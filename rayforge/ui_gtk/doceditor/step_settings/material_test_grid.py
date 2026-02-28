@@ -5,6 +5,7 @@ Provides UI for configuring material test array parameters.
 """
 
 from typing import Dict, Any, TYPE_CHECKING, cast
+from gettext import gettext as _
 
 from gi.repository import Adw, GLib, GObject, Gtk
 

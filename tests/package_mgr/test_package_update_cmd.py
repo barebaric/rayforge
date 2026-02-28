@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock, patch, call
 import pytest
+from gettext import gettext as _
 from rayforge.package_mgr.update_cmd import UpdateCommand
 from rayforge.package_mgr.package import Package, PackageMetadata
 

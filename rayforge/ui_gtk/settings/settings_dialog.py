@@ -1,3 +1,4 @@
+from gettext import gettext as _
 from gi.repository import Adw, Gdk, Gtk
 
 from ..icons import get_icon

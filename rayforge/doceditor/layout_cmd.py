@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, List, Tuple
+from gettext import gettext as _
 from ..shared.util.glib import idle_add
 from ..core.item import DocItem
 from ..core.undo import ChangePropertyCommand

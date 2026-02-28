@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from typing import Dict, Any, TYPE_CHECKING
+from gettext import gettext as _
 
 from ...core.doc import Doc
 from ...machine.models.machine import Machine

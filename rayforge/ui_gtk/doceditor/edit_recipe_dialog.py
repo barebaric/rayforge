@@ -1,5 +1,6 @@
 import logging
 from typing import Any, Dict, List, Optional
+from gettext import gettext as _
 
 from blinker import Signal
 from gi.repository import Adw, GObject, Gtk

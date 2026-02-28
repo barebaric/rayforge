@@ -1,15 +1,16 @@
 # flake8: noqa: E402
-import warnings
-import traceback
+import argparse
+import asyncio
 import logging
 import mimetypes
-import argparse
-import sys
 import os
+import sys
+import traceback
+import warnings
 import gettext
-import asyncio
 from pathlib import Path
 from typing import cast
+from gettext import gettext as _
 
 # Parse --config early before any rayforge imports, as they may
 # import config.py which computes CONFIG_DIR at module load time
@@ -36,21 +37,17 @@ warnings.filterwarnings(
 )
 
 # Gettext MUST be initialized before importing app modules.
-# This MUST run at the module level so that the `_` function is
-# available to any module (in any process) that gets imported.
 if hasattr(sys, "_MEIPASS"):
     # In a PyInstaller bundle, the project root is in a temporary
     # directory stored in sys._MEIPASS.
     base_dir = Path(sys._MEIPASS)  # type: ignore
 else:
-    # In other environments, this is safer.
     base_dir = Path(__file__).parent.parent
 
-# Make "_" available in all modules
+# Configure gettext with the locale directory
 locale_dir = base_dir / "rayforge" / "locale"
-logging.getLogger().setLevel(logging.DEBUG)
-logger.debug(f"Loading locales from {locale_dir}")
-gettext.install("rayforge", locale_dir)
+gettext.bindtextdomain("rayforge", str(locale_dir))
+gettext.textdomain("rayforge")
 
 # --------------------------------------------------------
 # GObject Introspection Repository (gi)

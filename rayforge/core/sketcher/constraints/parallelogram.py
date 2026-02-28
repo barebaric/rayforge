@@ -6,6 +6,7 @@ from typing import (
     List,
     TYPE_CHECKING,
 )
+from gettext import gettext as _
 from .base import Constraint
 
 if TYPE_CHECKING:

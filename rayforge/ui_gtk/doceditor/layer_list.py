@@ -2,6 +2,7 @@ import logging
 from gi.repository import Gtk
 from blinker import Signal
 from typing import cast, TYPE_CHECKING
+from gettext import gettext as _
 
 from ...core.doc import Doc
 from ...core.layer import Layer

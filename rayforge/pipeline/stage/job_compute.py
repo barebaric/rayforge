@@ -3,6 +3,7 @@ import logging
 import json
 from dataclasses import asdict
 from typing import Dict, Optional
+from gettext import gettext as _
 
 import numpy as np
 

@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING
+from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from blinker import Signal
 from ...core.step import Step

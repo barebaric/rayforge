@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
+from gettext import gettext as _
 from gi.repository import Gio, Adw
 from ...core.vectorization_spec import VectorizationSpec, TraceSpec
 from ...doceditor.file_cmd import ImportAction

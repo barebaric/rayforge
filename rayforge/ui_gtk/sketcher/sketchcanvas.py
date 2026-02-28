@@ -1,6 +1,7 @@
 import logging
 import math
 from typing import Optional, cast, TYPE_CHECKING
+from gettext import gettext as _
 from gi.repository import Adw, Gdk, Gtk
 from ...core.expression import ExpressionContext, safe_evaluate
 from ...core.matrix import Matrix

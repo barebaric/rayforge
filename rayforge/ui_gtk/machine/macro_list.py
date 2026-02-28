@@ -1,4 +1,5 @@
 from typing import cast
+from gettext import gettext as _
 from gi.repository import Gtk
 from ...machine.models.machine import Machine
 from ...machine.models.macro import Macro

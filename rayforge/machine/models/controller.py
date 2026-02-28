@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from gettext import gettext as _
 
 from blinker import Signal
 

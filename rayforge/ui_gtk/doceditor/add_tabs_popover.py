@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, List
+from gettext import gettext as _
 from gi.repository import Gtk, Adw
 
 if TYPE_CHECKING:

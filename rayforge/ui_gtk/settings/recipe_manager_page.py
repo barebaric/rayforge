@@ -1,4 +1,5 @@
 import logging
+from gettext import gettext as _
 from ..doceditor.recipe_list import RecipeListWidget
 from ..shared.preferences_page import TrackedPreferencesPage
 

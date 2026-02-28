@@ -1,3 +1,4 @@
+from gettext import gettext as _
 from gi.repository import Adw, Gtk
 from ...context import get_context
 from ...usage import get_usage_tracker

@@ -1,4 +1,5 @@
 import logging
+from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from ...camera.controller import CameraController
 from ..shared.patched_dialog_window import PatchedMessageDialog

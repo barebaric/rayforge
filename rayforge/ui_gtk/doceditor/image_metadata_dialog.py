@@ -1,5 +1,6 @@
 import logging
 from typing import Any, List, Optional, Tuple
+from gettext import gettext as _
 
 from gi.repository import Adw, Gdk, Gtk, Pango
 

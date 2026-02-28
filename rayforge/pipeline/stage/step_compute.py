@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 import math
 from typing import List, Tuple, Optional, TYPE_CHECKING
+from gettext import gettext as _
 from ...core.ops import Ops
 from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece

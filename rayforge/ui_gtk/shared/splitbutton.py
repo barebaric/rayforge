@@ -1,5 +1,6 @@
 import logging
 from typing import Sequence, Tuple
+from gettext import gettext as _
 from gi.repository import Gtk
 from ..icons import get_icon
 

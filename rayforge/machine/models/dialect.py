@@ -2,6 +2,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field, asdict, replace
 from typing import List, Dict, Optional, Any
+from gettext import gettext as _
 from ...core.varset import VarSet, Var, TextAreaVar, BoolVar
 
 

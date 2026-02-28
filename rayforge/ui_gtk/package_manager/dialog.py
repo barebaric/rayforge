@@ -1,6 +1,7 @@
 import logging
 import threading
 from typing import List
+from gettext import gettext as _
 
 from gi.repository import Adw, Gdk, GLib, Gtk
 

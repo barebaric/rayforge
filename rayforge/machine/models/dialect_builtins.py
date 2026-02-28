@@ -1,3 +1,4 @@
+from gettext import gettext as _
 from .dialect import GcodeDialect
 
 

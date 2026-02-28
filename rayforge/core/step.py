@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 from abc import ABC
 from typing import List, Optional, TYPE_CHECKING, Dict, Any, cast, Set
+from gettext import gettext as _
 from blinker import Signal
 from ..shared.units.formatter import format_value
 from .capability import Capability, CAPABILITIES_BY_NAME

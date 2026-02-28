@@ -1,5 +1,6 @@
 import logging
 from typing import Optional, List, Callable, cast, TYPE_CHECKING
+from gettext import gettext as _
 from gi.repository import Gtk
 from ..icons import get_icon
 from ...core.workflow import Workflow

@@ -1,4 +1,5 @@
 from typing import Optional
+from gettext import gettext as _
 from .intvar import IntVar, ValidationError
 from ...machine.transport.serial import SerialTransport
 

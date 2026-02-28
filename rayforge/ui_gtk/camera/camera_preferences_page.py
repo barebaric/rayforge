@@ -1,6 +1,7 @@
 from gi.repository import Gtk
 from blinker import Signal
 from typing import List, cast
+from gettext import gettext as _
 from ...camera.models.camera import Camera
 from ...camera.controller import CameraController
 from ..icons import get_icon

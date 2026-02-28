@@ -5,6 +5,7 @@ workpieces within a document.
 
 from __future__ import annotations
 import logging
+from gettext import gettext as _
 from typing import (
     List,
     Tuple,

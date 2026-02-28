@@ -5,6 +5,7 @@ import mimetypes
 import warnings
 from dataclasses import dataclass, field
 from enum import Enum, auto
+from gettext import gettext as _
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,

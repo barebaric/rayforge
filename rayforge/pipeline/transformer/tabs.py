@@ -2,6 +2,7 @@ from __future__ import annotations
 import math
 import logging
 from typing import Optional, List, Tuple, Dict, Any
+from gettext import gettext as _
 from ...core.geo.constants import (
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,

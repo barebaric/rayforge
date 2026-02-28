@@ -4,6 +4,7 @@ import logging
 import numpy as np
 from typing import Optional, List, Dict, Any, Sequence, TYPE_CHECKING
 from copy import deepcopy
+from gettext import gettext as _
 from ...core.ops import (
     Ops,
     Command,

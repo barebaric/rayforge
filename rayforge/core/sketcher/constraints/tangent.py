@@ -9,6 +9,7 @@ from typing import (
     Callable,
     TYPE_CHECKING,
 )
+from gettext import gettext as _
 from .base import Constraint, ConstraintStatus
 from ..entities import Line, Arc, Circle
 from rayforge.core.geo.primitives import find_closest_point_on_line

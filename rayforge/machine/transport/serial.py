@@ -6,6 +6,7 @@ import serial
 import serial_asyncio
 from typing import Optional, List
 from serial.tools import list_ports
+from gettext import gettext as _
 from .transport import Transport, TransportStatus
 
 logger = logging.getLogger(__name__)

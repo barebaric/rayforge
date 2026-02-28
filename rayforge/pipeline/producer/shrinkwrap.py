@@ -1,6 +1,7 @@
 import cairo
 import numpy as np
 from typing import Optional, TYPE_CHECKING, Dict, Any
+from gettext import gettext as _
 from ...core.geo import contours
 from ...core.matrix import Matrix
 from ...core.ops import (

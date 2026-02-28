@@ -2,6 +2,7 @@ import numpy as np
 import math
 import logging
 from typing import Optional, List, Dict, Any, Tuple, cast
+from gettext import gettext as _
 from scipy.spatial import cKDTree  # type: ignore
 from ...core.ops import (
     Ops,

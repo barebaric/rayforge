@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
+from gettext import gettext as _
 from gi.repository import Gtk
 from blinker import Signal
 from .editor import GcodeEditor

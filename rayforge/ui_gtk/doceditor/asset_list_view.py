@@ -2,6 +2,7 @@ import logging
 from gi.repository import Gtk
 from blinker import Signal
 from typing import cast, TYPE_CHECKING, Dict, List
+from gettext import gettext as _
 from ...core.doc import Doc
 from ...core.sketcher.sketch import Sketch
 from ...core.stock_asset import StockAsset

@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Dict, List, Optional
 from abc import ABC, abstractmethod
+from gettext import gettext as _
 from ..context import get_context
 from .varset import (
     ChoiceVar,

@@ -1,4 +1,5 @@
 from typing import Optional
+from gettext import gettext as _
 from ..commands import AddItemsCommand
 from ..entities import Point, Line
 from .base import SketchTool

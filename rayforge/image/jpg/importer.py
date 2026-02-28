@@ -2,6 +2,7 @@ import warnings
 from typing import Optional
 import logging
 from pathlib import Path
+from gettext import gettext as _
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)

@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 import uuid
 from typing import TYPE_CHECKING, List, Tuple, Optional
+from gettext import gettext as _
 
 from .base import SketchChangeCommand
 from ..sketch import Fill

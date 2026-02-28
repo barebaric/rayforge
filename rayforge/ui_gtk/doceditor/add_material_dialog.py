@@ -2,6 +2,7 @@
 
 import logging
 from typing import Dict, Any, Optional
+from gettext import gettext as _
 from gi.repository import Gtk, Adw, Gdk
 from ...core.material import Material
 

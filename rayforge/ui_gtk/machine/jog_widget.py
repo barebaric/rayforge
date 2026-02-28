@@ -1,5 +1,6 @@
 from gi.repository import Gtk, Adw, Gdk
 from typing import Optional
+from gettext import gettext as _
 from ...machine.driver.driver import Axis
 from ...machine.models.machine import JogDirection, Machine
 from ...machine.cmd import MachineCmd

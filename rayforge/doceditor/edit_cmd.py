@@ -1,6 +1,7 @@
 import uuid
 import logging
 from typing import TYPE_CHECKING, List, Dict, Tuple, Sequence, Optional, cast
+from gettext import gettext as _
 from ..core.item import DocItem
 from ..core.group import Group
 from ..core.undo import ListItemCommand, ReorderListCommand

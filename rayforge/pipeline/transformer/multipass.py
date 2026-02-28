@@ -1,6 +1,7 @@
 from __future__ import annotations
 import math
 from typing import Optional, Dict, Any
+from gettext import gettext as _
 
 from .base import OpsTransformer, ExecutionPhase
 from ...core.workpiece import WorkPiece

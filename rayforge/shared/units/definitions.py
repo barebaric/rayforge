@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional
+from gettext import gettext as _
 from .engine import engine
 
 

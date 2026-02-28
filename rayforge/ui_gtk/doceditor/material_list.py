@@ -3,6 +3,7 @@
 import uuid
 import logging
 from typing import Optional, cast
+from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from blinker import Signal
 from ...context import get_context

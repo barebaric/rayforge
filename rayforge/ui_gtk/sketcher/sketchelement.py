@@ -3,6 +3,7 @@ import math
 import cairo
 from blinker import Signal
 from typing import Tuple, List, Optional, TYPE_CHECKING, cast
+from gettext import gettext as _
 from ...core.geo.primitives import line_intersection, normalize_angle
 from ...core.matrix import Matrix
 from ...core.sketcher import Sketch

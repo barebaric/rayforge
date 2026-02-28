@@ -1,5 +1,6 @@
 import logging
 from typing import Optional, TYPE_CHECKING
+from gettext import gettext as _
 from gi.repository import Adw, Gtk, Pango
 from ...core.geo.font_config import FontConfig
 from ...core.sketcher.commands.text_property import ModifyTextPropertyCommand

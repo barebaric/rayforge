@@ -1,4 +1,5 @@
 from typing import cast
+from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from ...machine.models.dialect import GcodeDialect, get_available_dialects
 from ...context import get_context

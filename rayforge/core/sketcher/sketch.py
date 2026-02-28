@@ -5,6 +5,7 @@ from typing import Union, List, Optional, Set, Dict, Any, Sequence, Tuple
 from blinker import Signal
 from collections import defaultdict
 import math
+from gettext import gettext as _
 from ..geo import Geometry
 from ..varset import VarSet
 from ..asset import IAsset
@@ -609,7 +610,7 @@ class Sketch(IAsset):
                 curr_p = p_start
                 curr_edge = start_edge
 
-                for _ in range(len(self.registry.entities) + 1):
+                for __ in range(len(self.registry.entities) + 1):
                     current_half_edge = (
                         curr_p,
                         curr_edge["id"],

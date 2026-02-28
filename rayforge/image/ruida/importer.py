@@ -1,6 +1,7 @@
 import logging
 from typing import Optional, Dict
 from pathlib import Path
+from gettext import gettext as _
 
 from ...core.geo import Geometry
 from ...core.vectorization_spec import VectorizationSpec

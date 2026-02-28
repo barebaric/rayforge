@@ -5,6 +5,7 @@ from pathlib import Path
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 import warnings
+from gettext import gettext as _
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)

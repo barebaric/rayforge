@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Tuple
+from gettext import gettext as _
 
 from blinker import Signal
 from gi.repository import Adw, Gdk, GLib, Gtk

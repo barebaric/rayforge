@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 import math
 from typing import TYPE_CHECKING, Optional, Dict, Any
+from gettext import gettext as _
 
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand

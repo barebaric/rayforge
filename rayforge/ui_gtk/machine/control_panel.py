@@ -1,5 +1,6 @@
 from typing import Optional
 import logging
+from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from blinker import Signal
 from ...logging_setup import ui_log_event_received

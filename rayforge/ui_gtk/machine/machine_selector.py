@@ -1,5 +1,6 @@
 import logging
 from typing import Optional, cast
+from gettext import gettext as _
 from gi.repository import Gtk, Gio, GObject
 from blinker import Signal
 from ...context import get_context

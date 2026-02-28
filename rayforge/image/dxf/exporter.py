@@ -2,6 +2,7 @@ from __future__ import annotations
 import io
 import math
 from typing import List
+from gettext import gettext as _
 import ezdxf
 from ...core.geo import Geometry
 from ...core.geo.constants import (

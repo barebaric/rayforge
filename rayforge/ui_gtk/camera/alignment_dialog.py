@@ -1,6 +1,7 @@
 import logging
 import math
 from typing import List, Optional, Tuple
+from gettext import gettext as _
 
 import numpy as np
 from gi.repository import Adw, Gdk, GLib, Gtk
