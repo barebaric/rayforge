@@ -43,7 +43,10 @@ class SketchEditor:
         self._init_shortcuts()
 
         # 2. Pie Menu Setup
-        # Pass the shortcuts dict to the pie menu for label generation
+        # Pass the shortcuts dict to the pie menu for label generation.
+        # The pie menu is initially parented to the window, but will be
+        # re-parented to the canvas when a sketch is activated for more
+        # reliable positioning (especially on Windows).
         self.pie_menu = SketchPieMenu(self.parent_window, self.shortcuts)
 
         # Connect signals
@@ -97,6 +100,13 @@ class SketchEditor:
         self.sketch_element = sketch_element
         self.sketch_element.editor = self
 
+        # Re-parent the pie menu to the canvas for more reliable positioning
+        # (translate_coordinates doesn't work reliably on Windows when the
+        # popover is parented to a different widget in the hierarchy)
+        if sketch_element.canvas:
+            self.pie_menu.unparent()
+            self.pie_menu.set_parent(sketch_element.canvas)
+
         # Connect to TextBoxTool signals for UI management
         text_tool = self.sketch_element.tools.get("text_box")
         if isinstance(text_tool, TextBoxTool):
@@ -130,6 +140,10 @@ class SketchEditor:
         self.sketch_element = None
         if self.pie_menu.is_visible():
             self.pie_menu.popdown()
+
+        # Re-parent the pie menu back to the window
+        self.pie_menu.unparent()
+        self.pie_menu.set_parent(self.parent_window)
 
     def get_current_cursor(self) -> Optional[Gdk.Cursor]:
         """
@@ -289,15 +303,11 @@ class SketchEditor:
         # 3. Pass Context (Sketch, Target, Type)
         self.pie_menu.set_context(sketch_element, target, target_type)
 
-        win_coords = sketch_element.canvas.translate_coordinates(
-            self.parent_window, x, y
-        )
-        if win_coords:
-            win_x, win_y = win_coords[:2]
-            logger.info(
-                f"Opening Pie Menu at {win_x}, {win_y} (Type: {target_type})"
-            )
-            self.pie_menu.popup_at_location(win_x, win_y)
+        # Since the pie menu is parented to the canvas, we can use the
+        # canvas coordinates directly without translation. This is more
+        # reliable than translate_coordinates, especially on Windows.
+        logger.info(f"Opening Pie Menu at {x}, {y} (Type: {target_type})")
+        self.pie_menu.popup_at_location(x, y)
 
         gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
