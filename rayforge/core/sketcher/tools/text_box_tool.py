@@ -861,7 +861,7 @@ class TextBoxTool(SketchTool):
         ctx.transform(cairo_mat)
 
         transformed_geo.to_cairo(ctx)
-        ctx.set_source_rgba(0.0, 0.0, 0.0, 1.0)
+        self._set_text_color(ctx, entity)
         ctx.fill()
 
         start, end = self._get_selection_range()
@@ -929,10 +929,26 @@ class TextBoxTool(SketchTool):
             for p in pts_model[1:]:
                 ctx.line_to(*p)
             ctx.close_path()
-            ctx.set_source_rgba(0.0, 0.0, 0.0, 1.0)
+            self._set_text_color(ctx, entity)
             ctx.fill()
 
         ctx.restore()
+
+    def _set_text_color(
+        self, ctx: cairo.Context, entity: TextBoxEntity
+    ) -> None:
+        is_sketch_fully_constrained = self.element.sketch.is_fully_constrained
+        if entity.constrained:
+            if is_sketch_fully_constrained:
+                ctx.set_source_rgb(0.0, 0.6, 0.0)
+            else:
+                ctx.set_source_rgb(0.2, 0.8, 0.2)
+        else:
+            if self.element.canvas:
+                fg_rgba = self.element.canvas.get_color()
+                ctx.set_source_rgb(fg_rgba.red, fg_rgba.green, fg_rgba.blue)
+            else:
+                ctx.set_source_rgb(0.0, 0.0, 0.0)
 
     def _draw_selection_highlight(
         self,
