@@ -253,7 +253,10 @@ class PackageManager:
         try:
             pkg = Package.load_from_directory(package_path)
 
-            if not pkg.metadata.provides.code:
+            has_backend = pkg.metadata.provides.backend is not None
+            has_frontend = pkg.metadata.provides.frontend is not None
+
+            if not has_backend and not has_frontend:
                 self.loaded_packages[pkg.metadata.name] = pkg
                 logger.info(f"Loaded asset package: {pkg.metadata.name}")
                 return
@@ -279,7 +282,7 @@ class PackageManager:
                 self.incompatible_packages[pkg.metadata.name] = pkg
                 return
 
-            self._import_and_register(pkg)
+            self._import_and_register(pkg, pkg.metadata.provides.backend)
 
         except (PackageValidationError, FileNotFoundError) as e:
             logger.warning(
@@ -305,31 +308,26 @@ class PackageManager:
             return UpdateStatus.UP_TO_DATE
         return UpdateStatus.INCOMPATIBLE
 
-    def _import_and_register(self, pkg: Package):
+    def _import_and_register(self, pkg: Package, entry_point: Optional[str]):
         """
-        Imports the module specified in the package and registers it.
+        Imports the module specified by entry_point and registers it.
+
+        Args:
+            pkg: The package to load.
+            entry_point: Entry point string like 'module.submodule:function',
+                         or None to skip.
         """
-        entry_point = pkg.metadata.provides.code
         if not entry_point:
             return
 
         name = pkg.metadata.name
         module_name = f"rayforge_plugins.{name}"
 
-        # Resolve physical file path for importlib
-        if ":" in entry_point:
-            rel_path = entry_point.split(":")[0].replace(".", "/")
-            module_path = pkg.root_path / rel_path
-            module_path = (
-                (module_path / "__init__.py")
-                if module_path.is_dir()
-                else module_path.with_suffix(".py")
-            )
-        else:
-            module_path = pkg.root_path / entry_point
-
-        if not module_path.exists():
-            error_msg = f"Entry point {module_path} not found for {name}."
+        module_path = self._resolve_entry_point_path(
+            entry_point, pkg.root_path
+        )
+        if not module_path:
+            error_msg = f"Entry point {entry_point} not found for {name}."
             logger.error(error_msg)
             self._load_errors[name] = error_msg
             return
@@ -351,6 +349,29 @@ class PackageManager:
             error_msg = str(e)
             logger.error(f"Error importing plugin {name}: {e}")
             self._load_errors[name] = error_msg
+
+    def _resolve_entry_point_path(
+        self, entry_point: str, root_path: Path
+    ) -> Optional[Path]:
+        """
+        Resolve a module path to a file path.
+
+        Args:
+            entry_point: Module path like 'my_package.plugin'
+            root_path: The package root directory.
+
+        Returns:
+            Path to the module file, or None if not found.
+        """
+        module_path = root_path / entry_point.replace(".", "/")
+        if module_path.is_dir():
+            module_path = module_path / "__init__.py"
+        else:
+            module_path = module_path.with_suffix(".py")
+
+        if not module_path.exists():
+            return None
+        return module_path
 
     def install_package(
         self, git_url: str, package_id: Optional[str] = None
@@ -516,7 +537,7 @@ class PackageManager:
             self.incompatible_packages[addon_name] = pkg
             logger.info(f"Addon '{addon_name}' enabled but is incompatible")
         else:
-            self._import_and_register(pkg)
+            self._import_and_register(pkg, pkg.metadata.provides.backend)
             logger.info(f"Addon '{addon_name}' enabled and loaded")
 
         return True
@@ -655,7 +676,7 @@ class PackageManager:
             logger.info(f"Addon '{addon_name}' reloaded but is incompatible")
             return False
 
-        self._import_and_register(pkg)
+        self._import_and_register(pkg, pkg.metadata.provides.backend)
         if addon_name in self.loaded_packages:
             logger.info(f"Addon '{addon_name}' reloaded successfully")
             return True

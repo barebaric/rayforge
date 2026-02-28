@@ -26,7 +26,8 @@ class TestPackageRoundTrip:
             "api_version: 1\n"
             "depends:\n"
             "  - rayforge>=0.27.0,~0.27\n"
-            "entry_point: package.py\n"
+            "provides:\n"
+            "  backend: package\n"
         )
 
         (package_dir / "package.py").write_text(
@@ -71,7 +72,8 @@ class TestPackageRoundTrip:
             "api_version: 1\n"
             "depends:\n"
             "  - rayforge>=0.27.0,~0.27\n"
-            "entry_point: package.py\n"
+            "provides:\n"
+            "  backend: package\n"
         )
 
         (package_dir / "package.py").write_text(
@@ -116,7 +118,8 @@ class TestPackageRoundTrip:
             "api_version: 1\n"
             "depends:\n"
             "  - rayforge>=0.27.0,~0.27\n"
-            "entry_point: nonexistent.py\n"
+            "provides:\n"
+            "  backend: nonexistent\n"
         )
 
         context = RayforgeContext()

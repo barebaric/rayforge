@@ -1,4 +1,3 @@
-from typing import Dict, Type
 from .registry import step_widget_registry, StepWidgetRegistry
 from .base import StepComponentSettingsWidget
 from .engraver import EngraverSettingsWidget
@@ -27,12 +26,7 @@ step_widget_registry.register(
 )
 step_widget_registry.register("Smooth", SmoothSettingsWidget)
 
-WIDGET_REGISTRY: Dict[str, Type[StepComponentSettingsWidget]] = (
-    step_widget_registry.all_widgets()
-)
-
 __all__ = [
-    "WIDGET_REGISTRY",
     "step_widget_registry",
     "StepWidgetRegistry",
     "ContourProducerSettingsWidget",

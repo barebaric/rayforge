@@ -76,12 +76,3 @@ class TestStepWidgetRegistry:
             == OverscanSettingsWidget
         )
         assert step_widget_registry.get("Smooth") == SmoothSettingsWidget
-
-    def test_widget_registry_backward_compatibility(self):
-        from rayforge.ui_gtk.doceditor.step_settings import WIDGET_REGISTRY
-
-        assert (
-            WIDGET_REGISTRY.get("ContourProducer")
-            == ContourProducerSettingsWidget
-        )
-        assert WIDGET_REGISTRY.get("Rasterizer") == EngraverSettingsWidget

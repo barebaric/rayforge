@@ -1,4 +1,3 @@
-import ast
 import importlib
 import logging
 import re
@@ -38,12 +37,15 @@ class PackageProvides:
     Defines what the package provides to the system.
 
     Attributes:
-        code (Optional[str]): The entry point for the package
-                              (e.g., 'module.submodule:Class').
+        backend (Optional[str]): Module path loaded in worker and main
+                                 processes (e.g., 'my_package.plugin').
+        frontend (Optional[str]): Module path loaded only in main process
+                                  (e.g., 'my_package.ui').
         assets (List[Dict[str, str]]): A list of asset definitions.
     """
 
-    code: Optional[str] = None
+    backend: Optional[str] = None
+    frontend: Optional[str] = None
     assets: List[Dict[str, str]] = field(default_factory=list)
 
 
@@ -184,15 +186,12 @@ class Package:
                     email=author_data.get("email", ""),
                 )
 
-            # 2. Parse 'Provides' (Code and Assets)
+            # 2. Parse 'Provides' (Backend, Frontend, and Assets)
             provides_data = data.get("provides", {})
 
-            # Legacy compatibility: if 'entry_point' is at root, map it
-            if "code" not in provides_data and "entry_point" in data:
-                provides_data["code"] = data["entry_point"]
-
             provides = PackageProvides(
-                code=provides_data.get("code"),
+                backend=provides_data.get("backend"),
+                frontend=provides_data.get("frontend"),
                 assets=provides_data.get("assets", []),
             )
 
@@ -233,7 +232,7 @@ class Package:
         """
         logger.debug(f"Validating package structure for: {self.metadata.name}")
 
-        # --- 1. Basic Field Validation ---
+        # 1. Basic Field Validation
         if not self.metadata.name or not self.metadata.name.strip():
             raise PackageValidationError("Package 'name' cannot be empty.")
 
@@ -242,7 +241,7 @@ class Package:
                 f"Package '{self.metadata.name}' has no description."
             )
 
-        # --- 2. Version Validation ---
+        # 2. Version Validation
         try:
             # Strip leading 'v' if present for validation
             clean_ver = self.metadata.version.lstrip("v")
@@ -252,7 +251,7 @@ class Package:
                 f"Invalid semantic version: {self.metadata.version}"
             )
 
-        # --- 2.1 API Version Validation ---
+        # 2.1 API Version Validation
         if not isinstance(self.metadata.api_version, int):
             raise PackageValidationError(
                 f"api_version must be an integer, got: "
@@ -264,7 +263,7 @@ class Package:
                 f"Expected {PLUGIN_API_VERSION}."
             )
 
-        # --- 2.2 Depends Validation ---
+        # 2.2 Depends Validation
         if not self.metadata.depends:
             raise PackageValidationError("depends is required.")
         for dep in self.metadata.depends:
@@ -313,7 +312,7 @@ class Package:
                         f"'{constraint}': {dep}"
                     )
 
-        # --- 3. Author Validation ---
+        # 3. Author Validation
         if not self.metadata.author.name:
             raise PackageValidationError("Author name is required.")
 
@@ -332,7 +331,7 @@ class Package:
                     "appears invalid."
                 )
 
-        # --- 4. Asset Validation ---
+        # 4. Asset Validation
         for asset in self.metadata.provides.assets:
             path_str = asset.get("path")
             if not path_str:
@@ -352,34 +351,41 @@ class Package:
                     f"Asset path not found: {path_str}"
                 )
 
-        # --- 5. Code Entry Point Validation (Static) ---
-        if self.metadata.provides.code:
-            self._validate_code_entry_point(self.metadata.provides.code)
+        # 5. Backend Entry Point Validation
+        if self.metadata.provides.backend:
+            self._validate_entry_point(self.metadata.provides.backend)
+
+        # 6. Frontend Entry Point Validation
+        if self.metadata.provides.frontend:
+            self._validate_entry_point(self.metadata.provides.frontend)
 
         return True
 
-    def _validate_code_entry_point(self, entry_point: str):
+    def _validate_entry_point(self, entry_point: str):
         """
-        Validates the Python entry point using AST parsing.
-        """
-        # Case A: Module with Attribute (module.submodule:Class)
-        if ":" in entry_point:
-            module_str, attr_name = entry_point.split(":", 1)
-            file_path = self._resolve_module_path(module_str)
-            if not file_path:
-                raise PackageValidationError(
-                    f"Could not locate module file for '{module_str}' "
-                    f"inside {self.root_path}"
-                )
-            self._check_ast_for_attribute(file_path, attr_name)
+        Validates a module entry point.
 
-        # Case B: Direct file reference (Legacy)
-        else:
-            file_path = self.root_path / entry_point
-            if not file_path.exists():
-                raise PackageValidationError(
-                    f"Entry point file '{entry_point}' not found."
-                )
+        Entry point must be a valid Python module path
+        like 'my_package.plugin'.
+        """
+        if not self._is_valid_module_path(entry_point):
+            raise PackageValidationError(
+                f"Entry point '{entry_point}' is not a valid module path. "
+                "Use dotted notation (e.g., 'my_package.plugin')."
+            )
+
+        file_path = self._resolve_module_path(entry_point)
+        if not file_path:
+            raise PackageValidationError(
+                f"Module '{entry_point}' not found in {self.root_path}"
+            )
+
+    def _is_valid_module_path(self, path: str) -> bool:
+        """Check if a string is a valid Python module path."""
+        if not path or path.startswith(".") or path.endswith("."):
+            return False
+        parts = path.split(".")
+        return all(part.isidentifier() for part in parts)
 
     def _resolve_module_path(self, module_str: str) -> Optional[Path]:
         """
@@ -404,38 +410,6 @@ class Package:
             return path_py
 
         return None
-
-    def _check_ast_for_attribute(self, file_path: Path, attr_name: str):
-        """
-        Parses python file at file_path to check if attr_name is defined.
-        """
-        try:
-            source = file_path.read_text("utf-8")
-            tree = ast.parse(source, filename=str(file_path))
-
-            found = False
-            for node in tree.body:
-                if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
-                    if node.name == attr_name:
-                        found = True
-                        break
-                if isinstance(node, ast.Assign):
-                    for target in node.targets:
-                        if isinstance(target, ast.Name):
-                            if target.id == attr_name:
-                                found = True
-                                break
-            if not found:
-                raise PackageValidationError(
-                    f"Attribute '{attr_name}' not found in "
-                    f"{file_path.name} (static analysis)."
-                )
-        except SyntaxError as e:
-            raise PackageValidationError(
-                f"Syntax error in package code {file_path}: {e}"
-            )
-        except Exception as e:
-            raise PackageValidationError(f"Failed to parse entry point: {e}")
 
     @staticmethod
     def get_git_tag_version(package_dir: Path) -> str:
