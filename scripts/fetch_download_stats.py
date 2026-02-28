@@ -190,9 +190,6 @@ def get_ppa_downloads(owner, ppa_name):
         entries = data.get("entries", [])
 
         for entry in entries:
-            if entry.get("status") != "Published":
-                continue
-
             binary_link = entry.get("self_link")
             version = entry.get("binary_package_version", "unknown")
 
@@ -200,14 +197,13 @@ def get_ppa_downloads(owner, ppa_name):
                 continue
 
             try:
-                daily_url = f"{binary_link}?ws.op=getDailyDownloadTotals"
-                daily_data = fetch_json(daily_url)
+                count_url = f"{binary_link}?ws.op=getDownloadCount"
+                count_data = fetch_json(count_url)
 
-                version_total = sum(daily_data.values())
                 if version not in result["by_version"]:
                     result["by_version"][version] = 0
-                result["by_version"][version] += version_total
-                result["total"] += version_total
+                result["by_version"][version] += count_data
+                result["total"] += count_data
             except (HTTPError, URLError):
                 continue
 
