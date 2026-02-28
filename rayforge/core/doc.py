@@ -1,8 +1,18 @@
 import logging
-from typing import List, Optional, TypeVar, Iterable, Dict, TYPE_CHECKING, cast
+from typing import (
+    List,
+    Optional,
+    Set,
+    TypeVar,
+    Iterable,
+    Dict,
+    TYPE_CHECKING,
+    cast,
+)
 from gettext import gettext as _
 from blinker import Signal
 from ..core.undo import HistoryManager
+from ..pipeline.producer.registry import producer_registry
 from .asset import IAsset
 from .item import DocItem
 from .layer import Layer
@@ -436,6 +446,26 @@ class Doc(DocItem):
             if layer.workflow
             for step in layer.workflow.steps
         )
+
+    @property
+    def missing_producer_types(self) -> Set[str]:
+        """
+        Returns a set of producer type names that are used in this document
+        but are not available (not registered in the producer registry).
+
+        This is used to detect when a document uses features from an addon
+        that is not installed.
+        """
+        missing = set()
+        for layer in self.layers:
+            if layer.workflow:
+                for step in layer.workflow.steps:
+                    if step.opsproducer_dict:
+                        producer_type = step.opsproducer_dict.get("type")
+                        if producer_type:
+                            if producer_registry.get(producer_type) is None:
+                                missing.add(producer_type)
+        return missing
 
     def update_stock_visibility(self):
         """

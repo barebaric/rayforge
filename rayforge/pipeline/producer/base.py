@@ -144,8 +144,12 @@ class OpsProducer(ABC):
         This is a factory method that looks up the producer class by its
         name from the central registry and dispatches to the class's own
         `from_dict` method.
+
+        If the producer type is not found in the registry, returns a
+        PlaceholderProducer that preserves the original configuration.
         """
         from .registry import producer_registry
+        from .placeholder import PlaceholderProducer
 
         producer_type = data.get("type")
         if not producer_type:
@@ -153,6 +157,6 @@ class OpsProducer(ABC):
 
         ProducerClass = producer_registry.get(producer_type)
         if not ProducerClass:
-            raise ValueError(f"Unknown producer type: '{producer_type}'")
+            return PlaceholderProducer(producer_type, data)
 
         return ProducerClass.from_dict(data)

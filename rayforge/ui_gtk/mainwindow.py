@@ -44,6 +44,7 @@ from .doceditor.asset_list_view import AssetListView
 from .doceditor.import_handler import start_interactive_import
 from .doceditor.item_properties import DocItemPropertiesWidget
 from .doceditor.layer_list import LayerListView
+from .doceditor.missing_features_dialog import MissingFeaturesDialog
 from .doceditor.stock_properties_dialog import StockPropertiesDialog
 from .doceditor.sketch_properties import SketchPropertiesWidget
 from .doceditor.workflow_view import WorkflowView
@@ -1058,6 +1059,12 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Initialize new document
         self._initialize_document()
+
+        # Check for missing producer types and show dialog if needed
+        missing_types = new_doc.missing_producer_types
+        if missing_types:
+            dialog = MissingFeaturesDialog(self, missing_types)
+            dialog.present()
 
         # Trigger update to sync UI with new document
         self.on_doc_changed(new_doc)

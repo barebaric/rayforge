@@ -1,12 +1,13 @@
 from .registry import step_widget_registry, StepWidgetRegistry
 from .base import StepComponentSettingsWidget
-from .engraver import EngraverSettingsWidget
 from .contour import ContourProducerSettingsWidget
+from .engraver import EngraverSettingsWidget
 from .frame import FrameProducerSettingsWidget
 from .material_test_grid import MaterialTestGridSettingsWidget
 from .multipass import MultiPassSettingsWidget
 from .optimize import OptimizeSettingsWidget
 from .overscan import OverscanSettingsWidget
+from .placeholder import PlaceholderSettingsWidget
 from .shrinkwrap import ShrinkWrapProducerSettingsWidget
 from .smooth import SmoothSettingsWidget
 
@@ -20,6 +21,7 @@ step_widget_registry.register(
 step_widget_registry.register("MultiPassTransformer", MultiPassSettingsWidget)
 step_widget_registry.register("Optimize", OptimizeSettingsWidget)
 step_widget_registry.register("OverscanTransformer", OverscanSettingsWidget)
+step_widget_registry.register("PlaceholderProducer", PlaceholderSettingsWidget)
 step_widget_registry.register("Rasterizer", EngraverSettingsWidget)
 step_widget_registry.register(
     "ShrinkWrapProducer", ShrinkWrapProducerSettingsWidget
@@ -36,6 +38,7 @@ __all__ = [
     "MultiPassSettingsWidget",
     "OptimizeSettingsWidget",
     "OverscanSettingsWidget",
+    "PlaceholderSettingsWidget",
     "ShrinkWrapProducerSettingsWidget",
     "SmoothSettingsWidget",
     "StepComponentSettingsWidget",
