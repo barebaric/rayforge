@@ -154,7 +154,7 @@ export default function Home() {
             description="Безшовний перехід від 2D-дизайнів до 3D-траєкторій інструменту. Rayforge генерує G-код для 2-осьових та 3-осьових лазерних різаків і граверів, заповнюючи розрив між пласкими дизайнами та фізичними об'єктами."
             compatibilityHeading="Сумісно з: Grbl, Smoothieware"
             features={['3D-візуалізація', 'Генерація траєкторій інструменту', 'Керування осями']}
-            image="/assets/screenshot-3d-closeup.png"
+            image="/images/screenshot-3d-closeup.png"
           />
 
           <FeatureSection
@@ -166,7 +166,7 @@ export default function Home() {
               'Вирівнюйте все ідеально',
               'Встановлюйте розміри, що оновлюються автоматично',
             ]}
-            image="/assets/screenshot-sketcher.png"
+            image="/images/screenshot-sketcher.png"
             reverse
           />
 
@@ -179,7 +179,7 @@ export default function Home() {
               'Економте матеріал завдяки автоматичному компонуванню',
               'Плавні та точні криві',
             ]}
-            image="/assets/screenshot-optimizer.png"
+            image="/images/screenshot-optimizer.png"
           />
 
           <FeatureSection
@@ -203,7 +203,7 @@ export default function Home() {
               'Зберігайте налаштування для різних матеріалів',
               'Створюйте рецепти для повторного використання',
             ]}
-            image="/assets/screenshot-recipe.png"
+            image="/images/screenshot-recipe.png"
           />
         </div>
 

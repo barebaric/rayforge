@@ -154,7 +154,7 @@ export default function Home() {
             description="Transite perfeitamente de designs 2D para trajetórias 3D. O Rayforge gera G-code para cortadoras e gravadoras a laser de 2 e 3 eixos, conectando designs planos a objetos físicos."
             compatibilityHeading="Compatível com: Grbl, Smoothieware"
             features={['Visualização 3D', 'Geração de Trajetória', 'Controle de Eixos']}
-            image="/assets/screenshot-3d-closeup.png"
+            image="/images/screenshot-3d-closeup.png"
           />
 
           <FeatureSection
@@ -166,7 +166,7 @@ export default function Home() {
               'Alinhe tudo perfeitamente',
               'Defina dimensões que atualizam automaticamente',
             ]}
-            image="/assets/screenshot-sketcher.png"
+            image="/images/screenshot-sketcher.png"
             reverse
           />
 
@@ -179,7 +179,7 @@ export default function Home() {
               'Economize material com layout automático',
               'Curvas suaves e precisas',
             ]}
-            image="/assets/screenshot-optimizer.png"
+            image="/images/screenshot-optimizer.png"
           />
 
           <FeatureSection
@@ -203,7 +203,7 @@ export default function Home() {
               'Salve configurações para diferentes materiais',
               'Crie receitas reutilizáveis',
             ]}
-            image="/assets/screenshot-recipe.png"
+            image="/images/screenshot-recipe.png"
           />
         </div>
 

@@ -163,7 +163,7 @@ export default function Home() {
             description="Passez facilement des conceptions 2D aux parcours d'outil 3D. Rayforge génère du G-code pour les découpeuses et graveuses laser 2 axes et 3 axes, comblant le fossé entre les conceptions plates et les objets physiques."
             compatibilityHeading="Compatible avec : Grbl, Smoothieware"
             features={['Visualisation 3D', 'Génération de Parcours d\'Outil', 'Contrôle des Axes']}
-            image="/assets/screenshot-3d-closeup.png"
+            image="/images/screenshot-3d-closeup.png"
           />
 
           <FeatureSection
@@ -175,7 +175,7 @@ export default function Home() {
               'Alignez tout parfaitement',
               'Définissez des dimensions qui se mettent à jour automatiquement',
             ]}
-            image="/assets/screenshot-sketcher.png"
+            image="/images/screenshot-sketcher.png"
             reverse
           />
 
@@ -188,7 +188,7 @@ export default function Home() {
               'Économisez du matériau avec la mise en page automatique',
               'Courbes fluides et précises',
             ]}
-            image="/assets/screenshot-optimizer.png"
+            image="/images/screenshot-optimizer.png"
           />
 
           <FeatureSection
@@ -212,7 +212,7 @@ export default function Home() {
               'Enregistrez les réglages pour différents matériaux',
               'Créez des recettes réutilisables',
             ]}
-            image="/assets/screenshot-recipe.png"
+            image="/images/screenshot-recipe.png"
           />
         </div>
 
