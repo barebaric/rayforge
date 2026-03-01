@@ -7,7 +7,7 @@ from rayforge.uiscript import app, win
 from utils import open_app_settings, take_screenshot
 
 logger = logging.getLogger(__name__)
-PAGE = "packages"
+PAGE = "addons"
 
 
 def main():
