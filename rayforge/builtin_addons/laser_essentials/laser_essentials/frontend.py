@@ -17,7 +17,7 @@ from .producers import (
 )
 from .widgets import (
     ContourProducerSettingsWidget,
-    EngraverSettingsWidget,
+    RasterSettingsWidget,
     FrameProducerSettingsWidget,
     MaterialTestGridSettingsWidget,
     ShrinkWrapProducerSettingsWidget,
@@ -42,19 +42,19 @@ def register_step_widgets(widget_registry):
     )
     widget_registry.register(
         Rasterizer,
-        EngraverSettingsWidget,
+        RasterSettingsWidget,
         addon_name=ADDON_NAME,
     )
     # DepthEngraver and DitherRasterizer are aliases for Rasterizer
     widget_registry.register(
         Rasterizer,
-        EngraverSettingsWidget,
+        RasterSettingsWidget,
         name="DepthEngraver",
         addon_name=ADDON_NAME,
     )
     widget_registry.register(
         Rasterizer,
-        EngraverSettingsWidget,
+        RasterSettingsWidget,
         name="DitherRasterizer",
         addon_name=ADDON_NAME,
     )

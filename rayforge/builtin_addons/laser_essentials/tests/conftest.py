@@ -26,7 +26,9 @@ def _register_producers():
         Rasterizer, name="DepthEngraver", addon_name="laser_essentials"
     )
     producer_registry.register(
-        Rasterizer, name="DitherRasterizer", addon_name="laser_essentials"
+        Rasterizer,
+        name="DitherRasterizer",
+        addon_name="laser_essentials",
     )
     producer_registry.register(FrameProducer, addon_name="laser_essentials")
     producer_registry.register(

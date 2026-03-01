@@ -24,8 +24,8 @@ if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
 
 
-class EngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
-    """UI for configuring the Rasterizer producer."""
+class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
+    """UI for configuring the Raster producer."""
 
     def __init__(
         self,
