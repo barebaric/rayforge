@@ -194,11 +194,15 @@ class RayforgeContext:
             )[0]
             self._config.set_machine(machine)
 
-    def initialize_full_context(self):
+    def initialize_full_context(self, load_ui: bool = True):
         """
         Initializes the full application context with managers that should
         only be created in the main process. This is NOT safe to call from
         a subprocess.
+
+        Args:
+            load_ui: If False, skip UI-related imports (for headless/testing
+                environments without GTK). Defaults to True.
         """
         # This function should be idempotent.
         if self._config_mgr is not None:
@@ -270,31 +274,46 @@ class RayforgeContext:
         # Import registries
         from .core.step_registry import step_registry
         from .pipeline.producer.registry import producer_registry
-        from .ui_gtk.doceditor.step_settings import step_widget_registry
-        from .core.menu_registry import menu_registry
+
+        registries = {
+            "step_registry": step_registry,
+            "producer_registry": producer_registry,
+        }
+
+        step_widget_registry = None
+        menu_registry = None
+
+        if load_ui:
+            from .ui_gtk.doceditor.step_settings import (
+                step_widget_registry as _step_widget_registry,
+            )
+            from .core.menu_registry import menu_registry as _menu_registry
+
+            step_widget_registry = _step_widget_registry
+            menu_registry = _menu_registry
+
+            registries["widget_registry"] = step_widget_registry
+            registries["menu_registry"] = menu_registry
 
         # Provide registries to addon manager for addon enable/disable
-        self.addon_mgr.set_registries(
-            {
-                "step_registry": step_registry,
-                "producer_registry": producer_registry,
-                "widget_registry": step_widget_registry,
-                "menu_registry": menu_registry,
-            }
-        )
+        self.addon_mgr.set_registries(registries)
 
         # Load plugins from disk
-        self.addon_mgr.load_installed_addons()
+        self.addon_mgr.load_installed_addons(backend_only=not load_ui)
 
         # Trigger registration hooks
         self.plugin_mgr.hook.register_steps(step_registry=step_registry)
         self.plugin_mgr.hook.register_producers(
             producer_registry=producer_registry
         )
-        self.plugin_mgr.hook.register_step_widgets(
-            widget_registry=step_widget_registry
-        )
-        self.plugin_mgr.hook.register_menu_items(menu_registry=menu_registry)
+
+        if load_ui:
+            self.plugin_mgr.hook.register_step_widgets(
+                widget_registry=step_widget_registry
+            )
+            self.plugin_mgr.hook.register_menu_items(
+                menu_registry=menu_registry
+            )
 
         # Trigger the init hook for all registered plugins
         self.plugin_mgr.hook.rayforge_init(context=self)

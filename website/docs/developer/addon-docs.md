@@ -1,4 +1,4 @@
-# Rayforge Addon Developer Guide
+# Addon Developer Guide
 
 Rayforge uses an addon system based on [pluggy](https://pluggy.readthedocs.io/)
 to allow developers to extend functionality, add new machine drivers, or

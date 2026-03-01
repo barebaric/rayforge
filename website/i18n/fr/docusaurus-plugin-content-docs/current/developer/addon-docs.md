@@ -1,4 +1,4 @@
-# Guide du développeur d'addons Rayforge
+# Développement d'addons
 
 Rayforge utilise un système d'addons basé sur [pluggy](https://pluggy.readthedocs.io/)
 pour permettre aux développeurs d'étendre les fonctionnalités, d'ajouter de nouveaux pilotes machine, ou

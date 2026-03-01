@@ -18,7 +18,7 @@ module.exports = {
         'application-settings/machines',
         'application-settings/materials',
         'application-settings/recipes',
-        'application-settings/packages',
+        'application-settings/addons',
       ],
     },
     {
@@ -132,12 +132,6 @@ module.exports = {
         'developer/driver',
       ],
     },
-    {
-      type: 'category',
-      label: 'Plugins',
-      items: [
-        'developer/plugin-docs',
-      ],
-    },
+    'developer/addon-docs',
   ],
 };
