@@ -298,6 +298,26 @@ PROFILES: List[MachineProfile] = [
         ),
     ),
     MachineProfile(
+        name="OMTech K40+",
+        driver_class_name="GrblSerialDriver",
+        dialect_uid="grbl_dynamic_noz",
+        gcode_precision=3,
+        axis_extents=(300.0, 200.0),
+        work_margins=(5.0, 5.0, 5.0, 5.0),
+        origin=Origin.TOP_LEFT,
+        max_travel_speed=3000,
+        max_cut_speed=18000,
+        home_on_start=True,
+        heads=[
+            {
+                "max_power": 1000,
+                "frame_power_percent": 0.0,
+                "focus_power_percent": 0.0,
+                "spot_size_mm": [0.1, 0.1],
+            }
+        ],
+    ),
+    MachineProfile(
         name=_("Other Device"),
         driver_class_name="GrblSerialDriver",
         dialect_uid="grbl",
