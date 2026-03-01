@@ -18,6 +18,7 @@ from rayforge.core.addon_config import (
     AddonConfig,
     AddonState as ConfigAddonState,
 )
+from rayforge.shared.util.versioning import UnknownVersion
 from rayforge.shared.util.versioning import parse_requirement
 
 
@@ -135,7 +136,7 @@ class TestPackageManagerLoading:
         ):
             manager.load_package(package_dir)
 
-        mock_load.assert_called_once_with(package_dir)
+        mock_load.assert_called_once_with(package_dir, version=UnknownVersion)
         assert "test_plugin" in manager.loaded_packages
         manager.plugin_mgr.register.assert_called_once()
 
@@ -211,13 +212,16 @@ class TestPackageManagerInstallation:
         install_name = "my-plugin"
         git_url = f"https://example.com/repo/{install_name}.git"
         final_path = manager.install_dir / install_name
-        final_path.mkdir()  # Make it exist so the upgrade logic triggers
+        final_path.mkdir()
 
-        # Mock for the validation step inside install_package
         mock_pkg_for_validation = create_mock_package()
 
         with (
             patch("git.Repo.clone_from"),
+            patch(
+                "rayforge.package_mgr.package_manager.get_git_tag_version",
+                return_value="1.0.0",
+            ),
             patch(
                 "rayforge.package_mgr.package_manager."
                 "Package.load_from_directory",
@@ -235,12 +239,16 @@ class TestPackageManagerInstallation:
     def test_install_package_success(self, manager):
         manager.install_dir.mkdir()
         git_url = "https://a.b/c.git"
-        install_name = "c"  # Derived from URL for manual install
+        install_name = "c"
 
         mock_pkg_for_validation = create_mock_package()
 
         with (
             patch("git.Repo.clone_from"),
+            patch(
+                "rayforge.package_mgr.package_manager.get_git_tag_version",
+                return_value="1.0.0",
+            ),
             patch(
                 "rayforge.package_mgr.package_manager."
                 "Package.load_from_directory",

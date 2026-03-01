@@ -102,6 +102,9 @@ class DocEditor:
         # Connect to history manager to track undo/redo for saved state
         self.history_manager.changed.connect(self._on_history_changed)
 
+        # Connect to addon reload signal to refresh document
+        context.package_mgr.addon_reloaded.connect(self._on_addon_reload)
+
         # Instantiate and link command handlers, passing dependencies.
         self.asset = AssetCmd(self)
         self.edit = EditCmd(self)
@@ -221,6 +224,21 @@ class DocEditor:
             return settled_event.wait(timeout=timeout)
         finally:
             self.processing_state_changed.disconnect(on_settled)
+
+    def _on_addon_reload(self, sender, addon_name: str):
+        """
+        Refresh the document after an addon is reloaded.
+
+        Re-serializes and deserializes the document to ensure all
+        producer/widget instances use fresh class references from
+        the reloaded addon.
+        """
+        logger.info(f"Refreshing document after addon '{addon_name}' reload")
+        doc_data = self.doc.to_dict()
+        new_doc = Doc.from_dict(doc_data)
+        self.doc = new_doc
+        self.history_manager = new_doc.history_manager
+        self.document_changed.send(self)
 
     async def import_file_from_path(
         self,

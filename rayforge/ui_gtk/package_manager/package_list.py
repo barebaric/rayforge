@@ -4,9 +4,11 @@ from typing import Callable, cast, Optional, Tuple
 from gettext import gettext as _
 from gi.repository import Adw, Gtk, GLib
 from blinker import Signal
+from ... import __version__
 from ...context import get_context
 from ...package_mgr.package import Package, PackageMetadata
 from ...package_mgr.package_manager import AddonState
+from ...shared.util.versioning import UnknownVersion
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
 from .dialog import PackageRegistryDialog
@@ -121,8 +123,11 @@ class PackageRow(Gtk.Box):
 
     def _get_subtitle(self) -> str:
         parts = []
-        if self.pkg.metadata.version:
-            parts.append(self.pkg.metadata.version)
+        version = self.pkg.metadata.version
+        if version is UnknownVersion:
+            parts.append(__version__)
+        elif version:
+            parts.append(str(version))
         if self.pkg.metadata.author.name:
             parts.append(self.pkg.metadata.author.name)
         return " | ".join(parts)

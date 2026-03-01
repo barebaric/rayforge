@@ -1,10 +1,64 @@
+import importlib
 import logging
 import re
+from pathlib import Path
 from typing import List, Optional, Tuple
 
 import semver
 
 logger = logging.getLogger(__name__)
+
+
+class _UnknownVersion:
+    """
+    Sentinel class representing an unknown or undetermined version.
+
+    Used for builtin packages where version cannot be determined from git.
+    When displayed, the UI should fall back to rayforge.__version__.
+    """
+
+    __slots__ = ()
+
+    def __repr__(self) -> str:
+        return "UnknownVersion"
+
+
+UnknownVersion = _UnknownVersion()
+
+
+def get_git_tag_version(package_dir: Path) -> str:
+    """
+    Gets the version from git tags in the package directory.
+
+    Args:
+        package_dir (Path): The directory containing the package.
+
+    Returns:
+        str: The version from the latest git tag.
+
+    Raises:
+        RuntimeError: If no git tags are found or git is unavailable.
+    """
+    try:
+        importlib.import_module("git")
+    except ImportError:
+        raise RuntimeError("GitPython is required to get git tag version")
+
+    from git import Repo
+
+    try:
+        repo = Repo(package_dir)
+        tags = repo.tags
+        if tags:
+            latest_tag = sorted(
+                tags, key=lambda t: t.commit.committed_datetime
+            )[-1]
+            return latest_tag.name
+        raise RuntimeError(f"No git tags found in {package_dir}")
+    except Exception as e:
+        raise RuntimeError(
+            f"Failed to get git tag version from {package_dir}: {e}"
+        )
 
 
 def is_newer_version(remote_str: str, local_str: str) -> bool:

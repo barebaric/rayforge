@@ -22,6 +22,7 @@ from urllib.parse import urlparse
 
 import pluggy
 import yaml
+from blinker import Signal
 
 from .. import __version__
 from ..config import PACKAGE_REGISTRY_URL
@@ -29,8 +30,10 @@ from ..core.addon_config import AddonConfig, AddonState as ConfigAddonState
 from ..shared.util.po_compiler import compile_po_to_mo
 from ..shared.util.versioning import (
     check_rayforge_compatibility,
+    get_git_tag_version,
     is_newer_version,
     parse_requirement,
+    UnknownVersion,
 )
 from .package import Package, PackageMetadata, PackageValidationError
 
@@ -119,6 +122,8 @@ class PackageManager:
         self.disabled_packages: Dict[str, Package] = {}
         self._pending_unloads: Set[str] = set()
         self._load_errors: Dict[str, str] = {}
+
+        self.addon_reloaded = Signal()
 
     def set_registries(self, registries: Dict[str, "AddonRegistry"]):
         """
@@ -235,12 +240,19 @@ class PackageManager:
             return (UpdateStatus.NOT_INSTALLED, None)
 
         local_version = installed_pkg.metadata.version
-        is_newer = is_newer_version(remote_meta.version, local_version)
+        if local_version is UnknownVersion:
+            return (UpdateStatus.UP_TO_DATE, None)
+
+        local_version_str: Optional[str] = str(local_version)
+        remote_version = remote_meta.version
+        if remote_version is UnknownVersion:
+            return (UpdateStatus.UP_TO_DATE, local_version_str)
+
+        is_newer = is_newer_version(str(remote_version), str(local_version))
 
         if is_newer:
-            return (UpdateStatus.UPDATE_AVAILABLE, local_version)
-        else:
-            return (UpdateStatus.UP_TO_DATE, local_version)
+            return (UpdateStatus.UPDATE_AVAILABLE, local_version_str)
+        return (UpdateStatus.UP_TO_DATE, local_version_str)
 
     def check_for_updates(self) -> List[Tuple[Package, PackageMetadata]]:
         """
@@ -270,15 +282,17 @@ class PackageManager:
         for installed_pkg in self.loaded_packages.values():
             remote_meta = remote_packages.get(installed_pkg.metadata.name)
             if not remote_meta:
-                continue  # Installed package not in remote registry
+                continue
 
-            if is_newer_version(
-                remote_meta.version, installed_pkg.metadata.version
-            ):
+            local_ver = installed_pkg.metadata.version
+            remote_ver = remote_meta.version
+            if local_ver is UnknownVersion or remote_ver is UnknownVersion:
+                continue
+
+            if is_newer_version(str(remote_ver), str(local_ver)):
                 logger.info(
                     f"Update found for '{installed_pkg.metadata.name}': "
-                    f"{installed_pkg.metadata.version} -> "
-                    f"{remote_meta.version}"
+                    f"{local_ver} -> {remote_ver}"
                 )
                 updates_available.append((installed_pkg, remote_meta))
 
@@ -320,7 +334,29 @@ class PackageManager:
                 Used by worker processes.
         """
         try:
-            pkg = Package.load_from_directory(package_path)
+            is_builtin = not package_path.is_relative_to(self.install_dir)
+            version = None
+
+            if is_builtin:
+                version = UnknownVersion
+            else:
+                if self.addon_config:
+                    stored_version = self.addon_config.get_version(
+                        package_path.name
+                    )
+                    if stored_version is not None:
+                        version = stored_version
+                if version is None:
+                    try:
+                        version = get_git_tag_version(package_path)
+                    except RuntimeError:
+                        logger.warning(
+                            f"No stored version for '{package_path.name}' "
+                            "and no git tags found, using UnknownVersion"
+                        )
+                        version = UnknownVersion
+
+            pkg = Package.load_from_directory(package_path, version=version)
 
             has_backend = pkg.metadata.provides.backend is not None
             has_frontend = pkg.metadata.provides.frontend is not None
@@ -548,7 +584,6 @@ class PackageManager:
                 (for manual installs).
         """
         try:
-            # Use importlib to avoid making `git` a hard dependency
             importlib.import_module("git")
         except ImportError:
             logger.error("GitPython is required for package installation.")
@@ -561,14 +596,20 @@ class PackageManager:
             logger.info(f"Cloning {git_url} to staging area...")
 
             try:
-                Repo.clone_from(git_url, temp_path, depth=1)
+                Repo.clone_from(git_url, temp_path)
             except Exception as e:
                 logger.error(f"Git clone failed: {e}")
                 return None
 
             try:
+                version = get_git_tag_version(temp_path)
+            except RuntimeError as e:
+                logger.error(f"Failed to get package version: {e}")
+                return None
+
+            try:
                 logger.info("Validating package structure and code safety...")
-                pkg = Package.load_from_directory(temp_path)
+                pkg = Package.load_from_directory(temp_path, version=version)
                 pkg.validate()
                 logger.info("Validation passed.")
 
@@ -586,6 +627,9 @@ class PackageManager:
 
                 # Compile .po files to .mo files
                 self.compile_translations(final_path)
+
+                if self.addon_config:
+                    self.addon_config.set_version(install_name, version)
 
                 logger.info(f"Successfully installed package to {final_path}")
                 self.load_package(final_path)
@@ -876,7 +920,7 @@ class PackageManager:
         """
         Reload an addon (disable then enable).
 
-        Useful for development. Returns True if successful.
+        Returns True if successful.
         """
         if addon_name not in self.loaded_packages:
             logger.warning(
@@ -906,8 +950,11 @@ class PackageManager:
             return False
 
         self._import_and_register(pkg, pkg.metadata.provides.backend)
+        self._import_and_register(pkg, pkg.metadata.provides.frontend)
+        self._call_registration_hooks()
         if addon_name in self.loaded_packages:
             logger.info(f"Addon '{addon_name}' reloaded successfully")
+            self.addon_reloaded.send(self, addon_name=addon_name)
             return True
         else:
             logger.error(f"Failed to reload addon '{addon_name}'")
