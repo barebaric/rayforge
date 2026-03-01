@@ -218,22 +218,22 @@ def _offset_contour_group(
     Returns:
         List of offset contours as float coordinate tuples.
     """
-    if not pyclipper.Orientation(solid_path):  # type: ignore
+    if not pyclipper.Orientation(solid_path):
         solid_path = list(reversed(solid_path))
 
     paths_to_offset = [solid_path]
 
     for hole_path in hole_paths:
-        if pyclipper.Orientation(hole_path):  # type: ignore
+        if pyclipper.Orientation(hole_path):
             hole_path = list(reversed(hole_path))
         paths_to_offset.append(hole_path)
 
     try:
-        pco = pyclipper.PyclipperOffset()  # type: ignore
+        pco = pyclipper.PyclipperOffset()
         pco.AddPaths(
             paths_to_offset,
-            pyclipper.JT_MITER,  # type: ignore
-            pyclipper.ET_CLOSEDPOLYGON,  # type: ignore
+            pyclipper.JT_MITER,
+            pyclipper.ET_CLOSEDPOLYGON,
         )
         solution = pco.Execute(offset * scale)
     except Exception as e:
