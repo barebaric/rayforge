@@ -13,7 +13,6 @@ from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.steps import ContourStep
 from rayforge.pipeline.artifact import (
     ArtifactKey,
     JobArtifact,
@@ -193,7 +192,12 @@ class TestPipeline:
         mock_task_mgr.created_tasks.clear()
 
     def test_generate_job_fire_and_forget(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         """
         Tests that the fire-and-forget generate_job method correctly
@@ -202,7 +206,7 @@ class TestPipeline:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -250,7 +254,12 @@ class TestPipeline:
         assert "No machine is configured" in str(error)
 
     def test_generate_job_artifact_missing_dependencies(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         """
         Tests that job generation fails if step artifacts are not ready.
@@ -258,7 +267,7 @@ class TestPipeline:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -281,7 +290,12 @@ class TestPipeline:
 
     @pytest.mark.asyncio
     async def test_rapid_invalidation_does_not_corrupt_busy_state(
-        self, doc, real_workpiece, task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         """
         Black-box integration test that simulates a rapid invalidation
@@ -293,7 +307,7 @@ class TestPipeline:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         mock_processing_state_handler = MagicMock()
@@ -374,7 +388,7 @@ class TestPipeline:
 
     @pytest.mark.asyncio
     async def test_reconcile_data_triggers_view_rerender_on_workpiece_resize(
-        self, doc, real_workpiece, mock_task_mgr
+        self, doc, real_workpiece, mock_task_mgr, contour_step_class
     ):
         """
         Tests that pipeline.reconcile_data() triggers view re-rendering
@@ -390,7 +404,7 @@ class TestPipeline:
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         ctx = get_context()
-        step = ContourStep.create(ctx)
+        step = contour_step_class.create(ctx)
         layer.workflow.add_step(step)
 
         # Create pipeline
@@ -481,7 +495,12 @@ class TestPipeline:
         mock_task_mgr.created_tasks.clear()
 
     def test_get_existing_job_handle_returns_none_when_no_job_cached(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         """
         Tests that get_existing_job_handle returns None when no job
@@ -490,7 +509,7 @@ class TestPipeline:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -507,7 +526,12 @@ class TestPipeline:
         assert result is None
 
     def test_get_existing_job_handle_returns_none_when_no_handle(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         """
         Tests that get_existing_job_handle returns None when no
@@ -516,7 +540,7 @@ class TestPipeline:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(

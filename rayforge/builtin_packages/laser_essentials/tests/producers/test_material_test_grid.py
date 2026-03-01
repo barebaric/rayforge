@@ -22,13 +22,13 @@ from rayforge.core.ops import (
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline import CoordinateSystem
 from rayforge.pipeline.producer.base import OpsProducer
-from rayforge.pipeline.producer.material_test_grid import (
+from rayforge.machine.models.machine import Laser
+from laser_essentials.producers import (
     MaterialTestGridProducer,
     MaterialTestGridType,
     get_material_test_proportional_size,
     draw_material_test_preview,
 )
-from rayforge.machine.models.machine import Laser
 
 
 @pytest.fixture
@@ -104,7 +104,7 @@ def test_serialization_and_deserialization():
     recreated = OpsProducer.from_dict(data)
     assert data["type"] == "MaterialTestGridProducer"
     assert isinstance(recreated, MaterialTestGridProducer)
-    assert recreated.test_type == MaterialTestGridType.ENGRAVE
+    assert recreated.test_type.value == MaterialTestGridType.ENGRAVE.value
     assert tuple(recreated.grid_dimensions) == (4, 6)
     assert recreated.shape_size == 12.5
 
@@ -135,7 +135,7 @@ def test_get_material_test_proportional_size():
 
 
 @patch(
-    "rayforge.pipeline.producer.material_test_grid."
+    "laser_essentials.producers.material_test_grid."
     "MaterialTestGridProducer.draw_preview"
 )
 def test_draw_material_test_preview_delegates_call(

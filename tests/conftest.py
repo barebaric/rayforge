@@ -242,6 +242,38 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
         config_file.unlink()
 
 
+@pytest.fixture
+def contour_step_class(context_initializer):
+    """Get ContourStep class from registry after addons are loaded."""
+    from rayforge.core.step_registry import step_registry
+
+    return step_registry.get("ContourStep")
+
+
+@pytest.fixture
+def engrave_step_class(context_initializer):
+    """Get EngraveStep class from registry after addons are loaded."""
+    from rayforge.core.step_registry import step_registry
+
+    return step_registry.get("EngraveStep")
+
+
+@pytest.fixture
+def contour_producer_class(context_initializer):
+    """Get ContourProducer class from registry after addons are loaded."""
+    from rayforge.pipeline.producer.registry import producer_registry
+
+    return producer_registry.get("ContourProducer")
+
+
+@pytest.fixture
+def rasterizer_class(context_initializer):
+    """Get Rasterizer class from registry after addons are loaded."""
+    from rayforge.pipeline.producer.registry import producer_registry
+
+    return producer_registry.get("Rasterizer")
+
+
 @pytest.fixture(scope="function")
 def lite_context(tmp_path, task_mgr, monkeypatch):
     """

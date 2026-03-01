@@ -4,18 +4,19 @@ import logging
 from enum import Enum, auto
 from typing import Optional, TYPE_CHECKING, Dict, Any, Tuple
 from gettext import gettext as _
-from ...core.ops import Ops, SectionType
-from ...image.util import (
+
+from rayforge.core.ops import Ops, SectionType
+from rayforge.image.util import (
     surface_to_grayscale,
     surface_to_binary,
     normalize_grayscale,
     compute_auto_levels,
 )
-from ...image.dither import surface_to_dithered_array, DitherAlgorithm
-from ...shared.tasker.progress import ProgressContext
-from ..artifact import WorkPieceArtifact
-from ..coord import CoordinateSystem
-from .base import OpsProducer
+from rayforge.image.dither import surface_to_dithered_array, DitherAlgorithm
+from rayforge.shared.tasker.progress import ProgressContext
+from rayforge.pipeline.artifact import WorkPieceArtifact
+from rayforge.pipeline.coord import CoordinateSystem
+from rayforge.pipeline.producer.base import OpsProducer
 from .raster_util import (
     find_segments,
     convert_y_to_output,
@@ -24,9 +25,10 @@ from .raster_util import (
     generate_scan_lines,
 )
 
+
 if TYPE_CHECKING:
-    from ...core.workpiece import WorkPiece
-    from ...machine.models.laser import Laser
+    from rayforge.core.workpiece import WorkPiece
+    from rayforge.machine.models.laser import Laser
 
 logger = logging.getLogger(__name__)
 

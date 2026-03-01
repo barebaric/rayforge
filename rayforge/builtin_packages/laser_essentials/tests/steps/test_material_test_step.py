@@ -2,8 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from rayforge.core.capability import CUT, SCORE
-from rayforge.pipeline.steps import FrameStep
+from laser_essentials.steps import MaterialTestStep
 
 
 @pytest.fixture
@@ -21,19 +20,19 @@ def mock_context():
     return context
 
 
-class TestFrameStep:
+class TestMaterialTestStep:
     def test_instantiation(self):
-        step = FrameStep(name="Test")
-        assert step.typelabel == "Frame Outline"
-        assert step.capabilities == {CUT, SCORE}
+        step = MaterialTestStep(name="Test")
+        assert step.typelabel == "Material Test Grid"
+        assert step.capabilities == set()
 
     def test_create(self, mock_context):
-        step = FrameStep.create(mock_context)
-        assert isinstance(step, FrameStep)
+        step = MaterialTestStep.create(mock_context)
+        assert isinstance(step, MaterialTestStep)
         assert step.opsproducer_dict is not None
-        assert step.opsproducer_dict["type"] == "FrameProducer"
+        assert step.opsproducer_dict["type"] == "MaterialTestGridProducer"
 
     def test_serialization_includes_step_type(self):
-        step = FrameStep(name="Test")
+        step = MaterialTestStep(name="Test")
         data = step.to_dict()
-        assert data["step_type"] == "FrameStep"
+        assert data["step_type"] == "MaterialTestStep"

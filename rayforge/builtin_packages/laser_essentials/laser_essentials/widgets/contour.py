@@ -1,13 +1,15 @@
 from typing import Dict, Any, TYPE_CHECKING, cast
 from gettext import gettext as _
 from gi.repository import Gtk, Adw
+
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
 from rayforge.pipeline.producer.base import OpsProducer, CutSide
-from rayforge.pipeline.producer.contour import ContourProducer, CutOrder
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
 from rayforge.shared.util.glib import DebounceMixin
+from ..producers import ContourProducer, CutOrder
+
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step

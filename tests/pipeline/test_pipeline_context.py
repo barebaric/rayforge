@@ -13,7 +13,6 @@ from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact.key import ArtifactKey
 from rayforge.pipeline.context import GenerationContext
 from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.steps import ContourStep
 from rayforge.context import get_context
 
 
@@ -87,7 +86,7 @@ class TestPipelineContextIntegration:
         assert pipeline._contexts[1] is pipeline._active_context
 
     def test_reconcile_data_creates_incrementing_context_ids(
-        self, doc, mock_task_mgr, real_workpiece
+        self, doc, mock_task_mgr, real_workpiece, contour_step_class
     ):
         """
         Test that multiple reconcile_data calls create contexts with
@@ -105,7 +104,7 @@ class TestPipelineContextIntegration:
         assert pipeline._active_context.generation_id == initial_id
 
         pipeline.pause()
-        step = ContourStep.create(get_context())
+        step = contour_step_class.create(get_context())
         doc.active_layer.workflow.add_step(step)
         self._setup_doc_with_workpiece(doc, real_workpiece)
 
@@ -148,7 +147,7 @@ class TestPipelineContextIntegration:
         )
 
     def test_context_generation_id_matches_data_generation_id(
-        self, doc, mock_task_mgr, real_workpiece
+        self, doc, mock_task_mgr, real_workpiece, contour_step_class
     ):
         """
         Test that the context's generation_id matches the pipeline's
@@ -168,7 +167,7 @@ class TestPipelineContextIntegration:
         )
 
         pipeline.pause()
-        step = ContourStep.create(get_context())
+        step = contour_step_class.create(get_context())
         doc.active_layer.workflow.add_step(step)
         self._setup_doc_with_workpiece(doc, real_workpiece)
 
@@ -183,7 +182,9 @@ class TestPipelineContextIntegration:
             == pipeline._data_generation_id
         )
 
-    def test_old_contexts_preserved(self, doc, mock_task_mgr, real_workpiece):
+    def test_old_contexts_preserved(
+        self, doc, mock_task_mgr, real_workpiece, contour_step_class
+    ):
         """
         Test that old contexts are preserved when new ones are created.
         """
@@ -198,7 +199,7 @@ class TestPipelineContextIntegration:
         first_gen_id = pipeline._data_generation_id
 
         pipeline.pause()
-        step = ContourStep.create(get_context())
+        step = contour_step_class.create(get_context())
         doc.active_layer.workflow.add_step(step)
         self._setup_doc_with_workpiece(doc, real_workpiece)
 

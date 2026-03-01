@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-27 16:06+0100\n"
+"POT-Creation-Date: 2026-03-01 14:03+0100\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -175,7 +175,7 @@ msgstr "Ancho de corte"
 msgid "The effective width of the laser beam"
 msgstr "El ancho efectivo del haz láser"
 
-#: rayforge/core/capability.py rayforge/pipeline/steps.py
+#: rayforge/core/capability.py
 msgid "Engrave"
 msgstr "Grabar"
 
@@ -262,7 +262,6 @@ msgid "Horizontal"
 msgstr "Horizontal"
 
 #: rayforge/core/sketcher/constraints/angle.py
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Angle"
 msgstr "Ángulo"
@@ -2771,7 +2770,6 @@ msgid "G-code tool number (e.g., T0, T1)"
 msgstr "Número de herramienta de G-code (p. ej., T0, T1)"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 msgid "Max Power"
 msgstr "Potencia máxima"
 
@@ -3260,10 +3258,6 @@ msgid "Arrange"
 msgstr "Organizar"
 
 #: rayforge/ui_gtk/main_menu.py
-msgid "Create Material Test Grid"
-msgstr "Crear cuadrícula de prueba de material"
-
-#: rayforge/ui_gtk/main_menu.py
 msgid "_Tools"
 msgstr "_Herramientas"
 
@@ -3377,6 +3371,22 @@ msgid "An unexpected error occurred: {error}"
 msgstr "Ocurrió un error inesperado: {error}"
 
 #: rayforge/ui_gtk/package_manager/package_list.py
+msgid "Failed to load this package"
+msgstr ""
+
+#: rayforge/ui_gtk/package_manager/package_list.py
+msgid "This addon will be unloaded when active jobs finish"
+msgstr ""
+
+#: rayforge/ui_gtk/package_manager/package_list.py
+msgid "This package is incompatible with the current version of Rayforge"
+msgstr ""
+
+#: rayforge/ui_gtk/package_manager/package_list.py
+msgid "Enable or disable this addon"
+msgstr ""
+
+#: rayforge/ui_gtk/package_manager/package_list.py
 msgid "Uninstall Package"
 msgstr "Desinstalar paquete"
 
@@ -3398,6 +3408,50 @@ msgid "Failed to install package."
 msgstr "Error al instalar el paquete."
 
 #: rayforge/ui_gtk/package_manager/package_list.py
+msgid "Failed to enable addon and its dependencies."
+msgstr ""
+
+#: rayforge/ui_gtk/package_manager/package_list.py
+msgid "Enable Dependencies?"
+msgstr ""
+
+#: rayforge/ui_gtk/package_manager/package_list.py
+#, python-brace-format
+msgid ""
+"This addon requires: {deps}\n"
+"\n"
+"Enable them as well?"
+msgstr ""
+
+#: rayforge/ui_gtk/package_manager/package_list.py
+msgid "Enable All"
+msgstr ""
+
+#: rayforge/ui_gtk/package_manager/package_list.py
+msgid "Failed to enable addon. Check the logs for details."
+msgstr ""
+
+#: rayforge/ui_gtk/package_manager/package_list.py
+msgid "Cannot Disable Addon"
+msgstr ""
+
+#: rayforge/ui_gtk/package_manager/package_list.py
+#, python-brace-format
+msgid ""
+"This addon cannot be disabled.\n"
+"\n"
+"{reason}"
+msgstr ""
+
+#: rayforge/ui_gtk/package_manager/package_list.py
+msgid "Addon will be disabled when active jobs complete."
+msgstr ""
+
+#: rayforge/ui_gtk/package_manager/package_list.py
+msgid "Failed to disable addon. Check the logs for details."
+msgstr ""
+
+#: rayforge/ui_gtk/package_manager/package_list.py
 #, python-brace-format
 msgid "Uninstall {name}?"
 msgstr "¿Desinstalar {name}?"
@@ -3416,6 +3470,10 @@ msgstr "Desinstalar"
 #: rayforge/ui_gtk/package_manager/package_list.py
 msgid "Error deleting package."
 msgstr "Error al eliminar el paquete."
+
+#: rayforge/ui_gtk/package_manager/package_list.py
+msgid "Info"
+msgstr ""
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 msgid "Package Registry"
@@ -3711,7 +3769,6 @@ msgid "Automatically determine the trace threshold"
 msgstr "Determinar automáticamente el umbral de trazado"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 msgid "Threshold"
 msgstr "Umbral"
 
@@ -3720,7 +3777,6 @@ msgid "Trace objects darker than this value"
 msgstr "Trazar objetos más oscuros que este valor"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 msgid "Invert"
 msgstr "Invertir"
 
@@ -3786,153 +3842,6 @@ msgstr "Desactivar Sobrescanido Automático"
 msgid "Change Overscan Distance"
 msgstr "Cambiar distancia de Overscan"
 
-#: rayforge/ui_gtk/doceditor/step_settings/frame.py
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-#: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
-msgid "Cut Side"
-msgstr "Lado de corte"
-
-#: rayforge/ui_gtk/doceditor/step_settings/frame.py
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-#: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
-msgid "Path Offset (mm)"
-msgstr "Desplazamiento de trayectoria (mm)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/frame.py
-msgid "Absolute distance from content boundary"
-msgstr "Distancia absoluta desde el límite del contenido."
-
-#: rayforge/ui_gtk/doceditor/step_settings/frame.py
-msgid "Change Frame Setting"
-msgstr "Cambiar ajuste de marco"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Presets"
-msgstr "Preajustes"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Load common test configurations"
-msgstr "Cargar configuraciones de prueba comunes"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Test Type"
-msgstr "Tipo de prueba"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Cut: outlines; Engrave: fills with raster lines"
-msgstr "Corte: contornos; Grabado: rellenos con líneas de trama"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Speed &amp; Power"
-msgstr "Velocidad y Potencia"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Define the range of speeds and powers for the test grid"
-msgstr ""
-"Define el rango de velocidades y potencias para la cuadrícula de prueba"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Minimum Power (%)"
-msgstr "Potencia mínima (%)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "For first column"
-msgstr "Para la primera columna"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Maximum Power (%)"
-msgstr "Potencia máxima (%)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "For last column"
-msgstr "Para la última columna"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Minimum Speed"
-msgstr "Velocidad mínima"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Starting speed (mm/min)"
-msgstr "Velocidad inicial (mm/min)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Maximum Speed"
-msgstr "Velocidad máxima"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Ending speed (mm/min)"
-msgstr "Velocidad final (mm/min)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Columns (Power Steps)"
-msgstr "Columnas (Pasos de potencia)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Number of power variations"
-msgstr "Número de variaciones de potencia"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Rows (Speed Steps)"
-msgstr "Filas (Pasos de velocidad)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Number of speed variations"
-msgstr "Número de variaciones de velocidad"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Shape Size"
-msgstr "Tamaño de la forma"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Size of each test square (mm)"
-msgstr "Tamaño de cada cuadrado de prueba (mm)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Spacing"
-msgstr "Espaciado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Gap between test squares (mm)"
-msgstr "Separación entre cuadrados de prueba (mm)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Line Interval"
-msgstr "Intervalo de línea"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid ""
-"Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
-"to use laser spot size."
-msgstr ""
-"Distancia entre líneas de escaneo en unidades de máquina (para modo "
-"Grabado). Dejar en 0 para usar el tamaño del punto láser."
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Include Labels"
-msgstr "Incluir etiquetas"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Add speed/power annotations to the grid"
-msgstr "Añadir anotaciones de velocidad/potencia a la cuadrícula"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Label Engrave Power (%)"
-msgstr "Potencia de grabado de etiqueta (%)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Change Power Range"
-msgstr "Cambiar rango de potencia"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-#, python-brace-format
-msgid "Change {param_name}"
-msgstr "Cambiar {param_name}"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Change Grid Dimensions"
-msgstr "Cambiar dimensiones de la cuadrícula"
-
 #: rayforge/ui_gtk/doceditor/step_settings/optimize.py
 msgid "Enable Optimization"
 msgstr "Habilitar optimización"
@@ -3941,143 +3850,15 @@ msgstr "Habilitar optimización"
 msgid "Toggle Path Optimization"
 msgstr "Alternar optimización de trayectoria"
 
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Configure how the laser engraves your image."
-msgstr "Configurar cómo el láser graba tu imagen."
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Mode"
-msgstr "Modo"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Brightness cutoff for black/white (0-255)"
-msgstr "Umbral de brillo para blanco/negro (0-255)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Engraving Method"
-msgstr "Método de grabado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Algorithm for converting grayscale to binary"
-msgstr "Algoritmo para convertir escala de grises a binario"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Auto Levels"
-msgstr "Niveles Automáticos"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Automatically adjust black/white points"
-msgstr "Ajustar automáticamente los puntos negro/blanco"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Brightness Range"
-msgstr "Rango de brillo"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Auto-adjusted based on image content"
-msgstr "Ajustado automáticamente según el contenido de la imagen"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Drag markers to set black/white points"
-msgstr "Arrastra los marcadores para ajustar los puntos de blanco/negro"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Min Power"
-msgstr "Potencia mínima"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-#, python-format
-msgid "Power for lightest areas, as a % of the step's main power"
+#: rayforge/ui_gtk/doceditor/step_settings/placeholder.py
+msgid "This feature is not available."
 msgstr ""
-"Potencia para las áreas más claras, como % de la potencia principal del paso."
 
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-#, python-format
-msgid "Power for darkest areas, as a % of the step's main power"
-msgstr ""
-"Potencia para las áreas más oscuras, como % de la potencia principal del "
-"paso."
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Number of Depth Levels"
-msgstr "Número de niveles de profundidad"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Z Step-Down per Level (mm)"
-msgstr "Descenso en Z por nivel (mm)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Rotate Angle Per Pass"
-msgstr "Ángulo de rotación por pasada"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Degrees to rotate each successive pass"
-msgstr "Grados para rotar cada pasada sucesiva"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Engraving Pattern"
-msgstr "Patrón de grabado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Settings that control the scan line pattern and orientation."
-msgstr ""
-"Ajustes que controlan el patrón y la orientación de las líneas de escaneo."
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Angle of scan lines in degrees"
-msgstr "Ángulo de las líneas de escaneo en grados"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Cross-Hatch"
-msgstr "Trama cruzada"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Add a second pass at 90 degrees"
-msgstr "Añadir una segunda pasada a 90 grados"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Line Spacing"
-msgstr "Espaciado de línea"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+#: rayforge/ui_gtk/doceditor/step_settings/placeholder.py
 msgid ""
-"Distance between scan lines in machine units. Leave at 0 to use laser spot "
-"size"
+"The required component '{}' could not be found. The document can still be "
+"saved."
 msgstr ""
-"Distancia entre líneas de escaneo en unidades de máquina. Dejar en 0 para "
-"usar el tamaño del punto láser"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Engrave white areas instead of black areas"
-msgstr "Grabar áreas blancas en lugar de áreas negras"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Change Min Power"
-msgstr "Cambiar potencia mínima"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Change Max Power"
-msgstr "Cambiar potencia máxima"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Min Power (Black)"
-msgstr "Potencia mínima (Negro)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Max Power (White)"
-msgstr "Potencia máxima (Blanco)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Min Power (White)"
-msgstr "Potencia mín. (Blanco)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Max Power (Black)"
-msgstr "Potencia máx. (Negro)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Change engraving setting"
-msgstr "Cambiar ajuste de grabado"
 
 #: rayforge/ui_gtk/doceditor/step_settings/smooth.py
 msgid "Enable Smoothing"
@@ -4106,64 +3887,6 @@ msgstr "Cambiar suavizado"
 #: rayforge/ui_gtk/doceditor/step_settings/smooth.py
 msgid "Change corner angle"
 msgstr "Cambiar ángulo de esquina"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Remove Inner Paths"
-msgstr "Eliminar trayectorias internas"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "If enabled, only trace the outer outline of shapes"
-msgstr "Si está habilitado, solo traza el contorno exterior de las formas."
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Cut Order"
-msgstr "Orden de corte"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Processing order for nested paths"
-msgstr "Orden de procesamiento para trayectorias anidadas"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-#: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
-msgid ""
-"Absolute distance from original path, direction is controlled by Cut Side"
-msgstr ""
-"Distancia absoluta desde la trayectoria original. La dirección se controla "
-"con 'Lado de corte'."
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Rescan Content"
-msgstr "Reescanear contenido"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Ignore source geometry and re-trace within the workpiece"
-msgstr ""
-"Ignorar geometría de origen y volver a trazar dentro de la pieza de trabajo"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Tracing Threshold"
-msgstr "Umbral de trazado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Brightness level (0.0-1.0) to define edges"
-msgstr "Nivel de brillo (0.0-1.0) para definir bordes"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Change Edge Tracer Setting"
-msgstr "Cambiar ajuste del trazador de bordes"
-
-#: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
-msgid "Gravity"
-msgstr "Gravedad"
-
-#: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
-msgid "Pulls the hull inward. 0.0 is a standard convex hull"
-msgstr ""
-"Tira de la envoltura hacia adentro. 0.0 es una envoltura convexa estándar."
-
-#: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
-msgid "Change Shrinkwrap Setting"
-msgstr "Cambiar ajuste de envoltura"
 
 #: rayforge/ui_gtk/doceditor/step_settings/multipass.py
 msgid "Number of Passes"
@@ -4618,6 +4341,26 @@ msgstr "Grosor: {thickness}"
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "No thickness specified"
 msgstr "Grosor no especificado"
+
+#: rayforge/ui_gtk/doceditor/missing_features_dialog.py
+msgid "Missing Features"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/missing_features_dialog.py
+msgid "This document uses a feature that is not available: {}"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/missing_features_dialog.py
+msgid "This document uses features that are not available: {}"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/missing_features_dialog.py
+msgid "The document can still be edited and saved."
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/missing_features_dialog.py
+msgid "_OK"
+msgstr ""
 
 #: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "Select Material"
@@ -5419,50 +5162,13 @@ msgstr ""
 "Ruta a un directorio de configuración personalizado. Útil para pruebas con "
 "configuraciones aisladas."
 
-#: rayforge/pipeline/steps.py
-msgid "Contour"
-msgstr "Contorno"
+#: rayforge/pipeline/producer/placeholder.py
+msgid "Missing Producer"
+msgstr ""
 
-#: rayforge/pipeline/steps.py
-msgid "Shrink Wrap"
-msgstr "Envoltura"
-
-#: rayforge/pipeline/steps.py
-msgid "Frame Outline"
-msgstr "Contorno de marco"
-
-#: rayforge/pipeline/steps.py rayforge/doceditor/material_test_cmd.py
-msgid "Material Test Grid"
-msgstr "Cuadrícula de prueba de material"
-
-#: rayforge/pipeline/producer/raster.py
-msgid "Variable Power"
-msgstr "Potencia variable"
-
-#: rayforge/pipeline/producer/raster.py
-msgid "Constant Power"
-msgstr "Potencia constante"
-
-#: rayforge/pipeline/producer/raster.py
-msgid "Dither"
-msgstr "Tramado"
-
-#: rayforge/pipeline/producer/raster.py
-msgid "Multiple Depths"
-msgstr "Múltiples profundidades"
-
-#: rayforge/pipeline/producer/contour.py
-msgid "Inside-Outside"
-msgstr "Interior-Exterior"
-
-#: rayforge/pipeline/producer/contour.py
-msgid "Outside-Inside"
-msgstr "Exterior-Interior"
-
-#: rayforge/pipeline/producer/contour.py
-#: rayforge/pipeline/producer/shrinkwrap.py
-msgid "Optimizing path with arcs..."
-msgstr "Optimizando trayectoria con arcos..."
+#: rayforge/pipeline/producer/placeholder.py
+msgid "Missing: {}"
+msgstr ""
 
 #: rayforge/pipeline/producer/base.py
 msgid "Centerline"
@@ -5692,10 +5398,6 @@ msgstr "El ancho de la pieza de trabajo."
 #: rayforge/pipeline/encoder/context.py
 msgid "The height of the workpiece."
 msgstr "La altura de la pieza de trabajo."
-
-#: rayforge/doceditor/material_test_cmd.py
-msgid "Add Material Test"
-msgstr "Añadir prueba de material"
 
 #: rayforge/doceditor/transform_cmd.py
 msgid "Transform item(s)"

@@ -225,7 +225,8 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Determine initial machine dimensions for canvases.
         # 2D canvas uses axis extents, 3D canvas uses workarea.
-        config = get_context().config
+        context = get_context()
+        config = context.config
         if config.machine:
             width_mm, height_mm = config.machine.axis_extents
             area = config.machine.work_area
@@ -273,6 +274,10 @@ class MainWindow(Adw.ApplicationWindow):
         # Setup keyboard actions using the new ActionManager.
         self.action_manager = ActionManager(self)
         self.action_manager.register_actions()
+
+        # Let addons register their actions
+        context.plugin_mgr.hook.register_actions(window=self)
+
         shortcut_controller = Gtk.ShortcutController()
         self.action_manager.register_shortcuts(shortcut_controller)
         self.add_controller(shortcut_controller)
@@ -2039,10 +2044,6 @@ class MainWindow(Adw.ApplicationWindow):
             transient_for=self,
         )
         dialog.present()
-
-    def on_show_material_test(self, action, param):
-        """Creates a material test grid by delegating to the editor command."""
-        self.doc_editor.material_test.create_test_grid()
 
     def _on_settings_dialog_closed(self, dialog):
         logger.debug("Settings dialog closed")

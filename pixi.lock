@@ -4442,8 +4442,8 @@ packages:
   timestamp: 1746622023242
 - pypi: ./
   name: rayforge
-  version: 1.1.2.post8+git.96d3925f.dirty
-  sha256: ac78463db911e72d05a5f71e921ee64813358c904a47b2da32aa1ac2907e9a66
+  version: 1.1.2.post11+git.4cae38f6.dirty
+  sha256: 4ce204c806e2bf8c5de8350714877edeac701fc70cfa6ac7e985bc05671e305c
   requires_dist:
   - aiohttp==3.13.3
   - asyncudp==0.11.0

@@ -75,3 +75,21 @@ class RayforgeSpecs:
         Args:
             menu_registry: The global MenuRegistry instance.
         """
+
+    @hookspec
+    def register_commands(self, command_registry):
+        """
+        Called to allow plugins to register editor commands.
+
+        Args:
+            command_registry: The global CommandRegistry instance.
+        """
+
+    @hookspec
+    def register_actions(self, window):
+        """
+        Called to allow plugins to register window actions.
+
+        Args:
+            window: The MainWindow instance.
+        """

@@ -1,20 +1,22 @@
 import logging
 from typing import Optional, TYPE_CHECKING, Dict, Any
-from ...core.geo import Geometry
-from ...core.ops import (
+
+from rayforge.core.geo import Geometry
+from rayforge.core.ops import (
     Ops,
     OpsSectionStartCommand,
     OpsSectionEndCommand,
     SectionType,
 )
-from ...shared.tasker.progress import ProgressContext
-from ..artifact import WorkPieceArtifact
-from ..coord import CoordinateSystem
-from .base import OpsProducer, CutSide
+from rayforge.shared.tasker.progress import ProgressContext
+from rayforge.pipeline.artifact import WorkPieceArtifact
+from rayforge.pipeline.coord import CoordinateSystem
+from rayforge.pipeline.producer.base import OpsProducer, CutSide
+
 
 if TYPE_CHECKING:
-    from ...core.workpiece import WorkPiece
-    from ...machine.models.laser import Laser
+    from rayforge.core.workpiece import WorkPiece
+    from rayforge.machine.models.laser import Laser
 
 logger = logging.getLogger(__name__)
 

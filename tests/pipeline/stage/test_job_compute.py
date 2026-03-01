@@ -7,7 +7,6 @@ from rayforge.core.layer import Layer
 from rayforge.core.ops import Ops, LineToCommand
 from rayforge.machine.models.machine import Machine, Laser
 from rayforge.pipeline.artifact import StepOpsArtifact, JobArtifact
-from rayforge.pipeline.steps import ContourStep
 from rayforge.pipeline.stage.job_compute import (
     compute_job_artifact,
     _assemble_final_ops,
@@ -28,7 +27,7 @@ def machine(context_initializer):
 
 
 def test_job_compute_assembles_step_artifacts_correctly(
-    context_initializer, machine, mock_progress_context
+    context_initializer, machine, mock_progress_context, contour_step_class
 ):
     """
     Test that compute_job_artifact correctly assembles StepOpsArtifacts
@@ -38,7 +37,7 @@ def test_job_compute_assembles_step_artifacts_correctly(
     layer = doc.active_layer
     assert layer.workflow is not None
 
-    step = ContourStep.create(context_initializer)
+    step = contour_step_class.create(context_initializer)
     layer.workflow.add_step(step)
 
     final_ops_for_step = Ops()
@@ -83,7 +82,9 @@ def test_job_compute_assembles_step_artifacts_correctly(
     assert mock_progress_context.progress_calls[-1][0] == 1.0
 
 
-def test_job_compute_handles_empty_ops(context_initializer, machine):
+def test_job_compute_handles_empty_ops(
+    context_initializer, machine, contour_step_class
+):
     """
     Test that compute_job_artifact handles empty ops gracefully.
     """
@@ -91,7 +92,7 @@ def test_job_compute_handles_empty_ops(context_initializer, machine):
     layer = doc.active_layer
     assert layer.workflow is not None
 
-    step = ContourStep.create(context_initializer)
+    step = contour_step_class.create(context_initializer)
     layer.workflow.add_step(step)
 
     empty_ops = Ops()
@@ -110,7 +111,7 @@ def test_job_compute_handles_empty_ops(context_initializer, machine):
 
 
 def test_job_compute_without_progress_callback(
-    context_initializer, machine, mock_progress_context
+    context_initializer, machine, mock_progress_context, contour_step_class
 ):
     """
     Test that compute_job_artifact works without a progress callback.
@@ -119,7 +120,7 @@ def test_job_compute_without_progress_callback(
     layer = doc.active_layer
     assert layer.workflow is not None
 
-    step = ContourStep.create(context_initializer)
+    step = contour_step_class.create(context_initializer)
     layer.workflow.add_step(step)
 
     final_ops_for_step = Ops()
@@ -141,7 +142,9 @@ def test_job_compute_without_progress_callback(
     assert result.machine_code_bytes is not None
 
 
-def test_job_compute_multiple_steps(context_initializer, machine):
+def test_job_compute_multiple_steps(
+    context_initializer, machine, contour_step_class
+):
     """
     Test that compute_job_artifact correctly handles multiple steps.
     """
@@ -149,11 +152,11 @@ def test_job_compute_multiple_steps(context_initializer, machine):
     layer = doc.active_layer
     assert layer.workflow is not None
 
-    step1 = ContourStep.create(context_initializer)
+    step1 = contour_step_class.create(context_initializer)
     step1.name = "Step 1"
     layer.workflow.add_step(step1)
 
-    step2 = ContourStep.create(context_initializer)
+    step2 = contour_step_class.create(context_initializer)
     step2.name = "Step 2"
     layer.workflow.add_step(step2)
 
@@ -182,7 +185,9 @@ def test_job_compute_multiple_steps(context_initializer, machine):
     assert len(line_cmds) == 2
 
 
-def test_job_compute_empty_step_artifacts(context_initializer, machine):
+def test_job_compute_empty_step_artifacts(
+    context_initializer, machine, contour_step_class
+):
     """
     Test that compute_job_artifact handles empty step artifacts.
     """
@@ -190,7 +195,7 @@ def test_job_compute_empty_step_artifacts(context_initializer, machine):
     layer = doc.active_layer
     assert layer.workflow is not None
 
-    step = ContourStep.create(context_initializer)
+    step = contour_step_class.create(context_initializer)
     layer.workflow.add_step(step)
 
     step_artifacts_by_uid = {}
@@ -206,7 +211,9 @@ def test_job_compute_empty_step_artifacts(context_initializer, machine):
     assert result.machine_code_bytes is not None
 
 
-def test_job_compute_multiple_layers(context_initializer, machine):
+def test_job_compute_multiple_layers(
+    context_initializer, machine, contour_step_class
+):
     """
     Test that compute_job_artifact correctly handles multiple layers.
     """
@@ -214,14 +221,14 @@ def test_job_compute_multiple_layers(context_initializer, machine):
     layer1 = doc.active_layer
     assert layer1.workflow is not None
 
-    step1 = ContourStep.create(context_initializer)
+    step1 = contour_step_class.create(context_initializer)
     step1.name = "Step 1"
     layer1.workflow.add_step(step1)
 
     layer2 = Layer("Layer 2")
     doc.add_layer(layer2)
 
-    step2 = ContourStep.create(context_initializer)
+    step2 = contour_step_class.create(context_initializer)
     step2.name = "Step 2"
     if layer2.workflow:
         layer2.workflow.add_step(step2)
@@ -251,14 +258,16 @@ def test_job_compute_multiple_layers(context_initializer, machine):
     assert len(line_cmds) == 2
 
 
-def test_job_compute_layer_without_workflow(context_initializer, machine):
+def test_job_compute_layer_without_workflow(
+    context_initializer, machine, contour_step_class
+):
     """
     Test that compute_job_artifact handles layers without workflow.
     """
     doc = Doc()
     layer1 = doc.active_layer
 
-    step = ContourStep.create(context_initializer)
+    step = contour_step_class.create(context_initializer)
     if layer1.workflow:
         layer1.workflow.add_step(step)
 
@@ -286,7 +295,9 @@ def test_job_compute_layer_without_workflow(context_initializer, machine):
     assert len(line_cmds) == 1
 
 
-def test_job_compute_missing_step_artifact(context_initializer, machine):
+def test_job_compute_missing_step_artifact(
+    context_initializer, machine, contour_step_class
+):
     """
     Test that compute_job_artifact handles missing step artifacts.
     """
@@ -294,11 +305,11 @@ def test_job_compute_missing_step_artifact(context_initializer, machine):
     layer = doc.active_layer
     assert layer.workflow is not None
 
-    step1 = ContourStep.create(context_initializer)
+    step1 = contour_step_class.create(context_initializer)
     step1.name = "Step 1"
     layer.workflow.add_step(step1)
 
-    step2 = ContourStep.create(context_initializer)
+    step2 = contour_step_class.create(context_initializer)
     step2.name = "Step 2"
     layer.workflow.add_step(step2)
 
@@ -322,7 +333,9 @@ def test_job_compute_missing_step_artifact(context_initializer, machine):
     assert len(line_cmds) == 1
 
 
-def test_job_compute_vertex_data_generation(context_initializer, machine):
+def test_job_compute_vertex_data_generation(
+    context_initializer, machine, contour_step_class
+):
     """
     Test that compute_job_artifact generates vertex data.
     """
@@ -330,7 +343,7 @@ def test_job_compute_vertex_data_generation(context_initializer, machine):
     layer = doc.active_layer
     assert layer.workflow is not None
 
-    step = ContourStep.create(context_initializer)
+    step = contour_step_class.create(context_initializer)
     layer.workflow.add_step(step)
 
     ops = Ops()
@@ -353,7 +366,9 @@ def test_job_compute_vertex_data_generation(context_initializer, machine):
     assert result.vertex_data.powered_vertices.size > 0
 
 
-def test_job_compute_time_and_distance(context_initializer, machine):
+def test_job_compute_time_and_distance(
+    context_initializer, machine, contour_step_class
+):
     """
     Test that compute_job_artifact calculates time and distance.
     """
@@ -361,7 +376,7 @@ def test_job_compute_time_and_distance(context_initializer, machine):
     layer = doc.active_layer
     assert layer.workflow is not None
 
-    step = ContourStep.create(context_initializer)
+    step = contour_step_class.create(context_initializer)
     layer.workflow.add_step(step)
 
     ops = Ops()
@@ -385,7 +400,7 @@ def test_job_compute_time_and_distance(context_initializer, machine):
 
 
 def test_assemble_final_ops_single_step(
-    context_initializer, mock_progress_context
+    context_initializer, mock_progress_context, contour_step_class
 ):
     """
     Test _assemble_final_ops with a single step.
@@ -394,7 +409,7 @@ def test_assemble_final_ops_single_step(
     layer = doc.active_layer
     assert layer.workflow is not None
 
-    step = ContourStep.create(context_initializer)
+    step = contour_step_class.create(context_initializer)
     layer.workflow.add_step(step)
 
     ops = Ops()
@@ -414,7 +429,9 @@ def test_assemble_final_ops_single_step(
     assert len(line_cmds) == 1
 
 
-def test_assemble_final_ops_multiple_steps(context_initializer):
+def test_assemble_final_ops_multiple_steps(
+    context_initializer, contour_step_class
+):
     """
     Test _assemble_final_ops with multiple steps.
     """
@@ -422,11 +439,11 @@ def test_assemble_final_ops_multiple_steps(context_initializer):
     layer = doc.active_layer
     assert layer.workflow is not None
 
-    step1 = ContourStep.create(context_initializer)
+    step1 = contour_step_class.create(context_initializer)
     step1.name = "Step 1"
     layer.workflow.add_step(step1)
 
-    step2 = ContourStep.create(context_initializer)
+    step2 = contour_step_class.create(context_initializer)
     step2.name = "Step 2"
     layer.workflow.add_step(step2)
 
@@ -450,7 +467,9 @@ def test_assemble_final_ops_multiple_steps(context_initializer):
     assert len(line_cmds) == 2
 
 
-def test_assemble_final_ops_multiple_layers(context_initializer):
+def test_assemble_final_ops_multiple_layers(
+    context_initializer, contour_step_class
+):
     """
     Test _assemble_final_ops with multiple layers.
     """
@@ -458,14 +477,14 @@ def test_assemble_final_ops_multiple_layers(context_initializer):
     layer1 = doc.active_layer
     assert layer1.workflow is not None
 
-    step1 = ContourStep.create(context_initializer)
+    step1 = contour_step_class.create(context_initializer)
     step1.name = "Step 1"
     layer1.workflow.add_step(step1)
 
     layer2 = Layer("Layer 2")
     doc.add_layer(layer2)
 
-    step2 = ContourStep.create(context_initializer)
+    step2 = contour_step_class.create(context_initializer)
     step2.name = "Step 2"
     if layer2.workflow:
         layer2.workflow.add_step(step2)
@@ -490,7 +509,9 @@ def test_assemble_final_ops_multiple_layers(context_initializer):
     assert len(line_cmds) == 2
 
 
-def test_assemble_final_ops_empty_artifacts(context_initializer):
+def test_assemble_final_ops_empty_artifacts(
+    context_initializer, contour_step_class
+):
     """
     Test _assemble_final_ops with empty step artifacts.
     """
@@ -498,7 +519,7 @@ def test_assemble_final_ops_empty_artifacts(context_initializer):
     layer = doc.active_layer
     assert layer.workflow is not None
 
-    step = ContourStep.create(context_initializer)
+    step = contour_step_class.create(context_initializer)
     layer.workflow.add_step(step)
 
     step_artifacts_by_uid = {}
@@ -508,7 +529,9 @@ def test_assemble_final_ops_empty_artifacts(context_initializer):
     assert isinstance(result, Ops)
 
 
-def test_assemble_final_ops_missing_step(context_initializer):
+def test_assemble_final_ops_missing_step(
+    context_initializer, contour_step_class
+):
     """
     Test _assemble_final_ops with missing step artifacts.
     """
@@ -516,11 +539,11 @@ def test_assemble_final_ops_missing_step(context_initializer):
     layer = doc.active_layer
     assert layer.workflow is not None
 
-    step1 = ContourStep.create(context_initializer)
+    step1 = contour_step_class.create(context_initializer)
     step1.name = "Step 1"
     layer.workflow.add_step(step1)
 
-    step2 = ContourStep.create(context_initializer)
+    step2 = contour_step_class.create(context_initializer)
     step2.name = "Step 2"
     layer.workflow.add_step(step2)
 
@@ -539,7 +562,9 @@ def test_assemble_final_ops_missing_step(context_initializer):
     assert len(line_cmds) == 1
 
 
-def test_assemble_final_ops_without_progress(context_initializer):
+def test_assemble_final_ops_without_progress(
+    context_initializer, contour_step_class
+):
     """
     Test _assemble_final_ops without progress callback.
     """
@@ -547,7 +572,7 @@ def test_assemble_final_ops_without_progress(context_initializer):
     layer = doc.active_layer
     assert layer.workflow is not None
 
-    step = ContourStep.create(context_initializer)
+    step = contour_step_class.create(context_initializer)
     layer.workflow.add_step(step)
 
     ops = Ops()
@@ -652,7 +677,7 @@ def test_encode_gcode_and_opmap(
     assert "G1" in gcode_str
 
 
-def test_encode_gcode_and_opmap_without_progress(context_initializer, machine):
+def test_encode_gcode_and_opmap_without_progress(machine):
     """
     Test _encode_gcode_and_opmap without progress callback.
     """

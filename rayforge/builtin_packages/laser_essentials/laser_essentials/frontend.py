@@ -8,7 +8,7 @@ import gettext
 from pathlib import Path
 
 from rayforge.core.hooks import hookimpl
-from rayforge.pipeline.producer import (
+from .producers import (
     ContourProducer,
     FrameProducer,
     MaterialTestGridProducer,
@@ -23,7 +23,7 @@ from .widgets import (
     ShrinkWrapProducerSettingsWidget,
 )
 
-_localedir = Path(__file__).parent / "locales"
+_localedir = Path(__file__).parent.parent / "locales"
 _t = gettext.translation(
     "laser_essentials", localedir=_localedir, fallback=True
 )

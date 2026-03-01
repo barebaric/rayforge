@@ -18,12 +18,26 @@ from rayforge.pipeline.artifact import (
     create_handle_from_dict,
     WorkPieceArtifact,
 )
-from rayforge.pipeline.producer.contour import ContourProducer
-from rayforge.pipeline.producer.raster import Rasterizer
 from rayforge.pipeline.stage.workpiece_runner import (
     make_workpiece_artifact_in_subprocess,
 )
 from rayforge.pipeline.transformer.multipass import MultiPassTransformer
+
+
+@pytest.fixture
+def contour_producer_class(context_initializer):
+    """Get ContourProducer class from registry after addons are loaded."""
+    from rayforge.pipeline.producer.registry import producer_registry
+
+    return producer_registry.get("ContourProducer")
+
+
+@pytest.fixture
+def rasterizer_class(context_initializer):
+    """Get Rasterizer class from registry after addons are loaded."""
+    from rayforge.pipeline.producer.registry import producer_registry
+
+    return producer_registry.get("Rasterizer")
 
 
 @pytest.fixture
@@ -106,11 +120,11 @@ def rasterable_workpiece():
 
 
 def test_vector_producer_returns_artifact_with_vertex_data(
-    mock_proxy, base_workpiece
+    mock_proxy, base_workpiece, contour_producer_class
 ):
     # Arrange
     step = Step(typelabel="Contour")
-    step.opsproducer_dict = ContourProducer().to_dict()
+    step.opsproducer_dict = contour_producer_class().to_dict()
     settings = step.get_settings()
     laser = Laser()
     generation_id = 1
@@ -119,6 +133,7 @@ def test_vector_producer_returns_artifact_with_vertex_data(
 
     try:
         # Act
+        assert step.opsproducer_dict is not None
         result_gen_id = make_workpiece_artifact_in_subprocess(
             mock_proxy,
             get_context().artifact_store,
@@ -162,11 +177,11 @@ def test_vector_producer_returns_artifact_with_vertex_data(
 
 
 def test_raster_producer_returns_artifact_with_raster_data(
-    mock_proxy, rasterable_workpiece
+    mock_proxy, rasterable_workpiece, rasterizer_class
 ):
     # Arrange
     step = Step(typelabel="Engrave")
-    step.opsproducer_dict = Rasterizer().to_dict()
+    step.opsproducer_dict = rasterizer_class().to_dict()
     settings = step.get_settings()
     laser = Laser()
     generation_id = 2
@@ -178,6 +193,7 @@ def test_raster_producer_returns_artifact_with_raster_data(
 
     try:
         # Act
+        assert step.opsproducer_dict is not None
         result_gen_id = make_workpiece_artifact_in_subprocess(
             mock_proxy,
             get_context().artifact_store,
@@ -218,7 +234,9 @@ def test_raster_producer_returns_artifact_with_raster_data(
             get_context().artifact_store.release(handle)
 
 
-def test_empty_producer_result_returns_none(mock_proxy):
+def test_empty_producer_result_returns_none(
+    mock_proxy, contour_producer_class
+):
     # Arrange: Create a workpiece with no renderable data by giving it an
     # empty geometry in its source segment.
     empty_source = SourceAsset(
@@ -234,13 +252,14 @@ def test_empty_producer_result_returns_none(mock_proxy):
     empty_workpiece.set_size(10, 10)
 
     step = Step(typelabel="Contour")
-    step.opsproducer_dict = ContourProducer().to_dict()
+    step.opsproducer_dict = contour_producer_class().to_dict()
     settings = step.get_settings()
     laser = Laser()
     generation_id = 3
     generation_size = (10.0, 10.0)
 
     # Act
+    assert step.opsproducer_dict is not None
     result_gen_id = make_workpiece_artifact_in_subprocess(
         mock_proxy,
         get_context().artifact_store,
@@ -265,10 +284,12 @@ def test_empty_producer_result_returns_none(mock_proxy):
     assert not was_called
 
 
-def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
+def test_transformers_are_applied_before_put(
+    mock_proxy, base_workpiece, contour_producer_class
+):
     # Arrange
     step = Step(typelabel="Contour")
-    step.opsproducer_dict = ContourProducer().to_dict()
+    step.opsproducer_dict = contour_producer_class().to_dict()
     transformers = [MultiPassTransformer(passes=2).to_dict()]
     settings = step.get_settings()
     laser = Laser()
@@ -283,6 +304,7 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
 
     try:
         # Act
+        assert step.opsproducer_dict is not None
         _ = make_workpiece_artifact_in_subprocess(
             mock_proxy,
             get_context().artifact_store,
@@ -321,10 +343,10 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
             get_context().artifact_store.release(handle)
 
 
-def test_runner_calls_compute_function(base_workpiece):
+def test_runner_calls_compute_function(base_workpiece, contour_producer_class):
     """Test that the runner correctly calls the compute function."""
     step = Step(typelabel="Contour")
-    step.opsproducer_dict = ContourProducer().to_dict()
+    step.opsproducer_dict = contour_producer_class().to_dict()
     settings = step.get_settings()
     laser = Laser()
     generation_id = 1
@@ -344,6 +366,7 @@ def test_runner_calls_compute_function(base_workpiece):
         "rayforge.pipeline.stage.workpiece_runner.compute_workpiece_artifact",
         return_value=mock_artifact,
     ) as mock_compute:
+        assert step.opsproducer_dict is not None
         result_gen_id = make_workpiece_artifact_in_subprocess(
             mock_proxy,
             get_context().artifact_store,

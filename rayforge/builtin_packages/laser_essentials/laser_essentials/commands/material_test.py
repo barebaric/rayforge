@@ -3,21 +3,22 @@ import logging
 from typing import TYPE_CHECKING
 from gettext import gettext as _
 
-from ..core.item import DocItem
-from ..core.step import Step
-from ..core.step_registry import step_registry
-from ..core.undo import ListItemCommand
-from ..core.vectorization_spec import ProceduralSpec
-from ..core.workpiece import WorkPiece
-from ..image.procedural import ProceduralImporter
-from ..pipeline.producer.material_test_grid import (
+from rayforge.core.item import DocItem
+from rayforge.core.step import Step
+from rayforge.core.step_registry import step_registry
+from rayforge.core.undo import ListItemCommand
+from rayforge.core.vectorization_spec import ProceduralSpec
+from rayforge.core.workpiece import WorkPiece
+from rayforge.image.procedural import ProceduralImporter
+from ..producers import (
     MaterialTestGridProducer,
     draw_material_test_preview,
     get_material_test_proportional_size,
 )
 
+
 if TYPE_CHECKING:
-    from .editor import DocEditor
+    from rayforge.doceditor.editor import DocEditor
 
 logger = logging.getLogger(__name__)
 

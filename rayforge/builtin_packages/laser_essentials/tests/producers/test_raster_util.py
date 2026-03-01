@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
-from rayforge.pipeline.producer.raster_util import (
+
+from laser_essentials.producers.raster_util import (
     ScanLine,
     line_pixels,
     generate_scan_lines,

@@ -1,18 +1,15 @@
 import pytest
 import cairo
 from typing import List
+
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.geo import Geometry
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
-from rayforge.pipeline.producer.contour import (
-    ContourProducer,
-    CutSide,
-    CutOrder,
-)
-from rayforge.pipeline.producer.base import OpsProducer
+from rayforge.pipeline.producer.base import OpsProducer, CutSide
 from rayforge.machine.models.laser import Laser
 from rayforge.pipeline.artifact import WorkPieceArtifact
+from laser_essentials.producers import ContourProducer, CutOrder
 
 
 # --- Helpers ---
@@ -113,12 +110,12 @@ def test_serialization():
     )
     data = tracer.to_dict()
     recreated = OpsProducer.from_dict(data)
-
     assert isinstance(recreated, ContourProducer)
+
     assert recreated.remove_inner_paths is True
     assert recreated.path_offset_mm == 0.5
-    assert recreated.cut_side == CutSide.INSIDE
-    assert recreated.cut_order == CutOrder.OUTSIDE_INSIDE
+    assert recreated.cut_side.value == CutSide.INSIDE.value
+    assert recreated.cut_order.value == CutOrder.OUTSIDE_INSIDE.value
 
 
 def test_centerline_preserves_geometry(laser, dummy_surface, vector_workpiece):

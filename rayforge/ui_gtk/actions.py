@@ -54,9 +54,6 @@ class ActionManager:
         self._add_action("settings", self.win.show_settings)
         self._add_action("machine-settings", self.win.show_machine_settings)
 
-        # Tools Actions
-        self._add_action("material_test", self.win.on_show_material_test)
-
         # View Actions
         self._add_stateful_action(
             "show_3d_view",

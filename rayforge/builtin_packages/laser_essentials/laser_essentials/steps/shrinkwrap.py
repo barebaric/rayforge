@@ -3,19 +3,25 @@ from __future__ import annotations
 from typing import Optional, Set, TYPE_CHECKING
 from gettext import gettext as _
 
-from ...core.capability import ENGRAVE, Capability
-from ...core.step import Step
-from ..producer import Rasterizer
-from ..transformer import MultiPassTransformer, Optimize, OverscanTransformer
+from rayforge.core.capability import CUT, SCORE, Capability
+from rayforge.core.step import Step
+from rayforge.pipeline.transformer import (
+    MultiPassTransformer,
+    Optimize,
+    Smooth,
+    TabOpsTransformer,
+)
+from ..producers import ShrinkWrapProducer
+
 
 if TYPE_CHECKING:
-    from ...context import RayforgeContext
+    from rayforge.context import RayforgeContext
 
 
-class EngraveStep(Step):
-    TYPELABEL = _("Engrave")
-    DEFAULT_CAPABILITIES: Set[Capability] = {ENGRAVE}
-    PRODUCER_CLASS = Rasterizer
+class ShrinkWrapStep(Step):
+    TYPELABEL = _("Shrink Wrap")
+    DEFAULT_CAPABILITIES: Set[Capability] = {CUT, SCORE}
+    PRODUCER_CLASS = ShrinkWrapProducer
 
     def __init__(
         self, name: Optional[str] = None, typelabel: Optional[str] = None
@@ -29,27 +35,23 @@ class EngraveStep(Step):
         context: "RayforgeContext",
         name: Optional[str] = None,
         **kwargs,
-    ) -> "EngraveStep":
+    ) -> "ShrinkWrapStep":
         machine = context.machine
         assert machine is not None
         default_head = machine.get_default_head()
 
-        auto_distance = OverscanTransformer.calculate_auto_distance(
-            machine.max_cut_speed, machine.acceleration
-        )
-
         step = cls(name=name)
         step.opsproducer_dict = cls.PRODUCER_CLASS().to_dict()
         step.per_workpiece_transformers_dicts = [
-            OverscanTransformer(
-                enabled=True, distance_mm=auto_distance, auto=True
-            ).to_dict(),
+            Smooth(enabled=False, amount=20).to_dict(),
+            TabOpsTransformer().to_dict(),
             Optimize().to_dict(),
         ]
         step.per_step_transformers_dicts = [
             MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
         ]
         step.selected_laser_uid = default_head.uid
+        step.kerf_mm = default_head.spot_size_mm[0]
         step.max_cut_speed = machine.max_cut_speed
         step.max_travel_speed = machine.max_travel_speed
         return step

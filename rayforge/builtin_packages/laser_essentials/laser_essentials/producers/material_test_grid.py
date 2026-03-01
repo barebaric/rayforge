@@ -5,16 +5,17 @@ import re
 from enum import Enum
 from typing import Tuple, Dict, Any, List, Optional, TYPE_CHECKING
 
-from ...core.ops import Ops, SectionType
-from ...core.geo.geometry import Geometry
-from ...core.matrix import Matrix
-from ...shared.tasker.progress import ProgressContext
-from ..artifact import WorkPieceArtifact
-from ..coord import CoordinateSystem
-from .base import OpsProducer
+from rayforge.core.ops import Ops, SectionType
+from rayforge.core.geo.geometry import Geometry
+from rayforge.core.matrix import Matrix
+from rayforge.shared.tasker.progress import ProgressContext
+from rayforge.pipeline.artifact import WorkPieceArtifact
+from rayforge.pipeline.coord import CoordinateSystem
+from rayforge.pipeline.producer.base import OpsProducer
+
 
 if TYPE_CHECKING:
-    from ...core.workpiece import WorkPiece
+    from rayforge.core.workpiece import WorkPiece
 
 
 logger = logging.getLogger(__name__)

@@ -5,7 +5,7 @@ import pytest
 from rayforge.core.capability import CUT, SCORE
 from rayforge.core.step import Step
 from rayforge.core.step_registry import step_registry
-from rayforge.pipeline.steps import ContourStep
+from laser_essentials.steps import ContourStep
 
 
 @pytest.fixture
