@@ -1,27 +1,45 @@
 import pytest
 
-from rayforge.pipeline.producer.registry import (
-    ProducerRegistry,
-    producer_registry,
-)
-from rayforge.pipeline.producer import (
-    OpsProducer,
-    ContourProducer,
-    Rasterizer,
-    DepthEngraver,
-    DitherRasterizer,
-    FrameProducer,
-    MaterialTestGridProducer,
-    ShrinkWrapProducer,
-)
+from rayforge.pipeline.producer.registry import ProducerRegistry
+from rayforge.pipeline.producer import OpsProducer
 from rayforge.pipeline.producer.placeholder import PlaceholderProducer
+from rayforge.core.ops import Ops
+from rayforge.pipeline.coord import CoordinateSystem
+
+
+class MockProducer(OpsProducer):
+    """Mock producer for testing."""
+
+    label = "Mock Producer"
+
+    def run(
+        self,
+        laser,
+        surface,
+        pixels_per_mm,
+        *,
+        generation_id,
+        workpiece=None,
+        settings=None,
+        y_offset_mm=0.0,
+        context=None,
+    ):
+        from rayforge.pipeline.artifact import WorkPieceArtifact
+
+        return WorkPieceArtifact(
+            ops=Ops(),
+            is_scalable=False,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            generation_size=(0.0, 0.0),
+            generation_id=generation_id,
+        )
 
 
 class TestProducerRegistry:
     def test_register_and_get(self):
         registry = ProducerRegistry()
-        registry.register(ContourProducer)
-        assert registry.get("ContourProducer") == ContourProducer
+        registry.register(MockProducer)
+        assert registry.get("MockProducer") == MockProducer
 
     def test_get_unknown_returns_none(self):
         registry = ProducerRegistry()
@@ -29,36 +47,11 @@ class TestProducerRegistry:
 
     def test_all_producers_returns_copy(self):
         registry = ProducerRegistry()
-        registry.register(ContourProducer)
+        registry.register(MockProducer)
         all_producers = registry.all_producers()
-        assert all_producers == {"ContourProducer": ContourProducer}
-        all_producers["NewOne"] = ContourProducer
+        assert all_producers == {"MockProducer": MockProducer}
+        all_producers["NewOne"] = MockProducer
         assert "NewOne" not in registry.all_producers()
-
-    def test_global_registry_has_builtin_producers(self):
-        assert producer_registry.get("ContourProducer") == ContourProducer
-        assert producer_registry.get("Rasterizer") == Rasterizer
-        assert producer_registry.get("DepthEngraver") == DepthEngraver
-        assert producer_registry.get("DitherRasterizer") == DitherRasterizer
-        assert producer_registry.get("FrameProducer") == FrameProducer
-        assert (
-            producer_registry.get("MaterialTestGridProducer")
-            == MaterialTestGridProducer
-        )
-        assert (
-            producer_registry.get("ShrinkWrapProducer") == ShrinkWrapProducer
-        )
-
-    def test_producer_by_name_backward_compatibility(self):
-        from rayforge.pipeline.producer import producer_by_name
-
-        assert producer_by_name.get("ContourProducer") == ContourProducer
-        assert producer_by_name.get("Rasterizer") == Rasterizer
-
-    def test_from_dict_uses_registry(self):
-        data = {"type": "ContourProducer", "params": {}}
-        producer = OpsProducer.from_dict(data)
-        assert isinstance(producer, ContourProducer)
 
     def test_from_dict_unknown_type_returns_placeholder(self):
         data = {"type": "UnknownProducer", "params": {"foo": "bar"}}

@@ -10,12 +10,13 @@ from gettext import gettext as _
 from gi.repository import Adw, GLib, GObject, Gtk
 
 from rayforge.core.undo import DictItemCommand
-from rayforge.pipeline.producer import MaterialTestGridProducer
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
+from ..producers import MaterialTestGridProducer
+
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step

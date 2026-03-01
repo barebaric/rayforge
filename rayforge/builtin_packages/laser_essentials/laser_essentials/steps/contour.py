@@ -3,19 +3,25 @@ from __future__ import annotations
 from typing import Optional, Set, TYPE_CHECKING
 from gettext import gettext as _
 
-from ...core.capability import CUT, SCORE, Capability
-from ...core.step import Step
-from ..producer import FrameProducer
-from ..transformer import MultiPassTransformer, Optimize, TabOpsTransformer
+from rayforge.core.capability import CUT, SCORE, Capability
+from rayforge.core.step import Step
+from rayforge.pipeline.transformer import (
+    MultiPassTransformer,
+    Optimize,
+    Smooth,
+    TabOpsTransformer,
+)
+from ..producers import ContourProducer
+
 
 if TYPE_CHECKING:
-    from ...context import RayforgeContext
+    from rayforge.context import RayforgeContext
 
 
-class FrameStep(Step):
-    TYPELABEL = _("Frame Outline")
+class ContourStep(Step):
+    TYPELABEL = _("Contour")
     DEFAULT_CAPABILITIES: Set[Capability] = {CUT, SCORE}
-    PRODUCER_CLASS = FrameProducer
+    PRODUCER_CLASS = ContourProducer
 
     def __init__(
         self, name: Optional[str] = None, typelabel: Optional[str] = None
@@ -28,8 +34,9 @@ class FrameStep(Step):
         cls,
         context: "RayforgeContext",
         name: Optional[str] = None,
+        optimize: bool = True,
         **kwargs,
-    ) -> "FrameStep":
+    ) -> "ContourStep":
         machine = context.machine
         assert machine is not None
         default_head = machine.get_default_head()
@@ -37,9 +44,13 @@ class FrameStep(Step):
         step = cls(name=name)
         step.opsproducer_dict = cls.PRODUCER_CLASS().to_dict()
         step.per_workpiece_transformers_dicts = [
+            Smooth(enabled=False, amount=20).to_dict(),
             TabOpsTransformer().to_dict(),
-            Optimize().to_dict(),
         ]
+        if optimize:
+            step.per_workpiece_transformers_dicts.append(
+                Optimize().to_dict(),
+            )
         step.per_step_transformers_dicts = [
             MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
         ]

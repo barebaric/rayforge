@@ -13,7 +13,6 @@ from rayforge.core.ops import Ops
 from rayforge.machine.models.machine import Laser
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.producer import ContourProducer, Rasterizer
 from rayforge.pipeline.transformer import Optimize
 from rayforge.pipeline.transformer.base import OpsTransformer
 from rayforge.pipeline.stage.workpiece_compute import (
@@ -60,9 +59,10 @@ def base_workpiece():
 
 def test_compute_workpiece_artifact_returns_valid_artifact(
     base_workpiece,
+    contour_producer_class,
 ):
     """Test that compute_workpiece_artifact returns a valid artifact."""
-    opsproducer = ContourProducer()
+    opsproducer = contour_producer_class()
     laser = Laser()
     transformers = []
     settings = {
@@ -93,10 +93,10 @@ def test_compute_workpiece_artifact_returns_valid_artifact(
 
 
 def test_compute_workpiece_artifact_with_progress_callback(
-    base_workpiece, mock_progress_context
+    base_workpiece, mock_progress_context, contour_producer_class
 ):
     """Test that compute_workpiece_artifact calls progress callback."""
-    opsproducer = ContourProducer()
+    opsproducer = contour_producer_class()
     laser = Laser()
     transformers = []
     settings = {
@@ -126,7 +126,9 @@ def test_compute_workpiece_artifact_with_progress_callback(
     assert mock_progress_context.progress_calls[-1][0] == 1.0
 
 
-def test_compute_workpiece_artifact_with_empty_workpiece():
+def test_compute_workpiece_artifact_with_empty_workpiece(
+    contour_producer_class,
+):
     """Test compute_workpiece_artifact returns None for empty workpiece."""
     empty_source = SourceAsset(
         source_file=Path("empty"), original_data=b"", renderer=MagicMock()
@@ -140,7 +142,7 @@ def test_compute_workpiece_artifact_with_empty_workpiece():
     empty_workpiece = WorkPiece(name="empty_wp", source_segment=empty_segment)
     empty_workpiece.set_size(10, 10)
 
-    opsproducer = ContourProducer()
+    opsproducer = contour_producer_class()
     laser = Laser()
     transformers = []
     settings = {
@@ -303,11 +305,13 @@ def test_merge_artifact_ops_subsequent_chunks():
     assert result is final_artifact
 
 
-def test_execute_vector_with_boundaries(base_workpiece):
+def test_execute_vector_with_boundaries(
+    base_workpiece, contour_producer_class
+):
     """Test _execute_vector with boundaries (vector path)."""
     base_workpiece._edited_boundaries = base_workpiece.boundaries
 
-    opsproducer = ContourProducer()
+    opsproducer = contour_producer_class()
     laser = Laser()
     settings = {
         "pixels_per_mm": (10.0, 10.0),
@@ -369,9 +373,11 @@ def test_apply_transformers_disabled(base_workpiece, mock_progress_context):
     assert len(mock_progress_context.progress_calls) == 0
 
 
-def test_compute_workpiece_artifact_vector(base_workpiece):
+def test_compute_workpiece_artifact_vector(
+    base_workpiece, contour_producer_class
+):
     """Test compute_workpiece_artifact_vector returns valid artifact."""
-    opsproducer = ContourProducer()
+    opsproducer = contour_producer_class()
     laser = Laser()
     settings = {
         "pixels_per_mm": (10.0, 10.0),
@@ -395,10 +401,10 @@ def test_compute_workpiece_artifact_vector(base_workpiece):
 
 
 def test_compute_workpiece_artifact_vector_with_progress(
-    base_workpiece, mock_progress_context
+    base_workpiece, mock_progress_context, contour_producer_class
 ):
     """Test compute_workpiece_artifact_vector with progress callback."""
-    opsproducer = ContourProducer()
+    opsproducer = contour_producer_class()
     laser = Laser()
     settings = {
         "pixels_per_mm": (10.0, 10.0),
@@ -423,12 +429,12 @@ def test_compute_workpiece_artifact_vector_with_progress(
 
 
 def test_compute_workpiece_artifact_vector_with_boundaries(
-    base_workpiece,
+    base_workpiece, contour_producer_class
 ):
     """Test compute_workpiece_artifact_vector with boundaries."""
     base_workpiece._edited_boundaries = base_workpiece.boundaries
 
-    opsproducer = ContourProducer()
+    opsproducer = contour_producer_class()
     laser = Laser()
     settings = {
         "pixels_per_mm": (10.0, 10.0),
@@ -450,11 +456,11 @@ def test_compute_workpiece_artifact_vector_with_boundaries(
     assert result is not None
 
 
-def test_execute_raster_invalid_size(base_workpiece):
+def test_execute_raster_invalid_size(base_workpiece, contour_producer_class):
     """Test _execute_raster returns nothing for invalid size."""
     base_workpiece.set_size(0, 0)
 
-    opsproducer = ContourProducer()
+    opsproducer = contour_producer_class()
     laser = Laser()
     settings = {
         "pixels_per_mm": (10.0, 10.0),
@@ -479,10 +485,10 @@ def test_execute_raster_invalid_size(base_workpiece):
 
 
 def test_compute_workpiece_artifact_with_air_assist(
-    base_workpiece,
+    base_workpiece, contour_producer_class
 ):
     """Test compute_workpiece_artifact with air assist enabled."""
-    opsproducer = ContourProducer()
+    opsproducer = contour_producer_class()
     laser = Laser()
     transformers = []
     settings = {
@@ -510,9 +516,9 @@ def test_compute_workpiece_artifact_with_air_assist(
     assert isinstance(result, WorkPieceArtifact)
 
 
-def test_compute_workpiece_artifact_raster(base_workpiece):
+def test_compute_workpiece_artifact_raster(base_workpiece, rasterizer_class):
     """Test compute_workpiece_artifact_raster returns valid artifact."""
-    opsproducer = Rasterizer()
+    opsproducer = rasterizer_class()
     laser = Laser()
     settings = {
         "pixels_per_mm": (10.0, 10.0),
@@ -544,10 +550,10 @@ def test_compute_workpiece_artifact_raster(base_workpiece):
 
 
 def test_compute_workpiece_artifact_raster_with_progress(
-    base_workpiece, mock_progress_context
+    base_workpiece, mock_progress_context, rasterizer_class
 ):
     """Test compute_workpiece_artifact_raster with progress callback."""
-    opsproducer = Rasterizer()
+    opsproducer = rasterizer_class()
     laser = Laser()
     settings = {
         "pixels_per_mm": (10.0, 10.0),
@@ -579,7 +585,7 @@ def test_compute_workpiece_artifact_raster_with_progress(
     assert len(mock_progress_context.progress_calls) > 0
 
 
-def test_compute_workpiece_artifact_raster_empty_workpiece():
+def test_compute_workpiece_artifact_raster_empty_workpiece(rasterizer_class):
     """Test compute_workpiece_artifact_raster with empty workpiece."""
     empty_source = SourceAsset(
         source_file=Path("empty"), original_data=b"", renderer=MagicMock()
@@ -593,7 +599,7 @@ def test_compute_workpiece_artifact_raster_empty_workpiece():
     empty_workpiece = WorkPiece(name="empty_wp", source_segment=empty_segment)
     empty_workpiece.set_size(10, 10)
 
-    opsproducer = Rasterizer()
+    opsproducer = rasterizer_class()
     laser = Laser()
     settings = {
         "pixels_per_mm": (10.0, 10.0),
@@ -616,10 +622,10 @@ def test_compute_workpiece_artifact_raster_empty_workpiece():
 
 
 def test_compute_workpiece_artifact_with_transformers(
-    base_workpiece,
+    base_workpiece, contour_producer_class
 ):
     """Test compute_workpiece_artifact applies transformers."""
-    opsproducer = ContourProducer()
+    opsproducer = contour_producer_class()
     laser = Laser()
     transformers: list[OpsTransformer] = [Optimize()]
     settings = {
@@ -647,9 +653,9 @@ def test_compute_workpiece_artifact_with_transformers(
     assert isinstance(result, WorkPieceArtifact)
 
 
-def test_chunk_artifact_has_generation_size(base_workpiece):
+def test_chunk_artifact_has_generation_size(base_workpiece, rasterizer_class):
     """Test that chunk artifacts carry the full generation_size."""
-    opsproducer = Rasterizer()
+    opsproducer = rasterizer_class()
     laser = Laser()
     settings = {
         "pixels_per_mm": (10.0, 10.0),

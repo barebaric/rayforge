@@ -26,6 +26,7 @@ import yaml
 from .. import __version__
 from ..config import PACKAGE_REGISTRY_URL
 from ..core.addon_config import AddonConfig, AddonState as ConfigAddonState
+from ..shared.util.po_compiler import compile_po_to_mo
 from ..shared.util.versioning import (
     check_rayforge_compatibility,
     is_newer_version,
@@ -286,8 +287,15 @@ class PackageManager:
 
         return updates_available
 
-    def load_installed_packages(self):
-        """Scans the package directories and loads valid packages."""
+    def load_installed_packages(self, backend_only: bool = False):
+        """
+        Scans the package directories and loads valid packages.
+
+        Args:
+            backend_only: If True, only load backend entry points (skip
+                frontend/widgets to avoid pulling in GTK dependencies).
+                Used by worker processes.
+        """
         for pkg_dir in self.package_dirs:
             if not pkg_dir.exists():
                 if pkg_dir == self.install_dir:
@@ -297,11 +305,19 @@ class PackageManager:
             logger.info(f"Scanning for packages in {pkg_dir}...")
             for child in pkg_dir.iterdir():
                 if child.is_dir():
-                    self.load_package(child.resolve())
+                    self.load_package(
+                        child.resolve(), backend_only=backend_only
+                    )
 
-    def load_package(self, package_path: Path):
+    def load_package(self, package_path: Path, backend_only: bool = False):
         """
         Loads a single package from a directory.
+
+        Args:
+            package_path: Path to the package directory.
+            backend_only: If True, only load backend entry points (skip
+                frontend/widgets to avoid pulling in GTK dependencies).
+                Used by worker processes.
         """
         try:
             pkg = Package.load_from_directory(package_path)
@@ -335,8 +351,13 @@ class PackageManager:
                 self.incompatible_packages[pkg.metadata.name] = pkg
                 return
 
+            # Ensure translations are compiled for builtin packages
+            # (installed packages are compiled at install time)
+            self.compile_translations(package_path)
+
             self._import_and_register(pkg, pkg.metadata.provides.backend)
-            self._import_and_register(pkg, pkg.metadata.provides.frontend)
+            if not backend_only:
+                self._import_and_register(pkg, pkg.metadata.provides.frontend)
 
         except (PackageValidationError, FileNotFoundError) as e:
             logger.warning(
@@ -485,6 +506,35 @@ class PackageManager:
             return None
         return module_path
 
+    def compile_translations(self, package_path: Path) -> int:
+        """
+        Compile .po files to .mo files in a package's locales directory.
+
+        This is called automatically when a package is installed. It finds
+        all .po files under <package>/locales/ and compiles them to .mo
+        files in the corresponding LC_MESSAGES directories.
+
+        Args:
+            package_path: Path to the installed package directory.
+
+        Returns:
+            The number of .mo files compiled.
+        """
+        locales_dir = package_path / "locales"
+        if not locales_dir.exists():
+            return 0
+
+        compiled_count = 0
+        for po_file in locales_dir.rglob("*.po"):
+            mo_file = po_file.with_suffix(".mo")
+            if compile_po_to_mo(po_file, mo_file):
+                compiled_count += 1
+                logger.debug(f"Compiled {po_file} -> {mo_file}")
+
+        if compiled_count > 0:
+            logger.info(f"Compiled {compiled_count} translation file(s)")
+        return compiled_count
+
     def install_package(
         self, git_url: str, package_id: Optional[str] = None
     ) -> Optional[Path]:
@@ -533,6 +583,9 @@ class PackageManager:
                     self.uninstall_package(install_name)
 
                 shutil.copytree(temp_path, final_path, dirs_exist_ok=True)
+
+                # Compile .po files to .mo files
+                self.compile_translations(final_path)
 
                 logger.info(f"Successfully installed package to {final_path}")
                 self.load_package(final_path)

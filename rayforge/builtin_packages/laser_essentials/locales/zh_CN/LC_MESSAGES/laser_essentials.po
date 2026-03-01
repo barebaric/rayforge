@@ -1,0 +1,422 @@
+# Chinese (Simplified) translations for Rayforge package.
+# Copyright (C) 2025 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the Rayforge package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Rayforge\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-01 13:49+0100\n"
+"PO-Revision-Date: 2025-07-13 11:49+0200\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Chinese (Simplified)\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/producers/raster.py
+msgid "Variable Power"
+msgstr "可变功率"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/producers/raster.py
+msgid "Constant Power"
+msgstr "恒定功率"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/producers/raster.py
+msgid "Dither"
+msgstr "抖动"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/producers/raster.py
+msgid "Multiple Depths"
+msgstr "多深度"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/producers/contour.py
+msgid "Inside-Outside"
+msgstr "内-外"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/producers/contour.py
+msgid "Outside-Inside"
+msgstr "外-内"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/producers/contour.py
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/producers/shrinkwrap.py
+msgid "Optimizing path with arcs..."
+msgstr "正在用圆弧优化路径..."
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/frame.py
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/contour.py
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/shrinkwrap.py
+msgid "Cut Side"
+msgstr "切割侧"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/frame.py
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/contour.py
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/shrinkwrap.py
+msgid "Path Offset (mm)"
+msgstr "路径偏移 (mm)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/frame.py
+msgid "Absolute distance from content boundary"
+msgstr "距离内容边界的绝对距离"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/frame.py
+msgid "Change Frame Setting"
+msgstr "更改边框设置"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Presets"
+msgstr "预设"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Load common test configurations"
+msgstr "加载常用测试配置"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Test Type"
+msgstr "测试类型"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Cut: outlines; Engrave: fills with raster lines"
+msgstr "切割：轮廓；雕刻：用光栅线填充"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Speed &amp; Power"
+msgstr "速度和功率"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Define the range of speeds and powers for the test grid"
+msgstr "定义测试网格的速度和功率范围"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Minimum Power (%)"
+msgstr "最小功率 (%)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "For first column"
+msgstr "第一列"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Maximum Power (%)"
+msgstr "最大功率 (%)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "For last column"
+msgstr "最后一列"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Minimum Speed"
+msgstr "最小速度"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Starting speed (mm/min)"
+msgstr "起始速度 (毫米/分钟)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Maximum Speed"
+msgstr "最大速度"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Ending speed (mm/min)"
+msgstr "结束速度 (毫米/分钟)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Columns (Power Steps)"
+msgstr "列 (功率阶梯)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Number of power variations"
+msgstr "功率变化的数量"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Rows (Speed Steps)"
+msgstr "行 (速度阶梯)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Number of speed variations"
+msgstr "速度变化的数量"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Shape Size"
+msgstr "形状大小"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Size of each test square (mm)"
+msgstr "每个测试方块的大小 (毫米)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Spacing"
+msgstr "间距"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Gap between test squares (mm)"
+msgstr "测试方块之间的间隙 (毫米)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Line Interval"
+msgstr "线间隔"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid ""
+"Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
+"to use laser spot size."
+msgstr "扫描线之间的距离（以机器单位，用于雕刻模式）。留0使用激光光斑大小。"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Include Labels"
+msgstr "包含标签"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Add speed/power annotations to the grid"
+msgstr "向网格添加速度/功率注释"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Label Engrave Power (%)"
+msgstr "标签雕刻功率 (%)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Change Power Range"
+msgstr "更改功率范围"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+#, python-brace-format
+msgid "Change {param_name}"
+msgstr "更改 {param_name}"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/material_test_grid.py
+msgid "Change Grid Dimensions"
+msgstr "更改网格尺寸"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Configure how the laser engraves your image."
+msgstr "配置激光雕刻图像的方式。"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Mode"
+msgstr "模式"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Threshold"
+msgstr "阈值"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Brightness cutoff for black/white (0-255)"
+msgstr "黑/白亮度截止值 (0-255)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Engraving Method"
+msgstr "雕刻方法"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Algorithm for converting grayscale to binary"
+msgstr "将灰度转换为二值的算法"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Auto Levels"
+msgstr "自动色阶"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Automatically adjust black/white points"
+msgstr "自动调整黑白点"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Brightness Range"
+msgstr "亮度范围"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Auto-adjusted based on image content"
+msgstr "根据图像内容自动调整"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Drag markers to set black/white points"
+msgstr "拖动标记以设置黑/白点"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Min Power"
+msgstr "最小功率"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+#, python-format
+msgid "Power for lightest areas, as a % of the step's main power"
+msgstr "最亮区域的功率，占该步骤主功率的百分比"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Max Power"
+msgstr "最大功率"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+#, python-format
+msgid "Power for darkest areas, as a % of the step's main power"
+msgstr "最暗区域的功率，占该步骤主功率的百分比"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Number of Depth Levels"
+msgstr "深度层级数"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Z Step-Down per Level (mm)"
+msgstr "每层Z轴下刀量 (mm)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Rotate Angle Per Pass"
+msgstr "每次旋转角度"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Degrees to rotate each successive pass"
+msgstr "每次连续扫描旋转的度数"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Engraving Pattern"
+msgstr "雕刻图案"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Settings that control the scan line pattern and orientation."
+msgstr "控制扫描线图案和方向的设置。"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Angle"
+msgstr "角度"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Angle of scan lines in degrees"
+msgstr "扫描线角度（度）"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Cross-Hatch"
+msgstr "交叉填充"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Add a second pass at 90 degrees"
+msgstr "添加90度第二次扫描"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Line Spacing"
+msgstr "线间距"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid ""
+"Distance between scan lines in machine units. Leave at 0 to use laser spot "
+"size"
+msgstr "扫描线之间的距离（以机器单位）。留0使用激光光斑大小"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Invert"
+msgstr "反转"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Engrave white areas instead of black areas"
+msgstr "雕刻白色区域而不是黑色区域"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Change Min Power"
+msgstr "更改最小功率"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Change Max Power"
+msgstr "更改最大功率"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Min Power (Black)"
+msgstr "最小功率 (黑)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Max Power (White)"
+msgstr "最大功率 (白)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Min Power (White)"
+msgstr "最小功率 (白)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Max Power (Black)"
+msgstr "最大功率 (黑)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/engraver.py
+msgid "Change engraving setting"
+msgstr "更改雕刻设置"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/contour.py
+msgid "Remove Inner Paths"
+msgstr "移除内部路径"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/contour.py
+msgid "If enabled, only trace the outer outline of shapes"
+msgstr "如果启用，仅描摹形状的外部轮廓"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/contour.py
+msgid "Cut Order"
+msgstr "切割顺序"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/contour.py
+msgid "Processing order for nested paths"
+msgstr "嵌套路径的处理顺序"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/contour.py
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/shrinkwrap.py
+msgid ""
+"Absolute distance from original path, direction is controlled by Cut Side"
+msgstr "距离原始路径的绝对距离，方向由切割侧控制"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/contour.py
+msgid "Rescan Content"
+msgstr "重新扫描内容"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/contour.py
+msgid "Ignore source geometry and re-trace within the workpiece"
+msgstr "忽略源几何图形并在工件内重新描摹"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/contour.py
+msgid "Tracing Threshold"
+msgstr "描摹阈值"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/contour.py
+msgid "Brightness level (0.0-1.0) to define edges"
+msgstr "定义边缘的亮度级别 (0.0-1.0)"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/contour.py
+msgid "Change Edge Tracer Setting"
+msgstr "更改边缘描摹器设置"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/shrinkwrap.py
+msgid "Gravity"
+msgstr "重力"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/shrinkwrap.py
+msgid "Pulls the hull inward. 0.0 is a standard convex hull"
+msgstr "向内拉动外壳。0.0 是标准的凸包"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/widgets/shrinkwrap.py
+msgid "Change Shrinkwrap Setting"
+msgstr "更改收缩包裹设置"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/steps/frame.py
+msgid "Frame Outline"
+msgstr "边框轮廓"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/steps/engrave.py
+msgid "Engrave"
+msgstr "雕刻"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/steps/contour.py
+msgid "Contour"
+msgstr "轮廓"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/steps/shrinkwrap.py
+msgid "Shrink Wrap"
+msgstr "收缩包裹"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/steps/material_test.py
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/commands/material_test.py
+msgid "Material Test Grid"
+msgstr "材料测试网格"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/backend.py
+msgid "Create Material Test Grid"
+msgstr "创建材料测试网格"
+
+#: rayforge/builtin_packages/laser_essentials/laser_essentials/commands/material_test.py
+msgid "Add Material Test"
+msgstr "添加材料测试"

@@ -11,7 +11,6 @@ from rayforge.core.geo import Geometry
 from rayforge.core.ops import Ops
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.steps import ContourStep
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
@@ -71,12 +70,17 @@ class TestPipelineArtifacts:
         return doc.active_layer
 
     def test_get_artifact_handle(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -128,12 +132,17 @@ class TestPipelineArtifacts:
             get_context().artifact_store.release(handle)
 
     def test_get_scaled_ops(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -194,12 +203,17 @@ class TestPipelineArtifacts:
             get_context().artifact_store.release(handle)
 
     def test_get_scaled_ops_with_stale_non_scalable_artifact(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -249,12 +263,17 @@ class TestPipelineArtifacts:
             get_context().artifact_store.release(handle)
 
     def test_get_artifact(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -310,12 +329,17 @@ class TestPipelineArtifacts:
             get_context().artifact_store.release(handle)
 
     def test_get_artifact_with_stale_non_scalable_artifact(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(

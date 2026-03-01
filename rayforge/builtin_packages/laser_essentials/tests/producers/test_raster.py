@@ -1,6 +1,7 @@
 import pytest
 import cairo
 from unittest.mock import MagicMock
+
 from rayforge.core.ops import (
     OpsSectionStartCommand,
     OpsSectionEndCommand,
@@ -14,10 +15,7 @@ from rayforge.machine.models.laser import Laser
 from rayforge.pipeline import CoordinateSystem
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.producer.base import OpsProducer
-from rayforge.pipeline.producer.raster import (
-    Rasterizer,
-    DepthMode,
-)
+from laser_essentials.producers import Rasterizer, DepthMode
 
 
 @pytest.fixture
@@ -85,10 +83,10 @@ def test_serialization_and_deserialization():
     )
     data = original.to_dict()
     recreated = OpsProducer.from_dict(data)
-
     assert isinstance(recreated, Rasterizer)
+
     assert recreated.scan_angle == 45.0
-    assert recreated.depth_mode == DepthMode.MULTI_PASS
+    assert recreated.depth_mode.value == DepthMode.MULTI_PASS.value
     assert recreated.num_depth_levels == 8
     assert recreated.z_step_down == 0.2
     assert recreated.invert is True
@@ -110,7 +108,7 @@ def test_deserialization_with_legacy_type_name():
     producer = OpsProducer.from_dict(data)
     assert isinstance(producer, Rasterizer)
     assert producer.scan_angle == 30.0
-    assert producer.depth_mode == DepthMode.DITHER
+    assert producer.depth_mode.value == DepthMode.DITHER.value
     assert producer.invert is True
 
 
@@ -133,7 +131,7 @@ def test_deserialization_with_legacy_old_rasterizer_format():
     producer = OpsProducer.from_dict(data)
     assert isinstance(producer, Rasterizer)
     assert producer.scan_angle == 45.0
-    assert producer.depth_mode == DepthMode.CONSTANT_POWER
+    assert producer.depth_mode.value == DepthMode.CONSTANT_POWER.value
     assert producer.threshold == 200
     assert producer.invert is True
     assert producer.cross_hatch is True
@@ -152,9 +150,10 @@ def test_deserialization_with_legacy_dither_rasterizer_format():
     }
     producer = OpsProducer.from_dict(data)
     assert isinstance(producer, Rasterizer)
-    assert producer.depth_mode == DepthMode.DITHER
+    assert producer.depth_mode.value == DepthMode.DITHER.value
 
-    assert producer.dither_algorithm == DitherAlgorithm.BAYER4
+    assert producer.dither_algorithm is not None
+    assert producer.dither_algorithm.value == DitherAlgorithm.BAYER4.value
     assert producer.invert is True
 
 
@@ -166,7 +165,7 @@ def test_deserialization_with_invalid_enum_falls_back():
     }
     producer = OpsProducer.from_dict(data)
     assert isinstance(producer, Rasterizer)
-    assert producer.depth_mode == DepthMode.POWER_MODULATION
+    assert producer.depth_mode.value == DepthMode.POWER_MODULATION.value
 
 
 def test_deserialization_ignores_unknown_params():
@@ -181,7 +180,7 @@ def test_deserialization_ignores_unknown_params():
     }
     producer = OpsProducer.from_dict(data)
     assert isinstance(producer, Rasterizer)
-    assert producer.depth_mode == DepthMode.CONSTANT_POWER
+    assert producer.depth_mode.value == DepthMode.CONSTANT_POWER.value
     assert not hasattr(producer, "bidirectional")
     assert not hasattr(producer, "unknown_future_param")
 
@@ -737,10 +736,14 @@ def test_dither_serialization():
     )
     data = original.to_dict()
     recreated = OpsProducer.from_dict(data)
-
     assert isinstance(recreated, Rasterizer)
-    assert recreated.depth_mode == DepthMode.DITHER
-    assert recreated.dither_algorithm == DitherAlgorithm.FLOYD_STEINBERG
+
+    assert recreated.depth_mode.value == DepthMode.DITHER.value
+    assert recreated.dither_algorithm is not None
+    assert (
+        recreated.dither_algorithm.value
+        == DitherAlgorithm.FLOYD_STEINBERG.value
+    )
     assert recreated.threshold == 200
     assert recreated.invert is True
 
@@ -866,8 +869,8 @@ def test_cross_hatch_serialization():
     )
     data = original.to_dict()
     recreated = OpsProducer.from_dict(data)
-
     assert isinstance(recreated, Rasterizer)
+
     assert recreated.cross_hatch is True
     assert recreated.scan_angle == 30.0
 
@@ -1056,8 +1059,8 @@ def test_angle_increment_serialization():
     )
     data = original.to_dict()
     recreated = OpsProducer.from_dict(data)
-
     assert isinstance(recreated, Rasterizer)
+
     assert recreated.angle_increment == 30.0
     assert recreated.scan_angle == 0.0
     assert recreated.num_depth_levels == 5

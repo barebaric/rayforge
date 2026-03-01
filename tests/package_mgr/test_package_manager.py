@@ -72,8 +72,8 @@ class TestPackageManagerLoading:
             assert mock_load.call_count == 2
             pkg1_path = (manager.install_dir / "pkg1").resolve()
             pkg2_path = (manager.install_dir / "pkg2").resolve()
-            mock_load.assert_any_call(pkg1_path)
-            mock_load.assert_any_call(pkg2_path)
+            mock_load.assert_any_call(pkg1_path, backend_only=False)
+            mock_load.assert_any_call(pkg2_path, backend_only=False)
 
     def test_load_installed_packages_scans_builtin_and_external(self):
         """Test that both builtin and external directories are scanned."""
@@ -97,8 +97,8 @@ class TestPackageManagerLoading:
                 assert mock_load.call_count == 2
                 external_path = (packages_dir / "external_pkg").resolve()
                 builtin_path = (builtin_dir / "builtin_pkg").resolve()
-                mock_load.assert_any_call(builtin_path)
-                mock_load.assert_any_call(external_path)
+                mock_load.assert_any_call(builtin_path, backend_only=False)
+                mock_load.assert_any_call(external_path, backend_only=False)
 
     def test_load_installed_packages_missing_dir(self, manager):
         """Test that missing dirs are handled gracefully."""

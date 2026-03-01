@@ -74,6 +74,7 @@ test = [
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
+pythonpath = ["rayforge/builtin_packages/laser_essentials"]
 filterwarnings = [
     # Ignore Swig related deprecation warnings from importlib
     "ignore::DeprecationWarning:importlib._bootstrap",

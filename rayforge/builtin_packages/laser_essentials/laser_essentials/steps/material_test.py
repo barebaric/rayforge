@@ -3,12 +3,13 @@ from __future__ import annotations
 from typing import Optional, Set, TYPE_CHECKING
 from gettext import gettext as _
 
-from ...core.capability import Capability
-from ...core.step import Step
-from ..producer import MaterialTestGridProducer
+from rayforge.core.capability import Capability
+from rayforge.core.step import Step
+from ..producers import MaterialTestGridProducer
+
 
 if TYPE_CHECKING:
-    from ...context import RayforgeContext
+    from rayforge.context import RayforgeContext
 
 
 class MaterialTestStep(Step):

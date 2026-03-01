@@ -28,7 +28,6 @@ from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.steps import ContourStep, EngraveStep
 from rayforge.pipeline.view.view_manager import ViewManager
 
 if TYPE_CHECKING:
@@ -100,6 +99,8 @@ class StressTestController:
     task_mgr: "TaskManager"
     artifact_store: "ArtifactStore"
     context: "RayforgeContext"
+    contour_step_class: type
+    engrave_step_class: type
 
     _snapshots: List[MetricsSnapshot] = field(default_factory=list)
     _workpieces: List[WorkPiece] = field(default_factory=list)
@@ -219,7 +220,10 @@ class StressTestController:
         elif invalid_type == InvalidationType.ADD_STEP:
             if layer.workflow and len(self._get_available_steps()) < 5:
                 step_type = random.choice(
-                    [ContourStep.create, EngraveStep.create]
+                    [
+                        self.contour_step_class.create,
+                        self.engrave_step_class.create,
+                    ]
                 )
                 step = step_type(self.context)
                 layer.workflow.add_step(step)
@@ -528,7 +532,7 @@ class StressTestController:
             self._workpieces.append(wp)
 
         if self.doc.active_layer.workflow:
-            step = ContourStep.create(self.context)
+            step = self.contour_step_class.create(self.context)
             self.doc.active_layer.workflow.add_step(step)
 
         await asyncio.sleep(0.5)
@@ -583,7 +587,7 @@ class StressTestController:
 @pytest.mark.stress
 @pytest.mark.asyncio
 async def test_pipeline_stress_random_invalidations(
-    task_mgr, context_initializer
+    task_mgr, context_initializer, contour_step_class, engrave_step_class
 ):
     """
     Stress test the pipeline with random invalidations over 3 minutes.
@@ -625,6 +629,8 @@ async def test_pipeline_stress_random_invalidations(
         task_mgr=task_mgr,
         artifact_store=context_initializer.artifact_store,
         context=context_initializer,
+        contour_step_class=contour_step_class,
+        engrave_step_class=engrave_step_class,
     )
     controller._view_manager = view_manager
 

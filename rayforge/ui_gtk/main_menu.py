@@ -175,9 +175,6 @@ class MainMenu(Gio.Menu):
 
         # Tools Menu
         tools_menu = Gio.Menu()
-        tools_group = Gio.Menu()
-        tools_group.append(_("Create Material Test Grid"), "win.material_test")
-        tools_menu.append_section(None, tools_group)
 
         # Addon section for Tools menu
         self._addon_sections["Tools"] = Gio.Menu()

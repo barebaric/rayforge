@@ -17,7 +17,6 @@ from .file_cmd import FileCmd
 from .group_cmd import GroupCmd
 from .layer_cmd import LayerCmd
 from .layout_cmd import LayoutCmd
-from .material_test_cmd import MaterialTestCmd
 from .sketch_cmd import SketchCmd
 from .split_cmd import SplitCmd
 from .step_cmd import StepCmd
@@ -110,7 +109,6 @@ class DocEditor:
         self.group = GroupCmd(self, self.task_manager)
         self.layer = LayerCmd(self)
         self.layout = LayoutCmd(self, self.task_manager)
-        self.material_test = MaterialTestCmd(self)
         self.sketch = SketchCmd(self)
         self.split = SplitCmd(self)
         self.stock = StockCmd(self)

@@ -3,24 +3,24 @@ from __future__ import annotations
 from typing import Optional, Set, TYPE_CHECKING
 from gettext import gettext as _
 
-from ...core.capability import CUT, SCORE, Capability
-from ...core.step import Step
-from ..producer import ShrinkWrapProducer
-from ..transformer import (
+from rayforge.core.capability import CUT, SCORE, Capability
+from rayforge.core.step import Step
+from rayforge.pipeline.transformer import (
     MultiPassTransformer,
     Optimize,
-    Smooth,
     TabOpsTransformer,
 )
+from ..producers import FrameProducer
+
 
 if TYPE_CHECKING:
-    from ...context import RayforgeContext
+    from rayforge.context import RayforgeContext
 
 
-class ShrinkWrapStep(Step):
-    TYPELABEL = _("Shrink Wrap")
+class FrameStep(Step):
+    TYPELABEL = _("Frame Outline")
     DEFAULT_CAPABILITIES: Set[Capability] = {CUT, SCORE}
-    PRODUCER_CLASS = ShrinkWrapProducer
+    PRODUCER_CLASS = FrameProducer
 
     def __init__(
         self, name: Optional[str] = None, typelabel: Optional[str] = None
@@ -34,7 +34,7 @@ class ShrinkWrapStep(Step):
         context: "RayforgeContext",
         name: Optional[str] = None,
         **kwargs,
-    ) -> "ShrinkWrapStep":
+    ) -> "FrameStep":
         machine = context.machine
         assert machine is not None
         default_head = machine.get_default_head()
@@ -42,7 +42,6 @@ class ShrinkWrapStep(Step):
         step = cls(name=name)
         step.opsproducer_dict = cls.PRODUCER_CLASS().to_dict()
         step.per_workpiece_transformers_dicts = [
-            Smooth(enabled=False, amount=20).to_dict(),
             TabOpsTransformer().to_dict(),
             Optimize().to_dict(),
         ]

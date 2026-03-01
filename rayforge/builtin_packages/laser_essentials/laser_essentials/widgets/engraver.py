@@ -2,16 +2,13 @@ from typing import Dict, Any, TYPE_CHECKING, cast, Optional
 from gettext import gettext as _
 from gi.repository import Gtk, Adw, GObject
 import numpy as np
+
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.image.util import (
     compute_auto_levels,
     get_visible_grayscale_values,
 )
 from rayforge.pipeline.producer.base import OpsProducer
-from rayforge.pipeline.producer.raster import (
-    Rasterizer,
-    DepthMode,
-)
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_int, get_spinrow_float
 from rayforge.ui_gtk.shared.direction_preview import DirectionPreview
@@ -19,6 +16,8 @@ from rayforge.ui_gtk.shared.histogram_preview import HistogramPreview
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
+from ..producers import Rasterizer, DepthMode
+
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step

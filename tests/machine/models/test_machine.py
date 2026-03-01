@@ -35,8 +35,14 @@ from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import JogDirection, Machine, Origin
 from rayforge.machine.models.macro import MacroTrigger
 from rayforge.machine.transport import TransportStatus
-from rayforge.pipeline.steps import ContourStep
+from rayforge.core.step_registry import step_registry
 from rayforge.shared.tasker.manager import TaskManager
+
+
+@pytest.fixture
+def contour_step_class():
+    """Get ContourStep class from registry after addons are loaded."""
+    return step_registry.get("ContourStep")
 
 
 # Define the test-specific driver in the test file where it is used.
@@ -537,6 +543,7 @@ class TestMachine:
         mocker,
         lite_context,
         task_mgr: TaskManager,
+        contour_step_class,
     ):
         """
         Verify that sending a job correctly calls the driver's run method
@@ -545,7 +552,7 @@ class TestMachine:
         # --- Arrange ---
         await wait_for_tasks_to_finish(task_mgr)
         # Add a step to the workflow, which is required for job assembly.
-        step = ContourStep.create(lite_context)
+        step = contour_step_class.create(lite_context)
         workflow = doc.active_layer.workflow
         assert workflow is not None
         workflow.add_step(step)
@@ -584,6 +591,7 @@ class TestMachine:
         mocker,
         lite_context,
         task_mgr: TaskManager,
+        contour_step_class,
     ):
         """Verify that framing a job calls the driver's run method."""
         # --- Arrange ---
@@ -594,7 +602,7 @@ class TestMachine:
         assert machine.can_frame() is True
 
         # Add a step to the workflow, which is required for job assembly.
-        step = ContourStep.create(lite_context)
+        step = contour_step_class.create(lite_context)
         workflow = doc.active_layer.workflow
         assert workflow is not None
         workflow.add_step(step)

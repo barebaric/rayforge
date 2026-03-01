@@ -87,6 +87,12 @@ class ProducerRegistry:
         Returns:
             The producer class, or None if not found.
         """
+        # Ensure addons are loaded in worker processes so the registry
+        # is populated before we try to look up producer classes.
+        from rayforge.worker_init import ensure_addons_loaded
+
+        ensure_addons_loaded()
+
         return self._producers.get(name)
 
     def all_producers(self) -> Dict[str, Type["OpsProducer"]]:

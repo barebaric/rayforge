@@ -18,7 +18,6 @@ from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.geo import Geometry
 from rayforge.core.ops import Ops
 from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.steps import ContourStep
 from rayforge.pipeline.stage.workpiece_runner import (
     make_workpiece_artifact_in_subprocess,
 )
@@ -255,12 +254,17 @@ class TestPipelineMultipass:
 
     @pytest.mark.asyncio
     async def test_multipass_change_triggers_step_assembly(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
         pipeline = Pipeline(
             doc,

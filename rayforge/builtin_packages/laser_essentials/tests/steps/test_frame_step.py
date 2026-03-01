@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from rayforge.core.capability import CUT, SCORE
-from rayforge.pipeline.steps import ShrinkWrapStep
+from laser_essentials.steps import FrameStep
 
 
 @pytest.fixture
@@ -21,19 +21,19 @@ def mock_context():
     return context
 
 
-class TestShrinkWrapStep:
+class TestFrameStep:
     def test_instantiation(self):
-        step = ShrinkWrapStep(name="Test")
-        assert step.typelabel == "Shrink Wrap"
+        step = FrameStep(name="Test")
+        assert step.typelabel == "Frame Outline"
         assert step.capabilities == {CUT, SCORE}
 
     def test_create(self, mock_context):
-        step = ShrinkWrapStep.create(mock_context)
-        assert isinstance(step, ShrinkWrapStep)
+        step = FrameStep.create(mock_context)
+        assert isinstance(step, FrameStep)
         assert step.opsproducer_dict is not None
-        assert step.opsproducer_dict["type"] == "ShrinkWrapProducer"
+        assert step.opsproducer_dict["type"] == "FrameProducer"
 
     def test_serialization_includes_step_type(self):
-        step = ShrinkWrapStep(name="Test")
+        step = FrameStep(name="Test")
         data = step.to_dict()
-        assert data["step_type"] == "ShrinkWrapStep"
+        assert data["step_type"] == "FrameStep"

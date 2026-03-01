@@ -4,7 +4,7 @@ import pytest
 
 from rayforge.core.capability import ENGRAVE
 from rayforge.core.step_registry import step_registry
-from rayforge.pipeline.steps import EngraveStep
+from laser_essentials.steps import EngraveStep
 
 
 @pytest.fixture
@@ -45,4 +45,4 @@ class TestEngraveStep:
         StepClass = step_registry.get("EngraveStep")
         assert StepClass is not None
         step = StepClass.create(mock_context, name="FromRegistry")
-        assert isinstance(step, EngraveStep)
+        assert type(step).__name__ == "EngraveStep"
