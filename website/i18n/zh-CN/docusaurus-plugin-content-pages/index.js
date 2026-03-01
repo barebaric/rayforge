@@ -160,7 +160,7 @@ export default function Home() {
             description="无缝地从 2D 设计过渡到 3D 刀具路径。Rayforge 为 2 轴和 3 轴激光切割机和雕刻机生成 G-code，在平面设计和实体对象之间架起桥梁。"
             compatibilityHeading="兼容：Grbl、Smoothieware"
             features={['3D 可视化', '刀具路径生成', '轴控制']}
-            image="/assets/screenshot-3d-closeup.png"
+            image="/images/screenshot-3d-closeup.png"
           />
 
           <FeatureSection
@@ -172,7 +172,7 @@ export default function Home() {
               '完美对齐所有元素',
               '设置自动更新的尺寸',
             ]}
-            image="/assets/screenshot-sketcher.png"
+            image="/images/screenshot-sketcher.png"
             reverse
           />
 
@@ -185,7 +185,7 @@ export default function Home() {
               '通过自动布局节省材料',
               '流畅、精确的曲线',
             ]}
-            image="/assets/screenshot-optimizer.png"
+            image="/images/screenshot-optimizer.png"
           />
 
           <FeatureSection
@@ -209,7 +209,7 @@ export default function Home() {
               '保存不同材料的设置',
               '创建可重复使用的配方',
             ]}
-            image="/assets/screenshot-recipe.png"
+            image="/images/screenshot-recipe.png"
           />
         </div>
 
