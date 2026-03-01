@@ -19,7 +19,7 @@ TARGETS = {
     "app-settings:machines": "app_settings_machines",
     "app-settings:materials": "app_settings_materials",
     "app-settings:recipes": "app_settings_recipes",
-    "app-settings:packages": "app_settings_packages",
+    "app-settings:addons": "app_settings_addons",
     "machine-settings:general": "machine_settings_general",
     "machine-settings:hardware": "machine_settings_hardware",
     "machine-settings:advanced": "machine_settings_advanced",
