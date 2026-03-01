@@ -3,7 +3,7 @@ import threading
 from typing import Optional, TYPE_CHECKING
 import pluggy
 from .core.hooks import RayforgeSpecs
-from .package_mgr.package_manager import PackageManager
+from .addon_mgr.addon_manager import AddonManager
 
 # Use a TYPE_CHECKING block to import types for static analysis
 # without causing a runtime circular import.
@@ -42,8 +42,8 @@ class RayforgeContext:
         from .config import (
             CONFIG_DIR,
             DIALECT_DIR,
-            PACKAGES_DIR,
-            BUILTIN_PACKAGES_DIR,
+            ADDONS_DIR,
+            BUILTIN_ADDONS_DIR,
         )
         from .shared.util.localized import get_system_language
         from .core.addon_config import AddonConfig
@@ -60,10 +60,10 @@ class RayforgeContext:
         self.addon_config = AddonConfig(CONFIG_DIR)
         self.addon_config.load()
 
-        # Initialize the package manager
-        self.package_mgr = PackageManager(
-            [BUILTIN_PACKAGES_DIR, PACKAGES_DIR],
-            PACKAGES_DIR,
+        # Initialize the addon manager
+        self.addon_mgr = AddonManager(
+            [BUILTIN_ADDONS_DIR, ADDONS_DIR],
+            ADDONS_DIR,
             self.plugin_mgr,
             self.addon_config,
         )
@@ -273,8 +273,8 @@ class RayforgeContext:
         from .ui_gtk.doceditor.step_settings import step_widget_registry
         from .core.menu_registry import menu_registry
 
-        # Provide registries to package manager for addon enable/disable
-        self.package_mgr.set_registries(
+        # Provide registries to addon manager for addon enable/disable
+        self.addon_mgr.set_registries(
             {
                 "step_registry": step_registry,
                 "producer_registry": producer_registry,
@@ -284,7 +284,7 @@ class RayforgeContext:
         )
 
         # Load plugins from disk
-        self.package_mgr.load_installed_packages()
+        self.addon_mgr.load_installed_addons()
 
         # Trigger registration hooks
         self.plugin_mgr.hook.register_steps(step_registry=step_registry)

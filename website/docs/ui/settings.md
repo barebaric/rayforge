@@ -67,12 +67,12 @@ The Recipes page manages your operation recipes.
 
 See [Recipes](../application-settings/recipes) for more details.
 
-## Packages
+## Addons
 
-The Packages page shows installed extension packages.
+The Addons page shows installed extension addons.
 
-- **Package List**: Shows all installed packages
-- **Package Details**: View information about each package
+- **Addon List**: Shows all installed addons
+- **Addon Details**: View information about each addon
 
 ---
 

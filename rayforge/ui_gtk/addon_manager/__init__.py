@@ -1,0 +1,1 @@
+"""Addon manager UI components."""

@@ -188,7 +188,7 @@ class TestCheckRayforgeCompatibility:
         assert check_rayforge_compatibility([], "0.27.0") is True
 
     def test_no_rayforge_dependency(self):
-        depends = ["other-package>=1.0.0"]
+        depends = ["other-addon>=1.0.0"]
         assert check_rayforge_compatibility(depends, "0.27.0") is True
 
     def test_single_greater_or_equal_satisfied(self):
@@ -301,9 +301,9 @@ class TestCheckRayforgeCompatibility:
 
     def test_mixed_dependencies(self):
         depends = [
-            "other-package>=1.0.0",
+            "other-addon>=1.0.0",
             "rayforge>=0.27.0",
-            "another-package>=2.0.0",
+            "another-addon>=2.0.0",
         ]
         assert check_rayforge_compatibility(depends, "0.28.0") is True
 

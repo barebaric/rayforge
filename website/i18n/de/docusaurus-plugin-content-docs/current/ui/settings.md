@@ -66,12 +66,12 @@ Die Seite Rezepte verwaltet deine Operationsrezepte.
 
 Siehe [Rezepte](../application-settings/recipes) für weitere Details.
 
-## Pakete
+## Addons
 
-Die Seite Pakete zeigt installierte Erweiterungspakete.
+Die Seite Addons zeigt installierte Erweiterungs-Addons.
 
-- **Paketliste**: Zeigt alle installierten Pakete
-- **Paketdetails**: Informationen zu jedem Paket anzeigen
+- **Addon-Liste**: Zeigt alle installierten Addons
+- **Addon-Details**: Informationen zu jedem Addon anzeigen
 
 ---
 

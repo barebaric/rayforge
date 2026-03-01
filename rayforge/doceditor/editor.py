@@ -103,7 +103,7 @@ class DocEditor:
         self.history_manager.changed.connect(self._on_history_changed)
 
         # Connect to addon reload signal to refresh document
-        context.package_mgr.addon_reloaded.connect(self._on_addon_reload)
+        context.addon_mgr.addon_reloaded.connect(self._on_addon_reload)
 
         # Instantiate and link command handlers, passing dependencies.
         self.asset = AssetCmd(self)

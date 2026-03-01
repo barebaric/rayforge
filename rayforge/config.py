@@ -27,9 +27,9 @@ logger.debug(f"DIALECT_DIR is {DIALECT_DIR}")
 DIALECT_DIR.mkdir(parents=True, exist_ok=True)
 
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
-PACKAGES_DIR = CONFIG_DIR / "packages"
+ADDONS_DIR = CONFIG_DIR / "addons"
 
-BUILTIN_PACKAGES_DIR = Path(__file__).parent / "builtin_packages"
+BUILTIN_ADDONS_DIR = Path(__file__).parent / "builtin_addons"
 
 # State files (like logs)
 LOG_DIR = Path(user_log_dir("rayforge"))
@@ -39,12 +39,9 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 # Material directories
 CORE_MATERIALS_DIR = Path(__file__).parent / "resources" / "core_materials"
 USER_MATERIALS_DIR = CONFIG_DIR / "materials"
-
-# Material directories
 USER_RECIPES_DIR = CONFIG_DIR / "recipes"
 
-# Package registry
-PACKAGE_REGISTRY_URL = (
+ADDON_REGISTRY_URL = (
     "https://raw.githubusercontent.com/barebaric/rayforge-registry/"
     "main/registry.yaml"
 )
