@@ -222,22 +222,22 @@ Defined in `rayforge/core/hooks.py`:
 : Called during startup to register new machine drivers.
 
 **`register_steps`** (`step_registry`)
-: Called to allow plugins to register custom step types.
+: Called to allow addons to register custom step types.
 
 **`register_producers`** (`producer_registry`)
-: Called to allow plugins to register custom ops producers.
+: Called to allow addons to register custom ops producers.
 
 **`register_step_widgets`** (`widget_registry`)
-: Called to allow plugins to register custom step settings widgets.
+: Called to allow addons to register custom step settings widgets.
 
 **`register_menu_items`** (`menu_registry`)
-: Called to allow plugins to register menu items.
+: Called to allow addons to register menu items.
 
 **`register_commands`** (`command_registry`)
-: Called to allow plugins to register editor commands.
+: Called to allow addons to register editor commands.
 
 **`register_actions`** (`window`)
-: Called to allow plugins to register window actions.
+: Called to allow addons to register window actions.
 
 ## 6. Accessing Rayforge Data
 
@@ -254,7 +254,7 @@ you can access:
 - **`context.dialect_mgr`**: G-code dialect manager.
 - **`context.language`**: Current language code for localized content.
 - **`context.addon_mgr`**: Addon manager instance.
-- **`context.plugin_mgr`**: Plugin manager instance.
+- **`context.plugin_mgr`**: Plugin manager instance (internal pluggy).
 - **`context.debug_dump_manager`**: Debug dump manager.
 - **`context.artifact_store`**: Pipeline artifact store.
 

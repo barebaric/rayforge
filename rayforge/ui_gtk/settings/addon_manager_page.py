@@ -23,7 +23,7 @@ class AddonManagerPage(TrackedPreferencesPage):
         # The list of addons, which is an Adw.PreferencesGroup
         self.addon_list_widget = AddonListWidget(
             title=_("Installed Addons"),
-            description=_("Install, update, and remove addons and plugins."),
+            description=_("Install, update, and remove addons."),
         )
         self.add(self.addon_list_widget)
 

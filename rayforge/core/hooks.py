@@ -9,8 +9,7 @@ PLUGIN_API_VERSION = 1
 class RayforgeSpecs:
     """
     Core hook specifications.
-    Plugins (Rayforge addons) implement these methods to extend
-    functionality.
+    Addons implement these methods to extend functionality.
     """
 
     @hookspec
@@ -34,7 +33,7 @@ class RayforgeSpecs:
     @hookspec
     def register_machines(self, machine_manager):
         """
-        Called to allow plugins to register new machine drivers.
+        Called to allow addons to register new machine drivers.
 
         Args:
             machine_manager: The application's MachineManager instance.
@@ -43,7 +42,7 @@ class RayforgeSpecs:
     @hookspec
     def register_steps(self, step_registry):
         """
-        Called to allow plugins to register custom step types.
+        Called to allow addons to register custom step types.
 
         Args:
             step_registry: The global StepRegistry instance.
@@ -52,7 +51,7 @@ class RayforgeSpecs:
     @hookspec
     def register_producers(self, producer_registry):
         """
-        Called to allow plugins to register custom ops producers.
+        Called to allow addons to register custom ops producers.
 
         Args:
             producer_registry: The global ProducerRegistry instance.
@@ -61,7 +60,7 @@ class RayforgeSpecs:
     @hookspec
     def register_step_widgets(self, widget_registry):
         """
-        Called to allow plugins to register custom step settings widgets.
+        Called to allow addons to register custom step settings widgets.
 
         Args:
             widget_registry: The global StepWidgetRegistry instance.
@@ -70,7 +69,7 @@ class RayforgeSpecs:
     @hookspec
     def register_menu_items(self, menu_registry):
         """
-        Called to allow plugins to register menu items.
+        Called to allow addons to register menu items.
 
         Args:
             menu_registry: The global MenuRegistry instance.
@@ -79,7 +78,7 @@ class RayforgeSpecs:
     @hookspec
     def register_commands(self, command_registry):
         """
-        Called to allow plugins to register editor commands.
+        Called to allow addons to register editor commands.
 
         Args:
             command_registry: The global CommandRegistry instance.
@@ -88,7 +87,7 @@ class RayforgeSpecs:
     @hookspec
     def register_actions(self, window):
         """
-        Called to allow plugins to register window actions.
+        Called to allow addons to register window actions.
 
         Args:
             window: The MainWindow instance.

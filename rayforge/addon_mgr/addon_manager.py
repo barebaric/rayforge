@@ -465,7 +465,7 @@ class AddonManager:
                     del self._load_errors[name]
         except Exception as e:
             error_msg = str(e)
-            logger.error(f"Error importing plugin {name}: {e}")
+            logger.error(f"Error importing addon {name}: {e}")
             self._load_errors[name] = error_msg
 
     def _ensure_parent_modules(
