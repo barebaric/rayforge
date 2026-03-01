@@ -23,7 +23,7 @@ from ..machine.driver.driver import DeviceState, DeviceStatus, Axis
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.models.machine import Machine
 from ..machine.transport import TransportStatus
-from ..package_mgr.update_cmd import UpdateCommand
+from ..addon_mgr.update_cmd import UpdateCommand
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from ..pipeline.encoder.gcode import MachineCodeOpMap
 from ..pipeline.steps import step_registry
@@ -535,7 +535,7 @@ class MainWindow(Adw.ApplicationWindow):
             dialog = UsageConsentDialog(self)
             dialog.present()
 
-        # Trigger the non-blocking check for package updates
+        # Trigger the non-blocking check for addon updates
         self.update_cmd.check_for_updates_on_startup()
 
     def _apply_saved_visibility_state(self):

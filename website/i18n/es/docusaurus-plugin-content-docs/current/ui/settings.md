@@ -67,12 +67,12 @@ La página de Recetas gestiona tus recetas de operaciones.
 
 Ver [Recetas](../application-settings/recipes) para más detalles.
 
-## Paquetes
+## Addons
 
-La página de Paquetes muestra los paquetes de extensión instalados.
+La página de Addons muestra los addons de extensión instalados.
 
-- **Lista de Paquetes**: Muestra todos los paquetes instalados
-- **Detalles del Paquete**: Ver información sobre cada paquete
+- **Lista de Addons**: Muestra todos los addons instalados
+- **Detalles del Addon**: Ver información sobre cada addon
 
 ---
 

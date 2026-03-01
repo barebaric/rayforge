@@ -23,14 +23,14 @@ def ensure_addons_loaded():
 
     import pluggy
     from rayforge.config import (
-        BUILTIN_PACKAGES_DIR,
-        PACKAGES_DIR,
+        BUILTIN_ADDONS_DIR,
+        ADDONS_DIR,
         CONFIG_DIR,
     )
     from rayforge.core.hooks import RayforgeSpecs
     from rayforge.core.step_registry import step_registry
     from rayforge.pipeline.producer.registry import producer_registry
-    from rayforge.package_mgr.package_manager import PackageManager
+    from rayforge.addon_mgr.addon_manager import AddonManager
     from rayforge.core.addon_config import AddonConfig
 
     logger = logging.getLogger(__name__)
@@ -42,20 +42,19 @@ def ensure_addons_loaded():
     addon_config = AddonConfig(CONFIG_DIR)
     addon_config.load()
 
-    package_mgr = PackageManager(
-        [BUILTIN_PACKAGES_DIR, PACKAGES_DIR],
-        PACKAGES_DIR,
+    addon_mgr = AddonManager(
+        [BUILTIN_ADDONS_DIR, ADDONS_DIR],
+        ADDONS_DIR,
         plugin_mgr,
         addon_config,
     )
-    package_mgr.set_registries(
+    addon_mgr.set_registries(
         {
             "step_registry": step_registry,
             "producer_registry": producer_registry,
         }
     )
-    # backend_only=True skips frontend/widgets to avoid pulling in GTK
-    package_mgr.load_installed_packages(backend_only=True)
+    addon_mgr.load_installed_addons(backend_only=True)
 
     # Only register backend hooks, not frontend (widgets, menus, actions)
     plugin_mgr.hook.register_steps(step_registry=step_registry)

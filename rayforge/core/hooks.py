@@ -9,7 +9,7 @@ PLUGIN_API_VERSION = 1
 class RayforgeSpecs:
     """
     Core hook specifications.
-    Plugins (Rayforge packages) implement these methods to extend
+    Plugins (Rayforge addons) implement these methods to extend
     functionality.
     """
 

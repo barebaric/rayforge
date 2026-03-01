@@ -13,7 +13,7 @@ class _UnknownVersion:
     """
     Sentinel class representing an unknown or undetermined version.
 
-    Used for builtin packages where version cannot be determined from git.
+    Used for Git repositories where version cannot be determined.
     When displayed, the UI should fall back to rayforge.__version__.
     """
 
@@ -26,12 +26,12 @@ class _UnknownVersion:
 UnknownVersion = _UnknownVersion()
 
 
-def get_git_tag_version(package_dir: Path) -> str:
+def get_git_tag_version(path: Path) -> str:
     """
-    Gets the version from git tags in the package directory.
+    Gets the version from git tags in the directory.
 
     Args:
-        package_dir (Path): The directory containing the package.
+        path (Path): The directory containing the Git repository.
 
     Returns:
         str: The version from the latest git tag.
@@ -47,18 +47,16 @@ def get_git_tag_version(package_dir: Path) -> str:
     from git import Repo
 
     try:
-        repo = Repo(package_dir)
+        repo = Repo(path)
         tags = repo.tags
         if tags:
             latest_tag = sorted(
                 tags, key=lambda t: t.commit.committed_datetime
             )[-1]
             return latest_tag.name
-        raise RuntimeError(f"No git tags found in {package_dir}")
+        raise RuntimeError(f"No git tags found in {path}")
     except Exception as e:
-        raise RuntimeError(
-            f"Failed to get git tag version from {package_dir}: {e}"
-        )
+        raise RuntimeError(f"Failed to get git tag version from {path}: {e}")
 
 
 def is_newer_version(remote_str: str, local_str: str) -> bool:
@@ -77,13 +75,13 @@ def is_newer_version(remote_str: str, local_str: str) -> bool:
 
 def parse_requirement(req: str) -> Tuple[str, Optional[str]]:
     """
-    Parse a requirement string into package name and version constraint.
+    Parse a requirement string into name and version constraint.
 
     Args:
         req: Requirement string like "rayforge>=0.27.0" or "laser-essentials"
 
     Returns:
-        Tuple of (package_name, constraint_or_none).
+        Tuple of (name, constraint_or_none).
         Constraint includes operator, e.g. ">=1.0.0".
 
     Examples:

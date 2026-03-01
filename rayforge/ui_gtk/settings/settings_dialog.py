@@ -6,7 +6,7 @@ from ..shared.patched_dialog_window import PatchedDialogWindow
 from .general_preferences_page import GeneralPreferencesPage
 from .machine_settings_page import MachineSettingsPage
 from .material_manager_page import MaterialManagerPage
-from .package_manager_page import PackageManagerPage
+from .addon_manager_page import AddonManagerPage
 from .recipe_manager_page import RecipeManagerPage
 
 
@@ -21,7 +21,7 @@ class SettingsWindow(PatchedDialogWindow):
         "machines": 1,
         "materials": 2,
         "recipes": 3,
-        "packages": 4,
+        "addons": 4,
     }
 
     def __init__(self, initial_page: str = "general", **kwargs):
@@ -62,7 +62,7 @@ class SettingsWindow(PatchedDialogWindow):
         self._add_page(MachineSettingsPage)
         self._add_page(MaterialManagerPage)
         self._add_page(RecipeManagerPage)
-        self._add_page(PackageManagerPage)
+        self._add_page(AddonManagerPage)
 
         # Create the content's NavigationPage wrapper
         pages = self.content_stack.get_pages()
