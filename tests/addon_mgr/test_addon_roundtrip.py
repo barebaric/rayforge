@@ -51,7 +51,7 @@ class TestAddonRoundTrip:
             "_check_version_compatibility",
             return_value=UpdateStatus.UP_TO_DATE,
         ):
-            context.initialize_full_context()
+            context.initialize_full_context(load_ui=False)
 
         # The module name is derived from the directory, not the YAML file.
         assert "rayforge_plugins.integration_test_addon" in sys.modules
@@ -97,7 +97,7 @@ class TestAddonRoundTrip:
             "_check_version_compatibility",
             return_value=UpdateStatus.UP_TO_DATE,
         ):
-            context.initialize_full_context()
+            context.initialize_full_context(load_ui=False)
 
         # The module name is derived from the directory, not the YAML file.
         assert "rayforge_plugins.multi_hook_addon" in sys.modules
@@ -132,7 +132,7 @@ class TestAddonRoundTrip:
             "_check_version_compatibility",
             return_value=UpdateStatus.UP_TO_DATE,
         ):
-            context.initialize_full_context()
+            context.initialize_full_context(load_ui=False)
 
         assert "rayforge_plugins.invalid_addon" not in sys.modules
 
@@ -157,6 +157,6 @@ class TestAddonRoundTrip:
             [addons_dir], addons_dir, context.plugin_mgr
         )
 
-        context.initialize_full_context()
+        context.initialize_full_context(load_ui=False)
 
         assert "rayforge_plugins.no_metadata_addon" not in sys.modules

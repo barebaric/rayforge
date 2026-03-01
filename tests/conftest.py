@@ -225,7 +225,7 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
 
     # 3. Get the context and run the full initialization
     context = get_context()
-    context.initialize_full_context()
+    context.initialize_full_context(load_ui=False)
     yield context
 
     # 4. Teardown: shutdown and fully reset the context singleton and globals

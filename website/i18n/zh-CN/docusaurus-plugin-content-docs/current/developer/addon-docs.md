@@ -1,4 +1,4 @@
-# Rayforge 扩展开发指南
+# 扩展开发
 
 Rayforge 使用基于 [pluggy](https://pluggy.readthedocs.io/) 的扩展系统，允许开发者扩展功能、添加新机器驱动程序或集成自定义逻辑，而无需修改核心代码库。
 
