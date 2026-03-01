@@ -85,10 +85,11 @@ class DebugDumpManager:
         and creates a ZIP archive.
         """
         # Perform imports locally to avoid circular dependencies at startup
-        from .context import get_context
-        from .ui_gtk.about import get_dependency_info
-        from .logging_setup import get_memory_handler
         from .config import LOG_DIR
+        from .context import get_context
+        from .logging_setup import get_memory_handler
+        from .machine.models.dialect import get_available_dialects
+        from .ui_gtk.about import get_dependency_info
         from . import __version__
 
         logger.info("Creating debug dump archive...")
@@ -153,7 +154,22 @@ class DebugDumpManager:
                 with open(tmp_path / "all_machines.yaml", "w") as f:
                     yaml.safe_dump(all_machines_dict, f)
 
-                # 5. Create ZIP archive
+                # 5. Write custom dialects
+                custom_dialects = [
+                    d.to_dict()
+                    for d in get_available_dialects()
+                    if d.is_custom
+                ]
+                if custom_dialects:
+                    with open(tmp_path / "custom_dialects.yaml", "w") as f:
+                        yaml.safe_dump(custom_dialects, f)
+
+                # 6. Copy addons.yaml if it exists
+                addon_config_file = context.addon_config.config_file
+                if addon_config_file.exists():
+                    shutil.copy(addon_config_file, tmp_path / "addons.yaml")
+
+                # 7. Create ZIP archive
                 timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 archive_name = f"rayforge_debug_{timestamp_str}"
                 # Use a system-wide temp dir for the final archive to ensure

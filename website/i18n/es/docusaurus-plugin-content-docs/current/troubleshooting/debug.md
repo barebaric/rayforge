@@ -27,6 +27,8 @@ Ve a nuestra [página de GitHub Issues](https://github.com/barebaric/rayforge/is
 El archivo `.zip` generado contiene información técnica que nos ayuda a diagnosticar el problema rápidamente. Incluye:
 
 - **Ajustes de Máquina y Aplicación:** Tus configuraciones de máquina guardadas y preferencias de aplicación, lo cual nos ayuda a reproducir tu configuración.
+- **Dialectos Personalizados:** Cualquier dialecto G-code personalizado que hayas creado o modificado.
+- **Configuración de Addons:** La lista de addons habilitados/deshabilitados.
 - **Registros de Comunicación:** Un registro detallado de los datos enviados entre Rayforge y tu láser.
 - **Información del Sistema:** Tu sistema operativo y las versiones de Rayforge y bibliotecas clave instaladas.
 - **Estado de la Aplicación:** Otra información interna que puede ayudar a localizar la fuente de un error.
