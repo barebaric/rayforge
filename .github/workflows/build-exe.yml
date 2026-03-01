@@ -34,7 +34,7 @@ jobs:
           elif git describe --tags >/dev/null 2>&1; then
             VERSION=$(git describe --tags)
           else
-            VERSION="v0.0.0-$(git rev-parse --short HEAD)"
+            VERSION="0.0.0-$(git rev-parse --short HEAD)"
           fi
           if [ -z "$VERSION" ]; then
             echo "Error: No git version number found!"
