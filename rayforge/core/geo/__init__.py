@@ -9,6 +9,7 @@ from . import contours
 from . import fitting
 from . import intersect
 from . import linearize
+from . import polygon
 from . import primitives
 from . import query
 from . import text
@@ -40,6 +41,7 @@ __all__ = [
     "fitting",
     "intersect",
     "linearize",
+    "polygon",
     "primitives",
     "query",
     "text",

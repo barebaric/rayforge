@@ -664,6 +664,45 @@ class Geometry:
 
         return all_segments
 
+    def to_polygons(
+        self, tolerance: float = 0.3
+    ) -> List[List[Tuple[float, float]]]:
+        """
+        Converts the geometry to a list of 2D polygons.
+
+        The geometry is first linearized to convert arcs and beziers to
+        line segments, then each continuous subpath is extracted as a
+        polygon (list of (x, y) tuples).
+
+        Args:
+            tolerance: Tolerance for linearization and cleaning.
+
+        Returns:
+            A list of polygons, where each polygon is a list of (x, y) tuples.
+            Returns an empty list if the geometry is empty.
+        """
+        from .polygon import clean_polygon
+
+        if self.is_empty():
+            return []
+
+        linearized = self.linearize(tolerance)
+        segments = linearized.segments()
+
+        polygons = []
+        for segment in segments:
+            if len(segment) < 3:
+                continue
+
+            polygon = [(p[0], p[1]) for p in segment]
+            cleaned = clean_polygon(polygon, 0.01 * tolerance)
+            if cleaned:
+                polygons.append(cleaned)
+            elif len(polygon) >= 3:
+                polygons.append(polygon)
+
+        return polygons
+
     def transform(self: T_Geometry, matrix: "np.ndarray") -> T_Geometry:
         """
         Applies an affine transformation matrix to the geometry.

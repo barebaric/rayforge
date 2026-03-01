@@ -1112,3 +1112,100 @@ def test_fit_arcs_mixed_geometry():
     # to polylines). Original was 3 commands (Move, Line, Arc).
     # Result should be close to that (e.g., <= 5 if the arc got split).
     assert len(geo.data) <= 5
+
+
+class TestToPolygons:
+    def test_empty_geometry(self):
+        geo = Geometry()
+        polygons = geo.to_polygons()
+        assert polygons == []
+
+    def test_single_triangle(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(10, 0)
+        geo.line_to(5, 10)
+        geo.close_path()
+
+        polygons = geo.to_polygons()
+        assert len(polygons) == 1
+        assert len(polygons[0]) >= 3
+
+    def test_single_square(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(10, 0)
+        geo.line_to(10, 10)
+        geo.line_to(0, 10)
+        geo.close_path()
+
+        polygons = geo.to_polygons()
+        assert len(polygons) == 1
+        assert len(polygons[0]) >= 3
+
+    def test_multiple_segments(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(10, 0)
+        geo.line_to(10, 10)
+        geo.line_to(0, 10)
+        geo.close_path()
+        geo.move_to(20, 0)
+        geo.line_to(30, 0)
+        geo.line_to(30, 10)
+        geo.line_to(20, 10)
+        geo.close_path()
+
+        polygons = geo.to_polygons()
+        assert len(polygons) == 2
+
+    def test_with_arc(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(10, 0)
+        geo.arc_to(10, 10, 0, 5, clockwise=False)
+        geo.line_to(0, 10)
+        geo.close_path()
+
+        polygons = geo.to_polygons(tolerance=0.5)
+        assert len(polygons) == 1
+        assert len(polygons[0]) >= 3
+
+    def test_open_path(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(10, 0)
+        geo.line_to(10, 10)
+
+        polygons = geo.to_polygons()
+        assert len(polygons) == 1
+
+    def test_tolerance_affects_cleaning(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(10, 0)
+        geo.line_to(10, 10)
+        geo.line_to(0, 10)
+        geo.close_path()
+
+        polygons_low_tol = geo.to_polygons(tolerance=0.01)
+        polygons_high_tol = geo.to_polygons(tolerance=1.0)
+
+        assert len(polygons_low_tol) == 1
+        assert len(polygons_high_tol) == 1
+
+    def test_nested_geometry(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(20, 0)
+        geo.line_to(20, 20)
+        geo.line_to(0, 20)
+        geo.close_path()
+        geo.move_to(5, 5)
+        geo.line_to(15, 5)
+        geo.line_to(15, 15)
+        geo.line_to(5, 15)
+        geo.close_path()
+
+        polygons = geo.to_polygons()
+        assert len(polygons) == 2
