@@ -1,13 +1,13 @@
-import importlib
 import logging
 import re
 import yaml
 import semver
 from pathlib import Path
 from dataclasses import dataclass, field, asdict
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 
 from rayforge.core.hooks import PLUGIN_API_VERSION
+from rayforge.shared.util.versioning import UnknownVersion, get_git_tag_version
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +49,9 @@ class PackageProvides:
     assets: List[Dict[str, str]] = field(default_factory=list)
 
 
+VersionType = Union[str, object]
+
+
 @dataclass
 class PackageMetadata:
     """
@@ -57,7 +60,7 @@ class PackageMetadata:
 
     name: str
     description: str
-    version: str
+    version: VersionType
     depends: List[str]
     author: PackageAuthor
     provides: PackageProvides
@@ -68,7 +71,10 @@ class PackageMetadata:
 
     def to_dict(self) -> Dict[str, Any]:
         """Converts metadata back to a dictionary for YAML serialization."""
-        return asdict(self)
+        result = asdict(self)
+        if self.version is UnknownVersion:
+            result["version"] = None
+        return result
 
     @classmethod
     def from_registry_entry(
@@ -142,14 +148,23 @@ class Package:
         self.metadata = metadata
 
     @classmethod
-    def load_from_directory(cls, package_dir: Path) -> "Package":
+    def load_from_directory(
+        cls,
+        package_dir: Path,
+        version: Optional[VersionType] = None,
+    ) -> "Package":
         """
         Loads a package from a directory by parsing its YAML metadata file.
         The directory name is treated as the canonical package ID.
-        The version is obtained from git tags.
 
         Args:
             package_dir (Path): The directory containing the package.
+            version (Optional[VersionType]): The version to use. If None,
+                version is determined from git tags. For builtin packages
+                that cannot determine version from git, pass UnknownVersion.
+
+        Raises:
+            RuntimeError: If version is None and no git tags are found.
         """
         meta_file = package_dir / METADATA_FILENAME
         if not meta_file.exists():
@@ -206,13 +221,19 @@ class Package:
             if isinstance(requires, str):
                 requires = [requires]
 
-            version = cls.get_git_tag_version(package_dir)
+            resolved_version: VersionType
+            if version is not None:
+                resolved_version = version
+            elif version is UnknownVersion:
+                resolved_version = version
+            else:
+                resolved_version = get_git_tag_version(package_dir)
 
             metadata = PackageMetadata(
                 name=package_dir.name,
                 display_name=data.get("display_name", data.get("name", "")),
                 description=data.get("description", ""),
-                version=version,
+                version=resolved_version,
                 depends=depends,
                 author=author,
                 provides=provides,
@@ -242,14 +263,17 @@ class Package:
             )
 
         # 2. Version Validation
-        try:
-            # Strip leading 'v' if present for validation
-            clean_ver = self.metadata.version.lstrip("v")
-            semver.VersionInfo.parse(clean_ver)
-        except ValueError:
-            raise PackageValidationError(
-                f"Invalid semantic version: {self.metadata.version}"
-            )
+        if self.metadata.version is UnknownVersion:
+            pass
+        else:
+            try:
+                version_str = str(self.metadata.version)
+                clean_ver = version_str.lstrip("v")
+                semver.VersionInfo.parse(clean_ver)
+            except ValueError:
+                raise PackageValidationError(
+                    f"Invalid semantic version: {self.metadata.version}"
+                )
 
         # 2.1 API Version Validation
         if not isinstance(self.metadata.api_version, int):
@@ -410,44 +434,3 @@ class Package:
             return path_py
 
         return None
-
-    @staticmethod
-    def get_git_tag_version(package_dir: Path) -> str:
-        """
-        Gets the version from git tags in the package directory.
-
-        Args:
-            package_dir (Path): The directory containing the package.
-
-        Returns:
-            str: The version from the latest git tag.
-        """
-        try:
-            importlib.import_module("git")
-        except ImportError:
-            logger.warning(
-                "GitPython is required to get git tag version, "
-                "using default version 0.0.1"
-            )
-            return "0.0.1"
-
-        from git import Repo
-
-        try:
-            repo = Repo(package_dir)
-            tags = repo.tags
-            if tags:
-                latest_tag = sorted(
-                    tags, key=lambda t: t.commit.committed_datetime
-                )[-1]
-                return latest_tag.name
-            logger.warning(
-                f"No git tags found in {package_dir}, "
-                "using default version 0.0.1"
-            )
-            return "0.0.1"
-        except Exception as e:
-            logger.warning(
-                f"Failed to get git tag version from {package_dir}: {e}"
-            )
-            return "0.0.1"
