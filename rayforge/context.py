@@ -174,7 +174,7 @@ class RayforgeContext:
     def initialize_lite_context(self, machine_dir):
         """
         Initializes a minimal context for testing. Sets up MachineManager
-        and Config without cameras, materials, recipes, or plugins.
+        and Config without cameras, materials, recipes, or addons.
         """
         from pathlib import Path
         from .core.config import ConfigManager as CoreConfigManager
@@ -298,7 +298,7 @@ class RayforgeContext:
         # Provide registries to addon manager for addon enable/disable
         self.addon_mgr.set_registries(registries)
 
-        # Load plugins from disk
+        # Load addons from disk
         self.addon_mgr.load_installed_addons(backend_only=not load_ui)
 
         # Trigger registration hooks
@@ -315,7 +315,7 @@ class RayforgeContext:
                 menu_registry=menu_registry
             )
 
-        # Trigger the init hook for all registered plugins
+        # Trigger the init hook for all registered addons
         self.plugin_mgr.hook.rayforge_init(context=self)
 
         logger.info("Full application context initialized")

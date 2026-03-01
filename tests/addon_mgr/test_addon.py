@@ -22,16 +22,16 @@ class TestAddonMetadata:
     def test_from_registry_entry_valid(self):
         """Test creating metadata from registry dictionary."""
         data = {
-            "name": "My Plugin",
-            "description": "A test plugin",
+            "name": "My Addon",
+            "description": "A test addon",
             "depends": ["rayforge>=0.27.0,~0.27"],
             "author": {"name": "Test User", "email": "test@example.com"},
             "repository": "https://github.com/example/repo",
             "version": "1.0.0",
         }
-        meta = AddonMetadata.from_registry_entry("my_plugin", data)
-        assert meta.name == "my_plugin"
-        assert meta.display_name == "My Plugin"
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.name == "my_addon"
+        assert meta.display_name == "My Addon"
         assert meta.author.name == "Test User"
         assert meta.url == "https://github.com/example/repo"
         assert meta.depends == ["rayforge>=0.27.0,~0.27"]
@@ -39,12 +39,12 @@ class TestAddonMetadata:
     def test_from_registry_entry_with_string_depends(self):
         """Test handling string depends field."""
         data = {
-            "name": "My Plugin",
+            "name": "My Addon",
             "depends": "rayforge>=0.27.0",
             "author": "Test User <test@example.com>",
             "version": "1.0.0",
         }
-        meta = AddonMetadata.from_registry_entry("my_plugin", data)
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
         assert meta.depends == ["rayforge>=0.27.0"]
         assert meta.author.name == "Test User"
         assert meta.author.email == "test@example.com"
@@ -52,19 +52,19 @@ class TestAddonMetadata:
     def test_from_registry_entry_with_string_author(self):
         """Test handling string author field without email."""
         data = {
-            "name": "My Plugin",
+            "name": "My Addon",
             "depends": [],
             "author": "Test User",
             "version": "1.0.0",
         }
-        meta = AddonMetadata.from_registry_entry("my_plugin", data)
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
         assert meta.author.name == "Test User"
         assert meta.author.email == ""
 
     def test_from_registry_entry_missing_optional_fields(self):
         """Test handling missing optional fields."""
         data = {"depends": []}
-        meta = AddonMetadata.from_registry_entry("my_plugin", data)
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
         assert meta.description == ""
         assert meta.author.name == ""
         assert meta.author.email == ""
