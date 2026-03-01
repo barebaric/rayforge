@@ -63,7 +63,8 @@ class TestStepWidgetRegistry:
 class TestAddonWidgets:
     """Tests that require the full context (addon loading)."""
 
-    @pytest.mark.usefixtures("context_initializer")
+    @pytest.mark.ui
+    @pytest.mark.usefixtures("ui_context_initializer")
     def test_global_registry_has_producer_widgets(self):
         import importlib
 
@@ -77,15 +78,15 @@ class TestAddonWidgets:
         )
         assert (
             step_widget_registry.get("Rasterizer")
-            == widgets.EngraverSettingsWidget
+            == widgets.RasterSettingsWidget
         )
         assert (
             step_widget_registry.get("DepthEngraver")
-            == widgets.EngraverSettingsWidget
+            == widgets.RasterSettingsWidget
         )
         assert (
             step_widget_registry.get("DitherRasterizer")
-            == widgets.EngraverSettingsWidget
+            == widgets.RasterSettingsWidget
         )
         assert (
             step_widget_registry.get("FrameProducer")

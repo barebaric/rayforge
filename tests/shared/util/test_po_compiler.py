@@ -250,7 +250,7 @@ msgstr "你好世界"
 """
         po_file = tmp_path / "test.po"
         mo_file = tmp_path / "test.mo"
-        po_file.write_text(po_content)
+        po_file.write_text(po_content, encoding="utf-8")
 
         result = compile_po_to_mo(po_file, mo_file)
 
