@@ -27,6 +27,8 @@ Gehe zu unserer [GitHub-Issues-Seite](https://github.com/barebaric/rayforge/issu
 Die generierte `.zip`-Datei enthält technische Informationen, die uns helfen, das Problem schnell zu diagnostizieren. Sie umfasst:
 
 - **Maschinen- & Anwendungseinstellungen:** Deine gespeicherten Maschinenkonfigurationen und Anwendungseinstellungen, was uns hilft, dein Setup nachzustellen.
+- **Benutzerdefinierte Dialekte:** Alle benutzerdefinierten G-Code-Dialekte, die du erstellt oder geändert hast.
+- **Addon-Konfiguration:** Die Liste der aktivierten/deaktivierten Addons.
 - **Kommunikationsprotokolle:** Ein detailliertes Protokoll der Daten, die zwischen Rayforge und deinem Laser gesendet wurden.
 - **Systeminformationen:** Dein Betriebssystem und die Versionen von Rayforge und installierten Schlüsselbibliotheken.
 - **Anwendungszustand:** Andere interne Informationen, die helfen können, die Quelle eines Fehlers einzugrenzen.
