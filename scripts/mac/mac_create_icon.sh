@@ -19,7 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 
 # Paths
-SVG_PATH="$PROJECT_ROOT/website/static/assets/icon-app.svg"
+SVG_PATH="$PROJECT_ROOT/website/static/images/icon-app.svg"
 ICONSET_PATH="$PROJECT_ROOT/build/icon.iconset"
 OUTPUT_PATH="$PROJECT_ROOT/rayforge.icns"
 

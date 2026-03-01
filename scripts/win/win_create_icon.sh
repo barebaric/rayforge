@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-SOURCE_PATH="website/static/assets/favicon.png"
+SOURCE_PATH="website/static/images/favicon.png"
 ICO_PATH="rayforge.ico"
 
 if [ ! -f "$SOURCE_PATH" ]; then
