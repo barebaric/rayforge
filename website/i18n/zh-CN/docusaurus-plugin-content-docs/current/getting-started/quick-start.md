@@ -87,7 +87,8 @@ Rayforge 支持多种文件格式，包括 SVG、DXF、PDF 和光栅图像（JPE
 
 1. 将材料放在激光床上
 2. 根据机器说明聚焦激光
-3. 如果使用相机，使用[相机叠加](../machine/camera)对齐设计
+3. 使用[工件定位指南](../features/workpiece-positioning)中的方法之一
+   定位您的设计
 
 ### 开始任务
 
@@ -127,6 +128,8 @@ Rayforge 支持多种文件格式，包括 SVG、DXF、PDF 和光栅图像（JPE
 
 现在您已完成第一个任务，探索这些功能：
 
+- **[工件定位](../features/workpiece-positioning)**：掌握所有定位方法
+  （对焦模式、边框预览、WCS、相机）
 - **[多层操作](../features/multi-layer)**：为图层分配不同操作
 - **[固定标签](../features/holding-tabs)**：在切割期间保持切割件固定
 - **[相机集成](../machine/camera)**：使用相机进行精确对齐

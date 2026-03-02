@@ -203,6 +203,8 @@ Du musst dasselbe Teil 10-mal an verschiedenen Positionen schneiden:
 
 **Verwandte Seiten:**
 
+- [Werkstückpositionierung](../features/workpiece-positioning) - Umfassender
+  Positionierungsleitfaden
 - [Steuerungsfeld](../ui/control-panel) - Manuelle Steuerung und WCS-Verwaltung
 - [Maschineneinrichtung](../machine/general) - Deine Maschine konfigurieren
 - [3D-Vorschau](../ui/3d-preview) - Deine Jobs visualisieren

@@ -93,5 +93,7 @@ See [Camera Integration](../machine/camera) for details.
 
 ## Related Topics
 
+- [Workpiece Positioning](workpiece-positioning) - Comprehensive
+  positioning guide
 - [Camera Integration](../machine/camera)
 - [Quick Start Guide](../getting-started/quick-start)

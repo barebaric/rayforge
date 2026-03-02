@@ -87,7 +87,8 @@ A visualização 3D ajuda você a identificar problemas como:
 
 1. Coloque seu material na mesa do laser
 2. Focalize o laser de acordo com as instruções da sua máquina
-3. Se estiver usando a câmera, alinhe seu design usando a [sobreposição de câmera](../machine/camera)
+3. Posicione seu design usando um dos métodos no
+   [Guia de Posicionamento de Peça de Trabalho](../features/workpiece-positioning)
 
 ### Iniciando o Trabalho
 
@@ -124,12 +125,16 @@ Você completou seu primeiro trabalho no Rayforge! Agora você pode explorar rec
 
 
 ## Próximos Passos
-
 Agora que você completou seu primeiro trabalho, explore estes recursos:
 
-- **[Operações Multi-Camadas](../features/multi-layer)**: Atribua operações diferentes às camadas
-- **[Abas de Fixação](../features/holding-tabs)**: Mantenha peças cortadas no lugar durante o corte
-- **[Integração com Câmera](../machine/camera)**: Use uma câmera para alinhamento preciso
+- **[Posicionamento de Peça de Trabalho](../features/workpiece-positioning)**:
+  Domine todos os métodos de posicionamento (modo foco, enquadramento, WCS, câmera)
+- **[Operações Multi-Camadas](../features/multi-layer)**: Atribua operações
+  diferentes às camadas
+- **[Abas de Fixação](../features/holding-tabs)**: Mantenha peças cortadas
+  no lugar durante o corte
+- **[Integração com Câmera](../machine/camera)**: Use uma câmera para
+  alinhamento preciso
 - **[Hooks & Macros](../machine/hooks-macros)**: Automatize tarefas repetitivas
 
 ## Dicas para o Sucesso

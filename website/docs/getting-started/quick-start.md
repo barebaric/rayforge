@@ -87,7 +87,8 @@ The 3D preview helps you spot issues like:
 
 1. Place your material on the laser bed
 2. Focus the laser according to your machine's instructions
-3. If using the camera, align your design using the [camera overlay](../machine/camera)
+3. Position your design using one of the methods in the
+   [Workpiece Positioning Guide](../features/workpiece-positioning)
 
 ### Starting the Job
 
@@ -127,9 +128,14 @@ You've completed your first Rayforge job! Now you can explore more advanced feat
 
 Now that you've completed your first job, explore these features:
 
-- **[Multi-Layer Operations](../features/multi-layer)**: Assign different operations to layers
-- **[Holding Tabs](../features/holding-tabs)**: Keep cut pieces in place during cutting
-- **[Camera Integration](../machine/camera)**: Use a camera for precise alignment
+- **[Workpiece Positioning](../features/workpiece-positioning)**: Master
+  all positioning methods (focus mode, framing, WCS, camera)
+- **[Multi-Layer Operations](../features/multi-layer)**: Assign different
+  operations to layers
+- **[Holding Tabs](../features/holding-tabs)**: Keep cut pieces in place
+  during cutting
+- **[Camera Integration](../machine/camera)**: Use a camera for precise
+  alignment
 - **[Hooks & Macros](../machine/hooks-macros)**: Automate repetitive tasks
 
 ## Tips for Success

@@ -93,5 +93,6 @@
 
 ## 相关主题
 
+- [工件定位](workpiece-positioning) - 综合定位指南
 - [相机集成](../machine/camera)
 - [快速入门指南](../getting-started/quick-start)

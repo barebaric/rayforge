@@ -87,7 +87,8 @@ L'aperçu 3D vous aide à repérer les problèmes comme :
 
 1. Placez votre matériau sur le lit laser
 2. Faites la mise au point du laser selon les instructions de votre machine
-3. Si vous utilisez la caméra, alignez votre design en utilisant la [superposition caméra](../machine/camera)
+3. Positionnez votre design en utilisant l'une des méthodes du
+   [Guide de Positionnement de la Pièce](../features/workpiece-positioning)
 
 ### Démarrer le Travail
 
@@ -127,9 +128,14 @@ Vous avez terminé votre premier travail Rayforge ! Vous pouvez maintenant explo
 
 Maintenant que vous avez terminé votre premier travail, explorez ces fonctionnalités :
 
-- **[Opérations Multi-Couches](../features/multi-layer)** : Assigner différentes opérations aux calques
-- **[Ponts de Maintien](../features/holding-tabs)** : Maintenir les pièces coupées en place pendant la coupe
-- **[Intégration Caméra](../machine/camera)** : Utiliser une caméra pour un alignement précis
+- **[Positionnement de Pièce](../features/workpiece-positioning)** :
+  Maîtrise toutes les méthodes de positionnement (mode focus, cadrage, WCS, caméra)
+- **[Opérations Multi-Couches](../features/multi-layer)** : Assigner différentes
+  opérations aux calques
+- **[Ponts de Maintien](../features/holding-tabs)** : Maintenir les pièces coupées
+  en place pendant la coupe
+- **[Intégration Caméra](../machine/camera)** : Utiliser une caméra pour
+  un alignement précis
 - **[Hooks & Macros](../machine/hooks-macros)** : Automatiser les tâches répétitives
 
 ## Conseils pour Réussir

@@ -21,7 +21,7 @@ module.exports = {
   url: 'https://rayforge.org',
   baseUrl: '/',
   onBrokenLinks: 'warn',
-  favicon: 'assets/favicon.png',
+  favicon: 'images/favicon.png',
 
   organizationName: 'barebaric',
   projectName: 'rayforge',
@@ -108,7 +108,7 @@ module.exports = {
       title: 'Rayforge',
       logo: {
         alt: 'Rayforge Logo',
-        src: 'assets/icon.svg',
+        src: 'images/icon.svg',
       },
       items: [
         {

@@ -44,11 +44,28 @@ Cette valeur doit correspondre au paramètre $30 de votre firmware.
 
 #### Puissance de Cadrage
 
-Le niveau de puissance utilisé pour les opérations de cadrage (traçage du contour sans couper).
+Le niveau de puissance utilisé pour les opérations de cadrage (traçage du
+contour sans couper).
 
 - Définissez à 0 pour désactiver le cadrage
-- Valeurs typiques : 5-20 (juste visible, ne marquera pas le matériau)
 - Ajustez selon votre laser et matériau
+
+#### Puissance de Focus
+
+Le niveau de puissance utilisé lorsque le mode focus est activé. Le mode focus
+allume le laser à faible puissance pour agir comme un "pointeur laser" pour le
+positionnement.
+
+- Définissez à 0 pour désactiver la fonction de mode focus
+- Utilisez pour l'alignement visuel et le positionnement
+
+:::tip Utiliser le Mode Focus
+Cliquez sur le bouton focus (icône laser) dans la barre d'outils pour activer
+le mode focus. Le laser s'allumera à ce niveau de puissance, vous aidant à voir
+exactement où le laser est positionné. Consultez
+[Positionnement de la Pièce](../features/workpiece-positioning) pour plus
+d'informations.
+:::
 
 #### Taille du Spot
 
@@ -68,3 +85,5 @@ Pour mesurer la taille de votre spot :
 ## Voir Aussi
 
 - [Paramètres de l'Appareil](device) - Paramètres du mode laser GRBL
+- [Positionnement de la Pièce](../features/workpiece-positioning) -
+  Utilisation du mode focus et autres méthodes de positionnement

@@ -87,7 +87,8 @@ Die 3D-Vorschau hilft dir, Probleme zu erkennen wie:
 
 1. Platziere dein Material auf dem Laserbett
 2. Fokussiere den Laser entsprechend den Anweisungen deiner Maschine
-3. Wenn du die Kamera verwendest, richte dein Design mit der [Kamera-Überlagerung](../machine/camera) aus
+3. Positioniere dein Design mit einer der Methoden aus dem
+   [Werkstückpositionierungsleitfaden](../features/workpiece-positioning)
 
 ### Den Job starten
 
@@ -127,9 +128,14 @@ Du hast deinen ersten Rayforge-Job abgeschlossen! Jetzt kannst du erweiterte Fun
 
 Nachdem du deinen ersten Job abgeschlossen hast, erkunde diese Funktionen:
 
-- **[Mehrschicht-Operationen](../features/multi-layer)**: Unterschiedliche Operationen Ebenen zuweisen
-- **[Halte-Laschen](../features/holding-tabs)**: Geschnittene Teile während des Schneidens an Ort und Stelle halten
-- **[Kamera-Integration](../machine/camera)**: Eine Kamera zur präzisen Ausrichtung verwenden
+- **[Werkstückpositionierung](../features/workpiece-positioning)**: Meistere
+  alle Positionierungsmethoden (Fokusmodus, Einrahmen, WKS, Kamera)
+- **[Mehrschicht-Operationen](../features/multi-layer)**: Unterschiedliche
+  Operationen Ebenen zuweisen
+- **[Halte-Laschen](../features/holding-tabs)**: Geschnittene Teile während des Schneidens an Ort
+  und Stelle halten
+- **[Kamera-Integration](../machine/camera)**: Eine Kamera zur präzisen
+  Ausrichtung verwenden
 - **[Hooks & Makros](../machine/hooks-macros)**: Wiederkehrende Aufgaben automatisieren
 
 ## Tipps für den Erfolg

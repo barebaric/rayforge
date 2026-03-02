@@ -44,11 +44,28 @@ Dieser Wert sollte mit der $30-Einstellung deiner Firmware übereinstimmen.
 
 #### Rahmen-Leistung
 
-Der Leistungswert, der für Rahmen-Operationen verwendet wird (Umreißen ohne Schneiden).
+Der Leistungswert, der für Rahmen-Operationen verwendet wird (Umreißen ohne
+Schneiden).
 
 - Auf 0 setzen, um Rahmen zu deaktivieren
-- Typische Werte: 5-20 (gerade sichtbar, markiert das Material nicht)
 - Passe ihn basierend auf deinem Laser und Material an
+
+#### Fokus-Leistung
+
+Die Leistungsstufe, die verwendet wird, wenn der Fokusmodus aktiviert ist.
+Der Fokusmodus schaltet den Laser mit niedriger Leistung ein, um als
+"Laserzeiger" zur Positionierung zu dienen.
+
+- Auf 0 setzen, um die Fokusmodus-Funktion zu deaktivieren
+- Verwende für visuelle Ausrichtung und Positionierung
+
+:::tip Fokusmodus verwenden
+Klicke auf die Fokus-Taste (Laser-Symbol) in der Symbolleiste, um den
+Fokusmodus umzuschalten. Der Laser wird bei dieser Leistungsstufe
+eingeschaltet und hilft dir, genau zu sehen, wo der Laser positioniert ist.
+Siehe [Werkstückpositionierung](../features/workpiece-positioning) für weitere
+Informationen.
+:::
 
 #### Punktgröße
 
@@ -68,3 +85,5 @@ Um deine Punktgröße zu messen:
 ## Siehe auch
 
 - [Geräteeinstellungen](device) - GRBL Lasermodus-Einstellungen
+- [Werkstückpositionierung](../features/workpiece-positioning) - Verwendung
+  von Fokusmodus und anderen Positionierungsmethoden
