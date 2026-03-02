@@ -2,7 +2,7 @@
 Tests for rayforge.core.geo.polygon module.
 """
 
-from typing import cast
+from typing import cast, List
 
 from rayforge.core.geo.polygon import (
     Polygon,
@@ -10,8 +10,12 @@ from rayforge.core.geo.polygon import (
     polygon_area,
     polygon_bounds,
     polygon_centroid,
+    polygon_group_bounds,
     rotate_polygon,
+    rotate_polygons,
     translate_polygon,
+    translate_polygons,
+    translate_bounds,
     scale_polygon,
     convex_hull,
     clean_polygon,
@@ -21,6 +25,7 @@ from rayforge.core.geo.polygon import (
     polygon_difference,
     point_in_polygon,
     polygons_intersect,
+    normalize_polygons,
 )
 
 
@@ -76,6 +81,47 @@ class TestPolygonBounds:
         min_x, min_y, max_x, max_y = polygon_bounds(P((5, 10)))
         assert min_x == max_x == 5
         assert min_y == max_y == 10
+
+
+class TestGroupBounds:
+    def test_multiple_polygons(self):
+        poly1 = P((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = P((5, 5), (15, 5), (15, 15), (5, 15))
+        min_x, min_y, max_x, max_y = polygon_group_bounds([poly1, poly2])
+        assert min_x == 0
+        assert min_y == 0
+        assert max_x == 15
+        assert max_y == 15
+
+    def test_single_polygon(self):
+        polygon = P((1, 2), (5, 3), (3, 7), (0, 5))
+        min_x, min_y, max_x, max_y = polygon_group_bounds([polygon])
+        assert min_x == 0
+        assert min_y == 2
+        assert max_x == 5
+        assert max_y == 7
+
+    def test_empty_list(self):
+        assert polygon_group_bounds([]) == (0.0, 0.0, 0.0, 0.0)
+
+    def test_list_with_empty_polygons(self):
+        assert polygon_group_bounds(
+            [cast(Polygon, []), cast(Polygon, [])]
+        ) == (
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        )
+
+    def test_disjoint_polygons(self):
+        poly1 = P((0, 0), (1, 0), (1, 1), (0, 1))
+        poly2 = P((10, 10), (20, 10), (20, 20), (10, 20))
+        min_x, min_y, max_x, max_y = polygon_group_bounds([poly1, poly2])
+        assert min_x == 0
+        assert min_y == 0
+        assert max_x == 20
+        assert max_y == 20
 
 
 class TestPolygonCentroid:
@@ -144,6 +190,53 @@ class TestTranslatePolygon:
         polygon = P((1, 2), (3, 4))
         translated = translate_polygon(polygon, 0, 0)
         assert translated == polygon
+
+
+class TestRotatePolygons:
+    def test_multiple_polygons(self):
+        poly1 = P((1, 0), (2, 0), (2, 1))
+        poly2 = P((3, 0), (4, 0), (4, 1))
+        rotated = rotate_polygons([poly1, poly2], 90)
+        assert len(rotated) == 2
+        assert almost_equal(rotated[0][0][0], 0)
+        assert almost_equal(rotated[0][0][1], 1)
+        assert almost_equal(rotated[1][0][0], 0)
+        assert almost_equal(rotated[1][0][1], 3)
+
+    def test_empty_list(self):
+        rotated = rotate_polygons([], 90)
+        assert rotated == []
+
+    def test_preserves_count(self):
+        polygons = [P((1, 0), (2, 0)), P((3, 0), (4, 0)), P((5, 0), (6, 0))]
+        rotated = rotate_polygons(polygons, 45)
+        assert len(rotated) == 3
+
+
+class TestTranslatePolygons:
+    def test_multiple_polygons(self):
+        poly1 = P((0, 0), (10, 0), (5, 5))
+        poly2 = P((20, 20), (30, 20), (25, 25))
+        translated = translate_polygons([poly1, poly2], 5, 10)
+        assert len(translated) == 2
+        assert translated[0][0] == (5.0, 10.0)
+        assert translated[1][0] == (25.0, 30.0)
+
+    def test_negative(self):
+        poly1 = P((10, 20), (30, 40))
+        poly2 = P((50, 60), (70, 80))
+        translated = translate_polygons([poly1, poly2], -5, -10)
+        assert translated[0][0] == (5.0, 10.0)
+        assert translated[1][0] == (45.0, 50.0)
+
+    def test_zero(self):
+        polygons = [P((1, 2), (3, 4)), P((5, 6), (7, 8))]
+        translated = translate_polygons(polygons, 0, 0)
+        assert translated == polygons
+
+    def test_empty_list(self):
+        translated = translate_polygons([], 5, 10)
+        assert translated == []
 
 
 class TestScalePolygon:
@@ -276,6 +369,14 @@ class TestPointInPolygon:
     def test_empty_polygon(self):
         assert point_in_polygon((5, 5), cast(Polygon, [])) is False
 
+    def test_too_few_points(self):
+        polygon = P((0, 0), (10, 0))
+        assert point_in_polygon((5, 5), polygon) is False
+
+    def test_custom_scale(self):
+        polygon = P((0, 0), (100, 0), (100, 100), (0, 100))
+        assert point_in_polygon((50, 50), polygon, scale=10000000) is True
+
 
 class TestPolygonsIntersect:
     def test_overlapping(self):
@@ -300,6 +401,47 @@ class TestPolygonsIntersect:
             is False
         )
 
+    def test_min_area_below_threshold(self):
+        poly1 = P((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = P(
+            (9.999, 9.999), (10.001, 9.999), (10.001, 10.001), (9.999, 10.001)
+        )
+        assert polygons_intersect(poly1, poly2, min_area=1e10) is False
+
+    def test_min_area_above_threshold(self):
+        poly1 = P((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = P((5, 5), (15, 5), (15, 15), (5, 15))
+        assert polygons_intersect(poly1, poly2, min_area=100) is True
+
+    def test_min_area_zero(self):
+        poly1 = P((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = P((5, 5), (15, 5), (15, 15), (5, 15))
+        assert polygons_intersect(poly1, poly2, min_area=0) is True
+
+    def test_min_area_negative(self):
+        poly1 = P((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = P((5, 5), (15, 5), (15, 15), (5, 15))
+        assert polygons_intersect(poly1, poly2, min_area=-10) is True
+
+    def test_min_area_touching_polygons(self):
+        poly1 = P((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = P((10, 0), (20, 0), (20, 10), (10, 10))
+        assert polygons_intersect(poly1, poly2, min_area=10) is False
+
+    def test_min_area_small_intersection_filtered(self):
+        poly1 = P((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = P((9.9, 9.9), (10.1, 9.9), (10.1, 10.1), (9.9, 10.1))
+        assert polygons_intersect(poly1, poly2, min_area=1e15) is False
+
+    def test_insufficient_vertices(self):
+        assert (
+            polygons_intersect(P((0, 0), (1, 0)), P((0, 0), (1, 0), (1, 1)))
+            is False
+        )
+        assert (
+            polygons_intersect(P((0, 0), (1, 0), (1, 1)), P((0, 0))) is False
+        )
+
 
 class TestAlmostEqual:
     def test_equal(self):
@@ -314,3 +456,74 @@ class TestAlmostEqual:
     def test_custom_tolerance(self):
         assert almost_equal(1.0, 1.01, tolerance=0.1) is True
         assert almost_equal(1.0, 1.01, tolerance=0.001) is False
+
+
+class TestTranslateBounds:
+    def test_positive_offset(self):
+        bounds = (0, 0, 10, 10)
+        result = translate_bounds(bounds, 5, 3)
+        assert result == (5, 3, 15, 13)
+
+    def test_negative_offset(self):
+        bounds = (10, 10, 20, 20)
+        result = translate_bounds(bounds, -5, -3)
+        assert result == (5, 7, 15, 17)
+
+    def test_zero_offset(self):
+        bounds = (1, 2, 3, 4)
+        result = translate_bounds(bounds, 0, 0)
+        assert result == bounds
+
+    def test_mixed_offset(self):
+        bounds = (0, 0, 10, 10)
+        result = translate_bounds(bounds, -2, 5)
+        assert result == (-2, 5, 8, 15)
+
+
+class TestNormalizePolygons:
+    def test_basic_normalization(self):
+        poly1 = P((10, 10), (20, 10), (15, 20))
+        poly2 = P((30, 30), (40, 30), (35, 40))
+        normalized, min_x, min_y = normalize_polygons([poly1, poly2])
+        assert min_x == 10
+        assert min_y == 10
+        assert normalized[0][0] == (0.0, 0.0)
+
+    def test_already_at_origin(self):
+        polygon = P((0, 0), (10, 0), (5, 10))
+        normalized, min_x, min_y = normalize_polygons([polygon])
+        assert min_x == 0
+        assert min_y == 0
+        assert normalized[0] == polygon
+
+    def test_empty_list(self):
+        normalized, min_x, min_y = normalize_polygons(cast(List[Polygon], []))
+        assert normalized == []
+        assert min_x == 0.0
+        assert min_y == 0.0
+
+    def test_list_with_empty_polygons(self):
+        normalized, min_x, min_y = normalize_polygons(
+            [cast(Polygon, []), cast(Polygon, [])]
+        )
+        assert normalized == [[], []]
+        assert min_x == 0.0
+        assert min_y == 0.0
+
+    def test_negative_coordinates(self):
+        polygon = P((-5, -5), (5, -5), (0, 5))
+        normalized, min_x, min_y = normalize_polygons([polygon])
+        assert min_x == -5
+        assert min_y == -5
+        assert normalized[0][0] == (0.0, 0.0)
+
+    def test_multiple_polygons_shared_origin(self):
+        poly1 = P((10, 20), (20, 20), (15, 30))
+        poly2 = P((5, 10), (15, 10), (10, 20))
+        normalized, min_x, min_y = normalize_polygons([poly1, poly2])
+        assert min_x == 5
+        assert min_y == 10
+        all_x = [p[0] for poly in normalized for p in poly]
+        all_y = [p[1] for poly in normalized for p in poly]
+        assert min(all_x) == 0.0
+        assert min(all_y) == 0.0

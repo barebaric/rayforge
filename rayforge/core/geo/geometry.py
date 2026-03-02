@@ -62,6 +62,8 @@ logger = logging.getLogger(__name__)
 
 T_Geometry = TypeVar("T_Geometry", bound="Geometry")
 
+Rect = Tuple[float, float, float, float]
+
 
 class Geometry:
     """
@@ -587,7 +589,7 @@ class Geometry:
 
         return self.close_gaps(tolerance=tolerance)
 
-    def rect(self) -> Tuple[float, float, float, float]:
+    def rect(self) -> Rect:
         """
         Returns a rectangle (x1, y1, x2, y2) that encloses the
         occupied area in the XY plane.

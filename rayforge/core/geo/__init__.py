@@ -33,7 +33,7 @@ from .constants import (
     GEO_ARRAY_COLS,
 )
 from .font_config import FontConfig
-from .geometry import Geometry
+from .geometry import Geometry, Rect
 
 __all__ = [
     "analysis",
@@ -48,6 +48,7 @@ __all__ = [
     "transform",
     "FontConfig",
     "Geometry",
+    "Rect",
     "CMD_TYPE_MOVE",
     "CMD_TYPE_LINE",
     "CMD_TYPE_ARC",
