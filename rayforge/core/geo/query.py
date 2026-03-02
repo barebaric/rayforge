@@ -1,5 +1,5 @@
 import math
-from typing import Tuple, Optional
+from typing import Tuple, Optional, TYPE_CHECKING
 import numpy as np
 from .constants import (
     CMD_TYPE_MOVE,
@@ -25,6 +25,10 @@ from .primitives import (
     find_closest_point_on_bezier,
     get_arc_bounding_box,
 )
+
+
+if TYPE_CHECKING:
+    from .geometry import Rect
 
 
 def _compute_cubic_bezier_bounds_1d(
@@ -331,3 +335,22 @@ def find_closest_point_on_path_from_array(
         last_pos_3d = end_point_3d
 
     return closest_info
+
+
+def bboxes_intersect(bbox1: "Rect", bbox2: "Rect") -> bool:
+    """
+    Check if two axis-aligned bounding boxes intersect or touch.
+
+    Args:
+        bbox1: First bounding box as (min_x, min_y, max_x, max_y).
+        bbox2: Second bounding box as (min_x, min_y, max_x, max_y).
+
+    Returns:
+        True if the bounding boxes intersect or touch, False otherwise.
+    """
+    return not (
+        bbox1[2] < bbox2[0]
+        or bbox1[0] > bbox2[2]
+        or bbox1[3] < bbox2[1]
+        or bbox1[1] > bbox2[3]
+    )

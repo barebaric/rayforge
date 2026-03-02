@@ -6,11 +6,16 @@ on simple polygon representations (lists of (x, y) tuples).
 """
 
 import math
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, TYPE_CHECKING
 import pyclipper
+
+if TYPE_CHECKING:
+    from .geometry import Rect
 
 Point = Tuple[float, float]
 Polygon = List[Point]
+IntPoint = Tuple[int, int]
+IntPolygon = List[IntPoint]
 
 CLIPPER_SCALE = int(1e7)
 
@@ -41,9 +46,7 @@ def polygon_area(polygon: Polygon) -> float:
     return area / 2.0
 
 
-def polygon_bounds(
-    polygon: Polygon,
-) -> Tuple[float, float, float, float]:
+def polygon_bounds(polygon: Polygon) -> "Rect":
     """
     Get the bounding box of a polygon.
 
@@ -58,6 +61,92 @@ def polygon_bounds(
     xs = [p[0] for p in polygon]
     ys = [p[1] for p in polygon]
     return min(xs), min(ys), max(xs), max(ys)
+
+
+def int_polygon_bounds(polygon: IntPolygon) -> Tuple[int, int, int, int]:
+    """
+    Calculate bounds of an integer polygon.
+
+    Args:
+        polygon: List of integer (x, y) tuples.
+
+    Returns:
+        Tuple of (min_x, min_y, max_x, max_y).
+    """
+    if not polygon:
+        return 0, 0, 0, 0
+    min_x = min(p[0] for p in polygon)
+    max_x = max(p[0] for p in polygon)
+    min_y = min(p[1] for p in polygon)
+    max_y = max(p[1] for p in polygon)
+    return min_x, min_y, max_x, max_y
+
+
+def polygon_group_bounds(polygons: List[Polygon]) -> "Rect":
+    """
+    Get the bounding box of multiple polygons.
+
+    Args:
+        polygons: List of polygons.
+
+    Returns:
+        Tuple of (min_x, min_y, max_x, max_y).
+    """
+    if not polygons:
+        return 0.0, 0.0, 0.0, 0.0
+
+    all_points = [p for poly in polygons for p in poly]
+    if not all_points:
+        return 0.0, 0.0, 0.0, 0.0
+
+    min_x = min(p[0] for p in all_points)
+    min_y = min(p[1] for p in all_points)
+    max_x = max(p[0] for p in all_points)
+    max_y = max(p[1] for p in all_points)
+
+    return min_x, min_y, max_x, max_y
+
+
+def translate_bounds(bounds: "Rect", dx: float, dy: float) -> "Rect":
+    """
+    Translate a bounding box by a given offset.
+
+    Args:
+        bounds: Bounding box as (min_x, min_y, max_x, max_y).
+        dx: X offset.
+        dy: Y offset.
+
+    Returns:
+        Translated bounding box as (min_x, min_y, max_x, max_y).
+    """
+    return (bounds[0] + dx, bounds[1] + dy, bounds[2] + dx, bounds[3] + dy)
+
+
+def normalize_polygons(
+    polygons: List[Polygon],
+) -> Tuple[List[Polygon], float, float]:
+    """
+    Normalize polygons so their minimum corner is at the origin.
+
+    Args:
+        polygons: List of polygons to normalize.
+
+    Returns:
+        Tuple of (normalized polygons, original min_x, original min_y).
+        Returns (input, 0.0, 0.0) if polygons are empty or have no points.
+    """
+    if not polygons:
+        return polygons, 0.0, 0.0
+
+    all_points = [p for poly in polygons for p in poly]
+    if not all_points:
+        return polygons, 0.0, 0.0
+
+    min_x = min(p[0] for p in all_points)
+    min_y = min(p[1] for p in all_points)
+
+    normalized = translate_polygons(polygons, -min_x, -min_y)
+    return normalized, min_x, min_y
 
 
 def polygon_centroid(polygon: Polygon) -> Point:
@@ -132,6 +221,39 @@ def translate_polygon(polygon: Polygon, dx: float, dy: float) -> Polygon:
     return [(p[0] + dx, p[1] + dy) for p in polygon]
 
 
+def rotate_polygons(
+    polygons: List[Polygon], angle_degrees: float
+) -> List[Polygon]:
+    """
+    Rotate multiple polygons around the origin.
+
+    Args:
+        polygons: List of polygons to rotate.
+        angle_degrees: Rotation angle in degrees (positive = CCW).
+
+    Returns:
+        List of rotated polygons.
+    """
+    return [rotate_polygon(poly, angle_degrees) for poly in polygons]
+
+
+def translate_polygons(
+    polygons: List[Polygon], dx: float, dy: float
+) -> List[Polygon]:
+    """
+    Translate multiple polygons by a given offset.
+
+    Args:
+        polygons: List of polygons to translate.
+        dx: X offset.
+        dy: Y offset.
+
+    Returns:
+        List of translated polygons.
+    """
+    return [translate_polygon(poly, dx, dy) for poly in polygons]
+
+
 def scale_polygon(
     polygon: Polygon, sx: float, sy: Optional[float] = None
 ) -> Polygon:
@@ -184,16 +306,12 @@ def convex_hull(polygon: Polygon) -> Polygon:
     return lower[:-1] + upper[:-1]
 
 
-def to_clipper(
-    polygon: Polygon, scale: int = CLIPPER_SCALE
-) -> List[Tuple[int, int]]:
+def to_clipper(polygon: Polygon, scale: int = CLIPPER_SCALE) -> IntPolygon:
     """Convert polygon to clipper integer coordinates."""
     return [(int(p[0] * scale), int(p[1] * scale)) for p in polygon]
 
 
-def from_clipper(
-    polygon: List[Tuple[int, int]], scale: int = CLIPPER_SCALE
-) -> Polygon:
+def from_clipper(polygon: IntPolygon, scale: int = CLIPPER_SCALE) -> Polygon:
     """Convert clipper integer coordinates to polygon."""
     return [(p[0] / scale, p[1] / scale) for p in polygon]
 
@@ -351,13 +469,18 @@ def polygon_difference(poly1: Polygon, poly2: Polygon) -> List[Polygon]:
     return [from_clipper(path) for path in solution if len(path) >= 3]
 
 
-def point_in_polygon(point: Point, polygon: Polygon) -> bool:
+def point_in_polygon(
+    point: Point,
+    polygon: Polygon,
+    scale: int = CLIPPER_SCALE,
+) -> bool:
     """
     Check if a point is inside a polygon using pyclipper.
 
     Args:
         point: The (x, y) point to test.
         polygon: List of (x, y) tuples.
+        scale: Scale factor for clipper integer conversion.
 
     Returns:
         True if point is inside the polygon.
@@ -365,25 +488,50 @@ def point_in_polygon(point: Point, polygon: Polygon) -> bool:
     if not polygon or len(polygon) < 3:
         return False
 
-    clip_poly = to_clipper(polygon, 1000)
-    pt = (int(point[0] * 1000), int(point[1] * 1000))
+    clip_poly = to_clipper(polygon, scale)
+    pt = (int(point[0] * scale), int(point[1] * scale))
 
     return pyclipper.PointInPolygon(pt, clip_poly) != 0
 
 
-def polygons_intersect(poly1: Polygon, poly2: Polygon) -> bool:
+def polygons_intersect(
+    poly1: Polygon,
+    poly2: Polygon,
+    min_area: float = 0.0,
+) -> bool:
     """
     Check if two polygons intersect.
 
     Args:
         poly1: First polygon.
         poly2: Second polygon.
+        min_area: Minimum intersection area threshold (in clipper integer
+            coordinates). If > 0, only intersections with area > min_area
+            are considered valid. Default is 0 (any intersection).
 
     Returns:
-        True if polygons intersect.
+        True if polygons intersect (with area > min_area if specified).
     """
-    if not poly1 or not poly2:
+    if not poly1 or not poly2 or len(poly1) < 3 or len(poly2) < 3:
         return False
 
-    intersection = polygon_intersection(poly1, poly2)
-    return len(intersection) > 0
+    clipper = pyclipper.Pyclipper()
+    clipper.AddPath(to_clipper(poly1), pyclipper.PT_SUBJECT, True)
+    clipper.AddPath(to_clipper(poly2), pyclipper.PT_CLIP, True)
+
+    result = clipper.Execute(
+        pyclipper.CT_INTERSECTION,
+        pyclipper.PFT_NONZERO,
+        pyclipper.PFT_NONZERO,
+    )
+
+    if not result:
+        return False
+
+    if min_area <= 0:
+        return True
+
+    for path in result:
+        if abs(pyclipper.Area(path)) > min_area:
+            return True
+    return False

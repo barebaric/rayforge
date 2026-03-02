@@ -1,6 +1,7 @@
 import pytest
 import math
 from rayforge.core.geo import Geometry
+from rayforge.core.geo.query import bboxes_intersect
 
 
 @pytest.fixture
@@ -121,3 +122,50 @@ def test_find_closest_point_on_path_arc():
     assert idx == 1
     assert t == pytest.approx(0.5, abs=1e-2)
     assert point == pytest.approx((p_on_arc_x, p_on_arc_y), abs=1e-2)
+
+
+class TestBboxesIntersect:
+    def test_overlapping(self):
+        bbox1 = (0, 0, 10, 10)
+        bbox2 = (5, 5, 15, 15)
+        assert bboxes_intersect(bbox1, bbox2) is True
+
+    def test_non_overlapping(self):
+        bbox1 = (0, 0, 10, 10)
+        bbox2 = (20, 20, 30, 30)
+        assert bboxes_intersect(bbox1, bbox2) is False
+
+    def test_touching_edge(self):
+        bbox1 = (0, 0, 10, 10)
+        bbox2 = (10, 0, 20, 10)
+        assert bboxes_intersect(bbox1, bbox2) is True
+
+    def test_touching_corner(self):
+        bbox1 = (0, 0, 10, 10)
+        bbox2 = (10, 10, 20, 20)
+        assert bboxes_intersect(bbox1, bbox2) is True
+
+    def test_one_inside_other(self):
+        bbox1 = (0, 0, 20, 20)
+        bbox2 = (5, 5, 15, 15)
+        assert bboxes_intersect(bbox1, bbox2) is True
+        assert bboxes_intersect(bbox2, bbox1) is True
+
+    def test_identical(self):
+        bbox = (0, 0, 10, 10)
+        assert bboxes_intersect(bbox, bbox) is True
+
+    def test_negative_coordinates(self):
+        bbox1 = (-10, -10, 0, 0)
+        bbox2 = (-5, -5, 5, 5)
+        assert bboxes_intersect(bbox1, bbox2) is True
+
+    def test_separated_horizontally(self):
+        bbox1 = (0, 0, 10, 10)
+        bbox2 = (15, 0, 25, 10)
+        assert bboxes_intersect(bbox1, bbox2) is False
+
+    def test_separated_vertically(self):
+        bbox1 = (0, 0, 10, 10)
+        bbox2 = (0, 15, 10, 25)
+        assert bboxes_intersect(bbox1, bbox2) is False
