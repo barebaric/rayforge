@@ -37,6 +37,7 @@ class OctoprintAuthFlowVar(Var[str]):
             key="host",
             label=_("Hostname"),
             description=_("The IP address or hostname of the device"),
+            default="",
         )
         self.port_var = PortVar(
             key="port",
@@ -56,10 +57,12 @@ class OctoprintAuthFlowVar(Var[str]):
     @property
     def value(self) -> Optional[str]:
         """The value is a string in the format token@host:port"""
-        token = super().value
-        if token is None:
-            return ""
-        return f"{token}@{self.host_var.value}:{self.port_var.value}"
+        return f"{self._token}@{self.host_var.value}:{self.port_var.value}"
+
+    @property
+    def raw_value(self) -> Optional[str]:
+        """Returns just the token part of the value."""
+        return self._token
 
     @value.setter
     def value(self, new_value: Optional[str]):
@@ -68,7 +71,6 @@ class OctoprintAuthFlowVar(Var[str]):
             self._token = ""
             self.host_var.value = ""
             self.port_var.value = 80
-            super().value = None
             return
 
         try:
@@ -77,9 +79,6 @@ class OctoprintAuthFlowVar(Var[str]):
             self._token = token_part
             self.host_var.value = host_part
             self.port_var.value = int(port_part)
-            super().value = (
-                token_part  # Store only the token as the main value
-            )
         except ValueError:
             raise ValueError(
                 "Invalid value format. Expected 'token@host:port'."
@@ -97,7 +96,7 @@ class OctoprintAuthFlowVar(Var[str]):
             asyncio.set_event_loop(loop)
             try:
                 auth_workflow = AuthorizationWorkflow(
-                    base_url=f"http://{host}:{port}", usr_name=""
+                    base_url=f"http://{host}:{port}/", usr_name=""
                 )
                 loop.run_until_complete(auth_workflow.run_workflow())
             finally:

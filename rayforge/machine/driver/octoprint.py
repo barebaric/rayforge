@@ -27,7 +27,6 @@ from .driver import (
     Axis,
     Pos,
 )
-from .octoprint_api import AuthorizationWorkflow
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -54,9 +53,6 @@ class OctoprintDriver(Driver):
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
         self._cmd_lock = asyncio.Lock()
-        self.auth_workflow: Optional[AuthorizationWorkflow] = (
-            AuthorizationWorkflow(base_url="http://0.0.0.0:5000", usr_name="")
-        )
 
         self._offsets: Dict[str, Pos] = cast(
             Dict[str, Pos], machine.wcs_offsets.copy()

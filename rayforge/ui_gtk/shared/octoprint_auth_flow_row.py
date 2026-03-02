@@ -1,9 +1,11 @@
 from gi.repository import Gtk, Adw
 
 from gettext import gettext as _
+
 from rayforge.core.varset.hostnamevar import HostnameVar
 from rayforge.core.varset.octoprintauthflowvar import OctoprintAuthFlowVar
 from rayforge.core.varset.var import Var
+from blinker import Signal
 
 
 def escape_title(text: str) -> str:
@@ -14,19 +16,21 @@ def escape_title(text: str) -> str:
 class OctoprintAuthFlowRow(Adw.PreferencesGroup):
     def __init__(self, auth_flow_var: OctoprintAuthFlowVar):
         super().__init__(title=_("Authorization"))
+        print(auth_flow_var)
         self.auth_flow_var = auth_flow_var
         self._add_host_port_rows()
         self._add_button_row()
+        self.data_changed = Signal()
 
     def _add_host_port_rows(self):
-        host_row = self._create_hostname_row(
+        self.host_row = self._create_hostname_row(
             self.auth_flow_var.host_var, "value"
         )
-        port_row = self._create_integer_row(
+        self.port_row = self._create_integer_row(
             self.auth_flow_var.port_var, "value"
         )
-        self.add(host_row)
-        self.add(port_row)
+        self.add(self.host_row)
+        self.add(self.port_row)
 
     # From RowFactory
     def _create_hostname_row(self, var: HostnameVar, target_property: str):
@@ -37,10 +41,12 @@ class OctoprintAuthFlowRow(Adw.PreferencesGroup):
         initial_val = getattr(var, target_property)
         if initial_val is not None:
             row.set_text(str(initial_val))
-        row.connect(
-            "apply", lambda _: setattr(var, target_property, row.get_text())
-        )
+        row.connect("changed", lambda row: self._on_hostname_changed(var, row))
         return row
+
+    def _on_hostname_changed(self, var: HostnameVar, row: Adw.EntryRow):
+        var.value = row.get_text()
+        self.data_changed.send(self)
 
     def _create_integer_row(self, var: Var, target_property: str):
         # Use getattr to safely handle generic Vars that don't have min/max
@@ -62,9 +68,13 @@ class OctoprintAuthFlowRow(Adw.PreferencesGroup):
             row.set_subtitle(var.description)
         row.connect(
             "notify::value",
-            lambda _, __: setattr(var, target_property, int(adj.get_value())),
+            lambda r, _: self._on_port_changed(var, row),
         )
         return row
+
+    def _on_port_changed(self, var: Var, row: Adw.SpinRow):
+        var.value = int(row.get_value())
+        self.data_changed.send(self)
 
     def _add_button_row(self):
         row = Adw.ActionRow(title="Authenticate with Octoprint")
