@@ -93,5 +93,7 @@ Siehe [Kamera-Integration](../machine/camera) für Details.
 
 ## Verwandte Themen
 
+- [Werkstückpositionierung](workpiece-positioning) - Umfassender
+  Positionierungsleitfaden
 - [Kamera-Integration](../machine/camera)
 - [Schnellstart-Anleitung](../getting-started/quick-start)

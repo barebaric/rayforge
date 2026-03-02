@@ -87,7 +87,8 @@ La vista previa 3D te ayuda a detectar problemas como:
 
 1. Coloca tu material en la cama láser
 2. Enfoca el láser según las instrucciones de tu máquina
-3. Si usas la cámara, alinea tu diseño usando la [superposición de cámara](../machine/camera)
+3. Posiciona tu diseño usando uno de los métodos en la
+   [Guía de Posicionamiento de Piezas](../features/workpiece-positioning)
 
 ### Iniciando el Trabajo
 
@@ -126,10 +127,14 @@ Una vez que el trabajo se completa:
 ## Siguientes Pasos
 
 Ahora que has completado tu primer trabajo, explora estas funciones:
-
-- **[Operaciones Multi-Capa](../features/multi-layer)**: Asigna diferentes operaciones a las capas
-- **[Pestañas de Sujeción](../features/holding-tabs)**: Mantén las piezas cortadas en su lugar durante el corte
-- **[Integración de Cámara](../machine/camera)**: Usa una cámara para alineación precisa
+- **[Posicionamiento de Piezas de Trabajo](../features/workpiece-positioning)**:
+  Domina todos los métodos de posicionamiento (modo enfoque, enmarcado, WCS, cámara)
+- **[Operaciones Multi-Capa](../features/multi-layer)**: Asigna diferentes
+  operaciones a las capas
+- **[Pestañas de Sujeción](../features/holding-tabs)**: Mantén las piezas cortadas
+  en su lugar durante el corte
+- **[Integración de Cámara](../machine/camera)**: Usa una cámara para
+  alineación precisa
 - **[Hooks y Macros](../machine/hooks-macros)**: Automatiza tareas repetitivas
 
 ## Consejos para el Éxito

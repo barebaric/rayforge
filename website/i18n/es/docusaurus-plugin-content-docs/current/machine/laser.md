@@ -44,11 +44,28 @@ Este valor debería coincidir con el ajuste $30 de tu firmware.
 
 #### Potencia de Enmarcado
 
-El nivel de potencia usado para operaciones de enmarcado (delimitando sin cortar).
+El nivel de potencia usado para operaciones de enmarcado (delimitando sin
+cortar).
 
 - Establecer en 0 para deshabilitar el enmarcado
-- Valores típicos: 5-20 (apenas visible, no marcará el material)
 - Ajusta según tu láser y material
+
+#### Potencia de Enfoque
+
+El nivel de potencia usado cuando el modo enfoque está activado. El modo enfoque
+enciende el láser a baja potencia para actuar como "puntero láser" para
+posicionamiento.
+
+- Establecer en 0 para deshabilitar la función de modo enfoque
+- Usar para alineación visual y posicionamiento
+
+:::tip Usando el Modo Enfoque
+Haz clic en el botón de enfoque (icono de láser) en la barra de herramientas
+para alternar el modo enfoque. El láser se encenderá a este nivel de potencia,
+ayudándote a ver exactamente dónde está posicionado el láser. Consulta
+[Posicionamiento de Piezas de Trabajo](../features/workpiece-positioning)
+para más información.
+:::
 
 #### Tamaño del Punto
 
@@ -68,3 +85,5 @@ Para medir el tamaño de tu punto:
 ## Ver También
 
 - [Ajustes de Dispositivo](device) - Ajustes de modo láser de GRBL
+- [Posicionamiento de Piezas de Trabajo](../features/workpiece-positioning) -
+  Uso del modo enfoque y otros métodos de posicionamiento

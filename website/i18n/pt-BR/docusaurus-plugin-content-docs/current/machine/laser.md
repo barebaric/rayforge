@@ -44,11 +44,27 @@ Este valor deve corresponder à configuração $30 do seu firmware.
 
 #### Potência de Enquadramento
 
-O nível de potência usado para operações de enquadramento (delinear sem cortar).
+O nível de potência usado para operações de enquadramento (delinear sem
+cortar).
 
 - Defina como 0 para desabilitar enquadramento
-- Valores típicos: 5-20 (apenas visível, não marcará o material)
 - Ajuste com base no seu laser e material
+
+#### Potência de Foco
+
+O nível de potência usado quando o modo foco está ativado. O modo foco liga o
+laser em baixa potência para atuar como "ponteiro laser" para posicionamento.
+
+- Defina como 0 para desabilitar o recurso de modo foco
+- Use para alinhamento visual e posicionamento
+
+:::tip Usando o Modo Foco
+Clique no botão foco (ícone de laser) na barra de ferramentas para alternar o
+modo foco. O laser ligará neste nível de potência, ajudando você a ver
+exatamente onde o laser está posicionado. Consulte
+[Posicionamento de Peça de Trabalho](../features/workpiece-positioning) para
+mais informações.
+:::
 
 #### Tamanho do Ponto
 
@@ -68,3 +84,5 @@ Para medir o tamanho do seu ponto:
 ## Veja Também
 
 - [Configurações do Dispositivo](device) - Configurações de modo laser GRBL
+- [Posicionamento de Peça de Trabalho](../features/workpiece-positioning) -
+  Usando modo foco e outros métodos de posicionamento

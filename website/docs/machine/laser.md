@@ -47,8 +47,22 @@ This value should match your firmware's $30 setting.
 The power level used for framing operations (outlining without cutting).
 
 - Set to 0 to disable framing
-- Typical values: 5-20 (just visible, won't mark material)
 - Adjust based on your laser and material
+
+#### Focus Power
+
+The power level used when focus mode is enabled. Focus mode turns on the
+laser at low power to act as a "laser pointer" for positioning.
+
+- Set to 0 to disable the focus mode feature
+- Use for visual alignment and positioning
+
+:::tip Using Focus Mode
+Click the focus button (laser icon) in the toolbar to toggle focus mode.
+The laser will turn on at this power level, helping you see exactly where
+the laser is positioned. See [Workpiece Positioning](../features/workpiece-positioning)
+for more information.
+:::
 
 #### Spot Size
 
@@ -68,3 +82,5 @@ To measure your spot size:
 ## See Also
 
 - [Device Settings](device) - GRBL laser mode settings
+- [Workpiece Positioning](../features/workpiece-positioning) - Using
+  focus mode and other positioning methods

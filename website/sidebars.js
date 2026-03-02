@@ -66,6 +66,7 @@ module.exports = {
         'features/stock-handling',
         'features/simulation-mode',
         'features/framing-your-job',
+        'features/workpiece-positioning',
         'features/holding-tabs',
         'features/overscan',
         'features/kerf',
