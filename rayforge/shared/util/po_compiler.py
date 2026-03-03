@@ -18,7 +18,7 @@ def parse_po_file(po_path: Path) -> List[Tuple[str, str]]:
         po_path: Path to the .po file.
 
     Returns:
-        List of (msgid, msgstr) tuples, excluding the header entry.
+        List of (msgid, msgstr) tuples, including the header entry.
     """
     entries = []
     msgid_lines = []
@@ -35,8 +35,7 @@ def parse_po_file(po_path: Path) -> List[Tuple[str, str]]:
                 if msgid_lines and msgstr_lines:
                     msgid = _join_po_lines(msgid_lines)
                     msgstr = _join_po_lines(msgstr_lines)
-                    if msgid:
-                        entries.append((msgid, msgstr))
+                    entries.append((msgid, msgstr))
 
                 msgid_lines = [line[6:]]  # Remove "msgid "
                 msgstr_lines = []
@@ -59,8 +58,7 @@ def parse_po_file(po_path: Path) -> List[Tuple[str, str]]:
                 if in_msgstr and msgid_lines and msgstr_lines:
                     msgid = _join_po_lines(msgid_lines)
                     msgstr = _join_po_lines(msgstr_lines)
-                    if msgid:
-                        entries.append((msgid, msgstr))
+                    entries.append((msgid, msgstr))
                     msgid_lines = []
                     msgstr_lines = []
                     in_msgid = False
@@ -70,8 +68,7 @@ def parse_po_file(po_path: Path) -> List[Tuple[str, str]]:
     if msgid_lines and msgstr_lines:
         msgid = _join_po_lines(msgid_lines)
         msgstr = _join_po_lines(msgstr_lines)
-        if msgid:
-            entries.append((msgid, msgstr))
+        entries.append((msgid, msgstr))
 
     return entries
 
@@ -173,6 +170,24 @@ def write_mo_file(mo_path: Path, entries: List[Tuple[str, str]]) -> None:
 
         # Translated strings data
         f.write(trans_data)
+
+
+def needs_compilation(po_path: Path, mo_path: Path) -> bool:
+    """
+    Check if a .mo file needs to be compiled from its .po file.
+
+    Args:
+        po_path: Path to the source .po file.
+        mo_path: Path to the existing .mo file.
+
+    Returns:
+        True if compilation is needed (mo file missing or outdated).
+    """
+    if not mo_path.exists():
+        return True
+    if not po_path.exists():
+        return False
+    return po_path.stat().st_mtime > mo_path.stat().st_mtime
 
 
 def compile_po_to_mo(po_path: Path, mo_path: Path) -> bool:

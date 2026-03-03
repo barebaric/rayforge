@@ -27,7 +27,7 @@ from blinker import Signal
 from .. import __version__
 from ..config import ADDON_REGISTRY_URL
 from ..core.addon_config import AddonConfig, AddonState as ConfigAddonState
-from ..shared.util.po_compiler import compile_po_to_mo
+from ..shared.util.po_compiler import compile_po_to_mo, needs_compilation
 from ..shared.util.versioning import (
     check_rayforge_compatibility,
     get_git_tag_version,
@@ -540,16 +540,21 @@ class AddonManager:
             return None
         return module_path
 
-    def compile_translations(self, addon_path: Path) -> int:
+    def compile_translations(
+        self, addon_path: Path, force: bool = False
+    ) -> int:
         """
         Compile .po files to .mo files in an addon's locales directory.
 
-        This is called automatically when an addon is installed. It finds
-        all .po files under <addon>/locales/ and compiles them to .mo
-        files in the corresponding LC_MESSAGES directories.
+        This is called automatically when an addon is installed or loaded.
+        It finds all .po files under <addon>/locales/ and compiles them to .mo
+        files in the corresponding LC_MESSAGES directories. By default, it only
+        compiles if the .mo file is missing or outdated.
 
         Args:
             addon_path: Path to the installed addon directory.
+            force: If True, always compile even if .mo exists and is
+                up to date.
 
         Returns:
             The number of .mo files compiled.
@@ -561,9 +566,10 @@ class AddonManager:
         compiled_count = 0
         for po_file in locales_dir.rglob("*.po"):
             mo_file = po_file.with_suffix(".mo")
-            if compile_po_to_mo(po_file, mo_file):
-                compiled_count += 1
-                logger.debug(f"Compiled {po_file} -> {mo_file}")
+            if force or needs_compilation(po_file, mo_file):
+                if compile_po_to_mo(po_file, mo_file):
+                    compiled_count += 1
+                    logger.debug(f"Compiled {po_file} -> {mo_file}")
 
         if compiled_count > 0:
             logger.info(f"Compiled {compiled_count} translation file(s)")
@@ -620,7 +626,7 @@ class AddonManager:
 
                 shutil.copytree(temp_path, final_path, dirs_exist_ok=True)
 
-                self.compile_translations(final_path)
+                self.compile_translations(final_path, force=True)
 
                 if self.addon_config:
                     self.addon_config.set_version(install_name, version)
