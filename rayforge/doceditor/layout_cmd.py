@@ -14,11 +14,12 @@ from .layout import (
     BboxAlignMiddleStrategy,
     BboxAlignBottomStrategy,
     LayoutStrategy,
-    SpreadHorizontallyStrategy,
-    SpreadVerticallyStrategy,
     PixelPerfectLayoutStrategy,
     PositionAtStrategy,
+    SpreadHorizontallyStrategy,
+    SpreadVerticallyStrategy,
 )
+from .layout.registry import layout_registry
 
 if TYPE_CHECKING:
     from ..shared.tasker.manager import TaskManager
@@ -257,3 +258,28 @@ class LayoutCmd:
                     items_to_layout.append(item)
 
         return items_to_layout
+
+    def layout_nesting(self, selected_items: List[DocItem]):
+        """Action handler for the nesting layout using parallel workers."""
+        items_to_layout = self._get_items_to_layout(selected_items)
+
+        if not items_to_layout:
+            return
+
+        get_usage_tracker().track_page_view(
+            "/doc/layout/nesting", "Nesting Layout"
+        )
+
+        strategy_class = layout_registry.get("nesting")
+        if strategy_class is None:
+            return
+
+        strategy = strategy_class(
+            items=items_to_layout,
+            spacing=0.0,
+            rotations=36,
+            population_size=10,
+        )
+        self._execute_layout_task(
+            strategy, _("Nesting Layout"), use_async=True
+        )

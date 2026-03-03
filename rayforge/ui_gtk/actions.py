@@ -230,10 +230,17 @@ class ActionManager:
         self.actions["tab-remove"].set_enabled(bool(can_remove_single_tab))
 
         # Update layout-pixel-perfect action state
-        current_layer = self.doc.active_layer
-        has_workpieces = (
-            current_layer and len(current_layer.get_descendants(WorkPiece)) > 0
-        )
+        # Enabled when there are selected workpieces, or when nothing is
+        # selected but the active layer has workpieces (layout all)
+        selected_wps = self.win.surface.get_selected_workpieces()
+        if selected_wps:
+            has_workpieces = True
+        else:
+            current_layer = self.doc.active_layer
+            has_workpieces = (
+                current_layer
+                and len(current_layer.get_descendants(WorkPiece)) > 0
+            )
         self.actions["layout-pixel-perfect"].set_enabled(has_workpieces)
 
         # Update split action state

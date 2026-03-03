@@ -1,8 +1,9 @@
 from gi.repository import Gio, Gtk, GLib
 from typing import List
 from gettext import gettext as _
-from ..machine.models.macro import Macro
 from ..core.menu_registry import menu_registry
+from ..doceditor.layout.registry import layout_registry
+from ..machine.models.macro import Macro
 
 
 class MainMenu(Gio.Menu):
@@ -169,7 +170,9 @@ class MainMenu(Gio.Menu):
         arrange_menu.append_submenu(_("Flip"), flip_submenu)
 
         layout_group = Gio.Menu()
-        layout_group.append(_("Auto Layout"), "win.layout-pixel-perfect")
+        for info in layout_registry.list_all():
+            if info.action_id and info.label:
+                layout_group.append(info.label, f"win.{info.action_id}")
         arrange_menu.append_section(None, layout_group)
         self.append_submenu(_("Arrange"), arrange_menu)
 

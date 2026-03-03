@@ -47,12 +47,12 @@ display_name: "My Custom Addon"
 # Description displayed in the UI
 description: "Adds support for the XYZ laser cutter."
 
-# API version (must match Rayforge's PLUGIN_API_VERSION)
-api_version: 1
+# API version (must be >= Rayforge's MINIMUM_API_VERSION)
+api_version: 2
 
-# Dependencies on Rayforge version
+# Optional: Dependencies on Rayforge version
 depends:
-  - rayforge>=0.27.0,<2.0.0
+  - rayforge>=0.27.0
 
 # Optional: Dependencies on other addons
 requires:
@@ -82,12 +82,12 @@ url: https://github.com/username/my-custom-addon
 - `name`: Unique identifier (should match directory name)
 - `display_name`: Human-readable name shown in UI
 - `description`: Brief description of addon functionality
-- `api_version`: Must be `1` (matches Rayforge's `PLUGIN_API_VERSION`)
-- `depends`: List of version constraints for Rayforge
+- `api_version`: Must be `>= 1` (Rayforge's `MINIMUM_API_VERSION`)
 - `author`: Object with `name` (required) and `email` (optional)
 
 ### Optional Fields
 
+- `depends`: List of version constraints for Rayforge
 - `requires`: List of other addon dependencies
 - `provides`: Entry points and assets
 - `url`: Project homepage or repository

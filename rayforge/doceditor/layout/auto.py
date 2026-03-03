@@ -14,6 +14,7 @@ from typing import (
     TYPE_CHECKING,
 )
 from dataclasses import dataclass
+from gettext import gettext as _
 import cairo
 import numpy as np
 from scipy.ndimage import binary_dilation
@@ -72,6 +73,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         margin_mm: float = 0.5,
         resolution_px_per_mm: float = 8.0,
         allow_rotation: bool = True,
+        **kwargs,
     ):
         """
         Initializes pixel-perfect layout strategy.
@@ -83,7 +85,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                 Higher values lead to more accurate but slower packing.
             allow_rotation: Whether to allow 90-degree rotations.
         """
-        super().__init__(items)
+        super().__init__(items, **kwargs)
         self.margin_mm = margin_mm
         self.resolution = resolution_px_per_mm
         self.allow_rotation = allow_rotation

@@ -1658,10 +1658,6 @@ class MainWindow(Adw.ApplicationWindow):
         has_any_tabs = any(wp.tabs for wp in doc.all_workpieces)
         show_tabs_action.set_enabled(has_any_tabs)
 
-        # Layout - Update sensitivity for the pixel-perfect layout action
-        has_workpieces = len(doc.active_layer.get_descendants(WorkPiece)) > 0
-        am.get_action("layout-pixel-perfect").set_enabled(has_workpieces)
-
     def on_machine_warning_clicked(self, sender):
         """Opens the machine settings dialog for the current machine."""
         config = get_context().config
