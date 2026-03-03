@@ -29,6 +29,7 @@ class StockAsset(IAsset):
         )
         self.thickness: Optional[float] = None
         self.material_uid: Optional[str] = None
+        self._hidden: bool = False
         self.updated = Signal()
         self.extra: Dict[str, Any] = {}
 
@@ -68,11 +69,12 @@ class StockAsset(IAsset):
         """Serializes the StockAsset to a dictionary."""
         result = {
             "uid": self.uid,
-            "type": self.asset_type_name,  # For polymorphic deserialization
+            "type": self.asset_type_name,
             "name": self.name,
             "geometry": self.geometry.to_dict(),
             "thickness": self.thickness,
             "material_uid": self.material_uid,
+            "hidden": self._hidden,
         }
         result.update(self.extra)
         return result
@@ -87,6 +89,7 @@ class StockAsset(IAsset):
             "geometry",
             "thickness",
             "material_uid",
+            "hidden",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -99,6 +102,7 @@ class StockAsset(IAsset):
         asset.uid = data["uid"]
         asset.thickness = data.get("thickness")
         asset.material_uid = data.get("material_uid")
+        asset._hidden = data.get("hidden", False)
         asset.extra = extra
         return asset
 
@@ -144,3 +148,19 @@ class StockAsset(IAsset):
         width = max_x - min_x
         height = max_y - min_y
         return width, height
+
+    @property
+    def hidden(self) -> bool:
+        """Indicates if this asset should be hidden from the UI."""
+        return self._hidden
+
+    @hidden.setter
+    def hidden(self, value: bool):
+        """Sets the hidden state and sends an update signal if changed."""
+        if self._hidden != value:
+            self._hidden = value
+            self.updated.send(self)
+
+    def set_hidden(self, value: bool):
+        """Setter method for use with undo commands."""
+        self.hidden = value

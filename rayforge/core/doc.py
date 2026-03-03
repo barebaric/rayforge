@@ -325,7 +325,6 @@ class Doc(DocItem):
                 self._active_layer_index = new_index
                 self.updated.send(self)
                 self.active_layer_changed.send(self)
-                self.update_stock_visibility()
         except ValueError:
             logger.warning("Attempted to set a non-existent layer as active.")
 
@@ -425,8 +424,11 @@ class Doc(DocItem):
             new_active_index = 0
 
         self._active_layer_index = new_active_index
-        current_stock_items = self.stock_items
-        new_children_list = new_layers_list + current_stock_items
+        # Preserve non-layer children (like StockItems)
+        non_layer_children = [
+            c for c in self.children if not isinstance(c, Layer)
+        ]
+        new_children_list = new_layers_list + non_layer_children
         self.set_children(new_children_list)
 
         # After the state is consistent, send the active_layer_changed signal
@@ -466,16 +468,3 @@ class Doc(DocItem):
                             if producer_registry.get(producer_type) is None:
                                 missing.add(producer_type)
         return missing
-
-    def update_stock_visibility(self):
-        """
-        Updates stock item visibility based on the active layer.
-        Only the stock item assigned to the active layer will be visible.
-        """
-        active_layer = self.active_layer
-        active_stock_uid = (
-            active_layer.stock_item_uid if active_layer else None
-        )
-
-        for stock_item in self.stock_items:
-            stock_item.set_visible(stock_item.uid == active_stock_uid)

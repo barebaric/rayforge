@@ -22,10 +22,18 @@ class SketchAssetRowWidget(Gtk.Box):
     A custom widget representing a single Sketch asset in a list.
     """
 
+    edit_clicked = Signal()
+    delete_clicked = Signal()
+    visibility_changed = Signal()
+
     def __init__(self, doc: Doc, asset: Sketch, editor: "DocEditor"):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.add_css_class("asset-row-view")
         self.add_css_class("sketch-asset-row")
+
+        self.edit_clicked = Signal()
+        self.delete_clicked = Signal()
+        self.visibility_changed = Signal()
 
         self.edit_clicked = Signal()
         self.delete_clicked = Signal()
@@ -86,6 +94,21 @@ class SketchAssetRowWidget(Gtk.Box):
         self.delete_button.connect("clicked", self.on_delete_clicked)
         suffix_box.append(self.delete_button)
 
+        # Visibility toggle button (last)
+        self._visibility_icon_on = get_icon("visibility-on-symbolic")
+        self._visibility_icon_off = get_icon("visibility-off-symbolic")
+        self.visibility_button = Gtk.ToggleButton()
+        self.visibility_button.set_tooltip_text(_("Toggle visibility"))
+        self.visibility_button.connect("clicked", self.on_visibility_clicked)
+        suffix_box.append(self.visibility_button)
+
+        self.asset.updated.connect(self.on_asset_changed)
+        self.update_ui()
+
+    def do_destroy(self):
+        self.asset.updated.disconnect(self.on_asset_changed)
+
+    def on_asset_changed(self, sender, **kwargs):
         self.update_ui()
 
     def get_drag_content(self) -> Gdk.ContentProvider:
@@ -119,6 +142,10 @@ class SketchAssetRowWidget(Gtk.Box):
         new_name = self.name_entry.get_text()
         self.editor.asset.rename_asset(self.asset, new_name)
 
+    def on_visibility_clicked(self, button: Gtk.ToggleButton):
+        """Handles visibility toggle button clicks."""
+        self.visibility_changed.send(self)
+
     def update_ui(self):
         """Synchronizes the widget's state with the sketch data."""
         if not self.name_entry.has_focus():
@@ -126,6 +153,14 @@ class SketchAssetRowWidget(Gtk.Box):
         self.name_entry.set_tooltip_text(
             f"{self.asset.name} ({self.asset.uid})"
         )
+
+        # Update visibility button icon
+        if self.asset.hidden:
+            self.visibility_button.set_child(self._visibility_icon_off)
+            self.visibility_button.set_active(False)
+        else:
+            self.visibility_button.set_child(self._visibility_icon_on)
+            self.visibility_button.set_active(True)
 
         param_count = len(self.asset.input_parameters)
         if param_count == 0:
@@ -146,16 +181,23 @@ class StockAssetRowWidget(Gtk.Box):
     """
 
     delete_clicked = Signal()
+    visibility_changed = Signal()
 
     def __init__(self, doc: Doc, asset: StockAsset, editor: "DocEditor"):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.add_css_class("asset-row-view")
         self.add_css_class("stock-asset-row")
 
+        self.delete_clicked = Signal()
+        self.visibility_changed = Signal()
+
         self.set_margin_start(6)
         self.doc = doc
         self.asset = asset  # This is the StockAsset
         self.editor = editor
+
+        self._visibility_icon_on = get_icon("visibility-on-symbolic")
+        self._visibility_icon_off = get_icon("visibility-off-symbolic")
 
         # Icon
         icon = get_icon(asset.display_icon_name)
@@ -205,6 +247,12 @@ class StockAssetRowWidget(Gtk.Box):
         self.delete_button.set_tooltip_text(_("Delete this stock asset"))
         self.delete_button.connect("clicked", self.on_delete_clicked)
         suffix_box.append(self.delete_button)
+
+        # Visibility toggle button (last)
+        self.visibility_button = Gtk.ToggleButton()
+        self.visibility_button.set_tooltip_text(_("Toggle visibility"))
+        self.visibility_button.connect("clicked", self.on_visibility_clicked)
+        suffix_box.append(self.visibility_button)
 
         # Listen to the asset for changes to its data
         self.asset.updated.connect(self.on_asset_changed)
@@ -275,9 +323,21 @@ class StockAssetRowWidget(Gtk.Box):
             )
             dialog.present()
 
+    def on_visibility_clicked(self, button: Gtk.ToggleButton):
+        """Handles visibility toggle button clicks."""
+        self.visibility_changed.send(self)
+
     def update_ui(self):
         if not self.name_entry.has_focus():
             self.name_entry.set_text(self.asset.name)
+
+        # Update visibility button icon
+        if self.asset.hidden:
+            self.visibility_button.set_child(self._visibility_icon_off)
+            self.visibility_button.set_active(False)
+        else:
+            self.visibility_button.set_child(self._visibility_icon_on)
+            self.visibility_button.set_active(True)
 
         if self.asset.thickness is not None:
             formatted = format_value(self.asset.thickness, "length")

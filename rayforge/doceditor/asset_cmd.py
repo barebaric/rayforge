@@ -2,8 +2,10 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 from gettext import gettext as _
+
 from ..core.asset import IAsset
 from ..core.undo import ListItemCommand, ChangePropertyCommand
+from ..core.stock_asset import StockAsset
 
 if TYPE_CHECKING:
     from .editor import DocEditor
@@ -96,3 +98,35 @@ class AssetCmd:
                     name=_("Remove asset definition"),
                 )
             )
+
+    def toggle_asset_visibility(self, asset: IAsset):
+        """
+        Toggles the visibility of an asset and all its dependent items
+        with an undoable command.
+        """
+        new_hidden = not asset.hidden
+
+        with self.doc.history_manager.transaction(
+            _("Toggle Asset Visibility")
+        ) as t:
+            # Toggle the asset itself
+            t.execute(
+                ChangePropertyCommand(
+                    target=asset,
+                    property_name="hidden",
+                    new_value=new_hidden,
+                    setter_method_name="set_hidden",
+                )
+            )
+            # For StockAsset, also update all StockItem instances
+            if isinstance(asset, StockAsset):
+                for item in self.doc.stock_items:
+                    if item.stock_asset_uid == asset.uid:
+                        t.execute(
+                            ChangePropertyCommand(
+                                target=item,
+                                property_name="visible",
+                                new_value=not new_hidden,
+                                setter_method_name="set_visible",
+                            )
+                        )

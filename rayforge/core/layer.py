@@ -13,9 +13,7 @@ from typing import (
     TypeVar,
     Iterable,
     Dict,
-    TYPE_CHECKING,
     Any,
-    cast,
 )
 from blinker import Signal
 
@@ -25,9 +23,6 @@ from .matrix import Matrix
 from .step import Step
 from .workflow import Workflow
 from .workpiece import WorkPiece
-
-if TYPE_CHECKING:
-    from .stock import StockItem
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +47,6 @@ class Layer(DocItem):
         """
         super().__init__(name=name)
         self.visible: bool = True
-        self.stock_item_uid: Optional[str] = None
 
         # Signals for notifying other parts of the application of changes.
         # This one is special and is bubbled manually.
@@ -73,7 +67,6 @@ class Layer(DocItem):
             "name": self.name,
             "matrix": self.matrix.to_list(),
             "visible": self.visible,
-            "stock_item_uid": self.stock_item_uid,
             "children": [child.to_dict() for child in self.children],
         }
         result.update(self.extra)
@@ -88,7 +81,6 @@ class Layer(DocItem):
             "name",
             "matrix",
             "visible",
-            "stock_item_uid",
             "children",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -97,7 +89,6 @@ class Layer(DocItem):
         layer.uid = data["uid"]
         layer.matrix = Matrix.from_list(data["matrix"])
         layer.visible = data.get("visible", True)
-        layer.stock_item_uid = data.get("stock_item_uid")
         layer.extra = extra
 
         children = []
@@ -261,32 +252,3 @@ class Layer(DocItem):
                 if step.visible:
                     items.append((step, workpiece))
         return items
-
-    @property
-    def stock_item(self) -> Optional["StockItem"]:
-        """
-        Gets the stock item assigned to this layer.
-
-        Returns None for "Whole Surface" which represents the entire machine
-        surface.
-        """
-        if not self.stock_item_uid or not self.doc:
-            return None
-
-        return cast(
-            "Optional[StockItem]",
-            self.doc.get_child_by_uid(self.stock_item_uid),
-        )
-
-    @stock_item.setter
-    def stock_item(self, stock_item: Optional["StockItem"]):
-        """Sets the stock item for this layer."""
-        if stock_item is None:
-            self.stock_item_uid = None
-        else:
-            self.stock_item_uid = stock_item.uid
-
-    def set_stock_item_uid(self, uid: Optional[str]):
-        """Setter method for use with undo commands."""
-        self.stock_item_uid = uid
-        self.updated.send(self)

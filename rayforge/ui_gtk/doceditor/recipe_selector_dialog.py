@@ -114,9 +114,8 @@ class RecipeSelectorDialog(Adw.MessageDialog):
         search_text = self.search_entry.get_text().lower()
         show_compatible_only = self.filter_switch.get_active()
 
-        # Get context for compatibility check
-        active_layer = self.editor.doc.active_layer
-        stock_item = active_layer.stock_item if active_layer else None
+        # Get context for compatibility check - use all stock items from doc
+        stock_items = self.editor.doc.stock_items
         machine = self.editor.context.machine
 
         # Clear existing rows
@@ -130,7 +129,9 @@ class RecipeSelectorDialog(Adw.MessageDialog):
 
             # Filter by compatibility
             if show_compatible_only and not recipe.matches(
-                stock_item, self.capabilities, machine
+                stock_items,
+                self.capabilities,
+                machine,
             ):
                 continue
 
