@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-01 14:03+0100\n"
+"POT-Creation-Date: 2026-03-03 22:50+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -17,75 +17,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ?0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ?1 :2);\n"
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Checking for package updates..."
-msgstr "Перевірка оновлень пакетів..."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "An update is available for {name}."
-msgstr "Доступне оновлення для {name}."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "Updates are available for {name1} and {name2}."
-msgstr "Доступні оновлення для {name1} та {name2}."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "Updates are available for {name1}, {name2}, and {num} others."
-msgstr "Доступні оновлення для {name1}, {name2} та ще {num}."
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Install All"
-msgstr "Встановити все"
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Package updates found."
-msgstr "Знайдено оновлення пакетів."
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Packages are up to date."
-msgstr "Пакети актуальні."
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Update check failed."
-msgstr "Помилка перевірки оновлень."
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Installing package updates..."
-msgstr "Встановлення оновлень пакетів..."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "Package successfully updated."
-msgid_plural "{num} packages successfully updated."
-msgstr[0] "Пакет успішно оновлено."
-msgstr[1] "{num} пакети успішно оновлено."
-msgstr[2] "{num} пакетів успішно оновлено."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "{num_s} packages updated, {num_f} failed."
-msgstr "{num_s} пакетів оновлено, {num_f} з помилкою."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "Failed to update package."
-msgid_plural "Failed to update {num} packages."
-msgstr[0] "Не вдалося оновити пакет."
-msgstr[1] "Не вдалося оновити {num} пакети."
-msgstr[2] "Не вдалося оновити {num} пакетів."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "Finished with {num_failed} errors."
-msgstr "Завершено з {num_failed} помилками."
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "All package updates installed!"
-msgstr "Всі оновлення пакетів встановлено!"
 
 #: rayforge/core/layer.py
 #, python-brace-format
@@ -1337,7 +1268,7 @@ msgid "Connected"
 msgstr "Підключено"
 
 #: rayforge/machine/transport/transport.py
-#: rayforge/ui_gtk/package_manager/package_list.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Error"
@@ -1402,8 +1333,8 @@ msgstr ""
 #: rayforge/ui_gtk/machine/maintenance_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/profile_selector.py
-#: rayforge/ui_gtk/package_manager/package_list.py
-#: rayforge/ui_gtk/package_manager/dialog.py
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
@@ -1427,17 +1358,17 @@ msgstr "Скасувати"
 msgid "Delete"
 msgstr "Видалити"
 
-#: rayforge/ui_gtk/settings/package_manager_page.py
-msgid "Packages"
-msgstr "Пакети"
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Addons"
+msgstr "Додатки"
 
-#: rayforge/ui_gtk/settings/package_manager_page.py
-msgid "Installed Packages"
-msgstr "Встановлені пакети"
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Installed Addons"
+msgstr "Встановлені додатки"
 
-#: rayforge/ui_gtk/settings/package_manager_page.py
-msgid "Install, update, and remove packages and plugins."
-msgstr "Встановлення, оновлення та видалення пакетів і плагінів."
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Install, update, and remove addons."
+msgstr "Встановлення, оновлення та видалення додатків."
 
 #: rayforge/ui_gtk/settings/recipe_manager_page.py
 msgid "Recipes"
@@ -2392,7 +2323,7 @@ msgid "This dialect is still used by the following machine(s): {machines}"
 msgstr "Цей діалект все ще використовується наступними верстатами: {machines}"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
-#: rayforge/ui_gtk/package_manager/package_list.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 #: rayforge/ui_gtk/sketcher/sketchcanvas.py
@@ -2953,6 +2884,180 @@ msgstr "Непідтримуваний тип: {t}"
 msgid "Apply Change"
 msgstr "Застосувати зміни"
 
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Addon Registry"
+msgstr "Реєстр додатків"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Fetching registry..."
+msgstr "Отримання реєстру..."
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Install from URL..."
+msgstr "Встановити з URL..."
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Connection Failed"
+msgstr "З'єднання не вдалося"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Could not reach the registry."
+msgstr "Не вдалося зв'язатися з реєстром."
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "No addons found in registry."
+msgstr "Додатків не знайдено в реєстрі."
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Install"
+msgstr "Встановити"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/doceditor/recipe_control_widget.py
+msgid "Update"
+msgstr "Оновити"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Installed"
+msgstr "Встановлено"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#, python-brace-format
+msgid "Version {v} already installed"
+msgstr "Версія {v} вже встановлена"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Incompatible"
+msgstr "Несумісний"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#, python-brace-format
+msgid "Requires {deps}, but current rayforge version is {current}"
+msgstr "Потрібно {deps}, але поточна версія rayforge — {current}"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Unavailable"
+msgstr "Недоступний"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Manual Install"
+msgstr "Ручне встановлення"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Enter the Git URL."
+msgstr "Введіть URL Git."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Failed to load this addon"
+msgstr "Не вдалося завантажити цей додаток"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "This addon will be unloaded when active jobs finish"
+msgstr "Цей додаток буде видалено з пам'яті після завершення активних завдань"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "This addon is incompatible with the current version of Rayforge"
+msgstr "Цей додаток несумісний з поточною версією Rayforge"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Enable or disable this addon"
+msgstr "Увімкнути або вимкнути цей додаток"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Uninstall Addon"
+msgstr "Видалити додаток"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Install New Addon..."
+msgstr "Встановити новий додаток..."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "No addons installed."
+msgstr "Не встановлено жодного додатка."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+#, python-brace-format
+msgid "Installing {name}..."
+msgstr "Встановлення {name}..."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Failed to install addon."
+msgstr "Не вдалося встановити додаток."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Failed to enable addon and its dependencies."
+msgstr "Не вдалося увімкнути додаток та його залежності."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Enable Dependencies?"
+msgstr "Увімкнути залежності?"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+#, python-brace-format
+msgid ""
+"This addon requires: {deps}\n"
+"\n"
+"Enable them as well?"
+msgstr ""
+"Цей додаток потребує: {deps}\n"
+"\n"
+"Увімкнути їх також?"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Enable All"
+msgstr "Увімкнути все"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Failed to enable addon. Check the logs for details."
+msgstr "Не вдалося увімкнути додаток. Перевірте журнали для отримання деталей."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Cannot Disable Addon"
+msgstr "Неможливо вимкнути додаток"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+#, python-brace-format
+msgid ""
+"This addon cannot be disabled.\n"
+"\n"
+"{reason}"
+msgstr ""
+"Цей додаток неможливо вимкнути.\n"
+"\n"
+"{reason}"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Addon will be disabled when active jobs complete."
+msgstr "Додаток буде вимкнено після завершення активних завдань."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Failed to disable addon. Check the logs for details."
+msgstr "Не вдалося вимкнути додаток. Перевірте журнали для отримання деталей."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+#, python-brace-format
+msgid "Uninstall {name}?"
+msgstr "Видалити {name}?"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid ""
+"The addon files will be removed. Restart recommended to fully clear memory."
+msgstr ""
+"Файли додатка будуть видалені. Рекомендується перезавантажити для повного "
+"очищення пам'яті."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Uninstall"
+msgstr "Видалити"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Error deleting addon."
+msgstr "Помилка при видаленні додатка."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Info"
+msgstr "Інформація"
+
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid "Help Improve Rayforge"
 msgstr "Допомогти покращити Rayforge"
@@ -3215,10 +3320,6 @@ msgstr "Віддзеркалити по вертикалі"
 msgid "Flip"
 msgstr "Віддзеркалити"
 
-#: rayforge/ui_gtk/main_menu.py rayforge/doceditor/layout_cmd.py
-msgid "Auto Layout"
-msgstr "Автоматичне компонування"
-
 #: rayforge/ui_gtk/main_menu.py
 msgid "Arrange"
 msgstr "Впорядкувати"
@@ -3337,174 +3438,6 @@ msgstr "Помилка збереження файлу: {msg}"
 msgid "An unexpected error occurred: {error}"
 msgstr "Сталася неочікувана помилка: {error}"
 
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Failed to load this package"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "This addon will be unloaded when active jobs finish"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "This package is incompatible with the current version of Rayforge"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Enable or disable this addon"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Uninstall Package"
-msgstr "Видалити пакет"
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Install New Package..."
-msgstr "Встановити новий пакет..."
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "No packages installed."
-msgstr "Пакети не встановлено."
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-#, python-brace-format
-msgid "Installing {name}..."
-msgstr "Встановлення {name}..."
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Failed to install package."
-msgstr "Не вдалося встановити пакет."
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Failed to enable addon and its dependencies."
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Enable Dependencies?"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-#, python-brace-format
-msgid ""
-"This addon requires: {deps}\n"
-"\n"
-"Enable them as well?"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Enable All"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Failed to enable addon. Check the logs for details."
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Cannot Disable Addon"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-#, python-brace-format
-msgid ""
-"This addon cannot be disabled.\n"
-"\n"
-"{reason}"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Addon will be disabled when active jobs complete."
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Failed to disable addon. Check the logs for details."
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-#, python-brace-format
-msgid "Uninstall {name}?"
-msgstr "Видалити {name}?"
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid ""
-"The package files will be removed. Restart recommended to fully clear memory."
-msgstr ""
-"Файли пакета буде видалено. Рекомендується перезапуск для повного очищення "
-"пам'яті."
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Uninstall"
-msgstr "Видалити"
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Error deleting package."
-msgstr "Помилка видалення пакета."
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Info"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Package Registry"
-msgstr "Реєстр пакетів"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Fetching registry..."
-msgstr "Отримання реєстру..."
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Install from URL..."
-msgstr "Встановити з URL..."
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Connection Failed"
-msgstr "З'єднання не вдалося"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Could not reach the registry."
-msgstr "Не вдалося зв'язатися з реєстром."
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "No packages found in registry."
-msgstr "Пакети в реєстрі не знайдено."
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Install"
-msgstr "Встановити"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-#: rayforge/ui_gtk/doceditor/recipe_control_widget.py
-msgid "Update"
-msgstr "Оновити"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Installed"
-msgstr "Встановлено"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-#, python-brace-format
-msgid "Version {v} already installed"
-msgstr "Версія {v} вже встановлена"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Incompatible"
-msgstr "Несумісний"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-#, python-brace-format
-msgid "Requires {deps}, but current rayforge version is {current}"
-msgstr "Потрібно {deps}, але поточна версія rayforge — {current}"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Unavailable"
-msgstr "Недоступний"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Manual Install"
-msgstr "Ручне встановлення"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Enter the Git URL."
-msgstr "Введіть URL Git."
-
 #: rayforge/ui_gtk/toolbar.py
 msgid "Open Project"
 msgstr "Відкрити проект"
@@ -3572,10 +3505,6 @@ msgstr "Вирівняти вгорі"
 #: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
 msgid "Align Bottom"
 msgstr "Вирівняти внизу"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Auto Layout (pack workpieces)"
-msgstr "Автоматичне компонування (упакувати робочі деталі)"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Arrange selection"
@@ -3646,10 +3575,6 @@ msgstr "Новий проект створено"
 msgid "Untitled"
 msgstr "Без назви"
 
-#: rayforge/ui_gtk/doceditor/layer_view.py rayforge/doceditor/layer_cmd.py
-msgid "Assign stock material"
-msgstr "Призначити матеріал"
-
 #: rayforge/ui_gtk/doceditor/layer_view.py
 msgid "Delete this layer"
 msgstr "Видалити цей шар"
@@ -3663,10 +3588,6 @@ msgstr "{count} робоча деталь"
 #, python-brace-format
 msgid "{count} workpieces"
 msgstr "{count} робочих деталей"
-
-#: rayforge/ui_gtk/doceditor/layer_view.py
-msgid "Whole Surface"
-msgstr "Вся поверхня"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Create New Layers"
@@ -3819,13 +3740,13 @@ msgstr "Перемкнути оптимізацію контуру"
 
 #: rayforge/ui_gtk/doceditor/step_settings/placeholder.py
 msgid "This feature is not available."
-msgstr ""
+msgstr "Ця функція недоступна."
 
 #: rayforge/ui_gtk/doceditor/step_settings/placeholder.py
 msgid ""
 "The required component '{}' could not be found. The document can still be "
 "saved."
-msgstr ""
+msgstr "Не вдалося знайти необхідний компонент '{}'. Документ можна зберегти."
 
 #: rayforge/ui_gtk/doceditor/step_settings/smooth.py
 msgid "Enable Smoothing"
@@ -3900,8 +3821,8 @@ msgstr "{count} матеріалів"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #, python-brace-format
-msgid "Library from package: ({source})"
-msgstr "Бібліотека з пакету: ({source})"
+msgid "Library from addon: ({source})"
+msgstr "Бібліотека з додатку: ({source})"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "Add New Library"
@@ -4282,6 +4203,10 @@ msgid "Delete this sketch"
 msgstr "Видалити цей ескіз"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
+msgid "Toggle visibility"
+msgstr "Перемкнути видимість"
+
+#: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "1 parameter"
 msgstr "1 параметр"
 
@@ -4309,23 +4234,23 @@ msgstr "Товщина не вказана"
 
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "Missing Features"
-msgstr ""
+msgstr "Відсутні функції"
 
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "This document uses a feature that is not available: {}"
-msgstr ""
+msgstr "Цей документ використовує функцію, яка недоступна: {}"
 
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "This document uses features that are not available: {}"
-msgstr ""
+msgstr "Цей документ використовує функції, які недоступні: {}"
 
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "The document can still be edited and saved."
-msgstr ""
+msgstr "Документ все ще можна редагувати та зберегти."
 
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "_OK"
-msgstr ""
+msgstr "_Гаразд"
 
 #: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "Select Material"
@@ -5076,6 +5001,75 @@ msgstr "G-код занадто великий для перегляду."
 msgid "({line_count} lines > 20,000 line limit)"
 msgstr "({line_count} рядків > ліміт 20,000 рядків)"
 
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Checking for addon updates..."
+msgstr "Перевірка оновлень додатків..."
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "An update is available for {name}."
+msgstr "Доступне оновлення для {name}."
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "Updates are available for {name1} and {name2}."
+msgstr "Доступні оновлення для {name1} та {name2}."
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "Updates are available for {name1}, {name2}, and {num} others."
+msgstr "Доступні оновлення для {name1}, {name2} та ще {num}."
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Install All"
+msgstr "Встановити все"
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Addon updates found."
+msgstr "Знайдено оновлення додатків."
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Addons are up to date."
+msgstr "Додатки оновлені."
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Update check failed."
+msgstr "Помилка перевірки оновлень."
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Installing addon updates..."
+msgstr "Встановлення оновлень додатків..."
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "Addon successfully updated."
+msgid_plural "{num} addons successfully updated."
+msgstr[0] "Додаток успішно оновлено."
+msgstr[1] "{num} додатків успішно оновлено."
+msgstr[2] "{num} додатків успішно оновлено."
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "{num_s} addons updated, {num_f} failed."
+msgstr "{num_s} додатків оновлено, {num_f} не вдалося."
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "Failed to update addon."
+msgid_plural "Failed to update {num} addons."
+msgstr[0] "Не вдалося оновити додаток."
+msgstr[1] "Не вдалося оновити {num} додатків."
+msgstr[2] "Не вдалося оновити {num} додатків."
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "Finished with {num_failed} errors."
+msgstr "Завершено з {num_failed} помилками."
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "All addon updates installed!"
+msgstr "Всі оновлення додатків встановлено!"
+
 #: rayforge/app.py
 msgid "A GCode generator for laser cutters."
 msgstr "Генератор G-коду для лазерних різаків."
@@ -5128,11 +5122,11 @@ msgstr ""
 
 #: rayforge/pipeline/producer/placeholder.py
 msgid "Missing Producer"
-msgstr ""
+msgstr "Відсутній виробник"
 
 #: rayforge/pipeline/producer/placeholder.py
 msgid "Missing: {}"
-msgstr ""
+msgstr "Відсутнє: {}"
 
 #: rayforge/pipeline/producer/base.py
 msgid "Centerline"
@@ -5402,6 +5396,10 @@ msgstr "Видалити залежний елемент"
 msgid "Remove asset definition"
 msgstr "Видалити визначення ресурсу"
 
+#: rayforge/doceditor/asset_cmd.py
+msgid "Toggle Asset Visibility"
+msgstr "Перемкнути видимість ресурсу"
+
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "Import {filename}"
@@ -5502,6 +5500,10 @@ msgstr "Помилка завантаження: {error}"
 #, python-brace-format
 msgid "Could not fit the following items: {item_names}"
 msgstr "Не вдалося розмістити наступні елементи: {item_names}"
+
+#: rayforge/doceditor/layout/registry.py
+msgid "Auto Layout (pack workpieces)"
+msgstr "Автоматичне компонування (упакувати робочі деталі)"
 
 #: rayforge/doceditor/stock_cmd.py
 #, python-brace-format
@@ -5628,6 +5630,14 @@ msgstr "Додати екземпляр ескізу"
 #: rayforge/doceditor/layout_cmd.py
 msgid "Position at Point"
 msgstr "Позиціювати в точці"
+
+#: rayforge/doceditor/layout_cmd.py
+msgid "Auto Layout"
+msgstr "Автоматичне компонування"
+
+#: rayforge/doceditor/layout_cmd.py
+msgid "Nesting Layout"
+msgstr "Компонування"
 
 #: rayforge/image/png/importer.py rayforge/image/jpg/importer.py
 msgid "Failed to process image data."

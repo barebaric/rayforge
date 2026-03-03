@@ -28,6 +28,7 @@ check_package() {
   if msgattrib --untranslated --no-obsolete "$po_file" 2>/dev/null | grep -q "^msgid"; then
     echo ""
     echo "=== $pkg_name ==="
+    echo "($po_file)"
     msgattrib --untranslated --no-obsolete "$po_file" | awk '
         /^msgid/ && entry_count >= 100 { exit }
         /^msgid/ { entry_count++ }
@@ -54,24 +55,30 @@ if [ "$LANG_CODE" = "list" ]; then
     fi
   done
 
-  # Check builtin packages
-  for pkg_dir in rayforge/builtin_packages/*/; do
-    pkg_name=$(basename "$pkg_dir")
-    locale_dir="$pkg_dir/locales"
-    if [ -d "$locale_dir" ]; then
-      for lang_dir in "$locale_dir"/*/; do
-        lang=$(basename "$lang_dir")
-        if [ -d "$lang_dir/LC_MESSAGES" ] && [ -f "$lang_dir/LC_MESSAGES/$pkg_name.po" ]; then
-          if [ "$lang" != "en" ]; then
-            PO_FILE="$lang_dir/LC_MESSAGES/$pkg_name.po"
-            if msgattrib --untranslated --no-obsolete "$PO_FILE" 2>/dev/null | grep -q "^msgid"; then
-              echo "$lang ($pkg_name)"
-              found=1
-            fi
+  # Check builtin addons
+  for addon_dir in rayforge/builtin_addons/*/; do
+    addon_name=$(basename "$addon_dir")
+    
+    if [ -d "$addon_dir/locales" ]; then
+      locale_dir="$addon_dir/locales"
+    elif [ -d "$addon_dir/locale" ]; then
+      locale_dir="$addon_dir/locale"
+    else
+      continue
+    fi
+    
+    for lang_dir in "$locale_dir"/*/; do
+      lang=$(basename "$lang_dir")
+      if [ -d "$lang_dir/LC_MESSAGES" ] && [ -f "$lang_dir/LC_MESSAGES/$addon_name.po" ]; then
+        if [ "$lang" != "en" ]; then
+          PO_FILE="$lang_dir/LC_MESSAGES/$addon_name.po"
+          if msgattrib --untranslated --no-obsolete "$PO_FILE" 2>/dev/null | grep -q "^msgid"; then
+            echo "$lang ($addon_name addon)"
+            found=1
           fi
         fi
-      done
-    fi
+      fi
+    done
   done
 
   if [ "$found" -eq 0 ]; then
@@ -112,6 +119,7 @@ fi
 
 # Print untranslated strings for main app (limited to 100 entries by default)
 echo "=== rayforge (main app) ==="
+echo "($PO_FILE)"
 msgattrib --untranslated --no-obsolete "$PO_FILE" | awk '
     /^msgid/ && entry_count >= 100 { exit }
     /^msgid/ { entry_count++ }
@@ -123,4 +131,19 @@ for pkg_dir in rayforge/builtin_packages/*/; do
   pkg_name=$(basename "$pkg_dir")
   locale_dir="$pkg_dir/locales"
   check_package "$pkg_name" "$locale_dir"
+done
+
+# Check builtin addons
+for addon_dir in rayforge/builtin_addons/*/; do
+  addon_name=$(basename "$addon_dir")
+  
+  if [ -d "$addon_dir/locales" ]; then
+    locale_dir="$addon_dir/locales"
+  elif [ -d "$addon_dir/locale" ]; then
+    locale_dir="$addon_dir/locale"
+  else
+    continue
+  fi
+  
+  check_package "$addon_name" "$locale_dir"
 done
