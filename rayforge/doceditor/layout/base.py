@@ -10,6 +10,7 @@ from ...core.group import Group
 
 if TYPE_CHECKING:
     from ...shared.tasker.context import ExecutionContext
+    from ...shared.tasker.manager import TaskManager
 
 
 class LayoutStrategy(ABC):
@@ -132,3 +133,21 @@ class LayoutStrategy(ABC):
             move it to the target position.
         """
         pass
+
+    async def calculate_deltas_async(
+        self,
+        context: Optional[ExecutionContext] = None,
+        task_manager: "Optional[TaskManager]" = None,
+    ) -> Dict[DocItem, Matrix]:
+        """
+        Asynchronous version of calculate_deltas.
+
+        Default implementation raises NotImplementedError. Subclasses can
+        override this to provide async implementations.
+
+        Returns:
+            A dictionary mapping each DocItem to a delta Matrix.
+        """
+        raise NotImplementedError(
+            "This layout strategy does not support async calculation"
+        )

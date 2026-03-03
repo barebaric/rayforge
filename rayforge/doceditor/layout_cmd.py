@@ -36,7 +36,10 @@ class LayoutCmd:
         self._task_manager = task_manager
 
     def _execute_layout_task(
-        self, strategy: LayoutStrategy, transaction_name: str
+        self,
+        strategy: LayoutStrategy,
+        transaction_name: str,
+        use_async: bool = False,
     ):
         """
         A synchronous helper that configures and launches a background layout
@@ -103,6 +106,10 @@ class LayoutCmd:
         # This simple coroutine just runs the calculation in the background
         # and returns the result.
         async def layout_coro(context):
+            if use_async:
+                return await strategy.calculate_deltas_async(
+                    context, self._task_manager
+                )
             return strategy.calculate_deltas(context)
 
         # Launch the coroutine and attach the main-thread callback.
@@ -206,7 +213,25 @@ class LayoutCmd:
 
     def layout_pixel_perfect(self, selected_items: List[DocItem]):
         """Action handler for the pixel-perfect packing layout."""
-        # Determine the actual items to be laid out based on selection context.
+        items_to_layout = self._get_items_to_layout(selected_items)
+
+        if not items_to_layout:
+            return
+
+        get_usage_tracker().track_page_view("/doc/layout/auto", "Auto Layout")
+
+        strategy = PixelPerfectLayoutStrategy(
+            items=items_to_layout,
+            margin_mm=0.5,
+            resolution_px_per_mm=8.0,
+            allow_rotation=True,
+        )
+        self._execute_layout_task(strategy, _("Auto Layout"))
+
+    def _get_items_to_layout(
+        self, selected_items: List[DocItem]
+    ) -> List[DocItem]:
+        """Determine items to layout based on selection context."""
         if not selected_items:
             # If nothing is selected, get all top-level content items from
             # the current active layer only.
@@ -231,15 +256,4 @@ class LayoutCmd:
                 if not has_selected_ancestor:
                     items_to_layout.append(item)
 
-        if not items_to_layout:
-            return
-
-        get_usage_tracker().track_page_view("/doc/layout/auto", "Auto Layout")
-
-        strategy = PixelPerfectLayoutStrategy(
-            items=items_to_layout,
-            margin_mm=0.5,
-            resolution_px_per_mm=8.0,
-            allow_rotation=True,
-        )
-        self._execute_layout_task(strategy, _("Auto Layout"))
+        return items_to_layout
