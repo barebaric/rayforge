@@ -18,6 +18,15 @@ if [[ "$1" == "--compile-only" ]]; then
   COMPILE_ONLY=true
 fi
 
+# Get list of supported languages from main app
+SUPPORTED_LANGUAGES=()
+for lang_dir in rayforge/locale/*/; do
+  lang=$(basename "$lang_dir")
+  if [ "$lang" != "rayforge.pot" ] && [ -d "$lang_dir/LC_MESSAGES" ]; then
+    SUPPORTED_LANGUAGES+=("$lang")
+  fi
+done
+
 # Function to process translations for a package
 process_package() {
   local pkg_name="$1"
@@ -35,21 +44,42 @@ process_package() {
     echo "  Extracting strings to $locale_dir/$pkg_name.pot..."
     find "$src_dir" -name "*.py" | xgettext --from-code=UTF-8 --add-location=file -o "$locale_dir/$pkg_name.pot" -f - 2>/dev/null || true
 
-    # 2. Update existing .po files with msgmerge
-    echo "  Merging .pot with .po files..."
-    for lang_dir in "$locale_dir"/*/; do
-      lang=$(basename "$lang_dir")
-      if [ -d "$lang_dir/LC_MESSAGES" ]; then
-        if [ -f "$lang_dir/LC_MESSAGES/$pkg_name.po" ]; then
-          echo "    Updating $lang_dir/LC_MESSAGES/$pkg_name.po"
-          msgmerge --update -N "$lang_dir/LC_MESSAGES/$pkg_name.po" "$locale_dir/$pkg_name.pot" 2>/dev/null || true
-          msgattrib --no-obsolete --output-file="$lang_dir/LC_MESSAGES/$pkg_name.po" "$lang_dir/LC_MESSAGES/$pkg_name.po" 2>/dev/null || true
-        fi
+    # 2. Create .po files for all supported languages
+    echo "  Ensuring .po files exist for all supported languages..."
+    for lang in "${SUPPORTED_LANGUAGES[@]}"; do
+      lang_dir="$locale_dir/$lang/LC_MESSAGES"
+      po_file="$lang_dir/$pkg_name.po"
+
+      if [ ! -d "$lang_dir" ]; then
+        echo "    Creating directory $lang_dir..."
+        mkdir -p "$lang_dir"
+      fi
+
+      if [ ! -f "$po_file" ]; then
+        echo "    Initializing $po_file..."
+        msginit --no-translator --input="$locale_dir/$pkg_name.pot" --locale="$lang" --output="$po_file" 2>/dev/null || true
+        # Set charset to UTF-8 instead of ASCII (msginit defaults to ASCII)
+        sed -i 's/charset=ASCII/charset=UTF-8/' "$po_file"
       fi
     done
+
+      # 3. Update existing .po files with msgmerge
+      echo " Merging .pot with .po files..."
+      for lang_dir in "$locale_dir"/*/; do
+        lang=$(basename "$lang_dir")
+        if [ -d "$lang_dir/LC_MESSAGES" ]; then
+          if [ -f "$lang_dir/LC_MESSAGES/$pkg_name.po" ]; then
+            echo "    Updating $lang_dir/LC_MESSAGES/$pkg_name.po"
+            msgmerge --update -N "$lang_dir/LC_MESSAGES/$pkg_name.po" "$locale_dir/$pkg_name.pot" 2>/dev/null || true
+            msgattrib --no-obsolete --output-file="$lang_dir/LC_MESSAGES/$pkg_name.po" "$lang_dir/LC_MESSAGES/$pkg_name.po" 2>/dev/null || true
+            # Ensure charset is UTF-8 instead of ASCII
+            sed -i 's/charset=ASCII/charset=UTF-8/' "$lang_dir/LC_MESSAGES/$pkg_name.po"
+          fi
+        fi
+      done
   fi
 
-  # 3. Compile .po files to .mo files
+  # 4. Compile .po files to .mo files
   echo "  Compiling .mo files..."
   for lang_dir in "$locale_dir"/*/; do
     lang=$(basename "$lang_dir")
@@ -68,7 +98,7 @@ if [ "$COMPILE_ONLY" = false ]; then
 
   # 1. Extract new strings to .pot file for main app
   echo "Extracting strings to rayforge/locale/rayforge.pot..."
-  find rayforge/ -name "*.py" -not -path "*/builtin_packages/*" | xgettext --from-code=UTF-8 --add-location=file -o rayforge/locale/rayforge.pot -f -
+  find rayforge/ -name "*.py" -not -path "*/builtin_addons/*" | xgettext --from-code=UTF-8 --add-location=file -o rayforge/locale/rayforge.pot -f -
 
   # 2. Update existing .po files with msgmerge for main app
   echo "Merging .pot with .po files..."
@@ -77,7 +107,9 @@ if [ "$COMPILE_ONLY" = false ]; then
     if [ -d "$lang_dir/LC_MESSAGES" ]; then
       echo "  Updating $lang_dir/LC_MESSAGES/rayforge.po"
       msgmerge --update -N "$lang_dir/LC_MESSAGES/rayforge.po" rayforge/locale/rayforge.pot
-      msgattrib --no-obsolete --output-file="$lang_dir/LC_MESSAGES/rayforge.po" "$lang_dir/LC_MESSAGES/rayforge.po"
+      msgattrib --no-obsolete --output-file="$lang_dir/LC_MESSAGES/rayforge.po" "$lang_dir/LC_MESSAGES/rayforge.po" 2>/dev/null || true
+      # Ensure charset is UTF-8 instead of ASCII
+      sed -i 's/charset=ASCII/charset=UTF-8/' "$lang_dir/LC_MESSAGES/rayforge.po"
     fi
   done
 else
@@ -94,20 +126,22 @@ for lang_dir in rayforge/locale/*/; do
   fi
 done
 
-# 4. Process builtin packages
+# 4. Process builtin addons
 echo ""
-echo "Processing builtin packages..."
-for pkg_dir in rayforge/builtin_packages/*/; do
-  pkg_name=$(basename "$pkg_dir")
-  src_dir="$pkg_dir"
-  locale_dir="$pkg_dir/locales"
+echo "Processing builtin addons..."
+for addon_dir in rayforge/builtin_addons/*/; do
+  addon_name=$(basename "$addon_dir")
 
-  # Skip if no locales directory exists
-  if [ ! -d "$locale_dir" ]; then
-    continue
+  # Try to find the source directory and locale directory
+  if [ -d "$addon_dir/$addon_name" ] && [ -d "$addon_dir/locales" ]; then
+    src_dir="$addon_dir/$addon_name"
+    locale_dir="$addon_dir/locales"
+    process_package "$addon_name" "$src_dir" "$locale_dir"
+  elif [ -d "$addon_dir/locale" ]; then
+    src_dir="$addon_dir/$addon_name"
+    locale_dir="$addon_dir/locale"
+    process_package "$addon_name" "$src_dir" "$locale_dir"
   fi
-
-  process_package "$pkg_name" "$src_dir" "$locale_dir"
 done
 
 # Adjust the final message based on the mode.

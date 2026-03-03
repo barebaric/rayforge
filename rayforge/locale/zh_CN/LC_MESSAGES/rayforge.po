@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-01 14:03+0100\n"
+"POT-Creation-Date: 2026-03-03 22:50+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -16,71 +16,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Checking for package updates..."
-msgstr "正在检查软件包更新..."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "An update is available for {name}."
-msgstr "{name} 有可用更新。"
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "Updates are available for {name1} and {name2}."
-msgstr "{name1} 和 {name2} 有可用更新。"
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "Updates are available for {name1}, {name2}, and {num} others."
-msgstr "{name1}、{name2} 和其他 {num} 个项目有可用更新。"
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Install All"
-msgstr "全部安装"
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Package updates found."
-msgstr "发现软件包更新。"
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Packages are up to date."
-msgstr "软件包已是最新版本。"
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Update check failed."
-msgstr "更新检查失败。"
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Installing package updates..."
-msgstr "正在安装软件包更新..."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "Package successfully updated."
-msgid_plural "{num} packages successfully updated."
-msgstr[0] "软件包更新成功。"
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "{num_s} packages updated, {num_f} failed."
-msgstr "{num_s} 个软件包已更新，{num_f} 个失败。"
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "Failed to update package."
-msgid_plural "Failed to update {num} packages."
-msgstr[0] "软件包更新失败。"
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "Finished with {num_failed} errors."
-msgstr "完成，但有 {num_failed} 个错误。"
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "All package updates installed!"
-msgstr "所有软件包更新已安装！"
 
 #: rayforge/core/layer.py
 #, python-brace-format
@@ -1256,7 +1191,7 @@ msgid "Connected"
 msgstr "已连接"
 
 #: rayforge/machine/transport/transport.py
-#: rayforge/ui_gtk/package_manager/package_list.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Error"
@@ -1319,8 +1254,8 @@ msgstr "此机器配置文件及其所有设置将被永久删除。此操作无
 #: rayforge/ui_gtk/machine/maintenance_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/profile_selector.py
-#: rayforge/ui_gtk/package_manager/package_list.py
-#: rayforge/ui_gtk/package_manager/dialog.py
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
@@ -1344,17 +1279,17 @@ msgstr "取消"
 msgid "Delete"
 msgstr "删除"
 
-#: rayforge/ui_gtk/settings/package_manager_page.py
-msgid "Packages"
-msgstr "软件包"
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Addons"
+msgstr "插件"
 
-#: rayforge/ui_gtk/settings/package_manager_page.py
-msgid "Installed Packages"
-msgstr "已安装的软件包"
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Installed Addons"
+msgstr "已安装插件"
 
-#: rayforge/ui_gtk/settings/package_manager_page.py
-msgid "Install, update, and remove packages and plugins."
-msgstr "安装、更新和移除软件包及插件。"
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Install, update, and remove addons."
+msgstr "安装、更新和移除插件。"
 
 #: rayforge/ui_gtk/settings/recipe_manager_page.py
 msgid "Recipes"
@@ -2277,7 +2212,7 @@ msgid "This dialect is still used by the following machine(s): {machines}"
 msgstr "此方言仍被以下机器使用：{machines}"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
-#: rayforge/ui_gtk/package_manager/package_list.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 #: rayforge/ui_gtk/sketcher/sketchcanvas.py
@@ -2825,6 +2760,178 @@ msgstr "不支持的类型：{t}"
 msgid "Apply Change"
 msgstr "应用更改"
 
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Addon Registry"
+msgstr "插件注册表"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Fetching registry..."
+msgstr "正在获取注册表..."
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Install from URL..."
+msgstr "从URL安装..."
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Connection Failed"
+msgstr "连接失败"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Could not reach the registry."
+msgstr "无法连接到注册表。"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "No addons found in registry."
+msgstr "注册表中未找到插件。"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Install"
+msgstr "安装"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/doceditor/recipe_control_widget.py
+msgid "Update"
+msgstr "更新"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Installed"
+msgstr "已安装"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#, python-brace-format
+msgid "Version {v} already installed"
+msgstr "版本 {v} 已安装"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Incompatible"
+msgstr "不兼容"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#, python-brace-format
+msgid "Requires {deps}, but current rayforge version is {current}"
+msgstr "需要 {deps}，但当前Rayforge版本是 {current}"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Unavailable"
+msgstr "不可用"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Manual Install"
+msgstr "手动安装"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Enter the Git URL."
+msgstr "输入Git URL。"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Failed to load this addon"
+msgstr "加载此插件失败"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "This addon will be unloaded when active jobs finish"
+msgstr "此插件将在活动作业完成后卸载"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "This addon is incompatible with the current version of Rayforge"
+msgstr "此插件与当前版本的Rayforge不兼容"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Enable or disable this addon"
+msgstr "启用或禁用此插件"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Uninstall Addon"
+msgstr "卸载插件"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Install New Addon..."
+msgstr "安装新插件..."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "No addons installed."
+msgstr "未安装插件。"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+#, python-brace-format
+msgid "Installing {name}..."
+msgstr "正在安装 {name}..."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Failed to install addon."
+msgstr "安装插件失败。"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Failed to enable addon and its dependencies."
+msgstr "启用插件及其依赖项失败。"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Enable Dependencies?"
+msgstr "启用依赖项？"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+#, python-brace-format
+msgid ""
+"This addon requires: {deps}\n"
+"\n"
+"Enable them as well?"
+msgstr ""
+"此插件需要：{deps}\n"
+"\n"
+"是否同时启用它们？"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Enable All"
+msgstr "全部启用"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Failed to enable addon. Check the logs for details."
+msgstr "启用插件失败。请查看日志以获取详细信息。"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Cannot Disable Addon"
+msgstr "无法禁用插件"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+#, python-brace-format
+msgid ""
+"This addon cannot be disabled.\n"
+"\n"
+"{reason}"
+msgstr ""
+"无法禁用此插件。\n"
+"\n"
+"{reason}"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Addon will be disabled when active jobs complete."
+msgstr "插件将在活动作业完成后禁用。"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Failed to disable addon. Check the logs for details."
+msgstr "禁用插件失败。请检查日志以获取详细信息。"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+#, python-brace-format
+msgid "Uninstall {name}?"
+msgstr "卸载 {name}？"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid ""
+"The addon files will be removed. Restart recommended to fully clear memory."
+msgstr "插件文件将被删除。建议重启以完全清除内存。"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Uninstall"
+msgstr "卸载"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Error deleting addon."
+msgstr "删除插件时出错。"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Info"
+msgstr "信息"
+
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid "Help Improve Rayforge"
 msgstr "帮助改进 Rayforge"
@@ -3086,10 +3193,6 @@ msgstr "垂直翻转"
 msgid "Flip"
 msgstr "翻转"
 
-#: rayforge/ui_gtk/main_menu.py rayforge/doceditor/layout_cmd.py
-msgid "Auto Layout"
-msgstr "自动布局"
-
 #: rayforge/ui_gtk/main_menu.py
 msgid "Arrange"
 msgstr "排列"
@@ -3206,172 +3309,6 @@ msgstr "保存文件错误：{msg}"
 msgid "An unexpected error occurred: {error}"
 msgstr "发生意外错误：{error}"
 
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Failed to load this package"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "This addon will be unloaded when active jobs finish"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "This package is incompatible with the current version of Rayforge"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Enable or disable this addon"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Uninstall Package"
-msgstr "卸载软件包"
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Install New Package..."
-msgstr "安装新软件包..."
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "No packages installed."
-msgstr "未安装软件包。"
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-#, python-brace-format
-msgid "Installing {name}..."
-msgstr "正在安装 {name}..."
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Failed to install package."
-msgstr "安装软件包失败。"
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Failed to enable addon and its dependencies."
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Enable Dependencies?"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-#, python-brace-format
-msgid ""
-"This addon requires: {deps}\n"
-"\n"
-"Enable them as well?"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Enable All"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Failed to enable addon. Check the logs for details."
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Cannot Disable Addon"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-#, python-brace-format
-msgid ""
-"This addon cannot be disabled.\n"
-"\n"
-"{reason}"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Addon will be disabled when active jobs complete."
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Failed to disable addon. Check the logs for details."
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-#, python-brace-format
-msgid "Uninstall {name}?"
-msgstr "卸载 {name}？"
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid ""
-"The package files will be removed. Restart recommended to fully clear memory."
-msgstr "软件包文件将被删除。建议重启以完全清除内存。"
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Uninstall"
-msgstr "卸载"
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Error deleting package."
-msgstr "删除软件包错误。"
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Info"
-msgstr ""
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Package Registry"
-msgstr "软件包注册表"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Fetching registry..."
-msgstr "正在获取注册表..."
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Install from URL..."
-msgstr "从URL安装..."
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Connection Failed"
-msgstr "连接失败"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Could not reach the registry."
-msgstr "无法连接到注册表。"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "No packages found in registry."
-msgstr "在注册表中未找到软件包。"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Install"
-msgstr "安装"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-#: rayforge/ui_gtk/doceditor/recipe_control_widget.py
-msgid "Update"
-msgstr "更新"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Installed"
-msgstr "已安装"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-#, python-brace-format
-msgid "Version {v} already installed"
-msgstr "版本 {v} 已安装"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Incompatible"
-msgstr "不兼容"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-#, python-brace-format
-msgid "Requires {deps}, but current rayforge version is {current}"
-msgstr "需要 {deps}，但当前Rayforge版本是 {current}"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Unavailable"
-msgstr "不可用"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Manual Install"
-msgstr "手动安装"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Enter the Git URL."
-msgstr "输入Git URL。"
-
 #: rayforge/ui_gtk/toolbar.py
 msgid "Open Project"
 msgstr "打开项目"
@@ -3441,10 +3378,6 @@ msgid "Align Bottom"
 msgstr "底对齐"
 
 #: rayforge/ui_gtk/toolbar.py
-msgid "Auto Layout (pack workpieces)"
-msgstr "自动布局 (排列工件)"
-
-#: rayforge/ui_gtk/toolbar.py
 msgid "Arrange selection"
 msgstr "排列选中项"
 
@@ -3512,10 +3445,6 @@ msgstr "新项目已创建"
 msgid "Untitled"
 msgstr "未命名"
 
-#: rayforge/ui_gtk/doceditor/layer_view.py rayforge/doceditor/layer_cmd.py
-msgid "Assign stock material"
-msgstr "分配毛坯材料"
-
 #: rayforge/ui_gtk/doceditor/layer_view.py
 msgid "Delete this layer"
 msgstr "删除此图层"
@@ -3529,10 +3458,6 @@ msgstr "{count} 个工件"
 #, python-brace-format
 msgid "{count} workpieces"
 msgstr "{count} 个工件"
-
-#: rayforge/ui_gtk/doceditor/layer_view.py
-msgid "Whole Surface"
-msgstr "整个表面"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Create New Layers"
@@ -3682,13 +3607,13 @@ msgstr "切换路径优化"
 
 #: rayforge/ui_gtk/doceditor/step_settings/placeholder.py
 msgid "This feature is not available."
-msgstr ""
+msgstr "此功能不可用。"
 
 #: rayforge/ui_gtk/doceditor/step_settings/placeholder.py
 msgid ""
 "The required component '{}' could not be found. The document can still be "
 "saved."
-msgstr ""
+msgstr "找不到所需的组件 '{}'。该文档仍可保存。"
 
 #: rayforge/ui_gtk/doceditor/step_settings/smooth.py
 msgid "Enable Smoothing"
@@ -3762,8 +3687,8 @@ msgstr "{count} 种材料"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #, python-brace-format
-msgid "Library from package: ({source})"
-msgstr "来自软件包的库：({source})"
+msgid "Library from addon: ({source})"
+msgstr "来自插件的库：({source})"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "Add New Library"
@@ -4138,6 +4063,10 @@ msgid "Delete this sketch"
 msgstr "删除此草图"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
+msgid "Toggle visibility"
+msgstr "切换可见性"
+
+#: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "1 parameter"
 msgstr "1 个参数"
 
@@ -4165,23 +4094,23 @@ msgstr "未指定厚度"
 
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "Missing Features"
-msgstr ""
+msgstr "缺失的功能"
 
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "This document uses a feature that is not available: {}"
-msgstr ""
+msgstr "此文档使用了不可用的功能：{}"
 
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "This document uses features that are not available: {}"
-msgstr ""
+msgstr "此文档使用了不可用的功能：{}"
 
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "The document can still be edited and saved."
-msgstr ""
+msgstr "该文档仍可编辑和保存。"
 
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "_OK"
-msgstr ""
+msgstr "_确定"
 
 #: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "Select Material"
@@ -4921,6 +4850,71 @@ msgstr "G代码太大，无法预览。"
 msgid "({line_count} lines > 20,000 line limit)"
 msgstr "({line_count} 行 > 20,000 行限制)"
 
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Checking for addon updates..."
+msgstr "正在检查插件更新..."
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "An update is available for {name}."
+msgstr "{name} 有可用更新。"
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "Updates are available for {name1} and {name2}."
+msgstr "{name1} 和 {name2} 有可用更新。"
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "Updates are available for {name1}, {name2}, and {num} others."
+msgstr "{name1}、{name2} 和其他 {num} 个项目有可用更新。"
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Install All"
+msgstr "全部安装"
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Addon updates found."
+msgstr "发现插件更新。"
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Addons are up to date."
+msgstr "插件已是最新。"
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Update check failed."
+msgstr "更新检查失败。"
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Installing addon updates..."
+msgstr "正在安装插件更新..."
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "Addon successfully updated."
+msgid_plural "{num} addons successfully updated."
+msgstr[0] "插件已成功更新。"
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "{num_s} addons updated, {num_f} failed."
+msgstr "{num_s} 个插件已更新，{num_f} 个失败。"
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "Failed to update addon."
+msgid_plural "Failed to update {num} addons."
+msgstr[0] "更新插件失败。"
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "Finished with {num_failed} errors."
+msgstr "完成，但有 {num_failed} 个错误。"
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "All addon updates installed!"
+msgstr "所有插件更新已安装！"
+
 #: rayforge/app.py
 msgid "A GCode generator for laser cutters."
 msgstr "激光切割机的G代码生成器。"
@@ -4964,11 +4958,11 @@ msgstr "自定义配置目录的路径。适用于使用独立配置进行测试
 
 #: rayforge/pipeline/producer/placeholder.py
 msgid "Missing Producer"
-msgstr ""
+msgstr "缺少生产者"
 
 #: rayforge/pipeline/producer/placeholder.py
 msgid "Missing: {}"
-msgstr ""
+msgstr "缺失：{}"
 
 #: rayforge/pipeline/producer/base.py
 msgid "Centerline"
@@ -5237,6 +5231,10 @@ msgstr "移除依赖项"
 msgid "Remove asset definition"
 msgstr "移除资产定义"
 
+#: rayforge/doceditor/asset_cmd.py
+msgid "Toggle Asset Visibility"
+msgstr "切换资源可见性"
+
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "Import {filename}"
@@ -5333,6 +5331,10 @@ msgstr "加载失败：{error}"
 #, python-brace-format
 msgid "Could not fit the following items: {item_names}"
 msgstr "无法容纳以下项目：{item_names}"
+
+#: rayforge/doceditor/layout/registry.py
+msgid "Auto Layout (pack workpieces)"
+msgstr "自动布局 (排列工件)"
 
 #: rayforge/doceditor/stock_cmd.py
 #, python-brace-format
@@ -5459,6 +5461,14 @@ msgstr "添加草图实例"
 #: rayforge/doceditor/layout_cmd.py
 msgid "Position at Point"
 msgstr "定位在点"
+
+#: rayforge/doceditor/layout_cmd.py
+msgid "Auto Layout"
+msgstr "自动布局"
+
+#: rayforge/doceditor/layout_cmd.py
+msgid "Nesting Layout"
+msgstr "排样布局"
 
 #: rayforge/image/png/importer.py rayforge/image/jpg/importer.py
 msgid "Failed to process image data."
