@@ -43,12 +43,12 @@ display_name: "Mi Addon Personalizado"
 # Descripción mostrada en la UI
 description: "Añade soporte para la cortadora láser XYZ."
 
-# Versión de API (debe coincidir con PLUGIN_API_VERSION de Rayforge)
-api_version: 1
+# Opcional: Versión de API (debe ser >= PLUGIN_API_VERSION de Rayforge)
+api_version: 2
 
 # Dependencias de versión de Rayforge
 depends:
-  - rayforge>=0.27.0,<2.0.0
+  - rayforge>=0.27.0
 
 # Opcional: Dependencias de otros addons
 requires:
@@ -78,12 +78,12 @@ url: https://github.com/username/my-custom-addon
 - `name`: Identificador único (debe coincidir con el nombre del directorio)
 - `display_name`: Nombre legible mostrado en la UI
 - `description`: Descripción breve de la funcionalidad del addon
-- `api_version`: Debe ser `1` (coincide con `PLUGIN_API_VERSION` de Rayforge)
-- `depends`: Lista de restricciones de versión para Rayforge
+- `api_version`: Debe ser `>= 1` (Rayforge's `MINIMUM_API_VERSION`)
 - `author`: Objeto con `name` (requerido) y `email` (opcional)
 
 ### Campos Opcionales
 
+- `depends`: Lista de restricciones de versión para Rayforge
 - `requires`: Lista de dependencias de otros addons
 - `provides`: Puntos de entrada y assets
 - `url`: Página del proyecto o repositorio

@@ -108,8 +108,8 @@ class AddonManager:
             registries (Optional[Dict[str, AddonRegistry]]): Dict mapping
                 hook parameter names to registry instances. Expected keys:
                 'step_registry', 'producer_registry', 'widget_registry',
-                'menu_registry'. Each registry must implement the
-                AddonRegistry protocol.
+                'menu_registry', 'layout_registry'. Each registry must
+                implement the AddonRegistry protocol.
         """
         self.addon_dirs = addon_dirs
         self.install_dir = install_dir
@@ -132,7 +132,8 @@ class AddonManager:
         Args:
             registries: Dict mapping hook parameter names to registry
                 instances. Expected keys: 'step_registry',
-                'producer_registry', 'widget_registry', 'menu_registry'.
+                'producer_registry', 'widget_registry', 'menu_registry',
+                'layout_registry'.
         """
         self.registries = registries
 
@@ -354,6 +355,7 @@ class AddonManager:
                         version = UnknownVersion
 
             addon = Addon.load_from_directory(addon_path, version=version)
+            addon.validate()
 
             has_backend = addon.metadata.provides.backend is not None
             has_frontend = addon.metadata.provides.frontend is not None
@@ -395,7 +397,7 @@ class AddonManager:
             version_str = (
                 "(builtin)"
                 if addon.metadata.version is UnknownVersion
-                else f"v{addon.metadata.version}"
+                else str(addon.metadata.version)
             )
             logger.info(f"Loaded addon: {addon.metadata.name} {version_str}")
 
@@ -821,6 +823,7 @@ class AddonManager:
         producer_registry = self.registries.get("producer_registry")
         widget_registry = self.registries.get("widget_registry")
         menu_registry = self.registries.get("menu_registry")
+        layout_registry = self.registries.get("layout_registry")
 
         if step_registry:
             self.plugin_mgr.hook.register_steps(step_registry=step_registry)
@@ -835,6 +838,10 @@ class AddonManager:
         if menu_registry:
             self.plugin_mgr.hook.register_menu_items(
                 menu_registry=menu_registry
+            )
+        if layout_registry:
+            self.plugin_mgr.hook.register_layout_strategies(
+                layout_registry=layout_registry
             )
 
     def complete_pending_unloads(self) -> List[str]:

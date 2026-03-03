@@ -46,12 +46,12 @@ display_name: "Мій власний аддон"
 # Опис, що відображається в UI
 description: "Додає підтримку лазерного різака XYZ."
 
-# Версія API (має відповідати PLUGIN_API_VERSION Rayforge)
-api_version: 1
+# Версія API (має бути >= MINIMUM_API_VERSION Rayforge)
+api_version: 2
 
 # Залежності версії Rayforge
 depends:
-  - rayforge>=0.27.0,<2.0.0
+  - rayforge>=0.27.0
 
 # Опціонально: Залежності від інших аддонів
 requires:
@@ -81,12 +81,12 @@ url: https://github.com/username/my-custom-addon
 - `name`: Унікальний ідентифікатор (має відповідати імені директорії)
 - `display_name`: Зрозуміла назва, що відображається в UI
 - `description`: Короткий опис функціональності аддону
-- `api_version`: Має бути `1` (відповідає `PLUGIN_API_VERSION` Rayforge)
-- `depends`: Список обмежень версії для Rayforge
+- `api_version`: Має бути `>= 1` (Rayforge's `MINIMUM_API_VERSION`)
 - `author`: Об'єкт з `name` (обов'язково) та `email` (опціонально)
 
 ### Опціональні поля
 
+- `depends`: Список обмежень версії для Rayforge
 - `requires`: Список залежностей від інших аддонів
 - `provides`: Точки входу та assets
 - `url`: Сторінка проекту або репозиторій

@@ -43,12 +43,12 @@ display_name: "Mein Benutzerdefiniertes Addon"
 # Im UI angezeigte Beschreibung
 description: "Fügt Unterstützung für den XYZ-Laserschneider hinzu."
 
-# API-Version (muss mit Rayforge's PLUGIN_API_VERSION übereinstimmen)
-api_version: 1
+# API-Version (muss >= Rayforge's MINIMUM_API_VERSION sein)
+api_version: 2
 
-# Abhängigkeiten von Rayforge-Version
+# Optional: Abhängigkeiten von Rayforge-Version
 depends:
-  - rayforge>=0.27.0,<2.0.0
+  - rayforge>=0.27.0
 
 # Optional: Abhängigkeiten von anderen Addons
 requires:
@@ -78,12 +78,12 @@ url: https://github.com/username/mein-benutzerdefiniertes-addon
 - `name`: Eindeutiger Bezeichner (sollte mit Verzeichnisname übereinstimmen)
 - `display_name`: Menschenlesbarer Name, der in der UI angezeigt wird
 - `description`: Kurze Beschreibung der Addon-Funktionalität
-- `api_version`: Muss `1` sein (entspricht Rayforge's `PLUGIN_API_VERSION`)
-- `depends`: Liste von Versionseinschränkungen für Rayforge
+- `api_version`: Muss `>= 1` sein (Rayforge's `MINIMUM_API_VERSION`)
 - `author`: Objekt mit `name` (erforderlich) und `email` (optional)
 
 ### Optionale Felder
 
+- `depends`: Liste von Versionseinschränkungen für Rayforge
 - `requires`: Liste von anderen Addon-Abhängigkeiten
 - `provides`: Einstiegspunkte und Assets
 - `url`: Projekt-Homepage oder Repository

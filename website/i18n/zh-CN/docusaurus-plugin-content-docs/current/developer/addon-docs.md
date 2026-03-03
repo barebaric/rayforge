@@ -43,12 +43,12 @@ display_name: "My Custom Addon"
 # UI 中显示的描述
 description: "Adds support for the XYZ laser cutter."
 
-# API 版本（必须与 Rayforge 的 PLUGIN_API_VERSION 匹配）
-api_version: 1
+# API 版本（必须 >= Rayforge 的 MINIMUM_API_VERSION）
+api_version: 2
 
 # Rayforge 版本依赖
 depends:
-  - rayforge>=0.27.0,<2.0.0
+  - rayforge>=0.27.0
 
 # 可选：其他扩展依赖
 requires:
@@ -78,12 +78,12 @@ url: https://github.com/username/my-custom-addon
 - `name`：唯一标识符（应与目录名称匹配）
 - `display_name`：UI 中显示的可读名称
 - `description`：扩展功能的简要描述
-- `api_version`：必须为 `1`（与 Rayforge 的 `PLUGIN_API_VERSION` 匹配）
-- `depends`：Rayforge 的版本约束列表
+- `api_version`：必须 `>= 1`（Rayforge 的 `MINIMUM_API_VERSION`）
 - `author`：包含 `name`（必填）和 `email`（可选）的对象
 
 ### 可选字段
 
+- `depends`：Rayforge 的版本约束列表
 - `requires`：其他扩展依赖列表
 - `provides`：入口点和 assets
 - `url`：项目主页或仓库

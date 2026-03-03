@@ -6,7 +6,7 @@ from pathlib import Path
 from dataclasses import dataclass, field, asdict
 from typing import Optional, List, Dict, Any, Union
 
-from rayforge.core.hooks import PLUGIN_API_VERSION
+from rayforge.core.hooks import MINIMUM_API_VERSION, PLUGIN_API_VERSION
 from rayforge.shared.util.versioning import UnknownVersion, get_git_tag_version
 
 logger = logging.getLogger(__name__)
@@ -263,14 +263,17 @@ class Addon:
                 f"api_version must be an integer, got: "
                 f"{type(self.metadata.api_version).__name__}"
             )
-        if self.metadata.api_version != PLUGIN_API_VERSION:
+        if self.metadata.api_version < MINIMUM_API_VERSION:
             raise AddonValidationError(
                 f"Unsupported api_version: {self.metadata.api_version}. "
-                f"Expected {PLUGIN_API_VERSION}."
+                f"Minimum supported version is {MINIMUM_API_VERSION}."
+            )
+        if self.metadata.api_version > PLUGIN_API_VERSION:
+            raise AddonValidationError(
+                f"Unsupported api_version: {self.metadata.api_version}. "
+                f"Maximum supported version is {PLUGIN_API_VERSION}."
             )
 
-        if not self.metadata.depends:
-            raise AddonValidationError("depends is required.")
         for dep in self.metadata.depends:
             if not isinstance(dep, str):
                 raise AddonValidationError(

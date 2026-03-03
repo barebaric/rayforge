@@ -3,10 +3,11 @@ from typing import List
 from gettext import gettext as _
 from gi.repository import GLib, Gtk
 from blinker import Signal
-from .icons import get_icon
-from .shared.undo_button import UndoButton, RedoButton
-from .shared.splitbutton import SplitMenuButton
+from ..doceditor.layout.registry import layout_registry
 from .canvas3d import initialized as canvas3d_initialized
+from .icons import get_icon
+from .shared.splitbutton import SplitMenuButton
+from .shared.undo_button import UndoButton, RedoButton
 
 logger = logging.getLogger(__name__)
 
@@ -191,12 +192,18 @@ class MainToolbar(Gtk.Box):
                 "flip-vertical-symbolic",
                 "win.flip-vertical",
             ),
-            (
-                _("Auto Layout (pack workpieces)"),
-                "auto-layout-symbolic",
-                "win.layout-pixel-perfect",
-            ),
         ]
+
+        # Add registered layout strategies dynamically
+        for info in layout_registry.list_all():
+            if info.action_id and info.label:
+                arrange_actions.append(
+                    (
+                        info.label,
+                        "auto-layout-symbolic",
+                        f"win.{info.action_id}",
+                    )
+                )
         self.arrange_menu_button = SplitMenuButton(actions=arrange_actions)
         self.arrange_menu_button.set_tooltip_text(_("Arrange selection"))
         self.append(self.arrange_menu_button)

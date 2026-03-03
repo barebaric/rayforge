@@ -195,24 +195,6 @@ class TestAddon:
                 addon.validate()
             assert "Invalid asset path" in str(exc.value)
 
-    def test_validate_missing_depends(self):
-        """Test validation fails if depends is missing."""
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp)
-            (path / "main.py").write_text("def my_plugin(): pass")
-            data = {
-                "name": "test_pkg",
-                "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"backend": "main"},
-            }
-            with open(path / "rayforge-addon.yaml", "w") as f:
-                yaml.dump(data, f)
-
-            addon = Addon.load_from_directory(path, version=TEST_VERSION)
-            with pytest.raises(AddonValidationError) as exc:
-                addon.validate()
-            assert "depends is required" in str(exc.value)
-
     def test_validate_invalid_depends(self):
         """Test validation fails for invalid depends format."""
         with tempfile.TemporaryDirectory() as tmp:
@@ -232,7 +214,7 @@ class TestAddon:
                 addon.validate()
 
     def test_validate_wrong_api_version(self):
-        """Test validation fails for wrong api_version."""
+        """Test validation fails for api_version below minimum."""
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp)
             (path / "main.py").write_text("def my_plugin(): pass")
@@ -241,7 +223,7 @@ class TestAddon:
                 "depends": ["rayforge>=0.27.0,~0.27"],
                 "author": {"name": "Me", "email": "me@example.com"},
                 "provides": {"backend": "main"},
-                "api_version": 999,
+                "api_version": 0,
             }
             with open(path / "rayforge-addon.yaml", "w") as f:
                 yaml.dump(data, f)
@@ -271,6 +253,26 @@ class TestAddon:
                 addon.validate()
             assert "must be an integer" in str(exc.value)
 
+    def test_validate_api_version_too_high(self):
+        """Test validation fails for api_version above maximum."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            (path / "main.py").write_text("def my_plugin(): pass")
+            data = {
+                "name": "test_pkg",
+                "depends": ["rayforge>=0.27.0,~0.27"],
+                "author": {"name": "Me", "email": "me@example.com"},
+                "provides": {"backend": "main"},
+                "api_version": 999,
+            }
+            with open(path / "rayforge-addon.yaml", "w") as f:
+                yaml.dump(data, f)
+
+            addon = Addon.load_from_directory(path, version=TEST_VERSION)
+            with pytest.raises(AddonValidationError) as exc:
+                addon.validate()
+            assert "Unsupported api_version" in str(exc.value)
+
     def test_validate_default_api_version(self):
         """Test default api_version is used if not specified."""
         with tempfile.TemporaryDirectory() as tmp:
@@ -287,7 +289,7 @@ class TestAddon:
 
             addon = Addon.load_from_directory(path, version=TEST_VERSION)
             assert addon.validate() is True
-            assert addon.metadata.api_version == 1
+            assert addon.metadata.api_version == 2
 
     def test_validate_with_unknown_version(self):
         """Test validation passes with UnknownVersion."""

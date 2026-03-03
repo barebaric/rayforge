@@ -23,11 +23,35 @@ class TestAddonRoundTrip:
 
         (addon_dir / "rayforge-addon.yaml").write_text(
             "name: this_name_is_ignored\nversion: 0.1\n"
-            "api_version: 1\n"
+            "api_version: 2\n"
             "depends:\n"
             "  - rayforge>=0.27.0,~0.27\n"
+            "author:\n"
+            "  name: Test Author\n"
             "provides:\n"
             "  backend: addon\n"
+        )
+
+        (addon_dir / "addon.py").write_text(
+            "import sys\n"
+            "from rayforge.core.hooks import hookimpl\n"
+            "\n"
+            "sys.modules['integration_test_addon_loaded'] = False\n"
+            "\n"
+            "@hookimpl\n"
+            "def rayforge_init(context):\n"
+            "    sys.modules['integration_test_addon_loaded'] = True\n"
+        )
+
+        (addon_dir / "addon.py").write_text(
+            "import sys\n"
+            "from rayforge.core.hooks import hookimpl\n"
+            "\n"
+            "sys.modules['integration_test_addon_loaded'] = False\n"
+            "\n"
+            "@hookimpl\n"
+            "def rayforge_init(context):\n"
+            "    sys.modules['integration_test_addon_loaded'] = True\n"
         )
 
         (addon_dir / "addon.py").write_text(
@@ -69,11 +93,24 @@ class TestAddonRoundTrip:
 
         (addon_dir / "rayforge-addon.yaml").write_text(
             "name: this_name_is_ignored\nversion: 0.1\n"
-            "api_version: 1\n"
+            "api_version: 2\n"
             "depends:\n"
             "  - rayforge>=0.27.0,~0.27\n"
+            "author:\n"
+            "  name: Test Author\n"
             "provides:\n"
             "  backend: addon\n"
+        )
+
+        (addon_dir / "addon.py").write_text(
+            "import sys\n"
+            "from rayforge.core.hooks import hookimpl\n"
+            "\n"
+            "sys.modules['multi_hook_rayforge_init'] = False\n"
+            "\n"
+            "@hookimpl\n"
+            "def rayforge_init(context):\n"
+            "    sys.modules['multi_hook_rayforge_init'] = True\n"
         )
 
         (addon_dir / "addon.py").write_text(
@@ -114,12 +151,12 @@ class TestAddonRoundTrip:
         addon_dir.mkdir(parents=True)
 
         (addon_dir / "rayforge-addon.yaml").write_text(
-            "name: invalid_test\nversion: 0.1\n"
-            "api_version: 1\n"
+            "name: this_name_is_ignored\nversion: 0.1\n"
+            "api_version: 2\n"
             "depends:\n"
             "  - rayforge>=0.27.0,~0.27\n"
             "provides:\n"
-            "  backend: nonexistent\n"
+            "  backend: addon\n"
         )
 
         context = RayforgeContext()

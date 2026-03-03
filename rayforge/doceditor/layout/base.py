@@ -21,7 +21,7 @@ class LayoutStrategy(ABC):
     to a list of DocItems to achieve a specific layout.
     """
 
-    def __init__(self, items: Sequence[DocItem]):
+    def __init__(self, items: Sequence[DocItem], **kwargs):
         if not items:
             raise ValueError("LayoutStrategy requires at least one item.")
         # Filter out items that are descendants of other items in the selection

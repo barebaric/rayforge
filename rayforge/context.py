@@ -273,11 +273,19 @@ class RayforgeContext:
 
         # Import registries
         from .core.step_registry import step_registry
+        from .doceditor.layout.registry import (
+            layout_registry,
+            register_builtin_layout_strategies,
+        )
         from .pipeline.producer.registry import producer_registry
 
+        # Register built-in layout strategies before addons
+        register_builtin_layout_strategies()
+
         registries = {
-            "step_registry": step_registry,
+            "layout_registry": layout_registry,
             "producer_registry": producer_registry,
+            "step_registry": step_registry,
         }
 
         step_widget_registry = None
@@ -308,6 +316,9 @@ class RayforgeContext:
         )
 
         if load_ui:
+            self.plugin_mgr.hook.register_layout_strategies(
+                layout_registry=layout_registry
+            )
             self.plugin_mgr.hook.register_step_widgets(
                 widget_registry=step_widget_registry
             )
