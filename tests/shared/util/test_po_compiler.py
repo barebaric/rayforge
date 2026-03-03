@@ -29,8 +29,10 @@ msgstr "Hallo"
         po_file.write_text(po_content)
 
         entries = parse_po_file(po_file)
-        assert len(entries) == 1
-        assert entries[0] == ("Hello", "Hallo")
+        assert len(entries) == 2
+        assert entries[0][0] == ""
+        assert "Content-Type: text/plain; charset=UTF-8" in entries[0][1]
+        assert entries[1] == ("Hello", "Hallo")
 
     def test_parse_multiple_entries(self, tmp_path: Path):
         """Test parsing multiple entries."""
@@ -47,9 +49,10 @@ msgstr "Auf Wiedersehen"
         po_file.write_text(po_content)
 
         entries = parse_po_file(po_file)
-        assert len(entries) == 2
-        assert entries[0] == ("Hello", "Hallo")
-        assert entries[1] == ("Goodbye", "Auf Wiedersehen")
+        assert len(entries) == 3
+        assert entries[0][0] == ""
+        assert entries[1] == ("Hello", "Hallo")
+        assert entries[2] == ("Goodbye", "Auf Wiedersehen")
 
     def test_parse_multiline_string(self, tmp_path: Path):
         """Test parsing multi-line strings."""
@@ -65,9 +68,10 @@ msgstr "Dies ist eine "
         po_file.write_text(po_content)
 
         entries = parse_po_file(po_file)
-        assert len(entries) == 1
-        assert entries[0][0] == "This is a multi-line string"
-        assert entries[0][1] == "Dies ist eine mehrzeilige Zeichenkette"
+        assert len(entries) == 2
+        assert entries[0][0] == ""
+        assert entries[1][0] == "This is a multi-line string"
+        assert entries[1][1] == "Dies ist eine mehrzeilige Zeichenkette"
 
     def test_parse_newlines_in_string(self, tmp_path: Path):
         """Test parsing strings with embedded newlines."""
@@ -81,9 +85,10 @@ msgstr "Zeile 1\\nZeile 2"
         po_file.write_text(po_content)
 
         entries = parse_po_file(po_file)
-        assert len(entries) == 1
-        assert entries[0][0] == "Line 1\nLine 2"
-        assert entries[0][1] == "Zeile 1\nZeile 2"
+        assert len(entries) == 2
+        assert entries[0][0] == ""
+        assert entries[1][0] == "Line 1\nLine 2"
+        assert entries[1][1] == "Zeile 1\nZeile 2"
 
     def test_parse_with_comments(self, tmp_path: Path):
         """Test that comments are ignored."""
@@ -99,11 +104,12 @@ msgstr "Hallo"
         po_file.write_text(po_content)
 
         entries = parse_po_file(po_file)
-        assert len(entries) == 1
-        assert entries[0] == ("Hello", "Hallo")
+        assert len(entries) == 2
+        assert entries[0][0] == ""
+        assert entries[1] == ("Hello", "Hallo")
 
-    def test_parse_empty_msgid_skipped(self, tmp_path: Path):
-        """Test that empty msgid (header) is skipped."""
+    def test_parse_empty_msgid_included(self, tmp_path: Path):
+        """Test that empty msgid (header) is included."""
         po_content = """msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=UTF-8\\n"
@@ -115,9 +121,10 @@ msgstr "Hallo"
         po_file.write_text(po_content)
 
         entries = parse_po_file(po_file)
-        assert len(entries) == 1
-        # The header with empty msgid should not be in entries
-        assert entries[0] == ("Hello", "Hallo")
+        assert len(entries) == 2
+        assert entries[0][0] == ""
+        assert "Content-Type: text/plain; charset=UTF-8" in entries[0][1]
+        assert entries[1] == ("Hello", "Hallo")
 
     def test_parse_empty_msgstr(self, tmp_path: Path):
         """Test parsing entries with empty translations."""
@@ -131,8 +138,9 @@ msgstr ""
         po_file.write_text(po_content)
 
         entries = parse_po_file(po_file)
-        assert len(entries) == 1
-        assert entries[0] == ("Untranslated", "")
+        assert len(entries) == 2
+        assert entries[0][0] == ""
+        assert entries[1] == ("Untranslated", "")
 
 
 class TestWriteMoFile:
@@ -217,8 +225,8 @@ msgstr "Hallo"
         assert result is True
         assert mo_file.exists()
 
-    def test_compile_returns_false_on_empty_po(self, tmp_path: Path):
-        """Test that empty .po file returns False."""
+    def test_compile_header_only_po(self, tmp_path: Path):
+        """Test that .po file with only header compiles successfully."""
         po_content = """msgid ""
 msgstr ""
 """
@@ -228,7 +236,7 @@ msgstr ""
 
         result = compile_po_to_mo(po_file, mo_file)
 
-        assert result is False
+        assert result is True
 
     def test_compile_returns_false_on_invalid_po(self, tmp_path: Path):
         """Test that invalid .po file returns False."""
