@@ -86,7 +86,6 @@ class AuthorizationWorkflow:
             else:
                 logger.error("Failed to get authorization URL")
             api_key = await self.get_api_key()
-            print(api_key)
             return api_key
         else:
             raise Exception(

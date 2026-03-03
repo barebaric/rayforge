@@ -16,7 +16,6 @@ def escape_title(text: str) -> str:
 class OctoprintAuthFlowRow(Adw.PreferencesGroup):
     def __init__(self, auth_flow_var: OctoprintAuthFlowVar):
         super().__init__(title=_("Authorization"))
-        print(auth_flow_var)
         self.auth_flow_var = auth_flow_var
         self._add_host_port_rows()
         self._add_button_row()
@@ -31,6 +30,32 @@ class OctoprintAuthFlowRow(Adw.PreferencesGroup):
         )
         self.add(self.host_row)
         self.add(self.port_row)
+        self.add(self._create_raw_value_row())
+
+    def _create_raw_value_row(self):
+        row = Adw.ActionRow(title=_("API Key"))
+
+        raw = self.auth_flow_var.raw_value or ""
+        truncated = (raw[:20] + "...") if len(raw) > 20 else raw
+
+        self.raw_value_label = Gtk.Label(
+            label=truncated or _("Not set")
+        )  # store ref here
+        self.raw_value_label.set_selectable(False)
+        self.raw_value_label.add_css_class("dim-label")
+        self.raw_value_label.set_max_width_chars(24)
+        self.raw_value_label.set_tooltip_text(raw)
+
+        row.add_suffix(self.raw_value_label)
+        self.raw_value_row = row
+        return row
+
+    def update_raw_value(self):
+        raw = self.auth_flow_var.raw_value or ""
+        truncated = (raw[:20] + "...") if len(raw) > 20 else raw
+        label = self.raw_value_label
+        label.set_text(truncated or _("Not set"))
+        label.set_tooltip_text(raw)
 
     # From RowFactory
     def _create_hostname_row(self, var: HostnameVar, target_property: str):
@@ -85,4 +110,8 @@ class OctoprintAuthFlowRow(Adw.PreferencesGroup):
         self.add(row)
 
     def on_authorize_clicked(self):
-        self.auth_flow_var._on_click()
+        self.auth_flow_var._on_click(self.on_auth_finished)
+
+    def on_auth_finished(self):
+        self.data_changed.send(self)
+        self.update_raw_value()

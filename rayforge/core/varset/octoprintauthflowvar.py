@@ -1,7 +1,7 @@
 from __future__ import annotations
 import asyncio
 import threading
-from typing import Optional
+from typing import Callable, Optional
 
 from gettext import gettext as _
 
@@ -84,7 +84,7 @@ class OctoprintAuthFlowVar(Var[str]):
                 "Invalid value format. Expected 'token@host:port'."
             )
 
-    def _on_click(self):
+    def _on_click(self, finish_callback: Optional[Callable] = None):
         """Starts the authorization workflow in a background thread."""
         from rayforge.machine.driver.octoprint_api import AuthorizationWorkflow
 
@@ -98,7 +98,10 @@ class OctoprintAuthFlowVar(Var[str]):
                 auth_workflow = AuthorizationWorkflow(
                     base_url=f"http://{host}:{port}/", usr_name=""
                 )
-                loop.run_until_complete(auth_workflow.run_workflow())
+                token = loop.run_until_complete(auth_workflow.run_workflow())
+                self._token = token
+                if finish_callback:
+                    finish_callback()
             finally:
                 loop.close()
 
