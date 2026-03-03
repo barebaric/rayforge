@@ -104,6 +104,7 @@ class Sketch(IAsset):
             description=_DEFAULT_VARSET_DESCRIPTION,
         )
         self.updated = Signal()
+        self._hidden: bool = False
 
         # Initialize the Origin Point (Fixed Anchor)
         self.origin_id = self.registry.add_point(0.0, 0.0, fixed=True)
@@ -161,6 +162,22 @@ class Sketch(IAsset):
     def is_draggable_to_canvas(self) -> bool:
         """Whether this asset can be dragged from the list onto the canvas."""
         return True
+
+    @property
+    def hidden(self) -> bool:
+        """Indicates if this asset should be hidden from the UI."""
+        return self._hidden
+
+    @hidden.setter
+    def hidden(self, value: bool):
+        """Sets the hidden state and sends an update signal if changed."""
+        if self._hidden != value:
+            self._hidden = value
+            self.updated.send(self)
+
+    def set_hidden(self, value: bool):
+        """Setter method for use with undo commands."""
+        self.hidden = value
 
     @property
     def is_empty(self) -> bool:
@@ -244,6 +261,7 @@ class Sketch(IAsset):
             "constraints": [c.to_dict() for c in self.constraints],
             "fills": [f.to_dict() for f in self.fills],
             "origin_id": self.origin_id,
+            "hidden": self._hidden,
         }
 
     @classmethod
@@ -286,6 +304,7 @@ class Sketch(IAsset):
         for f_data in data.get("fills", []):
             new_sketch.fills.append(Fill.from_dict(f_data))
 
+        new_sketch._hidden = data.get("hidden", False)
         return new_sketch
 
     @classmethod

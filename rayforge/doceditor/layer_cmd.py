@@ -96,7 +96,6 @@ class AddLayerAndSetActiveCommand(Command):
         )
         cmd.execute()
         self._editor.doc.active_layer = self.new_layer
-        self._editor.doc.update_stock_visibility()
 
     def undo(self):
         """Removes the layer and restores the previous active layer."""
@@ -112,7 +111,6 @@ class AddLayerAndSetActiveCommand(Command):
         cmd.execute()
         if self._old_active_layer in self._editor.doc.layers:
             self._editor.doc.active_layer = self._old_active_layer
-        self._editor.doc.update_stock_visibility()
 
 
 class LayerCmd:
@@ -212,24 +210,6 @@ class LayerCmd:
             name=_("Toggle layer visibility"),
         )
         self._editor.history_manager.execute(cmd)
-
-    def set_layer_stock_item(
-        self, layer: Layer, stock_item_uid: Optional[str]
-    ):
-        """Assigns a stock item to a layer with an undoable command."""
-        if stock_item_uid == layer.stock_item_uid:
-            return
-        cmd = ChangePropertyCommand(
-            target=layer,
-            property_name="stock_item_uid",
-            new_value=stock_item_uid,
-            setter_method_name="set_stock_item_uid",
-            name=_("Assign stock material"),
-        )
-        self._editor.history_manager.execute(cmd)
-        # Update stock visibility when stock assignment changes
-        if layer.active:
-            self._editor.doc.update_stock_visibility()
 
     def set_active_layer(self, layer: Layer):
         """Sets the active layer."""

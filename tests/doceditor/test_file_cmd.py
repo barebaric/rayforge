@@ -856,7 +856,9 @@ class TestProjectRoundTrip:
         assert layer1.uid == layer2.uid
         assert layer1.name == layer2.name
         assert layer1.visible == layer2.visible
-        assert layer1.stock_item_uid == layer2.stock_item_uid
+        assert layer1.extra.get("stock_item_uid") == layer2.extra.get(
+            "stock_item_uid"
+        )
         assert len(layer1.children) == len(layer2.children)
 
     def _compare_workpieces(self, wp1, wp2):

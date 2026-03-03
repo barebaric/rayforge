@@ -6,6 +6,7 @@ from gi.repository import GLib
 from ....core.workpiece import WorkPiece
 from ....core.step import Step
 from ....core.matrix import Matrix
+from ....core.sketcher.sketch import Sketch
 from ....pipeline.artifact import (
     WorkPieceArtifact,
     BaseArtifactHandle,
@@ -112,6 +113,15 @@ class WorkPieceElement(CanvasElement):
 
         self.data.updated.connect(self._on_model_content_changed)
         self.data.transform_changed.connect(self._on_transform_changed)
+
+        # Connect to sketch updates if this workpiece depends on one
+        self._sketch: Optional[Sketch] = None
+        if self.data.sketch_uid and self.data.doc:
+            asset = self.data.doc.get_asset_by_uid(self.data.sketch_uid)
+            if isinstance(asset, Sketch):
+                self._sketch = asset
+                asset.updated.connect(self._on_sketch_changed)
+
         self.view_manager.source_artifact_ready.connect(
             self._on_source_artifact_ready
         )
@@ -389,6 +399,8 @@ class WorkPieceElement(CanvasElement):
         logger.debug(f"Removing WorkPieceElement for '{self.data.name}'")
         self.data.updated.disconnect(self._on_model_content_changed)
         self.data.transform_changed.disconnect(self._on_transform_changed)
+        if self._sketch is not None:
+            self._sketch.updated.disconnect(self._on_sketch_changed)
         self.view_manager.source_artifact_ready.disconnect(
             self._on_source_artifact_ready
         )
@@ -463,6 +475,11 @@ class WorkPieceElement(CanvasElement):
         )
         self._create_or_update_tab_handles()
         self.invalidate_and_rerender()
+
+    def _on_sketch_changed(self, sender, **kwargs):
+        """Handler for when the sketch this workpiece depends on changes."""
+        if self.canvas:
+            self.canvas.queue_draw()
 
     def _on_transform_changed(
         self, workpiece: WorkPiece, *, old_matrix: Optional["Matrix"] = None
@@ -559,7 +576,14 @@ class WorkPieceElement(CanvasElement):
         Args:
             ctx: The cairo context to draw on.
         """
-        if self._base_image_visible:
+        # Check if the workpiece depends on a hidden sketch
+        sketch_hidden = False
+        if self.data.sketch_uid and self.data.doc:
+            sketch = self.data.doc.get_asset_by_uid(self.data.sketch_uid)
+            if sketch and getattr(sketch, "hidden", False):
+                sketch_hidden = True
+
+        if self._base_image_visible and not sketch_hidden:
             # This handles the Y-flip for the base image and restores the
             # context, leaving it Y-UP for the next drawing operation.
             super().draw(ctx)

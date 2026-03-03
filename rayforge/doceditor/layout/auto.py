@@ -115,9 +115,11 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         # Stock-aware Logic
         stock_item: Optional[StockItem] = None
         doc = self.items[0].doc
-        # Get the stock item from the active layer
-        if doc and doc.active_layer:
-            stock_item = doc.active_layer.stock_item
+        # Get the first visible stock item from the document
+        if doc:
+            visible_stocks = [s for s in doc.stock_items if s.visible]
+            if visible_stocks:
+                stock_item = visible_stocks[0]
 
         # Use stock as boundary if it exists, otherwise use whole surface.
         if stock_item:

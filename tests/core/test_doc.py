@@ -680,68 +680,6 @@ def test_set_layers_active_layer_logic(doc):
     assert doc._active_layer_index == 0
 
 
-def test_update_stock_visibility(doc):
-    """
-    Tests that update_stock_visibility correctly shows/hides stock based
-    on the active layer's assigned stock.
-    """
-    layer1 = doc.layers[0]
-    layer2 = Layer("Layer 2")
-    doc.add_layer(layer2)
-
-    asset1 = StockAsset(name="Asset 1")
-    asset2 = StockAsset(name="Asset 2")
-    doc.add_asset(asset1)
-    doc.add_asset(asset2)
-
-    stock1 = StockItem(stock_asset_uid=asset1.uid, name="Wood")
-    stock2 = StockItem(stock_asset_uid=asset2.uid, name="Acrylic")
-    doc.add_child(stock1)
-    doc.add_child(stock2)
-
-    layer1.stock_item_uid = stock1.uid
-    layer2.stock_item_uid = stock2.uid
-
-    # Mock the method we want to check calls on
-    stock1.set_visible = MagicMock()
-    stock2.set_visible = MagicMock()
-
-    # Act 1: set layer 2 as active (this is a CHANGE from default)
-    doc.active_layer = layer2
-
-    # Assert 1: stock1 should be hidden, stock2 visible
-    stock1.set_visible.assert_called_once_with(False)
-    stock2.set_visible.assert_called_once_with(True)
-
-    stock1.set_visible.reset_mock()
-    stock2.set_visible.reset_mock()
-
-    # Act 2: set layer 1 as active (this is also a CHANGE)
-    doc.active_layer = layer1
-
-    # Assert 2: stock1 should be visible, stock2 hidden
-    stock1.set_visible.assert_called_once_with(True)
-    stock2.set_visible.assert_called_once_with(False)
-
-
-def test_active_layer_setter_triggers_update_stock_visibility(doc):
-    """
-    Tests that changing the active layer automatically calls
-    update_stock_visibility.
-    """
-    layer2 = Layer("Layer 2")
-    doc.add_layer(layer2)
-
-    with patch.object(doc, "update_stock_visibility") as mock_update:
-        doc.active_layer = layer2
-        mock_update.assert_called_once()
-
-    with patch.object(doc, "update_stock_visibility") as mock_update:
-        # Setting to the same layer should not trigger it again
-        doc.active_layer = layer2
-        mock_update.assert_not_called()
-
-
 def test_from_dict_clears_default_layer():
     """
     Tests that Doc.from_dict removes the default layer created by __init__
@@ -789,3 +727,79 @@ def test_from_dict_clears_default_layer():
     assert "Layer 1" not in layer_names  # Default name from __init__
     assert "Loaded Layer 1" in layer_names
     assert "Loaded Layer 2" in layer_names
+
+
+def test_from_dict_legacy_layer_stock_item_uid():
+    """
+    Tests that legacy documents with layer-level stock_item_uid load correctly.
+    The stock_item_uid is preserved in layer.extra for forward compatibility,
+    but stocks are now document-level.
+    """
+    legacy_doc_dict = {
+        "uid": "legacy-doc-uid",
+        "type": "doc",
+        "active_layer_index": 0,
+        "assets": [
+            {
+                "uid": "stock-asset-1",
+                "type": "stock",
+                "name": "Wood",
+                "thickness": 3.0,
+            }
+        ],
+        "children": [
+            {
+                "uid": "layer-1",
+                "type": "layer",
+                "name": "Layer with Stock",
+                "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                "visible": True,
+                "stock_item_uid": "stock-item-1",  # Legacy field
+                "children": [
+                    {
+                        "uid": "wf-1",
+                        "type": "workflow",
+                        "name": "Workflow",
+                        "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                        "children": [],
+                    }
+                ],
+            },
+            {
+                "uid": "stock-item-1",
+                "type": "stockitem",
+                "name": "Wood Stock",
+                "stock_asset_uid": "stock-asset-1",
+                "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                "visible": True,
+            },
+        ],
+    }
+
+    doc = Doc.from_dict(legacy_doc_dict)
+
+    # Verify document loaded correctly
+    assert len(doc.layers) == 1
+    assert len(doc.stock_items) == 1
+
+    # Verify stock is at document level
+    stock_item = doc.stock_items[0]
+    assert stock_item.uid == "stock-item-1"
+    assert stock_item.name == "Wood Stock"
+
+    # Verify layer loaded correctly
+    layer = doc.layers[0]
+    assert layer.name == "Layer with Stock"
+
+    # Verify legacy stock_item_uid is preserved in extra for forward
+    # compatibility
+    assert "stock_item_uid" in layer.extra
+    assert layer.extra["stock_item_uid"] == "stock-item-1"
+
+    # Verify round-trip serialization preserves the legacy field
+    re_serialized = doc.to_dict()
+    layer_dict = next(
+        c for c in re_serialized["children"] if c["type"] == "layer"
+    )
+    assert "stock_item_uid" in layer_dict
+    assert layer_dict["stock_item_uid"] == "stock-item-1"

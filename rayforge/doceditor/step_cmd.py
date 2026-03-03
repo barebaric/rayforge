@@ -64,9 +64,8 @@ class StepCmd:
         by itself; it should be called before the step is added to the
         document via an undoable command.
         """
-        # Get the context from the active layer and machine
-        active_layer = self._doc.active_layer
-        stock_item = active_layer.stock_item if active_layer else None
+        # Get the stock items from the document
+        stock_items = self._doc.stock_items
         machine = self._context.machine
 
         # Query the RecipeManager for the best match for ANY supported
@@ -75,7 +74,7 @@ class StepCmd:
         if step.capabilities:
             recipe_mgr = self._context.recipe_mgr
             matching_recipes = recipe_mgr.find_recipes(
-                stock_item=stock_item,
+                stock_items=stock_items,
                 capabilities=step.capabilities,
                 machine=machine,
             )

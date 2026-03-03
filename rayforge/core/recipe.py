@@ -1,6 +1,6 @@
 import uuid
 import math
-from typing import Dict, Any, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Any, Optional, Set, Tuple, List, TYPE_CHECKING
 from dataclasses import dataclass, field, asdict
 from .capability import Capability, CAPABILITIES_BY_NAME, CUT
 
@@ -66,7 +66,7 @@ class Recipe:
 
     def matches(
         self,
-        stock_item: Optional["StockItem"],
+        stock_items: List["StockItem"],
         capabilities: Optional[Set[Capability]] = None,
         machine: Optional["Machine"] = None,
     ) -> bool:
@@ -74,7 +74,9 @@ class Recipe:
         Checks if this recipe is a valid candidate for the given context.
 
         Args:
-            stock_item: The stock item to check against. Can be None.
+            stock_items: A list of StockItems. If empty, only generic recipes
+                         (without material/thickness constraints) match.
+                         Returns True if recipe matches ANY item in the list.
             capabilities: An optional set of capabilities to filter by.
             machine: An optional machine to filter by.
 
@@ -104,13 +106,38 @@ class Recipe:
         if capabilities and self.capability not in capabilities:
             return False
 
-        # 4. Check material compatibility
+        # 4. If no stock items to check against, only match generic recipes
+        # (recipes without material/thickness constraints)
+        if not stock_items:
+            # If recipe has material constraint, it can't match without stock
+            if self.material_uid is not None:
+                return False
+            # If recipe has thickness constraint, it can't match without stock
+            if (
+                self.min_thickness_mm is not None
+                or self.max_thickness_mm is not None
+            ):
+                return False
+            return True
+
+        # 5. Check if recipe matches ANY of the stock items
+        for stock_item in stock_items:
+            if self._matches_stock(stock_item):
+                return True
+
+        return False
+
+    def _matches_stock(self, stock_item: "StockItem") -> bool:
+        """
+        Checks if this recipe matches a single stock item.
+        """
+        # Check material compatibility
         if self.material_uid:
             # This recipe requires a specific material.
             if not stock_item or stock_item.material_uid != self.material_uid:
                 return False
 
-        # 5. Check thickness compatibility
+        # Check thickness compatibility
         thickness_mm = stock_item.thickness if stock_item else None
         if (
             self.min_thickness_mm is not None

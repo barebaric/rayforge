@@ -185,7 +185,7 @@ class AssetListView(Expander):
             if not isinstance(child, StockItem):
                 return
 
-        visible_assets = [a for a in self.doc.get_all_assets() if not a.hidden]
+        visible_assets = list(self.doc.get_all_assets())
         count = len(visible_assets)
         self.set_subtitle(
             _("{count} asset").format(count=count)
@@ -195,7 +195,7 @@ class AssetListView(Expander):
         self.update_list()
 
     def update_list(self):
-        new_assets = [a for a in self.doc.get_all_assets() if not a.hidden]
+        new_assets = list(self.doc.get_all_assets())
         uid_to_widget: Dict[str, Gtk.Widget] = {}
         child = self.draglist.get_first_child()
 
@@ -238,8 +238,10 @@ class AssetListView(Expander):
             if isinstance(widget, SketchAssetRowWidget):
                 widget.edit_clicked.connect(self.on_edit_sketch_clicked)
                 widget.delete_clicked.connect(self.on_delete_sketch_clicked)
+                widget.visibility_changed.connect(self.on_visibility_changed)
             elif isinstance(widget, StockAssetRowWidget):
                 widget.delete_clicked.connect(self.on_delete_stock_clicked)
+                widget.visibility_changed.connect(self.on_visibility_changed)
 
             self.draglist.add_row(new_row)
 
@@ -284,3 +286,8 @@ class AssetListView(Expander):
             asset_to_delete.uid,
         )
         self.editor.asset.delete_asset(asset_to_delete)
+
+    def on_visibility_changed(self, row_widget):
+        """Handles visibility toggle for any asset type."""
+        asset = row_widget.asset
+        self.editor.asset.toggle_asset_visibility(asset)
