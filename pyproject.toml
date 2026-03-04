@@ -74,12 +74,15 @@ test = [
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
-pythonpath = ["rayforge/builtin_packages/laser_essentials"]
+pythonpath = [
+    "rayforge/builtin_addons/rayforge-addon-laser",
+    "rayforge/builtin_addons/rayforge-addon-deepnest",
+]
 filterwarnings = [
     # Ignore Swig related deprecation warnings from importlib
     "ignore::DeprecationWarning:importlib._bootstrap",
 ]
-testpaths = ["tests", "rayforge/builtin_packages/*/tests"]
+testpaths = ["tests", "rayforge/builtin_addons/*/tests"]
 norecursedirs = [
     "builddir",
     ".git",
