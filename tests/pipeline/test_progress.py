@@ -4,7 +4,7 @@ from rayforge.shared.tasker.progress import (
     CallbackProgressContext,
     NoOpProgressContext,
 )
-from conftest import MockProgressContext
+from tests.conftest import MockProgressContext
 
 
 class TestNoOpProgressContext:

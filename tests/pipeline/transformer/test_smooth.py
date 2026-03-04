@@ -2,7 +2,7 @@ import math
 from unittest.mock import Mock
 from rayforge.core.ops import ArcToCommand, Ops
 from rayforge.pipeline.transformer.smooth import Smooth
-from conftest import MockProgressContext
+from tests.conftest import MockProgressContext
 
 
 def assert_points_almost_equal(p1: tuple, p2: tuple, places=5, msg=None):
