@@ -9,11 +9,13 @@ from . import contours
 from . import fitting
 from . import intersect
 from . import linearize
+from . import minkowski
 from . import polygon
 from . import primitives
 from . import query
 from . import text
 from . import transform
+
 from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
@@ -41,6 +43,7 @@ __all__ = [
     "fitting",
     "intersect",
     "linearize",
+    "minkowski",
     "polygon",
     "primitives",
     "query",
