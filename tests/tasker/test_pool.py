@@ -58,7 +58,7 @@ def event_with_ack_timeout_func(proxy: ExecutionContextProxy):
     return {"acked": result}
 
 
-def worker_init(filepath: Path, init_queue: mp.Queue):
+def worker_init(shared_state: dict, filepath: Path, init_queue: mp.Queue):
     """
     Initializer function that writes its PID to a file and signals completion.
     """

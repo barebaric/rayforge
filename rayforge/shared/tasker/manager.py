@@ -338,6 +338,15 @@ class TaskManager:
         with self._lock:
             return self._tasks.get(key)
 
+    def get_shared_state(self) -> Any:
+        """
+        Return the shared state dict for worker initialization.
+
+        This provides a generic mechanism for passing data to worker
+        processes. The dict is managed by the WorkerPoolManager.
+        """
+        return self._pool.get_shared_state()
+
     async def _run_task(
         self, task: Task, when_done: Optional[Callable[[Task], None]]
     ) -> None:

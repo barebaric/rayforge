@@ -3,6 +3,17 @@ import logging
 import os
 import sys
 from pathlib import Path
+from typing import Dict, Optional
+import pluggy
+from rayforge.core.addon_config import AddonConfig
+from rayforge.addon_mgr.addon_manager import AddonManager
+from rayforge.addon_mgr.lazy_loader import (
+    collect_module_paths,
+    ensure_addon_namespaces,
+    install_addon_finder,
+)
+from rayforge.config import BUILTIN_ADDONS_DIR, ADDONS_DIR, CONFIG_DIR
+from rayforge.core.hooks import RayforgeSpecs
 
 
 _worker_addons_loaded = False
@@ -21,15 +32,6 @@ def ensure_addons_loaded():
 
     _worker_addons_loaded = True
 
-    import pluggy
-    from rayforge.addon_mgr.addon_manager import AddonManager
-    from rayforge.config import (
-        BUILTIN_ADDONS_DIR,
-        ADDONS_DIR,
-        CONFIG_DIR,
-    )
-    from rayforge.core.addon_config import AddonConfig
-    from rayforge.core.hooks import RayforgeSpecs
     from rayforge.core.step_registry import step_registry
     from rayforge.doceditor.layout.registry import layout_registry
     from rayforge.pipeline.producer.registry import producer_registry
@@ -68,7 +70,7 @@ def ensure_addons_loaded():
 
 def invalidate_worker_addons_cache():
     """
-    Invalidate the addon cache so subsequent calls to ensure_addons_loaded()
+    Invalidate addon cache so subsequent calls to ensure_addons_loaded()
     will reload addons from disk.
 
     This should be called when addons are installed or removed at runtime,
@@ -78,15 +80,19 @@ def invalidate_worker_addons_cache():
     _worker_addons_loaded = False
 
 
-def initialize_worker():
+def initialize_worker(shared_state: Optional[Dict] = None):
     """
-    Sets up the minimal environment required for a worker subprocess.
+    Sets up minimal environment required for a worker subprocess.
 
-    This function is lightweight and has no dangerous imports. It is the
-    designated `worker_initializer` for the TaskManager.
+    This function is lightweight and has no dangerous imports. It is
+    designated `worker_initializer` for TaskManager.
 
     Addons are loaded lazily via ensure_addons_loaded() when first needed
     for deserializing producers, rather than at worker startup.
+
+    Args:
+        shared_state: Shared dict for worker initialization data.
+            Can contain 'addon_module_paths' key with module paths.
     """
     # Install a fallback gettext translator. This ensures the '_'
     # function exists during the module import phase.
@@ -116,5 +122,18 @@ def initialize_worker():
             os.environ.setdefault(
                 "GIO_EXTRA_MODULES", str(bundled_gio_modules)
             )
+
+    addon_dirs = [BUILTIN_ADDONS_DIR, ADDONS_DIR]
+
+    addon_module_paths = (
+        shared_state.get("addon_module_paths") if shared_state else None
+    )
+    if not addon_module_paths:
+        paths = collect_module_paths(addon_dirs)
+        install_addon_finder(addon_modules=paths)
+    else:
+        install_addon_finder(shared_dict=shared_state)
+
+    ensure_addon_namespaces(addon_dirs)
 
     logging.getLogger(__name__).debug("Worker process initialized.")

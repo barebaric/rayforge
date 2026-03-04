@@ -60,6 +60,7 @@ def _worker_main_loop(
     initializer: Optional[Callable[..., None]],
     initargs: Tuple[Any, ...],
     adoption_signals: dict,
+    shared_state: dict,
 ):
     """
     The main function for a worker process.
@@ -68,6 +69,10 @@ def _worker_main_loop(
     reports results, progress, and events back to the main process via the
     result_queue.
     """
+    worker_logger = logging.getLogger(__name__)
+    worker_logger.debug(
+        f"Worker {os.getpid()} shared_state keys: {list(shared_state.keys())}"
+    )
     # Set up a null translator for gettext in the subprocess.
     if not hasattr(builtins, "_"):
         setattr(builtins, "_", lambda s: s)
@@ -85,7 +90,7 @@ def _worker_main_loop(
 
     if initializer is not None:
         try:
-            initializer(*initargs)
+            initializer(shared_state, *initargs)
         except Exception:
             # If initialization fails, report it and exit immediately.
             error_info = traceback.format_exc()
@@ -200,6 +205,7 @@ class WorkerPoolManager:
         self._task_queue: MpQueue = self._mp_context.Queue()
         self._result_queue: MpQueue = self._mp_context.Queue()
         self._adoption_signals = self._manager.dict()
+        self._shared_state = self._manager.dict()
         self._workers: List[BaseProcess] = []
         self._cancelled_task_ids: Set[int] = set()
         self._lock = threading.Lock()
@@ -217,7 +223,6 @@ class WorkerPoolManager:
         for _ in range(num_workers):
             process = self._mp_context.Process(
                 target=_worker_main_loop,
-                # Pass initializer and initargs to the target function
                 args=(
                     self._task_queue,
                     self._result_queue,
@@ -225,6 +230,7 @@ class WorkerPoolManager:
                     initializer,
                     initargs,
                     self._adoption_signals,
+                    self._shared_state,
                 ),
                 daemon=True,
             )
@@ -235,6 +241,16 @@ class WorkerPoolManager:
             target=self._result_listener_loop, daemon=True
         )
         self._listener_thread.start()
+
+    def get_shared_state(self) -> Any:
+        """
+        Return the shared state dict for worker initialization.
+
+        This provides a generic mechanism for passing data to worker
+        processes. Callers can populate this dict with any data needed
+        during worker initialization.
+        """
+        return self._shared_state
 
     def submit(
         self,

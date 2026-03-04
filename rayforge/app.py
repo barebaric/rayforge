@@ -440,6 +440,15 @@ def main():
     task_mgr_proxy = cast(TaskManagerProxy, rayforge.shared.tasker.task_mgr)
     task_mgr_proxy.initialize(worker_initializer=initialize_worker)
 
+    # Wire up addon module paths from WorkerPoolManager to AddonManager.
+    # This allows workers to resolve rayforge_addons.* modules during
+    # unpickling without loading all addons at startup.
+    shared_state = task_mgr_proxy.get_shared_state()
+    get_context().addon_mgr.set_shared_state(shared_state)
+    # Pre-populate shared dict with addon module paths before workers
+    # are created. This ensures paths are available during unpickling.
+    get_context().addon_mgr.populate_addon_module_paths()
+
     # Initialize the full application context. This creates all managers
     # and sets up the backward-compatibility shim for old code.
     get_context().initialize_full_context()

@@ -93,6 +93,7 @@ class AddonManager:
         addon_config: Optional[AddonConfig] = None,
         is_job_active_callback: Optional[Callable[[], bool]] = None,
         registries: Optional[Dict[str, "AddonRegistry"]] = None,
+        shared_state: Optional[Dict[str, Any]] = None,
     ):
         """
         Args:
@@ -108,8 +109,9 @@ class AddonManager:
             registries (Optional[Dict[str, AddonRegistry]]): Dict mapping
                 hook parameter names to registry instances. Expected keys:
                 'step_registry', 'producer_registry', 'widget_registry',
-                'menu_registry', 'layout_registry'. Each registry must
-                implement the AddonRegistry protocol.
+                'menu_registry', 'layout_registry'.
+            shared_state (Optional[Any]): Shared dict for worker state,
+                used to populate addon module paths for worker processes.
         """
         self.addon_dirs = addon_dirs
         self.install_dir = install_dir
@@ -122,6 +124,7 @@ class AddonManager:
         self.disabled_addons: Dict[str, Addon] = {}
         self._pending_unloads: Set[str] = set()
         self._load_errors: Dict[str, str] = {}
+        self._shared_state = shared_state
 
         self.addon_reloaded = Signal()
 
@@ -136,6 +139,84 @@ class AddonManager:
                 'layout_registry'.
         """
         self.registries = registries
+
+    def set_shared_state(self, shared_state: Dict[str, Any]):
+        """
+        Set the shared state dict for worker initialization.
+
+        This allows the AddonManager to populate module paths for worker
+        processes to resolve rayforge_addons.* modules during unpickling.
+
+        Args:
+            shared_state: Shared dict for worker state.
+        """
+        self._shared_state = shared_state
+        self.populate_addon_module_paths()
+
+    def populate_addon_module_paths(self):
+        """
+        Populate the shared dict with addon module paths.
+
+        This scans addon directories and populates the shared dict with
+        module paths without loading the addons. This allows workers
+        to resolve rayforge_addons.* modules during unpickling.
+        """
+        if self._shared_state is None:
+            return
+
+        paths = {}
+        for addon_dir in self.addon_dirs:
+            if not addon_dir.exists():
+                continue
+
+            for child in addon_dir.iterdir():
+                if not child.is_dir():
+                    continue
+
+                try:
+                    addon = Addon.load_from_directory(child)
+                    addon.validate()
+                    name = addon.metadata.name
+
+                    backend_ep = addon.metadata.provides.backend
+                    frontend_ep = addon.metadata.provides.frontend
+
+                    for entry_point in [backend_ep, frontend_ep]:
+                        if not entry_point:
+                            continue
+
+                        module_name = f"rayforge_addons.{name}.{entry_point}"
+                        module_path = self._resolve_entry_point_path(
+                            entry_point, addon.root_path
+                        )
+                        if module_path:
+                            paths[module_name] = str(module_path)
+
+                    # Scan for all Python files in the addon directory
+                    # to register subpackages and modules.
+                    for py_file in addon.root_path.rglob("*.py"):
+                        rel_path = py_file.relative_to(addon.root_path)
+
+                        if rel_path.name == "__init__.py":
+                            # Register package (directory)
+                            parts = rel_path.parts[:-1]  # Remove __init__.py
+                            if parts:
+                                module_name = (
+                                    f"rayforge_addons.{name}.{'.'.join(parts)}"
+                                )
+                                paths[module_name] = str(py_file)
+                        else:
+                            # Register module
+                            module_path_str = str(rel_path.with_suffix(""))
+                            module_name = (
+                                f"rayforge_addons.{name}."
+                                f"{module_path_str.replace('/', '.')}"
+                            )
+                            paths[module_name] = str(py_file)
+                except Exception:
+                    pass
+
+        self._shared_state["addon_module_paths"] = paths
 
     def _parse_registry_dict(
         self, registry_data: Dict[str, Any]
@@ -448,6 +529,11 @@ class AddonManager:
             logger.error(error_msg)
             self._load_errors[name] = error_msg
             return
+
+        if self._shared_state is not None:
+            addon_paths = self._shared_state.get("addon_module_paths", {})
+            addon_paths[module_name] = str(module_path)
+            self._shared_state["addon_module_paths"] = addon_paths
 
         try:
             self._ensure_parent_modules(
