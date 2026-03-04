@@ -135,7 +135,7 @@ def test_get_material_test_proportional_size():
 
 
 @patch(
-    "laser_essentials.producers.material_test_grid."
+    "laser_essentials.producers.material_test_grid_producer."
     "MaterialTestGridProducer.draw_preview"
 )
 def test_draw_material_test_preview_delegates_call(

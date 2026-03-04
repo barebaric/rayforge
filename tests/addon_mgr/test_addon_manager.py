@@ -266,7 +266,7 @@ class TestAddonManagerUninstall:
     def test_uninstall_addon_success(self, manager):
         """Test a successful addon uninstall cleans up everything."""
         pkg_name = "my-uninstall-pkg"
-        module_name = f"rayforge_plugins.{pkg_name}"
+        module_name = f"rayforge_addons.{pkg_name}"
 
         # 1. Setup filesystem
         pkg_path = manager.install_dir / pkg_name
@@ -523,7 +523,7 @@ class TestAddonManagerDisabledAddons:
 
         assert "to_disable" in manager_with_config.loaded_addons
 
-        module_name = "rayforge_plugins.to_disable"
+        module_name = "rayforge_addons.to_disable"
         sys.modules[module_name] = Mock()
 
         result = manager_with_config.disable_addon("to_disable")

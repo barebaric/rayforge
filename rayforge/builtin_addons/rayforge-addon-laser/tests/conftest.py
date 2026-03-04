@@ -64,7 +64,7 @@ def register_laser_essentials():
 
     This also prevents ensure_addons_loaded() from loading via
     AddonManager, which would register classes from a different
-    module path (rayforge_plugins.*) causing isinstance() checks
+    module path (rayforge_addons.*) causing isinstance() checks
     to fail in tests.
     """
     from rayforge import worker_init

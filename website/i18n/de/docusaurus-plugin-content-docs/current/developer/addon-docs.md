@@ -34,7 +34,7 @@ Diese Datei teilt Rayforge mit, wie Ihr Addon geladen werden soll.
 ```yaml
 # rayforge-addon.yaml
 
-# Eindeutiger Bezeichner für Ihr Addon (Verzeichnisname)
+# Eindeutiger Bezeichner für Ihr Addon (muss ein gültiger Python-Modulname sein)
 name: mein_benutzerdefiniertes_addon
 
 # Menschenlesbarer Anzeigename
@@ -75,7 +75,7 @@ url: https://github.com/username/mein-benutzerdefiniertes-addon
 
 ### Erforderliche Felder
 
-- `name`: Eindeutiger Bezeichner (sollte mit Verzeichnisname übereinstimmen)
+- `name`: Eindeutiger Bezeichner (muss ein gültiger Python-Modulname sein)
 - `display_name`: Menschenlesbarer Name, der in der UI angezeigt wird
 - `description`: Kurze Beschreibung der Addon-Funktionalität
 - `api_version`: Muss `>= 1` sein (Rayforge's `MINIMUM_API_VERSION`)

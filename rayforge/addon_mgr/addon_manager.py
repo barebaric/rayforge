@@ -438,7 +438,7 @@ class AddonManager:
             return
 
         name = addon.metadata.name
-        module_name = f"rayforge_plugins.{name}.{entry_point}"
+        module_name = f"rayforge_addons.{name}.{entry_point}"
 
         module_path = self._resolve_entry_point_path(
             entry_point, addon.root_path
@@ -477,9 +477,9 @@ class AddonManager:
         Ensure parent modules exist in sys.modules for relative imports.
 
         For entry_point 'laser_essentials.backend', we need:
-        - rayforge_plugins (namespace)
-        - rayforge_plugins.{name} (namespace)
-        - rayforge_plugins.{name}.laser_essentials (actual addon module)
+        - rayforge_addons (namespace)
+        - rayforge_addons.{name} (namespace)
+        - rayforge_addons.{name}.laser_essentials (actual addon module)
         """
         import types
 
@@ -669,11 +669,11 @@ class AddonManager:
                 self._cleanup_directory(addon_path)
                 logger.info(f"Uninstalled addon at {addon_path}")
 
-            prefix = f"rayforge_plugins.{addon_name}."
+            prefix = f"rayforge_addons.{addon_name}."
             modules_to_unload = [
                 name for name in sys.modules if name.startswith(prefix)
             ]
-            base_module = f"rayforge_plugins.{addon_name}"
+            base_module = f"rayforge_addons.{addon_name}"
             if base_module in sys.modules:
                 modules_to_unload.append(base_module)
 
@@ -784,12 +784,12 @@ class AddonManager:
         if self.addon_config:
             self.addon_config.set_state(addon_name, ConfigAddonState.DISABLED)
 
-        prefix = f"rayforge_plugins.{addon_name}."
+        prefix = f"rayforge_addons.{addon_name}."
         modules_to_unload = [
             name for name in list(sys.modules) if name.startswith(prefix)
         ]
 
-        base_module = f"rayforge_plugins.{addon_name}"
+        base_module = f"rayforge_addons.{addon_name}"
         if base_module in sys.modules:
             modules_to_unload.append(base_module)
 

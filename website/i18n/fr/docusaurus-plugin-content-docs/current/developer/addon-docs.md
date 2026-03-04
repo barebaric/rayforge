@@ -37,7 +37,7 @@ Ce fichier indique à Rayforge comment charger votre addon.
 ```yaml
 # rayforge-addon.yaml
 
-# Identifiant unique pour votre addon (nom du répertoire)
+# Identifiant unique pour votre addon (doit être un nom de module Python valide)
 name: my_custom_addon
 
 # Nom d'affichage lisible par l'homme
@@ -78,7 +78,7 @@ url: https://github.com/username/my-custom-addon
 
 ### Champs requis
 
-- `name` : Identifiant unique (doit correspondre au nom du répertoire)
+- `name` : Identifiant unique (doit être un nom de module Python valide)
 - `display_name` : Nom lisible affiché dans l'interface
 - `description` : Brève description de la fonctionnalité de l'addon
 - `api_version` : Doit être `>= 1` (Rayforge's `MINIMUM_API_VERSION`)

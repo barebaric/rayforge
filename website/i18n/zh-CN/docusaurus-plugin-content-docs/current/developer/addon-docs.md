@@ -34,7 +34,7 @@ my-rayforge-addon/
 ```yaml
 # rayforge-addon.yaml
 
-# 扩展的唯一标识符（目录名称）
+# 扩展的唯一标识符（必须是有效的 Python 模块名称）
 name: my_custom_addon
 
 # 人类可读的显示名称
@@ -75,7 +75,7 @@ url: https://github.com/username/my-custom-addon
 
 ### 必填字段
 
-- `name`：唯一标识符（应与目录名称匹配）
+- `name`：唯一标识符（必须是有效的 Python 模块名称）
 - `display_name`：UI 中显示的可读名称
 - `description`：扩展功能的简要描述
 - `api_version`：必须 `>= 1`（Rayforge 的 `MINIMUM_API_VERSION`）

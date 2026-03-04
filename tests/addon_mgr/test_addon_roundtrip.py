@@ -78,7 +78,7 @@ class TestAddonRoundTrip:
             context.initialize_full_context(load_ui=False)
 
         # The module name is derived from the directory, not the YAML file.
-        assert "rayforge_plugins.integration_test_addon" in sys.modules
+        assert "rayforge_addons.integration_test_addon" in sys.modules
         assert sys.modules.get("integration_test_addon_loaded") is True
 
         del sys.modules["integration_test_addon_loaded"]
@@ -137,7 +137,7 @@ class TestAddonRoundTrip:
             context.initialize_full_context(load_ui=False)
 
         # The module name is derived from the directory, not the YAML file.
-        assert "rayforge_plugins.multi_hook_addon" in sys.modules
+        assert "rayforge_addons.multi_hook_addon" in sys.modules
         assert sys.modules.get("multi_hook_rayforge_init") is True
 
         del sys.modules["multi_hook_rayforge_init"]
@@ -171,7 +171,7 @@ class TestAddonRoundTrip:
         ):
             context.initialize_full_context(load_ui=False)
 
-        assert "rayforge_plugins.invalid_addon" not in sys.modules
+        assert "rayforge_addons.invalid_addon" not in sys.modules
 
     def test_addon_loading_missing_metadata(self, tmp_path):
         """
@@ -196,4 +196,4 @@ class TestAddonRoundTrip:
 
         context.initialize_full_context(load_ui=False)
 
-        assert "rayforge_plugins.no_metadata_addon" not in sys.modules
+        assert "rayforge_addons.no_metadata_addon" not in sys.modules

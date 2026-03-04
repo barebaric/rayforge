@@ -1,9 +1,9 @@
-name: laser-essentials
+name: laser_essentials
 display_name: "Laser Essentials"
 description: "Core laser cutting functionality"
-api_version: 1
+api_version: 2
 depends:
-  - rayforge>=0.27.0,<2.0.0
+  - rayforge>=0.27.0
 author:
   name: "Rayforge Team"
   email: "noreply@rayforge.org"

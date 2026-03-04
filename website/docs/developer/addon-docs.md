@@ -38,7 +38,7 @@ This file tells Rayforge how to load your addon.
 ```yaml
 # rayforge-addon.yaml
 
-# Unique identifier for your addon (directory name)
+# Unique identifier for your addon (must be a valid Python module name)
 name: my_custom_addon
 
 # Human-readable display name
@@ -79,7 +79,7 @@ url: https://github.com/username/my-custom-addon
 
 ### Required Fields
 
-- `name`: Unique identifier (should match directory name)
+- `name`: Unique identifier (must be a valid Python module name)
 - `display_name`: Human-readable name shown in UI
 - `description`: Brief description of addon functionality
 - `api_version`: Must be `>= 1` (Rayforge's `MINIMUM_API_VERSION`)

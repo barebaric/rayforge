@@ -69,7 +69,7 @@ class TestAddonWidgets:
         import importlib
 
         widgets = importlib.import_module(
-            "rayforge_plugins.laser_essentials.laser_essentials.widgets"
+            "rayforge_addons.laser_essentials.laser_essentials.widgets"
         )
 
         assert (
