@@ -5,30 +5,48 @@ These functions implement Minkowski sum/difference operations used
 in packing and nesting algorithms.
 """
 
-from typing import List
-from .polygon import IntPoint, IntPolygon, Polygon
+from typing import List, Tuple
+from .polygon import (
+    IntPolygon,
+    Polygon,
+    to_clipper,
+    from_clipper,
+    polygon_bounds,
+    convex_hull,
+    CLIPPER_SCALE,
+)
+
+
+def calculate_input_scale(
+    polygons: List[Polygon],
+    max_int: int = 2147483647,
+) -> float:
+    """
+    Calculate appropriate input scale based on geometry bounds.
+    """
+    if not polygons:
+        return 0.1 * max_int
+
+    max_abs = 0.0
+    for polygon in polygons:
+        for p in polygon:
+            max_abs = max(max_abs, abs(float(p[0])), abs(float(p[1])))
+
+    if max_abs < 1:
+        max_abs = 1
+
+    return (0.1 * max_int) / max_abs
 
 
 def convolve_two_segments(
-    a1: IntPoint,
-    a2: IntPoint,
-    b1: IntPoint,
-    b2: IntPoint,
-) -> IntPolygon:
+    a1: Tuple[float, float],
+    a2: Tuple[float, float],
+    b1: Tuple[float, float],
+    b2: Tuple[float, float],
+) -> List[Tuple[float, float]]:
     """
-    Convolve two line segments to produce a parallelogram.
-
-    Returns the 4 vertices of the resulting parallelogram.
-    Order matches boost::polygon convolve_two_segments.
-
-    Args:
-        a1: First point of segment A
-        a2: Second point of segment A
-        b1: First point of segment B
-        b2: Second point of segment B
-
-    Returns:
-        List of 4 vertices forming the parallelogram.
+    Creates a parallelogram from two line segments.
+    Matches the exact logic in minkowski.cc convolve_two_segments.
     """
     return [
         (a1[0] + b2[0], a1[1] + b2[1]),
@@ -39,79 +57,123 @@ def convolve_two_segments(
 
 
 def convolve_point_sequences(
-    path_a: IntPolygon, path_b: IntPolygon
+    seq_a: IntPolygon, seq_b: IntPolygon
 ) -> List[IntPolygon]:
     """
-    Convolve two point sequences (polygon outlines).
-
-    Returns a list of parallelograms formed by convolving each edge pair.
-    Matches boost::polygon convolve_two_point_sequences logic.
-
-    Args:
-        path_a: First polygon path
-        path_b: Second polygon path
-
-    Returns:
-        List of parallelogram polygons.
+    Calculates the convolution of two point sequences (polygons) by generating
+    parallelograms from all pairs of edges. This is a core part of the
+    Minkowski sum for general polygons.
     """
-    if len(path_a) < 2 or len(path_b) < 2:
+    parallelograms = []
+    if not seq_a or len(seq_a) < 2 or not seq_b or len(seq_b) < 2:
+        return parallelograms
+
+    for i in range(len(seq_a)):
+        p_a1 = seq_a[i - 1]
+        p_a2 = seq_a[i]
+
+        for j in range(len(seq_b)):
+            p_b1 = seq_b[j - 1]
+            p_b2 = seq_b[j]
+
+            parallelograms.append(
+                convolve_two_segments(p_a1, p_a2, p_b1, p_b2)
+            )
+
+    return parallelograms
+
+
+def minkowski_sum_convex(
+    poly_a: IntPolygon, poly_b: IntPolygon
+) -> List[IntPolygon]:
+    """
+    Calculates the Minkowski Sum for two CONVEX polygons.
+    Sum(A, B) = ConvexHull({a + b | a in Vertices(A), b in Vertices(B)})
+    """
+    if not poly_a or not poly_b:
         return []
 
-    result = []
-    len_a = len(path_a)
-    len_b = len(path_b)
+    all_points = []
+    for p1 in poly_a:
+        for p2 in poly_b:
+            all_points.append((p1[0] + p2[0], p1[1] + p2[1]))
 
-    for i in range(len_a):
-        a1 = path_a[i]
-        a2 = path_a[(i + 1) % len_a]
-
-        for j in range(len_b):
-            b1 = path_b[j]
-            b2 = path_b[(j + 1) % len_b]
-
-            parallelogram = convolve_two_segments(a1, a2, b1, b2)
-            result.append(parallelogram)
-
-    return result
+    hull = convex_hull(all_points)
+    return [[(int(p[0]), int(p[1])) for p in hull]] if len(hull) >= 3 else []
 
 
-def calculate_input_scale(
-    polygons: List[Polygon],
-    max_int: int = 2147483647,
-) -> float:
+def calculate_nfp(
+    stationary: Polygon,
+    orbiting: Polygon,
+    scale: int = CLIPPER_SCALE,
+) -> List[Polygon]:
     """
-    Calculate appropriate input scale based on geometry bounds.
-
-    This determines a scale factor that keeps coordinates within
-    integer limits when converted for clipper operations.
-
-    Args:
-        polygons: List of polygons to consider for bounds calculation
-        max_int: Maximum integer value to scale to (default: 32-bit signed max)
-
-    Returns:
-        Appropriate scale factor for clipper conversion.
+    Calculate the No-Fit Polygon (NFP) for two polygons.
+    Assumes polygons are convex for performance.
     """
-    if not polygons:
-        return 0.1 * max_int
+    if not stationary or not orbiting:
+        return []
 
-    max_x = 0.0
-    min_x = 0.0
-    max_y = 0.0
-    min_y = 0.0
+    static_path = to_clipper(stationary, scale)
+    orbiting_path = to_clipper(orbiting, scale)
 
-    for polygon in polygons:
-        for p in polygon:
-            max_x = max(max_x, float(p[0]))
-            min_x = min(min_x, float(p[0]))
-            max_y = max(max_y, float(p[1]))
-            min_y = min(min_y, float(p[1]))
+    # Negate orbiting polygon (reflect through origin)
+    orbiting_negated = [(-p[0], -p[1]) for p in orbiting_path]
 
-    max_abs_x = max(abs(max_x), abs(min_x))
-    max_abs_y = max(abs(max_y), abs(min_y))
-    max_abs = max(max_abs_x, max_abs_y)
+    # NFP = MinkowskiSum(stationary, -orbiting)
+    nfp_paths = minkowski_sum_convex(static_path, orbiting_negated)
 
-    if max_abs < 1:
-        max_abs = 1
+    results = []
+    for path in nfp_paths:
+        start_x = orbiting_path[0][0]
+        start_y = orbiting_path[0][1]
+        shifted = [(p[0] + start_x, p[1] + start_y) for p in path]
+        results.append(from_clipper(shifted, scale))
 
-    return (0.1 * max_int) / max_abs
+    return results
+
+
+def calculate_ifp(
+    container: Polygon,
+    part: Polygon,
+    scale: int = CLIPPER_SCALE,
+) -> List[Polygon]:
+    """
+    Calculate the Inner-Fit Polygon (IFP) using a simple formula based on
+    bounding boxes, which is exact for axis-aligned rectangles and a robust
+    approximation for other convex shapes.
+    """
+    if not container or not part:
+        return []
+
+    c_min_x, c_min_y, c_max_x, c_max_y = polygon_bounds(container)
+    p_min_x, p_min_y, p_max_x, p_max_y = polygon_bounds(part)
+
+    p_width = p_max_x - p_min_x
+    p_height = p_max_y - p_min_y
+    c_width = c_max_x - c_min_x
+    c_height = c_max_y - c_min_y
+
+    # Check if part is larger than container in either dimension
+    if p_width > c_width + 1e-9 or p_height > c_height + 1e-9:
+        return []
+
+    # This formula gives the valid locus for the part's reference point
+    # (part[0])
+    ifp_min_x = c_min_x - p_min_x
+    ifp_max_x = c_max_x - p_max_x
+    ifp_min_y = c_min_y - p_min_y
+    ifp_max_y = c_max_y - p_max_y
+
+    # If the resulting IFP has no area, return empty
+    if ifp_min_x > ifp_max_x or ifp_min_y > ifp_max_y:
+        return []
+
+    ifp = [
+        (ifp_min_x, ifp_min_y),
+        (ifp_max_x, ifp_min_y),
+        (ifp_max_x, ifp_max_y),
+        (ifp_min_x, ifp_max_y),
+    ]
+
+    return [ifp]

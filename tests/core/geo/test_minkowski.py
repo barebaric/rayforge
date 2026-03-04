@@ -3,11 +3,13 @@ Tests for rayforge.core.geo.minkowski module.
 """
 
 import pytest
-
 from rayforge.core.geo.minkowski import (
     convolve_two_segments,
     convolve_point_sequences,
     calculate_input_scale,
+    minkowski_sum_convex,
+    calculate_nfp,
+    calculate_ifp,
 )
 
 
@@ -157,7 +159,7 @@ class TestCalculateInputScale:
         polygons = [[(0.0, 0.0), (100.0, 0.0), (100.0, 100.0), (0.0, 100.0)]]
         scale = calculate_input_scale(polygons, max_int=1000000)
         assert scale > 0
-        assert scale < 100000
+        assert scale <= 1000
 
     def test_very_small_coordinates(self):
         polygons = [
@@ -180,3 +182,73 @@ class TestCalculateInputScale:
         ]
         scale = calculate_input_scale(polygons)
         assert scale > 0
+
+
+class TestMinkowskiSumConvex:
+    """Tests for _minkowski_sum_convex function."""
+
+    def test_basic_sum(self):
+        poly_a = [(0, 0), (10, 0), (10, 10), (0, 10)]
+        poly_b = [(0, 0), (5, 0), (5, 5), (0, 5)]
+        result = minkowski_sum_convex(poly_a, poly_b)
+        assert len(result) == 1
+        hull = result[0]
+        assert len(hull) >= 4
+        max_x = max(p[0] for p in hull)
+        max_y = max(p[1] for p in hull)
+        min_x = min(p[0] for p in hull)
+        min_y = min(p[1] for p in hull)
+        assert max_x == 15
+        assert max_y == 15
+        assert min_x == 0
+        assert min_y == 0
+
+    def test_empty_inputs(self):
+        assert minkowski_sum_convex([], [(0, 0)]) == []
+        assert minkowski_sum_convex([(0, 0)], []) == []
+
+
+class TestCalculateNFP:
+    """Tests for calculate_nfp function."""
+
+    def test_basic_nfp(self):
+        stat = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)]
+        orb = [(0.0, 0.0), (5.0, 0.0), (5.0, 5.0), (0.0, 5.0)]
+        result = calculate_nfp(stat, orb)
+        assert len(result) == 1
+        nfp = result[0]
+        max_x = max(p[0] for p in nfp)
+        min_x = min(p[0] for p in nfp)
+
+        # Width of NFP = width(A) + width(B) = 10 + 5 = 15
+        assert abs((max_x - min_x) - 15.0) < 0.1
+
+    def test_empty_inputs(self):
+        assert calculate_nfp([], [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)]) == []
+        assert calculate_nfp([(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)], []) == []
+
+
+class TestCalculateIFP:
+    """Tests for calculate_ifp function."""
+
+    def test_basic_ifp(self):
+        cont = [(0.0, 0.0), (20.0, 0.0), (20.0, 20.0), (0.0, 20.0)]
+        part = [(0.0, 0.0), (5.0, 0.0), (5.0, 5.0), (0.0, 5.0)]
+        result = calculate_ifp(cont, part)
+        assert len(result) == 1
+        ifp = result[0]
+        max_x = max(p[0] for p in ifp)
+        min_x = min(p[0] for p in ifp)
+
+        # Width of IFP = width(A) - width(B) = 20 - 5 = 15
+        assert abs((max_x - min_x) - 15.0) < 0.1
+
+    def test_part_too_large(self):
+        cont = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)]
+        part = [(0.0, 0.0), (20.0, 0.0), (20.0, 20.0), (0.0, 20.0)]
+        result = calculate_ifp(cont, part)
+        assert result == []
+
+    def test_empty_inputs(self):
+        assert calculate_ifp([], [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)]) == []
+        assert calculate_ifp([(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)], []) == []
