@@ -185,7 +185,7 @@ class AssetListView(Expander):
             if not isinstance(child, StockItem):
                 return
 
-        visible_assets = list(self.doc.get_all_assets())
+        visible_assets = [a for a in self.doc.get_all_assets() if not a.hidden]
         count = len(visible_assets)
         self.set_subtitle(
             _("{count} asset").format(count=count)
@@ -195,7 +195,7 @@ class AssetListView(Expander):
         self.update_list()
 
     def update_list(self):
-        new_assets = list(self.doc.get_all_assets())
+        new_assets = [a for a in self.doc.get_all_assets() if not a.hidden]
         uid_to_widget: Dict[str, Gtk.Widget] = {}
         child = self.draglist.get_first_child()
 

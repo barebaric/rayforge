@@ -65,7 +65,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _test_worker_initializer():
+def _test_worker_initializer(shared_state: dict):
     """
     A top-level, picklable worker initializer for the test environment.
     This patches GLib.idle_add inside the worker process to prevent deadlocks.
@@ -216,9 +216,11 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
     temp_config_dir = tmp_path / "config"
     temp_dialect_dir = temp_config_dir / "dialects"
     temp_machine_dir = temp_config_dir / "machines"
+    temp_addons_dir = temp_config_dir / "addons"
     monkeypatch.setattr(config, "CONFIG_DIR", temp_config_dir)
     monkeypatch.setattr(config, "DIALECT_DIR", temp_dialect_dir)
     monkeypatch.setattr(config, "MACHINE_DIR", temp_machine_dir)
+    monkeypatch.setattr(config, "ADDONS_DIR", temp_addons_dir)
 
     # 2. Patch the global task_mgr proxy to use our test-isolated instance.
     monkeypatch.setattr(tasker.task_mgr, "_instance", task_mgr)
@@ -428,9 +430,11 @@ def ui_context_initializer(tmp_path, monkeypatch, ui_task_mgr):
     temp_config_dir = tmp_path / "config"
     temp_dialect_dir = temp_config_dir / "dialects"
     temp_machine_dir = temp_config_dir / "machines"
+    temp_addons_dir = temp_config_dir / "addons"
     monkeypatch.setattr(config, "CONFIG_DIR", temp_config_dir)
     monkeypatch.setattr(config, "DIALECT_DIR", temp_dialect_dir)
     monkeypatch.setattr(config, "MACHINE_DIR", temp_machine_dir)
+    monkeypatch.setattr(config, "ADDONS_DIR", temp_addons_dir)
     monkeypatch.setattr(tasker, "task_mgr", ui_task_mgr)
 
     context = get_context()

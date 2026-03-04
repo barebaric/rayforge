@@ -66,37 +66,30 @@ class TestAddonWidgets:
     @pytest.mark.ui
     @pytest.mark.usefixtures("ui_context_initializer")
     def test_global_registry_has_producer_widgets(self):
-        import importlib
+        widget = step_widget_registry.get("ContourProducer")
+        assert widget is not None
+        assert widget.__name__ == "ContourProducerSettingsWidget"
 
-        widgets = importlib.import_module(
-            "rayforge_addons.laser_essentials.laser_essentials.widgets"
-        )
+        widget = step_widget_registry.get("Rasterizer")
+        assert widget is not None
+        assert widget.__name__ == "RasterSettingsWidget"
 
-        assert (
-            step_widget_registry.get("ContourProducer")
-            == widgets.ContourProducerSettingsWidget
-        )
-        assert (
-            step_widget_registry.get("Rasterizer")
-            == widgets.RasterSettingsWidget
-        )
-        assert (
-            step_widget_registry.get("DepthEngraver")
-            == widgets.RasterSettingsWidget
-        )
-        assert (
-            step_widget_registry.get("DitherRasterizer")
-            == widgets.RasterSettingsWidget
-        )
-        assert (
-            step_widget_registry.get("FrameProducer")
-            == widgets.FrameProducerSettingsWidget
-        )
-        assert (
-            step_widget_registry.get("MaterialTestGridProducer")
-            == widgets.MaterialTestGridSettingsWidget
-        )
-        assert (
-            step_widget_registry.get("ShrinkWrapProducer")
-            == widgets.ShrinkWrapProducerSettingsWidget
-        )
+        widget = step_widget_registry.get("DepthEngraver")
+        assert widget is not None
+        assert widget.__name__ == "RasterSettingsWidget"
+
+        widget = step_widget_registry.get("DitherRasterizer")
+        assert widget is not None
+        assert widget.__name__ == "RasterSettingsWidget"
+
+        widget = step_widget_registry.get("FrameProducer")
+        assert widget is not None
+        assert widget.__name__ == "FrameProducerSettingsWidget"
+
+        widget = step_widget_registry.get("MaterialTestGridProducer")
+        assert widget is not None
+        assert widget.__name__ == "MaterialTestGridSettingsWidget"
+
+        widget = step_widget_registry.get("ShrinkWrapProducer")
+        assert widget is not None
+        assert widget.__name__ == "ShrinkWrapProducerSettingsWidget"

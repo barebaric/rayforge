@@ -35,7 +35,7 @@ def long_running_process_func(context: ExecutionContextProxy):
     return "should_be_discarded"
 
 
-def worker_init(filepath: Path):
+def worker_init(shared_state: dict, filepath: Path):
     """Initializer function that writes its PID to a file."""
     # This function runs in the worker process.
     # We use a file-based side effect for the test to observe.
