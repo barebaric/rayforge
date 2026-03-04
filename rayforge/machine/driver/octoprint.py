@@ -1,5 +1,6 @@
 import asyncio
 import inspect
+import json
 import logging
 from typing import (
     Optional,
@@ -15,9 +16,13 @@ from typing import (
 
 from gettext import gettext as _
 
+import aiohttp
+
 from rayforge.core.varset.octoprintauthflowvar import OctoprintAuthFlowVar
+from rayforge.machine.transport.validators import is_valid_hostname_or_ip
+from rayforge.machine.transport.websocket import WebSocketTransport
 from ...context import RayforgeContext
-from ...core.varset import VarSet, PortVar
+from ...core.varset import VarSet
 from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TransportStatus
@@ -25,8 +30,10 @@ from .driver import (
     DeviceStatus,
     Driver,
     Axis,
+    DriverPrecheckError,
     Pos,
 )
+from .octoprint_api import SocketMessagesTypes, ConnectionInfos
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -47,10 +54,13 @@ class OctoprintDriver(Driver):
         super().__init__(context, machine)
         self.host = None
         self.port = None
-        self.ws_port = None
-        self.http = None
+        self.base_url = None
+        self.token = None
+        self.http_session = None
         self.websocket = None
-        self.keep_running = False
+        self.status: ConnectionInfos = ConnectionInfos(
+            connected=False, printer_name="Unknown", flags=[]
+        )
         self._connection_task: Optional[asyncio.Task] = None
         self._cmd_lock = asyncio.Lock()
 
@@ -67,8 +77,6 @@ class OctoprintDriver(Driver):
     @property
     def resource_uri(self) -> Optional[str]:
         if self.host:
-            # We assume port 80 is the control port for locking purposes
-            # even if ws_port is different.
             return f"tcp://{self.host}:{self.port}"
         return None
 
@@ -76,12 +84,6 @@ class OctoprintDriver(Driver):
     def get_setup_vars(cls) -> "VarSet":
         return VarSet(
             vars=[
-                PortVar(
-                    key="ws_port",
-                    label=_("WebSocket Port"),
-                    description=_("The WebSocket port for the device"),
-                    default=81,
-                ),
                 OctoprintAuthFlowVar(
                     key="authorize_button",
                     label=_("Authorize"),
@@ -116,10 +118,57 @@ class OctoprintDriver(Driver):
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
-        pass
+        token, host, port = OctoprintAuthFlowVar.parse_value(
+            cast(str, kwargs.get("authorize_button", ""))
+        )
+        if not is_valid_hostname_or_ip(host):
+            raise DriverPrecheckError(
+                _("Invalid hostname or IP address: '{host}'").format(host=host)
+            )
 
     def _setup_implementation(self, **kwargs: Any) -> None:
-        pass
+        token, host, port = OctoprintAuthFlowVar.parse_value(
+            cast(str, kwargs.get("authorize_button", ""))
+        )
+        self.token = token
+        self.host = host
+        self.port = port
+
+        self.base_url = f"http://{self.host}:{self.port}/"
+        self.socket_url = f"ws://{self.host}:{self.port}/sockjs/websocket"
+        self.websocket = WebSocketTransport(self.socket_url)
+        self.websocket.status_changed.connect(self.on_websocket_status_changed)
+        self.websocket.received.connect(self.on_websocket_data_received)
+
+    def on_websocket_data_received(self, sender, raw_data: bytes):
+        try:
+            data_str = raw_data.decode("utf-8").strip()
+        except UnicodeDecodeError:
+            logger.warning(
+                f"Received non-UTF8 data on WebSocket: {raw_data!r}"
+            )
+            return
+        logger.debug(f"WebSocket data received: {data_str}")
+        data: Dict[str, Any] = json.loads(raw_data)
+        msg_type = list(data.keys())[0]
+        data = data[msg_type]
+        match msg_type:
+            case SocketMessagesTypes.CONNECTED:
+                pass
+            case SocketMessagesTypes.HISTORY:
+                # TODO: Fetch profiles to get printer name
+                self.status = ConnectionInfos(
+                    data["state"]["flags"]["operational"],
+                    "WIP",
+                    data["state"]["flags"],
+                )
+
+    def on_websocket_status_changed(
+        self, sender, status: TransportStatus, message: Optional[str] = None
+    ):
+        self.connection_status_changed.send(
+            self, status=status, message=message
+        )
 
     @classmethod
     def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
@@ -128,12 +177,47 @@ class OctoprintDriver(Driver):
 
     async def _connect_implementation(self) -> None:
         # Simulate connection sequence
+        if not self.base_url or not self.token or not self.websocket:
+            self.connection_status_changed.send(
+                self,
+                status=TransportStatus.ERROR,
+                message=_("Missing connection parameters"),
+            )
+            return
         self.connection_status_changed.send(
             self, status=TransportStatus.CONNECTING
         )
-        await asyncio.sleep(0.1)
-
-        # Set IDLE state so the UI knows we are ready and not "busy"
+        self.http_session = aiohttp.ClientSession(
+            base_url=self.base_url, headers={"X-Api-Key": self.token}
+        )
+        await self.websocket.connect()
+        async with self.http_session.post(
+            "/api/login",
+            json={"passive": True},
+            headers={"Content-Type": "application/json"},
+        ) as response:
+            if response.status != 200:
+                self.connection_status_changed.send(
+                    self,
+                    status=TransportStatus.ERROR,
+                    message=_("Failed to authenticate with Octoprint API"),
+                )
+                return
+            data = await response.json()
+            usr_name = data.get("name")
+            session_id = data.get("session")
+            subscribe_payload = {
+                "subscribe": {
+                    "state": {"logs": True, "messages": False},
+                    "event": True,
+                    "plugins": False,
+                }
+            }
+            await self.websocket.send(
+                json.dumps(subscribe_payload).encode("utf-8")
+            )
+            auth_payload = {"auth": f"{usr_name}:{session_id}"}
+            await self.websocket.send(json.dumps(auth_payload).encode("utf-8"))
         self.state.status = DeviceStatus.IDLE
         self.state_changed.send(self, state=self.state)
 
@@ -277,3 +361,19 @@ class OctoprintDriver(Driver):
             self, message=f"Probe triggered at {simulated_pos}"
         )
         return simulated_pos
+
+    async def cleanup(self):
+        self.keep_running = False
+        if self._connection_task:
+            self._connection_task.cancel()
+        if self.websocket:
+            await self.websocket.disconnect()
+            self.websocket.received.disconnect(self.on_websocket_data_received)
+            self.websocket.status_changed.disconnect(
+                self.on_websocket_status_changed
+            )
+            self.websocket = None
+        if self.http_session:
+            await self.http_session.close()
+            self.http_session = None
+        await super().cleanup()

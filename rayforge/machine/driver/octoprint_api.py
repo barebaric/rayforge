@@ -1,11 +1,13 @@
 import asyncio
+from enum import Enum
 import logging
 import aiohttp
 import webbrowser
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 
+# from ..transport import TransportStatus
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +17,37 @@ class OctoprintNodeType:
     url: str
     version: str
     port: Optional[int] = None
+
+
+class SocketMessagesTypes(Enum):
+    CONNECTED = "connected"
+    REAUTH_REQUIRED = "reauthRequired"
+    CURRENT = "current"
+    HISTORY = "history"
+    EVENT = "event"
+    SLICING_PROGRESS = "slicingProgress"
+    PLUGIN = "plugin"
+
+
+class ConnectionFlags(Enum):
+    CANCELLING = "cancelling"
+    CLOSED_OR_ERROR = "closedOrError"
+    ERROR = "error"
+    FINISHING = "finishing"
+    OPERATIONAL = "operational"
+    PAUSED = "paused"
+    PAUSING = "pausing"
+    PRINTING = "printing"
+    READY = "ready"
+    RESUMING = "resuming"
+    SD_READY = "sdReady"
+
+
+@dataclass
+class ConnectionInfos:
+    connected: bool
+    printer_name: str
+    flags: List[ConnectionFlags]
 
 
 class AuthorizationWorkflow:

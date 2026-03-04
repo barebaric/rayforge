@@ -54,6 +54,12 @@ class OctoprintAuthFlowVar(Var[str]):
             value=value,
         )
 
+    @staticmethod
+    def parse_value(val: str) -> tuple[str, str, int]:
+        token_part, host_port_part = val.split("@")
+        host_part, port_part = host_port_part.split(":")
+        return token_part, host_part, int(port_part)
+
     @property
     def value(self) -> Optional[str]:
         """The value is a string in the format token@host:port"""
