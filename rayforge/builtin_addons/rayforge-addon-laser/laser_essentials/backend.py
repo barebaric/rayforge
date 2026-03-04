@@ -26,7 +26,7 @@ from .steps import (
 )
 from .commands import MaterialTestCmd
 
-_localedir = Path(__file__).parent.parent / "locales"
+_localedir = Path(__file__).parent.parent / "locale"
 _t = gettext.translation(
     "laser_essentials", localedir=_localedir, fallback=True
 )

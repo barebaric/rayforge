@@ -133,9 +133,9 @@ for addon_dir in rayforge/builtin_addons/*/; do
   addon_name=$(basename "$addon_dir")
 
   # Try to find the source directory and locale directory
-  if [ -d "$addon_dir/$addon_name" ] && [ -d "$addon_dir/locales" ]; then
+  if [ -d "$addon_dir/$addon_name" ] && [ -d "$addon_dir/locale" ]; then
     src_dir="$addon_dir/$addon_name"
-    locale_dir="$addon_dir/locales"
+    locale_dir="$addon_dir/locale"
     process_package "$addon_name" "$src_dir" "$locale_dir"
   elif [ -d "$addon_dir/locale" ]; then
     src_dir="$addon_dir/$addon_name"

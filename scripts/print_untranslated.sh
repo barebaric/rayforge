@@ -59,9 +59,7 @@ if [ "$LANG_CODE" = "list" ]; then
   for addon_dir in rayforge/builtin_addons/*/; do
     addon_name=$(basename "$addon_dir")
     
-    if [ -d "$addon_dir/locales" ]; then
-      locale_dir="$addon_dir/locales"
-    elif [ -d "$addon_dir/locale" ]; then
+    if [ -d "$addon_dir/locale" ]; then
       locale_dir="$addon_dir/locale"
     else
       continue
@@ -129,7 +127,7 @@ msgattrib --untranslated --no-obsolete "$PO_FILE" | awk '
 # Check builtin packages
 for pkg_dir in rayforge/builtin_packages/*/; do
   pkg_name=$(basename "$pkg_dir")
-  locale_dir="$pkg_dir/locales"
+  locale_dir="$pkg_dir/locale"
   check_package "$pkg_name" "$locale_dir"
 done
 
@@ -137,9 +135,7 @@ done
 for addon_dir in rayforge/builtin_addons/*/; do
   addon_name=$(basename "$addon_dir")
   
-  if [ -d "$addon_dir/locales" ]; then
-    locale_dir="$addon_dir/locales"
-  elif [ -d "$addon_dir/locale" ]; then
+  if [ -d "$addon_dir/locale" ]; then
     locale_dir="$addon_dir/locale"
   else
     continue
