@@ -1,20 +1,8 @@
 import logging
-import math
 import cairo
 from typing import Optional
 from ....core.stock import StockItem
 from ....core.matrix import Matrix
-from ....core.geo.constants import (
-    CMD_TYPE_MOVE,
-    CMD_TYPE_LINE,
-    CMD_TYPE_ARC,
-    COL_TYPE,
-    COL_X,
-    COL_Y,
-    COL_I,
-    COL_J,
-    COL_CW,
-)
 from ...canvas import CanvasElement
 
 
@@ -93,41 +81,8 @@ class StockElement(CanvasElement):
             ctx.scale(1.0 / geo_width, 1.0 / geo_height)
             ctx.translate(-min_x, -min_y)
 
-        # Build the path from geometry data
-        last_point = (0.0, 0.0)
-        data = self.data.geometry.data
-        if data is not None:
-            for row in data:
-                cmd_type = row[COL_TYPE]
-                x, y = row[COL_X], row[COL_Y]
-
-                if cmd_type == CMD_TYPE_MOVE:
-                    ctx.move_to(x, y)
-                elif cmd_type == CMD_TYPE_LINE:
-                    ctx.line_to(x, y)
-                elif cmd_type == CMD_TYPE_ARC:
-                    start_x, start_y = last_point
-                    i, j = row[COL_I], row[COL_J]
-                    center_x, center_y = start_x + i, start_y + j
-                    radius = math.dist(
-                        (start_x, start_y), (center_x, center_y)
-                    )
-                    if radius < 1e-6:
-                        ctx.line_to(x, y)
-                        last_point = (x, y)
-                        continue
-
-                    angle1 = math.atan2(start_y - center_y, start_x - center_x)
-                    angle2 = math.atan2(y - center_y, x - center_x)
-
-                    is_clockwise = bool(row[COL_CW])
-                    if is_clockwise:
-                        ctx.arc(center_x, center_y, radius, angle1, angle2)
-                    else:
-                        ctx.arc_negative(
-                            center_x, center_y, radius, angle1, angle2
-                        )
-                last_point = (x, y)
+        # Draw the geometry path using the standard method
+        self.data.geometry.to_cairo(ctx)
 
         # Get the material color if available
         material = self.data.material

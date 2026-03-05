@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional, TYPE_CHECKING, Tuple, cast
+from gettext import gettext as _
 from .geo import Geometry
 from .item import DocItem
 from .matrix import Matrix
@@ -88,6 +89,36 @@ class StockItem(DocItem):
         new_item.matrix = Matrix.from_list(data["matrix"])
         new_item.visible = data.get("visible", True)
         new_item.extra = extra
+
+        return new_item
+
+    def duplicate(self) -> "StockItem":
+        """
+        Creates a deep copy of this StockItem with a new UID.
+
+        This also creates a duplicate of the associated StockAsset,
+        ensuring the new item is completely independent.
+        """
+        from .stock_asset import StockAsset
+
+        old_asset = self.stock_asset
+        if old_asset:
+            asset_dict = old_asset.to_dict()
+            new_asset = StockAsset.from_dict(asset_dict)
+            new_asset.uid = str(__import__("uuid").uuid4())
+            new_asset.name = _("{name} (copy)").format(name=old_asset.name)
+        else:
+            new_asset = None
+
+        item_dict = self.to_dict()
+        new_item = StockItem.from_dict(item_dict)
+        new_item.uid = str(__import__("uuid").uuid4())
+        new_item.name = _("{name} (copy)").format(name=self.name)
+
+        if new_asset:
+            new_item.stock_asset_uid = new_asset.uid
+            if self.doc:
+                self.doc.add_asset(new_asset, silent=True)
 
         return new_item
 

@@ -3,10 +3,11 @@ import logging
 from typing import TYPE_CHECKING, List, Dict, Tuple, Sequence, Optional, cast
 from gettext import gettext as _
 from ..core.item import DocItem
-from ..core.group import Group
+from ..core.stock import StockItem
 from ..core.undo import ListItemCommand, ReorderListCommand
 from ..core.workpiece import WorkPiece
 from ..core.workflow import Workflow
+from .stock_cmd import RemoveStockAssetCommand
 
 if TYPE_CHECKING:
     from ..core.sketcher.sketch import Sketch
@@ -105,11 +106,8 @@ class EditCmd:
             offset_y = self._paste_increment_mm[1] * self._paste_counter
 
             for item_dict in self._clipboard_snapshot:
-                # Recreate item from dictionary. Assumes 'type' key exists.
-                if item_dict.get("type") == "group":
-                    new_item = Group.from_dict(item_dict)
-                else:  # Assume WorkPiece as default
-                    new_item = WorkPiece.from_dict(item_dict)
+                # Recreate item from dictionary using factory method
+                new_item = DocItem.create_from_dict(item_dict)
 
                 # Assign new UIDs to the pasted item and all its children
                 # recursively
@@ -162,27 +160,16 @@ class EditCmd:
 
         with history.transaction(_("Duplicate item(s)")) as t:
             for item in top_level_items:
-                item_dict = item.to_dict()
-
-                if item_dict.get("type") == "group":
-                    new_item = Group.from_dict(item_dict)
-                else:
-                    new_item = WorkPiece.from_dict(item_dict)
-
-                def assign_new_uids(item: DocItem):
-                    item.uid = str(uuid.uuid4())
-                    for child in item.children:
-                        assign_new_uids(child)
-
-                assign_new_uids(new_item)
+                new_item = item.duplicate()
                 newly_duplicated_items.append(new_item)
 
-                # A duplicated item has the same position as the original.
-                # No offset is applied. The deserialized new_item already
-                # has the correct matrix.
+                if isinstance(new_item, StockItem):
+                    owner = self._editor.doc
+                else:
+                    owner = target_layer
 
                 command = ListItemCommand(
-                    owner_obj=target_layer,
+                    owner_obj=owner,
                     item=new_item,
                     undo_command="remove_child",
                     redo_command="add_child",
@@ -252,6 +239,7 @@ class EditCmd:
                         "has no parent."
                     )
                     continue
+
                 command = ListItemCommand(
                     owner_obj=item.parent,
                     item=item,
@@ -260,6 +248,24 @@ class EditCmd:
                     name=_("Remove item"),
                 )
                 t.execute(command)
+
+                if isinstance(item, StockItem):
+                    stock_item = cast(StockItem, item)
+                    stock_asset_uid = stock_item.stock_asset_uid
+
+                    other_items_using_asset = [
+                        other
+                        for other in self._editor.doc.stock_items
+                        if other.stock_asset_uid == stock_asset_uid
+                        and other.uid != stock_item.uid
+                    ]
+
+                    if not other_items_using_asset:
+                        t.execute(
+                            RemoveStockAssetCommand(
+                                self._editor.doc, stock_asset_uid
+                            )
+                        )
 
     def clear_all_items(self):
         """

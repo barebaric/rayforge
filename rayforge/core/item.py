@@ -101,6 +101,48 @@ class DocItem(ABC):
         """Deserializes the item from a dictionary."""
         raise NotImplementedError
 
+    @staticmethod
+    def create_from_dict(data: Dict) -> "DocItem":
+        """
+        Factory method that deserializes a dictionary into the appropriate
+        DocItem subclass based on the 'type' field.
+        """
+        item_type = data.get("type")
+
+        if item_type == "group":
+            from .group import Group
+
+            return Group.from_dict(data)
+        elif item_type == "stockitem":
+            from .stock import StockItem
+
+            return StockItem.from_dict(data)
+        elif item_type == "workpiece" or item_type is None:
+            from .workpiece import WorkPiece
+
+            return WorkPiece.from_dict(data)
+        else:
+            raise ValueError(f"Unknown item type: {item_type}")
+
+    def duplicate(self) -> "DocItem":
+        """
+        Creates a deep copy of this item with new UIDs.
+
+        Subclasses can override this method if they need custom duplication
+        logic, but the default implementation using serialization should
+        work for most cases.
+        """
+        item_dict = self.to_dict()
+        new_item = self.__class__.from_dict(item_dict)
+
+        def assign_new_uids(item: "DocItem"):
+            item.uid = str(uuid.uuid4())
+            for child in item.children:
+                assign_new_uids(child)
+
+        assign_new_uids(new_item)
+        return new_item
+
     def __iter__(self):
         """
         Provides a non-recursive iterator over the item's direct children.
