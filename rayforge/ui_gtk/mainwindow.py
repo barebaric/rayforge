@@ -467,6 +467,10 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_surface_transform_initiated
         )
         self.surface.transform_end.connect(self._on_surface_transform_end)
+        self.surface.work_zero_requested.connect(self._on_work_zero_requested)
+        self.surface.click_to_zero_cancelled.connect(
+            self._on_click_to_zero_cancelled
+        )
 
         # Connect new signal from WorkSurface for edit sketch requests
         self.surface.edit_sketch_requested.connect(
@@ -486,6 +490,11 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self.control_panel.set_visible(False)
         self.vertical_paned.set_end_child(self.control_panel)
+
+        # Connect to click-to-zero mode signal
+        self.control_panel.click_to_zero_mode_changed.connect(
+            self._on_click_to_zero_mode_changed
+        )
 
         # Connect to position signal to remember user's chosen height
         self.vertical_paned.connect(
@@ -537,6 +546,27 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Trigger the non-blocking check for addon updates
         self.update_cmd.check_for_updates_on_startup()
+
+    def _on_click_to_zero_mode_changed(self, sender, *, active: bool):
+        """Handle click-to-zero mode toggle from control panel."""
+        self.surface.set_click_to_zero_mode(active)
+
+    def _on_work_zero_requested(self, sender, *, x: float, y: float):
+        """Handle work zero request from canvas click."""
+        config = get_context().config
+        if not config.machine:
+            return
+
+        async def set_zero_func(ctx):
+            if config.machine:
+                await config.machine.set_work_origin(x, y, 0.0)
+
+        task_mgr.add_coroutine(set_zero_func)
+        self.control_panel.set_click_to_zero_mode(False)
+
+    def _on_click_to_zero_cancelled(self, sender):
+        """Handle click-to-zero mode cancellation."""
+        self.control_panel.set_click_to_zero_mode(False)
 
     def _apply_saved_visibility_state(self):
         """

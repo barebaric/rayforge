@@ -19,8 +19,6 @@ logger = logging.getLogger(__name__)
 
 
 class MachineControlPanel(Gtk.Box):
-    notification_requested = Signal()
-
     def __init__(
         self,
         machine: Optional[Machine],
@@ -29,9 +27,12 @@ class MachineControlPanel(Gtk.Box):
     ):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
 
+        self.notification_requested = Signal()
+        self.click_to_zero_mode_changed = Signal()
         self.machine = machine
         self.machine_cmd = machine_cmd
         self._edit_dialog = None
+        self._click_to_zero_mode = False
 
         self.hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.hbox.set_spacing(12)
@@ -159,6 +160,22 @@ class MachineControlPanel(Gtk.Box):
         )
         zero_button_box.append(self.zero_here_btn)
 
+        # Click to Zero button
+        self._click_to_zero_icon = get_icon("crosshairs-symbolic")
+        self.click_to_zero_btn = Gtk.Button(child=self._click_to_zero_icon)
+        self.click_to_zero_btn.set_tooltip_text(
+            _("Click Canvas to Set Work Zero")
+        )
+        self.click_to_zero_btn.add_css_class("flat")
+        self.click_to_zero_btn.set_size_request(40, -1)
+        self.click_to_zero_btn.connect(
+            "clicked", self._on_click_to_zero_toggled
+        )
+        zero_button_box.append(self.click_to_zero_btn)
+        self.click_to_zero_btn.set_tooltip_text(
+            _("Click on canvas to set work zero")
+        )
+
         # Jog Speed row
         speed_adjustment = Gtk.Adjustment(
             value=1000, lower=1, upper=60000, step_increment=10
@@ -251,6 +268,17 @@ class MachineControlPanel(Gtk.Box):
             return
         machine = self.machine
         task_mgr.add_coroutine(lambda ctx: machine.set_work_origin_here(axis))
+
+    def set_click_to_zero_mode(self, active: bool):
+        """Set the click-to-zero mode programmatically."""
+        if self._click_to_zero_mode != active:
+            self._click_to_zero_mode = active
+            self._update_wcs_ui()
+            self.click_to_zero_mode_changed.send(self, active=active)
+
+    def _on_click_to_zero_toggled(self, button):
+        """Handle Click to Zero button click."""
+        self.set_click_to_zero_mode(not self._click_to_zero_mode)
 
     def _on_edit_offsets_clicked(self, button):
         """Open a dialog to edit WCS offsets manually."""

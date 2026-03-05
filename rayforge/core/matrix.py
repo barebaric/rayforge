@@ -522,7 +522,7 @@ class Matrix:
         """
         vec = np.array([point[0], point[1], 1])
         res_vec = np.dot(self.m, vec)
-        return (res_vec[0], res_vec[1])
+        return (float(res_vec[0]), float(res_vec[1]))
 
     def transform_vector(
         self, vector: Tuple[float, float]
@@ -534,7 +534,7 @@ class Matrix:
         # Use 0 for the homogeneous coordinate to ignore translation
         vec = np.array([vector[0], vector[1], 0])
         res_vec = np.dot(self.m, vec)
-        return (res_vec[0], res_vec[1])
+        return (float(res_vec[0]), float(res_vec[1]))
 
     def transform_rectangle(
         self, rect: Tuple[float, float, float, float]
