@@ -117,6 +117,32 @@ class StockItem(DocItem):
         asset = self.stock_asset
         return asset.geometry if asset else Geometry()
 
+    def get_world_geometry(self) -> "Geometry":
+        """
+        Returns the geometry transformed to world space.
+        """
+        geo = self.geometry
+        if geo.is_empty():
+            return geo
+        world_geo = geo.copy()
+        world_transform = self.get_world_transform()
+        world_geo.transform(world_transform.to_4x4_numpy())
+        return world_geo
+
+    def get_world_rect_geometry(self) -> "Geometry":
+        """
+        Returns a rectangle geometry in world space based on the bbox.
+        """
+        x, y, w, h = self.bbox
+        geo = Geometry()
+        if w > 0 and h > 0:
+            geo.move_to(x, y)
+            geo.line_to(x + w, y)
+            geo.line_to(x + w, y + h)
+            geo.line_to(x, y + h)
+            geo.close_path()
+        return geo
+
     @property
     def display_icon_name(self) -> str:
         """Delegates display_icon_name access to the StockAsset."""
