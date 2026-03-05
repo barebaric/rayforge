@@ -789,23 +789,14 @@ class FileCmd:
 
         # 2. Position at reference origin
         # The reference origin is where the user expects (0,0) to be.
-        # get_reference_offset returns WORLD coords of the reference origin
-        # when wcs_origin_is_workarea_origin is True (the common case).
-        # We need to account for the item size based on the machine's origin
-        # corner to ensure the item stays within the work area.
-        ref_x, ref_y, __ = machine.get_reference_offset()
-
-        # Adjust target position based on origin corner.
-        # For right-origin machines, the item's left edge should be
-        # positioned so the item fits within the work area.
-        # For top-origin machines (y_axis_down), adjust Y similarly.
-        target_x = ref_x
-        target_y = ref_y
-
-        if machine.x_axis_right:
-            target_x = ref_x - bbox_w
-        if machine.y_axis_down:
-            target_y = ref_y - bbox_h
+        # get_reference_position_world returns WORLD coords of the reference
+        # origin. We use world_position_from_origin to handle origin corner
+        # adjustment.
+        ref_x, ref_y = machine.get_reference_position_world()
+        space = machine.get_coordinate_space()
+        target_x, target_y = space.world_position_from_origin(
+            ref_x, ref_y, (bbox_w, bbox_h)
+        )
 
         # Calculate translation to move bbox top-left to the target position
         delta_x = target_x - bbox_x

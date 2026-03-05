@@ -154,12 +154,18 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                 context.set_message("Using whole surface as boundary...")
 
             # Get machine work area
-            wa_x, wa_y, wa_w, wa_h = 0.0, 0.0, 200.0, 200.0  # Fallback
+            wa_w, wa_h = 200.0, 200.0  # Fallback
             machine = get_context().machine
             if machine:
-                wa_x, wa_y, wa_w, wa_h = machine.work_area
-
-            canvas_origin_world = (wa_x, wa_y)
+                work_area = machine.work_area
+                wa_w, wa_h = work_area[2], work_area[3]
+                ref_x, ref_y = machine.get_reference_position_world()
+                space = machine.get_coordinate_space()
+                canvas_origin_world = space.world_position_from_origin(
+                    ref_x, ref_y, (wa_w, wa_h)
+                )
+            else:
+                canvas_origin_world = (0.0, 0.0)
             canvas_w_mm, canvas_h_mm = wa_w, wa_h
             canvas_w_px = round(canvas_w_mm * self.resolution)
             canvas_h_px = round(canvas_h_mm * self.resolution)

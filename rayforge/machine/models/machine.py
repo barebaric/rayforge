@@ -809,6 +809,20 @@ class Machine:
         else:
             return self.get_active_wcs_offset()
 
+    def get_reference_position_world(self) -> Tuple[float, float]:
+        """
+        Returns the reference origin position in WORLD coordinates.
+
+        This is used for positioning items in world space at the reference
+        origin (either workarea origin or WCS origin, depending on settings).
+
+        Returns:
+            Tuple of (x, y) in WORLD space.
+        """
+        offset_x, offset_y, _ = self.get_reference_offset()
+        machine_space = MachineSpace.from_machine(self)
+        return machine_space.machine_point_to_world(offset_x, offset_y)
+
     def get_visual_wcs_offset(self) -> Tuple[float, float]:
         """
         Returns the WCS offset transformed to visual coordinates.

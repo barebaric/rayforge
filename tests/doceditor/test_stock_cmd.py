@@ -5,14 +5,25 @@ from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.geo import Geometry
 from rayforge.doceditor.stock_cmd import StockCmd
+from rayforge.pipeline.coordspace import (
+    MachineSpace,
+    OriginCorner,
+    AxisDirection,
+)
 
 
 @pytest.fixture
 def stock_cmd(doc_editor, context_initializer):
-    """Provides a StockCmd instance."""
     mock_machine = MagicMock()
     mock_machine.axis_extents = (200.0, 200.0)
     mock_machine.work_area = (0.0, 0.0, 200.0, 200.0)
+    mock_machine.get_reference_position_world.return_value = (0.0, 0.0)
+    mock_machine.get_coordinate_space.return_value = MachineSpace(
+        origin=OriginCorner.BOTTOM_LEFT,
+        x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+        y_positive_direction=AxisDirection.POSITIVE_UP,
+        extents=(200.0, 200.0),
+    )
     context_initializer.config.machine = mock_machine
     return StockCmd(doc_editor)
 

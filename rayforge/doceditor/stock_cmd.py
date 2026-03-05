@@ -7,7 +7,7 @@ from ..core.matrix import Matrix
 from ..core.undo import ChangePropertyCommand, Command
 from ..core.stock import StockItem
 from ..core.stock_asset import StockAsset
-from ..pipeline.coordspace import OriginCorner
+
 from ..usage import get_usage_tracker
 
 if TYPE_CHECKING:
@@ -71,15 +71,9 @@ class StockCmd:
             stock_w = wa_w * 0.8
             stock_h = wa_h * 0.8
             space = machine.get_coordinate_space()
-            if space.origin == OriginCorner.BOTTOM_LEFT:
-                pass
-            elif space.origin == OriginCorner.TOP_LEFT:
-                stock_y = ref_y - stock_h
-            elif space.origin == OriginCorner.BOTTOM_RIGHT:
-                stock_x = ref_x - stock_w
-            elif space.origin == OriginCorner.TOP_RIGHT:
-                stock_x = ref_x - stock_w
-                stock_y = ref_y - stock_h
+            stock_x, stock_y = space.world_position_from_origin(
+                ref_x, ref_y, (stock_w, stock_h)
+            )
             logger.debug(
                 "Calculated stock position (%.2f, %.2f)", stock_x, stock_y
             )
