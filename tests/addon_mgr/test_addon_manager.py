@@ -230,7 +230,7 @@ class TestAddonManagerInstallation:
         ):
             manager.install_addon(git_url, addon_id=install_name)
 
-            mock_uninstall.assert_called_once_with(install_name)
+            mock_uninstall.assert_called_once_with("test_plugin")
             mock_load_addon.assert_called_once_with(final_path)
 
     def test_install_addon_success(self, manager):
@@ -273,7 +273,10 @@ class TestAddonManagerUninstall:
         pkg_path.mkdir(parents=True)
 
         # 2. Setup sys.modules to simulate a loaded module
-        sys.modules[module_name] = Mock()
+        # New implementation looks for modules based on __file__ attribute
+        mock_module = Mock()
+        mock_module.__file__ = str(pkg_path / "addon.py")
+        sys.modules[module_name] = mock_module
 
         # 3. Setup manager state with the loaded addon
         mock_addon = create_mock_addon(name=pkg_name)
@@ -292,6 +295,7 @@ class TestAddonManagerUninstall:
 
     def test_uninstall_unknown_addon(self, manager):
         """Test that uninstalling a non-existent addon fails gracefully."""
+        manager.install_dir.mkdir(parents=True, exist_ok=True)
         result = manager.uninstall_addon("non-existent-pkg")
         assert result is False
 

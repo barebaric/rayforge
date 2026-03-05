@@ -174,6 +174,12 @@ def clean_context_singleton():
     # Finally, reset the global singleton variable so the next test
     # starts with a completely fresh context.
     rayforge_context._context_instance = None
+
+    # Also reset the lazy loader to prevent pollution of sys.meta_path across tests
+    from rayforge.addon_mgr.lazy_loader import reset_addon_finder
+
+    reset_addon_finder()
+
     gc.collect()
 
 
@@ -227,6 +233,14 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
 
     # 3. Get the context and run the full initialization
     context = get_context()
+
+    # Wire up the AddonManager with the test TaskManager's shared state.
+    # This ensures that when load_installed_addons() builds the manifest,
+    # it is written to the shared dict that the test workers will use.
+    shared_state = task_mgr.get_shared_state()
+    context.addon_mgr.set_task_manager(task_mgr)
+    context.addon_mgr.set_shared_state(shared_state)
+
     context.initialize_full_context(load_ui=False)
     yield context
 
@@ -438,6 +452,12 @@ def ui_context_initializer(tmp_path, monkeypatch, ui_task_mgr):
     monkeypatch.setattr(tasker, "task_mgr", ui_task_mgr)
 
     context = get_context()
+
+    # Wire up AddonManager with the UI task manager's shared state
+    shared_state = ui_task_mgr.get_shared_state()
+    context.addon_mgr.set_task_manager(ui_task_mgr)
+    context.addon_mgr.set_shared_state(shared_state)
+
     context.initialize_full_context()
     yield context
 

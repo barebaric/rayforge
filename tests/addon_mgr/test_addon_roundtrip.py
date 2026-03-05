@@ -77,8 +77,8 @@ class TestAddonRoundTrip:
         ):
             context.initialize_full_context(load_ui=False)
 
-        # The module name is derived from the directory, not the YAML file.
-        assert "rayforge_addons.integration_test_addon" in sys.modules
+        # The module name uses the canonical name from YAML and entry point
+        assert "rayforge_addons.this_name_is_ignored.addon" in sys.modules
         assert sys.modules.get("integration_test_addon_loaded") is True
 
         del sys.modules["integration_test_addon_loaded"]
@@ -136,8 +136,8 @@ class TestAddonRoundTrip:
         ):
             context.initialize_full_context(load_ui=False)
 
-        # The module name is derived from the directory, not the YAML file.
-        assert "rayforge_addons.multi_hook_addon" in sys.modules
+        # The module name uses the canonical name from YAML and entry point
+        assert "rayforge_addons.this_name_is_ignored.addon" in sys.modules
         assert sys.modules.get("multi_hook_rayforge_init") is True
 
         del sys.modules["multi_hook_rayforge_init"]

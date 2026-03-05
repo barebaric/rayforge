@@ -26,11 +26,13 @@ class AddonRow(Gtk.Box):
         on_delete,
         on_toggle: Optional[Callable] = None,
         error_message: Optional[str] = None,
+        is_builtin: bool = False,
     ):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.addon = addon
         self.state = state
         self.on_toggle = on_toggle
+        self.is_builtin = is_builtin
 
         self.set_margin_top(6)
         self.set_margin_bottom(6)
@@ -66,7 +68,11 @@ class AddonRow(Gtk.Box):
             )
             self.append(icon)
         else:
-            icon = get_icon("addon-symbolic")
+            if self.is_builtin:
+                icon = get_icon("addon-builtin-symbolic")
+                icon.set_tooltip_text(_("Built-in addon"))
+            else:
+                icon = get_icon("addon-symbolic")
             icon.set_valign(Gtk.Align.CENTER)
             self.append(icon)
 
@@ -115,11 +121,12 @@ class AddonRow(Gtk.Box):
             self.enable_switch.connect("state-set", self._on_toggle_clicked)
             suffix_box.append(self.enable_switch)
 
-        delete_button = Gtk.Button(child=get_icon("delete-symbolic"))
-        delete_button.add_css_class("flat")
-        delete_button.set_tooltip_text(_("Uninstall Addon"))
-        delete_button.connect("clicked", lambda w: on_delete(addon))
-        suffix_box.append(delete_button)
+        if not self.is_builtin:
+            delete_button = Gtk.Button(child=get_icon("delete-symbolic"))
+            delete_button.add_css_class("flat")
+            delete_button.set_tooltip_text(_("Uninstall Addon"))
+            delete_button.connect("clicked", lambda w: on_delete(addon))
+            suffix_box.append(delete_button)
 
     def _get_subtitle(self) -> str:
         parts = []
@@ -164,20 +171,25 @@ class AddonListWidget(PreferencesGroupWithButton):
         context = get_context()
         am = context.addon_mgr
 
-        addons: list[Tuple[Addon, str, Optional[str]]] = []
+        addons: list[Tuple[Addon, str, Optional[str], bool]] = []
 
         for name, addon in am.loaded_addons.items():
             if name in am._pending_unloads:
                 state = AddonState.PENDING_UNLOAD.value
             else:
                 state = AddonState.ENABLED.value
-            addons.append((addon, state, None))
+            is_builtin = not addon.root_path.is_relative_to(am.install_dir)
+            addons.append((addon, state, None, is_builtin))
 
         for name, addon in am.disabled_addons.items():
-            addons.append((addon, AddonState.DISABLED.value, None))
+            is_builtin = not addon.root_path.is_relative_to(am.install_dir)
+            addons.append((addon, AddonState.DISABLED.value, None, is_builtin))
 
         for name, addon in am.incompatible_addons.items():
-            addons.append((addon, AddonState.INCOMPATIBLE.value, None))
+            is_builtin = not addon.root_path.is_relative_to(am.install_dir)
+            addons.append(
+                (addon, AddonState.INCOMPATIBLE.value, None, is_builtin)
+            )
 
         for name, error in am._load_errors.items():
             addon = (
@@ -186,7 +198,10 @@ class AddonListWidget(PreferencesGroupWithButton):
                 or am.incompatible_addons.get(name)
             )
             if addon:
-                addons.append((addon, AddonState.LOAD_ERROR.value, error))
+                is_builtin = not addon.root_path.is_relative_to(am.install_dir)
+                addons.append(
+                    (addon, AddonState.LOAD_ERROR.value, error, is_builtin)
+                )
 
         addons.sort(
             key=lambda a: (
@@ -196,13 +211,14 @@ class AddonListWidget(PreferencesGroupWithButton):
         self.set_items(addons)
 
     def create_row_widget(self, item: tuple) -> Gtk.Widget:
-        addon, state, error_message = item
+        addon, state, error_message, is_builtin = item
         return AddonRow(
             addon,
             state,
             self._on_delete_addon,
             self._on_toggle_addon,
             error_message,
+            is_builtin,
         )
 
     def _on_add_clicked(self, button):
