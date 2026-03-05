@@ -90,7 +90,7 @@ def _test_worker_initializer(shared_state: dict):
             ),
         ):
             # Now call the application's real initializer.
-            initialize_worker()
+            initialize_worker(shared_state)
 
 
 @pytest.fixture(scope="function", autouse=True)
