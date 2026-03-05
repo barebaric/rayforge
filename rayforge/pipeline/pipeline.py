@@ -73,6 +73,7 @@ class Pipeline:
     """
 
     RECONCILIATION_DELAY_MS = 200
+    REMOVAL_DEBOUNCE_DELAY_MS = 50
 
     def __init__(
         self,
@@ -104,6 +105,9 @@ class Pipeline:
         self._pause_count = 0
         self._last_known_busy_state = False
         self._reconciliation_timer: Optional[concurrent.futures.Future] = None
+        self._removal_timer: Optional[concurrent.futures.Future] = None
+        self._pending_workpiece_removals: List[tuple] = []
+        self._pending_step_removals: List[Step] = []
         self._is_shutting_down = False
 
         # Signals for notifying the UI of generation progress
@@ -197,6 +201,9 @@ class Pipeline:
         if self._reconciliation_timer:
             self._reconciliation_timer.cancel()
             self._reconciliation_timer = None
+        if self._removal_timer:
+            self._removal_timer.cancel()
+            self._removal_timer = None
         logger.info("Pipeline shutting down...")
 
         for task in list(self._task_manager):
@@ -257,10 +264,13 @@ class Pipeline:
 
         The pipeline is busy if:
         1. A reconciliation timer is pending, OR
-        2. The scheduler has pending work (PROCESSING nodes), OR
-        3. Any context (active or inactive) has active tasks
+        2. A removal timer is pending, OR
+        3. The scheduler has pending work (PROCESSING nodes), OR
+        4. Any context (active or inactive) has active tasks
         """
         if self._reconciliation_timer is not None:
+            return True
+        if self._removal_timer is not None:
             return True
         if self._scheduler.has_pending_work():
             return True
@@ -436,7 +446,7 @@ class Pipeline:
     def _on_descendant_removed(
         self, sender: Any, *, origin: DocItem, parent_of_origin: DocItem
     ) -> None:
-        """Handles removal of a model object using DAG-based invalidation."""
+        """Handles removal of a model object with debounced processing."""
         if isinstance(origin, WorkPiece):
             layer: Optional[Layer] = None
             current_item: Optional[DocItem] = parent_of_origin
@@ -446,36 +456,69 @@ class Pipeline:
                     break
                 current_item = current_item.parent
 
-            # Remove workpiece artifacts permanently (workpiece is deleted)
-            wp_key = ArtifactKey.for_workpiece(origin.uid)
+            self._pending_workpiece_removals.append((origin, layer))
+            self._schedule_removal_processing()
+
+        elif isinstance(origin, Step):
+            self._pending_step_removals.append(origin)
+            self._schedule_removal_processing()
+
+        self._schedule_reconciliation()
+
+    def _schedule_removal_processing(self) -> None:
+        """Schedules a debounced batch processing of pending removals."""
+        if self._removal_timer:
+            self._removal_timer.cancel()
+
+        self._removal_timer = (
+            self._task_manager.schedule_delayed_on_main_thread(
+                self.REMOVAL_DEBOUNCE_DELAY_MS,
+                self._process_pending_removals,
+            )
+        )
+
+    def _process_pending_removals(self) -> None:
+        """Process all pending workpiece and step removals in a batch."""
+        self._removal_timer = None
+
+        workpiece_removals = self._pending_workpiece_removals[:]
+        self._pending_workpiece_removals.clear()
+        step_removals = self._pending_step_removals[:]
+        self._pending_step_removals.clear()
+
+        affected_layers: set[Layer] = set()
+
+        for workpiece, layer in workpiece_removals:
+            wp_key = ArtifactKey.for_workpiece(workpiece.uid)
             self._artifact_manager.remove_for_workpiece(wp_key)
             self._scheduler.mark_node_dirty(wp_key)
 
-            if layer and layer.workflow:
+            if layer:
+                affected_layers.add(layer)
+
+        for layer in affected_layers:
+            if layer.workflow:
                 logger.debug(
-                    f"Workpiece '{origin.name}' removed from layer "
-                    f"'{layer.name}'. Invalidating step artifacts via DAG."
+                    f"Processing batched removals for layer '{layer.name}'. "
+                    f"Invalidating step artifacts."
                 )
                 for step in layer.workflow.steps:
                     step_key = ArtifactKey.for_step(step.uid)
                     self._invalidate_node(step_key)
 
-        elif isinstance(origin, Step):
+        for step in step_removals:
             logger.debug(
-                f"Step '{origin.name}' removed. Invalidating artifacts."
+                f"Step '{step.name}' removed. Invalidating artifacts."
             )
-            step_key = ArtifactKey.for_step(origin.uid)
+            step_key = ArtifactKey.for_step(step.uid)
 
-            # Cancel and invalidate all workpiece tasks for this step
             if self.doc:
                 for wp in self.doc.all_workpieces:
-                    wp_step_key = ArtifactKey.for_workpiece(wp.uid, origin.uid)
+                    wp_step_key = ArtifactKey.for_workpiece(wp.uid, step.uid)
                     self._invalidate_node(wp_step_key)
 
             self._artifact_manager.remove_for_step(step_key)
             self._invalidate_node(step_key)
-
-        self._schedule_reconciliation()
 
     def _collect_affected_workpieces(self, origin: DocItem) -> List[WorkPiece]:
         """
