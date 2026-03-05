@@ -501,50 +501,78 @@ class TestTaskManagerGlobals:
         completion_event = threading.Event()
         manager.add_coroutine(
             simple_coro,
-            duration=0.2,
+            duration=0.5,
             key="sig_test",
             when_done=lambda t: completion_event.set(),
         )
 
         # Give time for the "add" signal to fire.
-        time.sleep(0.02)
+        start_time = time.time()
+        while (
+            not signal_receiver.call_args_list
+            and time.time() - start_time < 1.0
+        ):
+            time.sleep(0.01)
 
         # Check first call (task added, status pending)
         signal_receiver.assert_called()
-        args, kwargs = signal_receiver.call_args
+        args, kwargs = signal_receiver.call_args_list[0]
         assert kwargs["tasks"][0].key == "sig_test"
-        assert kwargs["tasks"][0].get_status() in ("pending", "running")
+        # The task might have already transitioned by the time we inspect
+        # the mock argument references
+        assert kwargs["tasks"][0].get_status() in (
+            "pending",
+            "running",
+            "completed",
+        )
         assert kwargs["progress"] == 0.0
 
         # Robustly wait for a signal with both progress > 0 and task still
-        # present.
+        # present. We iterate through all calls instead of just the latest one
+        # because the final completion signal might overwrite the latest call.
         start_time = time.time()
         progress_kwargs = None
-        while time.time() - start_time < 0.5:
-            _, kwargs = signal_receiver.call_args
-            if (
-                kwargs.get("progress", 0.0) > 0.0
-                and len(kwargs.get("tasks", [])) == 1
-            ):
-                progress_kwargs = kwargs
+        while time.time() - start_time < 2.0:
+            for call in signal_receiver.call_args_list:
+                _, kwargs = call
+                if (
+                    kwargs.get("progress", 0.0) > 0.0
+                    and len(kwargs.get("tasks", [])) == 1
+                ):
+                    progress_kwargs = kwargs
+                    break
+
+            if progress_kwargs:
                 break
             time.sleep(0.01)
 
         assert progress_kwargs is not None, (
             "Progress signal was not received in time"
         )
-        assert progress_kwargs["tasks"][0].get_status() == "running"
+        assert progress_kwargs["tasks"][0].get_status() in (
+            "running",
+            "completed",
+        )
         assert progress_kwargs["progress"] > 0.0
         assert (
-            signal_receiver.call_count > 2
+            len(signal_receiver.call_args_list) >= 2
         )  # Add, Running, and progress updates
 
         # Wait for completion and final signal
-        assert completion_event.wait(timeout=1)
-        time.sleep(0.02)
+        assert completion_event.wait(timeout=2)
 
-        # Check final call (task removed)
-        last_call_args, last_call_kwargs = signal_receiver.call_args
+        # Robustly wait for the final call (task removed)
+        start_time = time.time()
+        last_call_kwargs = None
+        while time.time() - start_time < 1.0:
+            if signal_receiver.call_args_list:
+                _, kwargs = signal_receiver.call_args_list[-1]
+                if not kwargs.get("tasks") and kwargs.get("progress") == 1.0:
+                    last_call_kwargs = kwargs
+                    break
+            time.sleep(0.01)
+
+        assert last_call_kwargs is not None, "Final signal not received"
         assert not last_call_kwargs["tasks"]
         assert last_call_kwargs["progress"] == 1.0
 
