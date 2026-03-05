@@ -7,6 +7,7 @@ from ..core.matrix import Matrix
 from ..core.undo import ChangePropertyCommand, Command
 from ..core.stock import StockItem
 from ..core.stock_asset import StockAsset
+from ..pipeline.coordspace import OriginCorner
 from ..usage import get_usage_tracker
 
 if TYPE_CHECKING:
@@ -62,14 +63,28 @@ class StockCmd:
         """
         doc = self._editor.doc
         machine = self._editor.context.config.machine
-        wa_x, wa_y, wa_w, wa_h = (0.0, 0.0, 200.0, 200.0)
         if machine:
-            wa_x, wa_y, wa_w, wa_h = machine.work_area
-
-        stock_w = wa_w * 0.8
-        stock_h = wa_h * 0.8
-        stock_x = wa_x + (wa_w - stock_w) / 2
-        stock_y = wa_y + (wa_h - stock_h) / 2
+            __, __, wa_w, wa_h = machine.work_area
+            ref_x, ref_y = machine.get_reference_position_world()
+            stock_x = ref_x
+            stock_y = ref_y
+            stock_w = wa_w * 0.8
+            stock_h = wa_h * 0.8
+            space = machine.get_coordinate_space()
+            if space.origin == OriginCorner.BOTTOM_LEFT:
+                pass
+            elif space.origin == OriginCorner.TOP_LEFT:
+                stock_y = ref_y - stock_h
+            elif space.origin == OriginCorner.BOTTOM_RIGHT:
+                stock_x = ref_x - stock_w
+            elif space.origin == OriginCorner.TOP_RIGHT:
+                stock_x = ref_x - stock_w
+                stock_y = ref_y - stock_h
+            logger.debug(
+                "Calculated stock position (%.2f, %.2f)", stock_x, stock_y
+            )
+        else:
+            stock_x, stock_y, stock_w, stock_h = 0, 0, 200.0, 200.0
 
         default_geometry = Geometry()
         default_geometry.move_to(0, 0)
