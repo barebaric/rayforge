@@ -80,6 +80,9 @@ class WorkSurface(WorldSurface):
         self._simulation_mode = False
         self._simulation_overlay: Optional[CanvasElement] = None
 
+        # Click-to-zero mode state
+        self._click_to_zero_mode = False
+
         # Initialize the base WorldSurface with machine dimensions
         super().__init__(
             width_mm=width_mm,
@@ -134,6 +137,12 @@ class WorkSurface(WorldSurface):
         # Signal to request editing a sketch (handled by MainWindow)
         self.edit_sketch_requested = Signal()
         self.edit_stock_item_requested = Signal()
+
+        # Signal to set work zero at clicked position
+        self.work_zero_requested = Signal()
+
+        # Signal to cancel click-to-zero mode
+        self.click_to_zero_cancelled = Signal()
 
         # Connect to generic signals from the base Canvas class
         self.move_begin.connect(self._on_any_transform_begin)
@@ -244,6 +253,10 @@ class WorkSurface(WorldSurface):
         Handles right-clicks. Dispatches to the SketchEditor if a sketch is
         being edited, otherwise shows the standard WorkSurface context menu.
         """
+        if self._click_to_zero_mode and n_press == 1:
+            self.click_to_zero_cancelled.send(self)
+            return
+
         if isinstance(self.edit_context, SketchElement):
             self.sketch_editor.handle_right_click(gesture, n_press, x, y)
             return
@@ -451,6 +464,20 @@ class WorkSurface(WorldSurface):
         """
         logger.debug("WorkSurface.on_button_press fired")
 
+        # Handle click-to-zero mode
+        if self._click_to_zero_mode:
+            if gesture.get_button() == Gdk.BUTTON_PRIMARY and n_press == 1:
+                world_x, world_y = self._get_world_coords(x, y)
+                if self.machine:
+                    space = self.machine.get_coordinate_space()
+                    machine_x, machine_y = space.world_point_to_machine(
+                        world_x, world_y
+                    )
+                else:
+                    machine_x, machine_y = world_x, world_y
+                self.work_zero_requested.send(self, x=machine_x, y=machine_y)
+                return
+
         # A left-click should clear any lingering right-click context.
         if gesture.get_button() == Gdk.BUTTON_PRIMARY:
             if self.right_click_context:
@@ -501,6 +528,17 @@ class WorkSurface(WorldSurface):
             # create an undoable command to change it.
             if active_layer and active_layer != self.doc.active_layer:
                 self.editor.layer.set_active_layer(active_layer)
+
+    def on_motion(self, gesture: Gtk.Gesture, x: float, y: float) -> None:
+        if self._click_to_zero_mode:
+            self.set_cursor(Gdk.Cursor.new_from_name("crosshair"))
+            return
+        super().on_motion(gesture, x, y)
+
+    def on_motion_leave(self, controller: Gtk.EventControllerMotion) -> None:
+        if self._click_to_zero_mode:
+            self.set_cursor(None)
+        super().on_motion_leave(controller)
 
     def set_machine(self, machine: Optional[Machine]):
         """
@@ -643,6 +681,12 @@ class WorkSurface(WorldSurface):
                 wp_view.on_travel_visibility_changed()
             # Update pipeline view context
             self._update_pipeline_view_context()
+
+    def set_click_to_zero_mode(self, active: bool):
+        """Sets whether click-to-zero mode is active."""
+        self._click_to_zero_mode = active
+        if not active:
+            self.set_cursor(None)
 
     def _update_pipeline_view_context(self) -> None:
         """
