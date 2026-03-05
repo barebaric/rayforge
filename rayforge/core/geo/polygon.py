@@ -6,6 +6,7 @@ on simple polygon representations (lists of (x, y) tuples).
 """
 
 import math
+from functools import lru_cache
 from typing import List, Tuple, Optional, TYPE_CHECKING
 import pyclipper
 
@@ -273,6 +274,55 @@ def scale_polygon(
     return [(p[0] * sx, p[1] * sy) for p in polygon]
 
 
+def _cross(o: Point, a: Point, b: Point) -> float:
+    """Calculate the cross product of vectors OA and OB."""
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+
+@lru_cache(maxsize=256)
+def _is_convex_cached(poly_tuple: Tuple[Tuple[float, float], ...]) -> bool:
+    """
+    Cached convexity check for hashable polygon representation.
+    """
+    n = len(poly_tuple)
+    sign = None
+    for i in range(n):
+        c = _cross(
+            poly_tuple[i],
+            poly_tuple[(i + 1) % n],
+            poly_tuple[(i + 2) % n],
+        )
+        if abs(c) < 1e-10:
+            continue
+        if sign is None:
+            sign = c > 0
+        elif (c > 0) != sign:
+            return False
+    return True
+
+
+def is_convex(polygon: Polygon) -> bool:
+    """
+    Check if a polygon is convex.
+
+    A polygon is convex if all interior angles are <= 180 degrees,
+    meaning all cross products of consecutive edges have the same sign.
+
+    Args:
+        polygon: List of (x, y) tuples.
+
+    Returns:
+        True if the polygon is convex.
+    """
+    if len(polygon) < 3:
+        return False
+    if len(polygon) == 3:
+        return True
+
+    poly_tuple = tuple((round(p[0], 6), round(p[1], 6)) for p in polygon)
+    return _is_convex_cached(poly_tuple)
+
+
 def convex_hull(polygon: Polygon) -> Polygon:
     """
     Compute the convex hull of a polygon using Andrew's monotone chain.
@@ -286,20 +336,17 @@ def convex_hull(polygon: Polygon) -> Polygon:
     if len(polygon) < 3:
         return polygon
 
-    def cross(o, a, b):
-        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
-
     sorted_pts = sorted(polygon)
 
     lower = []
     for p in sorted_pts:
-        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+        while len(lower) >= 2 and _cross(lower[-2], lower[-1], p) <= 0:
             lower.pop()
         lower.append(p)
 
     upper = []
     for p in reversed(sorted_pts):
-        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+        while len(upper) >= 2 and _cross(upper[-2], upper[-1], p) <= 0:
             upper.pop()
         upper.append(p)
 

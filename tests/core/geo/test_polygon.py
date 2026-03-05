@@ -18,6 +18,7 @@ from rayforge.core.geo.polygon import (
     translate_bounds,
     scale_polygon,
     convex_hull,
+    is_convex,
     clean_polygon,
     polygon_offset,
     polygon_union,
@@ -278,6 +279,57 @@ class TestConvexHull:
         polygon = P((0, 0), (5, 10), (10, 0))
         hull = convex_hull(polygon)
         assert len(hull) == 3
+
+
+class TestIsConvex:
+    def test_square(self):
+        polygon = P((0, 0), (10, 0), (10, 10), (0, 10))
+        assert is_convex(polygon) is True
+
+    def test_triangle(self):
+        polygon = P((0, 0), (5, 10), (10, 0))
+        assert is_convex(polygon) is True
+
+    def test_pentagon(self):
+        polygon = P((0, 0), (5, -2), (10, 0), (8, 8), (2, 8))
+        assert is_convex(polygon) is True
+
+    def test_concave_quadrilateral(self):
+        polygon = P((0, 0), (10, 0), (5, 5), (10, 10), (0, 10))
+        assert is_convex(polygon) is False
+
+    def test_arrow_shape(self):
+        polygon = P((0, 0), (5, 5), (10, 0), (5, 10))
+        assert is_convex(polygon) is False
+
+    def test_empty(self):
+        assert is_convex(cast(Polygon, [])) is False
+
+    def test_single_point(self):
+        assert is_convex(P((0, 0))) is False
+
+    def test_two_points(self):
+        assert is_convex(P((0, 0), (1, 1))) is False
+
+    def test_collinear_points(self):
+        polygon = P((0, 0), (5, 0), (10, 0), (5, 5))
+        assert is_convex(polygon) is True
+
+    def test_clockwise_square(self):
+        polygon = P((0, 0), (0, 10), (10, 10), (10, 0))
+        assert is_convex(polygon) is True
+
+    def test_hexagon(self):
+        import math
+
+        angle = 0
+        polygon = []
+        for i in range(6):
+            x = 10 * math.cos(angle)
+            y = 10 * math.sin(angle)
+            polygon.append((x, y))
+            angle += math.pi / 3
+        assert is_convex(polygon) is True
 
 
 class TestCleanPolygon:
