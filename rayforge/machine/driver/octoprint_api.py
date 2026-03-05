@@ -1,11 +1,15 @@
 import asyncio
-from enum import Enum
 import logging
-import aiohttp
 import webbrowser
-
 from dataclasses import dataclass
-from typing import Optional, List
+from enum import Enum
+from typing import List, Literal, Optional
+
+import aiohttp
+import dacite
+
+from .driver import DeviceStatus
+
 
 # from ..transport import TransportStatus
 
@@ -43,11 +47,81 @@ class ConnectionFlags(Enum):
     SD_READY = "sdReady"
 
 
+FLAGS_PRIORITY: list[ConnectionFlags] = [
+    ConnectionFlags.ERROR,
+    ConnectionFlags.CLOSED_OR_ERROR,
+    ConnectionFlags.CANCELLING,
+    ConnectionFlags.FINISHING,
+    ConnectionFlags.PAUSING,
+    ConnectionFlags.PAUSED,
+    ConnectionFlags.RESUMING,
+    ConnectionFlags.PRINTING,
+    ConnectionFlags.OPERATIONAL,
+    ConnectionFlags.READY,
+    ConnectionFlags.SD_READY,
+]
+
+FLAGS_TO_STATUS: dict[ConnectionFlags, DeviceStatus] = {
+    ConnectionFlags.ERROR: DeviceStatus.ALARM,
+    ConnectionFlags.CLOSED_OR_ERROR: DeviceStatus.ALARM,
+    ConnectionFlags.CANCELLING: DeviceStatus.HOLD,
+    ConnectionFlags.FINISHING: DeviceStatus.CYCLE,
+    ConnectionFlags.PAUSING: DeviceStatus.HOLD,
+    ConnectionFlags.PAUSED: DeviceStatus.HOLD,
+    ConnectionFlags.RESUMING: DeviceStatus.CYCLE,
+    ConnectionFlags.PRINTING: DeviceStatus.RUN,
+    ConnectionFlags.OPERATIONAL: DeviceStatus.IDLE,
+    ConnectionFlags.READY: DeviceStatus.IDLE,
+    ConnectionFlags.SD_READY: DeviceStatus.IDLE,
+}
+
+
+def resolve_status(flags: list[ConnectionFlags]) -> DeviceStatus:
+    """Return the DeviceStatus for the highest-priority active flag."""
+    flag_set = set(flags)
+    for flag in FLAGS_PRIORITY:
+        if flag in flag_set:
+            return FLAGS_TO_STATUS[flag]
+    return DeviceStatus.UNKNOWN
+
+
+# TODO: Convert to Pydantic models if possible
+
+
 @dataclass
 class ConnectionInfos:
     connected: bool
     printer_name: str
     flags: List[ConnectionFlags]
+
+
+@dataclass
+class FileInfos:
+    name: str
+    display: str
+    path: str
+    type: Literal["model"] | Literal["machinecode"] | Literal["folder"]
+    type_path: str
+    origin: Literal["local"] | Literal["sdcard"]
+    user: str
+
+
+@dataclass
+class FilamentInfos:
+    length: float
+    volume: float
+
+
+@dataclass
+class JobInfos:
+    file: FileInfos
+    estimated_print_time: float
+    last_print_time: float
+    filament: FilamentInfos
+
+    @staticmethod
+    def from_dict(d: dict) -> "JobInfos":
+        return dacite.from_dict(data_class=JobInfos, data=d)
 
 
 class AuthorizationWorkflow:

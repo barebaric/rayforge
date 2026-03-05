@@ -33,7 +33,12 @@ from .driver import (
     DriverPrecheckError,
     Pos,
 )
-from .octoprint_api import SocketMessagesTypes, ConnectionInfos
+from .octoprint_api import (
+    JobInfos,
+    SocketMessagesTypes,
+    ConnectionInfos,
+    resolve_status,
+)
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -58,9 +63,10 @@ class OctoprintDriver(Driver):
         self.token = None
         self.http_session = None
         self.websocket = None
-        self.status: ConnectionInfos = ConnectionInfos(
-            connected=False, printer_name="Unknown", flags=[]
-        )
+        self.connection_flags = []
+        self.progress_notifier = None
+        self.last_op_index = -1
+        self.op_n = 0
         self._connection_task: Optional[asyncio.Task] = None
         self._cmd_lock = asyncio.Lock()
 
@@ -157,11 +163,30 @@ class OctoprintDriver(Driver):
                 pass
             case SocketMessagesTypes.HISTORY:
                 # TODO: Fetch profiles to get printer name
-                self.status = ConnectionInfos(
-                    data["state"]["flags"]["operational"],
-                    "WIP",
-                    data["state"]["flags"],
-                )
+                active_flags = [
+                    flag
+                    for flag, active in data["state"]["flags"].items()
+                    if active
+                ]
+                self.state.status = resolve_status(active_flags)
+                self.state_changed.send(self, state=self.state)
+                self.connection_flags = data["state"]["flags"]
+            case SocketMessagesTypes.CURRENT:
+                state = data["state"]
+                if set(state["flags"]) != set(self.connection_flags):
+                    active_flags = [
+                        flag
+                        for flag, active in state["flags"].items()
+                        if active
+                    ]
+                    self.state.status = resolve_status(active_flags)
+                    self.state_changed.send(self, state=self.state)
+                    self.connection_flags = state["flags"]
+                if data.get("job"):
+                    # current_job = JobInfos.from_dict(data["job"])
+                    pass
+                if data.get("progress"):
+                    pass
 
     def on_websocket_status_changed(
         self, sender, status: TransportStatus, message: Optional[str] = None
@@ -218,7 +243,7 @@ class OctoprintDriver(Driver):
             )
             auth_payload = {"auth": f"{usr_name}:{session_id}"}
             await self.websocket.send(json.dumps(auth_payload).encode("utf-8"))
-        self.state.status = DeviceStatus.IDLE
+        self.state.status = DeviceStatus.UNKNOWN
         self.state_changed.send(self, state=self.state)
 
         self.connection_status_changed.send(
