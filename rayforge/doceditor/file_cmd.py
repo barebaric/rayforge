@@ -945,7 +945,7 @@ class FileCmd:
         if ext == ".rfs":
             return self._export_sketch_to_rfs(file_path, workpiece)
 
-        geo = workpiece.world_space_boundaries
+        geo = workpiece.get_world_geometry()
         if geo is None or geo.is_empty():
             raise ValueError(
                 "Cannot export: The selected item has no geometry."
@@ -998,7 +998,7 @@ class FileCmd:
         """
         geometries = []
         for wp in self._editor.doc.get_descendants(WorkPiece):
-            geo = wp.world_space_boundaries
+            geo = wp.get_world_geometry()
             if geo is not None and not geo.is_empty():
                 geometries.append(geo)
 

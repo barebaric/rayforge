@@ -74,9 +74,11 @@ class GeometrySvgExporter(GeometryExporter):
         geometry: Geometry,
         min_x: float,
         min_y: float,
+        max_y: float | None = None,
     ) -> str:
         path_data: List[str] = []
-        _, _, _, max_y = geometry.rect()
+        if max_y is None:
+            _, _, _, max_y = geometry.rect()
 
         def transform(x: float, y: float) -> tuple:
             tx = x - min_x
@@ -209,6 +211,7 @@ class MultiGeometrySvgExporter(GeometryExporter):
         padding = 1.0
         svg_width = width + 2 * padding
         svg_height = height + 2 * padding
+        max_y = min_y + height
 
         vb = (
             f'viewBox="{-padding} {-padding} {svg_width:.3f} {svg_height:.3f}"'
@@ -221,7 +224,7 @@ class MultiGeometrySvgExporter(GeometryExporter):
         single_exporter = GeometrySvgExporter(Geometry())
         for geo in geometries:
             path_data = single_exporter._geometry_to_svg_path(
-                geo, min_x, min_y
+                geo, min_x, min_y, max_y
             )
             if path_data:
                 svg_parts.append(
