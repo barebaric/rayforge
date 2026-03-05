@@ -219,6 +219,40 @@ def split_inner_and_outer_contours(
     return internal_contours, external_contours
 
 
+def close_all_contours(geometry: "Geometry") -> "Geometry":
+    """
+    Closes all open contours in the given geometry.
+
+    Splits the geometry into individual contours, closes any that are not
+    already closed, and returns a new geometry with all contours closed.
+
+    Args:
+        geometry: The geometry to process.
+
+    Returns:
+        A new Geometry with all contours closed.
+    """
+    from .geometry import Geometry
+    from .split import split_into_contours
+
+    if geometry.is_empty():
+        return geometry.copy()
+
+    contours = split_into_contours(geometry)
+    if not contours:
+        return geometry.copy()
+
+    result = Geometry()
+    for contour in contours:
+        if not contour.is_closed():
+            contour.close_path()
+            contour._sync_to_numpy()
+        result.extend(contour)
+
+    result.last_move_to = geometry.last_move_to
+    return result
+
+
 def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
     """
     Analyzes a list of contours and enforces the correct winding order

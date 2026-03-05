@@ -2,6 +2,7 @@ import pytest
 from rayforge.core.geo import Geometry
 from rayforge.core.geo.analysis import get_subpath_area_from_array
 from rayforge.core.geo.contours import (
+    close_all_contours,
     filter_to_external_contours,
     reverse_contour,
     normalize_winding_orders,
@@ -460,3 +461,76 @@ def test_get_valid_contours_data_vertices_extraction():
     assert vertices[2] == pytest.approx((10.0, 10.0))
     assert vertices[3] == pytest.approx((0.0, 10.0))
     assert vertices[4] == pytest.approx((0.0, 0.0))
+
+
+def test_close_all_contours_empty():
+    """Tests that closing an empty geometry returns a copy."""
+    geo = Geometry()
+    result = close_all_contours(geo)
+    assert result.is_empty()
+    assert result is not geo, "Should return a new object"
+
+
+def test_close_all_contours_single_open():
+    """Tests closing a single open contour."""
+    open_geo = Geometry()
+    open_geo.move_to(0, 0)
+    open_geo.line_to(10, 0)
+    open_geo.line_to(10, 10)
+    open_geo.line_to(0, 10)
+
+    result = close_all_contours(open_geo)
+    assert result.is_closed()
+    assert result.rect() == pytest.approx((0.0, 0.0, 10.0, 10.0))
+
+
+def test_close_all_contours_single_closed():
+    """Tests that a closed contour remains closed."""
+    closed_geo = Geometry()
+    closed_geo.move_to(0, 0)
+    closed_geo.line_to(10, 0)
+    closed_geo.line_to(10, 10)
+    closed_geo.line_to(0, 10)
+    closed_geo.close_path()
+
+    assert closed_geo.is_closed()
+    result = close_all_contours(closed_geo)
+    assert result.is_closed()
+    assert result.rect() == pytest.approx((0.0, 0.0, 10.0, 10.0))
+
+
+def test_close_all_contours_multiple_open():
+    """Tests closing multiple open contours."""
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(5, 0)
+    geo.line_to(5, 5)
+    geo.line_to(0, 5)
+    geo.move_to(10, 10)
+    geo.line_to(15, 10)
+    geo.line_to(15, 15)
+    geo.line_to(10, 15)
+
+    result = close_all_contours(geo)
+    contours = result.split_into_contours()
+    assert len(contours) == 2
+    assert all(c.is_closed() for c in contours)
+
+
+def test_close_all_contours_mixed():
+    """Tests closing a mix of open and closed contours."""
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(5, 0)
+    geo.line_to(5, 5)
+    geo.line_to(0, 5)
+    geo.move_to(10, 10)
+    geo.line_to(15, 10)
+    geo.line_to(15, 15)
+    geo.line_to(10, 15)
+    geo.close_path()
+
+    result = close_all_contours(geo)
+    contours = result.split_into_contours()
+    assert len(contours) == 2
+    assert all(c.is_closed() for c in contours)
