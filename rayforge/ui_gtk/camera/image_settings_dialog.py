@@ -73,17 +73,23 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
         settings_box.append(image_group)
 
         # Auto White Balance Switch
-        self.auto_white_balance_switch = Adw.SwitchRow(
+        self.auto_white_balance_row = Adw.ActionRow(
             title=_("Auto White Balance"),
             subtitle=_("Automatically adjust white balance"),
         )
+        self.auto_white_balance_switch = Gtk.Switch()
+        self.auto_white_balance_switch.set_valign(Gtk.Align.CENTER)
         self.auto_white_balance_switch.set_active(
             self.camera.white_balance is None
         )
         self.auto_white_balance_switch.connect(
             "notify::active", self.on_auto_white_balance_toggled
         )
-        image_group.add(self.auto_white_balance_switch)
+        self.auto_white_balance_row.add_suffix(self.auto_white_balance_switch)
+        self.auto_white_balance_row.set_activatable_widget(
+            self.auto_white_balance_switch
+        )
+        image_group.add(self.auto_white_balance_row)
 
         # White Balance Manual Slider
         self.wb_adjustment = Gtk.Adjustment(
@@ -254,9 +260,10 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
 
     def _create_spin_row(
         self, title: str, subtitle: str, value: float, config_key: str
-    ) -> Adw.ActionRow:
-        row = Adw.ActionRow(title=title, subtitle=subtitle)
-        spin = Gtk.SpinButton(
+    ) -> Adw.SpinRow:
+        row = Adw.SpinRow(
+            title=title,
+            subtitle=subtitle,
             adjustment=Gtk.Adjustment(
                 value=value,
                 lower=-10.0,
@@ -267,11 +274,9 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
             digits=4,
             numeric=True,
         )
-        spin.set_valign(Gtk.Align.CENTER)
-        spin.connect(
-            "value-changed", self._on_distortion_value_changed, config_key
+        row.connect(
+            "notify::value", self._on_distortion_value_changed, config_key
         )
-        row.add_suffix(spin)
         return row
 
     # --- Callbacks ---
@@ -303,9 +308,9 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
         self.camera.transparency = adjustment.get_value()
 
     def _on_distortion_value_changed(
-        self, spin: Gtk.SpinButton, config_key: str
+        self, spin_row: Adw.SpinRow, pspec, config_key: str
     ):
-        setattr(self.camera, config_key, spin.get_value())
+        setattr(self.camera, config_key, spin_row.get_value())
 
     def on_dialog_response(self, dialog, response_id):
         if response_id == "close" or response_id == "cancel":
