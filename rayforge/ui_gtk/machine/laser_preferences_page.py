@@ -245,7 +245,7 @@ class LaserPreferencesPage(TrackedPreferencesPage):
         self.laserhead_config_group.add(self.tool_number_row)
 
         max_power_adjustment = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=1, page_increment=10
+            lower=0, upper=100000, step_increment=1, page_increment=10
         )
         self.max_power_row = Adw.SpinRow(
             title=_("Max Power"),
