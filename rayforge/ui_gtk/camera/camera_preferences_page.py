@@ -1,6 +1,6 @@
-from gi.repository import Gtk
+from gi.repository import Gtk, Adw
 from blinker import Signal
-from typing import List, cast
+from typing import List, cast, Optional
 from gettext import gettext as _
 from ...camera.models.camera import Camera
 from ...camera.controller import CameraController
@@ -164,6 +164,134 @@ class CameraListEditor(PreferencesGroupWithButton):
         self.remove_requested.send(self, camera=camera)
 
 
+class CameraEnhancementGroup(Adw.PreferencesGroup):
+    """A widget for noise reduction and image enhancement."""
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            title=_("Image Enhancement"),
+            description=_("Reduce noise and improve image stability."),
+            **kwargs,
+        )
+        self._controller: Optional[CameraController] = None
+        self._updating = False
+
+        # Scale 0-100 mapped to denoise factor 0.0 - 0.95
+        self.denoise_scale = Gtk.Scale.new_with_range(
+            Gtk.Orientation.HORIZONTAL, 0, 100, 1
+        )
+        self.denoise_scale.set_hexpand(True)
+        self.denoise_scale.set_value_pos(Gtk.PositionType.LEFT)
+        self.denoise_scale.connect("value-changed", self._on_value_changed)
+
+        row = Adw.ActionRow(title=_("Noise Reduction"))
+        subtitle_text = _(
+            "Temporal averaging. Higher values remove more noise "
+            "but cause trailing."
+        )
+        row.set_subtitle(subtitle_text)
+        row.add_suffix(self.denoise_scale)
+        self.add(row)
+
+    def set_controller(self, controller: Optional[CameraController]):
+        self._controller = controller
+        self.set_sensitive(controller is not None)
+
+        if not controller:
+            return
+
+        self._updating = True
+        # Read the current config. Defaults to 0.0
+        denoise_val = getattr(controller.config, "denoise", 0.0)
+        # Convert 0.0-0.95 range to 0-100 slider
+        self.denoise_scale.set_value(denoise_val * 100.0)
+        self._updating = False
+
+    def _on_value_changed(self, scale):
+        if self._updating or not self._controller:
+            return
+
+        # Convert 0-100 slider to 0.0-0.95 range
+        val = scale.get_value() / 100.0
+        # Hard clamp to 0.95 to avoid accidental infinite freeze
+        if val > 0.95:
+            val = 0.95
+
+        self._controller.config.denoise = val
+
+
+class CameraDistortionGroup(Adw.PreferencesGroup):
+    """A widget for correcting fisheye/wide-angle lens distortion."""
+
+    def __init__(self, **kwargs):
+        desc_text = _(
+            "Straighten bowed lines using Radial (k1, k2) and Tangential "
+            "(p1, p2) parameters. Note: Values are usually very small."
+        )
+        super().__init__(
+            title=_("Lens Distortion Correction (Fisheye)"),
+            description=desc_text,
+            **kwargs,
+        )
+        self._controller: Optional[CameraController] = None
+        self._updating = False
+
+        self.k1_spin = self._create_spin_row(_("Radial 1 (k1)"))
+        self.k2_spin = self._create_spin_row(_("Radial 2 (k2)"))
+        self.p1_spin = self._create_spin_row(_("Tangential 1 (p1)"))
+        self.p2_spin = self._create_spin_row(_("Tangential 2 (p2)"))
+
+    def _create_spin_row(self, title: str) -> Gtk.SpinButton:
+        row = Adw.ActionRow(title=title)
+        spin = Gtk.SpinButton(
+            adjustment=Gtk.Adjustment(
+                value=0.0,
+                lower=-10.0,
+                upper=10.0,
+                step_increment=0.001,
+                page_increment=0.01,
+            ),
+            digits=4,
+            numeric=True,
+        )
+        spin.set_valign(Gtk.Align.CENTER)
+        spin.connect("value-changed", self._on_value_changed)
+        row.add_suffix(spin)
+        self.add(row)
+        return spin
+
+    def set_controller(self, controller: Optional[CameraController]):
+        self._controller = controller
+        self.set_sensitive(controller is not None)
+
+        if not controller:
+            return
+
+        self._updating = True
+        self.k1_spin.set_value(
+            getattr(controller.config, "distortion_k1", 0.0)
+        )
+        self.k2_spin.set_value(
+            getattr(controller.config, "distortion_k2", 0.0)
+        )
+        self.p1_spin.set_value(
+            getattr(controller.config, "distortion_p1", 0.0)
+        )
+        self.p2_spin.set_value(
+            getattr(controller.config, "distortion_p2", 0.0)
+        )
+        self._updating = False
+
+    def _on_value_changed(self, spin: Gtk.SpinButton):
+        if self._updating or not self._controller:
+            return
+
+        self._controller.config.distortion_k1 = self.k1_spin.get_value()
+        self._controller.config.distortion_k2 = self.k2_spin.get_value()
+        self._controller.config.distortion_p1 = self.p1_spin.get_value()
+        self._controller.config.distortion_p2 = self.p2_spin.get_value()
+
+
 class CameraPreferencesPage(TrackedPreferencesPage):
     key = "camera"
     path_prefix = "/machine-settings/"
@@ -174,6 +302,7 @@ class CameraPreferencesPage(TrackedPreferencesPage):
         )
         self._controllers: List[CameraController] = []
         self._cameras: List[Camera] = []
+        self.selected_controller: Optional[CameraController] = None
 
         # Signals
         self.camera_add_requested = Signal()
@@ -242,6 +371,8 @@ class CameraPreferencesPage(TrackedPreferencesPage):
                 (c for c in self._controllers if c.config == selected_camera),
                 None,
             )
+            self.selected_controller = selected_controller
             self.camera_properties_widget.set_controller(selected_controller)
         else:
+            self.selected_controller = None
             self.camera_properties_widget.set_controller(None)
