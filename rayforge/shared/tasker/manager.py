@@ -112,7 +112,25 @@ class TaskManager:
     def _run_event_loop(self, loop: asyncio.AbstractEventLoop) -> None:
         """Run the asyncio event loop in a background thread."""
         asyncio.set_event_loop(loop)
-        loop.run_forever()
+        try:
+            loop.run_forever()
+        finally:
+            # Clean up when the thread is told to stop (during TaskManager
+            # shutdown)
+            try:
+                # 1. Cancel any lingering tasks to prevent "Task was destroyed
+                # but it is pending"
+                pending = asyncio.all_tasks(loop)
+                for t in pending:
+                    t.cancel()
+
+                # 2. Explicitly close the loop to free the self-pipe file
+                # descriptors.
+                if not loop.is_closed():
+                    loop.close()
+            except Exception as e:
+                logger.error(f"Error during event loop cleanup: {e}")
+                raise
 
     def _add_or_replace_task_unsafe(
         self,
