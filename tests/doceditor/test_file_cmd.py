@@ -22,6 +22,11 @@ from rayforge.image import (
     LayerInfo,
 )
 from rayforge.image.svg.renderer import SVG_RENDERER
+from rayforge.pipeline.coordspace import (
+    MachineSpace,
+    OriginCorner,
+    AxisDirection,
+)
 from rayforge.shared.tasker.manager import TaskManager
 
 
@@ -345,9 +350,13 @@ class TestFitAndPositionAtReferenceOrigin:
             mock_machine = MagicMock()
             mock_machine.axis_extents = (200, 150)
             mock_machine.work_area = (0, 0, 200, 150)
-            mock_machine.get_reference_offset.return_value = (0, 0, 0)
-            mock_machine.x_axis_right = False
-            mock_machine.y_axis_down = False
+            mock_machine.get_reference_position_world.return_value = (0, 0)
+            mock_machine.get_coordinate_space.return_value = MachineSpace(
+                origin=OriginCorner.BOTTOM_LEFT,
+                x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+                y_positive_direction=AxisDirection.POSITIVE_UP,
+                extents=(200, 150),
+            )
             mock_ctx.return_value.config.machine = mock_machine
 
             file_cmd._fit_and_position_at_reference_origin([wp])
@@ -366,9 +375,13 @@ class TestFitAndPositionAtReferenceOrigin:
             mock_machine = MagicMock()
             mock_machine.axis_extents = (200, 150)
             mock_machine.work_area = (0, 0, 200, 150)
-            mock_machine.get_reference_offset.return_value = (10, 20, 0)
-            mock_machine.x_axis_right = False
-            mock_machine.y_axis_down = False
+            mock_machine.get_reference_position_world.return_value = (10, 20)
+            mock_machine.get_coordinate_space.return_value = MachineSpace(
+                origin=OriginCorner.BOTTOM_LEFT,
+                x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+                y_positive_direction=AxisDirection.POSITIVE_UP,
+                extents=(200, 150),
+            )
             mock_ctx.return_value.config.machine = mock_machine
 
             file_cmd._fit_and_position_at_reference_origin([wp])

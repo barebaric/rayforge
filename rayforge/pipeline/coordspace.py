@@ -239,6 +239,36 @@ class MachineSpace(CoordinateSpace):
         width, height = self.extents
         return width - ml - mr, height - mt - mb
 
+    def world_position_from_origin(
+        self, ref_x: float, ref_y: float, size: Tuple[float, float]
+    ) -> Tuple[float, float]:
+        """
+        Convert a reference position at the origin corner to world coords.
+
+        Given a reference point at the machine's origin corner and an item
+        size, returns the bottom-left position in world coordinates.
+        This is useful for positioning items in world space when you have
+        a reference point at the origin corner.
+
+        Args:
+            ref_x: X coordinate of reference point at origin corner (world).
+            ref_y: Y coordinate of reference point at origin corner (world).
+            size: (width, height) of the item.
+
+        Returns:
+            Tuple of (x, y) for bottom-left position in world coordinates.
+        """
+        width, height = size
+
+        if self.origin == OriginCorner.BOTTOM_LEFT:
+            return ref_x, ref_y
+        elif self.origin == OriginCorner.TOP_LEFT:
+            return ref_x, ref_y - height
+        elif self.origin == OriginCorner.BOTTOM_RIGHT:
+            return ref_x - width, ref_y
+        else:  # TOP_RIGHT
+            return ref_x - width, ref_y - height
+
     def get_workarea_origin_in_machine(
         self,
     ) -> Tuple[float, float]:
