@@ -198,9 +198,14 @@ class MachineManager:
     def save_machine(self, machine):
         logger.debug(f"Saving machine {machine.id}")
         machine_file = self.filename_from_id(machine.id)
-        with open(machine_file, "w") as f:
+        try:
             data = machine.to_dict(include_frozen_dialect=False)
-            yaml.safe_dump(data, f)
+            content = yaml.safe_dump(data)
+        except Exception as e:
+            logger.error(f"Failed to serialize machine {machine.id}: {e}")
+            raise
+        with open(machine_file, "w") as f:
+            f.write(content)
 
     def load_machine(self, machine_id: str) -> Optional["Machine"]:
         machine_file = self.filename_from_id(machine_id)
