@@ -833,12 +833,12 @@ class SketchElement(CanvasElement):
         """
         Adds a symmetry constraint.
         Supported modes:
-        1. 3 Points: The first point in selection is considered the Center.
+        1. 3 Points: The last point in selection is considered the Center.
         2. 2 Points + 1 Line: The line is the Axis.
         """
         if not self.is_constraint_supported("symmetry") or not self.editor:
             logger.warning(
-                "Symmetry: Select 3 Points (1st is center) OR 2 Points + 1 "
+                "Symmetry: Select 3 Points (last is center) OR 2 Points + 1 "
                 "Line."
             )
             return
@@ -848,9 +848,9 @@ class SketchElement(CanvasElement):
         constr = None
 
         if len(point_ids) == 3 and not entity_ids:
-            center = point_ids[0]
-            p1 = point_ids[1]
-            p2 = point_ids[2]
+            p1 = point_ids[0]
+            p2 = point_ids[1]
+            center = point_ids[2]
             constr = SymmetryConstraint(p1, p2, center=center)
         elif len(point_ids) == 2 and len(entity_ids) == 1:
             p1 = point_ids[0]
