@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 import logging
+from multiprocessing.managers import DictProxy
 import threading
 from typing import (
     Any,
@@ -31,6 +32,7 @@ class TaskManager:
         main_thread_scheduler: Optional[Callable] = None,
         worker_initializer: Optional[Callable[..., None]] = None,
         worker_initargs: tuple = (),
+        shared_state: Optional[DictProxy[str, Any]] = None,
     ) -> None:
         logger.debug("Initializing TaskManager")
         self._tasks: Dict[Any, Task] = {}
@@ -50,9 +52,10 @@ class TaskManager:
         self._main_thread_scheduler = main_thread_scheduler or idle_add
         self._thread.start()
 
-        # Initialize the worker pool
         self._pool = WorkerPoolManager(
-            initializer=worker_initializer, initargs=worker_initargs
+            initializer=worker_initializer,
+            initargs=worker_initargs,
+            shared_state=shared_state,
         )
         self._connect_pool_signals()
 
@@ -398,7 +401,13 @@ class TaskManager:
         )
 
     def _on_pool_task_event(
-        self, sender, key, task_id, event_name, data, adoption_signals
+        self,
+        sender,
+        key,
+        task_id,
+        event_name,
+        data,
+        adoption_signals: DictProxy[str, bool],
     ):
         signal_key = f"{task_id}:{event_name}"
         logger.debug(
@@ -462,7 +471,7 @@ class TaskManager:
         task_id: int,
         event_name: str,
         data: dict,
-        adoption_signals: dict,
+        adoption_signals: DictProxy[str, Any],
     ):
         """Dispatches a task event from the main thread."""
         with self._lock:

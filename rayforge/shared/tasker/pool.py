@@ -10,6 +10,7 @@ import traceback
 import builtins
 from queue import Empty
 from multiprocessing import get_context, Manager
+from multiprocessing.managers import DictProxy
 from multiprocessing.process import BaseProcess
 from multiprocessing.queues import Queue as MpQueue
 from typing import Any, Callable, List, Set, Optional, Tuple
@@ -59,8 +60,8 @@ def _worker_main_loop(
     log_level: int,
     initializer: Optional[Callable[..., None]],
     initargs: Tuple[Any, ...],
-    adoption_signals: dict,
-    shared_state: dict,
+    adoption_signals: DictProxy[str, bool],
+    shared_state: DictProxy[str, Any],
 ):
     """
     The main function for a worker process.
@@ -189,6 +190,7 @@ class WorkerPoolManager:
         num_workers: int | None = None,
         initializer: Optional[Callable[..., None]] = None,
         initargs: Tuple[Any, ...] = (),
+        shared_state: Optional[DictProxy[str, Any]] = None,
     ):
         if num_workers is None:
             env_max = os.environ.get("RAYFORGE_MAX_WORKERS")
@@ -205,7 +207,10 @@ class WorkerPoolManager:
         self._task_queue: MpQueue = self._mp_context.Queue()
         self._result_queue: MpQueue = self._mp_context.Queue()
         self._adoption_signals = self._manager.dict()
-        self._shared_state = self._manager.dict()
+        if shared_state is not None:
+            self._shared_state = shared_state
+        else:
+            self._shared_state = self._manager.dict()
         self._workers: List[BaseProcess] = []
         self._cancelled_task_ids: Set[int] = set()
         self._lock = threading.Lock()
