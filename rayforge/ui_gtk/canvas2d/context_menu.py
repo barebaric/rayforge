@@ -31,6 +31,13 @@ def _populate_standard_items(menu: Gio.Menu):
     # Separator
     menu.append_section(None, Gio.Menu.new())
 
+    menu.append_item(
+        Gio.MenuItem.new(_("Convert to Stock"), "win.convert-to-stock")
+    )
+
+    # Separator
+    menu.append_section(None, Gio.Menu.new())
+
     menu.append_item(Gio.MenuItem.new(_("Remove"), "win.remove"))
 
 

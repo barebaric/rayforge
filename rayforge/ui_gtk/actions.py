@@ -144,6 +144,9 @@ class ActionManager:
         # Split Action
         self._add_action("split", self.on_split_action)
 
+        # Convert to Stock Action
+        self._add_action("convert-to-stock", self.on_convert_to_stock)
+
         # Tabbing Actions
         self._add_action("add-tabs-equidistant", self.on_add_tabs_equidistant)
         self._add_action("add-tabs-cardinal", self.on_add_tabs_cardinal)
@@ -491,6 +494,15 @@ class ActionManager:
         new_items = self.editor.split.split_items(selected_workpieces)
         if new_items:
             self.win.surface.select_items(new_items)
+
+    def on_convert_to_stock(self, action, param):
+        """Handler for the 'convert-to-stock' action."""
+        selected_wps = self.win.surface.get_selected_workpieces()
+        if not selected_wps:
+            return
+
+        for wp in selected_wps:
+            self.editor.stock.convert_to_stock(wp)
 
     # --- Alignment Action Handlers ---
 
