@@ -64,7 +64,6 @@ class WebSocketTransport(Transport):
                 self._set_status(TransportStatus.CONNECTED)
                 self._receive_task = asyncio.create_task(self._receive_loop())
                 await self._receive_task
-
             except (asyncio.CancelledError, ConnectionClosed):
                 # This is an expected part of a clean shutdown or reconnect
                 # cycle.

@@ -2,6 +2,7 @@ import asyncio
 import inspect
 import json
 import logging
+import math
 from typing import (
     Optional,
     cast,
@@ -35,6 +36,7 @@ from .driver import (
 )
 from .octoprint_api import (
     JobInfos,
+    Progress,
     SocketMessagesTypes,
     ConnectionInfos,
     resolve_status,
@@ -53,7 +55,7 @@ class OctoprintDriver(Driver):
     label = _("Octoprint")
     subtitle = _("Connect to an Octoprint device over the network")
     supports_settings = True
-    reports_granular_progress = False
+    reports_granular_progress = True
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
@@ -63,6 +65,7 @@ class OctoprintDriver(Driver):
         self.token = None
         self.http_session = None
         self.websocket = None
+        self.connecting = False
         self.connection_flags = []
         self.progress_notifier = None
         self.last_op_index = -1
@@ -142,6 +145,7 @@ class OctoprintDriver(Driver):
 
         self.base_url = f"http://{self.host}:{self.port}/"
         self.socket_url = f"ws://{self.host}:{self.port}/sockjs/websocket"
+        
         self.websocket = WebSocketTransport(self.socket_url)
         self.websocket.status_changed.connect(self.on_websocket_status_changed)
         self.websocket.received.connect(self.on_websocket_data_received)
@@ -183,10 +187,15 @@ class OctoprintDriver(Driver):
                     self.state_changed.send(self, state=self.state)
                     self.connection_flags = state["flags"]
                 if data.get("job"):
-                    # current_job = JobInfos.from_dict(data["job"])
+                    current_job = JobInfos.from_dict(data["job"])
                     pass
                 if data.get("progress"):
-                    pass
+                    progress = Progress.from_dict(data["progress"])
+                    if self.progress_notifier:
+                        op_i = round(self.op_n * progress.completion)
+                        if self.last_op_index != op_i:
+                            self.last_op_index = op_i
+                            self.progress_notifier(self.last_op_index)
 
     def on_websocket_status_changed(
         self, sender, status: TransportStatus, message: Optional[str] = None
@@ -194,6 +203,11 @@ class OctoprintDriver(Driver):
         self.connection_status_changed.send(
             self, status=status, message=message
         )
+        if status == TransportStatus.CONNECTED:
+            if not self.http_session:
+                return
+            self._connection_task = asyncio.create_task(self._on_web_socket_open())
+            
 
     @classmethod
     def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
@@ -202,20 +216,40 @@ class OctoprintDriver(Driver):
 
     async def _connect_implementation(self) -> None:
         # Simulate connection sequence
-        if not self.base_url or not self.token or not self.websocket:
+        if not self.base_url or not self.token:
             self.connection_status_changed.send(
                 self,
                 status=TransportStatus.ERROR,
                 message=_("Missing connection parameters"),
             )
             return
+        assert self.websocket != None
+        self.connecting = True
+        websocket = self.websocket
         self.connection_status_changed.send(
             self, status=TransportStatus.CONNECTING
         )
         self.http_session = aiohttp.ClientSession(
             base_url=self.base_url, headers={"X-Api-Key": self.token}
         )
-        await self.websocket.connect()
+        async with self.http_session.get("/api/version") as response:
+            if response.status != 200:
+                self.connection_status_changed.send(
+                    self,
+                    status=TransportStatus.ERROR,
+                    message=_("Failed to connect to Octoprint API. Is CORS Enabled ?"),
+                )
+                return
+        await websocket.connect()
+        self.state.status = DeviceStatus.UNKNOWN
+        self.state_changed.send(self, state=self.state)
+
+        # Upon connect, broadcast WCS state (matches loaded machine state)
+        self.wcs_updated.send(self, offsets=self._offsets)
+
+    async def _on_web_socket_open(self) -> None:
+        assert self.http_session != None and self.websocket != None
+        websocket = self.websocket
         async with self.http_session.post(
             "/api/login",
             json={"passive": True},
@@ -238,21 +272,18 @@ class OctoprintDriver(Driver):
                     "plugins": False,
                 }
             }
-            await self.websocket.send(
+            while not websocket.is_connected:
+                await asyncio.sleep(1)
+            await websocket.send(
                 json.dumps(subscribe_payload).encode("utf-8")
             )
             auth_payload = {"auth": f"{usr_name}:{session_id}"}
-            await self.websocket.send(json.dumps(auth_payload).encode("utf-8"))
-        self.state.status = DeviceStatus.UNKNOWN
-        self.state_changed.send(self, state=self.state)
-
-        self.connection_status_changed.send(
-            self, status=TransportStatus.CONNECTED
-        )
-
-        # Upon connect, broadcast WCS state (matches loaded machine state)
-        self.wcs_updated.send(self, offsets=self._offsets)
-
+            await websocket.send(json.dumps(auth_payload).encode("utf-8"))
+        if self.connecting:
+            self.connection_status_changed.send(
+                self, status=TransportStatus.CONNECTED
+            )
+            self.connecting = False
     async def run(
         self,
         machine_code: Any,
@@ -388,6 +419,7 @@ class OctoprintDriver(Driver):
         return simulated_pos
 
     async def cleanup(self):
+        logger.info("Cleaning up OctoprintDriver resources...")
         self.keep_running = False
         if self._connection_task:
             self._connection_task.cancel()
