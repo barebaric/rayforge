@@ -444,10 +444,8 @@ def main():
     # This allows workers to resolve rayforge_addons.* modules during
     # unpickling without loading all addons at startup.
     shared_state = task_mgr_proxy.get_shared_state()
+    get_context().addon_mgr.set_task_manager(task_mgr_proxy)
     get_context().addon_mgr.set_shared_state(shared_state)
-    # Pre-populate shared dict with addon module paths before workers
-    # are created. This ensures paths are available during unpickling.
-    get_context().addon_mgr.populate_addon_module_paths()
 
     # Initialize the full application context. This creates all managers
     # and sets up the backward-compatibility shim for old code.

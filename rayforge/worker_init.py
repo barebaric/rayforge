@@ -1,22 +1,21 @@
 import builtins
+import importlib
 import logging
 import os
 import sys
 from pathlib import Path
 from typing import Dict, Optional
+
 import pluggy
-from rayforge.core.addon_config import AddonConfig
-from rayforge.addon_mgr.addon_manager import AddonManager
 from rayforge.addon_mgr.lazy_loader import (
-    collect_module_paths,
     ensure_addon_namespaces,
     install_addon_finder,
 )
-from rayforge.config import BUILTIN_ADDONS_DIR, ADDONS_DIR, CONFIG_DIR
 from rayforge.core.hooks import RayforgeSpecs
 
 
 _worker_addons_loaded = False
+_shared_state_cache: Optional[Dict] = None
 
 
 def ensure_addons_loaded():
@@ -27,6 +26,7 @@ def ensure_addons_loaded():
     slowing down worker processes that may not need addon functionality.
     """
     global _worker_addons_loaded
+
     if _worker_addons_loaded:
         return
 
@@ -41,37 +41,52 @@ def ensure_addons_loaded():
     plugin_mgr = pluggy.PluginManager("rayforge")
     plugin_mgr.add_hookspecs(RayforgeSpecs)
 
-    # Load the actual addon config to respect enabled/disabled state
-    addon_config = AddonConfig(CONFIG_DIR)
-    addon_config.load()
+    manifest = None
 
-    addon_mgr = AddonManager(
-        [BUILTIN_ADDONS_DIR, ADDONS_DIR],
-        ADDONS_DIR,
-        plugin_mgr,
-        addon_config,
-    )
-    addon_mgr.set_registries(
-        {
-            "step_registry": step_registry,
-            "producer_registry": producer_registry,
-            "layout_registry": layout_registry,
-        }
-    )
-    addon_mgr.load_installed_addons(backend_only=True)
+    # Priority 1: Use cached state (Worker process scenario)
+    if _shared_state_cache is not None:
+        manifest = _shared_state_cache.get("addon_manifest")
+    else:
+        # Priority 2: Use TaskManager (Main process scenario)
+        # We must be careful not to trigger TaskManager creation in a worker
+        try:
+            from rayforge.shared.tasker import task_mgr
+
+            # accessing get_shared_state on the proxy triggers initialization
+            # which is safe in the main process but fatal in a worker.
+            # We assume that if _shared_state_cache is None, we are either
+            # in the main process or something went wrong with initialization.
+            shared_state = task_mgr.get_shared_state()
+            manifest = shared_state.get("addon_manifest")
+        except Exception as e:
+            # Catches AssertionError (daemonic process) or other init errors
+            logger.debug(f"Could not retrieve manifest from task_mgr: {e}")
+
+    if not manifest:
+        logger.warning("Cannot load worker addons: manifest not available.")
+        return
+
+    for module_name in manifest.enabled_backend_modules:
+        try:
+            module = importlib.import_module(module_name)
+            plugin_mgr.register(module)
+        except Exception as e:
+            logger.error(
+                f"Failed to load enabled backend module '{module_name}': {e}"
+            )
 
     # Only register backend hooks, not frontend (widgets, menus, actions)
     plugin_mgr.hook.register_steps(step_registry=step_registry)
     plugin_mgr.hook.register_producers(producer_registry=producer_registry)
     plugin_mgr.hook.register_layout_strategies(layout_registry=layout_registry)
 
-    logger.debug("Worker addons loaded.")
+    logger.debug("Worker addons loaded from manifest.")
 
 
 def invalidate_worker_addons_cache():
     """
     Invalidate addon cache so subsequent calls to ensure_addons_loaded()
-    will reload addons from disk.
+    will reload addons.
 
     This should be called when addons are installed or removed at runtime,
     followed by restarting the worker pool to pick up the changes.
@@ -92,8 +107,11 @@ def initialize_worker(shared_state: Optional[Dict] = None):
 
     Args:
         shared_state: Shared dict for worker initialization data.
-            Can contain 'addon_module_paths' key with module paths.
+            Contains the 'addon_manifest' key with the pre-computed structure.
     """
+    global _shared_state_cache
+    _shared_state_cache = shared_state
+
     # Install a fallback gettext translator. This ensures the '_'
     # function exists during the module import phase.
     if not hasattr(builtins, "_"):
@@ -123,17 +141,16 @@ def initialize_worker(shared_state: Optional[Dict] = None):
                 "GIO_EXTRA_MODULES", str(bundled_gio_modules)
             )
 
-    addon_dirs = [BUILTIN_ADDONS_DIR, ADDONS_DIR]
+    logger = logging.getLogger(__name__)
+    if not shared_state:
+        logger.error("Worker cannot initialize without shared_state.")
+        return
 
-    addon_module_paths = (
-        shared_state.get("addon_module_paths") if shared_state else None
-    )
-    if not addon_module_paths:
-        paths = collect_module_paths(addon_dirs)
-        install_addon_finder(addon_modules=paths)
+    manifest = shared_state.get("addon_manifest")
+    if not manifest:
+        logger.warning("Addon manifest not found in shared state.")
     else:
         install_addon_finder(shared_dict=shared_state)
+        ensure_addon_namespaces(manifest)
 
-    ensure_addon_namespaces(addon_dirs)
-
-    logging.getLogger(__name__).debug("Worker process initialized.")
+    logger.debug("Worker process initialized with addon manifest.")

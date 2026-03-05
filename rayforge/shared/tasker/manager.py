@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 import logging
+from multiprocessing import Manager
 from multiprocessing.managers import DictProxy
 import threading
 from typing import (
@@ -52,12 +53,35 @@ class TaskManager:
         self._main_thread_scheduler = main_thread_scheduler or idle_add
         self._thread.start()
 
-        self._pool = WorkerPoolManager(
-            initializer=worker_initializer,
-            initargs=worker_initargs,
-            shared_state=shared_state,
-        )
+        # TaskManager owns the persistent Manager and shared state
+        self._manager = Manager()
+        if shared_state is None:
+            shared_state = self._manager.dict()
+        self._shared_state = shared_state
+
+        self._pool_kwargs = {
+            "initializer": worker_initializer,
+            "initargs": worker_initargs,
+            "shared_state": self._shared_state,
+        }
+        self._pool = WorkerPoolManager(**self._pool_kwargs)
         self._connect_pool_signals()
+
+    def restart_worker_pool(self) -> None:
+        """
+        Shuts down the current worker pool and starts a new one.
+        This is necessary to apply changes like addon installation or updates
+        to worker processes. The shared_state is preserved.
+        """
+        logger.info("Restarting worker pool to apply configuration changes...")
+        from rayforge.worker_init import invalidate_worker_addons_cache
+
+        invalidate_worker_addons_cache()
+        with self._lock:
+            self._pool.shutdown()
+            self._pool = WorkerPoolManager(**self._pool_kwargs)
+            self._connect_pool_signals()
+        logger.info("Worker pool restarted.")
 
     def _connect_pool_signals(self):
         """Connects to signals emitted by the WorkerPoolManager."""
@@ -346,9 +370,9 @@ class TaskManager:
         Return the shared state dict for worker initialization.
 
         This provides a generic mechanism for passing data to worker
-        processes. The dict is managed by the WorkerPoolManager.
+        processes. The dict is managed by the TaskManager and persists.
         """
-        return self._pool.get_shared_state()
+        return self._shared_state
 
     async def _run_task(
         self, task: Task, when_done: Optional[Callable[[Task], None]]
@@ -794,6 +818,13 @@ class TaskManagerProxy:
             if self._instance is not None:
                 raise RuntimeError("TaskManager has already been initialized.")
             self._init_kwargs = kwargs
+
+    def restart_worker_pool(self) -> None:
+        """
+        Shuts down the current worker pool and starts a new one.
+        """
+        if self._instance is not None:
+            self._instance.restart_worker_pool()
 
     def _get_instance(self) -> TaskManager:
         """

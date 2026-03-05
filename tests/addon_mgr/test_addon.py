@@ -111,7 +111,8 @@ class TestAddon:
                 yaml.dump(data, f)
 
             addon = Addon.load_from_directory(path, version=TEST_VERSION)
-            assert addon.metadata.name == path.name
+            assert addon.metadata.name == data["name"]
+            assert addon.root_path == path
             assert addon.metadata.version == TEST_VERSION
             assert addon.metadata.provides.backend == "main.py"
 

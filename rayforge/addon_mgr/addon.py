@@ -150,7 +150,6 @@ class Addon:
     ) -> "Addon":
         """
         Loads an addon from a directory by parsing its YAML metadata file.
-        The directory name is treated as the canonical addon ID.
 
         Args:
             addon_dir (Path): The directory containing the addon.
@@ -159,6 +158,9 @@ class Addon:
                 that cannot determine version from git, pass UnknownVersion.
 
         Raises:
+            FileNotFoundError: If the metadata file is missing.
+            AddonValidationError: If parsing fails or required fields
+              are missing.
             RuntimeError: If version is None and no git tags are found.
         """
         meta_file = addon_dir / METADATA_FILENAME
@@ -176,6 +178,15 @@ class Addon:
             raise AddonValidationError(f"Failed to parse YAML metadata: {e}")
 
         try:
+            # The addon ID (namespace) MUST be defined in the metadata.
+            addon_name = data.get("name")
+            if not addon_name or not str(addon_name).strip():
+                raise AddonValidationError(
+                    f"Metadata file '{METADATA_FILENAME}' in {addon_dir} "
+                    "is missing the required 'name' field."
+                )
+            addon_name = str(addon_name).strip()
+
             author_data = data.get("author", {})
             if isinstance(author_data, str):
                 match = re.match(r"(.*) <(.*)>", author_data)
@@ -217,8 +228,8 @@ class Addon:
                 resolved_version = get_git_tag_version(addon_dir)
 
             metadata = AddonMetadata(
-                name=addon_dir.name,
-                display_name=data.get("display_name", data.get("name", "")),
+                name=addon_name,
+                display_name=data.get("display_name", addon_name),
                 description=data.get("description", ""),
                 version=resolved_version,
                 depends=depends,
@@ -231,6 +242,8 @@ class Addon:
 
             return cls(path=addon_dir, metadata=metadata)
 
+        except AddonValidationError:
+            raise
         except Exception as e:
             raise AddonValidationError(f"Structure error in metadata: {e}")
 
@@ -242,6 +255,13 @@ class Addon:
 
         if not self.metadata.name or not self.metadata.name.strip():
             raise AddonValidationError("Addon 'name' cannot be empty.")
+
+        if not self.metadata.name.isidentifier():
+            raise AddonValidationError(
+                f"Addon name '{self.metadata.name}' is not a valid Python "
+                "identifier. It must contain only letters, numbers, and "
+                "underscores, and cannot start with a number."
+            )
 
         if not self.metadata.description:
             logger.warning(f"Addon '{self.metadata.name}' has no description.")

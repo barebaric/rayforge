@@ -36,9 +36,10 @@ from ..shared.util.versioning import (
     UnknownVersion,
 )
 from .addon import Addon, AddonMetadata, AddonValidationError
+from .manifest import AddonManifest
 
 if TYPE_CHECKING:
-    pass
+    from ..shared.tasker.manager import TaskManagerProxy
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +95,7 @@ class AddonManager:
         is_job_active_callback: Optional[Callable[[], bool]] = None,
         registries: Optional[Dict[str, "AddonRegistry"]] = None,
         shared_state: Optional[Dict[str, Any]] = None,
+        task_mgr: Optional["TaskManagerProxy"] = None,
     ):
         """
         Args:
@@ -112,6 +114,8 @@ class AddonManager:
                 'menu_registry', 'layout_registry'.
             shared_state (Optional[Any]): Shared dict for worker state,
                 used to populate addon module paths for worker processes.
+            task_mgr (Optional[TaskManagerProxy]): Proxy to trigger worker
+                pool restarts upon configuration changes.
         """
         self.addon_dirs = addon_dirs
         self.install_dir = install_dir
@@ -125,6 +129,7 @@ class AddonManager:
         self._pending_unloads: Set[str] = set()
         self._load_errors: Dict[str, str] = {}
         self._shared_state = shared_state
+        self._task_mgr = task_mgr
 
         self.addon_reloaded = Signal()
 
@@ -140,83 +145,119 @@ class AddonManager:
         """
         self.registries = registries
 
+    def set_task_manager(self, task_mgr: "TaskManagerProxy"):
+        """
+        Set the task manager proxy to trigger worker pool restarts.
+        """
+        self._task_mgr = task_mgr
+
     def set_shared_state(self, shared_state: Dict[str, Any]):
         """
-        Set the shared state dict for worker initialization.
-
-        This allows the AddonManager to populate module paths for worker
-        processes to resolve rayforge_addons.* modules during unpickling.
+        Set the shared state dict and immediately build the addon manifest.
 
         Args:
             shared_state: Shared dict for worker state.
         """
         self._shared_state = shared_state
-        self.populate_addon_module_paths()
+        self._build_and_update_manifest()
 
-    def populate_addon_module_paths(self):
+    def _restart_workers(self):
         """
-        Populate the shared dict with addon module paths.
-
-        This scans addon directories and populates the shared dict with
-        module paths without loading the addons. This allows workers
-        to resolve rayforge_addons.* modules during unpickling.
+        Restarts the worker pool to ensure runtime modifications to addons
+        are securely reflected in background processes.
         """
-        if self._shared_state is None:
-            return
+        if self._task_mgr is not None:
+            logger.info("Restarting worker pool due to addon changes...")
+            self._task_mgr.restart_worker_pool()
 
-        paths = {}
-        for addon_dir in self.addon_dirs:
-            if not addon_dir.exists():
-                continue
+    def _build_and_update_manifest(self):
+        """
+        Scans all known addons to build a comprehensive manifest and
+        updates the shared state for worker processes.
 
-            for child in addon_dir.iterdir():
-                if not child.is_dir():
+        The namespace structure for addons is:
+        rayforge_addons.<ADDON_NAME>.<MODULE_STRUCTURE>
+
+        Where <ADDON_NAME> is the name from the rayforge-addon.yaml.
+        This guarantees isolation between addons even if they have internal
+        modules with the same name.
+        """
+        manifest = AddonManifest()
+        all_addons = (
+            list(self.loaded_addons.values())
+            + list(self.disabled_addons.values())
+            + list(self.incompatible_addons.values())
+        )
+
+        root_ns = "rayforge_addons"
+        manifest.namespaces.add(root_ns)
+
+        for addon in all_addons:
+            addon_id = addon.metadata.name
+
+            # Root namespace for this addon
+            addon_ns = f"rayforge_addons.{addon_id}"
+            manifest.namespaces.add(addon_ns)
+
+            # Scan all python files to register every potential module
+            for py_file in addon.root_path.rglob("*.py"):
+                # Ignore hidden files/directories
+                if any(p.startswith(".") for p in py_file.parts):
                     continue
 
-                try:
-                    addon = Addon.load_from_directory(child)
-                    addon.validate()
-                    name = addon.metadata.name
+                rel_path = py_file.relative_to(addon.root_path)
+                parts = rel_path.with_suffix("").parts
 
-                    backend_ep = addon.metadata.provides.backend
-                    frontend_ep = addon.metadata.provides.frontend
+                if py_file.name == "__init__.py":
+                    mod_parts = parts[:-1]
+                else:
+                    mod_parts = parts
 
-                    for entry_point in [backend_ep, frontend_ep]:
-                        if not entry_point:
-                            continue
+                if not mod_parts:
+                    continue
 
-                        module_name = f"rayforge_addons.{name}.{entry_point}"
-                        module_path = self._resolve_entry_point_path(
-                            entry_point, addon.root_path
-                        )
-                        if module_path:
-                            paths[module_name] = str(module_path)
+                # Ensure it's a valid python identifier sequence
+                if not all(p.isidentifier() for p in mod_parts):
+                    continue
 
-                    # Scan for all Python files in the addon directory
-                    # to register subpackages and modules.
-                    for py_file in addon.root_path.rglob("*.py"):
-                        rel_path = py_file.relative_to(addon.root_path)
+                module_name = f"{addon_ns}.{'.'.join(mod_parts)}"
+                manifest.module_paths[module_name] = str(py_file)
 
-                        if rel_path.name == "__init__.py":
-                            # Register package (directory)
-                            parts = rel_path.parts[:-1]  # Remove __init__.py
-                            if parts:
-                                module_name = (
-                                    f"rayforge_addons.{name}.{'.'.join(parts)}"
-                                )
-                                paths[module_name] = str(py_file)
-                        else:
-                            # Register module
-                            module_path_str = str(rel_path.with_suffix(""))
-                            module_name = (
-                                f"rayforge_addons.{name}."
-                                f"{module_path_str.replace('/', '.')}"
-                            )
-                            paths[module_name] = str(py_file)
-                except Exception:
-                    pass
+                # Add namespaces for parent packages
+                for i in range(1, len(mod_parts)):
+                    manifest.namespaces.add(
+                        f"{addon_ns}.{'.'.join(mod_parts[:i])}"
+                    )
 
-        self._shared_state["addon_module_paths"] = paths
+        # Populate enabled backend entry points using the namespaced structure
+        for addon in self.loaded_addons.values():
+            if addon.metadata.provides.backend:
+                backend_module = (
+                    f"rayforge_addons.{addon.metadata.name}."
+                    f"{addon.metadata.provides.backend}"
+                )
+                manifest.enabled_backend_modules.append(backend_module)
+
+        # Prefer the shared state from the active task manager, as it may have
+        # changed after a pool restart. Fall back to the stored shared state.
+        target_state = None
+        if self._task_mgr:
+            target_state = self._task_mgr.get_shared_state()
+
+        if target_state is None:
+            target_state = self._shared_state
+
+        if target_state is not None:
+            logger.debug(
+                f"Updating addon manifest in shared state. "
+                f"{len(manifest.module_paths)} modules, "
+                f"{len(manifest.enabled_backend_modules)} enabled backends."
+            )
+            target_state["addon_manifest"] = manifest
+        else:
+            logger.warning(
+                "No shared state available to update addon manifest."
+            )
 
     def _parse_registry_dict(
         self, registry_data: Dict[str, Any]
@@ -402,6 +443,9 @@ class AddonManager:
                 if child.is_dir():
                     self.load_addon(child.resolve(), backend_only=backend_only)
 
+        # Build manifest at the end of the batch load
+        self._build_and_update_manifest()
+
     def load_addon(self, addon_path: Path, backend_only: bool = False):
         """
         Loads a single addon from a directory.
@@ -413,47 +457,55 @@ class AddonManager:
                 Used by worker processes.
         """
         try:
-            is_builtin = not addon_path.is_relative_to(self.install_dir)
-            version = None
+            # 1. Load addon structure without resolving version yet to get
+            # canonical name
+            addon = Addon.load_from_directory(
+                addon_path, version=UnknownVersion
+            )
+            addon_name = addon.metadata.name
 
+            # 2. Resolve version using the proper addon_name
+            is_builtin = not addon_path.is_relative_to(self.install_dir)
             if is_builtin:
-                version = UnknownVersion
+                resolved_version = UnknownVersion
             else:
+                resolved_version = None
                 if self.addon_config:
-                    stored_version = self.addon_config.get_version(
-                        addon_path.name
+                    resolved_version = self.addon_config.get_version(
+                        addon_name
                     )
-                    if stored_version is not None:
-                        version = stored_version
-                if version is None:
+
+                if resolved_version is None:
                     try:
-                        version = get_git_tag_version(addon_path)
+                        resolved_version = get_git_tag_version(addon_path)
                     except RuntimeError:
                         logger.warning(
-                            f"No stored version for '{addon_path.name}' "
-                            "and no git tags found, using UnknownVersion"
+                            f"No stored version for addon '{addon_name}' "
+                            f"at {addon_path} and no git tags found, using "
+                            "UnknownVersion"
                         )
-                        version = UnknownVersion
+                        resolved_version = UnknownVersion
 
-            addon = Addon.load_from_directory(addon_path, version=version)
+            addon.metadata.version = resolved_version
+
+            # 3. Now completely validate the populated addon
             addon.validate()
 
             has_backend = addon.metadata.provides.backend is not None
             has_frontend = addon.metadata.provides.frontend is not None
 
             if not has_backend and not has_frontend:
-                self.loaded_addons[addon.metadata.name] = addon
-                logger.info(f"Loaded asset addon: {addon.metadata.name}")
+                self.loaded_addons[addon_name] = addon
+                logger.info(f"Loaded asset addon: {addon_name}")
                 return
 
             if self.addon_config:
-                state = self.addon_config.get_state(addon.metadata.name)
+                state = self.addon_config.get_state(addon_name)
                 if state == ConfigAddonState.DISABLED:
                     logger.info(
-                        f"Addon '{addon.metadata.name}' is disabled, "
-                        "skipping load"
+                        f"Addon '{addon_name}' is disabled, skipping load"
                     )
-                    self.disabled_addons[addon.metadata.name] = addon
+                    self.disabled_addons[addon_name] = addon
                     return
 
             if (
@@ -461,10 +513,10 @@ class AddonManager:
                 != UpdateStatus.UP_TO_DATE
             ):
                 logger.warning(
-                    f"Addon '{addon.metadata.name}' is incompatible with "
+                    f"Addon '{addon_name}' is incompatible with "
                     "this version of Rayforge"
                 )
-                self.incompatible_addons[addon.metadata.name] = addon
+                self.incompatible_addons[addon_name] = addon
                 return
 
             self.compile_translations(addon_path)
@@ -480,13 +532,13 @@ class AddonManager:
                 if addon.metadata.version is UnknownVersion
                 else str(addon.metadata.version)
             )
-            logger.info(f"Loaded addon: {addon.metadata.name} {version_str}")
+            logger.info(f"Loaded addon: {addon_name} {version_str}")
 
         except (AddonValidationError, FileNotFoundError) as e:
-            logger.warning(f"Skipping invalid addon at {addon_path.name}: {e}")
+            logger.warning(f"Skipping invalid addon at {addon_path}: {e}")
         except Exception as e:
             logger.error(
-                f"Failed to load addon {addon_path.name}: {e}",
+                f"Failed to load addon at {addon_path}: {e}",
                 exc_info=True,
             )
 
@@ -519,6 +571,12 @@ class AddonManager:
             return
 
         name = addon.metadata.name
+
+        # Module name logic: "rayforge_addons.<ADDON_NAME>.<ENTRY_POINT>"
+        # Example:
+        # 1. rayforge_addons
+        # 2. laser_essentials (addon name)
+        # 3. laser_essentials.backend (inner python structure)
         module_name = f"rayforge_addons.{name}.{entry_point}"
 
         module_path = self._resolve_entry_point_path(
@@ -529,11 +587,6 @@ class AddonManager:
             logger.error(error_msg)
             self._load_errors[name] = error_msg
             return
-
-        if self._shared_state is not None:
-            addon_paths = self._shared_state.get("addon_module_paths", {})
-            addon_paths[module_name] = str(module_path)
-            self._shared_state["addon_module_paths"] = addon_paths
 
         try:
             self._ensure_parent_modules(
@@ -562,46 +615,68 @@ class AddonManager:
         """
         Ensure parent modules exist in sys.modules for relative imports.
 
-        For entry_point 'laser_essentials.backend', we need:
-        - rayforge_addons (namespace)
-        - rayforge_addons.{name} (namespace)
-        - rayforge_addons.{name}.laser_essentials (actual addon module)
+        The module structure is:
+        rayforge_addons.<ADDON_ID>.<ENTRY_POINT_PARTS...>
+
+        We need to ensure all intermediates exist.
         """
         import types
 
-        parts = module_name.split(".")
-        if parts[0] not in sys.modules:
-            ns = types.ModuleType(parts[0])
+        # 1. Ensure root 'rayforge_addons'
+        if "rayforge_addons" not in sys.modules:
+            ns = types.ModuleType("rayforge_addons")
             ns.__path__ = []
-            ns.__package__ = parts[0]
-            sys.modules[parts[0]] = ns
+            ns.__package__ = "rayforge_addons"
+            sys.modules["rayforge_addons"] = ns
+
+        parts = module_name.split(".")
+        # parts[0] is rayforge_addons
+        # parts[1] is ADDON_ID (e.g. laser_essentials)
+        # parts[2:] are the rest
 
         if len(parts) > 1:
-            parent = f"{parts[0]}.{parts[1]}"
-            if parent not in sys.modules:
-                ns = types.ModuleType(parent)
-                ns.__path__ = []
-                ns.__package__ = parent
-                sys.modules[parent] = ns
+            addon_id = parts[1]
+            addon_ns = f"rayforge_addons.{addon_id}"
 
-        entry_parts = entry_point.split(".")
-        if len(entry_parts) > 1:
-            pkg_name = f"{parts[0]}.{parts[1]}.{entry_parts[0]}"
-            if pkg_name not in sys.modules:
-                pkg_path = root_path / entry_parts[0] / "__init__.py"
-                if pkg_path.exists():
-                    spec = importlib.util.spec_from_file_location(
-                        pkg_name, pkg_path
-                    )
-                    if spec and spec.loader:
-                        pkg_module = importlib.util.module_from_spec(spec)
-                        sys.modules[pkg_name] = pkg_module
-                        spec.loader.exec_module(pkg_module)
-                else:
-                    ns = types.ModuleType(pkg_name)
-                    ns.__path__ = [str(root_path / entry_parts[0])]
-                    ns.__package__ = pkg_name
-                    sys.modules[pkg_name] = ns
+            # 2. Ensure addon namespace
+            if addon_ns not in sys.modules:
+                ns = types.ModuleType(addon_ns)
+                ns.__path__ = []  # pure namespace
+                ns.__package__ = addon_ns
+                sys.modules[addon_ns] = ns
+
+            current_ns = addon_ns
+            current_path = root_path
+
+            # 3. Walk down entry point parts
+            # entry_point = "pkg.sub.mod"
+            #   -> parts are [rayforge_addons, ID, pkg, sub, mod]
+            # inner_parts are [pkg, sub, mod]
+            inner_parts = parts[2:]
+
+            # Iterate up to the second to last part (creating parent packages)
+            for i in range(len(inner_parts) - 1):
+                pkg_name = inner_parts[i]
+                full_pkg_name = f"{current_ns}.{pkg_name}"
+                current_path = current_path / pkg_name
+
+                if full_pkg_name not in sys.modules:
+                    init_file = current_path / "__init__.py"
+                    if init_file.exists():
+                        spec = importlib.util.spec_from_file_location(
+                            full_pkg_name, init_file
+                        )
+                        if spec and spec.loader:
+                            pkg_module = importlib.util.module_from_spec(spec)
+                            sys.modules[full_pkg_name] = pkg_module
+                            spec.loader.exec_module(pkg_module)
+                    else:
+                        ns = types.ModuleType(full_pkg_name)
+                        ns.__path__ = [str(current_path)]
+                        ns.__package__ = full_pkg_name
+                        sys.modules[full_pkg_name] = ns
+
+                current_ns = full_pkg_name
 
     def _resolve_entry_point_path(
         self, entry_point: str, root_path: Path
@@ -703,22 +778,27 @@ class AddonManager:
                 addon.validate()
                 logger.info("Validation passed.")
 
-                install_name = addon_id or self._extract_repo_name(git_url)
-                final_path = self.install_dir / install_name
+                addon_name = addon.metadata.name
+                install_dir_name = addon_id or self._extract_repo_name(git_url)
+                final_path = self.install_dir / install_dir_name
 
                 if final_path.exists():
                     logger.info(f"Upgrading existing addon at {final_path}")
-                    self.uninstall_addon(install_name)
+                    # Attempt uninstall by true ID
+                    self.uninstall_addon(addon_name)
 
                 shutil.copytree(temp_path, final_path, dirs_exist_ok=True)
 
                 self.compile_translations(final_path, force=True)
 
                 if self.addon_config:
-                    self.addon_config.set_version(install_name, version)
+                    self.addon_config.set_version(addon_name, version)
 
                 logger.info(f"Successfully installed addon to {final_path}")
                 self.load_addon(final_path)
+
+                self._build_and_update_manifest()
+                self._restart_workers()
                 return final_path
 
             except AddonValidationError as e:
@@ -742,10 +822,20 @@ class AddonManager:
                 f"Attempted to uninstall unknown or already "
                 f"uninstalled addon: {addon_name}"
             )
-            addon_path = self.install_dir / addon_name
-            if addon_path.exists():
-                self._cleanup_directory(addon_path)
-                return True
+            # Fallback: scan install_dir for matching addon
+            for child in self.install_dir.iterdir():
+                if child.is_dir() and (child / "rayforge-addon.yaml").exists():
+                    try:
+                        temp_addon = Addon.load_from_directory(
+                            child, version=UnknownVersion
+                        )
+                        if temp_addon.metadata.name == addon_name:
+                            self._cleanup_directory(child)
+                            return True
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to uninstall addon {addon_name}: {e}"
+                        )
             return False
 
         addon_path = addon.root_path
@@ -755,13 +845,24 @@ class AddonManager:
                 self._cleanup_directory(addon_path)
                 logger.info(f"Uninstalled addon at {addon_path}")
 
-            prefix = f"rayforge_addons.{addon_name}."
-            modules_to_unload = [
-                name for name in sys.modules if name.startswith(prefix)
-            ]
-            base_module = f"rayforge_addons.{addon_name}"
-            if base_module in sys.modules:
-                modules_to_unload.append(base_module)
+            # Robust unloading: Find all modules loaded from this addon's
+            # directory
+            # This handles any module structure (old style or new style)
+            addon_path_str = str(addon_path.resolve())
+            modules_to_unload = []
+            for name, module in list(sys.modules.items()):
+                if not hasattr(module, "__file__") or not module.__file__:
+                    continue
+                try:
+                    # Resolve to absolute path to match
+                    mod_path = str(Path(module.__file__).resolve())
+                    if mod_path.startswith(addon_path_str):
+                        modules_to_unload.append(name)
+                except Exception:
+                    logger.warning(
+                        f"Could not resolve path for module {name}, "
+                        "skipping unload."
+                    )
 
             for module_name in modules_to_unload:
                 module = sys.modules.get(module_name)
@@ -780,6 +881,8 @@ class AddonManager:
             if self.addon_config:
                 self.addon_config.remove_state(addon_name)
 
+            self._build_and_update_manifest()
+            self._restart_workers()
             return True
 
         except Exception as e:
@@ -836,6 +939,8 @@ class AddonManager:
             self._call_registration_hooks()
             logger.info(f"Addon '{addon_name}' enabled and loaded")
 
+        self._build_and_update_manifest()
+        self._restart_workers()
         return True
 
     def disable_addon(self, addon_name: str) -> bool:
@@ -863,6 +968,8 @@ class AddonManager:
             return False
 
         self._do_unload_addon(addon_name, addon)
+        self._build_and_update_manifest()
+        self._restart_workers()
         return True
 
     def _do_unload_addon(self, addon_name: str, addon: Addon):
@@ -870,14 +977,22 @@ class AddonManager:
         if self.addon_config:
             self.addon_config.set_state(addon_name, ConfigAddonState.DISABLED)
 
-        prefix = f"rayforge_addons.{addon_name}."
-        modules_to_unload = [
-            name for name in list(sys.modules) if name.startswith(prefix)
-        ]
-
-        base_module = f"rayforge_addons.{addon_name}"
-        if base_module in sys.modules:
-            modules_to_unload.append(base_module)
+        # Robust unloading: Find all modules loaded from this addon's directory
+        # This handles any module structure (old style or new style)
+        addon_path_str = str(addon.root_path.resolve())
+        modules_to_unload = []
+        for name, module in list(sys.modules.items()):
+            if not hasattr(module, "__file__") or not module.__file__:
+                continue
+            try:
+                mod_path = str(Path(module.__file__).resolve())
+                if mod_path.startswith(addon_path_str):
+                    modules_to_unload.append(name)
+            except Exception:
+                logger.warning(
+                    f"Could not resolve path for module {name}, "
+                    "skipping unload."
+                )
 
         self.plugin_mgr.hook.on_unload()
 
@@ -956,6 +1071,10 @@ class AddonManager:
                 self._do_unload_addon(addon_name, addon)
                 unloaded.append(addon_name)
 
+        if unloaded:
+            self._build_and_update_manifest()
+            self._restart_workers()
+
         return unloaded
 
     def has_pending_unloads(self) -> bool:
@@ -1032,6 +1151,8 @@ class AddonManager:
         if addon_name in self.loaded_addons:
             logger.info(f"Addon '{addon_name}' reloaded successfully")
             self.addon_reloaded.send(self, addon_name=addon_name)
+            self._build_and_update_manifest()
+            self._restart_workers()
             return True
         else:
             logger.error(f"Failed to reload addon '{addon_name}'")
