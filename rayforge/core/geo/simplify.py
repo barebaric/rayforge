@@ -120,7 +120,7 @@ def simplify_points_to_array(
 
 def simplify_points(
     points: Sequence[Tuple[float, float]], tolerance: float
-) -> Sequence[Tuple[float, float]]:
+) -> List[Tuple[float, float]]:
     """
     Simplify a sequence of 2D points using the Ramer-Douglas-Peucker algorithm.
 
@@ -150,7 +150,7 @@ def simplify_points(
     [(0, 0), (10, 10)]
     """
     if len(points) < 3:
-        return points
+        return list(points)
 
     # Convert list of tuples to numpy array
     arr = np.array(points, dtype=np.float64)
