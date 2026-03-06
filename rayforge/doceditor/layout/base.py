@@ -3,10 +3,11 @@ import math
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Sequence, Tuple, TYPE_CHECKING
 from blinker import Signal
-from ...core.matrix import Matrix
-from ...core.item import DocItem
-from ...core.workpiece import WorkPiece
 from ...core.group import Group
+from ...core.item import DocItem
+from ...core.matrix import Matrix
+from ...core.stock import StockItem
+from ...core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
     from ...shared.tasker.context import ExecutionContext
@@ -62,7 +63,8 @@ class LayoutStrategy(ABC):
     ) -> Optional[Tuple[float, float, float, float]]:
         """
         Calculates the axis-aligned bounding box (min_x, min_y, max_x, max_y)
-        of a single DocItem (WorkPiece or Group) in world (mm) coordinates.
+        of a single DocItem (WorkPiece, Group, or StockItem) in world (mm)
+        coordinates.
         """
 
         items_to_measure = []
@@ -71,6 +73,8 @@ class LayoutStrategy(ABC):
         elif isinstance(item, Group):
             # For a group, get all descendant workpieces to measure
             items_to_measure.extend(item.get_descendants(of_type=WorkPiece))
+        elif isinstance(item, StockItem):
+            items_to_measure.append(item)
         else:
             return None
 
