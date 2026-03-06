@@ -2,12 +2,14 @@
 Polygon utilities using pyclipper for boolean operations.
 
 This module provides basic polygon manipulation functions that operate
-on simple polygon representations (lists of (x, y) tuples).
+on simple polygon representations (lists of (x, y) tuples) and their
+high-performance NumPy vectorized equivalents.
 """
 
 import math
 from functools import lru_cache
 from typing import List, Tuple, Optional, TYPE_CHECKING
+import numpy as np
 import pyclipper
 
 if TYPE_CHECKING:
@@ -47,6 +49,15 @@ def polygon_area(polygon: Polygon) -> float:
     return area / 2.0
 
 
+def polygon_area_numpy(polygon: np.ndarray) -> float:
+    """Vectorized calculation of signed polygon area."""
+    if polygon.shape[0] < 3:
+        return 0.0
+    x = polygon[:, 0]
+    y = polygon[:, 1]
+    return float(0.5 * np.sum(x * np.roll(y, -1) - y * np.roll(x, -1)))
+
+
 def polygon_bounds(polygon: Polygon) -> "Rect":
     """
     Get the bounding box of a polygon.
@@ -62,6 +73,20 @@ def polygon_bounds(polygon: Polygon) -> "Rect":
     xs = [p[0] for p in polygon]
     ys = [p[1] for p in polygon]
     return min(xs), min(ys), max(xs), max(ys)
+
+
+def polygon_bounds_numpy(polygon: np.ndarray) -> "Rect":
+    """Vectorized calculation of bounding box for a single polygon."""
+    if polygon.size == 0:
+        return 0.0, 0.0, 0.0, 0.0
+    min_vals = np.min(polygon, axis=0)
+    max_vals = np.max(polygon, axis=0)
+    return (
+        float(min_vals[0]),
+        float(min_vals[1]),
+        float(max_vals[0]),
+        float(max_vals[1]),
+    )
 
 
 def int_polygon_bounds(polygon: IntPolygon) -> Tuple[int, int, int, int]:
@@ -108,6 +133,24 @@ def polygon_group_bounds(polygons: List[Polygon]) -> "Rect":
     return min_x, min_y, max_x, max_y
 
 
+def polygon_group_bounds_numpy(polygons: List[np.ndarray]) -> "Rect":
+    """Vectorized calculation of bounding box for multiple polygons."""
+    if not polygons:
+        return 0.0, 0.0, 0.0, 0.0
+    mins = [np.min(p, axis=0) for p in polygons if p.size > 0]
+    maxs = [np.max(p, axis=0) for p in polygons if p.size > 0]
+    if not mins:
+        return 0.0, 0.0, 0.0, 0.0
+    min_all = np.min(np.array(mins), axis=0)
+    max_all = np.max(np.array(maxs), axis=0)
+    return (
+        float(min_all[0]),
+        float(min_all[1]),
+        float(max_all[0]),
+        float(max_all[1]),
+    )
+
+
 def translate_bounds(bounds: "Rect", dx: float, dy: float) -> "Rect":
     """
     Translate a bounding box by a given offset.
@@ -148,6 +191,21 @@ def normalize_polygons(
 
     normalized = translate_polygons(polygons, -min_x, -min_y)
     return normalized, min_x, min_y
+
+
+def normalize_polygons_numpy(
+    polygons: List[np.ndarray],
+) -> Tuple[List[np.ndarray], float, float]:
+    """Vectorized normalization of multiple polygons."""
+    if not polygons:
+        return [], 0.0, 0.0
+    mins = [np.min(p, axis=0) for p in polygons if p.size > 0]
+    if not mins:
+        return polygons, 0.0, 0.0
+    min_all = np.min(np.array(mins), axis=0)
+    min_x, min_y = float(min_all[0]), float(min_all[1])
+    offset = np.array([-min_x, -min_y])
+    return [p + offset for p in polygons], min_x, min_y
 
 
 def polygon_centroid(polygon: Polygon) -> Point:
@@ -207,6 +265,18 @@ def rotate_polygon(polygon: Polygon, angle_degrees: float) -> Polygon:
     return [(x * cos_a - y * sin_a, x * sin_a + y * cos_a) for x, y in polygon]
 
 
+def rotate_polygon_numpy(
+    polygon: np.ndarray, angle_degrees: float
+) -> np.ndarray:
+    """Vectorized rotation for a single polygon."""
+    if polygon.size == 0:
+        return polygon
+    angle_rad = math.radians(angle_degrees)
+    c, s = math.cos(angle_rad), math.sin(angle_rad)
+    R = np.array([[c, s], [-s, c]])
+    return polygon @ R
+
+
 def translate_polygon(polygon: Polygon, dx: float, dy: float) -> Polygon:
     """
     Translate a polygon by a given offset.
@@ -220,6 +290,15 @@ def translate_polygon(polygon: Polygon, dx: float, dy: float) -> Polygon:
         Translated polygon.
     """
     return [(p[0] + dx, p[1] + dy) for p in polygon]
+
+
+def translate_polygon_numpy(
+    polygon: np.ndarray, dx: float, dy: float
+) -> np.ndarray:
+    """Vectorized translation for a single polygon."""
+    if polygon.size == 0:
+        return polygon
+    return polygon + np.array([dx, dy])
 
 
 def rotate_polygons(
@@ -238,6 +317,18 @@ def rotate_polygons(
     return [rotate_polygon(poly, angle_degrees) for poly in polygons]
 
 
+def rotate_polygons_numpy(
+    polygons: List[np.ndarray], angle_degrees: float
+) -> List[np.ndarray]:
+    """Vectorized rotation for multiple polygons."""
+    if not polygons:
+        return []
+    angle_rad = math.radians(angle_degrees)
+    c, s = math.cos(angle_rad), math.sin(angle_rad)
+    R = np.array([[c, s], [-s, c]])
+    return [p @ R for p in polygons]
+
+
 def translate_polygons(
     polygons: List[Polygon], dx: float, dy: float
 ) -> List[Polygon]:
@@ -253,6 +344,16 @@ def translate_polygons(
         List of translated polygons.
     """
     return [translate_polygon(poly, dx, dy) for poly in polygons]
+
+
+def translate_polygons_numpy(
+    polygons: List[np.ndarray], dx: float, dy: float
+) -> List[np.ndarray]:
+    """Vectorized translation for multiple polygons."""
+    if not polygons:
+        return []
+    offset = np.array([dx, dy])
+    return [p + offset for p in polygons]
 
 
 def scale_polygon(
@@ -356,6 +457,13 @@ def convex_hull(polygon: Polygon) -> Polygon:
 def to_clipper(polygon: Polygon, scale: int = CLIPPER_SCALE) -> IntPolygon:
     """Convert polygon to clipper integer coordinates."""
     return [(int(p[0] * scale), int(p[1] * scale)) for p in polygon]
+
+
+def to_clipper_numpy(
+    polygon: np.ndarray, scale: int = CLIPPER_SCALE
+) -> IntPolygon:
+    """Vectorized conversion to clipper integer coordinates."""
+    return (polygon * scale).astype(np.int64).tolist()
 
 
 def from_clipper(polygon: IntPolygon, scale: int = CLIPPER_SCALE) -> Polygon:
@@ -541,6 +649,17 @@ def point_in_polygon(
     return pyclipper.PointInPolygon(pt, clip_poly) != 0
 
 
+def point_in_polygon_numpy(
+    point: Tuple[float, float], polygon: np.ndarray, scale: int = CLIPPER_SCALE
+) -> bool:
+    """Check if point is in polygon using numpy arrays with pyclipper."""
+    if polygon.shape[0] < 3:
+        return False
+    clip_poly = to_clipper_numpy(polygon, scale)
+    pt = (int(point[0] * scale), int(point[1] * scale))
+    return pyclipper.PointInPolygon(pt, clip_poly) != 0
+
+
 def polygons_intersect(
     poly1: Polygon,
     poly2: Polygon,
@@ -565,6 +684,35 @@ def polygons_intersect(
     clipper = pyclipper.Pyclipper()
     clipper.AddPath(to_clipper(poly1), pyclipper.PT_SUBJECT, True)
     clipper.AddPath(to_clipper(poly2), pyclipper.PT_CLIP, True)
+
+    result = clipper.Execute(
+        pyclipper.CT_INTERSECTION,
+        pyclipper.PFT_NONZERO,
+        pyclipper.PFT_NONZERO,
+    )
+
+    if not result:
+        return False
+
+    if min_area <= 0:
+        return True
+
+    for path in result:
+        if abs(pyclipper.Area(path)) > min_area:
+            return True
+    return False
+
+
+def polygons_intersect_numpy(
+    poly1: np.ndarray, poly2: np.ndarray, min_area: float = 0.0
+) -> bool:
+    """Check if two numpy polygons intersect using pyclipper."""
+    if poly1.shape[0] < 3 or poly2.shape[0] < 3:
+        return False
+
+    clipper = pyclipper.Pyclipper()
+    clipper.AddPath(to_clipper_numpy(poly1), pyclipper.PT_SUBJECT, True)
+    clipper.AddPath(to_clipper_numpy(poly2), pyclipper.PT_CLIP, True)
 
     result = clipper.Execute(
         pyclipper.CT_INTERSECTION,

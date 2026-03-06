@@ -4,17 +4,26 @@ Tests for rayforge.core.geo.polygon module.
 
 from typing import cast, List
 
+import numpy as np
+
 from rayforge.core.geo.polygon import (
     Polygon,
     almost_equal,
     polygon_area,
+    polygon_area_numpy,
     polygon_bounds,
+    polygon_bounds_numpy,
     polygon_centroid,
     polygon_group_bounds,
+    polygon_group_bounds_numpy,
     rotate_polygon,
+    rotate_polygon_numpy,
     rotate_polygons,
+    rotate_polygons_numpy,
     translate_polygon,
+    translate_polygon_numpy,
     translate_polygons,
+    translate_polygons_numpy,
     translate_bounds,
     scale_polygon,
     convex_hull,
@@ -25,14 +34,22 @@ from rayforge.core.geo.polygon import (
     polygon_intersection,
     polygon_difference,
     point_in_polygon,
+    point_in_polygon_numpy,
     polygons_intersect,
+    polygons_intersect_numpy,
     normalize_polygons,
+    normalize_polygons_numpy,
 )
 
 
 def P(*points) -> Polygon:
     """Helper to create a polygon from integer points."""
     return [(float(x), float(y)) for x, y in points]
+
+
+def PN(*points) -> np.ndarray:
+    """Helper to create a numpy polygon from integer points."""
+    return np.array([[float(x), float(y)] for x, y in points], dtype=float)
 
 
 class TestPolygonArea:
@@ -66,6 +83,37 @@ class TestPolygonArea:
         assert polygon_area(P((0, 0), (1, 1))) == 0.0
 
 
+class TestPolygonAreaNumpy:
+    def test_triangle(self):
+        polygon = PN((0, 0), (10, 0), (5, 5))
+        area = polygon_area_numpy(polygon)
+        assert abs(area - 25.0) < 0.001
+
+    def test_square(self):
+        polygon = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        area = polygon_area_numpy(polygon)
+        assert abs(area - 100.0) < 0.001
+
+    def test_ccw_positive(self):
+        polygon = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        area = polygon_area_numpy(polygon)
+        assert area > 0
+
+    def test_cw_negative(self):
+        polygon = PN((0, 0), (0, 10), (10, 10), (10, 0))
+        area = polygon_area_numpy(polygon)
+        assert area < 0
+
+    def test_empty(self):
+        assert polygon_area_numpy(np.array([]).reshape(0, 2)) == 0.0
+
+    def test_single_point(self):
+        assert polygon_area_numpy(PN((0, 0))) == 0.0
+
+    def test_two_points(self):
+        assert polygon_area_numpy(PN((0, 0), (1, 1))) == 0.0
+
+
 class TestPolygonBounds:
     def test_basic(self):
         polygon = P((1, 2), (5, 3), (3, 7), (0, 5))
@@ -80,6 +128,29 @@ class TestPolygonBounds:
 
     def test_single_point(self):
         min_x, min_y, max_x, max_y = polygon_bounds(P((5, 10)))
+        assert min_x == max_x == 5
+        assert min_y == max_y == 10
+
+
+class TestPolygonBoundsNumpy:
+    def test_basic(self):
+        polygon = PN((1, 2), (5, 3), (3, 7), (0, 5))
+        min_x, min_y, max_x, max_y = polygon_bounds_numpy(polygon)
+        assert min_x == 0
+        assert min_y == 2
+        assert max_x == 5
+        assert max_y == 7
+
+    def test_empty(self):
+        assert polygon_bounds_numpy(np.array([]).reshape(0, 2)) == (
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        )
+
+    def test_single_point(self):
+        min_x, min_y, max_x, max_y = polygon_bounds_numpy(PN((5, 10)))
         assert min_x == max_x == 5
         assert min_y == max_y == 10
 
@@ -119,6 +190,47 @@ class TestGroupBounds:
         poly1 = P((0, 0), (1, 0), (1, 1), (0, 1))
         poly2 = P((10, 10), (20, 10), (20, 20), (10, 20))
         min_x, min_y, max_x, max_y = polygon_group_bounds([poly1, poly2])
+        assert min_x == 0
+        assert min_y == 0
+        assert max_x == 20
+        assert max_y == 20
+
+
+class TestGroupBoundsNumpy:
+    def test_multiple_polygons(self):
+        poly1 = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = PN((5, 5), (15, 5), (15, 15), (5, 15))
+        min_x, min_y, max_x, max_y = polygon_group_bounds_numpy([poly1, poly2])
+        assert min_x == 0
+        assert min_y == 0
+        assert max_x == 15
+        assert max_y == 15
+
+    def test_single_polygon(self):
+        polygon = PN((1, 2), (5, 3), (3, 7), (0, 5))
+        min_x, min_y, max_x, max_y = polygon_group_bounds_numpy([polygon])
+        assert min_x == 0
+        assert min_y == 2
+        assert max_x == 5
+        assert max_y == 7
+
+    def test_empty_list(self):
+        assert polygon_group_bounds_numpy([]) == (0.0, 0.0, 0.0, 0.0)
+
+    def test_list_with_empty_polygons(self):
+        assert polygon_group_bounds_numpy(
+            [np.array([]).reshape(0, 2), np.array([]).reshape(0, 2)]
+        ) == (
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        )
+
+    def test_disjoint_polygons(self):
+        poly1 = PN((0, 0), (1, 0), (1, 1), (0, 1))
+        poly2 = PN((10, 10), (20, 10), (20, 20), (10, 20))
+        min_x, min_y, max_x, max_y = polygon_group_bounds_numpy([poly1, poly2])
         assert min_x == 0
         assert min_y == 0
         assert max_x == 20
@@ -173,6 +285,37 @@ class TestRotatePolygon:
         assert almost_equal(rotated[0][1], -1)
 
 
+class TestRotatePolygonNumpy:
+    def test_90_degrees(self):
+        polygon = PN((1, 0), (2, 0), (2, 1))
+        rotated = rotate_polygon_numpy(polygon, 90)
+        assert almost_equal(rotated[0, 0], 0)
+        assert almost_equal(rotated[0, 1], 1)
+
+    def test_180_degrees(self):
+        polygon = PN((1, 0), (2, 0), (2, 1))
+        rotated = rotate_polygon_numpy(polygon, 180)
+        assert almost_equal(rotated[0, 0], -1)
+        assert almost_equal(rotated[0, 1], 0)
+
+    def test_360_degrees(self):
+        polygon = PN((1, 0), (2, 0), (2, 1))
+        rotated = rotate_polygon_numpy(polygon, 360)
+        assert almost_equal(rotated[0, 0], 1)
+        assert almost_equal(rotated[0, 1], 0)
+
+    def test_0_degrees(self):
+        polygon = PN((1, 2), (3, 4))
+        rotated = rotate_polygon_numpy(polygon, 0)
+        np.testing.assert_array_almost_equal(rotated, polygon)
+
+    def test_negative_angle(self):
+        polygon = PN((1, 0), (2, 0), (2, 1))
+        rotated = rotate_polygon_numpy(polygon, -90)
+        assert almost_equal(rotated[0, 0], 0)
+        assert almost_equal(rotated[0, 1], -1)
+
+
 class TestTranslatePolygon:
     def test_basic(self):
         polygon = P((0, 0), (10, 0), (5, 5))
@@ -193,6 +336,31 @@ class TestTranslatePolygon:
         assert translated == polygon
 
 
+class TestTranslatePolygonNumpy:
+    def test_basic(self):
+        polygon = PN((0, 0), (10, 0), (5, 5))
+        translated = translate_polygon_numpy(polygon, 5, 10)
+        assert translated[0, 0] == 5.0
+        assert translated[0, 1] == 10.0
+        assert translated[1, 0] == 15.0
+        assert translated[1, 1] == 10.0
+        assert translated[2, 0] == 10.0
+        assert translated[2, 1] == 15.0
+
+    def test_negative(self):
+        polygon = PN((10, 20), (30, 40))
+        translated = translate_polygon_numpy(polygon, -5, -10)
+        assert translated[0, 0] == 5.0
+        assert translated[0, 1] == 10.0
+        assert translated[1, 0] == 25.0
+        assert translated[1, 1] == 30.0
+
+    def test_zero(self):
+        polygon = PN((1, 2), (3, 4))
+        translated = translate_polygon_numpy(polygon, 0, 0)
+        np.testing.assert_array_almost_equal(translated, polygon)
+
+
 class TestRotatePolygons:
     def test_multiple_polygons(self):
         poly1 = P((1, 0), (2, 0), (2, 1))
@@ -211,6 +379,27 @@ class TestRotatePolygons:
     def test_preserves_count(self):
         polygons = [P((1, 0), (2, 0)), P((3, 0), (4, 0)), P((5, 0), (6, 0))]
         rotated = rotate_polygons(polygons, 45)
+        assert len(rotated) == 3
+
+
+class TestRotatePolygonsNumpy:
+    def test_multiple_polygons(self):
+        poly1 = PN((1, 0), (2, 0), (2, 1))
+        poly2 = PN((3, 0), (4, 0), (4, 1))
+        rotated = rotate_polygons_numpy([poly1, poly2], 90)
+        assert len(rotated) == 2
+        assert almost_equal(rotated[0][0, 0], 0)
+        assert almost_equal(rotated[0][0, 1], 1)
+        assert almost_equal(rotated[1][0, 0], 0)
+        assert almost_equal(rotated[1][0, 1], 3)
+
+    def test_empty_list(self):
+        rotated = rotate_polygons_numpy([], 90)
+        assert rotated == []
+
+    def test_preserves_count(self):
+        polygons = [PN((1, 0), (2, 0)), PN((3, 0), (4, 0)), PN((5, 0), (6, 0))]
+        rotated = rotate_polygons_numpy(polygons, 45)
         assert len(rotated) == 3
 
 
@@ -237,6 +426,37 @@ class TestTranslatePolygons:
 
     def test_empty_list(self):
         translated = translate_polygons([], 5, 10)
+        assert translated == []
+
+
+class TestTranslatePolygonsNumpy:
+    def test_multiple_polygons(self):
+        poly1 = PN((0, 0), (10, 0), (5, 5))
+        poly2 = PN((20, 20), (30, 20), (25, 25))
+        translated = translate_polygons_numpy([poly1, poly2], 5, 10)
+        assert len(translated) == 2
+        assert translated[0][0, 0] == 5.0
+        assert translated[0][0, 1] == 10.0
+        assert translated[1][0, 0] == 25.0
+        assert translated[1][0, 1] == 30.0
+
+    def test_negative(self):
+        poly1 = PN((10, 20), (30, 40))
+        poly2 = PN((50, 60), (70, 80))
+        translated = translate_polygons_numpy([poly1, poly2], -5, -10)
+        assert translated[0][0, 0] == 5.0
+        assert translated[0][0, 1] == 10.0
+        assert translated[1][0, 0] == 45.0
+        assert translated[1][0, 1] == 50.0
+
+    def test_zero(self):
+        polygons = [PN((1, 2), (3, 4)), PN((5, 6), (7, 8))]
+        translated = translate_polygons_numpy(polygons, 0, 0)
+        for i in range(len(polygons)):
+            np.testing.assert_array_almost_equal(translated[i], polygons[i])
+
+    def test_empty_list(self):
+        translated = translate_polygons_numpy([], 5, 10)
         assert translated == []
 
 
@@ -430,6 +650,35 @@ class TestPointInPolygon:
         assert point_in_polygon((50, 50), polygon, scale=10000000) is True
 
 
+class TestPointInPolygonNumpy:
+    def test_inside(self):
+        polygon = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        assert point_in_polygon_numpy((5, 5), polygon) is True
+
+    def test_outside(self):
+        polygon = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        assert point_in_polygon_numpy((15, 15), polygon) is False
+
+    def test_on_edge(self):
+        polygon = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        assert point_in_polygon_numpy((5, 0), polygon) is True
+
+    def test_empty_polygon(self):
+        assert (
+            point_in_polygon_numpy((5, 5), np.array([]).reshape(0, 2)) is False
+        )
+
+    def test_too_few_points(self):
+        polygon = PN((0, 0), (10, 0))
+        assert point_in_polygon_numpy((5, 5), polygon) is False
+
+    def test_custom_scale(self):
+        polygon = PN((0, 0), (100, 0), (100, 100), (0, 100))
+        assert (
+            point_in_polygon_numpy((50, 50), polygon, scale=10000000) is True
+        )
+
+
 class TestPolygonsIntersect:
     def test_overlapping(self):
         poly1 = P((0, 0), (10, 0), (10, 10), (0, 10))
@@ -492,6 +741,76 @@ class TestPolygonsIntersect:
         )
         assert (
             polygons_intersect(P((0, 0), (1, 0), (1, 1)), P((0, 0))) is False
+        )
+
+
+class TestPolygonsIntersectNumpy:
+    def test_overlapping(self):
+        poly1 = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = PN((5, 5), (15, 5), (15, 15), (5, 15))
+        assert polygons_intersect_numpy(poly1, poly2) is True
+
+    def test_non_overlapping(self):
+        poly1 = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = PN((20, 20), (30, 20), (30, 30), (20, 30))
+        assert polygons_intersect_numpy(poly1, poly2) is False
+
+    def test_touching(self):
+        poly1 = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = PN((10, 0), (20, 0), (20, 10), (10, 10))
+        result = polygons_intersect_numpy(poly1, poly2)
+        assert result is False
+
+    def test_empty(self):
+        assert (
+            polygons_intersect_numpy(
+                np.array([]).reshape(0, 2), PN((0, 0), (1, 0), (1, 1))
+            )
+            is False
+        )
+
+    def test_min_area_below_threshold(self):
+        poly1 = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = PN(
+            (9.999, 9.999), (10.001, 9.999), (10.001, 10.001), (9.999, 10.001)
+        )
+        assert polygons_intersect_numpy(poly1, poly2, min_area=1e10) is False
+
+    def test_min_area_above_threshold(self):
+        poly1 = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = PN((5, 5), (15, 5), (15, 15), (5, 15))
+        assert polygons_intersect_numpy(poly1, poly2, min_area=100) is True
+
+    def test_min_area_zero(self):
+        poly1 = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = PN((5, 5), (15, 5), (15, 15), (5, 15))
+        assert polygons_intersect_numpy(poly1, poly2, min_area=0) is True
+
+    def test_min_area_negative(self):
+        poly1 = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = PN((5, 5), (15, 5), (15, 15), (5, 15))
+        assert polygons_intersect_numpy(poly1, poly2, min_area=-10) is True
+
+    def test_min_area_touching_polygons(self):
+        poly1 = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = PN((10, 0), (20, 0), (20, 10), (10, 10))
+        assert polygons_intersect_numpy(poly1, poly2, min_area=10) is False
+
+    def test_min_area_small_intersection_filtered(self):
+        poly1 = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        poly2 = PN((9.9, 9.9), (10.1, 9.9), (10.1, 10.1), (9.9, 10.1))
+        assert polygons_intersect_numpy(poly1, poly2, min_area=1e15) is False
+
+    def test_insufficient_vertices(self):
+        assert (
+            polygons_intersect_numpy(
+                PN((0, 0), (1, 0)), PN((0, 0), (1, 0), (1, 1))
+            )
+            is False
+        )
+        assert (
+            polygons_intersect_numpy(PN((0, 0), (1, 0), (1, 1)), PN((0, 0)))
+            is False
         )
 
 
@@ -579,3 +898,54 @@ class TestNormalizePolygons:
         all_y = [p[1] for poly in normalized for p in poly]
         assert min(all_x) == 0.0
         assert min(all_y) == 0.0
+
+
+class TestNormalizePolygonsNumpy:
+    def test_basic_normalization(self):
+        poly1 = PN((10, 10), (20, 10), (15, 20))
+        poly2 = PN((30, 30), (40, 30), (35, 40))
+        normalized, min_x, min_y = normalize_polygons_numpy([poly1, poly2])
+        assert min_x == 10
+        assert min_y == 10
+        assert normalized[0][0, 0] == 0.0
+        assert normalized[0][0, 1] == 0.0
+
+    def test_already_at_origin(self):
+        polygon = PN((0, 0), (10, 0), (5, 10))
+        normalized, min_x, min_y = normalize_polygons_numpy([polygon])
+        assert min_x == 0
+        assert min_y == 0
+        np.testing.assert_array_almost_equal(normalized[0], polygon)
+
+    def test_empty_list(self):
+        normalized, min_x, min_y = normalize_polygons_numpy([])
+        assert normalized == []
+        assert min_x == 0.0
+        assert min_y == 0.0
+
+    def test_list_with_empty_polygons(self):
+        normalized, min_x, min_y = normalize_polygons_numpy(
+            [np.array([]).reshape(0, 2), np.array([]).reshape(0, 2)]
+        )
+        assert len(normalized) == 2
+        assert min_x == 0.0
+        assert min_y == 0.0
+
+    def test_negative_coordinates(self):
+        polygon = PN((-5, -5), (5, -5), (0, 5))
+        normalized, min_x, min_y = normalize_polygons_numpy([polygon])
+        assert min_x == -5
+        assert min_y == -5
+        assert normalized[0][0, 0] == 0.0
+        assert normalized[0][0, 1] == 0.0
+
+    def test_multiple_polygons_shared_origin(self):
+        poly1 = PN((10, 20), (20, 20), (15, 30))
+        poly2 = PN((5, 10), (15, 10), (10, 20))
+        normalized, min_x, min_y = normalize_polygons_numpy([poly1, poly2])
+        assert min_x == 5
+        assert min_y == 10
+        all_x = [p[:, 0] for p in normalized]
+        all_y = [p[:, 1] for p in normalized]
+        assert min(np.min(x) for x in all_x) == 0.0
+        assert min(np.min(y) for y in all_y) == 0.0
