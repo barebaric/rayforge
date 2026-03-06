@@ -265,7 +265,8 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         btn_zoom_out.connect("clicked", self.on_zoom_out_click)
 
         btn_zoom_fit = Gtk.Button(
-            child=get_icon("zoom-fit-best-symbolic"), tooltip_text=_("Fit to Window")
+            child=get_icon("zoom-fit-best-symbolic"),
+            tooltip_text=_("Fit to Window"),
         )
         btn_zoom_fit.connect("clicked", self.on_zoom_fit_click)
 
