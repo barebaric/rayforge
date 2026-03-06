@@ -125,10 +125,10 @@ class PointBubbleWidget(Gtk.Box):
             "clicked", lambda _: self.nudge_requested.send(self, dx=0.5, dy=0)
         )
         btn_up.connect(
-            "clicked", lambda _: self.nudge_requested.send(self, dx=0, dy=-0.5)
+            "clicked", lambda _: self.nudge_requested.send(self, dx=0, dy=0.5)
         )
         btn_down.connect(
-            "clicked", lambda _: self.nudge_requested.send(self, dx=0, dy=0.5)
+            "clicked", lambda _: self.nudge_requested.send(self, dx=0, dy=-0.5)
         )
 
         nudge_box.append(btn_left)

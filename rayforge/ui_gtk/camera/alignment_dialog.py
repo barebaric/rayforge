@@ -259,19 +259,19 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         zoom_box.add_css_class("linked")
 
         btn_zoom_out = Gtk.Button(
-            icon_name="zoom-out-symbolic",
-            tooltip_text=_("Zoom Out (Ctrl + Scroll Down)"),
+            child=get_icon("zoom-out-symbolic"),
+            tooltip_text=_("Zoom Out (Scroll Down)"),
         )
         btn_zoom_out.connect("clicked", self.on_zoom_out_click)
 
         btn_zoom_fit = Gtk.Button(
-            icon_name="zoom-fit-best-symbolic", tooltip_text=_("Fit to Window")
+            child=get_icon("zoom-fit-best-symbolic"), tooltip_text=_("Fit to Window")
         )
         btn_zoom_fit.connect("clicked", self.on_zoom_fit_click)
 
         btn_zoom_in = Gtk.Button(
-            icon_name="zoom-in-symbolic",
-            tooltip_text=_("Zoom In (Ctrl + Scroll Up)"),
+            child=get_icon("zoom-in-symbolic"),
+            tooltip_text=_("Zoom In (Scroll Up)"),
         )
         btn_zoom_in.connect("clicked", self.on_zoom_in_click)
 
@@ -331,7 +331,7 @@ class CameraAlignmentDialog(PatchedDialogWindow):
 
         info_text = _(
             "Click the image to add reference points. Drag to move them.\n"
-            "Ctrl+Scroll to Zoom. Middle-click and drag to Pan.\n"
+            "Scroll to Zoom. Middle-click and drag to Pan.\n"
             "Use the Arrow Keys to nudge the active point precisely."
         )
         info_label = Gtk.Label(label=info_text, xalign=0)
