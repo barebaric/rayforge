@@ -37,6 +37,7 @@ class Task:
         self._progress: float = 0.0
         self._message: Optional[str] = None
         self._cancel_requested: bool = False  # Flag for early cancellation
+        self._visible: bool = True  # Whether task appears in UI
         self.status_changed: Signal = Signal()
         self.event_received: Signal = Signal()
         self.when_done_callback: Optional[Callable[["Task"], None]] = when_done
