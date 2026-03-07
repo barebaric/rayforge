@@ -323,6 +323,7 @@ class DocEditor:
 
         logger.debug("DocEditor is setting a new document.")
         self.doc = new_doc
+        self._reconcile_step_lasers()
         self.history_manager = self.doc.history_manager
         # The Pipeline's setter handles cleanup and reconnection
         self.pipeline.doc = new_doc
@@ -342,6 +343,34 @@ class DocEditor:
         # Mark document as unsaved when setting a new doc
         # (unless called from load_project_from_path which will mark as saved)
         self.mark_as_unsaved()
+
+    def _reconcile_step_lasers(self):
+        """
+        Reconciles step laser UIDs with the current machine.
+
+        For each step, checks if its selected_laser_uid exists in the
+        machine's laser heads. If not, updates it to the default laser.
+        This handles the case where a project file references a laser
+        that doesn't exist in the current machine profile.
+        """
+        machine = self.context.machine
+        if not machine or not machine.heads:
+            return
+
+        valid_laser_uids = {head.uid for head in machine.heads}
+        default_laser_uid = machine.heads[0].uid
+
+        for layer in self.doc.layers:
+            if not layer.workflow:
+                continue
+            for step in layer.workflow.steps:
+                if step.selected_laser_uid not in valid_laser_uids:
+                    logger.info(
+                        f"Step '{step.name}' references non-existent laser "
+                        f"'{step.selected_laser_uid}', "
+                        f"resetting to default '{default_laser_uid}'"
+                    )
+                    step.selected_laser_uid = default_laser_uid
 
     @property
     def is_processing(self) -> bool:
