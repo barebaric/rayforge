@@ -130,17 +130,24 @@ done
 echo ""
 echo "Processing builtin addons..."
 for addon_dir in rayforge/builtin_addons/*/; do
-  addon_name=$(basename "$addon_dir")
-
-  # Try to find the source directory and locale directory
-  if [ -d "$addon_dir/$addon_name" ] && [ -d "$addon_dir/locale" ]; then
-    src_dir="$addon_dir/$addon_name"
-    locale_dir="$addon_dir/locale"
-    process_package "$addon_name" "$src_dir" "$locale_dir"
-  elif [ -d "$addon_dir/locale" ]; then
-    src_dir="$addon_dir/$addon_name"
-    locale_dir="$addon_dir/locale"
-    process_package "$addon_name" "$src_dir" "$locale_dir"
+  yaml_file="$addon_dir/rayforge-addon.yaml"
+  
+  if [ ! -f "$yaml_file" ]; then
+    continue
+  fi
+  
+  # Extract package name from YAML file
+  pkg_name=$(grep -E "^name:" "$yaml_file" | sed 's/name:[[:space:]]*//')
+  
+  if [ -z "$pkg_name" ]; then
+    continue
+  fi
+  
+  src_dir="$addon_dir$pkg_name"
+  locale_dir="$addon_dir/locale"
+  
+  if [ -d "$src_dir" ] && [ -d "$locale_dir" ]; then
+    process_package "$pkg_name" "$src_dir" "$locale_dir"
   fi
 done
 

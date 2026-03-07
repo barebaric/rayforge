@@ -57,7 +57,13 @@ if [ "$LANG_CODE" = "list" ]; then
 
   # Check builtin addons
   for addon_dir in rayforge/builtin_addons/*/; do
-    addon_name=$(basename "$addon_dir")
+    # Extract addon name from rayforge-addon.yaml
+    addon_yaml="$addon_dir/rayforge-addon.yaml"
+    if [ -f "$addon_yaml" ]; then
+      addon_name=$(grep "^name:" "$addon_yaml" | head -n 1 | cut -d':' -f2 | xargs)
+    else
+      addon_name=$(basename "$addon_dir")
+    fi
     
     if [ -d "$addon_dir/locale" ]; then
       locale_dir="$addon_dir/locale"
@@ -133,7 +139,13 @@ done
 
 # Check builtin addons
 for addon_dir in rayforge/builtin_addons/*/; do
-  addon_name=$(basename "$addon_dir")
+  # Extract addon name from rayforge-addon.yaml
+  addon_yaml="$addon_dir/rayforge-addon.yaml"
+  if [ -f "$addon_yaml" ]; then
+    addon_name=$(grep "^name:" "$addon_yaml" | head -n 1 | cut -d':' -f2 | xargs)
+  else
+    addon_name=$(basename "$addon_dir")
+  fi
   
   if [ -d "$addon_dir/locale" ]; then
     locale_dir="$addon_dir/locale"

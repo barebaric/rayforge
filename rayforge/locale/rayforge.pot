@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-03 22:50+0100\n"
+"POT-Creation-Date: 2026-03-07 14:23+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -25,6 +25,11 @@ msgstr ""
 
 #: rayforge/core/doc.py
 msgid "Layer 1"
+msgstr ""
+
+#: rayforge/core/stock.py
+#, python-brace-format
+msgid "{name} (copy)"
 msgstr ""
 
 #: rayforge/core/step.py
@@ -1470,6 +1475,10 @@ msgstr ""
 msgid "Ungroup"
 msgstr ""
 
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/doceditor/stock_cmd.py
+msgid "Convert to Stock"
+msgstr ""
+
 #: rayforge/ui_gtk/canvas2d/context_menu.py
 #: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
 msgid "Remove"
@@ -1561,7 +1570,16 @@ msgid "Device ID: {device_id}"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/point_bubble_widget.py
+#, python-brace-format
+msgid "Point {n}"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/point_bubble_widget.py
 msgid "Delete this point"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/point_bubble_widget.py
+msgid "Nudge Pixel:"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/properties_widget.py
@@ -1577,6 +1595,10 @@ msgid "Device ID"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/properties_widget.py
+msgid "System identifier for the camera device"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/properties_widget.py
 #: rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/maintenance_page.py
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
@@ -1589,7 +1611,15 @@ msgid "Name"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Display name for this camera"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Enabled"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Turn the camera stream on or off"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/properties_widget.py
@@ -1601,7 +1631,15 @@ msgid "Image Settings"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Adjust brightness, contrast, white balance, and noise"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Image Alignment"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Calibrate camera position and perspective"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
@@ -1610,9 +1648,22 @@ msgid "{camera_name} – Image Alignment"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
+msgid "Zoom Out (Scroll Down)"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/alignment_dialog.py
+msgid "Fit to Window"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/alignment_dialog.py
+msgid "Zoom In (Scroll Up)"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/alignment_dialog.py
 msgid ""
-"Click the image to add new reference points. Click or drag existing points "
-"to edit them."
+"Click the image to add reference points. Drag to move them.\n"
+"Scroll to Zoom. Middle-click and drag to Pan.\n"
+"Use the Arrow Keys to nudge the active point precisely."
 msgstr ""
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
@@ -1637,6 +1688,10 @@ msgid "Camera Image Settings"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Adjust image quality and appearance parameters."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Auto White Balance"
 msgstr ""
 
@@ -1649,11 +1704,32 @@ msgid "White Balance (Kelvin)"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Color temperature for accurate color representation"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Contrast"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Difference between light and dark areas"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Brightness"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Overall lightness or darkness of the image"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Noise Reduction"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Temporal averaging, higher values cause trailing"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
@@ -1664,12 +1740,80 @@ msgstr ""
 msgid "Transparency on the worksurface"
 msgstr ""
 
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Lens Distortion Correction"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid ""
+"Straighten bowed lines using Radial (k1, k2) and Tangential (p1, p2) "
+"parameters."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Radial 1 (k1)"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "First order radial distortion"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Radial 2 (k2)"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Second order radial distortion"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Tangential 1 (p1)"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "First order tangential distortion"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Tangential 2 (p2)"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Second order tangential distortion"
+msgstr ""
+
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Add New Camera"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "No cameras configured"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Image Enhancement"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Reduce noise and improve image stability."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Temporal averaging. Higher values remove more noise but cause trailing."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid ""
+"Straighten bowed lines using Radial (k1, k2) and Tangential (p1, p2) "
+"parameters. Note: Values are usually very small."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Lens Distortion Correction (Fisheye)"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
@@ -1797,6 +1941,14 @@ msgstr ""
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Set Work Zero at Current Position"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Click Canvas to Set Work Zero"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Click on canvas to set work zero"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/control_panel.py
@@ -2571,6 +2723,22 @@ msgstr ""
 msgid "Size of the laser spot in the Y direction"
 msgstr ""
 
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Cut Color"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Color for cutting operations"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Raster Color"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Color for engraving/raster operations"
+msgstr ""
+
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #, python-brace-format
 msgid "{machine_name} - Machine Settings"
@@ -2818,6 +2986,10 @@ msgstr ""
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "This addon is incompatible with the current version of Rayforge"
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Built-in addon"
 msgstr ""
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
@@ -5304,7 +5476,11 @@ msgid "Could not fit the following items: {item_names}"
 msgstr ""
 
 #: rayforge/doceditor/layout/registry.py
-msgid "Auto Layout (pack workpieces)"
+msgid "Auto Layout (Simple)"
+msgstr ""
+
+#: rayforge/doceditor/stock_cmd.py
+msgid "Remove Stock Asset"
 msgstr ""
 
 #: rayforge/doceditor/stock_cmd.py
@@ -5435,10 +5611,6 @@ msgstr ""
 
 #: rayforge/doceditor/layout_cmd.py
 msgid "Auto Layout"
-msgstr ""
-
-#: rayforge/doceditor/layout_cmd.py
-msgid "Nesting Layout"
 msgstr ""
 
 #: rayforge/image/png/importer.py rayforge/image/jpg/importer.py
