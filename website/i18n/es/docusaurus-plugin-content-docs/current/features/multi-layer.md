@@ -16,7 +16,6 @@ Una **capa** en Rayforge es:
 Una capa contiene una o más piezas de trabajo. Al importar archivos SVG con capas, cada capa de tu diseño se convierte en una capa separada en Rayforge. Esto te permite mantener tu diseño organizado exactamente como lo creaste.
 :::
 
-
 ---
 
 ## ¿Por Qué Usar Múltiples Capas?
@@ -99,18 +98,16 @@ Importar archivos SVG con estructura de capas existente:
 
 Cada capa tiene:
 
-| Propiedad        | Descripción                                          |
-| ---------------- | ---------------------------------------------------- |
-| **Nombre**       | El nombre mostrado en la lista de capas              |
-| **Visible**      | Alternar visibilidad en lienzo y previsualización    |
-| **Material Base**| Asociación opcional de material                      |
-| **Flujo de trabajo** | La(s) operación(es) aplicadas a piezas de trabajo en esta capa |
-| **Piezas de trabajo** | Las formas/imagenes contenidas en esta capa      |
+| Propiedad             | Descripción                                                    |
+| --------------------- | -------------------------------------------------------------- |
+| **Nombre**            | El nombre mostrado en la lista de capas                        |
+| **Visible**           | Alternar visibilidad en lienzo y previsualización              |
+| **Flujo de trabajo**  | La(s) operación(es) aplicadas a piezas de trabajo en esta capa |
+| **Piezas de trabajo** | Las formas/imagenes contenidas en esta capa                    |
 
 :::note Capas como Contenedores
 Las capas son contenedores para tus piezas de trabajo. Al importar archivos SVG con capas, cada capa de tu diseño se convierte en una capa separada en Rayforge.
 :::
-
 
 ### Reordenar Capas
 
@@ -140,7 +137,6 @@ Panel de Capas:
 Eliminar una capa remueve todas sus piezas de trabajo y ajustes de flujo de trabajo. Usa Deshacer si eliminas accidentalmente.
 :::
 
-
 ---
 
 ## Asignar Piezas de Trabajo a Capas
@@ -164,11 +160,9 @@ Al importar archivos SVG con "Usar Vectores Originales" habilitado:
 Rayforge detecta automáticamente capas de tu archivo SVG. Cada capa que creaste en tu software de diseño aparecerá como una capa separada en Rayforge.
 :::
 
-
 :::note Solo Importación Vectorial
 La selección de capas solo está disponible al usar importación vectorial directa. Al usar modo trazo, el SVG completo se procesa como una pieza de trabajo.
 :::
-
 
 ### Mover Piezas de Trabajo Entre Capas
 
@@ -202,7 +196,6 @@ Al importar archivos SVG, el diálogo de importación proporciona opciones que a
 :::tip Preparar Archivos SVG para Importación de Capas
 Para usar importación de capas SVG, crea tu diseño con capas en software como Inkscape. Usa el panel de Capas para organizar tu diseño, y Rayforge preservará esa estructura.
 :::
-
 
 ---
 
@@ -268,12 +261,12 @@ Controla qué capas se muestran en el lienzo y previsualizaciones:
 
 ### Visibilidad vs. Habilitado
 
-| Estado                    | Lienzo | Previsualización | G-code |
-| ------------------------- | ------ | ---------------- | ------ |
-| **Visible y Habilitado**  | Sí     | Sí               | Sí     |
-| **Oculto y Habilitado**   | No     | No               | Sí     |
-| **Visible y Deshabilitado**| Sí    | Sí               | No     |
-| **Oculto y Deshabilitado**| No     | No               | No     |
+| Estado                      | Lienzo | Previsualización | G-code |
+| --------------------------- | ------ | ---------------- | ------ |
+| **Visible y Habilitado**    | Sí     | Sí               | Sí     |
+| **Oculto y Habilitado**     | No     | No               | Sí     |
+| **Visible y Deshabilitado** | Sí     | Sí               | No     |
+| **Oculto y Deshabilitado**  | No     | No               | No     |
 
 :::note Deshabilitar Capas
 :::
@@ -361,11 +354,11 @@ Para configurar pausas de capa, usa la función de hooks en los ajustes de tu m�
 
 El flujo de trabajo de cada capa puede tener ajustes únicos:
 
-| Capa    | Operación | Velocidad  | Potencia | Pasadas |
-| ------- | --------- | ---------- | -------- | ------- |
-| Grabar  | Raster    | 300 mm/min | 20%      | 1       |
-| Marcar  | Contorno  | 500 mm/min | 10%      | 1       |
-| Cortar  | Contorno  | 100 mm/min | 90%      | 2       |
+| Capa   | Operación | Velocidad  | Potencia | Pasadas |
+| ------ | --------- | ---------- | -------- | ------- |
+| Grabar | Raster    | 300 mm/min | 20%      | 1       |
+| Marcar | Contorno  | 500 mm/min | 10%      | 1       |
+| Cortar | Contorno  | 100 mm/min | 90%      | 2       |
 
 ---
 

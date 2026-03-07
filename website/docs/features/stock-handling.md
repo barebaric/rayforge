@@ -1,10 +1,10 @@
-# Stock Handling Workflow
+# Stock Handling
 
-Stock handling in Rayforge is a sequential process that allows you to define the physical material you'll be working with, assign properties to it, and then organize your design elements on it. This guide walks you through the complete workflow from adding stock to auto-layouting your design.
+Stock in Rayforge represents the physical material you'll be cutting or engraving. Stock is a **document-global** concept—your document can have one or more stock items, and they exist independently of layers.
 
-## 1. Adding Stock
+## Adding Stock
 
-Stock represents the physical piece of material you'll be cutting or engraving. To add stock to your document:
+Stock represents the physical piece of material you'll be working with. To add stock to your document:
 
 1. In the **Stock Material** panel in the sidebar, click the **Add Stock** button
 2. A new stock item will be created with default dimensions (80% of your machine's workspace)
@@ -13,6 +13,7 @@ Stock represents the physical piece of material you'll be cutting or engraving. 
 ### Stock Properties
 
 Each stock item has the following properties:
+
 - **Name**: A descriptive name for identification (auto-numbered as "Stock 1", "Stock 2", etc.)
 - **Dimensions**: Width and height of the stock material
 - **Thickness**: The material thickness (optional but recommended for accurate 3D preview)
@@ -28,7 +29,7 @@ Each stock item has the following properties:
 - **Edit properties**: Click the properties button (document icon) to open the Stock Properties dialog
 - **Toggle visibility**: Click the visibility button (eye icon) to show/hide the stock item
 
-## 2. Assigning Material
+## Assigning Material
 
 Once you have stock defined, you can assign a material to it:
 
@@ -40,32 +41,32 @@ Once you have stock defined, you can assign a material to it:
 ### Material Properties
 
 Materials define the visual properties of your stock:
+
 - **Visual appearance**: Color and pattern for visualization
 - **Category**: Grouping (e.g., "Wood", "Acrylic", "Metal")
 - **Description**: Additional information about the material
 
 Note: Material properties are defined in material libraries and cannot be edited through the stock properties dialog. The stock properties only allow you to assign a material to a stock item.
 
-## 3. Assigning Stock to Layers
+## Converting Workpieces to Stock
 
-After defining your stock and assigning materials, you can associate layers with specific stock items:
+You can convert any workpiece into a stock item. This is useful when you have an irregular-shaped piece of material and want to use its exact outline as your stock boundary.
 
-1. In the **Layers** panel, locate the layer you want to assign to stock
-2. Click the stock assignment button (shows "Whole Surface" by default)
-3. From the dropdown menu, select the stock item you want to associate with this layer
-4. The content of that layer will now be constrained to the boundaries of the assigned stock
+To convert a workpiece to stock:
 
-You can also choose "Whole Surface" to use the entire machine workspace instead of a specific stock item.
+1. Right-click on the workpiece in the canvas or Document panel
+2. Select **Convert to Stock** from the context menu
+3. The workpiece will be replaced by a new stock item with the same shape and position
 
-### Why Assign Stock to Layers?
+The new stock item:
 
-- **Layout boundaries**: Provides boundaries for the auto-layout algorithm to work within
-- **Visual organization**: Helps organize your design by associating layers with physical materials
-- **Material visualization**: Shows the visual appearance of the assigned material on the stock
+- Uses the workpiece's geometry as its boundary
+- Inherits the workpiece's name
+- Can be assigned a material like any other stock item
 
-## 4. Auto-Layout
+## Auto-Layout
 
-The auto-layout feature helps you efficiently arrange your design elements:
+The auto-layout feature helps you efficiently arrange your design elements within stock boundaries:
 
 1. Select the items you want to arrange (or leave nothing selected to arrange all items in the active layer)
 2. Click the **Arrange** button in the toolbar and select **Auto Layout (pack workpieces)**
@@ -73,12 +74,13 @@ The auto-layout feature helps you efficiently arrange your design elements:
 
 ### Auto-Layout Behavior
 
-The auto-layout algorithm works differently depending on your layer configuration:
+The auto-layout algorithm arranges items within the visible stock items in your document:
 
-- **If a stock item is assigned to the layer**: Items are arranged within the boundaries of that specific stock item
-- **If "Whole Surface" is selected**: Items are arranged across the entire machine workspace
+- **If stock items are defined**: Items are arranged within the boundaries of visible stock items
+- **If no stock is defined**: Items are arranged across the entire machine workspace
 
 The algorithm considers:
+
 - **Item boundaries**: Respects the dimensions of each design element
 - **Rotation**: Can rotate items in 90-degree increments for better fit
 - **Spacing**: Maintains a margin between items (default 0.5mm)
@@ -87,6 +89,7 @@ The algorithm considers:
 ### Manual Layout Alternatives
 
 If you prefer more control, Rayforge also offers manual layout tools:
+
 - **Alignment tools**: Align left, right, center, top, bottom
 - **Distribution tools**: Spread items horizontally or vertically
 - **Individual positioning**: Click and drag items to place them manually
@@ -97,13 +100,14 @@ If you prefer more control, Rayforge also offers manual layout tools:
 2. **Use descriptive names** - Name your stock items clearly (e.g., "Birch Plywood 3mm")
 3. **Set material thickness** - This can be useful for future calculations and reference
 4. **Assign materials early** - This ensures proper visual representation from the start
-5. **Use layers for organization** - Separate different parts of your design into layers before assigning to stock
+5. **Use irregular stock for scrap pieces** - Convert workpieces to stock when using leftover material with custom shapes
 6. **Check fit before cutting** - Use the 2D view to verify everything fits on your stock material
 
 ## Troubleshooting
 
 ### Auto-layout doesn't work as expected
-- Check if your layer has a stock assigned
+
+- Make sure at least one stock item is visible
 - Make sure items are not grouped (ungroup them first)
 - Try reducing the number of items selected at once
-- Verify that items fit within the boundaries (stock or whole surface)
+- Verify that items fit within the stock boundaries

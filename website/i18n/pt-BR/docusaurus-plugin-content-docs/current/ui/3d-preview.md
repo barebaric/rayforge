@@ -82,6 +82,12 @@ Personalize o que você vê:
 - **Colorir por Potência**: Gradiente baseado na potência do laser
 - **Colorir por Velocidade**: Gradiente baseado na taxa de avanço
 
+:::tip Cores por Laser
+Ao usar máquinas com múltiplas cabeças de laser, cada laser pode ter suas próprias
+cores de corte e raster configuradas nas [Configurações do Laser](../machine/laser).
+Isso facilita identificar qual laser realizará cada operação.
+:::
+
 ### Visualização da Máquina
 
 - **Mostrar Origem**: Exibe ponto de referência (0,0)

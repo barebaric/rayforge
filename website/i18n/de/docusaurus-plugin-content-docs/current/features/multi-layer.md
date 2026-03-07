@@ -16,7 +16,6 @@ Eine **Ebene** in Rayforge ist:
 Eine Ebene enthält ein oder mehrere Werkstücke. Beim Importieren von SVG-Dateien mit Ebenen wird jede Ebene aus deinem Design zu einer separaten Ebene in Rayforge. Dies lässt dich dein Design genau so organisiert halten, wie du es erstellt hast.
 :::
 
-
 ---
 
 ## Warum mehrere Ebenen verwenden?
@@ -99,18 +98,16 @@ SVG-Dateien mit bestehender Ebenenstruktur importieren:
 
 Jede Ebene hat:
 
-| Eigenschaft     | Beschreibung                                              |
-| --------------- | --------------------------------------------------------- |
-| **Name**        | Der Name, der in der Ebenenliste angezeigt wird           |
-| **Sichtbar**    | Sichtbarkeit in Arbeitsfläche und Vorschau umschalten     |
-| **Rohmaterial** | Optionale Material-Zuordnung                              |
-| **Workflow**    | Die Operation(en), die auf Werkstücke in dieser Ebene angewendet werden |
-| **Werkstücke**  | Die Formen/Bilder, die in dieser Ebene enthalten sind     |
+| Eigenschaft    | Beschreibung                                                            |
+| -------------- | ----------------------------------------------------------------------- |
+| **Name**       | Der Name, der in der Ebenenliste angezeigt wird                         |
+| **Sichtbar**   | Sichtbarkeit in Arbeitsfläche und Vorschau umschalten                   |
+| **Workflow**   | Die Operation(en), die auf Werkstücke in dieser Ebene angewendet werden |
+| **Werkstücke** | Die Formen/Bilder, die in dieser Ebene enthalten sind                   |
 
 :::note Ebenen als Container
 Ebenen sind Container für deine Werkstücke. Beim Importieren von SVG-Dateien mit Ebenen wird jede Ebene aus deinem Design zu einer separaten Ebene in Rayforge.
 :::
-
 
 ### Ebenen neu anordnen
 
@@ -140,7 +137,6 @@ Ebenen-Panel:
 Das Löschen einer Ebene entfernt alle ihre Werkstücke und Workflow-Einstellungen. Verwende Rückgängig, wenn du versehentlich löschst.
 :::
 
-
 ---
 
 ## Werkstücke Ebenen zuweisen
@@ -164,11 +160,9 @@ Beim Importieren von SVG-Dateien mit aktiviertem "Originalvektoren verwenden":
 Rayforge erkennt automatisch Ebenen aus deiner SVG-Datei. Jede Ebene, die du in deiner Design-Software erstellt hast, wird als separate Ebene in Rayforge erscheinen.
 :::
 
-
 :::note Nur Vektor-Import
 Ebenenauswahl ist nur bei direktem Vektor-Import verfügbar. Bei Verwendung des Trace-Modus wird das gesamte SVG als ein Werkstück verarbeitet.
 :::
-
 
 ### Werkstücke zwischen Ebenen verschieben
 
@@ -202,7 +196,6 @@ Beim Importieren von SVG-Dateien bietet der Import-Dialog Optionen, die die Eben
 :::tip SVG-Dateien für Ebenen-Import vorbereiten
 Um SVG-Ebenen-Import zu verwenden, erstelle dein Design mit Ebenen in Software wie Inkscape. Verwende das Ebenen-Panel, um dein Design zu organisieren, und Rayforge wird diese Struktur beibehalten.
 :::
-
 
 ---
 
@@ -268,12 +261,12 @@ Steuern, welche Ebenen auf der Arbeitsfläche und in Vorschauen angezeigt werden
 
 ### Sichtbarkeit vs. Aktiviert
 
-| Zustand                       | Arbeitsfläche | Vorschau | G-Code |
-| ----------------------------- | ------------- | -------- | ------ |
-| **Sichtbar & Aktiviert**      | Ja            | Ja       | Ja     |
-| **Versteckt & Aktiviert**     | Nein          | Nein     | Ja     |
-| **Sichtbar & Deaktiviert**    | Ja            | Ja       | Nein   |
-| **Versteckt & Deaktiviert**   | Nein          | Nein     | Nein   |
+| Zustand                     | Arbeitsfläche | Vorschau | G-Code |
+| --------------------------- | ------------- | -------- | ------ |
+| **Sichtbar & Aktiviert**    | Ja            | Ja       | Ja     |
+| **Versteckt & Aktiviert**   | Nein          | Nein     | Ja     |
+| **Sichtbar & Deaktiviert**  | Ja            | Ja       | Nein   |
+| **Versteckt & Deaktiviert** | Nein          | Nein     | Nein   |
 
 :::note Ebenen deaktivieren
 :::
@@ -361,11 +354,11 @@ Um Ebenen-Pausen einzurichten, verwende die Hooks-Funktion in deinen Maschinenei
 
 Der Workflow jeder Ebene kann einzigartige Einstellungen haben:
 
-| Ebene   | Operation  | Geschwindigkeit | Leistung | Durchgänge |
-| ------- | ---------- | --------------- | -------- | ---------- |
-| Gravur  | Raster     | 300 mm/min      | 20%      | 1          |
-| Ritzen  | Kontur     | 500 mm/min      | 10%      | 1          |
-| Schnitt | Kontur     | 100 mm/min      | 90%      | 2          |
+| Ebene   | Operation | Geschwindigkeit | Leistung | Durchgänge |
+| ------- | --------- | --------------- | -------- | ---------- |
+| Gravur  | Raster    | 300 mm/min      | 20%      | 1          |
+| Ritzen  | Kontur    | 500 mm/min      | 10%      | 1          |
+| Schnitt | Kontur    | 100 mm/min      | 90%      | 2          |
 
 ---
 

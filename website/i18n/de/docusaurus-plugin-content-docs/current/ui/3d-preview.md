@@ -72,6 +72,13 @@ Passe an, was du siehst:
 - **Nach Leistung färben**: Farbverlauf basierend auf Laserleistung
 - **Nach Geschwindigkeit färben**: Farbverlauf basierend auf Vorschubrate
 
+:::tip Farben pro Laser
+Bei Maschinen mit mehreren Laserköpfen kann jeder Laser eigene Schnitt- und
+Rasterfarben haben, die in den [Lasereinstellungen](../machine/laser) konfiguriert
+werden. Dies erleichtert die Identifizierung, welcher Laser welche Operation
+ausführt.
+:::
+
 ### Maschinen-Visualisierung
 
 - **Ursprung anzeigen**: (0,0)-Referenzpunkt anzeigen

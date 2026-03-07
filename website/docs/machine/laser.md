@@ -79,6 +79,32 @@ To measure your spot size:
 3. Use the average of multiple measurements
 :::
 
+#### Cut Color
+
+The color used to display cutting operations for this laser in the canvas and
+3D preview. This helps you visually distinguish which laser will perform each
+cutting operation when working with multiple laser heads.
+
+- Click the color swatch to open a color picker
+- Choose a color that contrasts well with your material preview
+- Default colors are assigned automatically
+
+#### Raster Color
+
+The color used to display raster/engraving operations for this laser in the
+canvas and 3D preview.
+
+- Click the color swatch to open a color picker
+- Useful for differentiating raster operations from cuts
+- Each laser can have its own distinct raster color
+
+:::tip Multi-Laser Workflows
+When using multiple laser heads, assigning different colors to each laser
+makes it easy to see which operations will be performed by which laser.
+For example, use red for your main cutting laser and blue for a secondary
+engraving laser.
+:::
+
 ## See Also
 
 - [Device Settings](device) - GRBL laser mode settings

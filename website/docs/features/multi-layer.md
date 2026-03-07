@@ -19,7 +19,6 @@ layers, each layer from your design becomes a separate layer in Rayforge.
 This lets you keep your design organized exactly as you created it.
 :::
 
-
 ---
 
 ## Why Use Multiple Layers?
@@ -106,7 +105,6 @@ Each layer has:
 | -------------- | ---------------------------------------------------- |
 | **Name**       | The name shown in the layer list                     |
 | **Visible**    | Toggle visibility in canvas and preview              |
-| **Stock Item** | Optional material association                        |
 | **Workflow**   | The operation(s) applied to workpieces in this layer |
 | **Workpieces** | The shapes/images contained in this layer            |
 
@@ -114,7 +112,6 @@ Each layer has:
 Layers are containers for your workpieces. When importing SVG files with
 layers, each layer from your design becomes a separate layer in Rayforge.
 :::
-
 
 ### Reordering Layers
 
@@ -145,7 +142,6 @@ Deleting a layer removes all its workpieces and workflow settings. Use Undo
 if you delete accidentally.
 :::
 
-
 ---
 
 ## Assigning Workpieces to Layers
@@ -171,12 +167,10 @@ you created in your design software will appear as a separate layer in
 Rayforge.
 :::
 
-
 :::note Vector Import Only
 Layer selection is only available when using direct vector import.
 When using trace mode, the entire SVG is processed as one workpiece.
 :::
-
 
 ### Moving Workpieces Between Layers
 
@@ -215,7 +209,6 @@ To use SVG layer import, create your design with layers in software like
 Inkscape. Use the Layers panel to organize your design, and Rayforge
 will preserve that structure.
 :::
-
 
 ---
 
