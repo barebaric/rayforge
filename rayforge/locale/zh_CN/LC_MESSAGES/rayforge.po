@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-07 14:23+0100\n"
+"POT-Creation-Date: 2026-03-07 19:55+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -830,6 +830,7 @@ msgid "Cycle"
 msgstr "循环"
 
 #: rayforge/machine/driver/driver.py
+#: rayforge/ui_gtk/settings/ai_settings_page.py
 msgid "Test"
 msgstr "测试"
 
@@ -1228,10 +1229,6 @@ msgid "Add or remove machines."
 msgstr "添加或移除机器。"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
-msgid "+"
-msgstr "+"
-
-#: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid "This machine has an invalid configuration."
 msgstr "此机器配置无效。"
 
@@ -1251,6 +1248,7 @@ msgid ""
 msgstr "此机器配置文件及其所有设置将被永久删除。此操作无法撤销。"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
+#: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
@@ -1276,6 +1274,7 @@ msgid "Cancel"
 msgstr "取消"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
+#: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
@@ -1283,6 +1282,114 @@ msgstr "取消"
 #: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Delete"
 msgstr "删除"
+
+#: rayforge/ui_gtk/settings/machine_settings_page.py
+msgid "Add Machine"
+msgstr "添加机器"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Default provider"
+msgstr "默认提供商"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Enable or disable this provider"
+msgstr "启用或禁用此提供商"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Set as default"
+msgstr "设为默认"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Add Provider"
+msgstr "添加提供商"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "No providers configured"
+msgstr "未配置提供商"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "New Provider"
+msgstr "新建提供商"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/recipe_list.py
+#: rayforge/ui_gtk/doceditor/material_list.py
+#, python-brace-format
+msgid "Delete '{name}'?"
+msgstr "删除 '{name}'？"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid ""
+"This AI provider will be permanently removed. This action cannot be undone."
+msgstr "此AI提供商将被永久删除。此操作无法撤销。"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/camera/properties_widget.py
+#: rayforge/ui_gtk/machine/gcode_editor.py
+#: rayforge/ui_gtk/machine/maintenance_page.py
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#: rayforge/ui_gtk/sketcher/studio.py
+msgid "Name"
+msgstr "名称"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Provider Type"
+msgstr "提供商类型"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "OpenAI Compatible"
+msgstr "OpenAI兼容"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Base URL"
+msgstr "基础URL"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "API Key"
+msgstr "API密钥"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Default Model"
+msgstr "默认模型"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Connection Test"
+msgstr "连接测试"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Verify the provider configuration is working"
+msgstr "验证提供商配置是否正常工作"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Edit Provider"
+msgstr "编辑提供商"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Provider Settings"
+msgstr "提供商设置"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Testing..."
+msgstr "测试中..."
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "AI"
+msgstr "人工智能"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "AI Providers"
+msgstr "AI提供商"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid ""
+"Configure AI providers for use by addons. Addons can use these providers "
+"without needing their own API keys."
+msgstr "配置AI提供商供插件使用。插件可以使用这些提供商，无需自己的API密钥。"
 
 #: rayforge/ui_gtk/settings/addon_manager_page.py
 msgid "Addons"
@@ -1609,18 +1716,6 @@ msgstr "设备ID"
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "System identifier for the camera device"
 msgstr "摄像头设备的系统标识符"
-
-#: rayforge/ui_gtk/camera/properties_widget.py
-#: rayforge/ui_gtk/machine/gcode_editor.py
-#: rayforge/ui_gtk/machine/maintenance_page.py
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Name"
-msgstr "名称"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Display name for this camera"
@@ -3873,13 +3968,6 @@ msgstr "添加新库"
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "No user libraries found."
 msgstr "未找到用户库。"
-
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/recipe_list.py
-#: rayforge/ui_gtk/doceditor/material_list.py
-#, python-brace-format
-msgid "Delete '{name}'?"
-msgstr "删除 '{name}'？"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid ""

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-07 14:23+0100\n"
+"POT-Creation-Date: 2026-03-07 19:55+0100\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -906,6 +906,7 @@ msgid "Cycle"
 msgstr "Zyklus"
 
 #: rayforge/machine/driver/driver.py
+#: rayforge/ui_gtk/settings/ai_settings_page.py
 msgid "Test"
 msgstr "Test"
 
@@ -1324,10 +1325,6 @@ msgid "Add or remove machines."
 msgstr "Maschinen hinzufügen oder entfernen."
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
-msgid "+"
-msgstr "+"
-
-#: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid "This machine has an invalid configuration."
 msgstr "Diese Maschine hat eine ungültige Konfiguration."
 
@@ -1349,6 +1346,7 @@ msgstr ""
 "entfernt. Diese Aktion kann nicht rückgängig gemacht werden."
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
+#: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
@@ -1374,6 +1372,7 @@ msgid "Cancel"
 msgstr "Abbrechen"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
+#: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
@@ -1381,6 +1380,118 @@ msgstr "Abbrechen"
 #: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Delete"
 msgstr "Löschen"
+
+#: rayforge/ui_gtk/settings/machine_settings_page.py
+msgid "Add Machine"
+msgstr "Maschine hinzufügen"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Default provider"
+msgstr "Standardanbieter"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Enable or disable this provider"
+msgstr "Anbieter aktivieren oder deaktivieren"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Set as default"
+msgstr "Als Standard festlegen"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Add Provider"
+msgstr "Anbieter hinzufügen"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "No providers configured"
+msgstr "Keine Anbieter konfiguriert"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "New Provider"
+msgstr "Neuer Anbieter"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/recipe_list.py
+#: rayforge/ui_gtk/doceditor/material_list.py
+#, python-brace-format
+msgid "Delete '{name}'?"
+msgstr "„{name}“ löschen?"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid ""
+"This AI provider will be permanently removed. This action cannot be undone."
+msgstr ""
+"Dieser KI-Anbieter wird dauerhaft entfernt. Diese Aktion kann nicht "
+"rückgängig gemacht werden."
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/camera/properties_widget.py
+#: rayforge/ui_gtk/machine/gcode_editor.py
+#: rayforge/ui_gtk/machine/maintenance_page.py
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#: rayforge/ui_gtk/sketcher/studio.py
+msgid "Name"
+msgstr "Name"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Provider Type"
+msgstr "Anbietertyp"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "OpenAI Compatible"
+msgstr "OpenAI-kompatibel"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Base URL"
+msgstr "Basis-URL"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "API Key"
+msgstr "API-Schlüssel"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Default Model"
+msgstr "Standardmodell"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Connection Test"
+msgstr "Verbindungstest"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Verify the provider configuration is working"
+msgstr "Überprüfen, ob die Anbieterkonfiguration funktioniert"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Edit Provider"
+msgstr "Anbieter bearbeiten"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Provider Settings"
+msgstr "Anbietereinstellungen"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Testing..."
+msgstr "Testen..."
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "AI"
+msgstr "KI"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "AI Providers"
+msgstr "KI-Anbieter"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid ""
+"Configure AI providers for use by addons. Addons can use these providers "
+"without needing their own API keys."
+msgstr ""
+"Konfigurieren Sie KI-Anbieter für die Verwendung durch Addons. Addons können "
+"Diese Anbieter verwenden, ohne eigene API-Schlüssel zu benötigen."
 
 #: rayforge/ui_gtk/settings/addon_manager_page.py
 msgid "Addons"
@@ -1719,18 +1830,6 @@ msgstr "Geräte-ID"
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "System identifier for the camera device"
 msgstr "Systemkennung für das Kameragerät"
-
-#: rayforge/ui_gtk/camera/properties_widget.py
-#: rayforge/ui_gtk/machine/gcode_editor.py
-#: rayforge/ui_gtk/machine/maintenance_page.py
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Name"
-msgstr "Name"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Display name for this camera"
@@ -4058,13 +4157,6 @@ msgstr "Neue Bibliothek hinzufügen"
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "No user libraries found."
 msgstr "Keine Benutzerbibliotheken gefunden."
-
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/recipe_list.py
-#: rayforge/ui_gtk/doceditor/material_list.py
-#, python-brace-format
-msgid "Delete '{name}'?"
-msgstr "„{name}“ löschen?"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid ""

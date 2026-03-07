@@ -1,0 +1,101 @@
+# German translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-07 20:16+0100\n"
+"PO-Revision-Date: 2026-03-07 20:16+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/widgets/dialog.py
+msgid "Generate a Workpiece"
+msgstr "Ein Werkstück erstellen"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/widgets/dialog.py
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/widgets/dialog.py
+msgid "Generate"
+msgstr "Erstellen"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/widgets/dialog.py
+msgid ""
+"Describe the design you want to create. Example: 'A simple star shape with 5 "
+"points'"
+msgstr ""
+"Beschreibe das Design, das du erstellen möchtest. Beispiel: 'Eine einfache "
+"Sternform mit 5 Spitzen'"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/widgets/dialog.py
+msgid "Close"
+msgstr "Schließen"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/frontend.py
+msgid "Generate Workpiece with AI..."
+msgstr "Werkstück mit KI erstellen..."
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "Bad request - please check your settings"
+msgstr "Ungültige Anfrage - bitte überprüfe deine Einstellungen"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "Authentication failed - please check your API key"
+msgstr ""
+"Authentifizierung fehlgeschlagen - bitte überprüfe deinen API-Schlüssel"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "Access forbidden - please check your API key permissions"
+msgstr ""
+"Zugriff verweigert - bitte überprüfe die Berechtigungen deines API-Schlüssels"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "API endpoint not found - please check the base URL"
+msgstr "API-Endpunkt nicht gefunden - bitte überprüfe die Basis-URL"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "Rate limited - please wait and try again"
+msgstr "Anfragenlimit erreicht - bitte warte und versuche es erneut"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "Server error - please try again later"
+msgstr "Serverfehler - bitte versuche es später erneut"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "Service unavailable - please try again later"
+msgstr "Dienst nicht verfügbar - bitte versuche es später erneut"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "No AI provider configured. Please configure an AI provider in Settings."
+msgstr ""
+"Kein KI-Anbieter konfiguriert. Bitte konfiguriere einen KI-Anbieter in den "
+"Einstellungen."
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "No response from AI provider."
+msgstr "Keine Antwort vom KI-Anbieter."
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "AI did not generate valid SVG code. Please try a different prompt."
+msgstr ""
+"Die KI hat keinen gültigen SVG-Code generiert. Bitte versuche einen anderen "
+"Prompt."
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+#, python-brace-format
+msgid "Server returned error {code}"
+msgstr "Server hat Fehler {code} zurückgegeben"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "Connection failed - please check your network"
+msgstr "Verbindung fehlgeschlagen - bitte überprüfe dein Netzwerk"
