@@ -588,7 +588,6 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         self.update_apply_button_sensitivity()
 
     def update_apply_button_sensitivity(self, *_):
-
         idx = self.active_point_index
         if idx >= 0 and idx < len(self.world_points):
             self.world_points[idx] = self.bubble.get_world_coords()

@@ -69,7 +69,10 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
         right_scroll.set_child(settings_box)
 
         # --- Group: Camera Image Settings ---
-        image_group = Adw.PreferencesGroup(title=_("Camera Image Settings"))
+        image_group = Adw.PreferencesGroup(
+            title=_("Camera Image Settings"),
+            description=_("Adjust image quality and appearance parameters."),
+        )
         settings_box.append(image_group)
 
         # Auto White Balance Switch
@@ -114,7 +117,10 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
             "value-changed", self.on_white_balance_changed
         )
 
-        wb_row = Adw.ActionRow(title=_("White Balance (Kelvin)"))
+        wb_row = Adw.ActionRow(
+            title=_("White Balance (Kelvin)"),
+            subtitle=_("Color temperature for accurate color representation"),
+        )
         wb_row.add_suffix(self.white_balance_scale)
         image_group.add(wb_row)
 
@@ -125,7 +131,7 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
         # Other Sliders
         row, self.contrast_scale = self._create_slider_row(
             title=_("Contrast"),
-            subtitle=None,
+            subtitle=_("Difference between light and dark areas"),
             initial_val=self.camera.contrast,
             callback=self.on_contrast_changed,
             lower=0.0,
@@ -138,7 +144,7 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
 
         row, self.brightness_scale = self._create_slider_row(
             title=_("Brightness"),
-            subtitle=None,
+            subtitle=_("Overall lightness or darkness of the image"),
             initial_val=self.camera.brightness,
             callback=self.on_brightness_changed,
             lower=-100.0,
@@ -151,7 +157,7 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
 
         row, self.denoise_scale = self._create_slider_row(
             title=_("Noise Reduction"),
-            subtitle=_("Temporal averaging. Higher values cause trailing."),
+            subtitle=_("Temporal averaging, higher values cause trailing"),
             initial_val=self.camera.denoise * 100.0,
             callback=self.on_denoise_changed,
             lower=0.0,
