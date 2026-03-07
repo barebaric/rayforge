@@ -4,7 +4,40 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 1
-PLUGIN_API_VERSION = 2
+PLUGIN_API_VERSION = 3
+
+
+"""
+API Changelog
+=============
+
+Version 3
+---------
+Added AI provider support to the core API. No changes to hook
+specifications - existing addons remain compatible. The core
+RayforgeContext now includes AI provider management capabilities.
+
+Version 2
+---------
+Added ``register_layout_strategies`` hook to allow addons to register
+custom layout strategies for the UI. This enables addons to define
+how content is arranged and displayed in different contexts.
+
+Version 1
+-------
+Initial plugin API release. Includes core hooks for addon lifecycle,
+resource registration, and UI integration:
+
+- ``rayforge_init``: Called when application context is initialized
+- ``on_unload``: Called when addon is disabled or unloaded
+- ``register_machines``: Register new machine drivers
+- ``register_steps``: Register custom step types
+- ``register_producers``: Register custom ops producers
+- ``register_step_widgets``: Register custom step settings widgets
+- ``register_menu_items``: Register menu items
+- ``register_commands``: Register editor commands
+- ``register_actions``: Register window actions
+"""
 
 
 class RayforgeSpecs:

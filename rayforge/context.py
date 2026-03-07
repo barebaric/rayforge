@@ -9,6 +9,7 @@ from .addon_mgr.addon_manager import AddonManager
 # without causing a runtime circular import.
 if TYPE_CHECKING:
     from .camera.manager import CameraManager
+    from .core.ai.ai_service import AIService
     from .core.config import Config, ConfigManager
     from .core.library_manager import LibraryManager
     from .core.recipe_manager import RecipeManager
@@ -39,11 +40,14 @@ class RayforgeContext:
         from .pipeline.artifact.store import ArtifactStore
         from .debug import DebugDumpManager
         from .machine.models.dialect_manager import DialectManager
+        from .core.ai.ai_service import AIService
+        from .core.ai.config import AIConfigManager
         from .config import (
             CONFIG_DIR,
             DIALECT_DIR,
             ADDONS_DIR,
             BUILTIN_ADDONS_DIR,
+            AI_CONFIG_FILE,
         )
         from .shared.util.localized import get_system_language
         from .core.addon_config import AddonConfig
@@ -51,6 +55,11 @@ class RayforgeContext:
         self.artifact_store = ArtifactStore()
         # The DialectManager is safe and necessary for all processes.
         self._dialect_mgr = DialectManager(DIALECT_DIR)
+
+        # Initialize the AI service
+        self._ai_service = AIService()
+        self._ai_config_mgr = AIConfigManager(AI_CONFIG_FILE, self._ai_service)
+        self._ai_config_mgr.load()
 
         # Initialize the plugin manager
         self.plugin_mgr = pluggy.PluginManager("rayforge")
@@ -146,6 +155,11 @@ class RayforgeContext:
     def debug_dump_manager(self) -> "DebugDumpManager":
         """Returns the debug dump manager."""
         return self._debug_dump_manager
+
+    @property
+    def ai_service(self) -> "AIService":
+        """Returns the AI service."""
+        return self._ai_service
 
     @property
     def language(self) -> str:
@@ -340,6 +354,8 @@ class RayforgeContext:
             self._camera_mgr.shutdown()
         if self._machine_mgr:
             await self._machine_mgr.shutdown()
+        if self._ai_service:
+            await self._ai_service.close_all()
         self.artifact_store.shutdown()
         logger.info("RayforgeContext shutdown complete.")
 

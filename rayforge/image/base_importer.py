@@ -148,6 +148,7 @@ class Importer(ABC):
         self.source_file = source_file or Path("Untitled")
         self._warnings: List[str] = []
         self._errors: List[str] = []
+        self._vectorization_spec: Optional[VectorizationSpec] = None
 
     def add_warning(self, message: str) -> None:
         """Records a warning message to be displayed to the user."""
@@ -327,6 +328,18 @@ class Importer(ABC):
             VectorizationResult,
         )
 
+        # Resolve spec early so parse() can access trim_padding
+        self._vectorization_spec = vectorization_spec
+        if not self._vectorization_spec:
+            if ImporterFeature.DIRECT_VECTOR in self.features:
+                self._vectorization_spec = PassthroughSpec()
+            elif ImporterFeature.BITMAP_TRACING in self.features:
+                self._vectorization_spec = TraceSpec(
+                    threshold=1.0, auto_threshold=False
+                )
+            else:
+                self._vectorization_spec = PassthroughSpec()
+
         # 1. Parse
         parse_result = self.parse()
         if not parse_result:
@@ -341,18 +354,7 @@ class Importer(ABC):
         source_asset = self.create_source_asset(parse_result)
 
         # 3. Vectorize
-        spec = vectorization_spec
-        if not spec:
-            # Smart default: Choose spec based on importer features.
-            # Prefer direct vector if available, otherwise use whole image
-            # mode for bitmap formats.
-            if ImporterFeature.DIRECT_VECTOR in self.features:
-                spec = PassthroughSpec()
-            elif ImporterFeature.BITMAP_TRACING in self.features:
-                spec = TraceSpec(threshold=1.0, auto_threshold=False)
-            else:
-                # Fallback for importers that may not declare features yet
-                spec = PassthroughSpec()
+        spec = self._vectorization_spec
 
         # For vector formats, if no layers with geometry were found,
         # return early with no items. Only applies to TraceSpec since

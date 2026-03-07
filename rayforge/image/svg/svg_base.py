@@ -19,6 +19,7 @@ from svgelements import (
 
 from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
+from ...core.vectorization_spec import PassthroughSpec
 from ..base_importer import (
     Importer,
 )
@@ -332,7 +333,10 @@ class SvgImporterBase(Importer):
             # 3. Calculate new viewBox with padding to prevent clipping
             width = max_x - min_x
             height = max_y - min_y
-            padding = max(width, height) * 0.01
+            trim_padding = 0.01  # Default 1%
+            if isinstance(self._vectorization_spec, PassthroughSpec):
+                trim_padding = self._vectorization_spec.trim_padding
+            padding = max(width, height) * trim_padding
 
             new_vb_x = min_x - padding
             new_vb_y = min_y - padding
