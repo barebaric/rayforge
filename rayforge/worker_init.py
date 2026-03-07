@@ -66,6 +66,10 @@ def ensure_addons_loaded():
         logger.warning("Cannot load worker addons: manifest not available.")
         return
 
+    if _shared_state_cache:
+        install_addon_finder(shared_dict=_shared_state_cache)
+    ensure_addon_namespaces(manifest)
+
     for module_name in manifest.enabled_backend_modules:
         try:
             module = importlib.import_module(module_name)
@@ -142,15 +146,18 @@ def initialize_worker(shared_state: Optional[Dict] = None):
             )
 
     logger = logging.getLogger(__name__)
-    if not shared_state:
+    if shared_state is None:
         logger.error("Worker cannot initialize without shared_state.")
         return
 
     manifest = shared_state.get("addon_manifest")
     if not manifest:
-        logger.warning("Addon manifest not found in shared state.")
+        logger.warning(
+            "Addon manifest not yet available in shared state. "
+            "Addon finder will be installed lazily."
+        )
     else:
         install_addon_finder(shared_dict=shared_state)
         ensure_addon_namespaces(manifest)
 
-    logger.debug("Worker process initialized with addon manifest.")
+    logger.debug("Worker process initialized.")
