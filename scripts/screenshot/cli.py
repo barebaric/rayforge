@@ -21,6 +21,9 @@ TARGETS = {
     "app-settings:recipes": "app_settings_recipes",
     "app-settings:addons": "app_settings_addons",
     "app-settings:ai": "app_settings_ai",
+    "ai-workpiece-generator": "ai_workpiece_generator",
+    "control-panel": "control_panel",
+    "import-dialog": "import_dialog",
     "machine-settings:general": "machine_settings_general",
     "machine-settings:hardware": "machine_settings_hardware",
     "machine-settings:advanced": "machine_settings_advanced",
@@ -30,6 +33,7 @@ TARGETS = {
     "machine-settings:laser": "machine_settings_laser",
     "machine-settings:camera": "machine_settings_camera",
     "machine-settings:maintenance": "machine_settings_maintenance",
+    "material-test": "material_test",
     "step-settings:contour:general": "step_settings",
     "step-settings:contour:post": "step_settings",
     "step-settings:engrave:general:constant_power": "step_settings",
@@ -44,9 +48,6 @@ TARGETS = {
     "recipe-editor:general": "recipe_editor_general",
     "recipe-editor:applicability": "recipe_editor_applicability",
     "recipe-editor:settings": "recipe_editor_settings",
-    "material-test": "material_test",
-    "control-panel": "control_panel",
-    "import-dialog": "import_dialog",
 }
 
 
