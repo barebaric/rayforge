@@ -3,7 +3,7 @@ A renderer for visualizing texture-based artifacts using GPU texture rendering.
 """
 
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import numpy as np
 from OpenGL import GL
 from .gl_utils import BaseRenderer, Shader
@@ -150,7 +150,10 @@ class TextureArtifactRenderer(BaseRenderer):
         self.instances.clear()
 
     def add_instance(
-        self, texture_data: TextureData, final_model_matrix: np.ndarray
+        self,
+        texture_data: TextureData,
+        final_model_matrix: np.ndarray,
+        color_lut: Optional[np.ndarray] = None,
     ):
         """Adds a texture artifact to be rendered in the next frame."""
         if not self.is_initialized:
@@ -190,7 +193,11 @@ class TextureArtifactRenderer(BaseRenderer):
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
         self.instances.append(
-            {"texture_id": texture_id, "model_matrix": final_model_matrix}
+            {
+                "texture_id": texture_id,
+                "model_matrix": final_model_matrix,
+                "color_lut": color_lut,
+            }
         )
 
     def update_color_lut(self, lut_data: np.ndarray):
@@ -235,16 +242,33 @@ class TextureArtifactRenderer(BaseRenderer):
         shader.set_int("uTexture", 0)
         GL.glActiveTexture(GL.GL_TEXTURE1)
         shader.set_int("uColorLUT", 1)
-        GL.glBindTexture(
-            GL.GL_TEXTURE_2D, self.color_lut_texture
-        )  # Bind as 2D
         GL.glBindVertexArray(self.vao)
 
         for instance in self.instances:
             # Combine the base VPS with this instance's specific model matrix
             final_mvp = view_proj_scene_matrix @ instance["model_matrix"]
-            shader.set_mat4("uMVP", final_mvp.T)  # Transpose for OpenGL
+            shader.set_mat4("uMVP", final_mvp.T)
 
+            if instance["color_lut"] is not None:
+                lut_data = np.ascontiguousarray(
+                    instance["color_lut"], dtype=np.float32
+                )
+                GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)
+                GL.glTexImage2D(
+                    GL.GL_TEXTURE_2D,
+                    0,
+                    GL.GL_RGBA32F,
+                    lut_data.shape[0],
+                    1,
+                    0,
+                    GL.GL_RGBA,
+                    GL.GL_FLOAT,
+                    lut_data,
+                )
+                GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+
+            GL.glActiveTexture(GL.GL_TEXTURE1)
+            GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)
             GL.glActiveTexture(GL.GL_TEXTURE0)
             GL.glBindTexture(GL.GL_TEXTURE_2D, instance["texture_id"])
 

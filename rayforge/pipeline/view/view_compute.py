@@ -24,6 +24,25 @@ logger = logging.getLogger(__name__)
 CAIRO_MAX_DIMENSION = 30000
 
 
+def _get_color_set_for_laser(
+    render_context: RenderContext,
+    laser_uid: Optional[str],
+) -> ColorSet:
+    """
+    Resolve the appropriate ColorSet for a given laser.
+
+    Args:
+        render_context: The RenderContext containing color sets.
+        laser_uid: The UID of the laser to get colors for.
+
+    Returns:
+        A ColorSet - either laser-specific or the default/fallback.
+    """
+    if laser_uid and laser_uid in render_context.laser_color_sets:
+        return ColorSet.from_dict(render_context.laser_color_sets[laser_uid])
+    return ColorSet.from_dict(render_context.color_set_dict)
+
+
 def compute_view_dimensions(
     artifact: WorkPieceArtifact,
     context: RenderContext,
@@ -277,6 +296,7 @@ def compute_workpiece_view(
     render_context: RenderContext,
     generation_id: int,
     progress_context: Optional[ProgressContext] = None,
+    laser_uid: Optional[str] = None,
 ) -> Optional[WorkPieceViewArtifact]:
     """
     Computes a WorkPieceViewArtifact from a WorkPieceArtifact.
@@ -289,6 +309,7 @@ def compute_workpiece_view(
         render_context: The RenderContext containing rendering parameters.
         generation_id: The generation ID for staleness checking.
         progress_context: Optional ProgressContext for progress reporting.
+        laser_uid: Optional[str] The UID of the laser for color lookup.
 
     Returns:
         A WorkPieceViewArtifact containing the rendered bitmap, or None if
@@ -332,7 +353,7 @@ def compute_workpiece_view(
     ctx.scale(effective_ppm_x, -effective_ppm_y)
     ctx.translate(-x_mm, -y_mm)
 
-    color_set = ColorSet.from_dict(render_context.color_set_dict)
+    color_set = _get_color_set_for_laser(render_context, laser_uid)
 
     _set_progress(0.1, _("Rendering texture..."))
 
@@ -369,6 +390,7 @@ def compute_workpiece_view_to_buffer(
     render_context: RenderContext,
     bitmap: np.ndarray,
     progress_context: Optional[ProgressContext] = None,
+    laser_uid: Optional[str] = None,
 ) -> Optional[Tuple[float, float, float, float]]:
     """
     Renders a WorkPieceArtifact directly into a pre-allocated bitmap buffer.
@@ -381,6 +403,7 @@ def compute_workpiece_view_to_buffer(
         render_context: The RenderContext containing rendering parameters.
         bitmap: Pre-allocated numpy array to render into.
         progress_context: Optional ProgressContext for progress reporting.
+        laser_uid: Optional laser UID for color lookup.
 
     Returns:
         The bounding box (x, y, width, height) in mm, or None if
@@ -425,7 +448,7 @@ def compute_workpiece_view_to_buffer(
     ctx.scale(effective_ppm_x, -effective_ppm_y)
     ctx.translate(-x_mm, -y_mm)
 
-    color_set = ColorSet.from_dict(render_context.color_set_dict)
+    color_set = _get_color_set_for_laser(render_context, laser_uid)
 
     _set_progress(0.1, "Rendering texture...")
 
@@ -732,6 +755,7 @@ def render_chunk_to_buffer(
     render_context: RenderContext,
     bitmap: np.ndarray,
     view_bbox_mm: Tuple[float, float, float, float],
+    laser_uid: Optional[str] = None,
 ) -> bool:
     """
     Renders a chunk WorkPieceArtifact directly into a pre-allocated bitmap.
@@ -746,6 +770,7 @@ def render_chunk_to_buffer(
         bitmap: Pre-allocated numpy array to render into.
         view_bbox_mm: The bounding box (x, y, width, height) in mm of the
             view artifact being rendered to.
+        laser_uid: Optional laser UID for color lookup.
 
     Returns:
         True if rendering succeeded, False otherwise.
@@ -758,7 +783,7 @@ def render_chunk_to_buffer(
         bitmap, view_bbox_mm, render_context
     )
 
-    color_set = ColorSet.from_dict(render_context.color_set_dict)
+    color_set = _get_color_set_for_laser(render_context, laser_uid)
 
     if texture_data:
         _draw_texture(ctx, texture_data, color_set)

@@ -1,6 +1,6 @@
 from typing import cast
 from gettext import gettext as _
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, Gtk, Gdk
 from ...machine.models.laser import Laser
 from ...machine.models.machine import Machine
 from ..shared.adwfix import get_spinrow_int, get_spinrow_float
@@ -328,6 +328,32 @@ class LaserPreferencesPage(TrackedPreferencesPage):
         )
         self.laserhead_config_group.add(self.spot_size_y_row)
 
+        self.cut_color_button = Gtk.ColorButton()
+        self.cut_color_button.set_size_request(32, 32)
+        self.cut_color_row = Adw.ActionRow(
+            title=_("Cut Color"),
+            subtitle=_("Color for cutting operations"),
+            activatable_widget=self.cut_color_button,
+        )
+        self.cut_color_row.add_suffix(self.cut_color_button)
+        self.handler_ids["cut_color"] = self.cut_color_button.connect(
+            "color-set", self.on_cut_color_changed
+        )
+        self.laserhead_config_group.add(self.cut_color_row)
+
+        self.raster_color_button = Gtk.ColorButton()
+        self.raster_color_button.set_size_request(32, 32)
+        self.raster_color_row = Adw.ActionRow(
+            title=_("Raster Color"),
+            subtitle=_("Color for engraving/raster operations"),
+            activatable_widget=self.raster_color_button,
+        )
+        self.raster_color_row.add_suffix(self.raster_color_button)
+        self.handler_ids["raster_color"] = self.raster_color_button.connect(
+            "color-set", self.on_raster_color_changed
+        )
+        self.laserhead_config_group.add(self.raster_color_row)
+
         # Connect signals
         self.laser_list_editor.list_box.connect(
             "row-selected", self.on_laserhead_selected
@@ -355,6 +381,10 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             self.focus_power_row.handler_block(self.handler_ids["focus_power"])
             self.spot_size_x_row.handler_block(self.handler_ids["spot_x"])
             self.spot_size_y_row.handler_block(self.handler_ids["spot_y"])
+            self.cut_color_button.handler_block(self.handler_ids["cut_color"])
+            self.raster_color_button.handler_block(
+                self.handler_ids["raster_color"]
+            )
 
             selected_head = self._get_selected_laser()
             if not selected_head:
@@ -372,6 +402,12 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             spot_x, spot_y = selected_head.spot_size_mm
             self.spot_size_x_row.set_value(spot_x)
             self.spot_size_y_row.set_value(spot_y)
+            self._set_color_button(
+                self.cut_color_button, selected_head.cut_color
+            )
+            self._set_color_button(
+                self.raster_color_button, selected_head.raster_color
+            )
 
             # Unblock handlers
             self.name_row.handler_unblock(self.handler_ids["name"])
@@ -387,6 +423,12 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             )
             self.spot_size_x_row.handler_unblock(self.handler_ids["spot_x"])
             self.spot_size_y_row.handler_unblock(self.handler_ids["spot_y"])
+            self.cut_color_button.handler_unblock(
+                self.handler_ids["cut_color"]
+            )
+            self.raster_color_button.handler_unblock(
+                self.handler_ids["raster_color"]
+            )
 
     def _get_selected_laser(self):
         selected_row = self.laser_list_editor.list_box.get_selected_row()
@@ -439,3 +481,32 @@ class LaserPreferencesPage(TrackedPreferencesPage):
         x = get_spinrow_float(self.spot_size_x_row)
         y = get_spinrow_float(self.spot_size_y_row)
         selected_laser.set_spot_size(x, y)
+
+    def _set_color_button(self, button: Gtk.ColorButton, hex_color: str):
+        """Set the color button from a hex color string."""
+        rgba = Gdk.RGBA()
+        if not rgba.parse(hex_color):
+            rgba.parse("#ff00ff")
+        button.set_rgba(rgba)
+
+    def _get_hex_color(self, button: Gtk.ColorButton) -> str:
+        """Get the hex color string from a color button."""
+        rgba = button.get_rgba()
+        r = int(rgba.red * 255)
+        g = int(rgba.green * 255)
+        b = int(rgba.blue * 255)
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+    def on_cut_color_changed(self, button: Gtk.ColorButton):
+        """Update the cut color of the selected Laser."""
+        selected_laser = self._get_selected_laser()
+        if not selected_laser:
+            return
+        selected_laser.set_cut_color(self._get_hex_color(button))
+
+    def on_raster_color_changed(self, button: Gtk.ColorButton):
+        """Update the raster color of the selected Laser."""
+        selected_laser = self._get_selected_laser()
+        if not selected_laser:
+            return
+        selected_laser.set_raster_color(self._get_hex_color(button))

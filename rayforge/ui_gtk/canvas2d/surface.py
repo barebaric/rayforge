@@ -1,6 +1,15 @@
 import logging
 from blinker import Signal
-from typing import TYPE_CHECKING, Optional, cast, Dict, List, Sequence, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Optional,
+    cast,
+    Dict,
+    List,
+    Sequence,
+    Tuple,
+)
 from gi.repository import Gdk, Gtk, Graphene
 from ...camera.controller import CameraController
 from ...context import get_context
@@ -9,6 +18,7 @@ from ...core.item import DocItem
 from ...core.layer import Layer
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
+from ...machine.models.colors import OpsColorSet
 from ...machine.models.machine import Machine
 from ...pipeline.artifact import RenderContext
 from ...shared.util.colors import ColorSet
@@ -717,15 +727,35 @@ class WorkSurface(WorldSurface):
             return
 
         color_set_dict = self._get_theme_color_dict()
+        laser_color_dicts = self._get_laser_color_dicts()
 
         context = RenderContext(
             pixels_per_mm=(ppm_x, ppm_y),
             show_travel_moves=self._show_travel_moves,
             margin_px=5,
             color_set_dict=color_set_dict.to_dict(),
+            laser_color_sets=laser_color_dicts,
         )
 
         self.editor.view_manager.update_render_context(context)
+
+    def _get_laser_color_dicts(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Resolve colors for each laser in the machine.
+
+        Returns a dictionary mapping laser UID to its color set dictionary.
+        """
+        if not self.machine:
+            return {}
+
+        theme_colors = self._get_theme_color_dict()
+        laser_colors: Dict[str, Dict[str, Any]] = {}
+
+        for laser in self.machine.heads:
+            laser_color_set = OpsColorSet.from_laser(laser, theme_colors)
+            laser_colors[laser.uid] = laser_color_set.to_color_set().to_dict()
+
+        return laser_colors
 
     def _get_theme_color_dict(self) -> ColorSet:
         """
