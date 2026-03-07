@@ -3,10 +3,11 @@ from gi.repository import Adw, Gdk, Gtk
 
 from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
+from .addon_manager_page import AddonManagerPage
+from .ai_settings_page import AISettingsPage
 from .general_preferences_page import GeneralPreferencesPage
 from .machine_settings_page import MachineSettingsPage
 from .material_manager_page import MaterialManagerPage
-from .addon_manager_page import AddonManagerPage
 from .recipe_manager_page import RecipeManagerPage
 
 
@@ -21,7 +22,8 @@ class SettingsWindow(PatchedDialogWindow):
         "machines": 1,
         "materials": 2,
         "recipes": 3,
-        "addons": 4,
+        "ai": 4,
+        "addons": 5,
     }
 
     def __init__(self, initial_page: str = "general", **kwargs):
@@ -62,6 +64,7 @@ class SettingsWindow(PatchedDialogWindow):
         self._add_page(MachineSettingsPage)
         self._add_page(MaterialManagerPage)
         self._add_page(RecipeManagerPage)
+        self._add_page(AISettingsPage)
         self._add_page(AddonManagerPage)
 
         # Create the content's NavigationPage wrapper
@@ -86,7 +89,6 @@ class SettingsWindow(PatchedDialogWindow):
         self.add_controller(key_controller)
 
     def _add_page(self, page_class):
-        # ... (Same as existing code)
         page = page_class()
         page_name = page.get_title()
         self.content_stack.add_titled(page, page_name, page_name)
@@ -108,7 +110,6 @@ class SettingsWindow(PatchedDialogWindow):
         self.sidebar_list.append(row)
 
     def _on_row_selected(self, listbox, row):
-        # ... (Same as existing code)
         if row:
             index = row.get_index()
             pages = self.content_stack.get_pages()
@@ -119,7 +120,6 @@ class SettingsWindow(PatchedDialogWindow):
             self.content_page.set_title(page_title)
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
-        # ... (Same as existing code)
         if keyval == Gdk.KEY_Escape:
             self.close()
             return True

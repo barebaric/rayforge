@@ -63,12 +63,14 @@ class PassthroughSpec(VectorizationSpec):
 
     active_layer_ids: Optional[List[str]] = None
     create_new_layers: bool = True
+    trim_padding: float = 0.01
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "PassthroughSpec",
             "active_layer_ids": self.active_layer_ids,
             "create_new_layers": self.create_new_layers,
+            "trim_padding": self.trim_padding,
         }
 
     @classmethod
@@ -76,6 +78,7 @@ class PassthroughSpec(VectorizationSpec):
         return cls(
             active_layer_ids=data.get("active_layer_ids"),
             create_new_layers=data.get("create_new_layers", True),
+            trim_padding=data.get("trim_padding", 0.01),
         )
 
 

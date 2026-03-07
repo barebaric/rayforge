@@ -1,0 +1,12 @@
+name: ai_svg_generator
+display_name: "AI Workpiece Generator"
+description: "Generate workpieces using AI directly within Rayforge"
+api_version: 3
+depends:
+  - rayforge>=0.27.0
+author:
+  name: "Rayforge Team"
+  email: "noreply@rayforge.org"
+provides:
+  backend: "ai_svg_generator.backend"
+  frontend: "ai_svg_generator.frontend"

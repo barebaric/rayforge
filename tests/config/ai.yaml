@@ -1,0 +1,9 @@
+default_provider: test-provider
+providers:
+- api_key: sk-test-key
+  base_url: https://api.example.com/v1
+  default_model: gpt-4o
+  enabled: true
+  id: test-provider
+  name: Test Provider
+  provider_type: openai_compatible

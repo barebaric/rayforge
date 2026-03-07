@@ -28,6 +28,7 @@ DIALECT_DIR.mkdir(parents=True, exist_ok=True)
 
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
 ADDONS_DIR = CONFIG_DIR / "addons"
+AI_CONFIG_FILE = CONFIG_DIR / "ai.yaml"
 
 BUILTIN_ADDONS_DIR = Path(__file__).parent / "builtin_addons"
 
