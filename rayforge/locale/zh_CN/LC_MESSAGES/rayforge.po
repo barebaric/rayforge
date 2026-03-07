@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-03 22:50+0100\n"
+"POT-Creation-Date: 2026-03-07 14:23+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -25,6 +25,11 @@ msgstr "{name} 工作流"
 #: rayforge/core/doc.py
 msgid "Layer 1"
 msgstr "图层 1"
+
+#: rayforge/core/stock.py
+#, python-brace-format
+msgid "{name} (copy)"
+msgstr "{name} (副本)"
 
 #: rayforge/core/step.py
 #, python-brace-format
@@ -1481,6 +1486,10 @@ msgstr "编组"
 msgid "Ungroup"
 msgstr "取消编组"
 
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/doceditor/stock_cmd.py
+msgid "Convert to Stock"
+msgstr "转换为材料"
+
 #: rayforge/ui_gtk/canvas2d/context_menu.py
 #: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
 msgid "Remove"
@@ -1573,8 +1582,17 @@ msgid "Device ID: {device_id}"
 msgstr "设备ID：{device_id}"
 
 #: rayforge/ui_gtk/camera/point_bubble_widget.py
+#, python-brace-format
+msgid "Point {n}"
+msgstr "点 {n}"
+
+#: rayforge/ui_gtk/camera/point_bubble_widget.py
 msgid "Delete this point"
 msgstr "删除此点"
+
+#: rayforge/ui_gtk/camera/point_bubble_widget.py
+msgid "Nudge Pixel:"
+msgstr "微调像素："
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Camera Properties"
@@ -1589,6 +1607,10 @@ msgid "Device ID"
 msgstr "设备ID"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
+msgid "System identifier for the camera device"
+msgstr "摄像头设备的系统标识符"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
 #: rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/maintenance_page.py
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
@@ -1601,8 +1623,16 @@ msgid "Name"
 msgstr "名称"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Display name for this camera"
+msgstr "此摄像头的显示名称"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Enabled"
 msgstr "已启用"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Turn the camera stream on or off"
+msgstr "开启或关闭摄像头流"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Configure"
@@ -1613,8 +1643,16 @@ msgid "Image Settings"
 msgstr "图像设置"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Adjust brightness, contrast, white balance, and noise"
+msgstr "调整亮度、对比度、白平衡和噪点"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Image Alignment"
 msgstr "图像对齐"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Calibrate camera position and perspective"
+msgstr "校准摄像头位置和透视"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 #, python-brace-format
@@ -1622,10 +1660,26 @@ msgid "{camera_name} – Image Alignment"
 msgstr "{camera_name} – 图像对齐"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
+msgid "Zoom Out (Scroll Down)"
+msgstr "缩小（向下滚动）"
+
+#: rayforge/ui_gtk/camera/alignment_dialog.py
+msgid "Fit to Window"
+msgstr "适应窗口"
+
+#: rayforge/ui_gtk/camera/alignment_dialog.py
+msgid "Zoom In (Scroll Up)"
+msgstr "放大（向上滚动）"
+
+#: rayforge/ui_gtk/camera/alignment_dialog.py
 msgid ""
-"Click the image to add new reference points. Click or drag existing points "
-"to edit them."
-msgstr "点击图像以添加新的参考点。单击或拖动现有点以编辑它们。"
+"Click the image to add reference points. Drag to move them.\n"
+"Scroll to Zoom. Middle-click and drag to Pan.\n"
+"Use the Arrow Keys to nudge the active point precisely."
+msgstr ""
+"点击图像添加参考点。拖动以移动它们。\n"
+"滚动以缩放。中键点击并拖动以平移。\n"
+"使用方向键精确微调活动点。"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 msgid "Reset Points"
@@ -1649,6 +1703,10 @@ msgid "Camera Image Settings"
 msgstr "摄像头图像设置"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Adjust image quality and appearance parameters."
+msgstr "调整图像质量和外观参数。"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Auto White Balance"
 msgstr "自动白平衡"
 
@@ -1661,12 +1719,33 @@ msgid "White Balance (Kelvin)"
 msgstr "白平衡（开尔文）"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Color temperature for accurate color representation"
+msgstr "用于准确色彩表现的色温"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Contrast"
 msgstr "对比度"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Difference between light and dark areas"
+msgstr "明暗区域之间的差异"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Brightness"
 msgstr "亮度"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Overall lightness or darkness of the image"
+msgstr "图像的整体明暗度"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Noise Reduction"
+msgstr "降噪"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Temporal averaging, higher values cause trailing"
+msgstr "时间平均，较高的值会导致拖尾"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Transparency"
@@ -1676,6 +1755,52 @@ msgstr "透明度"
 msgid "Transparency on the worksurface"
 msgstr "工作台上的透明度"
 
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Lens Distortion Correction"
+msgstr "镜头畸变校正"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid ""
+"Straighten bowed lines using Radial (k1, k2) and Tangential (p1, p2) "
+"parameters."
+msgstr "使用径向（k1, k2）和切向（p1, p2）参数拉直弯曲的线条。"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Radial 1 (k1)"
+msgstr "径向 1 (k1)"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "First order radial distortion"
+msgstr "一阶径向畸变"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Radial 2 (k2)"
+msgstr "径向 2 (k2)"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Second order radial distortion"
+msgstr "二阶径向畸变"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Tangential 1 (p1)"
+msgstr "切向 1 (p1)"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "First order tangential distortion"
+msgstr "一阶切向畸变"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Tangential 2 (p2)"
+msgstr "切向 2 (p2)"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Second order tangential distortion"
+msgstr "二阶切向畸变"
+
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Add New Camera"
 msgstr "添加新摄像头"
@@ -1683,6 +1808,29 @@ msgstr "添加新摄像头"
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "No cameras configured"
 msgstr "未配置摄像头"
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Image Enhancement"
+msgstr "图像增强"
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Reduce noise and improve image stability."
+msgstr "减少噪点并提高图像稳定性。"
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Temporal averaging. Higher values remove more noise but cause trailing."
+msgstr "时间平均。较高的值可消除更多噪点但会导致拖尾。"
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid ""
+"Straighten bowed lines using Radial (k1, k2) and Tangential (p1, p2) "
+"parameters. Note: Values are usually very small."
+msgstr ""
+"使用径向（k1, k2）和切向（p1, p2）参数拉直弯曲的线条。注意：值通常非常小。"
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Lens Distortion Correction (Fisheye)"
+msgstr "镜头畸变校正（鱼眼）"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
@@ -1810,6 +1958,14 @@ msgstr "将当前Z位置设置为活动WCS的0"
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Set Work Zero at Current Position"
 msgstr "在当前位置设置工件零点"
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Click Canvas to Set Work Zero"
+msgstr "点击画布设置工作零点"
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Click on canvas to set work zero"
+msgstr "点击画布设置工作零点"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Jog Speed"
@@ -2586,6 +2742,22 @@ msgstr "光斑大小 Y"
 msgid "Size of the laser spot in the Y direction"
 msgstr "Y方向上的激光光斑大小"
 
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Cut Color"
+msgstr "切割颜色"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Color for cutting operations"
+msgstr "切割操作的颜色"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Raster Color"
+msgstr "光栅颜色"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Color for engraving/raster operations"
+msgstr "雕刻/光栅操作的颜色"
+
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #, python-brace-format
 msgid "{machine_name} - Machine Settings"
@@ -2834,6 +3006,10 @@ msgstr "此插件将在活动作业完成后卸载"
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "This addon is incompatible with the current version of Rayforge"
 msgstr "此插件与当前版本的Rayforge不兼容"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Built-in addon"
+msgstr "内置插件"
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Enable or disable this addon"
@@ -5333,8 +5509,12 @@ msgid "Could not fit the following items: {item_names}"
 msgstr "无法容纳以下项目：{item_names}"
 
 #: rayforge/doceditor/layout/registry.py
-msgid "Auto Layout (pack workpieces)"
-msgstr "自动布局 (排列工件)"
+msgid "Auto Layout (Simple)"
+msgstr "自动布局（简单）"
+
+#: rayforge/doceditor/stock_cmd.py
+msgid "Remove Stock Asset"
+msgstr "移除材料"
 
 #: rayforge/doceditor/stock_cmd.py
 #, python-brace-format
@@ -5465,10 +5645,6 @@ msgstr "定位在点"
 #: rayforge/doceditor/layout_cmd.py
 msgid "Auto Layout"
 msgstr "自动布局"
-
-#: rayforge/doceditor/layout_cmd.py
-msgid "Nesting Layout"
-msgstr "排样布局"
 
 #: rayforge/image/png/importer.py rayforge/image/jpg/importer.py
 msgid "Failed to process image data."

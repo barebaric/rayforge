@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-03 22:50+0100\n"
+"POT-Creation-Date: 2026-03-07 14:23+0100\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -26,6 +26,11 @@ msgstr "{name} Workflow"
 #: rayforge/core/doc.py
 msgid "Layer 1"
 msgstr "Calque 1"
+
+#: rayforge/core/stock.py
+#, python-brace-format
+msgid "{name} (copy)"
+msgstr "{name} (copie)"
 
 #: rayforge/core/step.py
 #, python-brace-format
@@ -1588,6 +1593,10 @@ msgstr "Grouper"
 msgid "Ungroup"
 msgstr "Dégrouper"
 
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/doceditor/stock_cmd.py
+msgid "Convert to Stock"
+msgstr "Convertir en matériau"
+
 #: rayforge/ui_gtk/canvas2d/context_menu.py
 #: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
 msgid "Remove"
@@ -1682,8 +1691,17 @@ msgid "Device ID: {device_id}"
 msgstr "Identifiant du périphérique : {device_id}"
 
 #: rayforge/ui_gtk/camera/point_bubble_widget.py
+#, python-brace-format
+msgid "Point {n}"
+msgstr "Point {n}"
+
+#: rayforge/ui_gtk/camera/point_bubble_widget.py
 msgid "Delete this point"
 msgstr "Supprimer ce point"
+
+#: rayforge/ui_gtk/camera/point_bubble_widget.py
+msgid "Nudge Pixel:"
+msgstr "Déplacer pixel :"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Camera Properties"
@@ -1698,6 +1716,10 @@ msgid "Device ID"
 msgstr "Identifiant du périphérique"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
+msgid "System identifier for the camera device"
+msgstr "Identifiant système du périphérique de caméra"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
 #: rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/maintenance_page.py
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
@@ -1710,8 +1732,16 @@ msgid "Name"
 msgstr "Nom"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Display name for this camera"
+msgstr "Nom d'affichage de cette caméra"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Enabled"
 msgstr "Activé"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Turn the camera stream on or off"
+msgstr "Activer ou désactiver le flux de la caméra"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Configure"
@@ -1722,8 +1752,16 @@ msgid "Image Settings"
 msgstr "Paramètres d’image"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Adjust brightness, contrast, white balance, and noise"
+msgstr "Ajuster la luminosité, le contraste, la balance des blancs et le bruit"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Image Alignment"
 msgstr "Alignement de l’image"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Calibrate camera position and perspective"
+msgstr "Calibrer la position et la perspective de la caméra"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 #, python-brace-format
@@ -1731,12 +1769,27 @@ msgid "{camera_name} – Image Alignment"
 msgstr "{camera_name} – Alignement de l’image"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
+msgid "Zoom Out (Scroll Down)"
+msgstr "Dézoomer (défiler vers le bas)"
+
+#: rayforge/ui_gtk/camera/alignment_dialog.py
+msgid "Fit to Window"
+msgstr "Ajuster à la fenêtre"
+
+#: rayforge/ui_gtk/camera/alignment_dialog.py
+msgid "Zoom In (Scroll Up)"
+msgstr "Zoomer (défiler vers le haut)"
+
+#: rayforge/ui_gtk/camera/alignment_dialog.py
 msgid ""
-"Click the image to add new reference points. Click or drag existing points "
-"to edit them."
+"Click the image to add reference points. Drag to move them.\n"
+"Scroll to Zoom. Middle-click and drag to Pan.\n"
+"Use the Arrow Keys to nudge the active point precisely."
 msgstr ""
-"Cliquez sur l’image pour ajouter de nouveaux points de référence. Cliquez ou "
-"faites glisser les points existants pour les modifier."
+"Cliquez sur l'image pour ajouter des points de référence. Faites glisser "
+"pour les déplacer.\n"
+"Défilez pour zoomer. Clic du milieu et glisser pour déplacer.\n"
+"Utilisez les touches fléchées pour déplacer le point actif avec précision."
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 msgid "Reset Points"
@@ -1760,6 +1813,10 @@ msgid "Camera Image Settings"
 msgstr "Paramètres d’image de la caméra"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Adjust image quality and appearance parameters."
+msgstr "Ajuster les paramètres de qualité et d'apparence de l'image."
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Auto White Balance"
 msgstr "Balance des blancs automatique"
 
@@ -1772,12 +1829,33 @@ msgid "White Balance (Kelvin)"
 msgstr "Balance des blancs (Kelvin)"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Color temperature for accurate color representation"
+msgstr "Température de couleur pour une représentation précise des couleurs"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Contrast"
 msgstr "Contraste"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Difference between light and dark areas"
+msgstr "Différence entre les zones claires et sombres"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Brightness"
 msgstr "Luminosité"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Overall lightness or darkness of the image"
+msgstr "Luminosité ou obscurité globale de l'image"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Noise Reduction"
+msgstr "Réduction du bruit"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Temporal averaging, higher values cause trailing"
+msgstr "Moyenne temporelle, les valeurs élevées provoquent des traînées"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Transparency"
@@ -1787,6 +1865,54 @@ msgstr "Transparence"
 msgid "Transparency on the worksurface"
 msgstr "Transparence sur la surface de travail"
 
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Lens Distortion Correction"
+msgstr "Correction de la distorsion de l'objectif"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid ""
+"Straighten bowed lines using Radial (k1, k2) and Tangential (p1, p2) "
+"parameters."
+msgstr ""
+"Redresser les lignes courbées avec les paramètres Radial (k1, k2) et "
+"Tangentiel (p1, p2)."
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Radial 1 (k1)"
+msgstr "Radial 1 (k1)"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "First order radial distortion"
+msgstr "Distorsion radiale du premier ordre"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Radial 2 (k2)"
+msgstr "Radial 2 (k2)"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Second order radial distortion"
+msgstr "Distorsion radiale du second ordre"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Tangential 1 (p1)"
+msgstr "Tangentiel 1 (p1)"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "First order tangential distortion"
+msgstr "Distorsion tangentielle du premier ordre"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Tangential 2 (p2)"
+msgstr "Tangentiel 2 (p2)"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Second order tangential distortion"
+msgstr "Distorsion tangentielle du second ordre"
+
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Add New Camera"
 msgstr "Ajouter une nouvelle caméra"
@@ -1794,6 +1920,32 @@ msgstr "Ajouter une nouvelle caméra"
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "No cameras configured"
 msgstr "Aucune caméra configurée"
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Image Enhancement"
+msgstr "Amélioration de l'image"
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Reduce noise and improve image stability."
+msgstr "Réduire le bruit et améliorer la stabilité de l'image."
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Temporal averaging. Higher values remove more noise but cause trailing."
+msgstr ""
+"Moyenne temporelle. Les valeurs élevées éliminent plus de bruit mais "
+"provoquent des traînées."
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid ""
+"Straighten bowed lines using Radial (k1, k2) and Tangential (p1, p2) "
+"parameters. Note: Values are usually very small."
+msgstr ""
+"Redresser les lignes courbées avec les paramètres Radial (k1, k2) et "
+"Tangentiel (p1, p2). Note : Les valeurs sont généralement très petites."
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Lens Distortion Correction (Fisheye)"
+msgstr "Correction de la distorsion de l'objectif (Fisheye)"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
@@ -1921,6 +2073,14 @@ msgstr "Définir la position Z actuelle comme 0 pour le WCS actif"
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Set Work Zero at Current Position"
 msgstr "Définir l'origine de travail à la position actuelle"
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Click Canvas to Set Work Zero"
+msgstr "Cliquer sur le canevas pour définir le zéro de travail"
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Click on canvas to set work zero"
+msgstr "Cliquer sur le canevas pour définir le zéro de travail"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Jog Speed"
@@ -2749,6 +2909,22 @@ msgstr "Taille du point Y"
 msgid "Size of the laser spot in the Y direction"
 msgstr "Taille du point laser dans la direction Y"
 
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Cut Color"
+msgstr "Couleur de coupe"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Color for cutting operations"
+msgstr "Couleur pour les opérations de coupe"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Raster Color"
+msgstr "Couleur de trame"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Color for engraving/raster operations"
+msgstr "Couleur pour les opérations de gravure/tramage"
+
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #, python-brace-format
 msgid "{machine_name} - Machine Settings"
@@ -3003,6 +3179,10 @@ msgstr ""
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "This addon is incompatible with the current version of Rayforge"
 msgstr "Cette extension est incompatible avec la version actuelle de Rayforge"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Built-in addon"
+msgstr "Extension intégrée"
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Enable or disable this addon"
@@ -5570,8 +5750,12 @@ msgid "Could not fit the following items: {item_names}"
 msgstr "Impossible de placer les éléments suivants : {item_names}"
 
 #: rayforge/doceditor/layout/registry.py
-msgid "Auto Layout (pack workpieces)"
-msgstr "Disposition automatique (compacter les pièces)"
+msgid "Auto Layout (Simple)"
+msgstr "Disposition automatique (Simple)"
+
+#: rayforge/doceditor/stock_cmd.py
+msgid "Remove Stock Asset"
+msgstr "Supprimer le matériau"
 
 #: rayforge/doceditor/stock_cmd.py
 #, python-brace-format
@@ -5702,10 +5886,6 @@ msgstr "Positionner au point"
 #: rayforge/doceditor/layout_cmd.py
 msgid "Auto Layout"
 msgstr "Disposition automatique"
-
-#: rayforge/doceditor/layout_cmd.py
-msgid "Nesting Layout"
-msgstr "Disposition en nidification"
 
 #: rayforge/image/png/importer.py rayforge/image/jpg/importer.py
 msgid "Failed to process image data."

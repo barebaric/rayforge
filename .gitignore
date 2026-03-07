@@ -18,6 +18,7 @@ builddir
 debian/rayforge
 debian/.debhelper
 
+# Translations
 *.mo
 *.po~
 *.mo~
