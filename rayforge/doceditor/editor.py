@@ -190,14 +190,14 @@ class DocEditor:
 
         settled_future = asyncio.get_running_loop().create_future()
 
-        # The signal sends `is_processing`, but the handler only needs
-        # `sender`.
         def on_settled(sender, is_processing: bool):
             if not is_processing and not settled_future.done():
                 settled_future.set_result(True)
 
         self.processing_state_changed.connect(on_settled)
         try:
+            if not self.is_processing and not settled_future.done():
+                settled_future.set_result(True)
             await asyncio.wait_for(settled_future, timeout)
         finally:
             self.processing_state_changed.disconnect(on_settled)
