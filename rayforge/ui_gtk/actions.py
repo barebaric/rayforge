@@ -5,6 +5,7 @@ from ..core.group import Group
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.workpiece import WorkPiece
+from ..doceditor.layout.registry import layout_registry
 from .doceditor.add_tabs_popover import AddTabsPopover
 from .shared.keyboard import PRIMARY_ACCEL
 
@@ -430,6 +431,14 @@ class ActionManager:
                 Gtk.NamedAction.new(action_name),
             )
             controller.add_shortcut(shortcut)
+
+        for info in layout_registry.list_all():
+            if info.action_id and info.shortcut:
+                shortcut = Gtk.Shortcut.new(
+                    Gtk.ShortcutTrigger.parse_string(info.shortcut),
+                    Gtk.NamedAction.new(f"win.{info.action_id}"),
+                )
+                controller.add_shortcut(shortcut)
 
     def get_action(self, name: str) -> Gio.SimpleAction:
         """Retrieves a registered action by its name."""

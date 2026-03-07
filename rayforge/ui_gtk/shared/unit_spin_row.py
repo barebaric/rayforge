@@ -101,6 +101,9 @@ class UnitSpinRowHelper:
         unit_name = config.unit_preferences.get(self.quantity)
         self._unit = get_unit(unit_name) if unit_name else None
         if not self._unit:
+            logger.warning(
+                "update_format_and_bounds: no unit found, returning"
+            )
             return
 
         if self._max_value_in_base is not None:
@@ -133,6 +136,7 @@ class UnitSpinRowHelper:
         self.update_format_and_bounds()
 
         if not self._unit:
+            logger.warning("Skipping due to no _unit")
             return
 
         display_value = self._unit.from_base(base_value)
