@@ -177,11 +177,11 @@ class RecipeControlWidget(Adw.ActionRow):
         dialog = AddEditRecipeDialog(
             parent=parent_window, recipe=template_recipe
         )
-        dialog.connect("response", self._on_save_as_dialog_response)
+        dialog.response.connect(self._on_save_as_dialog_response, weak=False)
         dialog.present()
 
     def _on_save_as_dialog_response(
-        self, dialog: AddEditRecipeDialog, response_id: str
+        self, dialog: AddEditRecipeDialog, *, response_id: str
     ):
         if response_id in ("add", "save"):
             data = dialog.get_recipe_data()

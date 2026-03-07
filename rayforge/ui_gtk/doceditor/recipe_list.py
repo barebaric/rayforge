@@ -132,7 +132,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
         )
         dialog = AddEditRecipeDialog(parent=parent_window)
 
-        def on_response(d, response_id: str):
+        def on_response(d, *, response_id: str):
             if response_id == "add":
                 data = d.get_recipe_data()
                 if data["name"]:
@@ -151,7 +151,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
                     self.recipes_changed.send(self)
             d.close()
 
-        dialog.connect("response", on_response)
+        dialog.response.connect(on_response, weak=False)
         dialog.present()
 
     def _on_edit_recipe(self, recipe: Recipe):
@@ -161,7 +161,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
         )
         dialog = AddEditRecipeDialog(parent=parent_window, recipe=recipe)
 
-        def on_response(d, response_id: str):
+        def on_response(d, *, response_id: str):
             if response_id == "save":
                 data = d.get_recipe_data()
                 if data["name"]:
@@ -180,7 +180,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
                     self.recipes_changed.send(self)
             d.close()
 
-        dialog.connect("response", on_response)
+        dialog.response.connect(on_response, weak=False)
         dialog.present()
 
     def _on_delete_recipe(self, recipe: Recipe):
