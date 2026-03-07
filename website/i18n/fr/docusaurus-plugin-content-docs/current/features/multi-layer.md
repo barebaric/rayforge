@@ -17,7 +17,6 @@ Un calque contient une ou plusieurs pièces. Lors de l'importation de fichiers S
 Cela vous permet de garder votre design organisé exactement comme vous l'avez créé.
 :::
 
-
 ---
 
 ## Pourquoi Utiliser Plusieurs Calques ?
@@ -100,18 +99,16 @@ Importer des fichiers SVG avec une structure de calques existante :
 
 Chaque calque a :
 
-| Propriété | Description |
-| --------- | ----------- |
-| **Nom** | Le nom affiché dans la liste des calques |
-| **Visible** | Basculer la visibilité dans le canevas et l'aperçu |
-| **Élément de Matériau** | Association de matériau optionnelle |
-| **Flux de Travail** | Les opérations appliquées aux pièces de ce calque |
-| **Pièces** | Les formes/images contenues dans ce calque |
+| Propriété           | Description                                        |
+| ------------------- | -------------------------------------------------- |
+| **Nom**             | Le nom affiché dans la liste des calques           |
+| **Visible**         | Basculer la visibilité dans le canevas et l'aperçu |
+| **Flux de Travail** | Les opérations appliquées aux pièces de ce calque  |
+| **Pièces**          | Les formes/images contenues dans ce calque         |
 
 :::note Calques comme Conteneurs
 Les calques sont des conteneurs pour vos pièces. Lors de l'importation de fichiers SVG avec des calques, chaque calque de votre design devient un calque séparé dans Rayforge.
 :::
-
 
 ### Réorganiser les Calques
 
@@ -141,7 +138,6 @@ Panneau Calques :
 Supprimer un calque supprime toutes ses pièces et ses paramètres de flux de travail. Utilisez Annuler si vous supprimez accidentellement.
 :::
 
-
 ---
 
 ## Assigner des Pièces aux Calques
@@ -165,12 +161,10 @@ Lors de l'importation de fichiers SVG avec "Utiliser les Vecteurs Originaux" act
 Rayforge détecte automatiquement les calques de votre fichier SVG. Chaque calque que vous avez créé dans votre logiciel de design apparaîtra comme un calque séparé dans Rayforge.
 :::
 
-
 :::note Import Vectoriel Uniquement
 La sélection de calques n'est disponible que lors de l'utilisation de l'import vectoriel direct.
 Lors de l'utilisation du mode trace, le SVG entier est traité comme une seule pièce.
 :::
-
 
 ### Déplacer des Pièces Entre les Calques
 
@@ -207,7 +201,6 @@ Lors de l'importation de fichiers SVG, la boîte de dialogue d'importation fourn
 Pour utiliser l'import de calques SVG, créez votre design avec des calques dans un logiciel comme Inkscape. Utilisez le panneau Calques pour organiser votre design, et Rayforge
 préservera cette structure.
 :::
-
 
 ---
 
@@ -273,12 +266,12 @@ Contrôlez quels calques sont affichés dans le canevas et les aperçus :
 
 ### Visibilité vs Activé
 
-| État | Canevas | Aperçu | G-code |
-| ---- | ------- | ------ | ------ |
-| **Visible & Activé** | Oui | Oui | Oui |
-| **Masqué & Activé** | Non | Non | Oui |
-| **Visible & Désactivé** | Oui | Oui | Non |
-| **Masqué & Désactivé** | Non | Non | Non |
+| État                    | Canevas | Aperçu | G-code |
+| ----------------------- | ------- | ------ | ------ |
+| **Visible & Activé**    | Oui     | Oui    | Oui    |
+| **Masqué & Activé**     | Non     | Non    | Oui    |
+| **Visible & Désactivé** | Oui     | Oui    | Non    |
+| **Masqué & Désactivé**  | Non     | Non    | Non    |
 
 :::note Désactiver les Calques
 :::
@@ -366,11 +359,11 @@ Pour configurer les pauses de calque, utilisez la fonction hooks dans vos param�
 
 Chaque flux de travail de calque peut avoir des paramètres uniques :
 
-| Calque | Opération | Vitesse | Puissance | Passes |
-| ------ | --------- | ------- | --------- | ------ |
-| Gravure | Raster | 300 mm/min | 20% | 1 |
-| Marquage | Contour | 500 mm/min | 10% | 1 |
-| Coupe | Contour | 100 mm/min | 90% | 2 |
+| Calque   | Opération | Vitesse    | Puissance | Passes |
+| -------- | --------- | ---------- | --------- | ------ |
+| Gravure  | Raster    | 300 mm/min | 20%       | 1      |
+| Marquage | Contour   | 500 mm/min | 10%       | 1      |
+| Coupe    | Contour   | 100 mm/min | 90%       | 2      |
 
 ---
 

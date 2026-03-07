@@ -122,32 +122,27 @@ graph TD
 ## Descrições dos DocItems
 
 - **`DocItem` (Abstrato)**
-
   - **Função:** A base abstrata para todos os nós da árvore.
   - **Propriedades Principais:** `uid`, `parent`, `children`, `matrix`, sinal
     `updated`, sinal `transform_changed`. Fornece a lógica principal do padrão
     composite.
 
 - **`Doc`**
-
   - **Função:** A raiz da árvore do documento.
   - **Propriedades Principais:** `children` (Layers, StockItems), `import_sources`
     (um dicionário mapeando UIDs para objetos `ImportSource`), `active_layer`.
 
 - **`Layer`**
-
   - **Função:** A unidade organizacional primária para conteúdo. Uma camada
     associa um grupo de workpieces a um único workflow de manufatura.
   - **Propriedades Principais:** `children` (WorkPieces, Groups, um Workflow),
-    `visible`, `stock_item_uid`.
+    `visible`.
 
 - **`Group`**
-
   - **Função:** Um contêiner para outros `DocItem`s (`WorkPiece`, `Group`).
     Permite que uma coleção de itens seja transformada como uma única unidade.
 
 - **`WorkPiece`**
-
   - **Função:** Representa um único elemento de design tangível na tela
     (ex.: um SVG importado).
   - **Propriedades Principais:** `vectors` (um objeto `Geometry`),
@@ -157,13 +152,11 @@ graph TD
     `matrix`.
 
 - **`Workflow`**
-
   - **Função:** Uma sequência ordenada de instruções de processamento. Possuído por uma
     `Layer`.
   - **Propriedades Principais:** `children` (uma lista ordenada de `Step`s).
 
 - **`Step`**
-
   - **Função:** Uma única instrução de processamento dentro de um `Workflow` (ex.,
     "Corte de Contorno" ou "Gravação Raster"). É um objeto de configuração
     contendo dicionários que definem o produtor, modificadores e
@@ -171,5 +164,6 @@ graph TD
 
 - **`StockItem`**
   - **Função:** Representa uma peça de material físico no documento,
-    definida por sua própria `geometry` vetorial. `Layer`s podem ser atribuídas a um
-    item de estoque específico.
+    definida por sua `geometry` vetorial. StockItems são itens de nível
+    de documento (filhos de `Doc`, junto com `Layer`s) e existem
+    independentemente de camadas.

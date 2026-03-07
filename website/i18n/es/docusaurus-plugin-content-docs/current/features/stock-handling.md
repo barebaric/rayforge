@@ -1,10 +1,10 @@
-# Flujo de Trabajo de Manejo de Material Base
+# Manejo de Material Base
 
-El manejo de material base en Rayforge es un proceso secuencial que te permite definir el material físico con el que trabajarás, asignarle propiedades, y luego organizar tus elementos de diseño en él. Esta guía te lleva a través del flujo de trabajo completo desde añadir material base hasta el auto-layout de tu diseño.
+El material base en Rayforge representa el material físico que cortarás o grabarás. El material base es un concepto **global del documento**—tu documento puede tener uno o más elementos de material base, y existen independientemente de las capas.
 
-## 1. Añadir Material Base
+## Añadir Material Base
 
-El material base representa la pieza física de material que cortarás o grabarás. Para añadir material base a tu documento:
+El material base representa la pieza física de material con la que trabajarás. Para añadir material base a tu documento:
 
 1. En el panel **Material Base** en la barra lateral, haz clic en el botón **Añadir Material Base**
 2. Se creará un nuevo elemento de material base con dimensiones por defecto (80% del área de trabajo de tu máquina)
@@ -13,6 +13,7 @@ El material base representa la pieza física de material que cortarás o grabar�
 ### Propiedades del Material Base
 
 Cada elemento de material base tiene las siguientes propiedades:
+
 - **Nombre:** Un nombre descriptivo para identificación (autonumerado como "Material Base 1", "Material Base 2", etc.)
 - **Dimensiones:** Ancho y alto del material base
 - **Espesor:** El espesor del material (opcional pero recomendado para previsualización 3D precisa)
@@ -28,7 +29,7 @@ Cada elemento de material base tiene las siguientes propiedades:
 - **Editar propiedades:** Haz clic en el botón de propiedades (icono de documento) para abrir el diálogo de Propiedades de Material Base
 - **Alternar visibilidad:** Haz clic en el botón de visibilidad (icono de ojo) para mostrar/ocultar el elemento de material base
 
-## 2. Asignar Material
+## Asignar Material
 
 Una vez que tienes material base definido, puedes asignarle un material:
 
@@ -40,32 +41,32 @@ Una vez que tienes material base definido, puedes asignarle un material:
 ### Propiedades del Material
 
 Los materiales definen las propiedades visuales de tu material base:
+
 - **Apariencia visual:** Color y patrón para visualización
 - **Categoría:** Agrupación (ej., "Madera", "Acrílico", "Metal")
 - **Descripción:** Información adicional sobre el material
 
 Nota: Las propiedades del material se definen en bibliotecas de materiales y no pueden editarse a través del diálogo de propiedades del material base. Las propiedades del material base solo te permiten asignar un material a un elemento de material base.
 
-## 3. Asignar Material Base a Capas
+## Convertir Piezas en Material Base
 
-Después de definir tu material base y asignar materiales, puedes asociar capas con elementos específicos de material base:
+Puedes convertir cualquier pieza en un elemento de material base. Esto es útil cuando tienes una pieza de material con forma irregular y quieres usar su contorno exacto como límite del material base.
 
-1. En el panel **Capas**, localiza la capa que quieres asignar al material base
-2. Haz clic en el botón de asignación de material base (muestra "Superficie Completa" por defecto)
-3. En el menú desplegable, selecciona el elemento de material base que quieres asociar con esta capa
-4. El contenido de esa capa ahora estará restringido a los límites del material base asignado
+Para convertir una pieza en material base:
 
-También puedes elegir "Superficie Completa" para usar toda el área de trabajo de la máquina en lugar de un elemento específico de material base.
+1. Haz clic derecho en la pieza en el lienzo o panel de Documento
+2. Selecciona **Convertir en Material Base** del menú contextual
+3. La pieza será reemplazada por un nuevo elemento de material base con la misma forma y posición
 
-### ¿Por Qué Asignar Material Base a Capas?
+El nuevo elemento de material base:
 
-- **Límites de diseño:** Proporciona límites para que el algoritmo de auto-layout funcione dentro
-- **Organización visual:** Ayuda a organizar tu diseño asociando capas con materiales físicos
-- **Visualización de material:** Muestra la apariencia visual del material asignado en el material base
+- Usa la geometría de la pieza como su límite
+- Hereda el nombre de la pieza
+- Puede tener un material asignado como cualquier otro elemento de material base
 
-## 4. Auto-Layout
+## Auto-Layout
 
-La función de auto-layout te ayuda a organizar eficientemente tus elementos de diseño:
+La función de auto-layout te ayuda a organizar eficientemente tus elementos de diseño dentro de los límites del material base:
 
 1. Selecciona los elementos que quieres organizar (o no selecciones nada para organizar todos los elementos en la capa activa)
 2. Haz clic en el botón **Organizar** en la barra de herramientas y selecciona **Auto Layout (empaquetar piezas)**
@@ -73,12 +74,13 @@ La función de auto-layout te ayuda a organizar eficientemente tus elementos de 
 
 ### Comportamiento del Auto-Layout
 
-El algoritmo de auto-layout funciona de manera diferente dependiendo de tu configuración de capas:
+El algoritmo de auto-layout organiza elementos dentro de los elementos de material base visibles en tu documento:
 
-- **Si un elemento de material base está asignado a la capa:** Los elementos se organizan dentro de los límites de ese elemento específico de material base
-- **Si "Superficie Completa" está seleccionado:** Los elementos se organizan a través de toda el área de trabajo de la máquina
+- **Si elementos de material base están definidos:** Los elementos se organizan dentro de los límites de los elementos de material base visibles
+- **Si ningún material base está definido:** Los elementos se organizan en toda el área de trabajo de la máquina
 
 El algoritmo considera:
+
 - **Límites de elementos:** Respeta las dimensiones de cada elemento de diseño
 - **Rotación:** Puede rotar elementos en incrementos de 90 grados para mejor ajuste
 - **Espaciado:** Mantiene un margen entre elementos (por defecto 0.5mm)
@@ -87,6 +89,7 @@ El algoritmo considera:
 ### Alternativas de Layout Manual
 
 Si prefieres más control, Rayforge también ofrece herramientas de layout manual:
+
 - **Herramientas de alineación:** Alinear izquierda, derecha, centro, arriba, abajo
 - **Herramientas de distribución:** Distribuir elementos horizontal o verticalmente
 - **Posicionamiento individual:** Haz clic y arrastra elementos para colocarlos manualmente
@@ -97,13 +100,14 @@ Si prefieres más control, Rayforge también ofrece herramientas de layout manua
 2. **Usa nombres descriptivos** - Nombra tus elementos de material base claramente (ej., "Contrachapado Abedul 3mm")
 3. **Configura el espesor del material** - Esto puede ser útil para cálculos futuros y referencia
 4. **Asigna materiales temprano** - Esto asegura representación visual correcta desde el inicio
-5. **Usa capas para organización** - Separa diferentes partes de tu diseño en capas antes de asignar al material base
+5. **Usa material base irregular para retales** - Convierte piezas en material base cuando uses material sobrante con formas personalizadas
 6. **Verifica el ajuste antes de cortar** - Usa la vista 2D para verificar que todo cabe en tu material base
 
 ## Solución de Problemas
 
 ### El auto-layout no funciona como se espera
-- Verifica si tu capa tiene un material base asignado
+
+- Asegúrate de que al menos un elemento de material base esté visible
 - Asegúrate que los elementos no estén agrupados (desagrupa primero)
 - Intenta reducir el número de elementos seleccionados a la vez
-- Verifica que los elementos caben dentro de los límites (material base o superficie completa)
+- Verifica que los elementos caben dentro de los límites del material base

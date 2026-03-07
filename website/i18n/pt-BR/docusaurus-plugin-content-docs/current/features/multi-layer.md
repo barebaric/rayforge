@@ -17,7 +17,6 @@ Uma camada contém uma ou mais peças. Ao importar arquivos SVG com camadas, cad
 Isso permite manter seu design organizado exatamente como você o criou.
 :::
 
-
 ---
 
 ## Por Que Usar Múltiplas Camadas?
@@ -100,18 +99,16 @@ Importe arquivos SVG com estrutura de camadas existente:
 
 Cada camada tem:
 
-| Propriedade       | Descrição                                          |
-| -------------- | ---------------------------------------------------- |
-| **Nome**       | O nome mostrado na lista de camadas                     |
-| **Visível**    | Alterna visibilidade na tela e pré-visualização              |
-| **Item de Estoque** | Associação de material opcional                        |
-| **Fluxo de Trabalho**   | A(s) operação(ões) aplicada(s) a peças nesta camada |
-| **Peças** | As formas/imagens contidas nesta camada            |
+| Propriedade           | Descrição                                           |
+| --------------------- | --------------------------------------------------- |
+| **Nome**              | O nome mostrado na lista de camadas                 |
+| **Visível**           | Alterna visibilidade na tela e pré-visualização     |
+| **Fluxo de Trabalho** | A(s) operação(ões) aplicada(s) a peças nesta camada |
+| **Peças**             | As formas/imagens contidas nesta camada             |
 
 :::note Camadas como Contêineres
 Camadas são contêineres para suas peças. Ao importar arquivos SVG com camadas, cada camada do seu design se torna uma camada separada no Rayforge.
 :::
-
 
 ### Reordenando Camadas
 
@@ -141,7 +138,6 @@ Painel de Camadas:
 Excluir uma camada remove todas as suas peças e configurações de fluxo de trabalho. Use Desfazer se você excluir acidentalmente.
 :::
 
-
 ---
 
 ## Atribuindo Peças a Camadas
@@ -167,12 +163,10 @@ que você criou no seu software de design aparecerá como uma camada separada no
 Rayforge.
 :::
 
-
 :::note Somente Importação Vetorial
 Seleção de camadas está disponível apenas ao usar importação vetorial direta.
 Ao usar modo de traço, todo SVG é processado como uma peça.
 :::
-
 
 ### Movendo Peças Entre Camadas
 
@@ -210,7 +204,6 @@ Para usar importação de camadas SVG, crie seu design com camadas em software c
 Inkscape. Use o painel de Camadas para organizar seu design, e o Rayforge
 preservará essa estrutura.
 :::
-
 
 ---
 
@@ -276,12 +269,12 @@ Controle quais camadas são mostradas na tela e pré-visualizações:
 
 ### Visibilidade vs Habilitado
 
-| Estado                  | Tela | Pré-visualização | G-code |
-| ---------------------- | ------ | ------- | ------ |
-| **Visível e Habilitado**  | Sim    | Sim     | Sim    |
-| **Oculto e Habilitado**   | Não     | Não      | Sim    |
-| **Visível e Desabilitado** | Sim    | Sim     | Não     |
-| **Oculto e Desabilitado**  | Não     | Não      | Não     |
+| Estado                     | Tela | Pré-visualização | G-code |
+| -------------------------- | ---- | ---------------- | ------ |
+| **Visível e Habilitado**   | Sim  | Sim              | Sim    |
+| **Oculto e Habilitado**    | Não  | Não              | Sim    |
+| **Visível e Desabilitado** | Sim  | Sim              | Não    |
+| **Oculto e Desabilitado**  | Não  | Não              | Não    |
 
 :::note Desabilitando Camadas
 :::
@@ -369,11 +362,11 @@ Para configurar pausas de camada, use o recurso de hooks nas configurações da 
 
 O fluxo de trabalho de cada camada pode ter configurações únicas:
 
-| Camada   | Operação | Velocidade      | Potência | Passagens |
-| ------- | --------- | ---------- | ----- | ------ |
-| Grave | Raster    | 300 mm/min | 20%   | 1      |
-| Marcação   | Contour   | 500 mm/min | 10%   | 1      |
-| Corte     | Contour   | 100 mm/min | 90%   | 2      |
+| Camada   | Operação | Velocidade | Potência | Passagens |
+| -------- | -------- | ---------- | -------- | --------- |
+| Grave    | Raster   | 300 mm/min | 20%      | 1         |
+| Marcação | Contour  | 500 mm/min | 10%      | 1         |
+| Corte    | Contour  | 100 mm/min | 90%      | 2         |
 
 ---
 

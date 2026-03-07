@@ -123,32 +123,27 @@ graph TD
 ## DocItem-Beschreibungen
 
 - **`DocItem` (Abstrakt)**
-
   - **Rolle:** Die abstrakte Basis für alle Baumknoten.
   - **Wichtige Eigenschaften:** `uid`, `parent`, `children`, `matrix`, `updated`-
     Signal, `transform_changed`-Signal. Stellt die Kern-Composite-Pattern-Logik bereit.
 
 - **`Doc`**
-
   - **Rolle:** Die Wurzel des Dokumentenbaums.
   - **Wichtige Eigenschaften:** `children` (Layers, StockItems), `import_sources`
     (ein Wörterbuch, das UIDs `ImportSource`-Objekten zuordnet), `active_layer`.
 
 - **`Layer`**
-
   - **Rolle:** Die primäre Organisationseinheit für Inhalt. Eine Ebene
     verknüpft eine Gruppe von Workpieces mit einem einzigen Fertigungs-
     workflow.
   - **Wichtige Eigenschaften:** `children` (WorkPieces, Groups, ein Workflow),
-    `visible`, `stock_item_uid`.
+    `visible`.
 
 - **`Group`**
-
   - **Rolle:** Ein Container für andere `DocItem`s (`WorkPiece`, `Group`).
     Ermöglicht, dass eine Sammlung von Elementen als eine Einheit transformiert wird.
 
 - **`WorkPiece`**
-
   - **Rolle:** Repräsentiert ein einzelnes, greifbares Design-Element auf der Canvas
     (z.B. ein importiertes SVG).
   - **Wichtige Eigenschaften:** `vectors` (ein `Geometry`-Objekt),
@@ -158,13 +153,11 @@ graph TD
     `matrix` gehandhabt wird.
 
 - **`Workflow`**
-
   - **Rolle:** Eine geordnete Sequenz von Verarbeitungsanweisungen. Besessen von einer
     `Layer`.
   - **Wichtige Eigenschaften:** `children` (eine geordnete Liste von `Step`s).
 
 - **`Step`**
-
   - **Rolle:** Eine einzelne Verarbeitungsanweisung innerhalb eines `Workflow` (z.B.,
     "Konturschnitt" oder "Rastergravur"). Es ist ein Konfigurationsobjekt,
     das Wörterbücher hält, die den zu verwendenden Produzenten, Modifizierer und
@@ -172,5 +165,6 @@ graph TD
 
 - **`StockItem`**
   - **Rolle:** Repräsentiert ein Stück physisches Material im Dokument,
-    definiert durch seine eigene Vektor-`geometry`. `Layer`s können einem
-    spezifischen Stock-Item zugewiesen werden.
+    definiert durch seine Vektor-`geometry`. StockItems sind Dokument-
+    elemente (Kinder von `Doc`, zusammen mit `Layer`s) und existieren
+    unabhängig von Ebenen.

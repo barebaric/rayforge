@@ -82,6 +82,13 @@ Personnalisez ce que vous voyez :
 - **Couleur par puissance** : Dégradé basé sur la puissance laser
 - **Couleur par vitesse** : Dégradé basé sur la vitesse d'avance
 
+:::tip Couleurs par Laser
+Lors de l'utilisation de machines avec plusieurs têtes laser, chaque laser peut
+avoir ses propres couleurs de coupe et de raster configurées dans
+[Paramètres Laser](../machine/laser). Cela facilite l'identification du laser
+qui effectuera chaque opération.
+:::
+
 ### Visualisation de la machine
 
 - **Afficher l'origine** : Afficher le point de référence (0,0)

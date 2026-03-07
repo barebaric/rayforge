@@ -81,6 +81,32 @@ Para medir o tamanho do seu ponto:
 3. Use a média de múltiplas medições
 :::
 
+#### Cor de Corte
+
+A cor usada para exibir operações de corte para este laser na tela e na
+visualização 3D. Isso ajuda você a distinguir visualmente qual laser realizará
+cada operação de corte ao trabalhar com múltiplas cabeças de laser.
+
+- Clique na amostra de cor para abrir um seletor de cores
+- Escolha uma cor que contraste bem com a visualização do seu material
+- Cores padrão são atribuídas automaticamente
+
+#### Cor de Raster
+
+A cor usada para exibir operações de raster/gravação para este laser na tela e
+na visualização 3D.
+
+- Clique na amostra de cor para abrir um seletor de cores
+- Útil para diferenciar operações de raster de cortes
+- Cada laser pode ter sua própria cor de raster distinta
+
+:::tip Fluxos de Trabalho Multi-Laser
+Ao usar múltiplas cabeças de laser, atribuir cores diferentes a cada laser
+facilita ver quais operações serão realizadas por qual laser.
+Por exemplo, use vermelho para seu laser de corte principal e azul para um
+laser de gravação secundário.
+:::
+
 ## Veja Também
 
 - [Configurações do Dispositivo](device) - Configurações de modo laser GRBL

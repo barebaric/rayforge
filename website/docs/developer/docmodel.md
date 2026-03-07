@@ -123,33 +123,28 @@ graph TD
 ## DocItem Descriptions
 
 - **`DocItem` (Abstract)**
-
   - **Role:** The abstract base for all tree nodes.
   - **Key Properties:** `uid`, `parent`, `children`, `matrix`, `updated`
     signal, `transform_changed` signal. Provides the core composite
     pattern logic.
 
 - **`Doc`**
-
   - **Role:** The root of the document tree.
   - **Key Properties:** `children` (Layers, StockItems), `import_sources`
     (a dictionary mapping UIDs to `ImportSource` objects), `active_layer`.
 
 - **`Layer`**
-
   - **Role:** The primary organizational unit for content. A layer
     associates a group of workpieces with a single manufacturing
     workflow.
   - **Key Properties:** `children` (WorkPieces, Groups, one Workflow),
-    `visible`, `stock_item_uid`.
+    `visible`.
 
 - **`Group`**
-
   - **Role:** A container for other `DocItem`s (`WorkPiece`, `Group`).
     Allows a collection of items to be transformed as a single unit.
 
 - **`WorkPiece`**
-
   - **Role:** Represents a single, tangible design element on the canvas
     (e.g., an imported SVG).
   - **Key Properties:** `vectors` (a `Geometry` object),
@@ -159,13 +154,11 @@ graph TD
     `matrix`.
 
 - **`Workflow`**
-
   - **Role:** An ordered sequence of processing instructions. Owned by a
     `Layer`.
   - **Key Properties:** `children` (an ordered list of `Step`s).
 
 - **`Step`**
-
   - **Role:** A single processing instruction within a `Workflow` (e.g.,
     "Contour Cut" or "Raster Engrave"). It is a configuration object
     holding dictionaries that define the producer, modifiers, and
@@ -173,5 +166,6 @@ graph TD
 
 - **`StockItem`**
   - **Role:** Represents a piece of physical material in the document,
-    defined by its own vector `geometry`. `Layer`s can be assigned to a
-    specific stock item.
+    defined by its vector `geometry`. StockItems are document-level items
+    (children of `Doc`, alongside `Layer`s) and exist independently of
+    layers.

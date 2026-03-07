@@ -82,6 +82,12 @@ Customize what you see:
 - **Color by Power**: Gradient based on laser power
 - **Color by Speed**: Gradient based on feed rate
 
+:::tip Per-Laser Colors
+When using machines with multiple laser heads, each laser can have its own
+cut and raster colors configured in [Laser Settings](../machine/laser).
+This makes it easy to identify which laser will perform each operation.
+:::
+
 ### Machine Visualization
 
 - **Show Origin**: Display (0,0) reference point

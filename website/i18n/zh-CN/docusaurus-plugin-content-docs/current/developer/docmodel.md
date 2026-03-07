@@ -88,37 +88,30 @@ graph TD
 ## DocItem 描述
 
 - **`DocItem`（抽象）**
-
   - **角色：** 所有树节点的抽象基类。
   - **关键属性：** `uid`、`parent`、`children`、`matrix`、`updated` 信号、`transform_changed` 信号。提供核心组合模式逻辑。
 
 - **`Doc`**
-
   - **角色：** 文档树的根。
   - **关键属性：** `children`（Layers、StockItems）、`import_sources`（将 UID 映射到 `ImportSource` 对象的字典）、`active_layer`。
 
 - **`Layer`**
-
   - **角色：** 内容的主要组织单位。图层将一组工件与单个制造工作流程相关联。
-  - **关键属性：** `children`（WorkPieces、Groups、一个 Workflow）、`visible`、`stock_item_uid`。
+  - **关键属性：** `children`（WorkPieces、Groups、一个 Workflow）、`visible`。
 
 - **`Group`**
-
   - **角色：** 其他 `DocItem`（`WorkPiece`、`Group`）的容器。允许作为单个单元变换一组项。
 
 - **`WorkPiece`**
-
   - **角色：** 表示画布上的单个有形设计元素（例如导入的 SVG）。
   - **关键属性：** `vectors`（`Geometry` 对象）、`import_source_uid`、`tabs`、`tabs_enabled`。其 `vectors` 被归一化为 1x1 盒子，所有缩放和定位由其变换 `matrix` 处理。
 
 - **`Workflow`**
-
   - **角色：** 有序的处理指令序列。由 `Layer` 拥有。
   - **关键属性：** `children`（有序的 `Step` 列表）。
 
 - **`Step`**
-
   - **角色：** `Workflow` 中的单个处理指令（例如"轮廓切割"或"光栅雕刻"）。它是一个配置对象，保存定义要使用的生产者、修改器和转换器的字典。
 
 - **`StockItem`**
-  - **角色：** 表示文档中的一块物理材料，由其自己的矢量 `geometry` 定义。`Layer` 可以分配给特定的库存项。
+  - **角色：** 表示文档中的一块物理材料，由其矢量 `geometry` 定义。StockItems 是文档级项目（`Doc` 的子项，与 `Layer` 并列），独立于图层存在。

@@ -123,31 +123,26 @@ graph TD
 ## Descriptions des DocItems
 
 - **`DocItem`** (Abstrait)
-
   - **Rôle :** La base abstraite pour tous les nœuds de l'arbre.
   - **Propriétés clés :** `uid`, `parent`, `children`, `matrix`, signal `updated`,
     signal `transform_changed`. Fournit la logique principale du pattern composite.
 
 - **`Doc`**
-
   - **Rôle :** La racine de l'arbre du document.
   - **Propriétés clés :** `children` (Layers, StockItems), `import_sources`
     (un dictionnaire mappant les UIDs aux objets `ImportSource`), `active_layer`.
 
 - **`Layer`**
-
   - **Rôle :** L'unité organisationnelle principale pour le contenu. Un calque
     associe un groupe de workpieces à un seul workflow de fabrication.
   - **Propriétés clés :** `children` (WorkPieces, Groups, un Workflow),
-    `visible`, `stock_item_uid`.
+    `visible`.
 
 - **`Group`**
-
   - **Rôle :** Un conteneur pour d'autres `DocItem` (`WorkPiece`, `Group`).
     Permet à une collection d'éléments d'être transformée comme une seule unité.
 
 - **`WorkPiece`**
-
   - **Rôle :** Représente un seul élément de conception tangible sur le canevas
     (par exemple, un SVG importé).
   - **Propriétés clés :** `vectors` (un objet `Geometry`),
@@ -157,13 +152,11 @@ graph TD
     transformation.
 
 - **`Workflow`**
-
   - **Rôle :** Une séquence ordonnée d'instructions de traitement. Possédé par un
     `Layer`.
   - **Propriétés clés :** `children` (une liste ordonnée de `Step`).
 
 - **`Step`**
-
   - **Rôle :** Une seule instruction de traitement dans un `Workflow` (par exemple,
     "Coupe Contour" ou "Gravure Raster"). C'est un objet de configuration
     contenant des dictionnaires qui définissent le producteur, les modificateurs et
@@ -171,5 +164,6 @@ graph TD
 
 - **`StockItem`**
   - **Rôle :** Représente un morceau de matériel physique dans le document,
-    défini par sa propre `geometry` vectorielle. Les `Layer` peuvent être assignés à un
-    élément de stock spécifique.
+    défini par sa `geometry` vectorielle. Les StockItems sont des éléments
+    de niveau document (enfants de `Doc`, aux côtés des `Layer`) et existent
+    indépendamment des calques.

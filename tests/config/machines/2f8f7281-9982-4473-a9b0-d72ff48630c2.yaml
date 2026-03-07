@@ -13,10 +13,12 @@ machine:
   gcode:
     gcode_precision: 3
   heads:
-  - focus_power_percent: 0.0
+  - cut_color: '#ff00ff'
+    focus_power_percent: 0.0
     frame_power_percent: 0.0
     max_power: 1000
     name: Laser Head
+    raster_color: '#000000'
     spot_size_mm:
     - 0.1
     - 0.1
