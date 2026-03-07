@@ -31,6 +31,7 @@ class SocketMessagesTypes(Enum):
     EVENT = "event"
     SLICING_PROGRESS = "slicingProgress"
     PLUGIN = "plugin"
+    TIMELAPSE = "timelapse"
 
 
 class ConnectionFlags(Enum):
@@ -80,7 +81,7 @@ def resolve_status(flags: list[ConnectionFlags]) -> DeviceStatus:
     """Return the DeviceStatus for the highest-priority active flag."""
     flag_set = set(flags)
     for flag in FLAGS_PRIORITY:
-        if flag in flag_set:
+        if flag.value in flag_set:
             return FLAGS_TO_STATUS[flag]
     return DeviceStatus.UNKNOWN
 
@@ -119,8 +120,11 @@ class JobInfos:
     filament: FilamentInfos
 
     @staticmethod
-    def from_dict(d: dict) -> "JobInfos":
-        return dacite.from_dict(data_class=JobInfos, data=d)
+    def from_dict(d: dict) -> "Optional[JobInfos]":
+        try:
+            return dacite.from_dict(data_class=JobInfos, data=d)
+        except:
+            return None
 
 @dataclass
 class Progress:
@@ -147,8 +151,11 @@ class Progress:
 
 
     @staticmethod
-    def from_dict(d: dict) -> "Progress":
-        return dacite.from_dict(data_class=Progress, data=d)
+    def from_dict(d: dict) -> "Optional[Progress]":
+        try:
+            return dacite.from_dict(data_class=Progress, data=d)
+        except:
+            return None
 
 class AuthorizationWorkflow:
     APP_NAME = "Rayforge"

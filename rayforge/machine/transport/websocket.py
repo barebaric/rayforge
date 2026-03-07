@@ -55,11 +55,7 @@ class WebSocketTransport(Transport):
                 self._set_status(TransportStatus.CONNECTING)
                 self._websocket = await websockets.connect(
                     self.uri,
-                    origin=self._origin,
-                    additional_headers=(
-                        ("Connection", "Upgrade"),
-                        ("Upgrade", "websocket"),
-                    ),
+                    origin=self._origin
                 )
                 self._set_status(TransportStatus.CONNECTED)
                 self._receive_task = asyncio.create_task(self._receive_loop())
@@ -142,7 +138,9 @@ class WebSocketTransport(Transport):
             return
         try:
             async for message in self._websocket:
-                if isinstance(message, bytes):
+                if isinstance(message, str): # text frames (opcode 0x1)
+                    self.received.send(self, data=(message.encode("utf-8")))  # normalize to bytes
+                elif isinstance(message, bytes): # binary frames (opcode 0x2)
                     self.received.send(self, data=message)
         except ConnectionClosed:
             pass  # The outer connect() loop will handle this.

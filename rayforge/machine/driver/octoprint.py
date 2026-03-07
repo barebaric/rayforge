@@ -150,18 +150,18 @@ class OctoprintDriver(Driver):
         self.websocket.status_changed.connect(self.on_websocket_status_changed)
         self.websocket.received.connect(self.on_websocket_data_received)
 
-    def on_websocket_data_received(self, sender, raw_data: bytes):
+    def on_websocket_data_received(self, sender, data: bytes):
         try:
-            data_str = raw_data.decode("utf-8").strip()
+            data_str = data.decode("utf-8").strip()
         except UnicodeDecodeError:
             logger.warning(
-                f"Received non-UTF8 data on WebSocket: {raw_data!r}"
+                f"Received non-UTF8 data on WebSocket: {data!r}"
             )
             return
         logger.debug(f"WebSocket data received: {data_str}")
-        data: Dict[str, Any] = json.loads(raw_data)
-        msg_type = list(data.keys())[0]
-        data = data[msg_type]
+        data: Dict[str, Any] = json.loads(data)
+        msg_type = SocketMessagesTypes(list(data.keys())[0])
+        data = data[msg_type.value]
         match msg_type:
             case SocketMessagesTypes.CONNECTED:
                 pass
@@ -177,32 +177,40 @@ class OctoprintDriver(Driver):
                 self.connection_flags = data["state"]["flags"]
             case SocketMessagesTypes.CURRENT:
                 state = data["state"]
-                if set(state["flags"]) != set(self.connection_flags):
-                    active_flags = [
-                        flag
-                        for flag, active in state["flags"].items()
-                        if active
-                    ]
+                print(state["flags"]["operational"])
+                active_flags = [
+                    flag
+                    for flag, active in state["flags"].items()
+                    if active
+                ]
+                if active_flags != self.connection_flags:
                     self.state.status = resolve_status(active_flags)
+                    print("new status")
+                    print(self.state.status)
                     self.state_changed.send(self, state=self.state)
-                    self.connection_flags = state["flags"]
+                    self.connection_flags = active_flags
                 if data.get("job"):
                     current_job = JobInfos.from_dict(data["job"])
-                    pass
+                    if current_job:    
+                        print(current_job.file)
                 if data.get("progress"):
                     progress = Progress.from_dict(data["progress"])
+                    if not progress:
+                        return
                     if self.progress_notifier:
                         op_i = round(self.op_n * progress.completion)
                         if self.last_op_index != op_i:
                             self.last_op_index = op_i
                             self.progress_notifier(self.last_op_index)
-
+                    print(progress.completion)
     def on_websocket_status_changed(
         self, sender, status: TransportStatus, message: Optional[str] = None
     ):
+        print(message)
         self.connection_status_changed.send(
             self, status=status, message=message
         )
+        print(status)
         if status == TransportStatus.CONNECTED:
             if not self.http_session:
                 return
@@ -243,7 +251,7 @@ class OctoprintDriver(Driver):
         await websocket.connect()
         self.state.status = DeviceStatus.UNKNOWN
         self.state_changed.send(self, state=self.state)
-
+        print("help pls")
         # Upon connect, broadcast WCS state (matches loaded machine state)
         self.wcs_updated.send(self, offsets=self._offsets)
 
