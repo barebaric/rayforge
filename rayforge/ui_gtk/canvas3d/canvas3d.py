@@ -1,9 +1,10 @@
 import logging
-from typing import Optional, Tuple, List, TYPE_CHECKING
+from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
 import numpy as np
 from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
 from ...context import RayforgeContext
+from ...machine.models.colors import OpsColorSet
 from ...pipeline.artifact import ArtifactStore, StepRenderArtifact
 from ...pipeline.pipeline import Pipeline
 from ...shared.util.colors import ColorSet
@@ -41,6 +42,7 @@ def prepare_scene_vertices_async(
     artifact_store: ArtifactStore,
     scene_description: SceneDescription,
     color_set: ColorSet,
+    laser_color_sets: Dict[str, ColorSet],
     scene_model_matrix: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -60,7 +62,6 @@ def prepare_scene_vertices_async(
     zero_power_rgba = np.array(
         color_set.get_rgba("zero_power"), dtype=np.float32
     )
-    power_lut = color_set.get_lut("cut")
 
     logger.debug("Starting scene vertex preparation from StepArtifacts")
 
@@ -82,6 +83,9 @@ def prepare_scene_vertices_async(
             logger.warning("Artifact has no vertex data to render.")
             continue
 
+        item_color_set = laser_color_sets.get(item.laser_uid, color_set)
+        power_lut = item_color_set.get_lut("cut")
+
         # 1. Get pre-computed, world-space vertices from the artifact.
         vertex_data = artifact.vertex_data
         p_verts = vertex_data.powered_vertices
@@ -91,7 +95,7 @@ def prepare_scene_vertices_async(
 
         # 2. Recolor the vertices using the current theme's ColorSet.
         if p_verts.size > 0:
-            power_levels = p_colors_std[:, 0]  # Use R channel as power
+            power_levels = p_colors_std[:, 0]
             power_indices = np.clip((power_levels * 255), 0, 255).astype(int)
             p_colors = power_lut[power_indices]
         else:
@@ -249,6 +253,7 @@ class Canvas3D(Gtk.GLArea):
             "zero_power": ("@accent_color", 0.5),
         }
         self._color_set: Optional[ColorSet] = None
+        self._laser_color_sets: Dict[str, ColorSet] = {}
         self._theme_is_dirty = True
 
         # State for interactions
@@ -586,7 +591,25 @@ class Canvas3D(Gtk.GLArea):
             self.axis_renderer.set_label_color(axis_color)
             self.axis_renderer.set_grid_color(grid_color)
 
+        self._update_laser_colors()
         self._theme_is_dirty = False
+
+    def _update_laser_colors(self):
+        """
+        Resolve ColorSet for each laser in the machine.
+
+        This builds per-laser color sets using the machine's laser list
+        and the current theme colors for travel/zero_power.
+        """
+        machine = self.context.machine
+        if not machine or not self._color_set:
+            self._laser_color_sets = {}
+            return
+
+        self._laser_color_sets = {}
+        for laser in machine.heads:
+            laser_color_set = OpsColorSet.from_laser(laser, self._color_set)
+            self._laser_color_sets[laser.uid] = laser_color_set.to_color_set()
 
     def on_render(self, area, ctx) -> bool:
         """The main rendering loop."""
@@ -974,16 +997,23 @@ class Canvas3D(Gtk.GLArea):
                 continue
 
             artifact = self.context.artifact_store.get(item.artifact_handle)
-            # Textures are part of the StepArtifact "render bundle"
             if isinstance(artifact, StepRenderArtifact):
+                item_color_set = self._laser_color_sets.get(
+                    item.laser_uid, self._color_set
+                )
+                engrave_lut = (
+                    item_color_set.get_lut("engrave")
+                    if item_color_set
+                    else None
+                )
                 for tex_instance in artifact.texture_instances:
-                    # Apply margin offset to texture transform
                     adjusted_transform = (
                         margin_offset @ tex_instance.world_transform
                     )
                     self.texture_renderer.add_instance(
                         tex_instance.texture_data,
                         adjusted_transform,
+                        color_lut=engrave_lut,
                     )
 
         # 3. Schedule the expensive vector preparation for a background thread
@@ -1015,6 +1045,7 @@ class Canvas3D(Gtk.GLArea):
                 self.context.artifact_store,
                 scene_description,
                 self._color_set,
+                self._laser_color_sets,
                 content_model_matrix,
                 key=task_key,
                 when_done=self._on_scene_prepared,

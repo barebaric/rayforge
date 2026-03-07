@@ -9,6 +9,37 @@ logger = logging.getLogger(__name__)
 ColorRGBA = Tuple[float, float, float, float]
 
 
+def hex_to_rgba(hex_color: str) -> ColorRGBA:
+    """Convert a hex color string to an RGBA tuple."""
+    hex_color = hex_color.lstrip("#")
+    if len(hex_color) == 6:
+        r = int(hex_color[0:2], 16) / 255.0
+        g = int(hex_color[2:4], 16) / 255.0
+        b = int(hex_color[4:6], 16) / 255.0
+        return (r, g, b, 1.0)
+    elif len(hex_color) == 8:
+        r = int(hex_color[0:2], 16) / 255.0
+        g = int(hex_color[2:4], 16) / 255.0
+        b = int(hex_color[4:6], 16) / 255.0
+        a = int(hex_color[6:8], 16) / 255.0
+        return (r, g, b, a)
+    else:
+        raise ValueError(f"Invalid hex color: {hex_color}")
+
+
+def create_lut_from_color(color: ColorRGBA) -> np.ndarray:
+    """Create a 256x4 LUT from a single color (grayscale to color gradient)."""
+    r, g, b, a = color
+    lut = np.zeros((256, 4), dtype=np.float32)
+    for i in range(256):
+        t = i / 255.0
+        lut[i, 0] = r * t
+        lut[i, 1] = g * t
+        lut[i, 2] = b * t
+        lut[i, 3] = a * t
+    return lut
+
+
 @dataclass(frozen=True)
 class ColorSet:
     """

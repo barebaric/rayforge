@@ -28,6 +28,7 @@ def render_chunk_to_view(
     chunk_handle_dict: Dict[str, Any],
     view_handle_dict: Dict[str, Any],
     render_context_dict: Dict[str, Any],
+    laser_uid: Optional[str] = None,
 ) -> bool:
     """
     Renders a chunk artifact to a view artifact in the current process.
@@ -93,7 +94,7 @@ def render_chunk_to_view(
             f"Worker rendering chunk to live buffer: {view_handle.shm_name}"
         )
         result = render_chunk_to_buffer(
-            chunk_artifact, context, shm_bitmap, view_bbox_mm
+            chunk_artifact, context, shm_bitmap, view_bbox_mm, laser_uid
         )
         logger.debug(
             f"[DIAGNOSTIC] Worker finished rendering chunk to live buffer: "
@@ -118,6 +119,7 @@ def make_workpiece_view_artifact_in_subprocess(
     generation_id: int = 0,
     step_uid: Optional[str] = None,
     workpiece_uid: Optional[str] = None,
+    laser_uid: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Renders a WorkPieceArtifact to a bitmap in a background process.
@@ -231,7 +233,7 @@ def make_workpiece_view_artifact_in_subprocess(
         )
 
         result_bbox = compute_workpiece_view_to_buffer(
-            artifact, context, shm_bitmap, progress_context
+            artifact, context, shm_bitmap, progress_context, laser_uid
         )
 
         if result_bbox is None:

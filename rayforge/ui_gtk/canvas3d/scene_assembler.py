@@ -30,6 +30,7 @@ class RenderItem:
     workpiece_size: Tuple[float, float]
     step_uid: str
     workpiece_uid: str
+    laser_uid: str  # For per-laser color lookup
 
 
 @dataclass
@@ -68,6 +69,7 @@ def generate_scene_description(
                 workpiece_size=(0.0, 0.0),  # Not applicable at step level
                 step_uid=step.uid,
                 workpiece_uid="",  # Not applicable at step level
+                laser_uid=step.selected_laser_uid or "",
             )
             render_items.append(item)
 

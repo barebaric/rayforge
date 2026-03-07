@@ -13,6 +13,8 @@ class Laser:
         self.frame_power_percent: float = 0  # in percent (0-1.0)
         self.focus_power_percent: float = 0  # in percent (0-1.0)
         self.spot_size_mm: Tuple[float, float] = 0.1, 0.1  # millimeters
+        self.cut_color: str = "#ff00ff"  # Magenta for cut
+        self.raster_color: str = "#000000"  # Black for raster
         self.changed = Signal()
         self.extra: Dict[str, Any] = {}
 
@@ -52,6 +54,14 @@ class Laser:
         self.spot_size_mm = spot_size_x_mm, spot_size_y_mm
         self.changed.send(self)
 
+    def set_cut_color(self, color: str):
+        self.cut_color = color
+        self.changed.send(self)
+
+    def set_raster_color(self, color: str):
+        self.raster_color = color
+        self.changed.send(self)
+
     def to_dict(self) -> Dict[str, Any]:
         result = {
             "uid": self.uid,
@@ -61,6 +71,8 @@ class Laser:
             "frame_power_percent": self.frame_power_percent * 100,
             "focus_power_percent": self.focus_power_percent * 100,
             "spot_size_mm": self.spot_size_mm,
+            "cut_color": self.cut_color,
+            "raster_color": self.raster_color,
         }
         result.update(self.extra)
         return result
@@ -77,6 +89,8 @@ class Laser:
             "spot_size_mm",
             "frame_power",
             "focus_power",
+            "cut_color",
+            "raster_color",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -103,6 +117,8 @@ class Laser:
             lh.focus_power_percent = focus_power / lh.max_power
 
         lh.spot_size_mm = data.get("spot_size_mm", lh.spot_size_mm)
+        lh.cut_color = data.get("cut_color", lh.cut_color)
+        lh.raster_color = data.get("raster_color", lh.raster_color)
         lh.extra = extra
         return lh
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from typing import Tuple, Dict, Any, Type, Union
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
 
@@ -17,6 +17,7 @@ class RenderContext:
     show_travel_moves: bool
     margin_px: int
     color_set_dict: Dict[str, Any]
+    laser_color_sets: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the context to a dictionary."""
@@ -36,6 +37,9 @@ class RenderContext:
             and self.margin_px == other.margin_px
             and self._compare_color_sets(
                 self.color_set_dict, other.color_set_dict
+            )
+            and self._compare_color_sets(
+                self.laser_color_sets, other.laser_color_sets
             )
         )
 
