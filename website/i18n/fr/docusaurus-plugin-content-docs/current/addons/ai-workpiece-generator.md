@@ -10,6 +10,8 @@ décrivant simplement ce que vous voulez. Tapez une description comme "une
 forme d'étoile simple" ou "un engrenage à 8 dents" et l'IA générera une
 pièce prête pour votre découpeuse laser.
 
+![Dialogue du Générateur de Pièces IA](/screenshots/ai-workpiece-generator.png)
+
 ## Prérequis
 
 Avant d'utiliser ce module, vous devez configurer un fournisseur IA.
@@ -18,7 +20,7 @@ les instructions de configuration.
 
 ## Utiliser le Générateur
 
-1. Ouvrez le Générateur de Pièces IA depuis le menu des outils du canevas
+1. Ouvrez le Générateur de Pièces IA depuis le menu **Outils**
 2. Entrez une description de la forme que vous souhaitez créer
 3. Spécifiez les dimensions en millimètres
 4. Cliquez sur **Générer** pour créer votre design

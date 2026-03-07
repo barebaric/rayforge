@@ -9,6 +9,8 @@ describing what you want. Type a description like "a simple star shape"
 or "a gear with 8 teeth" and the AI will generate a workpiece ready for
 your laser cutter.
 
+![AI Workpiece Generator Dialog](/screenshots/ai-workpiece-generator.png)
+
 ## Requirements
 
 Before using this addon, you need to configure an AI provider. See
@@ -16,7 +18,7 @@ Before using this addon, you need to configure an AI provider. See
 
 ## Using the Generator
 
-1. Open the AI Workpiece Generator from the canvas tools menu
+1. Open the AI Workpiece Generator from the **Tools** menu
 2. Enter a description of the shape you want to create
 3. Specify the dimensions in millimeters
 4. Click **Generate** to create your design

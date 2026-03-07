@@ -10,6 +10,8 @@ descrevendo o que você quer. Digite uma descrição como "uma forma de estrela
 simples" ou "uma engrenagem com 8 dentes" e a IA gerará uma peça pronta
 para sua cortadora a laser.
 
+![Diálogo do Gerador de Peças por IA](/screenshots/ai-workpiece-generator.png)
+
 ## Requisitos
 
 Antes de usar este addon, você precisa configurar um provedor de IA.
@@ -18,7 +20,7 @@ instruções de configuração.
 
 ## Usando o Gerador
 
-1. Abra o Gerador de Peças por IA no menu de ferramentas da tela
+1. Abra o Gerador de Peças por IA no menu **Ferramentas**
 2. Digite uma descrição da forma que você deseja criar
 3. Especifique as dimensões em milímetros
 4. Clique em **Gerar** para criar seu design
