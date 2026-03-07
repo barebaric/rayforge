@@ -1,0 +1,98 @@
+# Ukrainian translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-07 20:16+0100\n"
+"PO-Revision-Date: 2026-03-07 20:16+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/widgets/dialog.py
+msgid "Generate a Workpiece"
+msgstr "Створити деталь"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/widgets/dialog.py
+msgid "Cancel"
+msgstr "Скасувати"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/widgets/dialog.py
+msgid "Generate"
+msgstr "Створити"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/widgets/dialog.py
+msgid ""
+"Describe the design you want to create. Example: 'A simple star shape with 5 "
+"points'"
+msgstr ""
+"Опишіть дизайн, який ви хочете створити. Приклад: 'Проста форма зірки з 5 "
+"променями'"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/widgets/dialog.py
+msgid "Close"
+msgstr "Закрити"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/frontend.py
+msgid "Generate Workpiece with AI..."
+msgstr "Створити деталь за допомогою ШІ..."
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "Bad request - please check your settings"
+msgstr "Невірний запит - перевірте ваші налаштування"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "Authentication failed - please check your API key"
+msgstr "Помилка автентифікації - перевірте ваш API-ключ"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "Access forbidden - please check your API key permissions"
+msgstr "Доступ заборонено - перевірте дозволи вашого API-ключа"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "API endpoint not found - please check the base URL"
+msgstr "API-ендпоінт не знайдено - перевірте базову URL-адресу"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "Rate limited - please wait and try again"
+msgstr "Перевищено ліміт запитів - зачекайте і спробуйте знову"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "Server error - please try again later"
+msgstr "Помилка сервера - спробуйте пізніше"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "Service unavailable - please try again later"
+msgstr "Сервіс недоступний - спробуйте пізніше"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "No AI provider configured. Please configure an AI provider in Settings."
+msgstr ""
+"Не налаштовано провайдер ШІ. Будь ласка, налаштуйте провайдер ШІ у "
+"Налаштуваннях."
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "No response from AI provider."
+msgstr "Немає відповіді від провайдера ШІ."
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "AI did not generate valid SVG code. Please try a different prompt."
+msgstr "ШІ не згенерував дійсний SVG-код. Спробуйте інший запит."
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+#, python-brace-format
+msgid "Server returned error {code}"
+msgstr "Сервер повернув помилку {code}"
+
+#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+msgid "Connection failed - please check your network"
+msgstr "Помилка з'єднання - перевірте вашу мережу"

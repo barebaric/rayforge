@@ -33,15 +33,12 @@ Requirements:
 - Use a viewBox that matches the width/height values
   (e.g., viewBox="0 0 50 50" for 50mm)
 - All shapes must be closed paths suitable for laser cutting
-- Use simple stroke="black" fill="none" for cut lines
-- Keep designs simple and optimized for cutting
-- Maximum complexity: 50 path elements
-- Prefer simple geometric shapes over complex curves
+- Use simple stroke="black" for cut lines
 
 Example output for a 50x50mm square:
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50"
      width="50mm" height="50mm">
-  <rect x="5" y="5" width="40" height="40" fill="none" stroke="black"/>
+  <rect x="5" y="5" width="40" height="40" stroke="black"/>
 </svg>"""
 
 

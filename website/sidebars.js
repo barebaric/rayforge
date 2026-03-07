@@ -18,6 +18,7 @@ module.exports = {
         'application-settings/machines',
         'application-settings/materials',
         'application-settings/recipes',
+        'application-settings/ai-provider',
         'application-settings/addons',
       ],
     },
@@ -70,6 +71,13 @@ module.exports = {
         'features/holding-tabs',
         'features/overscan',
         'features/kerf',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Addons',
+      items: [
+        'addons/ai-workpiece-generator',
       ],
     },
     {

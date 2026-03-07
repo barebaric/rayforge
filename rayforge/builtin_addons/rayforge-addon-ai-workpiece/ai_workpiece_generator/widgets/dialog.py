@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AISvgGeneratorDialog(PatchedDialogWindow):
+class AIWorkpieceGeneratorDialog(PatchedDialogWindow):
     """Dialog for generating workpieces using AI."""
 
     def __init__(

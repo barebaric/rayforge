@@ -149,12 +149,26 @@ export default function Home() {
 
         <div className={styles.featuresWrapper}>
           <FeatureSection
+            blobClass={styles.blobPurple}
+            title="Design com IA"
+            description="Crie designs simplesmente descrevendo o que você quer. O Gerador de Peças por IA
+              transforma suas descrições de texto em designs prontos para laser instantaneamente."
+            features={[
+              'Gere designs a partir de prompts de texto',
+              'Não requer habilidades de design',
+              'Funciona com qualquer provedor compatível com OpenAI',
+            ]}
+            image="/images/ai-prompt.png"
+          />
+
+          <FeatureSection
             blobClass={styles.blobCyan}
             title="Suas Criações em 3D"
             description="Transite perfeitamente de designs 2D para trajetórias 3D. O Rayforge gera G-code para cortadoras e gravadoras a laser de 2 e 3 eixos, conectando designs planos a objetos físicos."
             compatibilityHeading="Compatível com: Grbl, Smoothieware"
             features={['Visualização 3D', 'Geração de Trajetória', 'Controle de Eixos']}
             image="/images/screenshot-3d-closeup.png"
+            reverse
           />
 
           <FeatureSection
@@ -167,7 +181,6 @@ export default function Home() {
               'Defina dimensões que atualizam automaticamente',
             ]}
             image="/images/screenshot-sketcher.png"
-            reverse
           />
 
           <FeatureSection
@@ -180,6 +193,7 @@ export default function Home() {
               'Curvas suaves e precisas',
             ]}
             image="/images/screenshot-optimizer.png"
+            reverse
           />
 
           <FeatureSection
@@ -192,7 +206,6 @@ export default function Home() {
               'Visualização em tempo real que atualiza enquanto você projeta',
             ]}
             image="/screenshots/main-simulation.png"
-            reverse
           />
 
           <FeatureSection
@@ -204,6 +217,7 @@ export default function Home() {
               'Crie receitas reutilizáveis',
             ]}
             image="/images/screenshot-recipe.png"
+            reverse
           />
         </div>
 

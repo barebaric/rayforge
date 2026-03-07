@@ -187,12 +187,26 @@ export default function Home() {
 
         <div className={styles.featuresWrapper}>
           <FeatureSection
+            blobClass={styles.blobPurple}
+            title="AI-Powered Design"
+            description="Create designs by simply describing what you want. The AI Workpiece Generator
+              turns your text descriptions into laser-ready designs instantly."
+            features={[
+              'Generate designs from text prompts',
+              'No design skills required',
+              'Works with any OpenAI-compatible provider',
+            ]}
+            image="/images/ai-prompt.png"
+          />
+
+          <FeatureSection
             blobClass={styles.blobCyan}
             title="Your Creations in 3D"
             description="Seamlessly transition from 2D designs to 3D toolpaths. Rayforge generates G-code for both 2-axis and 3-axis laser cutters and engravers, bridging the gap between flat designs and physical objects."
             compatibilityHeading="Compatible with: Grbl, Smoothieware"
             features={['3D Visualization', 'Toolpath Generation', 'Axis Control']}
             image="/images/screenshot-3d-closeup.png"
+            reverse
           />
 
           <FeatureSection
@@ -205,7 +219,6 @@ export default function Home() {
               'Set dimensions that update automatically',
             ]}
             image="/images/screenshot-sketcher.png"
-            reverse
           />
 
           <FeatureSection
@@ -218,6 +231,7 @@ export default function Home() {
               'Smooth, precise curves',
             ]}
             image="/images/screenshot-optimizer.png"
+            reverse
           />
 
           <FeatureSection
@@ -230,7 +244,6 @@ export default function Home() {
               'Live preview updates as you design',
             ]}
             image="/screenshots/main-simulation.png"
-            reverse
           />
 
           <FeatureSection
@@ -242,6 +255,7 @@ export default function Home() {
               'Create recipes you can reuse',
             ]}
             image="/images/screenshot-recipe.png"
+            reverse
           />
         </div>
 

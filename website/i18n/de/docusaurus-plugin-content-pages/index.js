@@ -149,12 +149,26 @@ export default function Home() {
 
         <div className={styles.featuresWrapper}>
           <FeatureSection
+            blobClass={styles.blobPurple}
+            title="KI-gestütztes Design"
+            description="Erstelle Designs, indem du einfach beschreibst, was du möchtest. Der KI-Werkstückgenerator
+              verwandelt deine Textbeschreibungen sofort in laserbereite Designs."
+            features={[
+              'Designs aus Text-Prompts generieren',
+              'Keine Designkenntnisse erforderlich',
+              'Funktioniert mit jedem OpenAI-kompatiblen Anbieter',
+            ]}
+            image="/images/ai-prompt.png"
+          />
+
+          <FeatureSection
             blobClass={styles.blobCyan}
             title="Deine Kreationen in 3D"
             description="Nahtloser Übergang von 2D-Designs zu 3D-Werkzeugpfaden. Rayforge generiert G-Code für 2-Achsen- und 3-Achsen-Lasercutter und -gravierer und überbrückt die Lücke zwischen flachen Designs und physischen Objekten."
             compatibilityHeading="Kompatibel mit: Grbl, Smoothieware"
             features={['3D-Visualisierung', 'Werkzeugpfad-Generierung', 'Achsensteuerung']}
             image="/images/screenshot-3d-closeup.png"
+            reverse
           />
 
           <FeatureSection
@@ -167,7 +181,6 @@ export default function Home() {
               'Definiere Abmessungen, die sich automatisch aktualisieren',
             ]}
             image="/images/screenshot-sketcher.png"
-            reverse
           />
 
           <FeatureSection
@@ -180,6 +193,7 @@ export default function Home() {
               'Glatte, präzise Kurven',
             ]}
             image="/images/screenshot-optimizer.png"
+            reverse
           />
 
           <FeatureSection
@@ -192,7 +206,6 @@ export default function Home() {
               'Live-Vorschau, die sich während des Designs aktualisiert',
             ]}
             image="/screenshots/main-simulation.png"
-            reverse
           />
 
           <FeatureSection
@@ -204,6 +217,7 @@ export default function Home() {
               'Wiederverwendbare Rezepte erstellen',
             ]}
             image="/images/screenshot-recipe.png"
+            reverse
           />
         </div>
 
