@@ -173,7 +173,7 @@ def register_builtin_layout_strategies():
         PixelPerfectLayoutStrategy,
         name="pixel-perfect",
         action_id="layout-pixel-perfect",
-        label=_("Auto Layout (pack workpieces)"),
+        label=_("Auto Layout (Simple)"),
         shortcut="<Ctrl><Alt>p",
         addon_name="core",
     )
