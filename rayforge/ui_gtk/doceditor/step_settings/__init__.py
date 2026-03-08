@@ -7,11 +7,15 @@ from .overscan import OverscanSettingsWidget
 from .placeholder import PlaceholderSettingsWidget
 from .smooth import SmoothSettingsWidget
 from rayforge.pipeline.producer.placeholder import PlaceholderProducer
-from rayforge.pipeline.transformer.crop import CropTransformer
-from rayforge.pipeline.transformer.multipass import MultiPassTransformer
-from rayforge.pipeline.transformer.optimize import Optimize
-from rayforge.pipeline.transformer.overscan import OverscanTransformer
-from rayforge.pipeline.transformer.smooth import Smooth
+from rayforge.pipeline.transformer.crop_transformer import CropTransformer
+from rayforge.pipeline.transformer.multipass_transformer import (
+    MultiPassTransformer,
+)
+from rayforge.pipeline.transformer.optimize_transformer import Optimize
+from rayforge.pipeline.transformer.overscan_transformer import (
+    OverscanTransformer,
+)
+from rayforge.pipeline.transformer.smooth_transformer import Smooth
 
 step_widget_registry.register(PlaceholderProducer, PlaceholderSettingsWidget)
 step_widget_registry.register(CropTransformer, CropTransformerSettingsWidget)

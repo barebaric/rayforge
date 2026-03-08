@@ -21,7 +21,9 @@ from rayforge.pipeline.artifact import (
 from rayforge.pipeline.stage.workpiece_runner import (
     make_workpiece_artifact_in_subprocess,
 )
-from rayforge.pipeline.transformer.multipass import MultiPassTransformer
+from rayforge.pipeline.transformer.multipass_transformer import (
+    MultiPassTransformer,
+)
 
 
 @pytest.fixture
