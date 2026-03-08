@@ -338,7 +338,7 @@ class ProviderEditorWidget(Adw.PreferencesGroup):
         self.test_row.add_suffix(self.test_success_icon)
 
         self.test_btn = Gtk.Button(label=_("Test"))
-        self.test_btn.add_css_class("pill")
+        self.test_btn.add_css_class("suggested-action")
         self.test_btn.set_valign(Gtk.Align.CENTER)
         self.test_btn.connect("clicked", self._on_test_clicked)
         self.test_row.add_suffix(self.test_btn)

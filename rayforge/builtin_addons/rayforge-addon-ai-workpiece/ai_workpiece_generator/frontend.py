@@ -10,6 +10,7 @@ from .widgets import AIWorkpieceGeneratorDialog
 if TYPE_CHECKING:
     from rayforge.ui_gtk.mainwindow import MainWindow
 
+
 ADDON_NAME = "ai_workpiece_generator"
 
 
@@ -39,9 +40,11 @@ def register_actions(window: "MainWindow") -> None:
         dialog.present()
 
     action.connect("activate", on_activate)
-    window.add_action(action)
+    window.action_registry.register(
+        "ai_generate_workpiece", action, "ai_workpiece_generator"
+    )
 
 
 @hookimpl
-def register_step_widgets(widget_registry) -> None:
+def register_step_widgets(widget_registry):
     pass

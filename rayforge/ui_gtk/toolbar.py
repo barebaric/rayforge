@@ -157,54 +157,10 @@ class MainToolbar(Gtk.Box):
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)
 
-        arrange_actions = [
-            (
-                _("Center Horizontally"),
-                "align-horizontal-center-symbolic",
-                "win.align-h-center",
-            ),
-            (
-                _("Center Vertically"),
-                "align-vertical-center-symbolic",
-                "win.align-v-center",
-            ),
-            (_("Align Left"), "align-left-symbolic", "win.align-left"),
-            (_("Align Right"), "align-right-symbolic", "win.align-right"),
-            (_("Align Top"), "align-top-symbolic", "win.align-top"),
-            (_("Align Bottom"), "align-bottom-symbolic", "win.align-bottom"),
-            (
-                _("Spread Horizontally"),
-                "distribute-horizontal-symbolic",
-                "win.spread-h",
-            ),
-            (
-                _("Spread Vertically"),
-                "distribute-vertical-symbolic",
-                "win.spread-v",
-            ),
-            (
-                _("Flip Horizontal"),
-                "flip-horizontal-symbolic",
-                "win.flip-horizontal",
-            ),
-            (
-                _("Flip Vertical"),
-                "flip-vertical-symbolic",
-                "win.flip-vertical",
-            ),
-        ]
-
-        # Add registered layout strategies dynamically
-        for info in layout_registry.list_all():
-            if info.action_id and info.label:
-                arrange_actions.append(
-                    (
-                        info.label,
-                        "auto-layout-symbolic",
-                        f"win.{info.action_id}",
-                    )
-                )
-        self.arrange_menu_button = SplitMenuButton(actions=arrange_actions)
+        self.arrange_actions = self._build_arrange_actions()
+        self.arrange_menu_button = SplitMenuButton(
+            actions=self.arrange_actions
+        )
         self.arrange_menu_button.set_tooltip_text(_("Arrange selection"))
         self.append(self.arrange_menu_button)
 
@@ -312,6 +268,63 @@ class MainToolbar(Gtk.Box):
         )
         self.machine_warning_box.add_controller(warning_click)
         self.append(self.machine_warning_box)
+
+        # Connect to layout registry changes for dynamic toolbar updates
+        layout_registry.changed.connect(self._on_layout_registry_changed)
+
+    def _build_arrange_actions(self):
+        """Build the list of arrange actions including registered layouts."""
+        arrange_actions = [
+            (
+                _("Center Horizontally"),
+                "align-horizontal-center-symbolic",
+                "win.align-h-center",
+            ),
+            (
+                _("Center Vertically"),
+                "align-vertical-center-symbolic",
+                "win.align-v-center",
+            ),
+            (_("Align Left"), "align-left-symbolic", "win.align-left"),
+            (_("Align Right"), "align-right-symbolic", "win.align-right"),
+            (_("Align Top"), "align-top-symbolic", "win.align-top"),
+            (_("Align Bottom"), "align-bottom-symbolic", "win.align-bottom"),
+            (
+                _("Spread Horizontally"),
+                "distribute-horizontal-symbolic",
+                "win.spread-h",
+            ),
+            (
+                _("Spread Vertically"),
+                "distribute-vertical-symbolic",
+                "win.spread-v",
+            ),
+            (
+                _("Flip Horizontal"),
+                "flip-horizontal-symbolic",
+                "win.flip-horizontal",
+            ),
+            (
+                _("Flip Vertical"),
+                "flip-vertical-symbolic",
+                "win.flip-vertical",
+            ),
+        ]
+        for info in layout_registry.list_all():
+            if info.action_id and info.label:
+                arrange_actions.append(
+                    (
+                        info.label,
+                        "auto-layout-symbolic",
+                        f"win.{info.action_id}",
+                    )
+                )
+        return arrange_actions
+
+    def _on_layout_registry_changed(self, sender):
+        """Handle layout registry changes by refreshing arrange menu."""
+        self.arrange_actions = self._build_arrange_actions()
+        self.arrange_menu_button.update_actions(self.arrange_actions)
 
     def _on_visibility_toggled(self, button: Gtk.ToggleButton):
         """Callback to update the visibility icon when the button's

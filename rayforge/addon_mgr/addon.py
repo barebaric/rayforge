@@ -77,7 +77,7 @@ class AddonMetadata:
 
     @classmethod
     def from_registry_entry(
-        cls, addon_id: str, data: Dict[str, Any]
+        cls, addon_name: str, data: Dict[str, Any]
     ) -> "AddonMetadata":
         """
         Parses a registry dictionary entry into an AddonMetadata object.
@@ -111,8 +111,8 @@ class AddonMetadata:
             requires = [requires]
 
         return cls(
-            name=addon_id,
-            display_name=data.get("name", addon_id),
+            name=addon_name,
+            display_name=data.get("display_name", addon_name),
             description=data.get("description", ""),
             version=str(
                 data.get("latest_stable", data.get("version", "0.0.0"))

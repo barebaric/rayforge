@@ -1,9 +1,9 @@
 from gi.repository import Gio, Gtk, GLib
 from typing import List
 from gettext import gettext as _
-from ..core.menu_registry import menu_registry
 from ..doceditor.layout.registry import layout_registry
 from ..machine.models.macro import Macro
+from .menu_registry import menu_registry
 
 
 class MainMenu(Gio.Menu):
@@ -169,11 +169,10 @@ class MainMenu(Gio.Menu):
         flip_submenu.append(_("Flip Vertical"), "win.flip-vertical")
         arrange_menu.append_submenu(_("Flip"), flip_submenu)
 
-        layout_group = Gio.Menu()
-        for info in layout_registry.list_all():
-            if info.action_id and info.label:
-                layout_group.append(info.label, f"win.{info.action_id}")
-        arrange_menu.append_section(None, layout_group)
+        self._layout_group = Gio.Menu()
+        self._populate_layout_group()
+        arrange_menu.append_section(None, self._layout_group)
+
         self.append_submenu(_("Arrange"), arrange_menu)
 
         # Tools Menu
@@ -227,6 +226,27 @@ class MainMenu(Gio.Menu):
 
         # Populate addon menu items
         self._populate_addon_items()
+
+        # Connect to menu registry changes
+        menu_registry.changed.connect(self._on_menu_registry_changed)
+
+        # Connect to layout registry changes
+        layout_registry.changed.connect(self._on_layout_registry_changed)
+
+    def _on_menu_registry_changed(self, sender):
+        """Handle menu registry changes by refreshing addon items."""
+        self._populate_addon_items()
+
+    def _on_layout_registry_changed(self, sender):
+        """Handle layout registry changes by refreshing layout items."""
+        self._populate_layout_group()
+
+    def _populate_layout_group(self):
+        """Populate layout strategies in the Arrange menu."""
+        self._layout_group.remove_all()
+        for info in layout_registry.list_all():
+            if info.action_id and info.label:
+                self._layout_group.append(info.label, f"win.{info.action_id}")
 
     def _populate_addon_items(self):
         """Populate addon menu items from the registry."""

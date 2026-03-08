@@ -1,4 +1,4 @@
-from rayforge.core.menu_registry import MenuRegistry, menu_registry
+from rayforge.ui_gtk.menu_registry import MenuRegistry, menu_registry
 
 
 class TestMenuRegistry:

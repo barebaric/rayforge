@@ -86,4 +86,6 @@ def register_actions(window):
         cmd.create_test_grid()
 
     action.connect("activate", on_activate)
-    window.add_action(action)
+    window.action_registry.register(
+        "material_test", action, "laser_essentials"
+    )

@@ -1,5 +1,6 @@
 import logging
 from typing import Dict, List, Optional, Set
+from blinker import Signal
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ class MenuRegistry:
         self._items: Dict[str, MenuItem] = {}
         self._addon_items: Dict[str, Set[str]] = {}
         self._menu_sections: Dict[str, str] = {}
+        self.changed = Signal()
 
     def register(
         self,
@@ -85,6 +87,7 @@ class MenuRegistry:
             self._addon_items[addon_name].add(item_id)
 
         logger.debug(f"Registered menu item '{item_id}' in menu '{menu}'")
+        self.changed.send(self)
 
     def unregister(self, item_id: str) -> bool:
         """
@@ -105,6 +108,7 @@ class MenuRegistry:
 
         del self._items[item_id]
         logger.debug(f"Unregistered menu item '{item_id}'")
+        self.changed.send(self)
         return True
 
     def unregister_all_from_addon(self, addon_name: str) -> int:
@@ -129,6 +133,8 @@ class MenuRegistry:
         logger.debug(
             f"Unregistered {count} menu items from addon '{addon_name}'"
         )
+        if count > 0:
+            self.changed.send(self)
         return count
 
     def get_items_for_menu(self, menu: str) -> List[MenuItem]:
@@ -162,6 +168,7 @@ class MenuRegistry:
             section_id: The section identifier within that menu.
         """
         self._menu_sections[menu] = section_id
+        self.changed.send(self)
 
     def get_menu_section(self, menu: str) -> Optional[str]:
         """

@@ -122,7 +122,8 @@ class AddonManager:
         self.plugin_mgr = plugin_mgr
         self.addon_config = addon_config
         self.is_job_active_callback = is_job_active_callback
-        self.registries = registries or {}
+        self.registries: Dict[str, AddonRegistry] = registries or {}
+        self._window: Optional[Any] = None
         self.loaded_addons: Dict[str, Addon] = {}
         self.incompatible_addons: Dict[str, Addon] = {}
         self.disabled_addons: Dict[str, Addon] = {}
@@ -144,6 +145,15 @@ class AddonManager:
                 'layout_registry'.
         """
         self.registries = registries
+
+    def set_window(self, window: Any):
+        """
+        Set the main window for registering actions.
+
+        Args:
+            window: The MainWindow instance for registering actions.
+        """
+        self._window = window
 
     def set_task_manager(self, task_mgr: "TaskManagerProxy"):
         """
@@ -401,7 +411,10 @@ class AddonManager:
         remote_addons = {addon.name: addon for addon in remote_addons_list}
         updates_available: List[Tuple[Addon, AddonMetadata]] = []
 
-        for installed_addon in self.loaded_addons.values():
+        all_installed = list(self.loaded_addons.values()) + list(
+            self.disabled_addons.values()
+        )
+        for installed_addon in all_installed:
             remote_meta = remote_addons.get(installed_addon.metadata.name)
             if not remote_meta:
                 continue
@@ -867,7 +880,10 @@ class AddonManager:
             for module_name in modules_to_unload:
                 module = sys.modules.get(module_name)
                 if module:
-                    self.plugin_mgr.unregister(module)
+                    try:
+                        self.plugin_mgr.unregister(module)
+                    except ValueError:
+                        pass
                     del sys.modules[module_name]
                     logger.info(f"Unloaded module: {module_name}")
 
@@ -877,6 +893,9 @@ class AddonManager:
                 del self.incompatible_addons[addon_name]
             if addon_name in self.disabled_addons:
                 del self.disabled_addons[addon_name]
+            if addon_name in self._load_errors:
+                del self._load_errors[addon_name]
+            self._pending_unloads.discard(addon_name)
 
             if self.addon_config:
                 self.addon_config.remove_state(addon_name)
@@ -1050,6 +1069,8 @@ class AddonManager:
             self.plugin_mgr.hook.register_layout_strategies(
                 layout_registry=layout_registry
             )
+        if self._window:
+            self.plugin_mgr.hook.register_actions(window=self._window)
 
     def complete_pending_unloads(self) -> List[str]:
         """

@@ -32,6 +32,7 @@ from ..shared.tasker import task_mgr
 from ..shared.util.time_format import format_hours_to_hm
 from ..usage import get_usage_tracker
 from .about import AboutDialog
+from .action_registry import action_registry
 from .actions import ActionManager
 from .canvas import CanvasElement
 from .canvas2d.drag_drop_cmd import DragDropCmd
@@ -274,6 +275,13 @@ class MainWindow(Adw.ApplicationWindow):
         # Setup keyboard actions using the new ActionManager.
         self.action_manager = ActionManager(self)
         self.action_manager.register_actions()
+
+        # Set up action registry for addons
+        action_registry.set_window(self)
+        self.action_registry = action_registry
+
+        # Provide window to addon manager for dynamic addon enable/disable
+        context.addon_mgr.set_window(self)
 
         # Let addons register their actions
         context.plugin_mgr.hook.register_actions(window=self)
