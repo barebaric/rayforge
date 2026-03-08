@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, Callable, Optional, cast
+from typing import TYPE_CHECKING, Dict, Callable, List, Optional, cast
 from gi.repository import Gtk, Gio, GLib
 from ..context import get_context
 from ..core.group import Group
@@ -20,6 +20,8 @@ class ActionManager:
     def __init__(self, win: "MainWindow"):
         self.win = win
         self.actions: Dict[str, Gio.SimpleAction] = {}
+        self._shortcut_controller: Optional[Gtk.ShortcutController] = None
+        self._layout_shortcuts: List[Gtk.Shortcut] = []
         # A convenient alias to the central controller
         self.editor = self.win.doc_editor
         self.doc = self.editor.doc
@@ -432,13 +434,32 @@ class ActionManager:
             )
             controller.add_shortcut(shortcut)
 
+        self._shortcut_controller = controller
+        self._update_layout_shortcuts()
+
+        layout_registry.changed.connect(self._on_layout_registry_changed)
+
+    def _on_layout_registry_changed(self, sender):
+        """Handle layout registry changes by refreshing shortcuts."""
+        self._update_layout_shortcuts()
+
+    def _update_layout_shortcuts(self):
+        """Update layout strategy shortcuts."""
+        if not self._shortcut_controller:
+            return
+
+        for shortcut in self._layout_shortcuts:
+            self._shortcut_controller.remove_shortcut(shortcut)
+        self._layout_shortcuts.clear()
+
         for info in layout_registry.list_all():
             if info.action_id and info.shortcut:
                 shortcut = Gtk.Shortcut.new(
                     Gtk.ShortcutTrigger.parse_string(info.shortcut),
                     Gtk.NamedAction.new(f"win.{info.action_id}"),
                 )
-                controller.add_shortcut(shortcut)
+                self._shortcut_controller.add_shortcut(shortcut)
+                self._layout_shortcuts.append(shortcut)
 
     def get_action(self, name: str) -> Gio.SimpleAction:
         """Retrieves a registered action by its name."""

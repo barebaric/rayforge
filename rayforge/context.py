@@ -306,16 +306,17 @@ class RayforgeContext:
         menu_registry = None
 
         if load_ui:
+            from .ui_gtk.action_registry import action_registry
             from .ui_gtk.doceditor.step_settings import (
                 step_widget_registry as _step_widget_registry,
             )
-            from .core.menu_registry import menu_registry as _menu_registry
+            from .ui_gtk.menu_registry import menu_registry
 
             step_widget_registry = _step_widget_registry
-            menu_registry = _menu_registry
 
-            registries["widget_registry"] = step_widget_registry
+            registries["action_registry"] = action_registry
             registries["menu_registry"] = menu_registry
+            registries["widget_registry"] = step_widget_registry
 
         # Provide registries to addon manager for addon enable/disable
         self.addon_mgr.set_registries(registries)

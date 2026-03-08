@@ -117,3 +117,27 @@ class SplitMenuButton(Gtk.Box):
         self.main_button.set_child(get_icon(icon_name))
         self.main_button.set_tooltip_text(name)
         self.main_button.set_action_name(action_name)
+
+    def update_actions(self, actions: Sequence[Tuple[str, str, str]]):
+        """
+        Updates the list of actions in the button.
+
+        Args:
+            actions: A sequence of tuples, where each tuple contains
+                     (name, icon_name, action_name) for an action.
+        """
+        if not actions:
+            logger.warning(
+                "SplitMenuButton.update_actions called with empty list"
+            )
+            return
+
+        self.actions = actions
+        self._last_action_index = 0
+
+        # Rebuild the popover menu
+        popover = self._build_popover()
+        self.menu_button.set_popover(popover)
+
+        # Reset the main button
+        self._set_active_action(0)

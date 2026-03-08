@@ -1,5 +1,6 @@
 from typing import Dict, List, Optional, Set, Type, TYPE_CHECKING
 from gettext import gettext as _
+from blinker import Signal
 
 if TYPE_CHECKING:
     from .base import LayoutStrategy
@@ -39,6 +40,7 @@ class LayoutStrategyRegistry:
     def __init__(self):
         self._strategies: Dict[str, LayoutStrategyInfo] = {}
         self._addon_items: Dict[str, Set[str]] = {}
+        self.changed = Signal()
 
     def register(
         self,
@@ -81,6 +83,8 @@ class LayoutStrategyRegistry:
                 self._addon_items[addon_name] = set()
             self._addon_items[addon_name].add(name)
 
+        self.changed.send(self)
+
     def unregister(self, name: str) -> bool:
         """
         Unregister a layout strategy by name.
@@ -99,6 +103,7 @@ class LayoutStrategyRegistry:
             self._addon_items[info.addon_name].discard(name)
 
         del self._strategies[name]
+        self.changed.send(self)
         return True
 
     def unregister_all_from_addon(self, addon_name: str) -> int:
@@ -120,6 +125,8 @@ class LayoutStrategyRegistry:
             if name in self._strategies:
                 del self._strategies[name]
                 count += 1
+        if count > 0:
+            self.changed.send(self)
         return count
 
     def get(self, name: str) -> Optional[Type["LayoutStrategy"]]:

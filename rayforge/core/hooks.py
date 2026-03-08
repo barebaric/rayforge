@@ -142,7 +142,9 @@ class RayforgeSpecs:
         .. versionadded:: 1
 
         Args:
-            window: The MainWindow instance.
+            window: The MainWindow instance. Use
+                window.action_registry.register() to register actions with
+                addon tracking for proper cleanup.
         """
 
     @hookspec

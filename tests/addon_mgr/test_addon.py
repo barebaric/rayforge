@@ -22,7 +22,7 @@ class TestAddonMetadata:
     def test_from_registry_entry_valid(self):
         """Test creating metadata from registry dictionary."""
         data = {
-            "name": "My Addon",
+            "display_name": "My Addon",
             "description": "A test addon",
             "depends": ["rayforge>=0.27.0,~0.27"],
             "author": {"name": "Test User", "email": "test@example.com"},
@@ -39,7 +39,7 @@ class TestAddonMetadata:
     def test_from_registry_entry_with_string_depends(self):
         """Test handling string depends field."""
         data = {
-            "name": "My Addon",
+            "display_name": "My Addon",
             "depends": "rayforge>=0.27.0",
             "author": "Test User <test@example.com>",
             "version": "1.0.0",
@@ -52,7 +52,7 @@ class TestAddonMetadata:
     def test_from_registry_entry_with_string_author(self):
         """Test handling string author field without email."""
         data = {
-            "name": "My Addon",
+            "display_name": "My Addon",
             "depends": [],
             "author": "Test User",
             "version": "1.0.0",
