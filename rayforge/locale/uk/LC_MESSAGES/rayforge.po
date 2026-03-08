@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-07 19:55+0100\n"
+"POT-Creation-Date: 2026-03-08 05:30+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -885,6 +885,8 @@ msgid "Lock"
 msgstr "Блокування"
 
 #: rayforge/machine/driver/driver.py
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Unlock"
 msgstr "Розблокування"
 
@@ -1327,6 +1329,7 @@ msgstr ""
 "дію неможливо скасувати."
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
+#: rayforge/ui_gtk/settings/license_settings_page.py
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/camera/alignment_dialog.py
@@ -1337,6 +1340,7 @@ msgstr ""
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/profile_selector.py
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
@@ -1365,6 +1369,106 @@ msgstr "Видалити"
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid "Add Machine"
 msgstr "Додати верстат"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Licenses"
+msgstr "Ліцензії"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Patreon"
+msgstr "Patreon"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Link your Patreon account for early access to new addons."
+msgstr ""
+"Прив'яжіть свій обліковий запис Patreon для раннього доступу до нових "
+"доповнень."
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Patreon Account Linked"
+msgstr "Обліковий запис Patreon прив'язано"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Early access addons are unlocked"
+msgstr "Доповнення з раннім доступом розблоковано"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Unlink"
+msgstr "Від'єднати"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Link Patreon Account"
+msgstr "Прив'язати обліковий запис Patreon"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Get early access to premium addons"
+msgstr "Отримати ранній доступ до преміум доповнень"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Link"
+msgstr "Прив'язати"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Addon Licenses"
+msgstr "Ліцензії доповнень"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Manage your purchased license keys."
+msgstr "Керуйте вашими придбаними ліцензійними ключами."
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "No licenses installed"
+msgstr "Ліцензії не встановлено"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Purchase a premium addon and enter the license key during installation."
+msgstr ""
+"Купіть преміум доповнення та введіть ліцензійний ключ під час встановлення."
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+#, python-brace-format
+msgid "Unlocks: {addons} (+{count} more)"
+msgstr "Розблоковує: {addons} (+{count} ще)"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+#, python-brace-format
+msgid "Unlocks: {addons}"
+msgstr "Розблоковує: {addons}"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
+msgid "Remove"
+msgstr "Видалити"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Addons Requiring License"
+msgstr "Доповнення, що потребують ліцензії"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "These addons need a valid license to be activated"
+msgstr "Ці доповнення потребують дійсної ліцензії для активації"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "License required"
+msgstr "Потрібна ліцензія"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Buy"
+msgstr "Купити"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Remove License?"
+msgstr "Видалити ліцензію?"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid ""
+"This license key will be removed. You may need to re-enter it to use "
+"licensed addons."
+msgstr ""
+"Цей ліцензійний ключ буде видалено. Можливо, вам доведеться ввести його "
+"знову, щоб використовувати ліцензовані доповнення."
 
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 msgid "Default provider"
@@ -1683,11 +1787,6 @@ msgstr "Розгрупувати"
 #: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/doceditor/stock_cmd.py
 msgid "Convert to Stock"
 msgstr "Перетворити в матеріал"
-
-#: rayforge/ui_gtk/canvas2d/context_menu.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
-msgid "Remove"
-msgstr "Видалити"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
 msgid "Edit Sketch"
@@ -2581,6 +2680,7 @@ msgid "This dialect is still used by the following machine(s): {machines}"
 msgstr "Цей діалект все ще використовується наступними верстатами: {machines}"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
@@ -3221,6 +3321,101 @@ msgstr "Ручне встановлення"
 msgid "Enter the Git URL."
 msgstr "Введіть URL Git."
 
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Enter License Key"
+msgstr "Введіть ключ ліцензії"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License Key"
+msgstr "Ключ ліцензії"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Activate"
+msgstr "Активувати"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+#, python-brace-format
+msgid "Enter the license key you received when purchasing {addon_name}."
+msgstr ""
+"Введіть ключ ліцензії, який ви отримали при купівлі {addon_name}."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Please enter a license key."
+msgstr "Будь ласка, введіть ключ ліцензії."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Validating license..."
+msgstr "Перевірка ліцензії..."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License validation failed."
+msgstr "Помилка перевірки ліцензії."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License Invalid"
+msgstr "Недійсна ліцензія"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License Required"
+msgstr "Потрібна ліцензія"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+#, python-brace-format
+msgid ""
+"{addon_name} is a premium addon. Purchase a license to unlock it, or enter "
+"your license key if you already have one."
+msgstr ""
+"{addon_name} — це преміум-доповнення. Купіть ліцензію, щоб розблокувати його, "
+"або введіть свій ключ ліцензії, якщо він у вас вже є."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Buy License"
+msgstr "Купити ліцензію"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Premium addon"
+msgstr "Преміум-доповнення"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Activate"
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+#, python-brace-format
+msgid "Enter the license key you received when purchasing {addon_name}."
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Please enter a license key."
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Validating license..."
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License validation failed."
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License Invalid"
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License Required"
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+#, python-brace-format
+msgid ""
+"{addon_name} is a premium addon. Purchase a license to unlock it, or enter "
+"your license key if you already have one."
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Buy License"
+msgstr ""
+
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Failed to load this addon"
 msgstr "Не вдалося завантажити цей додаток"
@@ -3234,16 +3429,20 @@ msgid "This addon is incompatible with the current version of Rayforge"
 msgstr "Цей додаток несумісний з поточною версією Rayforge"
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Premium addon"
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Built-in addon"
 msgstr "Вбудований додаток"
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
-msgid "Enable or disable this addon"
-msgstr "Увімкнути або вимкнути цей додаток"
-
-#: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Uninstall Addon"
 msgstr "Видалити додаток"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Enable or disable this addon"
+msgstr "Увімкнути або вимкнути цей додаток"
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Install New Addon..."
@@ -3760,30 +3959,6 @@ msgstr "Перемкнути панель керування"
 msgid "Toggle tab visibility"
 msgstr "Перемкнути видимість вкладок"
 
-#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
-msgid "Center Horizontally"
-msgstr "Центрувати по горизонталі"
-
-#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
-msgid "Center Vertically"
-msgstr "Центрувати по вертикалі"
-
-#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
-msgid "Align Left"
-msgstr "Вирівняти ліворуч"
-
-#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
-msgid "Align Right"
-msgstr "Вирівняти праворуч"
-
-#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
-msgid "Align Top"
-msgstr "Вирівняти вгорі"
-
-#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
-msgid "Align Bottom"
-msgstr "Вирівняти внизу"
-
 #: rayforge/ui_gtk/toolbar.py
 msgid "Arrange selection"
 msgstr "Впорядкувати вибране"
@@ -3824,6 +3999,30 @@ msgstr "Верстат налаштовано не повністю"
 msgid "Machine driver is missing required settings. Click to edit."
 msgstr ""
 "Драйвер верстата не має необхідних налаштувань. Натисніть для редагування."
+
+#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
+msgid "Center Horizontally"
+msgstr "Центрувати по горизонталі"
+
+#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
+msgid "Center Vertically"
+msgstr "Центрувати по вертикалі"
+
+#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
+msgid "Align Left"
+msgstr "Вирівняти ліворуч"
+
+#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
+msgid "Align Right"
+msgstr "Вирівняти праворуч"
+
+#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
+msgid "Align Top"
+msgstr "Вирівняти вгорі"
+
+#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
+msgid "Align Bottom"
+msgstr "Вирівняти внизу"
 
 #: rayforge/ui_gtk/project_cmd.py
 msgid "Unsaved Changes"

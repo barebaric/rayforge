@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-07 19:55+0100\n"
+"POT-Creation-Date: 2026-03-08 05:30+0100\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -898,6 +898,8 @@ msgid "Lock"
 msgstr "Gesperrt"
 
 #: rayforge/machine/driver/driver.py
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Unlock"
 msgstr "Entsperren"
 
@@ -1346,6 +1348,7 @@ msgstr ""
 "entfernt. Diese Aktion kann nicht rückgängig gemacht werden."
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
+#: rayforge/ui_gtk/settings/license_settings_page.py
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/camera/alignment_dialog.py
@@ -1356,6 +1359,7 @@ msgstr ""
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/profile_selector.py
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
@@ -1384,6 +1388,106 @@ msgstr "Löschen"
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid "Add Machine"
 msgstr "Maschine hinzufügen"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Licenses"
+msgstr "Lizenzen"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Patreon"
+msgstr "Patreon"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Link your Patreon account for early access to new addons."
+msgstr "Verknüpfe dein Patreon-Konto für frühen Zugang zu neuen Erweiterungen."
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Patreon Account Linked"
+msgstr "Patreon-Konto verknüpft"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Early access addons are unlocked"
+msgstr "Frühzugang-Erweiterungen sind freigeschaltet"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Unlink"
+msgstr "Verknüpfung aufheben"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Link Patreon Account"
+msgstr "Patreon-Konto verknüpfen"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Get early access to premium addons"
+msgstr "Frühen Zugang zu Premium-Erweiterungen erhalten"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Link"
+msgstr "Verknüpfen"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Addon Licenses"
+msgstr "Erweiterungs-Lizenzen"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Manage your purchased license keys."
+msgstr "Verwalte deine gekauften Lizenzschlüssel."
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "No licenses installed"
+msgstr "Keine Lizenzen installiert"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Purchase a premium addon and enter the license key during installation."
+msgstr ""
+"Kaufe eine Premium-Erweiterung und gib den Lizenzschlüssel während der "
+"Installation ein."
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+#, python-brace-format
+msgid "Unlocks: {addons} (+{count} more)"
+msgstr "Schaltet frei: {addons} (+{count} weitere)"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+#, python-brace-format
+msgid "Unlocks: {addons}"
+msgstr "Schaltet frei: {addons}"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
+msgid "Remove"
+msgstr "Entfernen"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Addons Requiring License"
+msgstr "Erweiterungen, die eine Lizenz benötigen"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "These addons need a valid license to be activated"
+msgstr ""
+"Diese Erweiterungen benötigen eine gültige Lizenz, um aktiviert zu werden"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "License required"
+msgstr "Lizenz erforderlich"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Buy"
+msgstr "Kaufen"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Remove License?"
+msgstr "Lizenz entfernen?"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid ""
+"This license key will be removed. You may need to re-enter it to use "
+"licensed addons."
+msgstr ""
+"Dieser Lizenzschlüssel wird entfernt. Möglicherweise musst du ihn erneut "
+"eingeben, um lizenzierte Erweiterungen zu nutzen."
 
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 msgid "Default provider"
@@ -1708,11 +1812,6 @@ msgstr "Gruppierung aufheben"
 #: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/doceditor/stock_cmd.py
 msgid "Convert to Stock"
 msgstr "In Material umwandeln"
-
-#: rayforge/ui_gtk/canvas2d/context_menu.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
-msgid "Remove"
-msgstr "Entfernen"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
 msgid "Edit Sketch"
@@ -2617,6 +2716,7 @@ msgstr ""
 "{machines}"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
@@ -3256,6 +3356,102 @@ msgstr "Manuelle Installation"
 msgid "Enter the Git URL."
 msgstr "Gib die Git-URL ein."
 
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Enter License Key"
+msgstr "Lizenzschlüssel eingeben"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License Key"
+msgstr "Lizenzschlüssel"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Activate"
+msgstr "Aktivieren"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+#, python-brace-format
+msgid "Enter the license key you received when purchasing {addon_name}."
+msgstr ""
+"Gib den Lizenzschlüssel ein, den du beim Kauf von {addon_name} erhalten hast."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Please enter a license key."
+msgstr "Bitte gib einen Lizenzschlüssel ein."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Validating license..."
+msgstr "Lizenz wird überprüft..."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License validation failed."
+msgstr "Lizenzüberprüfung fehlgeschlagen."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License Invalid"
+msgstr "Lizenz ungültig"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License Required"
+msgstr "Lizenz erforderlich"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+#, python-brace-format
+msgid ""
+"{addon_name} is a premium addon. Purchase a license to unlock it, or enter "
+"your license key if you already have one."
+msgstr ""
+"{addon_name} ist eine Premium-Erweiterung. Kaufe eine Lizenz, um sie "
+"freizuschalten, oder gib deinen Lizenzschlüssel ein, falls du bereits einen "
+"hast."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Buy License"
+msgstr "Lizenz kaufen"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Premium addon"
+msgstr "Premium-Erweiterung"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Activate"
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+#, python-brace-format
+msgid "Enter the license key you received when purchasing {addon_name}."
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Please enter a license key."
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Validating license..."
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License validation failed."
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License Invalid"
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License Required"
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+#, python-brace-format
+msgid ""
+"{addon_name} is a premium addon. Purchase a license to unlock it, or enter "
+"your license key if you already have one."
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Buy License"
+msgstr ""
+
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Failed to load this addon"
 msgstr "Diese Erweiterung konnte nicht geladen werden"
@@ -3271,16 +3467,20 @@ msgstr ""
 "Diese Erweiterung ist mit der aktuellen Version von Rayforge inkompatibel"
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Premium addon"
+msgstr ""
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Built-in addon"
 msgstr "Integrierte Erweiterung"
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
-msgid "Enable or disable this addon"
-msgstr "Diese Erweiterung aktivieren oder deaktivieren"
-
-#: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Uninstall Addon"
 msgstr "Erweiterung deinstallieren"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Enable or disable this addon"
+msgstr "Diese Erweiterung aktivieren oder deaktivieren"
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Install New Addon..."
@@ -3801,30 +4001,6 @@ msgstr "Steuerfeld umschalten"
 msgid "Toggle tab visibility"
 msgstr "Sichtbarkeit der Haltestege umschalten"
 
-#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
-msgid "Center Horizontally"
-msgstr "Horizontal zentrieren"
-
-#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
-msgid "Center Vertically"
-msgstr "Vertikal zentrieren"
-
-#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
-msgid "Align Left"
-msgstr "Links ausrichten"
-
-#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
-msgid "Align Right"
-msgstr "Rechts ausrichten"
-
-#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
-msgid "Align Top"
-msgstr "Oben ausrichten"
-
-#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
-msgid "Align Bottom"
-msgstr "Unten ausrichten"
-
 #: rayforge/ui_gtk/toolbar.py
 msgid "Arrange selection"
 msgstr "Auswahl anordnen"
@@ -3866,6 +4042,30 @@ msgid "Machine driver is missing required settings. Click to edit."
 msgstr ""
 "Dem Maschinentreiber fehlen erforderliche Einstellungen. Zum Bearbeiten "
 "klicken."
+
+#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
+msgid "Center Horizontally"
+msgstr "Horizontal zentrieren"
+
+#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
+msgid "Center Vertically"
+msgstr "Vertikal zentrieren"
+
+#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
+msgid "Align Left"
+msgstr "Links ausrichten"
+
+#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
+msgid "Align Right"
+msgstr "Rechts ausrichten"
+
+#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
+msgid "Align Top"
+msgstr "Oben ausrichten"
+
+#: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
+msgid "Align Bottom"
+msgstr "Unten ausrichten"
 
 #: rayforge/ui_gtk/project_cmd.py
 msgid "Unsaved Changes"
