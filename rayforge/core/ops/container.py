@@ -16,7 +16,7 @@ import numpy as np
 import json
 from ..geo import linearize, clipping
 from ..geo.primitives import get_arc_bounding_box
-from ..geo.types import Point3D, Rect, Point
+from ..geo.types import Point3D, Rect, Polygon
 from .commands import (
     State,
     Command,
@@ -1326,7 +1326,7 @@ class Ops:
         for segment in self.segments():
             print(segment)
 
-    def subtract_regions(self, regions: List[List[Point]]) -> "Ops":
+    def subtract_regions(self, regions: List[Polygon]) -> "Ops":
         """
         Clips the Ops by subtracting a list of polygonal regions.
         This modifies the Ops object in place and returns it.

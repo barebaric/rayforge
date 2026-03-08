@@ -1,7 +1,7 @@
 import numpy as np
 from typing import List, Sequence, Tuple
 
-from .types import Point
+from .types import Point, Polygon
 
 
 def simplify_points_to_array(
@@ -120,7 +120,7 @@ def simplify_points_to_array(
     return points[keep]
 
 
-def simplify_points(points: Sequence[Point], tolerance: float) -> List[Point]:
+def simplify_points(points: Sequence[Point], tolerance: float) -> Polygon:
     """
     Simplify a sequence of 2D points using the Ramer-Douglas-Peucker algorithm.
 

@@ -7,15 +7,13 @@ in packing and nesting algorithms.
 
 from typing import List
 from .polygon import (
-    IntPolygon,
-    Polygon,
     to_clipper,
     from_clipper,
     polygon_bounds,
     convex_hull,
     CLIPPER_SCALE,
 )
-from .types import Point
+from .types import IntPolygon, Point, Polygon
 
 
 def calculate_input_scale(
@@ -44,7 +42,7 @@ def convolve_two_segments(
     a2: Point,
     b1: Point,
     b2: Point,
-) -> List[Point]:
+) -> Polygon:
     """
     Creates a parallelogram from two line segments.
     Matches the exact logic in minkowski.cc convolve_two_segments.

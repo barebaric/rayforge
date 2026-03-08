@@ -56,7 +56,7 @@ from .query import (
     find_closest_point_on_path_from_array,
     get_total_distance_from_array,
 )
-from .types import Point, Point3D, Rect
+from .types import Point, Point3D, Polygon, Rect
 
 
 logger = logging.getLogger(__name__)
@@ -664,7 +664,7 @@ class Geometry:
 
         return all_segments
 
-    def to_polygons(self, tolerance: float = 0.3) -> List[List[Point]]:
+    def to_polygons(self, tolerance: float = 0.3) -> List[Polygon]:
         """
         Converts the geometry to a list of 2D polygons.
 

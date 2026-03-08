@@ -19,7 +19,7 @@ from .constants import (
     COL_C2X,
     COL_C2Y,
 )
-from .types import Point, Point3D
+from .types import Point, Point3D, Polygon
 
 
 def flatten_to_points(
@@ -248,7 +248,7 @@ def linearize_bezier_adaptive(
     p1: Point,
     tolerance_sq: float,
     max_depth: int = 10,
-) -> List[Point]:
+) -> Polygon:
     """
     Recursively flattens a cubic Bezier curve based on geometric error.
 
@@ -262,7 +262,7 @@ def linearize_bezier_adaptive(
         A list of points (excluding p0, including p1) that approximate the
         curve.
     """
-    points: List[Point] = []
+    points: Polygon = []
 
     def recursive_step(
         p0: Point,

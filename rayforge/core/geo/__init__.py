@@ -16,7 +16,15 @@ from . import query
 from . import text
 from . import transform
 
-from .types import Point, Point2DOr3D, Point3D, Rect
+from .types import (
+    IntPoint,
+    IntPolygon,
+    Point,
+    Point2DOr3D,
+    Point3D,
+    Polygon,
+    Rect,
+)
 from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
@@ -39,9 +47,12 @@ from .font_config import FontConfig
 from .geometry import Geometry
 
 __all__ = [
+    "IntPoint",
+    "IntPolygon",
     "Point",
     "Point2DOr3D",
     "Point3D",
+    "Polygon",
     "analysis",
     "contours",
     "fitting",
