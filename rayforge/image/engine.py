@@ -1,5 +1,6 @@
 import logging
-from typing import List, Tuple, Optional
+from typing import List, Optional
+from ..core.geo import Rect
 from ..core.matrix import Matrix
 from ..core.vectorization_spec import (
     VectorizationSpec,
@@ -62,7 +63,7 @@ class NormalizationEngine:
 
     @staticmethod
     def calculate_layout_item(
-        bounds: Tuple[float, float, float, float],
+        bounds: Rect,
         parse_result: ParsingResult,
         layer_id: Optional[str] = None,
         layer_name: Optional[str] = None,
@@ -301,9 +302,7 @@ class NormalizationEngine:
                 )
             ]
 
-    def _calculate_union_rect(
-        self, rects: List[Tuple[float, float, float, float]]
-    ) -> Tuple[float, float, float, float]:
+    def _calculate_union_rect(self, rects: List[Rect]) -> Rect:
         if not rects:
             return (0.0, 0.0, 0.0, 0.0)
 

@@ -2,6 +2,7 @@ import warnings
 import logging
 from typing import Optional, TYPE_CHECKING, List, Tuple
 from xml.etree import ElementTree as ET
+from ...core.geo import Rect
 from ...core.vectorization_spec import TraceSpec
 from ..base_renderer import Renderer, RenderSpecification
 from .svgutil import filter_svg_layers
@@ -98,7 +99,7 @@ class SvgRenderer(Renderer):
         width: int,
         height: int,
         visible_layer_ids: Optional[List[str]] = None,
-        viewbox: Optional[Tuple[float, float, float, float]] = None,
+        viewbox: Optional[Rect] = None,
         **kwargs,
     ) -> Optional[pyvips.Image]:
         """

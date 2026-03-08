@@ -56,14 +56,12 @@ from .query import (
     find_closest_point_on_path_from_array,
     get_total_distance_from_array,
 )
-from .types import Point3D
+from .types import Point3D, Rect
 
 
 logger = logging.getLogger(__name__)
 
 T_Geometry = TypeVar("T_Geometry", bound="Geometry")
-
-Rect = Tuple[float, float, float, float]
 
 
 class Geometry:

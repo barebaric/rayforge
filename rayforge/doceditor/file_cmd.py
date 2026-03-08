@@ -25,7 +25,7 @@ with warnings.catch_warnings():
     import pyvips
 
 from ..context import get_context
-from ..core.geo import Geometry
+from ..core.geo import Geometry, Rect
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.matrix import Matrix
@@ -74,7 +74,7 @@ class PreviewResult:
     parse_result: Optional[ParsingResult]  # Context for rendering
     aspect_ratio: float = 1.0
     warnings: List[str] = field(default_factory=list)
-    content_bounds: Optional[Tuple[float, float, float, float]] = None
+    content_bounds: Optional[Rect] = None
 
 
 class ImportAction(Enum):
@@ -660,7 +660,7 @@ class FileCmd:
     def _calculate_items_bbox(
         self,
         items: List[DocItem],
-    ) -> Optional[Tuple[float, float, float, float]]:
+    ) -> Optional[Rect]:
         """
         Calculates the world-space bounding box that encloses a list of
         DocItems by taking the union of their individual bboxes.

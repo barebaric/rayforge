@@ -17,7 +17,7 @@ from svgelements import (
     Arc,
 )
 
-from ...core.geo import Geometry
+from ...core.geo import Geometry, Rect
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import PassthroughSpec
 from ..base_importer import (
@@ -38,7 +38,7 @@ from .svgutil import (
 
 logger = logging.getLogger(__name__)
 
-ViewBoxType = Optional[Tuple[float, float, float, float]]
+ViewBoxType = Optional[Rect]
 ParsingFactsType = Optional[Tuple[float, float, ViewBoxType]]
 
 
@@ -157,10 +157,10 @@ class SvgImporterBase(Importer):
     ) -> Optional[
         Tuple[
             SVG,
-            Tuple[float, float, float, float],
+            Rect,
             float,
-            Optional[Tuple[float, float, float, float]],
-            Tuple[float, float, float, float],
+            Optional[Rect],
+            Rect,
         ]
     ]:
         """
@@ -217,9 +217,7 @@ class SvgImporterBase(Importer):
             unit_to_mm = final_dims_mm[0] / width_px if width_px > 0 else 1.0
 
         # Calculate untrimmed bounds in the same Native Units
-        untrimmed_document_bounds: Optional[
-            Tuple[float, float, float, float]
-        ] = None
+        untrimmed_document_bounds: Optional[Rect] = None
 
         # First, try to get the authoritative untrimmed viewbox by parsing
         # the original, untrimmed SVG data. This is the correct frame of

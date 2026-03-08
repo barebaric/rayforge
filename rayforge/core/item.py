@@ -15,6 +15,7 @@ from typing import (
 import logging
 import numpy as np
 from blinker import Signal
+from .geo import Rect
 from .matrix import Matrix
 
 if TYPE_CHECKING:
@@ -82,7 +83,7 @@ class DocItem(ABC):
         return False
 
     @property
-    def bbox(self) -> Tuple[float, float, float, float]:
+    def bbox(self) -> Rect:
         """
         The world-space bounding box of the item as (x, y, width, height).
         """
@@ -303,7 +304,7 @@ class DocItem(ABC):
         """
         return self._natural_size
 
-    def get_local_bbox(self) -> Optional[Tuple[float, float, float, float]]:
+    def get_local_bbox(self) -> Optional[Rect]:
         """
         Returns the bounding box of the item in its own local coordinate space
         (before the local matrix is applied).

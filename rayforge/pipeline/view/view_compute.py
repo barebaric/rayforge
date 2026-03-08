@@ -5,6 +5,7 @@ import math
 import numpy as np
 from typing import Optional, Tuple, Iterator, TYPE_CHECKING
 from gettext import gettext as _
+from ...core.geo import Rect
 from ...shared.tasker.progress import ProgressContext
 from ...shared.util.colors import ColorSet
 from ..artifact import WorkPieceArtifact
@@ -173,7 +174,7 @@ def _encode_vertex_and_texture_data(
 
 
 def calculate_render_dimensions(
-    bbox: Tuple[float, float, float, float],
+    bbox: Rect,
     render_context: RenderContext,
 ) -> Optional[Tuple[int, int, float, float]]:
     """
@@ -208,7 +209,7 @@ def calculate_render_dimensions(
 
 def _setup_cairo_context(
     bitmap: np.ndarray,
-    bbox: Tuple[float, float, float, float],
+    bbox: Rect,
     render_context: RenderContext,
 ) -> Tuple[cairo.Context, float]:
     """
@@ -391,7 +392,7 @@ def compute_workpiece_view_to_buffer(
     bitmap: np.ndarray,
     progress_context: Optional[ProgressContext] = None,
     laser_uid: Optional[str] = None,
-) -> Optional[Tuple[float, float, float, float]]:
+) -> Optional[Rect]:
     """
     Renders a WorkPieceArtifact directly into a pre-allocated bitmap buffer.
 
@@ -754,7 +755,7 @@ def render_chunk_to_buffer(
     artifact: WorkPieceArtifact,
     render_context: RenderContext,
     bitmap: np.ndarray,
-    view_bbox_mm: Tuple[float, float, float, float],
+    view_bbox_mm: Rect,
     laser_uid: Optional[str] = None,
 ) -> bool:
     """
@@ -807,7 +808,7 @@ def _get_content_bbox(
     vertex_data: Optional[VertexData],
     texture_data: Optional[TextureData],
     show_travel: bool,
-) -> Optional[Tuple[float, float, float, float]]:
+) -> Optional[Rect]:
     """Calculate the union bounding box of all visual content."""
     all_vertices = []
     has_content = False

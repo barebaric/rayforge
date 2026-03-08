@@ -1,7 +1,7 @@
 from typing import List, Tuple, Optional
 from .polygon import Polygon, Point
 from .primitives import is_point_in_polygon, get_segment_region_intersections
-from .types import Point3D
+from .types import Point3D, Rect
 
 
 # Cohen-Sutherland outcodes
@@ -12,9 +12,7 @@ _BOTTOM = 4  # 0100
 _TOP = 8  # 1000
 
 
-def _compute_outcode(
-    x: float, y: float, rect: Tuple[float, float, float, float]
-) -> int:
+def _compute_outcode(x: float, y: float, rect: Rect) -> int:
     x_min, y_min, x_max, y_max = rect
     code = _INSIDE
     if x < x_min:
@@ -31,7 +29,7 @@ def _compute_outcode(
 def clip_line_segment(
     p1: Point3D,
     p2: Point3D,
-    rect: Tuple[float, float, float, float],
+    rect: Rect,
 ) -> Optional[Tuple[Point3D, Point3D]]:
     """
     Clips a 3D line segment to an axis-aligned 2D rectangle using the

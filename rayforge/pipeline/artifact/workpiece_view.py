@@ -2,6 +2,7 @@ from __future__ import annotations
 import numpy as np
 from typing import Tuple, Dict, Any, Type, Union
 from dataclasses import dataclass, asdict, field
+from ...core.geo import Rect
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
 
@@ -65,7 +66,7 @@ class WorkPieceViewArtifactHandle(BaseArtifactHandle):
 
     def __init__(
         self,
-        bbox_mm: Tuple[float, float, float, float],
+        bbox_mm: Rect,
         workpiece_size_mm: Tuple[float, float],
         shm_name: str,
         handle_class_name: str,
@@ -94,7 +95,7 @@ class WorkPieceViewArtifact(BaseArtifact):
     def __init__(
         self,
         bitmap_data: np.ndarray,
-        bbox_mm: Tuple[float, float, float, float],
+        bbox_mm: Rect,
         workpiece_size_mm: Tuple[float, float],
         generation_id: int,
     ):

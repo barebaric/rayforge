@@ -25,7 +25,7 @@ with warnings.catch_warnings():
     import pyvips
 
 from ..context import get_context
-from .geo import Geometry
+from .geo import Geometry, Rect
 from .item import DocItem
 from .matrix import Matrix
 from .source_asset_segment import SourceAssetSegment
@@ -169,7 +169,6 @@ class WorkPiece(DocItem):
                 f"{sketch.uid}: {e}"
             )
             width, height = 0.0, 0.0
-            from .geo import Geometry
 
             geometry = Geometry()
             fill_geometries = []
@@ -228,7 +227,7 @@ class WorkPiece(DocItem):
         """
         return (self.natural_width_mm, self.natural_height_mm)
 
-    def get_local_bbox(self) -> Optional[Tuple[float, float, float, float]]:
+    def get_local_bbox(self) -> Optional[Rect]:
         """
         WorkPieces are geometrically defined as a unit square (0,0,1,1) that is
         scaled by their matrix.
@@ -1098,7 +1097,7 @@ class WorkPiece(DocItem):
 
     def get_geometry_world_bbox(
         self,
-    ) -> Optional[Tuple[float, float, float, float]]:
+    ) -> Optional[Rect]:
         """
         Calculates the bounding box of the workpiece's geometry in world
         coordinates.

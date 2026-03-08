@@ -1,5 +1,5 @@
 from typing import Tuple, Dict, Any
-from ...geo import primitives
+from ...geo import primitives, Rect
 
 
 class Point:
@@ -33,7 +33,7 @@ class Point:
             fixed=data.get("fixed", False),
         )
 
-    def is_in_rect(self, rect: Tuple[float, float, float, float]) -> bool:
+    def is_in_rect(self, rect: Rect) -> bool:
         """Checks if point is inside (min_x, min_y, max_x, max_y)."""
         return primitives.is_point_in_rect(self.pos(), rect)
 

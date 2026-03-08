@@ -7,6 +7,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
+from ...core.geo import Rect
 from ..util import parse_length, to_mm
 from .svg_fallback import (
     SVG_LOAD_AVAILABLE,
@@ -54,7 +55,7 @@ except Exception:
 
 def _get_margins_from_data(
     data: bytes,
-) -> Tuple[float, float, float, float]:
+) -> Rect:
     """
     Calculates content margins as ratios from raw SVG data using pyvips.
     Returns (left, top, right, bottom) margins as fractions of total size.

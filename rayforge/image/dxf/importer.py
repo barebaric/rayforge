@@ -14,7 +14,7 @@ from ezdxf.lldxf.const import DXFStructureError
 from ezdxf.addons import text2path
 from ezdxf.path import Command
 
-from ...core.geo import Geometry
+from ...core.geo import Geometry, Rect
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import VectorizationSpec, PassthroughSpec
 from ..base_importer import (
@@ -185,7 +185,7 @@ class DxfImporter(Importer):
 
     def _calculate_geometry_union(
         self, geometries: Iterable[Geometry]
-    ) -> Optional[Tuple[float, float, float, float]]:
+    ) -> Optional[Rect]:
         """Calculates the bounding box of a collection of geometries."""
         min_x, min_y, max_x, max_y = (
             float("inf"),
@@ -217,7 +217,7 @@ class DxfImporter(Importer):
     def _update_parse_result_bounds(
         self,
         original: ParsingResult,
-        new_bounds: Tuple[float, float, float, float],
+        new_bounds: Rect,
     ) -> ParsingResult:
         """
         Creates a new ParsingResult with updated bounds and transform matrices

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional, Dict, TYPE_CHECKING
-from ..core.geo import Geometry
+from ..core.geo import Geometry, Rect
 from ..core.matrix import Matrix
 
 if TYPE_CHECKING:
@@ -98,7 +98,7 @@ class LayerGeometry:
 
     layer_id: str
     name: str
-    content_bounds: Tuple[float, float, float, float]
+    content_bounds: Rect
 
 
 @dataclass
@@ -159,15 +159,13 @@ class ParsingResult:
     collected by the Importer and returned in ImportResult, not here.
     """
 
-    document_bounds: Tuple[float, float, float, float]
+    document_bounds: Rect
     native_unit_to_mm: float
     is_y_down: bool
     layers: List[LayerGeometry]
-    world_frame_of_reference: Tuple[float, float, float, float]
+    world_frame_of_reference: Rect
     background_world_transform: Matrix
-    untrimmed_document_bounds: Optional[Tuple[float, float, float, float]] = (
-        None
-    )
+    untrimmed_document_bounds: Optional[Rect] = None
     geometry_is_relative_to_bounds: bool = False
     is_cropped_to_content: bool = False
 
@@ -258,7 +256,7 @@ class LayoutItem:
     layer_name: Optional[str]
     world_matrix: Matrix
     normalization_matrix: Matrix
-    crop_window: Tuple[float, float, float, float]
+    crop_window: Rect
 
 
 @dataclass

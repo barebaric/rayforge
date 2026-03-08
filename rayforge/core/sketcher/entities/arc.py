@@ -2,6 +2,7 @@ import math
 from typing import List, Tuple, Dict, Optional, Any, Sequence, TYPE_CHECKING
 from ...geo import primitives
 from ...geo.geometry import Geometry
+from ...geo.types import Rect
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -47,9 +48,7 @@ class Arc(Entity):
         c = registry.get_point(self.center_idx)
         self.constrained = s.constrained and e.constrained and c.constrained
 
-    def _get_bbox(
-        self, registry: "EntityRegistry"
-    ) -> Tuple[float, float, float, float]:
+    def _get_bbox(self, registry: "EntityRegistry") -> Rect:
         start = registry.get_point(self.start_idx)
         end = registry.get_point(self.end_idx)
         center = registry.get_point(self.center_idx)
@@ -67,7 +66,7 @@ class Arc(Entity):
 
     def is_contained_by(
         self,
-        rect: Tuple[float, float, float, float],
+        rect: Rect,
         registry: "EntityRegistry",
     ) -> bool:
         # For an arc to be strictly inside, its entire bounding box must be
@@ -77,7 +76,7 @@ class Arc(Entity):
 
     def intersects_rect(
         self,
-        rect: Tuple[float, float, float, float],
+        rect: Rect,
         registry: "EntityRegistry",
     ) -> bool:
         start = registry.get_point(self.start_idx)

@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import List, Dict, Optional, Tuple, Sequence, TYPE_CHECKING, Any
+from typing import List, Dict, Optional, Sequence, TYPE_CHECKING, Any
 from dataclasses import dataclass
 from .item import DocItem
 from .matrix import Matrix
 from .workpiece import WorkPiece
+from .geo import Rect
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -92,7 +93,7 @@ class Group(DocItem):
     @staticmethod
     def _calculate_world_bbox(
         items: Sequence[DocItem],
-    ) -> Optional[Tuple[float, float, float, float]]:
+    ) -> Optional[Rect]:
         """
         Calculates the union of the world-space bounding boxes for a list
         of DocItems.

@@ -1,6 +1,7 @@
-from typing import List, Tuple, Dict, Any, Sequence, TYPE_CHECKING
+from typing import List, Dict, Any, Sequence, TYPE_CHECKING
 from ...geo import primitives
 from ...geo.geometry import Geometry
+from ...geo.types import Rect
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -29,7 +30,7 @@ class Line(Entity):
 
     def is_contained_by(
         self,
-        rect: Tuple[float, float, float, float],
+        rect: Rect,
         registry: "EntityRegistry",
     ) -> bool:
         p1 = registry.get_point(self.p1_idx)
@@ -38,7 +39,7 @@ class Line(Entity):
 
     def intersects_rect(
         self,
-        rect: Tuple[float, float, float, float],
+        rect: Rect,
         registry: "EntityRegistry",
     ) -> bool:
         p1 = registry.get_point(self.p1_idx)

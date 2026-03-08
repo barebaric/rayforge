@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Tuple
 
 import numpy as np
 
-from ..core.geo import Point3D
+from ..core.geo import Point3D, Rect
 
 if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine
@@ -180,7 +180,7 @@ class MachineSpace(CoordinateSpace):
     """
 
     extents: Tuple[float, float] = (200.0, 200.0)
-    margins: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
+    margins: Rect = (0.0, 0.0, 0.0, 0.0)
 
     @classmethod
     def from_machine(cls, machine: "Machine") -> "MachineSpace":

@@ -13,7 +13,7 @@ from .constants import (
     GEO_ARRAY_COLS,
 )
 from .linearize import linearize_arc, linearize_bezier_from_array
-from .types import Point3D
+from .types import Point3D, Rect
 
 
 def normalize_angle(angle: float) -> float:
@@ -148,7 +148,7 @@ def get_arc_bounding_box(
     end_pos: Tuple[float, float],
     center_offset: Tuple[float, float],
     clockwise: bool,
-) -> Tuple[float, float, float, float]:
+) -> Rect:
     """
     Calculates the tight bounding box (min_x, min_y, max_x, max_y) for an arc.
     """
@@ -564,9 +564,7 @@ def get_segment_region_intersections(
     return sorted(list(cut_points_t))
 
 
-def is_point_in_rect(
-    point: Tuple[float, float], rect: Tuple[float, float, float, float]
-) -> bool:
+def is_point_in_rect(point: Tuple[float, float], rect: Rect) -> bool:
     """Checks if a 2D point is inside a rectangle."""
     x, y = point
     rx1, ry1, rx2, ry2 = rect
@@ -574,8 +572,8 @@ def is_point_in_rect(
 
 
 def rect_a_contains_rect_b(
-    rect_a: Tuple[float, float, float, float],
-    rect_b: Tuple[float, float, float, float],
+    rect_a: Rect,
+    rect_b: Rect,
 ) -> bool:
     """Checks if rect_a fully contains rect_b."""
     ax1, ay1, ax2, ay2 = rect_a
@@ -586,7 +584,7 @@ def rect_a_contains_rect_b(
 def line_segment_intersects_rect(
     p1: Tuple[float, float],
     p2: Tuple[float, float],
-    rect: Tuple[float, float, float, float],
+    rect: Rect,
 ) -> bool:
     """Checks if a line segment intersects a rectangle."""
     from . import clipping
@@ -605,7 +603,7 @@ def arc_intersects_rect(
     end_pos: Tuple[float, float],
     center: Tuple[float, float],
     clockwise: bool,
-    rect: Tuple[float, float, float, float],
+    rect: Rect,
 ) -> bool:
     """Checks if an arc intersects with a rectangle."""
 
@@ -652,7 +650,7 @@ def arc_intersects_rect(
 def circle_is_contained_by_rect(
     center: Tuple[float, float],
     radius: float,
-    rect: Tuple[float, float, float, float],
+    rect: Rect,
 ) -> bool:
     """Checks if a circle is fully contained within a rectangle."""
     cx, cy = center
@@ -668,7 +666,7 @@ def circle_is_contained_by_rect(
 def circle_intersects_rect(
     center: Tuple[float, float],
     radius: float,
-    rect: Tuple[float, float, float, float],
+    rect: Rect,
 ) -> bool:
     """Checks if a circle's boundary intersects with a rectangle."""
     cx, cy = center

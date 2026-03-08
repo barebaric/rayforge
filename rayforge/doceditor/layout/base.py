@@ -1,8 +1,9 @@
 from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Sequence, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Sequence, TYPE_CHECKING
 from blinker import Signal
+from ...core.geo import Rect
 from ...core.group import Group
 from ...core.item import DocItem
 from ...core.matrix import Matrix
@@ -60,7 +61,7 @@ class LayoutStrategy(ABC):
     @staticmethod
     def _get_item_world_bbox(
         item: DocItem,
-    ) -> Optional[Tuple[float, float, float, float]]:
+    ) -> Optional[Rect]:
         """
         Calculates the axis-aligned bounding box (min_x, min_y, max_x, max_y)
         of a single DocItem (WorkPiece, Group, or StockItem) in world (mm)
@@ -101,7 +102,7 @@ class LayoutStrategy(ABC):
 
     def _get_selection_world_bbox(
         self,
-    ) -> Optional[Tuple[float, float, float, float]]:
+    ) -> Optional[Rect]:
         """
         Calculates the collective world-space bounding box for all
         items. Returns (min_x, min_y, max_x, max_y).

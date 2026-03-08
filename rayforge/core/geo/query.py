@@ -1,5 +1,5 @@
 import math
-from typing import Tuple, Optional, TYPE_CHECKING
+from typing import Tuple, Optional
 import numpy as np
 from .constants import (
     CMD_TYPE_MOVE,
@@ -25,11 +25,7 @@ from .primitives import (
     find_closest_point_on_bezier,
     get_arc_bounding_box,
 )
-from .types import Point3D
-
-
-if TYPE_CHECKING:
-    from .geometry import Rect
+from .types import Point3D, Rect
 
 
 def _compute_cubic_bezier_bounds_1d(
@@ -129,7 +125,7 @@ def _compute_cubic_bezier_bounds_1d(
 
 def get_bounding_rect_from_array(
     data: np.ndarray,
-) -> Tuple[float, float, float, float]:
+) -> Rect:
     """
     Calculates the bounding box (min_x, min_y, max_x, max_y) from the
     geometry array.
