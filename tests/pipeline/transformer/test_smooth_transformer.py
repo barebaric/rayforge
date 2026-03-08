@@ -1,7 +1,7 @@
 import math
 from unittest.mock import Mock
 from rayforge.core.ops import ArcToCommand, Ops
-from rayforge.pipeline.transformer.smooth import Smooth
+from rayforge.pipeline.transformer.smooth_transformer import Smooth
 from tests.conftest import MockProgressContext
 
 

@@ -1,12 +1,12 @@
 # flake8: noqa:F401
 import inspect
 from .base import OpsTransformer, ExecutionPhase
-from .crop import CropTransformer
-from .multipass import MultiPassTransformer
-from .optimize import Optimize
-from .overscan import OverscanTransformer
-from .smooth import Smooth
-from .tabs import TabOpsTransformer
+from .crop_transformer import CropTransformer
+from .multipass_transformer import MultiPassTransformer
+from .optimize_transformer import Optimize
+from .overscan_transformer import OverscanTransformer
+from .smooth_transformer import Smooth
+from .tabs_transformer import TabOpsTransformer
 
 transformer_by_name = dict(
     (name, obj)

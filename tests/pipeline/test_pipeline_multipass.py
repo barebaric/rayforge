@@ -10,7 +10,9 @@ from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.transformer.multipass import MultiPassTransformer
+from rayforge.pipeline.transformer.multipass_transformer import (
+    MultiPassTransformer,
+)
 from rayforge.image import SVG_RENDERER
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment

@@ -1,7 +1,9 @@
 import pytest
 from typing import List
 from rayforge.core.ops import Ops, Command, LineToCommand, MoveToCommand
-from rayforge.pipeline.transformer.multipass import MultiPassTransformer
+from rayforge.pipeline.transformer.multipass_transformer import (
+    MultiPassTransformer,
+)
 
 
 class TestMultiPassTransformer:

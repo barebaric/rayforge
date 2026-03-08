@@ -12,7 +12,7 @@ from rayforge.core.ops import (
     SectionType,
     EnableAirAssistCommand,
 )
-from rayforge.pipeline.transformer.overscan import (
+from rayforge.pipeline.transformer.overscan_transformer import (
     OverscanTransformer,
     ExecutionPhase,
 )
