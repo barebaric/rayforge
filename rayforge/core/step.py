@@ -4,6 +4,7 @@ from abc import ABC
 from typing import List, Optional, TYPE_CHECKING, Dict, Any, cast, Set
 from gettext import gettext as _
 from blinker import Signal
+from ..pipeline.transformer import transformer_by_name
 from ..shared.units.formatter import format_value
 from .capability import Capability, CAPABILITIES_BY_NAME
 from .item import DocItem
@@ -301,3 +302,23 @@ class Step(DocItem, ABC):
 
     def dump(self, indent: int = 0):
         print("  " * indent, self.name)
+
+    def is_position_sensitive(self) -> bool:
+        """
+        Returns True if workpiece position changes may affect the output.
+
+        This is true when per-workpiece transformers are configured that
+        depend on the workpiece's world position (e.g., crop-to-stock).
+        """
+        for t_dict in self.per_workpiece_transformers_dicts:
+            if not t_dict.get("enabled", True):
+                continue
+            name = t_dict.get("name")
+            if not name or not isinstance(name, str):
+                continue
+            transformer_cls = transformer_by_name.get(name)
+            if transformer_cls is None:
+                continue
+            if transformer_cls.POSITION_SENSITIVE:
+                return True
+        return False

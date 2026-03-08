@@ -1,4 +1,5 @@
-from typing import Any, List, Tuple, TYPE_CHECKING
+from typing import Any, List, Tuple, TYPE_CHECKING, Optional
+from ...core.geo import Geometry
 from ...shared.tasker.progress import CallbackProgressContext
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ..artifact.store import ArtifactStore
@@ -19,6 +20,7 @@ def make_workpiece_artifact_in_subprocess(
     generation_id: int,
     generation_size: Tuple[float, float],
     creator_tag: str,
+    stock_geom_dicts: Optional[List[dict]] = None,
 ) -> int:
     """
     The main entry point for generating operations for a single (Step,
@@ -46,6 +48,7 @@ def make_workpiece_artifact_in_subprocess(
         generation_id: Unique identifier for this generation.
         generation_size: The size of the generation in mm.
         creator_tag: Tag for artifact tracking.
+        stock_geom_dicts: Optional list of stock geometry dictionaries.
 
     Returns:
         The generation_id to signal completion.
@@ -70,6 +73,10 @@ def make_workpiece_artifact_in_subprocess(
     ]
     laser = Laser.from_dict(laser_dict)
     workpiece = WorkPiece.from_dict(workpiece_dict)
+
+    stock_geometries: List[Geometry] = []
+    if stock_geom_dicts:
+        stock_geometries = [Geometry.from_dict(d) for d in stock_geom_dicts]
 
     context = CallbackProgressContext(
         is_cancelled_func=proxy.is_cancelled,
@@ -118,6 +125,7 @@ def make_workpiece_artifact_in_subprocess(
         generation_id=generation_id,
         on_chunk=on_chunk_callback,
         context=context,
+        stock_geometries=stock_geometries,
     )
 
     if final_artifact is None:

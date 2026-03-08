@@ -1,12 +1,15 @@
 from __future__ import annotations
 import math
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, TYPE_CHECKING
 from gettext import gettext as _
 
 from .base import OpsTransformer, ExecutionPhase
 from ...core.workpiece import WorkPiece
 from ...core.ops import Ops
 from ...shared.tasker.progress import ProgressContext
+
+if TYPE_CHECKING:
+    from ...core.geo import Geometry
 
 
 class MultiPassTransformer(OpsTransformer):
@@ -85,6 +88,7 @@ class MultiPassTransformer(OpsTransformer):
         ops: Ops,
         workpiece: Optional[WorkPiece] = None,
         context: Optional[ProgressContext] = None,
+        stock_geometries: Optional[List["Geometry"]] = None,
     ) -> None:
         """
         Executes the multi-pass transformation on the Ops object.

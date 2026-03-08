@@ -1,5 +1,5 @@
 import math
-from typing import Optional, List, Tuple, Dict, Any
+from typing import Optional, List, Tuple, Dict, Any, TYPE_CHECKING
 from gettext import gettext as _
 from ...core.workpiece import WorkPiece
 from ...core.ops import Ops, LineToCommand, MoveToCommand
@@ -7,6 +7,9 @@ from ...core.geo.analysis import get_angle_at_vertex
 from ...core.geo.linearize import resample_polyline
 from ...shared.tasker.progress import ProgressContext
 from .base import OpsTransformer, ExecutionPhase
+
+if TYPE_CHECKING:
+    from ...core.geo import Geometry
 
 
 class Smooth(OpsTransformer):
@@ -124,6 +127,7 @@ class Smooth(OpsTransformer):
         ops: Ops,
         workpiece: Optional[WorkPiece] = None,
         context: Optional[ProgressContext] = None,
+        stock_geometries: Optional[List["Geometry"]] = None,
     ):
         """
         Executes the smoothing transformation on a set of operations.

@@ -25,6 +25,7 @@ class UnitSpinRowHelper:
         spin_row: Adw.SpinRow,
         quantity: str,
         max_value_in_base: Optional[float] = None,
+        min_digits: Optional[int] = None,
     ):
         self.spin_row = spin_row
         self.quantity = quantity
@@ -32,6 +33,7 @@ class UnitSpinRowHelper:
         self._is_updating = False
         self._original_subtitle_format = self.spin_row.get_subtitle() or ""
         self._max_value_in_base = max_value_in_base
+        self._min_digits = min_digits
 
         # Application-level signal for value changes (in base units)
         self.changed = Signal()
@@ -124,7 +126,9 @@ class UnitSpinRowHelper:
             new_upper = self._unit.from_base(self._max_value_in_base)
             adj.set_upper(new_upper)
 
-        self.spin_row.set_digits(self._unit.precision)
+        self.spin_row.set_digits(
+            max(self._unit.precision, self._min_digits or 0)
+        )
 
     def set_value_in_base_units(self, base_value: float):
         """

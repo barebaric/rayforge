@@ -1,7 +1,7 @@
 from __future__ import annotations
 import math
 import logging
-from typing import Optional, List, Tuple, Dict, Any
+from typing import Optional, List, Tuple, Dict, Any, TYPE_CHECKING
 from gettext import gettext as _
 from ...core.geo.constants import (
     CMD_TYPE_LINE,
@@ -17,6 +17,9 @@ from ...core.ops import (
 from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import ProgressContext
 from .base import OpsTransformer, ExecutionPhase
+
+if TYPE_CHECKING:
+    from ...core.geo import Geometry
 
 logger = logging.getLogger(__name__)
 
@@ -151,6 +154,7 @@ class TabOpsTransformer(OpsTransformer):
         ops: Ops,
         workpiece: Optional[WorkPiece] = None,
         context: Optional[ProgressContext] = None,
+        stock_geometries: Optional[List["Geometry"]] = None,
     ) -> None:
         if not self.enabled:
             return

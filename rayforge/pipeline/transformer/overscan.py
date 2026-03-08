@@ -22,6 +22,7 @@ from .base import OpsTransformer, ExecutionPhase
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
+    from ...core.geo import Geometry
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +122,7 @@ class OverscanTransformer(OpsTransformer):
         ops: Ops,
         workpiece: Optional[WorkPiece] = None,
         context: Optional[ProgressContext] = None,
+        stock_geometries: Optional[List["Geometry"]] = None,
     ) -> None:
         if not self.enabled or math.isclose(self.distance_mm, 0.0):
             return

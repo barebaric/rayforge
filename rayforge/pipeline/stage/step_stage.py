@@ -303,6 +303,14 @@ class StepPipelineStage(PipelineStage):
         assembly_info = []
         retained_handles = []
 
+        stock_geom_dicts = []
+        doc = step.layer.doc
+        if doc:
+            for stock_item in doc.stock_items:
+                geo = stock_item.get_world_geometry()
+                if geo:
+                    stock_geom_dicts.append(geo.to_dict())
+
         try:
             for wp in step.layer.all_workpieces:
                 handle = self._artifact_manager.get_workpiece_handle(
@@ -330,6 +338,7 @@ class StepPipelineStage(PipelineStage):
                     "artifact_handle_dict": handle.to_dict(),
                     "world_transform_list": wp.get_world_transform().to_list(),
                     "workpiece_dict": wp.in_world().to_dict(),
+                    "stock_geometries": stock_geom_dicts,
                 }
                 assembly_info.append(info)
         except ValueError:

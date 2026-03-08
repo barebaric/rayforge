@@ -323,6 +323,13 @@ class WorkPiecePipelineStage(PipelineStage):
         """
         from .workpiece_runner import make_workpiece_artifact_in_subprocess
 
+        stock_geom_dicts = []
+        if step.layer and step.layer.doc:
+            for stock_item in step.layer.doc.stock_items:
+                geo = stock_item.get_world_geometry()
+                if geo:
+                    stock_geom_dicts.append(geo.to_dict())
+
         self._task_manager.run_process(
             make_workpiece_artifact_in_subprocess,
             self._artifact_manager.get_store(),
@@ -334,6 +341,7 @@ class WorkPiecePipelineStage(PipelineStage):
             generation_id,
             workpiece_size,
             "wp",
+            stock_geom_dicts,
             key=key,
             when_done=lambda t: self._on_task_complete(
                 t,

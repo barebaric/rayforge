@@ -6,6 +6,7 @@ from gettext import gettext as _
 from rayforge.core.capability import CUT, SCORE, Capability
 from rayforge.core.step import Step
 from rayforge.pipeline.transformer import (
+    CropTransformer,
     MultiPassTransformer,
     Optimize,
     TabOpsTransformer,
@@ -43,6 +44,7 @@ class FrameStep(Step):
         step.opsproducer_dict = cls.PRODUCER_CLASS().to_dict()
         step.per_workpiece_transformers_dicts = [
             TabOpsTransformer().to_dict(),
+            CropTransformer(enabled=False).to_dict(),
             Optimize().to_dict(),
         ]
         step.per_step_transformers_dicts = [
