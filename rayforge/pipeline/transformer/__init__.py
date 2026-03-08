@@ -1,6 +1,7 @@
 # flake8: noqa:F401
 import inspect
 from .base import OpsTransformer, ExecutionPhase
+from .crop import CropTransformer
 from .multipass import MultiPassTransformer
 from .optimize import Optimize
 from .overscan import OverscanTransformer
@@ -16,6 +17,7 @@ transformer_by_name = dict(
 )
 
 __all__ = [
+    "CropTransformer",
     "OpsTransformer",
     "ExecutionPhase",
     "MultiPassTransformer",

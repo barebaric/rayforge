@@ -17,6 +17,7 @@ from ..encoder.textureencoder import TextureEncoder
 from ..encoder.vertexencoder import VertexEncoder
 
 if TYPE_CHECKING:
+    from ...core.geo import Geometry
     from ..transformer import OpsTransformer
 
 logger = logging.getLogger(__name__)
@@ -188,6 +189,7 @@ def _apply_transformers_to_ops(
     transformers: List["OpsTransformer"],
     workpiece: WorkPiece,
     context: Optional[ProgressContext] = None,
+    stock_geometries: Optional[List["Geometry"]] = None,
 ) -> None:
     """
     Applies transformers to ops.
@@ -197,6 +199,7 @@ def _apply_transformers_to_ops(
         transformers: List of transformers to apply.
         workpiece: The workpiece context for the transformers.
         context: Optional progress context.
+        stock_geometries: List of stock boundary geometries in world space.
     """
     for i, transformer in enumerate(transformers):
         base_progress = 0.5 + (i / len(transformers) * 0.4)
@@ -205,7 +208,9 @@ def _apply_transformers_to_ops(
             base_progress,
             _("Applying '{t}'").format(t=transformer.label),
         )
-        transformer.run(ops, workpiece=workpiece)
+        transformer.run(
+            ops, workpiece=workpiece, stock_geometries=stock_geometries
+        )
 
 
 def _encode_vertex_data(ops: Ops) -> VertexData:
@@ -227,6 +232,7 @@ def compute_step_artifacts(
     transformers: List["OpsTransformer"],
     generation_id: int,
     context: Optional[ProgressContext] = None,
+    stock_geometries: Optional[List["Geometry"]] = None,
 ) -> Tuple[StepRenderArtifact, StepOpsArtifact]:
     """
     Computes step artifacts from workpiece artifacts and transforms.
@@ -237,6 +243,7 @@ def compute_step_artifacts(
         transformers: List of OpsTransformers to apply to the combined ops.
         generation_id: The generation ID for staleness checking.
         context: Optional ProgressContext for progress reporting.
+        stock_geometries: List of stock boundary geometries in world space.
 
     Returns:
         Tuple of (StepRenderArtifact, StepOpsArtifact).
@@ -244,8 +251,6 @@ def compute_step_artifacts(
     combined_ops = Ops()
     texture_instances = []
     num_items = len(artifacts)
-    # The workpiece context for step-level transformers should be the first
-    # workpiece in the list. This is a simplification but sufficient for now.
     workpiece_context = artifacts[0][2] if artifacts else None
 
     for i, (artifact, world_matrix, workpiece) in enumerate(artifacts):
@@ -260,7 +265,11 @@ def compute_step_artifacts(
 
     if workpiece_context:
         _apply_transformers_to_ops(
-            combined_ops, transformers, workpiece_context, context
+            combined_ops,
+            transformers,
+            workpiece_context,
+            context,
+            stock_geometries,
         )
 
     set_progress(context, 0.9)

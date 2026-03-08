@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 from typing import List, Dict, Any, TYPE_CHECKING
 from gettext import gettext as _
+from ...core.geo import Geometry
 from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import CallbackProgressContext
@@ -70,8 +71,15 @@ def make_step_artifact_in_subprocess(
     artifacts = []
     num_items = len(workpiece_assembly_info)
 
+    stock_geometries: List[Geometry] = []
     for i, info in enumerate(workpiece_assembly_info):
         proxy.set_progress(i / num_items * 0.5)
+
+        if i == 0:
+            stock_geom_dicts = info.get("stock_geometries", [])
+            stock_geometries = [
+                Geometry.from_dict(d) for d in stock_geom_dicts
+            ]
 
         handle = create_handle_from_dict(info["artifact_handle_dict"])
         try:
@@ -103,6 +111,7 @@ def make_step_artifact_in_subprocess(
         transformers=transformers,
         generation_id=generation_id,
         context=context,
+        stock_geometries=stock_geometries,
     )
 
     proxy.set_message(_("Storing step data..."))

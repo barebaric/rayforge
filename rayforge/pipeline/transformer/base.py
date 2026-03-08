@@ -1,11 +1,14 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
+from typing import List, Optional, Dict, Any, TYPE_CHECKING
 from blinker import Signal
 from enum import Enum, auto
 from ...core.ops import Ops
 from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import ProgressContext
+
+if TYPE_CHECKING:
+    from ...core.geo import Geometry
 
 
 class ExecutionPhase(Enum):
@@ -39,6 +42,8 @@ class OpsTransformer(ABC):
     - Applying travel path optimizations
     - Applying arc welding
     """
+
+    POSITION_SENSITIVE: bool = False
 
     def __init__(self, enabled: bool = True, **kwargs):
         self._enabled = enabled
@@ -83,6 +88,7 @@ class OpsTransformer(ABC):
         ops: Ops,
         workpiece: Optional[WorkPiece] = None,
         context: Optional[ProgressContext] = None,
+        stock_geometries: Optional[List["Geometry"]] = None,
     ) -> None:
         """
         Runs the transformation.
@@ -92,6 +98,7 @@ class OpsTransformer(ABC):
             workpiece: The WorkPiece model being processed.
             context: Optional progress context for reporting progress and
                     checking cancellation.
+            stock_geometries: List of stock boundary geometries in world space.
         """
         pass
 

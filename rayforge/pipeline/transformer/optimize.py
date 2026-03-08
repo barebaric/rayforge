@@ -1,7 +1,7 @@
 import numpy as np
 import math
 import logging
-from typing import Optional, List, Dict, Any, Tuple, cast
+from typing import Optional, List, Dict, Any, Tuple, cast, TYPE_CHECKING
 from gettext import gettext as _
 from scipy.spatial import cKDTree  # type: ignore
 from ...core.ops import (
@@ -17,6 +17,9 @@ from ...core.ops.group import group_by_state_continuity
 from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import ProgressContext
 from .base import OpsTransformer, ExecutionPhase
+
+if TYPE_CHECKING:
+    from ...core.geo import Geometry
 
 
 logger = logging.getLogger(__name__)
@@ -530,6 +533,7 @@ class Optimize(OpsTransformer):
         ops: Ops,
         workpiece: Optional[WorkPiece] = None,
         context: Optional[ProgressContext] = None,
+        stock_geometries: Optional[List["Geometry"]] = None,
     ) -> None:
         if context is None:
             return

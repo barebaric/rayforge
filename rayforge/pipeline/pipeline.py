@@ -14,6 +14,7 @@ from typing import (
 )
 from blinker import Signal
 from contextlib import contextmanager
+
 from ..core.doc import Doc
 from ..core.group import Group
 from ..core.item import DocItem
@@ -21,6 +22,7 @@ from ..core.layer import Layer
 from ..core.matrix import Matrix
 from ..core.ops import Ops
 from ..core.step import Step
+from ..core.stock import StockItem
 from ..core.workpiece import WorkPiece
 from .artifact import (
     ArtifactManager,
@@ -412,6 +414,42 @@ class Pipeline:
                 return wp
         return None
 
+    def _should_invalidate_workpiece_for_transform(
+        self,
+        workpiece: WorkPiece,
+        step: Step,
+        size_changed: bool,
+    ) -> bool:
+        """
+        Determine if workpiece artifact should be invalidated for a transform.
+
+        Returns True if:
+        - Size changed (always invalidate)
+        - Position-sensitive transformers enabled (position may affect output)
+
+        Returns False if only position changed and step is not
+        position-sensitive.
+        """
+        if size_changed:
+            logger.debug(
+                f"_should_invalidate: size_changed=True for {workpiece.uid}, "
+                f"invalidating"
+            )
+            return True
+
+        if step.is_position_sensitive():
+            logger.debug(
+                f"_should_invalidate: step is position-sensitive for "
+                f"{workpiece.uid}, invalidating"
+            )
+            return True
+
+        logger.debug(
+            f"_should_invalidate: step is not position-sensitive for "
+            f"{workpiece.uid}, NOT invalidating"
+        )
+        return False
+
     def _invalidate_node(self, key: ArtifactKey) -> None:
         """
         Centralized invalidation using the DAG.
@@ -585,11 +623,55 @@ class Pipeline:
 
         self._schedule_reconciliation()
 
+    def _on_stock_transform_changed(self, stock_item: "StockItem") -> None:
+        """
+        Handles stock item transform changes.
+
+        When a stock item moves, check all workpieces that have the
+        boundary filter enabled and invalidate only those whose
+        intersection with the stock has changed.
+        """
+        if not self.doc:
+            return
+
+        logger.debug(
+            f"_on_stock_transform_changed: stock={stock_item.uid} moved"
+        )
+
+        for layer in self.doc.layers:
+            if not layer.workflow:
+                continue
+
+            for wp in layer.all_workpieces:
+                for step in layer.workflow.steps:
+                    if not step.is_position_sensitive():
+                        continue
+
+                    should_invalidate = (
+                        self._should_invalidate_workpiece_for_transform(
+                            wp, step, size_changed=False
+                        )
+                    )
+                    logger.debug(
+                        f"_on_stock_transform_changed: "
+                        f"should_invalidate={should_invalidate} "
+                        f"for wp={wp.uid}"
+                    )
+                    if should_invalidate:
+                        wp_step_key = ArtifactKey.for_workpiece(
+                            wp.uid, step.uid
+                        )
+                        self._invalidate_node(wp_step_key)
+                    step_key = ArtifactKey.for_step(step.uid)
+                    self._invalidate_node(step_key)
+
+        self._schedule_reconciliation()
+
     def _on_descendant_transform_changed(
         self,
         sender: Any,
         *,
-        origin: Union[WorkPiece, Group, Layer],
+        origin: Union[WorkPiece, Group, Layer, "StockItem"],
         parent_of_origin: DocItem,
         old_matrix: Optional["Matrix"] = None,
     ) -> None:
@@ -601,18 +683,26 @@ class Pipeline:
           regeneration since geometry is unchanged)
         - Size change: Use FULL_REPRODUCTION scope (workpiece geometry
           changed, requiring regeneration)
+        - Invalidate workpiece if the anything moved if a position-sensitive
+          step is present (e.g., crop-to-stock)
 
         This selective approach optimizes performance by avoiding
         unnecessary workpiece regeneration for pure position/rotation
-        changes.
+        changes that don't affect crop-to-stock.
 
         Args:
             sender: The signal sender.
-            origin: The WorkPiece, Group, or Layer whose transform changed.
+            origin: The WorkPiece, Group, Layer, or StockItem whose transform
+                    changed.
             parent_of_origin: The parent of the transformed item.
             old_matrix: The previous transform matrix, used to detect size
                          changes. Only provided for WorkPiece origins.
         """
+
+        if isinstance(origin, StockItem):
+            self._on_stock_transform_changed(origin)
+            return
+
         workpieces_to_check = self._collect_affected_workpieces(origin)
 
         for wp in workpieces_to_check:
@@ -630,7 +720,12 @@ class Pipeline:
 
             if wp.layer and wp.layer.workflow:
                 for step in wp.layer.workflow.steps:
-                    if size_changed:
+                    should_invalidate_wp = (
+                        self._should_invalidate_workpiece_for_transform(
+                            wp, step, size_changed
+                        )
+                    )
+                    if should_invalidate_wp:
                         wp_step_key = ArtifactKey.for_workpiece(
                             wp.uid, step.uid
                         )

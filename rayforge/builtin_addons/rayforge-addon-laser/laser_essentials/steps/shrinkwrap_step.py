@@ -6,6 +6,7 @@ from gettext import gettext as _
 from rayforge.core.capability import CUT, SCORE, Capability
 from rayforge.core.step import Step
 from rayforge.pipeline.transformer import (
+    CropTransformer,
     MultiPassTransformer,
     Optimize,
     Smooth,
@@ -45,6 +46,7 @@ class ShrinkWrapStep(Step):
         step.per_workpiece_transformers_dicts = [
             Smooth(enabled=False, amount=20).to_dict(),
             TabOpsTransformer().to_dict(),
+            CropTransformer(enabled=False).to_dict(),
             Optimize().to_dict(),
         ]
         step.per_step_transformers_dicts = [
