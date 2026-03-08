@@ -1218,7 +1218,7 @@ class Ops:
             # The segment was fully clipped, so the pen is now "up"
             return None
 
-    def clip(self, rect: Tuple[float, float, float, float]) -> Ops:
+    def clip_rect(self, rect: Tuple[float, float, float, float]) -> Ops:
         """
         Clips the Ops to the given rectangle.
         Returns a new, clipped Ops object.
@@ -1432,6 +1432,135 @@ class Ops:
 
         self.commands = new_ops.commands
         # Update last_move_to to a valid point if ops is not empty
+        if new_ops.commands:
+            for cmd_rev in reversed(new_ops.commands):
+                if isinstance(cmd_rev, MoveToCommand):
+                    self.last_move_to = cmd_rev.end
+                    break
+        return self
+
+    def clip_to_regions(
+        self,
+        regions: List[List[Tuple[float, float]]],
+        tolerance: float = 0.3,
+    ) -> "Ops":
+        """
+        Clips the Ops to only include parts that lie inside the given polygonal
+        regions.
+
+        This is useful when you have multiple valid areas and you want to
+        remove any toolpaths that fall outside those areas.
+
+        This method modifies the Ops object in place and returns it.
+
+        Args:
+            regions: List of closed polygons defining valid areas. Each
+                     polygon is a list of (x, y) tuples.
+            tolerance: Tolerance for linearization and polygon operations
+
+        Returns:
+            The modified Ops object (self), containing only the clipped paths
+        """
+        if not regions or not self.commands:
+            return self
+
+        valid_regions: List[List[Tuple[float, float]]] = []
+        for region in regions:
+            if len(region) >= 3:
+                valid_regions.append(region)
+
+        if not valid_regions:
+            return self
+
+        new_ops = Ops()
+        last_point: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        pen_pos: Optional[Tuple[float, float, float]] = None
+
+        first_move_idx = next(
+            (
+                i
+                for i, cmd in enumerate(self.commands)
+                if isinstance(cmd, MovingCommand)
+            ),
+            len(self.commands),
+        )
+        for i in range(first_move_idx):
+            new_ops.add(deepcopy(self.commands[i]))
+
+        for cmd in self.commands[first_move_idx:]:
+            if not isinstance(cmd, MovingCommand) or cmd.end is None:
+                if not new_ops.commands or new_ops.commands[-1] is not cmd:
+                    new_ops.add(deepcopy(cmd))
+                continue
+
+            if isinstance(cmd, MoveToCommand):
+                last_point = cmd.end
+                pen_pos = None
+                continue
+
+            if isinstance(cmd, ScanLinePowerCommand):
+                kept_segments = clipping.clip_line_segment_to_regions(
+                    last_point, cmd.end, valid_regions
+                )
+                num_values = len(cmd.power_values)
+                p_start_orig = np.array(last_point)
+                p_end_orig = np.array(cmd.end)
+                vec_orig = p_end_orig - p_start_orig
+                len_sq = np.dot(vec_orig, vec_orig)
+
+                for new_start, new_end in kept_segments:
+                    if len_sq > 1e-9:
+                        t_start = (
+                            np.dot(
+                                np.array(new_start) - p_start_orig, vec_orig
+                            )
+                            / len_sq
+                        )
+                        t_end = (
+                            np.dot(np.array(new_end) - p_start_orig, vec_orig)
+                            / len_sq
+                        )
+                    else:
+                        t_start, t_end = 0.0, 1.0
+
+                    idx_start = int(num_values * t_start)
+                    idx_end = int(num_values * t_end)
+                    new_power = cmd.power_values[idx_start:idx_end]
+
+                    if new_power:
+                        if (
+                            pen_pos is None
+                            or math.dist(pen_pos, new_start) > 1e-6
+                        ):
+                            new_ops.move_to(*new_start)
+                        new_ops.add(ScanLinePowerCommand(new_end, new_power))
+                        pen_pos = new_end
+                last_point = cmd.end
+                continue
+
+            linearized_commands = cmd.linearize(last_point)
+
+            p_current_segment_start = last_point
+            for l_cmd in linearized_commands:
+                if l_cmd.end is None:
+                    continue
+                p_current_segment_end = l_cmd.end
+
+                kept_segments = clipping.clip_line_segment_to_regions(
+                    p_current_segment_start,
+                    p_current_segment_end,
+                    valid_regions,
+                )
+                for sub_p1, sub_p2 in kept_segments:
+                    if pen_pos is None or math.dist(pen_pos, sub_p1) > 1e-6:
+                        new_ops.move_to(*sub_p1)
+                    new_ops.line_to(*sub_p2)
+                    pen_pos = sub_p2
+                p_current_segment_start = p_current_segment_end
+
+            last_point = cmd.end
+
+        self.commands = new_ops.commands
         if new_ops.commands:
             for cmd_rev in reversed(new_ops.commands):
                 if isinstance(cmd_rev, MoveToCommand):
