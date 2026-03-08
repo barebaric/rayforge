@@ -2,8 +2,8 @@ import logging
 import threading
 from typing import Optional, TYPE_CHECKING
 import pluggy
-from .core.hooks import RayforgeSpecs
 from .addon_mgr.addon_manager import AddonManager
+from .core.hooks import RayforgeSpecs
 
 # Use a TYPE_CHECKING block to import types for static analysis
 # without causing a runtime circular import.
@@ -13,10 +13,11 @@ if TYPE_CHECKING:
     from .core.config import Config, ConfigManager
     from .core.library_manager import LibraryManager
     from .core.recipe_manager import RecipeManager
+    from .debug import DebugDumpManager
+    from .license import LicenseValidator
     from .machine.models.machine import Machine
     from .machine.models.manager import MachineManager
     from .machine.models.dialect_manager import DialectManager
-    from .debug import DebugDumpManager
 
 
 logger = logging.getLogger(__name__)
@@ -37,9 +38,6 @@ class RayforgeContext:
         to call from any process. It only sets up services that are safe
         for subprocess initialization.
         """
-        from .pipeline.artifact.store import ArtifactStore
-        from .debug import DebugDumpManager
-        from .machine.models.dialect_manager import DialectManager
         from .core.ai.ai_service import AIService
         from .core.ai.config import AIConfigManager
         from .config import (
@@ -48,9 +46,14 @@ class RayforgeContext:
             ADDONS_DIR,
             BUILTIN_ADDONS_DIR,
             AI_CONFIG_FILE,
+            PATREON_CLIENT_ID,
         )
-        from .shared.util.localized import get_system_language
         from .core.addon_config import AddonConfig
+        from .debug import DebugDumpManager
+        from .license import LicenseValidator
+        from .machine.models.dialect_manager import DialectManager
+        from .pipeline.artifact.store import ArtifactStore
+        from .shared.util.localized import get_system_language
 
         self.artifact_store = ArtifactStore()
         # The DialectManager is safe and necessary for all processes.
@@ -69,12 +72,18 @@ class RayforgeContext:
         self.addon_config = AddonConfig(CONFIG_DIR)
         self.addon_config.load()
 
+        # Initialize license validator
+        self._license_validator = LicenseValidator(
+            CONFIG_DIR, PATREON_CLIENT_ID
+        )
+
         # Initialize the addon manager
         self.addon_mgr = AddonManager(
             [BUILTIN_ADDONS_DIR, ADDONS_DIR],
             ADDONS_DIR,
             self.plugin_mgr,
             self.addon_config,
+            license_validator=self._license_validator,
         )
 
         # These managers are initialized to None. The main application thread
@@ -155,6 +164,11 @@ class RayforgeContext:
     def debug_dump_manager(self) -> "DebugDumpManager":
         """Returns the debug dump manager."""
         return self._debug_dump_manager
+
+    @property
+    def license_validator(self) -> "LicenseValidator":
+        """Returns the license validator."""
+        return self._license_validator
 
     @property
     def ai_service(self) -> "AIService":

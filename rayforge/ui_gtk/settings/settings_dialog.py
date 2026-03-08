@@ -6,6 +6,7 @@ from ..shared.patched_dialog_window import PatchedDialogWindow
 from .addon_manager_page import AddonManagerPage
 from .ai_settings_page import AISettingsPage
 from .general_preferences_page import GeneralPreferencesPage
+from .license_settings_page import LicenseSettingsPage
 from .machine_settings_page import MachineSettingsPage
 from .material_manager_page import MaterialManagerPage
 from .recipe_manager_page import RecipeManagerPage
@@ -24,6 +25,7 @@ class SettingsWindow(PatchedDialogWindow):
         "recipes": 3,
         "ai": 4,
         "addons": 5,
+        "licenses": 6,
     }
 
     def __init__(self, initial_page: str = "general", **kwargs):
@@ -66,6 +68,7 @@ class SettingsWindow(PatchedDialogWindow):
         self._add_page(RecipeManagerPage)
         self._add_page(AISettingsPage)
         self._add_page(AddonManagerPage)
+        self._add_page(LicenseSettingsPage)
 
         # Create the content's NavigationPage wrapper
         pages = self.content_stack.get_pages()

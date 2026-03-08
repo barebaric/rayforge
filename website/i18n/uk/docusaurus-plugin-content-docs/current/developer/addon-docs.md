@@ -73,6 +73,10 @@ author:
   name: Іван Петренко
   email: ivan@example.com
 
+# Опціонально: Інформація про ліцензію (рекомендується ідентифікатор SPDX)
+license:
+  name: MIT
+
 url: https://github.com/username/my-custom-addon
 ```
 
@@ -89,6 +93,7 @@ url: https://github.com/username/my-custom-addon
 - `depends`: Список обмежень версії для Rayforge
 - `requires`: Список залежностей від інших аддонів
 - `provides`: Точки входу та assets
+- `license`: Інформація про ліцензію (dict з ключем `name`, використовуючи ідентифікатор SPDX)
 - `url`: Сторінка проекту або репозиторій
 
 ## 4. Точки входу

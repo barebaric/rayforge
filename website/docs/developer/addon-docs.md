@@ -74,6 +74,10 @@ author:
   name: Jane Doe
   email: jane@example.com
 
+# Optional: License information (SPDX identifier recommended)
+license:
+  name: MIT
+
 url: https://github.com/username/my-custom-addon
 ```
 
@@ -90,6 +94,7 @@ url: https://github.com/username/my-custom-addon
 - `depends`: List of version constraints for Rayforge
 - `requires`: List of other addon dependencies
 - `provides`: Entry points and assets
+- `license`: License information (dict with `name` key using SPDX identifier)
 - `url`: Project homepage or repository
 
 ## 4. Entry Points

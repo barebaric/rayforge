@@ -31,6 +31,76 @@ class AddonAuthor:
 
 
 @dataclass
+class AddonLicense:
+    """
+    Represents licensing information for an addon.
+
+    Attributes:
+        name: SPDX license identifier (e.g., "MIT", "BSL-1.1").
+        required: Whether a license is required for use.
+        purchase_url: URL to purchase a license.
+        product_id: Product identifier for license validation.
+        product_ids: List of product identifiers for license validation.
+        patreon_tier_ids: List of Patreon tier IDs that grant access.
+    """
+
+    name: str = ""
+    required: bool = False
+    purchase_url: str = ""
+    product_id: str = ""
+    product_ids: List[str] = field(default_factory=list)
+    patreon_tier_ids: List[str] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(
+        cls, data: Optional[Dict[str, Any]]
+    ) -> Optional["AddonLicense"]:
+        """Creates an AddonLicense from a dictionary, or None if empty."""
+        if not data:
+            return None
+        if not isinstance(data, dict):
+            return None
+        tier_ids = data.get("patreon_tier_ids", [])
+        if tier_ids is None:
+            tier_ids = []
+        product_ids = data.get("product_ids", [])
+        if product_ids is None:
+            product_ids = []
+        return cls(
+            name=data.get("name", ""),
+            required=bool(data.get("required", False)),
+            purchase_url=data.get("purchase_url", ""),
+            product_id=data.get("product_id", ""),
+            product_ids=product_ids if isinstance(product_ids, list) else [],
+            patreon_tier_ids=tier_ids if isinstance(tier_ids, list) else [],
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Converts the license to a dictionary for serialization."""
+        result = {}
+        if self.name:
+            result["name"] = self.name
+        if self.required:
+            result["required"] = self.required
+        if self.purchase_url:
+            result["purchase_url"] = self.purchase_url
+        if self.product_id:
+            result["product_id"] = self.product_id
+        if self.product_ids:
+            result["product_ids"] = self.product_ids
+        if self.patreon_tier_ids:
+            result["patreon_tier_ids"] = self.patreon_tier_ids
+        return result
+
+    def get_all_product_ids(self) -> List[str]:
+        """Returns all product IDs (both single and list)."""
+        ids = list(self.product_ids)
+        if self.product_id:
+            ids.append(self.product_id)
+        return ids
+
+
+@dataclass
 class AddonProvides:
     """
     Defines what the addon provides to the system.
@@ -67,12 +137,20 @@ class AddonMetadata:
     url: str = ""
     display_name: str = ""
     requires: List[str] = field(default_factory=list)
+    license: Optional[AddonLicense] = None
+
+    @property
+    def license_name(self) -> str:
+        """Returns the license name if available."""
+        return self.license.name if self.license else ""
 
     def to_dict(self) -> Dict[str, Any]:
         """Converts metadata back to a dictionary for YAML serialization."""
         result = asdict(self)
         if self.version is UnknownVersion:
             result["version"] = None
+        if self.license:
+            result["license"] = self.license.to_dict()
         return result
 
     @classmethod
@@ -123,6 +201,7 @@ class AddonMetadata:
             url=data.get("repository", ""),
             api_version=data.get("api_version", PLUGIN_API_VERSION),
             requires=requires,
+            license=AddonLicense.from_dict(data.get("license")),
         )
 
 
@@ -141,6 +220,8 @@ class Addon:
         """
         self.root_path = path
         self.metadata = metadata
+        self.license_message: str = ""
+        self.purchase_url: str = ""
 
     @classmethod
     def load_from_directory(
@@ -238,6 +319,7 @@ class Addon:
                 url=data.get("url", ""),
                 api_version=data.get("api_version", PLUGIN_API_VERSION),
                 requires=requires,
+                license=AddonLicense.from_dict(data.get("license")),
             )
 
             return cls(path=addon_dir, metadata=metadata)

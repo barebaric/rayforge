@@ -73,6 +73,10 @@ author:
   name: Jean Dupont
   email: jean@example.com
 
+# Optionnel : Informations de licence (identifiant SPDX recommandé)
+license:
+  name: MIT
+
 url: https://github.com/username/my-custom-addon
 ```
 
@@ -89,6 +93,7 @@ url: https://github.com/username/my-custom-addon
 - `depends` : Liste des contraintes de version pour Rayforge
 - `requires` : Liste des dépendances d'autres addons
 - `provides` : Points d'entrée et assets
+- `license` : Informations de licence (dict avec clé `name` utilisant l'identifiant SPDX)
 - `url` : Page du projet ou dépôt
 
 ## 4. Points d'entrée

@@ -10,3 +10,5 @@ author:
 provides:
   backend: "ai_workpiece_generator.backend"
   frontend: "ai_workpiece_generator.frontend"
+license:
+  name: "MIT"
