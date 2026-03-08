@@ -70,6 +70,10 @@ author:
   name: Max Mustermann
   email: max@example.com
 
+# Optional: Lizenzinformationen (SPDX-Kennzeichner empfohlen)
+license:
+  name: MIT
+
 url: https://github.com/username/mein-benutzerdefiniertes-addon
 ```
 
@@ -86,6 +90,7 @@ url: https://github.com/username/mein-benutzerdefiniertes-addon
 - `depends`: Liste von Versionseinschränkungen für Rayforge
 - `requires`: Liste von anderen Addon-Abhängigkeiten
 - `provides`: Einstiegspunkte und Assets
+- `license`: Lizenzinformationen (Dict mit `name`-Schlüssel unter Verwendung von SPDX-Kennzeichner)
 - `url`: Projekt-Homepage oder Repository
 
 ## 4. Einstiegspunkte

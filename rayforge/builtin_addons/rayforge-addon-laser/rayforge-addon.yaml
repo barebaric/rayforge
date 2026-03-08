@@ -10,3 +10,5 @@ author:
 provides:
   backend: "laser_essentials.backend"
   frontend: "laser_essentials.frontend"
+license:
+  name: "MIT"

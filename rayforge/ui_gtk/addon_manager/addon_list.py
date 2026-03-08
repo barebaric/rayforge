@@ -12,6 +12,8 @@ from ...shared.util.versioning import UnknownVersion
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
 from .addon_dialog import AddonRegistryDialog
+from .license_dialog import LicenseRequiredDialog
+
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +27,7 @@ class AddonRow(Gtk.Box):
         state: str,
         on_delete,
         on_toggle: Optional[Callable] = None,
+        on_unlock: Optional[Callable] = None,
         error_message: Optional[str] = None,
         is_builtin: bool = False,
     ):
@@ -32,6 +35,7 @@ class AddonRow(Gtk.Box):
         self.addon = addon
         self.state = state
         self.on_toggle = on_toggle
+        self.on_unlock = on_unlock
         self.is_builtin = is_builtin
 
         self.set_margin_top(6)
@@ -41,7 +45,12 @@ class AddonRow(Gtk.Box):
 
         is_asset_only = not addon.metadata.provides.backend
 
-        if state == AddonState.LOAD_ERROR.value:
+        if state == AddonState.LICENSE_REQUIRED.value:
+            icon = get_icon("lock-symbolic")
+            icon.set_valign(Gtk.Align.CENTER)
+            icon.set_tooltip_text(_("License required"))
+            self.append(icon)
+        elif state == AddonState.LOAD_ERROR.value:
             icon = get_icon("error-symbolic")
             icon.set_valign(Gtk.Align.CENTER)
             if error_message:
@@ -67,6 +76,11 @@ class AddonRow(Gtk.Box):
                 )
             )
             self.append(icon)
+        elif addon.metadata.license and addon.metadata.license.required:
+            icon = get_icon("crown-symbolic")
+            icon.set_valign(Gtk.Align.CENTER)
+            icon.set_tooltip_text(_("Premium addon"))
+            self.append(icon)
         else:
             if self.is_builtin:
                 icon = get_icon("addon-builtin-symbolic")
@@ -89,12 +103,16 @@ class AddonRow(Gtk.Box):
         if state in (
             AddonState.INCOMPATIBLE.value,
             AddonState.LOAD_ERROR.value,
+            AddonState.LICENSE_REQUIRED.value,
         ):
             title.add_css_class("dim-label")
         labels_box.append(title)
 
+        subtitle_text = self._get_subtitle()
+        if state == AddonState.LICENSE_REQUIRED.value:
+            subtitle_text = _("License required")
         subtitle = Gtk.Label(
-            label=self._get_subtitle(),
+            label=subtitle_text,
             halign=Gtk.Align.START,
             xalign=0,
         )
@@ -104,7 +122,25 @@ class AddonRow(Gtk.Box):
         suffix_box = Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)
         self.append(suffix_box)
 
-        if not is_asset_only and on_toggle:
+        if state == AddonState.LICENSE_REQUIRED.value:
+            unlock_btn = Gtk.Button(label=_("Unlock"))
+            unlock_btn.add_css_class("suggested-action")
+            unlock_btn.set_valign(Gtk.Align.CENTER)
+            unlock_btn.connect("clicked", self._on_unlock_clicked)
+            suffix_box.append(unlock_btn)
+
+        if not self.is_builtin:
+            delete_button = Gtk.Button(child=get_icon("delete-symbolic"))
+            delete_button.add_css_class("flat")
+            delete_button.set_tooltip_text(_("Uninstall Addon"))
+            delete_button.connect("clicked", lambda w: on_delete(addon))
+            suffix_box.append(delete_button)
+
+        if (
+            state != AddonState.LICENSE_REQUIRED.value
+            and not is_asset_only
+            and on_toggle
+        ):
             self.enable_switch = Gtk.Switch(valign=Gtk.Align.CENTER)
             self.enable_switch.set_active(state == AddonState.ENABLED.value)
             self.enable_switch.set_sensitive(
@@ -113,6 +149,7 @@ class AddonRow(Gtk.Box):
                     AddonState.INCOMPATIBLE.value,
                     AddonState.LOAD_ERROR.value,
                     AddonState.PENDING_UNLOAD.value,
+                    AddonState.LICENSE_REQUIRED.value,
                 )
             )
             self.enable_switch.set_tooltip_text(
@@ -120,13 +157,6 @@ class AddonRow(Gtk.Box):
             )
             self.enable_switch.connect("state-set", self._on_toggle_clicked)
             suffix_box.append(self.enable_switch)
-
-        if not self.is_builtin:
-            delete_button = Gtk.Button(child=get_icon("delete-symbolic"))
-            delete_button.add_css_class("flat")
-            delete_button.set_tooltip_text(_("Uninstall Addon"))
-            delete_button.connect("clicked", lambda w: on_delete(addon))
-            suffix_box.append(delete_button)
 
     def _get_subtitle(self) -> str:
         parts = []
@@ -143,6 +173,10 @@ class AddonRow(Gtk.Box):
         if self.on_toggle:
             self.on_toggle(self.addon.metadata.name, state)
         return False
+
+    def _on_unlock_clicked(self, btn):
+        if self.on_unlock:
+            self.on_unlock(self.addon)
 
 
 class AddonListWidget(PreferencesGroupWithButton):
@@ -191,6 +225,12 @@ class AddonListWidget(PreferencesGroupWithButton):
                 (addon, AddonState.INCOMPATIBLE.value, None, is_builtin)
             )
 
+        for name, addon in am.license_required_addons.items():
+            is_builtin = not addon.root_path.is_relative_to(am.install_dir)
+            addons.append(
+                (addon, AddonState.LICENSE_REQUIRED.value, None, is_builtin)
+            )
+
         for name, error in am._load_errors.items():
             addon = (
                 am.loaded_addons.get(name)
@@ -217,6 +257,7 @@ class AddonListWidget(PreferencesGroupWithButton):
             state,
             self._on_delete_addon,
             self._on_toggle_addon,
+            self._on_unlock_addon,
             error_message,
             is_builtin,
         )
@@ -345,6 +386,35 @@ class AddonListWidget(PreferencesGroupWithButton):
                     )
 
             self.populate_addons()
+
+    def _on_unlock_addon(self, addon: Addon):
+        """Handle unlock button click for license-required addon."""
+        license_config = addon.metadata.license
+        if not license_config:
+            return
+
+        product_ids = license_config.get_all_product_ids()
+        purchase_url = license_config.purchase_url
+        display_name = addon.metadata.display_name or addon.metadata.name
+        addon_name = addon.metadata.name
+
+        def on_license_added():
+            context = get_context()
+            success, _message = context.addon_mgr.recheck_license(addon_name)
+            if success:
+                context.addon_mgr.enable_addon(addon_name)
+            self.populate_addons()
+
+        root = cast(Gtk.Window, self.get_root())
+        dialog = LicenseRequiredDialog(
+            addon_name=display_name,
+            product_ids=product_ids,
+            purchase_url=purchase_url,
+            on_license_added=on_license_added,
+        )
+        if root:
+            dialog.set_transient_for(root)
+        dialog.present()
 
     def _on_delete_addon(self, addon: Addon):
         """Confirm and delete the addon."""

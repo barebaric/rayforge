@@ -70,6 +70,10 @@ author:
   name: Jane Doe
   email: jane@example.com
 
+# 可选：许可证信息（建议使用 SPDX 标识符）
+license:
+  name: MIT
+
 url: https://github.com/username/my-custom-addon
 ```
 
@@ -86,6 +90,7 @@ url: https://github.com/username/my-custom-addon
 - `depends`：Rayforge 的版本约束列表
 - `requires`：其他扩展依赖列表
 - `provides`：入口点和 assets
+- `license`：许可证信息（使用 SPDX 标识符的带有 `name` 键的字典）
 - `url`：项目主页或仓库
 
 ## 4. 入口点
