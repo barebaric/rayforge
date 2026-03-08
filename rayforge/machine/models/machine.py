@@ -11,6 +11,7 @@ from blinker import Signal
 
 from ...camera.models.camera import Camera
 from ...context import RayforgeContext, get_context
+from ...core.geo import Point3D
 from ...core.ops.commands import MovingCommand
 from ...pipeline.coordspace import MachineSpace
 from ...pipeline.encoder.gcode import MachineCodeOpMap
@@ -133,7 +134,7 @@ class Machine:
         # Any key NOT in wcs_offsets is considered an immutable/absolute system
         # with (0,0,0) offset.
         self.active_wcs: str = "G54"
-        self.wcs_offsets: Dict[str, Tuple[float, float, float]] = {
+        self.wcs_offsets: Dict[str, Point3D] = {
             "G54": (0.0, 0.0, 0.0),
             "G55": (0.0, 0.0, 0.0),
             "G56": (0.0, 0.0, 0.0),
@@ -759,7 +760,7 @@ class Machine:
         """
         await self.controller.set_power(head, percent)
 
-    def get_active_wcs_offset(self) -> Tuple[float, float, float]:
+    def get_active_wcs_offset(self) -> Point3D:
         """
         Returns the (x, y, z) offset for the currently active WCS.
         If the active_wcs is not in the known offsets dictionary, it assumes
@@ -792,7 +793,7 @@ class Machine:
         else:  # TOP_RIGHT
             return (width - mr, height - mt)
 
-    def get_reference_offset(self) -> Tuple[float, float, float]:
+    def get_reference_offset(self) -> Point3D:
         """
         Returns the offset for converting from MACHINE to REFERENCE coords.
 

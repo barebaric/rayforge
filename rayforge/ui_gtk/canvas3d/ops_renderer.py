@@ -7,6 +7,7 @@ import logging
 from typing import List, Tuple
 import numpy as np
 from OpenGL import GL
+from ...core.geo import Point3D
 from ...core.ops import (
     ArcToCommand,
     Command,
@@ -90,7 +91,7 @@ class OpsRenderer(BaseRenderer):
         travel_vertices: List[float] = []
         zero_power_vertices: List[float] = []
         zero_power_colors: List[float] = []
-        last_point: Tuple[float, float, float] = 0.0, 0.0, 0.0
+        last_point: Point3D = (0.0, 0.0, 0.0)
         current_power = 0.0
 
         cut_lut = colors.get_lut("cut")

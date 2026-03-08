@@ -19,6 +19,8 @@ from typing import TYPE_CHECKING, Tuple
 
 import numpy as np
 
+from ..core.geo import Point3D
+
 if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine
 
@@ -304,9 +306,9 @@ class MachineSpace(CoordinateSpace):
 
     def get_axis_label_origin(
         self,
-        wcs_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+        wcs_offset: Point3D = (0.0, 0.0, 0.0),
         wcs_is_workarea_origin: bool = False,
-    ) -> Tuple[float, float, float]:
+    ) -> Point3D:
         """
         Get the origin offset for axis labels.
 
@@ -357,7 +359,7 @@ class MachineSpace(CoordinateSpace):
         self,
         machine_x: float,
         machine_y: float,
-        wcs_offset: Tuple[float, float, float],
+        wcs_offset: Point3D,
         wcs_is_workarea_origin: bool = False,
     ) -> Tuple[float, float]:
         """

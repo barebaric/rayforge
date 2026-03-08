@@ -12,6 +12,7 @@ import logging
 from typing import Optional, Tuple
 import numpy as np
 from OpenGL import GL
+from ...core.geo import Point3D
 from .gl_utils import BaseRenderer, Shader
 from .text_renderer_3d import TextRenderer3D
 from .plane_renderer import PlaneRenderer
@@ -270,7 +271,7 @@ class AxisRenderer3D(BaseRenderer):
         text_mvp: np.ndarray,
         view_matrix: np.ndarray,
         model_matrix: np.ndarray,
-        origin_offset_mm: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+        origin_offset_mm: Point3D = (0.0, 0.0, 0.0),
         x_right: bool = False,
         y_down: bool = False,
         x_negative: bool = False,
@@ -391,7 +392,7 @@ class AxisRenderer3D(BaseRenderer):
         text_mvp_matrix: np.ndarray,
         view_matrix: np.ndarray,
         model_matrix: np.ndarray,
-        origin_offset_mm: Tuple[float, float, float],
+        origin_offset_mm: Point3D,
         x_right: bool = False,
         y_down: bool = False,
         x_negative: bool = False,

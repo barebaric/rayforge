@@ -6,9 +6,10 @@ taking into account different speeds for cutting and travel movements,
 as well as acceleration considerations.
 """
 
-from typing import Optional, Tuple, Sequence
+from typing import Optional, Sequence
 import math
 from copy import copy
+from ..geo.types import Point3D
 from .commands import MovingCommand, Command
 from .container import State
 
@@ -50,7 +51,7 @@ def estimate_time(
             cmd.state = copy(state)
 
     total_time = 0.0
-    last_point: Optional[Tuple[float, float, float]] = (0.0, 0.0, 0.0)
+    last_point: Optional[Point3D] = (0.0, 0.0, 0.0)
     current_state = State()
     current_state.cut_speed = int(default_cut_speed)
     current_state.travel_speed = int(default_travel_speed)

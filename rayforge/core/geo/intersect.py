@@ -1,8 +1,6 @@
 from typing import List, Tuple
 import numpy as np
 
-from .linearize import linearize_arc, linearize_bezier_from_array
-from .primitives import line_segment_intersection
 from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
@@ -13,11 +11,14 @@ from .constants import (
     COL_Y,
     COL_Z,
 )
+from .linearize import linearize_arc, linearize_bezier_from_array
+from .primitives import line_segment_intersection
+from .types import Point3D
 
 
 def _get_segments_for_row(
     data: np.ndarray, index: int
-) -> List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]]:
+) -> List[Tuple[Point3D, Point3D]]:
     """
     Returns a list of linearized line segments for a given row in a data array.
     """

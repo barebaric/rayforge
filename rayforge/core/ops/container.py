@@ -16,6 +16,7 @@ import numpy as np
 import json
 from ..geo import linearize, clipping
 from ..geo.primitives import get_arc_bounding_box
+from ..geo.types import Point3D
 from .commands import (
     State,
     Command,
@@ -57,7 +58,7 @@ def _get_total_distance_legacy(commands: List[Command]) -> float:
     Legacy function for ops.Command lists.
     """
     total = 0.0
-    last: Optional[Tuple[float, float, float]] = None
+    last: Optional[Point3D] = None
     for cmd in commands:
         total += cmd.distance(last)
         # Update last point if the command was a move
@@ -76,7 +77,7 @@ class Ops:
     def __init__(self) -> None:
         self.commands: List[Command] = []
         self._commands_ref_for_pyreverse: Command
-        self.last_move_to: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        self.last_move_to: Point3D = (0.0, 0.0, 0.0)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Ops object to a dictionary."""
@@ -486,9 +487,9 @@ class Ops:
 
     def bezier_to(
         self,
-        c1: Tuple[float, float, float],
-        c2: Tuple[float, float, float],
-        end: Tuple[float, float, float],
+        c1: Point3D,
+        c2: Point3D,
+        end: Point3D,
         num_steps: int = 20,
     ) -> None:
         """
@@ -807,7 +808,7 @@ class Ops:
         Like distance(), but only counts 2D cut distance.
         """
         total = 0.0
-        last: Optional[Tuple[float, float, float]] = None
+        last: Optional[Point3D] = None
         for cmd in self.commands:
             if cmd.is_cutting_command():
                 total += cmd.distance(last)
@@ -898,7 +899,7 @@ class Ops:
         is_non_uniform = not np.isclose(len_x, len_y)
 
         transformed_commands: List[Command] = []
-        last_point_untransformed: Optional[Tuple[float, float, float]] = None
+        last_point_untransformed: Optional[Point3D] = None
 
         for cmd in self.commands:
             original_cmd_end = (
@@ -991,7 +992,7 @@ class Ops:
         Replaces all complex commands (e.g., Arcs) with simple LineToCommands.
         """
         new_commands: List[Command] = []
-        last_point: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        last_point: Point3D = (0.0, 0.0, 0.0)
         # Find initial position, in case path doesn't start with MoveTo
         for cmd in self.commands:
             if isinstance(cmd, MoveToCommand):
@@ -1184,12 +1185,10 @@ class Ops:
 
     def _add_clipped_segment_to_ops(
         self,
-        segment: Optional[
-            Tuple[Tuple[float, float, float], Tuple[float, float, float]]
-        ],
+        segment: Optional[Tuple[Point3D, Point3D]],
         new_ops: Ops,
-        current_pen_pos: Optional[Tuple[float, float, float]],
-    ) -> Optional[Tuple[float, float, float]]:
+        current_pen_pos: Optional[Point3D],
+    ) -> Optional[Point3D]:
         """
         Processes a single clipped segment, adding MoveTo/LineTo commands
         to the new_ops object as needed.
@@ -1227,10 +1226,10 @@ class Ops:
         if not self.commands:
             return new_ops
 
-        last_point: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        last_point: Point3D = (0.0, 0.0, 0.0)
         # Tracks the last known position of the pen *within the clipped area*.
         # None means the pen is "up" or outside the clip rect.
-        clipped_pen_pos: Optional[Tuple[float, float, float]] = None
+        clipped_pen_pos: Optional[Point3D] = None
 
         for cmd in self.commands:
             if cmd.is_state_command() or cmd.is_marker():
@@ -1340,9 +1339,9 @@ class Ops:
             return self
 
         new_ops = Ops()
-        last_point: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        last_point: Point3D = (0.0, 0.0, 0.0)
         # Tracks the last known pen position of a *kept* segment
-        pen_pos: Optional[Tuple[float, float, float]] = None
+        pen_pos: Optional[Point3D] = None
 
         # Add any leading state/marker commands before the first move
         first_move_idx = next(
@@ -1473,8 +1472,8 @@ class Ops:
             return self
 
         new_ops = Ops()
-        last_point: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-        pen_pos: Optional[Tuple[float, float, float]] = None
+        last_point: Point3D = (0.0, 0.0, 0.0)
+        pen_pos: Optional[Point3D] = None
 
         first_move_idx = next(
             (

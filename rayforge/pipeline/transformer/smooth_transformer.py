@@ -1,10 +1,11 @@
 import math
-from typing import Optional, List, Tuple, Dict, Any, TYPE_CHECKING
+from typing import Optional, List, Dict, Any, TYPE_CHECKING
 from gettext import gettext as _
-from ...core.workpiece import WorkPiece
-from ...core.ops import Ops, LineToCommand, MoveToCommand
+from ...core.geo import Point3D
 from ...core.geo.analysis import get_angle_at_vertex
 from ...core.geo.linearize import resample_polyline
+from ...core.ops import Ops, LineToCommand, MoveToCommand
+from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import ProgressContext
 from .base import OpsTransformer, ExecutionPhase
 
@@ -146,7 +147,7 @@ class Smooth(OpsTransformer):
         for i, segment in enumerate(segments):
             if context and context.is_cancelled():
                 break
-            points_to_smooth: Optional[List[Tuple[float, float, float]]] = None
+            points_to_smooth: Optional[List[Point3D]] = None
             if self._is_line_only_segment(segment):
                 # Extract points. The `end` property may be typed as Optional.
                 points_to_smooth = [
@@ -174,21 +175,15 @@ class Smooth(OpsTransformer):
             and all(isinstance(c, LineToCommand) for c in segment[1:])
         )
 
-    def _is_closed(
-        self, points: List[Tuple[float, float, float]], tol=1e-6
-    ) -> bool:
+    def _is_closed(self, points: List[Point3D], tol=1e-6) -> bool:
         """Checks if a path is closed by comparing start and end points."""
         return len(points) >= 3 and self._distance(points[0], points[-1]) < tol
 
-    def _distance(
-        self, p1: Tuple[float, float, float], p2: Tuple[float, float, float]
-    ) -> float:
+    def _distance(self, p1: Point3D, p2: Point3D) -> float:
         """Calculates the 2D Euclidean distance between two points."""
         return math.hypot(p2[0] - p1[0], p2[1] - p1[1])
 
-    def _smooth_sub_segment(
-        self, sub_points: List[Tuple[float, float, float]]
-    ) -> List[Tuple[float, float, float]]:
+    def _smooth_sub_segment(self, sub_points: List[Point3D]) -> List[Point3D]:
         """Applies the Gaussian kernel to a single, open list of points.
 
         The endpoints of the sub-segment are preserved. Z is passed through.
@@ -216,9 +211,7 @@ class Smooth(OpsTransformer):
         smoothed.append(sub_points[-1])  # Preserve the end point.
         return smoothed
 
-    def _smooth_segment(
-        self, points: List[Tuple[float, float, float]]
-    ) -> List[Tuple[float, float, float]]:
+    def _smooth_segment(self, points: List[Point3D]) -> List[Point3D]:
         """Orchestrates the full smoothing process for one segment."""
         # A kernel of length 1 means no smoothing.
         if self._kernel is None or len(self._kernel) <= 1 or len(points) < 3:
@@ -298,9 +291,7 @@ class Smooth(OpsTransformer):
             final_points.append(prepared_points[-1])  # Add final anchor.
             return final_points
 
-    def _smooth_circularly(
-        self, points: List[Tuple[float, float, float]]
-    ) -> List[Tuple[float, float, float]]:
+    def _smooth_circularly(self, points: List[Point3D]) -> List[Point3D]:
         """Applies a wrapping Gaussian filter to a closed loop."""
         assert self._kernel is not None, "Kernel must be pre-computed."
         num_pts = len(points)

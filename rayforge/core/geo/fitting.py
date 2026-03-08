@@ -25,12 +25,13 @@ from .constants import (
 from .linearize import linearize_bezier_from_array, linearize_arc
 from .primitives import get_arc_angles
 from .simplify import simplify_points_to_array
+from .types import Point3D
 
 
 logger = logging.getLogger(__name__)
 
 
-Point2DOr3D = Tuple[float, float] | Tuple[float, float, float]
+Point2DOr3D = Tuple[float, float] | Point3D
 
 
 def are_collinear(
@@ -260,8 +261,8 @@ def get_arc_to_polyline_deviation(
 
 
 def convert_arc_to_beziers_from_array(
-    start_point: Tuple[float, float, float],
-    end_point: Tuple[float, float, float],
+    start_point: Point3D,
+    end_point: Point3D,
     center_offset: Tuple[float, float],
     clockwise: bool,
 ) -> List[np.ndarray]:
@@ -649,7 +650,7 @@ def fit_arcs(
 
     logger.debug("Starting optimized fit_arcs process...")
     new_rows: List[np.ndarray] = []
-    line_point_chain: List[Tuple[float, float, float]] = []
+    line_point_chain: List[Point3D] = []
 
     # Calculate linearization resolution.
     resolution = tolerance * 0.25
@@ -738,7 +739,7 @@ def optimize_path_from_array(
         return np.array([])
 
     optimized_rows: List[np.ndarray] = []
-    point_chain: List[Tuple[float, float, float]] = []
+    point_chain: List[Point3D] = []
 
     def flush_chain():
         nonlocal point_chain

@@ -5,6 +5,7 @@ from gettext import gettext as _
 
 from blinker import Signal
 
+from ...core.geo import Point3D
 from ...core.varset import ValidationError
 from ...shared.tasker import task_mgr
 from ..driver import get_driver_cls
@@ -289,7 +290,7 @@ class MachineController:
         )
 
     def _on_driver_wcs_updated(
-        self, driver: Driver, offsets: Dict[str, Tuple[float, float, float]]
+        self, driver: Driver, offsets: Dict[str, Point3D]
     ):
         """Updates internal WCS state from driver updates."""
         self.machine.wcs_offsets.update(offsets)

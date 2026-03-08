@@ -1,12 +1,13 @@
 from __future__ import annotations
 import math
 import logging
-from typing import Optional, List, Tuple, Dict, Any, TYPE_CHECKING
+from typing import Optional, List, Dict, Any, TYPE_CHECKING
 from gettext import gettext as _
 from ...core.geo.constants import (
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
 )
+from ...core.geo.types import Point3D
 from ...core.ops import (
     Ops,
     Command,
@@ -47,9 +48,7 @@ class TabOpsTransformer(OpsTransformer):
     def description(self) -> str:
         return _("Creates holding tabs by adding gaps to cut paths")
 
-    def _generate_tab_clip_data(
-        self, workpiece: WorkPiece
-    ) -> List[Tuple[float, float, float]]:
+    def _generate_tab_clip_data(self, workpiece: WorkPiece) -> List[Point3D]:
         """
         Generates clip data (center point and width) for each tab in the
         workpiece's local coordinate space. This matches the coordinate space
@@ -88,7 +87,7 @@ class TabOpsTransformer(OpsTransformer):
             if cmd_type not in (CMD_TYPE_LINE, CMD_TYPE_ARC):
                 continue
 
-            p_start_3d: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+            p_start_3d: Point3D = (0.0, 0.0, 0.0)
             if tab.segment_index > 0:
                 prev_cmd = workpiece.boundaries.get_command_at(
                     tab.segment_index - 1
