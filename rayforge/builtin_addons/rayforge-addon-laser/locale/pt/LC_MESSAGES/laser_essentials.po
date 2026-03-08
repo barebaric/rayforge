@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-04 22:07+0100\n"
+"POT-Creation-Date: 2026-03-08 22:00+0100\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -222,24 +222,25 @@ msgstr "Lado de Corte"
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/frame_widget.py
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
-msgid "Path Offset (mm)"
-msgstr "Deslocamento do Caminho (mm)"
+msgid "Path Offset"
+msgstr "Deslocamento do caminho"
 
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
 msgid ""
-"Absolute distance from original path, direction is controlled by Cut Side"
+"Absolute distance from original path in machine units, direction is "
+"controlled by Cut Side"
 msgstr ""
-"Distância absoluta do caminho original. A direção é controlada pelo Lado de "
-"Corte."
+"Distância absoluta do caminho original em unidades de máquina, a direção é "
+"controlada pelo lado de corte"
 
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
 msgid "Change Shrinkwrap Setting"
 msgstr "Alterar Configuração de Envoltório"
 
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/frame_widget.py
-msgid "Absolute distance from content boundary"
-msgstr "Distância absoluta do limite do conteúdo."
+msgid "Absolute distance from content boundary in machine units"
+msgstr "Distância absoluta do limite do conteúdo em unidades de máquina"
 
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/frame_widget.py
 msgid "Change Frame Setting"

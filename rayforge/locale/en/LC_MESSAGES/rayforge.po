@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-08 05:30+0100\n"
+"POT-Creation-Date: 2026-03-08 23:45+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -4029,6 +4029,26 @@ msgstr ""
 msgid "Change corner angle"
 msgstr ""
 
+#: rayforge/ui_gtk/doceditor/step_settings/crop.py
+msgid "Enable Crop-to-Stock"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/crop.py
+msgid "Offset"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/crop.py
+msgid "Grow/shrink stock boundary before cropping"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/crop.py
+msgid "Toggle Crop-to-Stock"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/crop.py
+msgid "Change Crop Offset"
+msgstr ""
+
 #: rayforge/ui_gtk/doceditor/step_settings/multipass.py
 msgid "Number of Passes"
 msgstr ""
@@ -4608,7 +4628,7 @@ msgid "(No source file)"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
-#: rayforge/pipeline/transformer/tabs.py
+#: rayforge/pipeline/transformer/tabs_transformer.py
 msgid "Tabs"
 msgstr ""
 
@@ -5430,69 +5450,77 @@ msgstr ""
 msgid "Rendering complete."
 msgstr ""
 
-#: rayforge/pipeline/transformer/overscan.py
-msgid "Overscan"
-msgstr ""
-
-#: rayforge/pipeline/transformer/overscan.py
-msgid "Extends raster lines to ensure constant engraving speed."
-msgstr ""
-
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Optimize Path"
 msgstr ""
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Minimizes travel distance by reordering segments."
 msgstr ""
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Preprocessing for optimization..."
 msgstr ""
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Analyzing and bucketing path segments..."
 msgstr ""
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 #, python-brace-format
 msgid "Optimizing segment {i}/{total}..."
 msgstr ""
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Finding nearest paths..."
 msgstr ""
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Applying 2-opt refinement..."
 msgstr ""
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Reassembling optimized paths..."
 msgstr ""
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Optimization complete"
 msgstr ""
 
-#: rayforge/pipeline/transformer/smooth.py
+#: rayforge/pipeline/transformer/smooth_transformer.py
 msgid "Smooth Path"
 msgstr ""
 
-#: rayforge/pipeline/transformer/smooth.py
+#: rayforge/pipeline/transformer/smooth_transformer.py
 msgid "Smooths the path by applying a Gaussian filter."
 msgstr ""
 
-#: rayforge/pipeline/transformer/tabs.py
-msgid "Creates holding tabs by adding gaps to cut paths"
+#: rayforge/pipeline/transformer/overscan_transformer.py
+msgid "Overscan"
 msgstr ""
 
-#: rayforge/pipeline/transformer/multipass.py
+#: rayforge/pipeline/transformer/overscan_transformer.py
+msgid "Extends raster lines to ensure constant engraving speed."
+msgstr ""
+
+#: rayforge/pipeline/transformer/crop_transformer.py
+msgid "Crop to Stock"
+msgstr ""
+
+#: rayforge/pipeline/transformer/crop_transformer.py
+msgid "Crops cutting lines to stock boundary."
+msgstr ""
+
+#: rayforge/pipeline/transformer/multipass_transformer.py
 msgid "Multi-Pass"
 msgstr ""
 
-#: rayforge/pipeline/transformer/multipass.py
+#: rayforge/pipeline/transformer/multipass_transformer.py
 msgid "Repeats the path multiple times, optionally stepping down in Z."
+msgstr ""
+
+#: rayforge/pipeline/transformer/tabs_transformer.py
+msgid "Creates holding tabs by adding gaps to cut paths"
 msgstr ""
 
 #: rayforge/pipeline/encoder/context.py
