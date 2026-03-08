@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from rayforge.core.capability import CUT, SCORE
+from rayforge.core.matrix import Matrix
 from rayforge.core.step import Step
 from rayforge.core.step_registry import step_registry
 from laser_essentials.steps import ContourStep
@@ -64,3 +65,93 @@ class TestContourStep:
         step = StepClass.create(mock_context, name="FromRegistry")
         assert isinstance(step, ContourStep)
         assert step.name == "FromRegistry"
+
+    def test_from_dict_adds_new_transformers_from_old_project(self):
+        step_registry.register(ContourStep)
+        old_project_data = {
+            "uid": "old-step-123",
+            "type": "step",
+            "step_type": "ContourStep",
+            "name": "Old Contour",
+            "matrix": Matrix.identity().to_list(),
+            "typelabel": "Contour",
+            "visible": True,
+            "opsproducer_dict": {"type": "ContourProducer"},
+            "per_workpiece_transformers_dicts": [
+                {"name": "TabOpsTransformer", "enabled": True},
+            ],
+            "per_step_transformers_dicts": [],
+            "children": [],
+        }
+
+        restored = Step.from_dict(old_project_data)
+
+        wp_names = [
+            t["name"] for t in restored.per_workpiece_transformers_dicts
+        ]
+        assert "TabOpsTransformer" in wp_names
+        assert "Smooth" in wp_names
+        assert "CropTransformer" in wp_names
+        assert "Optimize" in wp_names
+        assert len(restored.per_step_transformers_dicts) == 1
+        assert (
+            restored.per_step_transformers_dicts[0]["name"]
+            == "MultiPassTransformer"
+        )
+
+    def test_from_dict_preserves_existing_transformer_settings(self):
+        step_registry.register(ContourStep)
+        old_project_data = {
+            "uid": "old-step-456",
+            "type": "step",
+            "step_type": "ContourStep",
+            "name": "Old Contour",
+            "matrix": Matrix.identity().to_list(),
+            "typelabel": "Contour",
+            "visible": True,
+            "opsproducer_dict": {"type": "ContourProducer"},
+            "per_workpiece_transformers_dicts": [
+                {
+                    "name": "TabOpsTransformer",
+                    "enabled": True,
+                    "custom_setting": 42,
+                },
+            ],
+            "per_step_transformers_dicts": [],
+            "children": [],
+        }
+
+        restored = Step.from_dict(old_project_data)
+
+        tab_transformer = next(
+            t
+            for t in restored.per_workpiece_transformers_dicts
+            if t["name"] == "TabOpsTransformer"
+        )
+        assert tab_transformer["custom_setting"] == 42
+        assert tab_transformer["enabled"] is True
+
+    def test_from_dict_uses_typelabel_fallback_when_no_step_type(self):
+        step_registry.register(ContourStep)
+        old_project_data = {
+            "uid": "old-step-789",
+            "type": "step",
+            "name": "Old Contour",
+            "matrix": Matrix.identity().to_list(),
+            "typelabel": "Contour",
+            "visible": True,
+            "opsproducer_dict": {"type": "ContourProducer"},
+            "per_workpiece_transformers_dicts": [
+                {"name": "TabOpsTransformer", "enabled": True},
+            ],
+            "per_step_transformers_dicts": [],
+            "children": [],
+        }
+
+        restored = Step.from_dict(old_project_data)
+
+        assert isinstance(restored, ContourStep)
+        wp_names = [
+            t["name"] for t in restored.per_workpiece_transformers_dicts
+        ]
+        assert "CropTransformer" in wp_names

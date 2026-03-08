@@ -91,6 +91,31 @@ class StepRegistry:
 
         return self._steps.get(name)
 
+    def get_by_typelabel(self, typelabel: str) -> Optional[Type["Step"]]:
+        """
+        Look up a step class by its TYPELABEL attribute.
+
+        This is useful for backward compatibility with older project files
+        that only stored typelabel but not step_type.
+
+        Args:
+            typelabel: The TYPELABEL of the step.
+
+        Returns:
+            The step class, or None if not found.
+        """
+        # Ensure addons are loaded in worker processes so the registry
+        # is populated before we try to look up step classes.
+        from rayforge.worker_init import ensure_addons_loaded
+
+        ensure_addons_loaded()
+
+        for step_class in self._steps.values():
+            class_typelabel = getattr(step_class, "TYPELABEL", None)
+            if class_typelabel == typelabel:
+                return step_class
+        return None
+
     def get_factories(self) -> List[Callable]:
         """
         Return all registered step factory methods.

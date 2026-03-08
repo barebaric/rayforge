@@ -30,6 +30,16 @@ class FrameStep(Step):
         self.capabilities = self.DEFAULT_CAPABILITIES.copy()
 
     @classmethod
+    def get_default_transformers_dicts(cls) -> tuple[list, list]:
+        return [
+            TabOpsTransformer().to_dict(),
+            CropTransformer(enabled=False).to_dict(),
+            Optimize().to_dict(),
+        ], [
+            MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
+        ]
+
+    @classmethod
     def create(
         cls,
         context: "RayforgeContext",
@@ -42,14 +52,9 @@ class FrameStep(Step):
 
         step = cls(name=name)
         step.opsproducer_dict = cls.PRODUCER_CLASS().to_dict()
-        step.per_workpiece_transformers_dicts = [
-            TabOpsTransformer().to_dict(),
-            CropTransformer(enabled=False).to_dict(),
-            Optimize().to_dict(),
-        ]
-        step.per_step_transformers_dicts = [
-            MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
-        ]
+        per_wp, per_step = cls.get_default_transformers_dicts()
+        step.per_workpiece_transformers_dicts = per_wp
+        step.per_step_transformers_dicts = per_step
         step.selected_laser_uid = default_head.uid
         step.kerf_mm = default_head.spot_size_mm[0]
         step.max_cut_speed = machine.max_cut_speed

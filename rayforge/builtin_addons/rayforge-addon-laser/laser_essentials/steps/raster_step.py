@@ -29,6 +29,17 @@ class EngraveStep(Step):
         self.capabilities = self.DEFAULT_CAPABILITIES.copy()
 
     @classmethod
+    def get_default_transformers_dicts(cls) -> tuple[list, list]:
+        return [
+            OverscanTransformer(
+                enabled=True, distance_mm=0, auto=True
+            ).to_dict(),
+            Optimize().to_dict(),
+        ], [
+            MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
+        ]
+
+    @classmethod
     def create(
         cls,
         context: "RayforgeContext",
@@ -39,21 +50,19 @@ class EngraveStep(Step):
         assert machine is not None
         default_head = machine.get_default_head()
 
+        step = cls(name=name)
+        step.opsproducer_dict = cls.PRODUCER_CLASS().to_dict()
+        per_wp, per_step = cls.get_default_transformers_dicts()
+
         auto_distance = OverscanTransformer.calculate_auto_distance(
             machine.max_cut_speed, machine.acceleration
         )
+        for t in per_wp:
+            if t.get("name") == "OverscanTransformer":
+                t["distance_mm"] = auto_distance
 
-        step = cls(name=name)
-        step.opsproducer_dict = cls.PRODUCER_CLASS().to_dict()
-        step.per_workpiece_transformers_dicts = [
-            OverscanTransformer(
-                enabled=True, distance_mm=auto_distance, auto=True
-            ).to_dict(),
-            Optimize().to_dict(),
-        ]
-        step.per_step_transformers_dicts = [
-            MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
-        ]
+        step.per_workpiece_transformers_dicts = per_wp
+        step.per_step_transformers_dicts = per_step
         step.selected_laser_uid = default_head.uid
         step.max_cut_speed = machine.max_cut_speed
         step.max_travel_speed = machine.max_travel_speed
