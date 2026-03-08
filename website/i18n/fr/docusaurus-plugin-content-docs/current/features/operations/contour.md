@@ -114,18 +114,17 @@ Contrôle où le laser coupe par rapport au parcours vectoriel :
 - Réduit le temps de travail
 - Empêche les coupes manquées
 
-## Fonctionnalités Avancées
+## Post-Traitement
 
 ![Paramètres de post-traitement du contour](/screenshots/step-settings-contour-post.png)
 
-### Ponts de Maintien
+Les opérations de contour supportent plusieurs options de post-traitement :
 
-Les ponts gardent les pièces coupées attachées au matériau de stock pendant la coupe :
-
-- Ajoutez des ponts pour empêcher les pièces de tomber
-- Les ponts sont de petites sections non coupées
-- Cassez les ponts après l'achèvement du travail
-- Voir [Ponts de Maintien](../holding-tabs) pour plus de détails
+- **[Lissage de Parcours](../smooth)** - Réduire les bords irréguliers dans les parcours de coupe
+- **[Ponts de Maintien](../holding-tabs)** - Maintenir les pièces coupées attachées au matériau de stock
+- **[Rognage au Stock](../crop-to-stock)** - Limiter les coupes à la limite du matériau
+- **[Optimisation de Parcours](../path-optimization)** - Réduire la distance de déplacement entre les coupes
+- **[Passe Multiple](../multi-pass)** - Répéter les coupes pour les matériaux épais
 
 ### Compensation de Kerf
 

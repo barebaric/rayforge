@@ -114,18 +114,17 @@ Controls where the laser cuts relative to the vector path:
 - Reduces job time
 - Prevents missed cuts
 
-## Advanced Features
+## Post-Processing
 
 ![Contour post-processing settings](/screenshots/step-settings-contour-post.png)
 
-### Holding Tabs
+Contour operations support several post-processing options:
 
-Tabs keep cut pieces attached to stock material during cutting:
-
-- Add tabs to prevent pieces from falling
-- Tabs are small uncut sections
-- Break tabs after job completes
-- See [Holding Tabs](../holding-tabs) for details
+- **[Smooth Path](../smooth)** - Reduce jagged edges in cutting paths
+- **[Holding Tabs](../holding-tabs)** - Keep cut pieces attached to stock material
+- **[Crop to Stock](../crop-to-stock)** - Limit cuts to material boundary
+- **[Path Optimization](../path-optimization)** - Reduce travel distance between cuts
+- **[Multi-Pass](../multi-pass)** - Repeat cuts for thick materials
 
 ### Kerf Compensation
 

@@ -198,6 +198,18 @@ Veja [Fluxo de Trabalho Multi-Camadas](../multi-layer) para detalhes.
 - Toda gravação acontece enquanto material está fixado
 - Shrink wrap final corta todo lote livre
 
+## Pós-Processamento
+
+![Configurações de pós-processamento Shrink Wrap](/screenshots/step-settings-shrink-wrap-post.png)
+
+Operações Shrink Wrap suportam várias opções de pós-processamento:
+
+- **[Suavização de Caminho](../smooth)** - Reduz bordas irregulares no caminho do limite
+- **[Abas de Fixação](../holding-tabs)** - Mantém peças cortadas anexadas ao material de estoque
+- **[Cortar para Estoque](../crop-to-stock)** - Limita cortes ao limite do material
+- **[Otimização de Caminho](../path-optimization)** - Reduz distância de deslocamento
+- **[Multi-Passagem](../multi-pass)** - Repete cortes para materiais espessos
+
 ## Dicas e Melhores Práticas
 
 ![Configurações de pós-processamento Shrink Wrap](/screenshots/step-settings-shrink-wrap-post.png)
