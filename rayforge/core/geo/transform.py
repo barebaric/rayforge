@@ -1,6 +1,6 @@
 import math
 import logging
-from typing import Tuple, Optional, TYPE_CHECKING, TypeVar, List, Dict
+from typing import Optional, TYPE_CHECKING, TypeVar, List, Dict
 import numpy as np
 import pyclipper
 from .constants import (
@@ -20,7 +20,7 @@ from .constants import (
     COL_C2Y,
 )
 from .linearize import linearize_arc
-from .types import Point
+from .types import IntPolygon, Point, Polygon
 
 if TYPE_CHECKING:
     from .geometry import Geometry
@@ -202,11 +202,11 @@ def _group_solids_and_holes(
 
 
 def _offset_contour_group(
-    solid_path: List[Tuple[int, int]],
-    hole_paths: List[List[Tuple[int, int]]],
+    solid_path: IntPolygon,
+    hole_paths: List[IntPolygon],
     offset: float,
     scale: int = CLIPPER_SCALE,
-) -> List[List[Point]]:
+) -> List[Polygon]:
     """
     Offsets a solid with its holes using pyclipper.
 

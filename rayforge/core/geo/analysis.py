@@ -21,7 +21,7 @@ from .constants import (
 )
 from .linearize import linearize_arc, linearize_bezier_from_array
 from .primitives import is_point_in_polygon
-from .types import Point, Point2DOr3D
+from .types import Point, Point2DOr3D, Polygon
 
 if TYPE_CHECKING:
     from .geometry import Geometry
@@ -129,12 +129,12 @@ def encloses(container: "Geometry", content: "Geometry") -> bool:
 
 def get_subpath_vertices_from_array(
     data: np.ndarray, start_cmd_index: int
-) -> List[Point]:
+) -> Polygon:
     """
     Extracts all 2D vertices for a single continuous subpath starting at a
     given MoveToCommand index from a numpy array, linearizing any arcs.
     """
-    vertices: List[Point] = []
+    vertices: Polygon = []
     if start_cmd_index >= len(data):
         return []
 

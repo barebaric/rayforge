@@ -8,18 +8,14 @@ high-performance NumPy vectorized equivalents.
 
 import math
 from functools import lru_cache
-from typing import List, Tuple, Optional, TYPE_CHECKING
+from typing import List, Optional, Tuple, TYPE_CHECKING
 import numpy as np
 import pyclipper
 
-from .types import Point
+from .types import IntPolygon, Point, Polygon
 
 if TYPE_CHECKING:
     from .geometry import Rect
-
-Polygon = List[Point]
-IntPoint = Tuple[int, int]
-IntPolygon = List[IntPoint]
 
 CLIPPER_SCALE = int(1e7)
 

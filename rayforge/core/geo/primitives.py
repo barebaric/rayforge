@@ -13,7 +13,7 @@ from .constants import (
     GEO_ARRAY_COLS,
 )
 from .linearize import linearize_arc, linearize_bezier_from_array
-from .types import Point, Point3D, Rect
+from .types import Point, Point3D, Polygon, Rect
 
 
 def normalize_angle(angle: float) -> float:
@@ -93,7 +93,7 @@ def is_angle_between(
 
 def circle_circle_intersection(
     c1: Point, r1: float, c2: Point, r2: float
-) -> List[Point]:
+) -> Polygon:
     """
     Calculates the intersection points of two circles.
     Returns a list of 0, 1, or 2 points.
@@ -180,7 +180,7 @@ def get_arc_bounding_box(
     return min_x, min_y, max_x, max_y
 
 
-def is_point_in_polygon(point: Point, polygon: List[Point]) -> bool:
+def is_point_in_polygon(point: Point, polygon: Polygon) -> bool:
     """
     Checks if a point is inside or on the boundary of a polygon using a
     robust, multi-stage process (AABB -> Boundary -> Ray-Casting).
@@ -535,7 +535,7 @@ def find_closest_point_on_arc(
 def get_segment_region_intersections(
     p1_2d: Point,
     p2_2d: Point,
-    regions: List[List[Point]],
+    regions: List[Polygon],
 ) -> List[float]:
     """
     Calculates intersection points of a line segment with polygon boundaries.
