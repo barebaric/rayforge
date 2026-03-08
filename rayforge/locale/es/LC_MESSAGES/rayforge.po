@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-08 05:30+0100\n"
+"POT-Creation-Date: 2026-03-08 23:45+0100\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -3373,14 +3373,11 @@ msgstr "Activar"
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #, python-brace-format
 msgid "Enter the license key you received when purchasing {addon_name}."
-msgstr ""
-"Introduce la clave de licencia que recibiste al comprar {addon_name}."
+msgstr "Introduce la clave de licencia que recibiste al comprar {addon_name}."
 
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 msgid "Please enter a license key."
 msgstr "Por favor, introduce una clave de licencia."
-
-msgstr ""
 
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 msgid "Validating license..."
@@ -3389,8 +3386,6 @@ msgstr "Validando licencia..."
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 msgid "License validation failed."
 msgstr "La validación de la licencia falló."
-
-msgstr ""
 
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 msgid "License Invalid"
@@ -3414,50 +3409,6 @@ msgid "Buy License"
 msgstr "Comprar licencia"
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
-msgid "Premium addon"
-msgstr "Complemento premium"
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-msgid "Activate"
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-#, python-brace-format
-msgid "Enter the license key you received when purchasing {addon_name}."
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-msgid "Please enter a license key."
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-msgid "Validating license..."
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-msgid "License validation failed."
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-msgid "License Invalid"
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-msgid "License Required"
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-#, python-brace-format
-msgid ""
-"{addon_name} is a premium addon. Purchase a license to unlock it, or enter "
-"your license key if you already have one."
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-msgid "Buy License"
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Failed to load this addon"
 msgstr "Error al cargar este complemento"
 
@@ -3471,7 +3422,7 @@ msgstr "Este complemento es incompatible con la versión actual de Rayforge"
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Premium addon"
-msgstr ""
+msgstr "Complemento premium"
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Built-in addon"
@@ -4296,6 +4247,26 @@ msgstr "Cambiar suavizado"
 msgid "Change corner angle"
 msgstr "Cambiar ángulo de esquina"
 
+#: rayforge/ui_gtk/doceditor/step_settings/crop.py
+msgid "Enable Crop-to-Stock"
+msgstr "Activar recorte al material"
+
+#: rayforge/ui_gtk/doceditor/step_settings/crop.py
+msgid "Offset"
+msgstr "Desplazamiento"
+
+#: rayforge/ui_gtk/doceditor/step_settings/crop.py
+msgid "Grow/shrink stock boundary before cropping"
+msgstr "Ampliar/reducir el límite del material antes de recortar"
+
+#: rayforge/ui_gtk/doceditor/step_settings/crop.py
+msgid "Toggle Crop-to-Stock"
+msgstr "Alternar recorte al material"
+
+#: rayforge/ui_gtk/doceditor/step_settings/crop.py
+msgid "Change Crop Offset"
+msgstr "Cambiar desplazamiento de recorte"
+
 #: rayforge/ui_gtk/doceditor/step_settings/multipass.py
 msgid "Number of Passes"
 msgstr "Número de pasadas"
@@ -4884,7 +4855,7 @@ msgid "(No source file)"
 msgstr "(Sin archivo de origen)"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
-#: rayforge/pipeline/transformer/tabs.py
+#: rayforge/pipeline/transformer/tabs_transformer.py
 msgid "Tabs"
 msgstr "Pestañas de sujeción"
 
@@ -5731,72 +5702,80 @@ msgstr "Renderizando textura..."
 msgid "Rendering complete."
 msgstr "Renderizado completo."
 
-#: rayforge/pipeline/transformer/overscan.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
+msgid "Optimize Path"
+msgstr "Optimizar trayectoria"
+
+#: rayforge/pipeline/transformer/optimize_transformer.py
+msgid "Minimizes travel distance by reordering segments."
+msgstr "Minimiza la distancia de desplazamiento reordenando los segmentos."
+
+#: rayforge/pipeline/transformer/optimize_transformer.py
+msgid "Preprocessing for optimization..."
+msgstr "Preprocesando para la optimización..."
+
+#: rayforge/pipeline/transformer/optimize_transformer.py
+msgid "Analyzing and bucketing path segments..."
+msgstr "Analizando y agrupando segmentos de trayectoria..."
+
+#: rayforge/pipeline/transformer/optimize_transformer.py
+#, python-brace-format
+msgid "Optimizing segment {i}/{total}..."
+msgstr "Optimizando segmento {i}/{total}..."
+
+#: rayforge/pipeline/transformer/optimize_transformer.py
+msgid "Finding nearest paths..."
+msgstr "Buscando trayectorias más cercanas..."
+
+#: rayforge/pipeline/transformer/optimize_transformer.py
+msgid "Applying 2-opt refinement..."
+msgstr "Aplicando refinamiento 2-opt..."
+
+#: rayforge/pipeline/transformer/optimize_transformer.py
+msgid "Reassembling optimized paths..."
+msgstr "Reensamblando trayectorias optimizadas..."
+
+#: rayforge/pipeline/transformer/optimize_transformer.py
+msgid "Optimization complete"
+msgstr "Optimización completada"
+
+#: rayforge/pipeline/transformer/smooth_transformer.py
+msgid "Smooth Path"
+msgstr "Suavizar trayectoria"
+
+#: rayforge/pipeline/transformer/smooth_transformer.py
+msgid "Smooths the path by applying a Gaussian filter."
+msgstr "Suaviza la trayectoria aplicando un filtro gaussiano."
+
+#: rayforge/pipeline/transformer/overscan_transformer.py
 msgid "Overscan"
 msgstr "Overscan"
 
-#: rayforge/pipeline/transformer/overscan.py
+#: rayforge/pipeline/transformer/overscan_transformer.py
 msgid "Extends raster lines to ensure constant engraving speed."
 msgstr ""
 "Extiende las líneas de rasterizado para asegurar una velocidad de grabado "
 "constante."
 
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Optimize Path"
-msgstr "Optimizar trayectoria"
+#: rayforge/pipeline/transformer/crop_transformer.py
+msgid "Crop to Stock"
+msgstr "Recortar al material"
 
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Minimizes travel distance by reordering segments."
-msgstr "Minimiza la distancia de desplazamiento reordenando los segmentos."
+#: rayforge/pipeline/transformer/crop_transformer.py
+msgid "Crops cutting lines to stock boundary."
+msgstr "Recorta las líneas de corte al límite del material."
 
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Preprocessing for optimization..."
-msgstr "Preprocesando para la optimización..."
-
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Analyzing and bucketing path segments..."
-msgstr "Analizando y agrupando segmentos de trayectoria..."
-
-#: rayforge/pipeline/transformer/optimize.py
-#, python-brace-format
-msgid "Optimizing segment {i}/{total}..."
-msgstr "Optimizando segmento {i}/{total}..."
-
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Finding nearest paths..."
-msgstr "Buscando trayectorias más cercanas..."
-
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Applying 2-opt refinement..."
-msgstr "Aplicando refinamiento 2-opt..."
-
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Reassembling optimized paths..."
-msgstr "Reensamblando trayectorias optimizadas..."
-
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Optimization complete"
-msgstr "Optimización completada"
-
-#: rayforge/pipeline/transformer/smooth.py
-msgid "Smooth Path"
-msgstr "Suavizar trayectoria"
-
-#: rayforge/pipeline/transformer/smooth.py
-msgid "Smooths the path by applying a Gaussian filter."
-msgstr "Suaviza la trayectoria aplicando un filtro gaussiano."
-
-#: rayforge/pipeline/transformer/tabs.py
-msgid "Creates holding tabs by adding gaps to cut paths"
-msgstr "Crea pestañas de sujeción añadiendo huecos a las trayectorias de corte"
-
-#: rayforge/pipeline/transformer/multipass.py
+#: rayforge/pipeline/transformer/multipass_transformer.py
 msgid "Multi-Pass"
 msgstr "Múltiples pasadas"
 
-#: rayforge/pipeline/transformer/multipass.py
+#: rayforge/pipeline/transformer/multipass_transformer.py
 msgid "Repeats the path multiple times, optionally stepping down in Z."
 msgstr "Repite la trayectoria varias veces, opcionalmente bajando en el eje Z."
+
+#: rayforge/pipeline/transformer/tabs_transformer.py
+msgid "Creates holding tabs by adding gaps to cut paths"
+msgstr "Crea pestañas de sujeción añadiendo huecos a las trayectorias de corte"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The name of the currently active coordinate system (e.g. 'G54')."

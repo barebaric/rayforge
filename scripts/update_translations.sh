@@ -70,6 +70,7 @@ process_package() {
         if [ -d "$lang_dir/LC_MESSAGES" ]; then
           if [ -f "$lang_dir/LC_MESSAGES/$pkg_name.po" ]; then
             echo "    Updating $lang_dir/LC_MESSAGES/$pkg_name.po"
+            msguniq "$lang_dir/LC_MESSAGES/$pkg_name.po" -o "$lang_dir/LC_MESSAGES/$pkg_name.po" 2>/dev/null || true
             msgmerge --update -N "$lang_dir/LC_MESSAGES/$pkg_name.po" "$locale_dir/$pkg_name.pot" 2>/dev/null || true
             msgattrib --no-obsolete --output-file="$lang_dir/LC_MESSAGES/$pkg_name.po" "$lang_dir/LC_MESSAGES/$pkg_name.po" 2>/dev/null || true
             # Ensure charset is UTF-8 instead of ASCII
@@ -106,6 +107,7 @@ if [ "$COMPILE_ONLY" = false ]; then
     lang=$(basename "$lang_dir")
     if [ -d "$lang_dir/LC_MESSAGES" ]; then
       echo "  Updating $lang_dir/LC_MESSAGES/rayforge.po"
+      msguniq "$lang_dir/LC_MESSAGES/rayforge.po" -o "$lang_dir/LC_MESSAGES/rayforge.po" 2>/dev/null || true
       msgmerge --update -N "$lang_dir/LC_MESSAGES/rayforge.po" rayforge/locale/rayforge.pot
       msgattrib --no-obsolete --output-file="$lang_dir/LC_MESSAGES/rayforge.po" "$lang_dir/LC_MESSAGES/rayforge.po" 2>/dev/null || true
       # Ensure charset is UTF-8 instead of ASCII

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-08 05:30+0100\n"
+"POT-Creation-Date: 2026-03-08 23:45+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -3235,50 +3235,6 @@ msgid "Buy License"
 msgstr "购买许可证"
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
-msgid "Premium addon"
-msgstr "高级插件"
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-msgid "Activate"
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-#, python-brace-format
-msgid "Enter the license key you received when purchasing {addon_name}."
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-msgid "Please enter a license key."
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-msgid "Validating license..."
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-msgid "License validation failed."
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-msgid "License Invalid"
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-msgid "License Required"
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-#, python-brace-format
-msgid ""
-"{addon_name} is a premium addon. Purchase a license to unlock it, or enter "
-"your license key if you already have one."
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-msgid "Buy License"
-msgstr ""
-
-#: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Failed to load this addon"
 msgstr "加载此插件失败"
 
@@ -3292,7 +3248,7 @@ msgstr "此插件与当前版本的Rayforge不兼容"
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Premium addon"
-msgstr ""
+msgstr "高级插件"
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Built-in addon"
@@ -4106,6 +4062,26 @@ msgstr "更改平滑度"
 msgid "Change corner angle"
 msgstr "更改拐角角度"
 
+#: rayforge/ui_gtk/doceditor/step_settings/crop.py
+msgid "Enable Crop-to-Stock"
+msgstr "启用裁剪到材料"
+
+#: rayforge/ui_gtk/doceditor/step_settings/crop.py
+msgid "Offset"
+msgstr "偏移"
+
+#: rayforge/ui_gtk/doceditor/step_settings/crop.py
+msgid "Grow/shrink stock boundary before cropping"
+msgstr "裁剪前扩展/收缩材料边界"
+
+#: rayforge/ui_gtk/doceditor/step_settings/crop.py
+msgid "Toggle Crop-to-Stock"
+msgstr "切换裁剪到材料"
+
+#: rayforge/ui_gtk/doceditor/step_settings/crop.py
+msgid "Change Crop Offset"
+msgstr "更改裁剪偏移"
+
 #: rayforge/ui_gtk/doceditor/step_settings/multipass.py
 msgid "Number of Passes"
 msgstr "轮次/遍数"
@@ -4685,7 +4661,7 @@ msgid "(No source file)"
 msgstr "(无源文件)"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
-#: rayforge/pipeline/transformer/tabs.py
+#: rayforge/pipeline/transformer/tabs_transformer.py
 msgid "Tabs"
 msgstr "标签"
 
@@ -5509,70 +5485,78 @@ msgstr "正在渲染纹理..."
 msgid "Rendering complete."
 msgstr "渲染完成。"
 
-#: rayforge/pipeline/transformer/overscan.py
-msgid "Overscan"
-msgstr "过冲"
-
-#: rayforge/pipeline/transformer/overscan.py
-msgid "Extends raster lines to ensure constant engraving speed."
-msgstr "延长光栅线以确保恒定的雕刻速度。"
-
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Optimize Path"
 msgstr "优化路径"
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Minimizes travel distance by reordering segments."
 msgstr "通过重新排序线段来最小化移动距离。"
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Preprocessing for optimization..."
 msgstr "正在为优化进行预处理..."
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Analyzing and bucketing path segments..."
 msgstr "正在分析和分组路径线段..."
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 #, python-brace-format
 msgid "Optimizing segment {i}/{total}..."
 msgstr "正在优化线段 {i}/{total}..."
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Finding nearest paths..."
 msgstr "正在查找最近路径..."
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Applying 2-opt refinement..."
 msgstr "正在应用2-opt细化..."
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Reassembling optimized paths..."
 msgstr "正在重新组装优化后的路径..."
 
-#: rayforge/pipeline/transformer/optimize.py
+#: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Optimization complete"
 msgstr "优化完成"
 
-#: rayforge/pipeline/transformer/smooth.py
+#: rayforge/pipeline/transformer/smooth_transformer.py
 msgid "Smooth Path"
 msgstr "平滑路径"
 
-#: rayforge/pipeline/transformer/smooth.py
+#: rayforge/pipeline/transformer/smooth_transformer.py
 msgid "Smooths the path by applying a Gaussian filter."
 msgstr "通过应用高斯滤波器平滑路径。"
 
-#: rayforge/pipeline/transformer/tabs.py
-msgid "Creates holding tabs by adding gaps to cut paths"
-msgstr "通过在切割路径中添加间隙来创建固定标签"
+#: rayforge/pipeline/transformer/overscan_transformer.py
+msgid "Overscan"
+msgstr "过冲"
 
-#: rayforge/pipeline/transformer/multipass.py
+#: rayforge/pipeline/transformer/overscan_transformer.py
+msgid "Extends raster lines to ensure constant engraving speed."
+msgstr "延长光栅线以确保恒定的雕刻速度。"
+
+#: rayforge/pipeline/transformer/crop_transformer.py
+msgid "Crop to Stock"
+msgstr "裁剪到材料"
+
+#: rayforge/pipeline/transformer/crop_transformer.py
+msgid "Crops cutting lines to stock boundary."
+msgstr "将切割线裁剪到材料边界。"
+
+#: rayforge/pipeline/transformer/multipass_transformer.py
 msgid "Multi-Pass"
 msgstr "多轮"
 
-#: rayforge/pipeline/transformer/multipass.py
+#: rayforge/pipeline/transformer/multipass_transformer.py
 msgid "Repeats the path multiple times, optionally stepping down in Z."
 msgstr "重复路径多次，可选择在Z轴上逐层下降。"
+
+#: rayforge/pipeline/transformer/tabs_transformer.py
+msgid "Creates holding tabs by adding gaps to cut paths"
+msgstr "通过在切割路径中添加间隙来创建固定标签"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The name of the currently active coordinate system (e.g. 'G54')."

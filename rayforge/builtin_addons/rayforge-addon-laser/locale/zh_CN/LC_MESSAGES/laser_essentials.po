@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-04 22:07+0100\n"
+"POT-Creation-Date: 2026-03-08 22:00+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -216,22 +216,23 @@ msgstr "切割侧"
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/frame_widget.py
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
-msgid "Path Offset (mm)"
-msgstr "路径偏移 (mm)"
+msgid "Path Offset"
+msgstr "路径偏移"
 
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
 msgid ""
-"Absolute distance from original path, direction is controlled by Cut Side"
-msgstr "距离原始路径的绝对距离，方向由切割侧控制"
+"Absolute distance from original path in machine units, direction is "
+"controlled by Cut Side"
+msgstr "与原始路径的绝对距离（以机器单位计），方向由切割侧控制"
 
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
 msgid "Change Shrinkwrap Setting"
 msgstr "更改收缩包裹设置"
 
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/frame_widget.py
-msgid "Absolute distance from content boundary"
-msgstr "距离内容边界的绝对距离"
+msgid "Absolute distance from content boundary in machine units"
+msgstr "与内容边界的绝对距离（以机器单位计）"
 
 #: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/frame_widget.py
 msgid "Change Frame Setting"
