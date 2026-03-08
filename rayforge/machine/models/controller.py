@@ -392,8 +392,8 @@ class MachineController:
 
         if not self.machine.is_connected():
             self.machine.wcs_offsets[slot] = (x, y, z)
-            self.machine._scheduler(self.wcs_updated.send, self)
-            self.machine._scheduler(self.machine.changed.send, self)
+            self.machine._scheduler(self.wcs_updated.send, self.machine)
+            self.machine._scheduler(self.machine.changed.send, self.machine)
             return
 
         await self.driver.set_wcs_offset(slot, x, y, z)
