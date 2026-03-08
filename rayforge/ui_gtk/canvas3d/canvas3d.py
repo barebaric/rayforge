@@ -4,6 +4,7 @@ import numpy as np
 from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
 from ...context import RayforgeContext
+from ...core.geo import Point3D
 from ...machine.models.colors import OpsColorSet
 from ...pipeline.artifact import ArtifactStore, StepRenderArtifact
 from ...pipeline.pipeline import Pipeline
@@ -229,7 +230,7 @@ class Canvas3D(Gtk.GLArea):
         self._is_orbiting = False
         self._is_z_rotating = False
         self._gl_initialized = False
-        self._wcs_offset_mm: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        self._wcs_offset_mm: Point3D = (0.0, 0.0, 0.0)
 
         # This matrix transforms the grid and axes from a standard Y-up,
         # X-right system to match the machine's coordinate system.

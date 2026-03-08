@@ -56,6 +56,7 @@ from .query import (
     find_closest_point_on_path_from_array,
     get_total_distance_from_array,
 )
+from .types import Point3D
 
 
 logger = logging.getLogger(__name__)
@@ -77,7 +78,7 @@ class Geometry:
 
     def __init__(self) -> None:
         """Initializes a new, empty Geometry object."""
-        self.last_move_to: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        self.last_move_to: Point3D = (0.0, 0.0, 0.0)
         self._uniform_scalable: bool = True
         self._winding_cache: Dict[int, str] = {}
         self._pending_data: List[List[float]] = []
@@ -111,7 +112,7 @@ class Geometry:
 
         self._pending_data = []
 
-    def _get_last_point(self) -> Tuple[float, float, float]:
+    def _get_last_point(self) -> Point3D:
         """
         Retrieves the end point of the last command in the geometry.
         Returns (0,0,0) if empty.
@@ -626,7 +627,7 @@ class Geometry:
             return 0.0
         return get_area_from_array(self.data)
 
-    def segments(self) -> List[List[Tuple[float, float, float]]]:
+    def segments(self) -> List[List[Point3D]]:
         """
         Returns a list of segments, where each segment is a list of points
         defining a continuous subpath.
@@ -641,11 +642,10 @@ class Geometry:
         if self.data is None or len(self.data) == 0:
             return []
 
-        all_segments: List[List[Tuple[float, float, float]]] = []
-        current_segment_points: List[Tuple[float, float, float]] = []
+        all_segments: List[List[Point3D]] = []
+        current_segment_points: List[Point3D] = []
 
-        # Find the first real command to establish a start point if needed
-        implicit_start: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        implicit_start: Point3D = (0.0, 0.0, 0.0)
 
         for i in range(self.data.shape[0]):
             row = self.data[i]

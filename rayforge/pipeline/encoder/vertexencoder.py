@@ -1,6 +1,7 @@
 from __future__ import annotations
-from typing import List, Tuple
+from typing import List
 import numpy as np
+from ...core.geo import Point3D
 from ...core.ops import Ops
 from ...core.ops.commands import (
     MoveToCommand,
@@ -128,7 +129,7 @@ class VertexEncoder(OpsEncoder):
     def _handle_scanline(
         self,
         cmd: ScanLinePowerCommand,
-        start_pos: Tuple[float, float, float],
+        start_pos: Point3D,
         zero_power_v: List[float],
     ):
         """

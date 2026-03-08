@@ -2,6 +2,8 @@ from typing import Optional, List, Tuple, TYPE_CHECKING, Dict, Set
 from dataclasses import dataclass
 from gettext import gettext as _
 
+from ...core.geo import Point3D
+
 if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...machine.models.machine import Machine
@@ -28,7 +30,7 @@ class GcodeContext:
     workpiece: Optional["WorkPiece"] = None
 
     @property
-    def wcs_offset(self) -> Tuple[float, float, float]:
+    def wcs_offset(self) -> Point3D:
         """The (x, y, z) offset for the currently active WCS."""
         return self.machine.get_active_wcs_offset()
 

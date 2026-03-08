@@ -1,6 +1,7 @@
 import logging
 import math
 from typing import TYPE_CHECKING, Optional, List, Tuple
+from ...core.geo import Point3D
 from ...core.layer import Layer
 from ...core.ops import (
     Ops,
@@ -61,7 +62,7 @@ class GcodeEncoder(OpsEncoder):
         self.air_assist: bool = False  # Air assist state
         self.laser_active: bool = False  # Laser on/off state
         self.active_laser_uid: Optional[str] = None
-        self.current_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        self.current_pos: Point3D = (0.0, 0.0, 0.0)
         self._coord_format: str = "{:.3f}"  # Default format
         self._feed_format: str = "{:.3f}"
         self._power_format: str = "{:.3f}"
@@ -445,7 +446,7 @@ class GcodeEncoder(OpsEncoder):
         self,
         context: GcodeContext,
         gcode: List[str],
-        end: Tuple[float, float, float],
+        end: Point3D,
         center: Tuple[float, float],
         cw: bool,
     ) -> None:

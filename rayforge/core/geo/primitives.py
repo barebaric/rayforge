@@ -13,6 +13,7 @@ from .constants import (
     GEO_ARRAY_COLS,
 )
 from .linearize import linearize_arc, linearize_bezier_from_array
+from .types import Point3D
 
 
 def normalize_angle(angle: float) -> float:
@@ -25,7 +26,7 @@ def get_arc_angles(
     end_pos: Tuple[float, float],
     center: Tuple[float, float],
     clockwise: bool,
-) -> Tuple[float, float, float]:
+) -> Point3D:
     """
     Returns (start_angle, end_angle, sweep_angle) for an arc.
     Handles the clockwise/counter-clockwise logic and wrapping.
@@ -366,7 +367,7 @@ def find_closest_point_on_line_segment(
 
 def _find_closest_on_linearized_arc(
     arc_row: np.ndarray,
-    start_pos: Tuple[float, float, float],
+    start_pos: Point3D,
     x: float,
     y: float,
 ) -> Optional[Tuple[float, Tuple[float, float], float]]:
@@ -396,7 +397,7 @@ def _find_closest_on_linearized_arc(
 
 def find_closest_point_on_bezier(
     bezier_row: np.ndarray,
-    start_pos: Tuple[float, float, float],
+    start_pos: Point3D,
     x: float,
     y: float,
 ) -> Optional[Tuple[float, Tuple[float, float], float]]:
@@ -429,7 +430,7 @@ def find_closest_point_on_bezier(
 
 def _find_closest_point_on_arc_from_array(
     arc_row: np.ndarray,
-    start_pos: Tuple[float, float, float],
+    start_pos: Point3D,
     x: float,
     y: float,
 ) -> Optional[Tuple[float, Tuple[float, float], float]]:
@@ -508,7 +509,7 @@ def _find_closest_point_on_arc_from_array(
 
 
 def find_closest_point_on_arc(
-    arc_input: Any, start_pos: Tuple[float, float, float], x: float, y: float
+    arc_input: Any, start_pos: Point3D, x: float, y: float
 ) -> Optional[Tuple[float, Tuple[float, float], float]]:
     """
     Finds the closest point on an arc, using an analytical method for

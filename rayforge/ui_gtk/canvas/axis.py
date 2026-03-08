@@ -2,6 +2,7 @@ import math
 import logging
 from typing import Tuple, TYPE_CHECKING
 import cairo
+from ...core.geo import Point3D
 from ...core.matrix import Matrix
 from ...pipeline.coordspace import OriginCorner
 
@@ -173,7 +174,7 @@ class AxisRenderer:
         view_transform: Matrix,
         widget_w: int,
         widget_h: int,
-        origin_offset_mm: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+        origin_offset_mm: Point3D = (0.0, 0.0, 0.0),
     ):
         """
         Draws the grid, axes, and labels onto the Cairo context using the
@@ -238,7 +239,7 @@ class AxisRenderer:
         max_x: float,
         min_y: float,
         max_y: float,
-        origin_offset_mm: Tuple[float, float, float],
+        origin_offset_mm: Point3D,
     ):
         """Internal helper to draw the infinite grid lines."""
         ctx.set_source_rgba(*self.grid_color)
@@ -293,7 +294,7 @@ class AxisRenderer:
         ctx: cairo.Context,
         view_transform: Matrix,
         grid_size_mm: float,
-        origin_offset_mm: Tuple[float, float, float],
+        origin_offset_mm: Point3D,
     ):
         """Internal helper to draw the main XY axes and text labels."""
         # Calculate precision needed to display fractional grid sizes

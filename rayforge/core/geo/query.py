@@ -25,6 +25,7 @@ from .primitives import (
     find_closest_point_on_bezier,
     get_arc_bounding_box,
 )
+from .types import Point3D
 
 
 if TYPE_CHECKING:
@@ -296,7 +297,7 @@ def find_closest_point_on_path_from_array(
     min_dist_sq = float("inf")
     closest_info: Optional[Tuple[int, float, Tuple[float, float]]] = None
 
-    last_pos_3d: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    last_pos_3d: Point3D = (0.0, 0.0, 0.0)
     for i in range(len(data)):
         row = data[i]
         cmd_type = row[COL_TYPE]
