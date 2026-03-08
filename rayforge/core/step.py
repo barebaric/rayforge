@@ -120,6 +120,18 @@ class Step(DocItem, ABC):
         return result
 
     @classmethod
+    def get_default_transformers_dicts(cls) -> tuple[list, list]:
+        """
+        Returns default transformer configurations for this step type.
+
+        Returns:
+            A tuple of (per_workpiece_transformers_dicts,
+            per_step_transformers_dicts) for new steps of this type.
+            Subclasses should override this to provide their defaults.
+        """
+        return [], []
+
+    @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Step":
         """Deserializes a Step instance from a dictionary."""
         known_keys = {
@@ -151,8 +163,17 @@ class Step(DocItem, ABC):
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
-        step_type_name = data.get("step_type", "Step")
-        step_class = step_registry.get(step_type_name)
+        step_type_name = data.get("step_type")
+        if step_type_name:
+            step_class = step_registry.get(step_type_name)
+        else:
+            step_class = None
+
+        if step_class is None:
+            typelabel = data.get("typelabel")
+            if typelabel:
+                step_class = step_registry.get_by_typelabel(typelabel)
+
         if step_class is None:
             step_class = cls
 
@@ -172,10 +193,19 @@ class Step(DocItem, ABC):
         }
 
         step.opsproducer_dict = data["opsproducer_dict"]
-        step.per_workpiece_transformers_dicts = data[
-            "per_workpiece_transformers_dicts"
-        ]
-        step.per_step_transformers_dicts = data["per_step_transformers_dicts"]
+        loaded_per_wp = data["per_workpiece_transformers_dicts"]
+        loaded_per_step = data["per_step_transformers_dicts"]
+
+        default_per_wp, default_per_step = (
+            step_class.get_default_transformers_dicts()
+        )
+        step.per_workpiece_transformers_dicts = Step._merge_transformer_dicts(
+            loaded_per_wp, default_per_wp
+        )
+        step.per_step_transformers_dicts = Step._merge_transformer_dicts(
+            loaded_per_step, default_per_step
+        )
+
         step.pixels_per_mm = data.get("pixels_per_mm", (100, 100))
         step.power = data.get("power", 1.0)
         step.max_power = data.get("max_power", 1000)
@@ -187,6 +217,24 @@ class Step(DocItem, ABC):
         step.kerf_mm = data.get("kerf_mm", 0.0)
         step.extra = extra
         return step
+
+    @staticmethod
+    def _merge_transformer_dicts(
+        loaded: List[Dict[str, Any]], defaults: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Merges loaded transformer dicts with defaults.
+
+        Adds any transformers from defaults that are not present in loaded,
+        preserving order where new transformers appear in the defaults list.
+        """
+        loaded_names = {t.get("name") for t in loaded if t.get("name")}
+        result = list(loaded)
+        for default_t in defaults:
+            name = default_t.get("name")
+            if name and name not in loaded_names:
+                result.append(default_t)
+        return result
 
     def get_settings(self) -> Dict[str, Any]:
         """
