@@ -494,7 +494,7 @@ def test_clip_fully_inside(clip_rect):
     ops = Ops()
     ops.move_to(10, 10, -1)
     ops.line_to(90, 90, -1)
-    clipped_ops = ops.clip(clip_rect)
+    clipped_ops = ops.clip_rect(clip_rect)
     assert len(clipped_ops.commands) == 2
     assert isinstance(clipped_ops.commands[0], MoveToCommand)
     assert isinstance(clipped_ops.commands[1], LineToCommand)
@@ -506,7 +506,7 @@ def test_clip_fully_outside(clip_rect):
     ops = Ops()
     ops.move_to(110, 110, 0)
     ops.line_to(120, 120, 0)
-    clipped_ops = ops.clip(clip_rect)
+    clipped_ops = ops.clip_rect(clip_rect)
     assert len(clipped_ops.commands) == 0
 
 
@@ -516,7 +516,7 @@ def test_clip_with_arc():
     ops.move_to(0, 50)
     ops.arc_to(100, 50, i=50, j=0, clockwise=False)  # Semicircle
     clip_rect = (40.0, 0.0, 60.0, 100.0)  # A vertical slice through the middle
-    clipped_ops = ops.clip(clip_rect)
+    clipped_ops = ops.clip_rect(clip_rect)
 
     # Check that there are drawing commands left
     drawing_cmds = [c for c in clipped_ops if c.is_cutting_command()]
@@ -536,7 +536,7 @@ def test_clip_scanlinepowercommand_start_outside():
     ops.move_to(0, 50, 10)
     ops.scan_to(100, 50, 10, bytearray(range(100)))
     clip_rect = (50, 0, 150, 100)
-    clipped_ops = ops.clip(clip_rect)
+    clipped_ops = ops.clip_rect(clip_rect)
 
     assert len(clipped_ops.commands) == 2  # MoveTo, ScanLinePowerCommand
     assert isinstance(clipped_ops.commands[0], MoveToCommand)
@@ -563,7 +563,7 @@ def test_clip_scanlinepowercommand_crossing_with_z_interp():
     ops.move_to(-50, 50, 0)
     ops.scan_to(150, 50, 200, bytearray(range(200)))
     clip_rect = (0, 0, 100, 100)
-    clipped_ops = ops.clip(clip_rect)
+    clipped_ops = ops.clip_rect(clip_rect)
 
     assert len(clipped_ops.commands) == 2
     clipped_cmd = cast(ScanLinePowerCommand, clipped_ops.commands[1])
@@ -593,7 +593,7 @@ def test_clip_scanlinepowercommand_fully_outside():
     ops.move_to(200, 50, 10)
     ops.scan_to(300, 50, 10, bytearray(range(100)))
     clip_rect = (0, 0, 100, 100)
-    clipped_ops = ops.clip(clip_rect)
+    clipped_ops = ops.clip_rect(clip_rect)
     assert len(clipped_ops.commands) == 0
 
 
@@ -633,6 +633,252 @@ def test_subtract_regions_with_scanline():
     assert isinstance(scan2, ScanLinePowerCommand)
     assert scan2.end == pytest.approx((100, 50, 0))
     assert len(scan2.power_values) == 40
+
+
+def test_clip_to_regions_basic():
+    ops = Ops()
+    ops.move_to(0, 50, -5)
+    ops.line_to(100, 50, 5)
+    region = [(40.0, 45.0), (60.0, 45.0), (60.0, 55.0), (40.0, 55.0)]
+
+    ops.clip_to_regions([region])
+
+    assert len(ops.commands) == 2
+    assert ops.commands[0].end == pytest.approx((40.0, 50.0, -1.0))
+    assert ops.commands[1].end == pytest.approx((60.0, 50.0, 1.0))
+
+
+def test_clip_to_regions_fully_outside():
+    ops = Ops()
+    ops.move_to(0, 50, 0)
+    ops.line_to(30, 50, 0)
+    region = [(40.0, 45.0), (60.0, 45.0), (60.0, 55.0), (40.0, 55.0)]
+
+    ops.clip_to_regions([region])
+
+    assert len(ops.commands) == 0
+
+
+def test_clip_to_regions_fully_inside():
+    ops = Ops()
+    ops.move_to(45, 50, 0)
+    ops.line_to(55, 50, 0)
+    region = [(40.0, 45.0), (60.0, 45.0), (60.0, 55.0), (40.0, 55.0)]
+
+    ops.clip_to_regions([region])
+
+    assert len(ops.commands) == 2
+    assert ops.commands[1].end == pytest.approx((55, 50, 0))
+
+
+def test_clip_to_regions_multiple_regions():
+    ops = Ops()
+    ops.move_to(0, 50, 0)
+    ops.line_to(100, 50, 0)
+    region1 = [(20.0, 45.0), (30.0, 45.0), (30.0, 55.0), (20.0, 55.0)]
+    region2 = [(70.0, 45.0), (80.0, 45.0), (80.0, 55.0), (70.0, 55.0)]
+
+    ops.clip_to_regions([region1, region2])
+
+    assert len(ops.commands) == 4
+    assert ops.commands[0].end == pytest.approx((20.0, 50.0, 0.0))
+    assert ops.commands[1].end == pytest.approx((30.0, 50.0, 0.0))
+    assert ops.commands[2].end == pytest.approx((70.0, 50.0, 0.0))
+    assert ops.commands[3].end == pytest.approx((80.0, 50.0, 0.0))
+
+
+def test_clip_to_regions_with_scanline():
+    ops = Ops()
+    ops.move_to(0, 50, 0)
+    ops.scan_to(100, 50, 0, bytearray([100] * 100))
+    region = [(40.0, 40.0), (60.0, 40.0), (60.0, 60.0), (40.0, 60.0)]
+
+    ops.clip_to_regions([region])
+
+    assert len(ops.commands) == 2
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert ops.commands[0].end == pytest.approx((40, 50, 0))
+
+    scan = cast(ScanLinePowerCommand, ops.commands[1])
+    assert isinstance(scan, ScanLinePowerCommand)
+    assert scan.end == pytest.approx((60, 50, 0))
+    assert len(scan.power_values) == 20
+
+
+def test_clip_to_regions_empty_regions():
+    ops = Ops()
+    ops.move_to(0, 50, 0)
+    ops.line_to(100, 50, 0)
+
+    original_len = len(ops.commands)
+    ops.clip_to_regions([])
+
+    assert len(ops.commands) == original_len
+
+
+def test_clip_to_regions_preserves_state_commands():
+    ops = Ops()
+    ops.set_power(0.8)
+    ops.move_to(0, 50, 0)
+    ops.line_to(100, 50, 0)
+    region = [(40.0, 45.0), (60.0, 45.0), (60.0, 55.0), (40.0, 55.0)]
+
+    ops.clip_to_regions([region])
+
+    assert len(ops.commands) == 3
+    assert isinstance(ops.commands[0], SetPowerCommand)
+    assert isinstance(ops.commands[1], MoveToCommand)
+    assert isinstance(ops.commands[2], LineToCommand)
+
+
+def create_circle_polygon(cx, cy, radius, num_segments=32):
+    points = []
+    for i in range(num_segments):
+        angle = 2 * math.pi * i / num_segments
+        x = cx + radius * math.cos(angle)
+        y = cy + radius * math.sin(angle)
+        points.append((x, y))
+    return points
+
+
+class TestClipToCircleRegions:
+    """Tests for clipping Ops to circular regions."""
+
+    def test_clip_to_circle_basic(self):
+        ops = Ops()
+        ops.move_to(0, 50, -5)
+        ops.line_to(100, 50, 5)
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) == 2
+        assert ops.commands[0].end is not None
+        assert ops.commands[0].end[0] == pytest.approx(30.0, abs=0.5)
+        assert ops.commands[0].end[1] == pytest.approx(50.0)
+        assert ops.commands[1].end is not None
+        assert ops.commands[1].end[0] == pytest.approx(70.0, abs=0.5)
+        assert ops.commands[1].end[1] == pytest.approx(50.0)
+
+    def test_clip_to_circle_fully_outside(self):
+        ops = Ops()
+        ops.move_to(0, 50, 0)
+        ops.line_to(25, 50, 0)
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) == 0
+
+    def test_clip_to_circle_fully_inside(self):
+        ops = Ops()
+        ops.move_to(45, 50, 0)
+        ops.line_to(55, 50, 0)
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) == 2
+        assert ops.commands[1].end == pytest.approx((55, 50, 0))
+
+    def test_clip_to_multiple_circles(self):
+        ops = Ops()
+        ops.move_to(0, 50, 0)
+        ops.line_to(100, 50, 0)
+        circle1 = create_circle_polygon(25, 50, 10)
+        circle2 = create_circle_polygon(75, 50, 10)
+
+        ops.clip_to_regions([circle1, circle2])
+
+        assert len(ops.commands) == 4
+        assert ops.commands[0].end is not None
+        assert ops.commands[0].end[0] == pytest.approx(15.0, abs=0.5)
+        assert ops.commands[1].end is not None
+        assert ops.commands[1].end[0] == pytest.approx(35.0, abs=0.5)
+        assert ops.commands[2].end is not None
+        assert ops.commands[2].end[0] == pytest.approx(65.0, abs=0.5)
+        assert ops.commands[3].end is not None
+        assert ops.commands[3].end[0] == pytest.approx(85.0, abs=0.5)
+
+    def test_clip_to_circle_vertical_line(self):
+        ops = Ops()
+        ops.move_to(50, 0, 0)
+        ops.line_to(50, 100, 0)
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) == 2
+        assert ops.commands[0].end is not None
+        assert ops.commands[0].end[1] == pytest.approx(30.0, abs=0.5)
+        assert ops.commands[1].end is not None
+        assert ops.commands[1].end[1] == pytest.approx(70.0, abs=0.5)
+
+    def test_clip_to_circle_diagonal_line(self):
+        ops = Ops()
+        ops.move_to(0, 0, 0)
+        ops.line_to(100, 100, 0)
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) == 2
+        assert ops.commands[0].end is not None
+        start_x = ops.commands[0].end[0]
+        assert ops.commands[1].end is not None
+        end_x = ops.commands[1].end[0]
+        assert start_x == pytest.approx(50 - 20 * math.sqrt(2) / 2, abs=0.5)
+        assert end_x == pytest.approx(50 + 20 * math.sqrt(2) / 2, abs=0.5)
+
+    def test_clip_to_circle_with_scanline(self):
+        ops = Ops()
+        ops.move_to(0, 50, 0)
+        ops.scan_to(100, 50, 0, bytearray([100] * 100))
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) == 2
+        assert isinstance(ops.commands[0], MoveToCommand)
+        assert ops.commands[0].end is not None
+        assert ops.commands[0].end[0] == pytest.approx(30.0, abs=0.5)
+
+        scan = cast(ScanLinePowerCommand, ops.commands[1])
+        assert isinstance(scan, ScanLinePowerCommand)
+        assert scan.end is not None
+        assert scan.end[0] == pytest.approx(70.0, abs=0.5)
+        assert len(scan.power_values) == pytest.approx(40, abs=2)
+
+    def test_clip_to_circle_with_arc(self):
+        ops = Ops()
+        ops.move_to(30, 30)
+        ops.arc_to(70, 30, i=20, j=0, clockwise=True)
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) > 0
+        drawing_cmds = [c for c in ops if c.is_cutting_command()]
+        assert len(drawing_cmds) > 0
+        for cmd in ops.commands:
+            if isinstance(cmd, MovingCommand) and cmd.end is not None:
+                x, y, z = cmd.end
+                dist = math.hypot(x - 50, y - 50)
+                assert dist <= 20.5
+
+    def test_clip_to_circle_preserves_state_commands(self):
+        ops = Ops()
+        ops.set_power(0.8)
+        ops.move_to(0, 50, 0)
+        ops.line_to(100, 50, 0)
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) == 3
+        assert isinstance(ops.commands[0], SetPowerCommand)
+        assert isinstance(ops.commands[1], MoveToCommand)
+        assert isinstance(ops.commands[2], LineToCommand)
 
 
 def test_from_geometry():
