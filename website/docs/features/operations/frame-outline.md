@@ -100,25 +100,16 @@ Frame outline supports kerf compensation:
 - Ensures accurate final dimensions
 - Uses the kerf value from your laser head settings
 
-## Post-Processing Options
+## Post-Processing
 
 ![Frame Outline post-processing settings](/screenshots/step-settings-frame-outline-post.png)
 
-### Multi-Pass
+Frame Outline operations support several post-processing options:
 
-Cut the frame multiple times:
-
-- **Passes:** Number of repetitions
-- **Z Step-Down:** Lower Z between passes (requires Z-axis)
-- Useful for thick materials
-
-### Holding Tabs
-
-Add tabs to keep the framed piece attached:
-
-- Prevents pieces from falling during cutting
-- Configure tab width, height, and spacing
-- See [Holding Tabs](../holding-tabs) for details
+- **[Holding Tabs](../holding-tabs)** - Keep the framed piece attached to stock
+- **[Crop to Stock](../crop-to-stock)** - Limit cuts to material boundary
+- **[Path Optimization](../path-optimization)** - Reduce travel distance
+- **[Multi-Pass](../multi-pass)** - Repeat cuts for thick materials
 
 ## Use Cases
 

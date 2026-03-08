@@ -114,7 +114,19 @@ Controla onde o laser corta relativo ao caminho vetorial:
 - Reduz tempo de trabalho
 - Previne cortes perdidos
 
-## Recursos Avançados
+## Pós-Processamento
+
+![Configurações de pós-processamento de contorno](/screenshots/step-settings-contour-post.png)
+
+Operações de contorno suportam várias opções de pós-processamento:
+
+- **[Suavização de Caminho](../smooth)** - Reduz bordas irregulares em caminhos de corte
+- **[Abas de Fixação](../holding-tabs)** - Mantém peças cortadas anexadas ao material de estoque
+- **[Cortar para Estoque](../crop-to-stock)** - Limita cortes ao limite do material
+- **[Otimização de Caminho](../path-optimization)** - Reduz distância de deslocamento entre cortes
+- **[Multi-Passagem](../multi-pass)** - Repete cortes para materiais espessos
+
+### Compensação de Kerf
 
 ![Configurações de pós-processamento de contorno](/screenshots/step-settings-contour-post.png)
 
@@ -144,28 +156,6 @@ Kerf é a largura do material removido pelo feixe do laser:
 4. Para furos: desloque **fora** por kerf/2
 
 Veja [Kerf](../kerf) para guia detalhado.
-
-### Entrada/Saída
-
-Entradas e saídas controlam onde cortes começam e terminam:
-
-**Entrada:**
-
-- Entrada gradual no corte
-- Previne marcas de queimadura no ponto inicial
-- Move laser para velocidade total antes de atingir a borda do material
-
-**Saída:**
-
-- Saída gradual do corte
-- Previne dano no ponto final
-- Comum para metais e acrílicos
-
-**Configuração:**
-
-- Comprimento: Quão longe a entrada se estende (mm)
-- Ângulo: Direção do caminho de entrada
-- Tipo: Linha reta, arco ou espiral
 
 ## Dicas e Melhores Práticas
 

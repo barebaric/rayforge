@@ -113,18 +113,17 @@ Steuert, wo der Laser relativ zum Vektorpfad schneidet:
 - Reduziert Job-Zeit
 - Verhindert verpasste Schnitte
 
-## Erweiterte Funktionen
+## Nachbearbeitung
 
 ![Kontur-Nachbearbeitungseinstellungen](/screenshots/step-settings-contour-post.png)
 
-### Halte-Laschen
+Kontur-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 
-Laschen halten geschnittene Teile während des Schneidens am Rohmaterial befestigt:
-
-- Laschen hinzufügen, um zu verhindern, dass Teile fallen
-- Laschen sind kleine ungeschnittene Abschnitte
-- Laschen nach Job-Abschluss abbrechen
-- Siehe [Halte-Laschen](../holding-tabs) für Details
+- **[Pfad-Glättung](../smooth)** - Gezackte Kanten in Schneidepfaden reduzieren
+- **[Halte-Laschen](../holding-tabs)** - Geschnittene Teile am Rohmaterial befestigt halten
+- **[Auf Rohmaterial zuschneiden](../crop-to-stock)** - Schnitte auf Materialgrenze beschränken
+- **[Pfad-Optimierung](../path-optimization)** - Verfahrdistanz zwischen Schnitten reduzieren
+- **[Mehrfach-Durchgang](../multi-pass)** - Schnitte für dicke Materialien wiederholen
 
 ### Schnittbreiten-Kompensation
 

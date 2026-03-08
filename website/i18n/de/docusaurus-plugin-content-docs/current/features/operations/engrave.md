@@ -208,6 +208,16 @@ Für beste Qualität, bidirektional deaktivieren. Für Geschwindigkeit, aktivier
 
 Siehe [Overscan](../overscan) für Details.
 
+## Nachbearbeitung
+
+![Gravur-Nachbearbeitungseinstellungen](/screenshots/step-settings-engrave-post.png)
+
+Gravur-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
+
+- **[Overscan](../overscan)** - Rasterzeilen für konsistente Gravurqualität erweitern
+- **[Pfad-Optimierung](../path-optimization)** - Verfahrdistanz reduzieren
+- **[Mehrfach-Durchgang](../multi-pass)** - Gravur für tiefere Ergebnisse wiederholen
+
 ## Modus-spezifische Einstellungen
 
 ### Variabler-Leistungs-Modus-Einstellungen

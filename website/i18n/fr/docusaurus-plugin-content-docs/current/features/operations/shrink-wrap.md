@@ -198,9 +198,17 @@ Voir [Flux de Travail Multi-Couches](../multi-layer) pour plus de détails.
 - Toute la gravure se produit pendant que le matériau est sécurisé
 - Le shrink wrap final coupe tout le lot libre
 
-## Conseils & Meilleures Pratiques
+## Post-Traitement
 
 ![Paramètres de post-traitement shrink wrap](/screenshots/step-settings-shrink-wrap-post.png)
+
+Les opérations Shrink Wrap supportent plusieurs options de post-traitement :
+
+- **[Lissage de Parcours](../smooth)** - Réduire les bords irréguliers dans le parcours de limite
+- **[Ponts de Maintien](../holding-tabs)** - Maintenir les pièces coupées attachées au matériau de stock
+- **[Rognage au Stock](../crop-to-stock)** - Limiter les coupes à la limite du matériau
+- **[Optimisation de Parcours](../path-optimization)** - Réduire la distance de déplacement
+- **[Passe Multiple](../multi-pass)** - Répéter les coupes pour les matériaux épais
 
 ### Espacement des Pièces
 

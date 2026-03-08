@@ -208,6 +208,16 @@ For best quality, disable bidirectional. For speed, enable it.
 
 See [Overscan](../overscan) for details.
 
+## Post-Processing
+
+![Engrave post-processing settings](/screenshots/step-settings-engrave-post.png)
+
+Engrave operations support several post-processing options:
+
+- **[Overscan](../overscan)** - Extend raster lines for consistent engraving quality
+- **[Path Optimization](../path-optimization)** - Reduce travel distance
+- **[Multi-Pass](../multi-pass)** - Repeat engraving for deeper results
+
 ## Mode-Specific Settings
 
 ### Variable Power Mode Settings
@@ -317,8 +327,6 @@ Choose the algorithm that best suits your image and material:
 Use invert for lithophanes (light areas should be thin) or embossing (raised areas).
 
 ## Tips & Best Practices
-
-![Engrave post-processing settings](/screenshots/step-settings-engrave-post.png)
 
 ### Material Selection
 

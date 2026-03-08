@@ -100,25 +100,16 @@ El perfilado de marco soporta compensación de kerf:
 - Asegura dimensiones finales precisas
 - Usa el valor de kerf de la configuración de tu cabezal láser
 
-## Opciones de Post-Procesamiento
+## Post-Procesamiento
 
 ![Configuración de post-procesamiento de Perfilado de Marco](/screenshots/step-settings-frame-outline-post.png)
 
-### Multi-Pasada
+Las operaciones de Perfilado de Marco soportan varias opciones de post-procesamiento:
 
-Corta el marco múltiples veces:
-
-- **Pasadas:** Número de repeticiones
-- **Descenso Z:** Bajar Z entre pasadas (requiere eje Z)
-- Útil para materiales gruesos
-
-### Pestañas de Sujeción
-
-Añade pestañas para mantener la pieza enmarcada adjunta:
-
-- Previene que las piezas caigan durante el corte
-- Configura ancho, altura y espaciado de pestañas
-- Ver [Pestañas de Sujeción](../holding-tabs) para detalles
+- **[Pestañas de Sujeción](../holding-tabs)** - Mantienen la pieza enmarcada adjunta al material
+- **[Recortar al Material](../crop-to-stock)** - Limita los cortes al límite del material
+- **[Optimización de Trayectoria](../path-optimization)** - Reduce la distancia de viaje
+- **[Multi-Pasada](../multi-pass)** - Repite cortes para materiales gruesos
 
 ## Casos de Uso
 

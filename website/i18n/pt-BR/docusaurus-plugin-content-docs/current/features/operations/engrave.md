@@ -208,6 +208,16 @@ Para melhor qualidade, desabilite bidirecional. Para velocidade, habilite.
 
 Veja [Overscan](../overscan) para detalhes.
 
+## Pós-Processamento
+
+![Configurações de pós-processamento de gravação](/screenshots/step-settings-engrave-post.png)
+
+Operações de gravação suportam várias opções de pós-processamento:
+
+- **[Overscan](../overscan)** - Estende linhas raster para qualidade de gravação consistente
+- **[Otimização de Caminho](../path-optimization)** - Reduz distância de deslocamento
+- **[Multi-Passagem](../multi-pass)** - Repete gravação para resultados mais profundos
+
 ## Configurações Específicas do Modo
 
 ### Configurações do Modo Potência Variável

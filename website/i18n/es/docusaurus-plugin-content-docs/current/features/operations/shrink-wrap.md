@@ -198,6 +198,18 @@ Ver [Flujo de Trabajo Multi-Capa](../multi-layer) para detalles.
 - Todo el grabado ocurre mientras el material está asegurado
 - La envoltura contraída final corta todo el lote libre
 
+## Post-Procesamiento
+
+![Ajustes de post-procesamiento de envoltura contraída](/screenshots/step-settings-shrink-wrap-post.png)
+
+Las operaciones de Envoltura Contraída soportan varias opciones de post-procesamiento:
+
+- **[Suavizar Trayectoria](../smooth)** - Reduce bordes irregulares en la trayectoria del límite
+- **[Pestañas de Sujeción](../holding-tabs)** - Mantienen las piezas cortadas adjuntas al material base
+- **[Recortar al Material](../crop-to-stock)** - Limita los cortes al límite del material
+- **[Optimización de Trayectoria](../path-optimization)** - Reduce la distancia de viaje
+- **[Multi-Pasada](../multi-pass)** - Repite cortes para materiales gruesos
+
 ## Consejos y Mejores Prácticas
 
 ![Ajustes de post-procesamiento de envoltura contraída](/screenshots/step-settings-shrink-wrap-post.png)

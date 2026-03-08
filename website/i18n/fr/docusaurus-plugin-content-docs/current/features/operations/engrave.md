@@ -316,9 +316,17 @@ Choisissez l'algorithme qui convient le mieux à votre image et matériau :
 
 Utilisez inverser pour les lithophanes (les zones claires doivent être fines) ou le gaufrage (zones en relief).
 
-## Conseils & Meilleures Pratiques
+## Post-Traitement
 
 ![Paramètres de post-traitement de gravure](/screenshots/step-settings-engrave-post.png)
+
+Les opérations de gravure supportent plusieurs options de post-traitement :
+
+- **[Overscan](../overscan)** - Étendre les lignes raster pour une qualité de gravure cohérente
+- **[Optimisation de Parcours](../path-optimization)** - Réduire la distance de déplacement
+- **[Passe Multiple](../multi-pass)** - Répéter la gravure pour des résultats plus profonds
+
+## Conseils & Meilleures Pratiques
 
 ### Sélection du Matériau
 

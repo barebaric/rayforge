@@ -198,9 +198,17 @@ See [Multi-Layer Workflow](../multi-layer) for details.
 - All engraving happens while material is secured
 - Final shrink wrap cuts entire batch free
 
-## Tips & Best Practices
+## Post-Processing
 
 ![Shrink Wrap post-processing settings](/screenshots/step-settings-shrink-wrap-post.png)
+
+Shrink Wrap operations support several post-processing options:
+
+- **[Smooth Path](../smooth)** - Reduce jagged edges in the boundary path
+- **[Holding Tabs](../holding-tabs)** - Keep cut pieces attached to stock material
+- **[Crop to Stock](../crop-to-stock)** - Limit cuts to material boundary
+- **[Path Optimization](../path-optimization)** - Reduce travel distance
+- **[Multi-Pass](../multi-pass)** - Repeat cuts for thick materials
 
 ### Part Spacing
 
