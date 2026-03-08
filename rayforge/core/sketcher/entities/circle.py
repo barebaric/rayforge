@@ -1,6 +1,7 @@
 import math
-from typing import List, Tuple, Dict, Optional, Any, Sequence, TYPE_CHECKING
+from typing import List, Dict, Optional, Any, Sequence, TYPE_CHECKING
 from ...geo import primitives
+from ...geo.types import Point
 from ...geo.geometry import Geometry
 from ...geo.types import Rect
 from .entity import Entity
@@ -139,9 +140,7 @@ class Circle(Entity):
             construction=data.get("construction", False),
         )
 
-    def get_midpoint(
-        self, registry: "EntityRegistry"
-    ) -> Optional[Tuple[float, float]]:
+    def get_midpoint(self, registry: "EntityRegistry") -> Optional[Point]:
         """Returns a point on the circumference (the radius point)."""
         radius_pt = registry.get_point(self.radius_pt_idx)
         if not radius_pt:

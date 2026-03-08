@@ -15,7 +15,7 @@ from typing import (
 import logging
 import numpy as np
 from blinker import Signal
-from .geo import Rect
+from .geo import Rect, Point
 from .matrix import Matrix
 
 if TYPE_CHECKING:
@@ -171,7 +171,7 @@ class DocItem(ABC):
         return None
 
     @property
-    def pos(self) -> Tuple[float, float]:
+    def pos(self) -> Point:
         """
         The position (in mm) of the items's top-left corner in world space.
         """
@@ -179,7 +179,7 @@ class DocItem(ABC):
         return self.get_world_transform().transform_point((0.0, 0.0))
 
     @pos.setter
-    def pos(self, new_pos_world: Tuple[float, float]):
+    def pos(self, new_pos_world: Point):
         """
         Sets the world-space position of the items's top-left corner
         by manipulating the matrix's translation component.

@@ -20,7 +20,7 @@ import numpy as np
 from scipy.ndimage import binary_dilation
 from scipy.signal import fftconvolve
 from ...context import get_context
-from ...core.geo import Rect
+from ...core.geo import Point, Rect
 from ...core.group import Group
 from ...core.matrix import Matrix
 from ...core.item import DocItem
@@ -274,7 +274,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         stock_item: StockItem,
         width_px: int,
         height_px: int,
-        canvas_origin_world: Tuple[float, float],
+        canvas_origin_world: Point,
     ) -> np.ndarray:
         """
         Renders the stock's transformed geometry to a boolean mask that
@@ -560,7 +560,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
     def _compute_deltas_from_placements(
         self,
         placements: List[PlacedItem],
-        group_offset: Tuple[float, float],
+        group_offset: Point,
         canvas_h_px: int,
         canvas_h_mm: float,
     ) -> Dict[DocItem, Matrix]:
@@ -589,7 +589,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
     def _create_delta_for_placement(
         self,
         item: PlacedItem,
-        group_offset: Tuple[float, float],
+        group_offset: Point,
         canvas_h_px: int,
         canvas_h_mm: float,
     ) -> Tuple[DocItem, Matrix]:

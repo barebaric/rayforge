@@ -15,7 +15,7 @@ import cairo
 from gi.repository import GLib
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, Future
-from ...core.geo import Rect
+from ...core.geo import Point, Rect
 from ...core.matrix import Matrix
 from .region import ElementRegion, get_region_rect, check_region_hit
 from .hittest import check_pixel_hit
@@ -792,7 +792,7 @@ class CanvasElement:
         new_transform = self.transform.set_translation(x, y)
         self.set_transform(new_transform)
 
-    def pos_abs(self) -> Tuple[float, float]:
+    def pos_abs(self) -> Point:
         """
         Gets the absolute position on the canvas.
 
@@ -857,7 +857,7 @@ class CanvasElement:
         world_transform = self.get_world_transform()
         return world_transform.get_rotation()
 
-    def get_world_center(self) -> Tuple[float, float]:
+    def get_world_center(self) -> Point:
         """
         Calculates the element's center point in world coordinates.
         """
@@ -1122,9 +1122,7 @@ class CanvasElement:
         """
         pass
 
-    def handle_drag_move(
-        self, world_dx: float, world_dy: float
-    ) -> Tuple[float, float]:
+    def handle_drag_move(self, world_dx: float, world_dy: float) -> Point:
         """
         Intercepts a drag move to apply constraints. Subclasses can
         override this to customize drag behavior.

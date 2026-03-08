@@ -1,6 +1,7 @@
 import math
-from typing import List, Tuple, Dict, Optional, Any, Sequence, TYPE_CHECKING
+from typing import List, Dict, Optional, Any, Sequence, TYPE_CHECKING
 from ...geo import primitives
+from ...geo.types import Point
 from ...geo.geometry import Geometry
 from ...geo.types import Rect
 from .entity import Entity
@@ -150,9 +151,7 @@ class Arc(Entity):
             construction=data.get("construction", False),
         )
 
-    def get_midpoint(
-        self, registry: "EntityRegistry"
-    ) -> Optional[Tuple[float, float]]:
+    def get_midpoint(self, registry: "EntityRegistry") -> Optional[Point]:
         """
         Calculates the midpoint coordinates along the arc's circumference.
         """

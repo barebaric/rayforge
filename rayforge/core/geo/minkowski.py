@@ -5,7 +5,7 @@ These functions implement Minkowski sum/difference operations used
 in packing and nesting algorithms.
 """
 
-from typing import List, Tuple
+from typing import List
 from .polygon import (
     IntPolygon,
     Polygon,
@@ -15,6 +15,7 @@ from .polygon import (
     convex_hull,
     CLIPPER_SCALE,
 )
+from .types import Point
 
 
 def calculate_input_scale(
@@ -39,11 +40,11 @@ def calculate_input_scale(
 
 
 def convolve_two_segments(
-    a1: Tuple[float, float],
-    a2: Tuple[float, float],
-    b1: Tuple[float, float],
-    b2: Tuple[float, float],
-) -> List[Tuple[float, float]]:
+    a1: Point,
+    a2: Point,
+    b1: Point,
+    b2: Point,
+) -> List[Point]:
     """
     Creates a parallelogram from two line segments.
     Matches the exact logic in minkowski.cc convolve_two_segments.

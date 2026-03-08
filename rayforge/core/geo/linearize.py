@@ -19,7 +19,7 @@ from .constants import (
     COL_C2X,
     COL_C2Y,
 )
-from .types import Point3D
+from .types import Point, Point3D
 
 
 def flatten_to_points(
@@ -242,13 +242,13 @@ def linearize_bezier(
 
 
 def linearize_bezier_adaptive(
-    p0: Tuple[float, float],
-    c1: Tuple[float, float],
-    c2: Tuple[float, float],
-    p1: Tuple[float, float],
+    p0: Point,
+    c1: Point,
+    c2: Point,
+    p1: Point,
     tolerance_sq: float,
     max_depth: int = 10,
-) -> List[Tuple[float, float]]:
+) -> List[Point]:
     """
     Recursively flattens a cubic Bezier curve based on geometric error.
 
@@ -262,13 +262,13 @@ def linearize_bezier_adaptive(
         A list of points (excluding p0, including p1) that approximate the
         curve.
     """
-    points: List[Tuple[float, float]] = []
+    points: List[Point] = []
 
     def recursive_step(
-        p0: Tuple[float, float],
-        c1: Tuple[float, float],
-        c2: Tuple[float, float],
-        p1: Tuple[float, float],
+        p0: Point,
+        c1: Point,
+        c2: Point,
+        p1: Point,
         depth: int,
     ):
         # 1. Determine if the curve is flat enough to be a line.

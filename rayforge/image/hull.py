@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 from typing import Tuple, Optional, List
-from ..core.geo import Geometry
+from ..core.geo import Geometry, Point
 
 
 def polygon_to_geometry(
@@ -20,7 +20,7 @@ def polygon_to_geometry(
 
     squeezed_points = points.squeeze()
 
-    def _transform_point(p) -> Tuple[float, float]:
+    def _transform_point(p) -> Point:
         px, py = np.asarray(p).squeeze()
         ops_px = px - border_size
         ops_py = height_px - (py - border_size)
@@ -53,7 +53,7 @@ def _curves_to_geometry(
     if not segments:
         return None
 
-    def _transform_point(p) -> Tuple[float, float]:
+    def _transform_point(p) -> Point:
         px, py = np.asarray(p).squeeze()
         ops_px = px - border_size
         ops_py = height_px - (py - border_size)

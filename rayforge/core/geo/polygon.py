@@ -12,10 +12,11 @@ from typing import List, Tuple, Optional, TYPE_CHECKING
 import numpy as np
 import pyclipper
 
+from .types import Point
+
 if TYPE_CHECKING:
     from .geometry import Rect
 
-Point = Tuple[float, float]
 Polygon = List[Point]
 IntPoint = Tuple[int, int]
 IntPolygon = List[IntPoint]
@@ -381,7 +382,7 @@ def _cross(o: Point, a: Point, b: Point) -> float:
 
 
 @lru_cache(maxsize=256)
-def _is_convex_cached(poly_tuple: Tuple[Tuple[float, float], ...]) -> bool:
+def _is_convex_cached(poly_tuple: Tuple[Point, ...]) -> bool:
     """
     Cached convexity check for hashable polygon representation.
     """
@@ -650,7 +651,7 @@ def point_in_polygon(
 
 
 def point_in_polygon_numpy(
-    point: Tuple[float, float], polygon: np.ndarray, scale: int = CLIPPER_SCALE
+    point: Point, polygon: np.ndarray, scale: int = CLIPPER_SCALE
 ) -> bool:
     """Check if point is in polygon using numpy arrays with pyclipper."""
     if polygon.shape[0] < 3:

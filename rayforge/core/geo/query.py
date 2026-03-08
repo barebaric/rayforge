@@ -25,7 +25,7 @@ from .primitives import (
     find_closest_point_on_bezier,
     get_arc_bounding_box,
 )
-from .types import Point3D, Rect
+from .types import Point, Point3D, Rect
 
 
 def _compute_cubic_bezier_bounds_1d(
@@ -285,13 +285,13 @@ def get_total_distance_from_array(data: np.ndarray) -> float:
 
 def find_closest_point_on_path_from_array(
     data: np.ndarray, x: float, y: float
-) -> Optional[Tuple[int, float, Tuple[float, float]]]:
+) -> Optional[Tuple[int, float, Point]]:
     """
     Finds the closest point on an entire path to a given 2D coordinate from a
     numpy array.
     """
     min_dist_sq = float("inf")
-    closest_info: Optional[Tuple[int, float, Tuple[float, float]]] = None
+    closest_info: Optional[Tuple[int, float, Point]] = None
 
     last_pos_3d: Point3D = (0.0, 0.0, 0.0)
     for i in range(len(data)):

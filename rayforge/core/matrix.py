@@ -1,7 +1,7 @@
 import math
 from typing import Tuple, Any, Optional, Union, Sequence, List, cast
 import numpy as np
-from .geo import Rect
+from .geo import Rect, Point
 
 # A type alias for data that can be converted into a 3x3 matrix.
 # This includes another Matrix, a numpy array, or a 3x3 nested sequence.
@@ -195,7 +195,7 @@ class Matrix:
         """
         return self.get_determinant_2x2() < 0
 
-    def get_translation(self) -> Tuple[float, float]:
+    def get_translation(self) -> Point:
         """
         Extracts the translation component (tx, ty) from the matrix.
         """
@@ -298,7 +298,7 @@ class Matrix:
 
     @staticmethod
     def scale(
-        sx: float, sy: float, center: Optional[Tuple[float, float]] = None
+        sx: float, sy: float, center: Optional[Point] = None
     ) -> "Matrix":
         """
         Creates a scaling matrix.
@@ -329,7 +329,7 @@ class Matrix:
         self,
         sx: float,
         sy: float,
-        center: Optional[Tuple[float, float]] = None,
+        center: Optional[Point] = None,
     ) -> "Matrix":
         """
         Applies a scale before this matrix's transformation.
@@ -342,7 +342,7 @@ class Matrix:
         self,
         sx: float,
         sy: float,
-        center: Optional[Tuple[float, float]] = None,
+        center: Optional[Point] = None,
     ) -> "Matrix":
         """
         Applies a scale after this matrix's transformation.
@@ -366,9 +366,7 @@ class Matrix:
         return angle_deg
 
     @staticmethod
-    def rotation(
-        angle_deg: float, center: Optional[Tuple[float, float]] = None
-    ) -> "Matrix":
+    def rotation(angle_deg: float, center: Optional[Point] = None) -> "Matrix":
         """
         Creates a rotation matrix.
 
@@ -397,7 +395,7 @@ class Matrix:
         return m
 
     def pre_rotate(
-        self, angle_deg: float, center: Optional[Tuple[float, float]] = None
+        self, angle_deg: float, center: Optional[Point] = None
     ) -> "Matrix":
         """
         Applies a rotation before this matrix's transformation.
@@ -407,7 +405,7 @@ class Matrix:
         return r @ self
 
     def post_rotate(
-        self, angle_deg: float, center: Optional[Tuple[float, float]] = None
+        self, angle_deg: float, center: Optional[Point] = None
     ) -> "Matrix":
         """
         Applies a rotation after this matrix's transformation.
@@ -418,7 +416,7 @@ class Matrix:
 
     @staticmethod
     def shear(
-        sh_x: float, sh_y: float, center: Optional[Tuple[float, float]] = None
+        sh_x: float, sh_y: float, center: Optional[Point] = None
     ) -> "Matrix":
         """
         Creates a shearing matrix.
@@ -448,7 +446,7 @@ class Matrix:
         self,
         sh_x: float,
         sh_y: float,
-        center: Optional[Tuple[float, float]] = None,
+        center: Optional[Point] = None,
     ) -> "Matrix":
         """
         Applies a shear before this matrix's transformation.
@@ -461,7 +459,7 @@ class Matrix:
         self,
         sh_x: float,
         sh_y: float,
-        center: Optional[Tuple[float, float]] = None,
+        center: Optional[Point] = None,
     ) -> "Matrix":
         """
         Applies a shear after this matrix's transformation.
@@ -472,7 +470,7 @@ class Matrix:
 
     @staticmethod
     def flip_horizontal(
-        center: Optional[Tuple[float, float]] = None,
+        center: Optional[Point] = None,
     ) -> "Matrix":
         """
         Creates a horizontal flip (mirror along the Y-axis) matrix.
@@ -485,7 +483,7 @@ class Matrix:
 
     @staticmethod
     def flip_vertical(
-        center: Optional[Tuple[float, float]] = None,
+        center: Optional[Point] = None,
     ) -> "Matrix":
         """
         Creates a vertical flip (mirror along the X-axis) matrix.
@@ -509,9 +507,7 @@ class Matrix:
         """
         return Matrix(np.linalg.inv(self.m))
 
-    def transform_point(
-        self, point: Tuple[float, float]
-    ) -> Tuple[float, float]:
+    def transform_point(self, point: Point) -> Point:
         """
         Applies the full affine transformation to a 2D point.
 

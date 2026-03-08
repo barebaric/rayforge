@@ -4,7 +4,7 @@ import numpy as np
 from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
 from ...context import RayforgeContext
-from ...core.geo import Point3D, Rect
+from ...core.geo import Point, Point3D, Rect
 from ...machine.models.colors import OpsColorSet
 from ...pipeline.artifact import ArtifactStore, StepRenderArtifact
 from ...pipeline.pipeline import Pipeline
@@ -258,10 +258,10 @@ class Canvas3D(Gtk.GLArea):
         self._theme_is_dirty = True
 
         # State for interactions
-        self._last_pan_offset: Optional[Tuple[float, float]] = None
+        self._last_pan_offset: Optional[Point] = None
         self._rotation_pivot: Optional[np.ndarray] = None
-        self._last_orbit_pos: Optional[Tuple[float, float]] = None
-        self._last_z_rotate_screen_pos: Optional[Tuple[float, float]] = None
+        self._last_orbit_pos: Optional[Point] = None
+        self._last_z_rotate_screen_pos: Optional[Point] = None
 
         self.set_has_depth_buffer(True)
         self.set_focusable(True)
