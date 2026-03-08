@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from typing import Dict, Any, Optional, TYPE_CHECKING, Tuple, cast
 from gettext import gettext as _
-from .geo import Geometry
+from .geo import Geometry, Rect
 from .item import DocItem
 from .matrix import Matrix
 
@@ -54,7 +54,7 @@ class StockItem(DocItem):
             return asset.get_natural_size()
         return (1.0, 1.0)  # Fallback
 
-    def get_local_bbox(self) -> Optional[Tuple[float, float, float, float]]:
+    def get_local_bbox(self) -> Optional[Rect]:
         """
         StockItems are geometrically defined as a unit square (0,0,1,1) that is
         scaled by their matrix, keeping mathematical consistency with

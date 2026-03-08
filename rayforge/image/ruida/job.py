@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any
+
+from ...core.geo import Rect
 
 
 @dataclass
@@ -43,7 +45,7 @@ class RuidaJob:
     # An ordered list of commands to be executed.
     commands: List[RuidaCommand] = field(default_factory=list)
 
-    def get_extents(self) -> Tuple[float, float, float, float]:
+    def get_extents(self) -> Rect:
         """
         Calculates the bounding box (min_x, min_y, max_x, max_y) in mm
         of all geometric commands in the job.

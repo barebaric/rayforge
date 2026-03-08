@@ -2,10 +2,11 @@ import logging
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Any, Tuple, Optional, TYPE_CHECKING
 from gettext import gettext as _
-from .machine import Machine, Laser, Origin
-from .macro import Macro, MacroTrigger
+from ...core.geo import Rect
 from ..driver import get_driver_cls
 from .dialect import get_dialect, replace
+from .machine import Machine, Laser, Origin
+from .macro import Macro, MacroTrigger
 
 if TYPE_CHECKING:
     from ...context import RayforgeContext
@@ -58,8 +59,8 @@ class MachineProfile:
     gcode_precision: Optional[int] = None
     supports_arcs: Optional[bool] = None
     axis_extents: Optional[Tuple[float, float]] = None
-    work_margins: Optional[Tuple[float, float, float, float]] = None
-    soft_limits: Optional[Tuple[float, float, float, float]] = None
+    work_margins: Optional[Rect] = None
+    soft_limits: Optional[Rect] = None
     origin: Optional[Origin] = None
     max_travel_speed: Optional[int] = None
     max_cut_speed: Optional[int] = None

@@ -2,6 +2,7 @@ import math
 from typing import List, Tuple, Dict, Optional, Any, Sequence, TYPE_CHECKING
 from ...geo import primitives
 from ...geo.geometry import Geometry
+from ...geo.types import Rect
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -58,7 +59,7 @@ class Circle(Entity):
 
     def is_contained_by(
         self,
-        rect: Tuple[float, float, float, float],
+        rect: Rect,
         registry: "EntityRegistry",
     ) -> bool:
         center = registry.get_point(self.center_idx)
@@ -70,7 +71,7 @@ class Circle(Entity):
 
     def intersects_rect(
         self,
-        rect: Tuple[float, float, float, float],
+        rect: Rect,
         registry: "EntityRegistry",
     ) -> bool:
         center = registry.get_point(self.center_idx)

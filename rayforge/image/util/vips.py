@@ -8,7 +8,7 @@ import cairo
 import numpy
 import pyvips
 
-from ...core.geo import Geometry
+from ...core.geo import Geometry, Rect
 from ...core.matrix import Matrix
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ def resize_and_crop_from_full_image(
     full_image: pyvips.Image,
     target_w: int,
     target_h: int,
-    crop_window_px: Tuple[float, float, float, float],
+    crop_window_px: Rect,
 ) -> Optional[pyvips.Image]:
     """
     Scales a full source image up to a high resolution and then crops a

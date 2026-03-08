@@ -2,6 +2,7 @@ from typing import List, Tuple, Dict, Any, Sequence, Optional, TYPE_CHECKING
 from ...geo import primitives
 from ...geo.geometry import Geometry
 from ...geo.font_config import FontConfig
+from ...geo.types import Rect
 from .entity import Entity
 from .line import Line
 
@@ -78,7 +79,7 @@ class TextBoxEntity(Entity):
 
     def is_contained_by(
         self,
-        rect: Tuple[float, float, float, float],
+        rect: Rect,
         registry: "EntityRegistry",
     ) -> bool:
         p_origin = registry.get_point(self.origin_id)
@@ -102,7 +103,7 @@ class TextBoxEntity(Entity):
 
     def intersects_rect(
         self,
-        rect: Tuple[float, float, float, float],
+        rect: Rect,
         registry: "EntityRegistry",
     ) -> bool:
         p_origin = registry.get_point(self.origin_id)

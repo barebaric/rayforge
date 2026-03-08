@@ -1,9 +1,9 @@
 from __future__ import annotations
 from dataclasses import dataclass, field, replace
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 from copy import deepcopy
 
-from .geo import Geometry
+from .geo import Geometry, Rect
 from .matrix import Matrix
 from .vectorization_spec import VectorizationSpec
 
@@ -25,7 +25,7 @@ class SourceAssetSegment:
     layer_id: Optional[str] = None
 
     # --- Fields for cropped/traced bitmap rendering ---
-    crop_window_px: Optional[Tuple[float, float, float, float]] = None
+    crop_window_px: Optional[Rect] = None
     cropped_width_mm: Optional[float] = None
     cropped_height_mm: Optional[float] = None
 

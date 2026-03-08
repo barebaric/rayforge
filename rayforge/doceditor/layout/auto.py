@@ -20,6 +20,7 @@ import numpy as np
 from scipy.ndimage import binary_dilation
 from scipy.signal import fftconvolve
 from ...context import get_context
+from ...core.geo import Rect
 from ...core.group import Group
 from ...core.matrix import Matrix
 from ...core.item import DocItem
@@ -40,7 +41,7 @@ class WorkpieceVariant:
 
     item: DocItem  # The original DocItem (WorkPiece or Group)
     mask: np.ndarray  # Dilated mask for collision detection
-    local_bbox: Tuple[float, float, float, float]  # Bbox in local coords
+    local_bbox: Rect  # Bbox in local coords
     angle_offset: int  # Rotation applied to create this variant
     unrotated_size_mm: Tuple[float, float]  # The size of source shape
 
@@ -687,11 +688,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
 
     def _render_and_mask(
         self, item: DocItem, angle_offset: int
-    ) -> Optional[
-        Tuple[
-            np.ndarray, Tuple[float, float, float, float], Tuple[float, float]
-        ]
-    ]:
+    ) -> Optional[Tuple[np.ndarray, Rect, Tuple[float, float]]]:
         """
         Renders a DocItem to a pixel mask at a specific orientation.
 

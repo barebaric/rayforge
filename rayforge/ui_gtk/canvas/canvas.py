@@ -6,6 +6,7 @@ from enum import Enum, auto
 import cairo
 from gi.repository import Gtk, Gdk, Graphene
 from blinker import Signal
+from ...core.geo import Rect
 from ...core.matrix import Matrix
 from ..shared.keyboard import is_primary_keyval
 from . import transform
@@ -66,12 +67,7 @@ class Canvas(Gtk.DrawingArea):
         self._active_elem: Optional[CanvasElement] = None
 
         # Stores the state of an element or group at the start of a transform
-        self._active_origin: Optional[
-            Union[
-                Tuple[float, float, float, float],  # Group bbox (x,y,w,h)
-                Tuple[float, float, float, float],  # Legacy move rect
-            ]
-        ] = None
+        self._active_origin: Optional[Rect] = None  # Group bbox (x,y,w,h)
         # Stores the initial transform of a single element being transformed
         self._initial_transform: Optional[Matrix] = None
         self._initial_world_transform: Optional[Matrix] = None
@@ -89,9 +85,7 @@ class Canvas(Gtk.DrawingArea):
         self._selection_just_changed: bool = False
         self._selection_group: Optional[MultiSelectionGroup] = None
         self._framing_selection: bool = False
-        self._selection_frame_rect: Optional[
-            Tuple[float, float, float, float]
-        ] = None
+        self._selection_frame_rect: Optional[Rect] = None
         self._selection_before_framing: Set[CanvasElement] = set()
         self._group_hovered: bool = False
         self._last_mouse_x: float = 0.0

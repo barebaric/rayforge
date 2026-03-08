@@ -11,7 +11,7 @@ from blinker import Signal
 
 from ...camera.models.camera import Camera
 from ...context import RayforgeContext, get_context
-from ...core.geo import Point3D
+from ...core.geo import Point3D, Rect
 from ...core.ops.commands import MovingCommand
 from ...pipeline.coordspace import MachineSpace
 from ...pipeline.encoder.gcode import MachineCodeOpMap
@@ -113,13 +113,13 @@ class Machine:
         self.max_cut_speed: int = 1000  # in mm/min
         self.acceleration: int = 1000  # in mm/s²
         self._axis_extents: Tuple[float, float] = 200.0, 200.0
-        self._work_margins: Tuple[float, float, float, float] = (
+        self._work_margins: Rect = (
             0.0,
             0.0,
             0.0,
             0.0,
         )
-        self._soft_limits: Optional[Tuple[float, float, float, float]] = None
+        self._soft_limits: Optional[Rect] = None
         self.origin: Origin = Origin.BOTTOM_LEFT
         self.reverse_x_axis: bool = False
         self.reverse_y_axis: bool = False
@@ -385,7 +385,7 @@ class Machine:
         self.set_axis_extents(width, height)
 
     @property
-    def work_margins(self) -> Tuple[float, float, float, float]:
+    def work_margins(self) -> Rect:
         """
         The margins around the work area (left, top, right, bottom).
         These are positive distances from the axis extents edges.
@@ -403,7 +403,7 @@ class Machine:
         self.changed.send(self)
 
     @property
-    def work_area(self) -> Tuple[float, float, float, float]:
+    def work_area(self) -> Rect:
         """
         The usable work area within the axis extents (x, y, w, h).
         Computed from axis_extents and work_margins.
@@ -414,7 +414,7 @@ class Machine:
         return (ml, mt, max(1.0, w), max(1.0, h))
 
     @property
-    def soft_limits(self) -> Optional[Tuple[float, float, float, float]]:
+    def soft_limits(self) -> Optional[Rect]:
         """
         Configurable safety bounds for jogging (x_min, y_min, x_max, y_max).
         None means use work_area bounds.
@@ -536,7 +536,7 @@ class Machine:
         """Get the current work position of the machine."""
         return self.device_state.work_pos
 
-    def get_soft_limits(self) -> Tuple[float, float, float, float]:
+    def get_soft_limits(self) -> Rect:
         """Get the soft limits as (x_min, y_min, x_max, y_max)."""
         if self._soft_limits is not None:
             x_min, y_min, x_max, y_max = self._soft_limits
@@ -843,7 +843,7 @@ class Machine:
 
         return (wcs_x, wcs_y)
 
-    def get_visual_extent_frame(self) -> Tuple[float, float, float, float]:
+    def get_visual_extent_frame(self) -> Rect:
         """
         Returns the extent frame rectangle (x, y, width, height) in visual
         coordinates relative to the work area origin.

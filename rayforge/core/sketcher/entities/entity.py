@@ -1,5 +1,6 @@
-from typing import List, Tuple, Dict, Any, Sequence, TYPE_CHECKING, Optional
+from typing import List, Dict, Any, Sequence, TYPE_CHECKING, Optional
 from ...geo.geometry import Geometry
+from ...geo.types import Rect
 
 if TYPE_CHECKING:
     from ..constraints import Constraint
@@ -54,7 +55,7 @@ class Entity:
 
     def is_contained_by(
         self,
-        rect: Tuple[float, float, float, float],
+        rect: Rect,
         registry: "EntityRegistry",
     ) -> bool:
         """
@@ -65,7 +66,7 @@ class Entity:
 
     def intersects_rect(
         self,
-        rect: Tuple[float, float, float, float],
+        rect: Rect,
         registry: "EntityRegistry",
     ) -> bool:
         """

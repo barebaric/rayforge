@@ -4,13 +4,14 @@ import shutil
 import webbrowser
 from concurrent.futures import Future
 from pathlib import Path
-from typing import Callable, Coroutine, List, Optional, Tuple
+from typing import Callable, Coroutine, List, Optional
 from gettext import gettext as _
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from .. import __version__
 from .. import const
 from ..context import get_context
+from ..core.geo import Rect
 from ..core.group import Group
 from ..core.item import DocItem
 from ..core.step import Step
@@ -1275,7 +1276,7 @@ class MainWindow(Adw.ApplicationWindow):
         x_right: bool,
         x_negative: bool,
         y_negative: bool,
-        extent_frame: Optional[Tuple[float, float, float, float]] = None,
+        extent_frame: Optional[Rect] = None,
     ):
         """
         Creates a Canvas3D instance and adds it to the view stack.

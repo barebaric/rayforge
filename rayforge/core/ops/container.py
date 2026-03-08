@@ -16,7 +16,7 @@ import numpy as np
 import json
 from ..geo import linearize, clipping
 from ..geo.primitives import get_arc_bounding_box
-from ..geo.types import Point3D
+from ..geo.types import Point3D, Rect
 from .commands import (
     State,
     Command,
@@ -670,9 +670,7 @@ class Ops:
         """
         self.commands.append(OpsSectionEndCommand(section_type=section_type))
 
-    def rect(
-        self, include_travel: bool = False
-    ) -> Tuple[float, float, float, float]:
+    def rect(self, include_travel: bool = False) -> Rect:
         """
         Returns a rectangle (x1, y1, x2, y2) that encloses the
         occupied area in the XY plane.
@@ -1217,7 +1215,7 @@ class Ops:
             # The segment was fully clipped, so the pen is now "up"
             return None
 
-    def clip_rect(self, rect: Tuple[float, float, float, float]) -> Ops:
+    def clip_rect(self, rect: Rect) -> Ops:
         """
         Clips the Ops to the given rectangle.
         Returns a new, clipped Ops object.

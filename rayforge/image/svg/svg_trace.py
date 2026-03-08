@@ -1,10 +1,10 @@
 from __future__ import annotations
 import math
 import logging
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any
 from gettext import gettext as _
 
-from ...core.geo import Geometry
+from ...core.geo import Geometry, Rect
 from ...core.matrix import Matrix
 from ...core.vectorization_spec import (
     TraceSpec,
@@ -191,9 +191,7 @@ class SvgTraceImporter(SvgImporterBase):
             float(rendered_height),
         )
 
-        trace_untrimmed_bounds: Optional[Tuple[float, float, float, float]] = (
-            None
-        )
+        trace_untrimmed_bounds: Optional[Rect] = None
         if parse_result.untrimmed_document_bounds:
             u_native = parse_result.untrimmed_document_bounds
             # Convert untrimmed native size to trace pixels

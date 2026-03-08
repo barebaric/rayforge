@@ -1,6 +1,7 @@
 import math
 from typing import Tuple, Any, Optional, Union, Sequence, List, cast
 import numpy as np
+from .geo import Rect
 
 # A type alias for data that can be converted into a 3x3 matrix.
 # This includes another Matrix, a numpy array, or a 3x3 nested sequence.
@@ -536,9 +537,7 @@ class Matrix:
         res_vec = np.dot(self.m, vec)
         return (float(res_vec[0]), float(res_vec[1]))
 
-    def transform_rectangle(
-        self, rect: Tuple[float, float, float, float]
-    ) -> Tuple[float, float, float, float]:
+    def transform_rectangle(self, rect: Rect) -> Rect:
         """
         Transforms a rectangle and computes its new axis-aligned bounding box.
 

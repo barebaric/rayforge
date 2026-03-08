@@ -9,7 +9,7 @@ from rayforge.image.structures import (
     LayerGeometry,
     VectorizationResult,
 )
-from rayforge.core.geo import Geometry
+from rayforge.core.geo import Geometry, Rect
 
 
 @pytest.fixture
@@ -18,8 +18,8 @@ def engine():
 
 
 def create_vec_result(
-    document_bounds: Tuple[float, float, float, float],
-    layers: List[Tuple[str, Tuple[float, float, float, float]]],
+    document_bounds: Rect,
+    layers: List[Tuple[str, Rect]],
     is_y_down: bool = True,
     unit_scale: float = 1.0,
 ) -> VectorizationResult:

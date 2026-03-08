@@ -1,6 +1,6 @@
 import logging
-from typing import List, Dict, Optional, Tuple
-from ..core.geo import Geometry
+from typing import List, Dict, Optional
+from ..core.geo import Geometry, Rect
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.source_asset import SourceAsset
@@ -50,7 +50,7 @@ class ItemAssembler:
         spec: VectorizationSpec,
         source_name: str,
         geometries: Dict[Optional[str], Geometry],
-        document_bounds: Optional[Tuple[float, float, float, float]] = None,
+        document_bounds: Optional[Rect] = None,
     ) -> List[DocItem]:
         """
         Creates DocItems from the layout plan.

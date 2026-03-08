@@ -4,7 +4,7 @@ import numpy as np
 from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
 from ...context import RayforgeContext
-from ...core.geo import Point3D
+from ...core.geo import Point3D, Rect
 from ...machine.models.colors import OpsColorSet
 from ...pipeline.artifact import ArtifactStore, StepRenderArtifact
 from ...pipeline.pipeline import Pipeline
@@ -200,7 +200,7 @@ class Canvas3D(Gtk.GLArea):
         y_down: bool = False,
         x_negative: bool = False,
         y_negative: bool = False,
-        extent_frame: Optional[Tuple[float, float, float, float]] = None,
+        extent_frame: Optional[Rect] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
