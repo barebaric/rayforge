@@ -56,7 +56,7 @@ from .query import (
     find_closest_point_on_path_from_array,
     get_total_distance_from_array,
 )
-from .types import Point3D, Rect
+from .types import Point, Point3D, Rect
 
 
 logger = logging.getLogger(__name__)
@@ -664,9 +664,7 @@ class Geometry:
 
         return all_segments
 
-    def to_polygons(
-        self, tolerance: float = 0.3
-    ) -> List[List[Tuple[float, float]]]:
+    def to_polygons(self, tolerance: float = 0.3) -> List[List[Point]]:
         """
         Converts the geometry to a list of 2D polygons.
 
@@ -804,9 +802,9 @@ class Geometry:
 
     def map_to_frame(
         self: T_Geometry,
-        origin: Tuple[float, float],
-        p_width: Tuple[float, float],
-        p_height: Tuple[float, float],
+        origin: Point,
+        p_width: Point,
+        p_height: Point,
         anchor_y: Optional[float] = None,
         stable_src_height: Optional[float] = None,
     ) -> T_Geometry:
@@ -877,7 +875,7 @@ class Geometry:
 
     def find_closest_point(
         self, x: float, y: float
-    ) -> Optional[Tuple[int, float, Tuple[float, float]]]:
+    ) -> Optional[Tuple[int, float, Point]]:
         """
         Finds the closest point on the geometry's path to a given 2D point.
 
@@ -897,7 +895,7 @@ class Geometry:
 
     def find_closest_point_on_segment(
         self, segment_index: int, x: float, y: float
-    ) -> Optional[Tuple[float, Tuple[float, float]]]:
+    ) -> Optional[Tuple[float, Point]]:
         """
         Finds the closest point on a specific segment to the given coordinates.
 
@@ -980,7 +978,7 @@ class Geometry:
 
     def get_point_and_tangent_at(
         self, segment_index: int, t: float
-    ) -> Optional[Tuple[Tuple[float, float], Tuple[float, float]]]:
+    ) -> Optional[Tuple[Point, Point]]:
         """
         Calculates the 2D point and the normalized 2D tangent vector at a
         parameter `t` (0-1) along a given command segment.
@@ -1000,7 +998,7 @@ class Geometry:
 
     def get_outward_normal_at(
         self, segment_index: int, t: float
-    ) -> Optional[Tuple[float, float]]:
+    ) -> Optional[Point]:
         """
         Calculates the outward-pointing, normalized 2D normal vector for a
         point on the geometry path.

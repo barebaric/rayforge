@@ -3,6 +3,7 @@
 import struct
 from typing import Dict, Tuple, Callable, Union
 
+from ...core.geo import Point
 from .job import RuidaJob, RuidaLayer, RuidaCommand
 
 # Conversion factor from micrometers (device units) to millimeters.
@@ -210,7 +211,7 @@ class RuidaParser:
             job.layers[color] = RuidaLayer(color_index=color, speed=0, power=0)
         return job.layers[color]
 
-    def _decode_abs_coords(self, payload: bytes) -> Tuple[float, float]:
+    def _decode_abs_coords(self, payload: bytes) -> Point:
         """Decodes a 10-byte absolute coordinate pair."""
 
         def _decode_val(val_bytes: bytes) -> int:
@@ -247,7 +248,7 @@ class RuidaParser:
             val -= 0x4000  # 0x4000 = 1 << 14
         return val / UM_PER_MM
 
-    def _decode_rel_coords(self, payload: bytes) -> Tuple[float, float]:
+    def _decode_rel_coords(self, payload: bytes) -> Point:
         """Decodes a 4-byte relative coordinate pair."""
         dx = self._decode_rel_coord(payload[:2])
         dy = self._decode_rel_coord(payload[2:4])

@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Tuple
 
 import numpy as np
 
-from ..core.geo import Point3D, Rect
+from ..core.geo import Point, Point3D, Rect
 
 if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine
@@ -129,7 +129,7 @@ class CoordinateSpace(ABC):
 
     def transform_point_to_world(
         self, x: float, y: float, extents: Tuple[float, float]
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """
         Transform a point from this space to world space.
 
@@ -243,7 +243,7 @@ class MachineSpace(CoordinateSpace):
 
     def world_position_from_origin(
         self, ref_x: float, ref_y: float, size: Tuple[float, float]
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """
         Convert a reference position at the origin corner to world coords.
 
@@ -273,7 +273,7 @@ class MachineSpace(CoordinateSpace):
 
     def get_workarea_origin_in_machine(
         self,
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """
         Returns the position of the workarea origin in machine coordinates.
 
@@ -361,7 +361,7 @@ class MachineSpace(CoordinateSpace):
         machine_y: float,
         wcs_offset: Point3D,
         wcs_is_workarea_origin: bool = False,
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """
         Convert machine coordinates to command coordinates (G-code output).
 
@@ -402,9 +402,7 @@ class MachineSpace(CoordinateSpace):
         """
         return np.linalg.inv(self.get_transform_to_world(self.extents))
 
-    def world_point_to_machine(
-        self, x: float, y: float
-    ) -> Tuple[float, float]:
+    def world_point_to_machine(self, x: float, y: float) -> Point:
         """
         Transform a point from world space to machine space.
 
@@ -450,9 +448,7 @@ class MachineSpace(CoordinateSpace):
 
         return mx, my
 
-    def machine_point_to_world(
-        self, x: float, y: float
-    ) -> Tuple[float, float]:
+    def machine_point_to_world(self, x: float, y: float) -> Point:
         """
         Transform a point from machine space to world space.
 
@@ -501,9 +497,9 @@ class MachineSpace(CoordinateSpace):
 
     def world_item_to_machine(
         self,
-        pos: Tuple[float, float],
+        pos: Point,
         size: Tuple[float, float],
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """
         Convert item position from world space to machine space.
 
@@ -549,9 +545,9 @@ class MachineSpace(CoordinateSpace):
 
     def machine_item_to_world(
         self,
-        pos: Tuple[float, float],
+        pos: Point,
         size: Tuple[float, float],
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """
         Convert item position from machine space to world space.
 
@@ -656,7 +652,7 @@ class PixelSpace(CoordinateSpace):
         x: float,
         y: float,
         mm_dimensions: Tuple[float, float],
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """
         Convert pixel coordinates to millimeter coordinates.
 
@@ -681,7 +677,7 @@ class PixelSpace(CoordinateSpace):
 
     def transform_point_to_world(
         self, x: float, y: float, extents: Tuple[float, float]
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """
         Transform a point from pixel space to world space.
 

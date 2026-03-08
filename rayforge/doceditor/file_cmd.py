@@ -25,7 +25,7 @@ with warnings.catch_warnings():
     import pyvips
 
 from ..context import get_context
-from ..core.geo import Geometry, Rect
+from ..core.geo import Geometry, Point, Rect
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.matrix import Matrix
@@ -400,7 +400,7 @@ class FileCmd:
     def _position_newly_imported_items(
         self,
         items: List[DocItem],
-        position_mm: Optional[Tuple[float, float]],
+        position_mm: Optional[Point],
     ):
         """
         Applies transformations to newly imported items, either positioning
@@ -496,7 +496,7 @@ class FileCmd:
         self,
         payload: ImportPayload,
         filename: Path,
-        position_mm: Optional[Tuple[float, float]],
+        position_mm: Optional[Point],
         vectorization_spec: Optional[VectorizationSpec] = None,
     ):
         """
@@ -530,7 +530,7 @@ class FileCmd:
         filename: Path,
         mime_type: Optional[str],
         vectorization_spec: Optional[VectorizationSpec],
-        position_mm: Optional[Tuple[float, float]] = None,
+        position_mm: Optional[Point] = None,
     ):
         """
         Public, synchronous method to launch a file import in the background.
@@ -645,7 +645,7 @@ class FileCmd:
         self,
         files: List[Path],
         spec: VectorizationSpec,
-        pos: Optional[Tuple[float, float]],
+        pos: Optional[Point],
     ):
         """
         Imports multiple files using the same vectorization settings.

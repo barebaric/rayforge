@@ -25,7 +25,7 @@ with warnings.catch_warnings():
     import pyvips
 
 from ..context import get_context
-from .geo import Geometry, Rect
+from .geo import Geometry, Rect, Point
 from .item import DocItem
 from .matrix import Matrix
 from .source_asset_segment import SourceAssetSegment
@@ -1213,7 +1213,7 @@ class WorkPiece(DocItem):
         print("  " * indent, source_file, renderer_name)
 
     @property
-    def pos_machine(self) -> Optional[Tuple[float, float]]:
+    def pos_machine(self) -> Optional[Point]:
         """
         Gets the workpiece's anchor position in the machine's native
         coordinate system.
@@ -1243,7 +1243,7 @@ class WorkPiece(DocItem):
         return machine_x, machine_y
 
     @pos_machine.setter
-    def pos_machine(self, pos: Tuple[float, float]):
+    def pos_machine(self, pos: Point):
         """
         Sets the workpiece's position from the machine's native
         coordinate system.

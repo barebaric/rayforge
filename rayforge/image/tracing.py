@@ -4,11 +4,11 @@ import cv2
 import vtracer
 import xml.etree.ElementTree as ET
 import re
-from typing import Tuple, List, Optional
+from typing import List, Optional, Tuple
 import logging
 import threading
 import sys
-from ..core.geo import Geometry
+from ..core.geo import Geometry, Point
 from ..core.vectorization_spec import VectorizationSpec, TraceSpec
 from ..core.matrix import Matrix
 from .hull import get_enclosing_hull, get_hulls_from_image
@@ -227,11 +227,11 @@ def _flatten_bezier(
 
 
 def _transform_point_for_geometry(
-    p: Tuple[float, float],
+    p: Point,
     height_px: int,
     scale_x: float,
     scale_y: float,
-) -> Tuple[float, float]:
+) -> Point:
     """
     Transforms a point from vtracer's SVG coordinates to Y-down pixel
     coordinates relative to the original image (border removed).

@@ -1,6 +1,8 @@
 import numpy as np
 from typing import List, Sequence, Tuple
 
+from .types import Point
+
 
 def simplify_points_to_array(
     points: np.ndarray, tolerance: float
@@ -118,9 +120,7 @@ def simplify_points_to_array(
     return points[keep]
 
 
-def simplify_points(
-    points: Sequence[Tuple[float, float]], tolerance: float
-) -> List[Tuple[float, float]]:
+def simplify_points(points: Sequence[Point], tolerance: float) -> List[Point]:
     """
     Simplify a sequence of 2D points using the Ramer-Douglas-Peucker algorithm.
 
@@ -129,7 +129,7 @@ def simplify_points(
 
     Parameters
     ----------
-    points : Sequence[Tuple[float, float]]
+    points : Sequence[Point]
         A sequence of (x, y) coordinate tuples representing the points to
         simplify.
     tolerance : float
@@ -139,7 +139,7 @@ def simplify_points(
 
     Returns
     -------
-    Sequence[Tuple[float, float]]
+    Sequence[Point]
         A sequence of (x, y) coordinate tuples representing the simplified
         points. The first and last points are always preserved.
 

@@ -6,7 +6,7 @@ from enum import Enum, auto
 import cairo
 from gi.repository import Gtk, Gdk, Graphene
 from blinker import Signal
-from ...core.geo import Rect
+from ...core.geo import Point, Rect
 from ...core.matrix import Matrix
 from ..shared.keyboard import is_primary_keyval
 from . import transform
@@ -100,7 +100,7 @@ class Canvas(Gtk.DrawingArea):
 
         # --- Rotation State ---
         self._drag_start_angle: float = 0.0
-        self._rotation_pivot: Optional[Tuple[float, float]] = None
+        self._rotation_pivot: Optional[Point] = None
 
         # --- Signals ---
         self.move_begin = Signal()
@@ -146,9 +146,7 @@ class Canvas(Gtk.DrawingArea):
         """Gets the (width, height) of the canvas."""
         return self.root.size()
 
-    def _get_world_coords(
-        self, widget_x: float, widget_y: float
-    ) -> Tuple[float, float]:
+    def _get_world_coords(self, widget_x: float, widget_y: float) -> Point:
         """
         Converts widget pixel coordinates to canvas world coordinates using
         the active view_transform.
@@ -1204,9 +1202,7 @@ class Canvas(Gtk.DrawingArea):
         if len(selected) > 0:
             self._selection_mode = SelectionMode.RESIZE
 
-    def _get_element_world_corners(
-        self, elem: CanvasElement
-    ) -> List[Tuple[float, float]]:
+    def _get_element_world_corners(self, elem: CanvasElement) -> List[Point]:
         """
         Calculates the four corners of an element in world coordinates.
         """

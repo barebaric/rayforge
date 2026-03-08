@@ -16,7 +16,7 @@ from . import query
 from . import text
 from . import transform
 
-from .types import Point3D, Rect
+from .types import Point, Point2DOr3D, Point3D, Rect
 from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
@@ -39,6 +39,8 @@ from .font_config import FontConfig
 from .geometry import Geometry
 
 __all__ = [
+    "Point",
+    "Point2DOr3D",
     "Point3D",
     "analysis",
     "contours",

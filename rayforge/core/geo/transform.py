@@ -20,6 +20,7 @@ from .constants import (
     COL_C2Y,
 )
 from .linearize import linearize_arc
+from .types import Point
 
 if TYPE_CHECKING:
     from .geometry import Geometry
@@ -205,7 +206,7 @@ def _offset_contour_group(
     hole_paths: List[List[Tuple[int, int]]],
     offset: float,
     scale: int = CLIPPER_SCALE,
-) -> List[List[Tuple[float, float]]]:
+) -> List[List[Point]]:
     """
     Offsets a solid with its holes using pyclipper.
 
@@ -320,9 +321,9 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
 
 def map_geometry_to_frame(
     geometry: T_Geometry,
-    origin: Tuple[float, float],
-    p_width: Tuple[float, float],
-    p_height: Tuple[float, float],
+    origin: Point,
+    p_width: Point,
+    p_height: Point,
     anchor_y: Optional[float] = None,
     stable_src_height: Optional[float] = None,
 ) -> T_Geometry:

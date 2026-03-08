@@ -1,5 +1,6 @@
-from typing import Tuple, Dict, Any
+from typing import Dict, Any
 from ...geo import primitives, Rect
+from ...geo.types import Point as GeoPoint
 
 
 class Point:
@@ -11,7 +12,7 @@ class Point:
         # State tracked by solver
         self.constrained: bool = False
 
-    def pos(self) -> Tuple[float, float]:
+    def pos(self) -> GeoPoint:
         return (self.x, self.y)
 
     def to_dict(self) -> Dict[str, Any]:
