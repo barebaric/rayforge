@@ -16,6 +16,7 @@ a = Analysis(
         ('rayforge/version.txt', 'rayforge'),
         ('rayforge/resources', 'rayforge/resources'),
         ('rayforge/locale', 'rayforge/locale'),
+        ('rayforge/builtin_addons', 'rayforge/builtin_addons'),
     ],
     hiddenimports=hiddenimports,
     hookspath=['hooks'],
