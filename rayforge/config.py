@@ -28,7 +28,24 @@ DIALECT_DIR.mkdir(parents=True, exist_ok=True)
 
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
 ADDONS_DIR = CONFIG_DIR / "addons"
+ADDON_DATA_DIR = CONFIG_DIR / "addon_data"
 AI_CONFIG_FILE = CONFIG_DIR / "ai.yaml"
+
+
+def get_addon_data_dir(addon_name: str) -> Path:
+    """
+    Get the data directory for an addon.
+
+    Args:
+        addon_name: The canonical name of the addon.
+
+    Returns:
+        Path to the addon's data directory.
+    """
+    path = ADDON_DATA_DIR / addon_name
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
 
 BUILTIN_ADDONS_DIR = Path(__file__).parent / "builtin_addons"
 

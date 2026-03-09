@@ -155,7 +155,7 @@ class AddonManager:
         Args:
             registries: Dict mapping hook parameter names to registry
                 instances. Expected keys: 'step_registry',
-                'producer_registry', 'widget_registry', 'menu_registry',
+                'producer_registry', 'widget_registry', 'action_registry',
                 'layout_registry'.
         """
         self.registries = registries
@@ -1100,7 +1100,7 @@ class AddonManager:
         step_registry = self.registries.get("step_registry")
         producer_registry = self.registries.get("producer_registry")
         widget_registry = self.registries.get("widget_registry")
-        menu_registry = self.registries.get("menu_registry")
+        action_registry = self.registries.get("action_registry")
         layout_registry = self.registries.get("layout_registry")
 
         if step_registry:
@@ -1113,16 +1113,14 @@ class AddonManager:
             self.plugin_mgr.hook.register_step_widgets(
                 widget_registry=widget_registry
             )
-        if menu_registry:
-            self.plugin_mgr.hook.register_menu_items(
-                menu_registry=menu_registry
-            )
         if layout_registry:
             self.plugin_mgr.hook.register_layout_strategies(
                 layout_registry=layout_registry
             )
-        if self._window:
-            self.plugin_mgr.hook.register_actions(window=self._window)
+        if action_registry:
+            self.plugin_mgr.hook.register_actions(
+                action_registry=action_registry
+            )
 
     def complete_pending_unloads(self) -> List[str]:
         """

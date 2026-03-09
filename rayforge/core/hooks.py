@@ -4,12 +4,21 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 1
-PLUGIN_API_VERSION = 3
+PLUGIN_API_VERSION = 4
 
 
 """
 API Changelog
 =============
+
+Version 4
+---------
+Consolidated menu and action registration. The ``register_menu_items``
+hook has been removed. Use ``register_actions`` with the action_registry
+to register actions with optional menu and toolbar placement.
+
+The ``register_layout_strategies`` hook now only registers strategy
+classes. Layout actions should be registered via ``register_actions``.
 
 Version 3
 ---------
@@ -34,7 +43,7 @@ resource registration, and UI integration:
 - ``register_steps``: Register custom step types
 - ``register_producers``: Register custom ops producers
 - ``register_step_widgets``: Register custom step settings widgets
-- ``register_menu_items``: Register menu items
+- ``register_menu_items``: Register menu items (removed in v4)
 - ``register_commands``: Register editor commands
 - ``register_actions``: Register window actions
 """
@@ -113,17 +122,6 @@ class RayforgeSpecs:
         """
 
     @hookspec
-    def register_menu_items(self, menu_registry):
-        """
-        Called to allow addons to register menu items.
-
-        .. versionadded:: 1
-
-        Args:
-            menu_registry: The global MenuRegistry instance.
-        """
-
-    @hookspec
     def register_commands(self, command_registry):
         """
         Called to allow addons to register editor commands.
@@ -135,16 +133,18 @@ class RayforgeSpecs:
         """
 
     @hookspec
-    def register_actions(self, window):
+    def register_actions(self, action_registry):
         """
         Called to allow addons to register window actions.
 
         .. versionadded:: 1
+        .. versionchanged:: 4
+            Now receives action_registry instead of window. Use
+            action_registry.register() with optional menu and toolbar
+            placement parameters.
 
         Args:
-            window: The MainWindow instance. Use
-                window.action_registry.register() to register actions with
-                addon tracking for proper cleanup.
+            action_registry: The global ActionRegistry instance.
         """
 
     @hookspec
@@ -153,8 +153,11 @@ class RayforgeSpecs:
         Called to allow addons to register custom layout strategies.
 
         .. versionadded:: 2
+        .. versionchanged:: 4
+            Only registers strategy classes. Layout actions should be
+            registered via the ``register_actions`` hook with menu and
+            toolbar placement.
 
         Args:
-            layout_registry: Registry for layout strategies.
-                Supports registering strategies with optional metadata.
+            layout_registry: Registry for layout strategy classes.
         """
