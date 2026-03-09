@@ -1,9 +1,8 @@
 from gi.repository import Gio, Gtk, GLib
 from typing import List
 from gettext import gettext as _
-from ..doceditor.layout.registry import layout_registry
+from .action_registry import action_registry
 from ..machine.models.macro import Macro
-from .menu_registry import menu_registry
 
 
 class MainMenu(Gio.Menu):
@@ -170,7 +169,6 @@ class MainMenu(Gio.Menu):
         arrange_menu.append_submenu(_("Flip"), flip_submenu)
 
         self._layout_group = Gio.Menu()
-        self._populate_layout_group()
         arrange_menu.append_section(None, self._layout_group)
 
         self.append_submenu(_("Arrange"), arrange_menu)
@@ -179,8 +177,8 @@ class MainMenu(Gio.Menu):
         tools_menu = Gio.Menu()
 
         # Addon section for Tools menu
-        self._addon_sections["Tools"] = Gio.Menu()
-        tools_menu.append_section(None, self._addon_sections["Tools"])
+        self._addon_sections["tools"] = Gio.Menu()
+        tools_menu.append_section(None, self._addon_sections["tools"])
 
         self.append_submenu(_("_Tools"), tools_menu)
 
@@ -212,8 +210,8 @@ class MainMenu(Gio.Menu):
         machine_menu.append_section(None, machine_settings_group)
 
         # Addon section for Machine menu
-        self._addon_sections["Machine"] = Gio.Menu()
-        machine_menu.append_section(None, self._addon_sections["Machine"])
+        self._addon_sections["machine"] = Gio.Menu()
+        machine_menu.append_section(None, self._addon_sections["machine"])
 
         self.append_submenu(_("_Machine"), machine_menu)
 
@@ -226,36 +224,37 @@ class MainMenu(Gio.Menu):
 
         # Populate addon menu items
         self._populate_addon_items()
+        self._populate_layout_group()
 
-        # Connect to menu registry changes
-        menu_registry.changed.connect(self._on_menu_registry_changed)
+        # Connect to action registry changes
+        action_registry.changed.connect(self._on_action_registry_changed)
 
-        # Connect to layout registry changes
-        layout_registry.changed.connect(self._on_layout_registry_changed)
-
-    def _on_menu_registry_changed(self, sender):
-        """Handle menu registry changes by refreshing addon items."""
+    def _on_action_registry_changed(self, sender):
+        """Handle action registry changes by refreshing addon items."""
         self._populate_addon_items()
-
-    def _on_layout_registry_changed(self, sender):
-        """Handle layout registry changes by refreshing layout items."""
         self._populate_layout_group()
 
     def _populate_layout_group(self):
         """Populate layout strategies in the Arrange menu."""
         self._layout_group.remove_all()
-        for info in layout_registry.list_all():
-            if info.action_id and info.label:
-                self._layout_group.append(info.label, f"win.{info.action_id}")
+        items = action_registry.get_menu_items("arrange")
+        for info in items:
+            if info.label:
+                self._layout_group.append(
+                    info.label, f"win.{info.action_name}"
+                )
 
     def _populate_addon_items(self):
-        """Populate addon menu items from the registry."""
-        for menu_name, section in self._addon_sections.items():
+        """Populate addon menu items from the action registry."""
+        for menu_id, section in self._addon_sections.items():
             section.remove_all()
-            items = menu_registry.get_items_for_menu(menu_name)
-            for item in items:
-                menu_item = Gio.MenuItem.new(item.label, item.action)
-                section.append_item(menu_item)
+            items = action_registry.get_menu_items(menu_id)
+            for info in items:
+                if info.label:
+                    menu_item = Gio.MenuItem.new(
+                        info.label, f"win.{info.action_name}"
+                    )
+                    section.append_item(menu_item)
 
     def update_macros_menu(self, macros: List[Macro]):
         """Clears and rebuilds the dynamic macro execution menu items."""

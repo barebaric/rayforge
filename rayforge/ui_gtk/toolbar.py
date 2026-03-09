@@ -3,7 +3,7 @@ from typing import List
 from gettext import gettext as _
 from gi.repository import GLib, Gtk
 from blinker import Signal
-from ..doceditor.layout.registry import layout_registry
+from .action_registry import action_registry
 from .canvas3d import initialized as canvas3d_initialized
 from .icons import get_icon
 from .shared.splitbutton import SplitMenuButton
@@ -269,8 +269,8 @@ class MainToolbar(Gtk.Box):
         self.machine_warning_box.add_controller(warning_click)
         self.append(self.machine_warning_box)
 
-        # Connect to layout registry changes for dynamic toolbar updates
-        layout_registry.changed.connect(self._on_layout_registry_changed)
+        # Connect to action registry changes for dynamic toolbar updates
+        action_registry.changed.connect(self._on_action_registry_changed)
 
     def _build_arrange_actions(self):
         """Build the list of arrange actions including registered layouts."""
@@ -310,19 +310,20 @@ class MainToolbar(Gtk.Box):
                 "win.flip-vertical",
             ),
         ]
-        for info in layout_registry.list_all():
-            if info.action_id and info.label:
+        for info in action_registry.get_toolbar_items("arrange"):
+            if info.label:
+                icon = info.icon_name or "auto-layout-symbolic"
                 arrange_actions.append(
                     (
                         info.label,
-                        "auto-layout-symbolic",
-                        f"win.{info.action_id}",
+                        icon,
+                        f"win.{info.action_name}",
                     )
                 )
         return arrange_actions
 
-    def _on_layout_registry_changed(self, sender):
-        """Handle layout registry changes by refreshing arrange menu."""
+    def _on_action_registry_changed(self, sender):
+        """Handle action registry changes by refreshing arrange menu."""
         self.arrange_actions = self._build_arrange_actions()
         self.arrange_menu_button.update_actions(self.arrange_actions)
 

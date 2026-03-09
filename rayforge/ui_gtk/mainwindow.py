@@ -273,19 +273,18 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.drag_drop_cmd = self.drag_drop_cmd
         self.drag_drop_cmd.setup_drop_targets()
 
+        # Set up action registry before registering actions
+        action_registry.set_window(self)
+        self.action_registry = action_registry
+
         # Setup keyboard actions using the new ActionManager.
         self.action_manager = ActionManager(self)
         self.action_manager.register_actions()
 
-        # Set up action registry for addons
-        action_registry.set_window(self)
-        self.action_registry = action_registry
-
-        # Provide window to addon manager for dynamic addon enable/disable
-        context.addon_mgr.set_window(self)
-
-        # Let addons register their actions
-        context.plugin_mgr.hook.register_actions(window=self)
+        # Let addons register their actions (must be after window is set)
+        context.plugin_mgr.hook.register_actions(
+            action_registry=action_registry
+        )
 
         shortcut_controller = Gtk.ShortcutController()
         self.action_manager.register_shortcuts(shortcut_controller)

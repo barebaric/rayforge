@@ -5,7 +5,7 @@ from ..core.group import Group
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.workpiece import WorkPiece
-from ..doceditor.layout.registry import layout_registry
+from .action_registry import action_registry, MenuPlacement, ToolbarPlacement
 from .doceditor.add_tabs_popover import AddTabsPopover
 from .shared.keyboard import PRIMARY_ACCEL
 
@@ -170,7 +170,8 @@ class ActionManager:
         self._add_action("align-bottom", self.on_align_bottom)
         self._add_action("spread-h", self.on_spread_h)
         self._add_action("spread-v", self.on_spread_v)
-        self._add_action("layout-pixel-perfect", self.on_layout_pixel_perfect)
+
+        self._register_layout_actions()
 
         # Transform Actions
         self._add_action("flip-horizontal", self.on_flip_horizontal)
@@ -213,6 +214,29 @@ class ActionManager:
 
         self.update_action_states()
 
+    def _register_layout_actions(self):
+        """Register layout strategy actions with menu and toolbar placement."""
+        from ..doceditor.layout.registry import layout_registry
+        from gettext import gettext as _
+
+        for strategy_class in layout_registry.list_all():
+            name = layout_registry.list_names()[
+                list(layout_registry.list_all()).index(strategy_class)
+            ]
+            if name == "pixel-perfect":
+                action = Gio.SimpleAction.new("layout-pixel-perfect", None)
+                action.connect("activate", self.on_layout_pixel_perfect)
+                action_registry.register(
+                    action_name="layout-pixel-perfect",
+                    action=action,
+                    addon_name="core",
+                    label=_("Auto Layout (Simple)"),
+                    icon_name="auto-layout-symbolic",
+                    shortcut="<Ctrl><Alt>a",
+                    menu=MenuPlacement(menu_id="arrange"),
+                    toolbar=ToolbarPlacement(group="arrange"),
+                )
+
     def update_action_states(self, *args, **kwargs):
         """Updates the enabled state of actions based on document state."""
         self.actions["add_stock"].set_enabled(True)
@@ -247,7 +271,9 @@ class ActionManager:
                 current_layer
                 and len(current_layer.get_descendants(WorkPiece)) > 0
             )
-        self.actions["layout-pixel-perfect"].set_enabled(has_workpieces)
+        layout_info = action_registry.get("layout-pixel-perfect")
+        if layout_info and layout_info.action:
+            layout_info.action.set_enabled(has_workpieces)
 
         # Update split action state
         selected_wps = self.win.surface.get_selected_workpieces()
@@ -419,7 +445,6 @@ class ActionManager:
             "win.align-v-center": f"{PRIMARY_ACCEL}<Shift>End",
             "win.spread-h": f"{PRIMARY_ACCEL}<Shift>h",
             "win.spread-v": f"{PRIMARY_ACCEL}<Shift>v",
-            "win.layout-pixel-perfect": "<Ctrl><Alt>a",
             "win.flip-horizontal": "<Shift>h",
             "win.flip-vertical": "<Shift>v",
             # Machine & Help
@@ -435,16 +460,16 @@ class ActionManager:
             controller.add_shortcut(shortcut)
 
         self._shortcut_controller = controller
-        self._update_layout_shortcuts()
+        self._update_dynamic_shortcuts()
 
-        layout_registry.changed.connect(self._on_layout_registry_changed)
+        action_registry.changed.connect(self._on_action_registry_changed)
 
-    def _on_layout_registry_changed(self, sender):
-        """Handle layout registry changes by refreshing shortcuts."""
-        self._update_layout_shortcuts()
+    def _on_action_registry_changed(self, sender):
+        """Handle action registry changes by refreshing shortcuts."""
+        self._update_dynamic_shortcuts()
 
-    def _update_layout_shortcuts(self):
-        """Update layout strategy shortcuts."""
+    def _update_dynamic_shortcuts(self):
+        """Update shortcuts for actions registered via action_registry."""
         if not self._shortcut_controller:
             return
 
@@ -452,11 +477,11 @@ class ActionManager:
             self._shortcut_controller.remove_shortcut(shortcut)
         self._layout_shortcuts.clear()
 
-        for info in layout_registry.list_all():
-            if info.action_id and info.shortcut:
+        for info in action_registry.get_all_with_shortcuts():
+            if info.shortcut:
                 shortcut = Gtk.Shortcut.new(
                     Gtk.ShortcutTrigger.parse_string(info.shortcut),
-                    Gtk.NamedAction.new(f"win.{info.action_id}"),
+                    Gtk.NamedAction.new(f"win.{info.action_name}"),
                 )
                 self._shortcut_controller.add_shortcut(shortcut)
                 self._layout_shortcuts.append(shortcut)

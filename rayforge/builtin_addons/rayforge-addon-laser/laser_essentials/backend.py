@@ -1,7 +1,7 @@
 """
 Backend entry point for laser-essentials addon.
 
-Registers producers and menu items with the main application.
+Registers producers and actions with the main application.
 """
 
 import gettext
@@ -10,6 +10,7 @@ from pathlib import Path
 from gi.repository import Gio
 
 from rayforge.core.hooks import hookimpl
+from rayforge.ui_gtk.action_registry import MenuPlacement
 from .producers import (
     ContourProducer,
     FrameProducer,
@@ -63,29 +64,21 @@ def register_steps(step_registry):
 
 
 @hookimpl
-def register_menu_items(menu_registry):
-    """Register menu items with the menu registry."""
-    menu_registry.register(
-        item_id="laser_essentials.material_test",
-        label=_("Create Material Test Grid"),
-        action="win.material_test",
-        menu="Tools",
-        priority=100,
-        addon_name=ADDON_NAME,
-    )
-
-
-@hookimpl
-def register_actions(window):
-    """Register window actions."""
+def register_actions(action_registry):
+    """Register actions with menu placement."""
     action = Gio.SimpleAction.new("material_test", None)
 
     def on_activate(action, param):
+        window = action_registry.window
         editor = window.doc_editor
         cmd = MaterialTestCmd(editor)
         cmd.create_test_grid()
 
     action.connect("activate", on_activate)
-    window.action_registry.register(
-        "material_test", action, "laser_essentials"
+    action_registry.register(
+        action_name="material_test",
+        action=action,
+        addon_name=ADDON_NAME,
+        label=_("Create Material Test Grid"),
+        menu=MenuPlacement(menu_id="tools", priority=100),
     )
