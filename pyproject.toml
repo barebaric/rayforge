@@ -78,6 +78,7 @@ pythonpath = [
     "rayforge/builtin_addons/rayforge-addon-deepnest",
     "rayforge/builtin_addons/rayforge-addon-laser",
     "rayforge/builtin_addons/rayforge-addon-post",
+    "rayforge/builtin_addons/rayforge-addon-smart-stock",
 ]
 filterwarnings = [
     # Ignore Swig related deprecation warnings from importlib
