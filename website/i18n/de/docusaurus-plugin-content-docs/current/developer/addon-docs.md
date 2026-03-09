@@ -44,7 +44,7 @@ display_name: "Mein Benutzerdefiniertes Addon"
 description: "Fügt Unterstützung für den XYZ-Laserschneider hinzu."
 
 # API-Version (muss >= Rayforge's MINIMUM_API_VERSION sein)
-api_version: 2
+api_version: 6
 
 # Optional: Abhängigkeiten von Rayforge-Version
 depends:
@@ -174,22 +174,6 @@ def register_producers(producer_registry):
     producer_registry.register("my_producer", MyProducer)
 
 @hookimpl
-def register_step_widgets(widget_registry):
-    """
-    Wird aufgerufen, um benutzerdefinierte Schritteinstellungs-Widgets zu registrieren.
-    """
-    from .my_widget import MyStepWidget
-    widget_registry.register("my_custom_step", MyStepWidget)
-
-@hookimpl
-def register_menu_items(menu_registry):
-    """
-    Wird aufgerufen, um Menüeinträge zu registrieren.
-    """
-    from .menu_items import register_menus
-    register_menus(menu_registry)
-
-@hookimpl
 def register_commands(command_registry):
     """
     Wird aufgerufen, um Editor-Befehle zu registrieren.
@@ -198,12 +182,46 @@ def register_commands(command_registry):
     register_commands(command_registry)
 
 @hookimpl
-def register_actions(window):
+def register_actions(action_registry):
     """
     Wird aufgerufen, um Fensteraktionen zu registrieren.
     """
     from .actions import setup_actions
-    setup_actions(window)
+    setup_actions(action_registry)
+
+@hookimpl
+def register_transformers(transformer_registry):
+    """
+    Wird aufgerufen, um benutzerdefinierte Ops-Transformer zu registrieren.
+    """
+    from .my_transformer import MyTransformer
+    transformer_registry.register("my_transformer", MyTransformer)
+
+@hookimpl
+def register_layout_strategies(layout_registry):
+    """
+    Wird aufgerufen, um benutzerdefinierte Layout-Strategien zu registrieren.
+    """
+    from .my_layout import MyLayoutStrategy
+    layout_registry.register("my_layout", MyLayoutStrategy)
+
+@hookimpl
+def step_settings_loaded(dialog, step, producer):
+    """
+    Wird aufgerufen, wenn ein Schritt-Einstellungsdialog gefüllt wird.
+    Addons können benutzerdefinierte Widgets zum Dialog hinzufügen.
+    """
+    from .my_widget import add_custom_step_widgets
+    add_custom_step_widgets(dialog, step, producer)
+
+@hookimpl
+def transformer_settings_loaded(dialog, step, transformer):
+    """
+    Wird aufgerufen, wenn Post-Processing-Einstellungen gefüllt werden.
+    Addons können benutzerdefinierte Widgets für ihre Transformer hinzufügen.
+    """
+    from .my_widget import add_custom_transformer_widgets
+    add_custom_transformer_widgets(dialog, step, transformer)
 ```
 
 ### Verfügbare Hooks
@@ -227,17 +245,32 @@ Definiert in `rayforge/core/hooks.py`:
 **`register_producers`** (`producer_registry`)
 : Wird aufgerufen, um benutzerdefinierte Ops-Produzenten zu registrieren.
 
-**`register_step_widgets`** (`widget_registry`)
-: Wird aufgerufen, um benutzerdefinierte Schritteinstellungs-Widgets zu registrieren.
-
-**`register_menu_items`** (`menu_registry`)
-: Wird aufgerufen, um Menüeinträge zu registrieren.
+**`register_transformers`** (`transformer_registry`)
+: Wird aufgerufen, um benutzerdefinierte Ops-Transformer für
+  Post-Processing-Operationen zu registrieren. Transformer können Operationen
+  ändern, nachdem sie von Produzenten generiert wurden.
 
 **`register_commands`** (`command_registry`)
 : Wird aufgerufen, um Editor-Befehle zu registrieren.
 
-**`register_actions`** (`window`)
-: Wird aufgerufen, um Fensteraktionen zu registrieren.
+**`register_actions`** (`action_registry`)
+: Wird aufgerufen, um Fensteraktionen zu registrieren. Verwende den
+  action_registry, um Aktionen mit optionalen Menü- und
+  Werkzeugleisten-Platzierungsparametern zu registrieren.
+
+**`register_layout_strategies`** (`layout_registry`)
+: Wird aufgerufen, um benutzerdefinierte Layout-Strategien für die UI zu
+  registrieren. Layout-Aktionen sollten über `register_actions` registriert
+  werden.
+
+**`step_settings_loaded`** (`dialog`, `step`, `producer`)
+: Wird aufgerufen, wenn ein Schritt-Einstellungsdialog gefüllt wird. Addons
+  können benutzerdefinierte Widgets zum Dialog basierend auf dem
+  Produzententyp des Schritts hinzufügen.
+
+**`transformer_settings_loaded`** (`dialog`, `step`, `transformer`)
+: Wird aufgerufen, wenn Post-Processing-Einstellungen gefüllt werden.
+  Addons können benutzerdefinierte Widgets für ihre Transformer hinzufügen.
 
 ## 6. Auf Rayforge-Daten zugreifen
 
@@ -251,6 +284,7 @@ Der `rayforge_init`-Hook stellt den **`RayforgeContext`** bereit. Über dieses O
 - **`context.material_mgr`**: Zugriff auf die Materialbibliothek.
 - **`context.recipe_mgr`**: Zugriff auf Verarbeitungsrezepte.
 - **`context.dialect_mgr`**: G-Code-Dialekt-Manager.
+- **`context.ai_provider_mgr`**: AI-Provider-Manager für KI-gestützte Funktionen.
 - **`context.language`**: Aktueller Sprachcode für lokalisierte Inhalte.
 - **`context.addon_mgr`**: Addon-Manager-Instanz.
 - **`context.plugin_mgr`**: Plugin-Manager-Instanz.

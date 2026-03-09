@@ -47,7 +47,7 @@ display_name: "Мій власний аддон"
 description: "Додає підтримку лазерного різака XYZ."
 
 # Версія API (має бути >= MINIMUM_API_VERSION Rayforge)
-api_version: 2
+api_version: 6
 
 # Залежності версії Rayforge
 depends:
@@ -178,22 +178,6 @@ def register_producers(producer_registry):
     producer_registry.register("my_producer", MyProducer)
 
 @hookimpl
-def register_step_widgets(widget_registry):
-    """
-    Викликається для реєстрації власних віджетів налаштувань кроків.
-    """
-    from .my_widget import MyStepWidget
-    widget_registry.register("my_custom_step", MyStepWidget)
-
-@hookimpl
-def register_menu_items(menu_registry):
-    """
-    Викликається для реєстрації пунктів меню.
-    """
-    from .menu_items import register_menus
-    register_menus(menu_registry)
-
-@hookimpl
 def register_commands(command_registry):
     """
     Викликається для реєстрації команд редактора.
@@ -202,12 +186,46 @@ def register_commands(command_registry):
     register_commands(command_registry)
 
 @hookimpl
-def register_actions(window):
+def register_actions(action_registry):
     """
     Викликається для реєстрації дій вікна.
     """
     from .actions import setup_actions
-    setup_actions(window)
+    setup_actions(action_registry)
+
+@hookimpl
+def register_transformers(transformer_registry):
+    """
+    Викликається для реєстрації власних трансформерів ops.
+    """
+    from .my_transformer import MyTransformer
+    transformer_registry.register("my_transformer", MyTransformer)
+
+@hookimpl
+def register_layout_strategies(layout_registry):
+    """
+    Викликається для реєстрації власних стратегій макета.
+    """
+    from .my_layout import MyLayoutStrategy
+    layout_registry.register("my_layout", MyLayoutStrategy)
+
+@hookimpl
+def step_settings_loaded(dialog, step, producer):
+    """
+    Викликається при заповненні діалогу налаштувань кроку.
+    Аддони можуть додавати власні віджети до діалогу.
+    """
+    from .my_widget import add_custom_step_widgets
+    add_custom_step_widgets(dialog, step, producer)
+
+@hookimpl
+def transformer_settings_loaded(dialog, step, transformer):
+    """
+    Викликається при заповненні налаштувань пост-обробки.
+    Аддони можуть додавати власні віджети для своїх трансформерів.
+    """
+    from .my_widget import add_custom_transformer_widgets
+    add_custom_transformer_widgets(dialog, step, transformer)
 ```
 
 ### Доступні хуки
@@ -231,17 +249,30 @@ def register_actions(window):
 **`register_producers`** (`producer_registry`)
 : Викликається для дозволу плагінам реєструвати власних продюсерів ops.
 
-**`register_step_widgets`** (`widget_registry`)
-: Викликається для дозволу плагінам реєструвати власні віджети налаштувань кроків.
-
-**`register_menu_items`** (`menu_registry`)
-: Викликається для дозволу плагінам реєструвати пункти меню.
+**`register_transformers`** (`transformer_registry`)
+: Викликається для дозволу аддонам реєструвати власні трансформери ops
+  для операцій пост-обробки. Трансформери можуть змінювати операції
+  після того, як вони були згенеровані продюсерами.
 
 **`register_commands`** (`command_registry`)
-: Викликається для дозволу плагінам реєструвати команди редактора.
+: Викликається для дозволу аддонам реєструвати команди редактора.
 
-**`register_actions`** (`window`)
-: Викликається для дозволу плагінам реєструвати дії вікна.
+**`register_actions`** (`action_registry`)
+: Викликається для дозволу аддонам реєструвати дії вікна. Використовуйте
+  action_registry для реєстрації дій з опціональними параметрами розміщення
+  меню та панелі інструментів.
+
+**`register_layout_strategies`** (`layout_registry`)
+: Викликається для дозволу аддонам реєструвати власні стратегії макета
+  для UI. Дії макета повинні реєструватися через `register_actions`.
+
+**`step_settings_loaded`** (`dialog`, `step`, `producer`)
+: Викликається при заповненні діалогу налаштувань кроку. Аддони можуть
+  додавати власні віджети до діалогу на основі типу продюсера кроку.
+
+**`transformer_settings_loaded`** (`dialog`, `step`, `transformer`)
+: Викликається при заповненні налаштувань пост-обробки. Аддони можуть
+  додавати власні віджети для своїх трансформерів.
 
 ## 6. Доступ до даних Rayforge
 
@@ -256,6 +287,8 @@ def register_actions(window):
 - **`context.material_mgr`**: Доступ до бібліотеки матеріалів.
 - **`context.recipe_mgr`**: Доступ до рецептів обробки.
 - **`context.dialect_mgr`**: Менеджер діалектів G-code.
+- **`context.ai_provider_mgr`**: Менеджер провайдерів ШІ для функцій
+  зі штучним інтелектом.
 - **`context.language`**: Поточний код мови для локалізованого контенту.
 - **`context.addon_mgr`**: Екземпляр менеджера аддонів.
 - **`context.plugin_mgr`**: Екземпляр менеджера плагінів.

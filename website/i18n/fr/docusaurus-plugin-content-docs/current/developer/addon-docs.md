@@ -47,7 +47,7 @@ display_name: "Mon Addon Personnalisé"
 description: "Ajoute le support pour le découpeur laser XYZ."
 
 # Optionnel: Version de l'API (doit être >= MINIMUM_API_VERSION de Rayforge)
-api_version: 2
+api_version: 6
 
 # Dépendances de version Rayforge
 depends:
@@ -178,22 +178,6 @@ def register_producers(producer_registry):
     producer_registry.register("my_producer", MyProducer)
 
 @hookimpl
-def register_step_widgets(widget_registry):
-    """
-    Appelé pour enregistrer des widgets de paramètres d'étape personnalisés.
-    """
-    from .my_widget import MyStepWidget
-    widget_registry.register("my_custom_step", MyStepWidget)
-
-@hookimpl
-def register_menu_items(menu_registry):
-    """
-    Appelé pour enregistrer des éléments de menu.
-    """
-    from .menu_items import register_menus
-    register_menus(menu_registry)
-
-@hookimpl
 def register_commands(command_registry):
     """
     Appelé pour enregistrer des commandes d'éditeur.
@@ -202,12 +186,46 @@ def register_commands(command_registry):
     register_commands(command_registry)
 
 @hookimpl
-def register_actions(window):
+def register_actions(action_registry):
     """
     Appelé pour enregistrer des actions de fenêtre.
     """
     from .actions import setup_actions
-    setup_actions(window)
+    setup_actions(action_registry)
+
+@hookimpl
+def register_transformers(transformer_registry):
+    """
+    Appelé pour enregistrer des transformers d'ops personnalisés.
+    """
+    from .my_transformer import MyTransformer
+    transformer_registry.register("my_transformer", MyTransformer)
+
+@hookimpl
+def register_layout_strategies(layout_registry):
+    """
+    Appelé pour enregistrer des stratégies de disposition personnalisées.
+    """
+    from .my_layout import MyLayoutStrategy
+    layout_registry.register("my_layout", MyLayoutStrategy)
+
+@hookimpl
+def step_settings_loaded(dialog, step, producer):
+    """
+    Appelé lors du remplissage d'une boîte de dialogue de paramètres d'étape.
+    Les addons peuvent ajouter des widgets personnalisés à la boîte de dialogue.
+    """
+    from .my_widget import add_custom_step_widgets
+    add_custom_step_widgets(dialog, step, producer)
+
+@hookimpl
+def transformer_settings_loaded(dialog, step, transformer):
+    """
+    Appelé lors du remplissage des paramètres de post-traitement.
+    Les addons peuvent ajouter des widgets personnalisés pour leurs transformers.
+    """
+    from .my_widget import add_custom_transformer_widgets
+    add_custom_transformer_widgets(dialog, step, transformer)
 ```
 
 ### Hooks disponibles
@@ -230,17 +248,32 @@ Définis dans `rayforge/core/hooks.py` :
 **`register_producers`** (`producer_registry`)
 : Appelé pour permettre aux plugins d'enregistrer des producteurs d'ops personnalisés.
 
-**`register_step_widgets`** (`widget_registry`)
-: Appelé pour permettre aux plugins d'enregistrer des widgets de paramètres d'étape personnalisés.
-
-**`register_menu_items`** (`menu_registry`)
-: Appelé pour permettre aux plugins d'enregistrer des éléments de menu.
+**`register_transformers`** (`transformer_registry`)
+: Appelé pour permettre aux addons d'enregistrer des transformers d'ops
+  personnalisés pour les opérations de post-traitement. Les transformers peuvent
+  modifier des opérations après qu'elles ont été générées par les producteurs.
 
 **`register_commands`** (`command_registry`)
-: Appelé pour permettre aux plugins d'enregistrer des commandes d'éditeur.
+: Appelé pour permettre aux addons d'enregistrer des commandes d'éditeur.
 
-**`register_actions`** (`window`)
-: Appelé pour permettre aux plugins d'enregistrer des actions de fenêtre.
+**`register_actions`** (`action_registry`)
+: Appelé pour permettre aux addons d'enregistrer des actions de fenêtre.
+  Utilisez le action_registry pour enregistrer des actions avec des paramètres
+  optionnels de placement de menu et de barre d'outils.
+
+**`register_layout_strategies`** (`layout_registry`)
+: Appelé pour permettre aux addons d'enregistrer des stratégies de disposition
+  personnalisées pour l'UI. Les actions de disposition doivent être enregistrées
+  via `register_actions`.
+
+**`step_settings_loaded`** (`dialog`, `step`, `producer`)
+: Appelé lors du remplissage d'une boîte de dialogue de paramètres d'étape.
+  Les addons peuvent ajouter des widgets personnalisés à la boîte de dialogue
+  en fonction du type de producteur de l'étape.
+
+**`transformer_settings_loaded`** (`dialog`, `step`, `transformer`)
+: Appelé lors du remplissage des paramètres de post-traitement. Les addons
+  peuvent ajouter des widgets personnalisés pour leurs transformers.
 
 ## 6. Accéder aux données Rayforge
 
@@ -255,6 +288,8 @@ vous pouvez accéder à :
 - **`context.material_mgr`** : Accès à la bibliothèque de matériaux.
 - **`context.recipe_mgr`** : Accès aux recettes de traitement.
 - **`context.dialect_mgr`** : Gestionnaire de dialectes G-code.
+- **`context.ai_provider_mgr`** : Gestionnaire de fournisseurs IA pour les
+  fonctionnalités avec IA.
 - **`context.language`** : Code de langue actuel pour le contenu localisé.
 - **`context.addon_mgr`** : Instance du gestionnaire d'addons.
 - **`context.plugin_mgr`** : Instance du gestionnaire de plugins.
