@@ -7,6 +7,7 @@ from .intvar import IntVar
 from .portvar import PortVar
 from .serialportvar import SerialPortVar
 from .textareavar import TextAreaVar
+from .urlvar import UrlVar, WebsocketUrlVar
 from .var import Var, ValidationError
 from .varset import VarSet
 
@@ -21,7 +22,9 @@ __all__ = [
     "SerialPortVar",
     "SliderFloatVar",
     "TextAreaVar",
+    "UrlVar",
     "ValidationError",
     "Var",
     "VarSet",
+    "WebsocketUrlVar",
 ]
