@@ -1,15 +1,15 @@
-from typing import Dict, Any, TYPE_CHECKING, cast
-from gettext import gettext as _
-from gi.repository import Gtk, Adw
+from typing import Any, TYPE_CHECKING
 
+from gi.repository import Adw, Gtk
+from gettext import gettext as _
+
+from rayforge.pipeline.producer.base import CutSide
+from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
-from rayforge.pipeline.producer.base import OpsProducer, CutSide
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
-from rayforge.shared.util.glib import DebounceMixin
 from ..producers import ContourProducer, CutOrder
-
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
@@ -25,23 +25,22 @@ class ContourProducerSettingsWidget(
         self,
         editor: "DocEditor",
         title: str,
-        target_dict: Dict[str, Any],
+        producer: ContourProducer,
         page: Adw.PreferencesPage,
         step: "Step",
         **kwargs,
     ):
-        producer = cast(ContourProducer, OpsProducer.from_dict(target_dict))
-
         super().__init__(
             editor,
             title,
-            target_dict=target_dict,
+            component=producer,
             page=page,
             step=step,
             **kwargs,
         )
 
-        # Remove inner paths toggle
+        self.producer = producer
+
         switch_row = Adw.SwitchRow(
             title=_("Remove Inner Paths"),
             subtitle=_("If enabled, only trace the outer outline of shapes"),

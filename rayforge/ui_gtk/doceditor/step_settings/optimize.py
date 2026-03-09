@@ -1,6 +1,8 @@
-from typing import Dict, Any, TYPE_CHECKING
-from gettext import gettext as _
+from typing import TYPE_CHECKING
+
 from gi.repository import Adw
+from gettext import gettext as _
+
 from .base import StepComponentSettingsWidget
 from ....core.undo import DictItemCommand
 from ....pipeline.transformer import Optimize
@@ -17,20 +19,18 @@ class OptimizeSettingsWidget(StepComponentSettingsWidget):
         self,
         editor: "DocEditor",
         title: str,
-        target_dict: Dict[str, Any],
+        transformer: Optimize,
         page: Adw.PreferencesPage,
         step: "Step",
         **kwargs,
     ):
-        transformer = Optimize.from_dict(target_dict)
-
         super().__init__(
             editor,
             title,
-            description=transformer.description,
-            target_dict=target_dict,
+            component=transformer,
             page=page,
             step=step,
+            description=transformer.description,
             **kwargs,
         )
 

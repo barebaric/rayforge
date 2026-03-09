@@ -1099,7 +1099,6 @@ class AddonManager:
         """Call registration hooks for newly loaded addons."""
         step_registry = self.registries.get("step_registry")
         producer_registry = self.registries.get("producer_registry")
-        widget_registry = self.registries.get("widget_registry")
         action_registry = self.registries.get("action_registry")
         layout_registry = self.registries.get("layout_registry")
 
@@ -1108,10 +1107,6 @@ class AddonManager:
         if producer_registry:
             self.plugin_mgr.hook.register_producers(
                 producer_registry=producer_registry
-            )
-        if widget_registry:
-            self.plugin_mgr.hook.register_step_widgets(
-                widget_registry=widget_registry
             )
         if layout_registry:
             self.plugin_mgr.hook.register_layout_strategies(

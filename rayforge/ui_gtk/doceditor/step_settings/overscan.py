@@ -1,11 +1,13 @@
-from typing import Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
+
+from gi.repository import Adw, Gtk
 from gettext import gettext as _
-from gi.repository import Gtk, Adw
+
 from .base import StepComponentSettingsWidget
+from ....context import get_context
 from ....pipeline.transformer import OverscanTransformer
 from ....shared.util.glib import DebounceMixin
 from ...shared.unit_spin_row import UnitSpinRowHelper
-from ....context import get_context
 
 if TYPE_CHECKING:
     from ....core.step import Step
@@ -19,20 +21,18 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self,
         editor: "DocEditor",
         title: str,
-        target_dict: Dict[str, Any],
+        transformer: OverscanTransformer,
         page: Adw.PreferencesPage,
         step: "Step",
         **kwargs,
     ):
-        transformer = OverscanTransformer.from_dict(target_dict)
-
         super().__init__(
             editor,
             title,
-            description=transformer.description,
-            target_dict=target_dict,
+            component=transformer,
             page=page,
             step=step,
+            description=transformer.description,
             **kwargs,
         )
 

@@ -8,20 +8,7 @@ import gettext
 from pathlib import Path
 
 from rayforge.core.hooks import hookimpl
-from .producers import (
-    ContourProducer,
-    FrameProducer,
-    MaterialTestGridProducer,
-    Rasterizer,
-    ShrinkWrapProducer,
-)
-from .widgets import (
-    ContourProducerSettingsWidget,
-    RasterSettingsWidget,
-    FrameProducerSettingsWidget,
-    MaterialTestGridSettingsWidget,
-    ShrinkWrapProducerSettingsWidget,
-)
+from .widgets import PRODUCER_WIDGETS
 
 _localedir = Path(__file__).parent.parent / "locale"
 _t = gettext.translation(
@@ -33,43 +20,19 @@ ADDON_NAME = "laser_essentials"
 
 
 @hookimpl
-def register_step_widgets(widget_registry):
-    """Register step widgets with the widget registry."""
-    widget_registry.register(
-        ContourProducer,
-        ContourProducerSettingsWidget,
-        addon_name=ADDON_NAME,
-    )
-    widget_registry.register(
-        Rasterizer,
-        RasterSettingsWidget,
-        addon_name=ADDON_NAME,
-    )
-    # DepthEngraver and DitherRasterizer are aliases for Rasterizer
-    widget_registry.register(
-        Rasterizer,
-        RasterSettingsWidget,
-        name="DepthEngraver",
-        addon_name=ADDON_NAME,
-    )
-    widget_registry.register(
-        Rasterizer,
-        RasterSettingsWidget,
-        name="DitherRasterizer",
-        addon_name=ADDON_NAME,
-    )
-    widget_registry.register(
-        FrameProducer,
-        FrameProducerSettingsWidget,
-        addon_name=ADDON_NAME,
-    )
-    widget_registry.register(
-        MaterialTestGridProducer,
-        MaterialTestGridSettingsWidget,
-        addon_name=ADDON_NAME,
-    )
-    widget_registry.register(
-        ShrinkWrapProducer,
-        ShrinkWrapProducerSettingsWidget,
-        addon_name=ADDON_NAME,
-    )
+def step_settings_loaded(dialog, step, producer):
+    """Add step settings widgets based on producer type."""
+    if producer is None:
+        return
+
+    widget_cls = PRODUCER_WIDGETS.get(type(producer))
+    if widget_cls:
+        dialog.add(
+            widget_cls(
+                dialog.editor,
+                step.typelabel,
+                producer,
+                dialog,
+                step,
+            )
+        )

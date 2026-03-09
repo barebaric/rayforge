@@ -316,22 +316,16 @@ class RayforgeContext:
             "step_registry": step_registry,
         }
 
-        step_widget_registry = None
         action_registry = None
 
         if load_ui:
             from .ui_gtk.action_registry import (
                 action_registry as _action_registry,
             )
-            from .ui_gtk.doceditor.step_settings import (
-                step_widget_registry as _step_widget_registry,
-            )
 
             action_registry = _action_registry
-            step_widget_registry = _step_widget_registry
 
             registries["action_registry"] = action_registry
-            registries["widget_registry"] = step_widget_registry
 
         # Provide registries to addon manager for addon enable/disable
         self.addon_mgr.set_registries(registries)
@@ -349,11 +343,6 @@ class RayforgeContext:
             self.plugin_mgr.hook.register_layout_strategies(
                 layout_registry=layout_registry
             )
-            self.plugin_mgr.hook.register_step_widgets(
-                widget_registry=step_widget_registry
-            )
-            # Note: register_actions is called from MainWindow after
-            # action_registry.set_window() is called
 
         # Trigger the init hook for all registered addons
         self.plugin_mgr.hook.rayforge_init(context=self)

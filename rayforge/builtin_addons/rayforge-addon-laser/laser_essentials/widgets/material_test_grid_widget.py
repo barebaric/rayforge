@@ -4,29 +4,26 @@ Material Test Grid Settings Widget
 Provides UI for configuring material test array parameters.
 """
 
-from typing import Dict, Any, TYPE_CHECKING, cast
-from gettext import gettext as _
+from typing import Any, TYPE_CHECKING, cast
 
 from gi.repository import Adw, GLib, GObject, Gtk
+from gettext import gettext as _
 
 from rayforge.core.undo import DictItemCommand
-from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
+from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
 from ..producers import MaterialTestGridProducer
-
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
     from rayforge.doceditor.editor import DocEditor
 
 
-# Preset selector constants
 PRESET_NONE = "Select"
 
-# Preset configurations
 PRESETS = {
     "Diode Engrave": {
         "test_type": "Engrave",
@@ -60,24 +57,20 @@ class MaterialTestGridSettingsWidget(
         self,
         editor: "DocEditor",
         title: str,
-        target_dict: Dict[str, Any],
+        producer: MaterialTestGridProducer,
         page: Adw.PreferencesPage,
         step: "Step",
         **kwargs,
     ):
-        # Get current params
-        producer = MaterialTestGridProducer.from_dict(target_dict)
-
         super().__init__(
             editor,
             title,
-            target_dict=target_dict,
+            component=producer,
             page=page,
             step=step,
             **kwargs,
         )
 
-        # Populate the main group (self)
         self._build_preset_selector(producer)
         self._build_test_type_selector(producer)
         self._build_grid_dimensions(producer)

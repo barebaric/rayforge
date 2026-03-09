@@ -4,12 +4,20 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 1
-PLUGIN_API_VERSION = 4
+PLUGIN_API_VERSION = 5
 
 
 """
 API Changelog
 =============
+
+Version 5
+---------
+Replaced ``register_step_widgets`` hook with ``step_settings_loaded``
+and ``transformer_settings_loaded`` hooks. Addons now add their widgets
+directly to the settings dialog when the hook is called, instead of
+registering widget classes in advance. This gives addons full control
+over widget instantiation and lifecycle.
 
 Version 4
 ---------
@@ -42,7 +50,7 @@ resource registration, and UI integration:
 - ``register_machines``: Register new machine drivers
 - ``register_steps``: Register custom step types
 - ``register_producers``: Register custom ops producers
-- ``register_step_widgets``: Register custom step settings widgets
+- ``register_step_widgets``: Register step settings widgets (removed v5)
 - ``register_menu_items``: Register menu items (removed in v4)
 - ``register_commands``: Register editor commands
 - ``register_actions``: Register window actions
@@ -111,14 +119,32 @@ class RayforgeSpecs:
         """
 
     @hookspec
-    def register_step_widgets(self, widget_registry):
+    def step_settings_loaded(self, dialog, step, producer):
         """
-        Called to allow addons to register custom step settings widgets.
+        Called when a step settings dialog is being populated.
+        Addons can add custom widgets to the dialog based on the
+        step's producer type.
 
-        .. versionadded:: 1
+        .. versionadded:: 5
 
         Args:
-            widget_registry: The global StepWidgetRegistry instance.
+            dialog: The GeneralStepSettingsView instance to add widgets to.
+            step: The Step instance being configured.
+            producer: The OpsProducer instance, or None if not available.
+        """
+
+    @hookspec
+    def transformer_settings_loaded(self, dialog, step, transformer):
+        """
+        Called when post-processing settings are being populated.
+        Addons can add custom widgets for their transformers.
+
+        .. versionadded:: 5
+
+        Args:
+            dialog: The PostProcessingSettingsView instance to add widgets to.
+            step: The Step instance being configured.
+            transformer: The OpsTransformer instance.
         """
 
     @hookspec

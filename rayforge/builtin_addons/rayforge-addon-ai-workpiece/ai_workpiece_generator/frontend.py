@@ -34,8 +34,3 @@ def register_actions(action_registry):
         label=_("Generate Workpiece with AI..."),
         menu=MenuPlacement(menu_id="tools", priority=50),
     )
-
-
-@hookimpl
-def register_step_widgets(widget_registry):
-    pass
