@@ -130,7 +130,7 @@ def main():
     import gi
 
     gi.require_version("Adw", "1")
-    from gi.repository import Adw, GLib, Gtk
+    from gi.repository import Adw, Gio, GLib, Gtk
 
     if os.environ.get("SNAP"):
         settings = Gtk.Settings.get_default()
@@ -144,9 +144,49 @@ def main():
             super().__init__(application_id="org.rayforge.rayforge")
             from rayforge.ui_gtk.shared.keyboard import PRIMARY_ACCEL
 
-            self.set_accels_for_action("win.quit", [f"{PRIMARY_ACCEL}q"])
             self.args = args
             self.win = None
+            self._register_app_actions()
+            self.set_accels_for_action("app.quit", [f"{PRIMARY_ACCEL}q"])
+            self.set_accels_for_action(
+                "app.preferences", [f"{PRIMARY_ACCEL}comma"]
+            )
+
+        def _register_app_actions(self):
+            action_specs = (
+                ("about", self._on_app_about),
+                ("preferences", self._on_app_preferences),
+                ("quit", self._on_app_quit),
+            )
+            for name, callback in action_specs:
+                action = Gio.SimpleAction.new(name, None)
+                action.connect("activate", callback)
+                self.add_action(action)
+
+        def _get_main_window(self):
+            window = self.get_active_window()
+            if window is not None:
+                return window
+            return self.win
+
+        def _on_app_about(self, action, param):
+            window = self._get_main_window()
+            if window is None:
+                return
+            window.show_about_dialog(None, None)
+
+        def _on_app_preferences(self, action, param):
+            window = self._get_main_window()
+            if window is None:
+                return
+            window.show_settings(None, None)
+
+        def _on_app_quit(self, action, param):
+            window = self._get_main_window()
+            if window is None:
+                self.quit()
+                return
+            window.on_quit_action(None, None)
 
         def do_activate(self):
             # Import the window here to avoid module-level side-effects
