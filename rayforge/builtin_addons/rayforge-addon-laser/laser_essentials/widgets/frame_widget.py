@@ -1,16 +1,16 @@
-from typing import Dict, Any, TYPE_CHECKING, cast
+from typing import Any, TYPE_CHECKING
+
+from gi.repository import Adw, Gtk
 from gettext import gettext as _
-from gi.repository import Gtk, Adw
 
 from rayforge.core.undo import DictItemCommand
+from rayforge.pipeline.producer.base import CutSide
+from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
-from rayforge.shared.util.glib import DebounceMixin
-from rayforge.pipeline.producer.base import OpsProducer, CutSide
 from ..producers import FrameProducer
-
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
@@ -24,17 +24,15 @@ class FrameProducerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self,
         editor: "DocEditor",
         title: str,
-        target_dict: Dict[str, Any],
+        producer: FrameProducer,
         page: Adw.PreferencesPage,
         step: "Step",
         **kwargs,
     ):
-        producer = cast(FrameProducer, OpsProducer.from_dict(target_dict))
-
         super().__init__(
             editor,
             title,
-            target_dict=target_dict,
+            component=producer,
             page=page,
             step=step,
             **kwargs,

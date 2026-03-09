@@ -9,6 +9,11 @@ from ...core.step import Step
 from ...core.undo import ChangePropertyCommand, HistoryManager
 from ...pipeline.producer import OpsProducer
 from ...pipeline.transformer import OpsTransformer
+from ...pipeline.transformer.crop_transformer import CropTransformer
+from ...pipeline.transformer.multipass_transformer import MultiPassTransformer
+from ...pipeline.transformer.optimize_transformer import Optimize
+from ...pipeline.transformer.overscan_transformer import OverscanTransformer
+from ...pipeline.transformer.smooth_transformer import Smooth
 from ..icons import get_icon
 from ..shared.adwfix import get_spinrow_float
 from ..shared.keyboard import is_primary_modifier
@@ -16,11 +21,22 @@ from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.preferences_page import TrackedPreferencesPage
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from .recipe_control_widget import RecipeControlWidget
-from .step_settings import step_widget_registry
-from .step_settings.placeholder import PlaceholderSettingsWidget
+from .step_settings.crop import CropTransformerSettingsWidget
+from .step_settings.multipass import MultiPassSettingsWidget
+from .step_settings.optimize import OptimizeSettingsWidget
+from .step_settings.overscan import OverscanSettingsWidget
+from .step_settings.smooth import SmoothSettingsWidget
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
+
+_BUILTIN_TRANSFORMER_WIDGETS = {
+    CropTransformer: CropTransformerSettingsWidget,
+    MultiPassTransformer: MultiPassSettingsWidget,
+    Optimize: OptimizeSettingsWidget,
+    OverscanTransformer: OverscanSettingsWidget,
+    Smooth: SmoothSettingsWidget,
+}
 
 
 class GeneralStepSettingsView(TrackedPreferencesPage):
@@ -64,28 +80,13 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         if producer_dict:
             producer_name = producer_dict.get("type")
             if producer_name:
-                # Instantiate producer to check its properties later
                 producer = OpsProducer.from_dict(producer_dict)
-                WidgetClass = step_widget_registry.get(producer_name)
-                if WidgetClass:
-                    widget = WidgetClass(
-                        self.editor,
-                        self.step.typelabel,
-                        producer_dict,
-                        self,
-                        self.step,
-                    )
-                    self.add(widget)
-                else:
-                    # Widget not registered - show placeholder
-                    widget = PlaceholderSettingsWidget(
-                        self.editor,
-                        self.step.typelabel,
-                        producer_dict,
-                        self,
-                        self.step,
-                    )
-                    self.add(widget)
+
+        context = get_context()
+        if context:
+            context.plugin_mgr.hook.step_settings_loaded(
+                dialog=self, step=self.step, producer=producer
+            )
 
         general_group = Adw.PreferencesGroup(
             title=_("General Settings"),
@@ -412,47 +413,33 @@ class PostProcessingSettingsView(TrackedPreferencesPage):
         self.key = f"{producer_key}/post-processing"
         self.path_prefix = "/step-settings/"
 
-        content_added = False
+        all_transformer_dicts = (
+            step.per_workpiece_transformers_dicts or []
+        ) + (step.per_step_transformers_dicts or [])
 
-        # 3. Path Post-Processing Transformers
-        if step.per_workpiece_transformers_dicts:
-            for t_dict in step.per_workpiece_transformers_dicts:
-                transformer_name = t_dict.get("name")
-                if transformer_name:
-                    WidgetClass = step_widget_registry.get(transformer_name)
-                    if WidgetClass:
-                        transformer = OpsTransformer.from_dict(t_dict)
-                        widget = WidgetClass(
-                            editor,
-                            transformer.label,
-                            t_dict,
-                            self,
-                            step,
-                        )
-                        self.add(widget)
-                        content_added = True
+        for t_dict in all_transformer_dicts:
+            transformer = OpsTransformer.from_dict(t_dict)
+            WidgetClass = _BUILTIN_TRANSFORMER_WIDGETS.get(type(transformer))
+            if WidgetClass:
+                self.add(
+                    WidgetClass(
+                        editor,
+                        transformer.label,
+                        transformer,
+                        self,
+                        step,
+                    )
+                )
 
-        # 4. Post-Step (Assembly) Transformers
-        if step.per_step_transformers_dicts:
-            for t_dict in step.per_step_transformers_dicts:
-                transformer_name = t_dict.get("name")
-                if transformer_name:
-                    WidgetClass = step_widget_registry.get(transformer_name)
-                    if WidgetClass:
-                        transformer = OpsTransformer.from_dict(t_dict)
-                        widget = WidgetClass(
-                            editor,
-                            transformer.label,
-                            t_dict,
-                            self,
-                            step,
-                        )
-                        self.add(widget)
-                        content_added = True
+        context = get_context()
+        if context:
+            for t_dict in all_transformer_dicts:
+                transformer = OpsTransformer.from_dict(t_dict)
+                context.plugin_mgr.hook.transformer_settings_loaded(
+                    dialog=self, step=step, transformer=transformer
+                )
 
-        if not content_added:
-            # Add a placeholder to ensure this page is never empty. An empty
-            # page can cause layout issues.
+        if self.get_first_child() is None:
             placeholder_group = Adw.PreferencesGroup()
             placeholder_label = Gtk.Label(
                 label=_("No post-processing options available for this step."),

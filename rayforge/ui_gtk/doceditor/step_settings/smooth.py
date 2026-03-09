@@ -1,11 +1,13 @@
-from typing import Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
+
+from gi.repository import Adw, Gtk
 from gettext import gettext as _
-from gi.repository import Gtk, Adw
+
+from .base import StepComponentSettingsWidget
 from ....core.undo import DictItemCommand
 from ....pipeline.transformer import Smooth
-from ...shared.adwfix import get_spinrow_int
 from ....shared.util.glib import DebounceMixin
-from .base import StepComponentSettingsWidget
+from ...shared.adwfix import get_spinrow_int
 
 if TYPE_CHECKING:
     from ....core.step import Step
@@ -19,17 +21,15 @@ class SmoothSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self,
         editor: "DocEditor",
         title: str,
-        target_dict: Dict[str, Any],
+        transformer: Smooth,
         page: Adw.PreferencesPage,
         step: "Step",
         **kwargs,
     ):
-        transformer = Smooth.from_dict(target_dict)
-
         super().__init__(
             editor,
             title,
-            target_dict=target_dict,
+            component=transformer,
             page=page,
             step=step,
             description=transformer.description,

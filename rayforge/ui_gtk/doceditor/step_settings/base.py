@@ -1,5 +1,9 @@
-from typing import Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Union, Dict, Any
+
 from gi.repository import Adw
+
+from rayforge.pipeline.producer.base import OpsProducer
+from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from ....core.step import Step
@@ -8,11 +12,10 @@ if TYPE_CHECKING:
 
 class StepComponentSettingsWidget(Adw.PreferencesGroup):
     """
-    An abstract base class for a self-contained UI widget that manages the
-    settings for a single pipeline component (a Producer or Transformer).
+    Base class for settings widgets managing a Producer or Transformer.
 
-    Subclasses are responsible for building their own UI rows and connecting
-    signals to update the provided component model's dictionary representation.
+    Subclasses build UI rows and connect signals to update the component's
+    state via the step's dictionary representation.
     """
 
     # Class property: override to False to hide general settings
@@ -23,7 +26,7 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
         self,
         editor: "DocEditor",
         title: str,
-        target_dict: Dict[str, Any],
+        component: Union[OpsProducer, OpsTransformer],
         page: Adw.PreferencesPage,
         step: "Step",
         **kwargs,
@@ -34,9 +37,7 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
         Args:
             editor: The DocEditor instance.
             title: The title for the preferences group.
-            target_dict: The dictionary from the Step model (e.g.,
-                step.opsproducer_dict or an item from
-                step.per_workpiece_transformers_dicts) that this widget
+            component: The OpsProducer or OpsTransformer instance this widget
                 will modify.
             page: The parent Adw.PreferencesPage to which conditional groups
                   can be added or removed.
@@ -44,7 +45,34 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
         """
         super().__init__(title=title, **kwargs)
         self.editor = editor
-        self.target_dict = target_dict
+        self.component = component
         self.page = page
         self.step = step
         self.history_manager = editor.history_manager
+
+    @property
+    def target_dict(self) -> Dict[str, Any]:
+        """
+        Get the dictionary backing this component.
+
+        For producers, returns step.opsproducer_dict.
+        For transformers, finds matching dict from step's
+        transformer lists.
+        """
+        if isinstance(self.component, OpsProducer):
+            result = self.step.opsproducer_dict
+            if result is None:
+                raise ValueError("Step has no opsproducer_dict")
+            return result
+
+        component_name = type(self.component).__name__
+        for t_dict in self.step.per_workpiece_transformers_dicts or []:
+            if t_dict.get("name") == component_name:
+                return t_dict
+        for t_dict in self.step.per_step_transformers_dicts or []:
+            if t_dict.get("name") == component_name:
+                return t_dict
+
+        raise ValueError(
+            f"Could not find dict for transformer: {component_name}"
+        )

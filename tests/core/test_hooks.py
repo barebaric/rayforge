@@ -169,24 +169,48 @@ class TestRegistryHooks:
         assert len(received_registry) == 1
         assert received_registry[0] is producer_registry
 
-    def test_register_step_widgets_hook(self):
-        """Test register_step_widgets hook receives widget registry."""
-        received_registry = []
+    def test_step_settings_loaded_hook(self):
+        """Test step_settings_loaded hook receives step and producer."""
+        received_data = []
 
-        class WidgetRegistryPlugin:
+        class StepSettingsPlugin:
             @hookimpl
-            def register_step_widgets(self, widget_registry):
-                received_registry.append(widget_registry)
+            def step_settings_loaded(self, step, producer):
+                received_data.append((step, producer))
 
         context = RayforgeContext()
-        plugin = WidgetRegistryPlugin()
+        plugin = StepSettingsPlugin()
         context.plugin_mgr.register(plugin)
 
-        mock_registry = {"test": "widget"}
+        mock_step = {"id": "test-step"}
+        mock_producer = {"name": "TestProducer"}
 
-        context.plugin_mgr.hook.register_step_widgets(
-            widget_registry=mock_registry
+        context.plugin_mgr.hook.step_settings_loaded(
+            step=mock_step, producer=mock_producer
         )
 
-        assert len(received_registry) == 1
-        assert received_registry[0] == mock_registry
+        assert len(received_data) == 1
+        assert received_data[0] == (mock_step, mock_producer)
+
+    def test_transformer_settings_loaded_hook(self):
+        """Test transformer_settings_loaded hook receives data."""
+        received_data = []
+
+        class TransformerSettingsPlugin:
+            @hookimpl
+            def transformer_settings_loaded(self, step, transformer):
+                received_data.append((step, transformer))
+
+        context = RayforgeContext()
+        plugin = TransformerSettingsPlugin()
+        context.plugin_mgr.register(plugin)
+
+        mock_step = {"id": "test-step"}
+        mock_transformer = {"name": "TestTransformer"}
+
+        context.plugin_mgr.hook.transformer_settings_loaded(
+            step=mock_step, transformer=mock_transformer
+        )
+
+        assert len(received_data) == 1
+        assert received_data[0] == (mock_step, mock_transformer)

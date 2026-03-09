@@ -1,6 +1,8 @@
-from typing import Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
+
+from gi.repository import Adw, Gtk
 from gettext import gettext as _
-from gi.repository import Gtk, Adw
+
 from .base import StepComponentSettingsWidget
 from ....pipeline.transformer import CropTransformer
 from ....shared.util.glib import DebounceMixin
@@ -21,24 +23,23 @@ class CropTransformerSettingsWidget(
         self,
         editor: "DocEditor",
         title: str,
-        target_dict: Dict[str, Any],
+        transformer: CropTransformer,
         page: Adw.PreferencesPage,
         step: "Step",
         **kwargs,
     ):
-        transformer = CropTransformer.from_dict(target_dict)
-
         machine = get_context().machine
-        if machine and "tolerance" not in target_dict:
+        target_dict = step.opsproducer_dict
+        if machine and target_dict and "tolerance" not in target_dict:
             target_dict["tolerance"] = machine.arc_tolerance
 
         super().__init__(
             editor,
             title,
-            description=transformer.description,
-            target_dict=target_dict,
+            component=transformer,
             page=page,
             step=step,
+            description=transformer.description,
             **kwargs,
         )
 

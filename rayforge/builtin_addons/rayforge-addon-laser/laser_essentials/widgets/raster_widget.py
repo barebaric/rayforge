@@ -1,6 +1,7 @@
-from typing import Dict, Any, TYPE_CHECKING, cast, Optional
+from typing import Any, Optional, TYPE_CHECKING
+
+from gi.repository import Adw, GObject, Gtk
 from gettext import gettext as _
-from gi.repository import Gtk, Adw, GObject
 import numpy as np
 
 from rayforge.image.dither import DitherAlgorithm
@@ -8,16 +9,14 @@ from rayforge.image.util import (
     compute_auto_levels,
     get_visible_grayscale_values,
 )
-from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.shared.util.glib import DebounceMixin
-from rayforge.ui_gtk.shared.adwfix import get_spinrow_int, get_spinrow_float
-from rayforge.ui_gtk.shared.direction_preview import DirectionPreview
-from rayforge.ui_gtk.shared.histogram_preview import HistogramPreview
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
-from ..producers import Rasterizer, DepthMode
-
+from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
+from rayforge.ui_gtk.shared.direction_preview import DirectionPreview
+from rayforge.ui_gtk.shared.histogram_preview import HistogramPreview
+from ..producers import DepthMode, Rasterizer
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
@@ -31,24 +30,23 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self,
         editor: "DocEditor",
         title: str,
-        target_dict: Dict[str, Any],
+        producer: Rasterizer,
         page: Adw.PreferencesPage,
         step: "Step",
         **kwargs,
     ):
-        producer = cast(Rasterizer, OpsProducer.from_dict(target_dict))
-
         super().__init__(
             editor,
             title,
-            description=_("Configure how the laser engraves your image."),
-            target_dict=target_dict,
+            component=producer,
             page=page,
             step=step,
+            description=_("Configure how the laser engraves your image."),
             **kwargs,
         )
 
-        # Mode selection dropdown
+        self.producer = producer
+
         mode_choices = [m.display_name for m in DepthMode]
         self.mode_row = Adw.ComboRow(
             title=_("Mode"), model=Gtk.StringList.new(mode_choices)
