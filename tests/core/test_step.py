@@ -382,4 +382,32 @@ def test_step_backward_compatibility_with_missing_optional_fields():
     assert step.max_travel_speed == 10000
     assert step.air_assist is False
     assert step.kerf_mm == 0.0
+
+
+def test_deserialization_with_missing_step_class():
+    """
+    Tests that from_dict() handles a missing step class gracefully
+    by falling back to the base Step class.
+    """
+    step_dict = {
+        "uid": "step-missing-class-123",
+        "type": "step",
+        "step_type": "NonExistentStepClass",
+        "name": "Missing Step",
+        "matrix": Matrix.identity().to_list(),
+        "typelabel": "UnknownType",
+        "visible": True,
+        "opsproducer_dict": {"type": "NonExistentProducer"},
+        "per_workpiece_transformers_dicts": [],
+        "per_step_transformers_dicts": [],
+        "children": [],
+    }
+
+    step = Step.from_dict(step_dict)
+
+    assert isinstance(step, Step)
+    assert step.uid == "step-missing-class-123"
+    assert step.name == "Missing Step"
+    assert step.typelabel == "UnknownType"
+    assert step.opsproducer_dict == {"type": "NonExistentProducer"}
     assert step.extra == {}

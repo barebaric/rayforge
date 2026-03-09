@@ -290,7 +290,7 @@ class TestAddon:
 
             addon = Addon.load_from_directory(path, version=TEST_VERSION)
             assert addon.validate() is True
-            assert addon.metadata.api_version == 3
+            assert addon.metadata.api_version == 6
 
     def test_validate_with_unknown_version(self):
         """Test validation passes with UnknownVersion."""

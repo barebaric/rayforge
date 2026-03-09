@@ -4,12 +4,18 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 1
-PLUGIN_API_VERSION = 5
+PLUGIN_API_VERSION = 6
 
 
 """
 API Changelog
 =============
+
+Version 6
+---------
+Added ``register_transformers`` hook to allow addons to register custom
+OpsTransformer classes for post-processing operations. Transformers are
+now registered via the transformer_registry instead of introspection.
 
 Version 5
 ---------
@@ -116,6 +122,17 @@ class RayforgeSpecs:
 
         Args:
             producer_registry: The global ProducerRegistry instance.
+        """
+
+    @hookspec
+    def register_transformers(self, transformer_registry):
+        """
+        Called to allow addons to register custom ops transformers.
+
+        .. versionadded:: 6
+
+        Args:
+            transformer_registry: The global TransformerRegistry instance.
         """
 
     @hookspec

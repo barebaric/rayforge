@@ -35,6 +35,7 @@ def ensure_addons_loaded():
     from rayforge.core.step_registry import step_registry
     from rayforge.doceditor.layout.registry import layout_registry
     from rayforge.pipeline.producer.registry import producer_registry
+    from rayforge.pipeline.transformer.registry import transformer_registry
 
     logger = logging.getLogger(__name__)
 
@@ -82,6 +83,9 @@ def ensure_addons_loaded():
     # Only register backend hooks, not frontend (widgets, menus, actions)
     plugin_mgr.hook.register_steps(step_registry=step_registry)
     plugin_mgr.hook.register_producers(producer_registry=producer_registry)
+    plugin_mgr.hook.register_transformers(
+        transformer_registry=transformer_registry
+    )
     plugin_mgr.hook.register_layout_strategies(layout_registry=layout_registry)
 
     logger.debug("Worker addons loaded from manifest.")

@@ -75,8 +75,9 @@ test = [
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
 pythonpath = [
-    "rayforge/builtin_addons/rayforge-addon-laser",
     "rayforge/builtin_addons/rayforge-addon-deepnest",
+    "rayforge/builtin_addons/rayforge-addon-laser",
+    "rayforge/builtin_addons/rayforge-addon-post",
 ]
 filterwarnings = [
     # Ignore Swig related deprecation warnings from importlib

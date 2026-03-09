@@ -1,0 +1,14 @@
+name: post_processors
+display_name: "Post Processors"
+description: "Core Post-processing transformers for toolpath optimization"
+api_version: 6
+depends:
+  - rayforge>=0.27.0
+author:
+  name: "Rayforge Team"
+  email: "noreply@rayforge.org"
+provides:
+  backend: "post_processors.backend"
+  frontend: "post_processors.frontend"
+license:
+  name: "MIT"

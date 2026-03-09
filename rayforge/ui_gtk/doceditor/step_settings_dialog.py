@@ -8,12 +8,9 @@ from ...context import get_context
 from ...core.step import Step
 from ...core.undo import ChangePropertyCommand, HistoryManager
 from ...pipeline.producer import OpsProducer
+from ...pipeline.producer.placeholder import PlaceholderProducer
 from ...pipeline.transformer import OpsTransformer
-from ...pipeline.transformer.crop_transformer import CropTransformer
-from ...pipeline.transformer.multipass_transformer import MultiPassTransformer
-from ...pipeline.transformer.optimize_transformer import Optimize
-from ...pipeline.transformer.overscan_transformer import OverscanTransformer
-from ...pipeline.transformer.smooth_transformer import Smooth
+from ...pipeline.transformer.placeholder import PlaceholderTransformer
 from ..icons import get_icon
 from ..shared.adwfix import get_spinrow_float
 from ..shared.keyboard import is_primary_modifier
@@ -21,22 +18,10 @@ from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.preferences_page import TrackedPreferencesPage
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from .recipe_control_widget import RecipeControlWidget
-from .step_settings.crop import CropTransformerSettingsWidget
-from .step_settings.multipass import MultiPassSettingsWidget
-from .step_settings.optimize import OptimizeSettingsWidget
-from .step_settings.overscan import OverscanSettingsWidget
-from .step_settings.smooth import SmoothSettingsWidget
+from .step_settings.placeholder import PlaceholderSettingsWidget
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
-
-_BUILTIN_TRANSFORMER_WIDGETS = {
-    CropTransformer: CropTransformerSettingsWidget,
-    MultiPassTransformer: MultiPassSettingsWidget,
-    Optimize: OptimizeSettingsWidget,
-    OverscanTransformer: OverscanSettingsWidget,
-    Smooth: SmoothSettingsWidget,
-}
 
 
 class GeneralStepSettingsView(TrackedPreferencesPage):
@@ -86,6 +71,18 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         if context:
             context.plugin_mgr.hook.step_settings_loaded(
                 dialog=self, step=self.step, producer=producer
+            )
+
+        # Add placeholder widget if producer is not available
+        if isinstance(producer, PlaceholderProducer) and producer_dict:
+            self.add(
+                PlaceholderSettingsWidget(
+                    self.editor,
+                    producer.label,
+                    producer,
+                    self,
+                    self.step,
+                )
             )
 
         general_group = Adw.PreferencesGroup(
@@ -417,20 +414,6 @@ class PostProcessingSettingsView(TrackedPreferencesPage):
             step.per_workpiece_transformers_dicts or []
         ) + (step.per_step_transformers_dicts or [])
 
-        for t_dict in all_transformer_dicts:
-            transformer = OpsTransformer.from_dict(t_dict)
-            WidgetClass = _BUILTIN_TRANSFORMER_WIDGETS.get(type(transformer))
-            if WidgetClass:
-                self.add(
-                    WidgetClass(
-                        editor,
-                        transformer.label,
-                        transformer,
-                        self,
-                        step,
-                    )
-                )
-
         context = get_context()
         if context:
             for t_dict in all_transformer_dicts:
@@ -438,6 +421,17 @@ class PostProcessingSettingsView(TrackedPreferencesPage):
                 context.plugin_mgr.hook.transformer_settings_loaded(
                     dialog=self, step=step, transformer=transformer
                 )
+                # Add placeholder widget if transformer is not available
+                if isinstance(transformer, PlaceholderTransformer):
+                    self.add(
+                        PlaceholderSettingsWidget(
+                            editor,
+                            transformer.label,
+                            transformer,
+                            self,
+                            step,
+                        )
+                    )
 
         if self.get_first_child() is None:
             placeholder_group = Adw.PreferencesGroup()

@@ -1,7 +1,11 @@
-from typing import Dict, Any, TYPE_CHECKING
-from gettext import gettext as _
+from typing import TYPE_CHECKING, Union
+
 from gi.repository import Adw
+from gettext import gettext as _
+
 from .base import StepComponentSettingsWidget
+from rayforge.pipeline.producer.base import OpsProducer
+from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from ....core.step import Step
@@ -23,24 +27,21 @@ class PlaceholderSettingsWidget(StepComponentSettingsWidget):
         self,
         editor: "DocEditor",
         title: str,
-        target_dict: Dict[str, Any],
+        component: Union[OpsProducer, OpsTransformer],
         page: Adw.PreferencesPage,
         step: "Step",
         **kwargs,
     ):
-        # Producers use "type", transformers use "name"
-        component_type = target_dict.get("type") or target_dict.get(
-            "name", "Unknown"
-        )
-
         super().__init__(
             editor=editor,
             title=title,
-            target_dict=target_dict,
+            component=component,
             page=page,
             step=step,
             **kwargs,
         )
+
+        component_type = type(component).__name__
 
         error_row = Adw.ActionRow(
             title=_("This feature is not available."),
