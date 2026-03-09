@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-08 23:45+0100\n"
+"POT-Creation-Date: 2026-03-09 23:13+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -77,6 +77,28 @@ msgstr ""
 
 #: rayforge/core/varset/portvar.py
 msgid "Port must be a number."
+msgstr ""
+
+#: rayforge/core/varset/urlvar.py
+msgid "URL cannot be empty."
+msgstr ""
+
+#: rayforge/core/varset/urlvar.py
+msgid "URL must include a scheme (e.g., 'http://')."
+msgstr ""
+
+#: rayforge/core/varset/urlvar.py
+msgid "URL must include a hostname."
+msgstr ""
+
+#: rayforge/core/varset/urlvar.py
+#, python-brace-format
+msgid "URL scheme must be one of: {schemes}."
+msgstr ""
+
+#: rayforge/core/varset/urlvar.py
+#, python-brace-format
+msgid "Invalid URL: {error}"
 msgstr ""
 
 #: rayforge/core/varset/serialportvar.py
@@ -1740,12 +1762,34 @@ msgstr ""
 msgid "Select a machine to open the 3D view."
 msgstr ""
 
+#: rayforge/ui_gtk/actions.py
+msgid "Auto Layout (Simple)"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Please select an available camera device"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Please select a configured camera"
+msgstr ""
+
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "Select Camera"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "Please select an available camera device"
+msgid "No cameras configured."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+#, python-brace-format
+msgid "Failed to load image for Device ID: {device_id}"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+#, python-brace-format
+msgid "{name} (Device ID: {device_id})"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
@@ -1756,17 +1800,6 @@ msgstr ""
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #, python-brace-format
 msgid "Camera {device_id}"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/selection_dialog.py
-#, python-brace-format
-msgid "Failed to load image for Device ID: {device_id}"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/selection_dialog.py
-#: rayforge/ui_gtk/camera/camera_preferences_page.py
-#, python-brace-format
-msgid "Device ID: {device_id}"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/point_bubble_widget.py
@@ -1972,6 +2005,11 @@ msgstr ""
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Second order tangential distortion"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+#, python-brace-format
+msgid "Device ID: {device_id}"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
@@ -5358,6 +5396,7 @@ msgid "Missing Producer"
 msgstr ""
 
 #: rayforge/pipeline/producer/placeholder.py
+#: rayforge/pipeline/transformer/placeholder.py
 msgid "Missing: {}"
 msgstr ""
 
@@ -5485,6 +5524,10 @@ msgstr ""
 
 #: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Optimization complete"
+msgstr ""
+
+#: rayforge/pipeline/transformer/placeholder.py
+msgid "This transformer is not available."
 msgstr ""
 
 #: rayforge/pipeline/transformer/smooth_transformer.py
@@ -5735,10 +5778,6 @@ msgstr ""
 #: rayforge/doceditor/layout/auto.py
 #, python-brace-format
 msgid "Could not fit the following items: {item_names}"
-msgstr ""
-
-#: rayforge/doceditor/layout/registry.py
-msgid "Auto Layout (Simple)"
 msgstr ""
 
 #: rayforge/doceditor/stock_cmd.py
