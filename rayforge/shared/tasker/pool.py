@@ -3,6 +3,8 @@ Defines the WorkerPoolManager, a class for managing a pool of long-lived
 worker processes to execute tasks efficiently.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import threading
