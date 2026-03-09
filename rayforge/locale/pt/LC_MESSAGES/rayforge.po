@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-08 23:45+0100\n"
+"POT-Creation-Date: 2026-03-09 23:13+0100\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -78,6 +78,28 @@ msgstr "A porta não pode estar vazia."
 #: rayforge/core/varset/portvar.py
 msgid "Port must be a number."
 msgstr "A porta deve ser um número."
+
+#: rayforge/core/varset/urlvar.py
+msgid "URL cannot be empty."
+msgstr "A URL não pode estar vazia."
+
+#: rayforge/core/varset/urlvar.py
+msgid "URL must include a scheme (e.g., 'http://')."
+msgstr "A URL deve incluir um esquema (p. ex., 'http://')."
+
+#: rayforge/core/varset/urlvar.py
+msgid "URL must include a hostname."
+msgstr "A URL deve incluir um nome de host."
+
+#: rayforge/core/varset/urlvar.py
+#, python-brace-format
+msgid "URL scheme must be one of: {schemes}."
+msgstr "O esquema da URL deve ser um de: {schemes}."
+
+#: rayforge/core/varset/urlvar.py
+#, python-brace-format
+msgid "Invalid URL: {error}"
+msgstr "URL inválida: {error}"
 
 #: rayforge/core/varset/serialportvar.py
 msgid "Serial port cannot be empty."
@@ -1860,13 +1882,35 @@ msgstr "A visualização 3D não está disponível devido a dependências ausent
 msgid "Select a machine to open the 3D view."
 msgstr "Selecione uma máquina para abrir a visualização 3D."
 
+#: rayforge/ui_gtk/actions.py
+msgid "Auto Layout (Simple)"
+msgstr "Layout automático (Simples)"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Please select an available camera device"
+msgstr "Por favor, selecione um dispositivo de câmera disponível"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Please select a configured camera"
+msgstr "Por favor, selecione uma câmera configurada"
+
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "Select Camera"
 msgstr "Selecionar Câmera"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "Please select an available camera device"
-msgstr "Por favor, selecione um dispositivo de câmera disponível"
+msgid "No cameras configured."
+msgstr "Nenhuma câmera configurada."
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+#, python-brace-format
+msgid "Failed to load image for Device ID: {device_id}"
+msgstr "Falha ao carregar imagem para o ID do Dispositivo: {device_id}"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+#, python-brace-format
+msgid "{name} (Device ID: {device_id})"
+msgstr "{name} (ID do Dispositivo: {device_id})"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "No cameras found."
@@ -1877,17 +1921,6 @@ msgstr "Nenhuma câmera encontrada."
 #, python-brace-format
 msgid "Camera {device_id}"
 msgstr "Câmera {device_id}"
-
-#: rayforge/ui_gtk/camera/selection_dialog.py
-#, python-brace-format
-msgid "Failed to load image for Device ID: {device_id}"
-msgstr "Falha ao carregar imagem para o ID do Dispositivo: {device_id}"
-
-#: rayforge/ui_gtk/camera/selection_dialog.py
-#: rayforge/ui_gtk/camera/camera_preferences_page.py
-#, python-brace-format
-msgid "Device ID: {device_id}"
-msgstr "ID do Dispositivo: {device_id}"
 
 #: rayforge/ui_gtk/camera/point_bubble_widget.py
 #, python-brace-format
@@ -2099,6 +2132,11 @@ msgstr "Tangencial 2 (p2)"
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Second order tangential distortion"
 msgstr "Distorção tangencial de segunda ordem"
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+#, python-brace-format
+msgid "Device ID: {device_id}"
+msgstr "ID do Dispositivo: {device_id}"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Add New Camera"
@@ -5590,6 +5628,7 @@ msgid "Missing Producer"
 msgstr "Produtor Ausente"
 
 #: rayforge/pipeline/producer/placeholder.py
+#: rayforge/pipeline/transformer/placeholder.py
 msgid "Missing: {}"
 msgstr "Ausente: {}"
 
@@ -5718,6 +5757,10 @@ msgstr "Reunindo caminhos otimizados..."
 #: rayforge/pipeline/transformer/optimize_transformer.py
 msgid "Optimization complete"
 msgstr "Otimização concluída"
+
+#: rayforge/pipeline/transformer/placeholder.py
+msgid "This transformer is not available."
+msgstr "Este transformador não está disponível."
 
 #: rayforge/pipeline/transformer/smooth_transformer.py
 msgid "Smooth Path"
@@ -5973,10 +6016,6 @@ msgstr "Falha ao carregar: {error}"
 #, python-brace-format
 msgid "Could not fit the following items: {item_names}"
 msgstr "Não foi possível encaixar os seguintes itens: {item_names}"
-
-#: rayforge/doceditor/layout/registry.py
-msgid "Auto Layout (Simple)"
-msgstr "Layout automático (Simples)"
 
 #: rayforge/doceditor/stock_cmd.py
 msgid "Remove Stock Asset"
