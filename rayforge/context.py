@@ -306,6 +306,7 @@ class RayforgeContext:
             register_builtin_layout_strategies,
         )
         from .pipeline.producer.registry import producer_registry
+        from .pipeline.transformer.registry import transformer_registry
 
         # Register built-in layout strategies before addons
         register_builtin_layout_strategies()
@@ -314,6 +315,7 @@ class RayforgeContext:
             "layout_registry": layout_registry,
             "producer_registry": producer_registry,
             "step_registry": step_registry,
+            "transformer_registry": transformer_registry,
         }
 
         action_registry = None
@@ -334,10 +336,13 @@ class RayforgeContext:
         self.addon_mgr.load_installed_addons(backend_only=not load_ui)
 
         # Trigger registration hooks
-        self.plugin_mgr.hook.register_steps(step_registry=step_registry)
         self.plugin_mgr.hook.register_producers(
             producer_registry=producer_registry
         )
+        self.plugin_mgr.hook.register_transformers(
+            transformer_registry=transformer_registry
+        )
+        self.plugin_mgr.hook.register_steps(step_registry=step_registry)
 
         if load_ui:
             self.plugin_mgr.hook.register_layout_strategies(
