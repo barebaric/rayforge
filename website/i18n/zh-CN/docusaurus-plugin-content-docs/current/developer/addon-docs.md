@@ -44,7 +44,7 @@ display_name: "My Custom Addon"
 description: "Adds support for the XYZ laser cutter."
 
 # API 版本（必须 >= Rayforge 的 MINIMUM_API_VERSION）
-api_version: 2
+api_version: 6
 
 # Rayforge 版本依赖
 depends:
@@ -174,22 +174,6 @@ def register_producers(producer_registry):
     producer_registry.register("my_producer", MyProducer)
 
 @hookimpl
-def register_step_widgets(widget_registry):
-    """
-    调用以注册自定义步骤设置小部件。
-    """
-    from .my_widget import MyStepWidget
-    widget_registry.register("my_custom_step", MyStepWidget)
-
-@hookimpl
-def register_menu_items(menu_registry):
-    """
-    调用以注册菜单项。
-    """
-    from .menu_items import register_menus
-    register_menus(menu_registry)
-
-@hookimpl
 def register_commands(command_registry):
     """
     调用以注册编辑器命令。
@@ -198,12 +182,46 @@ def register_commands(command_registry):
     register_commands(command_registry)
 
 @hookimpl
-def register_actions(window):
+def register_actions(action_registry):
     """
     调用以注册窗口操作。
     """
     from .actions import setup_actions
-    setup_actions(window)
+    setup_actions(action_registry)
+
+@hookimpl
+def register_transformers(transformer_registry):
+    """
+    调用以注册自定义 ops 转换器。
+    """
+    from .my_transformer import MyTransformer
+    transformer_registry.register("my_transformer", MyTransformer)
+
+@hookimpl
+def register_layout_strategies(layout_registry):
+    """
+    调用以注册自定义布局策略。
+    """
+    from .my_layout import MyLayoutStrategy
+    layout_registry.register("my_layout", MyLayoutStrategy)
+
+@hookimpl
+def step_settings_loaded(dialog, step, producer):
+    """
+    调用以填充步骤设置对话框时。
+    扩展可以向对话框添加自定义小部件。
+    """
+    from .my_widget import add_custom_step_widgets
+    add_custom_step_widgets(dialog, step, producer)
+
+@hookimpl
+def transformer_settings_loaded(dialog, step, transformer):
+    """
+    调用以填充后处理设置时。
+    扩展可以为其转换器添加自定义小部件。
+    """
+    from .my_widget import add_custom_transformer_widgets
+    add_custom_transformer_widgets(dialog, step, transformer)
 ```
 
 ### 可用钩子
@@ -225,17 +243,28 @@ def register_actions(window):
 **`register_producers`**（`producer_registry`）
 : 调用以允许插件注册自定义 ops 生产者。
 
-**`register_step_widgets`**（`widget_registry`）
-: 调用以允许插件注册自定义步骤设置小部件。
-
-**`register_menu_items`**（`menu_registry`）
-: 调用以允许插件注册菜单项。
+**`register_transformers`**（`transformer_registry`）
+: 调用以允许扩展注册自定义 ops 转换器用于后处理操作。
+  转换器可以在生产者生成操作后修改操作。
 
 **`register_commands`**（`command_registry`）
-: 调用以允许插件注册编辑器命令。
+: 调用以允许扩展注册编辑器命令。
 
-**`register_actions`**（`window`）
-: 调用以允许插件注册窗口操作。
+**`register_actions`**（`action_registry`）
+: 调用以允许扩展注册窗口操作。使用 action_registry 注册带有
+  可选菜单和工具栏放置参数的操作。
+
+**`register_layout_strategies`**（`layout_registry`）
+: 调用以允许扩展注册 UI 的自定义布局策略。
+  布局操作应通过 `register_actions` 注册。
+
+**`step_settings_loaded`**（`dialog`、`step`、`producer`）
+: 调用以填充步骤设置对话框时。扩展可以基于步骤的生产者
+  类型向对话框添加自定义小部件。
+
+**`transformer_settings_loaded`**（`dialog`、`step`、`transformer`）
+: 调用以填充后处理设置时。扩展可以为其转换器添加自定义
+  小部件。
 
 ## 6. 访问 Rayforge 数据
 
@@ -249,6 +278,7 @@ def register_actions(window):
 - **`context.material_mgr`**：访问材料库。
 - **`context.recipe_mgr`**：访问加工配方。
 - **`context.dialect_mgr`**：G-code 方言管理器。
+- **`context.ai_provider_mgr`**：AI 提供商管理器，用于 AI 功能。
 - **`context.language`**：本地化内容的当前语言代码。
 - **`context.addon_mgr`**：扩展管理器实例。
 - **`context.plugin_mgr`**：插件管理器实例。
