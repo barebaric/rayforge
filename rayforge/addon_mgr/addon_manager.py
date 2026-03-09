@@ -703,7 +703,7 @@ class AddonManager:
             # 2. Ensure addon namespace
             if addon_ns not in sys.modules:
                 ns = types.ModuleType(addon_ns)
-                ns.__path__ = []  # pure namespace
+                ns.__path__ = [str(root_path)]
                 ns.__package__ = addon_ns
                 sys.modules[addon_ns] = ns
 
