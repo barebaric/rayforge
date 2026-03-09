@@ -4,6 +4,7 @@ from rayforge.core.varset.var import Var, ValidationError
 from rayforge.core.varset.intvar import IntVar
 from rayforge.core.varset.floatvar import FloatVar
 from rayforge.core.varset.choicevar import ChoiceVar
+from rayforge.core.varset.urlvar import UrlVar, WebsocketUrlVar
 from rayforge.core.varset.varset import VarSet
 
 
@@ -440,3 +441,115 @@ class TestVarSet:
         listener.assert_called_once_with(
             vs, var=v1, new_value=20, old_value=10
         )
+
+
+class TestUrlVar:
+    """Tests for the UrlVar class."""
+
+    def test_valid_url(self):
+        """Test that valid URLs pass validation."""
+        var = UrlVar(key="url", label="URL")
+        var.value = "http://example.com/path"
+        var.validate()
+        assert var.value == "http://example.com/path"
+
+    def test_valid_https_url(self):
+        """Test that HTTPS URLs pass validation."""
+        var = UrlVar(key="url", label="URL")
+        var.value = "https://example.com/path?query=1"
+        var.validate()
+        assert var.value == "https://example.com/path?query=1"
+
+    def test_invalid_url_no_scheme(self):
+        """Test that URLs without a scheme fail validation."""
+        var = UrlVar(key="url", label="URL")
+        var.value = "example.com/path"
+        with pytest.raises(ValidationError, match="scheme"):
+            var.validate()
+
+    def test_invalid_url_empty(self):
+        """Test that empty URLs fail validation."""
+        var = UrlVar(key="url", label="URL")
+        with pytest.raises(ValidationError, match="empty"):
+            var.validate()
+
+    def test_allowed_schemes(self):
+        """Test that allowed_schemes restricts valid schemes."""
+        var = UrlVar(key="url", label="URL", allowed_schemes=("http", "https"))
+        var.value = "http://example.com"
+        var.validate()
+        assert var.value == "http://example.com"
+        var.value = "https://example.com"
+        var.validate()
+        assert var.value == "https://example.com"
+        var.value = "ftp://example.com"
+        with pytest.raises(ValidationError, match="scheme"):
+            var.validate()
+
+    def test_default_value(self):
+        """Test that default value is used correctly."""
+        var = UrlVar(key="url", label="URL", default="http://localhost")
+        var.validate()
+        assert var.value == "http://localhost"
+
+
+class TestWebsocketUrlVar:
+    """Tests for the WebsocketUrlVar class."""
+
+    def test_valid_ws_url(self):
+        """Test that valid ws:// URLs pass validation."""
+        var = WebsocketUrlVar(key="ws_url", label="WebSocket URL")
+        var.value = "ws://example.com/ws"
+        var.validate()
+        assert var.value == "ws://example.com/ws"
+
+    def test_valid_wss_url(self):
+        """Test that valid wss:// URLs pass validation."""
+        var = WebsocketUrlVar(key="ws_url", label="WebSocket URL")
+        var.value = "wss://example.com:8080/ws"
+        var.validate()
+        assert var.value == "wss://example.com:8080/ws"
+
+    def test_invalid_http_url(self):
+        """Test that http:// URLs fail validation."""
+        var = WebsocketUrlVar(key="ws_url", label="WebSocket URL")
+        var.value = "http://example.com/ws"
+        with pytest.raises(ValidationError, match="ws"):
+            var.validate()
+
+    def test_invalid_url_no_scheme(self):
+        """Test that URLs without a scheme fail validation."""
+        var = WebsocketUrlVar(key="ws_url", label="WebSocket URL")
+        var.value = "example.com/ws"
+        with pytest.raises(ValidationError, match="scheme"):
+            var.validate()
+
+    def test_invalid_url_empty(self):
+        """Test that empty URLs fail validation."""
+        var = WebsocketUrlVar(key="ws_url", label="WebSocket URL")
+        with pytest.raises(ValidationError, match="empty"):
+            var.validate()
+
+    def test_default_value(self):
+        """Test that default value is used correctly."""
+        var = WebsocketUrlVar(
+            key="ws_url", label="WebSocket URL", default="ws://localhost/ws"
+        )
+        var.validate()
+        assert var.value == "ws://localhost/ws"
+
+    def test_serialization(self):
+        """Test that WebsocketUrlVar serializes correctly."""
+        var = WebsocketUrlVar(
+            key="ws_url",
+            label="WebSocket URL",
+            description="A WebSocket endpoint",
+            default="ws://localhost/ws",
+        )
+        var.value = "wss://example.com/ws"
+        serialized = var.to_dict(include_value=True)
+        assert serialized["key"] == "ws_url"
+        assert serialized["label"] == "WebSocket URL"
+        assert serialized["description"] == "A WebSocket endpoint"
+        assert serialized["default"] == "ws://localhost/ws"
+        assert serialized["value"] == "wss://example.com/ws"
