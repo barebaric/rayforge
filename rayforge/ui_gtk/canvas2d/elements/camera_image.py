@@ -199,7 +199,7 @@ class CameraImageElement(CanvasElement):
         """
         processed_image = image_data
 
-        if self.camera.image_to_world and physical_area:
+        if physical_area:
             processing_width, processing_height = output_size
             if (
                 max(processing_width, processing_height)
@@ -211,16 +211,13 @@ class CameraImageElement(CanvasElement):
                 processing_width = round(processing_width * scale)
                 processing_height = round(processing_height * scale)
 
-            # Let ValueError propagate to the caller's handler.
             transformed_image = self.controller.get_work_surface_image(
                 output_size=(processing_width, processing_height),
                 physical_area=physical_area,
             )
 
             if transformed_image is None:
-                logger.warning(
-                    "Perspective transformation failed, skipping frame."
-                )
+                logger.warning("Image transformation failed, skipping frame.")
                 return None
             processed_image = transformed_image
 

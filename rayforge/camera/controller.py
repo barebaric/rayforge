@@ -379,34 +379,80 @@ class CameraController:
         return H
 
     def get_work_surface_image(
-        self, output_size: Tuple[int, int], physical_area: Tuple[Pos, Pos]
+        self,
+        output_size: Tuple[int, int],
+        physical_area: Tuple[Pos, Pos],
     ) -> Optional[np.ndarray]:
         """
-        Get an aligned image of the specified physical area.
+        Get an image aligned to world coordinates.
+
+        For cameras with perspective calibration (image_to_world), this uses
+        homography transformation. For cameras without calibration, this
+        applies a simple resize to match the output size.
+
+        Both the canvas and stock detection addon should use this method
+        to ensure consistent image transformation.
+
+        The returned image has pixel coordinates that correspond to world
+        coordinates via:
+            world_x = pixel_x * (physical_width / output_width) + x_min
+            world_y = pixel_y * (physical_height / output_height) + y_min
+
+        Note: Y=0 in the output image corresponds to y_min in world coords,
+        and Y increases downward (image space) while world Y increases upward.
 
         Args:
             output_size: Desired output image size (width, height) in pixels
             physical_area: Physical area ((x_min, y_min), (x_max, y_max))
-              to capture in real-world coordinates
+              in real-world coordinates (mm)
 
         Returns:
-            Aligned image as a NumPy array
+            Aligned image as a NumPy array in BGR format, or None on failure
         """
-        if self.config.image_to_world is None:
-            raise ValueError(
-                "Corresponding points must be set before getting the"
-                " work surface image"
-            )
         if self._image_data is None:
             logger.warning("No image data available.")
             return None
 
-        # Capture raw image
-        processed_image = self._image_data
+        if self.config.image_to_world is not None:
+            return self._transform_with_homography(
+                self._image_data, output_size, physical_area
+            )
 
-        # Compute homography (world to image)
+        out_width, out_height = output_size
         try:
-            H = self._compute_homography(processed_image.shape[0])
+            resized = cv2.resize(
+                self._image_data,
+                (out_width, out_height),
+                interpolation=cv2.INTER_AREA,
+            )
+            return resized
+        except cv2.error as e:
+            logger.error(f"Failed to resize image: {e}")
+            return None
+
+    def _transform_with_homography(
+        self,
+        image: np.ndarray,
+        output_size: Tuple[int, int],
+        physical_area: Tuple[Pos, Pos],
+    ) -> Optional[np.ndarray]:
+        """
+        Transform an image using homography to world coordinates.
+
+        Args:
+            image: Source image to transform
+            output_size: Desired output image size (width, height) in pixels
+            physical_area: Physical area ((x_min, y_min), (x_max, y_max))
+
+        Returns:
+            Transformed image, or None on failure
+        """
+        if self.config.image_to_world is None:
+            logger.error("Cannot transform: no calibration points set")
+            return None
+
+        try:
+            H = self._compute_homography(image.shape[0])
         except ValueError as e:
             logger.error(f"Cannot compute homography: {e}")
             return None
@@ -440,7 +486,7 @@ class CameraController:
 
         try:
             aligned_image = cv2.warpPerspective(
-                processed_image, np.linalg.inv(M), output_size
+                image, np.linalg.inv(M), output_size
             )
             return aligned_image
         except cv2.error as e:

@@ -5,7 +5,6 @@ gi.require_version("GdkPixbuf", "2.0")
 import cv2
 import numpy as np
 from unittest.mock import patch
-import pytest
 from rayforge.camera.models.camera import Camera
 from rayforge.camera.controller import CameraController
 
@@ -95,8 +94,9 @@ def test_get_work_surface_image_no_corresponding_points():
     output_size = (200, 200)
     physical_area = ((0, 0), (100, 100))
 
-    with pytest.raises(ValueError):
-        controller.get_work_surface_image(output_size, physical_area)
+    result = controller.get_work_surface_image(output_size, physical_area)
+    assert result is not None
+    assert result.shape == (output_size[1], output_size[0], 3)
 
 
 def test_get_work_surface_image_no_image_data():
