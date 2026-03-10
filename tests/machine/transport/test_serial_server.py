@@ -1,9 +1,12 @@
 import asyncio
 import os
+import sys
 import pytest
+from rayforge.machine.transport import TransportStatus, SerialServerTransport
 
-from rayforge.machine.transport.serial_server import SerialServerTransport
-from rayforge.machine.transport import TransportStatus
+pytestmark = pytest.mark.skipif(
+    sys.platform == "win32", reason="SerialServerTransport requires Unix PTY"
+)
 
 
 class SignalTracker:
