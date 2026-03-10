@@ -858,6 +858,7 @@ class AddonManager:
 
                 logger.info(f"Successfully installed addon to {final_path}")
                 self.load_addon(final_path)
+                self._call_registration_hooks()
 
                 self._build_and_update_manifest()
                 self._restart_workers()
