@@ -442,6 +442,41 @@ class TestAddonManagerHelpers:
     def test_extract_repo_name(self, manager, url, expected):
         assert manager._extract_repo_name(url) == expected
 
+    def test_get_all_addons_empty(self, manager):
+        """Test get_all_addons returns empty dict when no addons."""
+        result = manager.get_all_addons()
+        assert result == {}
+
+    def test_get_all_addons_combines_all_categories(self, manager):
+        """Test get_all_addons combines all addon categories."""
+        manager.loaded_addons["loaded"] = create_mock_addon(name="loaded")
+        manager.disabled_addons["disabled"] = create_mock_addon(
+            name="disabled"
+        )
+        manager.incompatible_addons["incomp"] = create_mock_addon(
+            name="incomp"
+        )
+        manager.license_required_addons["licensed"] = create_mock_addon(
+            name="licensed"
+        )
+
+        result = manager.get_all_addons()
+
+        assert len(result) == 4
+        assert "loaded" in result
+        assert "disabled" in result
+        assert "incomp" in result
+        assert "licensed" in result
+
+    def test_get_all_addons_returns_copy(self, manager):
+        """Test get_all_addons returns a copy, not internal dict."""
+        manager.loaded_addons["test"] = create_mock_addon(name="test")
+
+        result = manager.get_all_addons()
+        result["new"] = create_mock_addon(name="new")
+
+        assert "new" not in manager.loaded_addons
+
 
 class TestAddonManagerDisabledAddons:
     """Tests for disabled addon functionality."""

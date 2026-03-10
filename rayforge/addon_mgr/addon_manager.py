@@ -1373,3 +1373,21 @@ class AddonManager:
             Dict of addon_name -> Addon for all license-required addons.
         """
         return dict(self.license_required_addons)
+
+    def get_all_addons(self) -> Dict[str, Addon]:
+        """
+        Get all addons from all categories.
+
+        Returns:
+            Dict of addon_name -> Addon for all addons (loaded,
+            license-required, disabled, and incompatible).
+        """
+        all_addons = {}
+        for source in [
+            self.loaded_addons,
+            self.license_required_addons,
+            self.disabled_addons,
+            self.incompatible_addons,
+        ]:
+            all_addons.update(source)
+        return all_addons
