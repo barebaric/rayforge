@@ -43,14 +43,12 @@ class LicenseSettingsPage(TrackedPreferencesPage):
         """Get list of addon names that use this product ID."""
         addon_mgr = get_context().addon_mgr
         result = []
-
-        for addon_name, addon in addon_mgr.license_required_addons.items():
+        for addon_name, addon in addon_mgr.get_all_addons().items():
             if addon.metadata.license:
                 product_ids = addon.metadata.license.get_all_product_ids()
                 if product_id in product_ids:
                     display = addon.metadata.display_name or addon_name
                     result.append(display)
-
         return result
 
     def _build_patreon_section(self):
@@ -119,18 +117,18 @@ class LicenseSettingsPage(TrackedPreferencesPage):
             if addon_names:
                 max_show = 3
                 if len(addon_names) > max_show:
-                    subtitle = _("Unlocks: {addons} (+{count} more)").format(
+                    title = _("{addons} (+{count} more)").format(
                         addons=", ".join(addon_names[:max_show]),
                         count=len(addon_names) - max_show,
                     )
                 else:
-                    subtitle = _("Unlocks: {addons}").format(
-                        addons=", ".join(addon_names)
-                    )
+                    title = ", ".join(addon_names)
+                subtitle = _("Product ID: {id}").format(id=product_id)
             else:
+                title = product_id
                 subtitle = masked
 
-            row = Adw.ActionRow(title=product_id, subtitle=subtitle)
+            row = Adw.ActionRow(title=title, subtitle=subtitle)
             remove_btn = Gtk.Button(label=_("Remove"))
             remove_btn.add_css_class("destructive-action")
             remove_btn.set_valign(Gtk.Align.CENTER)
