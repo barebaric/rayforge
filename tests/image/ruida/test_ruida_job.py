@@ -1,5 +1,5 @@
 import pytest
-from rayforge.image.ruida.job import RuidaJob, RuidaLayer, RuidaCommand
+from rayforge.image.ruida.job import RuidaJob, RuidaLayer, RuidaGeoCommand
 
 
 def test_ruidajob_creation():
@@ -21,13 +21,17 @@ def test_ruidajob_population():
 
     # Add commands
     job.commands.append(
-        RuidaCommand(command_type="Move_Abs", params=[0.0, 0.0], color_index=0)
+        RuidaGeoCommand(
+            command_type="Move_Abs", params=[0.0, 0.0], color_index=0
+        )
     )
     job.commands.append(
-        RuidaCommand(command_type="Cut_Abs", params=[10.0, 0.0], color_index=0)
+        RuidaGeoCommand(
+            command_type="Cut_Abs", params=[10.0, 0.0], color_index=0
+        )
     )
     job.commands.append(
-        RuidaCommand(
+        RuidaGeoCommand(
             command_type="Cut_Abs", params=[10.0, 10.0], color_index=0
         )
     )
@@ -44,10 +48,10 @@ def test_ruidajob_get_extents():
     job = RuidaJob()
     job.commands.extend(
         [
-            RuidaCommand(command_type="Move_Abs", params=[10.0, 20.0]),
-            RuidaCommand(command_type="Cut_Abs", params=[100.0, 20.0]),
-            RuidaCommand(command_type="Cut_Abs", params=[100.0, 50.0]),
-            RuidaCommand(command_type="Cut_Abs", params=[-5.0, 50.0]),
+            RuidaGeoCommand(command_type="Move_Abs", params=[10.0, 20.0]),
+            RuidaGeoCommand(command_type="Cut_Abs", params=[100.0, 20.0]),
+            RuidaGeoCommand(command_type="Cut_Abs", params=[100.0, 50.0]),
+            RuidaGeoCommand(command_type="Cut_Abs", params=[-5.0, 50.0]),
         ]
     )
 
@@ -62,5 +66,5 @@ def test_ruidajob_get_extents():
 def test_ruidajob_get_extents_no_points():
     """Tests that extents are zero if there are no geometric commands."""
     job = RuidaJob()
-    job.commands.append(RuidaCommand(command_type="End"))
+    job.commands.append(RuidaGeoCommand(command_type="End"))
     assert job.get_extents() == (0.0, 0.0, 0.0, 0.0)
