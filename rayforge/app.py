@@ -164,10 +164,14 @@ def main():
                 self.add_action(action)
 
         def _get_main_window(self):
+            from rayforge.ui_gtk.mainwindow import MainWindow
+
             window = self.get_active_window()
-            if window is not None:
+            if isinstance(window, MainWindow):
                 return window
-            return self.win
+            if isinstance(self.win, MainWindow):
+                return self.win
+            return None
 
         def _on_app_about(self, action, param):
             window = self._get_main_window()
