@@ -4,32 +4,42 @@ La page Maintenance dans les Paramètres Machine vous aide à suivre l'utilisati
 
 ![Paramètres de Maintenance](/screenshots/machine-maintenance.png)
 
-## Compteurs d'Heures
+## Suivi d'Utilisation
 
-Rayforge suit la durée d'utilisation de votre machine. Ces compteurs vous aident à planifier la maintenance préventive.
+Rayforge suit la durée d'utilisation de votre machine. Ces informations vous aident à planifier la maintenance préventive à des intervalles appropriés.
 
-### Heures Laser
+### Heures Totales
 
-Suit le temps total pendant lequel le laser a tiré. Utilisez-le pour :
+Le compteur d'heures totales suit tout le temps passé à exécuter des travaux sur la machine. Ce compteur cumulatif ne peut pas être réinitialisé et fournit un historique complet de l'utilisation de la machine.
 
-- Planifier le remplacement du tube laser (les tubes CO2 durent généralement 1000-3000 heures)
-- Surveiller la dégradation des diodes laser
-- Suivre les périodes de garantie
+Utilisez-le pour suivre l'âge global de la machine et planifier les intervalles de service majeurs.
 
-### Heures de Travail
+## Compteurs de Maintenance Personnalisés
 
-Suit le temps total passé à exécuter des travaux, y compris les mouvements de déplacement. Utilisez-le pour :
+Vous pouvez créer des compteurs personnalisés pour suivre des intervalles de maintenance spécifiques. Chaque compteur a un nom, suit les heures et peut être configuré avec un seuil de notification.
 
-- Planifier la tension des courroies
-- Planifier la lubrification des roulements
-- Suivre l'utilisation globale de la machine
+### Créer un Compteur
 
-### Heures de Mouvement
+1. Cliquez sur le bouton ajouter pour créer un nouveau compteur
+2. Entrez un nom descriptif (ex : "Tube Laser", "Tension Courroie", "Nettoyage Miroir")
+3. Définissez un seuil de notification en heures si souhaité
 
-Suit le temps passé à se déplacer (pas à couper). Utilisez-le pour :
+### Fonctionnalités du Compteur
 
-- Planifier la maintenance des moteurs pas à pas
-- Planifier le nettoyage et la lubrification des rails
+- **Noms personnalisés** : Étiquetez les compteurs pour toute tâche de maintenance
+- **Suivi des heures** : Accumule automatiquement le temps pendant l'exécution des travaux
+- **Seuils de notification** : Recevez des rappels quand la maintenance est nécessaire
+- **Capacité de réinitialisation** : Réinitialisez les compteurs après avoir effectué la maintenance
+
+### Exemples de Compteurs
+
+**Tube Laser** : Suivez les heures du tube CO2 pour planifier le remplacement (généralement 1000-3000 heures). Définissez une notification à 2500 heures pour planifier à l'avance.
+
+**Tension Courroie** : Suivez les heures depuis la dernière tension de courroie. Réinitialisez après avoir effectué la maintenance.
+
+**Nettoyage Miroir** : Suivez l'utilisation depuis le dernier nettoyage de miroir. Réinitialisez après le nettoyage.
+
+**Lubrification Roulements** : Suivez les heures pour les intervalles de maintenance des roulements.
 
 ## Réinitialiser les Compteurs
 
@@ -45,6 +55,8 @@ Intervalles de maintenance courants :
 - **Hebdomadaire** : Nettoyer les rails, vérifier la tension des courroies
 - **Mensuel** : Lubrifier les roulements, vérifier les connexions électriques
 - **Annuel** : Inspection complète, remplacer les pièces usées
+
+Ajustez les intervalles en fonction de vos modèles d'utilisation et des recommandations du fabricant.
 :::
 
 ## Voir Aussi

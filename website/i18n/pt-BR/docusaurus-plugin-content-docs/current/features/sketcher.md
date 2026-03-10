@@ -73,7 +73,7 @@ relações geométricas precisas:
   especificado
 - **Comprimento/Raio Igual**: Força múltiplos elementos (linhas, arcos ou círculos) a ter
   o mesmo comprimento ou raio
-- **Distância Igual**: Força a distância entre dois pares de pontos a ser igual
+- **Distância Igual**: Faz dois line segments ter same length (diferente de Comprimento/Raio, which also applies to arcs, circles)
 
 ## Interface do Menu Circular
 

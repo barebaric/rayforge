@@ -77,11 +77,15 @@ graph TD
 
 ```
 
-- Un `Doc` es el objeto de nivel superior. **Contiene** uno o más `Layer`s y `StockItem`s. También **gestiona** un registro de todos los `ImportSource`s en el proyecto.
+- Un `Doc` es el objeto de nivel superior. **Contiene** uno o más `Layer`s y
+  `StockItem`s. También **gestiona** el registro unificado `assets` de todos los `SourceAsset`s en el proyecto.
 - Cada `Layer` **contiene** el contenido del usuario: `WorkPiece`s y `Group`s. Crucialmente, un `Layer` también **posee uno** `Workflow`.
 - Un `Workflow` **contiene** una lista ordenada de `Step`s, que definen el proceso de manufactura para esa capa.
 - Un `Group` es un contenedor que puede contener `WorkPiece`s y otros `Group`s, permitiendo transformaciones anidadas.
-- Un `WorkPiece` es un elemento de diseño fundamental. No almacena sus datos crudos directamente. En su lugar, **referencia** un `ImportSource` via un UID. También **tiene** su propia `Geometry` (datos vectoriales) y puede tener una lista de `Tab`s.
+- Un `WorkPiece` es un elemento de diseño fundamental. No almacena sus
+  datos crudos directamente. En su lugar, **referencia** un `SourceAsset` via un
+  UID desde el registro unificado `assets` en el `Doc`. También **tiene** su propia `Geometry` (datos vectoriales) y puede tener una
+  lista de `Tab`s.
 
 ---
 

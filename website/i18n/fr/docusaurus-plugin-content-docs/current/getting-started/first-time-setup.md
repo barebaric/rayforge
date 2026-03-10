@@ -33,15 +33,15 @@ La page **Général** contient les informations de base de la machine, la sélec
 
 Sélectionnez le pilote approprié pour votre appareil dans le menu déroulant :
 
-- **GRBL Série** - Pour les appareils GRBL connectés via port USB/série
-- **GRBL Réseau** - Pour les appareils GRBL avec connectivité WiFi/Ethernet
+- **GRBL (Série)** - Pour les appareils GRBL connectés via port USB/série
+- **GRBL (Réseau)** - Pour les appareils GRBL avec connectivité WiFi/Ethernet
 - **Smoothie** - Pour les appareils basés sur Smoothieware
 
 ### Paramètres du Pilote
 
 Selon le pilote sélectionné, configurez les paramètres de connexion :
 
-#### GRBL Série (USB)
+#### GRBL (Série) - USB
 
 1. **Port** : Choisissez votre appareil dans le menu déroulant (ex : `/dev/ttyUSB0` sur Linux, `COM3` sur Windows)
 2. **Débit** : Sélectionnez `115200` (standard pour la plupart des appareils GRBL)
@@ -50,7 +50,7 @@ Selon le pilote sélectionné, configurez les paramètres de connexion :
 Si votre appareil n'apparaît pas dans la liste, vérifiez qu'il est connecté et que vous avez les permissions nécessaires. Sur Linux, vous devrez peut-être ajouter votre utilisateur au groupe `dialout`.
 :::
 
-#### GRBL Réseau / Smoothie (WiFi/Ethernet)
+#### GRBL (Réseau) / Smoothie - WiFi/Ethernet
 
 1. **Hôte** : Entrez l'adresse IP de votre appareil (ex : `192.168.1.100`)
 2. **Port** : Entrez le numéro de port (généralement `23` ou `8080`)

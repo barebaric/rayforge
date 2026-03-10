@@ -117,9 +117,10 @@ Utilisez le rappel `when_done` pour obtenir le résultat ou voir si une erreur s
 ```python
 def on_task_finished(task):
     if task.get_status() == 'completed':
-        print(f"Tâche terminée avec le résultat : {task.result()}")
-    elif task.get_status() == 'failed':
-        print(f"La tâche a échoué : {task._task_exception}")
+        try:
+            print(f"Tâche terminée avec le résultat : {task.result()}")
+        except Exception as e:
+            print(f"La tâche a échoué : {e}")
 
 task_mgr.run_process(my_cpu_task, 10, when_done=on_task_finished)
 ```
@@ -129,7 +130,8 @@ task_mgr.run_process(my_cpu_task, 10, when_done=on_task_finished)
 ### `task_mgr` (Le Proxy Manager)
 
 - `add_coroutine(coro, *args, key=None, when_done=None)` : Ajouter une tâche basée sur asyncio
-- `run_process(func, *args, key=None, when_done=None, when_event=None)` : Exécuter une tâche liée au CPU dans un processus séparé
+- `run_process(func, *args, key=None, when_done=None, when_event=None)` : Exécuter une tâche liée au CPU dans un processus séparé. Le callback `when_event` reçoit les événements personnalisés envoyés par la tâche via `context.send_event()`
+- `run_thread(func, *args, key=None, when_done=None)` : Exécuter une tâche dans un thread (partage la mémoire avec le processus principal)
 - `run_thread(func, *args, key=None, when_done=None)` : Exécuter une tâche dans un thread (partage la mémoire avec le processus principal)
 - `cancel_task(key)` : Annuler une tâche en cours par sa clé
 - `tasks_updated` (signal pour les mises à jour UI) : Émis lorsque l'état de la tâche change

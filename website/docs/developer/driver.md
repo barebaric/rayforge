@@ -87,7 +87,7 @@ ops.line_to(50, 50)       # Cut a line without air assist
 
 ## Driver Implementation
 
-All drivers MUST inherit from `rayforge.machine.drivers.Driver`.
+All drivers MUST inherit from `rayforge.machine.driver.driver.Driver`.
 
 ```python
 from rayforge.machine.driver.driver import Driver
@@ -143,6 +143,14 @@ Your driver class **MUST** implement the following methods. Note that most are *
 - `async def select_tool(tool_number: int)`: Selects a new tool/laser head by
   its number.
 - `async def clear_alarm()`: Clears any active alarm state.
+- `async def run_raw(gcode: str)`: Executes a raw G-code string directly on the machine.
+- `async def set_wcs_offset(wcs_slot, x, y, z)`: Sets a work coordinate system offset for the specified slot.
+- `async def read_wcs_offsets()`: Reads all work coordinate system offsets from the machine.
+- `async def run_probe_cycle(axis, max_travel, feed_rate)`: Initiates a probing move along the specified axis.
+- `async def set_power(head, percent)`: Sets laser power percentage for a specific head.
+- `can_jog(axis) -> bool`: Returns whether jogging is supported for the given axis.
+- `can_home(axis) -> bool`: Returns whether homing is supported for the given axis.
+- `async def read_parser_state()`: Queries the active G-code modal states from the machine.
 
 #### Firmware Settings (if `supports_settings` is `True`)
 
@@ -168,6 +176,20 @@ call the protected helper methods from the base `Driver` class.
   sent command.
 - `self._on_settings_read(settings)`: Sends the device settings you've read
   back to the UI.
+- `self._on_probe_status_changed(status)`: Emits probe status during a probing cycle.
+- `self._on_wcs_updated()`: Emits when work coordinate system data has been updated.
+
+### Properties
+
+Your driver can optionally define these properties:
+
+- `machine_space_wcs`: The work coordinate system identifier used for machine space (e.g., G53).
+- `machine_space_wcs_display_name`: Human-readable display name for the machine space WCS.
+- `resource_uri`: A unique identifier for the physical resource this driver controls, used for conflict detection when multiple machines might share hardware.
+
+### Exceptions
+
+Your driver may raise `ResourceBusyError` when attempting to use a resource that is already in use by another machine instance.
 
 ## Have Questions?
 

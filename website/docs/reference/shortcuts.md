@@ -49,9 +49,12 @@ Complete reference of keyboard shortcuts in Rayforge.
 | -------------- | ----------------- | ------------------------------ |
 | `H`            | Toggle Workpieces | Show/hide workpiece visibility |
 | `T`            | Toggle Tabs       | Show/hide holding tabs         |
-| `Alt+C`        | Toggle Camera     | Show/hide camera overlay       |
+| `Ctrl+Alt+C`   | Toggle Camera     | Show/hide camera overlay       |
 | `F12`          | 3D View           | Toggle 3D preview window       |
-| `Ctrl+Shift+R` | Simulation Mode   | Toggle simulation mode         |
+| `F11`          | Simulation Mode   | Toggle simulation mode         |
+| `Ctrl+Shift+G` | G-code Preview    | Toggle G-code preview          |
+| `Ctrl+Shift+T` | Travel View       | Toggle travel view             |
+| `Ctrl+Alt+W`   | Split Workpiece   | Split workpiece into parts     |
 
 ### 3D View Controls
 
@@ -72,7 +75,7 @@ Complete reference of keyboard shortcuts in Rayforge.
 | `Ctrl+U`         | Ungroup         | Ungroup selected group   |
 | `Ctrl+Page Up`   | Move Layer Up   | Move layer up in stack   |
 | `Ctrl+Page Down` | Move Layer Down | Move layer down in stack |
-| `Alt+S`          | Add Stock       | Add stock/material item  |
+| `Ctrl+Alt+S`     | Add Stock       | Add stock/material item  |
 
 ---
 
@@ -80,7 +83,7 @@ Complete reference of keyboard shortcuts in Rayforge.
 
 | Shortcut | Action                 | Description            |
 | -------- | ---------------------- | ---------------------- |
-| `Alt+T`  | Add Tabs (Equidistant) | Add evenly-spaced tabs |
+| `Ctrl+Alt+T` | Add Tabs (Equidistant) | Add evenly-spaced tabs |
 | `T`      | Toggle Tab Visibility  | Show/hide tabs overlay |
 
 ---
@@ -109,7 +112,7 @@ Complete reference of keyboard shortcuts in Rayforge.
 
 | Shortcut | Action        | Description        |
 | -------- | ------------- | ------------------ |
-| `Alt+A`  | Pixel Perfect | Snap to pixel grid |
+| `Ctrl+Alt+A` | Pixel Perfect | Snap to pixel grid |
 
 ---
 
@@ -194,9 +197,11 @@ When editing G-code or text fields:
 
 - `H` - Hide/show workpieces
 - `T` - Hide/show tabs
-- `Alt+C` - Toggle camera
+- `Ctrl+Alt+C` - Toggle camera
 - `F12` - 3D view
 - `F11` - Simulation mode
+- `Ctrl+Shift+G` - G-code preview
+- `Ctrl+Shift+T` - Travel view
 - `1`, `2`, `7` - 3D view presets
 - `P` - Perspective toggle
 
@@ -214,7 +219,7 @@ When editing G-code or text fields:
 - `Shift+Arrow Keys` - Align to edges
 - `Shift+Home` / `Shift+End` - Center align
 - `Ctrl+Shift+H` / `Ctrl+Shift+V` - Distribute
-- `Alt+A` - Pixel perfect
+- `Ctrl+Alt+A` - Pixel perfect
 
 ---
 
@@ -243,7 +248,7 @@ Keyboard shortcuts are currently hardcoded. Custom shortcut configuration may be
 2. **Use single-key toggles** - `H`, `T`, `P` for quick view changes
 3. **3D view shortcuts** - `1`, `2`, `7` for instant view switching
 4. **Alignment shortcuts** - `Shift+Arrow` faster than clicking alignment buttons
-5. **Simulation mode** - `Ctrl+Shift+S` to quickly check execution
+5. **Simulation mode** - `F11` to quickly check execution
 
 ### Workflow Shortcuts
 
@@ -273,8 +278,8 @@ Some lesser-known shortcuts:
 
 - `Ctrl+,` - Quick access to preferences (standard on macOS, works here too)
 - `Ctrl+Shift+Z` - Alternative redo (for users who prefer this over Ctrl+Y)
-- `Alt+A` - Pixel-perfect snapping for precise placement
-- `Alt+T` - Quick equidistant tab placement
+- `Ctrl+Alt+A` - Pixel-perfect snapping for precise placement
+- `Ctrl+Alt+T` - Quick equidistant tab placement
 
 ---
 
@@ -356,7 +361,7 @@ Some lesser-known shortcuts:
 |               | Delete       | Remove           |
 | **View**      | H            | Workpieces       |
 |               | T            | Tabs             |
-|               | Alt+C        | Camera           |
+|               | Ctrl+Alt+C   | Camera           |
 |               | F12          | 3D View          |
 |               | 1/2/7        | View Presets     |
 |               | P            | Perspective      |

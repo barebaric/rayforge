@@ -67,10 +67,9 @@ Ajusta los parámetros de la cuadrícula de prueba en el diálogo de configuraci
 - **Espaciado:** Espacio entre cuadrados en mm (por defecto: 5mm)
 
 #### Etiquetas
-
-- **Incluir Etiquetas:** Habilitar/deshabilitar etiquetas de ejes mostrando valores de velocidad y potencia
-- Las etiquetas aparecen en los bordes izquierdo y superior
-- Las etiquetas se graban al 10% de potencia, 1000 mm/min
+- **Incluir etiquetas**: Habilitar/deshabilitar etiquetas de ejes mostr values of speed and power
+- Las etiquetas aparecen en los bordes izquier y superior
+- Las etiquetas se graban con `label_power_percent` power and a configurable speed (default: 1000 mm/min) for different values
 
 ### Paso 4: Generar la Cuadrícula
 

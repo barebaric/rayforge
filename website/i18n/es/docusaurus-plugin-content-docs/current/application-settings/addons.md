@@ -36,11 +36,8 @@ La lista de addons muestra todos los addons instalados con:
 
 ### Actualizando Addons
 
-Cuando hay actualizaciones disponibles:
-
-1. Un indicador de actualización aparece junto al addon
-2. Haz clic en el botón **Actualizar** para instalar la actualización
-3. Reinicia Rayforge si se te solicita
+Cuando hay actualizaciones disponibles, un indicador aparece en el diálogo del Registro de Addons.
+Haz clic en **Actualizar** para instalar las actualizaciones disponibles.
 
 ### Eliminando Addons
 
@@ -56,7 +53,6 @@ Eliminar un addon puede afectar documentos que usan sus características.
 
 Los addons pueden instalarse desde:
 
-- **Archivos locales**: Archivos `.zip` descargados manualmente
 - **Repositorios**: Repositorios Git que contienen addons
 - **Registro oficial**: Addons curados por el equipo de Rayforge
 

@@ -34,7 +34,7 @@ Casos de uso comunes de macros:
 ### Creando una Macro
 
 1. **Abrir Configuración de Máquina:**
-   - Navega a **Configuración Máquina Macros**
+   - Navega a **Configuración → Máquina → Macros**
 
 2. **Añadir una nueva macro:**
    - Haz clic en el botón **"+"**
@@ -63,7 +63,7 @@ $H
 ; Espera a que el homing se complete
 ```
 
-**Uso:** Lleva rápidamente la máquina al origen antes de comenzar a trabajar.
+**Uso:** Lleva rápidamente la máquina al origen antes de comenzar el trabajo.
 
 ---
 
@@ -105,9 +105,7 @@ M5
 
 ---
 
----
-
-### Ejemplos de Macros
+## Hooks
 
 Los Hooks son **inyecciones automáticas de código G** activadas por eventos específicos durante la ejecución del trabajo.
 
@@ -117,17 +115,19 @@ Rayforge soporta estos disparadores de hooks:
 
 | Disparador            | Cuándo se Ejecuta                     | Usos Comunes                                 |
 | --------------------- | ------------------------------------- | ------------------------------------------- |
-| **Inicio de Trabajo** | Muy al comienzo del trabajo           | Homing, desplazamiento de trabajo, asistencia de aire on, precalentamiento |
-| **Fin de Trabajo**    | Muy al final del trabajo              | Volver al origen, asistencia de aire off, pitido, enfriamiento |
 | **Inicio de Capa**    | Antes de procesar cada capa           | Cambio de herramienta, ajuste de potencia, comentarios |
 | **Fin de Capa**       | Después de procesar cada capa         | Notificación de progreso, pausa             |
 | **Inicio de Pieza**   | Antes de procesar cada pieza          | Numeración de partes, marcas de alineación  |
 | **Fin de Pieza**      | Después de procesar cada pieza        | Enfriamiento, pausa de inspección           |
 
+:::note Código G a Nivel de Trabajo
+El código G de inicio y fin de trabajo se configura a través de los ajustes de preámbulo y postscript del dialecto, no mediante hooks. Ver [Ajustes de Código G](gcode) para detalles.
+:::
+
 ### Creando un Hook
 
 1. **Abrir Configuración de Máquina:**
-   - Navega a **Configuración Máquina Hooks**
+   - Navega a **Configuración → Máquina → Hooks**
 
 2. **Seleccionar un disparador:**
    - Elige el evento cuando este hook debe ejecutarse
@@ -140,40 +140,6 @@ Rayforge soporta estos disparadores de hooks:
    - Activa/desactiva hooks sin eliminarlos
 
 ### Ejemplos de Hooks
-
-#### Inicio de Trabajo: Inicializar Máquina
-
-**Disparador:** Inicio de Trabajo
-**Código:**
-
-```gcode
-G21         ; Milímetros
-G90         ; Posicionamiento absoluto
-$H          ; Llevar la máquina al origen
-G0 X0 Y0    ; Mover al origen
-M3 S0       ; Láser encendido pero potencia 0 (algunos controladores necesitan esto)
-M8          ; Asistencia de aire ON
-```
-
-**Propósito:** Asegura que la máquina esté en un estado conocido antes de cada trabajo.
-
----
-
-#### Fin de Trabajo: Volver al Origen y Pitido
-
-**Disparador:** Fin de Trabajo
-**Código:**
-
-```gcode
-M5          ; Láser OFF
-M9          ; Asistencia de aire OFF
-G0 X0 Y0    ; Volver al origen
-M300 S800 P200  ; Pitido (si es compatible)
-```
-
-**Propósito:** Termina el trabajo de manera segura y señala la finalización.
-
----
 
 #### Inicio de Capa: Añadir Comentario
 
@@ -208,24 +174,22 @@ M300 S800 P200  ; Pitido (si es compatible)
 Para un trabajo con 2 capas, cada una con 2 piezas:
 
 ```
-[Hook Inicio de Trabajo]
   [Hook Inicio de Capa] (Capa 1)
     [Hook Inicio de Pieza] (Pieza 1)
-      ... código G de pieza 1 ...
+       ... código G de pieza 1 ...
     [Hook Fin de Pieza] (Pieza 1)
     [Hook Inicio de Pieza] (Pieza 2)
-      ... código G de pieza 2 ...
+       ... código G de pieza 2 ...
     [Hook Fin de Pieza] (Pieza 2)
   [Hook Fin de Capa] (Capa 1)
   [Hook Inicio de Capa] (Capa 2)
     [Hook Inicio de Pieza] (Pieza 3)
-      ... código G de pieza 3 ...
+       ... código G de pieza 3 ...
     [Hook Fin de Pieza] (Pieza 3)
     [Hook Inicio de Pieza] (Pieza 4)
-      ... código G de pieza 4 ...
+       ... código G de pieza 4 ...
     [Hook Fin de Pieza] (Pieza 4)
   [Hook Fin de Capa] (Capa 2)
-[Hook Fin de Trabajo]
 ```
 
 ---
@@ -360,9 +324,6 @@ Siempre prueba macros y hooks en **modo simulación** o con el láser **deshabil
 
 - [ ] Las macros incluyen límites de velocidad de avance (`F` parámetro)
 - [ ] Las macros verifican los límites de posición
-- [ ] Los hooks de Inicio de Trabajo incluyen `M5` o comando de láser apagado
-- [ ] Los hooks de Fin de Trabajo apagan el láser (`M5`) y asistencia de aire (`M9`)
-- [ ] No hay comandos destructivos sin confirmación
 - [ ] Probado en simulación o con láser deshabilitado
 
 ---

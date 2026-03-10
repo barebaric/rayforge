@@ -51,9 +51,9 @@ Para configuración detallada de máquina, ver la sección [Configuración de M�
 
 La página de Materiales gestiona tu biblioteca de materiales.
 
-- **Añadir Material**: Crear un nuevo preajuste de material
-- **Importar Biblioteca**: Importar materiales desde un archivo
-- **Exportar Biblioteca**: Exportar tus materiales para respaldo o compartir
+- **Añadir Biblioteca**: Crear una nueva biblioteca de materiales
+- **Editar**: Renombrar una biblioteca seleccionada
+- **Eliminar**: Eliminar una biblioteca seleccionada
 
 Ver [Materiales](../application-settings/materials) para más detalles.
 
@@ -62,8 +62,8 @@ Ver [Materiales](../application-settings/materials) para más detalles.
 La página de Recetas gestiona tus recetas de operaciones.
 
 - **Añadir Receta**: Crear una nueva receta
-- **Importar Recetas**: Importar recetas desde un archivo
-- **Exportar Recetas**: Exportar tus recetas para respaldo o compartir
+- **Editar**: Modificar una receta seleccionada
+- **Eliminar**: Eliminar una receta seleccionada
 
 Ver [Recetas](../application-settings/recipes) para más detalles.
 
@@ -73,6 +73,19 @@ La página de Addons muestra los addons de extensión instalados.
 
 - **Lista de Addons**: Muestra todos los addons instalados
 - **Detalles del Addon**: Ver información sobre cada addon
+
+## Privacidad
+
+La página de Privacidad controla el informe de uso anónimo.
+
+- **Informar Uso Anónimo**: Cuando está habilitado, se envían datos de uso anónimos para ayudar a mejorar Rayforge. No se recopila información personal.
+
+## Licencias
+
+La página de Licencias gestiona tus claves de licencia para funciones premium y addons.
+
+- **Vincular Cuenta Patreon**: Conecta tu cuenta Patreon para acceder a beneficios de seguidor
+- **Claves de Licencia de Addons**: Ingresa claves de licencia para addons premium
 
 ---
 

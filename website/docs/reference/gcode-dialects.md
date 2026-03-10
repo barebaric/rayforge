@@ -8,8 +8,8 @@ Rayforge currently supports these G-code dialects:
 
 | Dialect                        | Firmware     | Common Use                  | Status                          |
 | ------------------------------ | ------------ | --------------------------- | ------------------------------- |
-| **GRBL (universal)**           | GRBL 1.1+    | Diode lasers, hobby CNC     |  Primary, fully supported      |
-| **GRBL (no Z axis)**           | GRBL 1.1+    | 2D laser cutters without Z  |  Optimized variant             |
+| **Grbl (Compat)**              | GRBL 1.1+    | Diode lasers, hobby CNC     |  Primary, fully supported      |
+| **Grbl (Compat, no Z axis)**   | GRBL 1.1+    | 2D laser cutters without Z  |  Optimized variant             |
 | **GRBL Dynamic (Depth-Aware)** | GRBL 1.1+    | Depth-Aware laser engraving |  Recommended for dynamic power |
 | **GRBL Dynamic (no Z axis)**   | GRBL 1.1+    | Depth-Aware laser engraving |  Optimized variant             |
 | **Smoothieware**               | Smoothieware | Laser cutters, CNC          |  Experimental                  |
@@ -18,7 +18,7 @@ Rayforge currently supports these G-code dialects:
 :::note Recommended Dialects
 :::
 
-**GRBL (universal)** is the most tested and recommended dialect for standard laser applications.
+**Grbl (Compat)** is the most tested and recommended dialect for standard laser applications.
 
     **GRBL Dynamic (Depth-Aware)** is recommended for Depth-Aware laser engraving where power varies during cuts (e.g., variable depth engraving).
 ---

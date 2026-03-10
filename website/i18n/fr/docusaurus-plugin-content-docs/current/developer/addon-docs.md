@@ -295,6 +295,7 @@ vous pouvez accéder à :
 - **`context.plugin_mgr`** : Instance du gestionnaire de plugins.
 - **`context.debug_dump_manager`** : Gestionnaire de dumps de débogage.
 - **`context.artifact_store`** : Stockage d'artefacts du pipeline.
+- **`context.license_validator`** : Validateur de licence pour les addons payants.
 
 ## 7. Localisation
 

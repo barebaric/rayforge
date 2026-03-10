@@ -4,7 +4,7 @@ Nachdem Rayforge installiert und deine Maschine konfiguriert ist, lass uns deine
 
 ## Schritt 1: Ein Design importieren
 
-Rayforge unterstützt verschiedene Dateiformate, darunter SVG, DXF, PDF und Rasterbilder (JPEG, PNG, BMP).
+Rayforge unterstützt verschiedene Dateiformate, darunter SVG, DXF, PDF, Ruida (.rd) und Rasterbilder (JPEG, PNG, BMP).
 
 1. **Klicke** auf **Datei → Öffnen** oder drücke <kbd>ctrl+o</kbd>
 2. Navigiere zu deiner Designdatei und wähle sie aus
@@ -56,7 +56,7 @@ Wenn du mit neuen Materialien arbeitest, beginne immer mit niedrigeren Leistungs
 
 Bevor du an deine Maschine sendest, zeige den Werkzeugweg in 3D an:
 
-1. Klicke auf **Ansicht → 3D-Vorschau** oder drücke <kbd>ctrl+3</kbd>
+1. Klicke auf **Ansicht → 3D-Vorschau** oder drücke <kbd>F12</kbd>
 2. Das 3D-Vorschau-Fenster zeigt den vollständigen Werkzeugweg
 3. Verwende deine Maus, um die Vorschau zu drehen und zu zoomen
 4. Überprüfe, ob der Pfad korrekt aussieht
@@ -92,24 +92,16 @@ Die 3D-Vorschau hilft dir, Probleme zu erkennen wie:
 
 ### Den Job starten
 
-1. **Laser positionieren**: Verwende die Jog-Steuerung, um den Laser an die Startposition zu bewegen
-   - Klicke auf **Ansicht → Steuerungsfeld** oder drücke <kbd>ctrl+l</kbd>
-   - Verwende die Pfeiltasten oder Tastaturpfeile, um den Laser zu bewegen
-   - Drücke <kbd>home</kbd>, um die Maschine zu referenzieren
+1. **Laser positionieren**: Verwende die Jog-Steuerung, um den Laser an die Startposition zu bewegen. Klicke auf **Ansicht → Steuerungsfeld** oder drücke <kbd>ctrl+l</kbd>, und verwende die Pfeiltasten oder Tastaturpfeile, um den Laser zu bewegen.
 
-2. **Design rahmen**: Führe die Rahm-Funktion aus, um die Platzierung zu überprüfen
-   - Klicke auf **Maschine → Rahmen** oder drücke <kbd>ctrl+f</kbd>
-   - Der Laser zeichnet den Begrenzungsrahmen deines Designs bei niedriger/keiner Leistung nach
-   - Überprüfe, ob er in dein Material passt
+2. **Design rahmen**: Führe die Rahm-Funktion aus, um die Platzierung zu überprüfen. Klicke auf **Maschine → Rahmen** und der Laser zeichnet den Begrenzungsrahmen deines Designs bei niedriger Leistung nach. Überprüfe, ob er in dein Material passt.
 
-3. **Job starten**: Klicke auf **Maschine → Job starten** oder drücke <kbd>ctrl+r</kbd>
+3. **Job starten**: Klicke auf **Maschine → Job starten**
 4. Überwache den Fortschritt in der Statusleiste
 
 ### Während des Jobs
 
-- Der rechte Abschnitt der Statusleiste zeigt den aktuellen Fortschritt und die geschätzte Gesamtlaufzeit
-- Du kannst den Job mit <kbd>ctrl+p</kbd> pausieren oder auf die Pause-Taste klicken
-- Drücke <kbd>esc</kbd> oder klicke auf Stopp, um den Job abzubrechen (Notstopp)
+Der rechte Abschnitt der Statusleiste zeigt den aktuellen Fortschritt und die geschätzte Gesamtlaufzeit. Verwende die Pause- und Stopp-Tasten im Steuerungsfeld, um den Job zu steuern. Beachte, dass <kbd>esc</kbd> den Simulationsmodus beendet, aber keinen aktiven Job stoppt.
 
 ## Schritt 6: Abschluss
 

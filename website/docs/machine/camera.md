@@ -46,7 +46,7 @@ The camera integration provides:
 1. **Connect your camera** to your computer via USB
 
 2. **Open Camera Settings:**
-   - Navigate to **Settings Preferences Camera**
+   - Navigate to **Settings → Preferences → Camera**
    - Or use the camera toolbar button
 
 3. **Add a new camera:**
@@ -86,7 +86,7 @@ Alignment creates a transformation matrix that maps camera pixels to machine coo
 
 1. **Open the Alignment Dialog:**
    - Click the camera alignment button in the toolbar
-   - Or go to **Camera Align Camera**
+   - Or go to **Camera → Align Camera**
 
 2. **Place alignment markers:**
    - You need at least 3 reference points (4 recommended for better accuracy)
@@ -197,7 +197,8 @@ Once aligned, the camera overlay helps position jobs accurately.
 | **Brightness**    | Overall image brightness     | -100 to +100                      |
 | **Contrast**      | Edge definition and contrast | 0 to 100                          |
 | **Transparency**  | Overlay opacity on canvas    | 0% (opaque) to 100% (transparent) |
-| **White Balance** | Color temperature correction | Auto or 2000-10000K               |
+| **White Balance** | Color temperature correction | Auto or 2500-10000K               |
+| **Denoise**       | Temporal noise reduction     | 0.0 to 0.95                       |
 
 ### Alignment Data
 
@@ -215,7 +216,7 @@ Once aligned, the camera overlay helps position jobs accurately.
 
 For precise work, you can calibrate the camera to correct barrel/pincushion distortion:
 
-1. **Print a checkerboard pattern** (e.g., 86 grid with 25mm squares)
+1. **Print a checkerboard pattern** (e.g., 8×6 grid with 25mm squares)
 2. **Capture 10+ images** of the pattern from different angles/positions
 3. **Use OpenCV calibration tools** to calculate camera matrix and distortion coefficients
 4. **Apply calibration** in Rayforge (advanced settings)
@@ -224,7 +225,7 @@ For precise work, you can calibrate the camera to correct barrel/pincushion dist
 Lens distortion correction is only necessary for:
 
 - Wide-angle lenses with noticeable barrel distortion
-- Precision work requiring &lt;1mm accuracy
+- Precision work requiring <1mm accuracy
 - Large work areas where distortion accumulates
 
 Most standard webcams work fine without calibration for typical laser work.
@@ -332,6 +333,7 @@ sudo lsof /dev/video0
 4. **Check focus** - Auto-focus may not work well; use manual if possible
 5. **Reduce transparency** temporarily to see camera image more clearly
 6. **Try different white balance** settings
+7. **Adjust denoise setting** if image appears grainy
 
 ### Camera Lag or Stuttering
 

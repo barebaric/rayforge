@@ -188,10 +188,10 @@ For images, line interval should match or exceed image resolution. If your image
 
 **Bidirectional Scanning:**
 
-- **Enabled:** Laser engraves in both directions (faster)
-- **Disabled:** Laser only engraves left-to-right (slower, more consistent)
+- **Enabled:** Laser engraves in both directions (left-to-right and right-to-left), doubling speed
+- **Disabled:** Laser only engraves left-to-right, returning without firing between lines
 
-For best quality, disable bidirectional. For speed, enable it.
+Bidirectional scanning is faster because the laser fires on every pass. However, slight mechanical differences between directions can cause visible banding on some materials. For critical quality work, especially on photos, disable bidirectional scanning for more consistent results.
 
 ### Overscan
 

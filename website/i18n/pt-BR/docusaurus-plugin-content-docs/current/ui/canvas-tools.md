@@ -13,11 +13,20 @@ Selecione, mova e transforme objetos na tela.
 - Arraste para criar caixa de seleção
 - Clique e arraste objetos selecionados para mover
 
+**Teclas Modificadoras Durante o Arraste:**
+
+Segurar teclas modificadoras enquanto arrasta muda o comportamento:
+
+- <kbd>ctrl</kbd> enquanto **move**: Ajusta o objeto à grade de 5mm, facilitando o alinhamento preciso
+- <kbd>ctrl</kbd> enquanto **rotaciona**: Ajusta a rotação em incrementos de 5 graus para ângulos consistentes
+- <kbd>shift</kbd> enquanto **escala**: Restringe as proporções (escala uniforme)
+- <kbd>ctrl</kbd> enquanto **escala**: Escala a partir do centro em vez da borda oposta
+
 **Alças de Transformação:**
 
 - **Alças de canto**: Escala proporcionalmente (segure <kbd>shift</kbd> para escalar não proporcionalmente)
 - **Alças de borda**: Escala em uma direção
-- **Alça de rotação**: Rotaciona ao redor do ponto central
+- **Alça de rotação**: Clique uma vez em um objeto selecionado para alternar o modo de rotação, depois arraste para rotacionar ao redor do ponto central
 
 **Atalhos de Teclado:**
 

@@ -4,32 +4,42 @@ A página de Manutenção nas Configurações da Máquina ajuda você a rastrear
 
 ![Configurações de Manutenção](/screenshots/machine-maintenance.png)
 
-## Contadores de Horas
+## Rastreamento de Uso
 
-O Rayforge rastreia quanto tempo sua máquina está em uso. Esses contadores ajudam você a agendar manutenção preventiva.
+O Rayforge rastreia quanto tempo sua máquina está em uso. Essas informações ajudam você a agendar manutenção preventiva em intervalos apropriados.
 
-### Horas do Laser
+### Horas Totais
 
-Rastreia o tempo total que o laser esteve disparando. Use isso para:
+O contador de horas totais rastreia todo o tempo gasto executando trabalhos na máquina. Este contador cumulativo não pode ser resetado e fornece um histórico completo do uso da máquina.
 
-- Agendar substituição do tubo de laser (tubos CO2 tipicamente duram 1000-3000 horas)
-- Monitorar degradação do diodo do laser
-- Rastrear períodos de garantia
+Use isso para rastrear a idade geral da máquina e planejar intervalos de serviço principais.
 
-### Horas de Trabalho
+## Contadores de Manutenção Personalizados
 
-Rastreia o tempo total gasto executando trabalhos, incluindo movimentos de deslocamento. Use isso para:
+Você pode criar contadores personalizados para rastrear intervalos de manutenção específicos. Cada contador tem um nome, rastreia horas e pode ser configurado com um limite de notificação.
 
-- Agendar tensão das correias
-- Planejar lubrificação dos rolamentos
-- Rastrear uso geral da máquina
+### Criando um Contador
 
-### Horas de Movimento
+1. Clique no botão adicionar para criar um novo contador
+2. Digite um nome descritivo (ex: "Tubo Laser", "Tensão de Correia", "Limpeza de Espelho")
+3. Defina um limite de notificação em horas se desejado
 
-Rastreia o tempo gasto movendo (não cortando). Use isso para:
+### Recursos do Contador
 
-- Agendar manutenção dos motores de passo
-- Planejar limpeza e lubrificação dos trilhos
+- **Nomes personalizados**: Rotule contadores para qualquer tarefa de manutenção
+- **Rastreamento de horas**: Acumula automaticamente tempo durante a execução de trabalhos
+- **Limites de notificação**: Receba lembretes quando manutenção é necessária
+- **Capacidade de reset**: Reset contadores após realizar manutenção
+
+### Exemplos de Contadores
+
+**Tubo Laser**: Rastreie horas do tubo CO2 para planejar substituição (tipicamente 1000-3000 horas). Defina uma notificação às 2500 horas para planejar com antecedência.
+
+**Tensão de Correia**: Rastreie horas desde a última tensão de correia. Reset após realizar a manutenção.
+
+**Limpeza de Espelho**: Rastreie uso desde a última limpeza de espelho. Reset após limpar.
+
+**Lubrificação de Rolamentos**: Rastreie horas para intervalos de manutenção de rolamentos.
 
 ## Resetando Contadores
 
@@ -45,6 +55,8 @@ Intervalos comuns de manutenção:
 - **Semanalmente**: Limpar trilhos, verificar tensão das correias
 - **Mensalmente**: Lubrificar rolamentos, verificar conexões elétricas
 - **Anualmente**: Inspeção completa, substituir peças gastas
+
+Ajuste intervalos com base em seus padrões de uso e recomendações do fabricante.
 :::
 
 ## Veja Também

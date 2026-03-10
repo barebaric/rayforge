@@ -34,11 +34,8 @@ La liste des addons affiche tous les addons installés avec :
 
 ### Mettre à Jour les Addons
 
-Quand des mises à jour sont disponibles :
-
-1. Un indicateur de mise à jour apparaît à côté de l'addon
-2. Cliquez sur le bouton **Mettre à Jour** pour installer la mise à jour
-3. Redémarrez Rayforge si demandé
+Quand des mises à jour sont disponibles, un indicateur apparaît dans le dialogue du Registre des Addons.
+Cliquez sur **Mettre à Jour** pour installer les mises à jour disponibles.
 
 ### Supprimer des Addons
 
@@ -54,7 +51,6 @@ Supprimer un addon peut affecter les documents qui utilisent ses fonctionnalité
 
 Les addons peuvent être installés depuis :
 
-- **Fichiers locaux** : Archives `.zip` téléchargées manuellement
 - **Dépôts** : Dépôts Git contenant des addons
 - **Registre officiel** : Addons organisés par l'équipe Rayforge
 

@@ -1,6 +1,6 @@
 # Integración de Cámara
 
-Rayforge soporta la integración de cámara USB para la alineación y posicionamiento preciso del material. La función de superposición de cámara te permite ver exactamente dónde tu láser cortará o grabará en el material, eliminando las conjeturas y reduciendo el desperdicio de material.
+Rayforge soporta la integración de cámara USB para la alineación y posicionamiento preciso del material. La función de superposición de cámara te permite ver exactamente dónde tu láser va a cortar o grabar en el material, eliminando las conjeturas y reduciendo el desperdicio de material.
 
 ![Ajustes de Cámara](/screenshots/machine-camera.png)
 
@@ -46,7 +46,7 @@ La integración de cámara proporciona:
 1. **Conecta tu cámara** a tu computadora vía USB
 
 2. **Abre Ajustes de Cámara:**
-   - Navega a **Configuración Preferencias Cámara**
+   - Navega a **Configuración → Preferencias → Cámara**
    - O usa el botón de la barra de herramientas de cámara
 
 3. **Añade una nueva cámara:**
@@ -86,7 +86,7 @@ La alineación crea una matriz de transformación que mapea los píxeles de la c
 
 1. **Abre el Diálogo de Alineación:**
    - Haz clic en el botón de alineación de cámara en la barra de herramientas
-   - O ve a **Cámara Alinear Cámara**
+   - O ve a **Cámara → Alinear Cámara**
 
 2. **Coloca marcadores de alineación:**
    - Necesitas al menos 3 puntos de referencia (4 recomendados para mejor precisión)
@@ -162,7 +162,7 @@ Una vez alineada, la superposición de cámara ayuda a posicionar trabajos con p
 
 4. **Previsualiza la alineación:**
    - Usa el [Modo Simulación](../features/simulation-mode) para visualizar
-   - Verifica que los cortes/grabados estén donde esperas
+   - Verifica que cortes/grabados estén donde esperas
 
 5. **Enmarca el trabajo** para verificar el posicionamiento antes de ejecutar
 
@@ -197,7 +197,8 @@ Una vez alineada, la superposición de cámara ayuda a posicionar trabajos con p
 | **Brillo**          | Brillo general de la imagen   | -100 a +100                         |
 | **Contraste**       | Definición de bordes y contraste | 0 a 100                           |
 | **Transparencia**   | Opacidad de la superposición en el lienzo | 0% (opaco) a 100% (transparente) |
-| **Balance de Blancos** | Corrección de temperatura de color | Auto o 2000-10000K                |
+| **Balance de Blancos** | Corrección de temperatura de color | Auto o 2500-10000K                |
+| **Reducción de Ruido** | Reducción de ruido temporal | 0.0 a 0.95                        |
 
 ### Datos de Alineación
 
@@ -317,7 +318,7 @@ sudo lsof /dev/video0
 - Usa más puntos de alineación (6-8 para áreas muy grandes)
 - Distribuye los puntos por toda el área de trabajo
 - Mide las coordenadas del mundo muy cuidadosamente
-- Usa comandos de movimiento de la máquina para posicionar el láser con precisión en coordenadas conocidas
+- Usa comandos de movimiento de la máquina para posicionar precisely el láser en coordenadas conocidas
 - Vuelve a alinear después de cualquier ajuste de la cámara
 
 ### Calidad de Imagen Pobre
@@ -332,6 +333,7 @@ sudo lsof /dev/video0
 4. **Revisa el enfoque** - El autoenfoque puede no funcionar bien; usa manual si es posible
 5. **Reduce la transparencia** temporalmente para ver la imagen de la cámara más claramente
 6. **Prueba diferentes ajustes** de balance de blancos
+7. **Ajusta la reducción de ruido** si la imagen aparece granulada
 
 ### Retraso o Tartamudeo de la Cámara
 

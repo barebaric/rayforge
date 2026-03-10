@@ -293,6 +293,7 @@ you can access:
 - **`context.plugin_mgr`**: Plugin manager instance (internal pluggy).
 - **`context.debug_dump_manager`**: Debug dump manager.
 - **`context.artifact_store`**: Pipeline artifact store.
+- **`context.license_validator`**: License validator for paid addons.
 
 ## 7. Localization
 

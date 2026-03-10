@@ -289,6 +289,7 @@ El hook `rayforge_init` proporciona el **`RayforgeContext`**. A través de este 
 - **`context.plugin_mgr`**: Instancia del gestor de plugins.
 - **`context.debug_dump_manager`**: Gestor de volcados de depuración.
 - **`context.artifact_store`**: Almacén de artefactos del pipeline.
+- **`context.license_validator`**: Validador de licencias para addons de pago.
 
 ## 7. Localización
 

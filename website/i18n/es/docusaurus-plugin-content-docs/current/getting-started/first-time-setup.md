@@ -33,15 +33,15 @@ La página **General** contiene información básica de la máquina, selección 
 
 Selecciona el controlador apropiado para tu dispositivo del menú desplegable:
 
-- **GRBL Serial** - Para dispositivos GRBL conectados vía USB/puerto serie
-- **GRBL Network** - Para dispositivos GRBL con conectividad WiFi/Ethernet
+- **GRBL (Serial)** - Para dispositivos GRBL conectados vía USB/puerto serie
+- **GRBL (Network)** - Para dispositivos GRBL con conectividad WiFi/Ethernet
 - **Smoothie** - Para dispositivos basados en Smoothieware
 
 ### Configuración del Controlador
 
 Dependiendo del controlador seleccionado, configura los parámetros de conexión:
 
-#### GRBL Serial (USB)
+#### GRBL (Serial) - USB
 
 1. **Puerto**: Elige tu dispositivo del menú desplegable (ej., `/dev/ttyUSB0` en Linux, `COM3` en Windows)
 2. **Velocidad de Transmisión**: Selecciona `115200` (estándar para la mayoría de dispositivos GRBL)
@@ -50,7 +50,7 @@ Dependiendo del controlador seleccionado, configura los parámetros de conexión
 Si tu dispositivo no aparece en la lista, verifica que esté conectado y que tengas los permisos necesarios. En Linux, puede que necesites añadir tu usuario al grupo `dialout`.
 :::
 
-#### GRBL Network / Smoothie (WiFi/Ethernet)
+#### GRBL (Network) / Smoothie - WiFi/Ethernet
 
 1. **Host**: Ingresa la dirección IP de tu dispositivo (ej., `192.168.1.100`)
 2. **Puerto**: Ingresa el número de puerto (típicamente `23` o `8080`)

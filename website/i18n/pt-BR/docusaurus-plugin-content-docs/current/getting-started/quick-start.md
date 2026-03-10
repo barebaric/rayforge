@@ -4,7 +4,7 @@ Agora que o Rayforge está instalado e sua máquina está configurada, vamos exe
 
 ## Passo 1: Importar um Design
 
-O Rayforge suporta vários formatos de arquivo, incluindo SVG, DXF, PDF e imagens raster (JPEG, PNG, BMP).
+O Rayforge suporta vários formatos de arquivo, incluindo SVG, DXF, PDF, Ruida (.rd) e imagens raster (JPEG, PNG, BMP).
 
 1. **Clique** em **Arquivo → Abrir** ou pressione <kbd>ctrl+o</kbd>
 2. Navegue até o arquivo de design e selecione-o
@@ -56,7 +56,7 @@ Ao trabalhar com novos materiais, sempre comece com configurações de potência
 
 Antes de enviar para sua máquina, visualize o caminho da ferramenta em 3D:
 
-1. Clique em **Visualizar → Visualização 3D** ou pressione <kbd>ctrl+3</kbd>
+1. Clique em **Visualizar → Visualização 3D** ou pressione <kbd>F12</kbd>
 2. A janela de visualização 3D mostra o caminho completo da ferramenta
 3. Use o mouse para rotacionar e dar zoom na visualização
 4. Verifique se o caminho parece correto
@@ -92,24 +92,16 @@ A visualização 3D ajuda você a identificar problemas como:
 
 ### Iniciando o Trabalho
 
-1. **Posicione o laser**: Use os controles de jog para mover o laser para a posição inicial
-   - Clique em **Visualizar → Painel de Controle** ou pressione <kbd>ctrl+l</kbd>
-   - Use os botões de seta ou as setas do teclado para mover o laser
-   - Pressione <kbd>home</kbd> para levar a máquina à origem
+1. **Posicione o laser**: Use os controles de jog para mover o laser para a posição inicial. Clique em **Visualizar → Painel de Controle** ou pressione <kbd>ctrl+l</kbd>, e use os botões de seta ou as setas do teclado para mover o laser.
 
-2. **Enquadrar o design**: Execute a função de enquadramento para verificar o posicionamento
-   - Clique em **Máquina → Enquadrar** ou pressione <kbd>ctrl+f</kbd>
-   - O laser traçará a caixa delimitadora do seu design com potência baixa/zero
-   - Verifique se cabe dentro do seu material
+2. **Enquadrar o design**: Execute a função de enquadramento para verificar o posicionamento. Clique em **Máquina → Enquadrar** e o laser traçará a caixa delimitadora do seu design com potência baixa. Verifique se cabe dentro do seu material.
 
-3. **Iniciar o trabalho**: Clique em **Máquina → Iniciar Trabalho** ou pressione <kbd>ctrl+r</kbd>
+3. **Iniciar o trabalho**: Clique em **Máquina → Iniciar Trabalho**
 4. Monitore o progresso na barra de status
 
 ### Durante o Trabalho
 
-- A seção direita da barra de status mostra o progresso atual e estimativa de tempo total de execução
-- Você pode pausar o trabalho com <kbd>ctrl+p</kbd> ou clicar no botão Pausar
-- Pressione <kbd>esc</kbd> ou clique em Parar para cancelar o trabalho (parada de emergência)
+A seção direita da barra de status mostra o progresso atual e estimativa de tempo total de execução. Use os botões Pausar e Parar no painel de controle para controlar o trabalho. Note que <kbd>esc</kbd> sai do modo de simulação, mas não para um trabalho ativo.
 
 ## Passo 6: Finalizando
 
