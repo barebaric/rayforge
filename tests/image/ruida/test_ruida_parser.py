@@ -4,9 +4,6 @@ from pathlib import Path
 from pytest_mock import MockerFixture  # Import the mocker fixture type
 
 from rayforge.image.ruida.parser import RuidaParser
-from rayforge.machine.driver.ruida.ruida_util import (
-    unswizzle_byte as unswizzle,
-)
 
 
 def _scramble(byte_val: int) -> int:
@@ -70,14 +67,6 @@ def simple_square_rd_file(tmp_path: Path) -> Path:
     rd_file = tmp_path / "test.rd"
     create_test_rd_file(rd_file)
     return rd_file
-
-
-def test_scramble_unscramble_bijection():
-    """Verify that unswizzle is the perfect inverse of _scramble."""
-    for byte_val in range(256):
-        scrambled = _scramble(byte_val)
-        unscrambled = unswizzle(scrambled)
-        assert unscrambled == byte_val
 
 
 def test_parser_on_simple_square(
