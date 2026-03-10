@@ -20,7 +20,7 @@ class RuidaLayer:
 
 
 @dataclass
-class RuidaCommand:
+class RuidaGeoCommand:
     """
     Represents a single geometric or state command tagged with a layer index.
     """
@@ -43,7 +43,7 @@ class RuidaJob:
     layers: Dict[int, RuidaLayer] = field(default_factory=dict)
 
     # An ordered list of commands to be executed.
-    commands: List[RuidaCommand] = field(default_factory=list)
+    commands: List[RuidaGeoCommand] = field(default_factory=list)
 
     def get_extents(self) -> Rect:
         """
