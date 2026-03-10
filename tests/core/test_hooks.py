@@ -186,7 +186,7 @@ class TestRegistryHooks:
         mock_producer = {"name": "TestProducer"}
 
         context.plugin_mgr.hook.step_settings_loaded(
-            step=mock_step, producer=mock_producer
+            dialog=None, step=mock_step, producer=mock_producer
         )
 
         assert len(received_data) == 1
@@ -209,7 +209,7 @@ class TestRegistryHooks:
         mock_transformer = {"name": "TestTransformer"}
 
         context.plugin_mgr.hook.transformer_settings_loaded(
-            step=mock_step, transformer=mock_transformer
+            dialog=None, step=mock_step, transformer=mock_transformer
         )
 
         assert len(received_data) == 1
