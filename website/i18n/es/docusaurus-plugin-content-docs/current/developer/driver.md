@@ -72,7 +72,7 @@ ops.line_to(50, 50)       # Cortar una línea sin asistencia de aire
 
 ## Implementación del Driver
 
-Todos los drivers DEBEN heredar de `rayforge.machine.drivers.Driver`.
+Todos los drivers DEBEN heredar de `rayforge.machine.driver.driver.Driver`.
 
 ```python
 from rayforge.machine.driver.driver import Driver

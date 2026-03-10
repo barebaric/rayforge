@@ -20,7 +20,7 @@ Rezepte sind benannte Presets, die alle Einstellungen für spezifische Operation
 
 #### 1. Rezept-Manager aufrufen
 
-Menü: Bearbeiten → Einstellungen → Rezepte
+Menü: Bearbeiten → Einstellungen, dann Rezepte auswählen
 
 #### 2. Neues Rezept erstellen
 

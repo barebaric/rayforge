@@ -87,7 +87,7 @@ ops.line_to(50, 50)       # Corta uma linha sem assistente de ar
 
 ## Implementação do Driver
 
-Todos os drivers DEVEM herdar de `rayforge.machine.drivers.Driver`.
+Todos os drivers DEVEM herdar de `rayforge.machine.driver.driver.Driver`.
 
 ```python
 from rayforge.machine.driver.driver import Driver
@@ -126,12 +126,15 @@ Sua classe de driver **DEVE** implementar os seguintes métodos. Note que a maio
 
 #### Controle de Dispositivo
 
+#### Controle de Dispositivo
+
 - `async def run(machine_code: Any, op_map: MachineCodeOpMap, doc: Doc,
   on_command_done: Optional[Callable[[int], Union[None, Awaitable[None]]]]
   = None)`: O método principal para executar um trabalho. Recebe código de máquina
   pré-codificado (ex.: string G-code) e um mapeamento entre índices de operação e
   código de máquina. O callback `on_command_done` é chamado com o op_index
   quando cada comando completa.
+- `async def run_raw(gcode: str)`: Executa uma string G-code crua diretamente.
 - `async def home(axes: Optional[Axis] = None)`: Faz home da máquina. Pode fazer home
   de eixos específicos ou todos os eixos.
 - `async def move_to(pos_x: float, pos_y: float)`: Move manualmente a cabeça
@@ -143,6 +146,30 @@ Sua classe de driver **DEVE** implementar os seguintes métodos. Note que a maio
 - `async def select_tool(tool_number: int)`: Seleciona uma nova ferramenta/cabeça de laser por
   seu número.
 - `async def clear_alarm()`: Limpa qualquer estado de alarme ativo.
+- `async def set_wcs_offset(wcs_slot, x, y, z)`: Define o offset do sistema de coordenadas de trabalho para um slot WCS específico.
+- `async def read_wcs_offsets()`: Lê todos os offsets WCS do dispositivo.
+- `async def run_probe_cycle(axis, max_travel, feed_rate)`: Inicia um movimento de sondagem ao longo do eixo especificado.
+- `async def set_power(head, percent)`: Define a porcentagem de potência do laser para uma cabeça específica.
+- `can_jog(axis: Axis)`: Verifica se o jogging é suportado para o eixo dado.
+- `can_home(axis: Axis)`: Verifica se o homing é suportado para o eixo dado.
+- `async def read_parser_state()`: Consulta os estados modais G-code ativos do dispositivo.
+
+#### Propriedades Adicionais
+
+- `machine_space_wcs`: O identificador do sistema de coordenadas de trabalho usado para coordenadas de espaço de máquina.
+- `machine_space_wcs_display_name`: Nome de exibição legível para humanos para o WCS de espaço de máquina.
+- `resource_uri`: Um identificador único para o recurso físico controlado por este driver. Usado para detecção de conflitos quando múltiplas máquinas não podem compartilhar o mesmo hardware.
+
+#### Sinais
+
+Seu driver pode emitir esses sinais para notificar a UI de mudanças de estado:
+
+- `probe_status_changed`: Emitido durante ciclos de sondagem com atualizações de status.
+- `wcs_updated`: Emitido quando os dados do sistema de coordenadas de trabalho são atualizados.
+
+#### Exceções
+
+- `ResourceBusyError`: Lançado ao tentar usar um recurso que está atualmente em uso por outra instância de máquina.
 
 #### Configurações de Firmware (se `supports_settings` for `True`)
 

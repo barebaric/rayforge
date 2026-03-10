@@ -1,17 +1,17 @@
-# 3D Preview
+# 3D View
 
-The 3D preview window lets you visualize your G-code toolpaths before
+The 3D view window lets you visualize your G-code toolpaths before
 sending them to your machine. This powerful feature helps you catch errors
 and verify your job setup.
 
 ![3D Preview](/screenshots/main-3d.png)
 
-## Opening 3D Preview
+## Opening 3D View
 
-Access the 3D preview:
+Access the 3D view:
 
-- **Menu**: View → 3D Preview
-- **Keyboard**: <kbd>ctrl+3</kbd>
+- **Menu**: View → 3D View
+- **Keyboard**: <kbd>F12</kbd>
 - **After G-code generation**: Automatically opens (configurable)
 
 ## Navigation
@@ -22,25 +22,17 @@ Access the 3D preview:
 - **Pan**: Right-click and drag, or middle-click and drag
 - **Zoom**: Scroll wheel, or <kbd>ctrl</kbd> + left-click and drag
 
-### Keyboard Controls
-
-- <kbd>r</kbd>: Reset camera to default view
-- <kbd>home</kbd>: Reset zoom and position
-- <kbd>f</kbd>: Fit view to toolpath
-- Arrow keys: Rotate camera
-
 ### View Presets
 
 Quick camera angles:
 
 - **Top** (<kbd>1</kbd>): Bird's eye view
 - **Front** (<kbd>2</kbd>): Front elevation
-- **Right** (<kbd>3</kbd>): Right side elevation
-- **Isometric** (<kbd>4</kbd>): 3D isometric view
+- **Isometric** (<kbd>7</kbd>): 3D isometric view
 
 ## Work Coordinate System Display
 
-The 3D preview visualizes the active Work Coordinate System (WCS)
+The 3D view visualizes the active Work Coordinate System (WCS)
 differently from the 2D canvas:
 
 ### Grid and Axes
@@ -58,13 +50,13 @@ by the machine's absolute position.
 
 ### Changing WCS
 
-The 3D preview automatically updates when you change the active WCS:
+The 3D view automatically updates when you change the active WCS:
 - Select a different WCS from the toolbar dropdown
 - The grid and axes shift to reflect the new WCS origin
 - Labels update to show coordinates relative to the new WCS
 
-:::tip WCS in 3D Preview
-The 3D preview shows your toolpaths relative to the selected WCS. When you
+:::tip WCS in 3D View
+The 3D view shows your toolpaths relative to the selected WCS. When you
 change WCS, you'll see the toolpaths appear to move because the reference
 point (the grid) has changed, not because the toolpaths themselves moved.
 :::
@@ -79,8 +71,6 @@ Customize what you see:
 - **Show Rapid Moves**: Display travel moves (dotted lines)
 - **Show Work Moves**: Display cutting/engraving moves (solid lines)
 - **Color by Operation**: Different colors for each operation
-- **Color by Power**: Gradient based on laser power
-- **Color by Speed**: Gradient based on feed rate
 
 :::tip Per-Laser Colors
 When using machines with multiple laser heads, each laser can have its own
@@ -92,7 +82,6 @@ This makes it easy to identify which laser will perform each operation.
 
 - **Show Origin**: Display (0,0) reference point
 - **Show Work Area**: Display machine boundaries
-- **Show Laser Head**: Display current position indicator
 
 ### Quality Settings
 
@@ -116,26 +105,6 @@ The timeline shows:
 - Current position in job
 - Operation boundaries (colored segments)
 - Estimated time at any point
-
-## Analysis Tools
-
-### Distance Measurement
-
-Measure distances in 3D:
-
-1. Enable measurement tool
-2. Click two points on toolpath
-3. View distance in current units
-
-### Statistics Panel
-
-View job statistics:
-
-- **Total Distance**: Sum of all moves
-- **Work Distance**: Cutting/engraving distance only
-- **Rapid Distance**: Travel moves only
-- **Estimated Time**: Job duration estimate
-- **Bounding Box**: Overall dimensions
 
 ### Layer Visibility
 
@@ -182,7 +151,7 @@ For large or complex jobs:
 
 ### Colors not showing correctly
 
-- Check color by setting (operation/power/speed)
+- Check color by setting (operation)
 - Ensure operations have different colors assigned
 - Reset view settings to defaults
 

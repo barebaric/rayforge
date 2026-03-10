@@ -48,7 +48,8 @@ El sistema de restricciones es el núcleo del dibujador paramétrico, permitién
 - **Horizontal**: Restringe una línea a ser perfectamente horizontal
 - **Tangente**: Hace una línea tangente a un círculo o arco
 - **Perpendicular**: Fuerza dos líneas, una línea y un arco/círculo, o dos arcos/círculos a encontrarse a 90 grados
-- **Punto en Línea/Forma**: Restringe un punto a estar sobre una línea, arco o círculo
+- **Punto en Línea/Forma**: Restringe un punto a estar sobre una línea, arco, círculo
+- **Colineal**: Fuerza dos o más líneas a situarse en la misma línea infinita
 - **Simetría**: Crea relaciones simétricas entre elementos. Soporta dos modos:
   - **Simetría de Punto**: Selecciona 3 puntos (el primero es el centro)
   - **Simetría de Línea**: Selecciona 2 puntos y 1 línea (la línea es el eje)

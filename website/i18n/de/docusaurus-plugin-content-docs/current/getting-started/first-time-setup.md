@@ -33,15 +33,15 @@ Die Seite **Allgemein** enthält grundlegende Maschineninformationen, Treiberaus
 
 Wähle den entsprechenden Treiber für dein Gerät aus dem Dropdown-Menü:
 
-- **GRBL Seriell** - Für GRBL-Geräte, die über USB/Seriell-Port verbunden sind
-- **GRBL Netzwerk** - Für GRBL-Geräte mit WiFi/Ethernet-Konnektivität
+- **GRBL (Seriell)** - Für GRBL-Geräte, die über USB/Seriell-Port verbunden sind
+- **GRBL (Netzwerk)** - Für GRBL-Geräte mit WiFi/Ethernet-Konnektivität
 - **Smoothie** - Für Smoothieware-basierte Geräte
 
 ### Treibereinstellungen
 
 Je nach ausgewähltem Treiber konfigurierst du die Verbindungsparameter:
 
-#### GRBL Seriell (USB)
+#### GRBL (Seriell) - USB
 
 1. **Port**: Wähle dein Gerät aus dem Dropdown-Menü (z.B. `/dev/ttyUSB0` unter Linux, `COM3` unter Windows)
 2. **Baudrate**: Wähle `115200` (Standard für die meisten GRBL-Geräte)
@@ -50,7 +50,7 @@ Je nach ausgewähltem Treiber konfigurierst du die Verbindungsparameter:
 Wenn dein Gerät nicht in der Liste erscheint, überprüfe, ob es angeschlossen ist und dass du über die notwendigen Berechtigungen verfügst. Unter Linux musst du möglicherweise deinen Benutzer zur `dialout`-Gruppe hinzufügen.
 :::
 
-#### GRBL Netzwerk / Smoothie (WiFi/Ethernet)
+#### GRBL (Netzwerk) / Smoothie - WiFi/Ethernet
 
 1. **Host**: Gib die IP-Adresse deines Geräts ein (z.B. `192.168.1.100`)
 2. **Port**: Gib die Portnummer ein (typischerweise `23` oder `8080`)

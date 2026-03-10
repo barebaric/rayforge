@@ -13,7 +13,7 @@ Rayforge is designed primarily for **GRBL-based controllers** but has experiment
 | **GRBL**         | 1.1+    | Fully supported | GRBL Serial            | Recommended            |
 | **grblHAL**      | 2023+   | Compatible      | GRBL Serial            | Modern GRBL fork       |
 | **GRBL**         | 0.9     | Limited         | GRBL Serial            | Older, may have issues |
-| **Smoothieware** | All     | Experimental    | None (use GRBL driver) | Untested               |
+| **Smoothieware** | All     | Experimental    | SmoothieDriver (Telnet) | Network-based       |
 | **Marlin**       | 2.0+    | Experimental    | None (use GRBL driver) | Laser mode required    |
 | **Other**        | -       | Not supported   | -                      | Request support        |
 
@@ -129,35 +129,35 @@ grblHAL is a modern fork of GRBL with enhanced features:
 ## Smoothieware
 
 **Versions:** All
-**Driver:** GRBL Serial (compatibility mode)
+**Driver:** SmoothieDriver (Telnet-based)
 
-### Compatibility Notes
+### About SmoothieDriver
 
-Smoothieware uses different G-code syntax:
+Rayforge includes a dedicated SmoothieDriver that connects to Smoothieware controllers via Telnet over network. This provides native support rather than relying on GRBL compatibility mode.
 
-**Key differences:**
+**Features:**
 
-| Feature         | GRBL           | Smoothieware     |
-| --------------- | -------------- | ---------------- |
-| **Laser On**    | `M4 S<value>`  | `M3 S<value>`    |
-| **Power Range** | 0-1000         | 0.0-1.0 (float)  |
-| **Status**      | `<...>` format | Different format |
+- Network connectivity (Ethernet/WiFi)
+- Real-time status reporting
+- Native Smoothieware G-code support
 
 **Using Smoothieware with Rayforge:**
 
-1. **Select Smoothieware dialect** in machine settings > G-code > Dialect
-2. **Test with low power** first
-3. **Verify power range** matches your config
-4. **No real-time status** - limited feedback
+1. **Configure network** on your Smoothieboard (Ethernet or WiFi)
+2. **Select SmoothieDriver** in machine settings
+3. **Enter IP address** of your controller
+4. **Select Smoothieware dialect** in machine settings > G-code > Dialect
+
+**Requirements:**
+
+- Smoothieboard with network connectivity
+- Controller and computer on same network
+- Telnet enabled in Smoothieware config
 
 **Limitations:**
 
-- Status reporting not fully compatible
-- Power scaling may differ
-- Settings ($$ commands) not supported
-- Untested on real hardware
-
-**Recommendation:** If possible, use GRBL-compatible firmware instead.
+- Requires network connection (no USB serial)
+- Settings ($$ commands) work differently than GRBL
 
 ---
 

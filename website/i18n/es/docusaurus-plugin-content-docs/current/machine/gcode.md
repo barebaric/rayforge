@@ -10,40 +10,28 @@ Selecciona el dialecto de código G que coincide con el firmware de tu controlad
 
 ### Dialectos Disponibles
 
-- **GRBL**: Más común para cortadores láser de aficionado. Usa M3/M5 para control del láser.
+- **Grbl (Compat)**: Dialecto GRBL estándar para cortadoras láser de hobby. Usa M3/M5 para control del láser.
+- **Grbl (Compat, no Z axis)**: Igual que Grbl (Compat) pero sin comandos de eje Z. Para máquinas solo 2D.
+- **GRBL Dynamic**: Usa el modo de potencia láser dinámica de GRBL para grabado de potencia variable.
+- **GRBL Dynamic (no Z axis)**: Modo dinámico sin comandos de eje Z.
 - **Smoothieware**: Para Smoothieboard y controladores similares.
 - **Marlin**: Para controladores basados en Marlin.
-- **GRBL-compatible**: Para controladores que mayormente siguen la sintaxis GRBL.
 
 :::info
 El dialecto afecta cómo la potencia del láser, los movimientos y otros comandos se formatean en el código G de salida.
 :::
 
-## Código G Personalizado
+## Preámbulo y Postscript del Dialecto
 
-Puedes personalizar el código G que Rayforge genera en puntos específicos del trabajo.
+Cada dialecto incluye código G de preámbulo y postscript personalizable que se ejecuta al inicio y al final de los trabajos.
 
-### Inicio del Programa
+### Preámbulo
 
-Comandos de código G ejecutados al comienzo de cada trabajo, antes de cualquier operación de corte.
+Comandos de código G ejecutados al comienzo de cada trabajo, antes de cualquier operación de corte. Usos comunes incluyen establecer unidades (G21 para mm), modo de posicionamiento (G90 para absoluto) e inicializar el estado de la máquina.
 
-Usos comunes:
-- Establecer unidades (G21 para mm)
-- Establecer modo de posicionamiento (G90 para absoluto)
-- Inicializar el estado de la máquina
+### Postscript
 
-### Fin del Programa
-
-Comandos de código G ejecutados al final de cada trabajo, después de todas las operaciones de corte.
-
-Usos comunes:
-- Apagar láser (M5)
-- Volver al origen (G0 X0 Y0)
-- Estacionar la cabeza
-
-### Cambio de Herramienta
-
-Comandos de código G ejecutados al cambiar entre cabezales láser (para máquinas con múltiples láseres).
+Comandos de código G ejecutados al final de cada trabajo, después de todas las operaciones de corte. Usos comunes incluyen apagar el láser (M5), volver al origen (G0 X0 Y0) y estacionar la cabeza.
 
 ## Ver También
 

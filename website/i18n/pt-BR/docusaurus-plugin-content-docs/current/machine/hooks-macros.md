@@ -34,7 +34,7 @@ Casos de uso comuns de macros:
 ### Criando uma Macro
 
 1. **Abrir Configurações da Máquina:**
-   - Navegue até **Configurações Máquina Macros**
+   - Navegue até **Configurações → Máquina → Macros**
 
 2. **Adicionar uma nova macro:**
    - Clique no botão **"+"**
@@ -105,9 +105,7 @@ M5
 
 ---
 
----
-
-### Exemplos de Macro
+## Hooks
 
 Hooks são **injeções automáticas de G-code** acionadas por eventos específicos durante a execução do trabalho.
 
@@ -117,17 +115,19 @@ O Rayforge suporta estes gatilhos de hook:
 
 | Gatilho             | Quando Executa                     | Usos Comuns                                 |
 | ------------------- | ---------------------------------- | ------------------------------------------- |
-| **Início do Trabalho**       | Início do trabalho        | Homing, deslocamento de trabalho, assistência de ar ligada, pré-aquecimento |
-| **Fim do Trabalho**         | Fim do trabalho              | Retornar à origem, assistência de ar desligada, bip, resfriamento |
 | **Início da Camada**     | Antes de processar cada camada     | Troca de ferramenta, ajuste de potência, comentários         |
 | **Fim da Camada**       | Após processar cada camada      | Notificação de progresso, pausa                |
 | **Início da Peça** | Antes de processar cada peça | Numeração de peças, marcas de alinhamento             |
 | **Fim da Peça**   | Após processar cada peça  | Resfriamento, pausa de inspeção                  |
 
+:::note G-code a Nível de Trabalho
+O G-code de início e fim de trabalho é configurado através das configurações de preâmbulo e postscript do dialeto, não através de hooks. Veja [Configurações de G-code](gcode) para detalhes.
+:::
+
 ### Criando um Hook
 
 1. **Abrir Configurações da Máquina:**
-   - Navegue até **Configurações Máquina Hooks**
+   - Navegue até **Configurações → Máquina → Hooks**
 
 2. **Selecionar um gatilho:**
    - Escolha o evento quando este hook deve executar
@@ -140,40 +140,6 @@ O Rayforge suporta estes gatilhos de hook:
    - Ative/desative hooks sem excluí-los
 
 ### Exemplos de Hooks
-
-#### Início do Trabalho: Inicializar Máquina
-
-**Gatilho:** Início do Trabalho
-**Código:**
-
-```gcode
-G21         ; Milímetros
-G90         ; Posicionamento absoluto
-$H          ; Levar a máquina à origem
-G0 X0 Y0    ; Mover para origem
-M3 S0       ; Laser ligado mas potência 0 (alguns controladores precisam disso)
-M8          ; Assistência de ar LIGADA
-```
-
-**Propósito:** Garante que a máquina está em um estado conhecido antes de cada trabalho.
-
----
-
-#### Fim do Trabalho: Retornar à Origem e Bipar
-
-**Gatilho:** Fim do Trabalho
-**Código:**
-
-```gcode
-M5          ; Laser DESLIGADO
-M9          ; Assistência de ar DESLIGADA
-G0 X0 Y0    ; Retornar à origem
-M300 S800 P200  ; Bipe (se suportado)
-```
-
-**Propósito:** Finaliza o trabalho com segurança e sinaliza conclusão.
-
----
 
 #### Início da Camada: Adicionar Comentário
 
@@ -208,7 +174,6 @@ M300 S800 P200  ; Bipe (se suportado)
 Para um trabalho com 2 camadas, cada uma com 2 peças:
 
 ```
-[Hook Início do Trabalho]
   [Hook Início da Camada] (Camada 1)
     [Hook Início da Peça] (Peça 1)
        ... G-code da peça 1 ...
@@ -225,7 +190,6 @@ Para um trabalho com 2 camadas, cada uma com 2 peças:
        ... G-code da peça 4 ...
     [Hook Fim da Peça] (Peça 4)
   [Hook Fim da Camada] (Camada 2)
-[Hook Fim do Trabalho]
 ```
 
 ---
@@ -360,9 +324,6 @@ Sempre teste macros e hooks no **modo de simulação** ou com o laser **desabili
 
 - [ ] Macros incluem limites de avanço (parâmetro `F`)
 - [ ] Macros verificam limites de posição
-- [ ] Hooks de início de trabalho incluem `M5` ou comando de laser desligado
-- [ ] Hooks de fim de trabalho desligam o laser (`M5`) e assistência de ar (`M9`)
-- [ ] Nenhum comando destrutivo sem confirmação
 - [ ] Testado em simulação ou com laser desabilitado
 
 ---

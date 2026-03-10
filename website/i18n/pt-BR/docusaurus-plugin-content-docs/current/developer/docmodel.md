@@ -29,7 +29,7 @@ Princípios principais do modelo incluem:
   matrizes mundiais de todos os seus ancestrais.
 - **Desacoplamento de Dados:** Os dados visuais ou brutos para um `WorkPiece` não são
   armazenados diretamente nele. Em vez disso, o `WorkPiece` mantém um UID que
-  referencia um objeto `ImportSource` em um registro central no `Doc`.
+  referencia um objeto `SourceAsset` no registro unificado `assets` no `Doc`.
   Isso desacopla a estrutura do documento do gerenciamento de dados,
   tornando o modelo mais leve e flexível.
 
@@ -104,7 +104,7 @@ graph TD
 ```
 
 - Um `Doc` é o objeto de nível superior. Ele **contém** um ou mais `Layer`s e
-  `StockItem`s. Ele também **gerencia** um registro de todos os `ImportSource`s no
+  `StockItem`s. Ele também **gerencia** o registro unificado `assets` de todos os `SourceAsset`s no
   projeto.
 - Cada `Layer` **contém** o conteúdo do usuário: `WorkPiece`s e `Group`s.
   Crucialmente, uma `Layer` também **possui um** `Workflow`.
@@ -113,8 +113,8 @@ graph TD
 - Um `Group` é um contêiner que pode conter `WorkPiece`s e outros `Group`s,
   permitindo transformações aninhadas.
 - Um `WorkPiece` é um elemento de design fundamental. Ele não armazena seus
-  dados brutos diretamente. Em vez disso, ele **referencia** um `ImportSource` via um
-  UID. Ele também **tem** sua própria `Geometry` (dados vetoriais) e pode ter uma
+  dados brutos diretamente. Em vez disso, ele **referencia** um `SourceAsset` via um
+  UID do registro unificado `assets` no `Doc`. Ele também **tem** sua própria `Geometry` (dados vetoriais) e pode ter uma
   lista de `Tab`s.
 
 ---
@@ -129,8 +129,8 @@ graph TD
 
 - **`Doc`**
   - **Função:** A raiz da árvore do documento.
-  - **Propriedades Principais:** `children` (Layers, StockItems), `import_sources`
-    (um dicionário mapeando UIDs para objetos `ImportSource`), `active_layer`.
+  - **Propriedades Principais:** `children` (Layers, StockItems), `assets`
+    (registro unificado mapeando UIDs para objetos `SourceAsset`), `active_layer`.
 
 - **`Layer`**
   - **Função:** A unidade organizacional primária para conteúdo. Uma camada

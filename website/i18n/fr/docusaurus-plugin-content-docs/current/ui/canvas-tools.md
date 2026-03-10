@@ -13,11 +13,20 @@ Sélectionnez, déplacez et transformez des objets sur le canevas.
 - Glissez pour créer une boîte de sélection
 - Cliquez et faites glisser les objets sélectionnés pour les déplacer
 
+**Touches Modificatrices Pendant le Glissement :**
+
+Maintenir les touches modificatrices pendant le glissement change le comportement :
+
+- <kbd>ctrl</kbd> en **déplaçant** : Aligner l'objet sur la grille de 5mm pour un alignement précis
+- <kbd>ctrl</kbd> en **tournant** : Aligner la rotation par incréments de 5 degrés pour des angles cohérents
+- <kbd>shift</kbd> en **mettant à l'échelle** : Contraindre les proportions (échelle uniforme)
+- <kbd>ctrl</kbd> en **mettant à l'échelle** : Mettre à l'échelle depuis le centre au lieu du bord opposé
+
 **Poignées de transformation :**
 
 - **Poignées d'angle** : Mise à l'échelle proportionnelle (maintenez <kbd>shift</kbd> pour mise à l'échelle non proportionnelle)
 - **Poignées de bord** : Mise à l'échelle dans une direction
-- **Poignée de rotation** : Rotation autour du point central
+- **Poignée de rotation** : Cliquez une fois sur un objet sélectionné pour basculer en mode rotation, puis faites glisser pour tourner autour du point central
 
 **Raccourcis clavier :**
 

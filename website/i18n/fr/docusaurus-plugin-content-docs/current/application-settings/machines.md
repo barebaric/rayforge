@@ -29,14 +29,6 @@ Les profils de machine stockent la configuration complète pour une découpeuse 
 
 Utilisez le menu déroulant de sélection de machine dans la fenêtre principale pour basculer entre les machines configurées. Tous les paramètres, incluant la machine sélectionnée, sont mémorisés entre les sessions.
 
-### Dupliquer une Machine
-
-Pour créer un profil de machine similaire :
-
-1. Sélectionnez la machine à dupliquer
-2. Cliquez sur le bouton **Dupliquer**
-3. Renommez la nouvelle machine et ajustez les paramètres selon vos besoins
-
 ### Supprimer une Machine
 
 1. Sélectionnez la machine à supprimer

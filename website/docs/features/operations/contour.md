@@ -126,6 +126,26 @@ Contour operations support several post-processing options:
 - **[Path Optimization](../path-optimization)** - Reduce travel distance between cuts
 - **[Multi-Pass](../multi-pass)** - Repeat cuts for thick materials
 
+### Retracing with Custom Threshold
+
+When working with bitmap images that have been converted to vectors, you can control which parts get traced:
+
+- **Override Threshold**: Enable custom brightness threshold for tracing
+- **Threshold (0-255)**: Brightness cutoff value when override is enabled
+  - Lower values trace darker areas only
+  - Higher values include lighter areas
+
+This is useful when the default tracing doesn't capture the detail level you need.
+
+### Remove Inner Paths
+
+For designs with holes or internal cutouts, you can choose to trace only the outermost boundary:
+
+- **Remove Inner Paths**: When enabled, only the outermost contour is traced
+- Internal holes and cutouts are ignored
+
+This is useful when you want to cut out a shape but preserve the interior, such as creating a frame or outline without cutting internal details.
+
 ### Kerf Compensation
 
 Kerf is the width of material removed by the laser beam:

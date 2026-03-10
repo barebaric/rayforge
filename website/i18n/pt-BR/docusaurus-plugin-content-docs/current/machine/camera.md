@@ -46,7 +46,7 @@ A integração com câmera fornece:
 1. **Conecte sua câmera** ao computador via USB
 
 2. **Abra Configurações da Câmera:**
-   - Navegue até **Configurações Preferências Câmera**
+   - Navegue até **Configurações → Preferências → Câmera**
    - Ou use o botão da câmera na barra de ferramentas
 
 3. **Adicione uma nova câmera:**
@@ -86,7 +86,7 @@ O alinhamento cria uma matriz de transformação que mapeia pixels da câmera pa
 
 1. **Abra o Diálogo de Alinhamento:**
    - Clique no botão de alinhamento de câmera na barra de ferramentas
-   - Ou vá para **Câmera Alinhar Câmera**
+   - Ou vá para **Câmera → Alinhar Câmera**
 
 2. **Coloque marcadores de alinhamento:**
    - Você precisa de pelo menos 3 pontos de referência (4 recomendados para melhor precisão)
@@ -197,7 +197,8 @@ Uma vez alinhada, a sobreposição de câmera ajuda a posicionar trabalhos com p
 | **Brilho**    | Brilho geral da imagem     | -100 a +100                      |
 | **Contraste**      | Definição de bordas e contraste | 0 a 100                          |
 | **Transparência**  | Opacidade da sobreposição na tela    | 0% (opaco) a 100% (transparente) |
-| **Balanço de Branco** | Correção de temperatura de cor | Auto ou 2000-10000K               |
+| **Balanço de Branco** | Correção de temperatura de cor | Auto ou 2500-10000K               |
+| **Redução de Ruído** | Redução de ruído temporal | 0.0 a 0.95                      |
 
 ### Dados de Alinhamento
 
@@ -224,7 +225,7 @@ Para trabalho preciso, você pode calibrar a câmera para corrigir distorção d
 A correção de distorção de lente só é necessária para:
 
 - Lentes grande-angular com distorção de barril perceptível
-- Trabalho de precisão exigindo &lt;1mm de precisão
+- Trabalho de precisão exigindo <1mm de precisão
 - Grandes áreas de trabalho onde a distorção se acumula
 
 A maioria das webcams padrão funciona bem sem calibração para trabalho típico de laser.
@@ -332,6 +333,7 @@ sudo lsof /dev/video0
 4. **Verifique o foco** - Auto-foco pode não funcionar bem; use manual se possível
 5. **Reduza a transparência** temporariamente para ver a imagem da câmera mais claramente
 6. **Tente diferentes configurações de balanço de branco**
+7. **Ajuste a redução de ruído** se a imagem aparecer granulada
 
 ### Atraso ou Travamento da Câmera
 
@@ -340,7 +342,7 @@ sudo lsof /dev/video0
 **Soluções:**
 
 - Reduza a resolução da câmera nas configurações do dispositivo (se acessível)
-- Feche outras aplicações usando CPU/GPU
+- Feche outras aplicações que usam CPU/GPU
 - Atualize drivers gráficos
 - No Linux, certifique-se de usar o backend V4L2 (automático no Rayforge)
 - Desabilite a câmera quando não precisar para economizar recursos

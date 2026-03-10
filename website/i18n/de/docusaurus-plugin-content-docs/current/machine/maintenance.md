@@ -4,39 +4,49 @@ Die Wartungsseite in den Maschineneinstellungen hilft Ihnen, die Maschinennutzun
 
 ![Wartungseinstellungen](/screenshots/machine-maintenance.png)
 
-## Stundenzähler
+## Nutzungsverfolgung
 
-Rayforge verfolgt, wie lange deine Maschine in Gebrauch ist. Diese Zähler helfen Ihnen, vorbeugende Wartung zu planen.
+Rayforge verfolgt, wie lange deine Maschine in Gebrauch ist. Diese Informationen helfen Ihnen, vorbeugende Wartung in geeigneten Intervallen zu planen.
 
-### Laserstunden
+### Gesamtstunden
 
-Verfolgt die Gesamtzeit, in der der Laser gefeuert hat. Verwende dies für:
+Der Gesamtstundenzähler verfolgt die gesamte Zeit, die mit dem Ausführen von Jobs auf der Maschine verbracht wurde. Dieser kumulative Zähler kann nicht zurückgesetzt werden und bietet eine vollständige Historie der Maschinennutzung.
 
-- Planung des Laseröhren-Austauschs (CO2-Röhren halten typischerweise 1000-3000 Stunden)
-- Überwachung der Laserdioden-Degradation
-- Verfolgung von Garantiezeiträumen
+Verwende dies, um das Gesamtalter der Maschine zu verfolgen und größere Wartungsintervalle zu planen.
 
-### Jobstunden
+## Benutzerdefinierte Wartungszähler
 
-Verfolgt die Gesamtzeit, die für das Ausführen von Jobs aufgewendet wurde, einschließlich Verfahrwege. Verwende dies für:
+Du kannst benutzerdefinierte Zähler erstellen, um spezifische Wartungsintervalle zu verfolgen. Jeder Zähler hat einen Namen, verfolgt Stunden und kann mit einem Benachrichtigungsschwellenwert konfiguriert werden.
 
-- Planung des Riemenzugs
-- Planung der Lager-Schmierung
-- Verfolgung der gesamten Maschinennutzung
+### Einen Zähler erstellen
 
-### Bewegungsstunden
+1. Klicke auf die Hinzufügen-Schaltfläche, um einen neuen Zähler zu erstellen
+2. Gib einen beschreibenden Namen ein (z.B. "Laserröhre", "Riemenzug", "Spiegelreinigung")
+3. Setze bei Bedarf einen Benachrichtigungsschwellenwert in Stunden
 
-Verfolgt die Zeit, die mit Bewegungen verbracht wurde (nicht Schneiden). Verwende dies für:
+### Zähler-Funktionen
 
-- Planung der Schrittmotor-Wartung
-- Planung der Schienenreinigung und Schmierung
+- **Benutzerdefinierte Namen**: Zähler für jede Wartungsaufgabe beschriften
+- **Stundenverfolgung**: Akkumuliert automatisch Zeit während der Jobausführung
+- **Benachrichtigungsschwellenwerte**: Erinnerung erhalten, wenn Wartung fällig ist
+- **Zurücksetzungsmöglichkeit**: Zähler nach durchgeführter Wartung zurücksetzen
+
+### Beispielzähler
+
+**Laserröhre**: Verfolge CO2-Röhrenstunden, um den Austausch zu planen (typischerweise 1000-3000 Stunden). Setze eine Benachrichtigung bei 2500 Stunden, um vorauszuplanen.
+
+**Riemenzug**: Verfolge Stunden seit dem letzten Riemenzug. Nach Durchführung der Wartung zurücksetzen.
+
+**Spiegelreinigung**: Verfolge Nutzung seit der letzten Spiegelreinigung. Nach Reinigung zurücksetzen.
+
+**Lager-Schmierung**: Verfolge Stunden für Lager-Wartungsintervalle.
 
 ## Zähler zurücksetzen
 
 Nach Durchführung der Wartung kannst du den entsprechenden Zähler zurücksetzen:
 
 1. Klicke auf die Zurücksetzen-Taste neben dem Zähler
-2. Bestätigen Sie das Zurücksetzen im Dialog
+2. Bestätige das Zurücksetzen im Dialog
 3. Der Zähler kehrt zu Null zurück
 
 :::tip Wartungsplan
@@ -45,6 +55,8 @@ Häufige Wartungsintervalle:
 - **Wöchentlich**: Schienen reinigen, Riemenzug überprüfen
 - **Monatlich**: Lager schmieren, elektrische Verbindungen überprüfen
 - **Jährlich**: Vollständige Inspektion, verschlissene Teile ersetzen
+
+Passe Intervalle basierend auf deinen Nutzungsmustern und Herstellerempfehlungen an.
 :::
 
 ## Siehe auch

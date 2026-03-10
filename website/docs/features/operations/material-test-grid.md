@@ -70,7 +70,14 @@ Adjust the test grid parameters in the settings dialog:
 
 - **Include Labels**: Enable/disable axis labels showing speed and power values
 - Labels appear on left and top edges
-- Labels are engraved at 10% power, 1000 mm/min
+- **Label Power (%)**: Power setting for engraving labels (configurable)
+- **Label Speed (mm/min)**: Speed for engraving labels (default: 1000 mm/min)
+
+#### Line Interval (Engrave Test Only)
+
+- **Line Interval (mm)**: Spacing between scan lines when using the engrave test type
+- Smaller values create denser fills but take longer to execute
+- Typical values: 0.1-0.3mm
 
 ### Step 4: Generate the Grid
 

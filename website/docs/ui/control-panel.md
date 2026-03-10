@@ -41,9 +41,6 @@ Home your machine's axes to establish a reference position:
 
 | Button   | Function       | Description                       |
 | -------- | -------------- | --------------------------------- |
-| Home X   | Homes X axis   | Moves X axis to its home position |
-| Home Y   | Homes Y axis   | Moves Y axis to its home position |
-| Home Z   | Homes Z axis   | Moves Z axis to its home position |
 | Home All | Homes all axes | Homes all axes simultaneously     |
 
 :::tip Homing Sequence
@@ -93,7 +90,7 @@ The jog buttons provide visual feedback:
 Configure the behavior of jog operations:
 
 **Jog Speed:**
-- **Range**: 1-10,000 mm/min
+- **Range**: 1-60,000 mm/min
 - **Default**: 1,000 mm/min
 - **Purpose**: Controls how fast the laser head moves
 
@@ -160,23 +157,17 @@ Select which coordinate system is currently active:
 | G58 (Work 5)  | User  | Fifth work coordinate system                    |
 | G59 (Work 6)  | User  | Sixth work coordinate system                    |
 
-### Current Offsets
-
-Displays the offset values for the active WCS:
-
-- Shown as (X, Y, Z) in millimeters
-- Represents the distance from machine origin to WCS origin
-- Updates automatically when WCS offsets change
-
 ### Setting WCS Zero
 
 Define where the origin of the active WCS should be:
 
-| Button | Function | Description                                          |
-| ------ | -------- | ---------------------------------------------------- |
-| Zero X | Set X=0  | Makes current X position the X origin for active WCS |
-| Zero Y | Set Y=0  | Makes current Y position the Y origin for active WCS |
-| Zero Z | Set Z=0  | Makes current Z position the Z origin for active WCS |
+| Button         | Function  | Description                                                 |
+| -------------- | --------- | ----------------------------------------------------------- |
+| Click to Zero  | Set X,Y=0 | Click the crosshairs icon, then click on the canvas to set work zero |
+| Edit Offsets   | Edit      | Manually edit WCS offset values                             |
+| Zero X         | Set X=0   | Makes current X position the X origin for active WCS        |
+| Zero Y         | Set Y=0   | Makes current Y position the Y origin for active WCS        |
+| Zero Z         | Set Z=0   | Makes current Z position the Z origin for active WCS        |
 
 :::note G53 Cannot Be Changed
 Zero buttons are disabled when G53 (Machine Coordinates) is selected,

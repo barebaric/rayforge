@@ -4,7 +4,7 @@ Now that Rayforge is installed and your machine is configured, let's run your fi
 
 ## Step 1: Import a Design
 
-Rayforge supports various file formats including SVG, DXF, PDF, and raster images (JPEG, PNG, BMP).
+Rayforge supports various file formats including SVG, DXF, PDF, Ruida (.rd), and raster images (JPEG, PNG, BMP).
 
 1. **Click** **File → Open** or press <kbd>ctrl+o</kbd>
 2. Navigate to your design file and select it
@@ -56,7 +56,7 @@ When working with new materials, always start with lower power settings and run 
 
 Before sending to your machine, preview the toolpath in 3D:
 
-1. Click **View → 3D Preview** or press <kbd>ctrl+3</kbd>
+1. Click **View → 3D Preview** or press <kbd>F12</kbd>
 2. The 3D preview window shows the complete toolpath
 3. Use your mouse to rotate and zoom the preview
 4. Verify that the path looks correct
@@ -92,24 +92,16 @@ The 3D preview helps you spot issues like:
 
 ### Starting the Job
 
-1. **Position the laser**: Use the jog controls to move the laser to the starting position
-   - Click **View → Control Panel** or press <kbd>ctrl+l</kbd>
-   - Use the arrow buttons or keyboard arrows to move the laser
-   - Press <kbd>home</kbd> to home the machine
+1. **Position the laser**: Use the jog controls to move the laser to the starting position. Click **View → Control Panel** or press <kbd>ctrl+l</kbd>, then use the arrow buttons or keyboard arrows to move the laser.
 
-2. **Frame the design**: Run the framing function to verify placement
-   - Click **Machine → Frame** or press <kbd>ctrl+f</kbd>
-   - The laser will trace the bounding box of your design at low/no power
-   - Verify it fits within your material
+2. **Frame the design**: Run the framing function to verify placement. Click **Machine → Frame** and the laser will trace the bounding box of your design at low power. Verify it fits within your material.
 
-3. **Start the job**: Click **Machine → Start Job** or press <kbd>ctrl+r</kbd>
+3. **Start the job**: Click **Machine → Start Job**
 4. Monitor the progress in the status bar
 
 ### During the Job
 
-- The right section of the status bar shows the current progress and total execution time estimate
-- You can pause the job with <kbd>ctrl+p</kbd> or click the Pause button
-- Press <kbd>esc</kbd> or click Stop to cancel the job (emergency stop)
+The right section of the status bar shows the current progress and total execution time estimate. Use the Pause and Stop buttons in the control panel to control the job. Note that <kbd>esc</kbd> exits simulation mode but does not stop an active job.
 
 ## Step 6: Finishing Up
 

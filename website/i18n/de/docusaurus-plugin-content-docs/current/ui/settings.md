@@ -50,9 +50,9 @@ Für detaillierte Maschinenkonfiguration siehe den Abschnitt [Maschineneinrichtu
 
 Die Seite Materialien verwaltet deine Materialbibliothek.
 
-- **Material hinzufügen**: Eine neue Materialvoreinstellung erstellen
-- **Bibliothek importieren**: Materialien aus einer Datei importieren
-- **Bibliothek exportieren**: Deine Materialien für Backup oder Weitergabe exportieren
+- **Bibliothek hinzufügen**: Eine neue Materialbibliothek erstellen
+- **Bearbeiten**: Eine ausgewählte Bibliothek umbenennen
+- **Löschen**: Eine ausgewählte Bibliothek entfernen
 
 Siehe [Materialien](../application-settings/materials) für weitere Details.
 
@@ -61,8 +61,8 @@ Siehe [Materialien](../application-settings/materials) für weitere Details.
 Die Seite Rezepte verwaltet deine Operationsrezepte.
 
 - **Rezept hinzufügen**: Ein neues Rezept erstellen
-- **Rezepte importieren**: Rezepte aus einer Datei importieren
-- **Rezepte exportieren**: Deine Rezepte für Backup oder Weitergabe exportieren
+- **Bearbeiten**: Ein ausgewähltes Rezept bearbeiten
+- **Löschen**: Ein ausgewähltes Rezept entfernen
 
 Siehe [Rezepte](../application-settings/recipes) für weitere Details.
 
@@ -72,6 +72,19 @@ Die Seite Addons zeigt installierte Erweiterungs-Addons.
 
 - **Addon-Liste**: Zeigt alle installierten Addons
 - **Addon-Details**: Informationen zu jedem Addon anzeigen
+
+## Datenschutz
+
+Die Seite Datenschutz steuert die anonyme Nutzungsberichterstattung.
+
+- **Anonyme Nutzung melden**: Wenn aktiviert, werden anonyme Nutzungsdaten gesendet, um Rayforge zu verbessern. Es werden keine persönlichen Informationen gesammelt.
+
+## Lizenzen
+
+Die Seite Lizenzen verwaltet deine Lizenzschlüssel für Premium-Funktionen und Addons.
+
+- **Patreon-Konto verknüpfen**: Verbinde dein Patreon-Konto, um Unterstützer-Vorteile zu erhalten
+- **Addon-Lizenzschlüssel**: Gib Lizenzschlüssel für Premium-Addons ein
 
 ---
 

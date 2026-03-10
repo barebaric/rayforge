@@ -34,14 +34,6 @@ Use the machine selector dropdown in the main window to switch between
 configured machines. All settings, including the selected machine, are
 remembered between sessions.
 
-### Duplicating a Machine
-
-To create a similar machine profile:
-
-1. Select the machine to duplicate
-2. Click the **Duplicate** button
-3. Rename the new machine and adjust settings as needed
-
 ### Deleting a Machine
 
 1. Select the machine to delete

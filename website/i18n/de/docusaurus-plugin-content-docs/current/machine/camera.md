@@ -50,8 +50,7 @@ Die Kamera-Integration bietet:
    - Oder verwende die Kamera-Symbolleistenschaltfläche
 
 3. **Eine neue Kamera hinzufügen:**
-   - Klicke auf die "+"
--Taste, um eine Kamera hinzuzufügen
+   - Klicke auf die "+"-Taste, um eine Kamera hinzuzufügen
    - Gib einen beschreibenden Namen ein (z.B. "Obere Kamera", "Arbeitsbereich-Kamera")
    - Wähle das Gerät aus dem Dropdown-Menü
      - Unter Linux: `/dev/video0`, `/dev/video1`, usw.
@@ -198,7 +197,8 @@ Sobald ausgerichtet, hilft das Kamera-Overlay beim präzisen Positionieren von J
 | **Helligkeit**      | Gesamtbildhelligkeit       | -100 bis +100                       |
 | **Kontrast**        | Kantendefinition und Kontrast | 0 bis 100                         |
 | **Transparenz**     | Overlay-Deckkraft auf Arbeitsfläche | 0% (undurchsichtig) bis 100% (transparent) |
-| **Weißabgleich**    | Farbtemperatur-Korrektur   | Auto oder 2000-10000K               |
+| **Weißabgleich**    | Farbtemperatur-Korrektur   | Auto oder 2500-10000K               |
+| **Rauschunterdrückung** | Zeitliche Rauschreduzierung | 0.0 bis 0.95                     |
 
 ### Ausrichtungsdaten
 
@@ -333,6 +333,7 @@ sudo lsof /dev/video0
 4. **Fokus überprüfen** - Autofokus funktioniert möglicherweise nicht gut; manuell verwenden, falls möglich
 5. **Transparenz vorübergehend reduzieren**, um Kamerabild deutlicher zu sehen
 6. **Verschiedene Weißabgleich-Einstellungen** ausprobieren
+7. **Rauschunterdrückung anpassen**, wenn das Bild körnig erscheint
 
 ### Kamera-Verzögerung oder Ruckeln
 

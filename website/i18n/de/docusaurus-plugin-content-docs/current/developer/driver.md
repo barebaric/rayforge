@@ -83,7 +83,7 @@ ops.line_to(50, 50)       # Eine Linie ohne Luftunterstützung schneiden
 
 ## Treiber-Implementierung
 
-Alle Treiber MÜSSEN von `rayforge.machine.drivers.Driver` erben.
+Alle Treiber MÜSSEN von `rayforge.machine.driver.driver.Driver` erben.
 
 ```python
 from rayforge.machine.driver.driver import Driver
@@ -122,16 +122,19 @@ Deine Treiberklasse **MUSS** die folgenden Methoden implementieren. Beachte, das
 
 #### Gerätesteuerung
 
+#### Gerätesteuerung
+
 - `async def run(machine_code: Any, op_map: MachineCodeOpMap, doc: Doc,
   on_command_done: Optional[Callable[[int], Union[None, Awaitable[None]]]]
   = None)`: Die Kernmethode zur Ausführung eines Auftrags. Empfängt vorkodierten Maschinen-
   code (z.B. G-Code-String) und ein Mapping zwischen Operationsindizes und
   Maschinencode. Der `on_command_done`-Callback wird mit dem op_index
   aufgerufen, wenn jeder Befehl abgeschlossen ist.
+- `async def run_raw(gcode: str)`: Führt einen rohen G-Code-String direkt aus.
 - `async def home(axes: Optional[Axis] = None)`: Referenziert die Maschine. Kann spezifische
   Achsen oder alle Achsen referenzieren.
-- `async def move_to(pos_x: float, pos_y: float)`: Bewegt den Laserkopf
-  manuell zu einer spezifischen XY-Koordinate.
+- `async def move_to(pos_x: float, pos_y: float)`: Bewegt manuell den Laserkopf
+  zu einer spezifischen XY-Koordinate.
 - `async def set_hold(hold: bool = True)`: Pausiert oder setzt den aktuellen Job fort.
 - `async def cancel()`: Stoppt den aktuellen Job.
 - `async def jog(axis: Axis, distance: float, speed: int)`: Joggt die Maschine
@@ -139,6 +142,30 @@ Deine Treiberklasse **MUSS** die folgenden Methoden implementieren. Beachte, das
 - `async def select_tool(tool_number: int)`: Wählt ein neues Werkzeug/Laserkopf nach
   seiner Nummer aus.
 - `async def clear_alarm()`: Löscht jeden aktiven Alarmzustand.
+- `async def set_wcs_offset(wcs_slot, x, y, z)`: Setzt den Arbeitskoordinatensystem-Offset für einen bestimmten WCS-Slot.
+- `async def read_wcs_offsets()`: Liest alle WCS-Offsets vom Gerät.
+- `async def run_probe_cycle(axis, max_travel, feed_rate)`: Initiiert eine Tastbewegung entlang der angegebenen Achse.
+- `async def set_power(head, percent)`: Setzt die Laserleistung in Prozent für einen bestimmten Kopf.
+- `can_jog(axis: Axis)`: Prüft, ob Jogging für die angegebene Achse unterstützt wird.
+- `can_home(axis: Axis)`: Prüft, ob Referenzieren für die angegebene Achse unterstützt wird.
+- `async def read_parser_state()`: Fragt die aktiven G-Code-Modal-Zustände vom Gerät ab.
+
+#### Zusätzliche Eigenschaften
+
+- `machine_space_wcs`: Das Arbeitskoordinatensystem-Kennzeichen für Maschinenraumkoordinaten.
+- `machine_space_wcs_display_name`: Anzeigename für den Maschinenraum-WCS.
+- `resource_uri`: Ein eindeutiger Bezeichner für die physische Ressource, die von diesem Treiber kontroll wird. Wird zur Konflikterkennung verwendet, wenn mehrere Maschinen nicht dieselbe Hardware teilen können.
+
+#### Signale
+
+Ihr Treiber kann diese Signale aussenden, um die UI über Zustandsänderungen zu informieren:
+
+- `probe_status_changed`: Wird während Tastzyklen mit Status-Updates ausgegeben.
+- `wcs_updated`: Wird ausgegeben, wenn WCS-Daten aktualisiert werden.
+
+#### Ausnahmen
+
+- `ResourceBusyError`: Wird ausgelöst, wenn versucht, eine Ressource zu verwenden, die derzeit von einer anderen Maschineninstanz verwendet wird.
 
 #### Firmware-Einstellungen (wenn `supports_settings` `True` ist)
 

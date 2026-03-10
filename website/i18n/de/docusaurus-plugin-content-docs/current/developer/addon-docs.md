@@ -290,6 +290,7 @@ Der `rayforge_init`-Hook stellt den **`RayforgeContext`** bereit. Über dieses O
 - **`context.plugin_mgr`**: Plugin-Manager-Instanz.
 - **`context.debug_dump_manager`**: Debug-Dump-Manager.
 - **`context.artifact_store`**: Pipeline-Artefakt-Speicher.
+- **`context.license_validator`**: Lizenz-Validator für kostenpflichtige Addons.
 
 ## 7. Lokalisierung
 

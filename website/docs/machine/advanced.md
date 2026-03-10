@@ -22,26 +22,27 @@ When enabled, Rayforge automatically clears any alarm state when connecting.
 - **Enable if**: Your machine frequently starts in alarm state
 - **Disable if**: You want to manually investigate alarms before clearing
 
-## Flip Axes
+### Allow Single Axis Homing
 
-These settings invert the direction of axis movements.
+When enabled, you can home individual axes independently (X, Y, or Z) rather than requiring all axes to home together. This is useful for machines where one axis may already be positioned correctly.
 
-### Flip X Axis
+## Arc Settings
 
-Inverts the X-axis direction. When enabled, positive X moves left instead of right.
+Settings for controlling how curved paths are converted to G-code movements.
 
-### Flip Y Axis
+### Support Arcs
 
-Inverts the Y-axis direction. When enabled, positive Y moves down instead of up.
+When enabled, Rayforge generates arc commands (G2/G3) for curved paths instead of breaking them into many small linear moves. This produces more compact G-code and smoother motion on most controllers.
 
-:::info
-Flip axes are useful when:
-- Your machine's coordinate system doesn't match expected behavior
-- You've wired your motors in reverse
-- You want to match the behavior of another machine
-:::
+When disabled, all curves are converted to linear segments (G1 commands), which provides maximum compatibility with controllers that don't support arcs.
+
+### Arc Tolerance
+
+This setting controls the maximum allowed deviation when fitting arcs to curved paths, specified in millimeters. A smaller value produces more accurate arcs but may require more arc commands. A larger value allows more deviation but generates fewer commands.
+
+Typical values range from 0.01mm for precision work to 0.1mm for faster processing.
 
 ## See Also
 
-- [Hardware Settings](hardware) - Axis origin configuration
-- [Device Settings](device) - GRBL axis direction settings
+- [Hardware Settings](hardware) - Axis origin and flip settings
+- [Device Settings](device) - GRBL-specific settings

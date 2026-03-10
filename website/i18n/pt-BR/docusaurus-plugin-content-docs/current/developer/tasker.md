@@ -117,9 +117,10 @@ Use o callback `when_done` para obter o resultado ou ver se ocorreu um erro.
 ```python
 def on_task_finished(task):
     if task.get_status() == 'completed':
-        print(f"Tarefa concluída com resultado: {task.result()}")
-    elif task.get_status() == 'failed':
-        print(f"Tarefa falhou: {task._task_exception}")
+        try:
+            print(f"Tarefa concluída com resultado: {task.result()}")
+        except Exception as e:
+            print(f"Tarefa falhou: {e}")
 
 task_mgr.run_process(minha_tarefa_cpu, 10, when_done=on_task_finished)
 ```
@@ -129,7 +130,8 @@ task_mgr.run_process(minha_tarefa_cpu, 10, when_done=on_task_finished)
 ### `task_mgr` (O Proxy do Gerenciador)
 
 - `add_coroutine(coro, *args, key=None, when_done=None)`: Adiciona uma tarefa baseada em asyncio
-- `run_process(func, *args, key=None, when_done=None, when_event=None)`: Executa uma tarefa limitada por CPU em um processo separado
+- `run_process(func, *args, key=None, when_done=None, when_event=None)`: Executa uma tarefa limitada por CPU em um processo separado. O callback `when_event` recebe eventos personalizados enviados pela tarefa via `context.send_event()`
+- `run_thread(func, *args, key=None, when_done=None)`: Executa uma tarefa em uma thread (compartilha memória com processo principal)
 - `run_thread(func, *args, key=None, when_done=None)`: Executa uma tarefa em uma thread (compartilha memória com processo principal)
 - `cancel_task(key)`: Cancela uma tarefa em execução pela sua chave
 - `tasks_updated` (sinal para atualizações de UI): Emitido quando o status da tarefa muda

@@ -34,14 +34,6 @@ Use o menu suspenso seletor de máquina na janela principal para alternar entre
 máquinas configuradas. Todas as configurações, incluindo a máquina selecionada, são
 lembradas entre sessões.
 
-### Duplicando uma Máquina
-
-Para criar um perfil de máquina similar:
-
-1. Selecione a máquina a duplicar
-2. Clique no botão **Duplicar**
-3. Renomeie a nova máquina e ajuste as configurações conforme necessário
-
 ### Excluindo uma Máquina
 
 1. Selecione a máquina a excluir

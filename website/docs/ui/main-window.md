@@ -14,20 +14,23 @@ Access all Rayforge functions through organized menus:
 - **File**: Open, save, import, export, and recent files
 - **Edit**: Undo, redo, copy, paste, preferences
 - **View**: Zoom, grid, rulers, panels, and view modes
-- **Operations**: Add, edit, and manage operations
+- **Object**: Add, edit, and manage operations
 - **Machine**: Connect, jog, home, start/stop jobs
-- **Help**: Documentation, about, and support
+- **Help**: About, Donate, Save Debug Log
 
 ### 2. Toolbar
 
-Quick access to frequently used tools:
+Quick access to frequently used controls:
 
-- **Selection tool**: Select and move objects
-- **Pan tool**: Navigate the canvas
-- **Zoom tool**: Zoom in/out on specific areas
-- **Measurement tool**: Measure distances and angles
-- **Alignment tools**: Align and distribute objects
 - **WCS dropdown**: Select the active Work Coordinate System (G53-G59)
+- **G-code preview toggle**: Show/hide the G-code preview overlay
+- **Simulation toggle**: Enable/disable job simulation mode
+- **Travel moves**: Toggle visibility of rapid travel moves
+- **Workpiece**: Toggle workpiece visibility
+- **Camera**: Toggle camera feed visibility
+- **Tabs**: Toggle tab visibility
+- **Focus laser**: Toggle laser focusing mode
+- **Job controls**: Home, Frame, Send, Hold, and Cancel buttons
 
 The WCS dropdown allows you to quickly switch between coordinate systems.
 See [Work Coordinate Systems](../general-info/coordinate-systems) for
@@ -84,8 +87,7 @@ See [Control Panel](control-panel) for detailed information.
 
 Show/hide panels as needed:
 
-- **Layers Panel**: View → Layers Panel (<kbd>ctrl+l</kbd>)
-- **Properties Panel**: View → Properties Panel (<kbd>ctrl+i</kbd>)
+- **Control Panel**: View → Control Panel (<kbd>ctrl+l</kbd>)
 
 ### Full Screen Mode
 
@@ -111,4 +113,4 @@ Customize the interface in **Edit → Preferences**:
 - [Work Coordinate Systems](../general-info/coordinate-systems) - WCS
 - [Canvas Tools](canvas-tools) - Tools for manipulating designs
 - [Control Panel](control-panel) - Manual machine control, status, and logs
-- [3D Preview](3d-preview) - Visualize toolpaths in 3D
+- [3D View](3d-preview) - Visualize toolpaths in 3D

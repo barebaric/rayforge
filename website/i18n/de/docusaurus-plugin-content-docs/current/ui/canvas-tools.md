@@ -13,11 +13,20 @@ Objekte auf der Canvas auswählen, bewegen und transformieren.
 - Ziehen um Auswahllrechteck zu erstellen
 - Ausgewählte Objekte anklicken und ziehen um zu bewegen
 
+**Modifikatortasten beim Ziehen:**
+
+Das Halten von Modifikatortasten während des Ziehens ändert das Verhalten:
+
+- <kbd>Strg</kbd> beim **Bewegen**: Rastet das Objekt am 5mm-Raster ein, was die präzise Ausrichtung erleichtert
+- <kbd>Strg</kbd> beim **Drehen**: Rastet die Drehung in 5-Grad-Schritten ein für konsistente Winkel
+- <kbd>Umschalt</kbd> beim **Skalieren**: Beschränkt die Proportionen (gleichmäßige Skalierung)
+- <kbd>Strg</kbd> beim **Skalieren**: Skaliert vom Zentrum statt vom gegenüberliegenden Rand
+
 **Transformations-Griffpunkte:**
 
 - **Eck-Griffpunkte**: Proportional skalieren (<kbd>Umschalt</kbd> gedrückt halten für unproportionale Skalierung)
 - **Kanten-Griffpunkte**: In eine Richtung skalieren
-- **Drehungs-Griffpunkt**: Um Mittelpunkt drehen
+- **Drehungs-Griffpunkt**: Einmal auf ein ausgewähltes Objekt klicken um in den Drehmodus zu wechseln, dann ziehen um um den Mittelpunkt zu drehen
 
 **Tastaturkürzel:**
 

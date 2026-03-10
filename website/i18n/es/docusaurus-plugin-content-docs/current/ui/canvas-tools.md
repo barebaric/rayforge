@@ -13,11 +13,20 @@ Selecciona, mueve y transforma objetos en el lienzo.
 - Arrastrar para crear caja de selección
 - Clic y arrastrar objetos seleccionados para mover
 
+**Teclas Modificadoras Durante el Arrastre:**
+
+Mantener teclas modificadoras mientras arrastras cambia el comportamiento:
+
+- <kbd>ctrl</kbd> mientras **mueves**: Ajusta el objeto a la cuadrícula de 5mm, facilitando la alineación precisa
+- <kbd>ctrl</kbd> mientras **rotas**: Ajusta la rotación en incrementos de 5 grados para ángulos consistentes
+- <kbd>shift</kbd> mientras **escala**: Restringe las proporciones (escala uniforme)
+- <kbd>ctrl</kbd> mientras **escala**: Escala desde el centro en lugar del borde opuesto
+
 **Manijas de Transformación:**
 
 - **Manijas de esquina**: Escalar proporcionalmente (mantén <kbd>shift</kbd> para escalar no proporcionalmente)
 - **Manijas de borde**: Escalar en una dirección
-- **Manija de rotación**: Rotar alrededor del punto central
+- **Manija de rotación**: Clic una vez en un objeto seleccionado para alternar el modo de rotación, luego arrastra para rotar alrededor del punto central
 
 **Atajos de Teclado:**
 

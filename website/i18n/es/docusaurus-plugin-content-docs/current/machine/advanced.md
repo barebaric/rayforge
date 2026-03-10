@@ -22,26 +22,27 @@ Cuando está habilitado, Rayforge limpia automáticamente cualquier estado de al
 - **Habilitar si**: Tu máquina frecuentemente inicia en estado de alarma
 - **Deshabilitar si**: Quieres investigar manualmente las alarmas antes de limpiarlas
 
-## Invertir Ejes
+### Permitir Homing de Eje Individual
 
-Estos ajustes invierten la dirección de los movimientos de los ejes.
+Cuando está habilitado, puedes hacer homing de ejes individuales independientemente (X, Y o Z) en lugar de requerir que todos los ejes hagan homing juntos. Esto es útil para máquinas donde un eje ya puede estar posicionado correctamente.
 
-### Invertir Eje X
+## Ajustes de Arcos
 
-Invierte la dirección del eje X. Cuando está habilitado, X positivo se mueve a la izquierda en lugar de a la derecha.
+Ajustes para controlar cómo las rutas curvas se convierten en movimientos de G-code.
 
-### Invertir Eje Y
+### Soportar Arcos
 
-Invierte la dirección del eje Y. Cuando está habilitado, Y positivo se mueve hacia abajo en lugar de hacia arriba.
+Cuando está habilitado, Rayforge genera comandos de arco (G2/G3) para rutas curvas en lugar de dividirlas en muchos movimientos lineales pequeños. Esto produce G-code más compacto y movimiento más suave en la mayoría de los controladores.
 
-:::info
-Invertir ejes es útil cuando:
-- El sistema de coordenadas de tu máquina no coincide con el comportamiento esperado
-- Has cableado tus motores al revés
-- Quieres coincidir con el comportamiento de otra máquina
-:::
+Cuando está deshabilitado, todas las curvas se convierten en segmentos lineales (comandos G1), lo que proporciona máxima compatibilidad con controladores que no soportan arcos.
+
+### Tolerancia de Arco
+
+Este ajuste controla la desviación máxima permitida al ajustar arcos a rutas curvas, especificada en milímetros. Un valor más pequeño produce arcos más precisos pero puede requerir más comandos de arco. Un valor más grande permite más desviación pero genera menos comandos.
+
+Valores típicos van de 0.01mm para trabajo de precisión a 0.1mm para procesamiento más rápido.
 
 ## Ver También
 
-- [Ajustes de Hardware](hardware) - Configuración de origen de ejes
-- [Ajustes de Dispositivo](device) - Ajustes de dirección de ejes de GRBL
+- [Ajustes de Hardware](hardware) - Configuración de origen de ejes e inversión
+- [Ajustes de Dispositivo](device) - Ajustes específicos de GRBL

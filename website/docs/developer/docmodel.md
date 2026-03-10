@@ -29,7 +29,7 @@ Key principles of the model include:
   world matrices of all its ancestors.
 - **Data Decoupling:** The visual or raw data for a `WorkPiece` is not
   stored directly within it. Instead, the `WorkPiece` holds a UID that
-  references an `ImportSource` object in a central registry on the `Doc`.
+  references a `SourceAsset` object in the unified `assets` registry on the `Doc`.
   This decouples the document structure from the data management,
   making the model more lightweight and flexible.
 
@@ -105,8 +105,8 @@ graph TD
 ```
 
 - A `Doc` is the top-level object. It **contains** one or more `Layer`s and
-  `StockItem`s. It also **manages** a registry of all `ImportSource`s in
-  the project.
+  `StockItem`s. It also **manages** the unified `assets` registry containing
+  all `SourceAsset`s in the project.
 - Each `Layer` **contains** the user's content: `WorkPiece`s and `Group`s.
   Crucially, a `Layer` also **owns one** `Workflow`.
 - A `Workflow` **contains** an ordered list of `Step`s, which define the
@@ -114,7 +114,7 @@ graph TD
 - A `Group` is a container that can hold `WorkPiece`s and other `Group`s,
   allowing for nested transformations.
 - A `WorkPiece` is a fundamental design element. It does not store its
-  raw data directly. Instead, it **references** an `ImportSource` via a
+  raw data directly. Instead, it **references** a `SourceAsset` via a
   UID. It also **has** its own `Geometry` (vector data) and can have a
   list of `Tab`s.
 
@@ -130,8 +130,8 @@ graph TD
 
 - **`Doc`**
   - **Role:** The root of the document tree.
-  - **Key Properties:** `children` (Layers, StockItems), `import_sources`
-    (a dictionary mapping UIDs to `ImportSource` objects), `active_layer`.
+  - **Key Properties:** `children` (Layers, StockItems), `assets`
+    (a unified registry mapping UIDs to `SourceAsset` objects), `active_layer`.
 
 - **`Layer`**
   - **Role:** The primary organizational unit for content. A layer
@@ -148,7 +148,7 @@ graph TD
   - **Role:** Represents a single, tangible design element on the canvas
     (e.g., an imported SVG).
   - **Key Properties:** `vectors` (a `Geometry` object),
-    `import_source_uid`,
+    `source_asset_uid`,
     `tabs`, `tabs_enabled`. Its `vectors` are normalized to a 1x1 box,
     with all scaling and positioning handled by its transformation
     `matrix`.

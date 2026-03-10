@@ -31,14 +31,6 @@ Usa el menú desplegable de selección de máquina en la ventana principal para 
 máquinas configuradas. Todos los ajustes, incluyendo la máquina seleccionada, se
 recuerdan entre sesiones.
 
-### Duplicando una Máquina
-
-Para crear un perfil de máquina similar:
-
-1. Selecciona la máquina a duplicar
-2. Haz clic en el botón **Duplicar**
-3. Renombra la nueva máquina y ajusta los ajustes según sea necesario
-
 ### Eliminando una Máquina
 
 1. Selecciona la máquina a eliminar

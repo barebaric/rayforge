@@ -33,15 +33,15 @@ The **General** page contains basic machine information, driver selection, and c
 
 Select the appropriate driver for your device from the dropdown:
 
-- **GRBL Serial** - For GRBL devices connected via USB/serial port
-- **GRBL Network** - For GRBL devices with WiFi/Ethernet connectivity
+- **GRBL (Serial)** - For GRBL devices connected via USB/serial port
+- **GRBL (Network)** - For GRBL devices with WiFi/Ethernet connectivity
 - **Smoothie** - For Smoothieware-based devices
 
 ### Driver Settings
 
 Depending on your selected driver, configure the connection parameters:
 
-#### GRBL Serial (USB)
+#### GRBL (Serial) - USB
 
 1. **Port**: Choose your device from the dropdown (e.g., `/dev/ttyUSB0` on Linux, `COM3` on Windows)
 2. **Baud Rate**: Select `115200` (standard for most GRBL devices)
@@ -50,7 +50,7 @@ Depending on your selected driver, configure the connection parameters:
 If your device doesn't appear in the list, check that it's connected and that you have the necessary permissions. On Linux, you may need to add your user to the `dialout` group.
 :::
 
-#### GRBL Network / Smoothie (WiFi/Ethernet)
+#### GRBL (Network) / Smoothie - WiFi/Ethernet
 
 1. **Host**: Enter the IP address of your device (e.g., `192.168.1.100`)
 2. **Port**: Enter the port number (typically `23` or `8080`)

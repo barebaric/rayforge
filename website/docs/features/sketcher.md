@@ -59,6 +59,7 @@ precise geometric relationships:
 - **Perpendicular**: Forces two lines, a line and an arc/circle, or two arcs/circles
   to meet at 90 degrees
 - **Point on Line/Shape**: Constrains a point to lie on a line, arc, or circle
+- **Collinear**: Forces two or more lines to lie on the same infinite line
 - **Symmetry**: Creates symmetrical relationships between elements. Supports two modes:
   - **Point Symmetry**: Select 3 points (first is the center)
   - **Line Symmetry**: Select 2 points and 1 line (the line is the axis)
@@ -73,7 +74,8 @@ precise geometric relationships:
   value
 - **Equal Length/Radius**: Forces multiple elements (lines, arcs, or circles) to have
   the same length or radius
-- **Equal Distance**: Forces the distance between two point pairs to be equal
+- **Equal Distance**: Makes two line segments the same length (different from Equal
+  Length/Radius, which can also apply to arcs and circles)
 
 ## Pie Menu Interface
 

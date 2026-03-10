@@ -29,7 +29,7 @@ Les principes clés du modèle incluent :
   matrices monde de tous ses ancêtres.
 - **Découplage des données :** Les données visuelles ou brutes d'un `WorkPiece` ne sont pas
   stockées directement en son sein. Au lieu de cela, le `WorkPiece` contient un UID qui
-  référence un objet `ImportSource` dans un registre central sur le `Doc`.
+  référence un objet `SourceAsset` dans le registre unifié `assets` sur le `Doc`.
   Cela découple la structure du document de la gestion des données,
   rendant le modèle plus léger et flexible.
 
@@ -105,7 +105,7 @@ graph TD
 ```
 
 - Un `Doc` est l'objet de niveau supérieur. Il **contient** un ou plusieurs `Layer` et
-  `StockItem`. Il **gère** également un registre de tous les `ImportSource` dans
+  `StockItem`. Il **gère** également le registre unifié `assets` de tous les `SourceAsset` dans
   le projet.
 - Chaque `Layer` **contient** le contenu de l'utilisateur : `WorkPiece` et `Group`.
   Crucialement, un `Layer` **possède aussi un** `Workflow`.
@@ -114,8 +114,8 @@ graph TD
 - Un `Group` est un conteneur qui peut contenir des `WorkPiece` et d'autres `Group`,
   permettant des transformations imbriquées.
 - Un `WorkPiece` est un élément de conception fondamental. Il ne stocke pas ses
-  données brutes directement. Au lieu de cela, il **référence** un `ImportSource` via un
-  UID. Il **a** également sa propre `Geometry` (données vectorielles) et peut avoir une
+  données brutes directement. Au lieu de cela, il **référence** un `SourceAsset` via un
+  UID depuis le registre unifié `assets` sur le `Doc`. Il **a** également sa propre `Geometry` (données vectorielles) et peut avoir une
   liste de `Tab`.
 
 ---
@@ -129,8 +129,8 @@ graph TD
 
 - **`Doc`**
   - **Rôle :** La racine de l'arbre du document.
-  - **Propriétés clés :** `children` (Layers, StockItems), `import_sources`
-    (un dictionnaire mappant les UIDs aux objets `ImportSource`), `active_layer`.
+  - **Propriétés clés :** `children` (Layers, StockItems), `assets`
+    (registre unifié mappant les UIDs aux objets `SourceAsset`), `active_layer`.
 
 - **`Layer`**
   - **Rôle :** L'unité organisationnelle principale pour le contenu. Un calque

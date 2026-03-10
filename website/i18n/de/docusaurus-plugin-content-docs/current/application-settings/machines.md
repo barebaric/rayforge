@@ -28,14 +28,6 @@ Maschinenprofile speichern die vollständige Konfiguration für einen Laserschne
 
 Verwende das Maschinenwähler-Dropdown im Hauptfenster, um zwischen konfigurierten Maschinen zu wechseln. Alle Einstellungen, einschließlich der ausgewählten Maschine, werden zwischen Sitzungen gespeichert.
 
-### Eine Maschine duplizieren
-
-Um ein ähnliches Maschinenprofil zu erstellen:
-
-1. Wähle die zu duplizierende Maschine aus
-2. Klicke auf die Schaltfläche **Duplizieren**
-3. Benennen Sie die neue Maschine um und passen Sie die Einstellungen nach Bedarf an
-
 ### Eine Maschine löschen
 
 1. Wähle die zu löschende Maschine aus

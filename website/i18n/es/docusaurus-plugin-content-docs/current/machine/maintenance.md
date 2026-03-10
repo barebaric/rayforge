@@ -4,32 +4,42 @@ La página de Mantenimiento en Configuración de Máquina te ayuda a rastrear el
 
 ![Ajustes de Mantenimiento](/screenshots/machine-maintenance.png)
 
-## Contadores de Horas
+## Seguimiento de Uso
 
-Rayforge rastrea cuánto tiempo ha estado en uso tu máquina. Estos contadores te ayudan a programar el mantenimiento preventivo.
+Rayforge rastrea cuánto tiempo ha estado en uso tu máquina. Esta información te ayuda a programar el mantenimiento preventivo en intervalos apropiados.
 
-### Horas de Láser
+### Horas Totales
 
-Rastrea el tiempo total que el láser ha estado disparando. Úsalo para:
+El contador de horas totales rastrea todo el tiempo gastado ejecutando trabajos en la máquina. Este contador acumulativo no puede reiniciarse y proporciona un historial completo del uso de la máquina.
 
-- Programar el reemplazo del tubo láser (los tubos CO2 típicamente duran 1000-3000 horas)
-- Monitorear la degradación del diodo láser
-- Rastrear períodos de garantía
+Usa esto para rastrear la edad general de la máquina y planificar intervalos de servicio importantes.
 
-### Horas de Trabajo
+## Contadores de Mantenimiento Personalizados
 
-Rastrea el tiempo total gastado ejecutando trabajos, incluyendo movimientos de desplazamiento. Úsalo para:
+Puedes crear contadores personalizados para rastrear intervalos de mantenimiento específicos. Cada contador tiene un nombre, rastrea horas y puede configurarse con un umbral de notificación.
 
-- Programar la tensión de correas
-- Planificar la lubricación de rodamientos
-- Rastrear el uso general de la máquina
+### Creando un Contador
 
-### Horas de Movimiento
+1. Haz clic en el botón añadir para crear un nuevo contador
+2. Ingresa un nombre descriptivo (ej., "Tubo Láser", "Tensión de Correa", "Limpieza de Espejo")
+3. Establece un umbral de notificación en horas si lo deseas
 
-Rastrea el tiempo gastado moviéndose (no cortando). Úsalo para:
+### Características del Contador
 
-- Programar el mantenimiento de motores paso a paso
-- Planificar la limpieza y lubricación de rieles
+- **Nombres personalizados**: Etiqueta contadores para cualquier tarea de mantenimiento
+- **Seguimiento de horas**: Acumula automáticamente tiempo durante la ejecución de trabajos
+- **Umbrales de notificación**: Recibe recordatorios cuando el mantenimiento es necesario
+- **Capacidad de reinicio**: Reinicia contadores después de realizar mantenimiento
+
+### Contadores de Ejemplo
+
+**Tubo Láser**: Rastrea horas del tubo CO2 para planificar reemplazo (típicamente 1000-3000 horas). Establece una notificación a las 2500 horas para planificar con anticipación.
+
+**Tensión de Correa**: Rastrea horas desde la última tensión de correa. Reinicia después de realizar el mantenimiento.
+
+**Limpieza de Espejo**: Rastrea uso desde la última limpieza de espejo. Reinicia después de limpiar.
+
+**Lubricación de Rodamientos**: Rastrea horas para intervalos de mantenimiento de rodamientos.
 
 ## Reiniciando Contadores
 
@@ -45,6 +55,8 @@ Intervalos de mantenimiento comunes:
 - **Semanal**: Limpiar rieles, revisar tensión de correas
 - **Mensual**: Lubricar rodamientos, revisar conexiones eléctricas
 - **Anual**: Inspección completa, reemplazar piezas desgastadas
+
+Ajusta los intervalos basándote en tus patrones de uso y recomendaciones del fabricante.
 :::
 
 ## Ver También

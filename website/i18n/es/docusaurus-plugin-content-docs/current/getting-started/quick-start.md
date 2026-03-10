@@ -4,7 +4,7 @@ Ahora que Rayforge está instalado y tu máquina está configurada, ¡ejecutemos
 
 ## Paso 1: Importar un Diseño
 
-Rayforge soporta varios formatos de archivo incluyendo SVG, DXF, PDF e imágenes rasterizadas (JPEG, PNG, BMP).
+Rayforge soporta varios formatos de archivo incluyendo SVG, DXF, PDF, Ruida (.rd) e imágenes rasterizadas (JPEG, PNG, BMP).
 
 1. **Haz clic** en **Archivo → Abrir** o presiona <kbd>ctrl+o</kbd>
 2. Navega hasta tu archivo de diseño y selecciónalo
@@ -56,7 +56,7 @@ Cuando trabajes con materiales nuevos, siempre comienza con ajustes de potencia 
 
 Antes de enviar a tu máquina, previsualiza la trayectoria en 3D:
 
-1. Haz clic en **Ver → Vista Previa 3D** o presiona <kbd>ctrl+3</kbd>
+1. Haz clic en **Ver → Vista Previa 3D** o presiona <kbd>F12</kbd>
 2. La ventana de vista previa 3D muestra la trayectoria completa
 3. Usa tu ratón para rotar y hacer zoom en la vista previa
 4. Verifica que la trayectoria se vea correcta
@@ -92,24 +92,16 @@ La vista previa 3D te ayuda a detectar problemas como:
 
 ### Iniciando el Trabajo
 
-1. **Posiciona el láser**: Usa los controles de desplazamiento para mover el láser a la posición inicial
-   - Haz clic en **Ver → Panel de Control** o presiona <kbd>ctrl+l</kbd>
-   - Usa los botones de flecha o las flechas del teclado para mover el láser
-   - Presiona <kbd>inicio</kbd> para llevar la máquina al origen
+1. **Posiciona el láser**: Usa los controles de desplazamiento para mover el láser a la posición inicial. Haz clic en **Ver → Panel de Control** o presiona <kbd>ctrl+l</kbd>, y usa los botones de flecha o las flechas del teclado para mover el láser.
 
-2. **Enmarca el diseño**: Ejecuta la función de enmarcado para verificar la ubicación
-   - Haz clic en **Máquina → Enmarcar** o presiona <kbd>ctrl+f</kbd>
-   - El láser trazará el cuadro delimitador de tu diseño a potencia baja/nula
-   - Verifica que quede dentro de tu material
+2. **Enmarca el diseño**: Ejecuta la función de enmarcado para verificar la ubicación. Haz clic en **Máquina → Enmarcar** y el láser trazará el cuadro delimitador de tu diseño a potencia baja. Verifica que quede dentro de tu material.
 
-3. **Inicia el trabajo**: Haz clic en **Máquina → Iniciar Trabajo** o presiona <kbd>ctrl+r</kbd>
+3. **Inicia el trabajo**: Haz clic en **Máquina → Iniciar Trabajo**
 4. Monitorea el progreso en la barra de estado
 
 ### Durante el Trabajo
 
-- La sección derecha de la barra de estado muestra el progreso actual y la estimación del tiempo total de ejecución
-- Puedes pausar el trabajo con <kbd>ctrl+p</kbd> o haciendo clic en el botón Pausar
-- Presiona <kbd>esc</kbd> o haz clic en Detener para cancelar el trabajo (parada de emergencia)
+La sección derecha de la barra de estado muestra el progreso actual y la estimación del tiempo total de ejecución. Usa los botones Pausar y Detener en el panel de control para controlar el trabajo. Nota que <kbd>esc</kbd> sale del modo de simulación pero no detiene un trabajo activo.
 
 ## Paso 6: Finalizando
 

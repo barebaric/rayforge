@@ -87,7 +87,7 @@ ops.line_to(50, 50)       # Couper une ligne sans assistance air
 
 ## Implémentation du pilote
 
-Tous les pilotes DOIVENT hériter de `rayforge.machine.drivers.Driver`.
+Tous les pilotes DOIVENT hériter de `rayforge.machine.driver.driver.Driver`.
 
 ```python
 from rayforge.machine.driver.driver import Driver
@@ -126,23 +126,50 @@ Votre classe de pilote **DOIT** implémenter les méthodes suivantes. Notez que 
 
 #### Contrôle de l'appareil
 
+#### Contrôle de l'appareil
+
 - `async def run(machine_code: Any, op_map: MachineCodeOpMap, doc: Doc,
   on_command_done: Optional[Callable[[int], Union[None, Awaitable[None]]]]
   = None)` : La méthode principale pour exécuter un travail. Reçoit du code machine pré-encodé
   (par exemple, chaîne G-code) et un mappage entre les indices d'opération et
   le code machine. Le rappel `on_command_done` est appelé avec l'op_index
   lorsque chaque commande se termine.
+- `async def run_raw(gcode: str)` : Exécute directement une chaîne G-code brute.
 - `async def home(axes: Optional[Axis] = None)` : Met la machine à l'origine. Peut mettre à l'origine
-  des axes spécifiques ou tous les axes.
+  des axes spécifiques/ tous les axes.
 - `async def move_to(pos_x: float, pos_y: float)` : Déplace manuellement la tête
   laser vers une coordonnée XY spécifique.
-- `async def set_hold(hold: bool = True)` : Met en pause ou reprend le travail actuel.
+- `async def set_hold(hold: bool = True)` : Met en pause/ reprend le travail actuel.
 - `async def cancel()` : Arrête le travail actuel.
 - `async def jog(axis: Axis, distance: float, speed: int)` : Déplace la machine
   le long d'un axe spécifique.
 - `async def select_tool(tool_number: int)` : Sélectionne un nouvel outil/tête laser par
   son numéro.
 - `async def clear_alarm()` : Efface tout état d'alarme actif.
+- `async def set_wcs_offset(wcs_slot, x, y, z)` : Définit le décalage du système de coordonnées de travail pour un slot WCS spécifique.
+- `async def read_wcs_offsets()` : Lit tous les décalages WCS de l'appareil.
+- `async def run_probe_cycle(axis, max_travel, feed_rate)` : Initie un mouvement de palpage le long de l'axe spécifié.
+- `async def set_power(head, percent)` : Définit le pourcentage de puissance laser pour une tête spécifique.
+- `can_jog(axis: Axis)` : Vérifie si le jogging est supporté pour l'axe donné.
+- `can_home(axis: Axis)` : Vérifie si le homing est supporté pour l'axe donné.
+- `async def read_parser_state()` : Interroge les états modaux G-code actifs de l'appareil.
+
+#### Propriétés supplémentaires
+
+- `machine_space_wcs` : L'identifiant du système de coordonnées de travail utilisé pour les coordonnées d'espace machine.
+- `machine_space_wcs_display_name` : Nom d'affichage lisible par l'homme pour le WCS d'espace machine.
+- `resource_uri` : Un identifiant unique pour la ressource physique contrôlée par ce pilote. Utilisé pour la détection des conflits lorsque plusieurs machines ne peuvent pas partager le même matériel.
+
+#### Signaux
+
+Votre pilote peut é é ces signaux pour informer l'interface des changements d'état :
+
+- `probe_status_changed` : Émis pendant les cycles de palpage avec des mises à jour de l'état.
+- `wcs_updated` : Émis lorsque les données du système de coordonnées de travail sont mises à jour.
+
+#### Exceptions
+
+- `ResourceBusyError` : Levée lorsque l'on tente d'utiliser une ressource actuellement utilisée par une autre instance de machine.
 
 #### Paramètres du firmware (si `supports_settings` est `True`)
 

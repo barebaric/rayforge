@@ -21,7 +21,7 @@ Vous pouvez créer des recettes via l'interface des paramètres principaux :
 
 #### 1. Accéder au Gestionnaire de Recettes
 
-Menu : Édition → Préférences → Recettes
+Menu : Édition → Paramètres, puis sélectionnez Recettes
 
 #### 2. Créer une Nouvelle Recette
 
