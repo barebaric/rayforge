@@ -147,8 +147,9 @@ class StressTestController:
 
         Returns True if settled within timeout, False if timeout exceeded.
         """
-        deadline = time.time() + self.config.max_settle_wait_sec
-        while time.time() < deadline:
+        start = time.monotonic()
+        timeout = self.config.max_settle_wait_sec
+        while time.monotonic() - start < timeout:
             if not self.pipeline.is_busy and not self.task_mgr.has_tasks():
                 return True
             await asyncio.sleep(0.1)
