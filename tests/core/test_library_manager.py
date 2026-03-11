@@ -13,34 +13,20 @@ class TestLibraryManager:
     def test_manager_creation(self):
         """Test creating a LibraryManager."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
+            user_dir = Path(temp_dir)
 
-            manager = LibraryManager(core_dir, user_dir)
+            manager = LibraryManager(user_dir)
 
-            assert manager.core_dir == core_dir
             assert manager.user_dir == user_dir
-            # len() triggers loading, so we expect 1 empty library (core only)
             assert len(manager) == 0
 
     def test_manager_load_libraries(self):
         """Test loading libraries in the manager."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
-
-            # Create core library with materials
-            core_dir.mkdir()
-            material1_data = {
-                "uid": "material1",
-                "name": "Material 1",
-                "category": "test",
-            }
-            with open(core_dir / "material1.yaml", "w") as f:
-                yaml.dump(material1_data, f)
+            user_dir = Path(temp_dir)
 
             # Create user subdirectory with materials
-            user_dir.mkdir()
+            user_dir.mkdir(parents=True, exist_ok=True)
             user_subdir = user_dir / "test_lib"
             user_subdir.mkdir()
             material2_data = {
@@ -51,46 +37,50 @@ class TestLibraryManager:
             with open(user_subdir / "material2.yaml", "w") as f:
                 yaml.dump(material2_data, f)
 
-            manager = LibraryManager(core_dir, user_dir)
+            manager = LibraryManager(user_dir)
             manager.load_all_libraries()
 
-            # Should have two libraries (core and user subdirectory)
+            # Should have one library (user subdirectory)
             libraries = manager.get_libraries()
-            assert len(libraries) == 2
+            assert len(libraries) == 1
 
-            # Should have two materials total
-            assert len(manager) == 2
+            # Should have one material total
+            assert len(manager) == 1
 
             # Should be able to get materials
-            assert manager.get_material("material1") is not None
             assert manager.get_material("material2") is not None
 
     def test_manager_get_library(self):
-        """Test getting a library by name."""
+        """Test getting a library by ID."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
+            user_dir = Path(temp_dir)
 
-            manager = LibraryManager(core_dir, user_dir)
+            # Create a library with metadata
+            user_dir.mkdir(parents=True, exist_ok=True)
+            user_subdir = user_dir / "test_lib"
+            user_subdir.mkdir()
+            metadata = {"name": "Test Library", "id": "test-lib-id"}
+            with open(user_subdir / "__library__.yaml", "w") as f:
+                yaml.dump(metadata, f)
+
+            manager = LibraryManager(user_dir)
             manager.load_all_libraries()
 
-            # Should have core library
-            core_library = manager.get_library("core")
-            assert core_library is not None
-            assert core_library.read_only is True
+            # Should have the library
+            library = manager.get_library("test-lib-id")
+            assert library is not None
+            assert library.read_only is False
 
             # Non-existent library should return None
             assert manager.get_library("nonexistent") is None
-            assert manager.get_library("user") is None
 
     def test_manager_get_material_or_none(self):
         """Test getting a material with graceful fallback."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
+            user_dir = Path(temp_dir)
 
             # Create a material in a user subdirectory
-            user_dir.mkdir()
+            user_dir.mkdir(parents=True, exist_ok=True)
             user_subdir = user_dir / "test_lib"
             user_subdir.mkdir()
             material_data = {
@@ -101,7 +91,7 @@ class TestLibraryManager:
             with open(user_subdir / "material1.yaml", "w") as f:
                 yaml.dump(material_data, f)
 
-            manager = LibraryManager(core_dir, user_dir)
+            manager = LibraryManager(user_dir)
             manager.load_all_libraries()
 
             # Should get the material
@@ -115,10 +105,9 @@ class TestLibraryManager:
     def test_manager_resolve_material(self):
         """Test resolving a material reference with fallback handling."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
+            user_dir = Path(temp_dir)
 
-            manager = LibraryManager(core_dir, user_dir)
+            manager = LibraryManager(user_dir)
             manager.load_all_libraries()
 
             # Non-existent material should return None
@@ -128,10 +117,9 @@ class TestLibraryManager:
     def test_manager_add_material(self):
         """Test adding a material to a library."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
+            user_dir = Path(temp_dir)
 
-            manager = LibraryManager(core_dir, user_dir)
+            manager = LibraryManager(user_dir)
             manager.load_all_libraries()
 
             # Create a user library first
@@ -158,10 +146,9 @@ class TestLibraryManager:
     def test_manager_remove_material(self):
         """Test removing a material from a library."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
+            user_dir = Path(temp_dir)
 
-            manager = LibraryManager(core_dir, user_dir)
+            manager = LibraryManager(user_dir)
             manager.load_all_libraries()
 
             # Create a user library first
@@ -192,21 +179,10 @@ class TestLibraryManager:
     def test_manager_get_all_materials(self):
         """Test getting all materials from all libraries."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
-
-            # Create core library with materials
-            core_dir.mkdir()
-            material1_data = {
-                "uid": "material1",
-                "name": "Material 1",
-                "category": "test",
-            }
-            with open(core_dir / "material1.yaml", "w") as f:
-                yaml.dump(material1_data, f)
+            user_dir = Path(temp_dir)
 
             # Create user subdirectory with materials
-            user_dir.mkdir()
+            user_dir.mkdir(parents=True, exist_ok=True)
             user_subdir = user_dir / "test_lib"
             user_subdir.mkdir()
             material2_data = {
@@ -217,24 +193,20 @@ class TestLibraryManager:
             with open(user_subdir / "material2.yaml", "w") as f:
                 yaml.dump(material2_data, f)
 
-            manager = LibraryManager(core_dir, user_dir)
+            manager = LibraryManager(user_dir)
             manager.load_all_libraries()
 
             # Get all materials
             all_materials = manager.get_all_materials()
-            assert len(all_materials) == 2
-
-            # User materials should come first
+            assert len(all_materials) == 1
             assert all_materials[0].uid == "material2"
-            assert all_materials[1].uid == "material1"
 
     def test_manager_reload_libraries(self):
         """Test reloading all libraries."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
+            user_dir = Path(temp_dir)
 
-            manager = LibraryManager(core_dir, user_dir)
+            manager = LibraryManager(user_dir)
             manager.load_all_libraries()
 
             # Initially empty
@@ -259,44 +231,48 @@ class TestLibraryManager:
             assert manager.get_material("material1") is not None
 
     def test_manager_get_library_names(self):
-        """Test getting the names of all libraries."""
+        """Test getting the IDs of all libraries."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
+            user_dir = Path(temp_dir)
 
-            manager = LibraryManager(core_dir, user_dir)
+            # Create a library with metadata
+            user_dir.mkdir(parents=True, exist_ok=True)
+            user_subdir = user_dir / "test_lib"
+            user_subdir.mkdir()
+            metadata = {"name": "Test Library", "id": "test-lib-id"}
+            with open(user_subdir / "__library__.yaml", "w") as f:
+                yaml.dump(metadata, f)
+
+            manager = LibraryManager(user_dir)
             manager.load_all_libraries()
 
             # Get library IDs
             library_ids = manager.get_library_ids()
-            assert "core" in library_ids
-            assert "user" not in library_ids  # user_dir is not a library
+            assert "test-lib-id" in library_ids
             assert len(library_ids) == 1
 
     def test_manager_str_repr(self):
         """Test string representations of LibraryManager."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
+            user_dir = Path(temp_dir)
 
-            manager = LibraryManager(core_dir, user_dir)
+            manager = LibraryManager(user_dir)
             manager.load_all_libraries()
 
             assert "LibraryManager" in str(manager)
-            assert "libraries=1" in str(manager)  # Only core library
+            assert "libraries=0" in str(manager)
             assert "materials=0" in str(manager)
 
     def test_manager_create_user_library(self):
         """Test creating a new user library."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
+            user_dir = Path(temp_dir)
 
-            manager = LibraryManager(core_dir, user_dir)
+            manager = LibraryManager(user_dir)
             manager.load_all_libraries()
 
-            # Initially should have 1 library (core only)
-            assert len(manager.get_library_ids()) == 1
+            # Initially should have no libraries
+            assert len(manager.get_library_ids()) == 0
 
             # Create a new user library
             lib_id = manager.create_user_library("Test Library")
@@ -305,15 +281,14 @@ class TestLibraryManager:
             # Reload to pick up the new library
             manager.reload_libraries()
 
-            # Should now have 2 libraries
+            # Should now have 1 library
             library_ids = manager.get_library_ids()
-            assert len(library_ids) == 2
+            assert len(library_ids) == 1
             assert lib_id in library_ids
 
             # Get the new library and check its properties
             new_library = manager.get_library(lib_id)
             assert new_library is not None
-            assert new_library.source == "user"
             assert new_library.read_only is False
             assert new_library.display_name == "Test Library"
 
@@ -322,12 +297,11 @@ class TestLibraryManager:
             assert empty_id is None
 
     def test_manager_remove_user_library(self):
-        """Test removing a user library."""
+        """Test removing a writable library."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
+            user_dir = Path(temp_dir)
 
-            manager = LibraryManager(core_dir, user_dir)
+            manager = LibraryManager(user_dir)
             manager.load_all_libraries()
 
             # Create a new user library
@@ -360,17 +334,12 @@ class TestLibraryManager:
             result = manager.remove_user_library("nonexistent")
             assert result is False
 
-            # Try to remove core library (should fail)
-            result = manager.remove_user_library("core")
-            assert result is False
-
     def test_manager_update_library(self):
         """Test updating a library's display name."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
+            user_dir = Path(temp_dir)
 
-            manager = LibraryManager(core_dir, user_dir)
+            manager = LibraryManager(user_dir)
             manager.load_all_libraries()
 
             # Create a new user library
@@ -400,111 +369,140 @@ class TestLibraryManager:
             result = manager.update_library("nonexistent")
             assert result is False
 
-            # Try to update core library (should fail)
-            core_lib_id = manager.get_library_ids()[0]  # Get core library ID
-            result = manager.update_library(core_lib_id)
-            assert result is False
-
-    def test_manager_material_priority(self):
-        """Test that user materials take priority over core materials."""
+    def test_manager_add_library(self):
+        """Test adding a MaterialLibrary directly."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
             user_dir = Path(temp_dir) / "user"
+            user_dir.mkdir()
+            library_dir = Path(temp_dir) / "addon_lib"
+            library_dir.mkdir()
 
-            # Create material with same UID in both core and user
+            # Create a material file
             material_data = {
-                "uid": "duplicate_material",
-                "name": "Core Material",
+                "uid": "material1",
+                "name": "Material 1",
                 "category": "test",
             }
-
-            core_dir.mkdir()
-            with open(core_dir / "duplicate_material.yaml", "w") as f:
+            with open(library_dir / "material1.yaml", "w") as f:
                 yaml.dump(material_data, f)
 
+            manager = LibraryManager(user_dir)
+            manager.load_all_libraries()
+
+            # Create and add a library
+            from rayforge.core.material_library import MaterialLibrary
+
+            library = MaterialLibrary(library_dir, read_only=True)
+            library.load_materials()
+
+            result = manager.add_library(library)
+            assert result is True
+            assert manager.get_library(library.library_id) is not None
+
+            # Try to add duplicate (should fail)
+            result = manager.add_library(library)
+            assert result is False
+
+    def test_manager_add_library_with_addon_name(self):
+        """Test adding a library with addon name tracking."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            user_dir = Path(temp_dir) / "user"
             user_dir.mkdir()
+            library_dir = Path(temp_dir) / "addon_lib"
+            library_dir.mkdir()
+
+            manager = LibraryManager(user_dir)
+
+            from rayforge.core.material_library import MaterialLibrary
+
+            library = MaterialLibrary(library_dir, read_only=True)
+            library.load_materials()
+
+            result = manager.add_library(library, addon_name="test_addon")
+            assert result is True
+
+            # Remove libraries by addon name
+            count = manager.unregister_all_from_addon("test_addon")
+            assert count == 1
+            assert manager.get_library(library.library_id) is None
+
+    def test_manager_add_library_from_path(self):
+        """Test adding a library from a path."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            user_dir = Path(temp_dir)
+            library_dir = Path(temp_dir) / "addon_lib"
+            library_dir.mkdir()
+
+            # Create a material file
+            material_data = {
+                "uid": "material1",
+                "name": "Material 1",
+                "category": "test",
+            }
+            with open(library_dir / "material1.yaml", "w") as f:
+                yaml.dump(material_data, f)
+
+            manager = LibraryManager(user_dir)
+
+            lib_id = manager.add_library_from_path(library_dir, read_only=True)
+            assert lib_id is not None
+
+            library = manager.get_library(lib_id)
+            assert library is not None
+            assert library.read_only is True
+            assert len(library) == 1
+
+            # Try to add from non-existent path
+            lib_id = manager.add_library_from_path(
+                Path(temp_dir) / "nonexistent"
+            )
+            assert lib_id is None
+
+    def test_manager_material_priority(self):
+        """Test that writable library materials take priority."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            user_dir = Path(temp_dir) / "user"
+            addon_dir = Path(temp_dir) / "addon"
+
+            # Create writable library with material
+            user_dir.mkdir(parents=True, exist_ok=True)
             user_subdir = user_dir / "test_lib"
             user_subdir.mkdir()
-            material_data["name"] = "User Material"
+            material_data = {
+                "uid": "duplicate_material",
+                "name": "Writable Material",
+                "category": "test",
+            }
             with open(user_subdir / "duplicate_material.yaml", "w") as f:
                 yaml.dump(material_data, f)
 
-            manager = LibraryManager(core_dir, user_dir)
+            manager = LibraryManager(user_dir)
             manager.load_all_libraries()
 
-            # Should get the user material (priority)
-            material = manager.get_material("duplicate_material")
-            assert material is not None
-            assert material.name == "User Material"
-
-    def test_manager_core_library_with_id(self):
-        """Test core library is loaded with its ID from __library__.yaml."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
-
-            # Create core library with metadata
-            core_dir.mkdir()
-            metadata = {
-                "name": "Core Materials",
-                "id": "core-library-uuid-1234",
-            }
-            with open(core_dir / "__library__.yaml", "w") as f:
-                yaml.dump(metadata, f)
-
-            # Add a material to core
-            material_data = {
-                "uid": "core_material",
-                "name": "Core Material",
+            # Create a read-only library with same material UID
+            addon_lib_dir = addon_dir / "addon_lib"
+            addon_lib_dir.mkdir(parents=True, exist_ok=True)
+            material_data2 = {
+                "uid": "duplicate_material",
+                "name": "Read-Only Material",
                 "category": "test",
             }
-            with open(core_dir / "core_material.yaml", "w") as f:
-                yaml.dump(material_data, f)
+            with open(addon_lib_dir / "duplicate_material.yaml", "w") as f:
+                yaml.dump(material_data2, f)
 
-            manager = LibraryManager(core_dir, user_dir)
-            manager.load_all_libraries()
+            manager.add_library_from_path(addon_lib_dir, read_only=True)
 
-            # Should have core library with its ID
-            core_library = manager.get_library("core-library-uuid-1234")
-            assert core_library is not None
-            assert core_library.source == "core"
-            assert core_library.read_only is True
-            assert core_library.display_name == "Core Materials"
-            assert core_library.library_id == "core-library-uuid-1234"
-
-            # Should not be accessible with "core" fallback
-            assert manager.get_library("core") is None
-
-            # Should still be able to get materials
-            material = manager.get_material("core_material")
+            # Should get the writable library material (priority)
+            material = manager.get_material("duplicate_material")
             assert material is not None
-            assert material.uid == "core_material"
-
-    def test_manager_core_library_fallback_id(self):
-        """Test core library falls back to 'core' when no ID in metadata."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
-
-            # Create core library without metadata
-            core_dir.mkdir()
-
-            manager = LibraryManager(core_dir, user_dir)
-            manager.load_all_libraries()
-
-            # Should have core library with fallback ID
-            core_library = manager.get_library("core")
-            assert core_library is not None
-            assert core_library.source == "core"
-            assert core_library.library_id == "core"
+            assert material.name == "Writable Material"
 
     def test_manager_user_library_with_id(self):
         """Test that user libraries are created with ID in metadata."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            core_dir = Path(temp_dir) / "core"
-            user_dir = Path(temp_dir) / "user"
+            user_dir = Path(temp_dir)
 
-            manager = LibraryManager(core_dir, user_dir)
+            manager = LibraryManager(user_dir)
             manager.load_all_libraries()
 
             # Create a new user library

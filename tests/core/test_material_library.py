@@ -14,17 +14,24 @@ class TestMaterialLibrary:
         """Test creating a MaterialLibrary."""
         with tempfile.TemporaryDirectory() as temp_dir:
             library_dir = Path(temp_dir)
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
 
             assert library.read_only is False
             assert library.is_loaded is False
-            assert library.source == "user"
+
+    def test_library_creation_read_only_default(self):
+        """Test that read_only defaults to True."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            library_dir = Path(temp_dir)
+            library = MaterialLibrary(library_dir)
+
+            assert library.read_only is True
 
     def test_library_load_empty_directory(self):
         """Test loading a library from an empty directory."""
         with tempfile.TemporaryDirectory() as temp_dir:
             library_dir = Path(temp_dir)
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
 
             library.load_materials()
 
@@ -54,7 +61,7 @@ class TestMaterialLibrary:
             with open(library_dir / "material2.yaml", "w") as f:
                 yaml.dump(material2_data, f)
 
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             assert library.is_loaded is True
@@ -83,7 +90,7 @@ class TestMaterialLibrary:
             with open(library_dir / "material1.yaml", "w") as f:
                 yaml.dump(material_data, f)
 
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             # Should still load the valid material
@@ -105,7 +112,7 @@ class TestMaterialLibrary:
             with open(library_dir / "material1.yaml", "w") as f:
                 yaml.dump(material_data, f)
 
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             material = library.get_material("material1")
@@ -120,7 +127,7 @@ class TestMaterialLibrary:
         """Test adding a material to a library."""
         with tempfile.TemporaryDirectory() as temp_dir:
             library_dir = Path(temp_dir)
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             # Create a material
@@ -142,7 +149,7 @@ class TestMaterialLibrary:
         """Test adding a duplicate material to a library."""
         with tempfile.TemporaryDirectory() as temp_dir:
             library_dir = Path(temp_dir)
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             # Create a material
@@ -162,7 +169,7 @@ class TestMaterialLibrary:
         """Test adding a material to a read-only library."""
         with tempfile.TemporaryDirectory() as temp_dir:
             library_dir = Path(temp_dir)
-            library = MaterialLibrary(library_dir, source="core")
+            library = MaterialLibrary(library_dir, read_only=True)
             library.load_materials()
 
             # Create a material
@@ -180,7 +187,7 @@ class TestMaterialLibrary:
         """Test removing a material from a library."""
         with tempfile.TemporaryDirectory() as temp_dir:
             library_dir = Path(temp_dir)
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             # Create a material
@@ -206,7 +213,7 @@ class TestMaterialLibrary:
         """Test removing a non-existent material from a library."""
         with tempfile.TemporaryDirectory() as temp_dir:
             library_dir = Path(temp_dir)
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             # Try to remove a non-existent material
@@ -218,7 +225,7 @@ class TestMaterialLibrary:
         """Test removing a material from a read-only library."""
         with tempfile.TemporaryDirectory() as temp_dir:
             library_dir = Path(temp_dir)
-            library = MaterialLibrary(library_dir, source="core")
+            library = MaterialLibrary(library_dir, read_only=True)
             library.load_materials()
 
             # Try to remove a material
@@ -230,7 +237,7 @@ class TestMaterialLibrary:
         """Test reloading a library."""
         with tempfile.TemporaryDirectory() as temp_dir:
             library_dir = Path(temp_dir)
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             # Initially empty
@@ -256,7 +263,7 @@ class TestMaterialLibrary:
         """Test checking if a library contains a material."""
         with tempfile.TemporaryDirectory() as temp_dir:
             library_dir = Path(temp_dir)
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             # Create a material
@@ -278,7 +285,7 @@ class TestMaterialLibrary:
         """Test iterating over materials in a library."""
         with tempfile.TemporaryDirectory() as temp_dir:
             library_dir = Path(temp_dir)
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             # Create materials
@@ -301,7 +308,7 @@ class TestMaterialLibrary:
         """Test string representations of MaterialLibrary."""
         with tempfile.TemporaryDirectory() as temp_dir:
             library_dir = Path(temp_dir)
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
 
             assert "MaterialLibrary" in str(library)
             assert library_dir.name in str(library)
@@ -318,7 +325,7 @@ class TestMaterialLibrary:
             with open(library_dir / "__library__.yaml", "w") as f:
                 yaml.dump(metadata, f)
 
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             assert library.is_loaded is True
@@ -335,7 +342,7 @@ class TestMaterialLibrary:
             with open(library_dir / "__library__.yaml", "w") as f:
                 yaml.dump(metadata, f)
 
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             assert library.is_loaded is True
@@ -353,7 +360,7 @@ class TestMaterialLibrary:
             with open(library_dir / "__library__.yaml", "w") as f:
                 f.write("invalid: yaml: content:[")
 
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             # Should still load but with fallback values
@@ -374,7 +381,7 @@ class TestMaterialLibrary:
             library_dir.mkdir()
 
             # No __library__.yaml file
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             assert library.is_loaded is True
@@ -394,7 +401,7 @@ class TestMaterialLibrary:
             with open(library_dir / "__library__.yaml", "w") as f:
                 yaml.dump(metadata, f)
 
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             assert library.is_loaded is True
@@ -422,7 +429,7 @@ class TestMaterialLibrary:
             with open(library_dir / "material1.yaml", "w") as f:
                 yaml.dump(material_data, f)
 
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             assert library.is_loaded is True
@@ -444,7 +451,7 @@ class TestMaterialLibrary:
             with open(library_dir / "__library__.yaml", "w") as f:
                 yaml.dump(metadata, f)
 
-            library = MaterialLibrary(library_dir, source="user")
+            library = MaterialLibrary(library_dir, read_only=False)
             library.load_materials()
 
             assert library.display_name == "Original Library"
@@ -470,7 +477,7 @@ class TestMaterialLibrary:
             assert library is not None
             assert library.display_name == "New Test Library"
             assert library.library_id is not None
-            assert library.source == "user"
+            assert library.read_only is False
             assert library._directory == library_dir
 
             # Verify the metadata file was created
@@ -494,3 +501,16 @@ class TestMaterialLibrary:
                 library_dir, "Another Library"
             )
             assert existing_library is None
+
+    def test_library_save_read_only(self):
+        """Test that read-only libraries cannot be saved."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            library_dir = Path(temp_dir)
+
+            library = MaterialLibrary(library_dir, read_only=True)
+            library.load_materials()
+
+            library.set_display_name("New Name")
+            result = library.save()
+
+            assert result is False

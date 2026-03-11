@@ -109,12 +109,7 @@ class MaterialSelectorDialog(Adw.MessageDialog):
             material_mgr.get_libraries(), key=lambda lib: lib.display_name
         )
         for lib in self.libraries:
-            display_name = (
-                _("Core Materials")
-                if lib.source == "core"
-                else lib.display_name
-            )
-            model.append(display_name)
+            model.append(lib.display_name)
 
         self.library_dropdown.set_model(model)
         if self.libraries:

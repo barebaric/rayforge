@@ -11,22 +11,22 @@ logger = logging.getLogger(__name__)
 
 class MaterialLibrary:
     """
-    Represents a single material library from a specific source.
+    Represents a single material library.
 
     Manages loading materials from a directory and handles read-only
-    libraries (core materials) vs user libraries.
+    vs writable libraries.
     """
 
-    def __init__(self, directory: Path, source: str):
+    def __init__(self, directory: Path, read_only: bool = True):
         """
         Initialize a material library.
 
         Args:
             directory: Directory containing material files
-            source: The source of the library ('core', 'user', plugin name)
+            read_only: If True, the library cannot be modified
         """
         self._directory = directory
-        self.source = source
+        self._read_only = read_only
         self._materials: Dict[str, Material] = {}
         self._loaded = False
         self._display_name: str = ""
@@ -61,8 +61,8 @@ class MaterialLibrary:
 
     @property
     def read_only(self) -> bool:
-        """A library is read-only if its source is not 'user'."""
-        return self.source != "user"
+        """Whether the library is read-only."""
+        return self._read_only
 
     @property
     def is_loaded(self) -> bool:
@@ -110,7 +110,7 @@ class MaterialLibrary:
             lib_id = str(uuid.uuid4())
             logger.debug(f"Generated library ID: {lib_id}")
 
-            library = cls(directory, source="user")
+            library = cls(directory, read_only=False)
             library._display_name = display_name
             library._library_id = lib_id
             library._loaded = (
@@ -310,8 +310,10 @@ class MaterialLibrary:
         Returns:
             True if saved successfully, False otherwise
         """
-        if self.source == "core":
-            logger.warning(f"Cannot save core library: {self._directory.name}")
+        if self._read_only:
+            logger.warning(
+                f"Cannot save read-only library: {self._directory.name}"
+            )
             return False
 
         try:

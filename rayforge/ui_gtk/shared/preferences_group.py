@@ -43,11 +43,13 @@ class PreferencesGroupWithButton(Adw.PreferencesGroup):
         self,
         button_label: str,
         selection_mode: Gtk.SelectionMode = Gtk.SelectionMode.NONE,
+        empty_placeholder: str = _("No parameters"),
         **kwargs,
     ):
         super().__init__(**kwargs)
         apply_css(css)
         self.add_css_class("pref-group-with-button")
+        self._empty_placeholder = empty_placeholder
 
         container_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         container_box.add_css_class("card")
@@ -77,7 +79,7 @@ class PreferencesGroupWithButton(Adw.PreferencesGroup):
         item_list = list(items)
 
         if not item_list:
-            placeholder_label = Gtk.Label(label=_("No parameters"))
+            placeholder_label = Gtk.Label(label=self._empty_placeholder)
             placeholder_label.add_css_class("dim-label")
             placeholder_label.set_halign(Gtk.Align.CENTER)
             placeholder_label.set_margin_top(12)
