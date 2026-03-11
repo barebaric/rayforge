@@ -187,7 +187,12 @@ def check_rayforge_compatibility(
         True if compatible, False otherwise.
     """
     try:
-        current_v = semver.VersionInfo.parse(current_version.lstrip("v"))
+        parsed_v = semver.VersionInfo.parse(current_version.lstrip("v"))
+        current_v = semver.VersionInfo(
+            major=parsed_v.major,
+            minor=parsed_v.minor,
+            patch=parsed_v.patch,
+        )
     except ValueError:
         return True
 
