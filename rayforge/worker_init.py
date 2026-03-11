@@ -135,6 +135,14 @@ def initialize_worker(shared_state: Optional[Dict] = None):
             os.environ.setdefault(
                 "GIO_EXTRA_MODULES", str(bundled_gio_modules)
             )
+    elif hasattr(sys, "_MEIPASS") and sys.platform == "win32":
+        # Windows PyInstaller bundles need explicit DLL search path
+        # for spawned subprocesses to find cairo, rsvg, etc.
+        base_dir = Path(sys._MEIPASS)
+        try:
+            os.add_dll_directory(str(base_dir))
+        except OSError:
+            pass
 
     logger = logging.getLogger(__name__)
     if shared_state is None:

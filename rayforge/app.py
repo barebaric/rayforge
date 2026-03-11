@@ -97,6 +97,17 @@ if hasattr(sys, "_MEIPASS"):
         files = [p.name for p in typelib_path.iterdir()]
         logger.info(f"Files in typelib path: {files}")
 
+        # On Windows, subprocesses need explicit DLL search path.
+        # This must be at module level to run during worker import.
+        if sys.platform == "win32":
+            logger.info(
+                f"Windows build detected. Adding '{base_dir}' to DLL search path."
+            )
+            try:
+                os.add_dll_directory(str(base_dir))
+            except OSError:
+                pass
+
 
 def handle_exception(exc_type, exc_value, exc_traceback):
     """
@@ -424,17 +435,6 @@ def main():
     # ===================================================================
     # SECTION 3: PLATFORM SPECIFIC INITIALIZATION
     # ===================================================================
-
-    # When running on Windows, spawned subprocesses do not
-    # know where to find the necessary DLLs (for cairo, rsvg, etc.).
-    # We must explicitly add the executable's directory to the
-    # DLL search path *before* any subprocesses are created.
-    # This must be done inside the main() guard.
-    if sys.platform == "win32":
-        logger.info(
-            f"Windows build detected. Adding '{base_dir}' to DLL search path."
-        )
-        os.add_dll_directory(str(base_dir))
 
     # Set the PyOpenGL platform before importing anything that uses OpenGL.
     # 'egl' is generally the best choice for GTK4 on modern Linux (Wayland/X11).
