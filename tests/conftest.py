@@ -231,17 +231,17 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
     # 2. Patch the global task_mgr proxy to use our test-isolated instance.
     monkeypatch.setattr(tasker.task_mgr, "_instance", task_mgr)
 
-    # 3. Get the context and run the full initialization
+    # 3. Get the context and configure for headless mode
     context = get_context()
+    context._headless = True
 
-    # Wire up the AddonManager with the test TaskManager's shared state.
-    # This ensures that when load_installed_addons() builds the manifest,
-    # it is written to the shared dict that the test workers will use.
+    # 4. Access addon_mgr to trigger lazy loading (backend_only=True)
+    # This happens before setting shared state, so we'll get a warning
+    # about missing shared state, but set_shared_state will rebuild it.
     shared_state = task_mgr.get_shared_state()
     context.addon_mgr.set_task_manager(task_mgr)
     context.addon_mgr.set_shared_state(shared_state)
 
-    context.initialize_full_context(load_ui=False)
     yield context
 
     # 4. Teardown: shutdown and fully reset the context singleton and globals
@@ -458,7 +458,6 @@ def ui_context_initializer(tmp_path, monkeypatch, ui_task_mgr):
     context.addon_mgr.set_task_manager(ui_task_mgr)
     context.addon_mgr.set_shared_state(shared_state)
 
-    context.initialize_full_context()
     yield context
 
     asyncio.run(context.shutdown())
