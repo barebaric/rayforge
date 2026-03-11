@@ -29,4 +29,5 @@ website/.docusaurus/
 website/build/
 
 .mac_env
+rayforge/private_addons
 rayforge/version.txt
