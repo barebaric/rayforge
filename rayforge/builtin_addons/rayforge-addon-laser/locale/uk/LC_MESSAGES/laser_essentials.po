@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-08 22:00+0100\n"
+"POT-Creation-Date: 2026-03-09 22:05+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -18,142 +18,142 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ?0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ?1 :2);\n"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/raster_producer.py
+#: laser_essentials/producers/raster_producer.py
 msgid "Variable Power"
 msgstr "Змінна потужність"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/raster_producer.py
+#: laser_essentials/producers/raster_producer.py
 msgid "Constant Power"
 msgstr "Постійна потужність"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/raster_producer.py
+#: laser_essentials/producers/raster_producer.py
 msgid "Dither"
 msgstr "Дитеринг"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/raster_producer.py
+#: laser_essentials/producers/raster_producer.py
 msgid "Multiple Depths"
 msgstr "Кілька глибин"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/shrinkwrap_producer.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/contour_producer.py
+#: laser_essentials/producers/shrinkwrap_producer.py
+#: laser_essentials/producers/contour_producer.py
 msgid "Optimizing path with arcs..."
 msgstr "Оптимізація шляху з дугами..."
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/contour_producer.py
+#: laser_essentials/producers/contour_producer.py
 msgid "Inside-Outside"
 msgstr "Зсередини-назовні"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/contour_producer.py
+#: laser_essentials/producers/contour_producer.py
 msgid "Outside-Inside"
 msgstr "Ззовні-всередину"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Configure how the laser engraves your image."
 msgstr "Налаштуйте, як лазер гравіює ваше зображення."
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Mode"
 msgstr "Режим"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Threshold"
 msgstr "Поріг"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Brightness cutoff for black/white (0-255)"
 msgstr "Поріг яскравості для чорно-білого (0-255)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Engraving Method"
 msgstr "Метод гравіювання"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Algorithm for converting grayscale to binary"
 msgstr "Алгоритм перетворення відтінків сірого у двійковий формат"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Auto Levels"
 msgstr "Авто рівні"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Automatically adjust black/white points"
 msgstr "Автоматично налаштувати чорні/білі точки"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Brightness Range"
 msgstr "Діапазон яскравості"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Auto-adjusted based on image content"
 msgstr "Автоналаштування на основі вмісту зображення"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Drag markers to set black/white points"
 msgstr "Перетягніть маркери, щоб встановити чорні/білі точки"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Min Power"
 msgstr "Мін. потужність"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 #, python-format
 msgid "Power for lightest areas, as a % of the step's main power"
 msgstr "Потужність для найсвітліших ділянок, у % від основної потужності кроку"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Max Power"
 msgstr "Макс. потужність"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 #, python-format
 msgid "Power for darkest areas, as a % of the step's main power"
 msgstr "Потужність для найтемніших ділянок, у % від основної потужності кроку"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Number of Depth Levels"
 msgstr "Кількість рівнів глибини"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Z Step-Down per Level (mm)"
 msgstr "Зниження Z на рівень (мм)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Rotate Angle Per Pass"
 msgstr "Кут повороту за прохід"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Degrees to rotate each successive pass"
 msgstr "Градуси повороту кожного наступного проходу"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Engraving Pattern"
 msgstr "Візерунок гравіювання"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Settings that control the scan line pattern and orientation."
 msgstr "Налаштування, що керують візерунком та орієнтацією ліній сканування."
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Angle"
 msgstr "Кут"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Angle of scan lines in degrees"
 msgstr "Кут ліній сканування в градусах"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Cross-Hatch"
 msgstr "Перехресна штриховка"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Add a second pass at 90 degrees"
 msgstr "Додати другий прохід під 90 градусів"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Line Spacing"
 msgstr "Інтервал між лініями"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid ""
 "Distance between scan lines in machine units. Leave at 0 to use laser spot "
 "size"
@@ -161,69 +161,69 @@ msgstr ""
 "Відстань між лініями сканування в одиницях верстата. Залиште 0, щоб "
 "використовувати розмір плями лазера"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Invert"
 msgstr "Інвертувати"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Engrave white areas instead of black areas"
 msgstr "Гравіювати білі ділянки замість чорних"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Change Power Range"
 msgstr "Змінити діапазон потужності"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Change Min Power"
 msgstr "Змінити мін. потужність"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Change Max Power"
 msgstr "Змінити макс. потужність"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Min Power (Black)"
 msgstr "Мін. потужність (чорне)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Max Power (White)"
 msgstr "Макс. потужність (біле)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Min Power (White)"
 msgstr "Мін. потужність (біле)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Max Power (Black)"
 msgstr "Макс. потужність (чорне)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Change engraving setting"
 msgstr "Змінити налаштування гравіювання"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/shrinkwrap_widget.py
 msgid "Gravity"
 msgstr "Гравітація"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/shrinkwrap_widget.py
 msgid "Pulls the hull inward. 0.0 is a standard convex hull"
 msgstr "Тягне оболонку всередину. 0.0 — стандартна опукла оболонка"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/frame_widget.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/frame_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Cut Side"
 msgstr "Сторона різу"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/frame_widget.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/frame_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Path Offset"
 msgstr "Зміщення контуру"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid ""
 "Absolute distance from original path in machine units, direction is "
 "controlled by Cut Side"
@@ -231,147 +231,147 @@ msgstr ""
 "Абсолютна відстань від оригінального контуру в одиницях машини, напрямок "
 "контролюється стороною різу"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/shrinkwrap_widget.py
 msgid "Change Shrinkwrap Setting"
 msgstr "Змінити налаштування стягування"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/frame_widget.py
+#: laser_essentials/widgets/frame_widget.py
 msgid "Absolute distance from content boundary in machine units"
 msgstr "Абсолютна відстань від межі вмісту в одиницях машини"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/frame_widget.py
+#: laser_essentials/widgets/frame_widget.py
 msgid "Change Frame Setting"
 msgstr "Змінити налаштування рамки"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Remove Inner Paths"
 msgstr "Видалити внутрішні контури"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "If enabled, only trace the outer outline of shapes"
 msgstr "Якщо увімкнено, трасувати лише зовнішній контур фігур"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Cut Order"
 msgstr "Порядок різання"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Processing order for nested paths"
 msgstr "Порядок обробки вкладених контурів"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Rescan Content"
 msgstr "Пересканувати вміст"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Ignore source geometry and re-trace within the workpiece"
 msgstr "Ігнорувати вихідну геометрію і повторно трасувати в робочій деталі"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Tracing Threshold"
 msgstr "Поріг трасування"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Brightness level (0.0-1.0) to define edges"
 msgstr "Рівень яскравості (0.0-1.0) для визначення країв"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Change Edge Tracer Setting"
 msgstr "Змінити налаштування трасування країв"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Presets"
 msgstr "Пресети"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Load common test configurations"
 msgstr "Завантажити типові конфігурації тестування"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Test Type"
 msgstr "Тип тесту"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Cut: outlines; Engrave: fills with raster lines"
 msgstr "Різання: контури; Гравіювання: заповнення растровими лініями"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Speed &amp; Power"
 msgstr "Швидкість та потужність"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Define the range of speeds and powers for the test grid"
 msgstr "Визначте діапазон швидкостей та потужностей для тестової сітки"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Minimum Power (%)"
 msgstr "Мінімальна потужність (%)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "For first column"
 msgstr "Для першого стовпця"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Maximum Power (%)"
 msgstr "Максимальна потужність (%)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "For last column"
 msgstr "Для останнього стовпця"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Minimum Speed"
 msgstr "Мінімальна швидкість"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Starting speed (mm/min)"
 msgstr "Початкова швидкість (мм/хв)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Maximum Speed"
 msgstr "Максимальна швидкість"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Ending speed (mm/min)"
 msgstr "Кінцева швидкість (мм/хв)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Columns (Power Steps)"
 msgstr "Стовпці (кроки потужності)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Number of power variations"
 msgstr "Кількість варіацій потужності"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Rows (Speed Steps)"
 msgstr "Рядки (кроки швидкості)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Number of speed variations"
 msgstr "Кількість варіацій швидкості"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Shape Size"
 msgstr "Розмір фігури"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Size of each test square (mm)"
 msgstr "Розмір кожного тестового квадрата (мм)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Spacing"
 msgstr "Інтервал"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Gap between test squares (mm)"
 msgstr "Проміжок між тестовими квадратами (мм)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Line Interval"
 msgstr "Інтервал ліній"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid ""
 "Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
 "to use laser spot size."
@@ -379,52 +379,52 @@ msgstr ""
 "Відстань між лініями сканування в одиницях верстата (для режиму "
 "гравіювання). Залиште 0, щоб використовувати розмір плями лазера."
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Include Labels"
 msgstr "Включити мітки"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Add speed/power annotations to the grid"
 msgstr "Додати анотації швидкості/потужності до сітки"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Label Engrave Power (%)"
 msgstr "Потужність гравіювання міток (%)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 #, python-brace-format
 msgid "Change {param_name}"
 msgstr "Змінити {param_name}"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Change Grid Dimensions"
 msgstr "Змінити розміри сітки"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/shrinkwrap_step.py
+#: laser_essentials/steps/shrinkwrap_step.py
 msgid "Shrink Wrap"
 msgstr "Обтискання"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/frame_step.py
+#: laser_essentials/steps/frame_step.py
 msgid "Frame Outline"
 msgstr "Контур рамки"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/raster_step.py
+#: laser_essentials/steps/raster_step.py
 msgid "Engrave"
 msgstr "Гравіювання"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/contour_step.py
+#: laser_essentials/steps/contour_step.py
 msgid "Contour"
 msgstr "Контур"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/material_test.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/commands/material_test_cmd.py
+#: laser_essentials/steps/material_test.py
+#: laser_essentials/commands/material_test_cmd.py
 msgid "Material Test Grid"
 msgstr "Сітка тестування матеріалу"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/backend.py
+#: laser_essentials/backend.py
 msgid "Create Material Test Grid"
 msgstr "Створити сітку тестування матеріалу"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/commands/material_test_cmd.py
+#: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "Додати тест матеріалу"

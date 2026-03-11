@@ -1068,9 +1068,9 @@ msgid ""
 "Q<0-255> for laser power instead of inline S commands, reducing buffer "
 "pressure on the controller."
 msgstr ""
-"Mach4 з аналоговим виходом M67 для високошвидкісного растрового "
-"гравіювання. Використовує M67 E0 Q<0-255> для потужності лазера замість "
-"рядкових команд S, зменшуючи тиск буфера на контролер."
+"Mach4 з аналоговим виходом M67 для високошвидкісного растрового гравіювання. "
+"Використовує M67 E0 Q<0-255> для потужності лазера замість рядкових команд "
+"S, зменшуючи тиск буфера на контролер."
 
 #: rayforge/machine/models/dialect/smoothieware.py
 msgid "Smoothieware"
