@@ -28,6 +28,7 @@ DIALECT_DIR.mkdir(parents=True, exist_ok=True)
 
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
 ADDONS_DIR = CONFIG_DIR / "addons"
+LICENSES_DIR = CONFIG_DIR / "licenses"
 ADDON_DATA_DIR = CONFIG_DIR / "addon_data"
 AI_CONFIG_FILE = CONFIG_DIR / "ai.yaml"
 

@@ -400,9 +400,7 @@ class AddonListWidget(PreferencesGroupWithButton):
 
         def on_license_added():
             context = get_context()
-            success, _message = context.addon_mgr.recheck_license(addon_name)
-            if success:
-                context.addon_mgr.enable_addon(addon_name)
+            context.addon_mgr.recheck_license(addon_name)
             self.populate_addons()
 
         root = cast(Gtk.Window, self.get_root())

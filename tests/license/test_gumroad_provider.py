@@ -1,10 +1,10 @@
-import json
 import tempfile
 from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
 import pytest
+import yaml
 
 from rayforge.license import (
     LicenseStatus,
@@ -36,9 +36,9 @@ class TestGumroadProvider:
         assert provider.has_license_for("PRODUCT123")
         assert provider.get_licenses() == {"PRODUCT123": "LICENSEKEY123"}
 
-        config_file = temp_dir / "gumroad_licenses.json"
+        config_file = temp_dir / "gumroad.yaml"
         with open(config_file) as f:
-            data = json.load(f)
+            data = yaml.safe_load(f)
         assert data["licenses"] == {"PRODUCT123": "LICENSEKEY123"}
 
     def test_remove_license(self, provider):
