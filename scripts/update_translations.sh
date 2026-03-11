@@ -44,6 +44,9 @@ process_package() {
     echo "  Extracting strings to $locale_dir/$pkg_name.pot..."
     find "$src_dir" -name "*.py" | xgettext --from-code=UTF-8 --add-location=file -o "$locale_dir/$pkg_name.pot" -f - 2>/dev/null || true
 
+    # Clean up file paths to show relative paths only
+    sed -i "s|#: $src_dir/|#: $pkg_name/|g" "$locale_dir/$pkg_name.pot"
+
     # 2. Create .po files for all supported languages
     echo "  Ensuring .po files exist for all supported languages..."
     for lang in "${SUPPORTED_LANGUAGES[@]}"; do
@@ -99,7 +102,10 @@ if [ "$COMPILE_ONLY" = false ]; then
 
   # 1. Extract new strings to .pot file for main app
   echo "Extracting strings to rayforge/locale/rayforge.pot..."
-  find rayforge/ -name "*.py" -not -path "*/builtin_addons/*" | xgettext --from-code=UTF-8 --add-location=file -o rayforge/locale/rayforge.pot -f -
+  find rayforge/ -name "*.py" \
+    -not -path "*/builtin_addons/*" \
+    -not -path "*/private_addons/*" | \
+    xgettext --from-code=UTF-8 --add-location=file -o rayforge/locale/rayforge.pot -f -
 
   # 2. Update existing .po files with msgmerge for main app
   echo "Merging .pot with .po files..."
@@ -128,28 +134,32 @@ for lang_dir in rayforge/locale/*/; do
   fi
 done
 
-# 4. Process builtin addons
+# 4. Process addons
 echo ""
-echo "Processing builtin addons..."
-for addon_dir in rayforge/builtin_addons/*/; do
-  yaml_file="$addon_dir/rayforge-addon.yaml"
-  
-  if [ ! -f "$yaml_file" ]; then
-    continue
-  fi
-  
-  # Extract package name from YAML file
-  pkg_name=$(grep -E "^name:" "$yaml_file" | sed 's/name:[[:space:]]*//')
-  
-  if [ -z "$pkg_name" ]; then
-    continue
-  fi
-  
-  src_dir="$addon_dir$pkg_name"
-  locale_dir="$addon_dir/locale"
-  
-  if [ -d "$src_dir" ] && [ -d "$locale_dir" ]; then
-    process_package "$pkg_name" "$src_dir" "$locale_dir"
+echo "Processing addons..."
+for addon_type in builtin_addons private_addons; do
+  if [ -d "rayforge/$addon_type" ]; then
+    for addon_dir in rayforge/$addon_type/*/; do
+      yaml_file="$addon_dir/rayforge-addon.yaml"
+      
+      if [ ! -f "$yaml_file" ]; then
+        continue
+      fi
+      
+      # Extract package name from YAML file
+      pkg_name=$(grep -E "^name:" "$yaml_file" | sed 's/name:[[:space:]]*//')
+      
+      if [ -z "$pkg_name" ]; then
+        continue
+      fi
+      
+      src_dir="$addon_dir$pkg_name"
+      locale_dir="$addon_dir/locale"
+      
+      if [ -d "$src_dir" ] && [ -d "$locale_dir" ]; then
+        process_package "$pkg_name" "$src_dir" "$locale_dir"
+      fi
+    done
   fi
 done
 

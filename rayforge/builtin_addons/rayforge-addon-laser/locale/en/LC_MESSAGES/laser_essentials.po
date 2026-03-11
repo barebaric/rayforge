@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-08 22:00+0100\n"
+"POT-Creation-Date: 2026-03-09 22:05+0100\n"
 "PO-Revision-Date: 2026-03-01 19:25+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,142 +17,142 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/raster_producer.py
+#: laser_essentials/producers/raster_producer.py
 msgid "Variable Power"
 msgstr "Variable Power"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/raster_producer.py
+#: laser_essentials/producers/raster_producer.py
 msgid "Constant Power"
 msgstr "Constant Power"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/raster_producer.py
+#: laser_essentials/producers/raster_producer.py
 msgid "Dither"
 msgstr "Dither"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/raster_producer.py
+#: laser_essentials/producers/raster_producer.py
 msgid "Multiple Depths"
 msgstr "Multiple Depths"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/shrinkwrap_producer.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/contour_producer.py
+#: laser_essentials/producers/shrinkwrap_producer.py
+#: laser_essentials/producers/contour_producer.py
 msgid "Optimizing path with arcs..."
 msgstr "Optimizing path with arcs..."
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/contour_producer.py
+#: laser_essentials/producers/contour_producer.py
 msgid "Inside-Outside"
 msgstr "Inside-Outside"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/producers/contour_producer.py
+#: laser_essentials/producers/contour_producer.py
 msgid "Outside-Inside"
 msgstr "Outside-Inside"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Configure how the laser engraves your image."
 msgstr "Configure how the laser engraves your image."
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Mode"
 msgstr "Mode"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Threshold"
 msgstr "Threshold"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Brightness cutoff for black/white (0-255)"
 msgstr "Brightness cutoff for black/white (0-255)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Engraving Method"
 msgstr "Engraving Method"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Algorithm for converting grayscale to binary"
 msgstr "Algorithm for converting grayscale to binary"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Auto Levels"
 msgstr "Auto Levels"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Automatically adjust black/white points"
 msgstr "Automatically adjust black/white points"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Brightness Range"
 msgstr "Brightness Range"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Auto-adjusted based on image content"
 msgstr "Auto-adjusted based on image content"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Drag markers to set black/white points"
 msgstr "Drag markers to set black/white points"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Min Power"
 msgstr "Min Power"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 #, python-format
 msgid "Power for lightest areas, as a % of the step's main power"
 msgstr "Power for lightest areas, as a % of the step's main power"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Max Power"
 msgstr "Max Power"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 #, python-format
 msgid "Power for darkest areas, as a % of the step's main power"
 msgstr "Power for darkest areas, as a % of the step's main power"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Number of Depth Levels"
 msgstr "Number of Depth Levels"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Z Step-Down per Level (mm)"
 msgstr "Z Step-Down per Level (mm)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Rotate Angle Per Pass"
 msgstr "Rotate Angle Per Pass"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Degrees to rotate each successive pass"
 msgstr "Degrees to rotate each successive pass"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Engraving Pattern"
 msgstr "Engraving Pattern"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Settings that control the scan line pattern and orientation."
 msgstr "Settings that control the scan line pattern and orientation."
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Angle"
 msgstr "Angle"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Angle of scan lines in degrees"
 msgstr "Angle of scan lines in degrees"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Cross-Hatch"
 msgstr "Cross-Hatch"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Add a second pass at 90 degrees"
 msgstr "Add a second pass at 90 degrees"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Line Spacing"
 msgstr "Line Spacing"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid ""
 "Distance between scan lines in machine units. Leave at 0 to use laser spot "
 "size"
@@ -160,215 +160,215 @@ msgstr ""
 "Distance between scan lines in machine units. Leave at 0 to use laser spot "
 "size"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Invert"
 msgstr "Invert"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Engrave white areas instead of black areas"
 msgstr "Engrave white areas instead of black areas"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Change Power Range"
 msgstr "Change Power Range"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Change Min Power"
 msgstr "Change Min Power"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Change Max Power"
 msgstr "Change Max Power"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Min Power (Black)"
 msgstr "Min Power (Black)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Max Power (White)"
 msgstr "Max Power (White)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Min Power (White)"
 msgstr "Min Power (White)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Max Power (Black)"
 msgstr "Max Power (Black)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/raster_widget.py
 msgid "Change engraving setting"
 msgstr "Change engraving setting"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/shrinkwrap_widget.py
 msgid "Gravity"
 msgstr "Gravity"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/shrinkwrap_widget.py
 msgid "Pulls the hull inward. 0.0 is a standard convex hull"
 msgstr "Pulls the hull inward. 0.0 is a standard convex hull"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/frame_widget.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/frame_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Cut Side"
 msgstr "Cut Side"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/frame_widget.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/frame_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Path Offset"
 msgstr ""
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid ""
 "Absolute distance from original path in machine units, direction is "
 "controlled by Cut Side"
 msgstr ""
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/shrinkwrap_widget.py
 msgid "Change Shrinkwrap Setting"
 msgstr "Change Shrinkwrap Setting"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/frame_widget.py
+#: laser_essentials/widgets/frame_widget.py
 msgid "Absolute distance from content boundary in machine units"
 msgstr ""
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/frame_widget.py
+#: laser_essentials/widgets/frame_widget.py
 msgid "Change Frame Setting"
 msgstr "Change Frame Setting"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Remove Inner Paths"
 msgstr "Remove Inner Paths"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "If enabled, only trace the outer outline of shapes"
 msgstr "If enabled, only trace the outer outline of shapes"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Cut Order"
 msgstr "Cut Order"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Processing order for nested paths"
 msgstr "Processing order for nested paths"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Rescan Content"
 msgstr "Rescan Content"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Ignore source geometry and re-trace within the workpiece"
 msgstr "Ignore source geometry and re-trace within the workpiece"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Tracing Threshold"
 msgstr "Tracing Threshold"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Brightness level (0.0-1.0) to define edges"
 msgstr "Brightness level (0.0-1.0) to define edges"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_widget.py
 msgid "Change Edge Tracer Setting"
 msgstr "Change Edge Tracer Setting"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Presets"
 msgstr "Presets"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Load common test configurations"
 msgstr "Load common test configurations"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Test Type"
 msgstr "Test Type"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Cut: outlines; Engrave: fills with raster lines"
 msgstr "Cut: outlines; Engrave: fills with raster lines"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Speed &amp; Power"
 msgstr "Speed &amp; Power"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Define the range of speeds and powers for the test grid"
 msgstr "Define the range of speeds and powers for the test grid"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Minimum Power (%)"
 msgstr "Minimum Power (%)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "For first column"
 msgstr "For first column"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Maximum Power (%)"
 msgstr "Maximum Power (%)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "For last column"
 msgstr "For last column"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Minimum Speed"
 msgstr "Minimum Speed"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Starting speed (mm/min)"
 msgstr "Starting speed (mm/min)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Maximum Speed"
 msgstr "Maximum Speed"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Ending speed (mm/min)"
 msgstr "Ending speed (mm/min)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Columns (Power Steps)"
 msgstr "Columns (Power Steps)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Number of power variations"
 msgstr "Number of power variations"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Rows (Speed Steps)"
 msgstr "Rows (Speed Steps)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Number of speed variations"
 msgstr "Number of speed variations"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Shape Size"
 msgstr "Shape Size"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Size of each test square (mm)"
 msgstr "Size of each test square (mm)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Spacing"
 msgstr "Spacing"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Gap between test squares (mm)"
 msgstr "Gap between test squares (mm)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Line Interval"
 msgstr "Line Interval"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid ""
 "Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
 "to use laser spot size."
@@ -376,52 +376,52 @@ msgstr ""
 "Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
 "to use laser spot size."
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Include Labels"
 msgstr "Include Labels"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Add speed/power annotations to the grid"
 msgstr "Add speed/power annotations to the grid"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Label Engrave Power (%)"
 msgstr "Label Engrave Power (%)"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 #, python-brace-format
 msgid "Change {param_name}"
 msgstr "Change {param_name}"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Change Grid Dimensions"
 msgstr "Change Grid Dimensions"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/shrinkwrap_step.py
+#: laser_essentials/steps/shrinkwrap_step.py
 msgid "Shrink Wrap"
 msgstr "Shrink Wrap"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/frame_step.py
+#: laser_essentials/steps/frame_step.py
 msgid "Frame Outline"
 msgstr "Frame Outline"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/raster_step.py
+#: laser_essentials/steps/raster_step.py
 msgid "Engrave"
 msgstr "Engrave"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/contour_step.py
+#: laser_essentials/steps/contour_step.py
 msgid "Contour"
 msgstr "Contour"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/material_test.py
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/commands/material_test_cmd.py
+#: laser_essentials/steps/material_test.py
+#: laser_essentials/commands/material_test_cmd.py
 msgid "Material Test Grid"
 msgstr "Material Test Grid"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/backend.py
+#: laser_essentials/backend.py
 msgid "Create Material Test Grid"
 msgstr "Create Material Test Grid"
 
-#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/commands/material_test_cmd.py
+#: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "Add Material Test"

@@ -1081,8 +1081,8 @@ msgid ""
 "pressure on the controller."
 msgstr ""
 "Mach4 con salida analógica M67 para grabado raster de alta velocidad. Usa "
-"M67 E0 Q<0-255> para la potencia del láser en lugar de comandos S en "
-"línea, reduciendo la presión del búfer en el controlador."
+"M67 E0 Q<0-255> para la potencia del láser en lugar de comandos S en línea, "
+"reduciendo la presión del búfer en el controlador."
 
 #: rayforge/machine/models/dialect/smoothieware.py
 msgid "Smoothieware"

@@ -996,8 +996,8 @@ msgid ""
 "Q<0-255> for laser power instead of inline S commands, reducing buffer "
 "pressure on the controller."
 msgstr ""
-"具有M67模拟输出的Mach4，用于高速光栅雕刻。使用M67 E0 Q<0-255>进行激光"
-"功率控制，而不是内联S命令，从而减少控制器的缓冲区压力。"
+"具有M67模拟输出的Mach4，用于高速光栅雕刻。使用M67 E0 Q<0-255>进行激光功率控"
+"制，而不是内联S命令，从而减少控制器的缓冲区压力。"
 
 #: rayforge/machine/models/dialect/smoothieware.py
 msgid "Smoothieware"

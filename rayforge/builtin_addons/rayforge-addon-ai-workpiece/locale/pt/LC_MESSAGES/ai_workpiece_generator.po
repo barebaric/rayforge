@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-07 20:16+0100\n"
+"POT-Creation-Date: 2026-03-09 22:05+0100\n"
 "PO-Revision-Date: 2026-03-07 20:16+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,19 +17,19 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/widgets/dialog.py
+#: ai_workpiece_generator/widgets/dialog.py
 msgid "Generate a Workpiece"
 msgstr "Gerar uma peça de trabalho"
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/widgets/dialog.py
+#: ai_workpiece_generator/widgets/dialog.py
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/widgets/dialog.py
+#: ai_workpiece_generator/widgets/dialog.py
 msgid "Generate"
 msgstr "Gerar"
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/widgets/dialog.py
+#: ai_workpiece_generator/widgets/dialog.py
 msgid ""
 "Describe the design you want to create. Example: 'A simple star shape with 5 "
 "points'"
@@ -37,61 +37,61 @@ msgstr ""
 "Descreva o design que você deseja criar. Exemplo: 'Uma forma de estrela "
 "simples com 5 pontas'"
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/widgets/dialog.py
+#: ai_workpiece_generator/widgets/dialog.py
 msgid "Close"
 msgstr "Fechar"
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/frontend.py
+#: ai_workpiece_generator/frontend.py
 msgid "Generate Workpiece with AI..."
 msgstr "Gerar peça de trabalho com IA..."
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+#: ai_workpiece_generator/generator.py
 msgid "Bad request - please check your settings"
 msgstr "Requisição inválida - por favor verifique suas configurações"
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+#: ai_workpiece_generator/generator.py
 msgid "Authentication failed - please check your API key"
 msgstr "Falha na autenticação - por favor verifique sua chave API"
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+#: ai_workpiece_generator/generator.py
 msgid "Access forbidden - please check your API key permissions"
 msgstr "Acesso negado - por favor verifique as permissões da sua chave API"
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+#: ai_workpiece_generator/generator.py
 msgid "API endpoint not found - please check the base URL"
 msgstr "Endpoint da API não encontrado - por favor verifique a URL base"
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+#: ai_workpiece_generator/generator.py
 msgid "Rate limited - please wait and try again"
 msgstr "Limite de requisições atingido - por favor aguarde e tente novamente"
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+#: ai_workpiece_generator/generator.py
 msgid "Server error - please try again later"
 msgstr "Erro do servidor - por favor tente novamente mais tarde"
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+#: ai_workpiece_generator/generator.py
 msgid "Service unavailable - please try again later"
 msgstr "Serviço indisponível - por favor tente novamente mais tarde"
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+#: ai_workpiece_generator/generator.py
 msgid "No AI provider configured. Please configure an AI provider in Settings."
 msgstr ""
 "Nenhum provedor de IA configurado. Por favor configure um provedor de IA nas "
 "Configurações."
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+#: ai_workpiece_generator/generator.py
 msgid "No response from AI provider."
 msgstr "Sem resposta do provedor de IA."
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+#: ai_workpiece_generator/generator.py
 msgid "AI did not generate valid SVG code. Please try a different prompt."
 msgstr "A IA não gerou código SVG válido. Por favor tente um prompt diferente."
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+#: ai_workpiece_generator/generator.py
 #, python-brace-format
 msgid "Server returned error {code}"
 msgstr "O servidor retornou o erro {code}"
 
-#: rayforge/builtin_addons/rayforge-addon-ai-workpiece/ai_workpiece_generator/generator.py
+#: ai_workpiece_generator/generator.py
 msgid "Connection failed - please check your network"
 msgstr "Falha na conexão - por favor verifique sua rede"
