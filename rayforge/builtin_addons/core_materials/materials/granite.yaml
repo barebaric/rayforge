@@ -1,0 +1,28 @@
+uid: granite
+name:
+  default: Granite
+  de: Granit
+  es: Granito
+  fr: Granit
+  pt: Granito
+  uk: Граніт
+  zh_CN: 花岗岩
+description:
+  default: Coarse-grained igneous rock
+  de: Grobkörniges magmatisches Gestein
+  es: Roca ígnea de grano grueso
+  fr: Roche ignée à grain grossier
+  pt: Rocha ígnea de grão grosso
+  uk: Грубозерниста магматична порода
+  zh_CN: 粗粒火成岩
+category:
+  default: Stone
+  de: Stein
+  es: Piedra
+  fr: Pierre
+  pt: Pedra
+  uk: Камінь
+  zh_CN: 石材
+appearance:
+  color: "#DCDCDC"
+  pattern: solid

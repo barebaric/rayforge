@@ -1,0 +1,28 @@
+uid: polyethylene
+name:
+  default: Polyethylene
+  de: Polyethylen
+  es: Polietileno
+  fr: Polyéthylène
+  pt: Polietileno
+  uk: Поліетилен
+  zh_CN: 聚乙烯
+description:
+  default: Common thermoplastic polymer
+  de: Häufiger thermoplastischer Kunststoff
+  es: Polímero termoplástico común
+  fr: Polymère thermoplastique courant
+  pt: Polímero termoplástico comum
+  uk: Звичайний термопластичний полімер
+  zh_CN: 常见的热塑性聚合物
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#F8F8FF"
+  pattern: solid

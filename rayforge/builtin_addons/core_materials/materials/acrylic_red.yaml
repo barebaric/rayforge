@@ -1,0 +1,28 @@
+uid: acrylic_red
+name:
+  default: Red Acrylic
+  de: Roter Acryl
+  es: Acrílico Rojo
+  fr: Acrylique Rouge
+  pt: Acrílico Vermelho
+  uk: Червоний акрил
+  zh_CN: 红色亚克力
+description:
+  default: Opaque red thermoplastic sheet
+  de: Undurchsichtiges rotes Thermoplastikblech
+  es: Lámina de termoplástico rojo opaco
+  fr: Feuille de thermoplastique rouge opaque
+  pt: Chapa de termoplástico vermelho opaco
+  uk: Непрозорий червоний термопластиковий лист
+  zh_CN: 不透明红色热塑性塑料板
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#FF0000"
+  pattern: solid

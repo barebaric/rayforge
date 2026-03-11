@@ -1,0 +1,28 @@
+uid: titanium
+name:
+  default: Titanium
+  de: Titan
+  es: Titanio
+  fr: Titane
+  pt: Titânio
+  uk: Титан
+  zh_CN: 钛
+description:
+  default: Lightweight strong metal with silver-gray color
+  de: Leichtes starkes Metall mit silbergrauer Farbe
+  es: Metal ligero y fuerte de color gris plateado
+  fr: Métal léger et fort de couleur gris argenté
+  pt: Metal leve e forte de cor cinza prateado
+  uk: Легкий міцний метал сріблясто-сірого кольору
+  zh_CN: 轻质强金属，呈银灰色
+category:
+  default: Metal
+  de: Metall
+  es: Metal
+  fr: Métal
+  pt: Metal
+  uk: Метал
+  zh_CN: 金属
+appearance:
+  color: "#71797E"
+  pattern: metallic

@@ -1,0 +1,28 @@
+uid: stainless_steel
+name:
+  default: Stainless Steel
+  de: Edelstahl
+  es: Acero Inoxidable
+  fr: Acier Inoxydable
+  pt: Aço Inoxidável
+  uk: Нержавіюча сталь
+  zh_CN: 不锈钢
+description:
+  default: Corrosion-resistant steel alloy
+  de: Korrosionsbeständige Stahllegierung
+  es: Aleación de acero resistente a la corrosión
+  fr: Alliage d'acier résistant à la corrosion
+  pt: Liga de aço resistente à corrosão
+  uk: Корозійностійка сталь
+  zh_CN: 耐腐蚀的钢合金
+category:
+  default: Metal
+  de: Metall
+  es: Metal
+  fr: Métal
+  pt: Metal
+  uk: Метал
+  zh_CN: 金属
+appearance:
+  color: "#A9A9A9"
+  pattern: metallic

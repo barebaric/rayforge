@@ -1,0 +1,28 @@
+uid: acrylic_orange
+name:
+  default: Orange Acrylic
+  de: Oranger Acryl
+  es: Acrílico Naranja
+  fr: Acrylique Orange
+  pt: Acrílico Laranja
+  uk: Помаранчевий акрил
+  zh_CN: 橙色亚克力
+description:
+  default: Opaque orange thermoplastic sheet
+  de: Undurchsichtiges oranges Thermoplastikblech
+  es: Lámina de termoplástico naranja opaco
+  fr: Feuille de thermoplastique orange opaque
+  pt: Chapa de termoplástico laranja opaco
+  uk: Непрозорий помаранчевий термопластиковий лист
+  zh_CN: 不透明橙色热塑性塑料板
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#FFA500"
+  pattern: solid

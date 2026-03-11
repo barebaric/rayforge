@@ -1,0 +1,28 @@
+uid: hickory
+name:
+  default: Hickory
+  de: Hickory
+  es: Nogal Americano
+  fr: Hickory
+  pt: Nogueira Americana
+  uk: Гікорі
+  zh_CN: 山核桃木
+description:
+  default: Tough hard hardwood
+  de: Zähes hartes Hartholz
+  es: Madera dura y resistente
+  fr: Bois dur et résistant
+  pt: Madeira dura e resistente
+  uk: Міцна тверда деревина
+  zh_CN: 坚韧的硬木
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#DAA520"
+  pattern: wood_grain

@@ -1,0 +1,28 @@
+uid: leather
+name:
+  default: Leather
+  de: Leder
+  es: Cuero
+  fr: Cuir
+  pt: Couro
+  uk: Шкіра
+  zh_CN: 皮革
+description:
+  default: Durable flexible material from animal hide
+  de: Langlebiges flexibles Material aus Tierhaut
+  es: Material flexible y duradero de piel animal
+  fr: Matériau flexible et durable en peau animale
+  pt: Material flexível e durável de pele animal
+  uk: Міцний гнучкий матеріал зі шкіри тварин
+  zh_CN: 源自动物皮的耐用柔韧材料
+category:
+  default: Organic
+  de: Organisch
+  es: Orgánico
+  fr: Organique
+  pt: Orgânico
+  uk: Органічний
+  zh_CN: 有机材料
+appearance:
+  color: "#8B4513"
+  pattern: solid

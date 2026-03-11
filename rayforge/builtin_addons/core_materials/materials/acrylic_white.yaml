@@ -1,0 +1,28 @@
+uid: acrylic_white
+name:
+  default: White Acrylic
+  de: Weißer Acryl
+  es: Acrílico Blanco
+  fr: Acrylique Blanc
+  pt: Acrílico Branco
+  uk: Білий акрил
+  zh_CN: 白色亚克力
+description:
+  default: Opaque white thermoplastic sheet
+  de: Undurchsichtiges weißes Thermoplastikblech
+  es: Lámina de termoplástico blanco opaco
+  fr: Feuille de thermoplastique blanc opaque
+  pt: Chapa de termoplástico branco opaco
+  uk: Непрозорий білий термопластиковий лист
+  zh_CN: 不透明白色热塑性塑料板
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#FFFFFF"
+  pattern: solid

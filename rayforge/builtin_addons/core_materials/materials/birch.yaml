@@ -1,0 +1,28 @@
+uid: birch
+name:
+  default: Birch
+  de: Birke
+  es: Abedul
+  fr: Bouleau
+  pt: Bétula
+  uk: Береза
+  zh_CN: 桦木
+description:
+  default: Pale hardwood with smooth grain
+  de: Blasses Hartholz mit glatter Maserung
+  es: Madera dura pálida con veta suave
+  fr: Bois dur pâle avec un grain lisse
+  pt: Madeira dura pálida com grão suave
+  uk: Блідий тверда деревина з гладким візерунком
+  zh_CN: 浅色硬木，纹理光滑
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#FFE4C4"
+  pattern: wood_grain

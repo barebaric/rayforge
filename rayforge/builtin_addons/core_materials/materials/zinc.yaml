@@ -1,0 +1,28 @@
+uid: zinc
+name:
+  default: Zinc
+  de: Zink
+  es: Zinc
+  fr: Zinc
+  pt: Zinco
+  uk: Цинк
+  zh_CN: 锌
+description:
+  default: Bluish-white metal used for galvanizing
+  de: Bläulich-weißes Metall für die Verzinkung
+  es: Metal blanquecino azulado utilizado para galvanizado
+  fr: Métal blanc bleuté utilisé pour la galvanisation
+  pt: Metal branco azulado usado para galvanização
+  uk: Блакитно-білий метал для оцинковування
+  zh_CN: 蓝白色金属，用于镀锌
+category:
+  default: Metal
+  de: Metall
+  es: Metal
+  fr: Métal
+  pt: Metal
+  uk: Метал
+  zh_CN: 金属
+appearance:
+  color: "#A0A0A0"
+  pattern: metallic
