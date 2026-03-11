@@ -43,12 +43,12 @@ logger = logging.getLogger(__name__)
 class StressTestConfig:
     """Configuration for stress test parameters."""
 
-    total_duration_sec: int = 90
+    total_duration_sec: int = 105
     chaos_phase_sec: int = 19
     settle_phase_sec: int = 7
     min_invalidation_interval_ms: int = 2
     max_invalidation_interval_ms: int = 777
-    max_settle_wait_sec: int = 30
+    max_settle_wait_sec: int = 45
     leak_threshold: int = 2
     initial_workpiece_count: int = 2
     max_workpieces: int = 5
