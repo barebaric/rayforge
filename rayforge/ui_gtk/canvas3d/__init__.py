@@ -1,4 +1,12 @@
 import logging
+import os
+
+# Check if 3D canvas is explicitly disabled via environment variable
+# This must be checked before any GL-related imports occur
+_3d_disabled = os.environ.get("RAYFORGE_DISABLE_3D", "").lower() in (
+    "true",
+    "1",
+)
 
 # This flag can be checked by other parts of the application
 # to decide whether to instantiate and show the 3D canvas.
@@ -19,9 +27,20 @@ def initialize():
     canvas cannot be used. It sets the package-level 'initialized' flag
     accordingly. This should be called from the main application entry
     point before any UI is created.
+
+    If the RAYFORGE_DISABLE_3D environment variable is set to 'true' or
+    '1', the 3D canvas will be disabled without attempting initialization.
     """
     global initialized, initialization_error
     if initialized or initialization_error:
+        return
+
+    # Check if 3D canvas is explicitly disabled via environment variable
+    if _3d_disabled:
+        logger.info(
+            "3D canvas disabled via RAYFORGE_DISABLE_3D environment variable."
+        )
+        initialized = False
         return
 
     try:
@@ -58,27 +77,27 @@ def initialize():
         initialized = False
 
 
+class _PlaceholderCanvas3D:
+    """A placeholder class for when the 3D canvas is disabled/unavailable."""
+
+    def __init__(self, *args, **kwargs):
+        raise RuntimeError("3D Canvas is not available.")
+
+
 # Expose the main widget class from the package.
-# We wrap this in a try-except to prevent a hard crash if canvas3d.py itself
-# has an import error for GL, and define a dummy class so that type hinting
-# or unconditional imports elsewhere don't break. The 'initialized' flag
-# remains the definitive source of truth for canvas availability.
-try:
-    from .canvas3d import Canvas3D  # type: ignore
-except Exception as e:
-    logger.exception(
-        "Failed to import Canvas3D. The 3D canvas will not be available."
-    )
-    initialization_error = f"Canvas3D import failed: {e}"
-
-    class Canvas3D:
-        """A placeholder class for when the 3D canvas fails to initialize."""
-
-        def __init__(self, *args, **kwargs):
-            raise RuntimeError(
-                "3D Canvas is not available due to an initialization failure. "
-                "Check logs for details."
-            )
+# Skip import entirely if disabled to avoid any GL loading.
+if _3d_disabled:
+    logger.info("Skipping Canvas3D import due to RAYFORGE_DISABLE_3D")
+    Canvas3D = _PlaceholderCanvas3D
+else:
+    try:
+        from .canvas3d import Canvas3D  # type: ignore
+    except Exception as e:
+        logger.exception(
+            "Failed to import Canvas3D. The 3D canvas will not be available."
+        )
+        initialization_error = f"Canvas3D import failed: {e}"
+        Canvas3D = _PlaceholderCanvas3D
 
 
 __all__ = [
