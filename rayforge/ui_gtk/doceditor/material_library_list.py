@@ -17,7 +17,10 @@ class LibraryRow(Gtk.Box):
     """A widget representing a single Material Library in a ListBox."""
 
     def __init__(
-        self, library: MaterialLibrary, on_delete_callback, on_edit_callback
+        self,
+        library: MaterialLibrary,
+        on_delete_callback,
+        on_edit_callback,
     ):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         logger.debug(
@@ -45,13 +48,8 @@ class LibraryRow(Gtk.Box):
         )
         self.append(labels_box)
 
-        label_text = (
-            _("Core Materials")
-            if self.library.source == "core"
-            else self.library.display_name
-        )
         self.title_label = Gtk.Label(
-            label=label_text,
+            label=self.library.display_name,
             halign=Gtk.Align.START,
             xalign=0,
         )
@@ -65,7 +63,7 @@ class LibraryRow(Gtk.Box):
         self.subtitle_label.add_css_class("dim-label")
         labels_box.append(self.subtitle_label)
 
-        # Add edit and delete buttons for user libraries only
+        # Add edit and delete buttons for writable libraries only
         if not self.library.read_only:
             # Suffix area for buttons
             suffix_box = Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)
@@ -85,17 +83,15 @@ class LibraryRow(Gtk.Box):
 
     def _get_subtitle_text(self) -> str:
         """Generates the subtitle text from library properties."""
-        if self.library.source == "core":
-            return _("Read-only core library")
-        elif self.library.source == "user":
-            material_count = len(self.library)
-            if material_count == 1:
-                return _("1 material")
-            return _("{count} materials").format(count=material_count)
+        material_count = len(self.library)
+        if material_count == 1:
+            count_text = _("1 material")
         else:
-            return _("Library from addon: ({source})").format(
-                source=self.library.source
-            )
+            count_text = _("{count} materials").format(count=material_count)
+
+        if self.library.read_only:
+            return _("{count} (Read-only)").format(count=count_text)
+        return count_text
 
     def _on_delete_clicked(self, button: Gtk.Button):
         """Handle delete button click."""
@@ -117,6 +113,7 @@ class LibraryListWidget(PreferencesGroupWithButton):
         super().__init__(
             button_label=_("Add New Library"),
             selection_mode=Gtk.SelectionMode.SINGLE,
+            empty_placeholder=_("No libraries found."),
             **kwargs,
         )
         self.library_selected = Signal()
@@ -125,17 +122,8 @@ class LibraryListWidget(PreferencesGroupWithButton):
         self._setup_ui()
 
     def _setup_ui(self):
-        """Configures the widget's list box and placeholder."""
-        placeholder = Gtk.Label(
-            label=_("No user libraries found."),
-            halign=Gtk.Align.CENTER,
-            margin_top=12,
-            margin_bottom=12,
-        )
-        placeholder.add_css_class("dim-label")
-        self.list_box.set_placeholder(placeholder)
+        """Configures the widget's list box."""
         self.list_box.set_show_separators(True)
-        # With the widget correctly initialized, 'row-selected' is reliable.
         self.list_box.connect("row-selected", self._on_library_selected)
 
     def populate_and_select(self, select_name: Optional[str] = None):
@@ -147,10 +135,9 @@ class LibraryListWidget(PreferencesGroupWithButton):
                          selects the first library in the list.
         """
         material_mgr = get_context().material_mgr
-        material_mgr.reload_libraries()
         libraries = sorted(
             material_mgr.get_libraries(),
-            key=lambda lib: (lib.source != "core", lib.display_name),
+            key=lambda lib: lib.display_name,
         )
         # Clear the old references before creating new ones
         self._row_widgets.clear()

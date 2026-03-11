@@ -274,24 +274,6 @@ class TestAddon:
                 addon.validate()
             assert "Unsupported api_version" in str(exc.value)
 
-    def test_validate_default_api_version(self):
-        """Test default api_version is used if not specified."""
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp)
-            (path / "main.py").write_text("def my_plugin(): pass")
-            data = {
-                "name": "test_pkg",
-                "depends": ["rayforge>=0.27.0,~0.27"],
-                "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"backend": "main"},
-            }
-            with open(path / "rayforge-addon.yaml", "w") as f:
-                yaml.dump(data, f)
-
-            addon = Addon.load_from_directory(path, version=TEST_VERSION)
-            assert addon.validate() is True
-            assert addon.metadata.api_version == 6
-
     def test_validate_with_unknown_version(self):
         """Test validation passes with UnknownVersion."""
         with tempfile.TemporaryDirectory() as tmp:

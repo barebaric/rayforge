@@ -158,6 +158,9 @@ class AddonManager:
                 'producer_registry', 'widget_registry', 'action_registry',
                 'layout_registry'.
         """
+        logger.debug(
+            f"set_registries called with keys: {list(registries.keys())}"
+        )
         self.registries = registries
 
     def set_window(self, window: Any):
@@ -662,6 +665,9 @@ class AddonManager:
                 module = importlib.util.module_from_spec(spec)
                 sys.modules[module_name] = module
                 spec.loader.exec_module(module)
+                logger.debug(
+                    f"Registering module {module_name} with plugin_mgr"
+                )
                 self.plugin_mgr.register(module)
                 self.loaded_addons[name] = addon
                 if name in self._load_errors:
@@ -1103,24 +1109,30 @@ class AddonManager:
         transformer_registry = self.registries.get("transformer_registry")
         action_registry = self.registries.get("action_registry")
         layout_registry = self.registries.get("layout_registry")
+        library_manager = self.registries.get("library_manager")
 
         if step_registry:
             self.plugin_mgr.hook.register_steps(step_registry=step_registry)
-        if producer_registry:
+        if producer_registry is not None:
             self.plugin_mgr.hook.register_producers(
                 producer_registry=producer_registry
             )
-        if transformer_registry:
+        if transformer_registry is not None:
             self.plugin_mgr.hook.register_transformers(
                 transformer_registry=transformer_registry
             )
-        if layout_registry:
+        if layout_registry is not None:
             self.plugin_mgr.hook.register_layout_strategies(
                 layout_registry=layout_registry
             )
-        if action_registry:
+        if action_registry is not None:
             self.plugin_mgr.hook.register_actions(
                 action_registry=action_registry
+            )
+        if library_manager is not None:
+            logger.debug("Calling register_material_libraries hook")
+            self.plugin_mgr.hook.register_material_libraries(
+                library_manager=library_manager
             )
 
     def complete_pending_unloads(self) -> List[str]:

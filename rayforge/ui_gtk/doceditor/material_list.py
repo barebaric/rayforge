@@ -105,22 +105,18 @@ class MaterialListWidget(PreferencesGroupWithButton):
 
     def __init__(self, **kwargs):
         # This list correctly uses the default SelectionMode.NONE
-        super().__init__(button_label=_("Add New Material"), **kwargs)
+        super().__init__(
+            button_label=_("Add New Material"),
+            empty_placeholder=_("No materials in selected library."),
+            **kwargs,
+        )
         self.material_added = Signal()
         self.material_deleted = Signal()
         self._setup_ui()
         self._current_library: Optional[MaterialLibrary] = None
 
     def _setup_ui(self):
-        """Configures the widget's list box and placeholder."""
-        placeholder = Gtk.Label(
-            label=_("No materials in selected library."),
-            halign=Gtk.Align.CENTER,
-            margin_top=12,
-            margin_bottom=12,
-        )
-        placeholder.add_css_class("dim-label")
-        self.list_box.set_placeholder(placeholder)
+        """Configures the widget's list box."""
         self.list_box.set_show_separators(True)
 
     def set_library(self, library: Optional[MaterialLibrary]):

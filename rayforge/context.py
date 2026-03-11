@@ -248,7 +248,6 @@ class RayforgeContext:
             CONFIG_DIR,
             MACHINE_DIR,
             CONFIG_FILE,
-            CORE_MATERIALS_DIR,
             USER_MATERIALS_DIR,
             USER_RECIPES_DIR,
         )
@@ -285,13 +284,11 @@ class RayforgeContext:
         )
 
         # Initialize the material manager
-        self._material_mgr = LibraryManager(
-            CORE_MATERIALS_DIR, USER_MATERIALS_DIR
-        )
+        self._material_mgr = LibraryManager(USER_MATERIALS_DIR)
         self._material_mgr.load_all_libraries()
         logger.info(
             f"Material manager initialized with "
-            f"{len(self._material_mgr.get_all_materials())} materials"
+            f"{len(self._material_mgr.get_all_materials())} user materials"
         )
 
         # Initialize the recipe manager
@@ -330,6 +327,7 @@ class RayforgeContext:
             action_registry = _action_registry
 
             registries["action_registry"] = action_registry
+            registries["library_manager"] = self._material_mgr
 
         # Provide registries to addon manager for addon enable/disable
         self.addon_mgr.set_registries(registries)
@@ -349,6 +347,14 @@ class RayforgeContext:
         if load_ui:
             self.plugin_mgr.hook.register_layout_strategies(
                 layout_registry=layout_registry
+            )
+            self.plugin_mgr.hook.register_material_libraries(
+                library_manager=self._material_mgr
+            )
+            logger.info(
+                f"Material libraries loaded: "
+                f"{len(self._material_mgr.get_all_materials())} "
+                f"total materials"
             )
 
         # Trigger the init hook for all registered addons

@@ -4,12 +4,18 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 1
-PLUGIN_API_VERSION = 6
+PLUGIN_API_VERSION = 7
 
 
 """
 API Changelog
 =============
+
+Version 7
+---------
+Added ``register_material_libraries`` hook to allow addons to register
+material libraries. Addons can return a list of paths to directories
+containing material YAML files.
 
 Version 6
 ---------
@@ -203,4 +209,19 @@ class RayforgeSpecs:
 
         Args:
             layout_registry: Registry for layout strategy classes.
+        """
+
+    @hookspec
+    def register_material_libraries(self, library_manager):
+        """
+        Called to allow addons to register material libraries.
+
+        Addons should call ``library_manager.add_library_from_path(path)`` to
+        register directories containing material YAML files. By default,
+        registered libraries are read-only.
+
+        .. versionadded:: 7
+
+        Args:
+            library_manager: The global LibraryManager instance.
         """
