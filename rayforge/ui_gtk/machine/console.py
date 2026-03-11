@@ -87,7 +87,7 @@ class Console(Gtk.Box):
         self.verbose_toggle.set_margin_end(6)
         self.verbose_toggle.set_halign(Gtk.Align.END)
         self.verbose_toggle.set_valign(Gtk.Align.START)
-        verbose_icon = get_icon("utilities-terminal-symbolic")
+        verbose_icon = get_icon("code-symbolic")
         self.verbose_toggle.set_child(verbose_icon)
         self.overlay.add_overlay(self.verbose_toggle)
 
