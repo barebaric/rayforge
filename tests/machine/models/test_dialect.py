@@ -3,8 +3,8 @@ from rayforge.machine.models.dialect import (
     GcodeDialect,
     register_dialect,
     _DIALECT_REGISTRY,
+    GRBL_DIALECT,
 )
-from rayforge.machine.models.dialect_builtins import GRBL_DIALECT
 
 
 @pytest.fixture(autouse=True)

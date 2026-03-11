@@ -3,7 +3,7 @@ import uuid
 from dataclasses import dataclass, field, asdict, replace
 from typing import List, Dict, Optional, Any
 from gettext import gettext as _
-from ...core.varset import VarSet, Var, TextAreaVar, BoolVar
+from ....core.varset import VarSet, Var, TextAreaVar, BoolVar
 
 
 _DIALECT_REGISTRY: Dict[str, "GcodeDialect"] = {}
@@ -35,7 +35,6 @@ def get_dialect(uid: str) -> "GcodeDialect":
 
 def get_available_dialects() -> List["GcodeDialect"]:
     """Returns a list of all registered GcodeDialect instances."""
-    # Sort by display name for consistent UI presentation
     return sorted(_DIALECT_REGISTRY.values(), key=lambda d: d.label)
 
 
@@ -46,10 +45,9 @@ class GcodeDialect:
     specific hardware dialect (e.g., GRBL, Marlin, Smoothieware).
     """
 
-    label: str  # User-facing name for UI (e.g., "GRBL")
+    label: str
     description: str
 
-    # Command Templates
     laser_on: str
     laser_off: str
     tool_change: str
@@ -59,11 +57,9 @@ class GcodeDialect:
     arc_cw: str
     arc_ccw: str
 
-    # Air Assist Control
     air_assist_on: str
     air_assist_off: str
 
-    # Machine Control Commands
     home_all: str
     home_axis: str
     move_to: str
@@ -72,11 +68,9 @@ class GcodeDialect:
     set_wcs_offset: str
     probe_cycle: str
 
-    # Preamble & Postscript
     preamble: List[str] = field(default_factory=list)
     postscript: List[str] = field(default_factory=list)
 
-    # Behavior Flags
     inject_wcs_after_preamble: bool = True
     can_g0_with_speed: bool = False
 
@@ -176,7 +170,7 @@ class GcodeDialect:
         """
         return replace(
             self,
-            uid=str(uuid.uuid4()),  # Explicitly generate a new UID
+            uid=str(uuid.uuid4()),
             is_custom=True,
             parent_uid=self.uid,
             label=new_label,
@@ -194,46 +188,34 @@ class GcodeDialect:
         Creates a dialect instance from a dictionary, correctly handling
         missing fields by inheriting from parent dialect.
         """
-        # 1. Determine the base dialect to inherit defaults from
         parent_uid = data.get("parent_uid")
         base_dialect = None
 
         if parent_uid:
-            # Try to find the specific parent in the loaded registry
             base_dialect = _DIALECT_REGISTRY.get(parent_uid.lower())
 
         if not base_dialect:
-            # If parent not found (or not specified), try to find generic GRBL
             base_dialect = _DIALECT_REGISTRY.get("grbl")
 
-        # 2. Establish defaults
         if base_dialect:
             defaults = asdict(base_dialect)
         else:
-            # If registry is empty (bootstrapping/testing), import the
-            # built-in GRBL dialect locally to avoid circular imports.
-            from .dialect_builtins import GRBL_DIALECT
+            from .grbl import GRBL_DIALECT
 
             defaults = asdict(GRBL_DIALECT)
 
-        # 3. Merge data on top of defaults.
-        # This ensures that any key missing in 'data' gets the value from
-        # 'defaults' (the parent/base dialect).
         merged_data = defaults.copy()
         merged_data.update(data)
 
-        # 4. Ensure identity fields are correct (don't inherit UID/custom flag)
         merged_data["uid"] = data.get("uid", str(uuid.uuid4()))
         merged_data["is_custom"] = data.get("is_custom", False)
         merged_data["parent_uid"] = data.get("parent_uid")
 
-        # 5. Filter to only include valid dataclass fields
         valid_fields = {f.name for f in cls.__dataclass_fields__.values()}
         filtered_data = {
             k: v for k, v in merged_data.items() if k in valid_fields
         }
 
-        # 6. Extract unknown attributes for forward compatibility
         extra = {k: v for k, v in merged_data.items() if k not in valid_fields}
 
         instance = cls(**filtered_data)
