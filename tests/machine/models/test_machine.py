@@ -26,8 +26,6 @@ from rayforge.machine.models.dialect import (
     _DIALECT_REGISTRY,
     GcodeDialect,
     get_dialect,
-)
-from rayforge.machine.models.dialect_builtins import (
     GRBL_DIALECT,
     SMOOTHIEWARE_DIALECT,
 )

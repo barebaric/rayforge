@@ -3,8 +3,12 @@ from typing import List, TYPE_CHECKING
 import yaml
 from pathlib import Path
 from blinker import Signal
-from .dialect import GcodeDialect, _DIALECT_REGISTRY, register_dialect
-from .dialect_builtins import BUILTIN_DIALECTS
+from .dialect import (
+    BUILTIN_DIALECTS,
+    GcodeDialect,
+    _DIALECT_REGISTRY,
+    register_dialect,
+)
 
 if TYPE_CHECKING:
     from .machine import Machine
