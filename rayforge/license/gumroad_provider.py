@@ -3,9 +3,11 @@ import logging
 import urllib.request
 import urllib.parse
 import urllib.error
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
+
+import yaml
 
 from .provider import (
     LicenseProvider,
@@ -21,9 +23,8 @@ logger = logging.getLogger(__name__)
 class GumroadProvider(LicenseProvider):
     API_URL = "https://api.gumroad.com/v2/licenses/verify"
 
-    def __init__(self, config_dir: Path):
-        self.config_dir = config_dir
-        self.config_file = config_dir / "gumroad_licenses.json"
+    def __init__(self, licenses_dir: Path):
+        self.config_file = licenses_dir / "gumroad.yaml"
         self._licenses: Dict[str, str] = {}
         self._cache: Dict[str, Dict[str, Any]] = {}
         self._load_config()
@@ -100,22 +101,12 @@ class GumroadProvider(LicenseProvider):
     ) -> LicenseResult:
         cached = self._get_valid_cache(product_id)
         if cached:
-            status = LicenseStatus(cached.get("status"))
-            license_type = LicenseType(cached.get("license_type", "unknown"))
-            last_validated_str = cached.get("last_validated")
-            last_validated = None
-            if last_validated_str:
-                last_validated = datetime.fromisoformat(last_validated_str)
-            return LicenseResult(
-                status=status,
-                message=cached.get("message", ""),
-                license_type=license_type,
-                customer_email=cached.get("customer_email"),
-                last_validated=last_validated,
-                metadata=cached.get("metadata", {}),
-            )
+            return self._cached_to_result(cached)
 
         if license_key.startswith("TESTKEY-"):
+            cached = self._get_valid_cache(product_id)
+            if cached:
+                return self._cached_to_result(cached)
             return self._create_test_result(product_id)
 
         try:
@@ -198,10 +189,12 @@ class GumroadProvider(LicenseProvider):
             )
 
     def _create_test_result(self, product_id: str) -> LicenseResult:
+        expires_at = datetime.now() + timedelta(days=1)
         result = LicenseResult(
             status=LicenseStatus.VALID,
             message="Test license key",
             license_type=LicenseType.ONE_TIME,
+            expires_at=expires_at,
             customer_email="test@example.com",
             last_validated=datetime.now(),
             metadata={
@@ -219,22 +212,8 @@ class GumroadProvider(LicenseProvider):
             return None
 
         try:
-            status = LicenseStatus(cached.get("status"))
-            license_type = LicenseType(cached.get("license_type", "unknown"))
-            last_validated_str = cached.get("last_validated")
-            last_validated = None
-            if last_validated_str:
-                last_validated = datetime.fromisoformat(last_validated_str)
-
-            cached_result = LicenseResult(
-                status=status,
-                message=cached.get("message", ""),
-                license_type=license_type,
-                customer_email=cached.get("customer_email"),
-                last_validated=last_validated,
-                metadata=cached.get("metadata", {}),
-            )
-            if cached_result.is_valid_for_offline():
+            result = self._cached_to_result(cached)
+            if result.is_valid_for_offline():
                 return cached
         except (ValueError, TypeError):
             pass
@@ -245,6 +224,9 @@ class GumroadProvider(LicenseProvider):
             "status": result.status.value,
             "message": result.message,
             "license_type": result.license_type.value,
+            "expires_at": result.expires_at.isoformat()
+            if result.expires_at
+            else None,
             "customer_email": result.customer_email,
             "last_validated": result.last_validated.isoformat()
             if result.last_validated
@@ -254,14 +236,36 @@ class GumroadProvider(LicenseProvider):
         self._cache[product_id] = cache_data
         self._save_cache()
 
+    def _cached_to_result(self, cached: Dict) -> LicenseResult:
+        status = LicenseStatus(cached.get("status"))
+        license_type = LicenseType(cached.get("license_type", "unknown"))
+        last_validated_str = cached.get("last_validated")
+        last_validated = None
+        if last_validated_str:
+            last_validated = datetime.fromisoformat(last_validated_str)
+        expires_at_str = cached.get("expires_at")
+        expires_at = None
+        if expires_at_str:
+            expires_at = datetime.fromisoformat(expires_at_str)
+        return LicenseResult(
+            status=status,
+            message=cached.get("message", ""),
+            license_type=license_type,
+            expires_at=expires_at,
+            customer_email=cached.get("customer_email"),
+            last_validated=last_validated,
+            metadata=cached.get("metadata", {}),
+        )
+
     def _load_config(self) -> None:
         if self.config_file.exists():
             try:
                 with open(self.config_file) as f:
-                    data = json.load(f)
-                    self._licenses = data.get("licenses", {})
-                    self._cache = data.get("cache", {})
-            except (json.JSONDecodeError, IOError) as e:
+                    data = yaml.safe_load(f) or {}
+                    if isinstance(data, dict):
+                        self._licenses = data.get("licenses", {})
+                        self._cache = data.get("cache", {})
+            except (yaml.YAMLError, IOError) as e:
                 logger.warning(f"Failed to load Gumroad config: {e}")
 
     def _save_config(self) -> None:
@@ -271,7 +275,7 @@ class GumroadProvider(LicenseProvider):
             "cache": self._cache,
         }
         with open(self.config_file, "w") as f:
-            json.dump(data, f, indent=2)
+            yaml.dump(data, f, default_flow_style=False)
 
     def _save_cache(self) -> None:
         self._save_config()

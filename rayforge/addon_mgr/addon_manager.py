@@ -1360,6 +1360,7 @@ class AddonManager:
         self._import_and_register(addon, addon.metadata.provides.frontend)
 
         if addon_name in self.loaded_addons:
+            self._call_registration_hooks()
             self._build_and_update_manifest()
             self._restart_workers()
             return True, "License validated, addon loaded successfully"

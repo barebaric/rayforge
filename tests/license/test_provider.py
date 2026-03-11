@@ -38,3 +38,34 @@ class TestLicenseResult:
             last_validated=None,
         )
         assert not result.is_valid_for_offline()
+
+    def test_is_expired_false_when_no_expiry(self):
+        result = LicenseResult(
+            status=LicenseStatus.VALID,
+            license_type=LicenseType.ONE_TIME,
+        )
+        assert not result.is_expired()
+
+    def test_is_expired_false_when_future_expiry(self):
+        result = LicenseResult(
+            status=LicenseStatus.VALID,
+            license_type=LicenseType.ONE_TIME,
+            expires_at=datetime.now() + timedelta(days=1),
+        )
+        assert not result.is_expired()
+
+    def test_is_expired_true_when_past_expiry(self):
+        result = LicenseResult(
+            status=LicenseStatus.VALID,
+            license_type=LicenseType.ONE_TIME,
+            expires_at=datetime.now() - timedelta(seconds=1),
+        )
+        assert result.is_expired()
+
+    def test_is_valid_for_offline_false_when_expired(self):
+        result = LicenseResult(
+            status=LicenseStatus.VALID,
+            license_type=LicenseType.ONE_TIME,
+            expires_at=datetime.now() - timedelta(seconds=1),
+        )
+        assert not result.is_valid_for_offline()

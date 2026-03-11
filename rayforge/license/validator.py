@@ -6,13 +6,13 @@ from typing import Callable, Dict, Optional
 
 from blinker import Signal
 
+from .gumroad_provider import GumroadProvider
+from .patreon_provider import PatreonProvider
 from .provider import (
     LicenseProvider,
     LicenseResult,
     LicenseStatus,
 )
-from .gumroad_provider import GumroadProvider
-from .patreon_provider import PatreonProvider
 
 
 logger = logging.getLogger(__name__)

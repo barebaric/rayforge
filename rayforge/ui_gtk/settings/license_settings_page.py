@@ -28,7 +28,7 @@ class LicenseSettingsPage(TrackedPreferencesPage):
         validator.changed.connect(self._on_license_changed)
 
     def _on_license_changed(self, sender):
-        self._refresh_ui()
+        GLib.idle_add(self._refresh_ui)
 
     def _build_ui(self):
         self._build_patreon_section()

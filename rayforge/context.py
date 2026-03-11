@@ -47,6 +47,7 @@ class RayforgeContext:
             BUILTIN_ADDONS_DIR,
             PRIVATE_ADDONS_DIR,
             AI_CONFIG_FILE,
+            LICENSES_DIR,
             PATREON_CLIENT_ID,
         )
         from .core.addon_config import AddonConfig
@@ -75,7 +76,7 @@ class RayforgeContext:
 
         # Initialize license validator
         self._license_validator = LicenseValidator(
-            CONFIG_DIR, PATREON_CLIENT_ID
+            LICENSES_DIR, PATREON_CLIENT_ID
         )
 
         # Initialize the addon manager

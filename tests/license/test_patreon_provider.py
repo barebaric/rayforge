@@ -1,8 +1,8 @@
-import json
 import tempfile
 from pathlib import Path
 
 import pytest
+import yaml
 
 from rayforge.license import LicenseStatus, PatreonProvider
 
@@ -40,8 +40,9 @@ class TestPatreonProvider:
 
     def test_unlink(self, provider, temp_dir):
         provider._access_token = "test_token"
-        config_file = temp_dir / "patreon_oauth.json"
-        config_file.write_text(json.dumps({"access_token": "test_token"}))
+        config_file = temp_dir / "patreon.yaml"
+        with open(config_file, "w") as f:
+            yaml.dump({"access_token": "test_token"}, f)
 
         provider.unlink()
 

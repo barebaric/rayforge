@@ -3,11 +3,12 @@ import logging
 import urllib.request
 import urllib.parse
 import urllib.error
+import yaml
 from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from threading import Thread
-from typing import Callable, Optional, List, Dict, Any
+from typing import Any, Callable, Dict, List, Optional
 
 from .provider import (
     LicenseProvider,
@@ -75,9 +76,8 @@ class PatreonProvider(LicenseProvider):
     API_BASE = "https://www.patreon.com/api/oauth2/v2"
     REDIRECT_PORT = 8765
 
-    def __init__(self, config_dir: Path, client_id: str):
-        self.config_dir = config_dir
-        self.config_file = config_dir / "patreon_oauth.json"
+    def __init__(self, licenses_dir: Path, client_id: str):
+        self.config_file = licenses_dir / "patreon.yaml"
         self.client_id = client_id
         self._access_token: Optional[str] = None
         self._cache: Dict[str, Dict[str, Any]] = {}
@@ -304,10 +304,10 @@ class PatreonProvider(LicenseProvider):
         if self.config_file.exists():
             try:
                 with open(self.config_file) as f:
-                    data = json.load(f)
+                    data = yaml.safe_load(f) or {}
                     self._access_token = data.get("access_token")
                     self._cache = data.get("cache", {})
-            except (json.JSONDecodeError, IOError) as e:
+            except (yaml.YAMLError, IOError) as e:
                 logger.warning(f"Failed to load Patreon config: {e}")
 
     def _save_config(self) -> None:
@@ -317,7 +317,7 @@ class PatreonProvider(LicenseProvider):
             "cache": self._cache,
         }
         with open(self.config_file, "w") as f:
-            json.dump(data, f, indent=2)
+            yaml.dump(data, f, default_flow_style=False)
 
     def _save_cache(self) -> None:
         self._save_config()
