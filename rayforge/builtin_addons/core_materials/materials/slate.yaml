@@ -1,0 +1,28 @@
+uid: slate
+name:
+  default: Slate
+  de: Schiefer
+  es: Pizarra
+  fr: Ardoise
+  pt: Ardósia
+  uk: Сланець
+  zh_CN: 板岩
+description:
+  default: Fine-grained metamorphic rock
+  de: Feinkörniges metamorphes Gestein
+  es: Roca metamórfica de grano fino
+  fr: Roche métamorphique à grain fin
+  pt: Rocha metamórfica de grão fino
+  uk: Дрібнозерниста метаморфічна порода
+  zh_CN: 细粒变质岩
+category:
+  default: Stone
+  de: Stein
+  es: Piedra
+  fr: Pierre
+  pt: Pedra
+  uk: Камінь
+  zh_CN: 石材
+appearance:
+  color: "#696969"
+  pattern: solid

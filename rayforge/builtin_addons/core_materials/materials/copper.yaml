@@ -1,0 +1,28 @@
+uid: copper
+name:
+  default: Copper
+  de: Kupfer
+  es: Cobre
+  fr: Cuivre
+  pt: Cobre
+  uk: Мідь
+  zh_CN: 铜
+description:
+  default: Reddish-orange conductive metal
+  de: Rötlich-oranges leitfähiges Metall
+  es: Metal conductor de color rojo anaranjado
+  fr: Métal conducteur rouge orangé
+  pt: Metal condutor de cor laranja avermelhado
+  uk: Червонувато-помаранчевий провідний метал
+  zh_CN: 红橙色的导电金属
+category:
+  default: Metal
+  de: Metall
+  es: Metal
+  fr: Métal
+  pt: Metal
+  uk: Метал
+  zh_CN: 金属
+appearance:
+  color: "#B87333"
+  pattern: metallic

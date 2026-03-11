@@ -1,0 +1,28 @@
+uid: marble
+name:
+  default: Marble
+  de: Marmor
+  es: Mármol
+  fr: Marbre
+  pt: Mármore
+  uk: Мармур
+  zh_CN: 大理石
+description:
+  default: Metamorphic rock with veined patterns
+  de: Metamorphes Gestein mit gemusterten Adern
+  es: Roca metamórfica con patrones veteados
+  fr: Roche métamorphique avec des motifs veinés
+  pt: Rocha metamórfica com padrões veiados
+  uk: Метаморфічна порода з прожилковим візерунком
+  zh_CN: 具有纹理图案的变质岩
+category:
+  default: Stone
+  de: Stein
+  es: Piedra
+  fr: Pierre
+  pt: Pedra
+  uk: Камінь
+  zh_CN: 石材
+appearance:
+  color: "#F5F5F5"
+  pattern: solid

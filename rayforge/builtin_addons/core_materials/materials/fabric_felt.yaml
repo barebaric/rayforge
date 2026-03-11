@@ -1,0 +1,28 @@
+uid: fabric_felt
+name:
+  default: Felt
+  de: Filz
+  es: Fieltro
+  fr: Feutre
+  pt: Feltro
+  uk: Фетр
+  zh_CN: 毛毡
+description:
+  default: Non-woven matted fabric
+  de: Nicht gewebtes, verfilztes Material
+  es: Tela no tejida de fibras enmarañadas
+  fr: Tissu non tissé feutré
+  pt: Tecido não tecido feltrado
+  uk: Нетканий валяний матеріал
+  zh_CN: 无纺毡合织物
+category:
+  default: Organic
+  de: Organisch
+  es: Orgánico
+  fr: Organique
+  pt: Orgânico
+  uk: Органічний
+  zh_CN: 有机材料
+appearance:
+  color: "#9370DB"
+  pattern: solid

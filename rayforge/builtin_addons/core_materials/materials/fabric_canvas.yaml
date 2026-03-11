@@ -1,0 +1,28 @@
+uid: fabric_canvas
+name:
+  default: Canvas
+  de: Leinwand
+  es: Lienzo
+  fr: Toile
+  pt: Lona
+  uk: Парусина
+  zh_CN: 帆布
+description:
+  default: Heavy-duty plain-woven fabric
+  de: Robuster, glatt gewebter Stoff
+  es: Tela resistente tejida llana
+  fr: Tissu lourd tissé plat
+  pt: Tecido resistente tecido plano
+  uk: Міцна гладкоткана тканина
+  zh_CN: 重型平纹织物
+category:
+  default: Organic
+  de: Organisch
+  es: Orgánico
+  fr: Organique
+  pt: Orgânico
+  uk: Органічний
+  zh_CN: 有机材料
+appearance:
+  color: "#D2B48C"
+  pattern: solid

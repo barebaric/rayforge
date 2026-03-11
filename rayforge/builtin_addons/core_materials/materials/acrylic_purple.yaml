@@ -1,0 +1,28 @@
+uid: acrylic_purple
+name:
+  default: Purple Acrylic
+  de: Lila Acryl
+  es: Acrílico Púrpura
+  fr: Acrylique Violet
+  pt: Acrílico Roxo
+  uk: Фіолетовий акрил
+  zh_CN: 紫色亚克力
+description:
+  default: Opaque purple thermoplastic sheet
+  de: Undurchsichtiges lila Thermoplastikblech
+  es: Lámina de termoplástico púrpura opaco
+  fr: Feuille de thermoplastique violet opaque
+  pt: Chapa de termoplástico roxo opaco
+  uk: Непрозорий фіолетовий термопластиковий лист
+  zh_CN: 不透明紫色热塑性塑料板
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#800080"
+  pattern: solid

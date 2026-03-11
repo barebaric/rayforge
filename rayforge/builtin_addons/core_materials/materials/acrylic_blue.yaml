@@ -1,0 +1,28 @@
+uid: acrylic_blue
+name:
+  default: Blue Acrylic
+  de: Blauer Acryl
+  es: Acrílico Azul
+  fr: Acrylique Bleu
+  pt: Acrílico Azul
+  uk: Синій акрил
+  zh_CN: 蓝色亚克力
+description:
+  default: Opaque blue thermoplastic sheet
+  de: Undurchsichtiges blaues Thermoplastikblech
+  es: Lámina de termoplástico azul opaco
+  fr: Feuille de thermoplastique bleu opaque
+  pt: Chapa de termoplástico azul opaco
+  uk: Непрозорий синій термопластиковий лист
+  zh_CN: 不透明蓝色热塑性塑料板
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#0000FF"
+  pattern: solid

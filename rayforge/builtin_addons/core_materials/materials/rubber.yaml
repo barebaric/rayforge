@@ -1,0 +1,28 @@
+uid: rubber
+name:
+  default: Rubber
+  de: Gummi
+  es: Caucho
+  fr: Caoutchouc
+  pt: Borracha
+  uk: Гума
+  zh_CN: 橡胶
+description:
+  default: Elastic polymer material
+  de: Elastisches Polymermaterial
+  es: Material polimérico elástico
+  fr: Matériau polymère élastique
+  pt: Material polimérico elástico
+  uk: Еластичний полімерний матеріал
+  zh_CN: 弹性聚合物材料
+category:
+  default: Organic
+  de: Organisch
+  es: Orgánico
+  fr: Organique
+  pt: Orgânico
+  uk: Органічний
+  zh_CN: 有机材料
+appearance:
+  color: "#2F4F4F"
+  pattern: solid

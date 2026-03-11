@@ -1,0 +1,28 @@
+uid: elm
+name:
+  default: Elm
+  de: Ulme
+  es: Olmo
+  fr: Orme
+  pt: Ulmeiro
+  uk: В'яз
+  zh_CN: 榆木
+description:
+  default: Interlocked grain hardwood
+  de: Hartholz mit verwobener Maserung
+  es: Madera dura con veta entrelazada
+  fr: Bois dur à grain entrelacé
+  pt: Madeira dura com grão entrelaçado
+  uk: Тверда деревина з переплетеним візерунком
+  zh_CN: 纹理交错的硬木
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#CD853F"
+  pattern: wood_grain

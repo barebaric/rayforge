@@ -1,0 +1,28 @@
+uid: pvc
+name:
+  default: PVC
+  de: PVC
+  es: PVC
+  fr: PVC
+  pt: PVC
+  uk: ПВХ
+  zh_CN: PVC
+description:
+  default: Polyvinyl chloride plastic
+  de: Polyvinylchlorid-Kunststoff
+  es: Plástico de cloruro de polivinilo
+  fr: Plastique de chlorure de polyvinyle
+  pt: Plástico de cloreto de polivinila
+  uk: Полівінілхлоридний пластик
+  zh_CN: 聚氯乙烯塑料
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#E0FFFF"
+  pattern: solid

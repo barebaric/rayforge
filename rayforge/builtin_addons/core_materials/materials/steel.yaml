@@ -1,0 +1,28 @@
+uid: steel
+name:
+  default: Steel
+  de: Stahl
+  es: Acero
+  fr: Acier
+  pt: Aço
+  uk: Сталь
+  zh_CN: 钢
+description:
+  default: Strong ferrous alloy with metallic luster
+  de: Starke Eisenlegierung mit metallischem Glanz
+  es: Aleación férrea fuerte con brillo metálico
+  fr: Alliage ferreux fort avec un éclat métallique
+  pt: Liga férea forte com brilho metálico
+  uk: Міцна залізна сплав з металевим блиском
+  zh_CN: 具有金属光泽的强铁合金
+category:
+  default: Metal
+  de: Metall
+  es: Metal
+  fr: Métal
+  pt: Metal
+  uk: Метал
+  zh_CN: 金属
+appearance:
+  color: "#708090"
+  pattern: metallic

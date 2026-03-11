@@ -1,0 +1,28 @@
+uid: nickel
+name:
+  default: Nickel
+  de: Nickel
+  es: Níquel
+  fr: Nickel
+  pt: Níquel
+  uk: Нікель
+  zh_CN: 镍
+description:
+  default: Silvery-white metal with slight golden tinge
+  de: Silber-weißes Metall mit leichtem goldenen Schimmer
+  es: Metal blanco plateado con ligero tinte dorado
+  fr: Métal blanc argenté avec une légère teinte dorée
+  pt: Metal branco prateado com leve tom dourado
+  uk: Сріблясто-білий метал з легким золотистим відтінком
+  zh_CN: 银白色金属，略带金色
+category:
+  default: Metal
+  de: Metall
+  es: Metal
+  fr: Métal
+  pt: Metal
+  uk: Метал
+  zh_CN: 金属
+appearance:
+  color: "#E0E0E0"
+  pattern: metallic

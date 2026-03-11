@@ -1,0 +1,28 @@
+uid: bamboo
+name:
+  default: Bamboo
+  de: Bambus
+  es: Bambú
+  fr: Bambou
+  pt: Bambu
+  uk: Бамбук
+  zh_CN: 竹子
+description:
+  default: Fast-growing woody grass
+  de: Schnell wachsendes holziges Gras
+  es: Hierba leñosa de rápido crecimiento
+  fr: Herbe ligneuse à croissance rapide
+  pt: Grama lenhosa de rápido crescimento
+  uk: Швидкозростаюча дерев'яниста трава
+  zh_CN: 快速生长的木质草
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#D2B48C"
+  pattern: wood_grain

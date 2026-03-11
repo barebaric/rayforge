@@ -1,0 +1,28 @@
+uid: maple
+name:
+  default: Maple
+  de: Ahorn
+  es: Arce
+  fr: Érable
+  pt: Bordo
+  uk: Клен
+  zh_CN: 枫木
+description:
+  default: Light hardwood with fine, even grain
+  de: Helles Hartholz mit feiner, gleichmäßiger Maserung
+  es: Madera dura clara con veta fina y uniforme
+  fr: Bois dur clair avec un grain fin et régulier
+  pt: Madeira dura clara com grão fino e uniforme
+  uk: Світла тверда деревина з дрібним рівномірним візерунком
+  zh_CN: 浅色硬木，纹理细腻均匀
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#F5DEB3"
+  pattern: wood_grain

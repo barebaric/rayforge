@@ -1,0 +1,28 @@
+uid: mahogany
+name:
+  default: Mahogany
+  de: Mahagoni
+  es: Caoba
+  fr: Acajou
+  pt: Mogno
+  uk: Махагон
+  zh_CN: 桃花心木
+description:
+  default: Rich reddish-brown tropical hardwood
+  de: Reiches rötlich-braunes tropisches Hartholz
+  es: Madera dura tropical de color marrón rojizo rico
+  fr: Bois dur tropical riche de couleur brun rougeâtre
+  pt: Madeira dura tropical rica de cor marrom avermelhado
+  uk: Багата червонувато-коричнева тропічна тверда деревина
+  zh_CN: 丰富的红棕色热带硬木
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#8B4513"
+  pattern: wood_grain

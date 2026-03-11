@@ -1,0 +1,28 @@
+uid: fabric_denim
+name:
+  default: Denim
+  de: Denim
+  es: Denim
+  fr: Denim
+  pt: Denim
+  uk: Денім
+  zh_CN: 丹宁布
+description:
+  default: Durable cotton twill fabric
+  de: Langlebiger Baumwoll-Satin-Stoff
+  es: Tela de algodón sarga duradera
+  fr: Tissu de coton sergé durable
+  pt: Tecido de algodão sarja durável
+  uk: Міцна бавовняна саржева тканина
+  zh_CN: 耐用的棉斜纹织物
+category:
+  default: Organic
+  de: Organisch
+  es: Orgánico
+  fr: Organique
+  pt: Orgânico
+  uk: Органічний
+  zh_CN: 有机材料
+appearance:
+  color: "#4169E1"
+  pattern: solid

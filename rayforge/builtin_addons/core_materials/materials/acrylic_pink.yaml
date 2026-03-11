@@ -1,0 +1,28 @@
+uid: acrylic_pink
+name:
+  default: Pink Acrylic
+  de: Pinker Acryl
+  es: Acrílico Rosa
+  fr: Acrylique Rose
+  pt: Acrílico Rosa
+  uk: Рожевий акрил
+  zh_CN: 粉色亚克力
+description:
+  default: Opaque pink thermoplastic sheet
+  de: Undurchsichtiges pinke Thermoplastikblech
+  es: Lámina de termoplástico rosa opaco
+  fr: Feuille de thermoplastique rose opaque
+  pt: Chapa de termoplástico rosa opaco
+  uk: Непрозорий рожевий термопластиковий лист
+  zh_CN: 不透明粉色热塑性塑料板
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#FFC0CB"
+  pattern: solid

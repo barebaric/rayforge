@@ -1,0 +1,28 @@
+uid: nylon
+name:
+  default: Nylon
+  de: Nylon
+  es: Nailon
+  fr: Nylon
+  pt: Nylon
+  uk: Нейлон
+  zh_CN: 尼龙
+description:
+  default: Strong synthetic polymer
+  de: Starker synthetischer Kunststoff
+  es: Polímero sintético fuerte
+  fr: Polymère synthétique fort
+  pt: Polímero sintético forte
+  uk: Міцний синтетичний полімер
+  zh_CN: 强韧的合成聚合物
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#FFFACD"
+  pattern: solid

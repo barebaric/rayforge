@@ -1,0 +1,28 @@
+uid: petg
+name:
+  default: PETG
+  de: PETG
+  es: PETG
+  fr: PETG
+  pt: PETG
+  uk: PETG
+  zh_CN: PETG
+description:
+  default: Polyethylene terephthalate glycol-modified plastic
+  de: Glykol-modifiziertes Polyethylenterephthalat-Kunststoff
+  es: Plástico de tereftalato de polietileno modificado con glicol
+  fr: Plastique de polytéréphtalate d'éthylène modifié au glycol
+  pt: Plástico de tereftalato de polietileno modificado com glicol
+  uk: Пластик з модифікованим гліколем поліетилентерефталат
+  zh_CN: 乙二醇改性聚对苯二甲酸乙二醇酯塑料
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#F0F8FF"
+  pattern: transparent

@@ -1,0 +1,28 @@
+uid: ceramic
+name:
+  default: Ceramic
+  de: Keramik
+  es: Cerámica
+  fr: Céramique
+  pt: Cerâmica
+  uk: Кераміка
+  zh_CN: 陶瓷
+description:
+  default: Hard brittle non-metallic material
+  de: Hartes sprödes nicht-metallisches Material
+  es: Material no metálico duro y frágil
+  fr: Matériau non métallique dur et cassant
+  pt: Material não metálico duro e frágil
+  uk: Тверда крихка неметалева речовина
+  zh_CN: 硬质脆性非金属材料
+category:
+  default: Ceramic
+  de: Keramik
+  es: Cerámica
+  fr: Céramique
+  pt: Cerâmica
+  uk: Кераміка
+  zh_CN: 陶瓷
+appearance:
+  color: "#F5F5F5"
+  pattern: solid

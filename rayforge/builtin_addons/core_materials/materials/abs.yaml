@@ -1,0 +1,28 @@
+uid: abs
+name:
+  default: ABS
+  de: ABS
+  es: ABS
+  fr: ABS
+  pt: ABS
+  uk: ABS
+  zh_CN: ABS
+description:
+  default: Acrylonitrile butadiene styrene thermoplastic
+  de: Acrylnitril-Butadien-Styrol-Thermoplast
+  es: Termoplástico de acrilonitrilo butadieno estireno
+  fr: Thermoplastique acrylonitrile butadiène styrène
+  pt: Termoplástico de acrilonitrila butadieno estireno
+  uk: Термопластик акрилонітрилбутадієнстирол
+  zh_CN: 丙烯腈-丁二烯-苯乙烯热塑性塑料
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#F5F5DC"
+  pattern: solid

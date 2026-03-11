@@ -1,0 +1,28 @@
+uid: slate_blue
+name:
+  default: Blue Slate
+  de: Blauer Schiefer
+  es: Pizarra Azul
+  fr: Ardoise Bleue
+  pt: Ardósia Azul
+  uk: Блакитний сланець
+  zh_CN: 蓝板岩
+description:
+  default: Blue-colored fine-grained metamorphic rock
+  de: Blauer feinkörniger metamorpher Fels
+  es: Roca metamórfica de grano fino de color azul
+  fr: Roche métamorphique à grain fin de couleur bleue
+  pt: Rocha metamórfica de grão fino de cor azul
+  uk: Блакитний дрібнозернистий метаморфічний камінь
+  zh_CN: 蓝色细粒变质岩
+category:
+  default: Stone
+  de: Stein
+  es: Piedra
+  fr: Pierre
+  pt: Pedra
+  uk: Камінь
+  zh_CN: 石材
+appearance:
+  color: "#6A5ACD"
+  pattern: solid

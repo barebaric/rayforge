@@ -1,0 +1,28 @@
+uid: bronze
+name:
+  default: Bronze
+  de: Bronze
+  es: Bronce
+  fr: Bronze
+  pt: Bronze
+  uk: Бронза
+  zh_CN: 青铜
+description:
+  default: Copper-tin alloy with brownish color
+  de: Kupfer-Zinn-Legierung mit bräunlicher Farbe
+  es: Aleación de cobre y estaño de color marrón
+  fr: Alliage cuivre-étain de couleur brune
+  pt: Liga de cobre e estanho de cor marrom
+  uk: Сплав міді та олова коричневого кольору
+  zh_CN: 铜锡合金，呈棕色
+category:
+  default: Metal
+  de: Metall
+  es: Metal
+  fr: Métal
+  pt: Metal
+  uk: Метал
+  zh_CN: 金属
+appearance:
+  color: "#CD7F32"
+  pattern: metallic

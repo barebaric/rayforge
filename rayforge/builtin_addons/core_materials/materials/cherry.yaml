@@ -1,0 +1,28 @@
+uid: cherry
+name:
+  default: Cherry
+  de: Kirsche
+  es: Cerezo
+  fr: Merisier
+  pt: Cerejeira
+  uk: Вишня
+  zh_CN: 樱桃木
+description:
+  default: Warm reddish-brown hardwood
+  de: Warmes rötlich-braunes Hartholz
+  es: Madera dura cálida de color marrón rojizo
+  fr: Bois dur chaud de couleur brun rougeâtre
+  pt: Madeira dura quente de cor marrom avermelhado
+  uk: Тепла тверда деревина червонувато-коричневого кольору
+  zh_CN: 温暖的红棕色硬木
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#CD5C5C"
+  pattern: wood_grain

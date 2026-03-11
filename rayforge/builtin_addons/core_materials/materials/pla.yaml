@@ -1,0 +1,28 @@
+uid: pla
+name:
+  default: PLA
+  de: PLA
+  es: PLA
+  fr: PLA
+  pt: PLA
+  uk: PLA
+  zh_CN: PLA
+description:
+  default: Polylactic acid biodegradable thermoplastic
+  de: Polymilchsäure biologisch abbaubarer Thermoplast
+  es: Ácido poliláctico termoplástico biodegradable
+  fr: Acide polylactique thermoplastique biodégradable
+  pt: Ácido polilático termoplástico biodegradável
+  uk: Полімолочна кислота біорозкладний термопластик
+  zh_CN: 聚乳酸生物可降解热塑性塑料
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#FFFACD"
+  pattern: solid

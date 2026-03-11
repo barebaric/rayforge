@@ -1,0 +1,28 @@
+uid: fabric_cotton
+name:
+  default: Cotton Fabric
+  de: Baumwollstoff
+  es: Tela de Algodón
+  fr: Tissu en Coton
+  pt: Tecido de Algodão
+  uk: Бавовняна тканина
+  zh_CN: 棉织物
+description:
+  default: Natural fiber woven fabric
+  de: Gewebter Stoff aus Naturfasern
+  es: Tela tejida de fibra natural
+  fr: Tissu tissé en fibres naturelles
+  pt: Tecido tecido de fibra natural
+  uk: Тканина з натуральних волокон
+  zh_CN: 天然纤维编织织物
+category:
+  default: Organic
+  de: Organisch
+  es: Orgánico
+  fr: Organique
+  pt: Orgânico
+  uk: Органічний
+  zh_CN: 有机材料
+appearance:
+  color: "#F5F5DC"
+  pattern: solid

@@ -1,0 +1,28 @@
+uid: brass
+name:
+  default: Brass
+  de: Messing
+  es: Latón
+  fr: Laiton
+  pt: Latão
+  uk: Латунь
+  zh_CN: 黄铜
+description:
+  default: Copper-zinc alloy with golden appearance
+  de: Kupfer-Zink-Legierung mit goldenem Aussehen
+  es: Aleación de cobre y zinc con apariencia dorada
+  fr: Alliage cuivre-zinc avec une apparence dorée
+  pt: Liga de cobre e zinco com aparência dourada
+  uk: Сплав міді та цинку з золотистим виглядом
+  zh_CN: 具有金色外观的铜锌合金
+category:
+  default: Metal
+  de: Metall
+  es: Metal
+  fr: Métal
+  pt: Metal
+  uk: Метал
+  zh_CN: 金属
+appearance:
+  color: "#B5A642"
+  pattern: metallic

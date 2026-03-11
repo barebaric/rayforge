@@ -1,0 +1,28 @@
+uid: galvanized_steel
+name:
+  default: Galvanized Steel
+  de: Verzinkter Stahl
+  es: Acero Galvanizado
+  fr: Acier Galvanisé
+  pt: Aço Galvanizado
+  uk: Оцинкована сталь
+  zh_CN: 镀锌钢
+description:
+  default: Steel coated with zinc for corrosion resistance
+  de: Mit Zink beschichteter Stahl für Korrosionsschutz
+  es: Acero recubierto de zinc para resistencia a la corrosión
+  fr: Acier recouvert de zinc pour résistance à la corrosion
+  pt: Aço revestido de zinco para resistência à corrosão
+  uk: Сталь, покрита цинком для захисту від корозії
+  zh_CN: 镀锌钢材，耐腐蚀
+category:
+  default: Metal
+  de: Metall
+  es: Metal
+  fr: Métal
+  pt: Metal
+  uk: Метал
+  zh_CN: 金属
+appearance:
+  color: "#B0C4DE"
+  pattern: metallic

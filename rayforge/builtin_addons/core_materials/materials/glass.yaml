@@ -1,0 +1,28 @@
+uid: glass
+name:
+  default: Glass
+  de: Glas
+  es: Vidrio
+  fr: Verre
+  pt: Vidro
+  uk: Скло
+  zh_CN: 玻璃
+description:
+  default: Transparent brittle material
+  de: Transparentes sprödes Material
+  es: Material transparente y frágil
+  fr: Matériau transparent et cassant
+  pt: Material transparente e frágil
+  uk: Прозорий крихкий матеріал
+  zh_CN: 透明易碎材料
+category:
+  default: Glass
+  de: Glas
+  es: Vidrio
+  fr: Verre
+  pt: Vidro
+  uk: Скло
+  zh_CN: 玻璃
+appearance:
+  color: "#ADD8E6"
+  pattern: transparent

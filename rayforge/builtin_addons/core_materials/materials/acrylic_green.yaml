@@ -1,0 +1,28 @@
+uid: acrylic_green
+name:
+  default: Green Acrylic
+  de: Grüner Acryl
+  es: Acrílico Verde
+  fr: Acrylique Vert
+  pt: Acrílico Verde
+  uk: Зелений акрил
+  zh_CN: 绿色亚克力
+description:
+  default: Opaque green thermoplastic sheet
+  de: Undurchsichtiges grünes Thermoplastikblech
+  es: Lámina de termoplástico verde opaco
+  fr: Feuille de thermoplastique vert opaque
+  pt: Chapa de termoplástico verde opaco
+  uk: Непрозорий зелений термопластиковий лист
+  zh_CN: 不透明绿色热塑性塑料板
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#008000"
+  pattern: solid

@@ -1,0 +1,28 @@
+uid: pine
+name:
+  default: Pine
+  de: Kiefer
+  es: Pino
+  fr: Pin
+  pt: Pinheiro
+  uk: Сосна
+  zh_CN: 松木
+description:
+  default: Softwood with pale yellow color
+  de: Nadelholz mit blassgelber Farbe
+  es: Madera blanda de color amarillo pálido
+  fr: Bois tendre de couleur jaune pâle
+  pt: Madeira macia de cor amarela pálida
+  uk: М'яка деревина блідо-жовтого кольору
+  zh_CN: 浅黄色的软木
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#FAEBD7"
+  pattern: wood_grain

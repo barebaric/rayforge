@@ -1,0 +1,28 @@
+uid: hdpe
+name:
+  default: HDPE
+  de: HDPE
+  es: HDPE
+  fr: HDPE
+  pt: HDPE
+  uk: HDPE
+  zh_CN: HDPE
+description:
+  default: High-density polyethylene plastic
+  de: Polyethylen hoher Dichte
+  es: Polietileno de alta densidad
+  fr: Polyéthylène haute densité
+  pt: Polietileno de alta densidade
+  uk: Поліетилен високої щільності
+  zh_CN: 高密度聚乙烯塑料
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#F5F5F5"
+  pattern: solid

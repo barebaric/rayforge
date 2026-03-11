@@ -1,0 +1,28 @@
+uid: ptfe
+name:
+  default: PTFE
+  de: PTFE
+  es: PTFE
+  fr: PTFE
+  pt: PTFE
+  uk: ПТФЕ
+  zh_CN: PTFE
+description:
+  default: Polytetrafluoroethylene, known as Teflon
+  de: Polytetrafluorethylen, bekannt als Teflon
+  es: Politetrafluoroetileno, conocido como Teflón
+  fr: Polytétrafluoroéthylène, connu sous le nom de Teflon
+  pt: Politetrafluoretileno, conhecido como Teflon
+  uk: Політетрафторетилен, відомий як тефлон
+  zh_CN: 聚四氟乙烯，即特氟龙
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#FFFFFF"
+  pattern: solid

@@ -1,0 +1,28 @@
+uid: cedar
+name:
+  default: Cedar
+  de: Zeder
+  es: Cedro
+  fr: Cèdre
+  pt: Cedro
+  uk: Кедр
+  zh_CN: 雪松
+description:
+  default: Aromatic reddish softwood
+  de: Aromatisches rötliches Nadelholz
+  es: Madera blanda aromática de color rojizo
+  fr: Bois tendre aromatique de couleur rougeâtre
+  pt: Madeira macia aromática de cor avermelhada
+  uk: Ароматична червонувата м'яка деревина
+  zh_CN: 芳香的红松软木
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#E6C288"
+  pattern: wood_grain

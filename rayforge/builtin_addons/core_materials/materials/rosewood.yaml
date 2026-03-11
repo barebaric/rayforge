@@ -1,0 +1,28 @@
+uid: rosewood
+name:
+  default: Rosewood
+  de: Palisander
+  es: Palo de rosa
+  fr: Palissandre
+  pt: Jacarandá
+  uk: Палисандр
+  zh_CN: 红木
+description:
+  default: Dark hardwood with reddish-brown hue
+  de: Dunkles Hartholz mit rötlich-braunem Farbton
+  es: Madera dura oscura con tono marrón rojizo
+  fr: Bois dur foncé avec une teinte brun rougeâtre
+  pt: Madeira dura escura com tom marrom avermelhado
+  uk: Темна тверда деревина з червонувато-коричневим відтінком
+  zh_CN: 深色硬木，带有红棕色调
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#800000"
+  pattern: wood_grain

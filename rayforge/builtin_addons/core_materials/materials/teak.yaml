@@ -1,0 +1,28 @@
+uid: teak
+name:
+  default: Teak
+  de: Teak
+  es: Teca
+  fr: Teck
+  pt: Teca
+  uk: Тік
+  zh_CN: 柚木
+description:
+  default: Durable tropical hardwood
+  de: Langlebiges tropisches Hartholz
+  es: Madera dura tropical duradera
+  fr: Bois dur tropical durable
+  pt: Madeira dura tropical durável
+  uk: Міцна тропічна тверда деревина
+  zh_CN: 耐用的热带硬木
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#D2691E"
+  pattern: wood_grain
