@@ -3,6 +3,19 @@
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
+# Function to compare .pot files ignoring POT-Creation-Date
+compare_pot_files() {
+  local old_pot="$1"
+  local new_pot="$2"
+
+  if [ ! -f "$old_pot" ]; then
+    return 1
+  fi
+
+  # Compare files ignoring the POT-Creation-Date line
+  diff -I '^"POT-Creation-Date:' "$old_pot" "$new_pot" >/dev/null 2>&1
+}
+
 # Check gettext version
 GETTEXT_VERSION=$(gettext --version | head -n1 | awk '{print $NF}')
 REQUIRED_VERSION="0.25"
@@ -42,10 +55,35 @@ process_package() {
 
     # 1. Extract new strings to .pot file
     echo "  Extracting strings to $locale_dir/$pkg_name.pot..."
-    find "$src_dir" -name "*.py" | xgettext --from-code=UTF-8 --add-location=file -o "$locale_dir/$pkg_name.pot" -f - 2>/dev/null || true
+    POT_FILE="$locale_dir/$pkg_name.pot"
+    POT_TMP="${POT_FILE}.tmp"
+
+    # Save old .pot if it exists
+    if [ -f "$POT_FILE" ]; then
+      cp "$POT_FILE" "${POT_FILE}.old"
+    fi
+
+    # Extract strings to temp file
+    find "$src_dir" -name "*.py" | xgettext --from-code=UTF-8 --add-location=file -o "$POT_TMP" -f - 2>/dev/null || true
 
     # Clean up file paths to show relative paths only
-    sed -i "s|#: $src_dir/|#: $pkg_name/|g" "$locale_dir/$pkg_name.pot"
+    sed -i "s|#: $src_dir/|#: $pkg_name/|g" "$POT_TMP"
+
+    # Compare old and new .pot files
+    if [ -f "${POT_FILE}.old" ]; then
+      if compare_pot_files "${POT_FILE}.old" "$POT_TMP"; then
+        echo "    No changes detected, keeping original .pot file"
+        rm "$POT_TMP"
+        rm "${POT_FILE}.old"
+      else
+        echo "    Changes detected, updating .pot file"
+        mv "$POT_TMP" "$POT_FILE"
+        rm "${POT_FILE}.old"
+      fi
+    else
+      # No old file existed, use the new one
+      mv "$POT_TMP" "$POT_FILE"
+    fi
 
     # 2. Create .po files for all supported languages
     echo "  Ensuring .po files exist for all supported languages..."
@@ -102,10 +140,35 @@ if [ "$COMPILE_ONLY" = false ]; then
 
   # 1. Extract new strings to .pot file for main app
   echo "Extracting strings to rayforge/locale/rayforge.pot..."
+  POT_FILE="rayforge/locale/rayforge.pot"
+  POT_TMP="${POT_FILE}.tmp"
+
+  # Save old .pot if it exists
+  if [ -f "$POT_FILE" ]; then
+    cp "$POT_FILE" "${POT_FILE}.old"
+  fi
+
+  # Extract strings to temp file
   find rayforge/ -name "*.py" \
     -not -path "*/builtin_addons/*" \
     -not -path "*/private_addons/*" | \
-    xgettext --from-code=UTF-8 --add-location=file -o rayforge/locale/rayforge.pot -f -
+    xgettext --from-code=UTF-8 --add-location=file -o "$POT_TMP" -f -
+
+  # Compare old and new .pot files
+  if [ -f "${POT_FILE}.old" ]; then
+    if compare_pot_files "${POT_FILE}.old" "$POT_TMP"; then
+      echo "  No changes detected, keeping original .pot file"
+      rm "$POT_TMP"
+      rm "${POT_FILE}.old"
+    else
+      echo "  Changes detected, updating .pot file"
+      mv "$POT_TMP" "$POT_FILE"
+      rm "${POT_FILE}.old"
+    fi
+  else
+    # No old file existed, use the new one
+    mv "$POT_TMP" "$POT_FILE"
+  fi
 
   # 2. Update existing .po files with msgmerge for main app
   echo "Merging .pot with .po files..."
