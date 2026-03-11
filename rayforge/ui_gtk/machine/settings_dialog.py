@@ -140,7 +140,7 @@ class MachineSettingsDialog(PatchedDialogWindow):
         )
         self._add_sidebar_row(_("G-code"), "gcode-symbolic", "gcode")
         self._add_sidebar_row(
-            _("Hooks & Macros"), "utilities-terminal-symbolic", "hooks-macros"
+            _("Hooks & Macros"), "code-symbolic", "hooks-macros"
         )
         self._add_sidebar_row(_("Device"), "settings-symbolic", "device")
         self._add_sidebar_row(_("Laser"), "laser-on-symbolic", "laser")

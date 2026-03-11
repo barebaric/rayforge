@@ -12,7 +12,7 @@ class HooksMacrosPage(TrackedPreferencesPage):
     def __init__(self, machine: Machine, **kwargs):
         super().__init__(
             title=_("Hooks & Macros"),
-            icon_name="utilities-terminal-symbolic",
+            icon_name="code-symbolic",
             **kwargs,
         )
         self.machine = machine
