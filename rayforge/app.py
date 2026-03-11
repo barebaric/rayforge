@@ -478,7 +478,7 @@ def main():
     get_context()
 
     # Initialize the TaskManager with the worker initializer.
-    # This MUST happen before initialize_full_context() because the
+    # This MUST happen before accessing addon_mgr because the
     # MachineManager creates machines which import task_mgr, which
     # would trigger the creation of the TaskManager.
     task_mgr_proxy = cast(TaskManagerProxy, rayforge.shared.tasker.task_mgr)
@@ -490,10 +490,6 @@ def main():
     shared_state = task_mgr_proxy.get_shared_state()
     get_context().addon_mgr.set_task_manager(task_mgr_proxy)
     get_context().addon_mgr.set_shared_state(shared_state)
-
-    # Initialize the full application context. This creates all managers
-    # and sets up the backward-compatibility shim for old code.
-    get_context().initialize_full_context()
 
     # Run application
     app = App(args)

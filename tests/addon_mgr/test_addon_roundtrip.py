@@ -66,7 +66,8 @@ class TestAddonRoundTrip:
         )
 
         context = RayforgeContext()
-        context.addon_mgr = AddonManager(
+        context._headless = True
+        context._addon_mgr = AddonManager(
             [addons_dir], addons_dir, context.plugin_mgr
         )
 
@@ -75,9 +76,8 @@ class TestAddonRoundTrip:
             "_check_version_compatibility",
             return_value=UpdateStatus.UP_TO_DATE,
         ):
-            context.initialize_full_context(load_ui=False)
+            context._load_addons_and_call_hooks()
 
-        # The module name uses the canonical name from YAML and entry point
         assert "rayforge_addons.this_name_is_ignored.addon" in sys.modules
         assert sys.modules.get("integration_test_addon_loaded") is True
 
@@ -125,7 +125,8 @@ class TestAddonRoundTrip:
         )
 
         context = RayforgeContext()
-        context.addon_mgr = AddonManager(
+        context._headless = True
+        context._addon_mgr = AddonManager(
             [addons_dir], addons_dir, context.plugin_mgr
         )
 
@@ -134,9 +135,8 @@ class TestAddonRoundTrip:
             "_check_version_compatibility",
             return_value=UpdateStatus.UP_TO_DATE,
         ):
-            context.initialize_full_context(load_ui=False)
+            context._load_addons_and_call_hooks()
 
-        # The module name uses the canonical name from YAML and entry point
         assert "rayforge_addons.this_name_is_ignored.addon" in sys.modules
         assert sys.modules.get("multi_hook_rayforge_init") is True
 
@@ -160,7 +160,8 @@ class TestAddonRoundTrip:
         )
 
         context = RayforgeContext()
-        context.addon_mgr = AddonManager(
+        context._headless = True
+        context._addon_mgr = AddonManager(
             [addons_dir], addons_dir, context.plugin_mgr
         )
 
@@ -169,7 +170,7 @@ class TestAddonRoundTrip:
             "_check_version_compatibility",
             return_value=UpdateStatus.UP_TO_DATE,
         ):
-            context.initialize_full_context(load_ui=False)
+            context._load_addons_and_call_hooks()
 
         assert "rayforge_addons.invalid_addon" not in sys.modules
 
@@ -190,10 +191,11 @@ class TestAddonRoundTrip:
         )
 
         context = RayforgeContext()
-        context.addon_mgr = AddonManager(
+        context._headless = True
+        context._addon_mgr = AddonManager(
             [addons_dir], addons_dir, context.plugin_mgr
         )
 
-        context.initialize_full_context(load_ui=False)
+        context._load_addons_and_call_hooks()
 
         assert "rayforge_addons.no_metadata_addon" not in sys.modules

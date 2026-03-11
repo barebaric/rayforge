@@ -6,12 +6,10 @@ import sys
 from pathlib import Path
 from typing import Dict, Optional
 
-import pluggy
 from rayforge.addon_mgr.lazy_loader import (
     ensure_addon_namespaces,
     install_addon_finder,
 )
-from rayforge.core.hooks import RayforgeSpecs
 
 
 _worker_addons_loaded = False
@@ -32,6 +30,7 @@ def ensure_addons_loaded():
 
     _worker_addons_loaded = True
 
+    from rayforge.context import get_context
     from rayforge.core.step_registry import step_registry
     from rayforge.doceditor.layout.registry import layout_registry
     from rayforge.pipeline.producer.registry import producer_registry
@@ -39,29 +38,14 @@ def ensure_addons_loaded():
 
     logger = logging.getLogger(__name__)
 
-    plugin_mgr = pluggy.PluginManager("rayforge")
-    plugin_mgr.add_hookspecs(RayforgeSpecs)
+    context = get_context()
+    context._headless = True
 
-    manifest = None
-
-    # Priority 1: Use cached state (Worker process scenario)
-    if _shared_state_cache is not None:
-        manifest = _shared_state_cache.get("addon_manifest")
-    else:
-        # Priority 2: Use TaskManager (Main process scenario)
-        # We must be careful not to trigger TaskManager creation in a worker
-        try:
-            from rayforge.shared.tasker import task_mgr
-
-            # accessing get_shared_state on the proxy triggers initialization
-            # which is safe in the main process but fatal in a worker.
-            # We assume that if _shared_state_cache is None, we are either
-            # in the main process or something went wrong with initialization.
-            shared_state = task_mgr.get_shared_state()
-            manifest = shared_state.get("addon_manifest")
-        except Exception as e:
-            # Catches AssertionError (daemonic process) or other init errors
-            logger.debug(f"Could not retrieve manifest from task_mgr: {e}")
+    manifest = (
+        _shared_state_cache.get("addon_manifest")
+        if _shared_state_cache
+        else None
+    )
 
     if not manifest:
         logger.warning("Cannot load worker addons: manifest not available.")
@@ -74,19 +58,22 @@ def ensure_addons_loaded():
     for module_name in manifest.enabled_backend_modules:
         try:
             module = importlib.import_module(module_name)
-            plugin_mgr.register(module)
+            context.plugin_mgr.register(module)
         except Exception as e:
             logger.error(
                 f"Failed to load enabled backend module '{module_name}': {e}"
             )
 
-    # Only register backend hooks, not frontend (widgets, menus, actions)
-    plugin_mgr.hook.register_steps(step_registry=step_registry)
-    plugin_mgr.hook.register_producers(producer_registry=producer_registry)
-    plugin_mgr.hook.register_transformers(
+    context.plugin_mgr.hook.register_steps(step_registry=step_registry)
+    context.plugin_mgr.hook.register_producers(
+        producer_registry=producer_registry
+    )
+    context.plugin_mgr.hook.register_transformers(
         transformer_registry=transformer_registry
     )
-    plugin_mgr.hook.register_layout_strategies(layout_registry=layout_registry)
+    context.plugin_mgr.hook.register_layout_strategies(
+        layout_registry=layout_registry
+    )
 
     logger.debug("Worker addons loaded from manifest.")
 
