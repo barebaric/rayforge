@@ -35,6 +35,9 @@ class PyvipsLogFilter(logging.Filter):
         return True
 
 
+logger = logging.getLogger(__name__)
+
+
 def pytest_configure(config):
     """
     Configure test-only components.
@@ -50,19 +53,16 @@ def pytest_configure(config):
         "pyvips.error",
     ]
     for name in pyvips_loggers:
-        logger = logging.getLogger(name)
-        logger.setLevel(logging.WARNING)
-        logger.propagate = False
-        logger.handlers = []
+        pyvips_logger = logging.getLogger(name)
+        pyvips_logger.setLevel(logging.WARNING)
+        pyvips_logger.propagate = False
+        pyvips_logger.handlers = []
 
     logging.getLogger().addFilter(PyvipsLogFilter())
 
 
 if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine
-
-
-logger = logging.getLogger(__name__)
 
 
 def _test_worker_initializer(shared_state: dict):

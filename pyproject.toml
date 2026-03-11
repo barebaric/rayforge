@@ -51,7 +51,12 @@ quote-style = "double"
 [tool.pyright]
 stubPath = "typings"
 reportMissingModuleSource = false
-include = ["rayforge", "tests/**/test_*.py"]
+include = [
+    "rayforge",
+    "tests/**/test_*.py",
+    "rayforge/builtin_addons/*",
+    "rayforge/private_addons/*",
+]
 
 [tool.mypy]
 mypy_path = "stubs"
@@ -74,17 +79,15 @@ test = [
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
-pythonpath = [
-    "rayforge/builtin_addons/rayforge-addon-deepnest",
-    "rayforge/builtin_addons/rayforge-addon-laser",
-    "rayforge/builtin_addons/rayforge-addon-post",
-    "rayforge/builtin_addons/rayforge-addon-smart-stock",
-]
 filterwarnings = [
     # Ignore Swig related deprecation warnings from importlib
     "ignore::DeprecationWarning:importlib._bootstrap",
 ]
-testpaths = ["tests", "rayforge/builtin_addons/*/tests"]
+testpaths = [
+    "tests",
+    "rayforge/builtin_addons/*/tests",
+    "rayforge/private_addons/*/tests",
+]
 norecursedirs = [
     "builddir",
     ".git",

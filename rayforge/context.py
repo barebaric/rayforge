@@ -45,6 +45,7 @@ class RayforgeContext:
             DIALECT_DIR,
             ADDONS_DIR,
             BUILTIN_ADDONS_DIR,
+            PRIVATE_ADDONS_DIR,
             AI_CONFIG_FILE,
             PATREON_CLIENT_ID,
         )
@@ -79,7 +80,7 @@ class RayforgeContext:
 
         # Initialize the addon manager
         self.addon_mgr = AddonManager(
-            [BUILTIN_ADDONS_DIR, ADDONS_DIR],
+            [BUILTIN_ADDONS_DIR, PRIVATE_ADDONS_DIR, ADDONS_DIR],
             ADDONS_DIR,
             self.plugin_mgr,
             self.addon_config,
