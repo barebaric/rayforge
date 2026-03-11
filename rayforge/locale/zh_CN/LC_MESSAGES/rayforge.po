@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-09 23:13+0100\n"
+"POT-Creation-Date: 2026-03-11 09:33+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -807,7 +807,7 @@ msgstr "运行"
 msgid "Hold"
 msgstr "暂停"
 
-#: rayforge/machine/driver/driver.py rayforge/machine/models/dialect.py
+#: rayforge/machine/driver/driver.py rayforge/machine/models/dialect/base.py
 msgid "Jog"
 msgstr "点动"
 
@@ -931,128 +931,6 @@ msgstr "无法连接到主机'{host}'。请检查IP地址和网络连接。"
 msgid "Laser Head"
 msgstr "激光头"
 
-#: rayforge/machine/models/dialect.py
-msgid "General Information"
-msgstr "常规信息"
-
-#: rayforge/machine/models/dialect.py rayforge/ui_gtk/varset/varset_editor.py
-msgid "Label"
-msgstr "标签"
-
-#: rayforge/machine/models/dialect.py
-msgid "User-facing name"
-msgstr "面向用户的名称"
-
-#: rayforge/machine/models/dialect.py rayforge/ui_gtk/varset/varset_editor.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "Description"
-msgstr "描述"
-
-#: rayforge/machine/models/dialect.py
-msgid "Short description"
-msgstr "简短描述"
-
-#: rayforge/machine/models/dialect.py
-msgid "Command Templates"
-msgstr "命令模板"
-
-#: rayforge/machine/models/dialect.py
-msgid "Laser On"
-msgstr "激光开启"
-
-#: rayforge/machine/models/dialect.py
-msgid "Laser Off"
-msgstr "激光关闭"
-
-#: rayforge/machine/models/dialect.py
-msgid "Travel Move"
-msgstr "移动"
-
-#: rayforge/machine/models/dialect.py
-msgid "Linear Move"
-msgstr "直线移动"
-
-#: rayforge/machine/models/dialect.py
-msgid "Arc (CW)"
-msgstr "圆弧（顺时针）"
-
-#: rayforge/machine/models/dialect.py
-msgid "Arc (CCW)"
-msgstr "圆弧（逆时针）"
-
-#: rayforge/machine/models/dialect.py
-msgid "Tool Change"
-msgstr "换刀"
-
-#: rayforge/machine/models/dialect.py
-msgid "Set Speed"
-msgstr "设置速度"
-
-#: rayforge/machine/models/dialect.py
-msgid "Air On"
-msgstr "吹气开启"
-
-#: rayforge/machine/models/dialect.py
-msgid "Air Off"
-msgstr "吹气关闭"
-
-#: rayforge/machine/models/dialect.py rayforge/ui_gtk/machine/jog_widget.py
-msgid "Home All"
-msgstr "全部回原点"
-
-#: rayforge/machine/models/dialect.py
-msgid "Home Axis"
-msgstr "轴回原点"
-
-#: rayforge/machine/models/dialect.py
-msgid "Move To"
-msgstr "移动到"
-
-#: rayforge/machine/models/dialect.py rayforge/ui_gtk/main_menu.py
-msgid "Clear Alarm"
-msgstr "清除报警"
-
-#: rayforge/machine/models/dialect.py
-msgid "Set WCS Offset"
-msgstr "设置WCS偏移"
-
-#: rayforge/machine/models/dialect.py
-msgid "Probe Cycle"
-msgstr "探测循环"
-
-#: rayforge/machine/models/dialect.py
-msgid "Scripts"
-msgstr "脚本"
-
-#: rayforge/machine/models/dialect.py
-msgid "Inject WCS after Preamble"
-msgstr "在前言后注入WCS"
-
-#: rayforge/machine/models/dialect.py
-#, python-brace-format
-msgid ""
-"Inject the active WCS command (e.g., G54) after the preamble script. When "
-"disabled, you can use {machine.active_wcs} in the preamble instead."
-msgstr ""
-"在前言脚本后注入活动的WCS命令（例如G54）。禁用时，您可以在前言中使用"
-"{machine.active_wcs}代替。"
-
-#: rayforge/machine/models/dialect.py
-msgid "Preamble"
-msgstr "前言"
-
-#: rayforge/machine/models/dialect.py
-msgid "Preamble script"
-msgstr "前言脚本"
-
-#: rayforge/machine/models/dialect.py
-msgid "Postscript"
-msgstr "后记"
-
-#: rayforge/machine/models/dialect.py
-msgid "Postscript script"
-msgstr "后记脚本"
-
 #: rayforge/machine/models/machine.py
 msgid "Default Machine"
 msgstr "默认机器"
@@ -1087,6 +965,199 @@ msgstr "未找到驱动'{driver}'。"
 #, python-brace-format
 msgid "An unexpected error occurred during validation: {error}"
 msgstr "验证期间发生意外错误：{error}"
+
+#: rayforge/machine/models/dialect/grbl_noz.py
+msgid "Grbl (Compat, no Z axis)"
+msgstr "Grbl（兼容，无Z轴）"
+
+#: rayforge/machine/models/dialect/grbl_noz.py
+msgid ""
+"Grbl dialect with highest compatibility, but removes Z axis commands for "
+"more efficient G-code"
+msgstr "Grbl方言具有最高兼容性，但移除Z轴命令以获得更高效的G代码"
+
+#: rayforge/machine/models/dialect/grbl_dynamic_noz.py
+msgid "GRBL Dynamic (no Z axis)"
+msgstr "GRBL动态（无Z轴）"
+
+#: rayforge/machine/models/dialect/grbl_dynamic_noz.py
+msgid ""
+"GRBL with M4 dynamic power (Depth-Aware) mode, but removes Z axis commands "
+"for more efficient G-code"
+msgstr "具有M4动态功率（深度感知）模式的GRBL，但移除Z轴命令以获得更高效的G代码"
+
+#: rayforge/machine/models/dialect/mach4_m67.py
+msgid "Mach4 (M67 Analog)"
+msgstr "Mach4 (M67 模拟输出)"
+
+#: rayforge/machine/models/dialect/mach4_m67.py
+msgid ""
+"Mach4 with M67 analog output for high-speed raster engraving. Uses M67 E0 "
+"Q<0-255> for laser power instead of inline S commands, reducing buffer "
+"pressure on the controller."
+msgstr ""
+"具有M67模拟输出的Mach4，用于高速光栅雕刻。使用M67 E0 Q<0-255>进行激光"
+"功率控制，而不是内联S命令，从而减少控制器的缓冲区压力。"
+
+#: rayforge/machine/models/dialect/smoothieware.py
+msgid "Smoothieware"
+msgstr "Smoothieware"
+
+#: rayforge/machine/models/dialect/smoothieware.py
+msgid "G-code dialect for Smoothieware-based controllers"
+msgstr "基于Smoothieware控制器的G代码方言"
+
+#: rayforge/machine/models/dialect/grbl_dynamic.py
+msgid "GRBL Dynamic"
+msgstr "GRBL动态"
+
+#: rayforge/machine/models/dialect/grbl_dynamic.py
+msgid ""
+"GRBL with M4 dynamic power (Depth-Aware) mode. S parameter is included in "
+"motion commands"
+msgstr "具有M4动态功率（深度感知）模式的GRBL。S参数包含在运动命令中"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "General Information"
+msgstr "常规信息"
+
+#: rayforge/machine/models/dialect/base.py
+#: rayforge/ui_gtk/varset/varset_editor.py
+msgid "Label"
+msgstr "标签"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "User-facing name"
+msgstr "面向用户的名称"
+
+#: rayforge/machine/models/dialect/base.py
+#: rayforge/ui_gtk/varset/varset_editor.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+msgid "Description"
+msgstr "描述"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Short description"
+msgstr "简短描述"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Command Templates"
+msgstr "命令模板"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Laser On"
+msgstr "激光开启"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Laser Off"
+msgstr "激光关闭"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Travel Move"
+msgstr "移动"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Linear Move"
+msgstr "直线移动"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Arc (CW)"
+msgstr "圆弧（顺时针）"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Arc (CCW)"
+msgstr "圆弧（逆时针）"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Tool Change"
+msgstr "换刀"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Set Speed"
+msgstr "设置速度"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Air On"
+msgstr "吹气开启"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Air Off"
+msgstr "吹气关闭"
+
+#: rayforge/machine/models/dialect/base.py
+#: rayforge/ui_gtk/machine/jog_widget.py
+msgid "Home All"
+msgstr "全部回原点"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Home Axis"
+msgstr "轴回原点"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Move To"
+msgstr "移动到"
+
+#: rayforge/machine/models/dialect/base.py rayforge/ui_gtk/main_menu.py
+msgid "Clear Alarm"
+msgstr "清除报警"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Set WCS Offset"
+msgstr "设置WCS偏移"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Probe Cycle"
+msgstr "探测循环"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Scripts"
+msgstr "脚本"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Inject WCS after Preamble"
+msgstr "在前言后注入WCS"
+
+#: rayforge/machine/models/dialect/base.py
+#, python-brace-format
+msgid ""
+"Inject the active WCS command (e.g., G54) after the preamble script. When "
+"disabled, you can use {machine.active_wcs} in the preamble instead."
+msgstr ""
+"在前言脚本后注入活动的WCS命令（例如G54）。禁用时，您可以在前言中使用"
+"{machine.active_wcs}代替。"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Preamble"
+msgstr "前言"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Preamble script"
+msgstr "前言脚本"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Postscript"
+msgstr "后记"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Postscript script"
+msgstr "后记脚本"
+
+#: rayforge/machine/models/dialect/marlin.py
+msgid "Marlin"
+msgstr "Marlin"
+
+#: rayforge/machine/models/dialect/marlin.py
+msgid "G-code for Marlin-based controllers, common in 3D printers"
+msgstr "基于Marlin控制器的G代码，常用于3D打印机"
+
+#: rayforge/machine/models/dialect/grbl.py
+msgid "Grbl (Compat)"
+msgstr "Grbl（兼容）"
+
+#: rayforge/machine/models/dialect/grbl.py
+msgid ""
+"Grbl dialect with highest compatibility for most diode lasers and hobby CNCs"
+msgstr "Grbl方言，对大多数二极管激光器和业余CNC具有最高兼容性"
 
 #: rayforge/machine/models/macro.py
 msgid "Layer Start"
@@ -1123,61 +1194,6 @@ msgstr "处理工件之后"
 #: rayforge/machine/models/macro.py
 msgid "Unnamed Macro"
 msgstr "未命名宏"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "Grbl (Compat)"
-msgstr "Grbl（兼容）"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid ""
-"Grbl dialect with highest compatibility for most diode lasers and hobby CNCs"
-msgstr "Grbl方言，对大多数二极管激光器和业余CNC具有最高兼容性"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "Grbl (Compat, no Z axis)"
-msgstr "Grbl（兼容，无Z轴）"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid ""
-"Grbl dialect with highest compatibility, but removes Z axis commands for "
-"more efficient G-code"
-msgstr "Grbl方言具有最高兼容性，但移除Z轴命令以获得更高效的G代码"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "Smoothieware"
-msgstr "Smoothieware"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "G-code dialect for Smoothieware-based controllers"
-msgstr "基于Smoothieware控制器的G代码方言"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "Marlin"
-msgstr "Marlin"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "G-code for Marlin-based controllers, common in 3D printers"
-msgstr "基于Marlin控制器的G代码，常用于3D打印机"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "GRBL Dynamic"
-msgstr "GRBL动态"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid ""
-"GRBL with M4 dynamic power (Depth-Aware) mode. S parameter is included in "
-"motion commands"
-msgstr "具有M4动态功率（深度感知）模式的GRBL。S参数包含在运动命令中"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "GRBL Dynamic (no Z axis)"
-msgstr "GRBL动态（无Z轴）"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid ""
-"GRBL with M4 dynamic power (Depth-Aware) mode, but removes Z axis commands "
-"for more efficient G-code"
-msgstr "具有M4动态功率（深度感知）模式的GRBL，但移除Z轴命令以获得更高效的G代码"
 
 #: rayforge/machine/cmd.py
 #, python-brace-format
@@ -1367,13 +1383,13 @@ msgstr "购买高级插件并在安装过程中输入许可证密钥。"
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
 #, python-brace-format
-msgid "Unlocks: {addons} (+{count} more)"
-msgstr "解锁：{addons}（+{count}个更多）"
+msgid "{addons} (+{count} more)"
+msgstr "{addons} (还有{count}个)"
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
 #, python-brace-format
-msgid "Unlocks: {addons}"
-msgstr "解锁：{addons}"
+msgid "Product ID: {id}"
+msgstr "产品ID：{id}"
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
 #: rayforge/ui_gtk/canvas2d/context_menu.py
@@ -4014,54 +4030,6 @@ msgstr "包含 {n} 个矢量的图层"
 msgid "Generating preview..."
 msgstr "正在生成预览..."
 
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Enable Overscan"
-msgstr "启用过冲"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Automatic Distance"
-msgstr "自动距离"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Calculate distance based on speed and acceleration with safety factor"
-msgstr "基于速度、加速度和安全系数计算距离"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Overscan Distance"
-msgstr "过冲距离"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Manual distance setting"
-msgstr "手动距离设置"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Toggle Overscan"
-msgstr "切换过冲"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Toggle Auto Overscan"
-msgstr "切换自动过冲"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Auto Calculate Overscan Distance"
-msgstr "自动计算过冲距离"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Disable Auto Overscan"
-msgstr "禁用自动过冲"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Change Overscan Distance"
-msgstr "更改过冲距离"
-
-#: rayforge/ui_gtk/doceditor/step_settings/optimize.py
-msgid "Enable Optimization"
-msgstr "启用优化"
-
-#: rayforge/ui_gtk/doceditor/step_settings/optimize.py
-msgid "Toggle Path Optimization"
-msgstr "切换路径优化"
-
 #: rayforge/ui_gtk/doceditor/step_settings/placeholder.py
 msgid "This feature is not available."
 msgstr "此功能不可用。"
@@ -4071,78 +4039,6 @@ msgid ""
 "The required component '{}' could not be found. The document can still be "
 "saved."
 msgstr "找不到所需的组件 '{}'。该文档仍可保存。"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Enable Smoothing"
-msgstr "启用平滑"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Smoothness"
-msgstr "平滑度"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Corner Angle Threshold"
-msgstr "拐角角度阈值"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Angles sharper than this are kept as corners (degrees)"
-msgstr "锐于此角度的角保留为拐角（度）"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Toggle Smoothing"
-msgstr "切换平滑"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Change smoothness"
-msgstr "更改平滑度"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Change corner angle"
-msgstr "更改拐角角度"
-
-#: rayforge/ui_gtk/doceditor/step_settings/crop.py
-msgid "Enable Crop-to-Stock"
-msgstr "启用裁剪到材料"
-
-#: rayforge/ui_gtk/doceditor/step_settings/crop.py
-msgid "Offset"
-msgstr "偏移"
-
-#: rayforge/ui_gtk/doceditor/step_settings/crop.py
-msgid "Grow/shrink stock boundary before cropping"
-msgstr "裁剪前扩展/收缩材料边界"
-
-#: rayforge/ui_gtk/doceditor/step_settings/crop.py
-msgid "Toggle Crop-to-Stock"
-msgstr "切换裁剪到材料"
-
-#: rayforge/ui_gtk/doceditor/step_settings/crop.py
-msgid "Change Crop Offset"
-msgstr "更改裁剪偏移"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Number of Passes"
-msgstr "轮次/遍数"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "How often to repeat the entire step"
-msgstr "重复整个步骤的次数"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Z Step-Down per Pass"
-msgstr "每轮次Z轴下降量"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Distance to lower Z-axis for each subsequent pass in machine units"
-msgstr "每轮次Z轴下降的距离（以机器单位计）"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Change number of passes"
-msgstr "更改轮次"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Change Z Step-Down"
-msgstr "更改Z轴下刀量"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/material_selector.py
