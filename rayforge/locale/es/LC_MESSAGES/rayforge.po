@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-09 23:13+0100\n"
+"POT-Creation-Date: 2026-03-11 09:33+0100\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -881,7 +881,7 @@ msgstr "En ejecución"
 msgid "Hold"
 msgstr "En espera"
 
-#: rayforge/machine/driver/driver.py rayforge/machine/models/dialect.py
+#: rayforge/machine/driver/driver.py rayforge/machine/models/dialect/base.py
 msgid "Jog"
 msgstr "Jog"
 
@@ -1011,129 +1011,6 @@ msgstr ""
 msgid "Laser Head"
 msgstr "Cabezal láser"
 
-#: rayforge/machine/models/dialect.py
-msgid "General Information"
-msgstr "Información general"
-
-#: rayforge/machine/models/dialect.py rayforge/ui_gtk/varset/varset_editor.py
-msgid "Label"
-msgstr "Etiqueta"
-
-#: rayforge/machine/models/dialect.py
-msgid "User-facing name"
-msgstr "Nombre visible para el usuario"
-
-#: rayforge/machine/models/dialect.py rayforge/ui_gtk/varset/varset_editor.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "Description"
-msgstr "Descripción"
-
-#: rayforge/machine/models/dialect.py
-msgid "Short description"
-msgstr "Descripción corta"
-
-#: rayforge/machine/models/dialect.py
-msgid "Command Templates"
-msgstr "Plantillas de comandos"
-
-#: rayforge/machine/models/dialect.py
-msgid "Laser On"
-msgstr "Encender láser"
-
-#: rayforge/machine/models/dialect.py
-msgid "Laser Off"
-msgstr "Apagar láser"
-
-#: rayforge/machine/models/dialect.py
-msgid "Travel Move"
-msgstr "Movimiento de desplazamiento"
-
-#: rayforge/machine/models/dialect.py
-msgid "Linear Move"
-msgstr "Movimiento lineal"
-
-#: rayforge/machine/models/dialect.py
-msgid "Arc (CW)"
-msgstr "Arco (horario)"
-
-#: rayforge/machine/models/dialect.py
-msgid "Arc (CCW)"
-msgstr "Arco (antihorario)"
-
-#: rayforge/machine/models/dialect.py
-msgid "Tool Change"
-msgstr "Cambio de herramienta"
-
-#: rayforge/machine/models/dialect.py
-msgid "Set Speed"
-msgstr "Establecer velocidad"
-
-#: rayforge/machine/models/dialect.py
-msgid "Air On"
-msgstr "Encender aire"
-
-#: rayforge/machine/models/dialect.py
-msgid "Air Off"
-msgstr "Apagar aire"
-
-#: rayforge/machine/models/dialect.py rayforge/ui_gtk/machine/jog_widget.py
-msgid "Home All"
-msgstr "Referenciar todo"
-
-#: rayforge/machine/models/dialect.py
-msgid "Home Axis"
-msgstr "Referenciar eje"
-
-#: rayforge/machine/models/dialect.py
-msgid "Move To"
-msgstr "Mover a"
-
-#: rayforge/machine/models/dialect.py rayforge/ui_gtk/main_menu.py
-msgid "Clear Alarm"
-msgstr "Limpiar alarma"
-
-#: rayforge/machine/models/dialect.py
-msgid "Set WCS Offset"
-msgstr "Establecer desplazamiento WCS"
-
-#: rayforge/machine/models/dialect.py
-msgid "Probe Cycle"
-msgstr "Ciclo de sondeo"
-
-#: rayforge/machine/models/dialect.py
-msgid "Scripts"
-msgstr "Scripts"
-
-#: rayforge/machine/models/dialect.py
-msgid "Inject WCS after Preamble"
-msgstr "Inyectar WCS después del preámbulo"
-
-#: rayforge/machine/models/dialect.py
-#, python-brace-format
-msgid ""
-"Inject the active WCS command (e.g., G54) after the preamble script. When "
-"disabled, you can use {machine.active_wcs} in the preamble instead."
-msgstr ""
-"Inyectar el comando WCS activo (p. ej., G54) después del script de "
-"preámbulo. Cuando está deshabilitado, puedes usar {machine.active_wcs} en el "
-"preámbulo en su lugar."
-
-#: rayforge/machine/models/dialect.py
-msgid "Preamble"
-msgstr "Preámbulo"
-
-#: rayforge/machine/models/dialect.py
-msgid "Preamble script"
-msgstr "Script de preámbulo"
-
-#: rayforge/machine/models/dialect.py
-msgid "Postscript"
-msgstr "Epílogo"
-
-#: rayforge/machine/models/dialect.py
-msgid "Postscript script"
-msgstr "Script de epílogo"
-
 #: rayforge/machine/models/machine.py
 msgid "Default Machine"
 msgstr "Máquina por defecto"
@@ -1168,6 +1045,209 @@ msgstr "Controlador '{driver}' no encontrado."
 #, python-brace-format
 msgid "An unexpected error occurred during validation: {error}"
 msgstr "Ocurrió un error inesperado durante la validación: {error}"
+
+#: rayforge/machine/models/dialect/grbl_noz.py
+msgid "Grbl (Compat, no Z axis)"
+msgstr "Grbl (Compatibilidad, sin eje Z)"
+
+#: rayforge/machine/models/dialect/grbl_noz.py
+msgid ""
+"Grbl dialect with highest compatibility, but removes Z axis commands for "
+"more efficient G-code"
+msgstr ""
+"Dialecto Grbl con máxima compatibilidad, pero elimina los comandos del eje Z "
+"para un G-code más eficiente"
+
+#: rayforge/machine/models/dialect/grbl_dynamic_noz.py
+msgid "GRBL Dynamic (no Z axis)"
+msgstr "GRBL Dinámico (sin eje Z)"
+
+#: rayforge/machine/models/dialect/grbl_dynamic_noz.py
+msgid ""
+"GRBL with M4 dynamic power (Depth-Aware) mode, but removes Z axis commands "
+"for more efficient G-code"
+msgstr ""
+"GRBL con modo de potencia dinámica M4 (consciente de profundidad), pero "
+"elimina los comandos del eje Z para un G-code más eficiente"
+
+#: rayforge/machine/models/dialect/mach4_m67.py
+msgid "Mach4 (M67 Analog)"
+msgstr "Mach4 (M67 Analógico)"
+
+#: rayforge/machine/models/dialect/mach4_m67.py
+msgid ""
+"Mach4 with M67 analog output for high-speed raster engraving. Uses M67 E0 "
+"Q<0-255> for laser power instead of inline S commands, reducing buffer "
+"pressure on the controller."
+msgstr ""
+"Mach4 con salida analógica M67 para grabado raster de alta velocidad. Usa "
+"M67 E0 Q<0-255> para la potencia del láser en lugar de comandos S en "
+"línea, reduciendo la presión del búfer en el controlador."
+
+#: rayforge/machine/models/dialect/smoothieware.py
+msgid "Smoothieware"
+msgstr "Smoothieware"
+
+#: rayforge/machine/models/dialect/smoothieware.py
+msgid "G-code dialect for Smoothieware-based controllers"
+msgstr "Dialecto G-code para controladores basados en Smoothieware"
+
+#: rayforge/machine/models/dialect/grbl_dynamic.py
+msgid "GRBL Dynamic"
+msgstr "GRBL Dinámico"
+
+#: rayforge/machine/models/dialect/grbl_dynamic.py
+msgid ""
+"GRBL with M4 dynamic power (Depth-Aware) mode. S parameter is included in "
+"motion commands"
+msgstr ""
+"GRBL con modo de potencia dinámica M4 (consciente de profundidad). El "
+"parámetro S se incluye en los comandos de movimiento"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "General Information"
+msgstr "Información general"
+
+#: rayforge/machine/models/dialect/base.py
+#: rayforge/ui_gtk/varset/varset_editor.py
+msgid "Label"
+msgstr "Etiqueta"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "User-facing name"
+msgstr "Nombre visible para el usuario"
+
+#: rayforge/machine/models/dialect/base.py
+#: rayforge/ui_gtk/varset/varset_editor.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+msgid "Description"
+msgstr "Descripción"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Short description"
+msgstr "Descripción corta"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Command Templates"
+msgstr "Plantillas de comandos"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Laser On"
+msgstr "Encender láser"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Laser Off"
+msgstr "Apagar láser"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Travel Move"
+msgstr "Movimiento de desplazamiento"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Linear Move"
+msgstr "Movimiento lineal"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Arc (CW)"
+msgstr "Arco (horario)"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Arc (CCW)"
+msgstr "Arco (antihorario)"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Tool Change"
+msgstr "Cambio de herramienta"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Set Speed"
+msgstr "Establecer velocidad"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Air On"
+msgstr "Encender aire"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Air Off"
+msgstr "Apagar aire"
+
+#: rayforge/machine/models/dialect/base.py
+#: rayforge/ui_gtk/machine/jog_widget.py
+msgid "Home All"
+msgstr "Referenciar todo"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Home Axis"
+msgstr "Referenciar eje"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Move To"
+msgstr "Mover a"
+
+#: rayforge/machine/models/dialect/base.py rayforge/ui_gtk/main_menu.py
+msgid "Clear Alarm"
+msgstr "Limpiar alarma"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Set WCS Offset"
+msgstr "Establecer desplazamiento WCS"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Probe Cycle"
+msgstr "Ciclo de sondeo"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Scripts"
+msgstr "Scripts"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Inject WCS after Preamble"
+msgstr "Inyectar WCS después del preámbulo"
+
+#: rayforge/machine/models/dialect/base.py
+#, python-brace-format
+msgid ""
+"Inject the active WCS command (e.g., G54) after the preamble script. When "
+"disabled, you can use {machine.active_wcs} in the preamble instead."
+msgstr ""
+"Inyectar el comando WCS activo (p. ej., G54) después del script de "
+"preámbulo. Cuando está deshabilitado, puedes usar {machine.active_wcs} en el "
+"preámbulo en su lugar."
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Preamble"
+msgstr "Preámbulo"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Preamble script"
+msgstr "Script de preámbulo"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Postscript"
+msgstr "Epílogo"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Postscript script"
+msgstr "Script de epílogo"
+
+#: rayforge/machine/models/dialect/marlin.py
+msgid "Marlin"
+msgstr "Marlin"
+
+#: rayforge/machine/models/dialect/marlin.py
+msgid "G-code for Marlin-based controllers, common in 3D printers"
+msgstr "G-code para controladores basados en Marlin, común en impresoras 3D"
+
+#: rayforge/machine/models/dialect/grbl.py
+msgid "Grbl (Compat)"
+msgstr "Grbl (Compatibilidad)"
+
+#: rayforge/machine/models/dialect/grbl.py
+msgid ""
+"Grbl dialect with highest compatibility for most diode lasers and hobby CNCs"
+msgstr ""
+"Dialecto Grbl con máxima compatibilidad para la mayoría de láseres de diodo "
+"y CNC de afición"
 
 #: rayforge/machine/models/macro.py
 msgid "Layer Start"
@@ -1204,69 +1284,6 @@ msgstr "Después de procesar una pieza"
 #: rayforge/machine/models/macro.py
 msgid "Unnamed Macro"
 msgstr "Macro sin nombre"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "Grbl (Compat)"
-msgstr "Grbl (Compatibilidad)"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid ""
-"Grbl dialect with highest compatibility for most diode lasers and hobby CNCs"
-msgstr ""
-"Dialecto Grbl con máxima compatibilidad para la mayoría de láseres de diodo "
-"y CNC de afición"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "Grbl (Compat, no Z axis)"
-msgstr "Grbl (Compatibilidad, sin eje Z)"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid ""
-"Grbl dialect with highest compatibility, but removes Z axis commands for "
-"more efficient G-code"
-msgstr ""
-"Dialecto Grbl con máxima compatibilidad, pero elimina los comandos del eje Z "
-"para un G-code más eficiente"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "Smoothieware"
-msgstr "Smoothieware"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "G-code dialect for Smoothieware-based controllers"
-msgstr "Dialecto G-code para controladores basados en Smoothieware"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "Marlin"
-msgstr "Marlin"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "G-code for Marlin-based controllers, common in 3D printers"
-msgstr "G-code para controladores basados en Marlin, común en impresoras 3D"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "GRBL Dynamic"
-msgstr "GRBL Dinámico"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid ""
-"GRBL with M4 dynamic power (Depth-Aware) mode. S parameter is included in "
-"motion commands"
-msgstr ""
-"GRBL con modo de potencia dinámica M4 (consciente de profundidad). El "
-"parámetro S se incluye en los comandos de movimiento"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "GRBL Dynamic (no Z axis)"
-msgstr "GRBL Dinámico (sin eje Z)"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid ""
-"GRBL with M4 dynamic power (Depth-Aware) mode, but removes Z axis commands "
-"for more efficient G-code"
-msgstr ""
-"GRBL con modo de potencia dinámica M4 (consciente de profundidad), pero "
-"elimina los comandos del eje Z para un G-code más eficiente"
 
 #: rayforge/machine/cmd.py
 #, python-brace-format
@@ -1465,13 +1482,13 @@ msgstr ""
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
 #, python-brace-format
-msgid "Unlocks: {addons} (+{count} more)"
-msgstr "Desbloquea: {addons} (+{count} más)"
+msgid "{addons} (+{count} more)"
+msgstr "{addons} (+{count} más)"
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
 #, python-brace-format
-msgid "Unlocks: {addons}"
-msgstr "Desbloquea: {addons}"
+msgid "Product ID: {id}"
+msgstr "ID de producto: {id}"
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
 #: rayforge/ui_gtk/canvas2d/context_menu.py
@@ -4196,55 +4213,6 @@ msgstr "Capa con {n} vectores"
 msgid "Generating preview..."
 msgstr "Generando vista previa..."
 
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Enable Overscan"
-msgstr "Habilitar Overscan"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Automatic Distance"
-msgstr "Distancia automática"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Calculate distance based on speed and acceleration with safety factor"
-msgstr ""
-"Calcular distancia basada en velocidad y aceleración con factor de seguridad"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Overscan Distance"
-msgstr "Distancia de Overscan"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Manual distance setting"
-msgstr "Ajuste manual de distancia"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Toggle Overscan"
-msgstr "Alternar Overscan"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Toggle Auto Overscan"
-msgstr "Alternar Overscan automático"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Auto Calculate Overscan Distance"
-msgstr "Calcular distancia de Overscan automáticamente"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Disable Auto Overscan"
-msgstr "Desactivar Sobrescanido Automático"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Change Overscan Distance"
-msgstr "Cambiar distancia de Overscan"
-
-#: rayforge/ui_gtk/doceditor/step_settings/optimize.py
-msgid "Enable Optimization"
-msgstr "Habilitar optimización"
-
-#: rayforge/ui_gtk/doceditor/step_settings/optimize.py
-msgid "Toggle Path Optimization"
-msgstr "Alternar optimización de trayectoria"
-
 #: rayforge/ui_gtk/doceditor/step_settings/placeholder.py
 msgid "This feature is not available."
 msgstr "Esta función no está disponible."
@@ -4256,79 +4224,6 @@ msgid ""
 msgstr ""
 "El componente requerido '{}' no se encontró. El documento aún se puede "
 "guardar."
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Enable Smoothing"
-msgstr "Habilitar suavizado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Smoothness"
-msgstr "Suavizado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Corner Angle Threshold"
-msgstr "Umbral de ángulo de esquina"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Angles sharper than this are kept as corners (degrees)"
-msgstr "Los ángulos más agudos que este se mantienen como esquinas (grados)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Toggle Smoothing"
-msgstr "Alternar suavizado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Change smoothness"
-msgstr "Cambiar suavizado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Change corner angle"
-msgstr "Cambiar ángulo de esquina"
-
-#: rayforge/ui_gtk/doceditor/step_settings/crop.py
-msgid "Enable Crop-to-Stock"
-msgstr "Activar recorte al material"
-
-#: rayforge/ui_gtk/doceditor/step_settings/crop.py
-msgid "Offset"
-msgstr "Desplazamiento"
-
-#: rayforge/ui_gtk/doceditor/step_settings/crop.py
-msgid "Grow/shrink stock boundary before cropping"
-msgstr "Ampliar/reducir el límite del material antes de recortar"
-
-#: rayforge/ui_gtk/doceditor/step_settings/crop.py
-msgid "Toggle Crop-to-Stock"
-msgstr "Alternar recorte al material"
-
-#: rayforge/ui_gtk/doceditor/step_settings/crop.py
-msgid "Change Crop Offset"
-msgstr "Cambiar desplazamiento de recorte"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Number of Passes"
-msgstr "Número de pasadas"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "How often to repeat the entire step"
-msgstr "Cuántas veces repetir el paso completo"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Z Step-Down per Pass"
-msgstr "Descenso de Z por pasada"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Distance to lower Z-axis for each subsequent pass in machine units"
-msgstr ""
-"Distancia para bajar el eje Z en cada pasada posterior en unidades de máquina"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Change number of passes"
-msgstr "Cambiar número de pasadas"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Change Z Step-Down"
-msgstr "Cambiar descenso en Z"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/material_selector.py

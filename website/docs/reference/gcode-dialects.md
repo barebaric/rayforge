@@ -6,21 +6,53 @@ Rayforge supports multiple G-code dialects to work with different controller fir
 
 Rayforge currently supports these G-code dialects:
 
-| Dialect                        | Firmware     | Common Use                  | Status                          |
-| ------------------------------ | ------------ | --------------------------- | ------------------------------- |
-| **Grbl (Compat)**              | GRBL 1.1+    | Diode lasers, hobby CNC     |  Primary, fully supported      |
-| **Grbl (Compat, no Z axis)**   | GRBL 1.1+    | 2D laser cutters without Z  |  Optimized variant             |
-| **GRBL Dynamic (Depth-Aware)** | GRBL 1.1+    | Depth-Aware laser engraving |  Recommended for dynamic power |
-| **GRBL Dynamic (no Z axis)**   | GRBL 1.1+    | Depth-Aware laser engraving |  Optimized variant             |
-| **Smoothieware**               | Smoothieware | Laser cutters, CNC          |  Experimental                  |
-| **Marlin**                     | Marlin 2.0+  | 3D printers with laser      |  Experimental                  |
+| Dialect                        | Firmware     | Common Use                  |
+| ------------------------------ | ------------ | --------------------------- |
+| **Grbl (Compat)**              | GRBL 1.1+    | Diode lasers, hobby CNC     |
+| **Grbl (Compat, no Z axis)**   | GRBL 1.1+    | 2D laser cutters without Z  |
+| **GRBL Dynamic (Depth-Aware)** | GRBL 1.1+    | Depth-Aware laser engraving |
+| **GRBL Dynamic (no Z axis)**   | GRBL 1.1+    | Depth-Aware laser engraving |
+| **Mach4 (M67 Analog)**         | Mach4        | High-speed raster engraving |
+| **Smoothieware**               | Smoothieware | Laser cutters, CNC          |
+| **Marlin**                     | Marlin 2.0+  | 3D printers with laser      |
 
 :::note Recommended Dialects
 :::
 
 **Grbl (Compat)** is the most tested and recommended dialect for standard laser applications.
 
-    **GRBL Dynamic (Depth-Aware)** is recommended for Depth-Aware laser engraving where power varies during cuts (e.g., variable depth engraving).
+**GRBL Dynamic (Depth-Aware)** is recommended for Depth-Aware laser engraving where power varies during cuts (e.g., variable depth engraving).
+
+---
+
+## Mach4 (M67 Analog)
+
+The **Mach4 (M67 Analog)** dialect is designed for high-speed raster engraving with Mach4 controllers. It uses the M67 command with analog output for precise laser power control.
+
+### Key Features
+
+- **M67 Analog Output**: Uses `M67 E0 Q<0-255>` for laser power instead of inline S commands
+- **Reduced Buffer Pressure**: By separating power commands from motion commands, the controller buffer is less stressed during high-speed operations
+- **High-Speed Raster**: Optimized for fast raster engraving operations
+
+### When to Use
+
+Use this dialect when:
+
+- You have a Mach4 controller with analog output capability
+- You need high-speed raster engraving
+- Your controller experiences buffer overflow with standard inline S commands
+
+### Command Format
+
+The dialect generates G-code like:
+
+```gcode
+M67 E0 Q127  ; Set laser power to 50% (127/255)
+G1 X100 Y200 F1000  ; Move to position
+M67 E0 Q0    ; Turn laser off
+```
+
 ---
 
 ## Creating a Custom Dialect

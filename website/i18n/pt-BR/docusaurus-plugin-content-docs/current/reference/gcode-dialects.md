@@ -6,21 +6,53 @@ O Rayforge suporta múltiplos dialetos G-code para trabalhar com diferentes firm
 
 O Rayforge atualmente suporta estes dialetos G-code:
 
-| Dialeto                        | Firmware     | Uso Comum                  | Status                          |
-| ------------------------------ | ------------ | --------------------------- | ------------------------------- |
-| **GRBL (universal)**           | GRBL 1.1+    | Lasers de diodo, CNC hobby     |  Primário, totalmente suportado      |
-| **GRBL (sem eixo Z)**           | GRBL 1.1+    | Cortadores a laser 2D sem Z  |  Variante otimizada             |
-| **GRBL Dinâmico (Sensível à Profundidade)** | GRBL 1.1+    | Gravação a laser sensível à profundidade |  Recomendado para potência dinâmica |
-| **GRBL Dinâmico (sem eixo Z)**   | GRBL 1.1+    | Gravação a laser sensível à profundidade |  Variante otimizada             |
-| **Smoothieware**               | Smoothieware | Cortadores a laser, CNC          |  Experimental                  |
-| **Marlin**                     | Marlin 2.0+  | Impressoras 3D com laser      |  Experimental                  |
+| Dialeto                                     | Firmware     | Uso Comum                                |
+| ------------------------------------------- | ------------ | ---------------------------------------- |
+| **GRBL (universal)**                        | GRBL 1.1+    | Lasers de diodo, CNC hobby               |
+| **GRBL (sem eixo Z)**                       | GRBL 1.1+    | Cortadores a laser 2D sem Z              |
+| **GRBL Dinâmico (Sensível à Profundidade)** | GRBL 1.1+    | Gravação a laser sensível à profundidade |
+| **GRBL Dinâmico (sem eixo Z)**              | GRBL 1.1+    | Gravação a laser sensível à profundidade |
+| **Mach4 (M67 Analog)**                      | Mach4        | Gravação raster de alta velocidade       |
+| **Smoothieware**                            | Smoothieware | Cortadores a laser, CNC                  |
+| **Marlin**                                  | Marlin 2.0+  | Impressoras 3D com laser                 |
 
 :::note Dialeto Recomendados
 :::
 
 **GRBL (universal)** é o dialeto mais testado e recomendado para aplicações de laser padrão.
 
-    **GRBL Dinâmico (Sensível à Profundidade)** é recomendado para gravação a laser sensível à profundidade onde a potência varia durante os cortes (ex., gravação de profundidade variável).
+**GRBL Dinâmico (Sensível à Profundidade)** é recomendado para gravação a laser sensível à profundidade onde a potência varia durante os cortes (ex., gravação de profundidade variável).
+
+---
+
+## Mach4 (M67 Analog)
+
+O dialeto **Mach4 (M67 Analog)** é projetado para gravação raster de alta velocidade com controladores Mach4. Ele usa o comando M67 com saída analógica para controle preciso de potência do laser.
+
+### Recursos Principais
+
+- **Saída Analógica M67**: Usa `M67 E0 Q<0-255>` para potência do laser em vez de comandos S inline
+- **Pressão de Buffer Reduzida**: Ao separar comandos de potência de comandos de movimento, o buffer do controlador é menos estressado durante operações de alta velocidade
+- **Raster de Alta Velocidade**: Otimizado para operações de gravação raster rápidas
+
+### Quando Usar
+
+Use este dialeto quando:
+
+- Você tem um controlador Mach4 com capacidade de saída analógica
+- Você precisa de gravação raster de alta velocidade
+- Seu controlador experimenta estouro de buffer com comandos S inline padrão
+
+### Formato de Comando
+
+O dialeto gera G-code como:
+
+```gcode
+M67 E0 Q127  ; Definir potência do laser para 50% (127/255)
+G1 X100 Y200 F1000  ; Mover para posição
+M67 E0 Q0    ; Desligar laser
+```
+
 ---
 
 ## Criando um Dialeto Personalizado
