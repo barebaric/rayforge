@@ -21,8 +21,22 @@ from rayforge.machine.transport.udp_server import UdpServerTransport
 from rayforge.machine.driver.ruida.ruida_transport import RuidaServerTransport
 from rayforge.machine.driver.driver import Axis
 from rayforge.machine.driver.ruida.ruida_encoder import RuidaEncoder
+from rayforge.machine.transport.transport import TransportStatus
 
 logger = logging.getLogger(__name__)
+
+
+async def wait_for_connection(
+    driver: RuidaDriver, timeout: float = 2.0
+) -> bool:
+    """Wait for driver to establish connection."""
+    await driver.connect()
+    deadline = asyncio.get_event_loop().time() + timeout
+    while asyncio.get_event_loop().time() < deadline:
+        if driver.is_connected:
+            return True
+        await asyncio.sleep(0.05)
+    return False
 
 
 @pytest_asyncio.fixture
@@ -111,8 +125,8 @@ async def test_setup_with_valid_config(driver):
 @pytest.mark.asyncio
 async def test_connect_to_simulator(driver, ruida_simulator):
     """Test that driver can connect to the simulator."""
-    await driver.connect()
-    assert driver._client.is_connected
+    assert await wait_for_connection(driver)
+    assert driver.is_connected
 
     await driver.cleanup()
 
@@ -122,8 +136,7 @@ async def test_move_to_updates_position(driver, ruida_simulator):
     """Test that move_to command updates simulator position."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
-    assert driver._client.is_connected
+    assert await wait_for_connection(driver)
 
     sim.x = 0
     sim.y = 0
@@ -142,7 +155,7 @@ async def test_move_to_negative_position(driver, ruida_simulator):
     """Test that move_to works with negative coordinates."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     sim.x = 0
     sim.y = 0
@@ -161,7 +174,7 @@ async def test_home_xy_resets_position(driver, ruida_simulator):
     """Test that home_xy command resets position to zero."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     sim.x = 50000
     sim.y = 100000
@@ -180,7 +193,7 @@ async def test_home_z_axis(driver, ruida_simulator):
     """Test that home command works for Z axis."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     sim.z = 30000
 
@@ -197,7 +210,7 @@ async def test_home_all_axes(driver, ruida_simulator):
     """Test that home with None homes all axes."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     sim.x = 100000
     sim.y = 200000
@@ -218,7 +231,7 @@ async def test_home_xy_only(driver, ruida_simulator):
     """Test that home can target only XY axes."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     sim.x = 100000
     sim.y = 200000
@@ -239,7 +252,7 @@ async def test_set_power(driver, ruida_simulator):
     """Test that set_power command works correctly."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     test_head = Laser()
     test_head.uid = "test-head-1"
@@ -256,7 +269,7 @@ async def test_set_power_zero(driver, ruida_simulator):
     """Test that set_power(0) disables power."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     test_head = Laser()
     test_head.uid = "test-head-2"
@@ -273,7 +286,7 @@ async def test_jog_x_axis(driver, ruida_simulator):
     """Test that jog command works for X axis."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     sim.x = 0
 
@@ -290,7 +303,7 @@ async def test_jog_y_axis(driver, ruida_simulator):
     """Test that jog command works for Y axis."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     sim.y = 0
 
@@ -307,7 +320,7 @@ async def test_jog_both_axes(driver, ruida_simulator):
     """Test that jog can move both axes simultaneously."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     sim.x = 10000
     sim.y = 20000
@@ -326,7 +339,7 @@ async def test_jog_negative_direction(driver, ruida_simulator):
     """Test that jog works in negative direction."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     sim.x = 100000
 
@@ -343,7 +356,7 @@ async def test_set_hold(driver, ruida_simulator):
     """Test that set_hold pauses the process."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     await driver.set_hold(True)
     await asyncio.sleep(0.2)
@@ -359,7 +372,7 @@ async def test_cancel(driver, ruida_simulator):
     """Test that cancel stops the process."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     await driver.cancel()
     await asyncio.sleep(0.2)
@@ -372,7 +385,7 @@ async def test_clear_alarm(driver, ruida_simulator):
     """Test that clear_alarm works."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     await driver.clear_alarm()
     await asyncio.sleep(0.2)
@@ -487,7 +500,7 @@ async def test_run_with_machine_code(driver, ruida_simulator):
 
     encoded = driver._machine.encode_ops(ops, doc)
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     sim.x = 0
     sim.y = 0
@@ -521,7 +534,7 @@ async def test_run_raw_warns_and_finishes(driver):
 
 
 @pytest.mark.asyncio
-async def test_connection_status_signals(driver):
+async def test_connection_status_signals(driver, ruida_simulator):
     """Test that connection status signals are emitted correctly."""
     status_changes = []
 
@@ -530,15 +543,11 @@ async def test_connection_status_signals(driver):
 
     driver.connection_status_changed.connect(on_connection_status_changed)
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     await driver.cleanup()
 
     await asyncio.sleep(0.05)
-
-    assert len(status_changes) >= 2
-
-    await driver.cleanup()
 
     assert len(status_changes) >= 2
 
@@ -548,7 +557,7 @@ async def test_unit_conversion_mm_to_um(driver, ruida_simulator):
     """Test that mm values are correctly converted to µm."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     sim.x = 0
     sim.y = 0
@@ -567,7 +576,7 @@ async def test_unit_conversion_small_values(driver, ruida_simulator):
     """Test unit conversion with sub-millimeter values."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     sim.x = 0
     sim.y = 0
@@ -586,7 +595,7 @@ async def test_multiple_moves_in_sequence(driver, ruida_simulator):
     """Test that multiple move commands work in sequence."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     sim.x = 0
     sim.y = 0
@@ -611,7 +620,7 @@ async def test_home_then_move(driver, ruida_simulator):
     """Test that home followed by move works correctly."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     sim.x = 100000
     sim.y = 200000
@@ -636,7 +645,7 @@ async def test_multiple_jogs_in_sequence(driver, ruida_simulator):
     """Test that multiple jog commands work in sequence."""
     sim, host, port, jog_port = ruida_simulator
 
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     sim.x = 0
     sim.y = 0
@@ -657,9 +666,9 @@ async def test_multiple_jogs_in_sequence(driver, ruida_simulator):
 
 
 @pytest.mark.asyncio
-async def test_power_settings_with_different_heads(driver):
+async def test_power_settings_with_different_heads(driver, ruida_simulator):
     """Test that set_power works with different laser heads."""
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     head1 = Laser()
     head1.uid = "head-1"
@@ -753,13 +762,13 @@ async def test_cleanup_resets_transport(driver):
 
     assert driver._udp_transport is None
     assert driver._ruida_transport is None
-    assert not driver._client.is_connected
+    assert driver._client is None
 
 
 @pytest.mark.asyncio
 async def test_reconnect_after_disconnect(driver, ruida_simulator):
     """Test that driver can reconnect after disconnect."""
-    await driver.connect()
+    assert await wait_for_connection(driver)
 
     assert driver.is_connected
 
@@ -767,8 +776,93 @@ async def test_reconnect_after_disconnect(driver, ruida_simulator):
 
     assert not driver.is_connected
 
-    await driver.connect()
+    driver._setup_implementation(host="127.0.0.1", port=50201, jog_port=50207)
+    assert await wait_for_connection(driver)
 
     assert driver.is_connected
+
+    await driver.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_keepalive_maintains_connection(driver, ruida_simulator):
+    """Test that periodic keepalive maintains the connection."""
+    assert await wait_for_connection(driver)
+
+    for _ in range(3):
+        await asyncio.sleep(driver.KEEPALIVE_INTERVAL + 0.2)
+        assert driver.is_connected, (
+            "Connection should remain active with keepalive"
+        )
+
+    await driver.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_connection_status_on_connect(driver, ruida_simulator):
+    """Test that CONNECTED status is emitted after successful connection."""
+    status_changes = []
+
+    def on_status(sender, status, message):
+        status_changes.append((status, message))
+
+    driver.connection_status_changed.connect(on_status)
+
+    assert await wait_for_connection(driver)
+
+    statuses = [s for s, _ in status_changes]
+    assert TransportStatus.CONNECTED in statuses
+
+    await driver.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_keepalive_timeout_behavior(driver, ruida_simulator):
+    """Test that driver handles connection lifecycle correctly."""
+    assert await wait_for_connection(driver)
+
+    await asyncio.sleep(driver.KEEPALIVE_INTERVAL * 2)
+
+    assert driver.is_connected, (
+        "Connection should remain active with keepalive"
+    )
+
+    await driver.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_position_polling_updates_state(driver, ruida_simulator):
+    """Test that position polling reads current position from controller."""
+    sim, host, port, jog_port = ruida_simulator
+
+    sim.x = 50000
+    sim.y = 75000
+
+    assert await wait_for_connection(driver)
+
+    await asyncio.sleep(driver.POSITION_POLL_INTERVAL + 0.5)
+
+    assert driver.state.machine_pos[0] == 50.0
+    assert driver.state.machine_pos[1] == 75.0
+
+    await driver.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_multiple_keepalive_cycles(driver, ruida_simulator):
+    """Test connection stability over multiple keepalive cycles."""
+    assert await wait_for_connection(driver)
+
+    cycle_count = 0
+    max_cycles = 5
+
+    for i in range(max_cycles):
+        await asyncio.sleep(driver.KEEPALIVE_INTERVAL)
+        if driver.is_connected:
+            cycle_count += 1
+
+    assert cycle_count >= max_cycles - 1, (
+        f"Expected {max_cycles - 1}+ successful cycles, got {cycle_count}"
+    )
 
     await driver.cleanup()

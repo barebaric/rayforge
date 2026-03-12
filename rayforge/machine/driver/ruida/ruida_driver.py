@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import inspect
+from dataclasses import replace
 from typing import (
     Any,
     TYPE_CHECKING,
@@ -52,6 +53,10 @@ class RuidaDriver(Driver):
     subtitle = _("Connect to a Ruida laser controller over UDP")
     supports_settings = False
     reports_granular_progress = False
+    CONNECTION_TIMEOUT = 2.0
+    RECONNECT_INTERVAL = 5.0
+    KEEPALIVE_INTERVAL = 1.0
+    POSITION_POLL_INTERVAL = 0.5
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
@@ -62,6 +67,11 @@ class RuidaDriver(Driver):
         self._ruida_transport = None
         self._jog_udp_transport = None
         self._client = None
+        self._response_received = asyncio.Event()
+        self._connection_task: Optional[asyncio.Task] = None
+        self._keep_running = False
+        self._is_connected = False
+        self._pending_mem_reads: Dict[int, asyncio.Future] = {}
 
     @property
     def machine_space_wcs(self) -> str:
@@ -139,8 +149,20 @@ class RuidaDriver(Driver):
 
         self._ruida_transport.decoded_received.connect(self._on_data_received)
         self._ruida_transport.status_changed.connect(self._on_status_changed)
+        self._client.position_updated.connect(self._on_position_updated)
 
     async def cleanup(self):
+        self._keep_running = False
+        self._is_connected = False
+
+        if self._connection_task:
+            self._connection_task.cancel()
+            try:
+                await self._connection_task
+            except asyncio.CancelledError:
+                pass
+            self._connection_task = None
+
         if self._ruida_transport:
             self._ruida_transport.decoded_received.disconnect(
                 self._on_data_received
@@ -149,6 +171,7 @@ class RuidaDriver(Driver):
                 self._on_status_changed
             )
         if self._client:
+            self._client.position_updated.disconnect(self._on_position_updated)
             await self._client.disconnect()
         if self._jog_udp_transport:
             await self._jog_udp_transport.disconnect()
@@ -157,6 +180,7 @@ class RuidaDriver(Driver):
         self._jog_udp_transport = None
         self._ruida_transport = None
         self._udp_transport = None
+        self._client = None
         self._update_connection_status(TransportStatus.DISCONNECTED, "")
         await super().cleanup()
 
@@ -167,19 +191,124 @@ class RuidaDriver(Driver):
             )
             return
 
-        assert self._client
+        if self._connection_task and not self._connection_task.done():
+            logger.warning("Connect called with active connection task")
+            return
+
+        self._keep_running = True
+        self._connection_task = asyncio.create_task(self._connection_loop())
+
+    async def _connection_loop(self) -> None:
+        logger.debug("Entering Ruida connection loop")
+        while self._keep_running:
+            self._update_connection_status(TransportStatus.CONNECTING)
+            self._is_connected = False
+
+            try:
+                if not self._client:
+                    raise DriverSetupError("Client not initialized")
+
+                await self._client.connect()
+
+                self._response_received.clear()
+                await self._client.keep_alive()
+
+                try:
+                    await asyncio.wait_for(
+                        self._response_received.wait(),
+                        timeout=self.CONNECTION_TIMEOUT,
+                    )
+                except asyncio.TimeoutError:
+                    self._update_connection_status(
+                        TransportStatus.ERROR,
+                        _("No response from controller"),
+                    )
+                    await self._disconnect_transports()
+                    self._update_connection_status(TransportStatus.SLEEPING)
+                    await asyncio.sleep(self.RECONNECT_INTERVAL)
+                    continue
+
+                self._is_connected = True
+                self._update_connection_status(TransportStatus.CONNECTED, "")
+                self.state.status = DeviceStatus.IDLE
+                self.state_changed.send(self, state=self.state)
+                logger.info(
+                    f"Connected to Ruida controller at "
+                    f"{self.host}:{self.port}",
+                    extra=self._log_extra("MACHINE_EVENT"),
+                )
+
+                last_poll_time = 0.0
+
+                while self._keep_running and self._is_connected:
+                    self._response_received.clear()
+                    await self._client.keep_alive()
+
+                    try:
+                        await asyncio.wait_for(
+                            self._response_received.wait(),
+                            timeout=self.CONNECTION_TIMEOUT,
+                        )
+                    except asyncio.TimeoutError:
+                        logger.warning(
+                            "Controller stopped responding, reconnecting",
+                            extra=self._log_extra("MACHINE_EVENT"),
+                        )
+                        self._is_connected = False
+                        await self._disconnect_transports()
+                        break
+
+                    current_time = asyncio.get_event_loop().time()
+                    if (
+                        current_time - last_poll_time
+                        >= self.POSITION_POLL_INTERVAL
+                    ):
+                        await self._poll_position()
+                        last_poll_time = current_time
+
+                    await asyncio.sleep(self.KEEPALIVE_INTERVAL)
+
+            except asyncio.CancelledError:
+                logger.debug("Connection loop cancelled")
+                break
+            except Exception as e:
+                logger.error(f"Connection error: {e}")
+                self._update_connection_status(TransportStatus.ERROR, str(e))
+                await self._disconnect_transports()
+
+            if self._keep_running:
+                self._update_connection_status(TransportStatus.SLEEPING)
+                await asyncio.sleep(self.RECONNECT_INTERVAL)
+
+        logger.debug("Exiting Ruida connection loop")
+
+    async def _disconnect_transports(self) -> None:
+        if self._client:
+            try:
+                await self._client.disconnect()
+            except Exception as e:
+                logger.debug(f"Error disconnecting client: {e}")
+        if self._jog_udp_transport:
+            try:
+                await self._jog_udp_transport.disconnect()
+            except Exception as e:
+                logger.debug(f"Error disconnecting jog transport: {e}")
+        if self._ruida_transport:
+            try:
+                await self._ruida_transport.disconnect()
+            except Exception as e:
+                logger.debug(f"Error disconnecting ruida transport: {e}")
+
+    async def _poll_position(self) -> None:
+        """Poll current position from controller."""
+        if not self._client or not self._is_connected:
+            return
+
         try:
-            await self._client.connect()
-            self._update_connection_status(TransportStatus.CONNECTED, "")
-            self.state.status = DeviceStatus.IDLE
-            self.state_changed.send(self, state=self.state)
-            logger.info(
-                f"Connected to Ruida controller at {self.host}:{self.port}"
-            )
+            logger.debug("Polling position from controller")
+            await self._client.get_position()
         except Exception as e:
-            logger.error(f"Failed to connect: {e}")
-            self._update_connection_status(TransportStatus.ERROR, str(e))
-            raise
+            logger.debug(f"Error polling position: {e}")
 
     async def run(
         self,
@@ -252,9 +381,17 @@ class RuidaDriver(Driver):
     async def home(self, axes: Optional[Axis] = None) -> None:
         assert self._client
         if axes is None:
+            logger.info("Home All", extra=self._log_extra("MACHINE_EVENT"))
             await self._client.home_xy()
             await self._client.home_z()
         else:
+            cmd_parts = []
+            if axes & (Axis.X | Axis.Y):
+                cmd_parts.append("XY")
+            if axes & Axis.Z:
+                cmd_parts.append("Z")
+            cmd_name = f"Home {'/'.join(cmd_parts)}"
+            logger.info(cmd_name, extra=self._log_extra("MACHINE_EVENT"))
             if axes & (Axis.X | Axis.Y):
                 await self._client.home_xy()
             if axes & Axis.Z:
@@ -262,6 +399,10 @@ class RuidaDriver(Driver):
 
     async def move_to(self, pos_x: float, pos_y: float) -> None:
         assert self._client
+        logger.info(
+            f"move_to x={pos_x:.2f} y={pos_y:.2f}",
+            extra=self._log_extra("MACHINE_EVENT"),
+        )
         x_um = int(pos_x * 1000)
         y_um = int(pos_y * 1000)
         await self._client.move_abs(x_um, y_um)
@@ -320,7 +461,33 @@ class RuidaDriver(Driver):
         return None
 
     def _on_data_received(self, sender, data: bytes) -> None:
-        pass
+        logger.debug(f"Received response: {data.hex()}")
+        self._response_received.set()
+
+        if self._client:
+            self._client.handle_response(data)
+
+    def _on_position_updated(self, sender, axis: str, value_um: int) -> None:
+        """Handle position update from client."""
+        pos_mm = value_um / 1000.0
+        current_pos = self.state.machine_pos
+
+        if axis == "x":
+            new_pos = (pos_mm, current_pos[1], current_pos[2])
+        elif axis == "y":
+            new_pos = (current_pos[0], pos_mm, current_pos[2])
+        elif axis == "z":
+            new_pos = (current_pos[0], current_pos[1], pos_mm)
+        else:
+            return
+
+        if new_pos != current_pos:
+            self.state = replace(self.state, machine_pos=new_pos)
+            logger.debug(
+                f"Position update: {axis}={pos_mm:.3f}mm, "
+                f"machine_pos={self.state.machine_pos}"
+            )
+            self.state_changed.send(self, state=self.state)
 
     def _on_status_changed(
         self, sender, status: TransportStatus, message: str = ""
@@ -336,5 +503,4 @@ class RuidaDriver(Driver):
 
     @property
     def is_connected(self) -> bool:
-        """Check if driver is connected."""
-        return self._client is not None and self._client.is_connected
+        return self._is_connected
