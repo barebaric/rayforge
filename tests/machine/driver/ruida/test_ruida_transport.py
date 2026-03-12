@@ -186,30 +186,31 @@ class TestRuidaTransport:
         original = b"\xce"
         codec = RuidaCodec()
         swizzled = codec.swizzle(original)
-        framed = frame_packet(swizzled)
 
         connect_call = self.mock_transport.received.connect.call_args
         callback = connect_call[0][0]
-        callback(self.mock_transport, framed)
+        callback(self.mock_transport, swizzled)
 
         assert handler.called
         call_kwargs = handler.call_args[1]
         assert call_kwargs["data"] == original
 
-    def test_on_raw_received_invalid_checksum_no_emit(self):
+    def test_on_raw_received_multibyte_response_emits_decoded(self):
         ruida = RuidaTransport(self.mock_transport)
         handler = MagicMock()
         ruida.decoded_received.connect(handler)
 
+        original = b"\xda\x01\x04\x21\x00\x00\x03\x06\x50"
         codec = RuidaCodec()
-        swizzled = codec.swizzle(b"\xce")
-        bad_framed = b"\xff\xff" + swizzled
+        swizzled = codec.swizzle(original)
 
         connect_call = self.mock_transport.received.connect.call_args
         callback = connect_call[0][0]
-        callback(self.mock_transport, bad_framed)
+        callback(self.mock_transport, swizzled)
 
-        handler.assert_not_called()
+        assert handler.called
+        call_kwargs = handler.call_args[1]
+        assert call_kwargs["data"] == original
 
     def test_on_raw_received_detects_magic_from_payload(self):
         ruida = RuidaTransport(self.mock_transport, magic=0x55)
@@ -218,11 +219,10 @@ class TestRuidaTransport:
 
         codec = RuidaCodec(magic=0x88)
         magic_probe = codec.swizzle(b"\xda\x00\x05\x7e")
-        framed = frame_packet(magic_probe)
 
         connect_call = self.mock_transport.received.connect.call_args
         callback = connect_call[0][0]
-        callback(self.mock_transport, framed)
+        callback(self.mock_transport, magic_probe)
 
         assert ruida.magic == 0x88
         magic_handler.assert_called_once()
