@@ -22,6 +22,11 @@ class HttpTransport(Transport):
         self._reconnect_interval = 5
         self._receive_interval = receive_interval
         self._connection_task: Optional[asyncio.Task] = None
+        self._connected = False
+
+    @property
+    def is_connected(self) -> bool:
+        return self._connected
 
     async def connect(self) -> None:
         """

@@ -15,7 +15,6 @@ class TransportStatus(Enum):
     SLEEPING = auto()
 
 
-# Translatable labels for TransportStatus enums
 TRANSPORT_STATUS_LABELS = {
     TransportStatus.UNKNOWN: _("Unknown"),
     TransportStatus.IDLE: _("Idle"),
@@ -43,6 +42,14 @@ class Transport(ABC):
         """
         self.received = Signal()
         self.status_changed = Signal()
+
+    @property
+    @abstractmethod
+    def is_connected(self) -> bool:
+        """
+        Return True if transport is connected and ready for I/O.
+        """
+        pass
 
     @abstractmethod
     async def connect(self) -> None:
