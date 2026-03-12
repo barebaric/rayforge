@@ -122,7 +122,7 @@ def _encode_gcode_and_opmap(
     doc: Doc,
     machine: Machine,
     context: Optional[ProgressContext] = None,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> np.ndarray:
     """
     Encodes operations to machine code and operation map.
 
@@ -133,18 +133,13 @@ def _encode_gcode_and_opmap(
         context: Optional ProgressContext for progress reporting.
 
     Returns:
-        A tuple of (machine_code_bytes, op_map_bytes).
+        A numpy array containing the JSON-serialized EncodedOutput.
     """
     set_progress(context, 0.8, _("Generating machine code..."))
     encoded_output = machine.encode_ops(final_ops, doc)
 
-    machine_code_bytes = np.frombuffer(
-        encoded_output.text.encode("utf-8"), dtype=np.uint8
-    )
-    op_map_str = encoded_output.to_json()
-    op_map_bytes = np.frombuffer(op_map_str.encode("utf-8"), dtype=np.uint8)
-
-    return machine_code_bytes, op_map_bytes
+    json_str = encoded_output.to_json()
+    return np.frombuffer(json_str.encode("utf-8"), dtype=np.uint8)
 
 
 def _encode_vertex_data(
@@ -197,7 +192,7 @@ def compute_job_artifact(
     final_time = _calculate_time_estimate(final_ops, machine, context)
     final_distance = _calculate_distance(final_ops)
 
-    machine_code_bytes, op_map_bytes = _encode_gcode_and_opmap(
+    encoded_output_bytes = _encode_gcode_and_opmap(
         final_ops, doc, machine, context
     )
 
@@ -210,7 +205,6 @@ def compute_job_artifact(
         distance=final_distance,
         generation_id=generation_id,
         vertex_data=vertex_data,
-        machine_code_bytes=machine_code_bytes,
-        op_map_bytes=op_map_bytes,
+        encoded_output_bytes=encoded_output_bytes,
         time_estimate=final_time,
     )

@@ -16,7 +16,7 @@ from typing import (
 )
 from ...context import RayforgeContext
 from ...core.varset import Var, VarSet, SerialPortVar, BaudrateVar
-from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
+from ...pipeline.encoder.base import OpsEncoder, EncodedOutput
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ...shared.tasker import task_mgr
 from ..transport import TransportStatus, SerialTransport
@@ -643,8 +643,7 @@ class GrblSerialDriver(Driver):
 
     async def run(
         self,
-        machine_code: Any,
-        op_map: "MachineCodeOpMap",
+        encoded: EncodedOutput,
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
@@ -652,9 +651,8 @@ class GrblSerialDriver(Driver):
     ) -> None:
         self._start_job(on_command_done)
 
-        gcode = cast(str, machine_code)
-        mapping = op_map.machine_code_to_op if op_map else None
-        gcode_lines = gcode.splitlines()
+        mapping = encoded.op_map.machine_code_to_op if encoded.op_map else None
+        gcode_lines = encoded.text.splitlines()
 
         try:
             await self._stream_gcode(gcode_lines, mapping)
@@ -667,12 +665,14 @@ class GrblSerialDriver(Driver):
                 "Connection remains active."
             )
 
-    async def run_raw(self, gcode: str) -> None:
+    async def run_raw(self, machine_code: str) -> None:
         """
         Executes a raw G-code string using the character-counting
         streaming protocol.
         """
-        lines = [line.strip() for line in gcode.splitlines() if line.strip()]
+        lines = [
+            line.strip() for line in machine_code.splitlines() if line.strip()
+        ]
         if not lines:
             return
         self._start_job()

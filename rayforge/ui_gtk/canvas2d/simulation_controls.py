@@ -176,21 +176,16 @@ class PreviewControls(Gtk.Box):
 
     def set_playback_source(
         self,
-        machine_code_bytes: Optional[np.ndarray],
-        op_map_bytes: Optional[np.ndarray],
+        encoded_output_bytes: Optional[np.ndarray],
     ):
         """Sets the source data for driving the playback timeline."""
-        if machine_code_bytes is not None:
-            gcode_str = machine_code_bytes.tobytes().decode("utf-8")
-            self.num_gcode_lines = gcode_str.count("\n")
-        else:
-            self.num_gcode_lines = 0
-
-        if op_map_bytes is not None:
-            map_str = op_map_bytes.tobytes().decode("utf-8")
-            encoded_output = EncodedOutput.from_json(map_str)
+        if encoded_output_bytes is not None:
+            json_str = encoded_output_bytes.tobytes().decode("utf-8")
+            encoded_output = EncodedOutput.from_json(json_str)
+            self.num_gcode_lines = encoded_output.text.count("\n")
             self.op_map = encoded_output.op_map
         else:
+            self.num_gcode_lines = 0
             self.op_map = None
         self.reset()
 

@@ -69,11 +69,11 @@ class SimulatorCmd:
             self.simulation_overlay.set_ops(new_artifact.ops)
             # The controls get the G-code and map to drive the timeline
             self.preview_controls.set_playback_source(
-                new_artifact.machine_code_bytes, new_artifact.op_map_bytes
+                new_artifact.encoded_output_bytes
             )
         else:
             self.simulation_overlay.set_ops(None)
-            self.preview_controls.set_playback_source(None, None)
+            self.preview_controls.set_playback_source(None)
 
         self.preview_controls.reset()
         if preserve_position:

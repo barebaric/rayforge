@@ -62,7 +62,7 @@ class TestDummyDriverCallback:
         """Test that run() works without providing a callback."""
         # Should not raise any exceptions
         encoded = machine.encode_ops(simple_ops, doc)
-        await driver.run(encoded.text, encoded.op_map, doc)
+        await driver.run(encoded, doc)
 
     @pytest.mark.asyncio
     async def test_run_with_callback(self, driver, machine, doc, simple_ops):
@@ -70,7 +70,7 @@ class TestDummyDriverCallback:
         callback_mock = MagicMock()
 
         encoded = machine.encode_ops(simple_ops, doc)
-        await driver.run(encoded.text, encoded.op_map, doc, callback_mock)
+        await driver.run(encoded, doc, callback_mock)
 
         # Verify callback was called for each command
         assert callback_mock.call_count == len(simple_ops)
@@ -88,7 +88,7 @@ class TestDummyDriverCallback:
         callback_mock = AsyncMock()
 
         encoded = machine.encode_ops(simple_ops, doc)
-        await driver.run(encoded.text, encoded.op_map, doc, callback_mock)
+        await driver.run(encoded, doc, callback_mock)
 
         # Verify callback was called for each command
         assert callback_mock.call_count == len(simple_ops)
@@ -109,7 +109,7 @@ class TestDummyDriverCallback:
             received_indices.append(op_index)
 
         encoded = machine.encode_ops(simple_ops, doc)
-        await driver.run(encoded.text, encoded.op_map, doc, collect_indices)
+        await driver.run(encoded, doc, collect_indices)
 
         # Verify we got a callback for all commands
         assert len(received_indices) == len(simple_ops)
@@ -124,7 +124,7 @@ class TestDummyDriverCallback:
         callback_mock = MagicMock()
 
         encoded = machine.encode_ops(empty_ops, doc)
-        await driver.run(encoded.text, encoded.op_map, doc, callback_mock)
+        await driver.run(encoded, doc, callback_mock)
 
         # Callback should not be called for empty ops
         callback_mock.assert_not_called()
@@ -137,7 +137,7 @@ class TestDummyDriverCallback:
         callback_mock = MagicMock()
 
         encoded = machine.encode_ops(complex_ops, doc)
-        await driver.run(encoded.text, encoded.op_map, doc, callback_mock)
+        await driver.run(encoded, doc, callback_mock)
 
         # Verify callback was called for each command
         assert callback_mock.call_count == len(complex_ops)
@@ -163,7 +163,7 @@ class TestDummyDriverCallback:
 
         # The driver should catch the exception and continue
         encoded = machine.encode_ops(simple_ops, doc)
-        await driver.run(encoded.text, encoded.op_map, doc, failing_callback)
+        await driver.run(encoded, doc, failing_callback)
 
         # Verify that the driver still attempted to call for all ops
         assert call_count == len(simple_ops)
@@ -178,8 +178,8 @@ class TestDummyDriverCallback:
 
         # Run two operations concurrently
         encoded = machine.encode_ops(simple_ops, doc)
-        task1 = driver.run(encoded.text, encoded.op_map, doc, callback_mock1)
-        task2 = driver.run(encoded.text, encoded.op_map, doc, callback_mock2)
+        task1 = driver.run(encoded, doc, callback_mock1)
+        task2 = driver.run(encoded, doc, callback_mock2)
 
         await asyncio.gather(task1, task2)
 
@@ -198,7 +198,7 @@ class TestDummyDriverCallback:
         callback_mock = MagicMock()
 
         encoded = machine.encode_ops(ops, doc)
-        await driver.run(encoded.text, encoded.op_map, doc, callback_mock)
+        await driver.run(encoded, doc, callback_mock)
 
         # Verify callback was called
         assert callback_mock.call_count == len(ops)

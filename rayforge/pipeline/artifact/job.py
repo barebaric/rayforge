@@ -7,7 +7,7 @@ from .base import BaseArtifact, VertexData
 from .handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
-    from ..encoder.base import MachineCodeOpMap
+    from ..encoder.base import MachineCodeOpMap, EncodedOutput
 
 
 class JobArtifactHandle(BaseArtifactHandle):
@@ -47,8 +47,7 @@ class JobArtifact(BaseArtifact):
         distance: float,
         generation_id: int,
         time_estimate: Optional[float] = None,
-        machine_code_bytes: Optional[np.ndarray] = None,
-        op_map_bytes: Optional[np.ndarray] = None,
+        encoded_output_bytes: Optional[np.ndarray] = None,
         vertex_data: Optional[VertexData] = None,
     ):
         super().__init__()
@@ -56,40 +55,42 @@ class JobArtifact(BaseArtifact):
         self.distance = distance
         self.generation_id = generation_id
         self.time_estimate = time_estimate
-        self.machine_code_bytes: Optional[np.ndarray] = machine_code_bytes
-        self.op_map_bytes: Optional[np.ndarray] = op_map_bytes
+        self.encoded_output_bytes: Optional[np.ndarray] = encoded_output_bytes
         self.vertex_data: Optional[VertexData] = vertex_data
 
-        # Caching properties for deserialized data
-        self._machine_code_str: Optional[str] = None
-        self._op_map_obj: Optional["MachineCodeOpMap"] = None
+        self._encoded_output: Optional["EncodedOutput"] = None
 
     @property
     def machine_code(self) -> Optional[str]:
         """
-        Lazily decodes and caches the G-code string from its byte array.
+        Lazily decodes and caches the G-code string from encoded_output.
         """
-        if (
-            self._machine_code_str is None
-            and self.machine_code_bytes is not None
-        ):
-            self._machine_code_str = self.machine_code_bytes.tobytes().decode(
-                "utf-8"
-            )
-        return self._machine_code_str
+        encoded = self.encoded_output
+        return encoded.text if encoded else None
 
     @property
     def op_map(self) -> Optional["MachineCodeOpMap"]:
         """
-        Lazily decodes and caches the MachineCodeOpMap from its byte array.
+        Lazily decodes and caches the MachineCodeOpMap from encoded_output.
+        """
+        encoded = self.encoded_output
+        return encoded.op_map if encoded else None
+
+    @property
+    def encoded_output(self) -> Optional["EncodedOutput"]:
+        """
+        Lazily decodes and caches the full EncodedOutput from its byte array.
+        This includes text, op_map, and driver_data (e.g., binary for Ruida).
         """
         from ..encoder.base import EncodedOutput
 
-        if self._op_map_obj is None and self.op_map_bytes is not None:
-            map_str = self.op_map_bytes.tobytes().decode("utf-8")
-            encoded_output = EncodedOutput.from_json(map_str)
-            self._op_map_obj = encoded_output.op_map
-        return self._op_map_obj
+        if (
+            self._encoded_output is None
+            and self.encoded_output_bytes is not None
+        ):
+            json_str = self.encoded_output_bytes.tobytes().decode("utf-8")
+            self._encoded_output = EncodedOutput.from_json(json_str)
+        return self._encoded_output
 
     def to_dict(self) -> Dict[str, Any]:
         """Converts the artifact to a dictionary for serialization."""
@@ -101,10 +102,8 @@ class JobArtifact(BaseArtifact):
         }
         if self.vertex_data is not None:
             result["vertex_data"] = self.vertex_data.to_dict()
-        if self.machine_code_bytes is not None:
-            result["machine_code_bytes"] = self.machine_code_bytes.tolist()
-        if self.op_map_bytes is not None:
-            result["op_map_bytes"] = self.op_map_bytes.tolist()
+        if self.encoded_output_bytes is not None:
+            result["encoded_output_bytes"] = self.encoded_output_bytes.tolist()
         return result
 
     @classmethod
@@ -121,13 +120,9 @@ class JobArtifact(BaseArtifact):
             common_args["vertex_data"] = VertexData.from_dict(
                 data["vertex_data"]
             )
-        if "machine_code_bytes" in data:
-            common_args["machine_code_bytes"] = np.array(
-                data["machine_code_bytes"], dtype=np.uint8
-            )
-        if "op_map_bytes" in data:
-            common_args["op_map_bytes"] = np.array(
-                data["op_map_bytes"], dtype=np.uint8
+        if "encoded_output_bytes" in data:
+            common_args["encoded_output_bytes"] = np.array(
+                data["encoded_output_bytes"], dtype=np.uint8
             )
         return cls(**common_args)
 
@@ -148,10 +143,8 @@ class JobArtifact(BaseArtifact):
 
     def get_arrays_for_storage(self) -> Dict[str, np.ndarray]:
         arrays = self.ops.to_numpy_arrays()
-        if self.machine_code_bytes is not None:
-            arrays["machine_code_bytes"] = self.machine_code_bytes
-        if self.op_map_bytes is not None:
-            arrays["op_map_bytes"] = self.op_map_bytes
+        if self.encoded_output_bytes is not None:
+            arrays["encoded_output_bytes"] = self.encoded_output_bytes
         if self.vertex_data is not None:
             arrays["powered_vertices"] = self.vertex_data.powered_vertices
             arrays["powered_colors"] = self.vertex_data.powered_colors
@@ -200,11 +193,8 @@ class JobArtifact(BaseArtifact):
             time_estimate=handle.time_estimate,
             distance=handle.distance,
             generation_id=handle.generation_id,
-            machine_code_bytes=arrays.get(
-                "machine_code_bytes", np.empty(0, dtype=np.uint8)
-            ).copy(),
-            op_map_bytes=arrays.get(
-                "op_map_bytes", np.empty(0, dtype=np.uint8)
+            encoded_output_bytes=arrays.get(
+                "encoded_output_bytes", np.empty(0, dtype=np.uint8)
             ).copy(),
             vertex_data=vertex_data,
         )
