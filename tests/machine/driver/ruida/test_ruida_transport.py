@@ -12,7 +12,7 @@ from rayforge.machine.driver.ruida.ruida_transport import (
     RuidaTransport,
     RuidaServerTransport,
 )
-from rayforge.machine.driver.ruida.ruida_framing import frame_packet
+from rayforge.machine.driver.ruida.ruida_util import frame_packet
 
 
 class TestRuidaCodec:
