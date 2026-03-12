@@ -8,7 +8,7 @@ Displays a WorldSurface with a laser dot that tracks the simulator's position.
 import argparse
 import logging
 import socket
-from typing import Optional
+from typing import Optional, Tuple
 
 import gi
 
@@ -17,7 +17,9 @@ from gi.repository import GLib, Gtk
 
 from rayforge.ui_gtk.canvas.worldsurface import WorldSurface
 from rayforge.ui_gtk.canvas2d.elements.dot import DotElement
-from simulator import RuidaSimulator
+from rayforge.machine.driver.ruida.ruida_simulator import RuidaSimulator
+from rayforge.machine.driver.ruida.ruida_transport import RuidaCodec
+from rayforge.machine.driver.ruida.ruida_framing import validate_packet
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +48,7 @@ class SimpleUdpServer:
             self._socket.close()
             self._socket = None
 
-    def send_to(self, data: bytes, addr):
+    def send_to(self, data: bytes, addr: Tuple[str, int]):
         if self._socket:
             self._socket.sendto(data, addr)
 
@@ -57,7 +59,11 @@ class SimpleUdpServer:
             data, addr = self._socket.recvfrom(2048)
             response = self.handler(data, addr)
             if response:
-                self.send_to(response, addr)
+                if isinstance(response, list):
+                    for pkt in response:
+                        self.send_to(pkt, addr)
+                else:
+                    self.send_to(response, addr)
         except BlockingIOError:
             pass
         except Exception as e:
@@ -66,9 +72,15 @@ class SimpleUdpServer:
 
 
 class SimulatorWindow(Gtk.ApplicationWindow):
-    def __init__(self, app: "SimulatorApp", simulator: RuidaSimulator):
+    def __init__(
+        self,
+        app: "SimulatorApp",
+        simulator: RuidaSimulator,
+        codec: RuidaCodec,
+    ):
         super().__init__(application=app)
         self.simulator = simulator
+        self.codec = codec
         self.app = app
         self._update_timeout_id = 0
 
@@ -132,17 +144,57 @@ class SimulatorWindow(Gtk.ApplicationWindow):
         self._set_laser_dot_position(display_x_mm, display_y_mm)
         return True
 
-    def _handle_main_packet(self, data: bytes, addr):
+    def _handle_main_packet(self, data: bytes, addr: Tuple[str, int]):
         logger.info(f"Main packet from {addr}: {data.hex()}")
-        response = self.simulator.handle_main_packet(data)
+
+        is_valid, payload, recv_cksum, calc_cksum = validate_packet(data)
+        if not is_valid:
+            logger.warning(
+                f"Checksum mismatch: received {recv_cksum:04X}, "
+                f"calculated {calc_cksum:04X}"
+            )
+            return [self.codec.swizzle(b"\xcc")]
+
+        detected = self.codec.detect_magic_from_payload(payload)
+        if detected is not None:
+            self.codec.set_magic(detected)
+
+        unswizzled = self.codec.unswizzle(payload)
+
+        detected = self.codec.detect_magic_from_mem_request(unswizzled)
+        if detected is not None:
+            self.codec.set_magic(detected)
+
+        logger.info(f"Decoded command: {unswizzled.hex()}")
+        if unswizzled and unswizzled[0] == 0xD9:
+            logger.info("*** D9 RAPID MOVE COMMAND RECEIVED ***")
+        response = self.simulator.process_commands(unswizzled)
+        logger.info(
+            f"Raw response: {response.hex() if response else '(empty)'}"
+        )
+
+        responses = []
+        if response == b"\xcc" or not response:
+            responses.append(self.codec.swizzle(b"\xcc"))
+        else:
+            responses.append(self.codec.swizzle(b"\xcc"))
+            responses.append(self.codec.swizzle(response))
+
+        for i, pkt in enumerate(responses):
+            logger.info(f"Response[{i}]: {pkt.hex()}")
+
         x_mm = -self.simulator.x / 1000.0
         y_mm = -self.simulator.y / 1000.0
         logger.info(f"Simulator position: x={x_mm:.3f}mm y={y_mm:.3f}mm")
-        return response
 
-    def _handle_jog_packet(self, data: bytes, addr):
-        logger.debug(f"Jog packet from {addr}: {data.hex()}")
+        return responses
+
+    def _handle_jog_packet(self, data: bytes, addr: Tuple[str, int]):
+        logger.info(f"JOG packet from {addr}: {data.hex()}")
         response = self.simulator.handle_jog_packet(data)
+        logger.info(
+            f"JOG response: {response.hex() if response else '(empty)'}"
+        )
         return response
 
     def do_close_request(self) -> bool:
@@ -158,19 +210,21 @@ class SimulatorApp(Gtk.Application):
     def __init__(
         self,
         simulator: RuidaSimulator,
+        codec: RuidaCodec,
         host: str = "0.0.0.0",
         port: int = 50200,
         jog_port: int = 50207,
     ):
         super().__init__(application_id="com.rayforge.RuidaSimulator")
         self.simulator = simulator
+        self.codec = codec
         self.host = host
         self.port = port
         self.jog_port = jog_port
         self._window: Optional[SimulatorWindow] = None
 
     def do_activate(self):
-        self._window = SimulatorWindow(self, self.simulator)
+        self._window = SimulatorWindow(self, self.simulator, self.codec)
         self._window.present()
 
 
@@ -185,9 +239,11 @@ def run_app(
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
-    simulator = RuidaSimulator(magic=magic)
+    simulator = RuidaSimulator()
+    codec = RuidaCodec(magic)
     app = SimulatorApp(
         simulator=simulator,
+        codec=codec,
         host=host,
         port=port,
         jog_port=jog_port,
