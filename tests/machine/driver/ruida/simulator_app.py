@@ -117,6 +117,7 @@ class SimulatorWindow(Gtk.ApplicationWindow):
             height_mm=self.bed_y_mm,
             show_grid=True,
             show_axis=True,
+            y_axis_down=True,
         )
 
         self._laser_dot = DotElement(0, 0, 1.0)
@@ -135,11 +136,15 @@ class SimulatorWindow(Gtk.ApplicationWindow):
         self.surface.queue_draw()
 
     def _update_laser_position(self) -> bool:
+        jog = self.simulator.jog_active
+        self.simulator.x += jog.get("x", 0)
+        self.simulator.y += jog.get("y", 0)
+
         sim_x_um = self.simulator.x
         sim_y_um = self.simulator.y
 
-        display_x_mm = -sim_x_um / 1000.0
-        display_y_mm = -sim_y_um / 1000.0
+        display_x_mm = sim_x_um / 1000.0
+        display_y_mm = self.bed_y_mm - sim_y_um / 1000.0
 
         self._set_laser_dot_position(display_x_mm, display_y_mm)
         return True
@@ -183,8 +188,8 @@ class SimulatorWindow(Gtk.ApplicationWindow):
         for i, pkt in enumerate(responses):
             logger.info(f"Response[{i}]: {pkt.hex()}")
 
-        x_mm = -self.simulator.x / 1000.0
-        y_mm = -self.simulator.y / 1000.0
+        x_mm = self.simulator.x / 1000.0
+        y_mm = self.simulator.y / 1000.0
         logger.info(f"Simulator position: x={x_mm:.3f}mm y={y_mm:.3f}mm")
 
         return responses
