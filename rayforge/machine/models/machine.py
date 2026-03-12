@@ -14,7 +14,7 @@ from ...context import RayforgeContext, get_context
 from ...core.geo import Point3D, Rect
 from ...core.ops.axis import Axis
 from ...pipeline.coordspace import MachineSpace
-from ...pipeline.encoder.gcode import MachineCodeOpMap
+from ...pipeline.encoder.base import EncodedOutput
 from ...shared.tasker import task_mgr
 from ..driver.driver import DeviceState
 from ..assembly import Assembly
@@ -1185,11 +1185,9 @@ class Machine:
 
         return ops_for_encoder
 
-    def encode_ops(
-        self, ops: "Ops", doc: "Doc"
-    ) -> Tuple[str, "MachineCodeOpMap"]:
+    def encode_ops(self, ops: "Ops", doc: "Doc") -> "EncodedOutput":
         """
-        Encodes an Ops object into machine code (G-code) and a corresponding
+        Encodes an Ops object into machine code and a corresponding
         operation map. This method is safe to run in a worker process as it
         uses static driver instantiation to get the encoder.
 
@@ -1198,30 +1196,30 @@ class Machine:
             doc: The document context for the job.
 
         Returns:
-            A tuple containing:
-            - A string of machine code (G-code).
-            - A MachineCodeOpMap object.
+            An EncodedOutput object containing the machine code text,
+            operation map, and any driver-specific data.
         """
-        # 1. Prepare ops (pure math)
         ops_for_encoder = self._prepare_ops_for_encoding(ops)
 
-        # 2. Instantiate the correct encoder via the driver factory
         from ..driver import get_driver_cls
         from ..driver.dummy import NoDeviceDriver
+        from ...pipeline.encoder.base import EncodedOutput
 
         if self.driver_name:
             try:
                 driver_cls = get_driver_cls(self.driver_name)
             except (ValueError, ImportError):
-                # Fallback if driver class is missing
                 driver_cls = NoDeviceDriver
         else:
             driver_cls = NoDeviceDriver
 
         encoder = driver_cls.create_encoder(self)
-
-        # 3. Perform encoding
-        return encoder.encode(ops_for_encoder, self, doc)
+        result = encoder.encode(ops_for_encoder, self, doc)
+        if not isinstance(result, EncodedOutput):
+            raise TypeError(
+                f"Encoder must return EncodedOutput, got {type(result)}"
+            )
+        return result
 
     def refresh_settings(self):
         """Public API for the UI to request a settings refresh."""

@@ -110,9 +110,9 @@ class MachineCmd:
 
             # If machine code or op map are missing, generate them now
             if machine_code is None or op_map is None:
-                machine_code, op_map = machine.encode_ops(
-                    ops, self._editor.doc
-                )
+                encoded = machine.encode_ops(ops, self._editor.doc)
+                machine_code = encoded.text
+                op_map = encoded.op_map
 
             if machine.reports_granular_progress:
                 await machine.driver.run(
@@ -192,16 +192,14 @@ class MachineCmd:
         frame_with_laser = frame_ops * head.frame_repeat_count
         frame_with_laser.job_end()
 
-        machine_code, op_map = machine.encode_ops(
-            frame_with_laser, self._editor.doc
-        )
+        encoded = machine.encode_ops(frame_with_laser, self._editor.doc)
 
         await self._execute_monitored_job(
             frame_with_laser,
             machine,
             on_progress,
-            machine_code=machine_code,
-            op_map=op_map,
+            machine_code=encoded.text,
+            op_map=encoded.op_map,
         )
 
     async def _run_send_action(

@@ -1,5 +1,5 @@
 from __future__ import annotations
-import json
+
 import numpy as np
 from typing import Optional, Dict, Any, Type, TYPE_CHECKING
 from ...core.ops import Ops
@@ -83,21 +83,12 @@ class JobArtifact(BaseArtifact):
         """
         Lazily decodes and caches the MachineCodeOpMap from its byte array.
         """
-        from ..encoder.base import MachineCodeOpMap
+        from ..encoder.base import EncodedOutput
 
         if self._op_map_obj is None and self.op_map_bytes is not None:
             map_str = self.op_map_bytes.tobytes().decode("utf-8")
-            map_dict = json.loads(map_str)
-            self._op_map_obj = MachineCodeOpMap(
-                op_to_machine_code={
-                    int(k): v
-                    for k, v in map_dict["op_to_machine_code"].items()
-                },
-                machine_code_to_op={
-                    int(k): v
-                    for k, v in map_dict["machine_code_to_op"].items()
-                },
-            )
+            encoded_output = EncodedOutput.from_json(map_str)
+            self._op_map_obj = encoded_output.op_map
         return self._op_map_obj
 
     def to_dict(self) -> Dict[str, Any]:

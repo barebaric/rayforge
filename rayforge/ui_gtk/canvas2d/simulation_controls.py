@@ -1,15 +1,14 @@
 """Preview playback controls overlay."""
 
-import json
 from typing import Optional
 from gettext import gettext as _
 import numpy as np
 from gi.repository import Gtk, GLib
 from blinker import Signal
 from ...core.ops import ScanLinePowerCommand
-from ...pipeline.encoder.gcode import MachineCodeOpMap
-from ...ui_gtk.icons import get_icon
+from ...pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
 from ...shared.units.formatter import format_value
+from ...ui_gtk.icons import get_icon
 from ...ui_gtk.shared.gtk import apply_css
 
 
@@ -189,17 +188,8 @@ class PreviewControls(Gtk.Box):
 
         if op_map_bytes is not None:
             map_str = op_map_bytes.tobytes().decode("utf-8")
-            map_dict = json.loads(map_str)
-            self.op_map = MachineCodeOpMap(
-                op_to_machine_code={
-                    int(k): v
-                    for k, v in map_dict["op_to_machine_code"].items()
-                },
-                machine_code_to_op={
-                    int(k): v
-                    for k, v in map_dict["machine_code_to_op"].items()
-                },
-            )
+            encoded_output = EncodedOutput.from_json(map_str)
+            self.op_map = encoded_output.op_map
         else:
             self.op_map = None
         self.reset()

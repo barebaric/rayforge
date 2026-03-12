@@ -1,5 +1,4 @@
 from typing import cast
-import json
 import numpy as np
 import multiprocessing as mp
 from multiprocessing import shared_memory
@@ -14,6 +13,10 @@ from rayforge.pipeline.artifact.workpiece import (
     WorkPieceArtifactHandle,
 )
 from rayforge.pipeline.artifact.job import JobArtifact, JobArtifactHandle
+from rayforge.pipeline.encoder.base import (
+    EncodedOutput,
+    MachineCodeOpMap,
+)
 
 
 @pytest.fixture
@@ -59,12 +62,13 @@ def _create_sample_hybrid_artifact() -> WorkPieceArtifact:
 def _create_sample_final_job_artifact() -> JobArtifact:
     """Helper to generate a final job artifact for tests."""
     machine_code_bytes = np.frombuffer(b"G1 X10 Y20", dtype=np.uint8)
-    op_map = {
-        "op_to_machine_code": {0: [0, 1]},
-        "machine_code_to_op": {0: 0, 1: 0},
-    }
+    op_map = MachineCodeOpMap(
+        op_to_machine_code={0: [0, 1]},
+        machine_code_to_op={0: 0, 1: 0},
+    )
+    encoded = EncodedOutput(text="G1 X10 Y20", op_map=op_map)
     op_map_bytes = np.frombuffer(
-        json.dumps(op_map).encode("utf-8"), dtype=np.uint8
+        encoded.to_json().encode("utf-8"), dtype=np.uint8
     )
     return JobArtifact(
         ops=Ops(),
