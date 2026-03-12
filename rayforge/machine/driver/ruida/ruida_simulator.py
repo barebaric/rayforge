@@ -199,10 +199,6 @@ class RuidaSimulator:
         """Delegate to server for backward compatibility with tests."""
         return self._server._process_single_command(data)
 
-    def _mem_lookup(self, mem: int):
-        """Delegate to state for backward compatibility with tests."""
-        return self.state.mem_lookup(mem)
-
     def handle_jog_packet(self, data: bytes) -> bytes:
         """
         Handle a packet on the jog control channel.

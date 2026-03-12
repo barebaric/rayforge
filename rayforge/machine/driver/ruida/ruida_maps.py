@@ -263,7 +263,7 @@ DEFAULT_MEMORY_MAP: Dict[int, Tuple[str, int]] = {
     0x001D: ("Laser Standby Pulse 2", 0),
     0x001E: ("Auto Type Space", 0),
     0x001F: ("TriColor", 0),
-    0x0020: ("Axis Control Para 1", 0x4000),
+    0x0020: ("Axis Control Para 1", 0x0),
     0x0021: ("Axis Precision 1", 0),
     0x0023: ("Axis Max Velocity 1", 0),
     0x0024: ("Axis Start Velocity 1", 0),
