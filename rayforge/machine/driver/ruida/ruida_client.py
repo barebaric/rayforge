@@ -471,3 +471,31 @@ class RuidaClient:
 
     def _build_error(self) -> bytes:
         return b"\xcd"
+
+    async def air_assist_on(self) -> None:
+        """Enable air assist."""
+        await self.send_command(b"\xca\x13")
+
+    async def air_assist_off(self) -> None:
+        """Disable air assist."""
+        await self.send_command(b"\xca\x12")
+
+    async def select_layer(self, layer_index: int) -> None:
+        """
+        Select layer by index (0-15).
+
+        Args:
+            layer_index: Layer index (0-15).
+        """
+        if not 0 <= layer_index <= 15:
+            raise ValueError(f"Layer index must be 0-15, got {layer_index}")
+        await self.send_command(bytes([0xCA, layer_index]))
+
+    async def send_raw(self, data: bytes) -> None:
+        """
+        Send raw binary data (already framed/swizzled).
+
+        Args:
+            data: Raw binary data to send.
+        """
+        await self._transport.send(data)
