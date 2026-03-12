@@ -26,10 +26,10 @@ from .ruida_maps import (
 from .ruida_protocol import RuidaState
 from .ruida_util import (
     decode14,
-    decode32,
+    decode35,
     decodeu14,
     decodeu35,
-    encode32,
+    encode35,
     parse_mem,
 )
 
@@ -312,14 +312,14 @@ class RuidaServer:
             if len(data) < 8:
                 return b"", 1
             opts = data[2]
-            coord = decode32(data[3:8])
+            coord = decode35(data[3:8])
             base_axis = subcmd & 0x0F
             axis = {0x00: "X", 0x01: "Y", 0x02: "Z", 0x03: "U"}.get(
                 base_axis, "?"
             )
             opt_desc = get_opt_desc(opts)
             self._log_command(
-                f"Rapid move {opt_desc} {axis}: {coord:+d}um", data[:8]
+                f"Rapid move {opt_desc} {axis}: {coord:+d}um (rel)", data[:8]
             )
             if base_axis == 0x00:
                 s.x += coord
@@ -343,8 +343,8 @@ class RuidaServer:
             if len(data) < 13:
                 return b"", 1
             opts = data[2]
-            x = decode32(data[3:8])
-            y = decode32(data[8:13])
+            x = decode35(data[3:8])
+            y = decode35(data[8:13])
             opt_desc = get_opt_desc(opts)
             self._log_command(
                 f"Rapid move {opt_desc} XY: ({x}um, {y}um)", data[:13]
@@ -357,9 +357,9 @@ class RuidaServer:
             if len(data) < 18:
                 return b"", 1
             opts = data[2]
-            x = decode32(data[3:8])
-            y = decode32(data[8:13])
-            u = decode32(data[13:18])
+            x = decode35(data[3:8])
+            y = decode35(data[8:13])
+            u = decode35(data[13:18])
             opt_desc = get_opt_desc(opts)
             self._log_command(
                 f"Rapid move {opt_desc} XYU: ({x}um, {y}um, {u}um)",
@@ -388,7 +388,7 @@ class RuidaServer:
             if isinstance(value, bytes):
                 encoded = value
             else:
-                encoded = encode32(value)
+                encoded = encode35(value)
             response = b"\xda\x01" + data[2:4] + encoded + encoded
             return response, 4
 
@@ -485,7 +485,7 @@ class RuidaServer:
             filenumber = decodeu14(data[2:4])
             desc = E5_COMMANDS.get(subcmd, f"Unknown E5 0x{subcmd:02X}")
             self._log_command(f"{desc} {filenumber}", data[:4])
-            return b"\xe5\x00" + encode32(0) + encode32(0), 4
+            return b"\xe5\x00" + encode35(0) + encode35(0), 4
 
         if subcmd == 0x02:
             desc = E5_COMMANDS.get(subcmd, f"Unknown E5 0x{subcmd:02X}")
@@ -545,8 +545,8 @@ class RuidaServer:
         if subcmd == 0x03:
             if len(data) < 12:
                 return b"", 2
-            x = decode32(data[2:7])
-            y = decode32(data[7:12])
+            x = decode35(data[2:7])
+            y = decode35(data[7:12])
             self._log_command(f"Process TopLeft ({x}um, {y}um)", data[:12])
             return b"", 12
 
@@ -576,16 +576,16 @@ class RuidaServer:
         if subcmd == 0x06:
             if len(data) < 12:
                 return b"", 2
-            v0 = decode32(data[2:7])
-            v1 = decode32(data[7:12])
+            v0 = decode35(data[2:7])
+            v1 = decode35(data[7:12])
             self._log_command(f"Feed Repeat ({v0}, {v1})", data[:12])
             return b"", 12
 
         if subcmd == 0x07:
             if len(data) < 12:
                 return b"", 2
-            x = decode32(data[2:7])
-            y = decode32(data[7:12])
+            x = decode35(data[2:7])
+            y = decode35(data[7:12])
             self._log_command(f"Process BottomRight ({x}um, {y}um)", data[:12])
             return b"", 12
 
@@ -608,7 +608,7 @@ class RuidaServer:
         if subcmd == 0x09:
             if len(data) < 7:
                 return b"", 2
-            length = decode32(data[2:7])
+            length = decode35(data[2:7])
             self._log_command(f"Feed Length: {length}um", data[:7])
             return b"", 7
 
@@ -636,24 +636,24 @@ class RuidaServer:
         if subcmd == 0x13:
             if len(data) < 12:
                 return b"", 2
-            x = decode32(data[2:7])
-            y = decode32(data[7:12])
+            x = decode35(data[2:7])
+            y = decode35(data[7:12])
             self._log_command(f"Array TopLeft ({x}um, {y}um)", data[:12])
             return b"", 12
 
         if subcmd == 0x17:
             if len(data) < 12:
                 return b"", 2
-            x = decode32(data[2:7])
-            y = decode32(data[7:12])
+            x = decode35(data[2:7])
+            y = decode35(data[7:12])
             self._log_command(f"Array BottomRight ({x}um, {y}um)", data[:12])
             return b"", 12
 
         if subcmd == 0x23:
             if len(data) < 12:
                 return b"", 2
-            x = decode32(data[2:7])
-            y = decode32(data[7:12])
+            x = decode35(data[2:7])
+            y = decode35(data[7:12])
             self._log_command(f"Array Add ({x}um, {y}um)", data[:12])
             return b"", 12
 
@@ -674,8 +674,8 @@ class RuidaServer:
         if subcmd == 0x35:
             if len(data) < 12:
                 return b"", 2
-            x = decode32(data[2:7])
-            y = decode32(data[7:12])
+            x = decode35(data[2:7])
+            y = decode35(data[7:12])
             self._log_command(f"Block X Size ({x}um, {y}um)", data[:12])
             return b"", 12
 
@@ -722,16 +722,16 @@ class RuidaServer:
         if subcmd == 0x50:
             if len(data) < 12:
                 return b"", 2
-            x = decode32(data[2:7])
-            y = decode32(data[7:12])
+            x = decode35(data[2:7])
+            y = decode35(data[7:12])
             self._log_command(f"Document Min Point ({x}um, {y}um)", data[:12])
             return b"", 12
 
         if subcmd == 0x51:
             if len(data) < 12:
                 return b"", 2
-            x = decode32(data[2:7])
-            y = decode32(data[7:12])
+            x = decode35(data[2:7])
+            y = decode35(data[7:12])
             self._log_command(f"Document Max Point ({x}um, {y}um)", data[:12])
             return b"", 12
 
@@ -739,8 +739,8 @@ class RuidaServer:
             if len(data) < 13:
                 return b"", 2
             part = data[2]
-            x = decode32(data[3:8])
-            y = decode32(data[8:13])
+            x = decode35(data[3:8])
+            y = decode35(data[8:13])
             self._log_command(f"Part {part} TopLeft ({x}um, {y}um)", data[:13])
             return b"", 13
 
@@ -748,8 +748,8 @@ class RuidaServer:
             if len(data) < 13:
                 return b"", 2
             part = data[2]
-            x = decode32(data[3:8])
-            y = decode32(data[8:13])
+            x = decode35(data[3:8])
+            y = decode35(data[8:13])
             self._log_command(
                 f"Part {part} BottomRight ({x}um, {y}um)", data[:13]
             )
@@ -759,7 +759,7 @@ class RuidaServer:
             if len(data) < 8:
                 return b"", 2
             axis_id = data[2]
-            coord = decode32(data[3:8])
+            coord = decode35(data[3:8])
             self._log_command(
                 f"Pen Offset Axis={axis_id}: {coord}um", data[:8]
             )
@@ -769,7 +769,7 @@ class RuidaServer:
             if len(data) < 8:
                 return b"", 2
             axis_id = data[2]
-            coord = decode32(data[3:8])
+            coord = decode35(data[3:8])
             self._log_command(
                 f"Layer Offset Axis={axis_id}: {coord}um", data[:8]
             )
@@ -790,8 +790,8 @@ class RuidaServer:
             if len(data) < 13:
                 return b"", 2
             part = data[2]
-            x = decode32(data[3:8])
-            y = decode32(data[8:13])
+            x = decode35(data[3:8])
+            y = decode35(data[8:13])
             self._log_command(
                 f"Part {part} Ex TopLeft ({x}um, {y}um)", data[:13]
             )
@@ -801,8 +801,8 @@ class RuidaServer:
             if len(data) < 13:
                 return b"", 2
             part = data[2]
-            x = decode32(data[3:8])
-            y = decode32(data[8:13])
+            x = decode35(data[3:8])
+            y = decode35(data[8:13])
             self._log_command(
                 f"Part {part} Ex BottomRight ({x}um, {y}um)", data[:13]
             )
@@ -851,8 +851,8 @@ class RuidaServer:
         s = self.state
         if len(data) < 11:
             return b"", 1
-        x = decode32(data[1:6])
-        y = decode32(data[6:11])
+        x = decode35(data[1:6])
+        y = decode35(data[6:11])
         self._log_command(f"Move Abs ({x}um, {y}um)", data[:11])
         s.x = x
         s.y = y
@@ -895,8 +895,8 @@ class RuidaServer:
         s = self.state
         if len(data) < 11:
             return b"", 1
-        x = decode32(data[1:6])
-        y = decode32(data[6:11])
+        x = decode35(data[1:6])
+        y = decode35(data[6:11])
         self._log_command(f"Cut Abs ({x}um, {y}um)", data[:11])
         s.x = x
         s.y = y
@@ -1003,14 +1003,14 @@ class RuidaServer:
         if subcmd == 0x02:
             if len(data) < 7:
                 return b"", 2
-            speed = decode32(data[2:7]) / 1000.0
+            speed = decode35(data[2:7]) / 1000.0
             self._log_command(f"Speed Laser 1: {speed}mm/s", data[:7])
             return b"", 7
 
         if subcmd == 0x03:
             if len(data) < 7:
                 return b"", 2
-            speed = decode32(data[2:7]) / 1000.0
+            speed = decode35(data[2:7]) / 1000.0
             self._log_command(f"Axis Speed: {speed}mm/s", data[:7])
             return b"", 7
 
@@ -1018,14 +1018,14 @@ class RuidaServer:
             if len(data) < 8:
                 return b"", 2
             part = data[2]
-            speed = decode32(data[3:8]) / 1000.0
+            speed = decode35(data[3:8]) / 1000.0
             self._log_command(f"Part {part} Speed: {speed}mm/s", data[:8])
             return b"", 8
 
         if subcmd in (0x05, 0x06):
             if len(data) < 7:
                 return b"", 2
-            speed = decode32(data[2:7]) / 1000.0
+            speed = decode35(data[2:7]) / 1000.0
             desc = "Force Eng Speed" if subcmd == 0x05 else "Axis Move Speed"
             self._log_command(f"{desc}: {speed}mm/s", data[:7])
             return b"", 7
@@ -1134,7 +1134,7 @@ class RuidaServer:
         if data[1] == 0x00:
             if len(data) < 7:
                 return b"", 2
-            coord = decode32(data[2:7])
+            coord = decode35(data[2:7])
             self._log_command(f"Axis X Move: {coord}um", data[:7])
             s.x = coord
             return b"", 7
@@ -1142,7 +1142,7 @@ class RuidaServer:
         if data[1] == 0x08:
             if len(data) < 7:
                 return b"", 2
-            coord = decode32(data[2:7])
+            coord = decode35(data[2:7])
             self._log_command(f"Axis Z Move: {coord}um", data[:7])
             s.z = coord
             return b"", 7
@@ -1158,7 +1158,7 @@ class RuidaServer:
         if data[1] == 0x00:
             if len(data) < 7:
                 return b"", 2
-            coord = decode32(data[2:7])
+            coord = decode35(data[2:7])
             self._log_command(f"Axis Y Move: {coord}um", data[:7])
             s.y = coord
             return b"", 7
@@ -1166,7 +1166,7 @@ class RuidaServer:
         if data[1] == 0x08:
             if len(data) < 7:
                 return b"", 2
-            coord = decode32(data[2:7])
+            coord = decode35(data[2:7])
             self._log_command(f"Axis U Move: {coord}um", data[:7])
             s.u = coord
             return b"", 7
@@ -1201,8 +1201,8 @@ class RuidaServer:
         if subcmd == 0x03:
             if len(data) < 12:
                 return b"", 2
-            x = decode32(data[2:7])
-            y = decode32(data[7:12])
+            x = decode35(data[2:7])
+            y = decode35(data[7:12])
             self._log_command(f"Display Offset ({x}um, {y}um)", data[:12])
             return b"", 12
 
@@ -1253,8 +1253,8 @@ class RuidaServer:
         if subcmd in (0x03, 0x04, 0x06):
             if len(data) < 12:
                 return b"", 2
-            x = decode32(data[2:7])
-            y = decode32(data[7:12])
+            x = decode35(data[2:7])
+            y = decode35(data[7:12])
             desc = {0x03: "Min Point", 0x04: "Max Point", 0x06: "Add"}.get(
                 subcmd, "?"
             )
@@ -1266,16 +1266,16 @@ class RuidaServer:
         if subcmd == 0x05:
             if len(data) < 12:
                 return b"", 2
-            x = decode32(data[2:7])
-            y = decode32(data[7:12])
+            x = decode35(data[2:7])
+            y = decode35(data[7:12])
             self._log_command(f"Element Array ({x}um, {y}um)", data[:12])
             return b"", 12
 
         if subcmd == 0x07:
             if len(data) < 12:
                 return b"", 2
-            x = decode32(data[2:7])
-            y = decode32(data[7:12])
+            x = decode35(data[2:7])
+            y = decode35(data[7:12])
             self._log_command(
                 f"Element Array Mirror ({x}um, {y}um)", data[:12]
             )

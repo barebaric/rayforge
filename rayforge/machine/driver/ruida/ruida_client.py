@@ -11,7 +11,7 @@ from typing import Optional
 from .ruida_protocol import RuidaResponse, RuidaState
 from .ruida_util import (
     encode14,
-    encode32,
+    encode35,
 )
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class RuidaClient:
 
     def build_move_abs(self, x: int, y: int) -> bytes:
         """Build absolute move command (0x88)."""
-        return b"\x88" + encode32(x) + encode32(y)
+        return b"\x88" + encode35(x) + encode35(y)
 
     def build_move_rel(self, dx: int, dy: int) -> bytes:
         """Build relative move command (0x89)."""
@@ -42,7 +42,7 @@ class RuidaClient:
 
     def build_cut_abs(self, x: int, y: int) -> bytes:
         """Build absolute cut command (0xA8)."""
-        return b"\xa8" + encode32(x) + encode32(y)
+        return b"\xa8" + encode35(x) + encode35(y)
 
     def build_cut_rel(self, dx: int, dy: int) -> bytes:
         """Build relative cut command (0xA9)."""
@@ -69,7 +69,7 @@ class RuidaClient:
     ) -> bytes:
         """Build rapid XY move command (0xD9)."""
         opts = self._build_move_opts(origin, light)
-        return b"\xd9\x10" + bytes([opts]) + encode32(x) + encode32(y)
+        return b"\xd9\x10" + bytes([opts]) + encode35(x) + encode35(y)
 
     def build_rapid_move_axis(
         self,
@@ -80,7 +80,7 @@ class RuidaClient:
     ) -> bytes:
         """Build rapid single-axis move command (0xD9)."""
         opts = self._build_move_opts(origin, light)
-        return b"\xd9" + bytes([axis & 0x0F]) + bytes([opts]) + encode32(coord)
+        return b"\xd9" + bytes([axis & 0x0F]) + bytes([opts]) + encode35(coord)
 
     def _build_move_opts(self, origin: bool, light: bool) -> int:
         """Build move options byte."""
@@ -186,12 +186,12 @@ class RuidaClient:
     def build_speed(self, speed_mm_s: float) -> bytes:
         """Build speed command."""
         speed_val = int(speed_mm_s * 1000)
-        return b"\xc9\x02" + encode32(speed_val)
+        return b"\xc9\x02" + encode35(speed_val)
 
     def build_axis_speed(self, speed_mm_s: float) -> bytes:
         """Build axis speed command."""
         speed_val = int(speed_mm_s * 1000)
-        return b"\xc9\x03" + encode32(speed_val)
+        return b"\xc9\x03" + encode35(speed_val)
 
     def build_end_of_file(self) -> bytes:
         """Build end of file command."""

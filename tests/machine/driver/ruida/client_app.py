@@ -13,7 +13,7 @@ from typing import Optional
 import gi
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk
+from gi.repository import GLib, Gtk
 
 from rayforge.machine.driver.ruida.ruida_client import RuidaClient
 from rayforge.machine.driver.ruida.ruida_util import (
@@ -37,6 +37,22 @@ class RuidaUdpClient:
     def connect(self):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._socket.settimeout(1.0)
+        self._send_magic_probe()
+
+    def _send_magic_probe(self):
+        assert self._socket is not None
+        probe = b"\xda\x00\x05\x7e"
+        swizzled = self._swizzle(probe)
+        checksum = calculate_checksum(swizzled)
+        packet = bytes([checksum >> 8, checksum & 0xFF]) + swizzled
+        try:
+            self._socket.sendto(packet, (self.host, self.port))
+            response, _ = self._socket.recvfrom(1024)
+            logger.debug(f"Magic probe response: {response.hex()}")
+        except socket.timeout:
+            logger.warning("Magic probe timed out")
+        except Exception as e:
+            logger.error(f"Magic probe error: {e}")
 
     def disconnect(self):
         if self._socket:
@@ -79,6 +95,8 @@ class ClientWindow(Gtk.ApplicationWindow):
         super().__init__(application=app)
         self.app = app
         self.client = app.client
+        self._pos_x_um = 0
+        self._pos_y_um = 0
 
         self.set_default_size(400, 500)
         self.set_title("Ruida Client")
@@ -93,19 +111,32 @@ class ClientWindow(Gtk.ApplicationWindow):
         connection_frame = Gtk.Frame(label="Connection")
         main_box.append(connection_frame)
 
-        conn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        conn_box.set_margin_top(6)
-        conn_box.set_margin_bottom(6)
-        conn_box.set_margin_start(6)
-        conn_box.set_margin_end(6)
-        connection_frame.set_child(conn_box)
+        conn_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        conn_vbox.set_margin_top(6)
+        conn_vbox.set_margin_bottom(6)
+        conn_vbox.set_margin_start(6)
+        conn_vbox.set_margin_end(6)
+        connection_frame.set_child(conn_vbox)
 
+        ip_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        ip_row.append(Gtk.Label(label="IP:"))
+        self.ip_entry = Gtk.Entry()
+        self.ip_entry.set_text(self.client.host)
+        self.ip_entry.set_hexpand(True)
+        ip_row.append(self.ip_entry)
+        conn_vbox.append(ip_row)
+
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self.status_label = Gtk.Label(label="● Disconnected")
-        conn_box.append(self.status_label)
+        self.status_label.set_hexpand(True)
+        btn_row.append(self.status_label)
 
         self.connect_btn = Gtk.Button(label="Connect")
         self.connect_btn.connect("clicked", self._on_connect_clicked)
-        conn_box.append(self.connect_btn)
+        btn_row.append(self.connect_btn)
+        conn_vbox.append(btn_row)
+
+        GLib.idle_add(self._auto_connect)
 
         pos_frame = Gtk.Frame(label="Position (mm)")
         main_box.append(pos_frame)
@@ -180,7 +211,7 @@ class ClientWindow(Gtk.ApplicationWindow):
         step_frame.set_child(step_box)
 
         self.step_buttons = []
-        for step in [1, 5]:
+        for step in [1, 5, 10]:
             btn = Gtk.ToggleButton(label=str(step))
             btn.connect("toggled", self._on_step_toggled, step)
             step_box.append(btn)
@@ -211,14 +242,22 @@ class ClientWindow(Gtk.ApplicationWindow):
             self.status_label.set_text("● Disconnected")
             self.connect_btn.set_label("Connect")
         else:
-            try:
-                self.client.connect()
-                self.status_label.set_text(
-                    f"● Connected to {self.client.host}:{self.client.port}"
-                )
-                self.connect_btn.set_label("Disconnect")
-            except Exception as e:
-                self.status_label.set_text(f"● Error: {e}")
+            self._do_connect()
+
+    def _do_connect(self):
+        self.client.host = self.ip_entry.get_text().strip()
+        try:
+            self.client.connect()
+            self.status_label.set_text(
+                f"● Connected to {self.client.host}:{self.client.port}"
+            )
+            self.connect_btn.set_label("Disconnect")
+        except Exception as e:
+            self.status_label.set_text(f"● Error: {e}")
+
+    def _auto_connect(self):
+        self._do_connect()
+        return False
 
     def _on_step_toggled(self, btn, step):
         if btn.get_active():
@@ -232,32 +271,42 @@ class ClientWindow(Gtk.ApplicationWindow):
             return
 
         step_um = int(self.step_size * UM_PER_MM)
+        MAX_REL_MOVE = 8000
 
-        if axis == "x":
-            cmd = self.client.client.build_move_rel(-direction * step_um, 0)
+        if step_um <= MAX_REL_MOVE:
+            if axis == "x":
+                cmd = self.client.client.build_move_rel(direction * step_um, 0)
+                self._pos_x_um += direction * step_um
+            else:
+                cmd = self.client.client.build_move_rel(
+                    0, -direction * step_um
+                )
+                self._pos_y_um += -direction * step_um
         else:
-            cmd = self.client.client.build_move_rel(0, -direction * step_um)
+            if axis == "x":
+                self._pos_x_um += direction * step_um
+                cmd = self.client.client.build_rapid_move_xy(
+                    self._pos_x_um, self._pos_y_um
+                )
+            else:
+                self._pos_y_um += -direction * step_um
+                cmd = self.client.client.build_rapid_move_xy(
+                    self._pos_x_um, self._pos_y_um
+                )
 
         logger.info(
             f"Jog {axis} direction={direction} step_um={step_um} cmd={cmd.hex()}"
         )
-        if self.client.send_command(cmd):
-            try:
-                x = float(self.x_entry.get_text())
-                y = float(self.y_entry.get_text())
-                if axis == "x":
-                    x += direction * self.step_size
-                else:
-                    y += direction * self.step_size
-                self.x_entry.set_text(str(x))
-                self.y_entry.set_text(str(y))
-            except ValueError:
-                pass
+        self.client.send_command(cmd)
+        self.x_entry.set_text(str(self._pos_x_um / 1000.0))
+        self.y_entry.set_text(str(self._pos_y_um / 1000.0))
 
     def _on_home(self, btn):
         if not self.client._socket:
             return
 
+        self._pos_x_um = 0
+        self._pos_y_um = 0
         cmd = self.client.client.build_home_xy()
         logger.info(f"Home command: {cmd.hex()}")
         self.client.send_command(cmd)
