@@ -3,6 +3,7 @@ from typing import Type, cast
 from .driver import Driver
 from .dummy import NoDeviceDriver
 from .grbl import GrblNetworkDriver, GrblSerialDriver, GrblTelnetDriver
+from .ruida import RuidaDriver
 from .smoothie import SmoothieDriver
 
 
@@ -34,5 +35,6 @@ __all__ = [
     "GrblNetworkDriver",
     "GrblSerialDriver",
     "GrblTelnetDriver",
+    "RuidaDriver",
     "SmoothieDriver",
 ]

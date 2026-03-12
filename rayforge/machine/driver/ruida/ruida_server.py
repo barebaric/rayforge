@@ -339,7 +339,31 @@ class RuidaServer:
             self._log_command(f"Rapid Feed Axis Move {opt_desc}", data[:8])
             return b"", 8
 
-        if subcmd in (0x10, 0x60):
+        if subcmd == 0x10:
+            if len(data) < 8:
+                return b"", 1
+            opts = data[2]
+            coord = decode35(data[3:8])
+            opt_desc = get_opt_desc(opts)
+            self._log_command(
+                f"Rapid move {opt_desc} X: {coord:+d}um (rel)", data[:8]
+            )
+            s.x += coord
+            return b"", 8
+
+        if subcmd == 0x11:
+            if len(data) < 8:
+                return b"", 1
+            opts = data[2]
+            coord = decode35(data[3:8])
+            opt_desc = get_opt_desc(opts)
+            self._log_command(
+                f"Rapid move {opt_desc} Y: {coord:+d}um (rel)", data[:8]
+            )
+            s.y += coord
+            return b"", 8
+
+        if subcmd == 0x60:
             if len(data) < 13:
                 return b"", 1
             opts = data[2]

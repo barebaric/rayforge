@@ -228,6 +228,10 @@ class RuidaSimulator:
             self._server.process_commands(data)
             return b"\xcc"
 
+        if data[0] == 0xD9:
+            self._server.process_commands(data)
+            return b"\xcc"
+
         return b"\xcc"
 
 
