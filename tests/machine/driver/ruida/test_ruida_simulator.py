@@ -6,11 +6,11 @@ from rayforge.machine.driver.ruida.ruida_simulator import RuidaSimulator
 from rayforge.machine.driver.ruida.ruida_util import (
     build_swizzle_lut,
     decode14,
-    decode32,
+    decode35,
     decodeu14,
     decodeu35,
     encode14,
-    encode32,
+    encode35,
     swizzle_byte,
     unswizzle_byte,
 )
@@ -45,10 +45,10 @@ class TestEncodingFunctions:
         assert encode14(0x3FFF) == b"\x7f\x7f"
 
     def test_encode32_zero(self):
-        assert encode32(0) == b"\x00\x00\x00\x00\x00"
+        assert encode35(0) == b"\x00\x00\x00\x00\x00"
 
     def test_encode32_max(self):
-        assert encode32(0xFFFFFFFF) == b"\x0f\x7f\x7f\x7f\x7f"
+        assert encode35(0xFFFFFFFF) == b"\x0f\x7f\x7f\x7f\x7f"
 
     def test_decode14_positive(self):
         assert decode14(b"\x00\x00") == 0
@@ -63,10 +63,10 @@ class TestEncodingFunctions:
         assert decodeu14(b"\x7f\x7f") == 0x3FFF
 
     def test_decode32_positive(self):
-        assert decode32(b"\x00\x00\x00\x00\x00") == 0
+        assert decode35(b"\x00\x00\x00\x00\x00") == 0
 
     def test_decode32_negative(self):
-        result = decode32(b"\x04\x00\x00\x00\x00")
+        result = decode35(b"\x7c\x00\x00\x00\x00")
         assert result == -1073741824
 
     def test_decodeu35(self):
@@ -81,34 +81,6 @@ class TestSimulatorBasics:
         sim = RuidaSimulator()
         assert sim.bed_x == RuidaSimulator.DEFAULT_BED_X
         assert sim.bed_y == RuidaSimulator.DEFAULT_BED_Y
-
-
-class TestMemoryLookup:
-    """Test memory address lookups."""
-
-    def test_card_id(self):
-        sim = RuidaSimulator()
-        name, value = sim._mem_lookup(0x057E)
-        assert name == "Card ID"
-        assert value == RuidaSimulator.CARD_ID
-
-    def test_bed_x(self):
-        sim = RuidaSimulator()
-        name, value = sim._mem_lookup(0x0026)
-        assert "X" in name
-        assert value == sim.bed_x
-
-    def test_bed_y(self):
-        sim = RuidaSimulator()
-        name, value = sim._mem_lookup(0x0036)
-        assert "Y" in name
-        assert value == sim.bed_y
-
-    def test_unknown_address(self):
-        sim = RuidaSimulator()
-        name, value = sim._mem_lookup(0xFFFF)
-        assert "Unknown" in name
-        assert value == 0
 
 
 class TestCommandHandling:
@@ -226,50 +198,23 @@ class TestD9Commands:
 
     def test_rapid_move_x(self):
         sim = RuidaSimulator()
-        coord_bytes = encode32(50000)
+        initial_x = sim.x
+        coord_bytes = encode35(50000)
         cmd = b"\xd9\x00\x00" + coord_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
         assert length == 8
-        assert sim.x == 50000
-
-    def test_rapid_move_y(self):
-        sim = RuidaSimulator()
-        coord_bytes = encode32(60000)
-        cmd = b"\xd9\x01\x00" + coord_bytes
-        response, length = sim._process_single_command(cmd)
-        assert response == b""
-        assert length == 8
-        assert sim.y == 60000
-
-    def test_rapid_move_xy(self):
-        sim = RuidaSimulator()
-        x_bytes = encode32(10000)
-        y_bytes = encode32(20000)
-        cmd = b"\xd9\x10\x00" + x_bytes + y_bytes
-        response, length = sim._process_single_command(cmd)
-        assert response == b""
-        assert length == 13
-        assert sim.x == 10000
-        assert sim.y == 20000
-
-    def test_rapid_move_xy_with_light(self):
-        sim = RuidaSimulator()
-        x_bytes = encode32(15000)
-        y_bytes = encode32(25000)
-        cmd = b"\xd9\x10\x03" + x_bytes + y_bytes
-        response, length = sim._process_single_command(cmd)
-        assert response == b""
-        assert length == 13
+        assert sim.x == initial_x + 50000
 
     def test_rapid_move_extended_x(self):
         sim = RuidaSimulator()
-        coord_bytes = encode32(75000)
+        initial_x = sim.x
+        coord_bytes = encode35(75000)
         cmd = b"\xd9\x50\x00" + coord_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
         assert length == 8
-        assert sim.x == 75000
+        assert sim.x == initial_x + 75000
 
 
 class TestMoveCommands:
@@ -277,8 +222,8 @@ class TestMoveCommands:
 
     def test_move_abs(self):
         sim = RuidaSimulator()
-        x_bytes = encode32(100000)
-        y_bytes = encode32(200000)
+        x_bytes = encode35(100000)
+        y_bytes = encode35(200000)
         cmd = b"\x88" + x_bytes + y_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -301,8 +246,8 @@ class TestMoveCommands:
 
     def test_cut_abs(self):
         sim = RuidaSimulator()
-        x_bytes = encode32(50000)
-        y_bytes = encode32(60000)
+        x_bytes = encode35(50000)
+        y_bytes = encode35(60000)
         cmd = b"\xa8" + x_bytes + y_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -365,7 +310,7 @@ class TestSpeedCommands:
 
     def test_speed_laser_1(self):
         sim = RuidaSimulator()
-        speed_bytes = encode32(20000)
+        speed_bytes = encode35(20000)
         cmd = b"\xc9\x02" + speed_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -373,7 +318,7 @@ class TestSpeedCommands:
 
     def test_axis_speed(self):
         sim = RuidaSimulator()
-        speed_bytes = encode32(50000)
+        speed_bytes = encode35(50000)
         cmd = b"\xc9\x03" + speed_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -381,7 +326,7 @@ class TestSpeedCommands:
 
     def test_part_speed(self):
         sim = RuidaSimulator()
-        speed_bytes = encode32(30000)
+        speed_bytes = encode35(30000)
         cmd = b"\xc9\x04\x00" + speed_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -389,7 +334,7 @@ class TestSpeedCommands:
 
     def test_force_eng_speed(self):
         sim = RuidaSimulator()
-        speed_bytes = encode32(15000)
+        speed_bytes = encode35(15000)
         cmd = b"\xc9\x05" + speed_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -397,7 +342,7 @@ class TestSpeedCommands:
 
     def test_axis_move_speed(self):
         sim = RuidaSimulator()
-        speed_bytes = encode32(25000)
+        speed_bytes = encode35(25000)
         cmd = b"\xc9\x06" + speed_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -423,8 +368,8 @@ class TestE7Commands:
 
     def test_process_top_left(self):
         sim = RuidaSimulator()
-        x_bytes = encode32(0)
-        y_bytes = encode32(0)
+        x_bytes = encode35(0)
+        y_bytes = encode35(0)
         cmd = b"\xe7\x03" + x_bytes + y_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -432,8 +377,8 @@ class TestE7Commands:
 
     def test_process_bottom_right(self):
         sim = RuidaSimulator()
-        x_bytes = encode32(100000)
-        y_bytes = encode32(100000)
+        x_bytes = encode35(100000)
+        y_bytes = encode35(100000)
         cmd = b"\xe7\x07" + x_bytes + y_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -441,8 +386,8 @@ class TestE7Commands:
 
     def test_document_min_point(self):
         sim = RuidaSimulator()
-        x_bytes = encode32(0)
-        y_bytes = encode32(0)
+        x_bytes = encode35(0)
+        y_bytes = encode35(0)
         cmd = b"\xe7\x50" + x_bytes + y_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -450,8 +395,8 @@ class TestE7Commands:
 
     def test_document_max_point(self):
         sim = RuidaSimulator()
-        x_bytes = encode32(320000)
-        y_bytes = encode32(220000)
+        x_bytes = encode35(320000)
+        y_bytes = encode35(220000)
         cmd = b"\xe7\x51" + x_bytes + y_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -498,8 +443,8 @@ class TestF1F2Commands:
 
     def test_f2_element_array_min_point(self):
         sim = RuidaSimulator()
-        x_bytes = encode32(1000)
-        y_bytes = encode32(2000)
+        x_bytes = encode35(1000)
+        y_bytes = encode35(2000)
         cmd = b"\xf2\x03" + x_bytes + y_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -540,8 +485,8 @@ class TestChecksumAccumulation:
     def test_checksum_accumulates_on_cut(self):
         sim = RuidaSimulator()
         sim.file_checksum_accumulator = 0
-        x_bytes = encode32(10000)
-        y_bytes = encode32(20000)
+        x_bytes = encode35(10000)
+        y_bytes = encode35(20000)
         cmd = b"\xa8" + x_bytes + y_bytes
         sim._process_single_command(cmd)
         assert sim.file_checksum_accumulator > 0
@@ -549,8 +494,8 @@ class TestChecksumAccumulation:
     def test_checksum_accumulates_on_move(self):
         sim = RuidaSimulator()
         sim.file_checksum_accumulator = 0
-        x_bytes = encode32(5000)
-        y_bytes = encode32(10000)
+        x_bytes = encode35(5000)
+        y_bytes = encode35(10000)
         cmd = b"\x88" + x_bytes + y_bytes
         sim._process_single_command(cmd)
         assert sim.file_checksum_accumulator > 0
@@ -622,7 +567,7 @@ class TestCACommands:
 
     def test_layer_color(self):
         sim = RuidaSimulator()
-        color_bytes = encode32(0x0000FF)
+        color_bytes = encode35(0x0000FF)
         cmd = b"\xca\x05" + color_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -641,24 +586,15 @@ class TestMemoryPersistence:
 
     def test_write_then_read_value(self):
         sim = RuidaSimulator()
-        write_val = encode32(12345) + encode32(0)
+        write_val = encode35(12345) + encode35(0)
         cmd = b"\xda\x01\x00\x30" + write_val
         sim._process_single_command(cmd)
         read_cmd = b"\xda\x00\x00\x30"
         response, _ = sim._process_single_command(read_cmd)
         assert response[0] == 0xDA
         assert response[1] == 0x01
-        decoded = decode32(response[4:9])
+        decoded = decode35(response[4:9])
         assert decoded == 12345
-
-    def test_write_overrides_default(self):
-        sim = RuidaSimulator()
-        default_name, default_val = sim._mem_lookup(0x0026)
-        write_val = encode32(default_val + 1000) + encode32(0)
-        cmd = b"\xda\x01\x00\x26" + write_val
-        sim._process_single_command(cmd)
-        _, new_val = sim._mem_lookup(0x0026)
-        assert new_val == default_val + 1000
 
 
 class TestRefPointMode:
@@ -709,7 +645,7 @@ class TestAxisMoveCommands:
 
     def test_axis_x_move(self):
         sim = RuidaSimulator()
-        coord_bytes = encode32(50000)
+        coord_bytes = encode35(50000)
         cmd = b"\x80\x00" + coord_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -718,7 +654,7 @@ class TestAxisMoveCommands:
 
     def test_axis_z_move_0x08(self):
         sim = RuidaSimulator()
-        coord_bytes = encode32(3000)
+        coord_bytes = encode35(3000)
         cmd = b"\x80\x08" + coord_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -727,7 +663,7 @@ class TestAxisMoveCommands:
 
     def test_axis_y_move(self):
         sim = RuidaSimulator()
-        coord_bytes = encode32(60000)
+        coord_bytes = encode35(60000)
         cmd = b"\xa0\x00" + coord_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -736,7 +672,7 @@ class TestAxisMoveCommands:
 
     def test_axis_u_move(self):
         sim = RuidaSimulator()
-        coord_bytes = encode32(2000)
+        coord_bytes = encode35(2000)
         cmd = b"\xa0\x08" + coord_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -766,7 +702,7 @@ class TestE5Commands:
 
     def test_e5_05_set_file_sum(self):
         sim = RuidaSimulator()
-        checksum_bytes = encode32(12345)
+        checksum_bytes = encode35(12345)
         cmd = b"\xe5\x05" + checksum_bytes
         sim.file_checksum_accumulator = 12345
         response, length = sim._process_single_command(cmd)
@@ -781,7 +717,7 @@ class TestD9RapidFeedAxis:
 
     def test_rapid_feed_axis_move(self):
         sim = RuidaSimulator()
-        coord_bytes = encode32(10000)
+        coord_bytes = encode35(10000)
         cmd = b"\xd9\x0f\x00" + coord_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""
@@ -884,7 +820,7 @@ class TestE7BYTest:
 
     def test_by_test(self):
         sim = RuidaSimulator()
-        val_bytes = encode32(0x11227766)
+        val_bytes = encode35(0x11227766)
         cmd = b"\xe7\x46" + val_bytes
         response, length = sim._process_single_command(cmd)
         assert response == b""

@@ -175,6 +175,20 @@ def estimate_packet_length(payload: bytes) -> int:
             return -1
         return 2
 
+    if cmd == 0xD9:
+        if len(payload) < 2:
+            return -1
+        sub = payload[1]
+        if sub in (0x00, 0x01, 0x02, 0x03, 0x50, 0x51, 0x52, 0x53):
+            return 8
+        if sub == 0x0F:
+            return 8
+        if sub in (0x10, 0x60):
+            return 13
+        if sub in (0x30, 0x70):
+            return 18
+        return 8
+
     if cmd == 0xDA:
         if len(payload) < 4:
             return -1

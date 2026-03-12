@@ -46,9 +46,9 @@ def encode14(v: int) -> bytes:
     return bytes([(v >> 7) & 0x7F, v & 0x7F])
 
 
-def encode32(v: int) -> bytes:
-    """Encode a 32-bit value as 5 bytes (35-bit encoding)."""
-    v = int(v) & 0xFFFFFFFF
+def encode35(v: int) -> bytes:
+    """Encode a signed 35-bit coordinate as 5 bytes."""
+    v = int(v) & 0x7FFFFFFFF
     return bytes(
         [
             (v >> 28) & 0x7F,
@@ -73,8 +73,8 @@ def decodeu14(data: bytes) -> int:
     return ((data[0] & 0x7F) << 7) | (data[1] & 0x7F)
 
 
-def decode32(data: bytes) -> int:
-    """Decode a 32-bit value from 5 bytes."""
+def decode35(data: bytes) -> int:
+    """Decode a signed 35-bit coordinate from 5 bytes."""
     val = (
         ((data[0] & 0x7F) << 28)
         | ((data[1] & 0x7F) << 21)
@@ -82,8 +82,8 @@ def decode32(data: bytes) -> int:
         | ((data[3] & 0x7F) << 7)
         | (data[4] & 0x7F)
     )
-    if val & 0x40000000:
-        val -= 0x80000000
+    if val & 0x400000000:
+        val -= 0x800000000
     return val
 
 
@@ -113,8 +113,8 @@ def decode_abs_coords(data: bytes) -> Tuple[float, float]:
     Decode absolute X,Y coordinates from 10 bytes.
     Returns coordinates in millimeters.
     """
-    x_um = decode32(data[:5])
-    y_um = decode32(data[5:10])
+    x_um = decode35(data[:5])
+    y_um = decode35(data[5:10])
     return x_um / UM_PER_MM, y_um / UM_PER_MM
 
 
