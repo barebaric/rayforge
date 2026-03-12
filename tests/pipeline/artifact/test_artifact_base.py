@@ -1,9 +1,9 @@
-import json
 import numpy as np
 from rayforge.core.ops import Ops
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.artifact import JobArtifact
 from rayforge.pipeline import CoordinateSystem
+from rayforge.pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
 
 
 def test_artifact_type_property():
@@ -100,7 +100,8 @@ def test_hybrid_serialization_round_trip():
 def test_final_job_serialization_round_trip():
     """Tests serialization for a final_job artifact."""
     machine_code_bytes = np.frombuffer(b"G1 X10", dtype=np.uint8)
-    op_map_bytes = np.frombuffer(json.dumps({0: 0}).encode(), np.uint8)
+    encoded = EncodedOutput(text="G1 X10", op_map=MachineCodeOpMap())
+    op_map_bytes = np.frombuffer(encoded.to_json().encode(), np.uint8)
 
     artifact = JobArtifact(
         ops=Ops(),

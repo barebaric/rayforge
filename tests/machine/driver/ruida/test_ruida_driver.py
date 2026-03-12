@@ -483,11 +483,11 @@ async def test_run_with_machine_code(driver):
     ops.add(MoveToCommand((10.0, 10.0, 0.0)))
     ops.add(LineToCommand((20.0, 20.0, 0.0)))
 
-    machine_code, op_map = driver._machine.encode_ops(ops, doc)
+    encoded = driver._machine.encode_ops(ops, doc)
 
     await driver.connect()
 
-    await driver.run(machine_code, op_map, doc)
+    await driver.run(encoded.text, encoded.op_map, doc)
 
     await driver.cleanup()
 

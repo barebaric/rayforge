@@ -18,6 +18,7 @@ from rayforge.doceditor.editor import DocEditor
 from rayforge.image import SVG_RENDERER
 from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.driver.driver import Axis
+from rayforge.pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.driver.grbl import GrblNetworkDriver
 from rayforge.machine.driver.grbl_serial import GrblSerialDriver
@@ -173,7 +174,9 @@ class TestMachine:
 
         # Create a mock encoder
         mock_encoder = mocker.Mock()
-        mock_encoder.encode.return_value = ("G0", mocker.Mock())
+        mock_encoder.encode.return_value = EncodedOutput(
+            text="G0", op_map=MachineCodeOpMap()
+        )
 
         # Patch the driver class's create_encoder static method
         create_encoder_mock = mocker.patch.object(
@@ -214,16 +217,10 @@ class TestMachine:
         """
         await wait_for_tasks_to_finish(task_mgr)
         # --- Arrange ---
-        from dataclasses import dataclass
-
-        @dataclass
-        class MockOpMap:
-            """A dummy dataclass to satisfy asdict() checks."""
-
-            pass
-
         mock_encoder = mocker.Mock()
-        mock_encoder.encode.return_value = ("G0", MockOpMap())
+        mock_encoder.encode.return_value = EncodedOutput(
+            text="G0", op_map=MachineCodeOpMap()
+        )
 
         # Patch the driver class's create_encoder static method
         mocker.patch.object(
@@ -291,7 +288,9 @@ class TestMachine:
         await wait_for_tasks_to_finish(task_mgr)
 
         mock_encoder = mocker.Mock()
-        mock_encoder.encode.return_value = ("G0", object())
+        mock_encoder.encode.return_value = EncodedOutput(
+            text="G0", op_map=MachineCodeOpMap()
+        )
 
         mocker.patch.object(
             NoDeviceDriver, "create_encoder", return_value=mock_encoder
@@ -331,7 +330,9 @@ class TestMachine:
 
         # Setup mocks
         mock_encoder = mocker.Mock()
-        mock_encoder.encode.return_value = ("G0", object())
+        mock_encoder.encode.return_value = EncodedOutput(
+            text="G0", op_map=MachineCodeOpMap()
+        )
 
         # Patch the driver class's create_encoder static method
         mocker.patch.object(

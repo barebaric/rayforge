@@ -1,7 +1,5 @@
 from __future__ import annotations
 import logging
-import json
-from dataclasses import asdict
 from typing import Dict, Optional
 from gettext import gettext as _
 
@@ -126,7 +124,7 @@ def _encode_gcode_and_opmap(
     context: Optional[ProgressContext] = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Encodes operations to G-code and operation map.
+    Encodes operations to machine code and operation map.
 
     Args:
         final_ops: The operations to encode.
@@ -137,13 +135,13 @@ def _encode_gcode_and_opmap(
     Returns:
         A tuple of (machine_code_bytes, op_map_bytes).
     """
-    set_progress(context, 0.8, _("Generating G-code..."))
-    gcode_str, op_map_obj = machine.encode_ops(final_ops, doc)
+    set_progress(context, 0.8, _("Generating machine code..."))
+    encoded_output = machine.encode_ops(final_ops, doc)
 
     machine_code_bytes = np.frombuffer(
-        gcode_str.encode("utf-8"), dtype=np.uint8
+        encoded_output.text.encode("utf-8"), dtype=np.uint8
     )
-    op_map_str = json.dumps(asdict(op_map_obj))
+    op_map_str = encoded_output.to_json()
     op_map_bytes = np.frombuffer(op_map_str.encode("utf-8"), dtype=np.uint8)
 
     return machine_code_bytes, op_map_bytes

@@ -60,7 +60,7 @@ async def test_carvera_air_gcode_generation(carvera_air_machine: "Machine"):
     doc = Doc()
 
     # --- Act ---
-    gcode_str, _ = machine.encode_ops(ops, doc)
+    gcode_str = machine.encode_ops(ops, doc).text
 
     # --- Assert ---
     # The Carvera profile specifies gcode_precision=4.
@@ -116,7 +116,7 @@ async def test_inject_wcs_after_preamble_flag(carvera_air_machine: "Machine"):
     doc = Doc()
 
     # --- Act: With inject_wcs_after_preamble=True (default) ---
-    gcode_str, _ = machine.encode_ops(ops, doc)
+    gcode_str = machine.encode_ops(ops, doc).text
     gcode_lines = gcode_str.split("\n")
 
     # --- Assert: WCS should be present ---
@@ -152,7 +152,7 @@ async def test_inject_wcs_after_preamble_flag(carvera_air_machine: "Machine"):
     register_dialect(custom_dialect)
     machine.set_dialect_uid(custom_dialect.uid)
 
-    gcode_str, _ = machine.encode_ops(ops, doc)
+    gcode_str = machine.encode_ops(ops, doc).text
     gcode_lines = gcode_str.split("\n")
 
     # --- Assert: WCS should NOT be present ---
