@@ -319,16 +319,16 @@ class RuidaServer:
             )
             opt_desc = get_opt_desc(opts)
             self._log_command(
-                f"Rapid move {opt_desc} {axis}: {coord}um", data[:8]
+                f"Rapid move {opt_desc} {axis}: {coord:+d}um", data[:8]
             )
             if base_axis == 0x00:
-                s.x = coord
+                s.x += coord
             elif base_axis == 0x01:
-                s.y = coord
+                s.y += coord
             elif base_axis == 0x02:
-                s.z = coord
+                s.z += coord
             elif base_axis == 0x03:
-                s.u = coord
+                s.u += coord
             return b"", 8
 
         if subcmd == 0x0F:
@@ -386,9 +386,10 @@ class RuidaServer:
             desc = DA_COMMANDS.get(subcmd, f"Unknown DA 0x{subcmd:02X}")
             self._log_command(f"{desc} {name} (mem: 0x{mem:04X})", data[:4])
             if isinstance(value, bytes):
-                response = b"\xda\x01" + data[2:4] + value
+                encoded = value
             else:
-                response = b"\xda\x01" + data[2:4] + encode32(value)
+                encoded = encode32(value)
+            response = b"\xda\x01" + data[2:4] + encoded + encoded
             return response, 4
 
         if subcmd == 0x01:

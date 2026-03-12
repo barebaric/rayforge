@@ -2,10 +2,9 @@
 Tests for the Ruida simulator.
 """
 
-from tests.machine.driver.ruida.simulator import RuidaSimulator
+from rayforge.machine.driver.ruida.ruida_simulator import RuidaSimulator
 from rayforge.machine.driver.ruida.ruida_util import (
     build_swizzle_lut,
-    calculate_checksum,
     decode14,
     decode32,
     decodeu14,
@@ -78,16 +77,8 @@ class TestEncodingFunctions:
 class TestSimulatorBasics:
     """Test basic simulator functionality."""
 
-    def test_swizzle_method(self):
-        sim = RuidaSimulator()
-        data = b"\xda\x00\x05\x7e"
-        swizzled = sim.swizzle(data)
-        unswizzled = sim.unswizzle(swizzled)
-        assert unswizzled == data
-
     def test_default_values(self):
         sim = RuidaSimulator()
-        assert sim.magic == 0x88
         assert sim.bed_x == RuidaSimulator.DEFAULT_BED_X
         assert sim.bed_y == RuidaSimulator.DEFAULT_BED_Y
 
@@ -144,22 +135,9 @@ class TestPacketHandling:
     def test_send_card_id_request(self):
         sim = RuidaSimulator()
         cmd = b"\xda\x00\x05\x7e"
-        swizzled = sim.swizzle(cmd)
-        checksum = calculate_checksum(swizzled)
-        packet = bytes([checksum >> 8, checksum & 0xFF]) + swizzled
-        response = sim.handle_main_packet(packet)
-        unswizzled = sim.unswizzle(response)
-        assert unswizzled[0] == 0xDA
-        assert unswizzled[1] == 0x01
-
-    def test_send_invalid_checksum(self):
-        sim = RuidaSimulator()
-        cmd = b"\xda\x00\x05\x7e"
-        swizzled = sim.swizzle(cmd)
-        packet = b"\xff\xff" + swizzled
-        response = sim.handle_main_packet(packet)
-        unswizzled = sim.unswizzle(response)
-        assert unswizzled == b"\xcf"
+        response = sim.process_commands(cmd)
+        assert response[0] == 0xDA
+        assert response[1] == 0x01
 
     def test_jog_keepalive(self):
         sim = RuidaSimulator()

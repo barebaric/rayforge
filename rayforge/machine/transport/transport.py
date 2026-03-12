@@ -15,7 +15,6 @@ class TransportStatus(Enum):
     SLEEPING = auto()
 
 
-# Translatable labels for TransportStatus enums
 TRANSPORT_STATUS_LABELS = {
     TransportStatus.UNKNOWN: _("Unknown"),
     TransportStatus.IDLE: _("Idle"),

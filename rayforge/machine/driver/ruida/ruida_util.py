@@ -99,8 +99,8 @@ def decodeu35(data: bytes) -> int:
 
 
 def parse_mem(data: bytes) -> int:
-    """Parse memory address from 2 bytes."""
-    return decodeu14(data)
+    """Parse memory address from 2 bytes (big-endian)."""
+    return (data[0] << 8) | data[1]
 
 
 def calculate_checksum(data: bytes) -> int:
