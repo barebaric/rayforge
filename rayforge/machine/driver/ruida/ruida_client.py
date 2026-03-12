@@ -8,9 +8,11 @@ sending them via transport, and parsing of responses.
 import logging
 from typing import Optional, TYPE_CHECKING
 
+from blinker import Signal
+
 from ...transport.transport import Transport
 from .ruida_protocol import RuidaResponse, RuidaState
-from .ruida_util import encode14, encode35
+from .ruida_util import encode14, encode35, decode35
 
 if TYPE_CHECKING:
     from .ruida_transport import RuidaTransport
@@ -42,10 +44,39 @@ class RuidaClient:
         self._transport = transport
         self._jog_transport = jog_transport
         self.state = state or RuidaState()
+        self.position_updated = Signal()
 
     @property
     def is_connected(self) -> bool:
         return self._transport.is_connected
+
+    def handle_response(self, data: bytes) -> None:
+        """
+        Handle a response from the controller.
+
+        Parses DA memory read responses and emits position_updated signal.
+        """
+        if len(data) >= 14 and data[0] == 0xDA and data[1] == 0x01:
+            mem_address = (data[2] << 8) | data[3]
+            value = decode35(data[4:9])
+
+            axis = None
+            if mem_address == 0x0421:
+                axis = "x"
+                self.state.x = value
+            elif mem_address == 0x0431:
+                axis = "y"
+                self.state.y = value
+            elif mem_address == 0x0441:
+                axis = "z"
+                self.state.z = value
+
+            if axis:
+                logger.debug(
+                    f"Position response: {axis}={value}um "
+                    f"(mem 0x{mem_address:04X})"
+                )
+                self.position_updated.send(self, axis=axis, value_um=value)
 
     async def connect(self) -> None:
         """Establish connection to the Ruida controller."""
@@ -499,3 +530,43 @@ class RuidaClient:
             data: Raw binary data to send.
         """
         await self._transport.send(data)
+
+    def build_read_memory(self, mem_address: int) -> bytes:
+        """
+        Build command to read from controller memory.
+
+        Args:
+            mem_address: Memory address (e.g., 0x0421 for Current X)
+
+        Returns:
+            Command bytes to send
+        """
+        mem_high = (mem_address >> 8) & 0xFF
+        mem_low = mem_address & 0xFF
+        return bytes([0xDA, 0x00, mem_high, mem_low])
+
+    async def read_memory(self, mem_address: int) -> None:
+        """
+        Send a memory read request to the controller.
+
+        Args:
+            mem_address: Memory address to read (e.g., 0x0421 for Current X)
+        """
+        await self.send_command(self.build_read_memory(mem_address))
+
+    async def get_position(self) -> tuple[int, int, int]:
+        """
+        Request current X, Y, Z position from controller.
+
+        Sends memory read commands for position registers.
+        Position values will be returned asynchronously via the
+        decoded_received signal.
+
+        Returns:
+            Tuple of (x, y, z) in micrometers
+            (may be stale until response received)
+        """
+        await self.read_memory(0x0421)
+        await self.read_memory(0x0431)
+        await self.read_memory(0x0441)
+        return (self.state.x, self.state.y, self.state.z)

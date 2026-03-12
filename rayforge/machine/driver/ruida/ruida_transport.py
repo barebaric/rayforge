@@ -98,31 +98,26 @@ class RuidaTransport(Transport):
         await self._transport.purge()
 
     def _on_raw_received(self, sender, data: bytes) -> None:
-        """Handle raw data from underlying transport."""
-        is_valid, payload, recv_cksum, calc_cksum = validate_packet(data)
+        """Handle raw data from underlying transport.
 
-        if not is_valid:
-            logger.warning(
-                f"Checksum mismatch: received {recv_cksum:04X}, "
-                f"calculated {calc_cksum:04X}"
-            )
+        Note: Server responses are NOT framed with checksums - they are
+        just swizzled bytes. Only client->server packets have checksums.
+        """
+        unswizzled = self._codec.unswizzle(data)
+
+        if len(data) == 1 and unswizzled[0] in (0xCC, 0xCD, 0xCE):
+            self.decoded_received.send(self, data=unswizzled)
             return
 
-        magic_detected = None
-
-        detected = self._codec.detect_magic_from_payload(payload)
+        detected = self._codec.detect_magic_from_payload(data)
         if detected is not None:
-            magic_detected = detected
-            unswizzled = self._codec.unswizzle(payload)
+            if self._codec.set_magic(detected):
+                self.magic_changed.send(self, magic=detected)
         else:
-            unswizzled = self._codec.unswizzle(payload)
             detected = self._codec.detect_magic_from_mem_request(unswizzled)
             if detected is not None:
-                magic_detected = detected
-
-        if magic_detected is not None:
-            if self._codec.set_magic(magic_detected):
-                self.magic_changed.send(self, magic=magic_detected)
+                if self._codec.set_magic(detected):
+                    self.magic_changed.send(self, magic=detected)
 
         self.decoded_received.send(self, data=unswizzled)
 
