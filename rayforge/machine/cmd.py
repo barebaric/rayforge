@@ -6,7 +6,7 @@ from blinker import Signal
 from ..context import get_context
 from ..core.ops import Ops
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
-from ..pipeline.encoder.base import MachineCodeOpMap
+from ..pipeline.encoder.base import EncodedOutput
 from ..pipeline.encoder.context import GcodeContext, JobInfo
 from ..shared.util.template import TemplateFormatter
 from .job_monitor import JobMonitor
@@ -61,8 +61,7 @@ class MachineCmd:
         ops: "Ops",
         machine: "Machine",
         on_progress: Optional[Callable[[dict], None]] = None,
-        machine_code: Optional[str] = None,
-        op_map: Optional[MachineCodeOpMap] = None,
+        encoded: Optional[EncodedOutput] = None,
     ):
         """
         Internal helper to execute a job on a driver while managing
@@ -109,22 +108,18 @@ class MachineCmd:
             self._scheduler(self.job_started.send, self)
 
             # If machine code or op map are missing, generate them now
-            if machine_code is None or op_map is None:
+            if encoded is None:
                 encoded = machine.encode_ops(ops, self._editor.doc)
-                machine_code = encoded.text
-                op_map = encoded.op_map
 
             if machine.reports_granular_progress:
                 await machine.driver.run(
-                    machine_code,
-                    op_map,
+                    encoded,
                     self._editor.doc,
                     on_command_done=self._current_monitor.update_progress,
                 )
             else:
                 await machine.driver.run(
-                    machine_code,
-                    op_map,
+                    encoded,
                     self._editor.doc,
                     on_command_done=None,
                 )
@@ -176,8 +171,7 @@ class MachineCmd:
             frame_with_laser,
             machine,
             on_progress,
-            machine_code=encoded.text,
-            op_map=encoded.op_map,
+            encoded=encoded,
         )
 
     async def _run_send_action(
@@ -194,8 +188,7 @@ class MachineCmd:
             artifact.ops,
             machine,
             on_progress,
-            machine_code=artifact.machine_code,
-            op_map=artifact.op_map,
+            encoded=artifact.encoded_output,
         )
 
     async def _start_job(

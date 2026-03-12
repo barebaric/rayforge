@@ -575,10 +575,10 @@ class TestMachine:
 
         # --- Assert ---
         run_spy.assert_called_once()
-        _machine_code, op_map, received_doc = run_spy.call_args.args
-        from rayforge.pipeline.encoder.base import MachineCodeOpMap
+        encoded, received_doc = run_spy.call_args.args
+        from rayforge.pipeline.encoder.base import EncodedOutput
 
-        assert isinstance(op_map, MachineCodeOpMap)
+        assert isinstance(encoded, EncodedOutput)
         assert received_doc is doc
 
     @pytest.mark.asyncio
@@ -624,10 +624,10 @@ class TestMachine:
 
         # --- Assert ---
         run_spy.assert_called_once()
-        machine_code, op_map, received_doc = run_spy.call_args.args
-        from rayforge.pipeline.encoder.base import MachineCodeOpMap
+        encoded, received_doc = run_spy.call_args.args
+        from rayforge.pipeline.encoder.base import EncodedOutput
 
-        assert isinstance(op_map, MachineCodeOpMap)
+        assert isinstance(encoded, EncodedOutput)
         assert received_doc is doc
 
     @pytest.mark.asyncio

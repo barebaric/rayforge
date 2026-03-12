@@ -20,8 +20,7 @@ from ...context import RayforgeContext
 if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...core.varset import VarSet
-    from ...pipeline.encoder.base import OpsEncoder
-    from ...pipeline.encoder.gcode import MachineCodeOpMap
+    from ...pipeline.encoder.base import OpsEncoder, EncodedOutput
     from ..models.machine import Machine
     from ..models.laser import Laser
 
@@ -322,19 +321,17 @@ class Driver(ABC):
     @abstractmethod
     async def run(
         self,
-        machine_code: Any,
-        op_map: "MachineCodeOpMap",
+        encoded: "EncodedOutput",
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
     ) -> None:
         """
-        Executes the given machine code.
+        Executes the given encoded output.
 
         Args:
-            machine_code: The machine code to execute (e.g. G-code string)
-            op_map: Mapping between index of ops and machine code
+            encoded: The encoded output containing machine code and op map
             doc: The document context
             on_command_done: Optional sync or async callback called when each
                            command is done. Called with the op_index.
@@ -342,12 +339,13 @@ class Driver(ABC):
         pass
 
     @abstractmethod
-    async def run_raw(self, gcode: str) -> None:
+    async def run_raw(self, machine_code: str) -> None:
         """
-        Executes a raw G-code string on the machine.
+        Executes a raw command (e.g. G-code if that is what the machine
+        supports).
 
         Args:
-            gcode: The raw G-code to execute.
+            machine_code: The raw machine code to execute.
         """
         pass
 

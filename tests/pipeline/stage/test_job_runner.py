@@ -1,5 +1,4 @@
 import pytest
-import json
 from dataclasses import asdict
 
 from rayforge.context import get_context
@@ -102,15 +101,12 @@ def test_jobrunner_assembles_step_artifacts_correctly(
 
     # Assert comprehensive artifact content
     assert final_artifact.vertex_data is not None
-    assert final_artifact.machine_code_bytes is not None
-    assert final_artifact.op_map_bytes is not None
+    assert final_artifact.encoded_output_bytes is not None
 
-    gcode_str = final_artifact.machine_code_bytes.tobytes().decode("utf-8")
-    op_map_str = final_artifact.op_map_bytes.tobytes().decode("utf-8")
-    op_map = json.loads(op_map_str)
-
-    assert "G1" in gcode_str  # Check for a linear move command
-    assert isinstance(op_map, dict) and len(op_map) > 0
+    gcode_str = final_artifact.machine_code
+    assert gcode_str is not None
+    assert "G1" in gcode_str
+    assert final_artifact.op_map is not None
 
     # Cleanup
     get_context().artifact_store.release(step_handle)

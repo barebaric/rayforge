@@ -12,7 +12,7 @@ import asyncio
 from typing import AsyncGenerator
 
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
+from rayforge.core.ops import Ops
 from rayforge.machine.driver.ruida.ruida_simulator import RuidaSimulator
 from rayforge.machine.driver.ruida.ruida_driver import RuidaDriver
 from rayforge.machine.models.machine import Machine
@@ -20,7 +20,7 @@ from rayforge.machine.models.laser import Laser
 from rayforge.machine.transport.udp_server import UdpServerTransport
 from rayforge.machine.driver.ruida.ruida_transport import RuidaServerTransport
 from rayforge.machine.driver.driver import Axis
-from rayforge.pipeline.encoder.gcode import GcodeEncoder
+from rayforge.machine.driver.ruida.ruida_encoder import RuidaEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ async def driver(
     sim, host, port, jog_port = ruida_simulator
 
     machine = Machine(lite_context)
-    machine.dialect_uid = "grbl"
+    machine.driver_name = "RuidaDriver"
     lite_context.machine_mgr.add_machine(machine)
 
     driver = RuidaDriver(lite_context, machine)
@@ -476,40 +476,46 @@ async def test_run_probe_cycle_not_supported(driver):
 
 
 @pytest.mark.asyncio
-async def test_run_with_machine_code(driver):
-    """Test that run method executes without errors."""
+async def test_run_with_machine_code(driver, ruida_simulator):
+    """Test that run method executes encoded commands on the simulator."""
+    sim, host, port, jog_port = ruida_simulator
+
     doc = Doc()
     ops = Ops()
-    ops.add(MoveToCommand((10.0, 10.0, 0.0)))
-    ops.add(LineToCommand((20.0, 20.0, 0.0)))
+    ops.move_to(10.0, 20.0)
+    ops.line_to(30.0, 40.0)
 
     encoded = driver._machine.encode_ops(ops, doc)
 
     await driver.connect()
 
-    await driver.run(encoded.text, encoded.op_map, doc)
+    sim.x = 0
+    sim.y = 0
+
+    await driver.run(encoded, doc)
+    await asyncio.sleep(0.2)
+
+    assert sim.x == 30000
+    assert sim.y == 40000
 
     await driver.cleanup()
 
 
 @pytest.mark.asyncio
-async def test_run_raw_with_gcode(driver):
-    """Test that run_raw executes G-code lines."""
+async def test_run_raw_warns_and_finishes(driver):
+    """Test that run_raw logs warning and sends job_finished signal."""
     await driver.connect()
 
-    gcode = "G0 X10\nG1 Y20\nG0 X0"
+    finished_events = []
 
-    await driver.run_raw(gcode)
+    def on_job_finished(sender):
+        finished_events.append(True)
 
-    await driver.cleanup()
+    driver.job_finished.connect(on_job_finished)
 
+    await driver.run_raw("G0 X10")
 
-@pytest.mark.asyncio
-async def test_run_raw_empty_gcode(driver):
-    """Test that run_raw with empty G-code succeeds."""
-    await driver.connect()
-
-    await driver.run_raw("")
+    assert len(finished_events) == 1
 
     await driver.cleanup()
 
@@ -674,11 +680,10 @@ async def test_power_settings_with_different_heads(driver):
 
 @pytest.mark.asyncio
 async def test_get_encoder_returns_correct_type(driver):
-    """Test that get_encoder returns GcodeEncoder."""
+    """Test that get_encoder returns RuidaEncoder."""
     encoder = driver.get_encoder()
 
-    assert isinstance(encoder, GcodeEncoder)
-    assert encoder.dialect.uid == driver._machine.dialect.uid
+    assert isinstance(encoder, RuidaEncoder)
 
 
 @pytest.mark.asyncio

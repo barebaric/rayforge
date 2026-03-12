@@ -15,7 +15,7 @@ from typing import (
 )
 from ...context import RayforgeContext
 from ...core.varset import VarSet
-from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
+from ...pipeline.encoder.base import OpsEncoder, EncodedOutput
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TransportStatus
 from .driver import Driver, Axis, Pos, DeviceStatus
@@ -109,8 +109,7 @@ class NoDeviceDriver(Driver):
 
     async def run(
         self,
-        machine_code: Any,
-        op_map: "MachineCodeOpMap",
+        encoded: EncodedOutput,
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
@@ -123,6 +122,7 @@ class NoDeviceDriver(Driver):
         simulates execution by calling the on_command_done callback for each
         command with a small delay.
         """
+        op_map = encoded.op_map
         # We assume ops are indexed 0..N-1.
         num_ops = 0
         if op_map and op_map.op_to_machine_code:
@@ -144,11 +144,13 @@ class NoDeviceDriver(Driver):
                     pass
         self.job_finished.send(self)
 
-    async def run_raw(self, gcode: str) -> None:
+    async def run_raw(self, machine_code: str) -> None:
         """
         Dummy implementation that simulates raw G-code execution.
         """
-        lines = [line.strip() for line in gcode.splitlines() if line.strip()]
+        lines = [
+            line.strip() for line in machine_code.splitlines() if line.strip()
+        ]
         for line in lines:
             logger.info(line, extra=self._log_extra("USER_COMMAND"))
             await asyncio.sleep(0.01)

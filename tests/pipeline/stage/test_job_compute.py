@@ -1,5 +1,4 @@
 import pytest
-import json
 import numpy as np
 
 from rayforge.core.doc import Doc
@@ -7,6 +6,7 @@ from rayforge.core.layer import Layer
 from rayforge.core.ops import Ops, LineToCommand
 from rayforge.machine.models.machine import Machine, Laser
 from rayforge.pipeline.artifact import StepOpsArtifact, JobArtifact
+from rayforge.pipeline.encoder.base import EncodedOutput
 from rayforge.pipeline.stage.job_compute import (
     compute_job_artifact,
     _assemble_final_ops,
@@ -67,15 +67,12 @@ def test_job_compute_assembles_step_artifacts_correctly(
     assert line_cmds[1].end == pytest.approx((50.0, 50.0, 0.0))
 
     assert result.vertex_data is not None
-    assert result.machine_code_bytes is not None
-    assert result.op_map_bytes is not None
+    assert result.encoded_output_bytes is not None
 
-    gcode_str = result.machine_code_bytes.tobytes().decode("utf-8")
-    op_map_str = result.op_map_bytes.tobytes().decode("utf-8")
-    op_map = json.loads(op_map_str)
-
+    gcode_str = result.machine_code
+    assert gcode_str is not None
     assert "G1" in gcode_str
-    assert isinstance(op_map, dict) and len(op_map) > 0
+    assert result.op_map is not None
 
     assert len(mock_progress_context.progress_calls) > 0
     assert mock_progress_context.progress_calls[0][0] == 0.0
@@ -107,7 +104,7 @@ def test_job_compute_handles_empty_ops(
     )
 
     assert isinstance(result, JobArtifact)
-    assert result.machine_code_bytes is not None
+    assert result.encoded_output_bytes is not None
 
 
 def test_job_compute_without_progress_callback(
@@ -139,7 +136,7 @@ def test_job_compute_without_progress_callback(
     )
 
     assert isinstance(result, JobArtifact)
-    assert result.machine_code_bytes is not None
+    assert result.encoded_output_bytes is not None
 
 
 def test_job_compute_multiple_steps(
@@ -208,7 +205,7 @@ def test_job_compute_empty_step_artifacts(
     )
 
     assert isinstance(result, JobArtifact)
-    assert result.machine_code_bytes is not None
+    assert result.encoded_output_bytes is not None
 
 
 def test_job_compute_multiple_layers(
@@ -664,32 +661,39 @@ def test_encode_gcode_and_opmap(
     ops.move_to(10, 10)
     ops.line_to(20, 20)
 
-    machine_code, op_map = _encode_gcode_and_opmap(
+    encoded_output_bytes = _encode_gcode_and_opmap(
         ops, doc, machine, mock_progress_context
     )
 
-    assert machine_code is not None
-    assert op_map is not None
-    assert isinstance(machine_code, type(np.array([])))
-    assert isinstance(op_map, type(np.array([])))
+    assert encoded_output_bytes is not None
+    assert isinstance(encoded_output_bytes, np.ndarray)
 
-    gcode_str = machine_code.tobytes().decode("utf-8")
-    assert "G1" in gcode_str
+    json_str = encoded_output_bytes.tobytes().decode("utf-8")
+    encoded = EncodedOutput.from_json(json_str)
+    assert "G1" in encoded.text
+    assert encoded.op_map is not None
 
 
 def test_encode_gcode_and_opmap_without_progress(machine):
     """
     Test _encode_gcode_and_opmap without progress callback.
     """
+    from rayforge.pipeline.encoder.base import EncodedOutput
+
     doc = Doc()
     ops = Ops()
     ops.move_to(10, 10)
     ops.line_to(20, 20)
 
-    machine_code, op_map = _encode_gcode_and_opmap(ops, doc, machine, None)
+    encoded_output_bytes = _encode_gcode_and_opmap(ops, doc, machine, None)
 
-    assert machine_code is not None
-    assert op_map is not None
+    assert encoded_output_bytes is not None
+    assert isinstance(encoded_output_bytes, np.ndarray)
+
+    json_str = encoded_output_bytes.tobytes().decode("utf-8")
+    encoded = EncodedOutput.from_json(json_str)
+    assert encoded.text is not None
+    assert encoded.op_map is not None
 
 
 def test_encode_vertex_data(mock_progress_context):

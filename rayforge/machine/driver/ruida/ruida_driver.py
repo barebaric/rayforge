@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import inspect
 from typing import (
     Any,
     TYPE_CHECKING,
@@ -14,9 +15,10 @@ from gettext import gettext as _
 
 from ....context import RayforgeContext
 from ....core.varset import VarSet, HostnameVar, PortVar
-from ....pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
-from ....pipeline.encoder.gcode import GcodeEncoder
+from ....pipeline.encoder.base import OpsEncoder, EncodedOutput
 from ...transport import TransportStatus
+from ...transport.validators import is_valid_hostname_or_ip
+from ...transport.udp import UdpTransport
 from ..driver import (
     Driver,
     DriverSetupError,
@@ -25,10 +27,9 @@ from ..driver import (
     Pos,
     DeviceStatus,
 )
-from ...transport.validators import is_valid_hostname_or_ip
-from ...transport.udp import UdpTransport
-from .ruida_transport import RuidaTransport
 from .ruida_client import RuidaClient
+from .ruida_encoder import RuidaEncoder
+from .ruida_transport import RuidaTransport
 
 if TYPE_CHECKING:
     from ....core.doc import Doc
@@ -116,7 +117,7 @@ class RuidaDriver(Driver):
 
     @classmethod
     def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
-        return GcodeEncoder(machine.dialect)
+        return RuidaEncoder()
 
     def _setup_implementation(self, **kwargs: Any) -> None:
         host = kwargs.get("host", "")
@@ -182,15 +183,17 @@ class RuidaDriver(Driver):
 
     async def run(
         self,
-        machine_code: Any,
-        op_map: "MachineCodeOpMap",
+        encoded: EncodedOutput,
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
     ) -> None:
-        gcode = str(machine_code)
-        lines = [line.strip() for line in gcode.splitlines() if line.strip()]
+        binary_data = encoded.driver_data.get("binary", b"")
+        text_lines = [
+            line.strip() for line in encoded.text.splitlines() if line.strip()
+        ]
+        op_map = encoded.op_map
 
         if on_command_done is not None:
             num_ops = 0
@@ -199,25 +202,37 @@ class RuidaDriver(Driver):
 
             for op_index in range(num_ops):
                 result = on_command_done(op_index)
-                import inspect
-
                 if inspect.isawaitable(result):
                     await result
 
         logger.info(
-            f"Executing {len(lines)} G-code lines",
+            f"Executing {len(text_lines)} commands",
             extra=self._log_extra("USER_COMMAND"),
         )
 
-        for line in lines:
+        for line in text_lines:
             logger.info(line, extra=self._log_extra("USER_COMMAND"))
+
+        if binary_data and self._client:
+            CHUNK_SIZE = 1024
+            for i in range(0, len(binary_data), CHUNK_SIZE):
+                chunk = binary_data[i : i + CHUNK_SIZE]
+                await self._client.send_command(chunk)
 
         self.job_finished.send(self)
 
-    async def run_raw(self, gcode: str) -> None:
-        lines = [line.strip() for line in gcode.splitlines() if line.strip()]
-        for line in lines:
-            logger.info(line, extra=self._log_extra("USER_COMMAND"))
+    async def run_raw(self, machine_code: str) -> None:
+        """
+        Ruida controllers use binary protocol, not text-based machine code.
+
+        This method logs a warning and does nothing. Use run() with
+        properly encoded Ruida binary data instead.
+        """
+        if machine_code and machine_code.strip():
+            logger.warning(
+                "Ruida controllers do not support text-based machine code. "
+                "Use run() with EncodedOutput instead."
+            )
         self.job_finished.send(self)
 
     async def set_hold(self, hold: bool = True) -> None:
