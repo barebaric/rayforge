@@ -6,8 +6,8 @@ Sends movement commands to the simulator and displays the current position.
 """
 
 import argparse
+import asyncio
 import logging
-import socket
 from typing import Optional
 
 import gi
@@ -16,75 +16,61 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import GLib, Gtk
 
 from rayforge.machine.driver.ruida.ruida_client import RuidaClient
-from rayforge.machine.driver.ruida.ruida_util import (
-    UM_PER_MM,
-    build_swizzle_lut,
-    calculate_checksum,
-)
+from rayforge.machine.driver.ruida.ruida_transport import RuidaTransport
+from rayforge.machine.driver.ruida.ruida_util import UM_PER_MM
+from rayforge.machine.transport.udp import UdpTransport
 
 logger = logging.getLogger(__name__)
 
 
 class RuidaUdpClient:
+    """
+    Synchronous wrapper for RuidaClient using the layered architecture.
+
+    Uses:
+    - UdpTransport (L3/4): Raw UDP communication
+    - RuidaTransport (L2): Swizzle + framing
+    - RuidaClient (L5/6): Protocol commands
+    """
+
     def __init__(self, host: str, port: int, magic: int = 0x88):
         self.host = host
         self.port = port
         self.magic = magic
-        self.swizzle_lut, self.unswizzle_lut = build_swizzle_lut(magic)
-        self.client = RuidaClient()
-        self._socket: Optional[socket.socket] = None
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._udp: Optional[UdpTransport] = None
+        self._transport: Optional[RuidaTransport] = None
+        self.client: Optional[RuidaClient] = None
+
+    @property
+    def is_connected(self) -> bool:
+        return self._transport is not None and self._transport.is_connected
+
+    def _run_async(self, coro):
+        if self._loop is None:
+            self._loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._loop)
+        return self._loop.run_until_complete(coro)
 
     def connect(self):
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._socket.settimeout(1.0)
-        self._send_magic_probe()
-
-    def _send_magic_probe(self):
-        assert self._socket is not None
-        probe = b"\xda\x00\x05\x7e"
-        swizzled = self._swizzle(probe)
-        checksum = calculate_checksum(swizzled)
-        packet = bytes([checksum >> 8, checksum & 0xFF]) + swizzled
-        try:
-            self._socket.sendto(packet, (self.host, self.port))
-            response, _ = self._socket.recvfrom(1024)
-            logger.debug(f"Magic probe response: {response.hex()}")
-        except socket.timeout:
-            logger.warning("Magic probe timed out")
-        except Exception as e:
-            logger.error(f"Magic probe error: {e}")
+        self._udp = UdpTransport(self.host, self.port)
+        self._transport = RuidaTransport(self._udp, self.magic)
+        self.client = RuidaClient(self._transport)
+        self._run_async(self.client.connect())
 
     def disconnect(self):
-        if self._socket:
-            self._socket.close()
-            self._socket = None
-
-    def _swizzle(self, data: bytes) -> bytes:
-        return bytes([self.swizzle_lut[b] for b in data])
-
-    def _unswizzle(self, data: bytes) -> bytes:
-        return bytes([self.unswizzle_lut[b] for b in data])
+        if self.client:
+            self._run_async(self.client.disconnect())
+        self.client = None
+        self._transport = None
+        self._udp = None
 
     def send_command(self, cmd: bytes) -> bool:
-        if not self._socket:
+        if not self.client:
             return False
-
-        swizzled = self._swizzle(cmd)
-        checksum = calculate_checksum(swizzled)
-        packet = bytes([checksum >> 8, checksum & 0xFF]) + swizzled
-
-        logger.debug(f"Sending packet: {packet.hex()}")
         try:
-            self._socket.sendto(packet, (self.host, self.port))
-            response, addr = self._socket.recvfrom(1024)
-            unswizzled = self._unswizzle(response)
-            logger.debug(
-                f"Received response: {response.hex()} -> {unswizzled.hex()}"
-            )
-            return len(unswizzled) > 0 and unswizzled[0] == 0xCC
-        except socket.timeout:
-            logger.warning("Command timed out")
-            return False
+            self._run_async(self.client.send_command(cmd))
+            return True
         except Exception as e:
             logger.error(f"Error sending command: {e}")
             return False
@@ -237,7 +223,7 @@ class ClientWindow(Gtk.ApplicationWindow):
         abs_box.append(btn_move_abs)
 
     def _on_connect_clicked(self, btn):
-        if self.client._socket:
+        if self.client.is_connected:
             self.client.disconnect()
             self.status_label.set_text("● Disconnected")
             self.connect_btn.set_label("Connect")
@@ -267,55 +253,51 @@ class ClientWindow(Gtk.ApplicationWindow):
                     other_btn.set_active(False)
 
     def _on_jog(self, btn, axis: str, direction: int):
-        if not self.client._socket:
+        if not self.client.is_connected:
             return
+        assert self.client.client
 
         step_um = int(self.step_size * UM_PER_MM)
         MAX_REL_MOVE = 8000
 
         if step_um <= MAX_REL_MOVE:
             if axis == "x":
-                cmd = self.client.client.build_move_rel(direction * step_um, 0)
                 self._pos_x_um += direction * step_um
+                dx, dy = direction * step_um, 0
             else:
-                cmd = self.client.client.build_move_rel(
-                    0, -direction * step_um
-                )
                 self._pos_y_um += -direction * step_um
+                dx, dy = 0, -direction * step_um
+            self.client._run_async(self.client.client.move_rel(dx, dy))
         else:
             if axis == "x":
                 self._pos_x_um += direction * step_um
-                cmd = self.client.client.build_rapid_move_xy(
-                    self._pos_x_um, self._pos_y_um
-                )
             else:
                 self._pos_y_um += -direction * step_um
-                cmd = self.client.client.build_rapid_move_xy(
+            self.client._run_async(
+                self.client.client.rapid_move_xy(
                     self._pos_x_um, self._pos_y_um
                 )
+            )
 
-        logger.info(
-            f"Jog {axis} direction={direction} step_um={step_um} cmd={cmd.hex()}"
-        )
-        self.client.send_command(cmd)
+        logger.info(f"Jog {axis} direction={direction} step_um={step_um}")
         self.x_entry.set_text(str(self._pos_x_um / 1000.0))
         self.y_entry.set_text(str(self._pos_y_um / 1000.0))
 
     def _on_home(self, btn):
-        if not self.client._socket:
+        if not self.client.is_connected:
             return
+        assert self.client.client
 
         self._pos_x_um = 0
         self._pos_y_um = 0
-        cmd = self.client.client.build_home_xy()
-        logger.info(f"Home command: {cmd.hex()}")
-        self.client.send_command(cmd)
+        self.client._run_async(self.client.client.home_xy())
         self.x_entry.set_text("0")
         self.y_entry.set_text("0")
 
     def _on_move_abs(self, btn):
-        if not self.client._socket:
+        if not self.client.is_connected:
             return
+        assert self.client.client
 
         try:
             x_mm = float(self.x_entry.get_text())
@@ -326,9 +308,9 @@ class ClientWindow(Gtk.ApplicationWindow):
         x_um = int(x_mm * UM_PER_MM)
         y_um = int(y_mm * UM_PER_MM)
 
-        cmd = self.client.client.build_move_abs(x_um, y_um)
-        logger.info(f"Move abs: x={x_mm}mm y={y_mm}mm cmd={cmd.hex()}")
-        self.client.send_command(cmd)
+        self._pos_x_um = x_um
+        self._pos_y_um = y_um
+        self.client._run_async(self.client.client.move_abs(x_um, y_um))
 
 
 class ClientApp(Gtk.Application):
