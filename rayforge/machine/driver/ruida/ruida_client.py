@@ -8,6 +8,7 @@ sending them via transport, and parsing of responses.
 import logging
 from typing import Optional, TYPE_CHECKING
 
+from rayforge.machine.transport.transport import Transport
 from .ruida_protocol import RuidaResponse, RuidaState
 from .ruida_util import encode14, encode35
 
@@ -36,8 +37,10 @@ class RuidaClient:
         self,
         transport: "RuidaTransport",
         state: Optional[RuidaState] = None,
+        jog_transport: Optional[Transport] = None,
     ):
         self._transport = transport
+        self._jog_transport = jog_transport
         self.state = state or RuidaState()
 
     @property
@@ -47,9 +50,13 @@ class RuidaClient:
     async def connect(self) -> None:
         """Establish connection to the Ruida controller."""
         await self._transport.connect()
+        if self._jog_transport:
+            await self._jog_transport.connect()
 
     async def disconnect(self) -> None:
         """Close connection to the Ruida controller."""
+        if self._jog_transport:
+            await self._jog_transport.disconnect()
         await self._transport.disconnect()
 
     def parse_response(self, data: bytes) -> RuidaResponse:
@@ -63,6 +70,20 @@ class RuidaClient:
             command: Raw command bytes (will be swizzled and framed)
         """
         await self._transport.send_command(command)
+
+    async def send_jog_command(self, command: bytes) -> None:
+        """
+        Send a raw jog command to the controller.
+
+        Jog commands are sent without swizzling or framing.
+
+        Args:
+            command: Raw command bytes
+        """
+        if self._jog_transport:
+            await self._jog_transport.send(command)
+        else:
+            await self._transport.send(command)
 
     async def move_abs(self, x: int, y: int) -> None:
         """
@@ -233,6 +254,24 @@ class RuidaClient:
         """
         await self.send_command(self._build_jog_keyup(axis))
 
+    async def jog_rel_x(self, dx: int) -> None:
+        """
+        Jog X axis by relative offset using D8 command.
+
+        Args:
+            dx: X offset in micrometers
+        """
+        await self.send_jog_command(self._build_jog_rel_x(dx))
+
+    async def jog_rel_y(self, dy: int) -> None:
+        """
+        Jog Y axis by relative offset using D8 command.
+
+        Args:
+            dy: Y offset in micrometers
+        """
+        await self.send_jog_command(self._build_jog_rel_y(dy))
+
     async def set_power_immediate(
         self, laser: int, power_percent: float
     ) -> None:
@@ -311,7 +350,7 @@ class RuidaClient:
         self, x: int, y: int, origin: bool = False, light: bool = False
     ) -> bytes:
         opts = self._build_move_opts(origin, light)
-        return b"\xd9\x10" + bytes([opts]) + encode35(x) + encode35(y)
+        return b"\xd9\x60" + bytes([opts]) + encode35(x) + encode35(y)
 
     def _build_rapid_move_axis(
         self,
@@ -388,6 +427,14 @@ class RuidaClient:
         if axis.lower() not in axis_map:
             raise ValueError(f"Invalid axis: {axis}")
         return b"\xd8" + bytes([axis_map[axis.lower()]])
+
+    def _build_jog_rel_x(self, dx: int) -> bytes:
+        """Build D8 command for relative X jog."""
+        return b"\xd9\x10\x02" + encode35(dx)
+
+    def _build_jog_rel_y(self, dy: int) -> bytes:
+        """Build D8 command for relative Y jog."""
+        return b"\xd9\x11\x02" + encode35(dy)
 
     def _build_power_immediate(
         self, laser: int, power_percent: float
