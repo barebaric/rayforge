@@ -290,13 +290,13 @@ def estimate_packet_length(payload: bytes) -> int:
         return 2
 
     if cmd == 0x88:
-        if len(payload) < 7:
-            return -1
-        return 7
-
-    if cmd == 0x89:
         if len(payload) < 11:
             return -1
         return 11
+
+    if cmd == 0x89:
+        if len(payload) < 5:
+            return -1
+        return 5
 
     return len(payload)
