@@ -181,6 +181,16 @@ class Driver(ABC):
         """
         pass
 
+    @property
+    def supported_wcs(self) -> List[str]:
+        """
+        Returns the list of supported mutable Work Coordinate Systems.
+
+        The first item should be the default WCS for this driver.
+        Drivers may override this to provide driver-specific WCS names.
+        """
+        return ["G54", "G55", "G56", "G57", "G58", "G59"]
+
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         self._context = context
         self._machine = machine
@@ -494,6 +504,19 @@ class Driver(ABC):
             The active WCS string if found, otherwise None.
         """
         return None
+
+    async def select_wcs(self, wcs: str) -> None:
+        """
+        Selects the active Work Coordinate System on the controller.
+
+        For G-code based controllers (GRBL, Smoothie), this is typically
+        done via G-code commands during job execution. Drivers that require
+        immediate selection should override this method.
+
+        Args:
+            wcs: The WCS slot to select (e.g., "G54", "REF0", "MACHINE")
+        """
+        pass
 
     @abstractmethod
     async def run_probe_cycle(

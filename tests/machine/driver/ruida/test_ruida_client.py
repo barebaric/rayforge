@@ -20,6 +20,7 @@ class TestRuidaClient:
                 "send_command",
                 "is_connected",
                 "received",
+                "decoded_received",
                 "status_changed",
             ]
         )
@@ -30,6 +31,8 @@ class TestRuidaClient:
         self.mock_transport.is_connected = False
         self.mock_transport.received = MagicMock()
         self.mock_transport.received.connect = MagicMock()
+        self.mock_transport.decoded_received = MagicMock()
+        self.mock_transport.decoded_received.connect = MagicMock()
         self.mock_transport.status_changed = MagicMock()
         self.mock_transport.status_changed.connect = MagicMock()
 
@@ -123,6 +126,7 @@ class TestRuidaClientAirAssist:
                 "send_command",
                 "is_connected",
                 "received",
+                "decoded_received",
                 "status_changed",
             ]
         )
@@ -133,6 +137,8 @@ class TestRuidaClientAirAssist:
         self.mock_transport.is_connected = False
         self.mock_transport.received = MagicMock()
         self.mock_transport.received.connect = MagicMock()
+        self.mock_transport.decoded_received = MagicMock()
+        self.mock_transport.decoded_received.connect = MagicMock()
         self.mock_transport.status_changed = MagicMock()
         self.mock_transport.status_changed.connect = MagicMock()
 
@@ -167,6 +173,7 @@ class TestRuidaClientSelectLayer:
                 "send_command",
                 "is_connected",
                 "received",
+                "decoded_received",
                 "status_changed",
             ]
         )
@@ -177,6 +184,8 @@ class TestRuidaClientSelectLayer:
         self.mock_transport.is_connected = False
         self.mock_transport.received = MagicMock()
         self.mock_transport.received.connect = MagicMock()
+        self.mock_transport.decoded_received = MagicMock()
+        self.mock_transport.decoded_received.connect = MagicMock()
         self.mock_transport.status_changed = MagicMock()
         self.mock_transport.status_changed.connect = MagicMock()
 
@@ -211,6 +220,7 @@ class TestRuidaClientSendRaw:
                 "send_command",
                 "is_connected",
                 "received",
+                "decoded_received",
                 "status_changed",
             ]
         )
@@ -221,6 +231,8 @@ class TestRuidaClientSendRaw:
         self.mock_transport.is_connected = False
         self.mock_transport.received = MagicMock()
         self.mock_transport.received.connect = MagicMock()
+        self.mock_transport.decoded_received = MagicMock()
+        self.mock_transport.decoded_received.connect = MagicMock()
         self.mock_transport.status_changed = MagicMock()
         self.mock_transport.status_changed.connect = MagicMock()
 
@@ -252,6 +264,7 @@ class TestRuidaClientJogCommands:
                 "send_command",
                 "is_connected",
                 "received",
+                "decoded_received",
                 "status_changed",
             ]
         )
@@ -262,6 +275,8 @@ class TestRuidaClientJogCommands:
         self.mock_transport.is_connected = False
         self.mock_transport.received = MagicMock()
         self.mock_transport.received.connect = MagicMock()
+        self.mock_transport.decoded_received = MagicMock()
+        self.mock_transport.decoded_received.connect = MagicMock()
         self.mock_transport.status_changed = MagicMock()
         self.mock_transport.status_changed.connect = MagicMock()
 
@@ -323,6 +338,7 @@ class TestRuidaClientJogWithoutJogTransport:
                 "send_command",
                 "is_connected",
                 "received",
+                "decoded_received",
                 "status_changed",
             ]
         )
@@ -333,6 +349,8 @@ class TestRuidaClientJogWithoutJogTransport:
         self.mock_transport.is_connected = False
         self.mock_transport.received = MagicMock()
         self.mock_transport.received.connect = MagicMock()
+        self.mock_transport.decoded_received = MagicMock()
+        self.mock_transport.decoded_received.connect = MagicMock()
         self.mock_transport.status_changed = MagicMock()
         self.mock_transport.status_changed.connect = MagicMock()
 
@@ -367,6 +385,7 @@ class TestRuidaClientPowerCommands:
                 "send_command",
                 "is_connected",
                 "received",
+                "decoded_received",
                 "status_changed",
             ]
         )
@@ -377,6 +396,8 @@ class TestRuidaClientPowerCommands:
         self.mock_transport.is_connected = False
         self.mock_transport.received = MagicMock()
         self.mock_transport.received.connect = MagicMock()
+        self.mock_transport.decoded_received = MagicMock()
+        self.mock_transport.decoded_received.connect = MagicMock()
         self.mock_transport.status_changed = MagicMock()
         self.mock_transport.status_changed.connect = MagicMock()
 
@@ -421,6 +442,7 @@ class TestRuidaClientSpeedCommands:
                 "send_command",
                 "is_connected",
                 "received",
+                "decoded_received",
                 "status_changed",
             ]
         )
@@ -431,6 +453,8 @@ class TestRuidaClientSpeedCommands:
         self.mock_transport.is_connected = False
         self.mock_transport.received = MagicMock()
         self.mock_transport.received.connect = MagicMock()
+        self.mock_transport.decoded_received = MagicMock()
+        self.mock_transport.decoded_received.connect = MagicMock()
         self.mock_transport.status_changed = MagicMock()
         self.mock_transport.status_changed.connect = MagicMock()
 
@@ -465,6 +489,7 @@ class TestRuidaClientEndOfFile:
                 "send_command",
                 "is_connected",
                 "received",
+                "decoded_received",
                 "status_changed",
             ]
         )
@@ -475,6 +500,8 @@ class TestRuidaClientEndOfFile:
         self.mock_transport.is_connected = False
         self.mock_transport.received = MagicMock()
         self.mock_transport.received.connect = MagicMock()
+        self.mock_transport.decoded_received = MagicMock()
+        self.mock_transport.decoded_received.connect = MagicMock()
         self.mock_transport.status_changed = MagicMock()
         self.mock_transport.status_changed.connect = MagicMock()
 

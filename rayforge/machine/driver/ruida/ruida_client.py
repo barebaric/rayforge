@@ -5,12 +5,18 @@ Handles generation of commands to send to a Ruida laser controller,
 sending them via transport, and parsing of responses.
 """
 
+import asyncio
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Dict, Optional, TYPE_CHECKING
 
 from blinker import Signal
 
 from rayforge.machine.transport.transport import Transport
+from .ruida_maps import (
+    REF_POINT_COMMANDS,
+    REF_POINT_MODE_TO_NAME,
+    REF_POINT_OFFSET_ADDRESSES,
+)
 from .ruida_protocol import RuidaResponse, RuidaState
 from .ruida_util import encode14, encode35, decode35
 
@@ -44,21 +50,37 @@ class RuidaClient:
         self._transport = transport
         self._jog_transport = jog_transport
         self.state = state or RuidaState()
+        self._pending_mem_reads: Dict[int, asyncio.Future] = {}
         self.position_updated = Signal()
+        self.state_changed = Signal()
+
+        self._transport.decoded_received.connect(self._handle_response)
 
     @property
     def is_connected(self) -> bool:
         return self._transport.is_connected
 
-    def handle_response(self, data: bytes) -> None:
+    def _handle_response(self, sender, data: bytes) -> None:
         """
-        Handle a response from the controller.
+        Handle decoded data from the transport layer.
 
-        Parses DA memory read responses and emits position_updated signal.
+        Parses DA memory read responses and emits signals.
+        Also resolves any pending synchronous memory reads.
+
+        Args:
+            sender: The signal sender (unused)
+            data: The decoded response data
         """
+        pending = list(self._pending_mem_reads.keys())
+        logger.debug(f"handle_response: {data.hex()} (pending: {pending})")
         if len(data) >= 14 and data[0] == 0xDA and data[1] == 0x01:
             mem_address = (data[2] << 8) | data[3]
             value = decode35(data[4:9])
+
+            if mem_address in self._pending_mem_reads:
+                future = self._pending_mem_reads.pop(mem_address)
+                if not future.done():
+                    future.set_result(value)
 
             axis = None
             if mem_address == 0x0421:
@@ -77,6 +99,8 @@ class RuidaClient:
                     f"(mem 0x{mem_address:04X})"
                 )
                 self.position_updated.send(self, axis=axis, value_um=value)
+
+        self.state_changed.send(self)
 
     async def connect(self) -> None:
         """Establish connection to the Ruida controller."""
@@ -263,8 +287,16 @@ class RuidaClient:
         await self.send_command(self._build_ref_point_1())
 
     async def set_ref_point_2(self) -> None:
-        """Set reference point 2 (current position)."""
+        """Set reference point 2 (machine zero/absolute position)."""
         await self.send_command(self._build_ref_point_2())
+
+    async def set_absolute_mode(self) -> None:
+        """Set absolute coordinate mode."""
+        await self.send_command(b"\xe6\x01")
+
+    async def commit_ref_point(self) -> None:
+        """Commit the current reference point setting."""
+        await self.send_command(b"\xf0")
 
     async def jog_start(self, axis: str, direction: int) -> None:
         """
@@ -531,7 +563,7 @@ class RuidaClient:
         """
         await self._transport.send(data)
 
-    def build_read_memory(self, mem_address: int) -> bytes:
+    def _build_read_memory(self, mem_address: int) -> bytes:
         """
         Build command to read from controller memory.
 
@@ -545,14 +577,14 @@ class RuidaClient:
         mem_low = mem_address & 0xFF
         return bytes([0xDA, 0x00, mem_high, mem_low])
 
-    async def read_memory(self, mem_address: int) -> None:
+    async def _read_memory(self, mem_address: int) -> None:
         """
         Send a memory read request to the controller.
 
         Args:
             mem_address: Memory address to read (e.g., 0x0421 for Current X)
         """
-        await self.send_command(self.build_read_memory(mem_address))
+        await self.send_command(self._build_read_memory(mem_address))
 
     async def get_position(self) -> tuple[int, int, int]:
         """
@@ -566,7 +598,132 @@ class RuidaClient:
             Tuple of (x, y, z) in micrometers
             (may be stale until response received)
         """
-        await self.read_memory(0x0421)
-        await self.read_memory(0x0431)
-        await self.read_memory(0x0441)
+        await self._read_memory(0x0421)
+        await self._read_memory(0x0431)
+        await self._read_memory(0x0441)
         return (self.state.x, self.state.y, self.state.z)
+
+    def _build_write_memory(self, mem_address: int, value: int) -> bytes:
+        """
+        Build command to write to controller memory.
+
+        Args:
+            mem_address: Memory address (e.g., 0x0224 for Position Point 0 X)
+            value: Value to write in micrometers
+
+        Returns:
+            Command bytes to send
+        """
+        mem_high = (mem_address >> 8) & 0xFF
+        mem_low = mem_address & 0xFF
+        encoded_value = encode35(value)
+        return (
+            bytes([0xDA, 0x01, mem_high, mem_low])
+            + encoded_value
+            + encoded_value
+        )
+
+    async def _write_memory(self, mem_address: int, value: int) -> None:
+        """
+        Write a value to controller memory.
+
+        Args:
+            mem_address: Memory address to write
+            value: Value to write (will be encoded as 35-bit signed)
+        """
+        await self.send_command(self._build_write_memory(mem_address, value))
+
+    async def _read_memory_wait(
+        self, mem_address: int, timeout: float = 2.0
+    ) -> Optional[int]:
+        """
+        Read a value from controller memory and wait for response.
+
+        Args:
+            mem_address: Memory address to read
+            timeout: Maximum time to wait for response in seconds
+
+        Returns:
+            Decoded value or None if timeout
+        """
+        loop = asyncio.get_event_loop()
+        future = loop.create_future()
+        self._pending_mem_reads[mem_address] = future
+
+        try:
+            await self._read_memory(mem_address)
+            return await asyncio.wait_for(future, timeout)
+        except asyncio.TimeoutError:
+            self._pending_mem_reads.pop(mem_address, None)
+            logger.warning(f"Timeout reading memory 0x{mem_address:04X}")
+            return None
+
+    async def set_ref_point_offset(
+        self, ref_point: str, x_um: int, y_um: int
+    ) -> None:
+        """
+        Set the offset for a reference point.
+
+        Args:
+            ref_point: "REF0" or "REF1"
+            x_um: X offset in micrometers
+            y_um: Y offset in micrometers
+        """
+        if ref_point not in REF_POINT_OFFSET_ADDRESSES:
+            raise ValueError(f"Unknown reference point: {ref_point}")
+
+        x_addr, y_addr = REF_POINT_OFFSET_ADDRESSES[ref_point]
+        await self._write_memory(x_addr, x_um)
+        await self._write_memory(y_addr, y_um)
+
+    async def get_ref_point_offset(
+        self, ref_point: str
+    ) -> Optional[tuple[int, int]]:
+        """
+        Get the offset for a reference point.
+
+        Args:
+            ref_point: "REF0" or "REF1"
+
+        Returns:
+            Tuple of (x_um, y_um) or None if read failed
+        """
+        if ref_point not in REF_POINT_OFFSET_ADDRESSES:
+            raise ValueError(f"Unknown reference point: {ref_point}")
+
+        x_addr, y_addr = REF_POINT_OFFSET_ADDRESSES[ref_point]
+        x_um = await self._read_memory_wait(x_addr)
+        y_um = await self._read_memory_wait(y_addr)
+
+        if x_um is None or y_um is None:
+            return None
+        return (x_um, y_um)
+
+    @property
+    def ref_points(self) -> tuple[str, ...]:
+        """Return tuple of valid reference point names including MACHINE."""
+        return ("MACHINE",) + tuple(REF_POINT_OFFSET_ADDRESSES.keys())
+
+    async def select_ref_point(self, ref_point: str) -> None:
+        """
+        Select a reference point mode on the controller.
+
+        Args:
+            ref_point: "MACHINE", "REF0", or "REF1"
+        """
+        if ref_point not in REF_POINT_COMMANDS:
+            raise ValueError(f"Unknown reference point: {ref_point}")
+        await self.send_command(REF_POINT_COMMANDS[ref_point])
+
+    async def get_ref_point_mode(self) -> Optional[str]:
+        """
+        Get the current reference point mode from the controller.
+
+        Returns:
+            "MACHINE", "REF0", "REF1", or None if read failed
+        """
+        mode = await self._read_memory_wait(0x04F0)
+        if mode is None:
+            return None
+
+        return REF_POINT_MODE_TO_NAME.get(mode, "UNKNOWN")

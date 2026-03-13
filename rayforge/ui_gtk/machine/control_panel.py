@@ -255,11 +255,15 @@ class MachineControlPanel(Gtk.Box):
         """Handle WCS ComboRow selection change."""
         if not self.machine:
             return
+        machine = self.machine
         idx = combo_row.get_selected()
         if 0 <= idx < len(self.wcs_list):
             wcs = self.wcs_list[idx]
-            if self.machine.active_wcs != wcs:
-                self.machine.set_active_wcs(wcs)
+            if machine.active_wcs != wcs:
+                task_mgr.add_coroutine(
+                    lambda ctx, w=wcs: machine.controller.select_wcs(w),
+                    key=(machine.id, "select-wcs"),
+                )
         self._update_wcs_ui()
 
     def _on_zero_axis_clicked(self, button, axis):

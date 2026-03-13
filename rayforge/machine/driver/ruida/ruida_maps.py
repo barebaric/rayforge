@@ -558,6 +558,7 @@ DYNAMIC_MEMORY_KEYS: Dict[int, Tuple[str, str]] = {
     0x0471: ("Current B", "b"),
     0x0481: ("Current C", "c"),
     0x0491: ("Current D", "d"),
+    0x04F0: ("Ref Point Mode", "ref_point_mode"),
 }
 
 # =============================================================================
@@ -652,4 +653,31 @@ DA_VARIABLE_4_BYTE_SUBCOMMANDS: set = {
     0x7A,
     0x7B,
     0x7C,
+}
+
+REF_POINT_OFFSET_ADDRESSES: Dict[str, tuple[int, int]] = {
+    "REF0": (0x0224, 0x0234),
+    "REF1": (0x0228, 0x0238),
+}
+
+REF_POINT_COMMANDS: Dict[str, bytes] = {
+    "MACHINE": b"\xd8\x10",
+    "REF0": b"\xd8\x12",
+    "REF1": b"\xd8\x11",
+}
+
+REF_POINT_MODE_TO_NAME: Dict[int, str] = {
+    0: "REF0",
+    1: "REF1",
+    2: "MACHINE",
+}
+
+REF_POINT_NAME_TO_MODE: Dict[str, int] = {
+    v: k for k, v in REF_POINT_MODE_TO_NAME.items()
+}
+
+REF_POINT_MODE_TO_NAME: Dict[int, str] = {
+    0: "REF0",
+    1: "REF1",
+    2: "MACHINE",
 }
