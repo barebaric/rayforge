@@ -235,9 +235,19 @@ class RuidaDriver(Driver):
                 self._update_connection_status(TransportStatus.CONNECTED, "")
                 self.state.status = DeviceStatus.IDLE
                 self.state_changed.send(self, state=self.state)
+
+                card_info = await self._client.get_card_info()
+                if card_info:
+                    card_id, model_name = card_info
+                    device = (
+                        f"{model_name or 'Ruida controller'} "
+                        f"(Card ID: 0x{card_id:08X})"
+                    )
+                else:
+                    device = "Ruida controller"
+
                 logger.info(
-                    f"Connected to Ruida controller at "
-                    f"{self.host}:{self.port}",
+                    f"Connected to {device} at {self.host}:{self.port}",
                     extra=self._log_extra("MACHINE_EVENT"),
                 )
 

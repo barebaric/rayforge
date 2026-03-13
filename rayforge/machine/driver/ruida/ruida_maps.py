@@ -676,8 +676,8 @@ REF_POINT_NAME_TO_MODE: Dict[str, int] = {
     v: k for k, v in REF_POINT_MODE_TO_NAME.items()
 }
 
-REF_POINT_MODE_TO_NAME: Dict[int, str] = {
-    0: "REF0",
-    1: "REF1",
-    2: "MACHINE",
+CARD_ID_ADDRESS = 0x057E
+
+CARD_ID_TO_MODEL: Dict[int, str] = {
+    0x65106510: "RDC6442S",
 }
