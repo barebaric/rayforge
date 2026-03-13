@@ -50,7 +50,7 @@ async def ruida_simulator():
     sim = RuidaSimulator()
     host = "127.0.0.1"
     port = 50201
-    jog_port = 50207
+    jog_port = 50208
 
     main_udp = UdpServerTransport(host, port)
     main_transport = RuidaServerTransport(main_udp, magic=0x88)
@@ -781,7 +781,7 @@ async def test_reconnect_after_disconnect(driver, ruida_simulator):
 
     assert not driver.is_connected
 
-    driver._setup_implementation(host="127.0.0.1", port=50201, jog_port=50207)
+    driver._setup_implementation(host="127.0.0.1", port=50201, jog_port=50208)
     assert await wait_for_connection(driver)
 
     assert driver.is_connected
