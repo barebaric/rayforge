@@ -1033,13 +1033,14 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_wcs_selected_toolbar(self, sender, *, wcs: str):
         """Handles WCS selection from the main toolbar."""
         config = get_context().config
-        if not config.machine:
+        machine = config.machine
+        if not machine:
             return
         logger.debug(f"Toolbar WCS selected: {wcs}")
-        machine = config.machine
         if machine.active_wcs != wcs:
             task_mgr.add_coroutine(
-                lambda ctx, w=wcs: machine.switch_active_wcs(w)
+                lambda ctx, w=wcs: machine.switch_active_wcs(w),
+                key=(machine.id, "select-wcs"),
             )
 
     def _update_wcs_dropdown(self, machine: Optional[Machine], **kwargs):

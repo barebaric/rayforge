@@ -456,6 +456,20 @@ class MachineController:
         await self.driver.set_wcs_offset(slot, x, y, z)
         await self.driver.read_wcs_offsets()
 
+    async def select_wcs(self, wcs: str) -> None:
+        """
+        Selects the active Work Coordinate System.
+
+        If connected, sends the selection to the controller.
+        Updates the machine's active_wcs state.
+
+        Args:
+            wcs: The WCS slot to select (e.g., "G54", "REF0")
+        """
+        if self.machine.is_connected():
+            await self.driver.select_wcs(wcs)
+        self.machine.set_active_wcs(wcs)
+
     async def set_work_origin_here(
         self, axes: Axis, wcs_slot: Optional[str] = None
     ):
@@ -602,6 +616,14 @@ class MachineController:
         Delegates to the driver's machine_space_wcs_display_name property.
         """
         return self.driver.machine_space_wcs_display_name
+
+    @property
+    def supported_wcs(self) -> List[str]:
+        """
+        Returns the list of supported Work Coordinate Systems.
+        Delegates to the driver's supported_wcs property.
+        """
+        return self.driver.supported_wcs
 
     def get_setting_vars(self) -> List["VarSet"]:
         """

@@ -219,9 +219,9 @@ class Machine:
     @property
     def supported_wcs(self) -> List[str]:
         """
-        Returns a sorted list of supported mutable Work Coordinate Systems.
+        Returns the list of supported Work Coordinate Systems from the driver.
         """
-        return sorted(list(self.wcs_offsets.keys()))
+        return self.controller.supported_wcs
 
     @property
     def kinematics(self) -> Kinematics:
