@@ -444,13 +444,18 @@ async def test_set_wcs_offset_noop(driver):
 
 
 @pytest.mark.asyncio
-async def test_read_wcs_offsets_returns_empty(driver):
-    """Test that read_wcs_offsets returns empty dict."""
-    await driver.connect()
+async def test_read_wcs_offsets(driver, ruida_simulator):
+    """Test that read_wcs_offsets returns ref point offsets."""
+    sim, host, port, jog_port = ruida_simulator
+
+    assert await wait_for_connection(driver)
 
     offsets = await driver.read_wcs_offsets()
 
-    assert offsets == {}
+    assert "MACHINE" in offsets
+    assert offsets["MACHINE"] == (0.0, 0.0, 0.0)
+    assert "REF0" in offsets
+    assert "REF1" in offsets
 
     await driver.cleanup()
 

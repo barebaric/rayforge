@@ -42,6 +42,8 @@ def mock_machine(isolated_machine):
     isolated_machine.add_head(laser1)
     isolated_machine.add_head(laser2)
 
+    isolated_machine.active_wcs = "MACHINE"
+
     return isolated_machine
 
 
@@ -440,13 +442,13 @@ class TestJobMarkers:
     """Tests for job start/end markers."""
 
     def test_job_start(self, encoder, mock_machine, doc):
-        """Job start should emit comment marker."""
+        """Job start should emit reference point selection command."""
         ops = Ops()
         ops.job_start()
         result = encoder.encode(ops, mock_machine, doc)
 
-        assert result.driver_data["binary"] == b""
-        assert "; Job Start" in result.text
+        assert result.driver_data["binary"] == b"\xd8\x10"
+        assert "; Job Start - Ref Point: MACHINE" in result.text
 
     def test_job_end(self, encoder, mock_machine, doc):
         """Job end should emit EOF marker."""
@@ -468,8 +470,9 @@ class TestJobMarkers:
         result = encoder.encode(ops, mock_machine, doc)
 
         lines = result.text.split("\n")
-        assert lines[0] == "; Job Start"
+        assert "Job Start" in lines[0]
         assert lines[-1] == "; Job End"
+        assert result.driver_data["binary"].startswith(b"\xd8\x10")
         assert result.driver_data["binary"].endswith(b"\xd7")
 
 
@@ -643,7 +646,7 @@ class TestComplexJobs:
 
         lines = result.text.split("\n")
         assert len(lines) >= 9
-        assert lines[0] == "; Job Start"
+        assert "Job Start" in lines[0]
         assert lines[-1] == "; Job End"
 
         cut_lines = [line for line in lines if "CUT_ABS" in line]

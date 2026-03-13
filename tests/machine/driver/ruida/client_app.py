@@ -8,6 +8,8 @@ Sends movement commands to the simulator and displays the current position.
 import argparse
 import asyncio
 import logging
+import threading
+from concurrent.futures import Future
 from typing import Optional
 
 import gi
@@ -16,6 +18,7 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import GLib, Gtk
 
 from rayforge.machine.driver.ruida.ruida_client import RuidaClient
+from rayforge.machine.driver.ruida.ruida_maps import REF_POINT_COMMANDS
 from rayforge.machine.driver.ruida.ruida_transport import RuidaTransport
 from rayforge.machine.driver.ruida.ruida_util import UM_PER_MM
 from rayforge.machine.transport.udp import UdpTransport
@@ -38,6 +41,8 @@ class RuidaUdpClient:
         self.port = port
         self.magic = magic
         self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._thread: Optional[threading.Thread] = None
+        self._loop_ready = threading.Event()
         self._udp: Optional[UdpTransport] = None
         self._transport: Optional[RuidaTransport] = None
         self.client: Optional[RuidaClient] = None
@@ -46,17 +51,67 @@ class RuidaUdpClient:
     def is_connected(self) -> bool:
         return self._transport is not None and self._transport.is_connected
 
-    def _run_async(self, coro):
-        if self._loop is None:
-            self._loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self._loop)
-        return self._loop.run_until_complete(coro)
+    def _start_loop(self):
+        """Start the asyncio event loop in a background thread."""
+        if self._loop is not None and self._loop.is_running():
+            return
+
+        self._loop_ready.clear()
+        self._loop = asyncio.new_event_loop()
+        loop = self._loop
+
+        def run_loop():
+            asyncio.set_event_loop(loop)
+            loop.call_soon(self._loop_ready.set)
+            loop.run_forever()
+
+        self._thread = threading.Thread(target=run_loop, daemon=True)
+        self._thread.start()
+        self._loop_ready.wait(timeout=2.0)
+
+    def _stop_loop(self):
+        """Stop the asyncio event loop."""
+        if self._loop and self._loop.is_running():
+            self._loop.call_soon_threadsafe(self._loop.stop)
+            if self._thread:
+                self._thread.join(timeout=1.0)
+        self._loop = None
+        self._thread = None
+        self._loop_ready.clear()
+
+    def _run_async(self, coro, timeout: float = 5.0):
+        """
+        Run a coroutine in the background asyncio loop.
+
+        Args:
+            coro: Coroutine to run
+            timeout: Maximum time to wait for completion
+
+        Returns:
+            Result of the coroutine
+
+        Raises:
+            TimeoutError if the coroutine doesn't complete in time
+        """
+        if self._loop is None or not self._loop.is_running():
+            logger.debug("_run_async: starting loop")
+            self._start_loop()
+
+        assert self._loop is not None
+        logger.debug(
+            f"_run_async: submitting coroutine, loop running={self._loop.is_running()}"
+        )
+        future: Future = asyncio.run_coroutine_threadsafe(coro, self._loop)
+        return future.result(timeout=timeout)
 
     def connect(self):
+        logger.debug("connect: creating transports")
         self._udp = UdpTransport(self.host, self.port)
         self._transport = RuidaTransport(self._udp, self.magic)
         self.client = RuidaClient(self._transport)
+        logger.debug("connect: calling async connect")
         self._run_async(self.client.connect())
+        logger.debug("connect: async connect completed")
 
     def disconnect(self):
         if self.client:
@@ -222,6 +277,26 @@ class ClientWindow(Gtk.ApplicationWindow):
         btn_move_abs.set_hexpand(True)
         abs_box.append(btn_move_abs)
 
+        ref_frame = Gtk.Frame(label="Reference Point")
+        main_box.append(ref_frame)
+
+        ref_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        ref_box.set_margin_top(6)
+        ref_box.set_margin_bottom(6)
+        ref_box.set_margin_start(6)
+        ref_box.set_margin_end(6)
+        ref_frame.set_child(ref_box)
+
+        self.ref_buttons = {}
+        self.ref_point = "MACHINE"
+        for name in REF_POINT_COMMANDS.keys():
+            btn = Gtk.ToggleButton(label=name)
+            btn.connect("toggled", self._on_ref_toggled, name)
+            ref_box.append(btn)
+            self.ref_buttons[name] = btn
+            if name == self.ref_point:
+                btn.set_active(True)
+
     def _on_connect_clicked(self, btn):
         if self.client.is_connected:
             self.client.disconnect()
@@ -238,8 +313,26 @@ class ClientWindow(Gtk.ApplicationWindow):
                 f"● Connected to {self.client.host}:{self.client.port}"
             )
             self.connect_btn.set_label("Disconnect")
+            self._sync_ref_point_from_controller()
         except Exception as e:
             self.status_label.set_text(f"● Error: {e}")
+
+    def _sync_ref_point_from_controller(self):
+        """Query the controller's ref point mode and update UI."""
+        if not self.client.is_connected or not self.client.client:
+            return
+        mode = self.client._run_async(
+            self.client.client.get_ref_point_mode(),
+            timeout=2.0,
+        )
+        if mode and mode in self.ref_buttons:
+            self.ref_point = mode
+            self._update_ref_buttons_ui(mode)
+            logger.info(f"Synced ref point mode from controller: {mode}")
+
+    def _update_ref_buttons_ui(self, active_name: str):
+        for name, btn in self.ref_buttons.items():
+            btn.set_active(name == active_name)
 
     def _auto_connect(self):
         self._do_connect()
@@ -252,7 +345,19 @@ class ClientWindow(Gtk.ApplicationWindow):
                 if other_btn is not btn:
                     other_btn.set_active(False)
 
+    def _on_ref_toggled(self, btn, name: str):
+        if btn.get_active():
+            self.ref_point = name
+            for other_name, other_btn in self.ref_buttons.items():
+                if other_name != name:
+                    other_btn.set_active(False)
+            if self.client.is_connected and self.client.client:
+                self.client._run_async(
+                    self.client.client.select_ref_point(name)
+                )
+
     def _on_jog(self, btn, axis: str, direction: int):
+        logger.debug(f"_on_jog called: axis={axis} dir={direction}")
         if not self.client.is_connected:
             return
         assert self.client.client

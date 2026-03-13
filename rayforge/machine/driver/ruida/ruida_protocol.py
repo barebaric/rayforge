@@ -42,7 +42,7 @@ class RuidaState:
         self.jog_speed = 10000
         self.jog_active: Dict[str, int] = {"x": 0, "y": 0, "z": 0, "u": 0}
         self.memory_values: Dict[int, int] = {}
-        self.ref_point_mode = 0
+        self.ref_point_mode = 2
 
     def mem_lookup(self, mem: int) -> Tuple[str, int]:
         """Look up memory address and return (name, value)."""

@@ -71,7 +71,6 @@ class RuidaDriver(Driver):
         self._connection_task: Optional[asyncio.Task] = None
         self._keep_running = False
         self._is_connected = False
-        self._pending_mem_reads: Dict[int, asyncio.Future] = {}
 
     @property
     def machine_space_wcs(self) -> str:
@@ -80,6 +79,12 @@ class RuidaDriver(Driver):
     @property
     def machine_space_wcs_display_name(self) -> str:
         return _("Machine Coordinates")
+
+    @property
+    def supported_wcs(self) -> List[str]:
+        if not self._client:
+            return [self.machine_space_wcs]
+        return list(self._client.ref_points)
 
     @property
     def resource_uri(self) -> Optional[str]:
@@ -147,7 +152,7 @@ class RuidaDriver(Driver):
             self._ruida_transport, jog_transport=self._jog_udp_transport
         )
 
-        self._ruida_transport.decoded_received.connect(self._on_data_received)
+        self._client.state_changed.connect(self._on_state_changed)
         self._ruida_transport.status_changed.connect(self._on_status_changed)
         self._client.position_updated.connect(self._on_position_updated)
 
@@ -164,13 +169,11 @@ class RuidaDriver(Driver):
             self._connection_task = None
 
         if self._ruida_transport:
-            self._ruida_transport.decoded_received.disconnect(
-                self._on_data_received
-            )
             self._ruida_transport.status_changed.disconnect(
                 self._on_status_changed
             )
         if self._client:
+            self._client.state_changed.disconnect(self._on_state_changed)
             self._client.position_updated.disconnect(self._on_position_updated)
             await self._client.disconnect()
         if self._jog_udp_transport:
@@ -239,6 +242,7 @@ class RuidaDriver(Driver):
                 )
 
                 last_poll_time = 0.0
+                last_ref_poll_time = 0.0
 
                 while self._keep_running and self._is_connected:
                     self._response_received.clear()
@@ -265,6 +269,10 @@ class RuidaDriver(Driver):
                     ):
                         await self._poll_position()
                         last_poll_time = current_time
+
+                    if current_time - last_ref_poll_time >= 2.0:
+                        await self._poll_ref_point_mode()
+                        last_ref_poll_time = current_time
 
                     await asyncio.sleep(self.KEEPALIVE_INTERVAL)
 
@@ -309,6 +317,19 @@ class RuidaDriver(Driver):
             await self._client.get_position()
         except Exception as e:
             logger.debug(f"Error polling position: {e}")
+
+    async def _poll_ref_point_mode(self) -> None:
+        """Poll current ref point mode from controller."""
+        if not self._client or not self._is_connected:
+            return
+
+        try:
+            mode = await self._client.get_ref_point_mode()
+            if mode and mode != self._machine.active_wcs:
+                logger.debug(f"Ref point mode changed: {mode}")
+                self._machine.set_active_wcs(mode)
+        except Exception as e:
+            logger.debug(f"Error polling ref point mode: {e}")
 
     async def run(
         self,
@@ -448,14 +469,67 @@ class RuidaDriver(Driver):
     async def set_wcs_offset(
         self, wcs_slot: str, x: float, y: float, z: float
     ) -> None:
-        pass
+        """
+        Set a reference point offset on the controller.
+
+        Args:
+            wcs_slot: "REF0" or "REF1"
+            x, y, z: Offset in mm (z ignored, Ruida is 2D)
+        """
+        if wcs_slot == "MACHINE":
+            return
+
+        if not self._client:
+            return
+
+        if wcs_slot not in self._client.ref_points:
+            logger.warning(f"Unknown WCS slot: {wcs_slot}")
+            return
+
+        x_um = int(x * 1000)
+        y_um = int(y * 1000)
+
+        await self._client.set_ref_point_offset(wcs_slot, x_um, y_um)
+        self.wcs_updated.send(self, offsets={wcs_slot: (x, y, z)})
 
     async def read_wcs_offsets(self) -> Dict[str, Pos]:
-        self.wcs_updated.send(self, offsets={})
-        return {}
+        """
+        Read reference point offsets from the controller.
+
+        Returns offsets for REF0 and REF1 in mm. MACHINE is always zero.
+        """
+        offsets: Dict[str, Pos] = {"MACHINE": (0.0, 0.0, 0.0)}
+
+        if not self._client:
+            self.wcs_updated.send(self, offsets=offsets)
+            return offsets
+
+        for ref_point in self._client.ref_points:
+            if ref_point == "MACHINE":
+                continue
+            result = await self._client.get_ref_point_offset(ref_point)
+            if result is not None:
+                x_um, y_um = result
+                offsets[ref_point] = (x_um / 1000.0, y_um / 1000.0, 0.0)
+
+        self.wcs_updated.send(self, offsets=offsets)
+        return offsets
 
     async def read_parser_state(self) -> Optional[str]:
-        return None
+        if not self._client or not self._is_connected:
+            return None
+        return await self._client.get_ref_point_mode()
+
+    async def select_wcs(self, wcs: str) -> None:
+        """
+        Select a reference point mode on the controller.
+
+        Args:
+            wcs: "REF0", "REF1", or "MACHINE"
+        """
+        if not self._client:
+            return
+        await self._client.select_ref_point(wcs)
 
     async def run_probe_cycle(
         self, axis: Axis, max_travel: float, feed_rate: int
@@ -463,12 +537,8 @@ class RuidaDriver(Driver):
         self.probe_status_changed.send(self, message="Probe not supported")
         return None
 
-    def _on_data_received(self, sender, data: bytes) -> None:
-        logger.debug(f"Received response: {data.hex()}")
+    def _on_state_changed(self, sender) -> None:
         self._response_received.set()
-
-        if self._client:
-            self._client.handle_response(data)
 
     def _on_position_updated(self, sender, axis: str, value_um: int) -> None:
         """Handle position update from client."""

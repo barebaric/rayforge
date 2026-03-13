@@ -34,6 +34,7 @@ from ....pipeline.encoder.base import (
     MachineCodeOpMap,
     EncodedOutput,
 )
+from .ruida_maps import REF_POINT_COMMANDS
 from .ruida_util import encode14, encode35
 
 if TYPE_CHECKING:
@@ -163,7 +164,7 @@ class RuidaEncoder(OpsEncoder):
                 self._handle_scan_line(cmd, binary, text)
                 self.current_pos = cmd.end
             case JobStartCommand():
-                self._handle_job_start(binary, text)
+                self._handle_job_start(machine, binary, text)
             case JobEndCommand():
                 self._handle_job_end(binary, text)
             case LayerStartCommand():
@@ -328,11 +329,24 @@ class RuidaEncoder(OpsEncoder):
 
     def _handle_job_start(
         self,
+        machine: "Machine",
         binary: List[bytes],
         text: List[str],
     ) -> None:
-        """Handle JobStartCommand - mark beginning of job."""
-        text.append("; Job Start")
+        """
+        Handle JobStartCommand - select reference point and mark job start.
+
+        Raises:
+            ValueError: If active_wcs is not a valid Ruida reference point
+        """
+        active_wcs = machine.active_wcs
+        if active_wcs not in REF_POINT_COMMANDS:
+            raise ValueError(
+                f"Unknown WCS slot '{active_wcs}'. "
+                f"Valid options: {', '.join(REF_POINT_COMMANDS.keys())}"
+            )
+        binary.append(REF_POINT_COMMANDS[active_wcs])
+        text.append(f"; Job Start - Ref Point: {active_wcs}")
 
     def _handle_job_end(
         self,
