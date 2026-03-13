@@ -92,8 +92,36 @@ class SimulatorWindow(Gtk.ApplicationWindow):
             f"Ruida Simulator ({self.bed_x_mm:.0f}x{self.bed_y_mm:.0f}mm)"
         )
 
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.set_child(main_box)
+
         self.surface = self._create_surface()
-        self.set_child(self.surface)
+        self.surface.set_hexpand(True)
+        self.surface.set_vexpand(True)
+        main_box.append(self.surface)
+
+        self._status_bar = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, spacing=12
+        )
+        self._status_bar.set_margin_top(4)
+        self._status_bar.set_margin_bottom(4)
+        self._status_bar.set_margin_start(8)
+        self._status_bar.set_margin_end(8)
+        self._status_bar.set_hexpand(True)
+        self._status_bar.set_vexpand(False)
+
+        self._pos_label = Gtk.Label(label="X: 0.00  Y: 0.00 mm")
+        self._pos_label.set_hexpand(True)
+        self._pos_label.set_halign(Gtk.Align.START)
+        self._status_bar.append(self._pos_label)
+
+        self._ref_store = Gtk.StringList.new(["MACHINE", "REF0", "REF1"])
+        self._ref_dropdown = Gtk.DropDown(model=self._ref_store)
+        self._ref_dropdown.set_selected(0)
+        self._ref_dropdown.connect("notify::selected", self._on_ref_changed)
+        self._status_bar.append(self._ref_dropdown)
+
+        main_box.append(self._status_bar)
 
         self._laser_dot_pos_mm = (0.0, 0.0)
         self._update_timeout_id = GLib.timeout_add(
@@ -147,7 +175,22 @@ class SimulatorWindow(Gtk.ApplicationWindow):
         display_y_mm = self.bed_y_mm - sim_y_um / 1000.0
 
         self._set_laser_dot_position(display_x_mm, display_y_mm)
+
+        self._pos_label.set_text(
+            f"X: {display_x_mm:.2f}  Y: {display_y_mm:.2f} mm"
+        )
+
+        ref_mode_to_idx = {2: 0, 0: 1, 1: 2}
+        idx = ref_mode_to_idx.get(self.simulator.ref_point_mode, 0)
+        if self._ref_dropdown.get_selected() != idx:
+            self._ref_dropdown.set_selected(idx)
+
         return True
+
+    def _on_ref_changed(self, dropdown, param):
+        idx = dropdown.get_selected()
+        idx_to_mode = {0: 2, 1: 0, 2: 1}
+        self.simulator.state.ref_point_mode = idx_to_mode.get(idx, 2)
 
     def _handle_main_packet(self, data: bytes, addr: Tuple[str, int]):
         logger.info(f"Main packet from {addr}: {data.hex()}")
