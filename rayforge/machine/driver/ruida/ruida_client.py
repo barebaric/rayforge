@@ -13,6 +13,8 @@ from blinker import Signal
 
 from rayforge.machine.transport.transport import Transport
 from .ruida_maps import (
+    CARD_ID_ADDRESS,
+    CARD_ID_TO_MODEL,
     REF_POINT_COMMANDS,
     REF_POINT_MODE_TO_NAME,
     REF_POINT_OFFSET_ADDRESSES,
@@ -727,3 +729,42 @@ class RuidaClient:
             return None
 
         return REF_POINT_MODE_TO_NAME.get(mode, "UNKNOWN")
+
+    async def get_card_id(self) -> Optional[int]:
+        """
+        Get the card ID from the controller.
+
+        Returns:
+            Card ID (e.g., 0x65106510) or None if read failed
+        """
+        return await self._read_memory_wait(CARD_ID_ADDRESS)
+
+    async def get_model_name(self) -> Optional[str]:
+        """
+        Get the controller model name.
+
+        Returns:
+            Model name (e.g., "RDC6442S") or None if unknown/read failed
+        """
+        card_id = await self.get_card_id()
+        if card_id is None:
+            return None
+
+        return CARD_ID_TO_MODEL.get(card_id, f"Unknown (0x{card_id:08X})")
+
+    async def get_card_info(
+        self,
+    ) -> Optional[tuple[Optional[int], Optional[str]]]:
+        """
+        Get card ID and model name from the controller.
+
+        Returns:
+            Tuple of (card_id, model_name) or None if read failed.
+            model_name may be None if card_id is unknown.
+        """
+        card_id = await self.get_card_id()
+        if card_id is None:
+            return None
+
+        model_name = CARD_ID_TO_MODEL.get(card_id)
+        return (card_id, model_name)
