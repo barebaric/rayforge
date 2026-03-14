@@ -10,6 +10,7 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
+from rayforge.ui_gtk.shared.slider import create_slider_row
 from ..producers import ShrinkWrapProducer
 
 if TYPE_CHECKING:
@@ -40,23 +41,19 @@ class ShrinkWrapProducerSettingsWidget(
             **kwargs,
         )
 
-        # Gravity setting (Slider)
-        gravity_row = Adw.ActionRow(
-            title=_("Gravity"),
-            subtitle=_("Pulls the hull inward. 0.0 is a standard convex hull"),
-        )
         gravity_adj = Gtk.Adjustment(
             lower=0.0, upper=1.0, step_increment=0.01, page_increment=0.1
         )
-        gravity_scale = Gtk.Scale(
-            orientation=Gtk.Orientation.HORIZONTAL,
-            adjustment=gravity_adj,
-            digits=2,
-            draw_value=True,
-        )
         gravity_adj.set_value(producer.gravity)
-        gravity_scale.set_size_request(200, -1)
-        gravity_row.add_suffix(gravity_scale)
+        gravity_row, gravity_scale = create_slider_row(
+            title=_("Gravity"),
+            adjustment=gravity_adj,
+            subtitle=_("Pulls the hull inward. 0.0 is a standard convex hull"),
+            digits=2,
+            on_value_changed=lambda s: self._debounce(
+                self._on_param_changed, "gravity", s.get_value()
+            ),
+        )
         self.add(gravity_row)
 
         # Cut Side
@@ -87,12 +84,6 @@ class ShrinkWrapProducerSettingsWidget(
         self.add(self.offset_row)
 
         # Connect signals
-        gravity_scale.connect(
-            "value-changed",
-            lambda scale: self._debounce(
-                self._on_param_changed, "gravity", scale.get_value()
-            ),
-        )
         self.offset_row.connect(
             "changed",
             lambda r: self._debounce(

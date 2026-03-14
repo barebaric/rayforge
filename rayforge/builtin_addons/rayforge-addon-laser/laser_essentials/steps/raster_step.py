@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Set, TYPE_CHECKING
+from typing import Optional, Protocol, Set, TYPE_CHECKING, cast
 from gettext import gettext as _
 
 from rayforge.core.capability import ENGRAVE, Capability
@@ -11,6 +11,12 @@ from ..producers import Rasterizer
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
+
+    class OverscanTransformerType(Protocol):
+        @staticmethod
+        def calculate_auto_distance(
+            step_speed: int, max_acceleration: int
+        ) -> float: ...
 
 
 class EngraveStep(Step):
@@ -56,7 +62,10 @@ class EngraveStep(Step):
         step.opsproducer_dict = cls.PRODUCER_CLASS().to_dict()
         per_wp, per_step = cls.get_default_transformers_dicts()
 
-        OverscanTransformer = transformer_registry.get("OverscanTransformer")
+        OverscanTransformer = cast(
+            "OverscanTransformerType",
+            transformer_registry.get("OverscanTransformer"),
+        )
         assert OverscanTransformer is not None
         auto_distance = OverscanTransformer.calculate_auto_distance(
             machine.max_cut_speed, machine.acceleration

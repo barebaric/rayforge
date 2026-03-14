@@ -10,6 +10,7 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_int
+from rayforge.ui_gtk.shared.slider import create_slider_row
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
@@ -43,20 +44,18 @@ class SmoothSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         switch_row.set_active(transformer.enabled)
         self.add(switch_row)
 
-        # Smoothness Amount Setting (Slider)
-        amount_row = Adw.ActionRow(title=_("Smoothness"))
         amount_adj = Gtk.Adjustment(
             lower=0, upper=100, step_increment=1, page_increment=10
         )
-        amount_scale = Gtk.Scale(
-            orientation=Gtk.Orientation.HORIZONTAL,
+        amount_adj.set_value(transformer.amount)
+        amount_row, amount_scale = create_slider_row(
+            title=_("Smoothness"),
             adjustment=amount_adj,
             digits=0,
-            draw_value=True,
+            on_value_changed=lambda s: self._debounce(
+                self._on_amount_changed, s
+            ),
         )
-        amount_adj.set_value(transformer.amount)
-        amount_scale.set_size_request(200, -1)
-        amount_row.add_suffix(amount_scale)
         self.add(amount_row)
 
         # Corner Angle Threshold Setting
@@ -85,10 +84,6 @@ class SmoothSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             self._on_sensitivity_toggled,
             amount_row,
             corner_row,
-        )
-        amount_scale.connect(
-            "value-changed",
-            lambda scale: self._debounce(self._on_amount_changed, scale),
         )
         corner_row.connect(
             "changed",

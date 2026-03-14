@@ -16,6 +16,7 @@ from ..shared.adwfix import get_spinrow_float
 from ..shared.keyboard import is_primary_modifier
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.slider import create_slider_row
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from .recipe_control_widget import RecipeControlWidget
 from .step_settings.placeholder import PlaceholderSettingsWidget
@@ -109,22 +110,17 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
             general_group.add(self.laser_row)
 
         # Power Slider
-        power_row = Adw.ActionRow(title=_("Power (%)"))
         self.power_adjustment = Gtk.Adjustment(
             upper=100, step_increment=0.1, page_increment=10
         )
-        power_scale = Gtk.Scale(
-            orientation=Gtk.Orientation.HORIZONTAL,
+        power_row, power_scale = create_slider_row(
+            title=_("Power (%)"),
             adjustment=self.power_adjustment,
             digits=1,
-            draw_value=True,
+            on_value_changed=lambda s: self._debounce(
+                self.on_power_changed, s
+            ),
         )
-        power_scale.set_size_request(300, -1)
-        power_scale.connect(
-            "value-changed",
-            lambda scale: self._debounce(self.on_power_changed, scale),
-        )
-        power_row.add_suffix(power_scale)
         general_group.add(power_row)
         # Set power row visibility based on producer capability
         power_row.set_visible(producer.supports_power if producer else False)
