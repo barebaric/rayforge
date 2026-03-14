@@ -154,3 +154,38 @@ class TestContourStep:
             t["name"] for t in restored.per_workpiece_transformers_dicts
         ]
         assert "CropTransformer" in wp_names
+
+    def test_optimize_dict_is_shared_between_lists(self):
+        step_registry.register(ContourStep)
+        data = {
+            "uid": "test-step",
+            "type": "step",
+            "step_type": "ContourStep",
+            "name": "Test",
+            "matrix": Matrix.identity().to_list(),
+            "typelabel": "Contour",
+            "visible": True,
+            "opsproducer_dict": {"type": "ContourProducer"},
+            "per_workpiece_transformers_dicts": [
+                {"name": "Optimize", "enabled": True},
+            ],
+            "per_step_transformers_dicts": [
+                {"name": "Optimize", "enabled": True},
+            ],
+            "children": [],
+        }
+
+        restored = Step.from_dict(data)
+
+        wp_optimize = next(
+            t
+            for t in restored.per_workpiece_transformers_dicts
+            if t["name"] == "Optimize"
+        )
+        step_optimize = next(
+            t
+            for t in restored.per_step_transformers_dicts
+            if t["name"] == "Optimize"
+        )
+
+        assert wp_optimize is step_optimize

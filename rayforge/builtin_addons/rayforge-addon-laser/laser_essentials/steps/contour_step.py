@@ -36,13 +36,14 @@ class ContourStep(Step):
         assert CropTransformer is not None
         assert Optimize is not None
         assert MultiPassTransformer is not None
+        optimize_dict = Optimize().to_dict()
         return [
             Smooth(enabled=False, amount=20).to_dict(),
             TabOpsTransformer().to_dict(),
             CropTransformer(enabled=False).to_dict(),
-            Optimize().to_dict(),
+            optimize_dict,
         ], [
-            Optimize().to_dict(),
+            optimize_dict,
             MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
         ]
 

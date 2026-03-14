@@ -410,9 +410,18 @@ class PostProcessingSettingsView(TrackedPreferencesPage):
             step.per_workpiece_transformers_dicts or []
         ) + (step.per_step_transformers_dicts or [])
 
+        # Deduplicate by object identity (same dict can be in both lists)
+        seen_ids = set()
+        unique_transformer_dicts = []
+        for t_dict in all_transformer_dicts:
+            dict_id = id(t_dict)
+            if dict_id not in seen_ids:
+                seen_ids.add(dict_id)
+                unique_transformer_dicts.append(t_dict)
+
         context = get_context()
         if context:
-            for t_dict in all_transformer_dicts:
+            for t_dict in unique_transformer_dicts:
                 transformer = OpsTransformer.from_dict(t_dict)
                 context.plugin_mgr.hook.transformer_settings_loaded(
                     dialog=self, step=step, transformer=transformer

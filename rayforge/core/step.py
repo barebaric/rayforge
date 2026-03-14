@@ -206,6 +206,9 @@ class Step(DocItem, ABC):
             loaded_per_step, default_per_step
         )
 
+        # Share dict references for transformers that appear in both lists
+        step._unify_shared_transformers()
+
         step.pixels_per_mm = data.get("pixels_per_mm", (100, 100))
         step.power = data.get("power", 1.0)
         step.max_power = data.get("max_power", 1000)
@@ -235,6 +238,24 @@ class Step(DocItem, ABC):
             if name and name not in loaded_names:
                 result.append(default_t)
         return result
+
+    def _unify_shared_transformers(self):
+        """
+        Ensures transformers that appear in both lists share the same dict.
+
+        Some transformers (like Optimize) are intended to be the same instance
+        in both per_workpiece and per_step lists. This method detects such
+        cases and unifies them to share the same dict reference.
+        """
+        per_wp_names = {
+            t.get("name"): t
+            for t in self.per_workpiece_transformers_dicts
+            if t.get("name")
+        }
+        for i, t in enumerate(self.per_step_transformers_dicts):
+            name = t.get("name")
+            if name and name in per_wp_names:
+                self.per_step_transformers_dicts[i] = per_wp_names[name]
 
     def get_settings(self) -> Dict[str, Any]:
         """

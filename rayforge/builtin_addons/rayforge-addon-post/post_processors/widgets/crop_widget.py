@@ -45,7 +45,10 @@ class CropTransformerSettingsWidget(
             **kwargs,
         )
 
-        switch_row = Adw.SwitchRow(title=_("Enable Crop-to-Stock"))
+        switch_row = Adw.SwitchRow(
+            title=_("Enable Crop-to-Stock"),
+            subtitle=_("Removes toolpaths extending beyond stock boundary"),
+        )
         switch_row.set_active(transformer.enabled)
         self.add(switch_row)
 
