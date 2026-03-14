@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-11 09:33+0100\n"
+"POT-Creation-Date: 2026-03-14 02:59+0100\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -4234,15 +4234,6 @@ msgstr ""
 "immer noch gespeichert werden."
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/material_selector.py
-msgid "Core Materials"
-msgstr "Kernmaterialien"
-
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-msgid "Read-only core library"
-msgstr "Schreibgeschützte Kernbibliothek"
-
-#: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "1 material"
 msgstr "1 Material"
 
@@ -4253,16 +4244,16 @@ msgstr "{count} Materialien"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #, python-brace-format
-msgid "Library from addon: ({source})"
-msgstr "Bibliothek aus Erweiterung: ({source})"
+msgid "{count} (Read-only)"
+msgstr "{count} (Schreibgeschützt)"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "Add New Library"
 msgstr "Neue Bibliothek hinzufügen"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
-msgid "No user libraries found."
-msgstr "Keine Benutzerbibliotheken gefunden."
+msgid "No libraries found."
+msgstr "Keine Bibliotheken gefunden."
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid ""
@@ -4798,7 +4789,6 @@ msgid "(No source file)"
 msgstr "(Keine Quelldatei)"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
-#: rayforge/pipeline/transformer/tabs_transformer.py
 msgid "Tabs"
 msgstr "Haltestege"
 
@@ -5648,85 +5638,9 @@ msgstr "Textur wird gerendert..."
 msgid "Rendering complete."
 msgstr "Rendering abgeschlossen."
 
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Optimize Path"
-msgstr "Pfad optimieren"
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Minimizes travel distance by reordering segments."
-msgstr "Minimiert die Verfahrstrecke durch Neuordnung der Segmente."
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Preprocessing for optimization..."
-msgstr "Vorbereitung für Optimierung..."
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Analyzing and bucketing path segments..."
-msgstr "Analysiere und gruppiere Pfadsegmente..."
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-#, python-brace-format
-msgid "Optimizing segment {i}/{total}..."
-msgstr "Optimiere Segment {i}/{total}..."
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Finding nearest paths..."
-msgstr "Suche nächstgelegene Pfade..."
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Applying 2-opt refinement..."
-msgstr "2-opt-Verfeinerung anwenden..."
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Reassembling optimized paths..."
-msgstr "Zusammenfügen optimierter Pfade..."
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Optimization complete"
-msgstr "Optimierung abgeschlossen"
-
 #: rayforge/pipeline/transformer/placeholder.py
 msgid "This transformer is not available."
 msgstr "Dieser Transformer ist nicht verfügbar."
-
-#: rayforge/pipeline/transformer/smooth_transformer.py
-msgid "Smooth Path"
-msgstr "Pfad glätten"
-
-#: rayforge/pipeline/transformer/smooth_transformer.py
-msgid "Smooths the path by applying a Gaussian filter."
-msgstr "Glättet den Pfad durch Anwendung eines Gauß-Filters."
-
-#: rayforge/pipeline/transformer/overscan_transformer.py
-msgid "Overscan"
-msgstr "Overscan"
-
-#: rayforge/pipeline/transformer/overscan_transformer.py
-msgid "Extends raster lines to ensure constant engraving speed."
-msgstr ""
-"Erweitert Rasterlinien, um eine konstante Gravurgeschwindigkeit zu "
-"gewährleisten."
-
-#: rayforge/pipeline/transformer/crop_transformer.py
-msgid "Crop to Stock"
-msgstr "Auf Material zuschneiden"
-
-#: rayforge/pipeline/transformer/crop_transformer.py
-msgid "Crops cutting lines to stock boundary."
-msgstr "Schneidet Schnittlinien auf Materialgrenze zu."
-
-#: rayforge/pipeline/transformer/multipass_transformer.py
-msgid "Multi-Pass"
-msgstr "Mehrfachdurchgang"
-
-#: rayforge/pipeline/transformer/multipass_transformer.py
-msgid "Repeats the path multiple times, optionally stepping down in Z."
-msgstr "Wiederholt den Pfad mehrmals, optional mit Z-Absenkung."
-
-#: rayforge/pipeline/transformer/tabs_transformer.py
-msgid "Creates holding tabs by adding gaps to cut paths"
-msgstr ""
-"Erstellt Haltestege, indem Lücken zu den Schnittpfaden hinzugefügt werden."
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The name of the currently active coordinate system (e.g. 'G54')."

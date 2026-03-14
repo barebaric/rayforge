@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-11 09:33+0100\n"
+"POT-Creation-Date: 2026-03-14 02:59+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -4186,15 +4186,6 @@ msgid ""
 msgstr "Не вдалося знайти необхідний компонент '{}'. Документ можна зберегти."
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/material_selector.py
-msgid "Core Materials"
-msgstr "Основні матеріали"
-
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-msgid "Read-only core library"
-msgstr "Основна бібліотека тільки для читання"
-
-#: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "1 material"
 msgstr "1 матеріал"
 
@@ -4205,16 +4196,16 @@ msgstr "{count} матеріалів"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #, python-brace-format
-msgid "Library from addon: ({source})"
-msgstr "Бібліотека з додатку: ({source})"
+msgid "{count} (Read-only)"
+msgstr "{count} (Тільки для читання)"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "Add New Library"
 msgstr "Додати нову бібліотеку"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
-msgid "No user libraries found."
-msgstr "Користувацькі бібліотеки не знайдено."
+msgid "No libraries found."
+msgstr "Бібліотек не знайдено."
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid ""
@@ -4746,7 +4737,6 @@ msgid "(No source file)"
 msgstr "(Немає вихідного файлу)"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
-#: rayforge/pipeline/transformer/tabs_transformer.py
 msgid "Tabs"
 msgstr "Табуляції"
 
@@ -5595,83 +5585,9 @@ msgstr "Рендеринг текстури..."
 msgid "Rendering complete."
 msgstr "Рендеринг завершено."
 
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Optimize Path"
-msgstr "Оптимізувати шлях"
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Minimizes travel distance by reordering segments."
-msgstr "Мінімізує відстань переміщення шляхом перевпорядкування сегментів."
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Preprocessing for optimization..."
-msgstr "Попередня обробка для оптимізації..."
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Analyzing and bucketing path segments..."
-msgstr "Аналіз та групування сегментів шляху..."
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-#, python-brace-format
-msgid "Optimizing segment {i}/{total}..."
-msgstr "Оптимізація сегмента {i}/{total}..."
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Finding nearest paths..."
-msgstr "Пошук найближчих шляхів..."
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Applying 2-opt refinement..."
-msgstr "Застосування 2-opt уточнення..."
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Reassembling optimized paths..."
-msgstr "Повторне збирання оптимізованих шляхів..."
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Optimization complete"
-msgstr "Оптимізацію завершено"
-
 #: rayforge/pipeline/transformer/placeholder.py
 msgid "This transformer is not available."
 msgstr "Цей трансформатор недоступний."
-
-#: rayforge/pipeline/transformer/smooth_transformer.py
-msgid "Smooth Path"
-msgstr "Згладжування шляху"
-
-#: rayforge/pipeline/transformer/smooth_transformer.py
-msgid "Smooths the path by applying a Gaussian filter."
-msgstr "Згладжує шлях шляхом застосування гаусового фільтра."
-
-#: rayforge/pipeline/transformer/overscan_transformer.py
-msgid "Overscan"
-msgstr "Оверскан"
-
-#: rayforge/pipeline/transformer/overscan_transformer.py
-msgid "Extends raster lines to ensure constant engraving speed."
-msgstr ""
-"Розширює растрові лінії для забезпечення постійної швидкості гравіювання."
-
-#: rayforge/pipeline/transformer/crop_transformer.py
-msgid "Crop to Stock"
-msgstr "Обрізати до матеріалу"
-
-#: rayforge/pipeline/transformer/crop_transformer.py
-msgid "Crops cutting lines to stock boundary."
-msgstr "Обрізає лінії різу до межі матеріалу."
-
-#: rayforge/pipeline/transformer/multipass_transformer.py
-msgid "Multi-Pass"
-msgstr "Багатопрохідний"
-
-#: rayforge/pipeline/transformer/multipass_transformer.py
-msgid "Repeats the path multiple times, optionally stepping down in Z."
-msgstr "Повторює шлях кілька разів, опціонально знижуючись по Z."
-
-#: rayforge/pipeline/transformer/tabs_transformer.py
-msgid "Creates holding tabs by adding gaps to cut paths"
-msgstr "Створює тримальні лапки шляхом додавання розривів до шляхів різання"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The name of the currently active coordinate system (e.g. 'G54')."

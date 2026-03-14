@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-11 09:33+0100\n"
+"POT-Creation-Date: 2026-03-14 02:59+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -4006,15 +4006,6 @@ msgid ""
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/material_selector.py
-msgid "Core Materials"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-msgid "Read-only core library"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "1 material"
 msgstr ""
 
@@ -4025,7 +4016,7 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #, python-brace-format
-msgid "Library from addon: ({source})"
+msgid "{count} (Read-only)"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
@@ -4033,7 +4024,7 @@ msgid "Add New Library"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
-msgid "No user libraries found."
+msgid "No libraries found."
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
@@ -4560,7 +4551,6 @@ msgid "(No source file)"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
-#: rayforge/pipeline/transformer/tabs_transformer.py
 msgid "Tabs"
 msgstr ""
 
@@ -5383,81 +5373,8 @@ msgstr ""
 msgid "Rendering complete."
 msgstr ""
 
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Optimize Path"
-msgstr ""
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Minimizes travel distance by reordering segments."
-msgstr ""
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Preprocessing for optimization..."
-msgstr ""
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Analyzing and bucketing path segments..."
-msgstr ""
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-#, python-brace-format
-msgid "Optimizing segment {i}/{total}..."
-msgstr ""
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Finding nearest paths..."
-msgstr ""
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Applying 2-opt refinement..."
-msgstr ""
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Reassembling optimized paths..."
-msgstr ""
-
-#: rayforge/pipeline/transformer/optimize_transformer.py
-msgid "Optimization complete"
-msgstr ""
-
 #: rayforge/pipeline/transformer/placeholder.py
 msgid "This transformer is not available."
-msgstr ""
-
-#: rayforge/pipeline/transformer/smooth_transformer.py
-msgid "Smooth Path"
-msgstr ""
-
-#: rayforge/pipeline/transformer/smooth_transformer.py
-msgid "Smooths the path by applying a Gaussian filter."
-msgstr ""
-
-#: rayforge/pipeline/transformer/overscan_transformer.py
-msgid "Overscan"
-msgstr ""
-
-#: rayforge/pipeline/transformer/overscan_transformer.py
-msgid "Extends raster lines to ensure constant engraving speed."
-msgstr ""
-
-#: rayforge/pipeline/transformer/crop_transformer.py
-msgid "Crop to Stock"
-msgstr ""
-
-#: rayforge/pipeline/transformer/crop_transformer.py
-msgid "Crops cutting lines to stock boundary."
-msgstr ""
-
-#: rayforge/pipeline/transformer/multipass_transformer.py
-msgid "Multi-Pass"
-msgstr ""
-
-#: rayforge/pipeline/transformer/multipass_transformer.py
-msgid "Repeats the path multiple times, optionally stepping down in Z."
-msgstr ""
-
-#: rayforge/pipeline/transformer/tabs_transformer.py
-msgid "Creates holding tabs by adding gaps to cut paths"
 msgstr ""
 
 #: rayforge/pipeline/encoder/context.py
