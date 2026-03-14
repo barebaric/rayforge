@@ -2,11 +2,11 @@
 Widget classes for transformer type for use in post-processing settings.
 """
 
-from .crop import CropTransformerSettingsWidget
-from .smooth import SmoothSettingsWidget
-from .multipass import MultiPassSettingsWidget
-from .optimize import OptimizeSettingsWidget
-from .overscan import OverscanSettingsWidget
+from .crop_widget import CropTransformerSettingsWidget
+from .smooth_widget import SmoothSettingsWidget
+from .multipass_widget import MultiPassSettingsWidget
+from .optimize_widget import OptimizeSettingsWidget
+from .overscan_widget import OverscanSettingsWidget
 from ..transformers import (
     CropTransformer,
     MultiPassTransformer,

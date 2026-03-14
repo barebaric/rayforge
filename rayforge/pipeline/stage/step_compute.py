@@ -187,7 +187,6 @@ def _process_artifact(
 def _apply_transformers_to_ops(
     ops: Ops,
     transformers: List["OpsTransformer"],
-    workpiece: WorkPiece,
     context: Optional[ProgressContext] = None,
     stock_geometries: Optional[List["Geometry"]] = None,
 ) -> None:
@@ -197,7 +196,6 @@ def _apply_transformers_to_ops(
     Args:
         ops: The ops to transform.
         transformers: List of transformers to apply.
-        workpiece: The workpiece context for the transformers.
         context: Optional progress context.
         stock_geometries: List of stock boundary geometries in world space.
     """
@@ -209,7 +207,10 @@ def _apply_transformers_to_ops(
             _("Applying '{t}'").format(t=transformer.label),
         )
         transformer.run(
-            ops, workpiece=workpiece, stock_geometries=stock_geometries
+            ops,
+            workpiece=None,
+            context=context,
+            stock_geometries=stock_geometries,
         )
 
 
@@ -251,7 +252,6 @@ def compute_step_artifacts(
     combined_ops = Ops()
     texture_instances = []
     num_items = len(artifacts)
-    workpiece_context = artifacts[0][2] if artifacts else None
 
     for i, (artifact, world_matrix, workpiece) in enumerate(artifacts):
         set_progress(context, i / num_items * 0.5)
@@ -259,18 +259,18 @@ def compute_step_artifacts(
         ops, texture_instance = _process_artifact(
             artifact, world_matrix, workpiece
         )
+        combined_ops.workpiece_start(workpiece.uid)
         combined_ops.extend(ops)
+        combined_ops.workpiece_end(workpiece.uid)
         if texture_instance is not None:
             texture_instances.append(texture_instance)
 
-    if workpiece_context:
-        _apply_transformers_to_ops(
-            combined_ops,
-            transformers,
-            workpiece_context,
-            context,
-            stock_geometries,
-        )
+    _apply_transformers_to_ops(
+        combined_ops,
+        transformers,
+        context,
+        stock_geometries,
+    )
 
     set_progress(context, 0.9)
 

@@ -39,6 +39,7 @@ class FrameStep(Step):
             CropTransformer(enabled=False).to_dict(),
             Optimize().to_dict(),
         ], [
+            Optimize().to_dict(),
             MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
         ]
 
