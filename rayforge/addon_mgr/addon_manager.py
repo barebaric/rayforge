@@ -459,6 +459,46 @@ class AddonManager:
 
         return updates_available
 
+    def load_addon_by_name(
+        self, addon_name: str, backend_only: bool = False
+    ) -> bool:
+        """
+        Load an addon by its canonical name.
+
+        Searches addon directories for an addon with the given name
+        and loads it if found.
+
+        Args:
+            addon_name: The canonical name of the addon to load.
+            backend_only: If True, only load backend entry points.
+
+        Returns:
+            True if the addon was loaded successfully, False otherwise.
+        """
+        for addon_dir in self.addon_dirs:
+            if not addon_dir.exists():
+                continue
+            for child in addon_dir.iterdir():
+                if not child.is_dir():
+                    continue
+                manifest_path = child / "rayforge-addon.yaml"
+                if not manifest_path.exists():
+                    continue
+                try:
+                    addon = Addon.load_from_directory(
+                        child, version=UnknownVersion
+                    )
+                    if addon.metadata.name == addon_name:
+                        self.load_addon(
+                            child.resolve(), backend_only=backend_only
+                        )
+                        self._call_registration_hooks()
+                        return addon_name in self.loaded_addons
+                except Exception:
+                    continue
+        logger.warning(f"Addon '{addon_name}' not found in addon directories")
+        return False
+
     def load_installed_addons(self, backend_only: bool = False):
         """
         Scans the addon directories and loads valid addons.
