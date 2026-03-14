@@ -38,13 +38,14 @@ class EngraveStep(Step):
         assert OverscanTransformer is not None
         assert Optimize is not None
         assert MultiPassTransformer is not None
+        optimize_dict = Optimize().to_dict()
         return [
             OverscanTransformer(
                 enabled=True, distance_mm=0, auto=True
             ).to_dict(),
-            Optimize().to_dict(),
+            optimize_dict,
         ], [
-            Optimize().to_dict(),
+            optimize_dict,
             MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
         ]
 

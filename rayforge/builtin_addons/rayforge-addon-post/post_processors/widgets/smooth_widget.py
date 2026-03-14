@@ -40,7 +40,10 @@ class SmoothSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
 
         # Main toggle switch
-        switch_row = Adw.SwitchRow(title=_("Enable Smoothing"))
+        switch_row = Adw.SwitchRow(
+            title=_("Enable Smoothing"),
+            subtitle=_("Smooths jagged edges using a Gaussian filter"),
+        )
         switch_row.set_active(transformer.enabled)
         self.add(switch_row)
 
@@ -50,6 +53,7 @@ class SmoothSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         amount_adj.set_value(transformer.amount)
         amount_row, amount_scale = create_slider_row(
             title=_("Smoothness"),
+            subtitle=_("Higher values produce smoother curves"),
             adjustment=amount_adj,
             digits=0,
             on_value_changed=lambda s: self._debounce(
