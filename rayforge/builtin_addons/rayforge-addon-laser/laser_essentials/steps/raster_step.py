@@ -5,11 +5,7 @@ from gettext import gettext as _
 
 from rayforge.core.capability import ENGRAVE, Capability
 from rayforge.core.step import Step
-from rayforge.pipeline.transformer import (
-    MultiPassTransformer,
-    Optimize,
-    OverscanTransformer,
-)
+from rayforge.pipeline.transformer.registry import transformer_registry
 from ..producers import Rasterizer
 
 
@@ -30,6 +26,9 @@ class EngraveStep(Step):
 
     @classmethod
     def get_default_transformers_dicts(cls) -> tuple[list, list]:
+        OverscanTransformer = transformer_registry.get("OverscanTransformer")
+        Optimize = transformer_registry.get("Optimize")
+        MultiPassTransformer = transformer_registry.get("MultiPassTransformer")
         return [
             OverscanTransformer(
                 enabled=True, distance_mm=0, auto=True
@@ -54,6 +53,7 @@ class EngraveStep(Step):
         step.opsproducer_dict = cls.PRODUCER_CLASS().to_dict()
         per_wp, per_step = cls.get_default_transformers_dicts()
 
+        OverscanTransformer = transformer_registry.get("OverscanTransformer")
         auto_distance = OverscanTransformer.calculate_auto_distance(
             machine.max_cut_speed, machine.acceleration
         )

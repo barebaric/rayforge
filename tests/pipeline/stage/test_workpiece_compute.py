@@ -13,7 +13,6 @@ from rayforge.core.ops import Ops
 from rayforge.machine.models.machine import Laser
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.transformer import Optimize
 from rayforge.pipeline.transformer.base import OpsTransformer
 from rayforge.pipeline.stage.workpiece_compute import (
     _create_initial_ops,
@@ -354,8 +353,11 @@ def test_apply_transformers_empty_list(base_workpiece, mock_progress_context):
     assert len(mock_progress_context.progress_calls) == 0
 
 
-def test_apply_transformers_disabled(base_workpiece, mock_progress_context):
+def test_apply_transformers_disabled(
+    base_workpiece, mock_progress_context, get_transformer
+):
     """Test _apply_transformers with disabled transformer."""
+    Optimize = get_transformer("Optimize")
     ops = Ops()
     transformer = Optimize()
     transformer.enabled = False
@@ -622,9 +624,10 @@ def test_compute_workpiece_artifact_raster_empty_workpiece(rasterizer_class):
 
 
 def test_compute_workpiece_artifact_with_transformers(
-    base_workpiece, contour_producer_class
+    base_workpiece, contour_producer_class, get_transformer
 ):
     """Test compute_workpiece_artifact applies transformers."""
+    Optimize = get_transformer("Optimize")
     opsproducer = contour_producer_class()
     laser = Laser()
     transformers: list[OpsTransformer] = [Optimize()]

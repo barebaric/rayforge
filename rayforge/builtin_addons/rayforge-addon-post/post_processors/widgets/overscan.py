@@ -7,9 +7,7 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
 from rayforge.context import get_context
-from rayforge.pipeline.transformer.overscan_transformer import (
-    OverscanTransformer,
-)
+from ..transformers import OverscanTransformer
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.shared.unit_spin_row import UnitSpinRowHelper
 

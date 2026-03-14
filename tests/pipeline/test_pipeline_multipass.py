@@ -5,35 +5,33 @@ import pytest
 import logging
 import asyncio
 from pathlib import Path
+from rayforge.context import get_context
 from rayforge.core.doc import Doc
+from rayforge.core.geo import Geometry
 from rayforge.core.layer import Layer
-from rayforge.core.step import Step
-from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.transformer.multipass_transformer import (
-    MultiPassTransformer,
-)
-from rayforge.image import SVG_RENDERER
+from rayforge.core.ops import Ops
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
+from rayforge.core.step import Step
 from rayforge.core.vectorization_spec import PassthroughSpec
-from rayforge.core.geo import Geometry
-from rayforge.core.ops import Ops
-from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.stage.workpiece_runner import (
-    make_workpiece_artifact_in_subprocess,
-)
-from rayforge.pipeline.stage.step_runner import (
-    make_step_artifact_in_subprocess,
-)
-from rayforge.pipeline.stage.job_runner import make_job_artifact_in_subprocess
+from rayforge.core.workpiece import WorkPiece
+from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
     StepRenderArtifact,
     StepOpsArtifact,
     JobArtifact,
 )
-from rayforge.context import get_context
+from rayforge.pipeline.coord import CoordinateSystem
+from rayforge.pipeline.pipeline import Pipeline
+from rayforge.pipeline.stage.job_runner import make_job_artifact_in_subprocess
+from rayforge.pipeline.stage.step_runner import (
+    make_step_artifact_in_subprocess,
+)
+from rayforge.pipeline.stage.workpiece_runner import (
+    make_workpiece_artifact_in_subprocess,
+)
+
 
 logger = logging.getLogger(__name__)
 
@@ -225,8 +223,11 @@ class TestPipelineMultipass:
 
         assert handler_called.called
 
-    def test_multipass_change_sends_job_assembly_invalidated(self):
+    def test_multipass_change_sends_job_assembly_invalidated(
+        self, get_transformer
+    ):
         """Test multipass changes send job_assembly_invalidated signal."""
+        MultiPassTransformer = get_transformer("MultiPassTransformer")
         doc = Doc()
         layer = Layer(name="Test Layer")
         step = Step(typelabel="Test Step", name="Test Step")

@@ -957,3 +957,39 @@ def mock_progress_context_v2():
     for sub in ctx._inner.sub_contexts:
         sub._progress_context.set_wrapper(sub)
     return ctx
+
+
+@pytest.fixture
+def get_transformer(context_initializer):
+    """Get a transformer class from the registry.
+
+    Requires context_initializer to ensure addons are loaded.
+
+    Usage:
+        def test_something(get_transformer):
+            Smooth = get_transformer("Smooth")
+            transformer = Smooth()
+    """
+    from rayforge.pipeline.transformer.registry import transformer_registry
+
+    def _get(name: str):
+        cls = transformer_registry.get(name)
+        if cls is None:
+            raise RuntimeError(f"Required transformer '{name}' not available")
+        return cls
+
+    return _get
+
+
+@pytest.fixture
+def get_transformer_sync(sync_addons_loaded):
+    """Sync version of get_transformer for tests that don't use context_initializer."""
+    from rayforge.pipeline.transformer.registry import transformer_registry
+
+    def _get(name: str):
+        cls = transformer_registry.get(name)
+        if cls is None:
+            raise RuntimeError(f"Required transformer '{name}' not available")
+        return cls
+
+    return _get

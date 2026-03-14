@@ -7,7 +7,7 @@ from rayforge.core.ops import (
     MovingCommand,
     ScanLinePowerCommand,
 )
-from rayforge.pipeline.transformer.optimize_transformer import (
+from post_processors.transformers import (
     Optimize,
     greedy_order_segments,
     two_opt,

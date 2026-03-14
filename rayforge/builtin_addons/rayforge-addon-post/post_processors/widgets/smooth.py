@@ -4,7 +4,7 @@ from gi.repository import Adw, Gtk
 from gettext import gettext as _
 
 from rayforge.core.undo import DictItemCommand
-from rayforge.pipeline.transformer.smooth_transformer import Smooth
+from ..transformers import Smooth
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,

@@ -1,8 +1,13 @@
 import math
 from unittest.mock import Mock
-from rayforge.core.ops import ArcToCommand, Ops
-from rayforge.pipeline.transformer.smooth_transformer import Smooth
+from rayforge.core.ops import (
+    ArcToCommand,
+    LineToCommand,
+    MoveToCommand,
+    Ops,
+)
 from tests.conftest import MockProgressContext
+from post_processors.transformers import Smooth
 
 
 def assert_points_almost_equal(p1: tuple, p2: tuple, places=5, msg=None):
@@ -47,16 +52,16 @@ def test_run_with_zero_amount():
     assert len(ops.commands) == len(original_ops.commands)
 
 
-def test_non_line_only_segment_is_unmodified():
-    """Tests that segments with arcs are unmodified."""
+def test_arcs_are_linearized_and_smoothed():
+    """Tests that segments with arcs are linearized and smoothed."""
     ops = Ops()
     ops.move_to(0, 0)
     ops.add(ArcToCommand((10, 10, 0), (5, 0), True))
-    original_ops = ops.copy()
     smoother = Smooth(amount=50)
     smoother.run(ops)
-    assert len(ops.commands) == len(original_ops.commands)
-    assert isinstance(ops.commands[1], ArcToCommand)
+    assert len(ops.commands) > 2
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert all(isinstance(c, LineToCommand) for c in ops.commands[1:])
 
 
 def test_smooth_open_path():

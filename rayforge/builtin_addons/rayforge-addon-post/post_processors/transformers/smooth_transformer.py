@@ -141,6 +141,7 @@ class Smooth(OpsTransformer):
         if self.amount == 0:
             return
 
+        ops.linearize_all()
         segments = list(ops.segments())
         ops.clear()
         total_segments = len(segments)

@@ -21,9 +21,6 @@ from rayforge.pipeline.artifact import (
 from rayforge.pipeline.stage.workpiece_runner import (
     make_workpiece_artifact_in_subprocess,
 )
-from rayforge.pipeline.transformer.multipass_transformer import (
-    MultiPassTransformer,
-)
 
 
 @pytest.fixture
@@ -287,8 +284,9 @@ def test_empty_producer_result_returns_none(
 
 
 def test_transformers_are_applied_before_put(
-    mock_proxy, base_workpiece, contour_producer_class
+    mock_proxy, base_workpiece, contour_producer_class, get_transformer
 ):
+    MultiPassTransformer = get_transformer("MultiPassTransformer")
     # Arrange
     step = Step(typelabel="Contour")
     step.opsproducer_dict = contour_producer_class().to_dict()
