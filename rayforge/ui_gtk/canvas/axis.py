@@ -348,6 +348,8 @@ class AxisRenderer:
             x_axis_start_mm = (workarea_right, x_axis_y)
             x_axis_end_mm = (workarea_left, x_axis_y)
         else:
+            y_axis_start_mm = (workarea_left, y_axis_start_mm[1])
+            y_axis_end_mm = (workarea_left, y_axis_end_mm[1])
             x_axis_start_mm = (workarea_left, x_axis_y)
             x_axis_end_mm = (workarea_right, x_axis_y)
 
