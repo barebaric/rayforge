@@ -9,6 +9,7 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
+from rayforge.ui_gtk.shared.slider import create_slider_row
 from ..producers import ContourProducer, CutOrder
 
 if TYPE_CHECKING:
@@ -95,28 +96,22 @@ class ContourProducerSettingsWidget(
         self.override_switch_row.set_active(producer.override_threshold)
         self.add(self.override_switch_row)
 
-        # Threshold Slider (using ActionRow + Gtk.Scale)
-        self.threshold_row = Adw.ActionRow(
-            title=_("Tracing Threshold"),
-            subtitle=_("Brightness level (0.0-1.0) to define edges"),
-        )
-
         threshold_adj = Gtk.Adjustment(
             lower=0.0,
             upper=1.0,
             step_increment=0.01,
             page_increment=0.1,
+            value=producer.threshold,
         )
-        threshold_adj.set_value(producer.threshold)
-
-        self.threshold_scale = Gtk.Scale(
-            orientation=Gtk.Orientation.HORIZONTAL,
+        self.threshold_row, self.threshold_scale = create_slider_row(
+            title=_("Tracing Threshold"),
             adjustment=threshold_adj,
+            subtitle=_("Brightness level (0.0-1.0) to define edges"),
             digits=2,
-            draw_value=True,
+            on_value_changed=lambda s: self._debounce(
+                self._on_param_changed, "threshold", s.get_value()
+            ),
         )
-        self.threshold_scale.set_size_request(150, -1)
-        self.threshold_row.add_suffix(self.threshold_scale)
         self.add(self.threshold_row)
 
         # Connect signals
@@ -137,12 +132,6 @@ class ContourProducerSettingsWidget(
 
         self.override_switch_row.connect(
             "notify::active", self._on_override_changed
-        )
-        self.threshold_scale.connect(
-            "value-changed",
-            lambda s: self._debounce(
-                self._on_param_changed, "threshold", s.get_value()
-            ),
         )
 
         # Set initial sensitivity

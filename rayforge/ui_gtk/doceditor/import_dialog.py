@@ -18,8 +18,9 @@ from ...core.workpiece import WorkPiece
 from ...doceditor.file_cmd import PreviewResult
 from ...image.base_importer import ImporterFeature
 from ...image.structures import ImportManifest
-from ..shared.patched_dialog_window import PatchedDialogWindow
 from ...core.matrix import Matrix
+from ..shared.patched_dialog_window import PatchedDialogWindow
+from ..shared.slider import create_slider
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -182,14 +183,10 @@ class ImportDialog(PatchedDialogWindow):
         self.threshold_adjustment = Gtk.Adjustment.new(
             0.5, 0.0, 1.0, 0.01, 0.1, 0
         )
-        self.threshold_scale = Gtk.Scale.new(
-            Gtk.Orientation.HORIZONTAL, self.threshold_adjustment
-        )
-        self.threshold_scale.set_size_request(200, -1)
-        self.threshold_scale.set_digits(2)
-        self.threshold_scale.set_value_pos(Gtk.PositionType.RIGHT)
-        self.threshold_scale.connect(
-            "value-changed", self._schedule_preview_update
+        self.threshold_scale = create_slider(
+            adjustment=self.threshold_adjustment,
+            digits=2,
+            on_value_changed=lambda s: self._schedule_preview_update(),
         )
         self.threshold_row = Adw.ActionRow(
             title=_("Threshold"),

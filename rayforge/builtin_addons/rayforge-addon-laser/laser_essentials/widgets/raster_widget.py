@@ -16,6 +16,7 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
 from rayforge.ui_gtk.shared.direction_preview import DirectionPreview
 from rayforge.ui_gtk.shared.histogram_preview import HistogramPreview
+from rayforge.ui_gtk.shared.slider import create_slider, create_slider_row
 from ..producers import DepthMode, Rasterizer
 
 if TYPE_CHECKING:
@@ -62,22 +63,13 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             page_increment=10,
             value=producer.threshold,
         )
-        self.threshold_scale = Gtk.Scale(
-            orientation=Gtk.Orientation.HORIZONTAL,
-            adjustment=threshold_adj,
-            digits=0,
-            draw_value=True,
-        )
-        self.threshold_scale.set_size_request(200, -1)
-        self.threshold_scale.connect(
-            "value-changed", self._on_threshold_changed
-        )
-
-        self.threshold_row = Adw.ActionRow(
+        self.threshold_row, self.threshold_scale = create_slider_row(
             title=_("Threshold"),
+            adjustment=threshold_adj,
             subtitle=_("Brightness cutoff for black/white (0-255)"),
+            digits=0,
+            on_value_changed=lambda s: self._on_threshold_changed(s),
         )
-        self.threshold_row.add_suffix(self.threshold_scale)
         self.add(self.threshold_row)
 
         # --- Dither Algorithm (for Dither mode) ---
@@ -144,20 +136,14 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             step_increment=0.1,
             value=producer.min_power * 100,
         )
-        self.min_power_scale = Gtk.Scale(
-            orientation=Gtk.Orientation.HORIZONTAL,
-            adjustment=self.min_power_adj,
-            digits=1,
-            draw_value=True,
-        )
-        self.min_power_scale.set_size_request(200, -1)
-        self.min_power_row = Adw.ActionRow(
+        self.min_power_row, self.min_power_scale = create_slider_row(
             title=_("Min Power"),
+            adjustment=self.min_power_adj,
             subtitle=_(
                 "Power for lightest areas, as a % of the step's main power"
             ),
+            digits=1,
         )
-        self.min_power_row.add_suffix(self.min_power_scale)
         self.add(self.min_power_row)
 
         self.max_power_adj = Gtk.Adjustment(
@@ -166,20 +152,14 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             step_increment=0.1,
             value=producer.max_power * 100,
         )
-        self.max_power_scale = Gtk.Scale(
-            orientation=Gtk.Orientation.HORIZONTAL,
-            adjustment=self.max_power_adj,
-            digits=1,
-            draw_value=True,
-        )
-        self.max_power_scale.set_size_request(200, -1)
-        self.max_power_row = Adw.ActionRow(
+        self.max_power_row, self.max_power_scale = create_slider_row(
             title=_("Max Power"),
+            adjustment=self.max_power_adj,
             subtitle=_(
                 "Power for darkest areas, as a % of the step's main power"
             ),
+            digits=1,
         )
-        self.max_power_row.add_suffix(self.max_power_scale)
         self.add(self.max_power_row)
 
         self._update_power_labels(producer.invert)
@@ -274,16 +254,13 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             page_increment=15,
             value=producer.scan_angle,
         )
-        self.angle_scale = Gtk.Scale(
-            orientation=Gtk.Orientation.HORIZONTAL,
+        self.angle_scale = create_slider(
             adjustment=angle_adj,
             digits=0,
-            draw_value=True,
+            on_value_changed=lambda s: self._on_angle_changed(s),
         )
         self.angle_scale.set_margin_top(30)
         self.angle_scale.set_margin_bottom(30)
-        self.angle_scale.set_size_request(200, -1)
-        self.angle_scale.connect("value-changed", self._on_angle_changed)
 
         self.direction_preview = DirectionPreview(
             producer.scan_angle, producer.cross_hatch

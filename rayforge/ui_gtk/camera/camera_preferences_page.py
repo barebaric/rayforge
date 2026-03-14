@@ -7,6 +7,7 @@ from ...camera.controller import CameraController
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.slider import create_slider
 from .properties_widget import CameraProperties
 from .selection_dialog import CameraSelectionDialog
 
@@ -176,13 +177,13 @@ class CameraEnhancementGroup(Adw.PreferencesGroup):
         self._controller: Optional[CameraController] = None
         self._updating = False
 
-        # Scale 0-100 mapped to denoise factor 0.0 - 0.95
-        self.denoise_scale = Gtk.Scale.new_with_range(
-            Gtk.Orientation.HORIZONTAL, 0, 100, 1
+        self.denoise_scale = create_slider(
+            adjustment=Gtk.Adjustment(
+                value=0, lower=0, upper=100, step_increment=1
+            ),
+            digits=0,
+            on_value_changed=self._on_value_changed,
         )
-        self.denoise_scale.set_hexpand(True)
-        self.denoise_scale.set_value_pos(Gtk.PositionType.LEFT)
-        self.denoise_scale.connect("value-changed", self._on_value_changed)
 
         row = Adw.ActionRow(title=_("Noise Reduction"))
         subtitle_text = _(

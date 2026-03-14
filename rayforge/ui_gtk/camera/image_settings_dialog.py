@@ -3,6 +3,7 @@ from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from ...camera.controller import CameraController
 from ..shared.patched_dialog_window import PatchedMessageDialog
+from ..shared.slider import create_slider_row
 from .display_widget import CameraDisplay
 
 logger = logging.getLogger(__name__)
@@ -95,33 +96,25 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
         image_group.add(self.auto_white_balance_row)
 
         # White Balance Manual Slider
-        self.wb_adjustment = Gtk.Adjustment(
-            lower=2500, upper=10000, step_increment=10, page_increment=100
-        )
-        self.white_balance_scale = Gtk.Scale.new(
-            Gtk.Orientation.HORIZONTAL, self.wb_adjustment
-        )
-        self.white_balance_scale.set_size_request(
-            200, -1
-        )  # Uniform slider width
-        self.white_balance_scale.set_valign(Gtk.Align.CENTER)
-        self.white_balance_scale.set_digits(0)
-        self.white_balance_scale.set_value_pos(Gtk.PositionType.RIGHT)
-
-        self.wb_adjustment.set_value(
+        initial_wb = (
             self.camera.white_balance
             if self.camera.white_balance is not None
             else 4000
         )
-        self.white_balance_scale.connect(
-            "value-changed", self.on_white_balance_changed
+        self.wb_adjustment = Gtk.Adjustment(
+            value=initial_wb,
+            lower=2500,
+            upper=10000,
+            step_increment=10,
+            page_increment=100,
         )
-
-        wb_row = Adw.ActionRow(
+        wb_row, self.white_balance_scale = create_slider_row(
             title=_("White Balance (Kelvin)"),
             subtitle=_("Color temperature for accurate color representation"),
+            adjustment=self.wb_adjustment,
+            digits=0,
+            on_value_changed=lambda s: self.on_white_balance_changed(s),
         )
-        wb_row.add_suffix(self.white_balance_scale)
         image_group.add(wb_row)
 
         self.white_balance_scale.set_sensitive(
@@ -248,21 +241,13 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
             step_increment=step,
             page_increment=page,
         )
-        scale = Gtk.Scale.new(Gtk.Orientation.HORIZONTAL, adj)
-        # Setting a 200px width for all scales makes them nicely aligned
-        # while leaving enough room so the title text won't vertically wrap
-        scale.set_size_request(200, -1)
-        scale.set_valign(Gtk.Align.CENTER)
-        scale.set_digits(digits)
-        scale.set_value_pos(Gtk.PositionType.RIGHT)
-        scale.connect("value-changed", callback)
-
-        row = Adw.ActionRow(title=title)
-        if subtitle:
-            row.set_subtitle(subtitle)
-        row.add_suffix(scale)
-
-        return row, scale
+        return create_slider_row(
+            title=title,
+            subtitle=subtitle,
+            adjustment=adj,
+            digits=digits,
+            on_value_changed=callback,
+        )
 
     def _create_spin_row(
         self, title: str, subtitle: str, value: float, config_key: str
@@ -286,9 +271,9 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
         return row
 
     # --- Callbacks ---
-    def on_white_balance_changed(self, adjustment):
+    def on_white_balance_changed(self, scale):
         if not self.auto_white_balance_switch.get_active():
-            self.camera.white_balance = adjustment.get_value()
+            self.camera.white_balance = scale.get_value()
 
     def on_auto_white_balance_toggled(self, switch_row, pspec):
         is_auto = switch_row.get_active()
@@ -298,20 +283,20 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
         else:
             self.camera.white_balance = self.wb_adjustment.get_value()
 
-    def on_contrast_changed(self, adjustment):
-        self.camera.contrast = adjustment.get_value()
+    def on_contrast_changed(self, scale):
+        self.camera.contrast = scale.get_value()
 
-    def on_brightness_changed(self, adjustment):
-        self.camera.brightness = adjustment.get_value()
+    def on_brightness_changed(self, scale):
+        self.camera.brightness = scale.get_value()
 
-    def on_denoise_changed(self, adjustment):
-        val = adjustment.get_value() / 100.0
+    def on_denoise_changed(self, scale):
+        val = scale.get_value() / 100.0
         if val > 0.95:
             val = 0.95
         self.camera.denoise = val
 
-    def on_transparency_changed(self, adjustment):
-        self.camera.transparency = adjustment.get_value()
+    def on_transparency_changed(self, scale):
+        self.camera.transparency = scale.get_value()
 
     def _on_distortion_value_changed(
         self, spin_row: Adw.SpinRow, pspec, config_key: str

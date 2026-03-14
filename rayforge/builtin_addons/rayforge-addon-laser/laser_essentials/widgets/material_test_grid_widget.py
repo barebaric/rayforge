@@ -15,6 +15,7 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
+from rayforge.ui_gtk.shared.slider import create_slider_row
 from ..producers import MaterialTestGridProducer
 
 if TYPE_CHECKING:
@@ -131,33 +132,23 @@ class MaterialTestGridSettingsWidget(
         self.min_power_adj = Gtk.Adjustment(
             lower=1, upper=100, step_increment=0.1, value=min_power
         )
-        self.min_power_scale = Gtk.Scale(
-            orientation=Gtk.Orientation.HORIZONTAL,
+        min_power_row, self.min_power_scale = create_slider_row(
+            title=_("Minimum Power (%)"),
             adjustment=self.min_power_adj,
+            subtitle=_("For first column"),
             digits=1,
-            draw_value=True,
-            width_request=200,
         )
-        min_power_row = Adw.ActionRow(
-            title=_("Minimum Power (%)"), subtitle=_("For first column")
-        )
-        min_power_row.add_suffix(self.min_power_scale)
         group.add(min_power_row)
 
         self.max_power_adj = Gtk.Adjustment(
             lower=1, upper=100, step_increment=0.1, value=max_power
         )
-        self.max_power_scale = Gtk.Scale(
-            orientation=Gtk.Orientation.HORIZONTAL,
+        max_power_row, self.max_power_scale = create_slider_row(
+            title=_("Maximum Power (%)"),
             adjustment=self.max_power_adj,
+            subtitle=_("For last column"),
             digits=1,
-            draw_value=True,
-            width_request=200,
         )
-        max_power_row = Adw.ActionRow(
-            title=_("Maximum Power (%)"), subtitle=_("For last column")
-        )
-        max_power_row.add_suffix(self.max_power_scale)
         group.add(max_power_row)
 
         self.min_power_handler_id = self.min_power_scale.connect(
@@ -305,25 +296,18 @@ class MaterialTestGridSettingsWidget(
             step_increment=0.1,
             value=producer.label_power_percent,
         )
-        power_scale = Gtk.Scale(
-            orientation=Gtk.Orientation.HORIZONTAL,
+        self.label_power_row, power_scale = create_slider_row(
+            title=_("Label Engrave Power (%)"),
             adjustment=power_adj,
             digits=1,
-            draw_value=True,
-            width_request=200,
+            on_value_changed=lambda s: self._debounce(
+                self._on_label_power_changed, s
+            ),
         )
-        self.label_power_row = Adw.ActionRow(
-            title=_("Label Engrave Power (%)")
-        )
-        self.label_power_row.add_suffix(power_scale)
         self.add(self.label_power_row)
 
         self.include_labels_switch.connect(
             "state-set", self._on_labels_toggled
-        )
-        power_scale.connect(
-            "value-changed",
-            lambda s: self._debounce(self._on_label_power_changed, s),
         )
 
         self._on_labels_toggled(
