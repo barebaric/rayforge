@@ -56,6 +56,7 @@ class VertexEncoder(OpsEncoder):
         # Track current state
         current_power = 0.0
         current_pos = (0.0, 0.0, 0.0)
+        is_initial_position = True
 
         for cmd in ops.commands:
             if isinstance(cmd, SetPowerCommand):
@@ -66,9 +67,14 @@ class VertexEncoder(OpsEncoder):
             match cmd:
                 case MoveToCommand():
                     start_pos, end_pos = current_pos, cmd.end
-                    travel_v.extend(start_pos)
-                    travel_v.extend(end_pos)
+                    # Skip the initial travel move from machine origin to first
+                    # cut point - this is positioning, not actual workpiece
+                    # travel
+                    if not is_initial_position:
+                        travel_v.extend(start_pos)
+                        travel_v.extend(end_pos)
                     current_pos = end_pos
+                    is_initial_position = False
 
                 case LineToCommand():
                     start_pos, end_pos = current_pos, cmd.end
@@ -83,6 +89,7 @@ class VertexEncoder(OpsEncoder):
                         zero_power_v.extend(start_pos)
                         zero_power_v.extend(end_pos)
                     current_pos = end_pos
+                    is_initial_position = False
 
                 case ArcToCommand():
                     start_pos = current_pos
@@ -100,6 +107,7 @@ class VertexEncoder(OpsEncoder):
                             zero_power_v.extend(seg_start)
                             zero_power_v.extend(seg_end)
                     current_pos = cmd.end
+                    is_initial_position = False
 
                 case ScanLinePowerCommand():
                     if cmd.end is not None:
@@ -109,6 +117,7 @@ class VertexEncoder(OpsEncoder):
                             zero_power_v,
                         )
                         current_pos = cmd.end
+                        is_initial_position = False
 
         # Convert lists to numpy arrays and return a VertexData object
         return VertexData(
