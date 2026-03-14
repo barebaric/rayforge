@@ -228,10 +228,15 @@ class TaskManager:
         """
 
         async def delayed_execution():
-            await asyncio.sleep(delay_ms / 1000.0)
-            self._main_thread_scheduler(callback, *args, **kwargs)
+            try:
+                await asyncio.sleep(delay_ms / 1000.0)
+                self._main_thread_scheduler(callback, *args, **kwargs)
+            except asyncio.CancelledError:
+                pass
 
-        return asyncio.run_coroutine_threadsafe(delayed_execution(), self.loop)
+        coro = delayed_execution()
+        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
+        return future
 
     async def run_in_executor(
         self, func: Callable[..., Any], *args: Any
