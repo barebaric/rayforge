@@ -29,6 +29,9 @@ class EngraveStep(Step):
         OverscanTransformer = transformer_registry.get("OverscanTransformer")
         Optimize = transformer_registry.get("Optimize")
         MultiPassTransformer = transformer_registry.get("MultiPassTransformer")
+        assert OverscanTransformer is not None
+        assert Optimize is not None
+        assert MultiPassTransformer is not None
         return [
             OverscanTransformer(
                 enabled=True, distance_mm=0, auto=True
@@ -54,6 +57,7 @@ class EngraveStep(Step):
         per_wp, per_step = cls.get_default_transformers_dicts()
 
         OverscanTransformer = transformer_registry.get("OverscanTransformer")
+        assert OverscanTransformer is not None
         auto_distance = OverscanTransformer.calculate_auto_distance(
             machine.max_cut_speed, machine.acceleration
         )
