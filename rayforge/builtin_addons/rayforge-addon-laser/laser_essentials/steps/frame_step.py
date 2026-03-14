@@ -30,6 +30,10 @@ class FrameStep(Step):
         CropTransformer = transformer_registry.get("CropTransformer")
         Optimize = transformer_registry.get("Optimize")
         MultiPassTransformer = transformer_registry.get("MultiPassTransformer")
+        assert TabOpsTransformer is not None
+        assert CropTransformer is not None
+        assert Optimize is not None
+        assert MultiPassTransformer is not None
         return [
             TabOpsTransformer().to_dict(),
             CropTransformer(enabled=False).to_dict(),

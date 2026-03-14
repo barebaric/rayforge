@@ -31,6 +31,11 @@ class ShrinkWrapStep(Step):
         CropTransformer = transformer_registry.get("CropTransformer")
         Optimize = transformer_registry.get("Optimize")
         MultiPassTransformer = transformer_registry.get("MultiPassTransformer")
+        assert Smooth is not None
+        assert TabOpsTransformer is not None
+        assert CropTransformer is not None
+        assert Optimize is not None
+        assert MultiPassTransformer is not None
         return [
             Smooth(enabled=False, amount=20).to_dict(),
             TabOpsTransformer().to_dict(),
