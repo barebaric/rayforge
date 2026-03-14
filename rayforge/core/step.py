@@ -4,7 +4,7 @@ from abc import ABC
 from typing import List, Optional, TYPE_CHECKING, Dict, Any, cast, Set
 from gettext import gettext as _
 from blinker import Signal
-from ..pipeline.transformer import transformer_by_name
+from ..pipeline.transformer.registry import transformer_registry
 from ..shared.units.formatter import format_value
 from .capability import Capability, CAPABILITIES_BY_NAME
 from .item import DocItem
@@ -364,7 +364,7 @@ class Step(DocItem, ABC):
             name = t_dict.get("name")
             if not name or not isinstance(name, str):
                 continue
-            transformer_cls = transformer_by_name.get(name)
+            transformer_cls = transformer_registry.get(name)
             if transformer_cls is None:
                 continue
             if transformer_cls.POSITION_SENSITIVE:

@@ -12,10 +12,8 @@ from rayforge.core.ops import (
     SectionType,
     EnableAirAssistCommand,
 )
-from rayforge.pipeline.transformer.overscan_transformer import (
-    OverscanTransformer,
-    ExecutionPhase,
-)
+from rayforge.pipeline.transformer.base import ExecutionPhase
+from post_processors.transformers import OverscanTransformer
 
 
 @pytest.fixture

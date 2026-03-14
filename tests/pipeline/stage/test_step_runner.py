@@ -2,9 +2,11 @@ import pytest
 from unittest.mock import patch
 import numpy as np
 
+from rayforge.context import get_context
 from rayforge.core.doc import Doc
-from rayforge.core.workpiece import WorkPiece
+from rayforge.core.matrix import Matrix
 from rayforge.core.ops import Ops, LineToCommand
+from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.machine import Machine, Laser
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
@@ -12,13 +14,11 @@ from rayforge.pipeline.artifact import (
     StepOpsArtifact,
     create_handle_from_dict,
 )
-from rayforge.context import get_context
 from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.core.matrix import Matrix
 from rayforge.pipeline.stage.step_runner import (
     make_step_artifact_in_subprocess,
 )
-from rayforge.pipeline.transformer import Optimize
+from rayforge.pipeline.transformer.registry import transformer_registry
 
 
 @pytest.fixture
@@ -275,6 +275,8 @@ def test_step_runner_instantiates_transformers_from_dict(
         call_args = mock_compute.call_args
         transformers = call_args[1]["transformers"]
         assert len(transformers) == 1
+        Optimize = transformer_registry.get("Optimize")
+        assert Optimize is not None
         assert isinstance(transformers[0], Optimize)
 
     get_context().artifact_store.release(base_handle)

@@ -4,7 +4,7 @@ from gi.repository import Adw, Gtk
 from gettext import gettext as _
 
 from rayforge.context import get_context
-from rayforge.pipeline.transformer.crop_transformer import CropTransformer
+from ..transformers import CropTransformer
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )

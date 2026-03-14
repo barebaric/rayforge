@@ -5,13 +5,7 @@ from gettext import gettext as _
 
 from rayforge.core.capability import CUT, SCORE, Capability
 from rayforge.core.step import Step
-from rayforge.pipeline.transformer import (
-    CropTransformer,
-    MultiPassTransformer,
-    Optimize,
-    Smooth,
-    TabOpsTransformer,
-)
+from rayforge.pipeline.transformer.registry import transformer_registry
 from ..producers import ContourProducer
 
 
@@ -32,6 +26,11 @@ class ContourStep(Step):
 
     @classmethod
     def get_default_transformers_dicts(cls) -> tuple[list, list]:
+        Smooth = transformer_registry.get("Smooth")
+        TabOpsTransformer = transformer_registry.get("TabOpsTransformer")
+        CropTransformer = transformer_registry.get("CropTransformer")
+        Optimize = transformer_registry.get("Optimize")
+        MultiPassTransformer = transformer_registry.get("MultiPassTransformer")
         return [
             Smooth(enabled=False, amount=20).to_dict(),
             TabOpsTransformer().to_dict(),

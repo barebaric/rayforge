@@ -12,7 +12,8 @@ from ..artifact import (
     WorkPieceArtifact,
 )
 from ..artifact.store import ArtifactStore, SharedMemoryNotFoundError
-from ..transformer import OpsTransformer, transformer_by_name
+from ..transformer import OpsTransformer
+from ..transformer.registry import transformer_registry
 
 if TYPE_CHECKING:
     pass
@@ -29,8 +30,13 @@ def _instantiate_transformers(
         if not t_dict.get("enabled", True):
             continue
         cls_name = t_dict.get("name")
-        if cls_name and cls_name in transformer_by_name:
-            cls = transformer_by_name[cls_name]
+        if cls_name:
+            cls = transformer_registry.get(cls_name)
+            if cls is None:
+                logger.warning(
+                    f"Transformer '{cls_name}' not found in registry"
+                )
+                continue
             try:
                 transformers.append(cls.from_dict(t_dict))
             except Exception as e:

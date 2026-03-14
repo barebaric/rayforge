@@ -5,12 +5,7 @@ from gettext import gettext as _
 
 from rayforge.core.capability import CUT, SCORE, Capability
 from rayforge.core.step import Step
-from rayforge.pipeline.transformer import (
-    CropTransformer,
-    MultiPassTransformer,
-    Optimize,
-    TabOpsTransformer,
-)
+from rayforge.pipeline.transformer.registry import transformer_registry
 from ..producers import FrameProducer
 
 
@@ -31,6 +26,10 @@ class FrameStep(Step):
 
     @classmethod
     def get_default_transformers_dicts(cls) -> tuple[list, list]:
+        TabOpsTransformer = transformer_registry.get("TabOpsTransformer")
+        CropTransformer = transformer_registry.get("CropTransformer")
+        Optimize = transformer_registry.get("Optimize")
+        MultiPassTransformer = transformer_registry.get("MultiPassTransformer")
         return [
             TabOpsTransformer().to_dict(),
             CropTransformer(enabled=False).to_dict(),

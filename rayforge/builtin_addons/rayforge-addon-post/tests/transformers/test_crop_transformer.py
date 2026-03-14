@@ -5,7 +5,7 @@ from rayforge.core.ops import Ops
 from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.transformer.crop_transformer import CropTransformer
+from post_processors.transformers import CropTransformer
 from rayforge.pipeline.transformer.base import ExecutionPhase
 
 

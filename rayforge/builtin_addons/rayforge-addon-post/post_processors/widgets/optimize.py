@@ -4,7 +4,7 @@ from gi.repository import Adw
 from gettext import gettext as _
 
 from rayforge.core.undo import DictItemCommand
-from rayforge.pipeline.transformer.optimize_transformer import Optimize
+from ..transformers import Optimize
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )

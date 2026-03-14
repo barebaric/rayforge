@@ -4,9 +4,7 @@ from gi.repository import Adw, Gtk
 from gettext import gettext as _
 
 from rayforge.core.undo import DictItemCommand
-from rayforge.pipeline.transformer.multipass_transformer import (
-    MultiPassTransformer,
-)
+from ..transformers import MultiPassTransformer
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )

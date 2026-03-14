@@ -12,7 +12,6 @@ from rayforge.pipeline.artifact import (
 )
 from rayforge.pipeline.artifact.base import TextureData, VertexData
 from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.transformer import Optimize, Smooth
 from rayforge.pipeline.stage.step_compute import (
     compute_step_artifacts,
     _apply_artifact_scaling,
@@ -135,9 +134,12 @@ def test_compute_step_artifacts_with_progress_callback(
     assert mock_progress_context.progress_calls[-1][0] == 1.0
 
 
-def test_compute_step_artifacts_with_transformers(setup_two_artifacts):
+def test_compute_step_artifacts_with_transformers(
+    setup_two_artifacts, get_transformer
+):
     """Test that compute_step_artifacts applies transformers."""
     artifacts = setup_two_artifacts
+    Optimize = get_transformer("Optimize")
     transformer = Optimize()
 
     render_artifact, ops_artifact = compute_step_artifacts(
@@ -164,10 +166,11 @@ def test_compute_step_artifacts_empty_list():
 
 
 def test_compute_step_artifacts_with_message_callback(
-    setup_two_artifacts, mock_progress_context
+    setup_two_artifacts, mock_progress_context, get_transformer
 ):
     """Test that compute_step_artifacts calls message callback."""
     artifacts = setup_two_artifacts
+    Optimize = get_transformer("Optimize")
 
     render_artifact, ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
@@ -214,10 +217,12 @@ def test_compute_step_artifacts_raster_artifact():
 
 
 def test_compute_step_artifacts_multiple_transformers(
-    setup_two_artifacts,
+    setup_two_artifacts, get_transformer
 ):
     """Test compute_step_artifacts with multiple transformers."""
     artifacts = setup_two_artifacts
+    Optimize = get_transformer("Optimize")
+    Smooth = get_transformer("Smooth")
     transformers = [Optimize(), Smooth()]
 
     render_artifact, ops_artifact = compute_step_artifacts(
@@ -535,8 +540,9 @@ def test_apply_transformers_to_ops_empty_list():
     assert not ops.is_empty()
 
 
-def test_apply_transformers_to_ops_with_transformer():
+def test_apply_transformers_to_ops_with_transformer(get_transformer):
     """Test _apply_transformers_to_ops with transformer."""
+    Optimize = get_transformer("Optimize")
     ops = Ops()
     ops.move_to(0, 0)
     ops.line_to(100, 0)
@@ -552,9 +558,10 @@ def test_apply_transformers_to_ops_with_transformer():
 
 
 def test_apply_transformers_to_ops_with_progress_context(
-    mock_progress_context,
+    mock_progress_context, get_transformer
 ):
     """Test _apply_transformers_to_ops with progress context."""
+    Optimize = get_transformer("Optimize")
     ops = Ops()
     ops.move_to(0, 0)
     ops.line_to(100, 0)
