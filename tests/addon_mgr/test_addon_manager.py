@@ -168,6 +168,74 @@ class TestAddonManagerLoading:
         assert "test_plugin" not in manager.loaded_addons
         assert "test_plugin" in manager.incompatible_addons
 
+    def test_load_addon_by_name_not_found(self, manager):
+        """Test load_addon_by_name returns False when addon not found."""
+        result = manager.load_addon_by_name("nonexistent_addon")
+        assert result is False
+
+    def test_load_addon_by_name_success(self, manager):
+        """Test load_addon_by_name loads and registers an addon."""
+        addon_dir = manager.install_dir / "test_pkg"
+        addon_dir.mkdir(parents=True)
+
+        manifest_content = """
+name: test_plugin
+version: "1.0.0"
+author: Test Author
+description: A test addon
+provides:
+  backend: backend
+"""
+        (addon_dir / "rayforge-addon.yaml").write_text(manifest_content)
+        (addon_dir / "backend.py").write_text("")
+
+        with (
+            patch("rayforge.addon_mgr.addon_manager.importlib.util"),
+            patch.object(
+                manager,
+                "_check_version_compatibility",
+                return_value=UpdateStatus.UP_TO_DATE,
+            ),
+            patch.object(manager, "_call_registration_hooks"),
+        ):
+            result = manager.load_addon_by_name("test_plugin")
+
+        assert result is True
+        assert "test_plugin" in manager.loaded_addons
+
+    def test_load_addon_by_name_backend_only(self, manager):
+        """Test load_addon_by_name respects backend_only flag."""
+        addon_dir = manager.install_dir / "test_pkg"
+        addon_dir.mkdir(parents=True)
+
+        manifest_content = """
+name: test_plugin
+version: "1.0.0"
+author: Test Author
+description: A test addon
+provides:
+  backend: backend
+  frontend: frontend
+"""
+        (addon_dir / "rayforge-addon.yaml").write_text(manifest_content)
+        (addon_dir / "backend.py").write_text("")
+        (addon_dir / "frontend.py").write_text("")
+
+        with (
+            patch("rayforge.addon_mgr.addon_manager.importlib.util"),
+            patch.object(
+                manager,
+                "_check_version_compatibility",
+                return_value=UpdateStatus.UP_TO_DATE,
+            ),
+            patch.object(manager, "_call_registration_hooks"),
+        ):
+            result = manager.load_addon_by_name(
+                "test_plugin", backend_only=True
+            )
+
+        assert result is True
+
 
 class TestAddonManagerInstallation:
     """Tests related to installing new addons."""
