@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import logging
+from dataclasses import dataclass
 from typing import Optional, List, Dict, Any, Tuple, cast, TYPE_CHECKING
 from gettext import gettext as _
 from scipy.spatial import cKDTree  # type: ignore
@@ -11,6 +12,8 @@ from rayforge.core.ops import (
     MoveToCommand,
     ScanLinePowerCommand,
     Command,
+    WorkpieceStartCommand,
+    WorkpieceEndCommand,
 )
 from rayforge.core.ops.flip import flip_segment
 from rayforge.core.ops.group import group_by_state_continuity
@@ -28,6 +31,233 @@ logger = logging.getLogger(__name__)
 def _dist_2d(p1: Tuple[float, ...], p2: Tuple[float, ...]) -> float:
     """Helper for 2D distance calculation on n-dimensional points."""
     return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
+
+
+@dataclass
+class WorkpieceMeta:
+    uid: str
+    commands: List[MovingCommand]
+    entry_point: Tuple[float, float, float]
+    exit_point: Tuple[float, float, float]
+    can_flip: bool = True
+
+
+def _split_by_workpiece_markers(
+    ops: Ops,
+) -> List[Tuple[str, List[MovingCommand]]]:
+    blocks: List[Tuple[str, List[MovingCommand]]] = []
+    current_uid: Optional[str] = None
+    current_block: List[MovingCommand] = []
+
+    for cmd in ops:
+        if isinstance(cmd, WorkpieceStartCommand):
+            current_uid = cmd.workpiece_uid
+            current_block = []
+        elif isinstance(cmd, WorkpieceEndCommand):
+            if current_uid is not None:
+                blocks.append((current_uid, current_block))
+            current_uid = None
+            current_block = []
+        elif isinstance(cmd, MovingCommand) and current_uid is not None:
+            current_block.append(cmd)
+
+    if current_uid is not None and current_block:
+        blocks.append((current_uid, current_block))
+
+    return blocks
+
+
+def _extract_workpiece_meta(
+    uid: str, commands: List[MovingCommand]
+) -> Optional[WorkpieceMeta]:
+    if not commands:
+        return None
+
+    entry_point: Optional[Tuple[float, float, float]] = None
+    exit_point: Optional[Tuple[float, float, float]] = None
+
+    for cmd in commands:
+        if isinstance(cmd, MoveToCommand):
+            entry_point = cmd.end
+            break
+
+    if entry_point is None:
+        for cmd in commands:
+            if cmd.end is not None:
+                entry_point = cmd.end
+                break
+
+    for cmd in reversed(commands):
+        if cmd.end is not None:
+            exit_point = cmd.end
+            break
+
+    if entry_point is None or exit_point is None:
+        return None
+
+    can_flip = True
+    for cmd in commands:
+        if cmd.is_travel_command():
+            continue
+        can_flip = True
+        break
+
+    return WorkpieceMeta(
+        uid=uid,
+        commands=commands,
+        entry_point=entry_point,
+        exit_point=exit_point,
+        can_flip=can_flip,
+    )
+
+
+def _kdtree_order_workpieces(
+    context: ProgressContext,
+    metas: List[WorkpieceMeta],
+    preserve_first: bool = False,
+) -> List[WorkpieceMeta]:
+    n = len(metas)
+    if n < 2:
+        return metas
+
+    context.set_total(n)
+
+    all_points = np.zeros((n * 2, 2))
+    for i, meta in enumerate(metas):
+        all_points[2 * i] = meta.entry_point[:2]
+        all_points[2 * i + 1] = meta.exit_point[:2]
+
+    kdtree = cKDTree(all_points)
+    ordered: List[WorkpieceMeta] = []
+    visited_mask = np.zeros(n, dtype=bool)
+
+    if preserve_first:
+        ordered.append(metas[0])
+        visited_mask[0] = True
+        current_pos = np.array(metas[0].exit_point[:2])
+        context.set_progress(1)
+    else:
+        ordered.append(metas[0])
+        visited_mask[0] = True
+        current_pos = np.array(metas[0].exit_point[:2])
+        context.set_progress(1)
+
+    while len(ordered) < n:
+        if context.is_cancelled():
+            return ordered
+
+        k = 10
+        found_next = False
+
+        while True:
+            num_points_in_tree = kdtree.n
+            query_k = min(k, num_points_in_tree)
+
+            distances, indices = kdtree.query(current_pos, k=query_k)
+
+            if not hasattr(indices, "__iter__"):
+                indices = [indices]
+
+            for point_idx in indices:
+                segment_idx = point_idx // 2
+                if not visited_mask[segment_idx]:
+                    next_meta = metas[segment_idx]
+                    is_exit_point = point_idx % 2 == 1
+
+                    if next_meta.can_flip and is_exit_point:
+                        next_meta = WorkpieceMeta(
+                            uid=next_meta.uid,
+                            commands=flip_segment(next_meta.commands),
+                            entry_point=next_meta.exit_point,
+                            exit_point=next_meta.entry_point,
+                            can_flip=next_meta.can_flip,
+                        )
+                        metas[segment_idx] = next_meta
+
+                    ordered.append(next_meta)
+                    visited_mask[segment_idx] = True
+                    current_pos = np.array(next_meta.exit_point[:2])
+                    found_next = True
+                    break
+
+            if found_next:
+                break
+
+            if k >= num_points_in_tree:
+                logger.error(
+                    "Workpiece optimizer could not find next workpiece."
+                )
+                for i in range(n):
+                    if not visited_mask[i]:
+                        ordered.append(metas[i])
+                return ordered
+
+            k *= 2
+
+        context.set_progress(len(ordered))
+
+    return ordered
+
+
+def _two_opt_workpieces(
+    context: ProgressContext,
+    ordered: List[WorkpieceMeta],
+    max_iter: int,
+) -> List[WorkpieceMeta]:
+    n = len(ordered)
+    if n < 3:
+        return ordered
+
+    iter_count = 0
+    improved = True
+    context.set_total(max_iter)
+
+    while improved and iter_count < max_iter:
+        if context.is_cancelled():
+            return ordered
+        context.set_progress(iter_count)
+
+        improved = False
+        for i in range(n - 2):
+            for j in range(i + 2, n):
+                if context.is_cancelled():
+                    return ordered
+
+                a_exit = ordered[i].exit_point
+                b_entry = ordered[i + 1].entry_point
+                e_exit = ordered[j].exit_point
+
+                if j < n - 1:
+                    f_entry = ordered[j + 1].entry_point
+
+                    curr_cost = _dist_2d(a_exit, b_entry) + _dist_2d(
+                        e_exit, f_entry
+                    )
+                    new_cost = _dist_2d(a_exit, e_exit) + _dist_2d(
+                        b_entry, f_entry
+                    )
+                else:
+                    curr_cost = _dist_2d(a_exit, b_entry)
+                    new_cost = _dist_2d(a_exit, e_exit)
+
+                if new_cost < curr_cost:
+                    sub = ordered[i + 1 : j + 1]
+                    for k in range(len(sub)):
+                        if sub[k].can_flip:
+                            sub[k] = WorkpieceMeta(
+                                uid=sub[k].uid,
+                                commands=flip_segment(sub[k].commands),
+                                entry_point=sub[k].exit_point,
+                                exit_point=sub[k].entry_point,
+                                can_flip=sub[k].can_flip,
+                            )
+                    ordered[i + 1 : j + 1] = sub[::-1]
+                    improved = True
+
+        iter_count += 1
+
+    context.set_progress(max_iter)
+    return ordered
 
 
 def _split_scanline(
@@ -495,8 +725,13 @@ class Optimize(OpsTransformer):
     """
     Optimizes toolpaths to minimize travel distance using a hybrid approach.
 
-    It categorizes path segments and applies optimization strategies
-    accordingly:
+    Performs two levels of optimization:
+    1. Workpiece-level: Reorders and flips workpieces to minimize
+       inter-workpiece travel (when multiple workpieces are present).
+    2. Segment-level: Reorders path segments within each workpiece.
+
+    For segment optimization, it categorizes path segments and applies
+    optimization strategies accordingly:
     1. A fast k-d tree nearest-neighbor search is applied to all segments for
        a good initial ordering.
     2. For segments with fewer paths than a threshold, a more intensive 2-opt
@@ -514,6 +749,19 @@ class Optimize(OpsTransformer):
     4. Execute optimization on each job according to its type.
     5. Re-assemble the final command list with state commands re-inserted.
     """
+
+    def __init__(
+        self,
+        enabled: bool = True,
+        allow_flip: bool = True,
+        preserve_first: bool = False,
+        preserve_order: Optional[List[str]] = None,
+        **kwargs,
+    ):
+        super().__init__(enabled=enabled, **kwargs)
+        self.allow_flip = allow_flip
+        self.preserve_first = preserve_first
+        self.preserve_order = preserve_order or []
 
     @property
     def execution_phase(self) -> ExecutionPhase:
@@ -538,15 +786,161 @@ class Optimize(OpsTransformer):
         if context is None:
             return
 
+        ops.preload_state()
+        if context.is_cancelled():
+            return
+
+        if workpiece is None:
+            blocks = _split_by_workpiece_markers(ops)
+            if len(blocks) >= 2:
+                self._optimize_workpiece_order(ops, blocks, context)
+                return
+
+        self._optimize_segments(ops, context)
+
+    def _optimize_workpiece_order(
+        self,
+        ops: Ops,
+        blocks: List[Tuple[str, List[MovingCommand]]],
+        context: ProgressContext,
+    ) -> None:
+        context.set_message(_("Analyzing workpieces..."))
+
+        metas: List[WorkpieceMeta] = []
+        for uid, commands in blocks:
+            meta = _extract_workpiece_meta(uid, commands)
+            if meta is not None:
+                if not self.allow_flip:
+                    meta = WorkpieceMeta(
+                        uid=meta.uid,
+                        commands=meta.commands,
+                        entry_point=meta.entry_point,
+                        exit_point=meta.exit_point,
+                        can_flip=False,
+                    )
+                metas.append(meta)
+
+        if len(metas) < 2:
+            return
+
+        preserved_indices: set = set()
+        reorderable_metas: List[WorkpieceMeta] = []
+
+        for i, meta in enumerate(metas):
+            if meta.uid in self.preserve_order or (
+                self.preserve_first and i == 0
+            ):
+                preserved_indices.add(i)
+            else:
+                reorderable_metas.append(meta)
+
+        if not reorderable_metas:
+            return
+
+        context.set_message(_("Optimizing workpiece order..."))
+
+        kdtree_weight = 0.7
+        kdtree_ctx = context.sub_context(
+            base_progress=0.0, progress_range=kdtree_weight, total=1.0
+        )
+        ordered_metas = _kdtree_order_workpieces(
+            kdtree_ctx, reorderable_metas, preserve_first=False
+        )
+
+        two_opt_ctx = context.sub_context(
+            base_progress=kdtree_weight,
+            progress_range=0.3,
+            total=1.0,
+        )
+        context.set_message(_("Applying 2-opt refinement..."))
+        ordered_metas = _two_opt_workpieces(two_opt_ctx, ordered_metas, 10)
+
+        context.set_message(_("Reassembling optimized workpieces..."))
+
+        if preserved_indices:
+            final_metas: List[WorkpieceMeta] = []
+            reorder_idx = 0
+            for i in range(len(metas)):
+                if i in preserved_indices:
+                    final_metas.append(metas[i])
+                else:
+                    if reorder_idx < len(ordered_metas):
+                        final_metas.append(ordered_metas[reorder_idx])
+                        reorder_idx += 1
+            ordered_metas = final_metas
+
+        self._reassemble_workpieces(ops, ordered_metas, context)
+
+        logger.debug(
+            f"Workpiece optimization finished: {len(ordered_metas)} "
+            "workpieces reordered"
+        )
+        context.set_message(_("Workpiece optimization complete"))
+        context.set_progress(1.0)
+        context.flush()
+
+    def _reassemble_workpieces(
+        self,
+        ops: Ops,
+        ordered_metas: List[WorkpieceMeta],
+        context: ProgressContext,
+    ) -> None:
+        ops.preload_state()
+
+        state_commands: List[Any] = []
+        for cmd in ops:
+            if cmd.is_state_command() and not isinstance(
+                cmd, (WorkpieceStartCommand, WorkpieceEndCommand)
+            ):
+                state_commands.append(cmd)
+
+        ops.clear()
+
+        prev_state = State()
+        for meta in ordered_metas:
+            ops.workpiece_start(meta.uid)
+
+            for cmd in meta.commands:
+                if hasattr(cmd, "state") and cmd.state:
+                    if cmd.state.power != prev_state.power:
+                        ops.set_power(cmd.state.power)
+                        prev_state.power = cmd.state.power
+                    if (
+                        cmd.state.cut_speed is not None
+                        and cmd.state.cut_speed != prev_state.cut_speed
+                    ):
+                        ops.set_cut_speed(cmd.state.cut_speed)
+                        prev_state.cut_speed = cmd.state.cut_speed
+                    if (
+                        cmd.state.travel_speed is not None
+                        and cmd.state.travel_speed != prev_state.travel_speed
+                    ):
+                        ops.set_travel_speed(cmd.state.travel_speed)
+                        prev_state.travel_speed = cmd.state.travel_speed
+                    if cmd.state.air_assist != prev_state.air_assist:
+                        ops.enable_air_assist(cmd.state.air_assist)
+                        prev_state.air_assist = cmd.state.air_assist
+                    if (
+                        cmd.state.active_laser_uid is not None
+                        and cmd.state.active_laser_uid
+                        != prev_state.active_laser_uid
+                    ):
+                        ops.set_laser(cmd.state.active_laser_uid)
+                        prev_state.active_laser_uid = (
+                            cmd.state.active_laser_uid
+                        )
+
+                ops.add(cmd)
+
+            ops.workpiece_end(meta.uid)
+
+    def _optimize_segments(self, ops: Ops, context: ProgressContext) -> None:
         # Thresholds for the smart optimization strategy
         TWO_OPT_SEGMENT_THRESHOLD = 1000
         TWO_OPT_COMMAND_LIMIT = 10000
 
         # Step 1: Preprocessing
         context.set_message(_("Preprocessing for optimization..."))
-        ops.preload_state()
-        if context.is_cancelled():
-            return
 
         commands = [c for c in ops if not c.is_state_command()]
         logger.debug(f"Optimizing {len(commands)} moving commands.")
@@ -708,7 +1102,11 @@ class Optimize(OpsTransformer):
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the transformer's configuration to a dictionary."""
-        return super().to_dict()
+        result = super().to_dict()
+        result["allow_flip"] = self.allow_flip
+        result["preserve_first"] = self.preserve_first
+        result["preserve_order"] = self.preserve_order
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Optimize":
@@ -718,5 +1116,9 @@ class Optimize(OpsTransformer):
                 f"Mismatched transformer name: expected {cls.__name__},"
                 f" got {data.get('name')}"
             )
-        # This transformer has no configurable parameters other than 'enabled'
-        return cls(enabled=data.get("enabled", True))
+        return cls(
+            enabled=data.get("enabled", True),
+            allow_flip=data.get("allow_flip", True),
+            preserve_first=data.get("preserve_first", False),
+            preserve_order=data.get("preserve_order", []),
+        )

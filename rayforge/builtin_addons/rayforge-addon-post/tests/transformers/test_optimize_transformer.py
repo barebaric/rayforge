@@ -646,3 +646,60 @@ def test_run_optimization_with_overscan_and_flip_preserves_state(
     assert move_cmd.end == pytest.approx(end_pt_overscan)
     assert flipped_scan_cmd.end == pytest.approx(start_pt_overscan)
     assert flipped_scan_cmd.power_values == power_values[::-1]
+
+
+def test_workpiece_level_optimization(mock_progress_context):
+    """
+    Test that workpiece-level optimization reorders workpieces to minimize
+    travel when run at per-step level (workpiece=None).
+    """
+    from rayforge.core.ops import WorkpieceStartCommand
+
+    ops = Ops()
+    ops.set_power(1.0)
+
+    # Workpiece A at (0,0)
+    ops.workpiece_start("wp-a")
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    ops.workpiece_end("wp-a")
+
+    # Workpiece C at (200, 200) - far away
+    ops.workpiece_start("wp-c")
+    ops.move_to(200, 200)
+    ops.line_to(210, 200)
+    ops.workpiece_end("wp-c")
+
+    # Workpiece B at (10, 0) - close to A
+    ops.workpiece_start("wp-b")
+    ops.move_to(10, 0)
+    ops.line_to(10, 10)
+    ops.workpiece_end("wp-b")
+
+    # Calculate travel before optimization
+    ops_copy = ops.copy()
+    ops_copy.preload_state()
+    travel_before = ops_copy.distance() - ops_copy.cut_distance()
+
+    # Run optimizer at per-step level (workpiece=None)
+    optimizer = Optimize()
+    optimizer.run(ops, context=mock_progress_context)
+
+    ops.preload_state()
+    travel_after = ops.distance() - ops.cut_distance()
+
+    # Travel should be reduced
+    assert travel_after < travel_before, (
+        f"Travel should be reduced: {travel_before} -> {travel_after}"
+    )
+
+    # Extract workpiece order after optimization
+    wp_order = []
+    for cmd in ops:
+        if isinstance(cmd, WorkpieceStartCommand):
+            wp_order.append(cmd.workpiece_uid)
+
+    # Should be reordered: A, B, C (not A, C, B)
+    assert wp_order == ["wp-a", "wp-b", "wp-c"], (
+        f"Workpieces should be reordered to A, B, C, got {wp_order}"
+    )

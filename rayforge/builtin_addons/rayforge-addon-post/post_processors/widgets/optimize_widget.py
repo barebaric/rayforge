@@ -44,6 +44,16 @@ class OptimizeSettingsWidget(StepComponentSettingsWidget):
         # Connect signals
         switch_row.connect("notify::active", self._on_enable_toggled)
 
+        flip_row = Adw.SwitchRow(title=_("Allow Flipping"))
+        flip_row.set_active(transformer.allow_flip)
+        self.add(flip_row)
+        flip_row.connect("notify::active", self._on_flip_toggled)
+
+        preserve_row = Adw.SwitchRow(title=_("Preserve First Workpiece"))
+        preserve_row.set_active(transformer.preserve_first)
+        self.add(preserve_row)
+        preserve_row.connect("notify::active", self._on_preserve_first_toggled)
+
     def _on_enable_toggled(self, row, pspec):
         new_value = row.get_active()
         if new_value == self.target_dict.get("enabled"):
@@ -54,6 +64,34 @@ class OptimizeSettingsWidget(StepComponentSettingsWidget):
             key="enabled",
             new_value=new_value,
             name=_("Toggle Path Optimization"),
+            on_change_callback=lambda: self.step.updated.send(self.step),
+        )
+        self.history_manager.execute(command)
+
+    def _on_flip_toggled(self, row, pspec):
+        new_value = row.get_active()
+        if new_value == self.target_dict.get("allow_flip"):
+            return
+
+        command = DictItemCommand(
+            target_dict=self.target_dict,
+            key="allow_flip",
+            new_value=new_value,
+            name=_("Toggle Flipping"),
+            on_change_callback=lambda: self.step.updated.send(self.step),
+        )
+        self.history_manager.execute(command)
+
+    def _on_preserve_first_toggled(self, row, pspec):
+        new_value = row.get_active()
+        if new_value == self.target_dict.get("preserve_first"):
+            return
+
+        command = DictItemCommand(
+            target_dict=self.target_dict,
+            key="preserve_first",
+            new_value=new_value,
+            name=_("Toggle Preserve First Workpiece"),
             on_change_callback=lambda: self.step.updated.send(self.step),
         )
         self.history_manager.execute(command)
