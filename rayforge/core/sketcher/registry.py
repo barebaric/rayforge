@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Set
 from ..geo.font_config import FontConfig
 from .entities.point import Point
 from .entities.entity import Entity
@@ -145,3 +145,41 @@ class EntityRegistry:
     def get_entity(self, idx: int) -> Optional[Entity]:
         """Retrieves a geometric entity (Line/Arc/Circle) by ID in O(1)."""
         return self._entity_map.get(idx)
+
+    def get_connected_entity_ids(self, start_entity_id: int) -> Set[int]:
+        """
+        Finds all entities transitively connected to the start entity
+        through shared points using BFS.
+
+        Args:
+            start_entity_id: The ID of the entity to start from.
+
+        Returns:
+            A set of entity IDs that are connected to the start entity,
+            including the start entity itself.
+        """
+        start_entity = self.get_entity(start_entity_id)
+        if start_entity is None:
+            return set()
+
+        connected_entities: Set[int] = {start_entity_id}
+        points_to_visit: Set[int] = set(start_entity.get_point_ids())
+        visited_points: Set[int] = set()
+
+        while points_to_visit:
+            pid = points_to_visit.pop()
+            if pid in visited_points:
+                continue
+            visited_points.add(pid)
+
+            for entity in self.entities:
+                if entity.id in connected_entities:
+                    continue
+                entity_points = entity.get_point_ids()
+                if pid in entity_points:
+                    connected_entities.add(entity.id)
+                    for ep in entity_points:
+                        if ep not in visited_points:
+                            points_to_visit.add(ep)
+
+        return connected_entities

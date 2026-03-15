@@ -1,4 +1,7 @@
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .registry import EntityRegistry
 from blinker import Signal
 
 
@@ -28,6 +31,15 @@ class SketchSelection:
         new_sel.constraint_idx = self.constraint_idx
         new_sel.junction_pid = self.junction_pid
         return new_sel
+
+    def is_empty(self) -> bool:
+        """Returns True if nothing is selected."""
+        return (
+            not self.point_ids
+            and not self.entity_ids
+            and self.constraint_idx is None
+            and self.junction_pid is None
+        )
 
     def select_constraint(self, idx: int, is_multi: bool):
         """Selects a constraint by index."""
@@ -84,3 +96,23 @@ class SketchSelection:
             if item_id not in collection:
                 collection.clear()
                 collection.append(item_id)
+
+    def select_connected_entities(
+        self, entity_id: int, registry: "EntityRegistry"
+    ):
+        """
+        Adds all entities connected to the given entity through shared points
+        to the current selection.
+
+        Args:
+            entity_id: The ID of the starting entity.
+            registry: The EntityRegistry to query for connected entities.
+        """
+        connected_ids = registry.get_connected_entity_ids(entity_id)
+        for eid in connected_ids:
+            if eid not in self.entity_ids:
+                self.entity_ids.append(eid)
+        self.point_ids.clear()
+        self.constraint_idx = None
+        self.junction_pid = None
+        self.changed.send(self)
