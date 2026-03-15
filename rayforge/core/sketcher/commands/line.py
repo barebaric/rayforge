@@ -1,7 +1,8 @@
 from __future__ import annotations
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, List, Tuple
+from typing import TYPE_CHECKING, Optional, List
 
+from ...geo import Point as GeoPoint
 from ..entities import Line, Point
 from .base import PreviewState, SketchChangeCommand
 from .items import AddItemsCommand
@@ -42,7 +43,7 @@ class LineCommand(SketchChangeCommand):
         self,
         sketch: Sketch,
         start_id: int,
-        end_pos: Tuple[float, float],
+        end_pos: GeoPoint,
         end_pid: Optional[int] = None,
         is_start_temp: bool = False,
     ):

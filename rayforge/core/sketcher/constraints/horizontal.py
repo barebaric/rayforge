@@ -2,15 +2,9 @@
 
 from __future__ import annotations
 import math
-from typing import (
-    Tuple,
-    Dict,
-    Any,
-    List,
-    Callable,
-    TYPE_CHECKING,
-)
+from typing import Dict, Any, List, Callable, TYPE_CHECKING
 from gettext import gettext as _
+from ...geo import Point
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
@@ -55,7 +49,7 @@ class HorizontalConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         return {
             self.p1: [(0.0, 1.0)],
             self.p2: [(0.0, -1.0)],
@@ -66,7 +60,7 @@ class HorizontalConstraint(Constraint):
         sx: float,
         sy: float,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
     ) -> bool:
@@ -88,7 +82,7 @@ class HorizontalConstraint(Constraint):
         self,
         ctx: "cairo.Context",
         registry: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,
         point_radius: float = 5.0,

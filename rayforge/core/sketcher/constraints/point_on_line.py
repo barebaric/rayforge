@@ -1,17 +1,11 @@
 from __future__ import annotations
 import math
 import cairo
-from typing import (
-    Tuple,
-    Dict,
-    Any,
-    List,
-    Callable,
-    TYPE_CHECKING,
-)
+from typing import Dict, Any, List, Callable, TYPE_CHECKING
 from gettext import gettext as _
-from .base import Constraint, ConstraintStatus
+from ...geo import Point
 from ..entities import Line, Arc, Circle
+from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
     from ..params import ParameterContext
@@ -109,14 +103,14 @@ class PointOnLineConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         pt = reg.get_point(self.point_id)
         shape = reg.get_entity(self.shape_id)
 
         if shape is None:
             return {}
 
-        grad: Dict[int, List[Tuple[float, float]]] = {}
+        grad: Dict[int, List[Point]] = {}
 
         def add_grad(pid, gx, gy):
             if pid not in grad:
@@ -203,7 +197,7 @@ class PointOnLineConstraint(Constraint):
         sx: float,
         sy: float,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
     ) -> bool:
@@ -217,7 +211,7 @@ class PointOnLineConstraint(Constraint):
         self,
         ctx: "cairo.Context",
         registry: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,
         point_radius: float = 5.0,

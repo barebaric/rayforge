@@ -3,7 +3,6 @@ import math
 from typing import (
     Optional,
     Union,
-    Tuple,
     Dict,
     Any,
     List,
@@ -12,8 +11,9 @@ from typing import (
     cast,
 )
 from gettext import gettext as _
-from .base import Constraint, ConstraintStatus
+from ...geo import Point
 from ..entities import Line, Arc, Circle
+from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
     import cairo
@@ -98,7 +98,7 @@ class EqualLengthConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         if len(self.entity_ids) < 2:
             return {}
 
@@ -106,7 +106,7 @@ class EqualLengthConstraint(Constraint):
             cast(Union[Line, Arc, Circle], reg.get_entity(eid))
             for eid in self.entity_ids
         ]
-        grad: Dict[int, List[Tuple[float, float]]] = {}
+        grad: Dict[int, List[Point]] = {}
         num_residuals = len(entities) - 1
 
         # Helper to get points defining length
@@ -168,7 +168,7 @@ class EqualLengthConstraint(Constraint):
         self,
         entity,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
     ):
         """Calculates screen pos for an equality symbol on an entity."""
         # 1. Get anchor point (mid_x, mid_y) and normal_angle in MODEL space
@@ -206,7 +206,7 @@ class EqualLengthConstraint(Constraint):
         sx: float,
         sy: float,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
     ) -> bool:
@@ -225,7 +225,7 @@ class EqualLengthConstraint(Constraint):
         self,
         ctx: "cairo.Context",
         registry: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,
         point_radius: float = 5.0,

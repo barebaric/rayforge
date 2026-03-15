@@ -1,24 +1,23 @@
 import math
 import cairo
 from collections import defaultdict
-from typing import Optional, Tuple, Any, List
-from rayforge.core.sketcher.entities import (
-    Line,
+from typing import Any, List, Optional, Tuple
+
+from ...core.geo import Polygon, primitives
+from ...core.geo.linearize import linearize_arc
+from ...core.geo.primitives import find_closest_point_on_line_segment
+from ...core.sketcher.constraints import (
+    CoincidentConstraint,
+    Constraint,
+    PointOnLineConstraint,
+)
+from ...core.sketcher.entities import (
     Arc,
     Circle,
     Entity,
+    Line,
     TextBoxEntity,
 )
-from rayforge.core.sketcher.constraints import (
-    Constraint,
-    CoincidentConstraint,
-    PointOnLineConstraint,
-)
-from rayforge.core.geo import primitives
-from rayforge.core.geo.primitives import (
-    find_closest_point_on_line_segment,
-)
-from rayforge.core.geo.linearize import linearize_arc
 
 
 class SketchHitTester:
@@ -92,12 +91,12 @@ class SketchHitTester:
 
     def _loop_to_polygon(
         self, loop: List[Tuple[int, bool]], element: Any
-    ) -> List[Tuple[float, float]]:
+    ) -> Polygon:
         """
         Converts a loop of entities into a list of 2D polygon vertices,
         linearizing any arcs.
         """
-        polygon: List[Tuple[float, float]] = []
+        polygon: Polygon = []
         registry = element.sketch.registry
 
         try:

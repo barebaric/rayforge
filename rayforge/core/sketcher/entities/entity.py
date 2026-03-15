@@ -1,6 +1,5 @@
 from typing import List, Dict, Any, Sequence, TYPE_CHECKING, Optional
-from ...geo.geometry import Geometry
-from ...geo.types import Rect
+from ...geo import Geometry, Rect
 
 if TYPE_CHECKING:
     from ..constraints import Constraint

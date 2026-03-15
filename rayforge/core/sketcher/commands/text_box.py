@@ -1,16 +1,17 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Tuple, Optional, Dict, Any
+from typing import TYPE_CHECKING, Optional, Dict, Any
 from gettext import gettext as _
 
-from .base import SketchChangeCommand
-from .items import AddItemsCommand
-from ..entities import Point, Line, TextBoxEntity
+from ...geo import Point as GeoPoint
 from ..constraints import (
     AspectRatioConstraint,
     HorizontalConstraint,
     PerpendicularConstraint,
     ParallelogramConstraint,
 )
+from ..entities import Point, Line, TextBoxEntity
+from .base import SketchChangeCommand
+from .items import AddItemsCommand
 
 if TYPE_CHECKING:
     from ..sketch import Sketch
@@ -22,7 +23,7 @@ class TextBoxCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        origin: Tuple[float, float],
+        origin: GeoPoint,
         width: float = 10.0,
         height: float = 10.0,
     ):
@@ -35,7 +36,7 @@ class TextBoxCommand(SketchChangeCommand):
 
     @staticmethod
     def calculate_geometry(
-        origin: Tuple[float, float], width: float, height: float
+        origin: GeoPoint, width: float, height: float
     ) -> Dict[str, Any]:
         """Calculates all points, entities, and constraints for a text box."""
         mx, my = origin

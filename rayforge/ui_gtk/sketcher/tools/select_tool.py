@@ -1,8 +1,9 @@
 import logging
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
 import cairo
 
+from ....core.geo import Point as GeoPoint
 from ....core.matrix import Matrix
 from ....core.sketcher.commands import (
     CreateOrEditConstraintCommand,
@@ -36,25 +37,25 @@ class SelectTool(SketchTool):
 
         # --- Box Selection State ---
         self.is_box_selecting: bool = False
-        self.drag_start_world_pos: Optional[Tuple[float, float]] = None
-        self.drag_current_world_pos: Optional[Tuple[float, float]] = None
+        self.drag_start_world_pos: Optional[GeoPoint] = None
+        self.drag_current_world_pos: Optional[GeoPoint] = None
         self.drag_initial_selection: Optional["SketchSelection"] = None
 
         # --- Drag State ---
         # For dragging a single point
         self.dragged_point_id: Optional[int] = None
-        self.drag_point_start_pos: Optional[Tuple[float, float]] = None
+        self.drag_point_start_pos: Optional[GeoPoint] = None
 
         # For dragging entities (lines/arcs)
         self.dragged_entity: Optional[Entity] = None
-        self.drag_start_model_pos: Optional[Tuple[float, float]] = None
+        self.drag_start_model_pos: Optional[GeoPoint] = None
 
         # State for stabilizing drag calculations and undo snapshots
         self.drag_start_wt_inv: Optional[Matrix] = None
         self.drag_start_ct_inv: Optional[Matrix] = None
 
         # Snapshots taken at start of drag
-        self.drag_initial_positions: Dict[int, Tuple[float, float]] = {}
+        self.drag_initial_positions: Dict[int, GeoPoint] = {}
         self.drag_initial_entity_states: Dict[int, Any] = {}
 
         self.drag_point_distances: Dict[int, int] = {}
@@ -382,9 +383,7 @@ class SelectTool(SketchTool):
             self.element.selection.constraint_idx = None
             self.element.selection.junction_pid = None
 
-    def _get_model_delta(
-        self, world_dx: float, world_dy: float
-    ) -> Tuple[float, float]:
+    def _get_model_delta(self, world_dx: float, world_dy: float) -> GeoPoint:
         """Safely converts a world-space delta to a model-space delta."""
         if self.drag_start_wt_inv is None or self.drag_start_ct_inv is None:
             return 0.0, 0.0

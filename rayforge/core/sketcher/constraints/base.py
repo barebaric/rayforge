@@ -12,6 +12,7 @@ from typing import (
     Set,
 )
 from ...expression import safe_evaluate
+from ...geo import Point
 
 if TYPE_CHECKING:
     import cairo
@@ -62,7 +63,7 @@ class Constraint:
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         """
         Calculates the partial derivatives (Jacobian entries) of the error.
         Returns a map: point_id -> list of (d_error/dx, d_error/dy).
@@ -91,7 +92,7 @@ class Constraint:
         sx: float,
         sy: float,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
     ) -> bool:
@@ -142,7 +143,7 @@ class Constraint:
         self,
         ctx: "cairo.Context",
         registry: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,
         point_radius: float = 5.0,

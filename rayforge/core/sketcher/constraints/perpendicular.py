@@ -12,13 +12,14 @@ from typing import (
     cast,
 )
 from gettext import gettext as _
-from .base import Constraint, ConstraintStatus
-from ..entities import Line, Arc, Circle
-from rayforge.core.geo.primitives import (
+from ...geo import Point
+from ...geo.primitives import (
     line_intersection,
     circle_circle_intersection,
     is_point_on_segment,
 )
+from ..entities import Line, Arc, Circle
+from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
     import cairo
@@ -139,10 +140,10 @@ class PerpendicularConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         e1 = reg.get_entity(self.e1_id)
         e2 = reg.get_entity(self.e2_id)
-        grad: Dict[int, List[Tuple[float, float]]] = {}
+        grad: Dict[int, List[Point]] = {}
 
         if e1 is None or e2 is None:
             return {}
@@ -237,7 +238,7 @@ class PerpendicularConstraint(Constraint):
     def get_visuals(
         self,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
     ) -> Optional[Tuple[float, float, Optional[float], Optional[float]]]:
         """Calculates screen position and angles for visualization."""
         e1 = reg.get_entity(self.e1_id)
@@ -412,7 +413,7 @@ class PerpendicularConstraint(Constraint):
         sx: float,
         sy: float,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
     ) -> bool:
@@ -450,7 +451,7 @@ class PerpendicularConstraint(Constraint):
         self,
         ctx: "cairo.Context",
         registry: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,
         point_radius: float = 5.0,

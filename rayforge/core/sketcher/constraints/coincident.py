@@ -3,14 +3,8 @@
 from __future__ import annotations
 import math
 from gettext import gettext as _
-from typing import (
-    Tuple,
-    Dict,
-    Any,
-    List,
-    Callable,
-    TYPE_CHECKING,
-)
+from typing import Dict, Any, List, Callable, TYPE_CHECKING
+from ...geo import Point
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
@@ -50,14 +44,14 @@ class CoincidentConstraint(Constraint):
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Tuple[float, float]:
+    ) -> Point:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         return (pt1.x - pt2.x, pt1.y - pt2.y)
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         return {
             self.p1: [(1.0, 0.0), (0.0, 1.0)],
             self.p2: [(-1.0, 0.0), (0.0, -1.0)],
@@ -68,7 +62,7 @@ class CoincidentConstraint(Constraint):
         sx: float,
         sy: float,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
     ) -> bool:
@@ -87,7 +81,7 @@ class CoincidentConstraint(Constraint):
         self,
         ctx: "cairo.Context",
         registry: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,
         point_radius: float = 5.0,

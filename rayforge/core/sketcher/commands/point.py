@@ -1,10 +1,11 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Tuple, Optional, Dict, Any
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from gettext import gettext as _
 
-from .base import SketchChangeCommand
+from ...geo import Point as GeoPoint
 from ..entities import Line, Arc, Circle, Point
+from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
     from ...undo.command import Command
@@ -20,12 +21,10 @@ class MovePointCommand(SketchChangeCommand):
         self,
         sketch: "Sketch",
         point_id: int,
-        start_pos: Tuple[float, float],
-        end_pos: Tuple[float, float],
+        start_pos: GeoPoint,
+        end_pos: GeoPoint,
         # snapshot is: (points_dict, entities_dict)
-        snapshot: Optional[
-            Tuple[Dict[int, Tuple[float, float]], Dict[int, Any]]
-        ] = None,
+        snapshot: Optional[tuple[Dict[int, GeoPoint], Dict[int, Any]]] = None,
     ):
         super().__init__(sketch, _("Move Point"))
         self.point_id = point_id

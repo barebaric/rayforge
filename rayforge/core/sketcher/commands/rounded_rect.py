@@ -1,7 +1,8 @@
 from __future__ import annotations
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any
+from typing import TYPE_CHECKING, Optional, Dict, Any
 
+from ...geo import Point as GeoPoint
 from .base import PreviewState, SketchChangeCommand
 from .items import AddItemsCommand
 from ..entities import Point, Line, Arc
@@ -56,7 +57,7 @@ class RoundedRectCommand(SketchChangeCommand):
         self,
         sketch: Sketch,
         start_pid: int,
-        end_pos: Tuple[float, float],
+        end_pos: GeoPoint,
         radius: float,
         is_start_temp: bool = False,
     ):

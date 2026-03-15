@@ -12,6 +12,7 @@ from typing import (
     Callable,
     TYPE_CHECKING,
 )
+from ...geo import Point
 from ...geo.primitives import line_intersection, normalize_angle
 from ..entities import Line
 from .base import Constraint, ConstraintStatus
@@ -190,7 +191,7 @@ class AngleConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         result = self._get_line_params(reg)
         if result is None:
             return {}
@@ -295,7 +296,7 @@ class AngleConstraint(Constraint):
     def get_visuals(
         self,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
     ):
         result = self._get_line_params(reg)
         if result is None:
@@ -330,7 +331,7 @@ class AngleConstraint(Constraint):
     def get_label_pos(
         self,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
     ):
         visuals = self.get_visuals(reg, to_screen)
@@ -353,7 +354,7 @@ class AngleConstraint(Constraint):
         sx: float,
         sy: float,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
     ) -> bool:
@@ -379,7 +380,7 @@ class AngleConstraint(Constraint):
         self,
         ctx: "cairo.Context",
         registry: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,
         point_radius: float = 5.0,
