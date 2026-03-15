@@ -1,10 +1,12 @@
 from __future__ import annotations
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, List
+import math
+from typing import TYPE_CHECKING, List, Optional
 
 from ...geo import Point as GeoPoint
 from ..entities import Circle, Point
 from .base import PreviewState, SketchChangeCommand
+from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
@@ -34,6 +36,37 @@ class CirclePreviewState(PreviewState):
         Excludes the center point since that may be permanent.
         """
         return {self.radius_id}
+
+    def get_dimensions(
+        self, registry: "EntityRegistry"
+    ) -> List["DimensionData"]:
+        """
+        Returns the circle radius dimension for preview.
+
+        Args:
+            registry: The entity registry to query for point positions.
+
+        Returns:
+            List containing a single DimensionData for the circle radius.
+        """
+        try:
+            center = registry.get_point(self.center_id)
+            radius_pt = registry.get_point(self.radius_id)
+        except IndexError:
+            return []
+        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+        dx = radius_pt.x - center.x
+        dy = radius_pt.y - center.y
+        dist = math.hypot(dx, dy)
+        angle = math.atan2(dy, dx) if dist > 1e-9 else 0
+        arc_mid_x = center.x + radius * math.cos(angle)
+        arc_mid_y = center.y + radius * math.sin(angle)
+        return [
+            DimensionData(
+                label=f"R{DimensionData.format_length(radius)}",
+                position=(arc_mid_x, arc_mid_y),
+            )
+        ]
 
 
 class CircleCommand(SketchChangeCommand):

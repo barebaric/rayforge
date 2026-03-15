@@ -295,3 +295,94 @@ def test_rectangle_create_preview_update():
     assert result == preview_ids
     p2 = sketch.registry.get_point(preview_ids["p2"])
     assert p2.x == 200
+
+
+def test_rectangle_preview_get_dimensions_returns_width_and_height():
+    """Test that dimensions show width and height."""
+    sketch = Sketch()
+    state = RectangleCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None
+    )
+    RectangleCommand.update_preview(sketch.registry, state, 100, 50)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert len(dims) == 2
+    width_dim = next(d for d in dims if d.label == "100.00")
+    height_dim = next(d for d in dims if d.label == "50.00")
+    assert width_dim is not None
+    assert height_dim is not None
+
+
+def test_rectangle_preview_get_dimensions_width_position_on_top_edge():
+    """Test width label is positioned on top edge."""
+    sketch = Sketch()
+    state = RectangleCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None
+    )
+    RectangleCommand.update_preview(sketch.registry, state, 100, 50)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    width_dim = next(d for d in dims if d.label == "100.00")
+    assert width_dim.position[0] == 50.0
+    assert width_dim.position[1] == 0
+
+
+def test_rectangle_preview_get_dimensions_height_position_on_right_edge():
+    """Test height label is positioned on right edge."""
+    sketch = Sketch()
+    state = RectangleCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None
+    )
+    RectangleCommand.update_preview(sketch.registry, state, 100, 50)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    height_dim = next(d for d in dims if d.label == "50.00")
+    assert height_dim.position[0] == 100
+    assert height_dim.position[1] == 25.0
+
+
+def test_rectangle_preview_get_dimensions_negative_direction():
+    """Test dimensions work when dragging in negative direction."""
+    sketch = Sketch()
+    state = RectangleCommand.start_preview(
+        sketch.registry, 100, 50, snapped_pid=None
+    )
+    RectangleCommand.update_preview(sketch.registry, state, 0, 0)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert len(dims) == 2
+    width_dim = next(d for d in dims if d.label == "100.00")
+    height_dim = next(d for d in dims if d.label == "50.00")
+    assert width_dim is not None
+    assert height_dim is not None
+
+
+def test_rectangle_preview_get_dimensions_no_leader_end():
+    """Test that rectangle dimensions have no leader_end."""
+    sketch = Sketch()
+    state = RectangleCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None
+    )
+    RectangleCommand.update_preview(sketch.registry, state, 100, 50)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    for dim in dims:
+        assert dim.leader_end is None
+
+
+def test_rectangle_preview_get_dimensions_missing_point():
+    """Test that missing points return empty list."""
+    sketch = Sketch()
+    state = RectangleCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None
+    )
+    sketch.registry.points.clear()
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert dims == []

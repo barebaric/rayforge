@@ -1,3 +1,4 @@
+import math
 from rayforge.core.sketcher import Sketch
 from rayforge.core.sketcher.commands import CircleCommand, CirclePreviewState
 from rayforge.core.sketcher.entities import Circle, Point
@@ -257,3 +258,78 @@ def test_circle_undo_no_dangling_points():
 
     assert len(sketch.registry.points) == initial_point_count
     assert len(sketch.registry.entities) == initial_entity_count
+
+
+def test_circle_preview_get_dimensions_returns_radius():
+    """Test that dimension shows radius at edge."""
+    sketch = Sketch()
+    state = CircleCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None
+    )
+    CircleCommand.update_preview(sketch.registry, state, 50, 0)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert len(dims) == 1
+    assert dims[0].label == "R50.00"
+    assert dims[0].leader_end is None
+    assert dims[0].position == (50.0, 0.0)
+
+
+def test_circle_preview_get_dimensions_diagonal_radius():
+    """Test radius dimension for diagonal radius point."""
+    sketch = Sketch()
+    state = CircleCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None
+    )
+    CircleCommand.update_preview(sketch.registry, state, 30, 40)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert len(dims) == 1
+    expected_radius = math.hypot(30, 40)
+    assert dims[0].label == f"R{expected_radius:.2f}"
+    assert dims[0].leader_end is None
+
+
+def test_circle_preview_get_dimensions_position_on_circle_edge():
+    """Test that position is on the circle's edge."""
+    sketch = Sketch()
+    state = CircleCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None
+    )
+    CircleCommand.update_preview(sketch.registry, state, 100, 0)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    pos = dims[0].position
+    dist_to_center = math.hypot(pos[0], pos[1])
+    assert abs(dist_to_center - 100.0) < 0.01
+
+
+def test_circle_preview_get_dimensions_label_on_circle():
+    """Test that label is positioned on the circle edge."""
+    sketch = Sketch()
+    state = CircleCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None
+    )
+    CircleCommand.update_preview(sketch.registry, state, 50, 0)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    pos = dims[0].position
+    dist_to_center = math.hypot(pos[0], pos[1])
+    assert abs(dist_to_center - 50.0) < 0.01
+
+
+def test_circle_preview_get_dimensions_missing_point():
+    """Test that missing points return empty list."""
+    sketch = Sketch()
+    state = CircleCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None
+    )
+    sketch.registry.points.clear()
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert dims == []

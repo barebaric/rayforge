@@ -1,12 +1,13 @@
 from __future__ import annotations
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, List, Optional
 
 from ...geo import Point as GeoPoint, primitives
 from ..constraints import EqualDistanceConstraint
 from ..entities import Arc, Point
 from .base import PreviewState, SketchChangeCommand
+from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
@@ -49,6 +50,52 @@ class ArcPreviewState(PreviewState):
     def has_start_point(self) -> bool:
         """Returns True if start point has been set."""
         return self.start_id is not None
+
+    def get_dimensions(
+        self, registry: "EntityRegistry"
+    ) -> List[DimensionData]:
+        """
+        Returns the arc radius dimension for preview.
+
+        Args:
+            registry: The entity registry to query for point positions.
+
+        Returns:
+            List containing a single DimensionData for the arc radius.
+        """
+        if self.start_id is None or self.temp_end_id is None:
+            return []
+        try:
+            center = registry.get_point(self.center_id)
+            start = registry.get_point(self.start_id)
+            end = registry.get_point(self.temp_end_id)
+        except IndexError:
+            return []
+        radius = math.hypot(start.x - center.x, start.y - center.y)
+        arc = Arc(
+            -1,
+            self.start_id,
+            self.temp_end_id,
+            self.center_id,
+            clockwise=self.clockwise,
+        )
+        midpoint = arc.get_midpoint(registry)
+        if not midpoint:
+            start_angle = math.atan2(start.y - center.y, start.x - center.x)
+            end_angle = math.atan2(end.y - center.y, end.x - center.x)
+            mid_angle = (start_angle + end_angle) / 2
+        else:
+            mid_angle = math.atan2(
+                midpoint[1] - center.y, midpoint[0] - center.x
+            )
+        arc_mid_x = center.x + radius * math.cos(mid_angle)
+        arc_mid_y = center.y + radius * math.sin(mid_angle)
+        return [
+            DimensionData(
+                label=f"R{DimensionData.format_length(radius)}",
+                position=(arc_mid_x, arc_mid_y),
+            )
+        ]
 
 
 class ArcCommand(SketchChangeCommand):

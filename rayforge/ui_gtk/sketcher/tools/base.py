@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
 import cairo
 
 if TYPE_CHECKING:
+    from ....core.sketcher.commands.base import PreviewState
     from ..sketchelement import SketchElement
 
 
@@ -66,6 +67,13 @@ class SketchTool(ABC):
         transient UI (like selection boxes) in screen space.
         """
         pass
+
+    def get_preview_state(self) -> Optional["PreviewState"]:
+        """
+        Returns the current preview state for tools that support live preview.
+        Override in subclasses that have a _preview_state attribute.
+        """
+        return None
 
     def handle_text_input(self, text: str) -> bool:
         """Optional hook for handling printable character input."""

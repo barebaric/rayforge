@@ -14,6 +14,9 @@ class ArcTool(SketchTool):
         super().__init__(element)
         self._preview_state: Optional[ArcPreviewState] = None
 
+    def get_preview_state(self) -> Optional[ArcPreviewState]:
+        return self._preview_state
+
     def on_deactivate(self):
         """Clean up any intermediate points if the arc was not finished."""
         if self._preview_state is not None:

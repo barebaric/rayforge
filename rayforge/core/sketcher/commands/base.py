@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Dict, Optional, Any
+from typing import TYPE_CHECKING, Dict, List, Optional, Any
 
 from ...geo import Point
 from ...undo.command import Command
@@ -8,6 +8,7 @@ from ...undo.command import Command
 if TYPE_CHECKING:
     from ..registry import EntityRegistry
     from ..sketch import Sketch
+    from .dimension import DimensionData
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,24 @@ class PreviewState:
             hit testing for snap purposes.
         """
         return set()
+
+    def get_dimensions(
+        self, registry: "EntityRegistry"
+    ) -> List["DimensionData"]:
+        """
+        Returns dimension data for live preview rendering.
+
+        Subclasses should override this to provide dimension information
+        (lengths, radii, angles, etc.) that should be displayed during
+        the preview phase.
+
+        Args:
+            registry: The entity registry to query for point positions.
+
+        Returns:
+            List of DimensionData objects representing dimensions to display.
+        """
+        return []
 
 
 class SketchChangeCommand(Command):

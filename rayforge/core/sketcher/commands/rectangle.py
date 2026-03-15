@@ -1,12 +1,13 @@
 from __future__ import annotations
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, Dict, Any
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from ...geo import Point as GeoPoint
-from .base import PreviewState, SketchChangeCommand
-from .items import AddItemsCommand
-from ..entities import Point, Line
 from ..constraints import HorizontalConstraint, VerticalConstraint
+from ..entities import Line, Point
+from .base import PreviewState, SketchChangeCommand
+from .dimension import DimensionData
+from .items import AddItemsCommand
 
 if TYPE_CHECKING:
     from ..registry import EntityRegistry
@@ -40,6 +41,39 @@ class RectanglePreviewState(PreviewState):
             if pid is not None:
                 result.add(pid)
         return result
+
+    def get_dimensions(
+        self, registry: "EntityRegistry"
+    ) -> List["DimensionData"]:
+        """
+        Returns width and height dimensions for preview.
+
+        Args:
+            registry: The entity registry to query for point positions.
+
+        Returns:
+            List containing DimensionData for width and height.
+        """
+        try:
+            p1 = registry.get_point(self.start_id)
+            p2 = registry.get_point(self.p_end_id)
+        except IndexError:
+            return []
+        width = abs(p2.x - p1.x)
+        height = abs(p2.y - p1.y)
+        mid_x = (p1.x + p2.x) / 2
+        top_y = min(p1.y, p2.y)
+        right_x = max(p1.x, p2.x)
+        return [
+            DimensionData(
+                label=DimensionData.format_length(width),
+                position=(mid_x, top_y),
+            ),
+            DimensionData(
+                label=DimensionData.format_length(height),
+                position=(right_x, (p1.y + p2.y) / 2),
+            ),
+        ]
 
 
 class RectangleCommand(SketchChangeCommand):
