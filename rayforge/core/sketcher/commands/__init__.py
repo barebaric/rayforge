@@ -5,6 +5,7 @@ from .circle import CircleCommand, CirclePreviewState
 from .constraint import ModifyConstraintCommand
 from .constraint_create import CreateOrEditConstraintCommand
 from .construction import ToggleConstructionCommand
+from .dimension import DimensionData
 from .fill import AddFillCommand, RemoveFillCommand
 from .fillet import FilletCommand
 from .items import AddItemsCommand, RemoveItemsCommand
@@ -26,6 +27,7 @@ __all__ = [
     "CircleCommand",
     "CirclePreviewState",
     "CreateOrEditConstraintCommand",
+    "DimensionData",
     "FilletCommand",
     "LineCommand",
     "LinePreviewState",

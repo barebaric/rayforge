@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Optional, Set
 
 from ...core.geo import Geometry, Point as GeoPoint
 from ...core.matrix import Matrix
+from ...core.sketcher.commands.dimension import DimensionData
 from ...core.sketcher.constraints import (
     CoincidentConstraint,
     PointOnLineConstraint,
@@ -75,12 +76,12 @@ class SketchRenderer:
 
         ctx.set_font_size(12)
 
-        # Draw points first, so that constraint overlays are drawn on top.
         to_screen = self.element.hittester.get_model_to_screen_transform(
             self.element
         )
         self._draw_points(ctx, to_screen)
         self._draw_overlays(ctx)
+        self._draw_preview_dimensions(ctx)
 
     def _draw_origin(self, ctx: cairo.Context):
         """Draws a fixed symbol at (0,0)."""
@@ -540,3 +541,63 @@ class SketchRenderer:
 
             ctx.arc(sx, sy, r, 0, 2 * math.pi)
             ctx.fill()
+
+    def _draw_preview_dimensions(self, ctx: cairo.Context):
+        tool = self.element.current_tool
+        preview_state = tool.get_preview_state()
+        if preview_state is None:
+            return
+
+        dimensions = preview_state.get_dimensions(self.element.sketch.registry)
+        if not dimensions:
+            return
+
+        to_screen_transform = (
+            self.element.hittester.get_model_to_screen_transform(self.element)
+        )
+        to_screen = to_screen_transform.transform_point
+
+        ctx.save()
+        ctx.set_font_size(11)
+        ctx.set_line_width(1.0)
+
+        for dim in dimensions:
+            if not isinstance(dim, DimensionData):
+                continue
+
+            sx, sy = to_screen(dim.position)
+
+            has_leader = dim.leader_end is not None
+
+            extents = ctx.text_extents(dim.label)
+            text_w = extents.width
+            text_h = extents.height
+            x_bearing = extents.x_bearing
+
+            label_offset_x = 15
+            label_offset_y = -15
+            label_sx = sx + label_offset_x
+            label_sy = sy + label_offset_y
+
+            if has_leader:
+                lx, ly = to_screen(dim.leader_end)
+                ctx.set_source_rgba(0.2, 0.4, 0.8, 0.9)
+                ctx.move_to(lx, ly)
+                ctx.line_to(label_sx, label_sy)
+                ctx.stroke()
+
+            padding = 3.0
+            bg_x = label_sx + x_bearing - padding
+            bg_y = label_sy - text_h - padding
+            bg_w = text_w + 2 * padding
+            bg_h = text_h + 2 * padding
+
+            ctx.set_source_rgba(1.0, 1.0, 1.0, 0.85)
+            ctx.rectangle(bg_x, bg_y, bg_w, bg_h)
+            ctx.fill()
+
+            ctx.set_source_rgba(0.1, 0.1, 0.1, 1.0)
+            ctx.move_to(label_sx, label_sy)
+            ctx.show_text(dim.label)
+
+        ctx.restore()

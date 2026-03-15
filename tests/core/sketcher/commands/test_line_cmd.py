@@ -1,3 +1,4 @@
+import math
 from rayforge.core.sketcher import Sketch
 from rayforge.core.sketcher.commands import LineCommand, LinePreviewState
 from rayforge.core.sketcher.entities import Line, Point
@@ -249,3 +250,54 @@ def test_line_undo_no_dangling_points():
 
     assert len(sketch.registry.points) == initial_point_count
     assert len(sketch.registry.entities) == initial_entity_count
+
+
+def test_line_preview_get_dimensions_returns_length_at_midpoint():
+    """Test that dimension shows length at line midpoint."""
+    sketch = Sketch()
+    state = LineCommand.start_preview(sketch.registry, 0, 0, snapped_pid=None)
+    LineCommand.update_preview(sketch.registry, state, 100, 0)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert len(dims) == 1
+    assert dims[0].label == "100.00"
+    assert dims[0].position == (50.0, 0.0)
+    assert dims[0].leader_end is None
+
+
+def test_line_preview_get_dimensions_diagonal_line():
+    """Test dimension for diagonal line."""
+    sketch = Sketch()
+    state = LineCommand.start_preview(sketch.registry, 0, 0, snapped_pid=None)
+    LineCommand.update_preview(sketch.registry, state, 30, 40)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert len(dims) == 1
+    expected_length = math.hypot(30, 40)
+    assert dims[0].label == f"{expected_length:.2f}"
+    assert dims[0].position == (15.0, 20.0)
+
+
+def test_line_preview_get_dimensions_very_small_length():
+    """Test that very small lengths show as 0.00."""
+    sketch = Sketch()
+    state = LineCommand.start_preview(sketch.registry, 0, 0, snapped_pid=None)
+    LineCommand.update_preview(sketch.registry, state, 0.005, 0)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert len(dims) == 1
+    assert dims[0].label == "0.00"
+
+
+def test_line_preview_get_dimensions_missing_point():
+    """Test that missing points return empty list."""
+    sketch = Sketch()
+    state = LineCommand.start_preview(sketch.registry, 0, 0, snapped_pid=None)
+    sketch.registry.points.clear()
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert dims == []

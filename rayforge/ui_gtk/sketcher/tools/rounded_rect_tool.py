@@ -18,6 +18,9 @@ class RoundedRectTool(SketchTool):
         super().__init__(element)
         self._preview_state: Optional[RoundedRectPreviewState] = None
 
+    def get_preview_state(self) -> Optional[RoundedRectPreviewState]:
+        return self._preview_state
+
     def on_deactivate(self):
         """Clean up if the tool is deactivated mid-creation."""
         if self._preview_state is None:

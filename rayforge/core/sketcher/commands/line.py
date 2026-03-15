@@ -1,10 +1,12 @@
 from __future__ import annotations
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, List
+import math
+from typing import TYPE_CHECKING, List, Optional
 
 from ...geo import Point as GeoPoint
 from ..entities import Line, Point
 from .base import PreviewState, SketchChangeCommand
+from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
@@ -34,6 +36,33 @@ class LinePreviewState(PreviewState):
         Excludes the start point since that may be permanent.
         """
         return {self.end_id}
+
+    def get_dimensions(
+        self, registry: "EntityRegistry"
+    ) -> List["DimensionData"]:
+        """
+        Returns the line length dimension for preview.
+
+        Args:
+            registry: The entity registry to query for point positions.
+
+        Returns:
+            List containing a single DimensionData for the line length.
+        """
+        try:
+            p1 = registry.get_point(self.start_id)
+            p2 = registry.get_point(self.end_id)
+        except IndexError:
+            return []
+        length = math.hypot(p2.x - p1.x, p2.y - p1.y)
+        mid_x = (p1.x + p2.x) / 2
+        mid_y = (p1.y + p2.y) / 2
+        return [
+            DimensionData(
+                label=DimensionData.format_length(length),
+                position=(mid_x, mid_y),
+            )
+        ]
 
 
 class LineCommand(SketchChangeCommand):

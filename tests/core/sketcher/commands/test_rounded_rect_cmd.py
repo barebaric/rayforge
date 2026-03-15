@@ -203,3 +203,107 @@ def test_rounded_rect_preview_with_small_radius():
     end_p = sketch.registry.get_point(state.p_end_id)
     assert end_p.x == 30
     assert end_p.y == 20
+
+
+def test_rounded_rect_preview_get_dimensions_returns_all():
+    """Test that dimensions show width, height, and radius."""
+    sketch = Sketch()
+    state = RoundedRectCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None, radius=10.0
+    )
+    RoundedRectCommand.update_preview(sketch.registry, state, 100, 50)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert len(dims) == 3
+    labels = [d.label for d in dims]
+    assert "100.00" in labels
+    assert "50.00" in labels
+    assert "R10.00" in labels
+
+
+def test_rounded_rect_preview_get_dimensions_zero_radius():
+    """Test that zero radius doesn't add radius dimension."""
+    sketch = Sketch()
+    state = RoundedRectCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None, radius=0.0
+    )
+    RoundedRectCommand.update_preview(sketch.registry, state, 100, 50)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert len(dims) == 2
+    labels = [d.label for d in dims]
+    assert "100.00" in labels
+    assert "50.00" in labels
+
+
+def test_rounded_rect_preview_get_dimensions_width_position_on_top_edge():
+    """Test width label is positioned on top edge."""
+    sketch = Sketch()
+    state = RoundedRectCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None, radius=10.0
+    )
+    RoundedRectCommand.update_preview(sketch.registry, state, 100, 50)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    width_dim = next(d for d in dims if d.label == "100.00")
+    assert width_dim.position[0] == 50.0
+    assert width_dim.position[1] == 0
+
+
+def test_rounded_rect_preview_get_dimensions_height_position_on_right_edge():
+    """Test height label is positioned on right edge."""
+    sketch = Sketch()
+    state = RoundedRectCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None, radius=10.0
+    )
+    RoundedRectCommand.update_preview(sketch.registry, state, 100, 50)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    height_dim = next(d for d in dims if d.label == "50.00")
+    assert height_dim.position[0] == 100
+    assert height_dim.position[1] == 25.0
+
+
+def test_rounded_rect_preview_get_dimensions_radius_label_format():
+    """Test that radius label uses R prefix."""
+    sketch = Sketch()
+    state = RoundedRectCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None, radius=15.5
+    )
+    RoundedRectCommand.update_preview(sketch.registry, state, 100, 50)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    radius_dim = next(d for d in dims if d.label.startswith("R"))
+    assert radius_dim.label == "R15.50"
+
+
+def test_rounded_rect_preview_get_dimensions_no_leader_end():
+    """Test that rounded rect dimensions have no leader_end."""
+    sketch = Sketch()
+    state = RoundedRectCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None, radius=10.0
+    )
+    RoundedRectCommand.update_preview(sketch.registry, state, 100, 50)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    for dim in dims:
+        assert dim.leader_end is None
+
+
+def test_rounded_rect_preview_get_dimensions_missing_point():
+    """Test that missing points return empty list."""
+    sketch = Sketch()
+    state = RoundedRectCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None, radius=10.0
+    )
+    sketch.registry.points.clear()
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert dims == []

@@ -516,3 +516,77 @@ def test_arc_command_undo_restores_temp_points_to_original_state():
     # The temp center and start should NOT be restored since they were temp
     assert len(sketch.registry.points) == 1  # Only origin
     assert sketch.registry.points[0].id == 0  # Only origin
+
+
+def test_arc_preview_get_dimensions_returns_radius():
+    """Test that dimension shows radius at arc midpoint."""
+    sketch = Sketch()
+    state = ArcCommand.start_center_preview(
+        sketch.registry, 0, 0, snapped_pid=None
+    )
+    ArcCommand.set_start_point(sketch.registry, state, 50, 0)
+    ArcCommand.update_preview(sketch.registry, state, 0, 50)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert len(dims) == 1
+    assert dims[0].label == "R50.00"
+    assert dims[0].leader_end is None
+
+
+def test_arc_preview_get_dimensions_no_dimensions_before_start():
+    """Test that no dimensions before start point is set."""
+    sketch = Sketch()
+    state = ArcCommand.start_center_preview(
+        sketch.registry, 0, 0, snapped_pid=None
+    )
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert dims == []
+
+
+def test_arc_preview_get_dimensions_position_on_arc():
+    """Test that dimension position is at arc midpoint on radius."""
+    sketch = Sketch()
+    state = ArcCommand.start_center_preview(
+        sketch.registry, 0, 0, snapped_pid=None
+    )
+    ArcCommand.set_start_point(sketch.registry, state, 100, 0)
+    ArcCommand.update_preview(sketch.registry, state, 0, 100)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    pos = dims[0].position
+    dist_to_center = math.hypot(pos[0], pos[1])
+    assert abs(dist_to_center - 100.0) < 0.01
+
+
+def test_arc_preview_get_dimensions_label_on_arc():
+    """Test that label is positioned on the arc radius."""
+    sketch = Sketch()
+    state = ArcCommand.start_center_preview(
+        sketch.registry, 0, 0, snapped_pid=None
+    )
+    ArcCommand.set_start_point(sketch.registry, state, 50, 0)
+    ArcCommand.update_preview(sketch.registry, state, 0, 50)
+
+    dims = state.get_dimensions(sketch.registry)
+
+    pos = dims[0].position
+    dist_to_center = math.hypot(pos[0], pos[1])
+    assert abs(dist_to_center - 50.0) < 0.01
+
+
+def test_arc_preview_get_dimensions_missing_point():
+    """Test that missing points return empty list."""
+    sketch = Sketch()
+    state = ArcCommand.start_center_preview(
+        sketch.registry, 0, 0, snapped_pid=None
+    )
+    ArcCommand.set_start_point(sketch.registry, state, 50, 0)
+    sketch.registry.points.clear()
+
+    dims = state.get_dimensions(sketch.registry)
+
+    assert dims == []
