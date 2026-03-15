@@ -16,9 +16,9 @@ if sys.platform.startswith("linux"):
 from rayforge.core.geo.font_config import FontConfig
 from rayforge.core.sketcher import Sketch
 from rayforge.core.sketcher.entities import TextBoxEntity
-from rayforge.core.sketcher.tools import TextBoxTool
-from rayforge.core.sketcher.tools.text_box_tool import TextBoxState
 from rayforge.ui_gtk.sketcher.sketchelement import SketchElement
+from rayforge.ui_gtk.sketcher.tools import TextBoxTool
+from rayforge.ui_gtk.sketcher.tools.text_box_tool import TextBoxState
 from rayforge.ui_gtk.sketcher.renderer import SketchRenderer
 
 

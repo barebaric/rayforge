@@ -1,10 +1,10 @@
 from unittest.mock import MagicMock, Mock
 import pytest
 from rayforge.core.geo.font_config import FontConfig
-from rayforge.core.sketcher.tools import TextBoxTool
-from rayforge.core.sketcher.tools.base import SketcherKey
-from rayforge.core.sketcher.tools.text_box_tool import TextBoxState
 from rayforge.core.sketcher.entities import TextBoxEntity
+from rayforge.ui_gtk.sketcher.tools import TextBoxTool
+from rayforge.ui_gtk.sketcher.tools.base import SketcherKey
+from rayforge.ui_gtk.sketcher.tools.text_box_tool import TextBoxState
 
 
 @pytest.fixture

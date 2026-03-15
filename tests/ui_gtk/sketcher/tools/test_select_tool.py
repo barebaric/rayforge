@@ -2,7 +2,7 @@ import pytest
 import cairo
 from unittest.mock import Mock
 from rayforge.core.sketcher.entities import Line
-from rayforge.core.sketcher.tools.select_tool import SelectTool
+from rayforge.ui_gtk.sketcher.tools.select_tool import SelectTool
 
 
 @pytest.fixture

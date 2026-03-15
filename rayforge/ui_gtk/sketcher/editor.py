@@ -1,15 +1,17 @@
 import logging
-from typing import Union, Optional, TYPE_CHECKING
-from gi.repository import Gtk, Gdk, GLib
-from ...core.sketcher.entities import Point, Entity
+from typing import TYPE_CHECKING, Optional, Union
+
+from gi.repository import Gdk, GLib, Gtk
+
 from ...core.sketcher.constraints import Constraint
-from ...core.sketcher.tools import SelectTool, TextBoxTool
-from ...core.sketcher.tools.base import SketcherKey
-from ...core.sketcher.tools.text_box_tool import TextBoxState
+from ...core.sketcher.entities import Entity, Point
 from ...core.undo import HistoryManager
 from ..canvas.cursor import get_tool_cursor
 from ..shared.keyboard import is_primary_modifier
 from .piemenu import SketchPieMenu
+from .tools import SelectTool, TextBoxTool
+from .tools.base import SketcherKey
+from .tools.text_box_tool import TextBoxState
 
 if TYPE_CHECKING:
     from .sketchelement import SketchElement

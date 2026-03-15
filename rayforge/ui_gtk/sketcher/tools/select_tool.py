@@ -1,25 +1,27 @@
 import logging
 import math
-import cairo
-from typing import Optional, Tuple, Dict, cast, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 from gettext import gettext as _
-from ...matrix import Matrix
-from ..commands import AddItemsCommand, MovePointCommand
-from ..constraints import (
+
+import cairo
+
+from ....core.matrix import Matrix
+from ....core.sketcher.commands import AddItemsCommand, MovePointCommand
+from ....core.sketcher.constraints import (
     AngleConstraint,
-    DragConstraint,
-    DistanceConstraint,
-    RadiusConstraint,
-    DiameterConstraint,
     CoincidentConstraint,
+    DiameterConstraint,
+    DistanceConstraint,
+    DragConstraint,
     PointOnLineConstraint,
+    RadiusConstraint,
 )
-from ..entities import Entity, Line, Arc, Circle, TextBoxEntity
+from ....core.sketcher.entities import Arc, Circle, Entity, Line, TextBoxEntity
 from .base import SketchTool
 from .text_box_tool import TextBoxTool
 
 if TYPE_CHECKING:
-    from ..selection import SketchSelection
+    from ....core.sketcher.selection import SketchSelection
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +107,7 @@ class SelectTool(SketchTool):
                         new_constr = RadiusConstraint(entity.id, radius)
                         cmd = AddItemsCommand(
                             self.element.sketch,
-                            _("Add Radius"),
+                            "Add Radius",
                             constraints=[new_constr],
                         )
                         self.element.execute_command(cmd)

@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock
-from rayforge.core.sketcher.tools.circle_tool import CircleTool
+from rayforge.ui_gtk.sketcher.tools.circle_tool import CircleTool
 
 
 @pytest.fixture

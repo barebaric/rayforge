@@ -1,7 +1,8 @@
 from typing import Optional
 from gettext import gettext as _
-from ..commands import AddItemsCommand
-from ..entities import Point, Circle
+
+from ....core.sketcher.commands import AddItemsCommand
+from ....core.sketcher.entities import Circle, Point
 from .base import SketchTool
 
 

@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import Mock
 from rayforge.core.sketcher.sketch import Fill
-from rayforge.core.sketcher.tools.fill_tool import FillTool
+from rayforge.ui_gtk.sketcher.tools.fill_tool import FillTool
 
 
 @pytest.fixture

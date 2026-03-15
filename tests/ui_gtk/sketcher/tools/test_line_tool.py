@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock
-from rayforge.core.sketcher.tools.line_tool import LineTool
+from rayforge.ui_gtk.sketcher.tools.line_tool import LineTool
 
 
 @pytest.fixture

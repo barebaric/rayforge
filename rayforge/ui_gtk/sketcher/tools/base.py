@@ -1,7 +1,13 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from enum import Enum, auto
+from typing import TYPE_CHECKING
+
 import cairo
+
+if TYPE_CHECKING:
+    from ..sketchelement import SketchElement
 
 
 class SketcherKey(Enum):
@@ -26,7 +32,7 @@ class SketcherKey(Enum):
 class SketchTool(ABC):
     """Abstract base class for sketcher tools."""
 
-    def __init__(self, element):
+    def __init__(self, element: SketchElement):
         self.element = element
 
     @abstractmethod

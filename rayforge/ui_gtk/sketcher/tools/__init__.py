@@ -1,4 +1,4 @@
-from .base import SketchTool
+from .base import SketchTool, SketcherKey
 from .line_tool import LineTool
 from .arc_tool import ArcTool
 from .circle_tool import CircleTool
@@ -15,6 +15,7 @@ __all__ = [
     "LineTool",
     "SelectTool",
     "SketchTool",
+    "SketcherKey",
     "RoundedRectTool",
     "RectangleTool",
     "TextBoxTool",
