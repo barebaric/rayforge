@@ -237,3 +237,125 @@ def test_add_text_box_increments_id_counter(registry):
     tb_id = registry.add_text_box(p1, p2, p3, content="Test")
 
     assert tb_id == 3
+
+
+def test_single_entity_returns_self():
+    """A single entity with no connections should return only itself."""
+    registry = EntityRegistry()
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    l1 = registry.add_line(p1, p2)
+
+    connected = registry.get_connected_entity_ids(l1)
+    assert connected == {l1}
+
+
+def test_two_connected_lines():
+    """Two lines sharing a point should both be returned."""
+    registry = EntityRegistry()
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(20, 0)
+    l1 = registry.add_line(p1, p2)
+    l2 = registry.add_line(p2, p3)
+
+    connected_from_l1 = registry.get_connected_entity_ids(l1)
+    assert connected_from_l1 == {l1, l2}
+
+    connected_from_l2 = registry.get_connected_entity_ids(l2)
+    assert connected_from_l2 == {l1, l2}
+
+
+def test_chain_of_connected_entities():
+    """A chain of entities should all be returned."""
+    registry = EntityRegistry()
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(20, 0)
+    p4 = registry.add_point(30, 0)
+    l1 = registry.add_line(p1, p2)
+    l2 = registry.add_line(p2, p3)
+    l3 = registry.add_line(p3, p4)
+
+    connected = registry.get_connected_entity_ids(l1)
+    assert connected == {l1, l2, l3}
+
+
+def test_disconnected_entities():
+    """Disconnected entities should not be included."""
+    registry = EntityRegistry()
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(30, 0)
+    p4 = registry.add_point(40, 0)
+    l1 = registry.add_line(p1, p2)
+    l2 = registry.add_line(p3, p4)
+
+    connected_l1 = registry.get_connected_entity_ids(l1)
+    assert connected_l1 == {l1}
+
+    connected_l2 = registry.get_connected_entity_ids(l2)
+    assert connected_l2 == {l2}
+
+
+def test_star_topology():
+    """Multiple entities sharing a single point (star pattern)."""
+    registry = EntityRegistry()
+    center = registry.add_point(0, 0)
+    p1 = registry.add_point(10, 0)
+    p2 = registry.add_point(0, 10)
+    p3 = registry.add_point(-10, 0)
+    l1 = registry.add_line(center, p1)
+    l2 = registry.add_line(center, p2)
+    l3 = registry.add_line(center, p3)
+
+    connected = registry.get_connected_entity_ids(l1)
+    assert connected == {l1, l2, l3}
+
+
+def test_mixed_entity_types():
+    """Connected entities of different types (lines, arcs, circles)."""
+    registry = EntityRegistry()
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(10, 10)
+    center = registry.add_point(5, 5)
+
+    l1 = registry.add_line(p1, p2)
+    l2 = registry.add_line(p2, p3)
+    arc = registry.add_arc(p1, p3, center)
+
+    connected = registry.get_connected_entity_ids(l1)
+    assert connected == {l1, l2, arc}
+
+
+def test_circle_is_standalone():
+    """A circle shares only its center and radius points."""
+    registry = EntityRegistry()
+    center = registry.add_point(0, 0)
+    radius_pt = registry.add_point(10, 0)
+    circle = registry.add_circle(center, radius_pt)
+
+    connected = registry.get_connected_entity_ids(circle)
+    assert connected == {circle}
+
+
+def test_circle_connected_via_shared_point():
+    """A circle connected to a line via shared center point."""
+    registry = EntityRegistry()
+    center = registry.add_point(0, 0)
+    p1 = registry.add_point(10, 0)
+    radius_pt = registry.add_point(5, 0)
+
+    l1 = registry.add_line(p1, center)
+    circle = registry.add_circle(center, radius_pt)
+
+    connected = registry.get_connected_entity_ids(l1)
+    assert connected == {l1, circle}
+
+
+def test_invalid_entity_id_returns_empty():
+    """Invalid entity ID should return empty set."""
+    registry = EntityRegistry()
+    connected = registry.get_connected_entity_ids(999)
+    assert connected == set()

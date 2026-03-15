@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum, auto
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
 
 import cairo
 
@@ -75,9 +75,18 @@ class SketchTool(ABC):
         """Optional hook for handling special (non-character) key events."""
         return False
 
-    def get_active_shortcuts(self) -> List[Tuple[str, str]]:
+    def get_active_shortcuts(
+        self,
+    ) -> List[Tuple[Union[str, List[str]], str, Optional[Callable[[], bool]]]]:
         """
         Returns shortcuts currently available based on tool state.
+
+        Returns a list of (key, label, condition) tuples.
+        - key: Either a string (single key) or list of strings (multiple keys)
+        - label: Human-readable description
+        - condition: Optional callable returning True if shortcut should be
+                     shown. If None, shortcut is always shown.
+
         Override in subclasses to provide context-sensitive shortcuts.
         """
         return []

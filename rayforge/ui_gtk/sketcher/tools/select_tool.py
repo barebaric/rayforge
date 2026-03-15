@@ -1,5 +1,15 @@
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 from gettext import gettext as _
 import cairo
 
@@ -87,11 +97,18 @@ class SelectTool(SketchTool):
         snapped = round(target_pos / grid_size) * grid_size
         return snapped - target_pos
 
-    def get_active_shortcuts(self) -> List[Tuple[str, str]]:
+    def get_active_shortcuts(
+        self,
+    ) -> List[Tuple[Union[str, List[str]], str, Optional[Callable[[], bool]]]]:
         """Returns shortcuts available based on current tool state."""
-        if self._is_dragging():
-            return [(PRIMARY_KEY_NAME, _("Snap to Grid"))]
-        return []
+        return [
+            (PRIMARY_KEY_NAME, _("Snap to Grid"), lambda: self._is_dragging()),
+            (
+                ["Shift", "Doubleclick"],
+                _("Select Connected"),
+                lambda: not self._is_dragging(),
+            ),
+        ]
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         hit_type, hit_obj = self.element.hittester.get_hit_data(
@@ -100,6 +117,39 @@ class SelectTool(SketchTool):
         logger.debug(
             f"SelectTool.on_press: n_press={n_press}, hit_type='{hit_type}'"
         )
+
+        is_shift_pressed = False
+        if self.element.canvas:
+            is_shift_pressed = self.element.canvas._shift_pressed
+
+        # Shift+double click on entity to select all connected geometry
+        if n_press == 2 and hit_type == "entity" and is_shift_pressed:
+            logger.debug("Shift+double-click on entity detected.")
+            entity = cast(Entity, hit_obj)
+            self.element.selection.select_connected_entities(
+                entity.id, self.element.sketch.registry
+            )
+            self.element.mark_dirty()
+            return True
+
+        # Shift+double click on point to select all connected geometry
+        if n_press == 2 and hit_type == "point" and is_shift_pressed:
+            logger.debug("Shift+double-click on point detected.")
+            pid = cast(int, hit_obj)
+            registry = self.element.sketch.registry
+            entity_ids = self.element.selection.entity_ids
+            entity_ids.clear()
+            for entity in registry.entities:
+                if pid in entity.get_point_ids():
+                    connected = registry.get_connected_entity_ids(entity.id)
+                    entity_ids.extend(connected)
+            entity_ids[:] = list(set(entity_ids))
+            self.element.selection.point_ids.clear()
+            self.element.selection.constraint_idx = None
+            self.element.selection.junction_pid = None
+            self.element.selection.changed.send(self.element.selection)
+            self.element.mark_dirty()
+            return True
 
         # Double click on entity to add/edit constraints. This is a terminal
         # action, so returning True is correct.

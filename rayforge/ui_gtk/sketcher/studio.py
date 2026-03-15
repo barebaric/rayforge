@@ -373,32 +373,38 @@ class SketchStudio(Gtk.Box):
             return
 
         element = self.canvas.sketch_element
+        tool = element.current_tool
 
-        # First, check if tool has context-sensitive shortcuts
-        tool_shortcuts = element.current_tool.get_active_shortcuts()
-        if tool_shortcuts:
-            for key, label in tool_shortcuts:
-                self.status_bar.add_shortcut_entry([key], label, separator="")
-            return
+        def is_not_dragging():
+            return not (hasattr(tool, "_is_dragging") and tool._is_dragging())
 
-        # Otherwise, show constraint/tool selection shortcuts
-        shortcuts = get_active_shortcuts(
+        # Tool shortcuts (key can be string or list of strings)
+        for key, label, condition in tool.get_active_shortcuts():
+            if condition is None or condition():
+                if isinstance(key, list):
+                    display_keys = key
+                else:
+                    display_keys = [key]
+                self.status_bar.add_shortcut_entry(
+                    display_keys, label, separator=""
+                )
+
+        # Global shortcuts (key sequences split into individual keys)
+        global_shortcuts = get_active_shortcuts(
             selection=element.selection,
             sketch=element.sketch,
-            active_tool=element.current_tool,
+            active_tool=tool,
+            is_dragging_fn=is_not_dragging,
         )
-
-        for key, label in shortcuts:
-            keys = list(key)
-            display_keys = []
-            for k in keys:
-                if k == " ":
-                    display_keys.append("Space")
+        for key, label, condition in global_shortcuts:
+            if condition is None or condition():
+                if key == " ":
+                    display_keys = ["Space"]
                 else:
-                    display_keys.append(k.upper())
-            self.status_bar.add_shortcut_entry(
-                display_keys, label, separator=""
-            )
+                    display_keys = [k.upper() for k in key]
+                self.status_bar.add_shortcut_entry(
+                    display_keys, label, separator=""
+                )
 
     def _on_text_editing_started(self, sender):
         """Shows font properties when text editing begins."""

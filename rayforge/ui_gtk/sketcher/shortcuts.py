@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import List, Optional, TYPE_CHECKING
+from typing import Callable, List, Optional, Tuple, TYPE_CHECKING
 
 from ...core.sketcher.constraints import (
     AngleConstraint,
@@ -65,21 +65,26 @@ def get_active_shortcuts(
     sketch: Optional["Sketch"] = None,
     active_tool: Optional["SketchTool"] = None,
     is_editing: bool = False,
-) -> List[tuple]:
+    is_dragging_fn: Optional[Callable[[], bool]] = None,
+) -> List[Tuple[str, str, Optional[Callable[[], bool]]]]:
     """
-    Returns list of (key, label) tuples for current context.
+    Returns list of (key, label, condition) tuples for current context.
     Tool shortcuts are only shown when no constraint shortcuts are applicable.
+
+    Args:
+        is_dragging_fn: Optional callable that returns True if currently
+                        dragging. Used to hide global shortcuts during drag.
     """
     result = []
 
     for cls, key, label in CONSTRAINT_SHORTCUTS:
         if cls.can_apply_to(selection, sketch):
-            result.append((key, label))
+            result.append((key, label, is_dragging_fn))
 
     if not result:
         for tool in ALL_TOOLS:
             if tool.SHORTCUT:
-                result.append(tool.SHORTCUT)
+                result.append((*tool.SHORTCUT, is_dragging_fn))
 
     return result
 
