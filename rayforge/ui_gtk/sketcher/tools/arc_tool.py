@@ -1,9 +1,6 @@
 from typing import Optional
 
-from ....core.sketcher.commands import (
-    ArcCommand,
-    ArcPreviewState,
-)
+from ....core.sketcher.commands import ArcCommand, ArcPreviewState
 from .base import SketchTool
 
 
@@ -12,29 +9,27 @@ class ArcTool(SketchTool):
 
     def __init__(self, element):
         super().__init__(element)
-        self.center_id: Optional[int] = None
-        self.start_id: Optional[int] = None
-        self.center_temp: bool = False
-        self.start_temp: bool = False
         self._preview_state: Optional[ArcPreviewState] = None
 
     def on_deactivate(self):
         """Clean up any intermediate points if the arc was not finished."""
         if self._preview_state is not None:
-            ArcCommand.cleanup_preview(
-                self.element.sketch.registry, self._preview_state
-            )
+            if self._preview_state.has_start_point:
+                ArcCommand.cleanup_preview(
+                    self.element.sketch.registry, self._preview_state
+                )
+
+            if self._preview_state.center_temp:
+                self.element.remove_point_if_unused(
+                    self._preview_state.center_id
+                )
+            if self._preview_state.start_temp:
+                self.element.remove_point_if_unused(
+                    self._preview_state.start_id
+                )
+
             self._preview_state = None
 
-        if self.start_temp:
-            self.element.remove_point_if_unused(self.start_id)
-        if self.center_temp:
-            self.element.remove_point_if_unused(self.center_id)
-
-        self.center_id = None
-        self.start_id = None
-        self.center_temp = False
-        self.start_temp = False
         self.element.mark_dirty()
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
@@ -58,6 +53,9 @@ class ArcTool(SketchTool):
         if self._preview_state is None:
             return
 
+        if not self._preview_state.has_start_point:
+            return
+
         mx, my = self.element.hittester.screen_to_model(
             world_x, world_y, self.element
         )
@@ -73,71 +71,53 @@ class ArcTool(SketchTool):
     def _handle_click(self, pid_hit, mx, my) -> bool:
         # State machine: Center -> Start -> End
 
-        if self.center_id is not None:
+        if self._preview_state is not None:
             try:
-                self.element.sketch.registry.get_point(self.center_id)
-            except IndexError:
-                # Center point was deleted, reset the tool completely
-                self.on_deactivate()
-
-        if self.start_id is not None:
-            try:
-                self.element.sketch.registry.get_point(self.start_id)
-            except IndexError:
-                # Start point was deleted, reset to expecting start point
-                self.start_id = None
-                self.start_temp = False
-                if self._preview_state is not None:
-                    ArcCommand.cleanup_preview(
-                        self.element.sketch.registry, self._preview_state
-                    )
-                    self._preview_state = None
-
-        if self.center_id is None:
-            # Step 1: Center Point
-            if pid_hit is None:
-                pid_hit = self.element.sketch.add_point(mx, my)
-                self.center_temp = True
-                self.element.update_bounds_from_sketch()
-            else:
-                self.center_temp = False
-
-            self.center_id = pid_hit
-            self.element.selection.clear()
-            self.element.selection.select_point(pid_hit, False)
-
-        elif self.start_id is None:
-            # Step 2: Start Point
-            if pid_hit is None:
-                pid_hit = self.element.sketch.add_point(mx, my)
-                self.start_temp = True
-                self.element.update_bounds_from_sketch()
-            else:
-                self.start_temp = False
-
-            # Cannot start where center is
-            if pid_hit != self.center_id:
-                self.start_id = pid_hit
-                self.element.selection.select_point(pid_hit, True)
-
-                # Create a temporary End point and Arc entity to visualize
-                # dragging
-                self._preview_state = ArcCommand.start_preview(
-                    self.element.sketch.registry,
-                    mx,
-                    my,
-                    center_id=self.center_id,
-                    center_temp=self.center_temp,
-                    start_id=self.start_id,
-                    start_temp=self.start_temp,
+                self.element.sketch.registry.get_point(
+                    self._preview_state.center_id
                 )
+            except IndexError:
+                self.on_deactivate()
+                return True
+
+        if self._preview_state is None:
+            # Step 1: Center Point
+            self._preview_state = ArcCommand.start_center_preview(
+                self.element.sketch.registry, mx, my, snapped_pid=pid_hit
+            )
+            self.element.selection.clear()
+            self.element.selection.select_point(
+                self._preview_state.center_id, False
+            )
+            self.element.update_bounds_from_sketch()
+
+        elif not self._preview_state.has_start_point:
+            # Step 2: Start Point
+            if pid_hit == self._preview_state.center_id:
+                self.element.mark_dirty()
+                return True
+
+            ArcCommand.set_start_point(
+                self.element.sketch.registry,
+                self._preview_state,
+                mx,
+                my,
+                snapped_pid=pid_hit,
+            )
+            if self._preview_state.start_id is not None:
+                self.element.selection.select_point(
+                    self._preview_state.start_id, True
+                )
+            self.element.update_bounds_from_sketch()
 
         else:
             # Step 3: End Point (Finalize)
             if self._preview_state is None:
                 return False
+            if self._preview_state.start_id is None:
+                return False
 
-            preview_end_id = self._preview_state.temp_end_id
+            preview_ids = self._preview_state.get_preview_point_ids()
             clockwise = self._preview_state.clockwise
             center_id = self._preview_state.center_id
             center_temp = self._preview_state.center_temp
@@ -150,34 +130,24 @@ class ArcTool(SketchTool):
 
             self._preview_state = None
 
-            if pid_hit == preview_end_id:
-                pid_hit = None
+            final_pid = None if pid_hit in preview_ids else pid_hit
 
             cmd = ArcCommand(
                 self.element.sketch,
                 center_id,
                 start_id,
                 (mx, my),
-                end_pid=pid_hit,
+                end_pid=final_pid,
                 is_center_temp=center_temp,
                 is_start_temp=start_temp,
                 clockwise=clockwise,
             )
             self.element.execute_command(cmd)
 
-            # Reset tool state
-            self.center_id = None
-            self.start_id = None
-            self.center_temp = False
-            self.start_temp = False
-
-            # Select the last point
             self.element.selection.clear()
-            if cmd.end_pid is not None:
-                self.element.selection.select_point(cmd.end_pid, False)
-            elif cmd.add_cmd and cmd.add_cmd.points:
+            if cmd.committed_end_id is not None:
                 self.element.selection.select_point(
-                    cmd.add_cmd.points[-1].id, False
+                    cmd.committed_end_id, False
                 )
 
         self.element.mark_dirty()

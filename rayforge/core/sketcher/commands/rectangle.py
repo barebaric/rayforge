@@ -27,6 +27,19 @@ class RectanglePreviewState(PreviewState):
         self.p_end_id = p_end_id
         self.preview_ids = preview_ids
 
+    def get_preview_point_ids(self) -> set[int]:
+        """
+        Returns IDs of temporary preview points that shouldn't be snapped to.
+
+        Excludes the start point since that may be permanent.
+        """
+        result = {self.p_end_id}
+        for key in ["p2", "p4"]:
+            pid = self.preview_ids.get(key)
+            if pid is not None:
+                result.add(pid)
+        return result
+
 
 class RectangleCommand(SketchChangeCommand):
     """A smart command to create a fully constrained rectangle."""
@@ -45,6 +58,14 @@ class RectangleCommand(SketchChangeCommand):
         self.end_pid = end_pid
         self.is_start_temp = is_start_temp
         self.add_cmd: Optional[AddItemsCommand] = None
+        self._committed_end_id: Optional[int] = None
+
+    @property
+    def committed_end_id(self) -> Optional[int]:
+        """
+        The final end point ID after execute(), or None if not applicable.
+        """
+        return self._committed_end_id
 
     @staticmethod
     def calculate_geometry(
@@ -314,6 +335,7 @@ class RectangleCommand(SketchChangeCommand):
             constraints=result["constraints"],
         )
         self.add_cmd._do_execute()
+        self._committed_end_id = self.end_pid
 
     def _do_undo(self) -> None:
         if self.add_cmd:

@@ -49,6 +49,7 @@ def test_arc_update_preview():
 
     ArcCommand.update_preview(sketch.registry, state, 0, 50)
 
+    assert state.temp_end_id is not None
     end_p = sketch.registry.get_point(state.temp_end_id)
     expected_radius = 50.0
     actual_radius = math.hypot(end_p.x, end_p.y)

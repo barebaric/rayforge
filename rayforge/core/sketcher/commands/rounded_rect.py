@@ -35,6 +35,19 @@ class RoundedRectPreviewState(PreviewState):
         self.preview_ids = preview_ids
         self.radius = radius
 
+    def get_preview_point_ids(self) -> set[int]:
+        """
+        Returns IDs of temporary preview points that shouldn't be snapped to.
+
+        Excludes the start point since that may be permanent.
+        """
+        result = {self.p_end_id}
+        for key in ["t2", "t4", "t6", "t8", "c1", "c2", "c3", "c4"]:
+            pid = self.preview_ids.get(key)
+            if pid is not None:
+                result.add(pid)
+        return result
+
 
 class RoundedRectCommand(SketchChangeCommand):
     """A smart command to create a fully constrained rounded rectangle."""
@@ -53,6 +66,14 @@ class RoundedRectCommand(SketchChangeCommand):
         self.radius = radius
         self.is_start_temp = is_start_temp
         self.add_cmd: Optional[AddItemsCommand] = None
+        self._committed_end_id: Optional[int] = None
+
+    @property
+    def committed_end_id(self) -> Optional[int]:
+        """
+        The final end point ID after execute(), or None if not applicable.
+        """
+        return self._committed_end_id
 
     @staticmethod
     def calculate_geometry(
@@ -430,6 +451,7 @@ class RoundedRectCommand(SketchChangeCommand):
             constraints=result["constraints"],
         )
         self.add_cmd._do_execute()
+        self._committed_end_id = None
 
     def _do_undo(self) -> None:
         if self.add_cmd:

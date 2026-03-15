@@ -67,13 +67,7 @@ class RectangleTool(SketchTool):
             )
         else:
             # --- Second Click: Finalize the rectangle ---
-            preview_point_ids = {
-                self._preview_state.p_end_id,
-                self._preview_state.preview_ids.get("p2"),
-                self._preview_state.preview_ids.get("p4"),
-            }
-            preview_point_ids.discard(None)
-
+            preview_ids = self._preview_state.get_preview_point_ids()
             start_id = self._preview_state.start_id
             start_temp = self._preview_state.start_temp
 
@@ -83,7 +77,7 @@ class RectangleTool(SketchTool):
             self._preview_state = None
 
             # If we hit a preview point, treat it as no snap (use mouse coords)
-            final_pid = None if pid_hit in preview_point_ids else pid_hit
+            final_pid = None if pid_hit in preview_ids else pid_hit
 
             # Create the command to generate the rectangle
             cmd = RectangleCommand(

@@ -21,10 +21,10 @@ class ArcPreviewState(PreviewState):
         self,
         center_id: int,
         center_temp: bool,
-        start_id: int,
-        start_temp: bool,
-        temp_end_id: int,
-        temp_entity_id: int,
+        start_id: Optional[int] = None,
+        start_temp: bool = False,
+        temp_end_id: Optional[int] = None,
+        temp_entity_id: Optional[int] = None,
     ):
         self.center_id = center_id
         self.center_temp = center_temp
@@ -33,6 +33,22 @@ class ArcPreviewState(PreviewState):
         self.temp_end_id = temp_end_id
         self.temp_entity_id = temp_entity_id
         self.clockwise = False
+
+    def get_preview_point_ids(self) -> set[int]:
+        """
+        Returns IDs of temp preview points that shouldn't be snapped to.
+
+        Excludes center and start points since they may be permanent.
+        """
+        result: set[int] = set()
+        if self.temp_end_id is not None:
+            result.add(self.temp_end_id)
+        return result
+
+    @property
+    def has_start_point(self) -> bool:
+        """Returns True if start point has been set."""
+        return self.start_id is not None
 
 
 class ArcCommand(SketchChangeCommand):
@@ -58,6 +74,83 @@ class ArcCommand(SketchChangeCommand):
         self.is_start_temp = is_start_temp
         self.clockwise = clockwise
         self.add_cmd: Optional[AddItemsCommand] = None
+        self._committed_end_id: Optional[int] = None
+
+    @property
+    def committed_end_id(self) -> Optional[int]:
+        """The final end point ID after execute(), or None."""
+        return self._committed_end_id
+
+    @staticmethod
+    def start_center_preview(
+        registry: EntityRegistry,
+        x: float,
+        y: float,
+        snapped_pid: Optional[int] = None,
+        **kwargs,
+    ) -> ArcPreviewState:
+        """
+        Creates preview state after first click (center point).
+
+        Args:
+            registry: The entity registry to modify.
+            x, y: The initial coordinates.
+            snapped_pid: An existing point ID to snap to, or None.
+
+        Returns:
+            ArcPreviewState with center point set.
+        """
+        if snapped_pid is not None:
+            center_id = snapped_pid
+            center_temp = False
+        else:
+            center_id = registry.add_point(x, y)
+            center_temp = True
+
+        return ArcPreviewState(
+            center_id=center_id,
+            center_temp=center_temp,
+        )
+
+    @staticmethod
+    def set_start_point(
+        registry: EntityRegistry,
+        preview_state: PreviewState,
+        x: float,
+        y: float,
+        snapped_pid: Optional[int] = None,
+    ) -> None:
+        """
+        Sets the start point and creates the preview arc entity.
+
+        Args:
+            registry: The entity registry to modify.
+            preview_state: The preview state from start_center_preview.
+            x, y: The start point coordinates.
+            snapped_pid: An existing point ID to snap to, or None.
+
+        Raises:
+            AttributeError: If preview_state is not an ArcPreviewState.
+        """
+        if not isinstance(preview_state, ArcPreviewState):
+            raise AttributeError("Expected ArcPreviewState")
+
+        if snapped_pid is not None and snapped_pid != preview_state.center_id:
+            start_id = snapped_pid
+            start_temp = False
+        else:
+            start_id = registry.add_point(x, y)
+            start_temp = True
+
+        temp_end_id = registry.add_point(x, y)
+        temp_entity_id = registry.add_arc(
+            start_id, temp_end_id, preview_state.center_id
+        )
+
+        preview_state.start_id = start_id
+        preview_state.start_temp = start_temp
+        preview_state.temp_end_id = temp_end_id
+        preview_state.temp_entity_id = temp_entity_id
 
     @staticmethod
     def start_preview(
@@ -121,6 +214,13 @@ class ArcCommand(SketchChangeCommand):
         """
         if not isinstance(preview_state, ArcPreviewState):
             raise AttributeError("Expected ArcPreviewState")
+        if (
+            preview_state.temp_end_id is None
+            or preview_state.temp_entity_id is None
+            or preview_state.start_id is None
+        ):
+            return
+
         try:
             center = registry.get_point(preview_state.center_id)
             start = registry.get_point(preview_state.start_id)
@@ -165,11 +265,15 @@ class ArcCommand(SketchChangeCommand):
         """
         if not isinstance(preview_state, ArcPreviewState):
             raise AttributeError("Expected ArcPreviewState")
-        arc_ent = registry.get_entity(preview_state.temp_entity_id)
-        if isinstance(arc_ent, Arc):
-            preview_state.clockwise = arc_ent.clockwise
 
         if preview_state.temp_entity_id is not None:
+            try:
+                arc_ent = registry.get_entity(preview_state.temp_entity_id)
+                if isinstance(arc_ent, Arc):
+                    preview_state.clockwise = arc_ent.clockwise
+            except IndexError:
+                pass
+
             registry.entities = [
                 e
                 for e in registry.entities
@@ -181,6 +285,23 @@ class ArcCommand(SketchChangeCommand):
             registry.points = [
                 p for p in registry.points if p.id != preview_state.temp_end_id
             ]
+
+    @staticmethod
+    def cleanup_center_preview(
+        registry: EntityRegistry, preview_state: PreviewState
+    ) -> None:
+        """
+        Removes center point preview (when only center is set).
+
+        Args:
+            registry: The entity registry to modify.
+            preview_state: The preview state from start_center_preview.
+
+        Raises:
+            AttributeError: If preview_state is not an ArcPreviewState.
+        """
+        if not isinstance(preview_state, ArcPreviewState):
+            raise AttributeError("Expected ArcPreviewState")
 
     def _do_execute(self) -> None:
         if self.add_cmd:
@@ -263,6 +384,7 @@ class ArcCommand(SketchChangeCommand):
             constraints=[geom_constr],
         )
         self.add_cmd._do_execute()
+        self._committed_end_id = end_pid
 
     def _do_undo(self) -> None:
         if self.add_cmd:

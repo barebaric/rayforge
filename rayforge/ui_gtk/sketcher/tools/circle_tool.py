@@ -72,8 +72,7 @@ class CircleTool(SketchTool):
             )
         else:
             # --- Second Click: Finalize the circle ---
-            preview_radius_id = self._preview_state.radius_id
-
+            preview_ids = self._preview_state.get_preview_point_ids()
             center_id = self._preview_state.center_id
             center_temp = self._preview_state.center_temp
 
@@ -82,8 +81,7 @@ class CircleTool(SketchTool):
             )
             self._preview_state = None
 
-            # If we hit our own preview point, treat it as no snap
-            final_pid = None if pid_hit == preview_radius_id else pid_hit
+            final_pid = None if pid_hit in preview_ids else pid_hit
 
             # Cannot have radius point at center
             if final_pid != center_id:
@@ -96,18 +94,11 @@ class CircleTool(SketchTool):
                 )
                 self.element.execute_command(cmd)
 
-                # Get the final end point ID for selection
-                if cmd.add_cmd and cmd.add_cmd.points:
-                    for p in cmd.add_cmd.points:
-                        if p.x == mx or (
-                            final_pid is not None and p.id == final_pid
-                        ):
-                            final_pid = p.id
-                            break
-
                 self.element.selection.clear()
-                if final_pid is not None:
-                    self.element.selection.select_point(final_pid, False)
+                if cmd.committed_end_id is not None:
+                    self.element.selection.select_point(
+                        cmd.committed_end_id, False
+                    )
 
         self.element.mark_dirty()
         return True

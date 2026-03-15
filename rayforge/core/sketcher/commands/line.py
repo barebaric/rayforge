@@ -26,6 +26,14 @@ class LinePreviewState(PreviewState):
         self.end_id = end_id
         self.entity_id = entity_id
 
+    def get_preview_point_ids(self) -> set[int]:
+        """
+        Returns IDs of temporary preview points that shouldn't be snapped to.
+
+        Excludes the start point since that may be permanent.
+        """
+        return {self.end_id}
+
 
 class LineCommand(SketchChangeCommand):
     """A command to create a line between two points."""
@@ -44,6 +52,14 @@ class LineCommand(SketchChangeCommand):
         self.end_pid = end_pid
         self.is_start_temp = is_start_temp
         self.add_cmd: Optional[AddItemsCommand] = None
+        self._committed_end_id: Optional[int] = None
+
+    @property
+    def committed_end_id(self) -> Optional[int]:
+        """
+        The final end point ID after execute(), or None if not applicable.
+        """
+        return self._committed_end_id
 
     @staticmethod
     def start_preview(
@@ -195,6 +211,7 @@ class LineCommand(SketchChangeCommand):
             entities=[new_line],
         )
         self.add_cmd._do_execute()
+        self._committed_end_id = end_pid
 
     def _do_undo(self) -> None:
         if self.add_cmd:
