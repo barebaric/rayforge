@@ -68,10 +68,6 @@ class LineTool(SketchTool):
             self._preview_state = LineCommand.start_preview(
                 self.element.sketch.registry, mx, my, snapped_pid=pid_hit
             )
-            self.element.selection.clear()
-            self.element.selection.select_point(
-                self._preview_state.start_id, False
-            )
         else:
             # --- Second Click: Finalize the line ---
             preview_ids = self._preview_state.get_preview_point_ids()
@@ -113,10 +109,6 @@ class LineTool(SketchTool):
                         end_pt.x,
                         end_pt.y,
                         snapped_pid=cmd.committed_end_id,
-                    )
-                    self.element.selection.clear()
-                    self.element.selection.select_point(
-                        cmd.committed_end_id, False
                     )
                 except IndexError:
                     pass
