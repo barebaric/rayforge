@@ -279,14 +279,16 @@ class ArcCommand(SketchChangeCommand):
         if not isinstance(arc_ent, Arc):
             return
 
-        radius = math.hypot(start.x - center.x, start.y - center.y)
-        projected = primitives.project_point_onto_circle(
-            (x, y), (center.x, center.y), radius
+        cursor_radius = math.hypot(x - center.x, y - center.y)
+        start_angle = math.atan2(start.y - center.y, start.x - center.x)
+        start.x = center.x + cursor_radius * math.cos(start_angle)
+        start.y = center.y + cursor_radius * math.sin(start_angle)
+        end.x = center.x + cursor_radius * math.cos(
+            math.atan2(y - center.y, x - center.x)
         )
-        if projected:
-            end.x, end.y = projected
-        else:
-            end.x, end.y = x, y
+        end.y = center.y + cursor_radius * math.sin(
+            math.atan2(y - center.y, x - center.x)
+        )
 
         arc_ent.clockwise = primitives.determine_arc_direction(
             (center.x, center.y), (start.x, start.y), (x, y)
