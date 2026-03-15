@@ -88,10 +88,6 @@ class ArcTool(SketchTool):
             self._preview_state = ArcCommand.start_center_preview(
                 self.element.sketch.registry, mx, my, snapped_pid=pid_hit
             )
-            self.element.selection.clear()
-            self.element.selection.select_point(
-                self._preview_state.center_id, False
-            )
             self.element.update_bounds_from_sketch()
 
         elif not self._preview_state.has_start_point:
@@ -107,10 +103,6 @@ class ArcTool(SketchTool):
                 my,
                 snapped_pid=pid_hit,
             )
-            if self._preview_state.start_id is not None:
-                self.element.selection.select_point(
-                    self._preview_state.start_id, True
-                )
             self.element.update_bounds_from_sketch()
 
         else:
@@ -146,12 +138,6 @@ class ArcTool(SketchTool):
                 clockwise=clockwise,
             )
             self.element.execute_command(cmd)
-
-            self.element.selection.clear()
-            if cmd.committed_end_id is not None:
-                self.element.selection.select_point(
-                    cmd.committed_end_id, False
-                )
 
         self.element.mark_dirty()
         return True
