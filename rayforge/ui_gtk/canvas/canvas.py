@@ -95,6 +95,7 @@ class Canvas(Gtk.DrawingArea):
         self._rotating: bool = False
         self._shearing: bool = False
         self._was_dragging: bool = False
+        self._edit_dragging: bool = False
         self._transforming_elements: List[CanvasElement] = []
         self.edit_context: Optional[CanvasElement] = None
 
@@ -119,6 +120,9 @@ class Canvas(Gtk.DrawingArea):
         self.selection_changed = Signal()
         self.active_element_changed = Signal()
         self.elem_removed = Signal()
+
+        self.edit_drag_begin = Signal()
+        self.edit_drag_end = Signal()
 
     def add(self, elem: CanvasElement):
         """Adds a top-level element to the canvas."""
@@ -700,6 +704,9 @@ class Canvas(Gtk.DrawingArea):
             )
             world_dx = current_world_x - start_world_x
             world_dy = current_world_y - start_world_y
+            if not self._edit_dragging:
+                self._edit_dragging = True
+                self.edit_drag_begin.send(self)
             logger.debug(
                 f"on_mouse_drag: calling handle_edit_drag with "
                 f"dx={world_dx}, dy={world_dy}"
@@ -1008,12 +1015,16 @@ class Canvas(Gtk.DrawingArea):
         Handles the end of a drag operation, finalizing transforms.
         """
         if self.edit_context:
+            was_dragging = self._edit_dragging
             ok, start_x, start_y = self._drag_gesture.get_start_point()
             if ok:
                 world_x, world_y = self._get_world_coords(
                     start_x + offset_x, start_y + offset_y
                 )
                 self.edit_context.handle_edit_release(world_x, world_y)
+            if was_dragging:
+                self._edit_dragging = False
+                self.edit_drag_end.send(self)
             self.queue_draw()
             return
 

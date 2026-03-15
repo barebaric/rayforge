@@ -12,9 +12,11 @@ if sys.platform == "darwin":
     if PRIMARY_MODIFIER_MASK == 0:
         PRIMARY_MODIFIER_MASK = Gdk.ModifierType.CONTROL_MASK
     PRIMARY_ACCEL = "<Meta>"
+    PRIMARY_KEY_NAME = "Cmd"
 else:
     PRIMARY_MODIFIER_MASK = Gdk.ModifierType.CONTROL_MASK
     PRIMARY_ACCEL = "<Primary>"
+    PRIMARY_KEY_NAME = "Ctrl"
 
 
 def is_primary_modifier(state: Gdk.ModifierType) -> bool:

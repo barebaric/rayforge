@@ -70,9 +70,6 @@ def get_active_shortcuts(
     Returns list of (key, label) tuples for current context.
     Tool shortcuts are only shown when no constraint shortcuts are applicable.
     """
-    if is_editing and active_tool:
-        return active_tool.EDITING_SHORTCUTS
-
     result = []
 
     for cls, key, label in CONSTRAINT_SHORTCUTS:

@@ -274,6 +274,8 @@ class SketchStudio(Gtk.Box):
             self.canvas.sketch_element.tool_changed.connect(
                 self._on_tool_changed
             )
+            self.canvas.edit_drag_begin.connect(self._on_edit_drag_begin)
+            self.canvas.edit_drag_end.connect(self._on_edit_drag_end)
             self._on_selection_changed(self.canvas.sketch_element.selection)
 
             # Connect to text editing signals to show font properties
@@ -355,6 +357,14 @@ class SketchStudio(Gtk.Box):
         """Handles tool changes to update status bar."""
         self._update_status_bar()
 
+    def _on_edit_drag_begin(self, sender):
+        """Handles start of edit mode drag to show context shortcuts."""
+        self._update_status_bar()
+
+    def _on_edit_drag_end(self, sender):
+        """Handles end of edit mode drag to restore default shortcuts."""
+        self._update_status_bar()
+
     def _update_status_bar(self):
         """Updates the status bar with current shortcuts."""
         self.status_bar.clear()
@@ -363,6 +373,15 @@ class SketchStudio(Gtk.Box):
             return
 
         element = self.canvas.sketch_element
+
+        # First, check if tool has context-sensitive shortcuts
+        tool_shortcuts = element.current_tool.get_active_shortcuts()
+        if tool_shortcuts:
+            for key, label in tool_shortcuts:
+                self.status_bar.add_shortcut_entry([key], label, separator="")
+            return
+
+        # Otherwise, show constraint/tool selection shortcuts
         shortcuts = get_active_shortcuts(
             selection=element.selection,
             sketch=element.sketch,

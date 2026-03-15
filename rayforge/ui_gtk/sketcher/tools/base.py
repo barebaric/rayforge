@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum, auto
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import cairo
 
@@ -32,8 +32,7 @@ class SketcherKey(Enum):
 class SketchTool(ABC):
     """Abstract base class for sketcher tools."""
 
-    SHORTCUT: tuple = ()
-    EDITING_SHORTCUTS: list = []
+    SHORTCUT: Optional[Tuple[str, str]] = None
 
     def __init__(self, element: SketchElement):
         self.element = element
@@ -75,3 +74,10 @@ class SketchTool(ABC):
     def handle_key_event(self, key: SketcherKey) -> bool:
         """Optional hook for handling special (non-character) key events."""
         return False
+
+    def get_active_shortcuts(self) -> List[Tuple[str, str]]:
+        """
+        Returns shortcuts currently available based on tool state.
+        Override in subclasses to provide context-sensitive shortcuts.
+        """
+        return []
