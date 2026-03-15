@@ -1,14 +1,31 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any
 
-from .base import SketchChangeCommand
+from .base import PreviewState, SketchChangeCommand
 from .items import AddItemsCommand
 from ..entities import Point, Line
 from ..constraints import HorizontalConstraint, VerticalConstraint
 
 if TYPE_CHECKING:
+    from ..registry import EntityRegistry
     from ..sketch import Sketch
+
+
+class RectanglePreviewState(PreviewState):
+    """Preview state for rectangle tool's 2-click workflow."""
+
+    def __init__(
+        self,
+        start_id: int,
+        start_temp: bool,
+        p_end_id: int,
+        preview_ids: Dict[str, int],
+    ):
+        self.start_id = start_id
+        self.start_temp = start_temp
+        self.p_end_id = p_end_id
+        self.preview_ids = preview_ids
 
 
 class RectangleCommand(SketchChangeCommand):
@@ -77,6 +94,172 @@ class RectangleCommand(SketchChangeCommand):
             "constraints": constraints,
         }
 
+    @staticmethod
+    def create_preview(
+        registry: EntityRegistry,
+        start_pid: int,
+        end_pid: int,
+        preview_ids: Optional[Dict[str, int]] = None,
+    ) -> Optional[Dict[str, int]]:
+        """
+        Creates or updates preview geometry in the registry.
+
+        Args:
+            registry: The entity registry to modify.
+            start_pid: The ID of the start corner point.
+            end_pid: The ID of the end corner point (preview corner).
+            preview_ids: Existing preview IDs to update, or None to create new.
+
+        Returns:
+            Dict of preview IDs, or None if geometry is invalid.
+        """
+        try:
+            start_p = registry.get_point(start_pid)
+            end_p = registry.get_point(end_pid)
+        except IndexError:
+            return None
+
+        coords = {
+            "p2": (end_p.x, start_p.y),
+            "p4": (start_p.x, end_p.y),
+        }
+
+        if preview_ids is None:
+            # Create new preview geometry
+            preview_ids = {}
+            for name, (px, py) in coords.items():
+                preview_ids[name] = registry.add_point(px, py)
+
+            # Create lines
+            preview_ids["line1"] = registry.add_line(
+                start_pid, preview_ids["p2"]
+            )
+            preview_ids["line2"] = registry.add_line(
+                preview_ids["p2"], end_pid
+            )
+            preview_ids["line3"] = registry.add_line(
+                end_pid, preview_ids["p4"]
+            )
+            preview_ids["line4"] = registry.add_line(
+                preview_ids["p4"], start_pid
+            )
+        else:
+            # Update existing preview geometry
+            for name, (px, py) in coords.items():
+                p = registry.get_point(preview_ids[name])
+                p.x, p.y = px, py
+
+        return preview_ids
+
+    @staticmethod
+    def start_preview(
+        registry: EntityRegistry,
+        x: float,
+        y: float,
+        snapped_pid: Optional[int] = None,
+        **kwargs,
+    ) -> RectanglePreviewState:
+        """
+        Creates initial preview state with start and end points.
+
+        Args:
+            registry: The entity registry to modify.
+            x, y: The initial coordinates.
+            snapped_pid: An existing point ID to snap to, or None.
+
+        Returns:
+            RectanglePreviewState for use with update_preview and
+            cleanup_preview.
+        """
+        if snapped_pid is not None:
+            start_id = snapped_pid
+            start_temp = False
+        else:
+            start_id = registry.add_point(x, y)
+            start_temp = True
+
+        p_end_id = registry.add_point(x, y)
+
+        preview_ids = RectangleCommand.create_preview(
+            registry, start_id, p_end_id
+        )
+        assert preview_ids is not None
+
+        return RectanglePreviewState(
+            start_id=start_id,
+            start_temp=start_temp,
+            p_end_id=p_end_id,
+            preview_ids=preview_ids,
+        )
+
+    @staticmethod
+    def update_preview(
+        registry: EntityRegistry,
+        preview_state: PreviewState,
+        x: float,
+        y: float,
+    ) -> None:
+        """
+        Updates the end point position and refreshes preview geometry.
+
+        Args:
+            registry: The entity registry to modify.
+            preview_state: The preview state from start_preview.
+            x, y: The new end point coordinates.
+
+        Raises:
+            AttributeError: If preview_state is not a RectanglePreviewState.
+        """
+        if not isinstance(preview_state, RectanglePreviewState):
+            raise AttributeError("Expected RectanglePreviewState")
+        try:
+            p_end = registry.get_point(preview_state.p_end_id)
+        except IndexError:
+            return
+        p_end.x = x
+        p_end.y = y
+
+        RectangleCommand.create_preview(
+            registry,
+            preview_state.start_id,
+            preview_state.p_end_id,
+            preview_ids=preview_state.preview_ids,
+        )
+
+    @staticmethod
+    def cleanup_preview(
+        registry: EntityRegistry, preview_state: PreviewState
+    ) -> None:
+        """
+        Removes all preview entities and points from the registry.
+
+        Args:
+            registry: The entity registry to modify.
+            preview_state: The preview state from start_preview.
+
+        Raises:
+            AttributeError: If preview_state is not a RectanglePreviewState.
+        """
+        if not isinstance(preview_state, RectanglePreviewState):
+            raise AttributeError("Expected RectanglePreviewState")
+        preview_ids = preview_state.preview_ids
+        p_end_id = preview_state.p_end_id
+
+        # Collect all point IDs to remove
+        point_ids = set(preview_ids.values())
+        point_ids.add(p_end_id)
+
+        # Find and remove entities that use these points
+        entity_ids_to_remove = {
+            e.id
+            for e in registry.entities
+            if any(pid in point_ids for pid in e.get_point_ids())
+        }
+        registry.remove_entities_by_id(list(entity_ids_to_remove))
+
+        # Remove points
+        registry.points = [p for p in registry.points if p.id not in point_ids]
+
     def _do_execute(self) -> None:
         if self.add_cmd:
             return self.add_cmd._do_execute()
@@ -135,14 +318,3 @@ class RectangleCommand(SketchChangeCommand):
     def _do_undo(self) -> None:
         if self.add_cmd:
             self.add_cmd._do_undo()
-            # If the start point was temporary, it was removed from the sketch
-            # before the command ran. The command's undo removes the *new*
-            # version. We must restore the original temp point.
-            if (
-                self.is_start_temp
-                and self._snapshot is not None
-                and self.start_pid in self._snapshot[0]
-            ):
-                start_x, start_y = self._snapshot[0][self.start_pid]
-                new_p = Point(self.start_pid, start_x, start_y)
-                self.sketch.registry.points.append(new_p)

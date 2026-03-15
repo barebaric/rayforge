@@ -655,3 +655,89 @@ def test_empty_text_box_undo_restores_constraints():
         restored = sketch.registry.get_point(pt.id)
         assert restored is not None
         assert restored.id == pt.id
+
+
+def test_undo_removes_text_box_when_reverting_to_empty():
+    """
+    Test that undo removes the text box when reverting to empty content.
+    This handles the case where user types text into an empty box, then
+    undoes - the box should be removed, not left empty.
+    """
+    sketch = Sketch()
+
+    initial_point_count = len(sketch.registry.points)
+
+    p_origin = sketch.add_point(0, 0)
+    p_width = sketch.add_point(50, 0)
+    p_height = sketch.add_point(0, 10)
+
+    tb_id = sketch.registry.add_text_box(
+        p_origin,
+        p_width,
+        p_height,
+        content="",
+        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+    )
+
+    cmd = ModifyTextPropertyCommand(
+        sketch, tb_id, "New Text", FontConfig(font_family="sans-serif")
+    )
+
+    cmd.execute()
+
+    tb = sketch.registry.get_entity(tb_id)
+    assert tb is not None
+    assert isinstance(tb, TextBoxEntity)
+    assert tb.content == "New Text"
+
+    cmd.undo()
+
+    assert sketch.registry.get_entity(tb_id) is None
+    assert len(sketch.registry.points) == initial_point_count
+
+
+def test_redo_restores_text_box_after_undo_to_empty():
+    """
+    Test that redo restores the text box after undoing to empty content.
+    Uses HistoryManager to properly test redo behavior.
+    """
+    sketch = Sketch()
+
+    initial_point_count = len(sketch.registry.points)
+
+    p_origin = sketch.add_point(0, 0)
+    p_width = sketch.add_point(50, 0)
+    p_height = sketch.add_point(0, 10)
+
+    tb_id = sketch.registry.add_text_box(
+        p_origin,
+        p_width,
+        p_height,
+        content="",
+        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+    )
+
+    history = HistoryManager()
+
+    cmd = ModifyTextPropertyCommand(
+        sketch, tb_id, "New Text", FontConfig(font_family="sans-serif")
+    )
+
+    history.execute(cmd)
+
+    tb = sketch.registry.get_entity(tb_id)
+    assert tb is not None
+    assert isinstance(tb, TextBoxEntity)
+    assert tb.content == "New Text"
+
+    history.undo()
+
+    assert sketch.registry.get_entity(tb_id) is None
+    assert len(sketch.registry.points) == initial_point_count
+
+    history.redo()
+
+    tb = sketch.registry.get_entity(tb_id)
+    assert tb is not None
+    assert isinstance(tb, TextBoxEntity)
+    assert tb.content == "New Text"

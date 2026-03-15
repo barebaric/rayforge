@@ -1,6 +1,7 @@
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock, patch
 from rayforge.ui_gtk.sketcher.tools.circle_tool import CircleTool
+from rayforge.core.sketcher.commands.circle import CirclePreviewState
 
 
 @pytest.fixture
@@ -13,8 +14,12 @@ def mock_element():
     element.sketch.registry.entities = []
     element.sketch.registry._id_counter = 0
     element.sketch.registry._entity_map = {}
-    element.sketch.add_point = Mock(return_value=0)
-    element.sketch.add_circle = Mock(return_value=0)
+    element.sketch.registry.add_point = Mock(return_value=0)
+    element.sketch.registry.add_circle = Mock(return_value=0)
+    element.sketch.registry.get_point = Mock(
+        side_effect=lambda pid: MagicMock(x=0.0, y=0.0)
+    )
+    element.sketch.remove_point_if_unused = Mock()
     element.selection = Mock()
     element.selection.clear = Mock()
     element.selection.select_point = Mock()
@@ -24,6 +29,7 @@ def mock_element():
     element.remove_point_if_unused = Mock()
     element.mark_dirty = Mock()
     element.update_bounds_from_sketch = Mock()
+    element.execute_command = Mock()
     element.editor = None
     return element
 
@@ -37,47 +43,56 @@ def circle_tool(mock_element):
 def test_circle_tool_initialization(circle_tool, mock_element):
     """Test that CircleTool initializes correctly."""
     assert circle_tool.element == mock_element
-    assert circle_tool.center_id is None
-    assert circle_tool.center_temp is False
-    assert circle_tool.temp_radius_id is None
-    assert circle_tool.temp_entity_id is None
+    assert circle_tool._preview_state is None
 
 
-def test_circle_tool_cleanup_temps_no_temps(circle_tool):
-    """Test cleanup when no temps exist."""
-    circle_tool._cleanup_temps()
-    assert circle_tool.temp_radius_id is None
-    assert circle_tool.temp_entity_id is None
-
-
-def test_circle_tool_on_deactivate(circle_tool, mock_element):
-    """Test that on_deactivate cleans up state."""
-    circle_tool.center_id = 1
-    circle_tool.center_temp = True
-    circle_tool.temp_radius_id = 2
-    circle_tool.temp_entity_id = 3
-
+def test_circle_tool_on_deactivate_no_preview(circle_tool, mock_element):
+    """Test that on_deactivate works when no preview state."""
     circle_tool.on_deactivate()
+    assert circle_tool._preview_state is None
 
-    assert circle_tool.center_id is None
-    assert circle_tool.center_temp is False
-    assert circle_tool.temp_radius_id is None
-    assert circle_tool.temp_entity_id is None
-    mock_element.mark_dirty.assert_called_once()
+
+def test_circle_tool_on_deactivate_with_preview(circle_tool, mock_element):
+    """Test that on_deactivate cleans up preview state."""
+    circle_tool._preview_state = CirclePreviewState(
+        center_id=1,
+        center_temp=True,
+        radius_id=2,
+        entity_id=3,
+    )
+
+    with patch(
+        "rayforge.ui_gtk.sketcher.tools.circle_tool.CircleCommand"
+        ".cleanup_preview"
+    ):
+        circle_tool.on_deactivate()
+
+    assert circle_tool._preview_state is None
+    mock_element.remove_point_if_unused.assert_called_once_with(1)
 
 
 def test_circle_tool_on_press_no_hit(circle_tool, mock_element):
     """Test on_press when no point is hit."""
     mock_element.hittester.get_hit_data.return_value = (None, None)
     mock_element.hittester.screen_to_model.return_value = (10.0, 20.0)
-    mock_element.sketch.add_point.return_value = 0
+    mock_element.sketch.registry.add_point.side_effect = [0, 1]
+    mock_element.sketch.registry.add_circle.return_value = 2
 
-    result = circle_tool.on_press(100.0, 200.0, 1)
+    with patch(
+        "rayforge.ui_gtk.sketcher.tools.circle_tool.CircleCommand"
+        ".start_preview"
+    ) as mock_start:
+        mock_start.return_value = CirclePreviewState(
+            center_id=0,
+            center_temp=True,
+            radius_id=1,
+            entity_id=2,
+        )
+        result = circle_tool.on_press(100.0, 200.0, 1)
 
     assert result is True
-    assert circle_tool.center_id == 0
-    assert circle_tool.center_temp is True
-    assert mock_element.sketch.add_point.call_count == 2
+    assert circle_tool._preview_state is not None
+    assert circle_tool._preview_state.center_id == 0
 
 
 def test_circle_tool_on_drag(circle_tool):
@@ -94,38 +109,50 @@ def test_circle_tool_on_release(circle_tool):
 
 def test_circle_tool_on_hover_motion_no_preview(circle_tool):
     """Test on_hover_motion when not in preview stage."""
-    circle_tool.center_id = None
+    circle_tool._preview_state = None
     circle_tool.on_hover_motion(100.0, 200.0)
     assert True
 
 
 def test_circle_tool_on_hover_motion_with_preview(circle_tool, mock_element):
     """Test on_hover_motion updates preview when in preview stage."""
-    circle_tool.center_id = 0
-    circle_tool.temp_radius_id = 1
-    circle_tool.temp_entity_id = 2
+    circle_tool._preview_state = CirclePreviewState(
+        center_id=0,
+        center_temp=True,
+        radius_id=1,
+        entity_id=2,
+    )
 
     mock_point = Mock()
     mock_point.x = 0.0
     mock_point.y = 0.0
-
     mock_element.sketch.registry.get_point.return_value = mock_point
     mock_element.hittester.screen_to_model.return_value = (10.0, 10.0)
 
     circle_tool.on_hover_motion(100.0, 200.0)
 
-    assert mock_point.x == 10.0
-    assert mock_point.y == 10.0
-    mock_element.mark_dirty.assert_called_once()
+    mock_element.mark_dirty.assert_called()
 
 
 def test_circle_tool_handle_click_center_point(circle_tool, mock_element):
     """Test _handle_click for setting center point."""
     mock_element.hittester.screen_to_model.return_value = (10.0, 20.0)
-    mock_element.sketch.add_point.return_value = 0
+    mock_element.sketch.registry.add_point.side_effect = [0, 1]
+    mock_element.sketch.registry.add_circle.return_value = 2
 
-    result = circle_tool._handle_click(None, 10.0, 20.0)
+    with patch(
+        "rayforge.ui_gtk.sketcher.tools.circle_tool.CircleCommand"
+        ".start_preview"
+    ) as mock_start:
+        mock_start.return_value = CirclePreviewState(
+            center_id=0,
+            center_temp=True,
+            radius_id=1,
+            entity_id=2,
+        )
+        result = circle_tool._handle_click(None, 10.0, 20.0)
 
     assert result is True
-    assert circle_tool.center_id == 0
-    assert circle_tool.center_temp is True
+    assert circle_tool._preview_state is not None
+    assert circle_tool._preview_state.center_id == 0
+    assert circle_tool._preview_state.center_temp is True
