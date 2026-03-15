@@ -1,8 +1,9 @@
 from typing import Optional
-from gettext import gettext as _
 
-from ....core.sketcher.commands import AddItemsCommand
-from ....core.sketcher.entities import Line, Point
+from ....core.sketcher.commands import (
+    LineCommand,
+    LinePreviewState,
+)
 from .base import SketchTool
 
 
@@ -11,104 +12,130 @@ class LineTool(SketchTool):
 
     def __init__(self, element):
         super().__init__(element)
-        self.line_start_id: Optional[int] = None
-        self.start_point_temp: bool = False
+        self._preview_state: Optional[LinePreviewState] = None
 
     def on_deactivate(self):
-        """Clean up the starting point if a line was not finished."""
-        if self.start_point_temp:
-            self.element.remove_point_if_unused(self.line_start_id)
-        self.line_start_id = None
-        self.start_point_temp = False
+        """Clean up if the tool is deactivated mid-creation."""
+        if self._preview_state is not None:
+            start_id = self._preview_state.start_id
+            start_temp = self._preview_state.start_temp
+
+            LineCommand.cleanup_preview(
+                self.element.sketch.registry, self._preview_state
+            )
+            self._preview_state = None
+
+            if start_temp:
+                self.element.remove_point_if_unused(start_id)
+
+            self.element.mark_dirty()
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
-        # Use screen_to_model for coordinate entry
         mx, my = self.element.hittester.screen_to_model(
             world_x, world_y, self.element
         )
-
-        # Check if we hit an existing point to snap to
         hit_type, hit_obj = self.element.hittester.get_hit_data(
             world_x, world_y, self.element
         )
         pid_hit = hit_obj if hit_type == "point" else None
-
         return self._handle_click(pid_hit, mx, my)
+
+    def on_hover_motion(self, world_x: float, world_y: float):
+        """Updates the live preview of the line."""
+        if self._preview_state is None:
+            return
+
+        mx, my = self.element.hittester.screen_to_model(
+            world_x, world_y, self.element
+        )
+
+        try:
+            LineCommand.update_preview(
+                self.element.sketch.registry, self._preview_state, mx, my
+            )
+            self.element.mark_dirty()
+        except (IndexError, KeyError):
+            self.on_deactivate()
+
+    def _handle_click(
+        self, pid_hit: Optional[int], mx: float, my: float
+    ) -> bool:
+        if self._preview_state is None:
+            # --- First Click: Start preview ---
+            self._preview_state = LineCommand.start_preview(
+                self.element.sketch.registry, mx, my, snapped_pid=pid_hit
+            )
+            self.element.selection.clear()
+            self.element.selection.select_point(
+                self._preview_state.start_id, False
+            )
+        else:
+            # --- Second Click: Finalize the line ---
+            preview_point_ids = {self._preview_state.end_id}
+
+            start_id = self._preview_state.start_id
+            start_temp = self._preview_state.start_temp
+
+            LineCommand.cleanup_preview(
+                self.element.sketch.registry, self._preview_state
+            )
+            self._preview_state = None
+
+            # If we hit a preview point, treat it as no snap (use mouse coords)
+            final_pid = None if pid_hit in preview_point_ids else pid_hit
+
+            # Handle case where start point was deleted during preview
+            try:
+                self.element.sketch.registry.get_point(start_id)
+            except IndexError:
+                self.element.mark_dirty()
+                return True
+
+            # Create the command to generate the line
+            cmd = LineCommand(
+                self.element.sketch,
+                start_id,
+                (mx, my),
+                end_pid=final_pid,
+                is_start_temp=start_temp,
+            )
+            self.element.execute_command(cmd)
+
+            # After committing, start a new line from the end point
+            if cmd.add_cmd is not None:
+                # Get the committed end point ID
+                committed_end_pid = final_pid
+                if committed_end_pid is None:
+                    # The command created a new point - find it
+                    for p in cmd.add_cmd.points:
+                        if p.id != start_id:
+                            committed_end_pid = p.id
+                            break
+
+                if committed_end_pid is not None:
+                    # Start a new preview from the committed end point
+                    try:
+                        end_pt = self.element.sketch.registry.get_point(
+                            committed_end_pid
+                        )
+                        self._preview_state = LineCommand.start_preview(
+                            self.element.sketch.registry,
+                            end_pt.x,
+                            end_pt.y,
+                            snapped_pid=committed_end_pid,
+                        )
+                        self.element.selection.clear()
+                        self.element.selection.select_point(
+                            committed_end_pid, False
+                        )
+                    except IndexError:
+                        pass
+
+        self.element.mark_dirty()
+        return True
 
     def on_drag(self, world_dx: float, world_dy: float):
         pass
 
     def on_release(self, world_x: float, world_y: float):
         pass
-
-    def _handle_click(self, pid_hit, mx, my) -> bool:
-        if self.line_start_id is not None:
-            try:
-                self.element.sketch.registry.get_point(self.line_start_id)
-            except IndexError:
-                # Start point was deleted, reset the tool
-                self.line_start_id = None
-                self.start_point_temp = False
-
-        new_point = None
-        if pid_hit is None:
-            # Create a point temporarily, but don't add to registry yet.
-            # Give it a temporary ID that the AddItemsCommand will replace.
-            temp_id = self.element.sketch.registry._id_counter
-            pid_hit = temp_id
-            new_point = Point(temp_id, mx, my)
-
-        if self.line_start_id is None:
-            if new_point:
-                # This is the first point of a new line, add it for preview.
-                # This is not undoable, but is cleaned up by on_deactivate.
-                self.line_start_id = self.element.sketch.add_point(mx, my)
-                self.start_point_temp = True
-                self.element.update_bounds_from_sketch()
-            else:
-                self.line_start_id = pid_hit
-                self.start_point_temp = False
-
-            self.element.selection.clear()
-            self.element.selection.select_point(self.line_start_id, False)
-        else:
-            if self.line_start_id != pid_hit:
-                # Create the line entity with a temporary ID.
-                temp_line_id = self.element.sketch.registry._id_counter + (
-                    1 if new_point else 0
-                )
-                new_line = Line(temp_line_id, self.line_start_id, pid_hit)
-
-                # Create command
-                points_to_add = [new_point] if new_point else []
-
-                # Adopt start point if it was temp
-                if self.start_point_temp:
-                    try:
-                        p_start = self.element.sketch.registry.get_point(
-                            self.line_start_id
-                        )
-                        # Remove from registry so Command can add it properly
-                        self.element.sketch.registry.points.remove(p_start)
-                        points_to_add.insert(0, p_start)
-                    except (IndexError, ValueError):
-                        pass
-
-                cmd = AddItemsCommand(
-                    self.element.sketch,
-                    _("Add Line"),
-                    points=points_to_add,
-                    entities=[new_line],
-                )
-                self.element.execute_command(cmd)
-
-            # Start a new line segment from this point
-            self.line_start_id = pid_hit
-            # The new start point is either existing or just committed,
-            # so it's not temp
-            self.start_point_temp = False
-            self.element.selection.clear()
-            self.element.selection.select_point(pid_hit, False)
-
-        self.element.mark_dirty()
-        return True
