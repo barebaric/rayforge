@@ -77,6 +77,7 @@ class SketchElement(CanvasElement):
 
         # Signals
         self.constraint_edit_requested = Signal()
+        self.tool_changed = Signal()
 
         # Model
         self._sketch: Sketch
@@ -392,6 +393,7 @@ class SketchElement(CanvasElement):
             self.current_tool.on_deactivate()
             self.active_tool_name = tool_name
             self.mark_dirty()
+            self.tool_changed.send(self, tool_name=tool_name)
             if self.canvas:
                 canvas = cast("SketchCanvas", self.canvas)
                 canvas.update_sketch_cursor()

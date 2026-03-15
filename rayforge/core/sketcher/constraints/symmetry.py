@@ -10,6 +10,8 @@ from .base import Constraint, ConstraintStatus
 if TYPE_CHECKING:
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 
 class SymmetryConstraint(Constraint):
@@ -32,6 +34,19 @@ class SymmetryConstraint(Constraint):
         self.p2 = p2
         self.center = center
         self.axis = axis
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        if len(selection.point_ids) == 3 and not selection.entity_ids:
+            return True
+        if len(selection.point_ids) == 2 and len(selection.entity_ids) == 1:
+            if sketch is None:
+                return False
+            entity = sketch.registry.get_entity(selection.entity_ids[0])
+            return isinstance(entity, Line)
+        return False
 
     @staticmethod
     def get_type_name() -> str:

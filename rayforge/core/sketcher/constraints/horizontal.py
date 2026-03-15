@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 import math
-from typing import Dict, Any, List, Callable, TYPE_CHECKING
+from typing import Dict, Any, List, Callable, Optional, TYPE_CHECKING
 from gettext import gettext as _
 from ...geo import Point
+from ..entities import Line
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
     import cairo
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 
 class HorizontalConstraint(Constraint):
@@ -20,6 +23,24 @@ class HorizontalConstraint(Constraint):
         super().__init__(user_visible=user_visible)
         self.p1 = p1
         self.p2 = p2
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        if len(selection.point_ids) == 2 and not selection.entity_ids:
+            return True
+        if selection.point_ids:
+            return False
+        if sketch is None:
+            return False
+
+        lines = [
+            sketch.registry.get_entity(eid)
+            for eid in selection.entity_ids
+            if isinstance(sketch.registry.get_entity(eid), Line)
+        ]
+        return len(lines) > 0 and len(lines) == len(selection.entity_ids)
 
     @staticmethod
     def get_type_name() -> str:

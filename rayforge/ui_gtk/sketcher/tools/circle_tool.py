@@ -1,3 +1,4 @@
+from gettext import gettext as _
 from typing import Optional
 
 from ....core.sketcher.commands import CircleCommand, CirclePreviewState
@@ -6,6 +7,8 @@ from .base import SketchTool
 
 class CircleTool(SketchTool):
     """Handles creating circles (Center -> Radius Point)."""
+
+    SHORTCUT = ("gc", _("Circle"))
 
     def __init__(self, element):
         super().__init__(element)

@@ -1,3 +1,4 @@
+from gettext import gettext as _
 from typing import Optional
 
 from ....core.sketcher.commands import ArcCommand, ArcPreviewState
@@ -6,6 +7,8 @@ from .base import SketchTool
 
 class ArcTool(SketchTool):
     """Handles creating arcs (Center -> Start -> End)."""
+
+    SHORTCUT = ("ga", _("Arc"))
 
     def __init__(self, element):
         super().__init__(element)

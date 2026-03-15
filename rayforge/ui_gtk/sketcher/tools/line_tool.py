@@ -1,3 +1,4 @@
+from gettext import gettext as _
 from typing import Optional
 
 from ....core.sketcher.commands import (
@@ -9,6 +10,8 @@ from .base import SketchTool
 
 class LineTool(SketchTool):
     """Handles creating lines between points."""
+
+    SHORTCUT = ("gl", _("Line"))
 
     def __init__(self, element):
         super().__init__(element)

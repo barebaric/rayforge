@@ -1,6 +1,6 @@
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
-
+from gettext import gettext as _
 import cairo
 
 from ....core.geo import Point as GeoPoint
@@ -28,6 +28,8 @@ logger = logging.getLogger(__name__)
 
 class SelectTool(SketchTool):
     """Handles selection and point dragging."""
+
+    SHORTCUT = (" ", _("Select"))
 
     def __init__(self, element):
         super().__init__(element)

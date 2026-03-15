@@ -5,11 +5,14 @@ import math
 from typing import Optional, Dict, Any, List, TYPE_CHECKING
 from gettext import gettext as _
 from ...geo import Point
+from ..entities import Line, Arc, Circle
 from .base import Constraint
 
 if TYPE_CHECKING:
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 
 class EqualDistanceConstraint(Constraint):
@@ -23,6 +26,20 @@ class EqualDistanceConstraint(Constraint):
         self.p2 = p2
         self.p3 = p3
         self.p4 = p4
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        if selection.point_ids or len(selection.entity_ids) < 2:
+            return False
+        if sketch is None:
+            return False
+        for eid in selection.entity_ids:
+            entity = sketch.registry.get_entity(eid)
+            if not isinstance(entity, (Line, Arc, Circle)):
+                return False
+        return True
 
     @staticmethod
     def get_type_name() -> str:

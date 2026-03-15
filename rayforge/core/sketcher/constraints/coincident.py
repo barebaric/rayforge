@@ -3,7 +3,7 @@
 from __future__ import annotations
 import math
 from gettext import gettext as _
-from typing import Dict, Any, List, Callable, TYPE_CHECKING
+from typing import Dict, Any, List, Callable, Optional, TYPE_CHECKING
 from ...geo import Point
 from .base import Constraint, ConstraintStatus
 
@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     import cairo
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 
 class CoincidentConstraint(Constraint):
@@ -20,6 +22,12 @@ class CoincidentConstraint(Constraint):
         super().__init__(user_visible=user_visible)
         self.p1 = p1
         self.p2 = p2
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        return len(selection.point_ids) == 2 and not selection.entity_ids
 
     @staticmethod
     def get_type_name() -> str:
