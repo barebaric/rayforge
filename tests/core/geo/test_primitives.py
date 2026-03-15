@@ -3,26 +3,28 @@ import math
 from collections import namedtuple
 
 from rayforge.core.geo.primitives import (
-    is_point_in_polygon,
-    line_segment_intersection,
-    get_segment_region_intersections,
-    line_intersection,
-    is_angle_between,
-    get_arc_bounding_box,
-    normalize_angle,
-    get_arc_angles,
-    get_arc_midpoint,
+    arc_intersects_rect,
     circle_circle_intersection,
-    is_point_on_segment,
-    find_closest_point_on_line_segment,
+    circle_intersects_rect,
+    circle_is_contained_by_rect,
+    determine_arc_direction,
     find_closest_point_on_arc,
     find_closest_point_on_line,
+    find_closest_point_on_line_segment,
+    get_arc_angles,
+    get_arc_bounding_box,
+    get_arc_midpoint,
+    get_segment_region_intersections,
+    is_angle_between,
+    is_point_in_polygon,
     is_point_in_rect,
-    rect_a_contains_rect_b,
+    is_point_on_segment,
+    line_intersection,
+    line_segment_intersection,
     line_segment_intersects_rect,
-    arc_intersects_rect,
-    circle_is_contained_by_rect,
-    circle_intersects_rect,
+    normalize_angle,
+    project_point_onto_circle,
+    rect_a_contains_rect_b,
 )
 
 
@@ -705,3 +707,196 @@ def test_circle_intersects_rect(selection_rect):
     assert circle_intersects_rect((0, 30), 10, selection_rect)
     # Separate
     assert not circle_intersects_rect((100, 100), 5, selection_rect)
+
+
+def test_project_point_onto_circle_basic():
+    """Test projecting a point onto circle circumference."""
+    center = (0, 0)
+    radius = 10.0
+    point = (20, 0)
+    result = project_point_onto_circle(point, center, radius)
+    assert result is not None
+    assert result == pytest.approx((10.0, 0.0))
+
+
+def test_project_point_onto_circle_quadrants():
+    """Test projection in all four quadrants."""
+    center = (0, 0)
+    radius = 5.0
+
+    # Quadrant I
+    result = project_point_onto_circle((10, 10), center, radius)
+    assert result is not None
+    assert result[0] > 0 and result[1] > 0
+
+    # Quadrant II
+    result = project_point_onto_circle((-10, 10), center, radius)
+    assert result is not None
+    assert result[0] < 0 and result[1] > 0
+
+    # Quadrant III
+    result = project_point_onto_circle((-10, -10), center, radius)
+    assert result is not None
+    assert result[0] < 0 and result[1] < 0
+
+    # Quadrant IV
+    result = project_point_onto_circle((10, -10), center, radius)
+    assert result is not None
+    assert result[0] > 0 and result[1] < 0
+
+
+def test_project_point_onto_circle_at_center():
+    """Test projecting from center returns None."""
+    center = (0, 0)
+    radius = 10.0
+    result = project_point_onto_circle((0, 0), center, radius)
+    assert result is None
+
+
+def test_project_point_onto_circle_near_center():
+    """Test projecting from near center returns None."""
+    center = (0, 0)
+    radius = 10.0
+    result = project_point_onto_circle((1e-10, 1e-10), center, radius)
+    assert result is None
+
+
+def test_project_point_onto_circle_on_circumference():
+    """Test projecting a point already on the circle."""
+    center = (0, 0)
+    radius = 10.0
+    point = (10, 0)
+    result = project_point_onto_circle(point, center, radius)
+    assert result == pytest.approx(point)
+
+
+def test_project_point_onto_circle_offset_center():
+    """Test projection with offset center."""
+    center = (100, 200)
+    radius = 50.0
+    point = (150, 200)
+    result = project_point_onto_circle(point, center, radius)
+    assert result is not None
+    assert result == pytest.approx((150.0, 200.0))
+
+
+def test_project_point_onto_circle_diagonal():
+    """Test projection from diagonal direction."""
+    center = (0, 0)
+    radius = math.sqrt(2)
+    point = (10, 10)
+    result = project_point_onto_circle(point, center, radius)
+    assert result is not None
+    # Projected point should be on the 45-degree line
+    assert abs(result[0] - result[1]) < 1e-9
+    # Distance from center should equal radius
+    dist = math.hypot(result[0], result[1])
+    assert dist == pytest.approx(radius)
+
+
+def test_determine_arc_direction_clockwise():
+    """Test clockwise arc direction determination."""
+    center = (0, 0)
+    start = (10, 0)
+
+    # Mouse below the start point (Y-down screen coords) = clockwise
+    mouse = (5, -5)
+    result = determine_arc_direction(center, start, mouse)
+    assert result is True
+
+
+def test_determine_arc_direction_counter_clockwise():
+    """Test counter-clockwise arc direction determination."""
+    center = (0, 0)
+    start = (10, 0)
+
+    # Mouse above the start point = counter-clockwise
+    mouse = (5, 5)
+    result = determine_arc_direction(center, start, mouse)
+    assert result is False
+
+
+def test_determine_arc_direction_quadrants():
+    """Test arc direction in all quadrants."""
+    center = (0, 0)
+
+    # Start in Quadrant I
+    start = (10, 10)
+    mouse_cw = (15, 5)
+    mouse_ccw = (5, 15)
+    assert determine_arc_direction(center, start, mouse_cw) is True
+    assert determine_arc_direction(center, start, mouse_ccw) is False
+
+    # Start in Quadrant II
+    start = (-10, 10)
+    mouse_cw = (-5, 15)
+    mouse_ccw = (-15, 5)
+    assert determine_arc_direction(center, start, mouse_cw) is True
+    assert determine_arc_direction(center, start, mouse_ccw) is False
+
+    # Start in Quadrant III
+    start = (-10, -10)
+    mouse_cw = (-15, -5)
+    mouse_ccw = (-5, -15)
+    assert determine_arc_direction(center, start, mouse_cw) is True
+    assert determine_arc_direction(center, start, mouse_ccw) is False
+
+    # Start in Quadrant IV
+    start = (10, -10)
+    mouse_cw = (5, -15)
+    mouse_ccw = (15, -5)
+    assert determine_arc_direction(center, start, mouse_cw) is True
+    assert determine_arc_direction(center, start, mouse_ccw) is False
+
+
+def test_determine_arc_direction_cardinal_directions():
+    """Test arc direction from cardinal start points."""
+    center = (0, 0)
+
+    # Start at East (0 radians)
+    start = (10, 0)
+    assert determine_arc_direction(center, start, (5, -5)) is True
+    assert determine_arc_direction(center, start, (5, 5)) is False
+
+    # Start at North (pi/2 radians)
+    start = (0, 10)
+    assert determine_arc_direction(center, start, (5, 5)) is True
+    assert determine_arc_direction(center, start, (-5, 5)) is False
+
+    # Start at West (pi radians)
+    start = (-10, 0)
+    assert determine_arc_direction(center, start, (-5, 5)) is True
+    assert determine_arc_direction(center, start, (-5, -5)) is False
+
+    # Start at South (3*pi/2 radians)
+    start = (0, -10)
+    assert determine_arc_direction(center, start, (-5, -5)) is True
+    assert determine_arc_direction(center, start, (5, -5)) is False
+
+
+def test_determine_arc_direction_offset_center():
+    """Test arc direction with offset center."""
+    center = (100, 200)
+    start = (110, 200)
+
+    # Mouse below start (relative to center)
+    mouse = (105, 195)
+    result = determine_arc_direction(center, start, mouse)
+    assert result is True
+
+    # Mouse above start (relative to center)
+    mouse = (105, 205)
+    result = determine_arc_direction(center, start, mouse)
+    assert result is False
+
+
+def test_determine_arc_direction_colinear():
+    """Test arc direction when points are colinear."""
+    center = (0, 0)
+    start = (10, 0)
+
+    # Mouse colinear with center and start
+    mouse = (20, 0)
+    result = determine_arc_direction(center, start, mouse)
+    # Cross product is 0, so result should be False
+    assert result is False
