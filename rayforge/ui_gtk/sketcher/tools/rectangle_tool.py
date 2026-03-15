@@ -1,3 +1,4 @@
+from gettext import gettext as _
 from typing import Optional
 
 from ....core.sketcher.commands import (
@@ -9,6 +10,8 @@ from .base import SketchTool
 
 class RectangleTool(SketchTool):
     """Handles creating rectangles."""
+
+    SHORTCUT = ("gr", _("Rectangle"))
 
     def __init__(self, element):
         super().__init__(element)

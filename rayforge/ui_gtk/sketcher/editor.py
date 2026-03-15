@@ -9,6 +9,7 @@ from ...core.undo import HistoryManager
 from ..canvas.cursor import get_tool_cursor
 from ..shared.keyboard import is_primary_modifier
 from .piemenu import SketchPieMenu
+from .shortcuts import get_shortcuts_dict
 from .tools import SelectTool, TextBoxTool
 from .tools.base import SketcherKey
 from .tools.text_box_tool import TextBoxState
@@ -45,11 +46,10 @@ class SketchEditor:
         self._init_shortcuts()
 
         # 2. Pie Menu Setup
-        # Pass the shortcuts dict to the pie menu for label generation.
         # The pie menu is initially parented to the window, but will be
         # re-parented to the canvas when a sketch is activated for more
         # reliable positioning (especially on Windows).
-        self.pie_menu = SketchPieMenu(self.parent_window, self.shortcuts)
+        self.pie_menu = SketchPieMenu(self.parent_window)
 
         # Connect signals
         self.pie_menu.tool_selected.connect(self.on_tool_selected)
@@ -59,39 +59,7 @@ class SketchEditor:
 
     def _init_shortcuts(self):
         """Initializes the keyboard shortcut mappings."""
-        # This can only be called once we have a sketch_element, so we map
-        # to function names and resolve them at runtime.
-        self.shortcuts = {
-            # Tools
-            " ": "set_tool:select",
-            "gl": "set_tool:line",
-            "ga": "set_tool:arc",
-            "gc": "set_tool:circle",
-            "gr": "set_tool:rectangle",
-            "go": "set_tool:rounded_rect",
-            "gf": "set_tool:fill",
-            "gt": "set_tool:text_box",
-            "gn": "toggle_construction_on_selection",
-            # Actions
-            "ch": "add_chamfer_action",
-            "cf": "add_fillet_action",
-            # Constraints (Single Key)
-            "h": "add_horizontal_constraint",
-            "v": "add_vertical_constraint",
-            "n": "add_perpendicular",
-            "t": "add_tangent",
-            "e": "add_equal_constraint",
-            "o": "add_alignment_constraint",
-            "c": "add_alignment_constraint",  # FreeCAD alias
-            "s": "add_symmetry_constraint",
-            # Constraints (K prefix)
-            "kd": "add_distance_constraint",
-            "kr": "add_radius_constraint",
-            "ko": "add_diameter_constraint",
-            "ka": "add_angle_constraint",
-            "kx": "add_aspect_ratio_constraint",
-        }
-        # A set of all prefixes for quick checking (e.g., "g", "k")
+        self.shortcuts = get_shortcuts_dict()
         self.shortcut_prefixes = {
             s[:i] for s in self.shortcuts for i in range(1, len(s))
         }

@@ -18,6 +18,8 @@ if TYPE_CHECKING:
     import cairo
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 
 class ConstraintStatus(Enum):
@@ -40,6 +42,17 @@ class Constraint:
 
     def __init__(self, user_visible: bool = True):
         self.user_visible = user_visible
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        """
+        Returns True if this constraint can be applied to the current
+        selection.
+        Subclasses should override this method.
+        """
+        return False
 
     @staticmethod
     def get_type_name() -> str:

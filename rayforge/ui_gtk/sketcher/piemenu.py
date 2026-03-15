@@ -19,6 +19,7 @@ from rayforge.core.sketcher.constraints import (
     TangentConstraint,
     VerticalConstraint,
 )
+from .shortcuts import get_shortcuts_dict
 
 if TYPE_CHECKING:
     from rayforge.ui_gtk.sketcher.sketchelement import SketchElement
@@ -181,7 +182,7 @@ class SketchPieMenu(PieMenu):
         },
     }
 
-    def __init__(self, parent_widget: Gtk.Widget, shortcuts: dict):
+    def __init__(self, parent_widget: Gtk.Widget):
         super().__init__(parent_widget)
 
         # Context Data
@@ -194,7 +195,7 @@ class SketchPieMenu(PieMenu):
         self.constraint_selected = Signal()
         self.action_triggered = Signal()
 
-        # Invert the editor's shortcut map to group keys by action
+        shortcuts = get_shortcuts_dict()
         action_to_keys = {}
         for key, action in shortcuts.items():
             if action not in action_to_keys:

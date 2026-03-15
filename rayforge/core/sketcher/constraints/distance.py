@@ -18,6 +18,8 @@ if TYPE_CHECKING:
     import cairo
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 
 class DistanceConstraint(Constraint):
@@ -35,16 +37,34 @@ class DistanceConstraint(Constraint):
         self.p1 = p1
         self.p2 = p2
 
-        # Handle migration or dual initialization
         if expression is not None:
             self.expression = expression
             self.value = float(value)
         elif isinstance(value, str):
             self.expression = value
-            self.value = 0.0  # Will be updated by update_from_context shortly
+            self.value = 0.0
         else:
             self.expression = None
             self.value = float(value)
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        if len(selection.point_ids) == 2 and not selection.entity_ids:
+            return True
+        if selection.point_ids:
+            return False
+        if sketch is None:
+            return False
+        from ..entities import Line
+
+        lines = [
+            sketch.registry.get_entity(eid)
+            for eid in selection.entity_ids
+            if isinstance(sketch.registry.get_entity(eid), Line)
+        ]
+        return len(lines) == 1 and len(lines) == len(selection.entity_ids)
 
     @staticmethod
     def get_type_name() -> str:

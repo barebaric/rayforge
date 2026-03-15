@@ -25,6 +25,8 @@ if TYPE_CHECKING:
     import cairo
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 
 class PerpendicularConstraint(Constraint):
@@ -39,6 +41,22 @@ class PerpendicularConstraint(Constraint):
         super().__init__(user_visible=user_visible)
         self.e1_id = e1_id
         self.e2_id = e2_id
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        if selection.point_ids or len(selection.entity_ids) != 2:
+            return False
+        if sketch is None:
+            return False
+        e1 = sketch.registry.get_entity(selection.entity_ids[0])
+        e2 = sketch.registry.get_entity(selection.entity_ids[1])
+        if not isinstance(e1, (Line, Arc, Circle)):
+            return False
+        if not isinstance(e2, (Line, Arc, Circle)):
+            return False
+        return True
 
     @staticmethod
     def get_type_name() -> str:

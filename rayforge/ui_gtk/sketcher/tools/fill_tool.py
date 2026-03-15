@@ -1,3 +1,4 @@
+from gettext import gettext as _
 import math
 
 from ....core.geo import Polygon, primitives
@@ -8,6 +9,8 @@ from .base import SketchTool
 
 class FillTool(SketchTool):
     """Handles creating and removing fills from closed regions."""
+
+    SHORTCUT = ("gf", _("Fill"))
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         if n_press != 1:

@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     import cairo
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 
 class DiameterConstraint(Constraint):
@@ -35,6 +37,17 @@ class DiameterConstraint(Constraint):
         else:
             self.expression = None
             self.value = float(value)
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        if selection.point_ids or len(selection.entity_ids) != 1:
+            return False
+        if sketch is None:
+            return False
+        entity = sketch.registry.get_entity(selection.entity_ids[0])
+        return isinstance(entity, Circle)
 
     @staticmethod
     def get_type_name() -> str:

@@ -32,6 +32,9 @@ class SketcherKey(Enum):
 class SketchTool(ABC):
     """Abstract base class for sketcher tools."""
 
+    SHORTCUT: tuple = ()
+    EDITING_SHORTCUTS: list = []
+
     def __init__(self, element: SketchElement):
         self.element = element
 

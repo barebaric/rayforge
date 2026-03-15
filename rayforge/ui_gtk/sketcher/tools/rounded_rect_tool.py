@@ -1,3 +1,4 @@
+from gettext import gettext as _
 from typing import Optional
 
 from ....core.sketcher.commands import (
@@ -10,6 +11,7 @@ from .base import SketchTool
 class RoundedRectTool(SketchTool):
     """Handles creating rounded rectangles."""
 
+    SHORTCUT = ("go", _("Rounded Rectangle"))
     DEFAULT_RADIUS = 10.0
 
     def __init__(self, element):

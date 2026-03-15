@@ -4,11 +4,14 @@ from gettext import gettext as _
 from typing import Dict, Any, List, TYPE_CHECKING, Callable, Optional
 import cairo
 from ...geo import Point
+from ..entities import Line
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 
 class AspectRatioConstraint(Constraint):
@@ -29,6 +32,18 @@ class AspectRatioConstraint(Constraint):
         self.p3 = p3
         self.p4 = p4
         self.ratio = ratio
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        if selection.point_ids or len(selection.entity_ids) != 2:
+            return False
+        if sketch is None:
+            return False
+        e1 = sketch.registry.get_entity(selection.entity_ids[0])
+        e2 = sketch.registry.get_entity(selection.entity_ids[1])
+        return isinstance(e1, Line) and isinstance(e2, Line)
 
     @staticmethod
     def get_type_name() -> str:

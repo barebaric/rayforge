@@ -1,7 +1,7 @@
 from __future__ import annotations
 import math
 import cairo
-from typing import Dict, Any, List, Callable, TYPE_CHECKING
+from typing import Dict, Any, List, Callable, Optional, TYPE_CHECKING
 from gettext import gettext as _
 from ...geo import Point
 from ...geo.primitives import find_closest_point_on_line
@@ -11,6 +11,8 @@ from .base import Constraint, ConstraintStatus
 if TYPE_CHECKING:
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 
 class TangentConstraint(Constraint):
@@ -23,6 +25,22 @@ class TangentConstraint(Constraint):
         super().__init__(user_visible=user_visible)
         self.line_id = line_id
         self.shape_id = shape_id
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        if selection.point_ids or len(selection.entity_ids) != 2:
+            return False
+        if sketch is None:
+            return False
+        e1 = sketch.registry.get_entity(selection.entity_ids[0])
+        e2 = sketch.registry.get_entity(selection.entity_ids[1])
+        has_line = isinstance(e1, Line) or isinstance(e2, Line)
+        has_shape = isinstance(e1, (Arc, Circle)) or isinstance(
+            e2, (Arc, Circle)
+        )
+        return has_line and has_shape
 
     @staticmethod
     def get_type_name() -> str:

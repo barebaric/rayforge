@@ -33,6 +33,9 @@ class TextBoxState(Enum):
 
 
 class TextBoxTool(SketchTool):
+    SHORTCUT = ("gt", _("Text Box"))
+    EDITING_SHORTCUTS = []
+
     def __init__(self, element):
         super().__init__(element)
         self.state = TextBoxState.IDLE

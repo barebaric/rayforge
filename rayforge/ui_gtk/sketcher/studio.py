@@ -8,9 +8,11 @@ from ...core.undo.property_cmd import ChangePropertyCommand
 from ...core.varset import IntVar, FloatVar, SliderFloatVar
 from ..icons import get_icon
 from ..shared.keyboard import PRIMARY_ACCEL
+from ..shared.status_bar import StatusBar
 from ..varset.varset_editor import VarSetEditorWidget
 from .font_properties import FontPropertiesWidget
 from .menu import SketchMenu
+from .shortcuts import get_active_shortcuts
 from .sketchcanvas import SketchCanvas
 
 logger = logging.getLogger(__name__)
@@ -157,6 +159,10 @@ class SketchStudio(Gtk.Box):
         # The paned widget will handle expansion.
         main_paned.set_end_child(self.canvas)
 
+        # 3. Status Bar
+        self.status_bar = StatusBar()
+        self.append(self.status_bar)
+
         # Connect history manager to varset editor for undo support
         if self.canvas.sketch_editor:
             self.varset_editor.undo_manager = (
@@ -265,6 +271,9 @@ class SketchStudio(Gtk.Box):
             self.canvas.sketch_element.selection.changed.connect(
                 self._on_selection_changed
             )
+            self.canvas.sketch_element.tool_changed.connect(
+                self._on_tool_changed
+            )
             self._on_selection_changed(self.canvas.sketch_element.selection)
 
             # Connect to text editing signals to show font properties
@@ -327,6 +336,7 @@ class SketchStudio(Gtk.Box):
         """Handles selection changes to show/hide font properties."""
         if not self.canvas or not self.canvas.sketch_element:
             self.font_properties.set_text_entity(None)
+            self._update_status_bar()
             return
 
         text_entity_id = None
@@ -339,6 +349,37 @@ class SketchStudio(Gtk.Box):
                 text_entity_id = entity_id
 
         self.font_properties.set_text_entity(text_entity_id)
+        self._update_status_bar()
+
+    def _on_tool_changed(self, sender, tool_name: str):
+        """Handles tool changes to update status bar."""
+        self._update_status_bar()
+
+    def _update_status_bar(self):
+        """Updates the status bar with current shortcuts."""
+        self.status_bar.clear()
+
+        if not self.canvas or not self.canvas.sketch_element:
+            return
+
+        element = self.canvas.sketch_element
+        shortcuts = get_active_shortcuts(
+            selection=element.selection,
+            sketch=element.sketch,
+            active_tool=element.current_tool,
+        )
+
+        for key, label in shortcuts:
+            keys = list(key)
+            display_keys = []
+            for k in keys:
+                if k == " ":
+                    display_keys.append("Space")
+                else:
+                    display_keys.append(k.upper())
+            self.status_bar.add_shortcut_entry(
+                display_keys, label, separator=""
+            )
 
     def _on_text_editing_started(self, sender):
         """Shows font properties when text editing begins."""

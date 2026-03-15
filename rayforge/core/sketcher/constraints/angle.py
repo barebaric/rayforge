@@ -21,6 +21,8 @@ if TYPE_CHECKING:
     import cairo
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +72,18 @@ class AngleConstraint(Constraint):
         else:
             self.expression = None
             self.value = float(value)
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        if selection.point_ids or len(selection.entity_ids) != 2:
+            return False
+        if sketch is None:
+            return False
+        e1 = sketch.registry.get_entity(selection.entity_ids[0])
+        e2 = sketch.registry.get_entity(selection.entity_ids[1])
+        return isinstance(e1, Line) and isinstance(e2, Line)
 
     @staticmethod
     def get_type_name() -> str:
