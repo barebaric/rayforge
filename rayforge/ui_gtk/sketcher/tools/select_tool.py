@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 from gettext import gettext as _
 import cairo
 
@@ -17,6 +17,7 @@ from ....core.sketcher.constraints import (
     RadiusConstraint,
 )
 from ....core.sketcher.entities import Arc, Circle, Entity, Line, TextBoxEntity
+from ...shared.keyboard import PRIMARY_KEY_NAME
 from .base import SketchTool
 from .text_box_tool import TextBoxTool
 
@@ -62,6 +63,35 @@ class SelectTool(SketchTool):
         self.drag_initial_entity_states: Dict[int, Any] = {}
 
         self.drag_point_distances: Dict[int, int] = {}
+
+    def _is_dragging(self) -> bool:
+        """Returns True if currently dragging a point or entity."""
+        return (
+            self.dragged_point_id is not None
+            or self.dragged_entity is not None
+        )
+
+    def _get_drag_start_world_pos(self) -> Tuple[float, float]:
+        """Returns the world-space start position of the current drag."""
+        if self.drag_point_start_pos is not None:
+            return self.drag_point_start_pos
+        if self.drag_start_model_pos is not None:
+            return self.drag_start_model_pos
+        return 0.0, 0.0
+
+    @staticmethod
+    def _calculate_snap_offset(target_pos: float, grid_size: float) -> float:
+        """Calculates snap offset to align target to nearest grid line."""
+        if grid_size <= 0:
+            return 0.0
+        snapped = round(target_pos / grid_size) * grid_size
+        return snapped - target_pos
+
+    def get_active_shortcuts(self) -> List[Tuple[str, str]]:
+        """Returns shortcuts available based on current tool state."""
+        if self._is_dragging():
+            return [(PRIMARY_KEY_NAME, _("Snap to Grid"))]
+        return []
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         hit_type, hit_obj = self.element.hittester.get_hit_data(
@@ -191,7 +221,21 @@ class SelectTool(SketchTool):
             return False
 
     def on_drag(self, world_dx: float, world_dy: float):
-        # Route to the correct drag handler based on what was pressed
+        if self._is_dragging() and self.element.canvas:
+            canvas = self.element.canvas
+            if canvas._ctrl_pressed and canvas.grid_size > 0:
+                start_x, start_y = self._get_drag_start_world_pos()
+                target_x = start_x + world_dx
+                target_y = start_y + world_dy
+                snap_offset_x = self._calculate_snap_offset(
+                    target_x, canvas.grid_size
+                )
+                snap_offset_y = self._calculate_snap_offset(
+                    target_y, canvas.grid_size
+                )
+                world_dx += snap_offset_x
+                world_dy += snap_offset_y
+
         if self.dragged_point_id is not None:
             self._handle_point_drag(world_dx, world_dy)
         elif self.dragged_entity is not None:
