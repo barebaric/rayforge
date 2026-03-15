@@ -4,7 +4,7 @@ import pytest
 
 from rayforge.core.sketcher.commands import RoundedRectCommand
 from rayforge.core.sketcher.entities import Point
-from rayforge.core.sketcher.tools import RoundedRectTool
+from rayforge.ui_gtk.sketcher.tools import RoundedRectTool
 
 
 @pytest.fixture

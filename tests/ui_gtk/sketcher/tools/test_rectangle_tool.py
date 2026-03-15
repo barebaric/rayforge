@@ -3,7 +3,7 @@ import pytest
 
 from rayforge.core.sketcher.commands import RectangleCommand
 from rayforge.core.sketcher.entities import Point
-from rayforge.core.sketcher.tools import RectangleTool
+from rayforge.ui_gtk.sketcher.tools import RectangleTool
 
 
 @pytest.fixture

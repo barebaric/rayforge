@@ -1,7 +1,7 @@
 import pytest
 import cairo
 from unittest.mock import Mock
-from rayforge.core.sketcher.tools.base import SketchTool
+from rayforge.ui_gtk.sketcher.tools.base import SketchTool
 
 
 @pytest.fixture

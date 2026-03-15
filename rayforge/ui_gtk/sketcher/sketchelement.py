@@ -30,16 +30,16 @@ from ...core.sketcher.constraints import (
     EqualLengthConstraint,
     SymmetryConstraint,
 )
-from ...core.sketcher.entities import Line, Arc, Circle, Entity, Point
+from ...core.sketcher.entities import Arc, Circle, Entity, Line, Point
 from ...core.sketcher.selection import SketchSelection
-from ...core.sketcher.tools import (
-    SelectTool,
-    LineTool,
+from .tools import (
     ArcTool,
     CircleTool,
     FillTool,
-    RoundedRectTool,
+    LineTool,
     RectangleTool,
+    RoundedRectTool,
+    SelectTool,
     TextBoxTool,
 )
 from ..canvas import CanvasElement

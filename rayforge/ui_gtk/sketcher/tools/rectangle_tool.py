@@ -1,5 +1,6 @@
-from typing import Optional, Dict
-from ..commands import RectangleCommand
+from typing import Dict, Optional
+
+from ....core.sketcher.commands import RectangleCommand
 from .base import SketchTool
 
 
@@ -131,6 +132,7 @@ class RectangleTool(SketchTool):
 
     def _update_preview_geometry(self, is_creation: bool = False):
         """Calculates and creates/updates preview geometry."""
+        assert self.start_id is not None
         registry = self.element.sketch.registry
         p1 = registry.get_point(self.start_id)
         p3 = registry.get_point(self._preview_ids["p_end"])

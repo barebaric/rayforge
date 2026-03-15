@@ -18,8 +18,8 @@ from ...core.sketcher.entities import (
     Point,
     TextBoxEntity,
 )
-from ...core.sketcher.tools import TextBoxTool
 from ..canvas import WorldSurface
+from .tools import TextBoxTool
 
 if TYPE_CHECKING:
     from .sketchelement import SketchElement

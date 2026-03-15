@@ -1,19 +1,25 @@
 import logging
 import math
-from typing import Optional, cast
 from enum import Enum, auto
+from typing import TYPE_CHECKING, Optional, cast
+
 import cairo
 from blinker import Signal
-from ...geo import Geometry, primitives
-from ..commands import TextBoxCommand
-from ..commands.live_text_edit import LiveTextEditCommand
-from ..constraints import (
+
+from ....core.geo import Geometry, primitives
+from ....core.sketcher.commands import TextBoxCommand
+from ....core.sketcher.commands.live_text_edit import LiveTextEditCommand
+from ....core.sketcher.commands.text_property import ModifyTextPropertyCommand
+from ....core.sketcher.constraints import (
     AspectRatioConstraint,
     HorizontalConstraint,
     VerticalConstraint,
 )
-from ..entities import Line, Point, TextBoxEntity
+from ....core.sketcher.entities import Line, Point, TextBoxEntity
 from .base import SketchTool, SketcherKey
+
+if TYPE_CHECKING:
+    from ..sketchcanvas import SketchCanvas
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +89,7 @@ class TextBoxTool(SketchTool):
 
     def start_editing(self, entity_id: int):
         """Public method to begin editing an existing text box."""
-        from ..entities import TextBoxEntity
+        from ....core.sketcher.entities import TextBoxEntity
 
         entity = self.element.sketch.registry.get_entity(entity_id)
         if not isinstance(entity, TextBoxEntity):
@@ -324,14 +330,12 @@ class TextBoxTool(SketchTool):
         self.cursor_pos = len(self.text_buffer)
 
     def _finalize_edit(self):
-        from ..commands.text_property import ModifyTextPropertyCommand
-
         if self.editing_entity_id is not None:
             entity = self.element.sketch.registry.get_entity(
                 self.editing_entity_id
             )
             if entity:
-                # Use a command to make the final text and size change undoable
+                entity = cast(TextBoxEntity, entity)
                 cmd = ModifyTextPropertyCommand(
                     self.element.sketch,
                     self.editing_entity_id,
@@ -874,7 +878,8 @@ class TextBoxTool(SketchTool):
             # Calculate view scale for consistent cursor size
             scale = 1.0
             if self.element.canvas:
-                scale_x, _ = self.element.canvas.get_view_scale()
+                canvas = cast("SketchCanvas", self.element.canvas)
+                scale_x, _ = canvas.get_view_scale()
                 scale = scale_x if scale_x > 1e-13 else 1.0
             cursor_width = 3.0 / scale
 
@@ -962,10 +967,11 @@ class TextBoxTool(SketchTool):
         if self.editing_entity_id is None:
             return
 
-        entity = self.element.sketch.registry.get_entity(
-            self.editing_entity_id
+        entity = cast(
+            TextBoxEntity,
+            self.element.sketch.registry.get_entity(self.editing_entity_id),
         )
-        if not entity:
+        if not isinstance(entity, TextBoxEntity):
             return
 
         p_origin = self.element.sketch.registry.get_point(entity.origin_id)

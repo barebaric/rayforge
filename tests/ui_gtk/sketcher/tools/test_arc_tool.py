@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock
-from rayforge.core.sketcher.tools.arc_tool import ArcTool
+from rayforge.ui_gtk.sketcher.tools.arc_tool import ArcTool
 
 
 @pytest.fixture

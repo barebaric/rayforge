@@ -1,9 +1,10 @@
 import math
 from typing import Optional
 from gettext import gettext as _
-from ..commands import AddItemsCommand
-from ..constraints import EqualDistanceConstraint
-from ..entities import Point, Arc
+
+from ....core.sketcher.commands import AddItemsCommand
+from ....core.sketcher.constraints import EqualDistanceConstraint
+from ....core.sketcher.entities import Arc, Point
 from .base import SketchTool
 
 
