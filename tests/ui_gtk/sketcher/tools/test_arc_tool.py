@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import Mock
 from rayforge.ui_gtk.sketcher.tools.arc_tool import ArcTool
+from rayforge.core.sketcher.commands import ArcPreviewState
 
 
 @pytest.fixture
@@ -41,15 +42,7 @@ def test_arc_tool_initialization(arc_tool, mock_element):
     assert arc_tool.start_id is None
     assert arc_tool.center_temp is False
     assert arc_tool.start_temp is False
-    assert arc_tool.temp_end_id is None
-    assert arc_tool.temp_entity_id is None
-
-
-def test_arc_tool_cleanup_temps_no_temps(arc_tool):
-    """Test cleanup when no temps exist."""
-    arc_tool._cleanup_temps()
-    assert arc_tool.temp_end_id is None
-    assert arc_tool.temp_entity_id is None
+    assert arc_tool._preview_state is None
 
 
 def test_arc_tool_on_deactivate(arc_tool, mock_element):
@@ -58,8 +51,14 @@ def test_arc_tool_on_deactivate(arc_tool, mock_element):
     arc_tool.start_id = 2
     arc_tool.center_temp = True
     arc_tool.start_temp = True
-    arc_tool.temp_end_id = 3
-    arc_tool.temp_entity_id = 4
+    arc_tool._preview_state = ArcPreviewState(
+        center_id=1,
+        center_temp=True,
+        start_id=2,
+        start_temp=True,
+        temp_end_id=3,
+        temp_entity_id=4,
+    )
 
     arc_tool.on_deactivate()
 
@@ -67,8 +66,7 @@ def test_arc_tool_on_deactivate(arc_tool, mock_element):
     assert arc_tool.start_id is None
     assert arc_tool.center_temp is False
     assert arc_tool.start_temp is False
-    assert arc_tool.temp_end_id is None
-    assert arc_tool.temp_entity_id is None
+    assert arc_tool._preview_state is None
     mock_element.mark_dirty.assert_called_once()
 
 
@@ -109,8 +107,14 @@ def test_arc_tool_on_hover_motion_with_preview(arc_tool, mock_element):
     """Test on_hover_motion updates preview when in preview stage."""
     arc_tool.center_id = 0
     arc_tool.start_id = 1
-    arc_tool.temp_end_id = 2
-    arc_tool.temp_entity_id = 3
+    arc_tool._preview_state = ArcPreviewState(
+        center_id=0,
+        center_temp=False,
+        start_id=1,
+        start_temp=False,
+        temp_end_id=2,
+        temp_entity_id=3,
+    )
 
     mock_point_center = Mock()
     mock_point_center.x = 0.0
@@ -134,8 +138,7 @@ def test_arc_tool_on_hover_motion_with_preview(arc_tool, mock_element):
 
     arc_tool.on_hover_motion(100.0, 200.0)
 
-    mock_point_end.x = 10.0
-    mock_point_end.y = 10.0
+    mock_element.mark_dirty.assert_called()
 
 
 def test_arc_tool_handle_click_center_point(arc_tool, mock_element):

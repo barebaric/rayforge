@@ -1,8 +1,6 @@
 from typing import Optional
-from gettext import gettext as _
 
-from ....core.sketcher.commands import AddItemsCommand
-from ....core.sketcher.entities import Circle, Point
+from ....core.sketcher.commands import CircleCommand, CirclePreviewState
 from .base import SketchTool
 
 
@@ -11,39 +9,23 @@ class CircleTool(SketchTool):
 
     def __init__(self, element):
         super().__init__(element)
-        self.center_id: Optional[int] = None
-        self.center_temp: bool = False
-
-        # Live Preview State
-        self.temp_radius_id: Optional[int] = None
-        self.temp_entity_id: Optional[int] = None
-
-    def _cleanup_temps(self):
-        """Removes temporary preview entities from the registry."""
-        if self.temp_entity_id is not None:
-            # Remove entity
-            self.element.sketch.registry.entities = [
-                e
-                for e in self.element.sketch.registry.entities
-                if e.id != self.temp_entity_id
-            ]
-            # Rebuild map
-            reg = self.element.sketch.registry
-            reg._entity_map = {e.id: e for e in reg.entities}
-            self.temp_entity_id = None
-
-        if self.temp_radius_id is not None:
-            self.element.remove_point_if_unused(self.temp_radius_id)
-            self.temp_radius_id = None
+        self._preview_state: Optional[CirclePreviewState] = None
 
     def on_deactivate(self):
-        """Clean up the center point if a circle was not finished."""
-        self._cleanup_temps()
-        if self.center_temp:
-            self.element.remove_point_if_unused(self.center_id)
-        self.center_id = None
-        self.center_temp = False
-        self.element.mark_dirty()
+        """Clean up if the tool is deactivated mid-creation."""
+        if self._preview_state is not None:
+            center_id = self._preview_state.center_id
+            center_temp = self._preview_state.center_temp
+
+            CircleCommand.cleanup_preview(
+                self.element.sketch.registry, self._preview_state
+            )
+            self._preview_state = None
+
+            if center_temp:
+                self.element.remove_point_if_unused(center_id)
+
+            self.element.mark_dirty()
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         mx, my = self.element.hittester.screen_to_model(
@@ -63,11 +45,7 @@ class CircleTool(SketchTool):
 
     def on_hover_motion(self, world_x: float, world_y: float):
         """Updates the live preview of the circle."""
-        if (
-            self.center_id is None
-            or self.temp_entity_id is None
-            or self.temp_radius_id is None
-        ):
+        if self._preview_state is None:
             return
 
         mx, my = self.element.hittester.screen_to_model(
@@ -75,91 +53,61 @@ class CircleTool(SketchTool):
         )
 
         try:
-            r_pt = self.element.sketch.registry.get_point(self.temp_radius_id)
-            r_pt.x = mx
-            r_pt.y = my
+            CircleCommand.update_preview(
+                self.element.sketch.registry, self._preview_state, mx, my
+            )
             self.element.mark_dirty()
-        except IndexError:
-            pass
+        except (IndexError, KeyError):
+            self.on_deactivate()
 
     def _handle_click(self, pid_hit, mx, my) -> bool:
-        # State machine: Center -> Radius Point
-
-        if self.center_id is not None:
-            try:
-                self.element.sketch.registry.get_point(self.center_id)
-            except IndexError:
-                # Center point was deleted, reset the tool
-                self.on_deactivate()
-
-        if self.center_id is None:
-            # Step 1: Center Point
-            if pid_hit is None:
-                pid_hit = self.element.sketch.add_point(mx, my)
-                self.center_temp = True
-                self.element.update_bounds_from_sketch()
-            else:
-                self.center_temp = False
-
-            self.center_id = pid_hit
-            self.element.selection.clear()
-            self.element.selection.select_point(pid_hit, False)
-
-            # Create a temporary Radius point and Circle entity
-            self.temp_radius_id = self.element.sketch.add_point(mx, my)
-            self.temp_entity_id = self.element.sketch.add_circle(
-                self.center_id, self.temp_radius_id
+        if self._preview_state is None:
+            # --- First Click: Start preview ---
+            self._preview_state = CircleCommand.start_preview(
+                self.element.sketch.registry, mx, my, snapped_pid=pid_hit
             )
-
+            self.element.selection.clear()
+            self.element.selection.select_point(
+                self._preview_state.center_id, False
+            )
         else:
-            # Step 2: Radius Point (Finalize)
+            # --- Second Click: Finalize the circle ---
+            preview_radius_id = self._preview_state.radius_id
 
-            # If we hit our own preview point, ignore the hit so we create a
-            # new, real point
-            if pid_hit == self.temp_radius_id:
-                pid_hit = None
+            center_id = self._preview_state.center_id
+            center_temp = self._preview_state.center_temp
 
-            # Clean up the preview geometry before adding the real command
-            self._cleanup_temps()
+            CircleCommand.cleanup_preview(
+                self.element.sketch.registry, self._preview_state
+            )
+            self._preview_state = None
 
-            new_point = None
-            if pid_hit is None:
-                temp_id = self.element.sketch.registry._id_counter
-                pid_hit = temp_id
-                new_point = Point(temp_id, mx, my)
+            # If we hit our own preview point, treat it as no snap
+            final_pid = None if pid_hit == preview_radius_id else pid_hit
 
             # Cannot have radius point at center
-            if pid_hit != self.center_id:
-                temp_circle_id = self.element.sketch.registry._id_counter + (
-                    1 if new_point else 0
-                )
-                new_circle = Circle(temp_circle_id, self.center_id, pid_hit)
-
-                points_to_add = [new_point] if new_point else []
-
-                if self.center_temp:
-                    try:
-                        p = self.element.sketch.registry.get_point(
-                            self.center_id
-                        )
-                        self.element.sketch.registry.points.remove(p)
-                        points_to_add.append(p)
-                    except (IndexError, ValueError):
-                        pass
-
-                cmd = AddItemsCommand(
+            if final_pid != center_id:
+                cmd = CircleCommand(
                     self.element.sketch,
-                    _("Add Circle"),
-                    points=points_to_add,
-                    entities=[new_circle],
+                    center_id,
+                    (mx, my),
+                    end_pid=final_pid,
+                    is_center_temp=center_temp,
                 )
                 self.element.execute_command(cmd)
 
-                # Reset for next circle
-                self.center_id = None
-                self.center_temp = False
+                # Get the final end point ID for selection
+                if cmd.add_cmd and cmd.add_cmd.points:
+                    for p in cmd.add_cmd.points:
+                        if p.x == mx or (
+                            final_pid is not None and p.id == final_pid
+                        ):
+                            final_pid = p.id
+                            break
+
                 self.element.selection.clear()
-                self.element.selection.select_point(pid_hit, False)
+                if final_pid is not None:
+                    self.element.selection.select_point(final_pid, False)
 
         self.element.mark_dirty()
         return True

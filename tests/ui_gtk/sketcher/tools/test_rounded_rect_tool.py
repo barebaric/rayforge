@@ -1,8 +1,11 @@
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from rayforge.core.sketcher.commands import RoundedRectCommand
+from rayforge.core.sketcher.commands import (
+    RoundedRectCommand,
+    RoundedRectPreviewState,
+)
 from rayforge.core.sketcher.entities import Point
 from rayforge.ui_gtk.sketcher.tools import RoundedRectTool
 
@@ -26,126 +29,121 @@ def tool(mock_element):
 
 def test_rounded_rect_tool_initialization(tool):
     """Test the tool's initial state."""
-    assert tool.start_id is None
-    assert tool.start_temp is False
-    assert tool._is_previewing is False
-    assert not tool._preview_ids
+    assert tool._preview_state is None
 
 
 def test_first_click_no_hit_starts_preview(tool, mock_element):
     """Test that the first click on an empty space starts the preview mode."""
-    mock_element.sketch.add_point.side_effect = [0, 1]  # start_id, p_end_id
+    mock_element.sketch.registry.add_point.side_effect = [0, 1]
     mock_element.hittester.screen_to_model.return_value = (10, 20)
-    tool._update_preview_geometry = MagicMock()
 
-    result = tool.on_press(100, 200, 1)
+    with patch.object(
+        RoundedRectCommand, "create_preview"
+    ) as mock_create_preview:
+        mock_create_preview.return_value = {"t2": 2, "line1": 10}
+        result = tool.on_press(100, 200, 1)
 
     assert result is True
-    assert tool.start_id == 0
-    assert tool.start_temp is True
-    assert tool._is_previewing is True
-    assert tool._preview_ids["p_end"] == 1
-    tool._update_preview_geometry.assert_called_once_with(is_creation=True)
-    mock_element.sketch.add_point.assert_has_calls(
-        [call(10, 20), call(10, 20)]
-    )
+    assert tool._preview_state is not None
+    assert tool._preview_state.start_id == 0
+    assert tool._preview_state.start_temp is True
+    assert tool._preview_state.p_end_id == 1
+    mock_element.sketch.registry.add_point.assert_called()
 
 
 def test_first_click_with_hit_starts_preview(tool, mock_element):
     """Test a first click on an existing point starts the preview mode."""
     mock_element.hittester.get_hit_data.return_value = ("point", 5)
-    mock_element.sketch.add_point.return_value = 6  # p_end_id
+    mock_element.sketch.registry.add_point.return_value = 6
     mock_element.hittester.screen_to_model.return_value = (10, 20)
-    tool._update_preview_geometry = MagicMock()
 
-    result = tool.on_press(100, 200, 1)
+    with patch.object(
+        RoundedRectCommand, "create_preview"
+    ) as mock_create_preview:
+        mock_create_preview.return_value = {"t2": 7, "line1": 10}
+        result = tool.on_press(100, 200, 1)
 
     assert result is True
-    assert tool.start_id == 5
-    assert tool.start_temp is False
-    assert tool._is_previewing is True
-    assert tool._preview_ids["p_end"] == 6
-    tool._update_preview_geometry.assert_called_once_with(is_creation=True)
+    assert tool._preview_state is not None
+    assert tool._preview_state.start_id == 5
+    assert tool._preview_state.start_temp is False
+    assert tool._preview_state.p_end_id == 6
 
 
 def test_second_click_creates_rounded_rectangle(tool, mock_element):
     """Test a second click creates final rounded rectangle geometry."""
-    # --- Setup first click state ---
-    tool.start_id = 0
-    tool.start_temp = True  # Important for checking point removal
-    tool._is_previewing = True
-    mock_start_point = Point(0, 0, 0)
-    mock_element.sketch.registry.get_point.return_value = mock_start_point
-    tool._cleanup_temps = MagicMock()
+    tool._preview_state = RoundedRectPreviewState(
+        start_id=0,
+        start_temp=True,
+        p_end_id=1,
+        preview_ids={"t2": 2, "line1": 10},
+        radius=10.0,
+    )
+    mock_element.sketch.registry.get_point.return_value = Point(0, 0, 0)
 
-    # --- Simulate second click ---
     mock_element.hittester.screen_to_model.return_value = (100, 50)
     result = tool.on_press(100, 200, 1)
 
     assert result is True
-    tool._cleanup_temps.assert_called_once()
-
-    # Verify command execution
     mock_element.execute_command.assert_called_once()
     cmd = mock_element.execute_command.call_args[0][0]
     assert isinstance(cmd, RoundedRectCommand)
-
-    # Check command contents
     assert cmd.start_pid == 0
     assert cmd.end_pos == (100, 50)
     assert cmd.is_start_temp is True
     assert cmd.radius == tool.DEFAULT_RADIUS
-
-    # Verify tool reset
-    assert tool.start_id is None
-    assert tool._is_previewing is False
+    assert tool._preview_state is None
 
 
 def test_on_hover_motion_updates_preview(tool, mock_element):
     """Test that hovering updates the preview geometry."""
-    # --- Setup preview state ---
-    tool.start_id = 0
-    tool._is_previewing = True
-    tool._preview_ids["p_end"] = 1
-    mock_point = Point(1, 0, 0)
-    mock_element.sketch.registry.get_point.return_value = mock_point
-    tool._update_preview_geometry = MagicMock()
+    tool._preview_state = RoundedRectPreviewState(
+        start_id=0,
+        start_temp=True,
+        p_end_id=1,
+        preview_ids={"t2": 2, "line1": 10},
+        radius=10.0,
+    )
 
-    # --- Simulate hover ---
-    mock_element.hittester.screen_to_model.return_value = (75, 85)
-    tool.on_hover_motion(100, 200)
+    with patch.object(RoundedRectCommand, "update_preview") as mock_update:
+        mock_element.hittester.screen_to_model.return_value = (75, 85)
+        tool.on_hover_motion(100, 200)
 
-    assert mock_point.x == 75
-    assert mock_point.y == 85
-    tool._update_preview_geometry.assert_called_once()
-    mock_element.mark_dirty.assert_called_once()
+        mock_update.assert_called_once()
+        call_args = mock_update.call_args
+        assert call_args[0][2] == 75
+        assert call_args[0][3] == 85
+        mock_element.mark_dirty.assert_called_once()
 
 
 def test_on_deactivate_cleans_up(tool, mock_element):
     """Test that deactivating the tool cleans up temporary state."""
-    tool.start_id = 0
-    tool.start_temp = True
-    tool._is_previewing = True
-    tool._cleanup_temps = MagicMock()
+    tool._preview_state = RoundedRectPreviewState(
+        start_id=0,
+        start_temp=True,
+        p_end_id=1,
+        preview_ids={"t2": 2, "line1": 10},
+        radius=10.0,
+    )
 
     tool.on_deactivate()
 
-    tool._cleanup_temps.assert_called_once()
-    mock_element.remove_point_if_unused.assert_called_once_with(0)
-    assert tool.start_id is None
-    assert tool.start_temp is False
+    assert tool._preview_state is None
+    mock_element.mark_dirty.assert_called()
 
 
 def test_degenerate_rounded_rectangle_aborts_creation(tool, mock_element):
     """Test that a zero-width or zero-height rect is not created."""
     # --- Setup first click state ---
-    tool.start_id = 0
-    tool.start_temp = True
-    tool._is_previewing = True
-    mock_start_point = Point(0, 10, 20)
-    mock_element.sketch.registry.get_point.return_value = mock_start_point
+    tool._preview_state = RoundedRectPreviewState(
+        start_id=0,
+        start_temp=True,
+        p_end_id=1,
+        preview_ids={"t2": 2, "line1": 10},
+        radius=10.0,
+    )
+    mock_element.sketch.registry.get_point.return_value = Point(0, 10, 20)
     mock_element.sketch.remove_point_if_unused = MagicMock()
-    tool._cleanup_temps = MagicMock()
 
     # --- Simulate second click at nearly the same spot ---
     mock_element.hittester.screen_to_model.return_value = (10, 20.0000001)

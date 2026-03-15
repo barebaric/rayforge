@@ -334,6 +334,57 @@ def find_closest_point_on_line(
     return p1[0] + t * dx, p1[1] + t * dy
 
 
+def project_point_onto_circle(
+    point: Point, center: Point, radius: float
+) -> Optional[Point]:
+    """
+    Projects a point onto the circumference of a circle.
+
+    Args:
+        point: The point to project (x, y).
+        center: The center of the circle (x, y).
+        radius: The radius of the circle.
+
+    Returns:
+        The (x, y) coordinates of the projected point on the circle's
+        circumference, or None if the point is at the center.
+    """
+    dx = point[0] - center[0]
+    dy = point[1] - center[1]
+    dist = math.hypot(dx, dy)
+
+    if dist < 1e-9:
+        return None
+
+    scale = radius / dist
+    return (center[0] + dx * scale, center[1] + dy * scale)
+
+
+def determine_arc_direction(center: Point, start: Point, mouse: Point) -> bool:
+    """
+    Determines if an arc should be clockwise based on mouse position.
+
+    Uses the cross product of vectors (Center->Start) and (Center->Mouse).
+    In screen coordinates (Y-down), a positive cross product indicates
+    clockwise direction.
+
+    Args:
+        center: The center point of the arc.
+        start: The start point of the arc.
+        mouse: The current mouse position.
+
+    Returns:
+        True if the arc should be clockwise, False for counter-clockwise.
+    """
+    vec_s_x = start[0] - center[0]
+    vec_s_y = start[1] - center[1]
+    vec_m_x = mouse[0] - center[0]
+    vec_m_y = mouse[1] - center[1]
+
+    det = vec_s_x * vec_m_y - vec_s_y * vec_m_x
+    return bool(det < 0)
+
+
 def find_closest_point_on_line_segment(
     p1: Point, p2: Point, x: float, y: float
 ) -> Tuple[float, Point, float]:

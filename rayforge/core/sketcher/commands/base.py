@@ -5,9 +5,22 @@ from typing import TYPE_CHECKING, Dict, Tuple, Optional, Any
 from ...undo.command import Command
 
 if TYPE_CHECKING:
+    from ..registry import EntityRegistry
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
+
+
+class PreviewState:
+    """
+    Base class for preview state returned by start_preview().
+
+    Subclass this to store command-specific preview data.
+    All preview state should be stored as attributes for the tool to read
+    after calling cleanup_preview().
+    """
+
+    pass
 
 
 class SketchChangeCommand(Command):
@@ -23,6 +36,72 @@ class SketchChangeCommand(Command):
         self._snapshot: Optional[
             Tuple[Dict[int, Tuple[float, float]], Dict[int, Any]]
         ] = None
+
+    @staticmethod
+    def start_preview(
+        registry: "EntityRegistry",
+        x: float,
+        y: float,
+        snapped_pid: Optional[int] = None,
+        **kwargs,
+    ) -> PreviewState:
+        """
+        Creates initial preview state with start point(s).
+
+        Args:
+            registry: The entity registry to modify.
+            x, y: The initial coordinates.
+            snapped_pid: An existing point ID to snap to, or None.
+            **kwargs: Additional command-specific parameters.
+
+        Returns:
+            PreviewState containing preview state for use with update_preview
+            and cleanup_preview.
+
+        Raises:
+            NotImplementedError: If the command does not support preview.
+        """
+        raise NotImplementedError("This command does not support preview")
+
+    @staticmethod
+    def update_preview(
+        registry: "EntityRegistry",
+        preview_state: PreviewState,
+        x: float,
+        y: float,
+    ) -> None:
+        """
+        Updates the preview geometry based on new cursor position.
+
+        Args:
+            registry: The entity registry to modify.
+            preview_state: The preview state from start_preview.
+            x, y: The new cursor coordinates.
+
+        Raises:
+            NotImplementedError: If the command does not support preview.
+        """
+        raise NotImplementedError("This command does not support preview")
+
+    @staticmethod
+    def cleanup_preview(
+        registry: "EntityRegistry", preview_state: PreviewState
+    ) -> None:
+        """
+        Removes all preview entities and points from the registry.
+
+        The preview_state is modified in place if needed (e.g., to store
+        final computed values like direction). The tool reads all necessary
+        values from preview_state after calling this method.
+
+        Args:
+            registry: The entity registry to modify.
+            preview_state: The preview state from start_preview.
+
+        Raises:
+            NotImplementedError: If the command does not support preview.
+        """
+        raise NotImplementedError("This command does not support preview")
 
     def capture_snapshot(self):
         """Captures the current coordinates of all points and entity states."""
