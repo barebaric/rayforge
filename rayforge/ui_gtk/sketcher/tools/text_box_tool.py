@@ -1,6 +1,7 @@
 import logging
 import math
 from enum import Enum, auto
+from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional, cast
 
 import cairo
@@ -41,6 +42,7 @@ class TextBoxTool(SketchTool):
         self.cursor_visible = True
         self.is_hovering = False
         self.live_edit_cmd: Optional[LiveTextEditCommand] = None
+        self._is_new_text_box = False
 
         # Text selection state
         self.selection_start: Optional[int] = None
@@ -119,6 +121,11 @@ class TextBoxTool(SketchTool):
 
             self._finalize_edit()
 
+            if self._is_new_text_box:
+                self._is_new_text_box = False
+                if self.element.editor:
+                    self.element.editor.history_manager.end_transaction()
+
         self.state = TextBoxState.IDLE
         self.editing_entity_id = None
         self.text_buffer = ""
@@ -162,6 +169,11 @@ class TextBoxTool(SketchTool):
             self._drag_start_world_x = world_x
             self._drag_start_world_y = world_y
             return False  # Don't claim gesture, allow drag events
+
+        editor = self.element.editor
+        self._is_new_text_box = bool(editor)
+        if editor:
+            editor.history_manager.begin_transaction(_("Add Text Box"))
 
         cmd = TextBoxCommand(self.element.sketch, origin=(mx, my))
         self.element.execute_command(cmd)
