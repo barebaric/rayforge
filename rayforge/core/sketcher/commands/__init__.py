@@ -7,6 +7,7 @@ from .construction import ToggleConstructionCommand
 from .fill import AddFillCommand, RemoveFillCommand
 from .fillet import FilletCommand
 from .items import AddItemsCommand, RemoveItemsCommand
+from .line import LineCommand, LinePreviewState
 from .live_text_edit import LiveTextEditCommand
 from .point import MovePointCommand, UnstickJunctionCommand
 from .rectangle import RectangleCommand, RectanglePreviewState
@@ -24,6 +25,8 @@ __all__ = [
     "CircleCommand",
     "CirclePreviewState",
     "FilletCommand",
+    "LineCommand",
+    "LinePreviewState",
     "LiveTextEditCommand",
     "ModifyConstraintCommand",
     "ModifyTextPropertyCommand",
