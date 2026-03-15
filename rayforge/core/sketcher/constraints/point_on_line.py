@@ -257,3 +257,7 @@ class PointOnLineConstraint(Constraint):
         self._set_color(ctx, is_hovered)
         ctx.stroke()
         ctx.restore()
+
+    def get_draggable_point(self) -> int:
+        """Returns the point that lies on the line/shape."""
+        return self.point_id

@@ -3,6 +3,7 @@ from .base import SketchChangeCommand
 from .chamfer import ChamferCommand
 from .circle import CircleCommand, CirclePreviewState
 from .constraint import ModifyConstraintCommand
+from .constraint_create import CreateOrEditConstraintCommand
 from .construction import ToggleConstructionCommand
 from .fill import AddFillCommand, RemoveFillCommand
 from .fillet import FilletCommand
@@ -24,6 +25,7 @@ __all__ = [
     "ChamferCommand",
     "CircleCommand",
     "CirclePreviewState",
+    "CreateOrEditConstraintCommand",
     "FilletCommand",
     "LineCommand",
     "LinePreviewState",

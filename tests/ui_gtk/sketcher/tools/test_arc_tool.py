@@ -38,19 +38,11 @@ def arc_tool(mock_element):
 def test_arc_tool_initialization(arc_tool, mock_element):
     """Test that ArcTool initializes correctly."""
     assert arc_tool.element == mock_element
-    assert arc_tool.center_id is None
-    assert arc_tool.start_id is None
-    assert arc_tool.center_temp is False
-    assert arc_tool.start_temp is False
     assert arc_tool._preview_state is None
 
 
 def test_arc_tool_on_deactivate(arc_tool, mock_element):
     """Test that on_deactivate cleans up state."""
-    arc_tool.center_id = 1
-    arc_tool.start_id = 2
-    arc_tool.center_temp = True
-    arc_tool.start_temp = True
     arc_tool._preview_state = ArcPreviewState(
         center_id=1,
         center_temp=True,
@@ -62,10 +54,6 @@ def test_arc_tool_on_deactivate(arc_tool, mock_element):
 
     arc_tool.on_deactivate()
 
-    assert arc_tool.center_id is None
-    assert arc_tool.start_id is None
-    assert arc_tool.center_temp is False
-    assert arc_tool.start_temp is False
     assert arc_tool._preview_state is None
     mock_element.mark_dirty.assert_called_once()
 
@@ -74,14 +62,14 @@ def test_arc_tool_on_press_no_hit(arc_tool, mock_element):
     """Test on_press when no point is hit."""
     mock_element.hittester.get_hit_data.return_value = (None, None)
     mock_element.hittester.screen_to_model.return_value = (10.0, 20.0)
-    mock_element.sketch.add_point.return_value = 0
+    mock_element.sketch.registry.add_point = Mock(return_value=0)
 
     result = arc_tool.on_press(100.0, 200.0, 1)
 
     assert result is True
-    assert arc_tool.center_id == 0
-    assert arc_tool.center_temp is True
-    mock_element.sketch.add_point.assert_called_once_with(10.0, 20.0)
+    assert arc_tool._preview_state is not None
+    assert arc_tool._preview_state.center_id == 0
+    assert arc_tool._preview_state.center_temp is True
 
 
 def test_arc_tool_on_drag(arc_tool):
@@ -98,15 +86,13 @@ def test_arc_tool_on_release(arc_tool):
 
 def test_arc_tool_on_hover_motion_no_preview(arc_tool):
     """Test on_hover_motion when not in preview stage."""
-    arc_tool.center_id = None
+    arc_tool._preview_state = None
     arc_tool.on_hover_motion(100.0, 200.0)
     assert True
 
 
 def test_arc_tool_on_hover_motion_with_preview(arc_tool, mock_element):
     """Test on_hover_motion updates preview when in preview stage."""
-    arc_tool.center_id = 0
-    arc_tool.start_id = 1
     arc_tool._preview_state = ArcPreviewState(
         center_id=0,
         center_temp=False,
@@ -144,10 +130,11 @@ def test_arc_tool_on_hover_motion_with_preview(arc_tool, mock_element):
 def test_arc_tool_handle_click_center_point(arc_tool, mock_element):
     """Test _handle_click for setting center point."""
     mock_element.hittester.screen_to_model.return_value = (10.0, 20.0)
-    mock_element.sketch.add_point.return_value = 0
+    mock_element.sketch.registry.add_point = Mock(return_value=0)
 
     result = arc_tool._handle_click(None, 10.0, 20.0)
 
     assert result is True
-    assert arc_tool.center_id == 0
-    assert arc_tool.center_temp is True
+    assert arc_tool._preview_state is not None
+    assert arc_tool._preview_state.center_id == 0
+    assert arc_tool._preview_state.center_temp is True

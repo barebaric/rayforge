@@ -26,6 +26,14 @@ class CirclePreviewState(PreviewState):
         self.radius_id = radius_id
         self.entity_id = entity_id
 
+    def get_preview_point_ids(self) -> set[int]:
+        """
+        Returns IDs of temporary preview points that shouldn't be snapped to.
+
+        Excludes the center point since that may be permanent.
+        """
+        return {self.radius_id}
+
 
 class CircleCommand(SketchChangeCommand):
     """A command to create a circle with center and radius points."""
@@ -44,6 +52,14 @@ class CircleCommand(SketchChangeCommand):
         self.end_pid = end_pid
         self.is_center_temp = is_center_temp
         self.add_cmd: Optional[AddItemsCommand] = None
+        self._committed_end_id: Optional[int] = None
+
+    @property
+    def committed_end_id(self) -> Optional[int]:
+        """
+        The final end point ID after execute(), or None if not applicable.
+        """
+        return self._committed_end_id
 
     @staticmethod
     def start_preview(
@@ -191,6 +207,7 @@ class CircleCommand(SketchChangeCommand):
             entities=[new_circle],
         )
         self.add_cmd._do_execute()
+        self._committed_end_id = end_pid
 
     def _do_undo(self) -> None:
         if self.add_cmd:

@@ -127,3 +127,7 @@ class CoincidentConstraint(Constraint):
         self._set_color(ctx, is_hovered)
         ctx.stroke()
         ctx.restore()
+
+    def get_draggable_point(self) -> int:
+        """Returns p1 as the draggable point for coincident constraints."""
+        return self.p1

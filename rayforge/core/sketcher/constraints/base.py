@@ -201,3 +201,12 @@ class Constraint:
                 if eids and not entity_ids.isdisjoint(eids):
                     return True
         return False
+
+    def get_draggable_point(self) -> Optional[int]:
+        """
+        Returns a point ID that can be dragged to manipulate this constraint.
+
+        Override in subclasses that represent point-like constraints.
+        Returns None by default.
+        """
+        return None

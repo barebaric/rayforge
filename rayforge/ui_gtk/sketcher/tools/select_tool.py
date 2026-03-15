@@ -1,19 +1,18 @@
 import logging
-import math
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
-from gettext import gettext as _
 
 import cairo
 
 from ....core.matrix import Matrix
-from ....core.sketcher.commands import AddItemsCommand, MovePointCommand
+from ....core.sketcher.commands import (
+    CreateOrEditConstraintCommand,
+    MovePointCommand,
+)
 from ....core.sketcher.constraints import (
     AngleConstraint,
-    CoincidentConstraint,
     DiameterConstraint,
     DistanceConstraint,
     DragConstraint,
-    PointOnLineConstraint,
     RadiusConstraint,
 )
 from ....core.sketcher.entities import Arc, Circle, Entity, Line, TextBoxEntity
@@ -73,131 +72,16 @@ class SelectTool(SketchTool):
         if n_press == 2 and hit_type == "entity":
             logger.debug("Double-click on entity detected.")
             entity = cast(Entity, hit_obj)
-            if isinstance(entity, Arc):
-                # Find an existing RadiusConstraint for this arc
-                found_constr = None
-                constraints = self.element.sketch.constraints or []
-                for constr in constraints:
-                    if (
-                        isinstance(constr, RadiusConstraint)
-                        and constr.entity_id == entity.id
-                    ):
-                        found_constr = constr
-                        break
-
-                # If a constraint exists, edit it.
-                if found_constr:
-                    logger.debug(
-                        f"Found existing constraint, emitting signal: "
-                        f"{found_constr}"
-                    )
+            if isinstance(entity, (Arc, Line, Circle)):
+                cmd = CreateOrEditConstraintCommand(
+                    self.element.sketch, entity
+                )
+                self.element.execute_command(cmd)
+                if cmd.constraint is not None:
+                    logger.debug(f"Constraint for editing: {cmd.constraint}")
                     self.element.constraint_edit_requested.send(
-                        self.element, constraint=found_constr
+                        self.element, constraint=cmd.constraint
                     )
-                else:
-                    # If no constraint exists, create one and then edit it.
-                    s = self.element.sketch.registry.get_point(
-                        entity.start_idx
-                    )
-                    c = self.element.sketch.registry.get_point(
-                        entity.center_idx
-                    )
-                    if s and c:
-                        radius = math.hypot(s.x - c.x, s.y - c.y)
-                        new_constr = RadiusConstraint(entity.id, radius)
-                        cmd = AddItemsCommand(
-                            self.element.sketch,
-                            "Add Radius",
-                            constraints=[new_constr],
-                        )
-                        self.element.execute_command(cmd)
-                        logger.debug(
-                            f"Created new constraint, emitting signal: "
-                            f"{new_constr}"
-                        )
-                        self.element.constraint_edit_requested.send(
-                            self.element, constraint=new_constr
-                        )
-                return True
-
-            elif isinstance(entity, Line):
-                p1_id, p2_id = entity.p1_idx, entity.p2_idx
-                found_constr = None
-                constraints = self.element.sketch.constraints or []
-                for constr in constraints:
-                    if isinstance(constr, DistanceConstraint):
-                        # Check for constraint between the line's endpoints
-                        if {constr.p1, constr.p2} == {p1_id, p2_id}:
-                            found_constr = constr
-                            break
-
-                if found_constr:
-                    logger.debug(
-                        f"Found existing constraint, emitting signal: "
-                        f"{found_constr}"
-                    )
-                    self.element.constraint_edit_requested.send(
-                        self.element, constraint=found_constr
-                    )
-                else:
-                    p1 = self.element.sketch.registry.get_point(p1_id)
-                    p2 = self.element.sketch.registry.get_point(p2_id)
-                    if p1 and p2:
-                        dist = math.hypot(p1.x - p2.x, p1.y - p2.y)
-                        new_constr = DistanceConstraint(p1_id, p2_id, dist)
-                        cmd = AddItemsCommand(
-                            self.element.sketch,
-                            _("Add Distance"),
-                            constraints=[new_constr],
-                        )
-                        self.element.execute_command(cmd)
-                        logger.debug(
-                            f"Created new constraint, emitting signal: "
-                            f"{new_constr}"
-                        )
-                        self.element.constraint_edit_requested.send(
-                            self.element, constraint=new_constr
-                        )
-                return True
-
-            elif isinstance(entity, Circle):
-                found_constr = None
-                constraints = self.element.sketch.constraints or []
-                for constr in constraints:
-                    if (
-                        isinstance(constr, DiameterConstraint)
-                        and constr.circle_id == entity.id
-                    ):
-                        found_constr = constr
-                        break
-
-                if found_constr:
-                    logger.debug(
-                        f"Found existing constraint, emitting signal: "
-                        f"{found_constr}"
-                    )
-                    self.element.constraint_edit_requested.send(
-                        self.element, constraint=found_constr
-                    )
-                else:
-                    c = self._safe_get_point(entity.center_idx)
-                    r_pt = self._safe_get_point(entity.radius_pt_idx)
-                    if c and r_pt:
-                        radius = math.hypot(r_pt.x - c.x, r_pt.y - c.y)
-                        new_constr = DiameterConstraint(entity.id, radius * 2)
-                        cmd = AddItemsCommand(
-                            self.element.sketch,
-                            _("Add Diameter"),
-                            constraints=[new_constr],
-                        )
-                        self.element.execute_command(cmd)
-                        logger.debug(
-                            f"Created new constraint, emitting signal: "
-                            f"{new_constr}"
-                        )
-                        self.element.constraint_edit_requested.send(
-                            self.element, constraint=new_constr
-                        )
                 return True
             elif isinstance(entity, TextBoxEntity):
                 text_tool = self.element.tools.get("text_box")
@@ -255,11 +139,7 @@ class SelectTool(SketchTool):
             constraints = self.element.sketch.constraints
             if constraints and idx < len(constraints):
                 constr = constraints[idx]
-                pid_to_drag = None
-                if isinstance(constr, CoincidentConstraint):
-                    pid_to_drag = constr.p1
-                elif isinstance(constr, PointOnLineConstraint):
-                    pid_to_drag = constr.point_id
+                pid_to_drag = constr.get_draggable_point()
 
                 if pid_to_drag is not None:
                     self._prepare_point_drag(pid_to_drag)

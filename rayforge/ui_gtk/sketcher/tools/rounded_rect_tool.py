@@ -75,29 +75,12 @@ class RoundedRectTool(SketchTool):
             )
         else:
             # --- Second Click: Finalize the rounded rectangle ---
-            preview_point_ids = {
-                self._preview_state.p_end_id,
-                self._preview_state.preview_ids.get("t2"),
-                self._preview_state.preview_ids.get("t4"),
-                self._preview_state.preview_ids.get("t6"),
-                self._preview_state.preview_ids.get("t8"),
-                self._preview_state.preview_ids.get("c1"),
-                self._preview_state.preview_ids.get("c2"),
-                self._preview_state.preview_ids.get("c3"),
-                self._preview_state.preview_ids.get("c4"),
-            }
-            preview_point_ids.discard(None)
-
-            if pid_hit in preview_point_ids:
-                pid_hit = None
-
             start_id = self._preview_state.start_id
             start_temp = self._preview_state.start_temp
 
             RoundedRectCommand.cleanup_preview(
                 self.element.sketch.registry, self._preview_state
             )
-
             self._preview_state = None
 
             cmd = RoundedRectCommand(

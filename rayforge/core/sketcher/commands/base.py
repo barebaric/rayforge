@@ -20,7 +20,19 @@ class PreviewState:
     after calling cleanup_preview().
     """
 
-    pass
+    def get_preview_point_ids(self) -> set[int]:
+        """
+        Returns IDs of temporary preview points that shouldn't be snapped to.
+
+        Subclasses should override this to return the IDs of points that
+        were created during preview and should be excluded from hit testing.
+        The start/center point is typically excluded since it may be permanent.
+
+        Returns:
+            Set of temporary point IDs that tools should ignore during
+            hit testing for snap purposes.
+        """
+        return set()
 
 
 class SketchChangeCommand(Command):

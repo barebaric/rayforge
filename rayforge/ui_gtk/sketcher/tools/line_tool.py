@@ -71,8 +71,7 @@ class LineTool(SketchTool):
             )
         else:
             # --- Second Click: Finalize the line ---
-            preview_point_ids = {self._preview_state.end_id}
-
+            preview_ids = self._preview_state.get_preview_point_ids()
             start_id = self._preview_state.start_id
             start_temp = self._preview_state.start_temp
 
@@ -82,7 +81,7 @@ class LineTool(SketchTool):
             self._preview_state = None
 
             # If we hit a preview point, treat it as no snap (use mouse coords)
-            final_pid = None if pid_hit in preview_point_ids else pid_hit
+            final_pid = None if pid_hit in preview_ids else pid_hit
 
             # Handle case where start point was deleted during preview
             try:
@@ -101,35 +100,23 @@ class LineTool(SketchTool):
             )
             self.element.execute_command(cmd)
 
-            # After committing, start a new line from the end point
-            if cmd.add_cmd is not None:
-                # Get the committed end point ID
-                committed_end_pid = final_pid
-                if committed_end_pid is None:
-                    # The command created a new point - find it
-                    for p in cmd.add_cmd.points:
-                        if p.id != start_id:
-                            committed_end_pid = p.id
-                            break
-
-                if committed_end_pid is not None:
-                    # Start a new preview from the committed end point
-                    try:
-                        end_pt = self.element.sketch.registry.get_point(
-                            committed_end_pid
-                        )
-                        self._preview_state = LineCommand.start_preview(
-                            self.element.sketch.registry,
-                            end_pt.x,
-                            end_pt.y,
-                            snapped_pid=committed_end_pid,
-                        )
-                        self.element.selection.clear()
-                        self.element.selection.select_point(
-                            committed_end_pid, False
-                        )
-                    except IndexError:
-                        pass
+            if cmd.committed_end_id is not None:
+                try:
+                    end_pt = self.element.sketch.registry.get_point(
+                        cmd.committed_end_id
+                    )
+                    self._preview_state = LineCommand.start_preview(
+                        self.element.sketch.registry,
+                        end_pt.x,
+                        end_pt.y,
+                        snapped_pid=cmd.committed_end_id,
+                    )
+                    self.element.selection.clear()
+                    self.element.selection.select_point(
+                        cmd.committed_end_id, False
+                    )
+                except IndexError:
+                    pass
 
         self.element.mark_dirty()
         return True
