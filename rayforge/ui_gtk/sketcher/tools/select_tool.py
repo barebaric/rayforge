@@ -34,6 +34,7 @@ class SelectTool(SketchTool):
         self.hovered_point_id: Optional[int] = None
         self.hovered_constraint_idx: Optional[int] = None
         self.hovered_junction_pid: Optional[int] = None
+        self.hovered_entity_id: Optional[int] = None
 
         # --- Box Selection State ---
         self.is_box_selecting: bool = False
@@ -269,6 +270,7 @@ class SelectTool(SketchTool):
         new_hover_pid = None
         new_hover_constraint_idx = None
         new_hover_junction_pid = None
+        new_hover_entity_id = None
 
         if hit_type == "point":
             new_hover_pid = hit_obj
@@ -276,15 +278,19 @@ class SelectTool(SketchTool):
             new_hover_constraint_idx = hit_obj
         elif hit_type == "junction":
             new_hover_junction_pid = hit_obj
+        elif hit_type == "entity":
+            new_hover_entity_id = hit_obj.id
 
         if (
             self.hovered_point_id != new_hover_pid
             or self.hovered_constraint_idx != new_hover_constraint_idx
             or self.hovered_junction_pid != new_hover_junction_pid
+            or self.hovered_entity_id != new_hover_entity_id
         ):
             self.hovered_point_id = new_hover_pid
             self.hovered_constraint_idx = new_hover_constraint_idx
             self.hovered_junction_pid = new_hover_junction_pid
+            self.hovered_entity_id = new_hover_entity_id
             self.element.mark_dirty()
 
     def draw_overlay(self, ctx: cairo.Context):

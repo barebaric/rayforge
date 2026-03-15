@@ -146,6 +146,10 @@ class SketchRenderer:
         is_sketch_fully_constrained = self.element.sketch.is_fully_constrained
         entities = self.element.sketch.registry.entities or []
         text_tool = self.element.tools.get("text_box")
+        select_tool = self.element.tools.get("select")
+        hovered_entity_id = (
+            select_tool.hovered_entity_id if select_tool else None
+        )
 
         for entity in entities:
             # If a text box is being actively edited, its tool overlay will
@@ -164,6 +168,7 @@ class SketchRenderer:
                 continue
 
             is_sel = entity.id in self.element.selection.entity_ids
+            is_hovered = entity.id == hovered_entity_id
             ctx.save()
 
             # 1. Define the Path
@@ -192,6 +197,16 @@ class SketchRenderer:
                     ctx.set_line_width(base_line_width * 3.0)
                 ctx.stroke_preserve()
                 ctx.restore()
+            elif is_hovered:
+                ctx.save()
+                ctx.set_dash([])
+                ctx.set_source_rgba(1.0, 0.4, 0.2, 0.4)
+                if isinstance(entity, TextBoxEntity):
+                    ctx.set_line_width(base_line_width * 2.0)
+                else:
+                    ctx.set_line_width(base_line_width * 3.0)
+                ctx.stroke_preserve()
+                ctx.restore()
 
             # 3. Draw Actual Entity
             if isinstance(entity, TextBoxEntity):
@@ -208,15 +223,17 @@ class SketchRenderer:
                 scale = self.element.line_width / base_line_width
                 ctx.set_dash([5.0 / scale, 5.0 / scale])
                 ctx.set_line_width(base_line_width * 0.8)
-                if entity.constrained:
-                    ctx.set_source_rgb(0.2, 0.3, 0.6)  # Dark Blue
+                if is_hovered:
+                    ctx.set_source_rgb(1.0, 0.4, 0.2)
+                elif entity.constrained:
+                    ctx.set_source_rgb(0.2, 0.3, 0.6)
                 else:
-                    ctx.set_source_rgb(0.3, 0.5, 0.8)  # Light Blue
+                    ctx.set_source_rgb(0.3, 0.5, 0.8)
                 ctx.stroke()
             else:
                 self._set_standard_color(
                     ctx,
-                    is_sel,
+                    is_sel or is_hovered,
                     entity.constrained,
                     is_sketch_fully_constrained,
                 )
