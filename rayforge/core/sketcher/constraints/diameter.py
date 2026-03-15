@@ -1,16 +1,8 @@
 from __future__ import annotations
 import math
 from gettext import gettext as _
-from typing import (
-    Union,
-    Tuple,
-    Dict,
-    Any,
-    List,
-    Optional,
-    Callable,
-    TYPE_CHECKING,
-)
+from typing import Union, Dict, Any, List, Optional, Callable, TYPE_CHECKING
+from ...geo import Point
 from ..entities import Circle
 from .base import Constraint, ConstraintStatus
 from .radius import RadiusConstraint
@@ -96,7 +88,7 @@ class DiameterConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         entity = reg.get_entity(self.circle_id)
         if isinstance(entity, Circle):
             c = reg.get_point(entity.center_idx)
@@ -118,7 +110,7 @@ class DiameterConstraint(Constraint):
     def get_label_pos(
         self,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
     ):
         # Delegate to RadiusConstraint's logic as it is identical
@@ -130,7 +122,7 @@ class DiameterConstraint(Constraint):
         sx: float,
         sy: float,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
     ) -> bool:
@@ -159,7 +151,7 @@ class DiameterConstraint(Constraint):
         self,
         ctx: "cairo.Context",
         registry: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,
         point_radius: float = 5.0,

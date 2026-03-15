@@ -1,9 +1,9 @@
 from __future__ import annotations
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, List, Tuple
+from typing import TYPE_CHECKING, Optional, List
 
-from ...geo import primitives
+from ...geo import Point as GeoPoint, primitives
 from ..constraints import EqualDistanceConstraint
 from ..entities import Arc, Point
 from .base import PreviewState, SketchChangeCommand
@@ -59,7 +59,7 @@ class ArcCommand(SketchChangeCommand):
         sketch: Sketch,
         center_id: int,
         start_id: int,
-        end_pos: Tuple[float, float],
+        end_pos: GeoPoint,
         end_pid: Optional[int] = None,
         is_center_temp: bool = False,
         is_start_temp: bool = False,

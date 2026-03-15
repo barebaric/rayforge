@@ -1,8 +1,9 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Dict, Any, Tuple, Optional, List
+from typing import TYPE_CHECKING, Dict, Any, Optional, List
 from gettext import gettext as _
 from ....core.geo.geometry import Geometry
 from ....core.geo.font_config import FontConfig
+from ....core.geo import Point as GeoPoint
 from ..constraints import (
     AspectRatioConstraint,
     EqualLengthConstraint,
@@ -32,7 +33,7 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         self.new_font_config = new_font_config
         self.old_content = ""
         self.old_font_config: Optional[FontConfig] = None
-        self.old_point_positions: Dict[int, Tuple[float, float]] = {}
+        self.old_point_positions: Dict[int, GeoPoint] = {}
         self.old_aspect_ratio: Optional[float] = None
         self.aspect_ratio_constraint_idx: Optional[int] = None
         self._added_constraints: List[Constraint] = []
@@ -43,12 +44,12 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         self._removed_entities: List[Any] = []
         self._removed_constraints: List[Constraint] = []
         self._modified_equal_length_constraints: List[
-            Tuple[int, List[int]]
+            tuple[int, List[int]]
         ] = []
 
     def _calculate_natural_metrics(
         self, content: str, font_config: FontConfig
-    ) -> Tuple[float, float]:
+    ) -> GeoPoint:
         """Calculates the natural width and height from font properties."""
         _, _, font_height = font_config.get_font_metrics()
 

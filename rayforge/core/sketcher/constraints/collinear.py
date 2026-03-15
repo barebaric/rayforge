@@ -1,6 +1,7 @@
 from __future__ import annotations
-from typing import Tuple, Dict, Any, List, TYPE_CHECKING
+from typing import Dict, Any, List, TYPE_CHECKING
 from gettext import gettext as _
+from ...geo import Point
 from .base import Constraint
 
 if TYPE_CHECKING:
@@ -53,7 +54,7 @@ class CollinearConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         p1 = reg.get_point(self.p1)
         p2 = reg.get_point(self.p2)
         p3 = reg.get_point(self.p3)

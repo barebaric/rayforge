@@ -1,17 +1,9 @@
 from __future__ import annotations
 import math
 import cairo
-from typing import (
-    Union,
-    Tuple,
-    Dict,
-    Any,
-    List,
-    Optional,
-    Callable,
-    TYPE_CHECKING,
-)
+from typing import Union, Dict, Any, List, Optional, Callable, TYPE_CHECKING
 from gettext import gettext as _
+from ...geo import Point
 from ..entities import Arc, Circle
 from .base import Constraint, ConstraintStatus
 
@@ -103,7 +95,7 @@ class RadiusConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         entity = reg.get_entity(self.entity_id)
 
         # Type narrowing for Pylance
@@ -138,7 +130,7 @@ class RadiusConstraint(Constraint):
     def get_label_pos(
         self,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
     ):
         """Calculates screen position for Radius/Diameter constraint labels."""
@@ -206,7 +198,7 @@ class RadiusConstraint(Constraint):
         sx: float,
         sy: float,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
     ) -> bool:
@@ -235,7 +227,7 @@ class RadiusConstraint(Constraint):
         self,
         ctx: "cairo.Context",
         registry: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,
         point_radius: float = 5.0,

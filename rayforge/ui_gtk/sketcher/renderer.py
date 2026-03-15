@@ -2,9 +2,9 @@ import cairo
 import math
 from collections import defaultdict
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Optional, Set
 
-from ...core.geo import Geometry
+from ...core.geo import Geometry, Point as GeoPoint
 from ...core.matrix import Matrix
 from ...core.sketcher.constraints import (
     CoincidentConstraint,
@@ -376,7 +376,7 @@ class SketchRenderer:
     def _draw_junctions(
         self,
         ctx: cairo.Context,
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[GeoPoint], GeoPoint],
         text_box_point_ids: Set[int],
     ) -> None:
         registry = self.element.sketch.registry

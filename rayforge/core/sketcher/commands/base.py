@@ -1,7 +1,8 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Dict, Tuple, Optional, Any
+from typing import TYPE_CHECKING, Dict, Optional, Any
 
+from ...geo import Point
 from ...undo.command import Command
 
 if TYPE_CHECKING:
@@ -45,9 +46,9 @@ class SketchChangeCommand(Command):
         super().__init__(name)
         self.sketch = sketch
         # Stores ( {point_id: (x, y)}, {entity_id: state_dict} )
-        self._snapshot: Optional[
-            Tuple[Dict[int, Tuple[float, float]], Dict[int, Any]]
-        ] = None
+        self._snapshot: Optional[tuple[Dict[int, Point], Dict[int, Any]]] = (
+            None
+        )
 
     @staticmethod
     def start_preview(

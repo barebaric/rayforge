@@ -1,12 +1,8 @@
 # constraints/drag.py
 
 from __future__ import annotations
-from typing import (
-    Tuple,
-    Dict,
-    List,
-    TYPE_CHECKING,
-)
+from typing import Dict, List, TYPE_CHECKING
+from ...geo import Point
 from .base import Constraint
 
 if TYPE_CHECKING:
@@ -36,7 +32,7 @@ class DragConstraint(Constraint):
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Tuple[float, float]:
+    ) -> Point:
         p = reg.get_point(self.point_id)
         err_x = (p.x - self.target_x) * self.weight
         err_y = (p.y - self.target_y) * self.weight
@@ -44,7 +40,7 @@ class DragConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         return {
             self.point_id: [(self.weight, 0.0), (0.0, self.weight)],
         }

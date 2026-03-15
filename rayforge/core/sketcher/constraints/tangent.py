@@ -1,18 +1,12 @@
 from __future__ import annotations
 import math
 import cairo
-from typing import (
-    Tuple,
-    Dict,
-    Any,
-    List,
-    Callable,
-    TYPE_CHECKING,
-)
+from typing import Dict, Any, List, Callable, TYPE_CHECKING
 from gettext import gettext as _
-from .base import Constraint, ConstraintStatus
+from ...geo import Point
+from ...geo.primitives import find_closest_point_on_line
 from ..entities import Line, Arc, Circle
-from rayforge.core.geo.primitives import find_closest_point_on_line
+from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
     from ..params import ParameterContext
@@ -87,10 +81,10 @@ class TangentConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         line = reg.get_entity(self.line_id)
         shape = reg.get_entity(self.shape_id)
-        grad: Dict[int, List[Tuple[float, float]]] = {}
+        grad: Dict[int, List[Point]] = {}
 
         if not isinstance(line, Line) or not isinstance(shape, (Arc, Circle)):
             return grad
@@ -179,7 +173,7 @@ class TangentConstraint(Constraint):
         sx: float,
         sy: float,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
     ) -> bool:
@@ -224,7 +218,7 @@ class TangentConstraint(Constraint):
         self,
         ctx: "cairo.Context",
         registry: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,
         point_radius: float = 5.0,

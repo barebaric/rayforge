@@ -1,7 +1,6 @@
 import math
-from typing import List, Tuple
 
-from ....core.geo import primitives as geo_primitives
+from ....core.geo import Polygon, primitives
 from ....core.sketcher.commands import AddFillCommand, RemoveFillCommand
 from ....core.sketcher.entities import Circle
 from .base import SketchTool
@@ -40,7 +39,7 @@ class FillTool(SketchTool):
                         is_hit = True
             else:
                 # General polygon case
-                polygon: List[Tuple[float, float]] = []
+                polygon: Polygon = []
                 is_valid = True
                 for eid, fwd in loop:
                     entity = registry.get_entity(eid)
@@ -56,7 +55,7 @@ class FillTool(SketchTool):
                     except IndexError:
                         is_valid = False
                         break
-                if is_valid and geo_primitives.is_point_in_polygon(
+                if is_valid and primitives.is_point_in_polygon(
                     (mx, my), polygon
                 ):
                     is_hit = True

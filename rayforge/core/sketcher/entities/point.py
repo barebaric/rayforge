@@ -1,6 +1,6 @@
-from typing import Dict, Any
-from ...geo import primitives, Rect
-from ...geo.types import Point as GeoPoint
+from typing import Any, Dict
+
+from ...geo import Point as GeoPoint, Rect, primitives
 
 
 class Point:

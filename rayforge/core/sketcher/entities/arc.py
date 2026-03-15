@@ -1,9 +1,6 @@
 import math
 from typing import List, Dict, Optional, Any, Sequence, TYPE_CHECKING
-from ...geo import primitives
-from ...geo.types import Point
-from ...geo.geometry import Geometry
-from ...geo.types import Rect
+from ...geo import Geometry, Point, Rect, primitives
 from .entity import Entity
 
 if TYPE_CHECKING:

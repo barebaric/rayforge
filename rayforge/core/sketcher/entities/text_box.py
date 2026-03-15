@@ -1,8 +1,7 @@
 from typing import List, Tuple, Dict, Any, Sequence, Optional, TYPE_CHECKING
-from ...geo import primitives
+from ...geo import primitives, Rect
 from ...geo.geometry import Geometry
 from ...geo.font_config import FontConfig
-from ...geo.types import Rect
 from .entity import Entity
 from .line import Line
 

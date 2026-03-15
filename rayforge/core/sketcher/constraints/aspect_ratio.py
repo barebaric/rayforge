@@ -1,16 +1,9 @@
 from __future__ import annotations
 import math
 from gettext import gettext as _
-from typing import (
-    Tuple,
-    Dict,
-    Any,
-    List,
-    TYPE_CHECKING,
-    Callable,
-    Optional,
-)
+from typing import Dict, Any, List, TYPE_CHECKING, Callable, Optional
 import cairo
+from ...geo import Point
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
@@ -81,7 +74,7 @@ class AspectRatioConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         pt3 = reg.get_point(self.p3)
@@ -95,7 +88,7 @@ class AspectRatioConstraint(Constraint):
         dy2 = pt4.y - pt3.y
         dist2 = math.hypot(dx2, dy2)
 
-        grad: Dict[int, List[Tuple[float, float]]] = {}
+        grad: Dict[int, List[Point]] = {}
 
         def add(pid, gx, gy):
             if pid not in grad:
@@ -118,8 +111,8 @@ class AspectRatioConstraint(Constraint):
     def _get_icon_pos(
         self,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
-    ) -> Optional[Tuple[float, float]]:
+        to_screen: Callable[[Point], Point],
+    ) -> Optional[Point]:
         """Calculates the screen position of the constraint icon."""
         p_ids1 = {self.p1, self.p2}
         p_ids2 = {self.p3, self.p4}
@@ -183,7 +176,7 @@ class AspectRatioConstraint(Constraint):
         sx: float,
         sy: float,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
     ) -> bool:
@@ -197,7 +190,7 @@ class AspectRatioConstraint(Constraint):
         self,
         ctx: "cairo.Context",
         registry: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,
         point_radius: float = 5.0,

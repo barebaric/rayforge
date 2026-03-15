@@ -1,12 +1,7 @@
 from __future__ import annotations
-from typing import (
-    Tuple,
-    Dict,
-    Any,
-    List,
-    TYPE_CHECKING,
-)
+from typing import Dict, Any, List, TYPE_CHECKING
 from gettext import gettext as _
+from ...geo import Point
 from .base import Constraint
 
 if TYPE_CHECKING:
@@ -58,7 +53,7 @@ class ParallelogramConstraint(Constraint):
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """Returns the difference between vectors (p_width-p_origin) and
         (p4-p_height).
         """
@@ -77,7 +72,7 @@ class ParallelogramConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         """Returns the gradient of the error with respect to each point."""
         return {
             self.p_origin: [(-1.0, 0.0), (0.0, -1.0)],

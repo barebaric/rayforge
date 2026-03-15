@@ -1,18 +1,11 @@
 from __future__ import annotations
 import math
 import cairo
-from typing import (
-    Tuple,
-    Dict,
-    Any,
-    List,
-    Optional,
-    Callable,
-    TYPE_CHECKING,
-)
+from typing import Dict, Any, List, Optional, Callable, TYPE_CHECKING
 from gettext import gettext as _
-from .base import Constraint, ConstraintStatus
+from ...geo import Point
 from ..entities import Line
+from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
     from ..params import ParameterContext
@@ -112,7 +105,7 @@ class SymmetryConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         if self.center is not None:
             # P1+P2 - 2C = 0. Safe to use dict literal as keys are distinct.
             return {
@@ -136,7 +129,7 @@ class SymmetryConstraint(Constraint):
             mx = (pt1.x + pt2.x) * 0.5
             my = (pt1.y + pt2.y) * 0.5
 
-            grad: Dict[int, List[Tuple[float, float]]] = {}
+            grad: Dict[int, List[Point]] = {}
             num_residuals = 2
 
             def add(pid, row, gx, gy):
@@ -167,7 +160,7 @@ class SymmetryConstraint(Constraint):
         sx: float,
         sy: float,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
     ) -> bool:
@@ -195,7 +188,7 @@ class SymmetryConstraint(Constraint):
         self,
         ctx: "cairo.Context",
         registry: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,
         point_radius: float = 5.0,

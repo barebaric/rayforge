@@ -2,7 +2,6 @@ from __future__ import annotations
 import math
 from typing import (
     Union,
-    Tuple,
     Dict,
     Any,
     List,
@@ -11,6 +10,7 @@ from typing import (
     TYPE_CHECKING,
 )
 from gettext import gettext as _
+from ...geo import Point
 from ...geo.primitives import find_closest_point_on_line_segment
 from .base import Constraint, ConstraintStatus
 
@@ -90,7 +90,7 @@ class DistanceConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         dx = pt2.x - pt1.x
@@ -110,7 +110,7 @@ class DistanceConstraint(Constraint):
     def get_label_pos(
         self,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
     ):
         """Calculates screen position for distance constraint label."""
@@ -131,7 +131,7 @@ class DistanceConstraint(Constraint):
         sx: float,
         sy: float,
         reg: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
     ) -> bool:
@@ -167,7 +167,7 @@ class DistanceConstraint(Constraint):
         self,
         ctx: "cairo.Context",
         registry: "EntityRegistry",
-        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,
         point_radius: float = 5.0,

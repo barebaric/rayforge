@@ -2,15 +2,9 @@
 
 from __future__ import annotations
 import math
-from typing import (
-    Optional,
-    Tuple,
-    Dict,
-    Any,
-    List,
-    TYPE_CHECKING,
-)
+from typing import Optional, Dict, Any, List, TYPE_CHECKING
 from gettext import gettext as _
+from ...geo import Point
 from .base import Constraint
 
 if TYPE_CHECKING:
@@ -76,7 +70,7 @@ class EqualDistanceConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Tuple[float, float]]]:
+    ) -> Dict[int, List[Point]]:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         pt3 = reg.get_point(self.p3)
@@ -90,7 +84,7 @@ class EqualDistanceConstraint(Constraint):
         dy2 = pt4.y - pt3.y
         dist2 = math.hypot(dx2, dy2)
 
-        grad: Dict[int, List[Tuple[float, float]]] = {}
+        grad: Dict[int, List[Point]] = {}
 
         def add(pid, gx, gy):
             if pid not in grad:
