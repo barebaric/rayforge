@@ -34,6 +34,7 @@ def create_slider_row(
     digits: int = 1,
     draw_value: bool = True,
     on_value_changed: Optional[Callable[[Gtk.Scale], None]] = None,
+    format_suffix: Optional[str] = None,
 ) -> tuple[Adw.ActionRow, Gtk.Scale]:
     scale = create_slider(
         adjustment=adjustment,
@@ -54,7 +55,10 @@ def create_slider_row(
 
         def update_label(s):
             format_str = f"%.{digits}f"
-            value_label.set_text(format_str % s.get_value())
+            text = format_str % s.get_value()
+            if format_suffix:
+                text += format_suffix
+            value_label.set_text(text)
 
         scale.connect("value-changed", update_label)
         update_label(scale)
