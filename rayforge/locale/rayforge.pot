@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-14 02:59+0100\n"
+"POT-Creation-Date: 2026-03-17 21:30+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -194,14 +194,17 @@ msgid "Collinear"
 msgstr ""
 
 #: rayforge/core/sketcher/constraints/tangent.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Tangent"
 msgstr ""
 
 #: rayforge/core/sketcher/constraints/distance.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Distance"
 msgstr ""
 
 #: rayforge/core/sketcher/constraints/vertical.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Vertical"
 msgstr ""
 
@@ -210,60 +213,48 @@ msgid "Equal Distance"
 msgstr ""
 
 #: rayforge/core/sketcher/constraints/perpendicular.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Perpendicular"
 msgstr ""
 
 #: rayforge/core/sketcher/constraints/symmetry.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Symmetry"
 msgstr ""
 
 #: rayforge/core/sketcher/constraints/horizontal.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Horizontal"
 msgstr ""
 
 #: rayforge/core/sketcher/constraints/angle.py
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Angle"
 msgstr ""
 
 #: rayforge/core/sketcher/constraints/diameter.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Diameter"
 msgstr ""
 
 #: rayforge/core/sketcher/constraints/coincident.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Coincident"
 msgstr ""
 
 #: rayforge/core/sketcher/constraints/radius.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Radius"
 msgstr ""
 
 #: rayforge/core/sketcher/constraints/aspect_ratio.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Aspect Ratio"
 msgstr ""
 
-#: rayforge/core/sketcher/tools/select_tool.py
-msgid "Add Radius"
-msgstr ""
-
-#: rayforge/core/sketcher/tools/select_tool.py
-msgid "Add Distance"
-msgstr ""
-
-#: rayforge/core/sketcher/tools/select_tool.py
-msgid "Add Diameter"
-msgstr ""
-
-#: rayforge/core/sketcher/tools/arc_tool.py
-msgid "Add Arc"
-msgstr ""
-
-#: rayforge/core/sketcher/tools/circle_tool.py
+#: rayforge/core/sketcher/commands/circle.py
 msgid "Add Circle"
-msgstr ""
-
-#: rayforge/core/sketcher/tools/line_tool.py
-msgid "Add Line"
 msgstr ""
 
 #: rayforge/core/sketcher/commands/fillet.py
@@ -271,6 +262,7 @@ msgid "Add Fillet"
 msgstr ""
 
 #: rayforge/core/sketcher/commands/text_box.py
+#: rayforge/ui_gtk/sketcher/tools/text_box_tool.py
 msgid "Add Text Box"
 msgstr ""
 
@@ -287,8 +279,32 @@ msgstr ""
 msgid "Edit Constraint"
 msgstr ""
 
+#: rayforge/core/sketcher/commands/constraint_create.py
+msgid "Add Constraint"
+msgstr ""
+
+#: rayforge/core/sketcher/commands/constraint_create.py
+msgid "Add Radius"
+msgstr ""
+
+#: rayforge/core/sketcher/commands/constraint_create.py
+msgid "Add Distance"
+msgstr ""
+
+#: rayforge/core/sketcher/commands/constraint_create.py
+msgid "Add Diameter"
+msgstr ""
+
+#: rayforge/core/sketcher/commands/line.py
+msgid "Add Line"
+msgstr ""
+
 #: rayforge/core/sketcher/commands/chamfer.py
 msgid "Add Chamfer"
+msgstr ""
+
+#: rayforge/core/sketcher/commands/arc.py
+msgid "Add Arc"
 msgstr ""
 
 #: rayforge/core/sketcher/commands/rounded_rect.py
@@ -1738,7 +1754,8 @@ msgid "Remove Tab"
 msgstr ""
 
 #: rayforge/ui_gtk/canvas2d/simulation_controls.py
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/line_tool.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Line"
 msgstr ""
 
@@ -4365,7 +4382,9 @@ msgid "Material thickness"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/select_tool.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Select"
 msgstr ""
 
@@ -4830,27 +4849,36 @@ msgstr ""
 msgid "{tasks} tasks"
 msgstr ""
 
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/arc_tool.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Arc"
 msgstr ""
 
 #: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/text_box_tool.py
 msgid "Text Box"
 msgstr ""
 
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/circle_tool.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Circle"
 msgstr ""
 
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Rectangle"
 msgstr ""
 
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Rounded Rectangle"
 msgstr ""
 
 #: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/fill_tool.py
 msgid "Fill"
 msgstr ""
 
@@ -4956,6 +4984,14 @@ msgstr ""
 msgid "Rename Sketch"
 msgstr ""
 
+#: rayforge/ui_gtk/sketcher/tools/select_tool.py
+msgid "Snap to Grid"
+msgstr ""
+
+#: rayforge/ui_gtk/sketcher/tools/select_tool.py
+msgid "Select Connected"
+msgstr ""
+
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Finish Sketch"
 msgstr ""
@@ -4982,6 +5018,10 @@ msgstr ""
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Fit View"
+msgstr ""
+
+#: rayforge/ui_gtk/sketcher/shortcuts.py
+msgid "Equal"
 msgstr ""
 
 #: rayforge/ui_gtk/sketcher/font_properties.py
