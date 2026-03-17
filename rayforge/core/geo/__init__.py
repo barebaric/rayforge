@@ -13,10 +13,12 @@ from . import minkowski
 from . import polygon
 from . import primitives
 from . import query
+from . import smooth
 from . import text
 from . import transform
 
 from .types import (
+    Edge,
     IntPoint,
     IntPolygon,
     Point,
@@ -47,6 +49,7 @@ from .font_config import FontConfig
 from .geometry import Geometry
 
 __all__ = [
+    "Edge",
     "IntPoint",
     "IntPolygon",
     "Point",
@@ -62,6 +65,7 @@ __all__ = [
     "polygon",
     "primitives",
     "query",
+    "smooth",
     "text",
     "transform",
     "FontConfig",

@@ -1,11 +1,12 @@
 import math
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from rayforge.core.ops import (
     ArcToCommand,
     LineToCommand,
     MoveToCommand,
     Ops,
 )
+from rayforge.core.geo.smooth import smooth_polyline
 from tests.conftest import MockProgressContext
 from post_processors.transformers import Smooth
 
@@ -126,17 +127,24 @@ def test_context_cancellation_and_progress():
     context._inner._progress_context.set_wrapper(context._inner)
     smoother = Smooth(amount=50)
 
-    original_smooth_segment = smoother._smooth_segment
     call_count = [0]
+    original_smooth_polyline = smooth_polyline
 
-    def cancelling_smooth_segment(points):
+    def cancelling_smooth_polyline(
+        points, amount, corner_angle, is_closed=None
+    ):
         call_count[0] += 1
         if call_count[0] >= 5:
             context.set_cancelled(True)
-        return original_smooth_segment(points)
+        return original_smooth_polyline(
+            points, amount, corner_angle, is_closed
+        )
 
-    smoother._smooth_segment = cancelling_smooth_segment
-    smoother.run(ops, context=context)
+    with patch(
+        "post_processors.transformers.smooth_transformer.smooth_polyline",
+        cancelling_smooth_polyline,
+    ):
+        smoother.run(ops, context=context)
 
     assert len(list(ops.segments())) == 5
     assert abs(context.progress_calls[-1] - 0.5) < 1e-9
