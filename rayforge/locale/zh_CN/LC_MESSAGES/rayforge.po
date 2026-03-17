@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-14 02:59+0100\n"
+"POT-Creation-Date: 2026-03-17 21:30+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -193,14 +193,17 @@ msgid "Collinear"
 msgstr "共线"
 
 #: rayforge/core/sketcher/constraints/tangent.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Tangent"
 msgstr "相切"
 
 #: rayforge/core/sketcher/constraints/distance.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Distance"
 msgstr "距离"
 
 #: rayforge/core/sketcher/constraints/vertical.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Vertical"
 msgstr "垂直"
 
@@ -209,67 +212,56 @@ msgid "Equal Distance"
 msgstr "等距"
 
 #: rayforge/core/sketcher/constraints/perpendicular.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Perpendicular"
 msgstr "垂直"
 
 #: rayforge/core/sketcher/constraints/symmetry.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Symmetry"
 msgstr "对称"
 
 #: rayforge/core/sketcher/constraints/horizontal.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Horizontal"
 msgstr "水平"
 
 #: rayforge/core/sketcher/constraints/angle.py
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Angle"
 msgstr "角度"
 
 #: rayforge/core/sketcher/constraints/diameter.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Diameter"
 msgstr "直径"
 
 #: rayforge/core/sketcher/constraints/coincident.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Coincident"
 msgstr "重合"
 
 #: rayforge/core/sketcher/constraints/radius.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Radius"
 msgstr "半径"
 
 #: rayforge/core/sketcher/constraints/aspect_ratio.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Aspect Ratio"
 msgstr "宽高比"
 
-#: rayforge/core/sketcher/tools/select_tool.py
-msgid "Add Radius"
-msgstr "添加半径"
-
-#: rayforge/core/sketcher/tools/select_tool.py
-msgid "Add Distance"
-msgstr "添加距离"
-
-#: rayforge/core/sketcher/tools/select_tool.py
-msgid "Add Diameter"
-msgstr "添加直径"
-
-#: rayforge/core/sketcher/tools/arc_tool.py
-msgid "Add Arc"
-msgstr "添加圆弧"
-
-#: rayforge/core/sketcher/tools/circle_tool.py
+#: rayforge/core/sketcher/commands/circle.py
 msgid "Add Circle"
 msgstr "添加圆形"
-
-#: rayforge/core/sketcher/tools/line_tool.py
-msgid "Add Line"
-msgstr "添加直线"
 
 #: rayforge/core/sketcher/commands/fillet.py
 msgid "Add Fillet"
 msgstr "添加圆角"
 
 #: rayforge/core/sketcher/commands/text_box.py
+#: rayforge/ui_gtk/sketcher/tools/text_box_tool.py
 msgid "Add Text Box"
 msgstr "添加文本框"
 
@@ -286,9 +278,33 @@ msgstr "移除填充"
 msgid "Edit Constraint"
 msgstr "编辑约束"
 
+#: rayforge/core/sketcher/commands/constraint_create.py
+msgid "Add Constraint"
+msgstr "添加约束"
+
+#: rayforge/core/sketcher/commands/constraint_create.py
+msgid "Add Radius"
+msgstr "添加半径"
+
+#: rayforge/core/sketcher/commands/constraint_create.py
+msgid "Add Distance"
+msgstr "添加距离"
+
+#: rayforge/core/sketcher/commands/constraint_create.py
+msgid "Add Diameter"
+msgstr "添加直径"
+
+#: rayforge/core/sketcher/commands/line.py
+msgid "Add Line"
+msgstr "添加直线"
+
 #: rayforge/core/sketcher/commands/chamfer.py
 msgid "Add Chamfer"
 msgstr "添加倒角"
+
+#: rayforge/core/sketcher/commands/arc.py
+msgid "Add Arc"
+msgstr "添加圆弧"
 
 #: rayforge/core/sketcher/commands/rounded_rect.py
 msgid "Add Rounded Rectangle"
@@ -1751,7 +1767,8 @@ msgid "Remove Tab"
 msgstr "移除标签"
 
 #: rayforge/ui_gtk/canvas2d/simulation_controls.py
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/line_tool.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Line"
 msgstr "直线"
 
@@ -4399,7 +4416,9 @@ msgid "Material thickness"
 msgstr "材料厚度"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/select_tool.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Select"
 msgstr "选择"
 
@@ -4868,27 +4887,36 @@ msgstr " (+{tasks} 更多)"
 msgid "{tasks} tasks"
 msgstr "{tasks} 个任务"
 
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/arc_tool.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Arc"
 msgstr "圆弧"
 
 #: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/text_box_tool.py
 msgid "Text Box"
 msgstr "文本框"
 
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/circle_tool.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Circle"
 msgstr "圆形"
 
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Rectangle"
 msgstr "矩形"
 
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Rounded Rectangle"
 msgstr "圆角矩形"
 
 #: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/fill_tool.py
 msgid "Fill"
 msgstr "填充"
 
@@ -4994,6 +5022,22 @@ msgstr "配置草图名称和基本属性"
 msgid "Rename Sketch"
 msgstr "重命名草图"
 
+#: rayforge/ui_gtk/sketcher/tools/select_tool.py
+msgid "Snap to Grid"
+msgstr "对齐网格"
+
+#: rayforge/ui_gtk/sketcher/tools/select_tool.py
+msgid "Select Connected"
+msgstr "选择相连对象"
+
+#: rayforge/ui_gtk/sketcher/shortcuts.py
+msgid "Equal"
+msgstr "相等"
+
+#: rayforge/ui_gtk/sketcher/tools/select_tool.py
+msgid "Select Connected"
+msgstr ""
+
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Finish Sketch"
 msgstr "完成草图"
@@ -5021,6 +5065,10 @@ msgstr "草图(_S)"
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Fit View"
 msgstr "适应视图"
+
+#: rayforge/ui_gtk/sketcher/shortcuts.py
+msgid "Equal"
+msgstr ""
 
 #: rayforge/ui_gtk/sketcher/font_properties.py
 msgid "Font Properties"

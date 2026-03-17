@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-14 02:59+0100\n"
+"POT-Creation-Date: 2026-03-17 21:30+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -194,14 +194,17 @@ msgid "Collinear"
 msgstr "Колінеарність"
 
 #: rayforge/core/sketcher/constraints/tangent.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Tangent"
 msgstr "Дотична"
 
 #: rayforge/core/sketcher/constraints/distance.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Distance"
 msgstr "Відстань"
 
 #: rayforge/core/sketcher/constraints/vertical.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Vertical"
 msgstr "Вертикаль"
 
@@ -210,67 +213,56 @@ msgid "Equal Distance"
 msgstr "Рівна відстань"
 
 #: rayforge/core/sketcher/constraints/perpendicular.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Perpendicular"
 msgstr "Перпендикуляр"
 
 #: rayforge/core/sketcher/constraints/symmetry.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Symmetry"
 msgstr "Симетрія"
 
 #: rayforge/core/sketcher/constraints/horizontal.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Horizontal"
 msgstr "Горизонталь"
 
 #: rayforge/core/sketcher/constraints/angle.py
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Angle"
 msgstr "Кут"
 
 #: rayforge/core/sketcher/constraints/diameter.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Diameter"
 msgstr "Діаметр"
 
 #: rayforge/core/sketcher/constraints/coincident.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Coincident"
 msgstr "Співпадіння"
 
 #: rayforge/core/sketcher/constraints/radius.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Radius"
 msgstr "Радіус"
 
 #: rayforge/core/sketcher/constraints/aspect_ratio.py
+#: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Aspect Ratio"
 msgstr "Співвідношення сторін"
 
-#: rayforge/core/sketcher/tools/select_tool.py
-msgid "Add Radius"
-msgstr "Додати радіус"
-
-#: rayforge/core/sketcher/tools/select_tool.py
-msgid "Add Distance"
-msgstr "Додати відстань"
-
-#: rayforge/core/sketcher/tools/select_tool.py
-msgid "Add Diameter"
-msgstr "Додати діаметр"
-
-#: rayforge/core/sketcher/tools/arc_tool.py
-msgid "Add Arc"
-msgstr "Додати дугу"
-
-#: rayforge/core/sketcher/tools/circle_tool.py
+#: rayforge/core/sketcher/commands/circle.py
 msgid "Add Circle"
 msgstr "Додати коло"
-
-#: rayforge/core/sketcher/tools/line_tool.py
-msgid "Add Line"
-msgstr "Додати лінію"
 
 #: rayforge/core/sketcher/commands/fillet.py
 msgid "Add Fillet"
 msgstr "Додати заокруглення"
 
 #: rayforge/core/sketcher/commands/text_box.py
+#: rayforge/ui_gtk/sketcher/tools/text_box_tool.py
 msgid "Add Text Box"
 msgstr "Додати текстове поле"
 
@@ -287,9 +279,33 @@ msgstr "Видалити заливку"
 msgid "Edit Constraint"
 msgstr "Редагувати обмеження"
 
+#: rayforge/core/sketcher/commands/constraint_create.py
+msgid "Add Constraint"
+msgstr "Додати обмеження"
+
+#: rayforge/core/sketcher/commands/constraint_create.py
+msgid "Add Radius"
+msgstr "Додати радіус"
+
+#: rayforge/core/sketcher/commands/constraint_create.py
+msgid "Add Distance"
+msgstr "Додати відстань"
+
+#: rayforge/core/sketcher/commands/constraint_create.py
+msgid "Add Diameter"
+msgstr "Додати діаметр"
+
+#: rayforge/core/sketcher/commands/line.py
+msgid "Add Line"
+msgstr "Додати лінію"
+
 #: rayforge/core/sketcher/commands/chamfer.py
 msgid "Add Chamfer"
 msgstr "Додати фаску"
+
+#: rayforge/core/sketcher/commands/arc.py
+msgid "Add Arc"
+msgstr "Додати дугу"
 
 #: rayforge/core/sketcher/commands/rounded_rect.py
 msgid "Add Rounded Rectangle"
@@ -1844,7 +1860,8 @@ msgid "Remove Tab"
 msgstr "Видалити вкладку"
 
 #: rayforge/ui_gtk/canvas2d/simulation_controls.py
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/line_tool.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Line"
 msgstr "Лінія"
 
@@ -4550,7 +4567,9 @@ msgid "Material thickness"
 msgstr "Товщина матеріалу"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/select_tool.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Select"
 msgstr "Вибрати"
 
@@ -5026,27 +5045,36 @@ msgstr " (+{tasks} ще)"
 msgid "{tasks} tasks"
 msgstr "{tasks} завдань"
 
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/arc_tool.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Arc"
 msgstr "Дуга"
 
 #: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/text_box_tool.py
 msgid "Text Box"
 msgstr "Текстове поле"
 
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/circle_tool.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Circle"
 msgstr "Коло"
 
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Rectangle"
 msgstr "Прямокутник"
 
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Rounded Rectangle"
 msgstr "Закруглений прямокутник"
 
 #: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/fill_tool.py
 msgid "Fill"
 msgstr "Заповнення"
 
@@ -5154,6 +5182,22 @@ msgstr "Налаштувати назву ескізу та основні вл�
 msgid "Rename Sketch"
 msgstr "Перейменувати ескіз"
 
+#: rayforge/ui_gtk/sketcher/tools/select_tool.py
+msgid "Snap to Grid"
+msgstr "Прив'язати до сітки"
+
+#: rayforge/ui_gtk/sketcher/tools/select_tool.py
+msgid "Select Connected"
+msgstr "Вибрати з'єднані"
+
+#: rayforge/ui_gtk/sketcher/shortcuts.py
+msgid "Equal"
+msgstr "Рівний"
+
+#: rayforge/ui_gtk/sketcher/tools/select_tool.py
+msgid "Select Connected"
+msgstr ""
+
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Finish Sketch"
 msgstr "Завершити ескіз"
@@ -5181,6 +5225,10 @@ msgstr "_Ескіз"
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Fit View"
 msgstr "Вмістити вид"
+
+#: rayforge/ui_gtk/sketcher/shortcuts.py
+msgid "Equal"
+msgstr ""
 
 #: rayforge/ui_gtk/sketcher/font_properties.py
 msgid "Font Properties"
