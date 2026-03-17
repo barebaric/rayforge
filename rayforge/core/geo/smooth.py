@@ -18,7 +18,7 @@ def compute_gaussian_kernel(amount: int) -> Tuple[List[float], float]:
     Compute a Gaussian kernel based on smoothing amount.
 
     Args:
-        amount: Smoothing strength from 0 (none) to 100 (heavy).
+        amount: Smoothing strength from 0 (none) to 200 (very heavy).
 
     Returns:
         Tuple of (kernel, sigma) where kernel is a normalized list of weights.
@@ -125,7 +125,7 @@ def smooth_polyline(
 
     Args:
         points: List of 3D points to smooth.
-        amount: Smoothing strength from 0 (none) to 100 (heavy).
+        amount: Smoothing strength from 0 (none) to 200 (very heavy).
         corner_angle_threshold: Internal angles smaller than this (in degrees)
                                are preserved as corners.
         is_closed: Whether the polyline is closed. If None, auto-detected.
