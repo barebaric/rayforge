@@ -39,6 +39,10 @@ from rayforge.core.geo.polygon import (
     polygons_intersect_numpy,
     normalize_polygons,
     normalize_polygons_numpy,
+    polygon_perimeter,
+    polygon_perimeter_numpy,
+    point_line_distance,
+    extract_polygon_edges,
 )
 
 
@@ -949,3 +953,115 @@ class TestNormalizePolygonsNumpy:
         all_y = [p[:, 1] for p in normalized]
         assert min(np.min(x) for x in all_x) == 0.0
         assert min(np.min(y) for y in all_y) == 0.0
+
+
+class TestPolygonPerimeter:
+    def test_triangle(self):
+        polygon = P((0, 0), (10, 0), (5, 5))
+        perimeter = polygon_perimeter(polygon)
+        expected = 10 + 5 * 2 ** 0.5 * 2
+        assert abs(perimeter - expected) < 0.001
+
+    def test_square(self):
+        polygon = P((0, 0), (10, 0), (10, 10), (0, 10))
+        perimeter = polygon_perimeter(polygon)
+        assert abs(perimeter - 40.0) < 0.001
+
+    def test_empty(self):
+        assert polygon_perimeter(cast(Polygon, [])) == 0.0
+
+    def test_single_point(self):
+        assert polygon_perimeter(P((0, 0))) == 0.0
+
+    def test_two_points(self):
+        polygon = P((0, 0), (10, 0))
+        perimeter = polygon_perimeter(polygon)
+        assert abs(perimeter - 20.0) < 0.001
+
+
+class TestPolygonPerimeterNumpy:
+    def test_triangle(self):
+        polygon = PN((0, 0), (10, 0), (5, 5))
+        perimeter = polygon_perimeter_numpy(polygon)
+        expected = 10 + 5 * 2 ** 0.5 * 2
+        assert abs(perimeter - expected) < 0.001
+
+    def test_square(self):
+        polygon = PN((0, 0), (10, 0), (10, 10), (0, 10))
+        perimeter = polygon_perimeter_numpy(polygon)
+        assert abs(perimeter - 40.0) < 0.001
+
+    def test_empty(self):
+        assert polygon_perimeter_numpy(np.array([]).reshape(0, 2)) == 0.0
+
+    def test_single_point(self):
+        assert polygon_perimeter_numpy(PN((0, 0))) == 0.0
+
+    def test_two_points(self):
+        polygon = PN((0, 0), (10, 0))
+        perimeter = polygon_perimeter_numpy(polygon)
+        assert abs(perimeter - 20.0) < 0.001
+
+
+class TestPointLineDistance:
+    def test_point_on_line(self):
+        distance = point_line_distance((5, 5), (0, 5), (10, 5))
+        assert abs(distance - 0.0) < 0.001
+
+    def test_point_off_line_perpendicular(self):
+        distance = point_line_distance((5, 10), (0, 5), (10, 5))
+        assert abs(distance - 5.0) < 0.001
+
+    def test_point_at_line_start(self):
+        distance = point_line_distance((0, 5), (0, 5), (10, 5))
+        assert abs(distance - 0.0) < 0.001
+
+    def test_point_at_line_end(self):
+        distance = point_line_distance((10, 5), (0, 5), (10, 5))
+        assert abs(distance - 0.0) < 0.001
+
+    def test_point_beyond_segment(self):
+        distance = point_line_distance((-5, 5), (0, 5), (10, 5))
+        assert abs(distance - 5.0) < 0.001
+
+    def test_point_beyond_segment_end(self):
+        distance = point_line_distance((15, 5), (0, 5), (10, 5))
+        assert abs(distance - 5.0) < 0.001
+
+    def test_zero_length_segment(self):
+        distance = point_line_distance((5, 5), (0, 0), (0, 0))
+        assert abs(distance - 5 * 2 ** 0.5) < 0.001
+
+
+class TestExtractPolygonEdges:
+    def test_triangle(self):
+        polygon = P((0, 0), (10, 0), (5, 5))
+        edges = extract_polygon_edges(polygon)
+        assert len(edges) == 3
+        assert (0, 0) in [e[0] for e in edges]
+        assert (10, 0) in [e[0] for e in edges]
+        assert (5, 5) in [e[0] for e in edges]
+
+    def test_square(self):
+        polygon = P((0, 0), (10, 0), (10, 10), (0, 10))
+        edges = extract_polygon_edges(polygon)
+        assert len(edges) == 4
+        assert (0, 0) in [e[0] for e in edges]
+        assert (10, 0) in [e[0] for e in edges]
+        assert (10, 10) in [e[0] for e in edges]
+        assert (0, 10) in [e[0] for e in edges]
+
+    def test_empty(self):
+        edges = extract_polygon_edges(cast(Polygon, []))
+        assert edges == []
+
+    def test_single_point(self):
+        edges = extract_polygon_edges(P((0, 0)))
+        assert edges == []
+
+    def test_two_points(self):
+        polygon = P((0, 0), (10, 0))
+        edges = extract_polygon_edges(polygon)
+        assert len(edges) == 2
+        assert edges[0] == ((0, 0), (10, 0))
+        assert edges[1] == ((10, 0), (0, 0))
