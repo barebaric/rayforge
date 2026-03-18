@@ -450,8 +450,9 @@ def find_closest_point_on_bezier(
 ) -> Optional[Tuple[float, Point, float]]:
     """
     Finds the closest point on a Bézier curve by linearizing it.
+    Uses a fine resolution (0.005) for accurate closest-point detection.
     """
-    bezier_segments = linearize_bezier_from_array(bezier_row, start_pos)
+    bezier_segments = linearize_bezier_from_array(bezier_row, start_pos, 0.005)
     if not bezier_segments:
         return None
 
