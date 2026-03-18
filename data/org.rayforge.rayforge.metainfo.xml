@@ -66,6 +66,67 @@
   </screenshots>
 
   <releases>
+    <release version="1.2" date="2026-03-18">
+      <description>
+        <p>Addon System Rewrite and AI Workpiece Generation</p>
+        <p>Major Changes:</p>
+        <ul>
+          <li>AI workpiece generation</li>
+          <li>Complete addon system rewrite and refactoring</li>
+          <li>Built-in addons: laser-essentials, core materials, post-processors, layout</li>
+          <li>Path optimizer now also optimizes inter-workpiece travel</li>
+          <li>Stock is now a document-level concept - no more stock per layer</li>
+        </ul>
+        <p>New Features:</p>
+        <ul>
+          <li>Camera image enhancement with temporal noise reduction</li>
+          <li>Fisheye lens distortion correction</li>
+          <li>Zoom, pan and keyboard navigation in camera alignment dialog</li>
+          <li>Tons of new materials in core materials addon</li>
+          <li>Mach4 G-code dialect</li>
+          <li>Post-processor: crop-to-stock</li>
+          <li>Click canvas to set zero feature</li>
+          <li>Support for configuring cut/raster colors per laser</li>
+          <li>Support for duplicating stock and non-rectangular stock</li>
+          <li>Convert workpiece to stock (right-click menu)</li>
+          <li>Machine profile for OMTech K40+</li>
+          <li>Navigation and zoom icons for UI controls</li>
+        </ul>
+        <p>Sketcher Improvements:</p>
+        <ul>
+          <li>Live preview for line tool</li>
+          <li>Dimension display while adding geometry</li>
+          <li>Snap-to-grid on Ctrl press</li>
+          <li>Hover highlighting for entities and constraints</li>
+          <li>Toolbar shows currently available shortcuts</li>
+          <li>Shift+Double click selects connected geometry</li>
+          <li>Arc radius can be changed while adding second endpoint</li>
+          <li>Selection preserved when creating lines, arcs, or circles</li>
+        </ul>
+        <p>Other Improvements:</p>
+        <ul>
+          <li>Imported items and stock aligned with WCS origin by default</li>
+          <li>Improved camera selection dialog (left/right indicators, keyboard support)</li>
+          <li>Sketcher symmetry constraint click order aligns with FreeCAD</li>
+          <li>Maximum laser G-code power increased to 100.000</li>
+          <li>Context lazy loads most services for better performance</li>
+          <li>RAYFORGE_DISABLE_3D environment variable</li>
+        </ul>
+        <p>Fixed:</p>
+        <ul>
+          <li>Undoing text box left entries in history manager stack</li>
+          <li>Y axis drawn on wrong side of canvas</li>
+          <li>Auto layout for rotated stock</li>
+          <li>SVG exporter stacking multiple workpieces on top of each other</li>
+          <li>Text color in Sketcher while editing</li>
+          <li>Default laser assignment when project references non-existent laser</li>
+          <li>Text box rotating while typing on Windows</li>
+          <li>Addon handling issues on Windows</li>
+          <li>macOS app menu window narrowed to MainWindow</li>
+          <li>macOS app menu actions</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.1.2" date="2026-02-28">
       <description>
         <p>Bug fix release</p>
