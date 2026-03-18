@@ -7,6 +7,7 @@ from gettext import gettext as _
 from rayforge.core.geo.constants import (
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
+    CMD_TYPE_BEZIER,
 )
 from rayforge.core.geo.types import Point3D
 from rayforge.core.ops import (
@@ -82,10 +83,10 @@ class TabOpsTransformer(OpsTransformer):
                 )
                 continue
 
-            cmd_type, x, y, z, p1, p2, p3, _ = cmd
+            cmd_type, x, y, z, p1, p2, p3, p4 = cmd
             end_point = (x, y, z)
 
-            if cmd_type not in (CMD_TYPE_LINE, CMD_TYPE_ARC):
+            if cmd_type not in (CMD_TYPE_LINE, CMD_TYPE_ARC, CMD_TYPE_BEZIER):
                 continue
 
             p_start_3d: Point3D = (0.0, 0.0, 0.0)
@@ -138,6 +139,27 @@ class TabOpsTransformer(OpsTransformer):
                 tab_angle = start_angle + angle_range * tab.pos
                 center_x = center[0] + radius * math.cos(tab_angle)
                 center_y = center[1] + radius * math.sin(tab_angle)
+
+            elif cmd_type == CMD_TYPE_BEZIER:
+                c1x, c1y, c2x, c2y = p1, p2, p3, p4
+                t = tab.pos
+                t2 = t * t
+                t3 = t2 * t
+                mt = 1.0 - t
+                mt2 = mt * mt
+                mt3 = mt2 * mt
+                center_x = (
+                    mt3 * p_start_3d[0]
+                    + 3.0 * mt2 * t * c1x
+                    + 3.0 * mt * t2 * c2x
+                    + t3 * end_point[0]
+                )
+                center_y = (
+                    mt3 * p_start_3d[1]
+                    + 3.0 * mt2 * t * c1y
+                    + 3.0 * mt * t2 * c2y
+                    + t3 * end_point[1]
+                )
 
             logger.debug(
                 f"Local space tab center (from normalized vectors): "

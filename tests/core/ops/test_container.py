@@ -1130,6 +1130,68 @@ def test_clip_at_ignores_state_commands():
     assert ops.commands[6].end == pytest.approx((100, 0, 0))
 
 
+def test_clip_at_with_state_commands_in_subpath():
+    """
+    Tests that clip_at correctly handles state commands within a continuous
+    subpath. The geometry index and commands index must be properly aligned.
+    """
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(50, 0)  # Segment 1
+    ops.set_power(0.5)  # State command in the middle of subpath
+    ops.line_to(100, 0)  # Segment 2
+
+    # Clip on the second segment (after the state command)
+    # The clip point at x=75 is on segment 2, which is at geometry index 2
+    # but would be at commands index 3 if not handled correctly.
+    assert ops.clip_at(75, 0, 10.0) is True
+
+    # Expected: Move(0,0), Line(50,0), SetPower, Line(70,0), Move(80,0),
+    #           Line(100,0)
+    # The gap is centered at x=75 with width 10, so from 70 to 80.
+    # Segment 1 (0-50) is kept whole.
+    # Segment 2 (50-100) is split: 50-70 kept, 70-80 gap, 80-100 kept.
+    assert len(ops.commands) == 6
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert ops.commands[0].end == (0, 0, 0)
+    assert isinstance(ops.commands[1], LineToCommand)
+    assert ops.commands[1].end == pytest.approx((50.0, 0.0, 0.0))
+    assert isinstance(ops.commands[2], SetPowerCommand)
+    assert isinstance(ops.commands[3], LineToCommand)
+    assert ops.commands[3].end == pytest.approx((70.0, 0.0, 0.0))
+    assert isinstance(ops.commands[4], MoveToCommand)
+    assert ops.commands[4].end == pytest.approx((80.0, 0.0, 0.0))
+    assert isinstance(ops.commands[5], LineToCommand)
+    assert ops.commands[5].end == pytest.approx((100.0, 0.0, 0.0))
+
+
+def test_clip_at_end_of_segment_with_state_command():
+    """
+    Tests clipping at the exact endpoint of a segment when there's a state
+    command before the next segment.
+    """
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(100, 0)  # Segment 1
+    ops.set_power(0.8)  # State command
+    ops.line_to(200, 0)  # Segment 2
+
+    # Clip at the exact endpoint of segment 1 (x=100)
+    assert ops.clip_at(100, 0, 10.0) is True
+
+    # The clip should be centered at x=100, so gap from 95 to 105
+    # Segment 1 should end at 95, segment 2 should start at 105
+    # Note: State command at position 100 is inside the gap, so it's removed
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert ops.commands[0].end == (0, 0, 0)
+    assert isinstance(ops.commands[1], LineToCommand)
+    assert ops.commands[1].end == pytest.approx((95.0, 0.0, 0.0))
+    assert isinstance(ops.commands[2], MoveToCommand)
+    assert ops.commands[2].end == pytest.approx((105.0, 0.0, 0.0))
+    assert isinstance(ops.commands[3], LineToCommand)
+    assert ops.commands[3].end == pytest.approx((200.0, 0.0, 0.0))
+
+
 def test_dump(sample_ops):
     """Ensures dump() runs without error and produces output."""
     f = io.StringIO()
