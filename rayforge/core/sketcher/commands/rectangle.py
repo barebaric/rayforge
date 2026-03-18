@@ -3,7 +3,11 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from ...geo import Point as GeoPoint
-from ..constraints import HorizontalConstraint, VerticalConstraint
+from ..constraints import (
+    DistanceConstraint,
+    HorizontalConstraint,
+    VerticalConstraint,
+)
 from ..entities import Line, Point
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
@@ -28,6 +32,8 @@ class RectanglePreviewState(PreviewState):
         self.start_temp = start_temp
         self.p_end_id = p_end_id
         self.preview_ids = preview_ids
+        self.locked_width: Optional[float] = None
+        self.locked_height: Optional[float] = None
 
     def get_preview_point_ids(self) -> set[int]:
         """
@@ -41,6 +47,54 @@ class RectanglePreviewState(PreviewState):
             if pid is not None:
                 result.add(pid)
         return result
+
+    def set_dimensions(
+        self,
+        registry: "EntityRegistry",
+        width: Optional[float] = None,
+        height: Optional[float] = None,
+    ) -> None:
+        """
+        Sets the rectangle dimensions from numeric input.
+
+        Args:
+            registry: The entity registry to modify.
+            width: The width to apply (or None to keep current).
+            height: The height to apply (or None to keep current).
+        """
+        if width is not None:
+            self.locked_width = width
+        if height is not None:
+            self.locked_height = height
+
+        try:
+            start_p = registry.get_point(self.start_id)
+            end_p = registry.get_point(self.p_end_id)
+        except IndexError:
+            return
+
+        dx = end_p.x - start_p.x
+        dy = end_p.y - start_p.y
+
+        sign_x = 1.0 if dx >= 0 else -1.0
+        sign_y = 1.0 if dy >= 0 else -1.0
+
+        new_width = (
+            self.locked_width if self.locked_width is not None else abs(dx)
+        )
+        new_height = (
+            self.locked_height if self.locked_height is not None else abs(dy)
+        )
+
+        end_p.x = start_p.x + sign_x * new_width
+        end_p.y = start_p.y + sign_y * new_height
+
+        RectangleCommand.create_preview(
+            registry,
+            self.start_id,
+            self.p_end_id,
+            preview_ids=self.preview_ids,
+        )
 
     def get_dimensions(
         self, registry: "EntityRegistry"
@@ -86,12 +140,16 @@ class RectangleCommand(SketchChangeCommand):
         end_pos: GeoPoint,
         end_pid: Optional[int] = None,
         is_start_temp: bool = False,
+        fixed_width: Optional[float] = None,
+        fixed_height: Optional[float] = None,
     ):
         super().__init__(sketch, _("Add Rectangle"))
         self.start_pid = start_pid
         self.end_pos = end_pos
         self.end_pid = end_pid
         self.is_start_temp = is_start_temp
+        self.fixed_width = fixed_width
+        self.fixed_height = fixed_height
         self.add_cmd: Optional[AddItemsCommand] = None
         self._committed_end_id: Optional[int] = None
 
@@ -110,6 +168,8 @@ class RectangleCommand(SketchChangeCommand):
         y2: float,
         start_pid: int,
         end_pid: Optional[int],
+        fixed_width: Optional[float] = None,
+        fixed_height: Optional[float] = None,
     ) -> Optional[Dict[str, Any]]:
         """Calculates the points, entities, and constraints for a rectangle."""
         if abs(x2 - x1) < 1e-6 or abs(y2 - y1) < 1e-6:
@@ -138,12 +198,40 @@ class RectangleCommand(SketchChangeCommand):
             Line(next_temp_id(), points["p4"].id, points["p1_id"]),
         ]
 
-        constraints = [
+        constraints: List[Any] = [
             HorizontalConstraint(points["p1_id"], points["p2"].id),
             VerticalConstraint(points["p2"].id, points["p3"].id),
             HorizontalConstraint(points["p4"].id, points["p3"].id),
             VerticalConstraint(points["p1_id"], points["p4"].id),
         ]
+
+        top_edge_y = min(y1, y2)
+        right_edge_x = max(x1, x2)
+
+        if top_edge_y == y1:
+            top_edge_p1 = points["p1_id"]
+            top_edge_p2 = points["p2"].id
+        else:
+            top_edge_p1 = points["p4"].id
+            top_edge_p2 = points["p3"].id
+
+        if right_edge_x == x2:
+            right_edge_p1 = points["p2"].id
+            right_edge_p2 = points["p3"].id
+        else:
+            right_edge_p1 = points["p1_id"]
+            right_edge_p2 = points["p4"].id
+
+        if fixed_width is not None:
+            constraints.append(
+                DistanceConstraint(top_edge_p1, top_edge_p2, fixed_width)
+            )
+
+        if fixed_height is not None:
+            constraints.append(
+                DistanceConstraint(right_edge_p1, right_edge_p2, fixed_height)
+            )
+
         return {
             "points": points,
             "entities": entities,
@@ -270,10 +358,34 @@ class RectangleCommand(SketchChangeCommand):
             raise AttributeError("Expected RectanglePreviewState")
         try:
             p_end = registry.get_point(preview_state.p_end_id)
+            p_start = registry.get_point(preview_state.start_id)
         except IndexError:
             return
-        p_end.x = x
-        p_end.y = y
+
+        if (
+            preview_state.locked_width is not None
+            or preview_state.locked_height is not None
+        ):
+            dx = p_end.x - p_start.x
+            dy = p_end.y - p_start.y
+            sign_x = 1.0 if dx >= 0 else -1.0
+            sign_y = 1.0 if dy >= 0 else -1.0
+
+            new_x = (
+                p_start.x + sign_x * preview_state.locked_width
+                if preview_state.locked_width is not None
+                else x
+            )
+            new_y = (
+                p_start.y + sign_y * preview_state.locked_height
+                if preview_state.locked_height is not None
+                else y
+            )
+            p_end.x = new_x
+            p_end.y = new_y
+        else:
+            p_end.x = x
+            p_end.y = y
 
         RectangleCommand.create_preview(
             registry,
@@ -341,6 +453,8 @@ class RectangleCommand(SketchChangeCommand):
             final_my,
             self.start_pid,
             self.end_pid,
+            fixed_width=self.fixed_width,
+            fixed_height=self.fixed_height,
         )
         if not result:
             if self.is_start_temp:

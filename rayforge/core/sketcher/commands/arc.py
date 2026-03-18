@@ -4,7 +4,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, List, Optional
 
 from ...geo import Point as GeoPoint, primitives
-from ..constraints import EqualDistanceConstraint
+from ..constraints import EqualDistanceConstraint, RadiusConstraint
 from ..entities import Arc, Point
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
@@ -34,6 +34,7 @@ class ArcPreviewState(PreviewState):
         self.temp_end_id = temp_end_id
         self.temp_entity_id = temp_entity_id
         self.clockwise = False
+        self.locked_radius: Optional[float] = None
 
     def get_preview_point_ids(self) -> set[int]:
         """
@@ -50,6 +51,34 @@ class ArcPreviewState(PreviewState):
     def has_start_point(self) -> bool:
         """Returns True if start point has been set."""
         return self.start_id is not None
+
+    def set_radius(self, registry: "EntityRegistry", radius: float) -> None:
+        """
+        Sets the arc radius from numeric input.
+
+        Args:
+            registry: The entity registry to modify.
+            radius: The radius to apply.
+        """
+        if self.start_id is None or self.temp_end_id is None:
+            return
+
+        self.locked_radius = radius
+
+        try:
+            center = registry.get_point(self.center_id)
+            start = registry.get_point(self.start_id)
+            end = registry.get_point(self.temp_end_id)
+        except IndexError:
+            return
+
+        start_angle = math.atan2(start.y - center.y, start.x - center.x)
+        end_angle = math.atan2(end.y - center.y, end.x - center.x)
+
+        start.x = center.x + radius * math.cos(start_angle)
+        start.y = center.y + radius * math.sin(start_angle)
+        end.x = center.x + radius * math.cos(end_angle)
+        end.y = center.y + radius * math.sin(end_angle)
 
     def get_dimensions(
         self, registry: "EntityRegistry"
@@ -111,6 +140,7 @@ class ArcCommand(SketchChangeCommand):
         is_center_temp: bool = False,
         is_start_temp: bool = False,
         clockwise: bool = False,
+        fixed_radius: Optional[float] = None,
     ):
         super().__init__(sketch, _("Add Arc"))
         self.center_id = center_id
@@ -120,6 +150,7 @@ class ArcCommand(SketchChangeCommand):
         self.is_center_temp = is_center_temp
         self.is_start_temp = is_start_temp
         self.clockwise = clockwise
+        self.fixed_radius = fixed_radius
         self.add_cmd: Optional[AddItemsCommand] = None
         self._committed_end_id: Optional[int] = None
 
@@ -279,7 +310,11 @@ class ArcCommand(SketchChangeCommand):
         if not isinstance(arc_ent, Arc):
             return
 
-        cursor_radius = math.hypot(x - center.x, y - center.y)
+        if preview_state.locked_radius is not None:
+            cursor_radius = preview_state.locked_radius
+        else:
+            cursor_radius = math.hypot(x - center.x, y - center.y)
+
         start_angle = math.atan2(start.y - center.y, start.x - center.x)
         start.x = center.x + cursor_radius * math.cos(start_angle)
         start.y = center.y + cursor_radius * math.sin(start_angle)
@@ -403,9 +438,16 @@ class ArcCommand(SketchChangeCommand):
             clockwise=self.clockwise,
         )
 
-        geom_constr = EqualDistanceConstraint(
-            self.center_id, self.start_id, self.center_id, end_pid
-        )
+        constraints: List = [
+            EqualDistanceConstraint(
+                self.center_id, self.start_id, self.center_id, end_pid
+            )
+        ]
+
+        if self.fixed_radius is not None:
+            constraints.append(
+                RadiusConstraint(temp_arc_id, self.fixed_radius)
+            )
 
         points_to_add: List[Point] = [new_point] if new_point else []
 
@@ -430,7 +472,7 @@ class ArcCommand(SketchChangeCommand):
             "",
             points=points_to_add,
             entities=[new_arc],
-            constraints=[geom_constr],
+            constraints=constraints,
         )
         self.add_cmd._do_execute()
         self._committed_end_id = end_pid

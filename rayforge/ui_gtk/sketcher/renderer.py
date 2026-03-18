@@ -561,7 +561,12 @@ class SketchRenderer:
         ctx.set_font_size(11)
         ctx.set_line_width(1.0)
 
-        for dim in dimensions:
+        dim_input_buffer = getattr(tool, "_dim_input", None)
+        dim_input_active = (
+            dim_input_buffer is not None and dim_input_buffer.is_active()
+        )
+
+        for dim_idx, dim in enumerate(dimensions):
             if not isinstance(dim, DimensionData):
                 continue
 
@@ -569,7 +574,18 @@ class SketchRenderer:
 
             has_leader = dim.leader_end is not None
 
-            extents = ctx.text_extents(dim.label)
+            label = dim.label
+            is_editing = False
+            if dim_input_active and dim_input_buffer is not None:
+                field_text = dim_input_buffer.get_display_text(dim_idx)
+                if field_text is not None:
+                    label = field_text
+                    is_editing = True
+                elif dim_input_buffer.field_count == 1:
+                    label = dim_input_buffer.get_display_text() or label
+                    is_editing = True
+
+            extents = ctx.text_extents(label)
             text_w = extents.width
             text_h = extents.height
             x_bearing = extents.x_bearing
@@ -592,12 +608,18 @@ class SketchRenderer:
             bg_w = text_w + 2 * padding
             bg_h = text_h + 2 * padding
 
-            ctx.set_source_rgba(1.0, 1.0, 1.0, 0.85)
+            if is_editing:
+                ctx.set_source_rgba(0.9, 0.95, 1.0, 0.95)
+            else:
+                ctx.set_source_rgba(1.0, 1.0, 1.0, 0.85)
             ctx.rectangle(bg_x, bg_y, bg_w, bg_h)
             ctx.fill()
 
-            ctx.set_source_rgba(0.1, 0.1, 0.1, 1.0)
+            if is_editing:
+                ctx.set_source_rgba(0.0, 0.2, 0.8, 1.0)
+            else:
+                ctx.set_source_rgba(0.1, 0.1, 0.1, 1.0)
             ctx.move_to(label_sx, label_sy)
-            ctx.show_text(dim.label)
+            ctx.show_text(label)
 
         ctx.restore()
