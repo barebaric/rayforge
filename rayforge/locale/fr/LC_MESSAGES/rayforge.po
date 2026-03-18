@@ -5253,14 +5253,6 @@ msgstr "Aligner sur la grille"
 msgid "Select Connected"
 msgstr "Sélectionner les éléments connectés"
 
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Equal"
-msgstr "Égal"
-
-#: rayforge/ui_gtk/sketcher/tools/select_tool.py
-msgid "Select Connected"
-msgstr ""
-
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Finish Sketch"
 msgstr "Terminer l'esquisse"
@@ -5291,7 +5283,7 @@ msgstr "Ajuster la vue"
 
 #: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Equal"
-msgstr ""
+msgstr "Égal"
 
 #: rayforge/ui_gtk/sketcher/font_properties.py
 msgid "Font Properties"

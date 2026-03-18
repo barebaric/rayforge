@@ -5244,14 +5244,6 @@ msgstr "Am Raster ausrichten"
 msgid "Select Connected"
 msgstr "Verbundene auswählen"
 
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Equal"
-msgstr "Gleich"
-
-#: rayforge/ui_gtk/sketcher/tools/select_tool.py
-msgid "Select Connected"
-msgstr ""
-
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Finish Sketch"
 msgstr "Skizze fertigstellen"
@@ -5282,7 +5274,7 @@ msgstr "Ansicht anpassen"
 
 #: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Equal"
-msgstr ""
+msgstr "Gleich"
 
 #: rayforge/ui_gtk/sketcher/font_properties.py
 msgid "Font Properties"

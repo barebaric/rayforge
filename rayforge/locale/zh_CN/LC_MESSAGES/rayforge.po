@@ -5030,14 +5030,6 @@ msgstr "对齐网格"
 msgid "Select Connected"
 msgstr "选择相连对象"
 
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Equal"
-msgstr "相等"
-
-#: rayforge/ui_gtk/sketcher/tools/select_tool.py
-msgid "Select Connected"
-msgstr ""
-
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Finish Sketch"
 msgstr "完成草图"
@@ -5068,7 +5060,7 @@ msgstr "适应视图"
 
 #: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Equal"
-msgstr ""
+msgstr "相等"
 
 #: rayforge/ui_gtk/sketcher/font_properties.py
 msgid "Font Properties"
