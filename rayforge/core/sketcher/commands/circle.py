@@ -4,6 +4,7 @@ import math
 from typing import TYPE_CHECKING, List, Optional
 
 from ...geo import Point as GeoPoint
+from ..constraints import RadiusConstraint
 from ..entities import Circle, Point
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
@@ -28,14 +29,55 @@ class CirclePreviewState(PreviewState):
         self.center_temp = center_temp
         self.radius_id = radius_id
         self.entity_id = entity_id
+        self.locked_radius: Optional[float] = None
 
     def get_preview_point_ids(self) -> set[int]:
         """
         Returns IDs of temporary preview points that shouldn't be snapped to.
 
-        Excludes the center point since that may be permanent.
+        Excludes the center point since it may be permanent.
         """
         return {self.radius_id}
+
+    def set_radius(self, registry: "EntityRegistry", radius: float) -> None:
+        """
+        Sets the circle radius from numeric input.
+
+        Args:
+            registry: The entity registry to modify.
+            radius: The radius to apply.
+        """
+        self.locked_radius = radius
+
+        try:
+            center = registry.get_point(self.center_id)
+            radius_pt = registry.get_point(self.radius_id)
+        except IndexError:
+            return
+
+        dx = radius_pt.x - center.x
+        dy = radius_pt.y - center.y
+        current_radius = math.hypot(dx, dy)
+
+        if current_radius < 1e-9:
+            radius_pt.x = center.x + radius
+            return
+
+        scale = radius / current_radius
+        radius_pt.x = center.x + dx * scale
+        radius_pt.y = center.y + dy * scale
+
+    def set_diameter(
+        self, registry: "EntityRegistry", diameter: float
+    ) -> None:
+        """
+        Sets the circle diameter from numeric input.
+
+        Args:
+            registry: The entity registry to modify.
+            diameter: The diameter to apply.
+        """
+        self.set_radius(registry, diameter / 2.0)
 
     def get_dimensions(
         self, registry: "EntityRegistry"
@@ -79,12 +121,14 @@ class CircleCommand(SketchChangeCommand):
         end_pos: GeoPoint,
         end_pid: Optional[int] = None,
         is_center_temp: bool = False,
+        fixed_radius: Optional[float] = None,
     ):
         super().__init__(sketch, _("Add Circle"))
         self.center_id = center_id
         self.end_pos = end_pos
         self.end_pid = end_pid
         self.is_center_temp = is_center_temp
+        self.fixed_radius = fixed_radius
         self.add_cmd: Optional[AddItemsCommand] = None
         self._committed_end_id: Optional[int] = None
 
@@ -151,6 +195,10 @@ class CircleCommand(SketchChangeCommand):
         """
         if not isinstance(preview_state, CirclePreviewState):
             raise AttributeError("Expected CirclePreviewState")
+
+        if preview_state.locked_radius is not None:
+            return
+
         try:
             radius_p = registry.get_point(preview_state.radius_id)
         except IndexError:
@@ -234,11 +282,19 @@ class CircleCommand(SketchChangeCommand):
             except (IndexError, ValueError):
                 pass
 
+        constraints_to_add = []
+        if self.fixed_radius is not None:
+            radius_constr = RadiusConstraint(
+                temp_circle_id, self.fixed_radius, user_visible=True
+            )
+            constraints_to_add.append(radius_constr)
+
         self.add_cmd = AddItemsCommand(
             self.sketch,
             "",
             points=points_to_add,
             entities=[new_circle],
+            constraints=constraints_to_add,
         )
         self.add_cmd._do_execute()
         self._committed_end_id = end_pid

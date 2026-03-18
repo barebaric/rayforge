@@ -4,6 +4,7 @@ import math
 from typing import TYPE_CHECKING, List, Optional
 
 from ...geo import Point as GeoPoint
+from ..constraints import DistanceConstraint
 from ..entities import Line, Point
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
@@ -28,14 +29,43 @@ class LinePreviewState(PreviewState):
         self.start_temp = start_temp
         self.end_id = end_id
         self.entity_id = entity_id
+        self.locked_length: Optional[float] = None
 
     def get_preview_point_ids(self) -> set[int]:
         """
         Returns IDs of temporary preview points that shouldn't be snapped to.
 
-        Excludes the start point since that may be permanent.
+        Excludes the start point since it may be permanent.
         """
         return {self.end_id}
+
+    def set_length(self, registry: "EntityRegistry", length: float) -> None:
+        """
+        Sets the line length from numeric input.
+
+        Args:
+            registry: The entity registry to modify.
+            length: The length to apply.
+        """
+        self.locked_length = length
+
+        try:
+            start_p = registry.get_point(self.start_id)
+            end_p = registry.get_point(self.end_id)
+        except IndexError:
+            return
+
+        dx = end_p.x - start_p.x
+        dy = end_p.y - start_p.y
+        current_length = math.hypot(dx, dy)
+
+        if current_length < 1e-9:
+            end_p.x = start_p.x + length
+            return
+
+        scale = length / current_length
+        end_p.x = start_p.x + dx * scale
+        end_p.y = start_p.y + dy * scale
 
     def get_dimensions(
         self, registry: "EntityRegistry"
@@ -75,12 +105,14 @@ class LineCommand(SketchChangeCommand):
         end_pos: GeoPoint,
         end_pid: Optional[int] = None,
         is_start_temp: bool = False,
+        fixed_length: Optional[float] = None,
     ):
         super().__init__(sketch, _("Add Line"))
         self.start_id = start_id
         self.end_pos = end_pos
         self.end_pid = end_pid
         self.is_start_temp = is_start_temp
+        self.fixed_length = fixed_length
         self.add_cmd: Optional[AddItemsCommand] = None
         self._committed_end_id: Optional[int] = None
 
@@ -147,6 +179,10 @@ class LineCommand(SketchChangeCommand):
         """
         if not isinstance(preview_state, LinePreviewState):
             raise AttributeError("Expected LinePreviewState")
+
+        if preview_state.locked_length is not None:
+            return
+
         try:
             end_p = registry.get_point(preview_state.end_id)
         except IndexError:
@@ -234,11 +270,18 @@ class LineCommand(SketchChangeCommand):
             except (IndexError, ValueError):
                 pass
 
+        constraints = []
+        if self.fixed_length is not None:
+            constraints.append(
+                DistanceConstraint(self.start_id, end_pid, self.fixed_length)
+            )
+
         self.add_cmd = AddItemsCommand(
             self.sketch,
             "",
             points=points_to_add,
             entities=[new_line],
+            constraints=constraints,
         )
         self.add_cmd._do_execute()
         self._committed_end_id = end_pid

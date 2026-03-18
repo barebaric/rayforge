@@ -423,6 +423,33 @@ class SketchEditor:
 
         is_primary = is_primary_modifier(state)
 
+        # Priority 0.5: Tool dimension input during preview
+        preview_state = tool.get_preview_state() if tool else None
+        if preview_state is not None and not is_primary:
+            dim_key_map = {
+                Gdk.KEY_BackSpace: SketcherKey.BACKSPACE,
+                Gdk.KEY_Delete: SketcherKey.DELETE,
+                Gdk.KEY_Return: SketcherKey.RETURN,
+                Gdk.KEY_KP_Enter: SketcherKey.RETURN,
+                Gdk.KEY_Escape: SketcherKey.ESCAPE,
+                Gdk.KEY_Tab: SketcherKey.TAB,
+                Gdk.KEY_ISO_Left_Tab: SketcherKey.TAB,
+            }
+            if keyval in dim_key_map:
+                handled = tool.handle_key_event(
+                    dim_key_map[keyval], shift=is_shift
+                )
+                if handled:
+                    return True
+
+            key_unicode = Gdk.keyval_to_unicode(keyval)
+            if key_unicode != 0:
+                char = chr(key_unicode)
+                if char.isdigit() or char in ".," or char == " ":
+                    handled = tool.handle_text_input(char)
+                    if handled:
+                        return True
+
         # Priority 1: Immediate actions (Undo/Redo, Delete)
         if is_primary:
             if keyval == Gdk.KEY_z:

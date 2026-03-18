@@ -57,6 +57,7 @@ CONSTRAINT_SHORTCUTS = [
     (AngleConstraint, "ka", _("Angle")),
     (AspectRatioConstraint, "kx", _("Aspect Ratio")),
     (CoincidentConstraint, "o", _("Coincident")),
+    (CoincidentConstraint, "c", _("Coincident")),
 ]
 
 

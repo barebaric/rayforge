@@ -22,6 +22,7 @@ class SketcherKey(Enum):
     ESCAPE = auto()
     HOME = auto()
     END = auto()
+    TAB = auto()
     UNDO = auto()
     REDO = auto()
     COPY = auto()
@@ -79,7 +80,9 @@ class SketchTool(ABC):
         """Optional hook for handling printable character input."""
         return False
 
-    def handle_key_event(self, key: SketcherKey) -> bool:
+    def handle_key_event(
+        self, key: SketcherKey, shift: bool = False, ctrl: bool = False
+    ) -> bool:
         """Optional hook for handling special (non-character) key events."""
         return False
 
