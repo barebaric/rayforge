@@ -5211,14 +5211,6 @@ msgstr "Ajustar à Grade"
 msgid "Select Connected"
 msgstr "Selecionar Conectados"
 
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Equal"
-msgstr "Igual"
-
-#: rayforge/ui_gtk/sketcher/tools/select_tool.py
-msgid "Select Connected"
-msgstr ""
-
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Finish Sketch"
 msgstr "Concluir Esboço"
@@ -5249,7 +5241,7 @@ msgstr "Ajustar à Vista"
 
 #: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Equal"
-msgstr ""
+msgstr "Igual"
 
 #: rayforge/ui_gtk/sketcher/font_properties.py
 msgid "Font Properties"

@@ -5190,14 +5190,6 @@ msgstr "Прив'язати до сітки"
 msgid "Select Connected"
 msgstr "Вибрати з'єднані"
 
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Equal"
-msgstr "Рівний"
-
-#: rayforge/ui_gtk/sketcher/tools/select_tool.py
-msgid "Select Connected"
-msgstr ""
-
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Finish Sketch"
 msgstr "Завершити ескіз"
@@ -5228,7 +5220,7 @@ msgstr "Вмістити вид"
 
 #: rayforge/ui_gtk/sketcher/shortcuts.py
 msgid "Equal"
-msgstr ""
+msgstr "Рівний"
 
 #: rayforge/ui_gtk/sketcher/font_properties.py
 msgid "Font Properties"
