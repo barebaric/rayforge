@@ -5,6 +5,65 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.2
+
+### Added
+
+- AI workpiece generation
+- Camera image enhancement with temporal noise reduction (thanks
+  to MausRundung)
+- Fisheye lens distortion correction with radial and tangential parameters
+  (thanks to MausRundung)
+- Zoom, pan and keyboard navigation in camera alignment dialog
+  (thanks to MausRundung)
+- Complete addon system rewrite and refactoring
+- Tons of new materials in core materials addon
+- Sketcher: live preview for line tool
+- Sketcher: show dimensions while adding geometry
+- Sketcher: snap-to-grid on Ctrl press
+- Sketcher: highlight hovered entities and constraints
+- Sketcher: toolbar shows currently available shortcuts
+- Sketcher: Shift+Double click selects connected geometry
+- Sketcher: allow arc radius changes while adding second arc endpoint
+- Path optimizer now also optimizes inter-workpiece travel
+- Mach4 G-code dialect
+- Post-processor: crop-to-stock
+- Click canvas to set zero feature
+- Support for configuring cut/raster colors per laser
+- Support for duplicating stock and non-rectangular stock
+- Convert workpiece to stock (right-click menu)
+- RAYFORGE_DISABLE_3D environment variable
+- Machine profile for OMTech K40+
+- Navigation and zoom icons for UI controls
+
+### Changed
+
+- Stock is now a document-level concept - no more stock per layer
+- Improved camera selection dialog (left/right indicators, keyboard support)
+- Imported items and stock now aligned with WCS origin by default
+- Stock placed at WCS origin by default
+- Sketcher: preserve selection when creating lines, arcs, or circles
+- Sketcher symmetry constraint click order now aligns with FreeCAD
+- Maximum laser G-code power increased to 100.000
+- Addon terminology changed from "plugin" to "addon"
+- Context now lazy loads most services for better performance
+
+### Fixed
+
+- Undoing text box left entries in history manager stack
+- Y axis drawn on wrong side of canvas
+- Auto layout for rotated stock
+- SVG exporter stacking multiple workpieces on top of each other
+- Text color in Sketcher while editing
+- When opening project file referencing non-existent laser, assign default laser
+- Text box rotates while typing on Windows
+- Addon handling issues on Windows
+
+### macOS Specific
+
+- Narrow macOS app menu window to MainWindow - pgilfernandez
+- macOS app menu actions fix - pgilfernandez
+
 ## 1.1.2
 
 ### Fixed
