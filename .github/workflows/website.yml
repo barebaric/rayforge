@@ -2,9 +2,10 @@ name: Build and deploy website
 
 on:
   push:
-    # Trigger on new version tags
+    # Trigger on new version tags (supports both 1.2 and 1.2.0 formats)
     tags:
       - "*.*.*"
+      - "*.*"
     # Trigger on pushes to the main branch to update existing docs
     branches:
       - main
