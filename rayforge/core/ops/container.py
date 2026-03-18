@@ -1046,9 +1046,22 @@ class Ops:
         if dist_sq > (width * 2) ** 2:  # Generous tolerance for clicking
             return False
 
-        # 2. Identify the continuous subpath containing the hit segment
+        # 2. Convert geometry index to command index (geometry excludes state
+        # commands, so we need to map)
+        command_index = 0
+        geo_idx = 0
+        for cmd_idx, cmd in enumerate(self.commands):
+            if isinstance(cmd, MovingCommand):
+                if geo_idx == segment_index:
+                    command_index = cmd_idx
+                    break
+                geo_idx += 1
+        else:
+            return False
+
+        # 3. Identify the continuous subpath containing the hit segment
         start_idx = 0
-        for i in range(segment_index, -1, -1):
+        for i in range(command_index, -1, -1):
             if isinstance(self.commands[i], MoveToCommand):
                 start_idx = i
                 break
@@ -1063,7 +1076,7 @@ class Ops:
         if not subpath_cmds or not isinstance(subpath_cmds[0], MovingCommand):
             return False
 
-        # 3. Create a temporary, linearized version of the subpath
+        # 4. Create a temporary, linearized version of the subpath
         temp_ops = Ops()
         temp_ops.commands = deepcopy(subpath_cmds)
         temp_ops.preload_state()
@@ -1074,6 +1087,17 @@ class Ops:
             return False
 
         # 4. Find closest point on the *linearized* path and calculate distance
+        # Filter to only geometric commands since to_geometry() excludes state
+        # commands, and we need indices to align.
+        linear_geo_cmds = [
+            cmd
+            for cmd in linear_cmds
+            if isinstance(cmd, (MoveToCommand, LineToCommand))
+        ]
+
+        if len(linear_geo_cmds) < 2:
+            return False
+
         linear_temp_geo = temp_ops.to_geometry()
         linear_closest = linear_temp_geo.find_closest_point(x, y)
         if not linear_closest:
@@ -1082,16 +1106,16 @@ class Ops:
         linear_segment_idx, linear_t, _ = linear_closest
 
         hit_dist = 0.0
-        last_pos = linear_cmds[0].end
+        last_pos = linear_geo_cmds[0].end
         assert last_pos is not None  # Should be MoveTo.end
 
         for i in range(1, linear_segment_idx):
-            cmd = linear_cmds[i]
+            cmd = linear_geo_cmds[i]
             if isinstance(cmd, LineToCommand):
                 hit_dist += math.dist(last_pos[:2], cmd.end[:2])
                 last_pos = cmd.end
 
-        hit_segment_cmd = linear_cmds[linear_segment_idx]
+        hit_segment_cmd = linear_geo_cmds[linear_segment_idx]
         if isinstance(hit_segment_cmd, LineToCommand) and hit_segment_cmd.end:
             dist = math.dist(last_pos[:2], hit_segment_cmd.end[:2])
             hit_dist += linear_t * dist
