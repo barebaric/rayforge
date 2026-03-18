@@ -87,7 +87,7 @@ def polygon_perimeter_numpy(polygon: np.ndarray) -> float:
 
     rolled = np.roll(polygon, -1, axis=0)
     diffs = rolled - polygon
-    distances = np.sqrt(np.sum(diffs ** 2, axis=1))
+    distances = np.sqrt(np.sum(diffs**2, axis=1))
     return float(np.sum(distances))
 
 
@@ -112,8 +112,9 @@ def point_line_distance(
     line_len = (line_vec[0] ** 2 + line_vec[1] ** 2) ** 0.5
 
     if line_len < 1e-6:
-        return ((point[0] - line_start[0]) ** 2 +
-                (point[1] - line_start[1]) ** 2) ** 0.5
+        return (
+            (point[0] - line_start[0]) ** 2 + (point[1] - line_start[1]) ** 2
+        ) ** 0.5
 
     line_unit = (line_vec[0] / line_len, line_vec[1] / line_len)
     point_vec = (
@@ -121,16 +122,13 @@ def point_line_distance(
         point[1] - line_start[1],
     )
 
-    proj_len = (
-        point_vec[0] * line_unit[0] + point_vec[1] * line_unit[1]
-    )
+    proj_len = point_vec[0] * line_unit[0] + point_vec[1] * line_unit[1]
     proj_len = max(0.0, min(line_len, proj_len))
 
     closest_x = line_start[0] + proj_len * line_unit[0]
     closest_y = line_start[1] + proj_len * line_unit[1]
 
-    return ((point[0] - closest_x) ** 2 +
-            (point[1] - closest_y) ** 2) ** 0.5
+    return ((point[0] - closest_x) ** 2 + (point[1] - closest_y) ** 2) ** 0.5
 
 
 def extract_polygon_edges(polygon: Polygon) -> List[Tuple[Point, Point]]:

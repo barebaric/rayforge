@@ -146,6 +146,17 @@ class CutCapability(Capability):
                     max_val=1.0,
                     show_value=True,
                 ),
+                SliderFloatVar(
+                    key="tab_power",
+                    label=_("Tab Power"),
+                    description=_(
+                        "Laser power at tab positions (% of cut power)"
+                    ),
+                    default=0.0,
+                    min_val=0.0,
+                    max_val=1.0,
+                    show_value=True,
+                ),
                 IntVar(
                     key="cut_speed",
                     label=_("Cut Speed"),

@@ -114,9 +114,10 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
             upper=100, step_increment=0.1, page_increment=10
         )
         power_row, power_scale = create_slider_row(
-            title=_("Power (%)"),
+            title=_("Power"),
             adjustment=self.power_adjustment,
             digits=1,
+            format_suffix="%",
             on_value_changed=lambda s: self._debounce(
                 self.on_power_changed, s
             ),
@@ -124,6 +125,27 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         general_group.add(power_row)
         # Set power row visibility based on producer capability
         power_row.set_visible(producer.supports_power if producer else False)
+
+        # Tab Power Slider
+        self.tab_power_adjustment = Gtk.Adjustment(
+            upper=100, step_increment=0.1, page_increment=10
+        )
+        tab_power_row, tab_power_scale = create_slider_row(
+            title=_("Tab Power"),
+            subtitle=_("Laser power at tab positions (% of cut power)"),
+            adjustment=self.tab_power_adjustment,
+            digits=1,
+            format_suffix="%",
+            on_value_changed=lambda s: self._debounce(
+                self.on_tab_power_changed, s
+            ),
+        )
+        general_group.add(tab_power_row)
+        # Set tab power row visibility based on producer capability
+        tab_power_row.set_visible(
+            producer.supports_power if producer else False
+        )
+        self.tab_power_row = tab_power_row
 
         # Add a spin row for cut speed
         cut_speed_adjustment = Gtk.Adjustment(
@@ -247,6 +269,10 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         # Sync Kerf
         self.kerf_row.get_adjustment().set_value(self.step.kerf_mm)
 
+        # Sync Tab Power
+        tab_power_percent = self.step.tab_power * 100.0
+        self.tab_power_adjustment.set_value(tab_power_percent)
+
     def on_laser_selected(self, combo_row, pspec):
         """Handles changes in the laser head selection."""
         machine = get_context().machine
@@ -335,6 +361,18 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
             new_value=new_value,
             setter_method_name="set_power",
             name=_("Change laser power"),
+        )
+        self.history_manager.execute(command)
+        self.changed.send(self)
+
+    def on_tab_power_changed(self, scale):
+        new_value = scale.get_value() / 100.0
+        command = ChangePropertyCommand(
+            target=self.step,
+            property_name="tab_power",
+            new_value=new_value,
+            setter_method_name="set_tab_power",
+            name=_("Change tab power"),
         )
         self.history_manager.execute(command)
         self.changed.send(self)

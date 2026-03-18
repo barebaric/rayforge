@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, Optional, List, Dict, Any
 
 from .base import OpsTransformer
 
@@ -53,6 +53,7 @@ class PlaceholderTransformer(OpsTransformer):
         workpiece: Optional["WorkPiece"] = None,
         context: Optional["ProgressContext"] = None,
         stock_geometries: Optional[List["Geometry"]] = None,
+        settings: Optional[Dict[str, Any]] = None,
     ) -> None:
         pass
 

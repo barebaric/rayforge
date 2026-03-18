@@ -65,6 +65,7 @@ class Step(DocItem, ABC):
         self.max_travel_speed = 10000
         self.air_assist = False
         self.kerf_mm: float = 0.0
+        self.tab_power: float = 0.0
 
         # Forward compatibility: store unknown attributes
         self.extra: Dict[str, Any] = {}
@@ -114,6 +115,7 @@ class Step(DocItem, ABC):
             "max_travel_speed": self.max_travel_speed,
             "air_assist": self.air_assist,
             "kerf_mm": self.kerf_mm,
+            "tab_power": self.tab_power,
             "children": [child.to_dict() for child in self.children],
         }
         result.update(self.extra)
@@ -159,6 +161,7 @@ class Step(DocItem, ABC):
             "max_travel_speed",
             "air_assist",
             "kerf_mm",
+            "tab_power",
             "children",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -218,6 +221,7 @@ class Step(DocItem, ABC):
         step.max_travel_speed = data.get("max_travel_speed", 10000)
         step.air_assist = data.get("air_assist", False)
         step.kerf_mm = data.get("kerf_mm", 0.0)
+        step.tab_power = data.get("tab_power", 0.0)
         step.extra = extra
         return step
 
@@ -270,6 +274,7 @@ class Step(DocItem, ABC):
             "air_assist": self.air_assist,
             "pixels_per_mm": self.pixels_per_mm,
             "kerf_mm": self.kerf_mm,
+            "tab_power": self.tab_power,
             "generated_workpiece_uid": self.generated_workpiece_uid,
         }
 
@@ -360,6 +365,13 @@ class Step(DocItem, ABC):
         """Sets the kerf (beam width) in millimeters for this process."""
         if self.kerf_mm != kerf:
             self.kerf_mm = float(kerf)
+            self.updated.send(self)
+
+    def set_tab_power(self, power: float):
+        if not (0.0 <= power <= 1.0):
+            raise ValueError("Tab power must be between 0.0 and 1.0")
+        if self.tab_power != power:
+            self.tab_power = power
             self.updated.send(self)
 
     def get_summary(self) -> str:

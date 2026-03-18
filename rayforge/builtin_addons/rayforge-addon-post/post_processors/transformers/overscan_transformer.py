@@ -124,6 +124,7 @@ class OverscanTransformer(OpsTransformer):
         workpiece: Optional[WorkPiece] = None,
         context: Optional[ProgressContext] = None,
         stock_geometries: Optional[List["Geometry"]] = None,
+        settings: Optional[Dict[str, Any]] = None,
     ) -> None:
         if not self.enabled or math.isclose(self.distance_mm, 0.0):
             return

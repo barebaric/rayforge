@@ -959,7 +959,7 @@ class TestPolygonPerimeter:
     def test_triangle(self):
         polygon = P((0, 0), (10, 0), (5, 5))
         perimeter = polygon_perimeter(polygon)
-        expected = 10 + 5 * 2 ** 0.5 * 2
+        expected = 10 + 5 * 2**0.5 * 2
         assert abs(perimeter - expected) < 0.001
 
     def test_square(self):
@@ -983,7 +983,7 @@ class TestPolygonPerimeterNumpy:
     def test_triangle(self):
         polygon = PN((0, 0), (10, 0), (5, 5))
         perimeter = polygon_perimeter_numpy(polygon)
-        expected = 10 + 5 * 2 ** 0.5 * 2
+        expected = 10 + 5 * 2**0.5 * 2
         assert abs(perimeter - expected) < 0.001
 
     def test_square(self):
@@ -1030,7 +1030,7 @@ class TestPointLineDistance:
 
     def test_zero_length_segment(self):
         distance = point_line_distance((5, 5), (0, 0), (0, 0))
-        assert abs(distance - 5 * 2 ** 0.5) < 0.001
+        assert abs(distance - 5 * 2**0.5) < 0.001
 
 
 class TestExtractPolygonEdges:
