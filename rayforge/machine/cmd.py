@@ -281,6 +281,20 @@ class MachineCmd:
             on_progress=on_progress,
         )
 
+    def run_send_job(self, machine: "Machine"):
+        """
+        Schedules the send_job coroutine to run via the task manager.
+        """
+        self._editor.task_manager.add_coroutine(
+            lambda ctx: self._start_job(
+                machine,
+                job_name="sending",
+                final_job_action=self._run_send_action,
+                on_progress=None,
+            ),
+            key="send-job",
+        )
+
     def set_hold(self, machine: "Machine", is_requesting_hold: bool):
         """
         Adds a task to set the machine's hold state (pause/resume).
