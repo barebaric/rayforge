@@ -1,7 +1,17 @@
 from __future__ import annotations
 import math
 import logging
-from typing import Optional, List, Dict, Any, TYPE_CHECKING
+from copy import deepcopy
+from enum import auto, Enum
+from typing import (
+    Optional,
+    List,
+    Dict,
+    Any,
+    Tuple,
+    Sequence,
+    TYPE_CHECKING,
+)
 from gettext import gettext as _
 
 from rayforge.core.geo.constants import (
@@ -16,6 +26,9 @@ from rayforge.core.ops import (
     SectionType,
     OpsSectionStartCommand,
     OpsSectionEndCommand,
+    SetPowerCommand,
+    MoveToCommand,
+    LineToCommand,
 )
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
@@ -25,6 +38,11 @@ if TYPE_CHECKING:
     from rayforge.core.geo import Geometry
 
 logger = logging.getLogger(__name__)
+
+
+class _EventType(Enum):
+    ENTER_TAB = auto()
+    EXIT_TAB = auto()
 
 
 class TabOpsTransformer(OpsTransformer):
@@ -48,7 +66,10 @@ class TabOpsTransformer(OpsTransformer):
 
     @property
     def description(self) -> str:
-        return _("Creates holding tabs by adding gaps to cut paths")
+        return _(
+            "Creates holding tabs by adding gaps or reducing power "
+            "on cut paths"
+        )
 
     def _generate_tab_clip_data(self, workpiece: WorkPiece) -> List[Point3D]:
         """
@@ -177,6 +198,7 @@ class TabOpsTransformer(OpsTransformer):
         workpiece: Optional[WorkPiece] = None,
         context: Optional[ProgressContext] = None,
         stock_geometries: Optional[List["Geometry"]] = None,
+        settings: Optional[Dict[str, Any]] = None,
     ) -> None:
         if not self.enabled:
             return
@@ -190,9 +212,13 @@ class TabOpsTransformer(OpsTransformer):
             )
             return
 
+        tab_power = 0.0
+        if settings:
+            tab_power = settings.get("tab_power", 0.0)
+
         logger.debug(
             f"TabOpsTransformer running for workpiece '{workpiece.name}' "
-            f"with {len(workpiece.tabs)} tabs."
+            f"with {len(workpiece.tabs)} tabs, tab_power={tab_power}."
         )
 
         tab_clip_data = self._generate_tab_clip_data(workpiece)
@@ -240,6 +266,18 @@ class TabOpsTransformer(OpsTransformer):
             f"TabOps: Clipping points to be used: {processed_clip_data}"
         )
 
+        if tab_power > 0:
+            self._apply_tab_power(
+                ops, processed_clip_data, tab_power, settings
+            )
+        else:
+            self._apply_tab_gaps(ops, processed_clip_data)
+
+    def _apply_tab_gaps(
+        self,
+        ops: Ops,
+        clip_data: List[Tuple[float, float, float]],
+    ) -> None:
         new_commands: List[Command] = []
         active_section_type: Optional[SectionType] = None
         section_buffer: List[Command] = []
@@ -250,13 +288,13 @@ class TabOpsTransformer(OpsTransformer):
 
             if active_section_type == SectionType.VECTOR_OUTLINE:
                 logger.debug(
-                    "Processing buffered VECTOR_OUTLINE section for tabs."
+                    "Processing buffered VECTOR_OUTLINE section for tab gaps."
                 )
                 temp_ops = Ops()
                 temp_ops.commands = section_buffer
                 num_before = len(temp_ops)
 
-                for x, y, width in processed_clip_data:
+                for x, y, width in clip_data:
                     logger.debug(
                         f"TabOps: Clipping at ({x:.4f}, {y:.4f}) "
                         f"with width {width:.2f}"
@@ -293,8 +331,296 @@ class TabOpsTransformer(OpsTransformer):
                 section_buffer.append(cmd)
 
         _process_buffer()  # Process any commands in the final buffer
-
         ops.commands = new_commands
+
+    def _apply_tab_power(
+        self,
+        ops: Ops,
+        clip_data: List[Tuple[float, float, float]],
+        tab_power: float,
+        settings: Optional[Dict[str, Any]],
+    ) -> None:
+        original_power = settings.get("power", 1.0) if settings else 1.0
+        actual_tab_power = tab_power * original_power
+        new_commands: List[Command] = []
+        active_section_type: Optional[SectionType] = None
+        section_buffer: List[Command] = []
+
+        def _process_buffer():
+            if not section_buffer:
+                return
+
+            if active_section_type == SectionType.VECTOR_OUTLINE:
+                logger.debug(
+                    "Processing buffered VECTOR_OUTLINE section for tab power."
+                )
+                processed = self._insert_power_commands(
+                    section_buffer, clip_data, actual_tab_power, original_power
+                )
+                new_commands.extend(processed)
+            else:
+                logger.debug(
+                    "Passing through buffered section of type "
+                    f"{active_section_type}."
+                )
+                new_commands.extend(section_buffer)
+
+        for cmd in ops:
+            if isinstance(cmd, OpsSectionStartCommand):
+                _process_buffer()
+                section_buffer = []
+                active_section_type = cmd.section_type
+                new_commands.append(cmd)
+            elif isinstance(cmd, OpsSectionEndCommand):
+                _process_buffer()
+                section_buffer = []
+                active_section_type = None
+                new_commands.append(cmd)
+            else:
+                section_buffer.append(cmd)
+
+        _process_buffer()
+        ops.commands = new_commands
+
+    def _insert_power_commands(
+        self,
+        commands: List[Command],
+        clip_data: List[Tuple[float, float, float]],
+        tab_power: float,
+        original_power: float,
+    ) -> List[Command]:
+        temp_ops = Ops()
+        temp_ops.commands = deepcopy(commands)
+        temp_ops.preload_state()
+        temp_ops.linearize_all()
+        linear_cmds = temp_ops.commands
+
+        if len(linear_cmds) < 2:
+            return commands
+
+        geo_cmds = [
+            cmd
+            for cmd in linear_cmds
+            if isinstance(cmd, (MoveToCommand, LineToCommand))
+        ]
+
+        if len(geo_cmds) < 2:
+            return commands
+
+        tab_regions = self._compute_tab_regions(temp_ops, geo_cmds, clip_data)
+
+        if not tab_regions:
+            return commands
+
+        tab_regions.sort(key=lambda r: r[0])
+
+        return self._build_commands_with_power(
+            linear_cmds, geo_cmds, tab_regions, tab_power, original_power
+        )
+
+    def _compute_tab_regions(
+        self,
+        temp_ops: Ops,
+        geo_cmds: Sequence[Command],
+        clip_data: List[Tuple[float, float, float]],
+    ) -> List[Tuple[float, float]]:
+        tab_regions: List[Tuple[float, float]] = []
+
+        for x, y, width in clip_data:
+            temp_geo = temp_ops.to_geometry()
+            closest = temp_geo.find_closest_point(x, y)
+            if not closest:
+                continue
+
+            dist_sq = (x - closest[2][0]) ** 2 + (y - closest[2][1]) ** 2
+            if dist_sq > (width * 2) ** 2:
+                continue
+
+            hit_dist = self._compute_hit_distance(geo_cmds, closest)
+            if hit_dist is None:
+                continue
+
+            gap_start = max(0.0, hit_dist - width / 2.0)
+            gap_end = hit_dist + width / 2.0
+            tab_regions.append((gap_start, gap_end))
+
+        return tab_regions
+
+    def _compute_hit_distance(
+        self,
+        geo_cmds: Sequence[Command],
+        closest: Tuple[int, float, Tuple[float, ...]],
+    ) -> Optional[float]:
+        segment_idx = closest[0]
+        t = closest[1]
+
+        if segment_idx >= len(geo_cmds):
+            return None
+
+        hit_dist = 0.0
+        last_pos = geo_cmds[0].end
+        if last_pos is None:
+            return None
+
+        for i in range(1, segment_idx):
+            cmd = geo_cmds[i]
+            if isinstance(cmd, MoveToCommand) and cmd.end:
+                last_pos = cmd.end
+            elif isinstance(cmd, LineToCommand) and cmd.end:
+                hit_dist += math.dist(last_pos[:2], cmd.end[:2])
+                last_pos = cmd.end
+
+        hit_segment_cmd = geo_cmds[segment_idx]
+        if isinstance(hit_segment_cmd, LineToCommand) and hit_segment_cmd.end:
+            dist = math.dist(last_pos[:2], hit_segment_cmd.end[:2])
+            hit_dist += t * dist
+            return hit_dist
+
+        return None
+
+    def _build_commands_with_power(
+        self,
+        linear_cmds: List[Command],
+        geo_cmds: Sequence[Command],
+        tab_regions: List[Tuple[float, float]],
+        tab_power: float,
+        original_power: float,
+    ) -> List[Command]:
+        result: List[Command] = []
+        accum_dist = 0.0
+        current_power = original_power
+        last_pos = geo_cmds[0].end
+        assert last_pos is not None
+
+        result.append(deepcopy(linear_cmds[0]))
+
+        for cmd in linear_cmds[1:]:
+            if isinstance(cmd, LineToCommand):
+                p1, p2 = last_pos, cmd.end
+                seg_len = math.dist(p1[:2], p2[:2])
+
+                if seg_len < 1e-9:
+                    last_pos = p2
+                    continue
+
+                seg_start = accum_dist
+                seg_end = accum_dist + seg_len
+
+                events = self._collect_events(seg_start, seg_end, tab_regions)
+
+                if events:
+                    self._process_segment_events(
+                        result,
+                        cmd,
+                        p1,
+                        p2,
+                        seg_len,
+                        seg_start,
+                        seg_end,
+                        events,
+                        tab_power,
+                        original_power,
+                        current_power,
+                    )
+                    current_power = self._get_final_power(
+                        events, tab_power, original_power
+                    )
+                else:
+                    result.append(deepcopy(cmd))
+
+                last_pos = p2
+                accum_dist += seg_len
+            elif isinstance(cmd, MoveToCommand):
+                result.append(deepcopy(cmd))
+                if cmd.end:
+                    last_pos = cmd.end
+            else:
+                result.append(deepcopy(cmd))
+
+        return result
+
+    def _collect_events(
+        self,
+        seg_start: float,
+        seg_end: float,
+        tab_regions: List[Tuple[float, float]],
+    ) -> List[Tuple[float, _EventType]]:
+        events: List[Tuple[float, _EventType]] = []
+
+        for tab_start, tab_end in tab_regions:
+            if tab_end <= seg_start or tab_start >= seg_end:
+                continue
+            enter = max(tab_start, seg_start)
+            exit = min(tab_end, seg_end)
+            events.append((enter, _EventType.ENTER_TAB))
+            events.append((exit, _EventType.EXIT_TAB))
+
+        events.sort(key=lambda e: e[0])
+        return events
+
+    def _process_segment_events(
+        self,
+        result: List[Command],
+        cmd: LineToCommand,
+        p1: Point3D,
+        p2: Point3D,
+        seg_len: float,
+        seg_start: float,
+        seg_end: float,
+        events: List[Tuple[float, _EventType]],
+        tab_power: float,
+        original_power: float,
+        current_power: float,
+    ) -> None:
+        last_dist = seg_start
+
+        for event_dist, event_type in events:
+            if event_dist > last_dist + 1e-9:
+                t = (event_dist - seg_start) / seg_len
+                split_pt = self._interpolate_point(p1, p2, t)
+
+                new_cmd = LineToCommand(split_pt)
+                new_cmd.state = deepcopy(cmd.state) if cmd.state else None
+                result.append(new_cmd)
+
+            if event_type == _EventType.ENTER_TAB:
+                if current_power != tab_power:
+                    result.append(SetPowerCommand(tab_power))
+                    current_power = tab_power
+            else:
+                if current_power != original_power:
+                    result.append(SetPowerCommand(original_power))
+                    current_power = original_power
+
+            last_dist = event_dist
+
+        if seg_end > last_dist + 1e-9:
+            result.append(deepcopy(cmd))
+
+    def _interpolate_point(
+        self, p1: Point3D, p2: Point3D, t: float
+    ) -> Point3D:
+        return (
+            p1[0] + t * (p2[0] - p1[0]),
+            p1[1] + t * (p2[1] - p1[1]),
+            p1[2] + t * (p2[2] - p1[2])
+            if len(p1) > 2 and len(p2) > 2
+            else 0.0,
+        )
+
+    def _get_final_power(
+        self,
+        events: List[Tuple[float, _EventType]],
+        tab_power: float,
+        original_power: float,
+    ) -> float:
+        if not events:
+            return original_power
+
+        _, last_event_type = events[-1]
+        if last_event_type == _EventType.EXIT_TAB:
+            return original_power
+        return tab_power
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TabOpsTransformer":

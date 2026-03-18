@@ -443,6 +443,7 @@ def _apply_transformers(
     transform_weight: float,
     context: Optional[ProgressContext] = None,
     stock_geometries: Optional[List["Geometry"]] = None,
+    settings: Optional[dict] = None,
 ) -> None:
     """
     Apply enabled transformers to the operations in phases.
@@ -455,6 +456,7 @@ def _apply_transformers(
         transform_weight: Weight for transform phase in progress calculation.
         context: Optional ProgressContext for progress reporting.
         stock_geometries: Optional list of stock boundary geometries.
+        settings: Optional dictionary of step settings.
     """
     enabled_transformers = [t for t in transformers if t.enabled]
     if not enabled_transformers:
@@ -487,6 +489,7 @@ def _apply_transformers(
                 workpiece=workpiece,
                 context=None,
                 stock_geometries=stock_geometries,
+                settings=settings,
             )
             processed_count += 1
 
@@ -740,6 +743,7 @@ def compute_workpiece_artifact(
         transform_weight,
         context,
         stock_geometries,
+        settings,
     )
 
     if settings["air_assist"]:

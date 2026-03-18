@@ -99,6 +99,7 @@ class Smooth(OpsTransformer):
         workpiece: Optional[WorkPiece] = None,
         context: Optional[ProgressContext] = None,
         stock_geometries: Optional[List["Geometry"]] = None,
+        settings: Optional[Dict[str, Any]] = None,
     ):
         """
         Executes the smoothing transformation on a set of operations.
