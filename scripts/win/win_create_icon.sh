@@ -11,11 +11,20 @@ fi
 
 echo "--- Generating Windows Icon ($ICO_PATH) ---"
 
-# Convert paths to Windows format for ImageMagick (native Windows binary)
-WIN_SOURCE_PATH=$(cygpath -w "$SOURCE_PATH")
-WIN_ICO_PATH=$(cygpath -w "$ICO_PATH")
+# Debug: show original paths and working directory
+echo "DEBUG: PWD=$PWD"
+echo "DEBUG: SOURCE_PATH=$SOURCE_PATH"
+echo "DEBUG: ICO_PATH=$ICO_PATH"
 
-magick -density 300 -background transparent "$WIN_SOURCE_PATH" \
+# Convert to Windows-style paths with forward slashes
+WIN_SOURCE_PATH=$(cygpath -m "$SOURCE_PATH")
+WIN_ICO_PATH=$(cygpath -m "$ICO_PATH")
+
+echo "DEBUG: WIN_SOURCE_PATH=$WIN_SOURCE_PATH"
+echo "DEBUG: WIN_ICO_PATH=$WIN_ICO_PATH"
+
+# Disable MSYS2's automatic path conversion for magick.exe arguments
+MSYS_NO_PATHCONV=1 magick -density 300 -background transparent "$WIN_SOURCE_PATH" \
        -define icon:auto-resize=256,64,48,32,16 \
        "$WIN_ICO_PATH"
 
