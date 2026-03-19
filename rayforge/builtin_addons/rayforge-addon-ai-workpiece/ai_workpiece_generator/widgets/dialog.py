@@ -1,4 +1,5 @@
 import logging
+import tempfile
 from gettext import gettext as _
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -6,11 +7,12 @@ from typing import TYPE_CHECKING
 from gi.repository import Adw, GLib, Gdk, Gtk
 
 from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.workpiece import WorkPiece
 from rayforge.ui_gtk.shared.patched_dialog_window import PatchedDialogWindow
 
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
-    from ..controller import AISvgGeneratorController
+    from ..controller import AISvgGeneratorController, GenerationResult
 
 logger = logging.getLogger(__name__)
 
@@ -177,20 +179,18 @@ class AIWorkpieceGeneratorDialog(PatchedDialogWindow):
 
         self.set_generating(True)
 
-        def on_success(temp_path: Path) -> None:
+        def on_success(result: "GenerationResult") -> None:
             self._stop_pulse()
-            machine_dims = self._editor.machine_dimensions
-            position_mm = None
-            if machine_dims:
-                ws_width, ws_height = machine_dims
-                position_mm = (ws_width / 2, ws_height / 2)
 
-            self._editor.file.load_file_from_path(
-                filename=temp_path,
-                mime_type="image/svg+xml",
-                vectorization_spec=PassthroughSpec(trim_padding=0),
-                position_mm=position_mm,
-            )
+            if result.sketch:
+                self._add_sketch_workpiece(result.sketch)
+            elif result.svg_content:
+                self._import_svg_as_geometry(result.svg_content)
+            else:
+                self.set_generating(False)
+                self.set_error(_("No content generated."))
+                return
+
             self.close()
 
         def on_error(message: str) -> None:
@@ -203,6 +203,64 @@ class AIWorkpieceGeneratorDialog(PatchedDialogWindow):
 
         self._start_pulse()
         self._controller.generate(prompt, on_success, on_error)
+
+    def _add_sketch_workpiece(self, sketch) -> None:
+        """Add a sketch-based workpiece to the document."""
+        self._editor.doc.add_asset(sketch)
+
+        workpiece = WorkPiece.from_sketch(sketch)
+
+        machine_dims = self._editor.machine_dimensions
+        if machine_dims:
+            ws_width, ws_height = machine_dims
+            width, height = workpiece.natural_size
+            workpiece.pos = (
+                ws_width / 2 - width / 2,
+                ws_height / 2 - height / 2,
+            )
+
+        target_layer = self._editor.default_workpiece_layer
+        with self._editor.history_manager.transaction(
+            _("Add AI-Generated Workpiece")
+        ) as t:
+            from rayforge.core.undo import ListItemCommand
+
+            command = ListItemCommand(
+                owner_obj=target_layer,
+                item=workpiece,
+                undo_command="remove_child",
+                redo_command="add_child",
+                name=_("Add AI-Generated Workpiece"),
+            )
+            t.execute(command)
+
+        logger.info("Created editable sketch workpiece: %s", sketch.name)
+
+    def _import_svg_as_geometry(self, svg_content: str) -> None:
+        """Fall back to importing SVG as non-editable geometry."""
+        temp_file = tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".svg",
+            delete=False,
+            encoding="utf-8",
+        )
+        temp_file.write(svg_content)
+        temp_file.close()
+
+        machine_dims = self._editor.machine_dimensions
+        position_mm = None
+        if machine_dims:
+            ws_width, ws_height = machine_dims
+            position_mm = (ws_width / 2, ws_height / 2)
+
+        self._editor.file.load_file_from_path(
+            filename=Path(temp_file.name),
+            mime_type="image/svg+xml",
+            vectorization_spec=PassthroughSpec(trim_padding=0),
+            position_mm=position_mm,
+        )
+
+        logger.info("Imported AI-generated SVG as geometry (contains beziers)")
 
     def get_prompt(self) -> str:
         return self._buffer.get_text(
