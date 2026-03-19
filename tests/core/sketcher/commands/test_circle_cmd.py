@@ -260,8 +260,8 @@ def test_circle_undo_no_dangling_points():
     assert len(sketch.registry.entities) == initial_entity_count
 
 
-def test_circle_preview_get_dimensions_returns_radius():
-    """Test that dimension shows radius at edge."""
+def test_circle_preview_get_dimensions_returns_diameter():
+    """Test that dimension shows diameter at edge."""
     sketch = Sketch()
     state = CircleCommand.start_preview(
         sketch.registry, 0, 0, snapped_pid=None
@@ -271,13 +271,13 @@ def test_circle_preview_get_dimensions_returns_radius():
     dims = state.get_dimensions(sketch.registry)
 
     assert len(dims) == 1
-    assert dims[0].label == "R50.00"
+    assert dims[0].label == "Ø100.00"
     assert dims[0].leader_end is None
     assert dims[0].position == (50.0, 0.0)
 
 
-def test_circle_preview_get_dimensions_diagonal_radius():
-    """Test radius dimension for diagonal radius point."""
+def test_circle_preview_get_dimensions_diagonal_diameter():
+    """Test diameter dimension for diagonal radius point."""
     sketch = Sketch()
     state = CircleCommand.start_preview(
         sketch.registry, 0, 0, snapped_pid=None
@@ -287,8 +287,8 @@ def test_circle_preview_get_dimensions_diagonal_radius():
     dims = state.get_dimensions(sketch.registry)
 
     assert len(dims) == 1
-    expected_radius = math.hypot(30, 40)
-    assert dims[0].label == f"R{expected_radius:.2f}"
+    expected_diameter = 2 * math.hypot(30, 40)
+    assert dims[0].label == f"Ø{expected_diameter:.2f}"
     assert dims[0].leader_end is None
 
 

@@ -176,10 +176,10 @@ class CircleTool(SketchTool):
 
         registry = self.element.sketch.registry
         self._preview_state.set_diameter(registry, diameter)
-        self._finalize_shape(fixed_radius=diameter / 2.0)
+        self._finalize_shape(fixed_diameter=diameter)
         self.element.mark_dirty()
 
-    def _finalize_shape(self, fixed_radius: Optional[float] = None):
+    def _finalize_shape(self, fixed_diameter: Optional[float] = None):
         if self._preview_state is None:
             return
 
@@ -208,7 +208,7 @@ class CircleTool(SketchTool):
             (mx, my),
             end_pid=None,
             is_center_temp=center_temp,
-            fixed_radius=fixed_radius,
+            fixed_diameter=fixed_diameter,
         )
         self.element.execute_command(cmd)
         self.element.mark_dirty()
