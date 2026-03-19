@@ -5,6 +5,26 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.2.1
+
+### Added
+
+- Buttons to move to center, bottom/left and top/right of workpiece
+- Support for setting a "tab power"
+- Sketcher: allow entering dimensions while adding geometry
+
+### Changed
+
+- Better button layout in the control panel
+- Sketcher: circle now uses diameter constraint consistently, not sometimes radius
+- Laser dot now always drawn on top, not obscured by workpieces
+
+### Fixed
+
+- Builtin addon yaml files not included in .snap
+- Imprecise tab location while dragging the tab handle
+- Tabs not working on beziers
+
 ## 1.2
 
 ### Added

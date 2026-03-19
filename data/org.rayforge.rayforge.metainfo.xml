@@ -66,6 +66,29 @@
   </screenshots>
 
   <releases>
+    <release version="1.2.1" date="2026-03-19">
+      <description>
+        <p>Bug fix release</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Buttons to move to center, bottom/left and top/right of workpiece</li>
+          <li>Support for setting a "tab power"</li>
+          <li>Sketcher: allow entering dimensions while adding geometry</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Better button layout in the control panel</li>
+          <li>Sketcher: circle now uses diameter constraint consistently</li>
+          <li>Laser dot now always drawn on top, not obscured by workpieces</li>
+        </ul>
+        <p>Fixed:</p>
+        <ul>
+          <li>Builtin addon yaml files not included in .snap</li>
+          <li>Imprecise tab location while dragging the tab handle</li>
+          <li>Tabs not working on beziers</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.2" date="2026-03-18">
       <description>
         <p>Addon System Rewrite and AI Workpiece Generation</p>
