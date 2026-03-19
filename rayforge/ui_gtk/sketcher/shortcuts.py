@@ -16,14 +16,15 @@ from ...core.sketcher.constraints import (
     VerticalConstraint,
 )
 from .tools import (
-    LineTool,
     ArcTool,
+    BezierTool,
     CircleTool,
+    FillTool,
+    LineTool,
     RectangleTool,
     RoundedRectTool,
-    FillTool,
-    TextBoxTool,
     SelectTool,
+    TextBoxTool,
 )
 
 if TYPE_CHECKING:
@@ -33,13 +34,14 @@ if TYPE_CHECKING:
 
 
 ALL_TOOLS = [
-    SelectTool,
-    LineTool,
     ArcTool,
+    BezierTool,
     CircleTool,
+    FillTool,
+    LineTool,
     RectangleTool,
     RoundedRectTool,
-    FillTool,
+    SelectTool,
     TextBoxTool,
 ]
 
@@ -106,26 +108,28 @@ def get_shortcuts_dict() -> dict:
     Used by SketchEditor for key handling.
     """
     from .tools import (
-        LineTool,
         ArcTool,
+        BezierTool,
         CircleTool,
+        FillTool,
+        LineTool,
         RectangleTool,
         RoundedRectTool,
-        FillTool,
-        TextBoxTool,
         SelectTool,
+        TextBoxTool,
     )
 
     shortcuts = {}
 
     tool_map = {
-        SelectTool: "select",
-        LineTool: "line",
         ArcTool: "arc",
+        BezierTool: "bezier",
         CircleTool: "circle",
+        FillTool: "fill",
+        LineTool: "line",
         RectangleTool: "rectangle",
         RoundedRectTool: "rounded_rect",
-        FillTool: "fill",
+        SelectTool: "select",
         TextBoxTool: "text_box",
     }
 

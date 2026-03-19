@@ -34,6 +34,7 @@ from ...core.sketcher.entities import Arc, Circle, Entity, Line, Point
 from ...core.sketcher.selection import SketchSelection
 from .tools import (
     ArcTool,
+    BezierTool,
     CircleTool,
     FillTool,
     LineTool,
@@ -97,6 +98,7 @@ class SketchElement(CanvasElement):
             "line": LineTool(self),
             "arc": ArcTool(self),
             "circle": CircleTool(self),
+            "bezier": BezierTool(self),
             "fill": FillTool(self),
             "rounded_rect": RoundedRectTool(self),
             "rectangle": RectangleTool(self),

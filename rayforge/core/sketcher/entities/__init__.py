@@ -1,15 +1,17 @@
-from .point import Point
+from .arc import Arc
+from .bezier import Bezier
+from .circle import Circle
 from .entity import Entity
 from .line import Line
-from .arc import Arc
-from .circle import Circle
+from .point import Point
 from .text_box import TextBoxEntity
 
 __all__ = [
-    "Point",
+    "Arc",
+    "Bezier",
+    "Circle",
     "Entity",
     "Line",
-    "Arc",
-    "Circle",
+    "Point",
     "TextBoxEntity",
 ]

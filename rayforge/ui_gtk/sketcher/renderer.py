@@ -13,6 +13,7 @@ from ...core.sketcher.constraints import (
 )
 from ...core.sketcher.entities import (
     Arc,
+    Bezier,
     Circle,
     Entity,
     Line,
@@ -178,6 +179,8 @@ class SketchRenderer:
                 has_path = self._define_line_path(ctx, entity)
             elif isinstance(entity, Arc):
                 has_path = self._define_arc_path(ctx, entity)
+            elif isinstance(entity, Bezier):
+                has_path = self._define_bezier_path(ctx, entity)
             elif isinstance(entity, Circle):
                 has_path = self._define_circle_path(ctx, entity)
             elif isinstance(entity, TextBoxEntity):
@@ -310,6 +313,19 @@ class SketchRenderer:
         ctx.arc(center.x, center.y, radius, 0, 2 * math.pi)
         return True
 
+    def _define_bezier_path(self, ctx: cairo.Context, bezier: Bezier) -> bool:
+        """Defines the path for a bezier curve without stroking."""
+        start = self._safe_get_point(bezier.start_idx)
+        cp1 = self._safe_get_point(bezier.cp1_idx)
+        cp2 = self._safe_get_point(bezier.cp2_idx)
+        end = self._safe_get_point(bezier.end_idx)
+        if not (start and cp1 and cp2 and end):
+            return False
+
+        ctx.move_to(start.x, start.y)
+        ctx.curve_to(cp1.x, cp1.y, cp2.x, cp2.y, end.x, end.y)
+        return True
+
     def _define_text_box_path(
         self, ctx: cairo.Context, entity: TextBoxEntity
     ) -> bool:
@@ -412,6 +428,11 @@ class SketchRenderer:
                 point_counts[entity.start_idx] += 1
                 point_counts[entity.end_idx] += 1
                 point_counts[entity.center_idx] += 1
+            elif isinstance(entity, Bezier):
+                point_counts[entity.start_idx] += 1
+                point_counts[entity.cp1_idx] += 1
+                point_counts[entity.cp2_idx] += 1
+                point_counts[entity.end_idx] += 1
             elif isinstance(entity, Circle):
                 point_counts[entity.center_idx] += 1
                 point_counts[entity.radius_pt_idx] += 1
@@ -482,6 +503,11 @@ class SketchRenderer:
                 entity_points.add(ent.start_idx)
                 entity_points.add(ent.end_idx)
                 entity_points.add(ent.center_idx)
+            elif isinstance(ent, Bezier):
+                entity_points.add(ent.start_idx)
+                entity_points.add(ent.cp1_idx)
+                entity_points.add(ent.cp2_idx)
+                entity_points.add(ent.end_idx)
             elif isinstance(ent, Circle):
                 entity_points.add(ent.center_idx)
                 entity_points.add(ent.radius_pt_idx)
