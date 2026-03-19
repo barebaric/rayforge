@@ -51,6 +51,42 @@ def test_arc_get_point_ids(registry):
     assert set(arc.get_point_ids()) == {p1, p2, p3}
 
 
+def test_arc_get_junction_point_ids(registry):
+    """Tests that an arc correctly reports its junction point IDs."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(5, 5)
+    arc = registry.get_entity(registry.add_arc(p1, p2, p3))
+    assert set(arc.get_junction_point_ids()) == {p1, p2, p3}
+
+
+def test_arc_hit_test(registry):
+    """Tests Arc.hit_test method."""
+    center = registry.add_point(0, 0)
+    start = registry.add_point(10, 0)
+    end = registry.add_point(0, 10)
+    arc = registry.get_entity(registry.add_arc(start, end, center, cw=False))
+    threshold = 2.0
+
+    # Point on the arc (radius 10, 45 degrees)
+    assert arc.hit_test(10, 0, threshold, registry) is True
+    assert arc.hit_test(0, 10, threshold, registry) is True
+    angle_45 = 10 * math.sqrt(2) / 2
+    assert arc.hit_test(angle_45, angle_45, threshold, registry) is True
+
+    # Point within threshold distance
+    assert arc.hit_test(10 + 1, 0, threshold, registry) is True
+    assert arc.hit_test(10 - 1, 0, threshold, registry) is True
+
+    # Point outside threshold
+    assert arc.hit_test(15, 0, threshold, registry) is False
+    assert arc.hit_test(5, 0, threshold, registry) is False
+
+    # Point outside arc sweep (CW arc would include this, CCW does not)
+    assert arc.hit_test(-10, 0, threshold, registry) is False
+    assert arc.hit_test(0, -10, threshold, registry) is False
+
+
 def test_arc_update_constrained_status(registry):
     """Test Arc.update_constrained_status logic."""
     s = registry.add_point(10, 0)

@@ -40,6 +40,37 @@ def test_circle_get_point_ids(registry):
     assert set(circle.get_point_ids()) == {p1, p2}
 
 
+def test_circle_get_junction_point_ids(registry):
+    """Tests that a circle correctly reports its junction point IDs."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    circle = registry.get_entity(registry.add_circle(p1, p2))
+    assert set(circle.get_junction_point_ids()) == {p1, p2}
+
+
+def test_circle_hit_test(registry):
+    """Tests Circle.hit_test method."""
+    center = registry.add_point(0, 0)
+    radius_pt = registry.add_point(10, 0)
+    circle = registry.get_entity(registry.add_circle(center, radius_pt))
+    threshold = 2.0
+
+    # Point on the circle (radius 10)
+    assert circle.hit_test(10, 0, threshold, registry) is True
+    assert circle.hit_test(-10, 0, threshold, registry) is True
+    assert circle.hit_test(0, 10, threshold, registry) is True
+    assert circle.hit_test(0, -10, threshold, registry) is True
+
+    # Point within threshold distance
+    assert circle.hit_test(11, 0, threshold, registry) is True
+    assert circle.hit_test(9, 0, threshold, registry) is True
+
+    # Point outside threshold
+    assert circle.hit_test(15, 0, threshold, registry) is False
+    assert circle.hit_test(5, 0, threshold, registry) is False
+    assert circle.hit_test(0, 0, threshold, registry) is False
+
+
 class MockRadiusConstraint:
     """Mock constraint class for testing circle status updates."""
 

@@ -24,6 +24,28 @@ class Circle(Entity):
     def get_point_ids(self) -> List[int]:
         return [self.center_idx, self.radius_pt_idx]
 
+    def get_junction_point_ids(self) -> List[int]:
+        return [self.center_idx, self.radius_pt_idx]
+
+    def hit_test(
+        self,
+        mx: float,
+        my: float,
+        threshold: float,
+        registry: "EntityRegistry",
+    ) -> bool:
+        center = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        if not (center and radius_pt):
+            return False
+
+        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+        if radius == 0.0:
+            return False
+
+        dist_mouse = math.hypot(mx - center.x, my - center.y)
+        return abs(dist_mouse - radius) < threshold
+
     def get_ignorable_unconstrained_points(self) -> List[int]:
         """
         If the circle is geometrically constrained, the radius point (which

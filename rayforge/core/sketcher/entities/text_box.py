@@ -34,6 +34,34 @@ class TextBoxEntity(Entity):
     def get_point_ids(self) -> List[int]:
         return [self.origin_id, self.width_id, self.height_id]
 
+    def get_junction_point_ids(self) -> List[int]:
+        return []
+
+    def hit_test(
+        self,
+        mx: float,
+        my: float,
+        threshold: float,
+        registry: "EntityRegistry",
+    ) -> bool:
+        p_origin = registry.get_point(self.origin_id)
+        p_width = registry.get_point(self.width_id)
+        p_height = registry.get_point(self.height_id)
+        if not (p_origin and p_width and p_height):
+            return False
+
+        p4_x = p_width.x + p_height.x - p_origin.x
+        p4_y = p_width.y + p_height.y - p_origin.y
+
+        polygon = [
+            (p_origin.x, p_origin.y),
+            (p_width.x, p_width.y),
+            (p4_x, p4_y),
+            (p_height.x, p_height.y),
+        ]
+
+        return primitives.is_point_in_polygon((mx, my), polygon)
+
     def get_all_frame_point_ids(self, registry: "EntityRegistry") -> List[int]:
         """Returns all 4 corner points of the text box frame."""
         ids = [self.origin_id, self.width_id, self.height_id]

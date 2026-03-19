@@ -1,6 +1,9 @@
 from typing import List, Dict, Any, Sequence, TYPE_CHECKING
-from ...geo import primitives, Rect
-from ...geo.geometry import Geometry
+from ...geo import Geometry, Rect
+from ...geo.primitives import (
+    find_closest_point_on_line_segment,
+    line_segment_intersects_rect,
+)
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -19,6 +22,25 @@ class Line(Entity):
 
     def get_point_ids(self) -> List[int]:
         return [self.p1_idx, self.p2_idx]
+
+    def get_junction_point_ids(self) -> List[int]:
+        return [self.p1_idx, self.p2_idx]
+
+    def hit_test(
+        self,
+        mx: float,
+        my: float,
+        threshold: float,
+        registry: "EntityRegistry",
+    ) -> bool:
+        p1 = registry.get_point(self.p1_idx)
+        p2 = registry.get_point(self.p2_idx)
+        if not (p1 and p2):
+            return False
+        _, _, dist_sq = find_closest_point_on_line_segment(
+            (p1.x, p1.y), (p2.x, p2.y), mx, my
+        )
+        return dist_sq < threshold**2
 
     def update_constrained_status(
         self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
@@ -43,9 +65,7 @@ class Line(Entity):
     ) -> bool:
         p1 = registry.get_point(self.p1_idx)
         p2 = registry.get_point(self.p2_idx)
-        return primitives.line_segment_intersects_rect(
-            p1.pos(), p2.pos(), rect
-        )
+        return line_segment_intersects_rect(p1.pos(), p2.pos(), rect)
 
     def to_geometry(self, registry: "EntityRegistry") -> Geometry:
         """Converts the line to a Geometry object."""
