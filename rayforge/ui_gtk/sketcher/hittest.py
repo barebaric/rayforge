@@ -13,6 +13,7 @@ from ...core.sketcher.constraints import (
 )
 from ...core.sketcher.entities import (
     Arc,
+    Bezier,
     Circle,
     Entity,
     Line,
@@ -25,6 +26,28 @@ class SketchHitTester:
 
     def __init__(self, snap_distance: float = 12.0):
         self.snap_distance = snap_distance
+
+    def _evaluate_bezier(
+        self,
+        x0: float,
+        y0: float,
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+        x3: float,
+        y3: float,
+        t: float,
+    ) -> Tuple[float, float]:
+        mt = 1 - t
+        mt2 = mt * mt
+        mt3 = mt2 * mt
+        t2 = t * t
+        t3 = t2 * t
+
+        x = mt3 * x0 + 3 * mt2 * t * x1 + 3 * mt * t2 * x2 + t3 * x3
+        y = mt3 * y0 + 3 * mt2 * t * y1 + 3 * mt * t2 * y2 + t3 * y3
+        return (x, y)
 
     def screen_to_model(
         self, wx: float, wy: float, element: Any
@@ -309,6 +332,11 @@ class SketchHitTester:
                 point_counts[entity.start_idx] += 1
                 point_counts[entity.end_idx] += 1
                 point_counts[entity.center_idx] += 1
+            elif isinstance(entity, Bezier):
+                point_counts[entity.start_idx] += 1
+                point_counts[entity.cp1_idx] += 1
+                point_counts[entity.cp2_idx] += 1
+                point_counts[entity.end_idx] += 1
             elif isinstance(entity, Circle):
                 point_counts[entity.center_idx] += 1
                 point_counts[entity.radius_pt_idx] += 1
@@ -425,6 +453,51 @@ class SketchHitTester:
                             angle_mouse, element.sketch.registry
                         ):
                             return entity
+
+            elif isinstance(entity, Bezier):
+                start = safe_get(entity.start_idx)
+                cp1 = safe_get(entity.cp1_idx)
+                cp2 = safe_get(entity.cp2_idx)
+                end = safe_get(entity.end_idx)
+                if not (start and cp1 and cp2 and end):
+                    continue
+
+                num_samples = 20
+                min_dist_sq = float("inf")
+                for i in range(num_samples):
+                    t1 = i / num_samples
+                    t2 = (i + 1) / num_samples
+                    p1 = self._evaluate_bezier(
+                        start.x,
+                        start.y,
+                        cp1.x,
+                        cp1.y,
+                        cp2.x,
+                        cp2.y,
+                        end.x,
+                        end.y,
+                        t1,
+                    )
+                    p2 = self._evaluate_bezier(
+                        start.x,
+                        start.y,
+                        cp1.x,
+                        cp1.y,
+                        cp2.x,
+                        cp2.y,
+                        end.x,
+                        end.y,
+                        t2,
+                    )
+                    _, _, dist_sq = find_closest_point_on_line_segment(
+                        p1, p2, mx, my
+                    )
+                    if dist_sq < min_dist_sq:
+                        min_dist_sq = dist_sq
+
+                if min_dist_sq < threshold**2:
+                    return entity
+
             elif isinstance(entity, TextBoxEntity):
                 p_origin = safe_get(entity.origin_id)
                 p_width = safe_get(entity.width_id)

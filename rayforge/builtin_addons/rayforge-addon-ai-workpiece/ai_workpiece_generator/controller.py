@@ -9,7 +9,6 @@ from svgelements import SVG, Path as SvgPath
 from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
 from rayforge.core.sketcher import Sketch
-from rayforge.core.sketcher.geometry_import_error import GeometryImportError
 from rayforge.image.svg.svgutil import PPI
 from rayforge.shared.tasker import task_mgr
 from .generator import generate_svg
@@ -225,10 +224,6 @@ class AISvgGeneratorController:
                             "Successfully converted AI-generated SVG to "
                             "editable sketch"
                         )
-                except GeometryImportError as e:
-                    logger.info(
-                        "SVG contains beziers, falling back to geometry: %s", e
-                    )
                 except Exception as e:
                     logger.warning(
                         "Failed to convert SVG to sketch: %s", e, exc_info=True

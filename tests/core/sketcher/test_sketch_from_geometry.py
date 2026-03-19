@@ -1,8 +1,7 @@
 import pytest
 from rayforge.core.geo import Geometry
 from rayforge.core.sketcher import Sketch
-from rayforge.core.sketcher.geometry_import_error import GeometryImportError
-from rayforge.core.sketcher.entities import Line, Arc
+from rayforge.core.sketcher.entities import Line, Arc, Bezier
 
 
 class TestSketchFromGeometry:
@@ -72,17 +71,57 @@ class TestSketchFromGeometry:
         assert isinstance(arc, Arc)
         assert arc.clockwise is True
 
-    def test_from_geometry_with_bezier_raises_error(self):
-        """Converting geometry with bezier curves should raise
-        GeometryImportError."""
+    def test_from_geometry_with_bezier(self):
+        """Converting a geometry with a bezier curve."""
         geo = Geometry()
         geo.move_to(0, 0)
         geo.bezier_to(10, 10, 3, 3, 7, 7)
 
-        with pytest.raises(GeometryImportError) as exc_info:
-            Sketch.from_geometry(geo)
+        sketch = Sketch.from_geometry(geo)
 
-        assert "bezier" in str(exc_info.value).lower()
+        assert len(sketch.registry.entities) == 1
+        bezier = sketch.registry.entities[0]
+        assert isinstance(bezier, Bezier)
+
+    def test_from_geometry_with_multiple_beziers(self):
+        """Converting geometry with multiple beziers."""
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.bezier_to(10, 10, 3, 3, 7, 7)
+        geo.bezier_to(20, 0, 13, 13, 17, 7)
+
+        sketch = Sketch.from_geometry(geo)
+
+        assert len(sketch.registry.entities) == 2
+        for entity in sketch.registry.entities:
+            assert isinstance(entity, Bezier)
+
+    def test_from_geometry_mixed_with_bezier(self):
+        """Converting mixed geometry with bezier."""
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(10, 0)
+        geo.bezier_to(20, 10, 13, 3, 17, 7)
+
+        sketch = Sketch.from_geometry(geo)
+
+        assert len(sketch.registry.entities) == 2
+        assert isinstance(sketch.registry.entities[0], Line)
+        assert isinstance(sketch.registry.entities[1], Bezier)
+
+    def test_from_geometry_bezier_roundtrip(self):
+        """Test bezier roundtrip conversion."""
+        original_geo = Geometry()
+        original_geo.move_to(0, 0)
+        original_geo.bezier_to(10, 10, 3, 3, 7, 7)
+
+        sketch = Sketch.from_geometry(original_geo)
+        result_geo = sketch.to_geometry()
+
+        original_rect = original_geo.rect()
+        result_rect = result_geo.rect()
+
+        assert original_rect == pytest.approx(result_rect, rel=1e-6)
 
     def test_from_geometry_point_deduplication(self):
         """Points at the same coordinates should be deduplicated."""
@@ -174,23 +213,3 @@ class TestSketchFromGeometry:
         arc_ccw = sketch_ccw.registry.entities[0]
         assert isinstance(arc_ccw, Arc)
         assert arc_ccw.clockwise is False
-
-    def test_from_geometry_multiple_beziers_raises_error(self):
-        """Multiple beziers should still raise error."""
-        geo = Geometry()
-        geo.move_to(0, 0)
-        geo.bezier_to(10, 10, 3, 3, 7, 7)
-        geo.bezier_to(20, 0, 13, 13, 17, 7)
-
-        with pytest.raises(GeometryImportError):
-            Sketch.from_geometry(geo)
-
-    def test_from_geometry_mixed_with_bezier_raises_error(self):
-        """Mixed geometry with bezier should raise error."""
-        geo = Geometry()
-        geo.move_to(0, 0)
-        geo.line_to(10, 0)
-        geo.bezier_to(20, 10, 13, 3, 17, 7)
-
-        with pytest.raises(GeometryImportError):
-            Sketch.from_geometry(geo)

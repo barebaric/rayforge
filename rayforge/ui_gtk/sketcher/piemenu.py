@@ -36,34 +36,35 @@ class SketchPieMenu(PieMenu):
     """
 
     _MENU_ITEMS = {
-        "select": {
-            "icon": "sketch-select-symbolic",
-            "label": _("Select"),
-            "action": "set_tool:select",
-            "handler": "_on_tool_clicked",
-        },
-        "line": {
-            "icon": "sketch-line-symbolic",
-            "label": _("Line"),
-            "action": "set_tool:line",
-            "handler": "_on_tool_clicked",
-        },
+        # Geometry Creation Tools
         "arc": {
             "icon": "sketch-arc-symbolic",
             "label": _("Arc"),
             "action": "set_tool:arc",
             "handler": "_on_tool_clicked",
         },
-        "text_box": {
-            "icon": "sketch-text-symbolic",
-            "label": _("Text Box"),
-            "action": "set_tool:text_box",
+        "bezier": {
+            "icon": "sketch-bezier-symbolic",
+            "label": _("Bezier"),
+            "action": "set_tool:bezier",
             "handler": "_on_tool_clicked",
         },
         "circle": {
             "icon": "sketch-circle-symbolic",
             "label": _("Circle"),
             "action": "set_tool:circle",
+            "handler": "_on_tool_clicked",
+        },
+        "fill": {
+            "icon": "sketch-fill-symbolic",
+            "label": _("Fill"),
+            "action": "set_tool:fill",
+            "handler": "_on_tool_clicked",
+        },
+        "line": {
+            "icon": "sketch-line-symbolic",
+            "label": _("Line"),
+            "action": "set_tool:line",
             "handler": "_on_tool_clicked",
         },
         "rectangle": {
@@ -78,28 +79,23 @@ class SketchPieMenu(PieMenu):
             "action": "set_tool:rounded_rect",
             "handler": "_on_tool_clicked",
         },
-        "fill": {
-            "icon": "sketch-fill-symbolic",
-            "label": _("Fill"),
-            "action": "set_tool:fill",
+        "select": {
+            "icon": "sketch-select-symbolic",
+            "label": _("Select"),
+            "action": "set_tool:select",
             "handler": "_on_tool_clicked",
         },
-        "construction": {
-            "icon": "sketch-construction-symbolic",
-            "label": _("Construction"),
-            "action": "toggle_construction_on_selection",
-            "handler": "_on_action_clicked",
+        "text_box": {
+            "icon": "sketch-text-symbolic",
+            "label": _("Text Box"),
+            "action": "set_tool:text_box",
+            "handler": "_on_tool_clicked",
         },
+        # Geometry Change Tools
         "chamfer": {
             "icon": "sketch-chamfer-symbolic",
             "label": _("Chamfer"),
             "action": "add_chamfer_action",
-            "handler": "_on_action_clicked",
-        },
-        "fillet": {
-            "icon": "sketch-fillet-symbolic",
-            "label": _("Fillet"),
-            "action": "add_fillet_action",
             "handler": "_on_action_clicked",
         },
         "delete": {
@@ -108,40 +104,17 @@ class SketchPieMenu(PieMenu):
             "action": None,
             "handler": "_on_action_clicked",
         },
-        "dist": {
-            "icon": "sketch-distance-symbolic",
-            "constraint_class": DistanceConstraint,
-            "action": "add_distance_constraint",
-            "handler": "_on_constraint_clicked",
+        "fillet": {
+            "icon": "sketch-fillet-symbolic",
+            "label": _("Fillet"),
+            "action": "add_fillet_action",
+            "handler": "_on_action_clicked",
         },
-        "horiz": {
-            "icon": "sketch-constrain-horizontal-symbolic",
-            "constraint_class": HorizontalConstraint,
-            "action": "add_horizontal_constraint",
-            "handler": "_on_constraint_clicked",
-        },
-        "vert": {
-            "icon": "sketch-constrain-vertical-symbolic",
-            "constraint_class": VerticalConstraint,
-            "action": "add_vertical_constraint",
-            "handler": "_on_constraint_clicked",
-        },
-        "radius": {
-            "icon": "sketch-radius-symbolic",
-            "constraint_class": RadiusConstraint,
-            "action": "add_radius_constraint",
-            "handler": "_on_constraint_clicked",
-        },
-        "diameter": {
-            "icon": "sketch-diameter-symbolic",
-            "constraint_class": DiameterConstraint,
-            "action": "add_diameter_constraint",
-            "handler": "_on_constraint_clicked",
-        },
-        "perp": {
-            "icon": "sketch-constrain-perpendicular-symbolic",
-            "constraint_class": PerpendicularConstraint,
-            "action": "add_perpendicular",
+        # Constraint Tools
+        "align": {
+            "icon": "sketch-constrain-point-symbolic",
+            "constraint_class": CoincidentConstraint,
+            "action": "add_alignment_constraint",
             "handler": "_on_constraint_clicked",
         },
         "angle": {
@@ -150,16 +123,28 @@ class SketchPieMenu(PieMenu):
             "action": "add_angle_constraint",
             "handler": "_on_constraint_clicked",
         },
-        "tangent": {
-            "icon": "sketch-constrain-tangential-symbolic",
-            "constraint_class": TangentConstraint,
-            "action": "add_tangent",
+        "aspect_ratio": {
+            "icon": "sketch-constrain-aspect-symbolic",
+            "constraint_class": AspectRatioConstraint,
+            "action": "add_aspect_ratio_constraint",
             "handler": "_on_constraint_clicked",
         },
-        "align": {
-            "icon": "sketch-constrain-point-symbolic",
-            "constraint_class": CoincidentConstraint,
-            "action": "add_alignment_constraint",
+        "construction": {
+            "icon": "sketch-construction-symbolic",
+            "label": _("Construction"),
+            "action": "toggle_construction_on_selection",
+            "handler": "_on_action_clicked",
+        },
+        "diameter": {
+            "icon": "sketch-diameter-symbolic",
+            "constraint_class": DiameterConstraint,
+            "action": "add_diameter_constraint",
+            "handler": "_on_constraint_clicked",
+        },
+        "dist": {
+            "icon": "sketch-distance-symbolic",
+            "constraint_class": DistanceConstraint,
+            "action": "add_distance_constraint",
             "handler": "_on_constraint_clicked",
         },
         "equal": {
@@ -168,16 +153,40 @@ class SketchPieMenu(PieMenu):
             "action": "add_equal_constraint",
             "handler": "_on_constraint_clicked",
         },
+        "horiz": {
+            "icon": "sketch-constrain-horizontal-symbolic",
+            "constraint_class": HorizontalConstraint,
+            "action": "add_horizontal_constraint",
+            "handler": "_on_constraint_clicked",
+        },
+        "perp": {
+            "icon": "sketch-constrain-perpendicular-symbolic",
+            "constraint_class": PerpendicularConstraint,
+            "action": "add_perpendicular",
+            "handler": "_on_constraint_clicked",
+        },
+        "radius": {
+            "icon": "sketch-radius-symbolic",
+            "constraint_class": RadiusConstraint,
+            "action": "add_radius_constraint",
+            "handler": "_on_constraint_clicked",
+        },
         "symmetry": {
             "icon": "sketch-constrain-symmetric-symbolic",
             "constraint_class": SymmetryConstraint,
             "action": "add_symmetry_constraint",
             "handler": "_on_constraint_clicked",
         },
-        "aspect_ratio": {
-            "icon": "sketch-constrain-aspect-symbolic",
-            "constraint_class": AspectRatioConstraint,
-            "action": "add_aspect_ratio_constraint",
+        "tangent": {
+            "icon": "sketch-constrain-tangential-symbolic",
+            "constraint_class": TangentConstraint,
+            "action": "add_tangent",
+            "handler": "_on_constraint_clicked",
+        },
+        "vert": {
+            "icon": "sketch-constrain-vertical-symbolic",
+            "constraint_class": VerticalConstraint,
+            "action": "add_vertical_constraint",
             "handler": "_on_constraint_clicked",
         },
     }
@@ -277,6 +286,7 @@ class SketchPieMenu(PieMenu):
                     "line",
                     "arc",
                     "circle",
+                    "bezier",
                     "rounded_rect",
                     "rectangle",
                     "fill",

@@ -1,16 +1,18 @@
 from typing import List, Dict, Optional, Any, Set
 from ..geo.font_config import FontConfig
-from .entities.point import Point
+from .entities.arc import Arc
+from .entities.bezier import Bezier
+from .entities.circle import Circle
 from .entities.entity import Entity
 from .entities.line import Line
-from .entities.arc import Arc
-from .entities.circle import Circle
+from .entities.point import Point
 from .entities.text_box import TextBoxEntity
 
 _ENTITY_CLASSES = {
-    "line": Line,
     "arc": Arc,
+    "bezier": Bezier,
     "circle": Circle,
+    "line": Line,
     "text_box": TextBoxEntity,
 }
 
@@ -51,22 +53,6 @@ class EntityRegistry:
         new_reg._id_counter = data.get("id_counter", 0)
         return new_reg
 
-    def add_point(self, x: float, y: float, fixed: bool = False) -> int:
-        pid = self._id_counter
-        self.points.append(Point(pid, x, y, fixed))
-        self._id_counter += 1
-        return pid
-
-    def add_line(
-        self, p1_idx: int, p2_idx: int, construction: bool = False
-    ) -> int:
-        eid = self._id_counter
-        entity = Line(eid, p1_idx, p2_idx, construction=construction)
-        self.entities.append(entity)
-        self._entity_map[eid] = entity
-        self._id_counter += 1
-        return eid
-
     def add_arc(
         self,
         start: int,
@@ -84,6 +70,28 @@ class EntityRegistry:
         self._id_counter += 1
         return eid
 
+    def add_bezier(
+        self,
+        start_idx: int,
+        cp1_idx: int,
+        cp2_idx: int,
+        end_idx: int,
+        construction: bool = False,
+    ) -> int:
+        eid = self._id_counter
+        entity = Bezier(
+            eid,
+            start_idx,
+            cp1_idx,
+            cp2_idx,
+            end_idx,
+            construction=construction,
+        )
+        self.entities.append(entity)
+        self._entity_map[eid] = entity
+        self._id_counter += 1
+        return eid
+
     def add_circle(
         self, center_idx: int, radius_pt_idx: int, construction: bool = False
     ) -> int:
@@ -95,6 +103,22 @@ class EntityRegistry:
         self._entity_map[eid] = entity
         self._id_counter += 1
         return eid
+
+    def add_line(
+        self, p1_idx: int, p2_idx: int, construction: bool = False
+    ) -> int:
+        eid = self._id_counter
+        entity = Line(eid, p1_idx, p2_idx, construction=construction)
+        self.entities.append(entity)
+        self._entity_map[eid] = entity
+        self._id_counter += 1
+        return eid
+
+    def add_point(self, x: float, y: float, fixed: bool = False) -> int:
+        pid = self._id_counter
+        self.points.append(Point(pid, x, y, fixed))
+        self._id_counter += 1
+        return pid
 
     def add_text_box(
         self,

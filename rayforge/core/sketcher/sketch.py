@@ -19,6 +19,10 @@ from ..geo.constants import (
     COL_I,
     COL_J,
     COL_CW,
+    COL_C1X,
+    COL_C1Y,
+    COL_C2X,
+    COL_C2Y,
 )
 from ..varset import VarSet
 from .constraints import (
@@ -42,8 +46,7 @@ from .constraints import (
     VerticalConstraint,
 )
 from .constraints.drag import DragConstraint
-from .entities import Line, Arc, Circle, Entity
-from .geometry_import_error import GeometryImportError
+from .entities import Line, Arc, Circle, Bezier, Entity
 from .params import ParameterContext
 from .registry import EntityRegistry
 from .solver import Solver
@@ -332,32 +335,19 @@ class Sketch(IAsset):
         """
         Creates a Sketch from a Geometry object.
 
-        The geometry must contain only lines and arcs. Beziers are not
-        supported and will raise GeometryImportError. No linearization
-        is performed.
+        The geometry can contain lines, arcs, and bezier curves.
 
         Args:
             geometry: The Geometry object to convert.
 
         Returns:
             A new Sketch instance with entities created from the geometry.
-
-        Raises:
-            GeometryImportError: If the geometry contains bezier curves.
         """
         sketch = cls()
         data = geometry.data
 
         if data is None or len(data) == 0:
             return sketch
-
-        for row in data:
-            cmd_type = row[COL_TYPE]
-            if cmd_type == CMD_TYPE_BEZIER:
-                raise GeometryImportError(
-                    "Cannot convert geometry containing bezier curves to "
-                    "sketch. Use fit_arcs() to convert beziers to arcs first."
-                )
 
         point_map: Dict[Tuple[float, float], int] = {}
 
@@ -401,6 +391,22 @@ class Sketch(IAsset):
                 )
                 current_pid = end_pid
                 current_x, current_y = end_x, end_y
+            elif cmd_type == CMD_TYPE_BEZIER:
+                if current_pid is None:
+                    current_pid = get_or_add_point(current_x, current_y)
+
+                cp1_x = row[COL_C1X]
+                cp1_y = row[COL_C1Y]
+                cp2_x = row[COL_C2X]
+                cp2_y = row[COL_C2Y]
+
+                cp1_pid = get_or_add_point(cp1_x, cp1_y)
+                cp2_pid = get_or_add_point(cp2_x, cp2_y)
+                end_pid = get_or_add_point(end_x, end_y)
+
+                sketch.add_bezier(current_pid, cp1_pid, cp2_pid, end_pid)
+                current_pid = end_pid
+                current_x, current_y = end_x, end_y
 
         return sketch
 
@@ -428,6 +434,18 @@ class Sketch(IAsset):
         return self.registry.add_arc(
             start, end, center, clockwise, construction
         )
+
+    def add_bezier(
+        self,
+        start: int,
+        cp1: int,
+        cp2: int,
+        end: int,
+        construction: bool = False,
+    ) -> int:
+        """Adds a cubic bezier curve defined by start, two control points,
+        and end point IDs."""
+        return self.registry.add_bezier(start, cp1, cp2, end, construction)
 
     def add_circle(
         self, center: int, radius_pt: int, construction: bool = False
@@ -1183,7 +1201,7 @@ class Sketch(IAsset):
         for e in self.registry.entities:
             if e.construction:
                 continue
-            if isinstance(e, (Line, Arc)):
+            if isinstance(e, (Line, Arc, Bezier)):
                 chainable.append(e)
             else:
                 standalone.append(e)
@@ -1227,6 +1245,8 @@ class Sketch(IAsset):
                 u, v = e.p1_idx, e.p2_idx
             elif isinstance(e, Arc):
                 u, v = e.start_idx, e.end_idx
+            elif isinstance(e, Bezier):
+                u, v = e.start_idx, e.end_idx
             else:
                 continue
 
@@ -1243,6 +1263,8 @@ class Sketch(IAsset):
             if isinstance(ent, Line):
                 return find(ent.p1_idx), find(ent.p2_idx)
             if isinstance(ent, Arc):
+                return find(ent.start_idx), find(ent.end_idx)
+            if isinstance(ent, Bezier):
                 return find(ent.start_idx), find(ent.end_idx)
             return -1, -1
 
@@ -1309,7 +1331,9 @@ class Sketch(IAsset):
             first_e, first_fwd = final_chain[0]
             if isinstance(first_e, Line):
                 s_id = first_e.p1_idx if first_fwd else first_e.p2_idx
-            else:  # Arc
+            elif isinstance(first_e, Arc):
+                s_id = first_e.start_idx if first_fwd else first_e.end_idx
+            else:  # Bezier
                 s_id = first_e.start_idx if first_fwd else first_e.end_idx
 
             start_pt = self.registry.get_point(s_id)

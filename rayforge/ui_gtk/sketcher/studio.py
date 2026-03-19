@@ -212,13 +212,14 @@ class SketchStudio(Gtk.Box):
 
         # Tool selection actions
         tool_map = {
-            "tool_select": "select",
-            "tool_line": "line",
-            "tool_circle": "circle",
             "tool_arc": "arc",
+            "tool_bezier": "bezier",
+            "tool_circle": "circle",
+            "tool_fill": "fill",
+            "tool_line": "line",
             "tool_rectangle": "rectangle",
             "tool_rounded_rect": "rounded_rect",
-            "tool_fill": "fill",
+            "tool_select": "select",
         }
         for action_name, tool_id in tool_map.items():
             action = Gio.SimpleAction.new(action_name, None)

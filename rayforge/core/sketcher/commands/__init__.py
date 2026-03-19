@@ -1,5 +1,6 @@
 from .arc import ArcCommand, ArcPreviewState
 from .base import SketchChangeCommand
+from .bezier import BezierCommand, BezierPreviewState
 from .chamfer import ChamferCommand
 from .circle import CircleCommand, CirclePreviewState
 from .constraint import ModifyConstraintCommand
@@ -23,6 +24,8 @@ __all__ = [
     "AddItemsCommand",
     "ArcCommand",
     "ArcPreviewState",
+    "BezierCommand",
+    "BezierPreviewState",
     "ChamferCommand",
     "CircleCommand",
     "CirclePreviewState",
