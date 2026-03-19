@@ -16,9 +16,13 @@ echo "DEBUG: PWD=$PWD"
 echo "DEBUG: SOURCE_PATH=$SOURCE_PATH"
 echo "DEBUG: ICO_PATH=$ICO_PATH"
 
+# Convert to absolute paths first, then to Windows-style with forward slashes
+ABS_SOURCE_PATH=$(realpath "$SOURCE_PATH")
+ABS_ICO_PATH="$(pwd)/${ICO_PATH}"
+
 # Convert to Windows-style paths with forward slashes
-WIN_SOURCE_PATH=$(cygpath -m "$SOURCE_PATH")
-WIN_ICO_PATH=$(cygpath -m "$ICO_PATH")
+WIN_SOURCE_PATH=$(cygpath -m "$ABS_SOURCE_PATH")
+WIN_ICO_PATH=$(cygpath -m "$ABS_ICO_PATH")
 
 echo "DEBUG: WIN_SOURCE_PATH=$WIN_SOURCE_PATH"
 echo "DEBUG: WIN_ICO_PATH=$WIN_ICO_PATH"
