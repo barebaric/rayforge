@@ -41,6 +41,33 @@ jobs:
       - name: Build snap
         uses: snapcore/action-build@v1
         id: build
+        env:
+          SNAPCRAFT_DEBUG: "1"
+        continue-on-error: true
+
+      - name: Capture snapcraft logs on failure
+        if: steps.build.outcome == 'failure'
+        run: |
+          echo "::group::Snapcraft log files"
+          for log in /home/runner/.local/state/snapcraft/log/*.log; do
+            if [ -f "$log" ]; then
+              echo "=== $log ==="
+              cat "$log"
+            fi
+          done
+          echo "::endgroup::"
+          echo "::group::LXD status"
+          sudo lxc list --project snapcraft 2>&1 || true
+          sudo lxc storage list 2>&1 || true
+          echo "::endgroup::"
+          echo "::group::System resources"
+          free -h
+          df -h
+          echo "::endgroup::"
+
+      - name: Fail if build failed
+        if: steps.build.outcome == 'failure'
+        run: exit 1
 
       - name: Test built snap
         run: |
