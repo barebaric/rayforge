@@ -11,8 +11,12 @@ fi
 
 echo "--- Generating Windows Icon ($ICO_PATH) ---"
 
-magick -density 300 -background transparent "$SOURCE_PATH" \
+# Convert paths to Windows format for ImageMagick (native Windows binary)
+WIN_SOURCE_PATH=$(cygpath -w "$SOURCE_PATH")
+WIN_ICO_PATH=$(cygpath -w "$ICO_PATH")
+
+magick -density 300 -background transparent "$WIN_SOURCE_PATH" \
        -define icon:auto-resize=256,64,48,32,16 \
-       "$ICO_PATH"
+       "$WIN_ICO_PATH"
 
 echo "✅ Icon generation complete."
