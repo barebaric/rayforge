@@ -24,13 +24,13 @@ jobs:
     needs: [lint-test]  # Run only if tests pass
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
 
       - name: Install Pixi
-        uses: prefix-dev/setup-pixi@v0.8.1
+        uses: prefix-dev/setup-pixi@v0.9
         with:
           pixi-version: latest
           environments: build
