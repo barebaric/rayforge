@@ -53,6 +53,22 @@ class RadiusConstraint(Constraint):
         """Returns to human-readable name of this constraint type."""
         return _("Radius")
 
+    def get_title(self) -> str:
+        """Returns a human-readable title for this constraint."""
+        return f"{self.get_type_name()} {self._format_value()}"
+
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
+        """Returns a human-readable subtitle describing constrained entity."""
+        entity = registry.get_entity(self.entity_id)
+        if isinstance(entity, (Arc, Circle)):
+            center = registry.get_point(entity.center_idx)
+            if center:
+                return _("{} at {}").format(
+                    type(entity).__name__,
+                    self._format_coord(center.x, center.y),
+                )
+        return ""
+
     def targets_segment(
         self, p1: int, p2: int, entity_id: Optional[int]
     ) -> bool:

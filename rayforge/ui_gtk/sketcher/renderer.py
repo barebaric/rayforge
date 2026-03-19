@@ -363,6 +363,10 @@ class SketchRenderer:
         hovered_constraint_idx = (
             select_tool.hovered_constraint_idx if select_tool else None
         )
+        if self.element.external_hovered_constraint_idx is not None:
+            hovered_constraint_idx = (
+                self.element.external_hovered_constraint_idx
+            )
 
         # Collect all points associated with text boxes to hide their overlays
         text_box_point_ids = set()

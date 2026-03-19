@@ -11,6 +11,7 @@ from typing import (
     TYPE_CHECKING,
     Set,
 )
+from locale import format_string
 from ...expression import safe_evaluate
 from ...geo import Point
 
@@ -151,6 +152,24 @@ class Constraint:
     def _format_value(self) -> str:
         """Helper to format the value string for constraints."""
         return f"{float(self.value):.1f}"
+
+    def get_title(self) -> str:
+        """
+        Returns a human-readable title for this constraint.
+        Subclasses should override to include the value.
+        """
+        return self.get_type_name()
+
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
+        """
+        Returns a human-readable subtitle describing the constrained entities.
+        Subclasses should override to provide meaningful descriptions.
+        """
+        return ""
+
+    def _format_coord(self, x: float, y: float) -> str:
+        """Formats coordinates respecting the user's locale."""
+        return format_string("%.1f/%.1f", (x, y), grouping=True)
 
     def draw(
         self,

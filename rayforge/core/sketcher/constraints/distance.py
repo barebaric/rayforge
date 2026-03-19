@@ -71,6 +71,21 @@ class DistanceConstraint(Constraint):
         """Returns to human-readable name of this constraint type."""
         return _("Distance")
 
+    def get_title(self) -> str:
+        """Returns a human-readable title for this constraint."""
+        return f"{self.get_type_name()} {self._format_value()}"
+
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
+        """Returns a subtitle describing the constrained points."""
+        p1 = registry.get_point(self.p1)
+        p2 = registry.get_point(self.p2)
+        if p1 and p2:
+            return _("From {} to {}").format(
+                self._format_coord(p1.x, p1.y),
+                self._format_coord(p2.x, p2.y),
+            )
+        return ""
+
     def targets_segment(
         self, p1: int, p2: int, entity_id: Optional[int]
     ) -> bool:
