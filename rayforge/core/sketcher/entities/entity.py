@@ -52,6 +52,26 @@ class Entity:
         """
         return []
 
+    def hit_test(
+        self,
+        mx: float,
+        my: float,
+        threshold: float,
+        registry: "EntityRegistry",
+    ) -> bool:
+        """
+        Returns True if the point (mx, my) is within threshold distance of
+        this entity in model coordinates.
+        """
+        return False
+
+    def get_junction_point_ids(self) -> List[int]:
+        """
+        Returns point IDs that should be counted for junction detection.
+        These are typically the endpoints of geometric entities.
+        """
+        return []
+
     def is_contained_by(
         self,
         rect: Rect,

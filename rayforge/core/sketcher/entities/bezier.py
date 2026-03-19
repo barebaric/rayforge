@@ -1,5 +1,6 @@
 from typing import Dict, Any, List, Sequence, TYPE_CHECKING
 from ...geo import Geometry, Rect, primitives
+from ...geo.primitives import find_closest_point_on_line_segment
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -26,6 +27,45 @@ class Bezier(Entity):
 
     def get_point_ids(self) -> List[int]:
         return [self.start_idx, self.cp1_idx, self.cp2_idx, self.end_idx]
+
+    def get_junction_point_ids(self) -> List[int]:
+        return [self.start_idx, self.cp1_idx, self.cp2_idx, self.end_idx]
+
+    def hit_test(
+        self,
+        mx: float,
+        my: float,
+        threshold: float,
+        registry: "EntityRegistry",
+    ) -> bool:
+        start = registry.get_point(self.start_idx)
+        cp1 = registry.get_point(self.cp1_idx)
+        cp2 = registry.get_point(self.cp2_idx)
+        end = registry.get_point(self.end_idx)
+        if not (start and cp1 and cp2 and end):
+            return False
+
+        points = self._sample_bezier(
+            start.x,
+            start.y,
+            cp1.x,
+            cp1.y,
+            cp2.x,
+            cp2.y,
+            end.x,
+            end.y,
+            20,
+        )
+
+        min_dist_sq = float("inf")
+        for i in range(len(points) - 1):
+            _, _, dist_sq = find_closest_point_on_line_segment(
+                points[i], points[i + 1], mx, my
+            )
+            if dist_sq < min_dist_sq:
+                min_dist_sq = dist_sq
+
+        return min_dist_sq < threshold**2
 
     def update_constrained_status(
         self, registry: "EntityRegistry", constraints: Sequence["Constraint"]

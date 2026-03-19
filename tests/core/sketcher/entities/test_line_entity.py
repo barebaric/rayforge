@@ -38,6 +38,39 @@ def test_line_get_point_ids(registry):
     assert set(line.get_point_ids()) == {p1, p2}
 
 
+def test_line_get_junction_point_ids(registry):
+    """Tests that a line correctly reports its junction point IDs."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    line = registry.get_entity(registry.add_line(p1, p2))
+    assert set(line.get_junction_point_ids()) == {p1, p2}
+
+
+def test_line_hit_test(registry):
+    """Tests Line.hit_test method."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(100, 0)
+    line = registry.get_entity(registry.add_line(p1, p2))
+    threshold = 5.0
+
+    # Point on the line
+    assert line.hit_test(50, 0, threshold, registry) is True
+    assert line.hit_test(0, 0, threshold, registry) is True
+    assert line.hit_test(100, 0, threshold, registry) is True
+
+    # Point within threshold distance
+    assert line.hit_test(50, 3, threshold, registry) is True
+    assert line.hit_test(50, -4, threshold, registry) is True
+
+    # Point outside threshold
+    assert line.hit_test(50, 10, threshold, registry) is False
+    assert line.hit_test(50, -10, threshold, registry) is False
+
+    # Point beyond line segment endpoints
+    assert line.hit_test(-10, 0, threshold, registry) is False
+    assert line.hit_test(110, 0, threshold, registry) is False
+
+
 def test_line_update_constrained_status(registry):
     """Test Line.update_constrained_status logic."""
     p1 = registry.add_point(0, 0)

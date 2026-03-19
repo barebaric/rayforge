@@ -5,7 +5,6 @@ from typing import Any, List, Optional, Tuple
 
 from ...core.geo import Polygon, primitives
 from ...core.geo.linearize import linearize_arc
-from ...core.geo.primitives import find_closest_point_on_line_segment
 from ...core.sketcher.constraints import (
     CoincidentConstraint,
     Constraint,
@@ -13,12 +12,12 @@ from ...core.sketcher.constraints import (
 )
 from ...core.sketcher.entities import (
     Arc,
-    Bezier,
     Circle,
     Entity,
     Line,
     TextBoxEntity,
 )
+from ..canvas.worldsurface import WorldSurface
 
 
 class SketchHitTester:
@@ -26,28 +25,6 @@ class SketchHitTester:
 
     def __init__(self, snap_distance: float = 12.0):
         self.snap_distance = snap_distance
-
-    def _evaluate_bezier(
-        self,
-        x0: float,
-        y0: float,
-        x1: float,
-        y1: float,
-        x2: float,
-        y2: float,
-        x3: float,
-        y3: float,
-        t: float,
-    ) -> Tuple[float, float]:
-        mt = 1 - t
-        mt2 = mt * mt
-        mt3 = mt2 * mt
-        t2 = t * t
-        t3 = t2 * t
-
-        x = mt3 * x0 + 3 * mt2 * t * x1 + 3 * mt * t2 * x2 + t3 * x3
-        y = mt3 * y0 + 3 * mt2 * t * y1 + 3 * mt * t2 * y2 + t3 * y3
-        return (x, y)
 
     def screen_to_model(
         self, wx: float, wy: float, element: Any
@@ -325,25 +302,11 @@ class SketchHitTester:
         registry = element.sketch.registry
         point_counts = defaultdict(int)
         for entity in registry.entities:
-            if isinstance(entity, Line):
-                point_counts[entity.p1_idx] += 1
-                point_counts[entity.p2_idx] += 1
-            elif isinstance(entity, Arc):
-                point_counts[entity.start_idx] += 1
-                point_counts[entity.end_idx] += 1
-                point_counts[entity.center_idx] += 1
-            elif isinstance(entity, Bezier):
-                point_counts[entity.start_idx] += 1
-                point_counts[entity.cp1_idx] += 1
-                point_counts[entity.cp2_idx] += 1
-                point_counts[entity.end_idx] += 1
-            elif isinstance(entity, Circle):
-                point_counts[entity.center_idx] += 1
-                point_counts[entity.radius_pt_idx] += 1
+            for pid in entity.get_junction_point_ids():
+                point_counts[pid] += 1
 
         for pid, count in point_counts.items():
             if count > 1:
-                # Ignore junctions that are part of a text box frame
                 if pid in text_box_point_ids:
                     continue
                 try:
@@ -396,126 +359,14 @@ class SketchHitTester:
         mx, my = self.screen_to_model(wx, wy, element)
 
         scale = 1.0
-        if element.canvas and hasattr(element.canvas, "get_view_scale"):
+        if isinstance(element.canvas, WorldSurface):
             scale_x, _ = element.canvas.get_view_scale()
             scale = scale_x if scale_x > 1e-9 else 1.0
         threshold = self.snap_distance / scale
 
-        def safe_get(pid):
-            try:
-                return element.sketch.registry.get_point(pid)
-            except Exception:
-                return None
-
-        entities = element.sketch.registry.entities or []
+        registry = element.sketch.registry
+        entities = registry.entities or []
         for entity in entities:
-            if isinstance(entity, Line):
-                p1 = safe_get(entity.p1_idx)
-                p2 = safe_get(entity.p2_idx)
-                if p1 and p2:
-                    _, _, dist_sq = find_closest_point_on_line_segment(
-                        (p1.x, p1.y), (p2.x, p2.y), mx, my
-                    )
-                    if dist_sq < threshold**2:
-                        return entity
-
-            elif isinstance(entity, (Arc, Circle)):
-                center = safe_get(entity.center_idx)
-                if not center:
-                    continue
-
-                radius = 0.0
-                if isinstance(entity, Arc):
-                    start = safe_get(entity.start_idx)
-                    if start:
-                        radius = math.hypot(
-                            start.x - center.x, start.y - center.y
-                        )
-                elif isinstance(entity, Circle):
-                    radius_pt = safe_get(entity.radius_pt_idx)
-                    if radius_pt:
-                        radius = math.hypot(
-                            radius_pt.x - center.x, radius_pt.y - center.y
-                        )
-
-                if radius == 0.0:
-                    continue
-
-                dist_mouse = math.hypot(mx - center.x, my - center.y)
-
-                if abs(dist_mouse - radius) < threshold:
-                    if isinstance(entity, Circle):
-                        return entity
-
-                    if isinstance(entity, Arc):
-                        angle_mouse = math.atan2(my - center.y, mx - center.x)
-                        if entity.is_angle_within_sweep(
-                            angle_mouse, element.sketch.registry
-                        ):
-                            return entity
-
-            elif isinstance(entity, Bezier):
-                start = safe_get(entity.start_idx)
-                cp1 = safe_get(entity.cp1_idx)
-                cp2 = safe_get(entity.cp2_idx)
-                end = safe_get(entity.end_idx)
-                if not (start and cp1 and cp2 and end):
-                    continue
-
-                num_samples = 20
-                min_dist_sq = float("inf")
-                for i in range(num_samples):
-                    t1 = i / num_samples
-                    t2 = (i + 1) / num_samples
-                    p1 = self._evaluate_bezier(
-                        start.x,
-                        start.y,
-                        cp1.x,
-                        cp1.y,
-                        cp2.x,
-                        cp2.y,
-                        end.x,
-                        end.y,
-                        t1,
-                    )
-                    p2 = self._evaluate_bezier(
-                        start.x,
-                        start.y,
-                        cp1.x,
-                        cp1.y,
-                        cp2.x,
-                        cp2.y,
-                        end.x,
-                        end.y,
-                        t2,
-                    )
-                    _, _, dist_sq = find_closest_point_on_line_segment(
-                        p1, p2, mx, my
-                    )
-                    if dist_sq < min_dist_sq:
-                        min_dist_sq = dist_sq
-
-                if min_dist_sq < threshold**2:
-                    return entity
-
-            elif isinstance(entity, TextBoxEntity):
-                p_origin = safe_get(entity.origin_id)
-                p_width = safe_get(entity.width_id)
-                p_height = safe_get(entity.height_id)
-                if not (p_origin and p_width and p_height):
-                    continue
-
-                # Reconstruct the parallelogram for point-in-polygon test
-                p4_x = p_width.x + p_height.x - p_origin.x
-                p4_y = p_width.y + p_height.y - p_origin.y
-
-                polygon = [
-                    (p_origin.x, p_origin.y),
-                    (p_width.x, p_width.y),
-                    (p4_x, p4_y),
-                    (p_height.x, p_height.y),
-                ]
-
-                if primitives.is_point_in_polygon((mx, my), polygon):
-                    return entity
+            if entity.hit_test(mx, my, threshold, registry):
+                return entity
         return None

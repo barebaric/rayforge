@@ -38,6 +38,32 @@ class Arc(Entity):
     def get_point_ids(self) -> List[int]:
         return [self.start_idx, self.end_idx, self.center_idx]
 
+    def get_junction_point_ids(self) -> List[int]:
+        return [self.start_idx, self.end_idx, self.center_idx]
+
+    def hit_test(
+        self,
+        mx: float,
+        my: float,
+        threshold: float,
+        registry: "EntityRegistry",
+    ) -> bool:
+        center = registry.get_point(self.center_idx)
+        start = registry.get_point(self.start_idx)
+        if not (center and start):
+            return False
+
+        radius = math.hypot(start.x - center.x, start.y - center.y)
+        if radius == 0.0:
+            return False
+
+        dist_mouse = math.hypot(mx - center.x, my - center.y)
+        if abs(dist_mouse - radius) >= threshold:
+            return False
+
+        angle_mouse = math.atan2(my - center.y, mx - center.x)
+        return self.is_angle_within_sweep(angle_mouse, registry)
+
     def update_constrained_status(
         self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
     ) -> None:

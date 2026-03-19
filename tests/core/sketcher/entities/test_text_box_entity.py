@@ -61,6 +61,37 @@ def test_text_box_get_point_ids(registry):
     assert set(box.get_point_ids()) == {p1, p2, p3}
 
 
+def test_text_box_get_junction_point_ids(registry):
+    """Tests that a text box has no junction point IDs."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(0, 10)
+    box = registry.get_entity(
+        registry.add_text_box(p1, p2, p3, "Test", FontConfig())
+    )
+    assert box.get_junction_point_ids() == []
+
+
+def test_text_box_hit_test(registry):
+    """Tests TextBoxEntity.hit_test method."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(0, 10)
+    box = registry.get_entity(
+        registry.add_text_box(p1, p2, p3, "Test", FontConfig())
+    )
+    threshold = 5.0
+
+    # Point inside the text box
+    assert box.hit_test(2, 2, threshold, registry) is True
+    assert box.hit_test(5, 5, threshold, registry) is True
+
+    # Point outside the text box
+    assert box.hit_test(15, 5, threshold, registry) is False
+    assert box.hit_test(5, 15, threshold, registry) is False
+    assert box.hit_test(-5, 5, threshold, registry) is False
+
+
 def test_text_box_get_all_frame_point_ids(registry):
     """Tests that a text box correctly reports all frame point IDs."""
     p1 = registry.add_point(0, 0)
