@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Callable, Tuple
 import logging
 from gettext import gettext as _
 from gi.repository import Gtk, Adw
@@ -33,6 +33,9 @@ class MachineControlPanel(Gtk.Box):
         self.machine_cmd = machine_cmd
         self._edit_dialog = None
         self._click_to_zero_mode = False
+        self._get_bounds_callback: Optional[
+            Callable[[], Optional[Tuple[float, float, float, float]]]
+        ] = None
 
         self.hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.hbox.set_spacing(12)
@@ -112,6 +115,39 @@ class MachineControlPanel(Gtk.Box):
 
         self.position_row = Adw.ActionRow(title=_("Current Position"))
         self.wcs_group.add(self.position_row)
+
+        position_button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        position_button_box.set_spacing(6)
+        self.position_row.add_suffix(position_button_box)
+
+        self.move_ll_btn = Gtk.Button(child=get_icon("bottom-left-symbolic"))
+        self.move_ll_btn.add_css_class("flat")
+        self.move_ll_btn.set_size_request(40, -1)
+        self.move_ll_btn.connect("clicked", self._on_move_to_position, "ll")
+        self.move_ll_btn.set_tooltip_text(
+            _("Move to Lower-Left of Selection or Workarea")
+        )
+        position_button_box.append(self.move_ll_btn)
+
+        self.move_center_btn = Gtk.Button(child=get_icon("center-symbolic"))
+        self.move_center_btn.add_css_class("flat")
+        self.move_center_btn.set_size_request(40, -1)
+        self.move_center_btn.connect(
+            "clicked", self._on_move_to_position, "center"
+        )
+        self.move_center_btn.set_tooltip_text(
+            _("Move to Center of Selection or Workarea")
+        )
+        position_button_box.append(self.move_center_btn)
+
+        self.move_ur_btn = Gtk.Button(child=get_icon("top-right-symbolic"))
+        self.move_ur_btn.add_css_class("flat")
+        self.move_ur_btn.set_size_request(40, -1)
+        self.move_ur_btn.connect("clicked", self._on_move_to_position, "ur")
+        self.move_ur_btn.set_tooltip_text(
+            _("Move to Upper-Right of Selection or Workarea")
+        )
+        position_button_box.append(self.move_ur_btn)
 
         # Zeroing Buttons in one ActionRow
         self.zero_row = Adw.ActionRow(title=_("Zero Axes"))
@@ -276,6 +312,57 @@ class MachineControlPanel(Gtk.Box):
             self._update_wcs_ui()
             self.click_to_zero_mode_changed.send(self, active=active)
 
+    def set_get_bounds_callback(
+        self,
+        callback: Optional[
+            Callable[[], Optional[Tuple[float, float, float, float]]]
+        ],
+    ):
+        """Set the callback to get selection/workpiece bounds."""
+        self._get_bounds_callback = callback
+
+    def update_position_menu_sensitivity(self):
+        """Update the position menu sensitivity based on current bounds."""
+        if not self.machine:
+            return
+        is_dummy = isinstance(self.machine.driver, NoDeviceDriver)
+        is_connected = self.machine.is_connected()
+        is_active = is_connected or is_dummy
+
+        has_bounds = (
+            self._get_bounds_callback is not None
+            and self._get_bounds_callback() is not None
+        )
+        self.move_ll_btn.set_sensitive(has_bounds and is_active)
+        self.move_center_btn.set_sensitive(has_bounds and is_active)
+        self.move_ur_btn.set_sensitive(has_bounds and is_active)
+
+    def _on_move_to_position(self, button, position: str):
+        """Handle move to position menu action."""
+        if not self.machine or not self.machine_cmd:
+            return
+        if not self._get_bounds_callback:
+            return
+
+        bounds = self._get_bounds_callback()
+        if not bounds:
+            return
+
+        min_x, min_y, max_x, max_y = bounds
+
+        if position == "ll":
+            world_x, world_y = min_x, min_y
+        elif position == "center":
+            world_x, world_y = (min_x + max_x) / 2, (min_y + max_y) / 2
+        elif position == "ur":
+            world_x, world_y = max_x, max_y
+        else:
+            return
+
+        space = self.machine.get_coordinate_space()
+        machine_x, machine_y = space.world_point_to_machine(world_x, world_y)
+        self.machine_cmd.move_to(self.machine, machine_x, machine_y)
+
     def _on_click_to_zero_toggled(self, button):
         """Handle Click to Zero button click."""
         self.set_click_to_zero_mode(not self._click_to_zero_mode)
@@ -424,6 +511,8 @@ class MachineControlPanel(Gtk.Box):
         self.zero_z_btn.set_sensitive(can_zero)
         self.zero_here_btn.set_sensitive(can_zero)
         self.edit_offsets_btn.set_sensitive(can_manual)
+
+        self.update_position_menu_sensitivity()
 
         if is_mcs:
             msg = _(

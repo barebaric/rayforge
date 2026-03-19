@@ -371,3 +371,11 @@ class MachineCmd:
     def home(self, machine: "Machine", axis: Optional[Axis] = None):
         """Adds a task to home a specific axis."""
         self._editor.task_manager.add_coroutine(lambda ctx: machine.home(axis))
+
+    def move_to(self, machine: "Machine", x: float, y: float):
+        """Adds a task to move to an absolute position."""
+        driver = machine.driver
+        if driver:
+            self._editor.task_manager.add_coroutine(
+                lambda ctx: driver.move_to(x, y), key="move-to"
+            )

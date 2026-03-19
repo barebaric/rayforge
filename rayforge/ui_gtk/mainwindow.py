@@ -4,7 +4,7 @@ import shutil
 import webbrowser
 from concurrent.futures import Future
 from pathlib import Path
-from typing import Callable, Coroutine, List, Optional
+from typing import Callable, Coroutine, List, Optional, Tuple
 from gettext import gettext as _
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
@@ -504,6 +504,9 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_click_to_zero_mode_changed
         )
 
+        # Set up bounds callback for position menu
+        self.control_panel.set_get_bounds_callback(self._get_selection_bounds)
+
         # Connect to position signal to remember user's chosen height
         self.vertical_paned.connect(
             "notify::position", self._on_vertical_pane_position_changed
@@ -575,6 +578,53 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_click_to_zero_cancelled(self, sender):
         """Handle click-to-zero mode cancellation."""
         self.control_panel.set_click_to_zero_mode(False)
+
+    def _get_selection_bounds(
+        self,
+    ) -> Optional[Tuple[float, float, float, float]]:
+        """
+        Get the bounding box of selected items or workarea bounds.
+
+        Returns:
+            A tuple (min_x, min_y, max_x, max_y) in world coordinates,
+            or None if there is no machine configured.
+        """
+        selected_elements = self.surface.get_selected_elements()
+
+        if selected_elements:
+            workpieces = []
+            for elem in selected_elements:
+                if isinstance(elem.data, WorkPiece):
+                    workpieces.append(elem.data)
+                elif isinstance(elem.data, Group):
+                    workpieces.extend(elem.data.get_descendants(WorkPiece))
+
+            bboxes = []
+            for wp in workpieces:
+                bbox = wp.get_geometry_world_bbox()
+                if bbox is not None:
+                    bboxes.append(bbox)
+
+            if bboxes:
+                min_x = min(b[0] for b in bboxes)
+                min_y = min(b[1] for b in bboxes)
+                max_x = max(b[2] for b in bboxes)
+                max_y = max(b[3] for b in bboxes)
+                return (min_x, min_y, max_x, max_y)
+
+        config = get_context().config
+        machine = config.machine
+        if not machine:
+            return None
+
+        space = machine.get_coordinate_space()
+        workarea_origin_machine = space.get_workarea_origin_in_machine()
+        min_x, min_y = space.machine_point_to_world(*workarea_origin_machine)
+        workarea_w, workarea_h = space.workarea_size
+        max_x = min_x + workarea_w
+        max_y = min_y + workarea_h
+
+        return (min_x, min_y, max_x, max_y)
 
     def _apply_saved_visibility_state(self):
         """
@@ -1333,6 +1383,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.item_props_widget.set_items(selected_items)
         self.item_revealer.set_reveal_child(bool(selected_items))
         self.sketch_props_widget.set_items(selected_items)
+        self.control_panel.update_position_menu_sensitivity()
         self._update_actions_and_ui()
 
     def on_config_changed(self, sender, **kwargs):
