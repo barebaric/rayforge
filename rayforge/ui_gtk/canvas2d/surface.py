@@ -843,11 +843,14 @@ class WorkSurface(WorldSurface):
         def sort_key(element: CanvasElement):
             """
             Sort key for root's children. Camera at bottom, then stock,
-            then dot, then layers, simulation overlay on top.
+            then layers, laser dot and simulation overlay on top.
             """
             if isinstance(element, SimulationOverlay):
                 # Simulation overlay is always on top of everything
                 return float("inf")
+            if isinstance(element, DotElement):
+                # Laser dot is always on top of workpieces
+                return float("inf") - 1
             if isinstance(element, LayerElement):
                 # LayerElements are ordered according to the doc.layers list.
                 # Add a large offset to ensure all layers are above stock
@@ -864,8 +867,7 @@ class WorkSurface(WorldSurface):
             if isinstance(element, AxisExtentFrameElement):
                 # Extent frame is above camera but below everything else
                 return -1.5
-            # Other elements (like the laser dot) are above the camera but
-            # below stock and layers.
+            # Other elements are above the camera but below stock and layers.
             return -1
 
         self.root.children.sort(key=sort_key)
