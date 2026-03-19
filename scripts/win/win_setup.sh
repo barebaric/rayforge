@@ -82,9 +82,8 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
       libtool
       git
 
-      # Installer & Icon Tools
+      # Installer Tools
       mingw-w64-x86_64-nsis
-      mingw-w64-x86_64-imagemagick
 
       # Base Python Environment and Bindings
       mingw-w64-x86_64-python
@@ -111,6 +110,7 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
       mingw-w64-x86_64-python-maturin
       mingw-w64-x86_64-python-numpy
       mingw-w64-x86_64-python-opencv
+      mingw-w64-x86_64-python-pillow
       mingw-w64-x86_64-python-pyopengl
       mingw-w64-x86_64-python-pyopengl-accelerate
       mingw-w64-x86_64-python-scipy
