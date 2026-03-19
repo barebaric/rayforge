@@ -5,8 +5,6 @@ authors: rayforge_team
 tags: [multi-laser, opérations, flux-de-travail]
 ---
 
-![Superposition de caméra](/images/camera-overlay.png)
-
 L'une des fonctionnalités les plus puissantes de Rayforge est la capacité
 d'assigner différents lasers à différentes opérations au sein d'une même
 tâche. Cela ouvre des possibilités passionnantes pour les configurations

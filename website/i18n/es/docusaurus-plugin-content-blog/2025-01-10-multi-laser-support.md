@@ -5,8 +5,6 @@ authors: rayforge_team
 tags: [multi-laser, operations, workflow]
 ---
 
-![Camera Overlay](/images/camera-overlay.png)
-
 Una de las funciones más potentes de Rayforge es la capacidad de asignar diferentes láseres a diferentes operaciones dentro de un solo trabajo. Esto abre posibilidades emocionantes para configuraciones de múltiples herramientas y flujos de trabajo especializados.
 
 <!-- truncate -->

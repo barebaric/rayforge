@@ -5,8 +5,6 @@ authors: rayforge_team
 tags: [multi-laser, operations, workflow]
 ---
 
-![Camera Overlay](/images/camera-overlay.png)
-
 Eine der leistungsstärksten Funktionen in Rayforge ist die Möglichkeit, verschiedene
 Laser unterschiedlichen Operationen innerhalb eines einzelnen Auftrags zuzuweisen.
 Dies eröffnet spannende Möglichkeiten für Multi-Werkzeug-Setups und spezialisierte
