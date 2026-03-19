@@ -1,2 +1,3 @@
 recursive-include rayforge/resources *
 recursive-include rayforge/locale *.mo
+recursive-include rayforge/builtin_addons *.py *.yaml *.po *.pot *.mo *.png *.jpg *.jpeg *.gif *.svg *.ico
