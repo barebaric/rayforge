@@ -26,7 +26,7 @@ jobs:
           fetch-tags: true
 
       - name: Install Pixi
-        uses: prefix-dev/setup-pixi@v0.9
+        uses: prefix-dev/setup-pixi@v0.9.4
         with:
           pixi-version: v0.48.2
           cache: true
@@ -52,7 +52,7 @@ jobs:
           fetch-tags: true
 
       - name: Install Pixi
-        uses: prefix-dev/setup-pixi@v0.9
+        uses: prefix-dev/setup-pixi@v0.9.4
         with:
           pixi-version: v0.48.2
           cache: true
@@ -78,7 +78,7 @@ jobs:
           fetch-tags: true
 
       - name: Install Pixi
-        uses: prefix-dev/setup-pixi@v0.9
+        uses: prefix-dev/setup-pixi@v0.9.4
         with:
           pixi-version: v0.48.2
           cache: true
@@ -104,7 +104,7 @@ jobs:
           fetch-tags: true
 
       - name: Install Pixi
-        uses: prefix-dev/setup-pixi@v0.9
+        uses: prefix-dev/setup-pixi@v0.9.4
         with:
           pixi-version: v0.48.2
           cache: true
