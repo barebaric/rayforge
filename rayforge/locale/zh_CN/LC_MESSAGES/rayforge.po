@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-17 21:30+0100\n"
+"POT-Creation-Date: 2026-03-19 01:07+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -114,8 +114,20 @@ msgid "Optionally force a specific laser head"
 msgstr "可选地强制使用特定的激光头"
 
 #: rayforge/core/capability.py rayforge/ui_gtk/canvas2d/simulation_controls.py
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Power"
 msgstr "功率"
+
+#: rayforge/core/capability.py
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
+msgid "Tab Power"
+msgstr "标签功率"
+
+#: rayforge/core/capability.py
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
+#, python-format
+msgid "Laser power at tab positions (% of cut power)"
+msgstr "标签位置的激光功率（切割功率的百分比）"
 
 #: rayforge/core/capability.py
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
@@ -1327,6 +1339,7 @@ msgstr "此机器配置文件及其所有设置将被永久删除。此操作无
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 #: rayforge/ui_gtk/doceditor/import_handler.py
+#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
 #: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "Cancel"
 msgstr "取消"
@@ -1337,7 +1350,9 @@ msgstr "取消"
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Delete"
 msgstr "删除"
 
@@ -1945,6 +1960,7 @@ msgid "Clear All Points"
 msgstr "清除所有点"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
+#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
 msgid "Apply"
 msgstr "应用"
 
@@ -2186,6 +2202,18 @@ msgstr "手动编辑偏移"
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Current Position"
 msgstr "当前位置"
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Move to Lower-Left of Selection or Workarea"
+msgstr "移动到选择或工作区域的左下角"
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Move to Center of Selection or Workarea"
+msgstr "移动到选择或工作区域的中心"
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Move to Upper-Right of Selection or Workarea"
+msgstr "移动到选择或工作区域的右上角"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Zero Axes"
@@ -2678,10 +2706,6 @@ msgid "Select, create and manage G-code dialect definitions."
 msgstr "选择、创建和管理G代码方言定义。"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
-msgid "Home X"
-msgstr "X轴归零"
-
-#: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move North-West"
 msgstr "向西北移动"
 
@@ -2693,9 +2717,10 @@ msgstr "向北移动"
 msgid "Move North-East"
 msgstr "向东北移动"
 
-#: rayforge/ui_gtk/machine/jog_widget.py
-msgid "Home Y"
-msgstr "Y轴归零"
+#: rayforge/ui_gtk/machine/jog_widget.py rayforge/ui_gtk/mainwindow.py
+#: rayforge/ui_gtk/toolbar.py
+msgid "Send to machine"
+msgstr "发送到机器"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move West (Left)"
@@ -2706,8 +2731,8 @@ msgid "Move East (Right)"
 msgstr "向东（右）移动"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
-msgid "Home Z"
-msgstr "Z轴归零"
+msgid "Increase Z-Distance"
+msgstr "增加Z距离"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move South-West"
@@ -2722,12 +2747,24 @@ msgid "Move South-East"
 msgstr "向东南移动"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
-msgid "Increase Z-Distance"
-msgstr "增加Z距离"
-
-#: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Decrease Z-Distance"
 msgstr "减少Z距离"
+
+#: rayforge/ui_gtk/machine/jog_widget.py
+msgid "Home X"
+msgstr "X轴归零"
+
+#: rayforge/ui_gtk/machine/jog_widget.py
+msgid "Home Y"
+msgstr "Y轴归零"
+
+#: rayforge/ui_gtk/machine/jog_widget.py
+msgid "Home Z"
+msgstr "Z轴归零"
+
+#: rayforge/ui_gtk/machine/jog_widget.py rayforge/ui_gtk/toolbar.py
+msgid "Cancel running job"
+msgstr "取消运行中的作业"
 
 #: rayforge/ui_gtk/machine/profile_selector.py
 msgid "Add a New Machine"
@@ -3768,10 +3805,6 @@ msgstr "配置边框功率以启用"
 msgid "Cycle laser head around the occupied area"
 msgstr "沿占用区域循环移动激光头"
 
-#: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
-msgid "Send to machine"
-msgstr "发送到机器"
-
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Resume machine"
 msgstr "恢复机器"
@@ -3858,10 +3891,6 @@ msgstr "添加标签到选中项"
 #: rayforge/ui_gtk/toolbar.py
 msgid "Home the machine"
 msgstr "机器回原点"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Cancel running job"
-msgstr "取消运行中的作业"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Clear machine alarm (unlock)"
@@ -4124,10 +4153,6 @@ msgid "Power, speed, and laser head selection for this operation."
 msgstr "此操作的功率、速度和激光头选择。"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Power (%)"
-msgstr "功率 (%)"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 #, python-brace-format
 msgid "Max: {max_speed}"
 msgstr "最大：{max_speed}"
@@ -4155,6 +4180,10 @@ msgstr "更改割缝"
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Change laser power"
 msgstr "更改激光功率"
+
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
+msgid "Change tab power"
+msgstr "更改标签功率"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Change cut speed"
@@ -5029,6 +5058,48 @@ msgstr "对齐网格"
 #: rayforge/ui_gtk/sketcher/tools/select_tool.py
 msgid "Select Connected"
 msgstr "选择相连对象"
+
+#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
+msgid "Next field"
+msgstr "下一个字段"
+
+#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
+msgid "Prev field"
+msgstr "上一个字段"
+
+#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
+#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
+msgid "W"
+msgstr "宽"
+
+#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
+#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
+msgid "H"
+msgstr "高"
+
+#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
+msgid "Type dimensions (W H)"
+msgstr "输入尺寸（宽 高）"
+
+#: rayforge/ui_gtk/sketcher/tools/arc_tool.py
+msgid "Type radius"
+msgstr "输入半径"
+
+#: rayforge/ui_gtk/sketcher/tools/circle_tool.py
+msgid "Type diameter"
+msgstr "输入直径"
+
+#: rayforge/ui_gtk/sketcher/tools/line_tool.py
+msgid "Type length"
+msgstr "输入长度"
+
+#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
+msgid "R"
+msgstr "R"
+
+#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
+msgid "Type dimensions (W H R)"
+msgstr "输入尺寸（宽 高 R）"
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Finish Sketch"
