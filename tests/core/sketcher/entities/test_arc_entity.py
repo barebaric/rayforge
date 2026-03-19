@@ -51,6 +51,34 @@ def test_arc_get_point_ids(registry):
     assert set(arc.get_point_ids()) == {p1, p2, p3}
 
 
+def test_arc_get_endpoint_ids(registry):
+    """Tests that an arc correctly reports its endpoint IDs."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(5, 5)
+    arc = registry.get_entity(registry.add_arc(p1, p2, p3))
+    assert arc.get_endpoint_ids() == [p1, p2]
+    assert set(arc.get_point_ids()) == {p1, p2, p3}
+
+
+def test_arc_to_polygon_vertices(registry):
+    """Tests that an arc linearizes into polygon vertices."""
+    center = registry.add_point(0, 0)
+    start = registry.add_point(10, 0)
+    end = registry.add_point(0, 10)
+    arc = registry.get_entity(registry.add_arc(start, end, center, cw=False))
+
+    vertices = arc.to_polygon_vertices(registry, forward=True)
+    assert len(vertices) == 17
+    assert vertices[0] == pytest.approx((10.0, 0.0))
+    assert vertices[-1] == pytest.approx((0.0, 10.0))
+
+    vertices_rev = arc.to_polygon_vertices(registry, forward=False)
+    assert len(vertices_rev) == 17
+    assert vertices_rev[0] == pytest.approx((0.0, 10.0))
+    assert vertices_rev[-1] == pytest.approx((10.0, 0.0))
+
+
 def test_arc_get_junction_point_ids(registry):
     """Tests that an arc correctly reports its junction point IDs."""
     p1 = registry.add_point(0, 0)

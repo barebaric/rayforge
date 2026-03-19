@@ -1,5 +1,5 @@
 from typing import Dict, Any, List, Sequence, TYPE_CHECKING
-from ...geo import Geometry, Rect, primitives
+from ...geo import Geometry, Polygon, Rect, primitives
 from ...geo.primitives import find_closest_point_on_line_segment
 from .entity import Entity
 
@@ -28,8 +28,11 @@ class Bezier(Entity):
     def get_point_ids(self) -> List[int]:
         return [self.start_idx, self.cp1_idx, self.cp2_idx, self.end_idx]
 
+    def get_endpoint_ids(self) -> List[int]:
+        return [self.start_idx, self.end_idx]
+
     def get_junction_point_ids(self) -> List[int]:
-        return [self.start_idx, self.cp1_idx, self.cp2_idx, self.end_idx]
+        return [self.start_idx, self.end_idx]
 
     def hit_test(
         self,
@@ -200,6 +203,33 @@ class Bezier(Entity):
                 cp1.x,
                 cp1.y,
             )
+
+    def to_polygon_vertices(
+        self,
+        registry: "EntityRegistry",
+        forward: bool,
+    ) -> Polygon:
+        start = registry.get_point(self.start_idx)
+        cp1 = registry.get_point(self.cp1_idx)
+        cp2 = registry.get_point(self.cp2_idx)
+        end = registry.get_point(self.end_idx)
+        if not (start and cp1 and cp2 and end):
+            return []
+
+        points = self._sample_bezier(
+            start.x,
+            start.y,
+            cp1.x,
+            cp1.y,
+            cp2.x,
+            cp2.y,
+            end.x,
+            end.y,
+            20,
+        )
+        if not forward:
+            points = list(reversed(points))
+        return points
 
     def to_dict(self) -> Dict[str, Any]:
         data = super().to_dict()

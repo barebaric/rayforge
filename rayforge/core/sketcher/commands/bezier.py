@@ -131,15 +131,10 @@ class BezierCommand(SketchChangeCommand):
         except IndexError:
             return
 
-        if preview_state.cp2_id is not None:
-            cp2 = registry.get_point(preview_state.cp2_id)
-            cp2.x = x
-            cp2.y = y
-
-            if preview_state.end_id is not None:
-                end = registry.get_point(preview_state.end_id)
-                end.x = x
-                end.y = y
+        if preview_state.end_id is not None:
+            end = registry.get_point(preview_state.end_id)
+            end.x = x
+            end.y = y
 
     @staticmethod
     def set_cp1(

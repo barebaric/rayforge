@@ -40,6 +40,22 @@ def test_circle_get_point_ids(registry):
     assert set(circle.get_point_ids()) == {p1, p2}
 
 
+def test_circle_get_endpoint_ids(registry):
+    """Tests that a circle has no endpoints (it's a closed loop)."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    circle = registry.get_entity(registry.add_circle(p1, p2))
+    assert circle.get_endpoint_ids() == []
+
+
+def test_circle_to_polygon_vertices(registry):
+    """Tests that a circle returns empty list (handled specially for fills)."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    circle = registry.get_entity(registry.add_circle(p1, p2))
+    assert circle.to_polygon_vertices(registry, forward=True) == []
+
+
 def test_circle_get_junction_point_ids(registry):
     """Tests that a circle correctly reports its junction point IDs."""
     p1 = registry.add_point(0, 0)

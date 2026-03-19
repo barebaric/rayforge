@@ -1,6 +1,6 @@
 import math
 from typing import List, Dict, Optional, Any, Sequence, TYPE_CHECKING
-from ...geo import Geometry, Point, Rect, primitives
+from ...geo import Geometry, Point, Polygon, Rect, primitives
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -37,6 +37,9 @@ class Arc(Entity):
 
     def get_point_ids(self) -> List[int]:
         return [self.start_idx, self.end_idx, self.center_idx]
+
+    def get_endpoint_ids(self) -> List[int]:
+        return [self.start_idx, self.end_idx]
 
     def get_junction_point_ids(self) -> List[int]:
         return [self.start_idx, self.end_idx, self.center_idx]
@@ -148,6 +151,55 @@ class Arc(Entity):
             offset_y,
             clockwise=is_cw,
         )
+
+    def to_polygon_vertices(
+        self,
+        registry: "EntityRegistry",
+        forward: bool,
+    ) -> Polygon:
+        start_pt = registry.get_point(self.start_idx)
+        end_pt = registry.get_point(self.end_idx)
+        center_pt = registry.get_point(self.center_idx)
+        if not (start_pt and end_pt and center_pt):
+            return []
+
+        radius = math.hypot(start_pt.x - center_pt.x, start_pt.y - center_pt.y)
+        start_a = math.atan2(
+            start_pt.y - center_pt.y, start_pt.x - center_pt.x
+        )
+        end_a = math.atan2(end_pt.y - center_pt.y, end_pt.x - center_pt.x)
+
+        vertices: Polygon = []
+        num_segments = 16
+
+        if forward:
+            if self.clockwise:
+                if end_a > start_a:
+                    end_a -= 2 * math.pi
+            else:
+                if end_a < start_a:
+                    end_a += 2 * math.pi
+            for i in range(num_segments + 1):
+                t = i / num_segments
+                a = start_a + t * (end_a - start_a)
+                px = center_pt.x + radius * math.cos(a)
+                py = center_pt.y + radius * math.sin(a)
+                vertices.append((px, py))
+        else:
+            if self.clockwise:
+                if start_a > end_a:
+                    start_a -= 2 * math.pi
+            else:
+                if start_a < end_a:
+                    start_a += 2 * math.pi
+            for i in range(num_segments + 1):
+                t = i / num_segments
+                a = end_a + t * (start_a - end_a)
+                px = center_pt.x + radius * math.cos(a)
+                py = center_pt.y + radius * math.sin(a)
+                vertices.append((px, py))
+
+        return vertices
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Arc to a dictionary."""

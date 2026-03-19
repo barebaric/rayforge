@@ -1,9 +1,6 @@
 from gettext import gettext as _
-import math
 
-from ....core.geo import Polygon, primitives
 from ....core.sketcher.commands import AddFillCommand, RemoveFillCommand
-from ....core.sketcher.entities import Circle
 from .base import SketchTool
 
 
@@ -19,63 +16,13 @@ class FillTool(SketchTool):
         mx, my = self.element.hittester.screen_to_model(
             world_x, world_y, self.element
         )
-        sketch = self.element.sketch
-        registry = sketch.registry
-
-        all_loops = sketch._find_all_closed_loops()
-        loops_under_cursor = []
-
-        # Find all loops containing the click point
-        for loop in all_loops:
-            is_hit = False
-            # Special case for single-entity circles
-            if len(loop) == 1:
-                entity = registry.get_entity(loop[0][0])
-                if isinstance(entity, Circle):
-                    center = registry.get_point(entity.center_idx)
-                    radius_pt = registry.get_point(entity.radius_pt_idx)
-                    radius = math.hypot(
-                        radius_pt.x - center.x, radius_pt.y - center.y
-                    )
-                    dist_to_center = math.hypot(mx - center.x, my - center.y)
-                    if dist_to_center < radius:
-                        is_hit = True
-            else:
-                # General polygon case
-                polygon: Polygon = []
-                is_valid = True
-                for eid, fwd in loop:
-                    entity = registry.get_entity(eid)
-                    if not entity:
-                        is_valid = False
-                        break
-                    # Simple polygon from endpoints for hit testing
-                    p_ids = entity.get_point_ids()
-                    start_pid = p_ids[0] if fwd else p_ids[1]
-                    try:
-                        p = registry.get_point(start_pid)
-                        polygon.append((p.x, p.y))
-                    except IndexError:
-                        is_valid = False
-                        break
-                if is_valid and primitives.is_point_in_polygon(
-                    (mx, my), polygon
-                ):
-                    is_hit = True
-
-            if is_hit:
-                area = abs(sketch._calculate_loop_signed_area(loop))
-                loops_under_cursor.append((area, loop))
-
-        if not loops_under_cursor:
+        target_loop = self.element.sketch.get_loop_at_point(mx, my)
+        if not target_loop:
             return False
 
-        # Select the smallest area loop under the cursor
-        loops_under_cursor.sort(key=lambda x: x[0])
-        target_loop = loops_under_cursor[0][1]
+        sketch = self.element.sketch
         target_loop_set = frozenset(target_loop)
 
-        # Check if a fill already exists for this loop
         existing_fill = None
         for fill in sketch.fills:
             if frozenset(fill.boundary) == target_loop_set:
@@ -83,14 +30,11 @@ class FillTool(SketchTool):
                 break
 
         if existing_fill:
-            # Remove the fill
-            cmd = RemoveFillCommand(self.element.sketch, existing_fill)
-            self.element.execute_command(cmd)
+            cmd = RemoveFillCommand(sketch, existing_fill)
         else:
-            # Add a new fill
-            cmd = AddFillCommand(self.element.sketch, target_loop)
-            self.element.execute_command(cmd)
+            cmd = AddFillCommand(sketch, target_loop)
 
+        self.element.execute_command(cmd)
         self.element.mark_dirty()
         return True
 

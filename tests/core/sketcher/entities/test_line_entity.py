@@ -38,6 +38,29 @@ def test_line_get_point_ids(registry):
     assert set(line.get_point_ids()) == {p1, p2}
 
 
+def test_line_get_endpoint_ids(registry):
+    """Tests that a line correctly reports its endpoint IDs."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    line = registry.get_entity(registry.add_line(p1, p2))
+    assert line.get_endpoint_ids() == [p1, p2]
+
+
+def test_line_to_polygon_vertices(registry):
+    """Tests that a line returns its start point as polygon vertex."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 5)
+    line = registry.get_entity(registry.add_line(p1, p2))
+
+    vertices_forward = line.to_polygon_vertices(registry, forward=True)
+    assert len(vertices_forward) == 1
+    assert vertices_forward[0] == (0.0, 0.0)
+
+    vertices_backward = line.to_polygon_vertices(registry, forward=False)
+    assert len(vertices_backward) == 1
+    assert vertices_backward[0] == (10.0, 5.0)
+
+
 def test_line_get_junction_point_ids(registry):
     """Tests that a line correctly reports its junction point IDs."""
     p1 = registry.add_point(0, 0)

@@ -3,18 +3,13 @@ import cairo
 from collections import defaultdict
 from typing import Any, List, Optional, Tuple
 
-from ...core.geo import Polygon, primitives
-from ...core.geo.linearize import linearize_arc
 from ...core.sketcher.constraints import (
     CoincidentConstraint,
     Constraint,
     PointOnLineConstraint,
 )
 from ...core.sketcher.entities import (
-    Arc,
-    Circle,
     Entity,
-    Line,
     TextBoxEntity,
 )
 from ..canvas.worldsurface import WorldSurface
@@ -88,111 +83,6 @@ class SketchHitTester:
             return "entity", hit_entity
 
         return None, None
-
-    def _loop_to_polygon(
-        self, loop: List[Tuple[int, bool]], element: Any
-    ) -> Polygon:
-        """
-        Converts a loop of entities into a list of 2D polygon vertices,
-        linearizing any arcs.
-        """
-        polygon: Polygon = []
-        registry = element.sketch.registry
-
-        try:
-            first_eid, first_fwd = loop[0]
-            first_ent = registry.get_entity(first_eid)
-            if not first_ent:
-                return []
-            p_ids = first_ent.get_point_ids()
-            current_pid = p_ids[0] if first_fwd else p_ids[1]
-            last_pos_3d = registry.get_point(current_pid).pos()
-            polygon.append(last_pos_3d[:2])
-
-            for eid, fwd in loop:
-                entity = registry.get_entity(eid)
-                if not entity:
-                    return []
-
-                if isinstance(entity, Line):
-                    p_ids = entity.get_point_ids()
-                    end_pid = p_ids[1] if fwd else p_ids[0]
-                    end_pos_3d = registry.get_point(end_pid).pos()
-                    polygon.append(end_pos_3d[:2])
-                    last_pos_3d = end_pos_3d
-                elif isinstance(entity, Arc):
-                    start_pt = registry.get_point(entity.start_idx)
-                    end_pt = registry.get_point(entity.end_idx)
-                    center_pt = registry.get_point(entity.center_idx)
-
-                    # Mock a command for the linearizer
-                    class MockArcCmd:
-                        end = (end_pt.x, end_pt.y, 0.0)
-                        center_offset = (
-                            center_pt.x - start_pt.x,
-                            center_pt.y - start_pt.y,
-                        )
-                        clockwise = entity.clockwise
-
-                    segments = linearize_arc(MockArcCmd(), start_pt.pos())
-                    if not fwd:  # Reverse traversal
-                        segments.reverse()
-
-                    for p1, p2 in segments:
-                        pt_to_add = p2 if fwd else p1
-                        polygon.append(pt_to_add[:2])
-
-                    p_ids = entity.get_point_ids()
-                    end_pid = p_ids[1] if fwd else p_ids[0]
-                    last_pos_3d = registry.get_point(end_pid).pos()
-
-        except (IndexError, AttributeError):
-            return []
-
-        return polygon
-
-    def get_loop_at_point(
-        self, wx: float, wy: float, element: Any
-    ) -> Optional[List[Tuple[int, bool]]]:
-        """
-        Finds the smallest closed loop (face) at a given world coordinate.
-        """
-        mx, my = self.screen_to_model(wx, wy, element)
-        all_loops = element.sketch._find_all_closed_loops()
-        hit_loops = []
-
-        for loop in all_loops:
-            # Circles are a special case loop
-            if len(loop) == 1:
-                eid, _ = loop[0]
-                entity = element.sketch.registry.get_entity(eid)
-                if isinstance(entity, Circle):
-                    center = element.sketch.registry.get_point(
-                        entity.center_idx
-                    )
-                    radius_pt = element.sketch.registry.get_point(
-                        entity.radius_pt_idx
-                    )
-                    radius = math.hypot(
-                        radius_pt.x - center.x, radius_pt.y - center.y
-                    )
-                    dist_sq = (mx - center.x) ** 2 + (my - center.y) ** 2
-                    if dist_sq <= radius**2:
-                        area = math.pi * radius**2
-                        hit_loops.append({"boundary": loop, "area": area})
-                    continue
-
-            polygon = self._loop_to_polygon(loop, element)
-            if polygon and primitives.is_point_in_polygon((mx, my), polygon):
-                area = element.sketch._calculate_loop_signed_area(loop)
-                hit_loops.append({"boundary": loop, "area": abs(area)})
-
-        if not hit_loops:
-            return None
-
-        # Return the boundary of the loop with the smallest area
-        smallest_loop = min(hit_loops, key=lambda item: item["area"])
-        return smallest_loop["boundary"]
 
     def get_objects_in_rect(
         self,

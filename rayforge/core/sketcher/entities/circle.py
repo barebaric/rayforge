@@ -24,6 +24,9 @@ class Circle(Entity):
     def get_point_ids(self) -> List[int]:
         return [self.center_idx, self.radius_pt_idx]
 
+    def get_endpoint_ids(self) -> List[int]:
+        return []
+
     def get_junction_point_ids(self) -> List[int]:
         return [self.center_idx, self.radius_pt_idx]
 

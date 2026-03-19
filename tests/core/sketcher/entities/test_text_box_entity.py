@@ -61,6 +61,17 @@ def test_text_box_get_point_ids(registry):
     assert set(box.get_point_ids()) == {p1, p2, p3}
 
 
+def test_text_box_get_endpoint_ids(registry):
+    """Tests that a text box has no endpoints (not a path entity)."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(0, 10)
+    box = registry.get_entity(
+        registry.add_text_box(p1, p2, p3, "Test", FontConfig())
+    )
+    assert box.get_endpoint_ids() == []
+
+
 def test_text_box_get_junction_point_ids(registry):
     """Tests that a text box has no junction point IDs."""
     p1 = registry.add_point(0, 0)
