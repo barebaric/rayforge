@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-17 21:30+0100\n"
+"POT-Creation-Date: 2026-03-19 01:07+0100\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -114,8 +114,20 @@ msgid "Optionally force a specific laser head"
 msgstr "Optional einen bestimmten Laserkopf erzwingen."
 
 #: rayforge/core/capability.py rayforge/ui_gtk/canvas2d/simulation_controls.py
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Power"
 msgstr "Leistung"
+
+#: rayforge/core/capability.py
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
+msgid "Tab Power"
+msgstr "Laschenleistung"
+
+#: rayforge/core/capability.py
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
+#, python-format
+msgid "Laser power at tab positions (% of cut power)"
+msgstr "Laserleistung an Laschenpositionen (% der Schnittleistung)"
 
 #: rayforge/core/capability.py
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
@@ -1426,6 +1438,7 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 #: rayforge/ui_gtk/doceditor/import_handler.py
+#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
 #: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "Cancel"
 msgstr "Abbrechen"
@@ -1436,7 +1449,9 @@ msgstr "Abbrechen"
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Delete"
 msgstr "Löschen"
 
@@ -2066,6 +2081,7 @@ msgid "Clear All Points"
 msgstr "Alle Punkte löschen"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
+#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
 msgid "Apply"
 msgstr "Anwenden"
 
@@ -2312,6 +2328,18 @@ msgstr "Offsets manuell bearbeiten"
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Current Position"
 msgstr "Aktuelle Position"
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Move to Lower-Left of Selection or Workarea"
+msgstr "Zur unteren linken Ecke der Auswahl oder des Arbeitsbereichs bewegen"
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Move to Center of Selection or Workarea"
+msgstr "Zur Mitte der Auswahl oder des Arbeitsbereichs bewegen"
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Move to Upper-Right of Selection or Workarea"
+msgstr "Zur oberen rechten Ecke der Auswahl oder des Arbeitsbereichs bewegen"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Zero Axes"
@@ -2838,10 +2866,6 @@ msgid "Select, create and manage G-code dialect definitions."
 msgstr "Auswählen, erstellen und verwalten von G-Code-Dialektdefinitionen."
 
 #: rayforge/ui_gtk/machine/jog_widget.py
-msgid "Home X"
-msgstr "Referenzfahrt X"
-
-#: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move North-West"
 msgstr "Nach Nordwesten bewegen"
 
@@ -2853,9 +2877,10 @@ msgstr "Nach Norden bewegen"
 msgid "Move North-East"
 msgstr "Nach Nordosten bewegen"
 
-#: rayforge/ui_gtk/machine/jog_widget.py
-msgid "Home Y"
-msgstr "Referenzfahrt Y"
+#: rayforge/ui_gtk/machine/jog_widget.py rayforge/ui_gtk/mainwindow.py
+#: rayforge/ui_gtk/toolbar.py
+msgid "Send to machine"
+msgstr "An Maschine senden"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move West (Left)"
@@ -2866,8 +2891,8 @@ msgid "Move East (Right)"
 msgstr "Nach Osten bewegen (Rechts)"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
-msgid "Home Z"
-msgstr "Referenzfahrt Z"
+msgid "Increase Z-Distance"
+msgstr "Z-Abstand erhöhen"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move South-West"
@@ -2882,12 +2907,24 @@ msgid "Move South-East"
 msgstr "Nach Südosten bewegen"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
-msgid "Increase Z-Distance"
-msgstr "Z-Abstand erhöhen"
-
-#: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Decrease Z-Distance"
 msgstr "Z-Abstand verringern"
+
+#: rayforge/ui_gtk/machine/jog_widget.py
+msgid "Home X"
+msgstr "Referenzfahrt X"
+
+#: rayforge/ui_gtk/machine/jog_widget.py
+msgid "Home Y"
+msgstr "Referenzfahrt Y"
+
+#: rayforge/ui_gtk/machine/jog_widget.py
+msgid "Home Z"
+msgstr "Referenzfahrt Z"
+
+#: rayforge/ui_gtk/machine/jog_widget.py rayforge/ui_gtk/toolbar.py
+msgid "Cancel running job"
+msgstr "Laufenden Auftrag abbrechen"
 
 #: rayforge/ui_gtk/machine/profile_selector.py
 msgid "Add a New Machine"
@@ -3954,10 +3991,6 @@ msgstr "Rahmenleistung zum Aktivieren konfigurieren"
 msgid "Cycle laser head around the occupied area"
 msgstr "Laserkopf um den belegten Bereich fahren"
 
-#: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
-msgid "Send to machine"
-msgstr "An Maschine senden"
-
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Resume machine"
 msgstr "Maschine fortsetzen"
@@ -4044,10 +4077,6 @@ msgstr "Haltestege zur Auswahl hinzufügen"
 #: rayforge/ui_gtk/toolbar.py
 msgid "Home the machine"
 msgstr "Maschine referenzieren"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Cancel running job"
-msgstr "Laufenden Auftrag abbrechen"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Clear machine alarm (unlock)"
@@ -4321,10 +4350,6 @@ msgid "Power, speed, and laser head selection for this operation."
 msgstr "Leistung, Geschwindigkeit und Laserkopfauswahl für diesen Vorgang."
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Power (%)"
-msgstr "Leistung (%)"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 #, python-brace-format
 msgid "Max: {max_speed}"
 msgstr "Max: {max_speed}"
@@ -4352,6 +4377,10 @@ msgstr "Schnittfuge ändern"
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Change laser power"
 msgstr "Laserleistung ändern"
+
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
+msgid "Change tab power"
+msgstr "Laschenleistung ändern"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Change cut speed"
@@ -5243,6 +5272,48 @@ msgstr "Am Raster ausrichten"
 #: rayforge/ui_gtk/sketcher/tools/select_tool.py
 msgid "Select Connected"
 msgstr "Verbundene auswählen"
+
+#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
+msgid "Next field"
+msgstr "Nächstes Feld"
+
+#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
+msgid "Prev field"
+msgstr "Vorheriges Feld"
+
+#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
+#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
+msgid "W"
+msgstr "B"
+
+#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
+#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
+msgid "H"
+msgstr "H"
+
+#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
+msgid "Type dimensions (W H)"
+msgstr "Maße eingeben (B H)"
+
+#: rayforge/ui_gtk/sketcher/tools/arc_tool.py
+msgid "Type radius"
+msgstr "Radius eingeben"
+
+#: rayforge/ui_gtk/sketcher/tools/circle_tool.py
+msgid "Type diameter"
+msgstr "Durchmesser eingeben"
+
+#: rayforge/ui_gtk/sketcher/tools/line_tool.py
+msgid "Type length"
+msgstr "Länge eingeben"
+
+#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
+msgid "R"
+msgstr "R"
+
+#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
+msgid "Type dimensions (W H R)"
+msgstr "Maße eingeben (B H R)"
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Finish Sketch"
