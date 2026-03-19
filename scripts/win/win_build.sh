@@ -70,6 +70,7 @@ pyinstaller --onedir --hide-console hide-early \
   --add-data "rayforge/version.txt;rayforge" \
   --add-data "rayforge/resources;rayforge/resources" \
   --add-data "rayforge/locale;rayforge/locale" \
+  --add-data "rayforge/builtin_addons;rayforge/builtin_addons" \
   --add-data "etc;etc" \
   --add-data "${WIN_MSYS2_PATH}\\mingw64\\share\\glib-2.0\\schemas;glib-2.0\\schemas" \
   --add-data "${WIN_MSYS2_PATH}\\mingw64\\share\\icons;share\\icons" \
