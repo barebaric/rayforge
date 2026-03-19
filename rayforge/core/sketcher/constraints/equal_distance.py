@@ -46,6 +46,25 @@ class EqualDistanceConstraint(Constraint):
         """Returns to human-readable name of this constraint type."""
         return _("Equal Distance")
 
+    def get_title(self) -> str:
+        """Returns a human-readable title for this constraint."""
+        return self.get_type_name()
+
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
+        """Returns subtitle describing constrained segments."""
+        p1 = registry.get_point(self.p1)
+        p2 = registry.get_point(self.p2)
+        p3 = registry.get_point(self.p3)
+        p4 = registry.get_point(self.p4)
+        if p1 and p2 and p3 and p4:
+            return _("{}-{} and {}-{}").format(
+                self._format_coord(p1.x, p1.y),
+                self._format_coord(p2.x, p2.y),
+                self._format_coord(p3.x, p3.y),
+                self._format_coord(p4.x, p4.y),
+            )
+        return ""
+
     def targets_segment(
         self, p1: int, p2: int, entity_id: Optional[int]
     ) -> bool:

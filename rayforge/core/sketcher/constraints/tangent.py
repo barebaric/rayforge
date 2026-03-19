@@ -47,6 +47,23 @@ class TangentConstraint(Constraint):
         """Returns to human-readable name of this constraint type."""
         return _("Tangent")
 
+    def get_title(self) -> str:
+        """Returns a human-readable title for this constraint."""
+        return self.get_type_name()
+
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
+        """Returns subtitle describing constrained entities."""
+        line = registry.get_entity(self.line_id)
+        shape = registry.get_entity(self.shape_id)
+        if isinstance(line, Line) and isinstance(shape, (Arc, Circle)):
+            center = registry.get_point(shape.center_idx)
+            if center:
+                return _("Line to {} at {}").format(
+                    type(shape).__name__,
+                    self._format_coord(center.x, center.y),
+                )
+        return ""
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "TangentConstraint",

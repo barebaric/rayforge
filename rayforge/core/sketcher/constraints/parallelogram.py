@@ -31,6 +31,19 @@ class ParallelogramConstraint(Constraint):
         """Returns to human-readable name of this constraint type."""
         return _("Parallelogram")
 
+    def get_title(self) -> str:
+        """Returns a human-readable title for this constraint."""
+        return self.get_type_name()
+
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
+        """Returns a human-readable subtitle describing constrained points."""
+        p_origin = registry.get_point(self.p_origin)
+        if p_origin:
+            return _("Origin at {}").format(
+                self._format_coord(p_origin.x, p_origin.y)
+            )
+        return ""
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "ParallelogramConstraint",

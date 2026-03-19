@@ -89,6 +89,18 @@ class AngleConstraint(Constraint):
     def get_type_name() -> str:
         return _("Angle")
 
+    def get_title(self) -> str:
+        """Returns a human-readable title for this constraint."""
+        return f"{self.get_type_name()} {self._format_value()}°"
+
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
+        """Returns subtitle describing constrained entities."""
+        e1 = registry.get_entity(self.e1_id)
+        e2 = registry.get_entity(self.e2_id)
+        if isinstance(e1, Line) and isinstance(e2, Line):
+            return _("Between two lines")
+        return ""
+
     def to_dict(self) -> Dict[str, Any]:
         data = {
             "type": "AngleConstraint",

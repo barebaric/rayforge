@@ -10,6 +10,7 @@ from ..icons import get_icon
 from ..shared.keyboard import PRIMARY_ACCEL
 from ..shared.status_bar import StatusBar
 from ..varset.varset_editor import VarSetEditorWidget
+from .conflicts_widget import ConflictingConstraintsWidget
 from .font_properties import FontPropertiesWidget
 from .menu import SketchMenu
 from .shortcuts import get_active_shortcuts
@@ -173,6 +174,10 @@ class SketchStudio(Gtk.Box):
         self.font_properties = FontPropertiesWidget(self.canvas.sketch_editor)
         side_panel_box.append(self.font_properties)
 
+        # Conflicting Constraints Group (shows when there are conflicts)
+        self.conflicts_widget = ConflictingConstraintsWidget()
+        side_panel_box.append(self.conflicts_widget)
+
         # Initialize the VarSetEditor with the default sketch's parameters
         # This ensures variables added before 'set_sketch' are attached to
         # the current sketch
@@ -275,9 +280,15 @@ class SketchStudio(Gtk.Box):
             self.canvas.sketch_element.tool_changed.connect(
                 self._on_tool_changed
             )
+            self.canvas.sketch_element.solved.connect(self._on_sketch_solved)
             self.canvas.edit_drag_begin.connect(self._on_edit_drag_begin)
             self.canvas.edit_drag_end.connect(self._on_edit_drag_end)
             self._on_selection_changed(self.canvas.sketch_element.selection)
+
+            # Connect conflicts widget to sketch element
+            self.conflicts_widget.set_sketch_element(
+                self.canvas.sketch_element
+            )
 
             # Connect to text editing signals to show font properties
             text_tool = self.canvas.sketch_element.tools.get("text_box")
@@ -365,6 +376,10 @@ class SketchStudio(Gtk.Box):
     def _on_edit_drag_end(self, sender):
         """Handles end of edit mode drag to restore default shortcuts."""
         self._update_status_bar()
+
+    def _on_sketch_solved(self, sender):
+        """Handles sketch solve completion to update conflicts widget."""
+        self.conflicts_widget._update_conflicts()
 
     def _update_status_bar(self):
         """Updates the status bar with current shortcuts."""

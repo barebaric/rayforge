@@ -34,6 +34,17 @@ class CoincidentConstraint(Constraint):
         """Returns to human-readable name of this constraint type."""
         return _("Coincident")
 
+    def get_title(self) -> str:
+        """Returns a human-readable title for this constraint."""
+        return self.get_type_name()
+
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
+        """Returns a human-readable subtitle describing constrained points."""
+        p1 = registry.get_point(self.p1)
+        if p1:
+            return _("At {}").format(self._format_coord(p1.x, p1.y))
+        return ""
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "CoincidentConstraint",

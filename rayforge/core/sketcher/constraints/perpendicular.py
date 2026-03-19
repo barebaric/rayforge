@@ -63,6 +63,20 @@ class PerpendicularConstraint(Constraint):
         """Returns to human-readable name of this constraint type."""
         return _("Perpendicular")
 
+    def get_title(self) -> str:
+        """Returns a human-readable title for this constraint."""
+        return self.get_type_name()
+
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
+        """Returns subtitle describing constrained entities."""
+        e1 = registry.get_entity(self.e1_id)
+        e2 = registry.get_entity(self.e2_id)
+        if e1 and e2:
+            return _("Between {} and {}").format(
+                type(e1).__name__, type(e2).__name__
+            )
+        return ""
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "PerpendicularConstraint",

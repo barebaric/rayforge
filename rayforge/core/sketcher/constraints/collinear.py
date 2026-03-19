@@ -23,6 +23,23 @@ class CollinearConstraint(Constraint):
         """Returns to human-readable name of this constraint type."""
         return _("Collinear")
 
+    def get_title(self) -> str:
+        """Returns a human-readable title for this constraint."""
+        return self.get_type_name()
+
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
+        """Returns a human-readable subtitle describing constrained points."""
+        p1 = registry.get_point(self.p1)
+        p2 = registry.get_point(self.p2)
+        p3 = registry.get_point(self.p3)
+        if p1 and p2 and p3:
+            return _("{}, {}, {}").format(
+                self._format_coord(p1.x, p1.y),
+                self._format_coord(p2.x, p2.y),
+                self._format_coord(p3.x, p3.y),
+            )
+        return ""
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "CollinearConstraint",

@@ -79,9 +79,11 @@ class SketchElement(CanvasElement):
         # Signals
         self.constraint_edit_requested = Signal()
         self.tool_changed = Signal()
+        self.solved = Signal()
 
         # Model
         self._sketch: Sketch
+        self.external_hovered_constraint_idx: Optional[int] = None
 
         # State Managers
         self.selection = SketchSelection()
@@ -192,6 +194,7 @@ class SketchElement(CanvasElement):
         self.sketch.solve()
         self.update_bounds_from_sketch()
         self.mark_dirty()
+        self.solved.send(self)
 
     def remove(self):
         """Overrides remove to cleanup signal connections."""

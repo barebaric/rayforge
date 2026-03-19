@@ -37,6 +37,16 @@ class EqualLengthConstraint(Constraint):
         """Returns to human-readable name of this constraint type."""
         return _("Equal Length")
 
+    def get_title(self) -> str:
+        """Returns a human-readable title for this constraint."""
+        return self.get_type_name()
+
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
+        """Returns subtitle describing constrained entities."""
+        if len(self.entity_ids) >= 2:
+            return _("{} entities").format(len(self.entity_ids))
+        return ""
+
     def targets_segment(
         self, p1: int, p2: int, entity_id: Optional[int]
     ) -> bool:
