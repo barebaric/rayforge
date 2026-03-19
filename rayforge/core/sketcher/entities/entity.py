@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Sequence, TYPE_CHECKING, Optional
-from ...geo import Geometry, Rect
+from ...geo import Geometry, Polygon, Rect
 
 if TYPE_CHECKING:
     from ..constraints import Constraint
@@ -43,6 +43,14 @@ class Entity:
 
     def get_point_ids(self) -> List[int]:
         """Returns IDs of all control points used by this entity."""
+        return []
+
+    def get_endpoint_ids(self) -> List[int]:
+        """
+        Returns IDs of the two endpoints for path/loop traversal.
+        Returns empty list for single-point entities (Circle).
+        Index 0 is the start, index 1 is the end.
+        """
         return []
 
     def get_ignorable_unconstrained_points(self) -> List[int]:
@@ -118,6 +126,17 @@ class Entity:
         Used for multi-segment loops.
         """
         pass
+
+    def to_polygon_vertices(
+        self,
+        registry: "EntityRegistry",
+        forward: bool,
+    ) -> Polygon:
+        """
+        Converts this entity to a list of polygon vertices for hit testing.
+        Curves should be sampled/linearized appropriately.
+        """
+        return []
 
     def create_text_fill_geometry(
         self, registry: "EntityRegistry"

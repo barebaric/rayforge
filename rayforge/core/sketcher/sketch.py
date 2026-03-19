@@ -8,6 +8,7 @@ import math
 from gettext import gettext as _
 from ..asset import IAsset
 from ..geo import Geometry
+from ..geo import primitives
 from ..geo.constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
@@ -512,6 +513,18 @@ class Sketch(IAsset):
                 # T_ccw = (-dy, dx). Traversal = (dy, -dx).
                 # T_cw = (dy, -dx). Traversal = (-dy, dx).
                 return (-dy, dx) if entity.clockwise else (dy, -dx)
+
+        elif isinstance(entity, Bezier):
+            start = self.registry.get_point(entity.start_idx)
+            cp1 = self.registry.get_point(entity.cp1_idx)
+            end = self.registry.get_point(entity.end_idx)
+            cp2 = self.registry.get_point(entity.cp2_idx)
+            if start_pid == start.id:
+                # Tangent at start is direction to cp1
+                return (cp1.x - start.x, cp1.y - start.y)
+            else:
+                # Tangent at end is direction from cp2
+                return (end.x - cp2.x, end.y - cp2.y)
         return (1.0, 0.0)
 
     def _build_adjacency_list(self) -> Dict[int, List[Dict[str, Any]]]:
@@ -536,9 +549,8 @@ class Sketch(IAsset):
             # Skip circles in graph traversal (handled separately)
             if isinstance(e, Circle):
                 continue
-            if isinstance(e, (Line, Arc)):
-                p_ids = e.get_point_ids()
-                # Lines/Arcs have 2 endpoints for traversal
+            if isinstance(e, (Line, Arc, Bezier)):
+                p_ids = e.get_endpoint_ids()
                 p1_id, p2_id = p_ids[0], p_ids[1]
 
                 # Get the coincident groups for both endpoints
@@ -637,12 +649,11 @@ class Sketch(IAsset):
                 return math.pi * radius**2
 
         points = []
-        # Calculate polygon area (straight chords)
         first_ent = self.registry.get_entity(loop[0][0])
         if not first_ent:
             return 0.0
         first_fwd = loop[0][1]
-        p_ids = first_ent.get_point_ids()
+        p_ids = first_ent.get_endpoint_ids()
         curr_p_id = p_ids[0] if first_fwd else p_ids[1]
 
         for eid, fwd in loop:
@@ -652,7 +663,7 @@ class Sketch(IAsset):
                 ent = self.registry.get_entity(eid)
                 if not ent:
                     return 0.0
-                p_ids = ent.get_point_ids()
+                p_ids = ent.get_endpoint_ids()
                 curr_p_id = p_ids[1] if curr_p_id == p_ids[0] else p_ids[0]
             except IndexError:
                 return 0.0
@@ -785,6 +796,69 @@ class Sketch(IAsset):
                 loops.append([(e.id, True)])
 
         return loops
+
+    def _loop_to_polygon(
+        self, loop: List[Tuple[int, bool]]
+    ) -> List[Tuple[float, float]]:
+        """
+        Converts a loop of entities into a list of 2D polygon vertices,
+        sampling beziers and linearizing arcs.
+        """
+        polygon: List[Tuple[float, float]] = []
+
+        for eid, fwd in loop:
+            entity = self.registry.get_entity(eid)
+            if not entity:
+                return []
+
+            vertices = entity.to_polygon_vertices(self.registry, fwd)
+            if not vertices:
+                return []
+            polygon.extend(vertices)
+
+        return polygon
+
+    def get_loop_at_point(
+        self, mx: float, my: float
+    ) -> Optional[List[Tuple[int, bool]]]:
+        """
+        Finds the smallest closed loop containing the given point.
+        Returns None if no loop contains the point.
+        """
+        all_loops = self._find_all_closed_loops()
+        hit_loops = []
+
+        for loop in all_loops:
+            is_hit = False
+
+            if len(loop) == 1:
+                entity = self.registry.get_entity(loop[0][0])
+                if isinstance(entity, Circle):
+                    center = self.registry.get_point(entity.center_idx)
+                    radius_pt = self.registry.get_point(entity.radius_pt_idx)
+                    if center and radius_pt:
+                        radius = math.hypot(
+                            radius_pt.x - center.x, radius_pt.y - center.y
+                        )
+                        dist_sq = (mx - center.x) ** 2 + (my - center.y) ** 2
+                        if dist_sq <= radius**2:
+                            is_hit = True
+            else:
+                polygon = self._loop_to_polygon(loop)
+                if polygon and primitives.is_point_in_polygon(
+                    (mx, my), polygon
+                ):
+                    is_hit = True
+
+            if is_hit:
+                area = abs(self._calculate_loop_signed_area(loop))
+                hit_loops.append((area, loop))
+
+        if not hit_loops:
+            return None
+
+        hit_loops.sort(key=lambda x: x[0])
+        return hit_loops[0][1]
 
     # --- Validation ---
 
@@ -1384,7 +1458,7 @@ class Sketch(IAsset):
                 if not first_ent:
                     continue
 
-                p_ids = first_ent.get_point_ids()
+                p_ids = first_ent.get_endpoint_ids()
                 start_pid = p_ids[0] if first_fwd else p_ids[1]
                 start_pt = self.registry.get_point(start_pid)
 

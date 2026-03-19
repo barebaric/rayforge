@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Sequence, TYPE_CHECKING
-from ...geo import Geometry, Rect
+from ...geo import Geometry, Polygon, Rect
 from ...geo.primitives import (
     find_closest_point_on_line_segment,
     line_segment_intersects_rect,
@@ -21,6 +21,9 @@ class Line(Entity):
         self.type = "line"
 
     def get_point_ids(self) -> List[int]:
+        return [self.p1_idx, self.p2_idx]
+
+    def get_endpoint_ids(self) -> List[int]:
         return [self.p1_idx, self.p2_idx]
 
     def get_junction_point_ids(self) -> List[int]:
@@ -87,6 +90,16 @@ class Line(Entity):
         end_pid = p_ids[1] if forward else p_ids[0]
         end_pt = registry.get_point(end_pid)
         geo.line_to(end_pt.x, end_pt.y)
+
+    def to_polygon_vertices(
+        self,
+        registry: "EntityRegistry",
+        forward: bool,
+    ) -> Polygon:
+        p_ids = self.get_endpoint_ids()
+        start_pid = p_ids[0] if forward else p_ids[1]
+        p = registry.get_point(start_pid)
+        return [(p.x, p.y)]
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Line to a dictionary."""

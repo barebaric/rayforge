@@ -34,6 +34,9 @@ class TextBoxEntity(Entity):
     def get_point_ids(self) -> List[int]:
         return [self.origin_id, self.width_id, self.height_id]
 
+    def get_endpoint_ids(self) -> List[int]:
+        return []
+
     def get_junction_point_ids(self) -> List[int]:
         return []
 

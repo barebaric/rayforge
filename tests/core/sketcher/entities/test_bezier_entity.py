@@ -51,6 +51,35 @@ def test_bezier_get_point_ids(registry):
     assert set(bezier.get_point_ids()) == {p1, p2, p3, p4}
 
 
+def test_bezier_get_endpoint_ids(registry):
+    """Tests that a bezier correctly reports its endpoint IDs."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(5, 10)
+    p3 = registry.add_point(15, 10)
+    p4 = registry.add_point(20, 0)
+    bezier = registry.get_entity(registry.add_bezier(p1, p2, p3, p4))
+    assert bezier.get_endpoint_ids() == [p1, p4]
+
+
+def test_bezier_to_polygon_vertices(registry):
+    """Tests that a bezier samples into polygon vertices."""
+    start = registry.add_point(0, 0)
+    cp1 = registry.add_point(0, 20)
+    cp2 = registry.add_point(20, 20)
+    end = registry.add_point(20, 0)
+    bezier = registry.get_entity(registry.add_bezier(start, cp1, cp2, end))
+
+    vertices = bezier.to_polygon_vertices(registry, forward=True)
+    assert len(vertices) == 21
+    assert vertices[0] == pytest.approx((0.0, 0.0))
+    assert vertices[-1] == pytest.approx((20.0, 0.0))
+
+    vertices_rev = bezier.to_polygon_vertices(registry, forward=False)
+    assert len(vertices_rev) == 21
+    assert vertices_rev[0] == pytest.approx((20.0, 0.0))
+    assert vertices_rev[-1] == pytest.approx((0.0, 0.0))
+
+
 def test_bezier_get_junction_point_ids(registry):
     """Tests that a bezier correctly reports its junction point IDs."""
     p1 = registry.add_point(0, 0)
@@ -58,7 +87,7 @@ def test_bezier_get_junction_point_ids(registry):
     p3 = registry.add_point(15, 10)
     p4 = registry.add_point(20, 0)
     bezier = registry.get_entity(registry.add_bezier(p1, p2, p3, p4))
-    assert set(bezier.get_junction_point_ids()) == {p1, p2, p3, p4}
+    assert set(bezier.get_junction_point_ids()) == {p1, p4}
 
 
 def test_bezier_hit_test(registry):
