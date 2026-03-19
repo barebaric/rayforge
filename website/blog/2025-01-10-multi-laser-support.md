@@ -5,8 +5,6 @@ authors: rayforge_team
 tags: [multi-laser, operations, workflow]
 ---
 
-![Camera Overlay](/images/camera-overlay.png)
-
 One of the most powerful features in Rayforge is the ability to assign
 different lasers to different operations within a single job. This opens
 up exciting possibilities for multi-tool setups and specialized
