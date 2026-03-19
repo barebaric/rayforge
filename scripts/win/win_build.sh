@@ -26,10 +26,10 @@ echo "${APP_VERSION}" > rayforge/version.txt
 
 
 # ----------------------------------------------------
-# STEP 1: Generate .ico file from SVG
+# STEP 1: Generate .ico file from PNG
 # ----------------------------------------------------
 echo "Creating application icon..."
-bash scripts/win/win_create_icon.sh
+python3 scripts/win/win_create_icon.py
 
 # ----------------------------------------------------
 # STEP 2: Configure GTK Theme for the bundle
