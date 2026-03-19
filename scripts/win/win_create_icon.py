@@ -14,4 +14,4 @@ if img.mode != "RGBA":
 
 icons = [img.resize(size, Image.Resampling.LANCZOS) for size in sizes]
 icons[0].save(ico_path, format="ICO", sizes=sizes, append_images=icons[1:])
-print("✅ Icon generation complete.")
+print("Icon generation complete.")
