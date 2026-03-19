@@ -11,7 +11,6 @@ from rayforge.addon_mgr.lazy_loader import (
     install_addon_finder,
 )
 
-
 _worker_addons_loaded = False
 _shared_state_cache: Optional[Dict] = None
 
@@ -28,7 +27,15 @@ def ensure_addons_loaded():
     if _worker_addons_loaded:
         return
 
+    manifest = (
+        _shared_state_cache.get("addon_manifest")
+        if _shared_state_cache
+        else None
+    )
+
     _worker_addons_loaded = True
+    if not manifest:
+        return
 
     from rayforge.context import get_context
     from rayforge.core.step_registry import step_registry
@@ -40,16 +47,6 @@ def ensure_addons_loaded():
 
     context = get_context()
     context._headless = True
-
-    manifest = (
-        _shared_state_cache.get("addon_manifest")
-        if _shared_state_cache
-        else None
-    )
-
-    if not manifest:
-        logger.warning("Cannot load worker addons: manifest not available.")
-        return
 
     if _shared_state_cache:
         install_addon_finder(shared_dict=_shared_state_cache)
