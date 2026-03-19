@@ -6,9 +6,21 @@ from blinker import Signal
 from collections import defaultdict
 import math
 from gettext import gettext as _
-from ..geo import Geometry
-from ..varset import VarSet
 from ..asset import IAsset
+from ..geo import Geometry
+from ..geo.constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    CMD_TYPE_BEZIER,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_I,
+    COL_J,
+    COL_CW,
+)
+from ..varset import VarSet
 from .constraints import (
     AngleConstraint,
     AspectRatioConstraint,
@@ -31,6 +43,7 @@ from .constraints import (
 )
 from .constraints.drag import DragConstraint
 from .entities import Line, Arc, Circle, Entity
+from .geometry_import_error import GeometryImportError
 from .params import ParameterContext
 from .registry import EntityRegistry
 from .solver import Solver
@@ -313,6 +326,83 @@ class Sketch(IAsset):
         with open(file_path, "r") as f:
             data = json.load(f)
         return cls.from_dict(data)
+
+    @classmethod
+    def from_geometry(cls, geometry: Geometry) -> "Sketch":
+        """
+        Creates a Sketch from a Geometry object.
+
+        The geometry must contain only lines and arcs. Beziers are not
+        supported and will raise GeometryImportError. No linearization
+        is performed.
+
+        Args:
+            geometry: The Geometry object to convert.
+
+        Returns:
+            A new Sketch instance with entities created from the geometry.
+
+        Raises:
+            GeometryImportError: If the geometry contains bezier curves.
+        """
+        sketch = cls()
+        data = geometry.data
+
+        if data is None or len(data) == 0:
+            return sketch
+
+        for row in data:
+            cmd_type = row[COL_TYPE]
+            if cmd_type == CMD_TYPE_BEZIER:
+                raise GeometryImportError(
+                    "Cannot convert geometry containing bezier curves to "
+                    "sketch. Use fit_arcs() to convert beziers to arcs first."
+                )
+
+        point_map: Dict[Tuple[float, float], int] = {}
+
+        def get_or_add_point(x: float, y: float) -> int:
+            key = (round(x, 6), round(y, 6))
+            if key not in point_map:
+                point_map[key] = sketch.add_point(x, y)
+            return point_map[key]
+
+        current_x, current_y = 0.0, 0.0
+        current_pid: Optional[int] = None
+
+        for row in data:
+            cmd_type = row[COL_TYPE]
+            end_x, end_y = row[COL_X], row[COL_Y]
+
+            if cmd_type == CMD_TYPE_MOVE:
+                current_x, current_y = end_x, end_y
+                current_pid = get_or_add_point(end_x, end_y)
+            elif cmd_type == CMD_TYPE_LINE:
+                if current_pid is None:
+                    current_pid = get_or_add_point(current_x, current_y)
+                end_pid = get_or_add_point(end_x, end_y)
+                sketch.add_line(current_pid, end_pid)
+                current_pid = end_pid
+                current_x, current_y = end_x, end_y
+            elif cmd_type == CMD_TYPE_ARC:
+                if current_pid is None:
+                    current_pid = get_or_add_point(current_x, current_y)
+                end_pid = get_or_add_point(end_x, end_y)
+
+                i_offset, j_offset = row[COL_I], row[COL_J]
+                clockwise = bool(row[COL_CW])
+
+                center_x = current_x + i_offset
+                center_y = current_y + j_offset
+                center_pid = get_or_add_point(center_x, center_y)
+
+                sketch.add_arc(
+                    current_pid, end_pid, center_pid, clockwise=clockwise
+                )
+                current_pid = end_pid
+                current_x, current_y = end_x, end_y
+
+        return sketch
 
     def set_param(self, name: str, value: Union[str, float]) -> None:
         """Define a parameter like 'width'=100 or 'height'='width/2'."""
