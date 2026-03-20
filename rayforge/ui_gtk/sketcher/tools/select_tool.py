@@ -48,6 +48,8 @@ logger = logging.getLogger(__name__)
 class SelectTool(SketchTool):
     """Handles selection and point dragging."""
 
+    ICON = "sketch-select-symbolic"
+    LABEL = _("Select")
     SHORTCUT = (" ", _("Select"))
 
     def __init__(self, element):
@@ -86,6 +88,12 @@ class SelectTool(SketchTool):
         self.drag_initial_entity_states: Dict[int, Any] = {}
 
         self.drag_point_distances: Dict[int, int] = {}
+
+    def is_available(self, target, target_type) -> bool:
+        return target is None
+
+    def shortcut_is_active(self) -> bool:
+        return True
 
     def _is_dragging(self) -> bool:
         """Returns True if currently dragging a point, entity, or CP."""

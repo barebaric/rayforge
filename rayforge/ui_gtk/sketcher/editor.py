@@ -9,8 +9,7 @@ from ...core.undo import HistoryManager
 from ..canvas.cursor import get_tool_cursor
 from ..shared.keyboard import is_primary_modifier
 from .piemenu import SketchPieMenu
-from .shortcuts import get_shortcuts_dict
-from .tools import SelectTool, TextBoxTool
+from .tools import TOOL_REGISTRY, SelectTool, TextBoxTool
 from .tools.base import SketcherKey
 from .tools.text_box_tool import TextBoxState
 
@@ -53,13 +52,19 @@ class SketchEditor:
 
         # Connect signals
         self.pie_menu.tool_selected.connect(self.on_tool_selected)
-        self.pie_menu.constraint_selected.connect(self.on_constraint_selected)
-        self.pie_menu.action_triggered.connect(self.on_action_triggered)
         self.pie_menu.right_clicked.connect(self.on_pie_menu_right_click)
 
     def _init_shortcuts(self):
-        """Initializes the keyboard shortcut mappings."""
-        self.shortcuts = get_shortcuts_dict()
+        """Builds keyboard shortcut mappings from tool registry."""
+        self.shortcuts = {}
+
+        for tool_name, tool_cls in TOOL_REGISTRY.items():
+            if tool_cls.SHORTCUT:
+                key, _label = tool_cls.SHORTCUT
+                self.shortcuts[key] = f"set_tool:{tool_name}"
+
+        self.shortcuts["c"] = "set_tool:coincident"
+
         self.shortcut_prefixes = {
             s[:i] for s in self.shortcuts for i in range(1, len(s))
         }
@@ -168,23 +173,11 @@ class SketchEditor:
 
     def on_pie_menu_right_click(self, sender, gesture, n_press, x, y):
         """
-        Handles a right-click that happened on the PieMenu's drawing area.
-        Translates coordinates and forwards to the main right-click handler.
+        Handles a right-click on the PieMenu. Just closes it - the user
+        can right-click again to reposition.
         """
-        sketch_element = self.sketch_element
-        if not sketch_element or not sketch_element.canvas:
-            return
-
-        child = self.pie_menu.get_child()
-        if not child:
-            return
-
-        canvas_coords = child.translate_coordinates(
-            sketch_element.canvas, x, y
-        )
-        if canvas_coords:
-            canvas_x, canvas_y = canvas_coords[:2]
-            self.handle_right_click(gesture, n_press, canvas_x, canvas_y)
+        self.pie_menu.popdown()
+        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
     def handle_right_click(
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
@@ -217,11 +210,15 @@ class SketchEditor:
         target_type = hit_type
 
         # 2. Resolve Hit Object to Concrete Type AND Update Selection
-        # If the clicked object is not already selected, select it.
+        # Only change selection if the clicked item is not already selected.
+        sel = sketch_element.selection
+
         if hit_type == "point":
             assert isinstance(hit_obj, int)
             pid = hit_obj
             target = sketch_element.sketch.registry.get_point(pid)
+            if pid not in sel.point_ids:
+                sketch_element.selection.select_point(pid, is_multi=False)
 
             # Check if this point is a valid chamfer corner (2 lines). If so,
             # promote the selection type to "junction".
@@ -232,22 +229,31 @@ class SketchEditor:
             assert isinstance(hit_obj, int)
             pid = hit_obj
             target = sketch_element.sketch.registry.get_point(pid)
+            if sel.junction_pid != pid:
+                sketch_element.selection.select_junction(pid, is_multi=False)
 
         elif hit_type == "entity":
             assert isinstance(hit_obj, Entity)
             target = hit_obj
+            if target.id not in sel.entity_ids:
+                sketch_element.selection.select_entity(target, is_multi=False)
 
         elif hit_type == "constraint":
             assert isinstance(hit_obj, int)
             idx = hit_obj
             if 0 <= idx < len(sketch_element.sketch.constraints):
                 target = sketch_element.sketch.constraints[idx]
+                if sel.constraint_idx != idx:
+                    sketch_element.selection.select_constraint(
+                        idx, is_multi=False
+                    )
 
         self.pie_menu.set_context(sketch_element, target, target_type)
 
-        # Since the pie menu is parented to the canvas, we can use the
-        # canvas coordinates directly without translation. This is more
-        # reliable than translate_coordinates, especially on Windows.
+        if not self.pie_menu.has_items():
+            logger.debug("No tools available for this context")
+            return
+
         logger.info(f"Opening Pie Menu at {x}, {y} (Type: {target_type})")
         self.pie_menu.popup_at_location(x, y)
 
@@ -259,42 +265,6 @@ class SketchEditor:
             self.sketch_element.set_tool(tool)
             if self.sketch_element.canvas:
                 self.sketch_element.canvas.grab_focus()
-
-    def on_constraint_selected(self, sender, action: str):
-        logger.info(f"Constraint activated: {action}")
-        if not self.sketch_element:
-            return
-
-        method = getattr(self.sketch_element, action, None)
-        if method:
-            method()
-
-        if self.sketch_element.canvas:
-            self.sketch_element.canvas.grab_focus()
-
-    def on_action_triggered(self, sender, action: str):
-        logger.info(f"Action activated: {action}")
-        if not self.sketch_element:
-            return
-
-        ctx = self.sketch_element
-        if action == "toggle_construction_on_selection":
-            ctx.toggle_construction_on_selection()
-        elif action == "delete":
-            ctx.delete_selection()
-        elif action == "chamfer":
-            ctx.add_chamfer_action()
-        elif action == "fillet":
-            ctx.add_fillet_action()
-        elif action == "set_waypoint_sharp":
-            ctx.set_waypoint_sharp()
-        elif action == "set_waypoint_smooth":
-            ctx.set_waypoint_smooth()
-        elif action == "set_waypoint_symmetric":
-            ctx.set_waypoint_symmetric()
-
-        if self.sketch_element.canvas:
-            self.sketch_element.canvas.grab_focus()
 
     # --- Text Box UI Management ---
 

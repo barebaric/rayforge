@@ -9,12 +9,20 @@ from .dimension_input import DimensionInputHandler
 class CircleTool(SketchTool):
     """Handles creating circles (Center -> Radius Point)."""
 
+    ICON = "sketch-circle-symbolic"
+    LABEL = _("Circle")
     SHORTCUT = ("gc", _("Circle"))
 
     def __init__(self, element):
         super().__init__(element)
         self._preview_state: Optional[CirclePreviewState] = None
         self._dim_input = DimensionInputHandler()
+
+    def is_available(self, target, target_type) -> bool:
+        return target is None
+
+    def shortcut_is_active(self) -> bool:
+        return True
 
     def get_preview_state(self) -> Optional[CirclePreviewState]:
         return self._preview_state

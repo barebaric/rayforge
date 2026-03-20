@@ -8,6 +8,8 @@ import cairo
 
 if TYPE_CHECKING:
     from ....core.sketcher.commands.base import PreviewState
+    from ....core.sketcher.constraints import Constraint
+    from ....core.sketcher.entities import Entity, Point
     from ..sketchelement import SketchElement
 
 
@@ -34,6 +36,8 @@ class SketcherKey(Enum):
 class SketchTool(ABC):
     """Abstract base class for sketcher tools."""
 
+    ICON: Optional[str] = None
+    LABEL: Optional[str] = None
     SHORTCUT: Optional[Tuple[str, str]] = None
 
     def __init__(self, element: SketchElement):
@@ -59,6 +63,13 @@ class SketchTool(ABC):
         """
         Called when the tool is about to be switched or deactivated.
         Subclasses can implement this to clean up their state.
+        """
+        pass
+
+    def on_activate(self):
+        """
+        Called when the tool becomes active.
+        Action tools override this to execute immediately.
         """
         pass
 
@@ -101,3 +112,38 @@ class SketchTool(ABC):
         Override in subclasses to provide context-sensitive shortcuts.
         """
         return []
+
+    def is_available(
+        self,
+        target: Optional[Union["Point", "Entity", "Constraint"]],
+        target_type: Optional[str],
+    ) -> bool:
+        """
+        Determines if this tool should be visible in the pie menu.
+
+        Args:
+            target: The object under the cursor (Point, Entity, Constraint)
+            target_type: Type identifier ('point', 'entity', 'constraint',
+                         'junction', None for empty space)
+
+        Returns:
+            True if the tool should be shown, False otherwise.
+
+        Default implementation returns True for tools with ICON and LABEL.
+        Override in subclasses for context-sensitive visibility.
+        """
+        return self.ICON is not None and self.LABEL is not None
+
+    def shortcut_is_active(self) -> bool:
+        """
+        Determines if this tool's shortcut should be shown in the status bar.
+
+        Returns:
+            True if the shortcut should be shown, False otherwise.
+
+        Default implementation delegates to is_available() with no target.
+        Global tools (line, arc, etc.) should override to always return True.
+        Constraint/action tools should use the default to show only when
+        applicable.
+        """
+        return self.is_available(None, None)
