@@ -1,4 +1,5 @@
 import cairo
+import logging
 import math
 from collections import defaultdict
 from collections.abc import Callable
@@ -6,6 +7,7 @@ from typing import TYPE_CHECKING, Optional, Set
 
 from ...core.geo import Geometry, Point as GeoPoint
 from ...core.matrix import Matrix
+from ...core.sketcher.commands import BezierPreviewState
 from ...core.sketcher.commands.dimension import DimensionData
 from ...core.sketcher.constraints import (
     CoincidentConstraint,
@@ -21,10 +23,12 @@ from ...core.sketcher.entities import (
     TextBoxEntity,
 )
 from ..canvas import WorldSurface
-from .tools import TextBoxTool
+from .tools import BezierTool, TextBoxTool
 
 if TYPE_CHECKING:
     from .sketchelement import SketchElement
+
+logger = logging.getLogger(__name__)
 
 
 class SketchRenderer:
@@ -83,6 +87,7 @@ class SketchRenderer:
         self._draw_points(ctx, to_screen)
         self._draw_overlays(ctx)
         self._draw_preview_dimensions(ctx)
+        self._draw_bezier_control_handles(ctx)
 
     def _draw_origin(self, ctx: cairo.Context):
         """Draws a fixed symbol at (0,0)."""
@@ -316,14 +321,20 @@ class SketchRenderer:
     def _define_bezier_path(self, ctx: cairo.Context, bezier: Bezier) -> bool:
         """Defines the path for a bezier curve without stroking."""
         start = self._safe_get_point(bezier.start_idx)
-        cp1 = self._safe_get_point(bezier.cp1_idx)
-        cp2 = self._safe_get_point(bezier.cp2_idx)
         end = self._safe_get_point(bezier.end_idx)
-        if not (start and cp1 and cp2 and end):
+        if not (start and end):
             return False
 
+        if bezier.is_line(self.element.sketch.registry):
+            ctx.move_to(start.x, start.y)
+            ctx.line_to(end.x, end.y)
+            return True
+
+        cp1_x, cp1_y, cp2_x, cp2_y = bezier.get_control_points_or_endpoints(
+            self.element.sketch.registry
+        )
         ctx.move_to(start.x, start.y)
-        ctx.curve_to(cp1.x, cp1.y, cp2.x, cp2.y, end.x, end.y)
+        ctx.curve_to(cp1_x, cp1_y, cp2_x, cp2_y, end.x, end.y)
         return True
 
     def _define_text_box_path(
@@ -434,8 +445,6 @@ class SketchRenderer:
                 point_counts[entity.center_idx] += 1
             elif isinstance(entity, Bezier):
                 point_counts[entity.start_idx] += 1
-                point_counts[entity.cp1_idx] += 1
-                point_counts[entity.cp2_idx] += 1
                 point_counts[entity.end_idx] += 1
             elif isinstance(entity, Circle):
                 point_counts[entity.center_idx] += 1
@@ -496,8 +505,8 @@ class SketchRenderer:
         origin_id = getattr(self.element.sketch, "origin_id", -1)
         hover_pid = self.element.tools["select"].hovered_point_id
 
-        # Determine points that should be highlighted due to entity selection
         entity_points = set()
+
         for eid in self.element.selection.entity_ids:
             ent = self._get_entity_by_id(eid)
             if isinstance(ent, Line):
@@ -509,14 +518,11 @@ class SketchRenderer:
                 entity_points.add(ent.center_idx)
             elif isinstance(ent, Bezier):
                 entity_points.add(ent.start_idx)
-                entity_points.add(ent.cp1_idx)
-                entity_points.add(ent.cp2_idx)
                 entity_points.add(ent.end_idx)
             elif isinstance(ent, Circle):
                 entity_points.add(ent.center_idx)
                 entity_points.add(ent.radius_pt_idx)
             elif isinstance(ent, TextBoxEntity):
-                # Highlight the points if the text box is selected
                 entity_points.update(
                     ent.get_all_frame_point_ids(self.element.sketch.registry)
                 )
@@ -530,7 +536,6 @@ class SketchRenderer:
             is_explicit_sel = p.id in self.element.selection.point_ids
             is_implicit_sel = p.id in entity_points
 
-            # Handle origin point separately for selection/hover feedback
             if p.id == origin_id:
                 if is_hovered or is_explicit_sel:
                     ctx.save()
@@ -651,5 +656,244 @@ class SketchRenderer:
                 ctx.set_source_rgba(0.1, 0.1, 0.1, 1.0)
             ctx.move_to(label_sx, label_sy)
             ctx.show_text(label)
+
+        ctx.restore()
+
+    def _draw_bezier_control_handles(self, ctx: cairo.Context):
+        """Draws control handles for bezier preview and selected beziers."""
+        to_screen_transform = (
+            self.element.hittester.get_model_to_screen_transform(self.element)
+        )
+        to_screen = to_screen_transform.transform_point
+
+        tool = self.element.current_tool
+        preview_state = None
+        if isinstance(tool, BezierTool):
+            preview_state = tool.get_preview_state()
+
+        if isinstance(preview_state, BezierPreviewState):
+            if not preview_state.is_line_preview:
+                self._draw_bezier_preview_handles(
+                    ctx, to_screen, preview_state
+                )
+
+        selected_bezier_ids: set[int] = set()
+        selected_point_ids: set[int] = set()
+        for eid in self.element.selection.entity_ids:
+            entity = self._get_entity_by_id(eid)
+            if isinstance(entity, Bezier):
+                selected_bezier_ids.add(eid)
+                selected_point_ids.add(entity.start_idx)
+                selected_point_ids.add(entity.end_idx)
+
+        for pid in selected_point_ids:
+            waypoint = self._safe_get_point(pid)
+            if waypoint is None:
+                continue
+            self._draw_waypoint_handles(ctx, to_screen, waypoint)
+
+        selected_waypoint_ids: set[int] = set()
+        for pid in self.element.selection.point_ids:
+            selected_waypoint_ids.add(pid)
+        if self.element.selection.junction_pid is not None:
+            selected_waypoint_ids.add(self.element.selection.junction_pid)
+
+        for pid in selected_waypoint_ids:
+            waypoint = self._safe_get_point(pid)
+            if waypoint is None:
+                continue
+            connected = waypoint.get_connected_beziers(
+                self.element.sketch.registry
+            )
+            if connected:
+                self._draw_waypoint_handles(ctx, to_screen, waypoint)
+
+    def _draw_bezier_preview_handles(
+        self, ctx: cairo.Context, to_screen, preview_state: BezierPreviewState
+    ):
+        """Draw control handles for the active bezier preview."""
+        if preview_state.end_id is None:
+            return
+
+        try:
+            start_pt = self.element.sketch.registry.get_point(
+                preview_state.start_id
+            )
+            end_pt = self.element.sketch.registry.get_point(
+                preview_state.end_id
+            )
+        except IndexError:
+            return
+
+        if not (start_pt and end_pt):
+            return
+
+        start_sx, start_sy = to_screen((start_pt.x, start_pt.y))
+        end_sx, end_sy = to_screen((end_pt.x, end_pt.y))
+
+        temp_bezier = None
+        if preview_state.temp_entity_id is not None:
+            temp_entity = self.element.sketch.registry.get_entity(
+                preview_state.temp_entity_id
+            )
+            if isinstance(temp_entity, Bezier):
+                temp_bezier = temp_entity
+
+        ctx.save()
+        ctx.set_line_width(1.0)
+        ctx.set_source_rgba(0.6, 0.4, 0.8, 0.8)
+
+        if temp_bezier is not None:
+            if temp_bezier.cp1 is not None:
+                cp1_abs = (
+                    start_pt.x + temp_bezier.cp1[0],
+                    start_pt.y + temp_bezier.cp1[1],
+                )
+                cp1_sx, cp1_sy = to_screen(cp1_abs)
+                ctx.move_to(start_sx, start_sy)
+                ctx.line_to(cp1_sx, cp1_sy)
+                ctx.stroke()
+
+            if temp_bezier.cp2 is not None:
+                cp2_abs = (
+                    end_pt.x + temp_bezier.cp2[0],
+                    end_pt.y + temp_bezier.cp2[1],
+                )
+                cp2_sx, cp2_sy = to_screen(cp2_abs)
+                ctx.move_to(end_sx, end_sy)
+                ctx.line_to(cp2_sx, cp2_sy)
+                ctx.stroke()
+
+        virtual_cp_abs = preview_state.get_virtual_cp_absolute(
+            self.element.sketch.registry
+        )
+        if virtual_cp_abs is not None:
+            cp_sx, cp_sy = to_screen(virtual_cp_abs)
+            ctx.move_to(end_sx, end_sy)
+            ctx.line_to(cp_sx, cp_sy)
+            ctx.stroke()
+
+        ctx.set_source_rgba(0.6, 0.4, 0.8, 1.0)
+
+        if temp_bezier is not None:
+            if temp_bezier.cp1 is not None:
+                cp1_abs = (
+                    start_pt.x + temp_bezier.cp1[0],
+                    start_pt.y + temp_bezier.cp1[1],
+                )
+                cp1_sx, cp1_sy = to_screen(cp1_abs)
+                ctx.rectangle(cp1_sx - 4, cp1_sy - 4, 8, 8)
+                ctx.fill()
+
+            if temp_bezier.cp2 is not None:
+                cp2_abs = (
+                    end_pt.x + temp_bezier.cp2[0],
+                    end_pt.y + temp_bezier.cp2[1],
+                )
+                cp2_sx, cp2_sy = to_screen(cp2_abs)
+                ctx.rectangle(cp2_sx - 4, cp2_sy - 4, 8, 8)
+                ctx.fill()
+
+        if virtual_cp_abs is not None:
+            cp_sx, cp_sy = to_screen(virtual_cp_abs)
+            ctx.rectangle(cp_sx - 4, cp_sy - 4, 8, 8)
+            ctx.fill()
+
+        ctx.restore()
+
+    def _draw_bezier_entity_handles(
+        self, ctx: cairo.Context, to_screen, bezier: Bezier
+    ):
+        """Draw control handles for a selected bezier entity."""
+        if bezier.cp1 is None and bezier.cp2 is None:
+            return
+
+        try:
+            start_pt = self.element.sketch.registry.get_point(bezier.start_idx)
+            end_pt = self.element.sketch.registry.get_point(bezier.end_idx)
+        except IndexError:
+            return
+
+        if not (start_pt and end_pt):
+            return
+
+        start_sx, start_sy = to_screen((start_pt.x, start_pt.y))
+        end_sx, end_sy = to_screen((end_pt.x, end_pt.y))
+
+        ctx.save()
+        ctx.set_line_width(1.0)
+        ctx.set_source_rgba(0.2, 0.6, 1.0, 0.8)
+
+        if bezier.cp1 is not None:
+            cp1_abs = (start_pt.x + bezier.cp1[0], start_pt.y + bezier.cp1[1])
+            cp1_sx, cp1_sy = to_screen(cp1_abs)
+            ctx.move_to(start_sx, start_sy)
+            ctx.line_to(cp1_sx, cp1_sy)
+            ctx.stroke()
+            ctx.set_source_rgba(0.2, 0.6, 1.0, 1.0)
+            ctx.rectangle(cp1_sx - 4, cp1_sy - 4, 8, 8)
+            ctx.fill()
+
+        if bezier.cp2 is not None:
+            cp2_abs = (end_pt.x + bezier.cp2[0], end_pt.y + bezier.cp2[1])
+            cp2_sx, cp2_sy = to_screen(cp2_abs)
+            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.8)
+            ctx.move_to(end_sx, end_sy)
+            ctx.line_to(cp2_sx, cp2_sy)
+            ctx.stroke()
+            ctx.set_source_rgba(0.2, 0.6, 1.0, 1.0)
+            ctx.rectangle(cp2_sx - 4, cp2_sy - 4, 8, 8)
+            ctx.fill()
+
+        ctx.restore()
+
+    def _draw_waypoint_handles(
+        self,
+        ctx: cairo.Context,
+        to_screen,
+        waypoint: Point,
+    ):
+        """Draw control handles for all beziers connected to a waypoint."""
+        connected_beziers = waypoint.get_connected_beziers(
+            self.element.sketch.registry
+        )
+
+        if not connected_beziers:
+            return
+
+        wp_sx, wp_sy = to_screen((waypoint.x, waypoint.y))
+
+        ctx.save()
+        ctx.set_line_width(1.0)
+        ctx.set_source_rgba(0.2, 0.6, 1.0, 0.8)
+
+        for bezier in connected_beziers:
+            if bezier.start_idx == waypoint.id and bezier.cp1 is not None:
+                cp_abs = (
+                    waypoint.x + bezier.cp1[0],
+                    waypoint.y + bezier.cp1[1],
+                )
+                cp_sx, cp_sy = to_screen(cp_abs)
+                ctx.move_to(wp_sx, wp_sy)
+                ctx.line_to(cp_sx, cp_sy)
+                ctx.stroke()
+                ctx.set_source_rgba(0.2, 0.6, 1.0, 1.0)
+                ctx.rectangle(cp_sx - 4, cp_sy - 4, 8, 8)
+                ctx.fill()
+                ctx.set_source_rgba(0.2, 0.6, 1.0, 0.8)
+
+            if bezier.end_idx == waypoint.id and bezier.cp2 is not None:
+                cp_abs = (
+                    waypoint.x + bezier.cp2[0],
+                    waypoint.y + bezier.cp2[1],
+                )
+                cp_sx, cp_sy = to_screen(cp_abs)
+                ctx.move_to(wp_sx, wp_sy)
+                ctx.line_to(cp_sx, cp_sy)
+                ctx.stroke()
+                ctx.set_source_rgba(0.2, 0.6, 1.0, 1.0)
+                ctx.rectangle(cp_sx - 4, cp_sy - 4, 8, 8)
+                ctx.fill()
+                ctx.set_source_rgba(0.2, 0.6, 1.0, 0.8)
 
         ctx.restore()

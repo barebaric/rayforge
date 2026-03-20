@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from gettext import gettext as _
 
 from ...geo import Point as GeoPoint
-from ..entities import Line, Arc, Circle, Point
+from ..entities import Bezier, Line, Arc, Circle, Point
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
@@ -80,6 +80,47 @@ class MovePointCommand(SketchChangeCommand):
         # We do NOT update self._snapshot; we keep the state from before
         # the FIRST move.
         return True
+
+
+class MoveControlPointCommand(SketchChangeCommand):
+    """An undoable command for moving a control point offset."""
+
+    def __init__(
+        self,
+        sketch: "Sketch",
+        bezier_id: int,
+        cp_index: int,
+        start_offset: Optional[GeoPoint],
+        end_offset: Optional[GeoPoint],
+    ):
+        label = _("Move Control Point")
+        super().__init__(sketch, label)
+        self.bezier_id = bezier_id
+        self.cp_index = cp_index
+        self.start_offset = start_offset
+        self.end_offset = end_offset
+
+    def _get_bezier(self) -> Optional[Bezier]:
+        entity = self.sketch.registry.get_entity(self.bezier_id)
+        if isinstance(entity, Bezier):
+            return entity
+        return None
+
+    def _do_execute(self) -> None:
+        bezier = self._get_bezier()
+        if bezier:
+            if self.cp_index == 1:
+                bezier.cp1 = self.end_offset
+            else:
+                bezier.cp2 = self.end_offset
+
+    def _do_undo(self) -> None:
+        bezier = self._get_bezier()
+        if bezier:
+            if self.cp_index == 1:
+                bezier.cp1 = self.start_offset
+            else:
+                bezier.cp2 = self.start_offset
 
 
 class UnstickJunctionCommand(SketchChangeCommand):

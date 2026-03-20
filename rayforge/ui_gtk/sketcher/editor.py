@@ -77,12 +77,19 @@ class SketchEditor:
             self.pie_menu.unparent()
             self.pie_menu.set_parent(sketch_element.canvas)
 
+        self.history_manager.changed.connect(self._on_history_changed)
+
         # Connect to TextBoxTool signals for UI management
         text_tool = self.sketch_element.tools.get("text_box")
         if isinstance(text_tool, TextBoxTool):
             text_tool.editing_started.connect(self._on_text_editing_started)
             text_tool.editing_finished.connect(self._on_text_editing_finished)
             text_tool.cursor_moved.connect(self._on_text_cursor_moved)
+
+    def _on_history_changed(self, sender, command):
+        """Called when the undo/redo history changes."""
+        if self.sketch_element:
+            self.sketch_element.mark_dirty()
 
     def deactivate(self):
         """Ends the current editing session."""
@@ -91,6 +98,8 @@ class SketchEditor:
         self._stop_text_cursor_timer()
         if self.sketch_element:
             # Disconnect signals
+            self.history_manager.changed.disconnect(self._on_history_changed)
+
             text_tool = self.sketch_element.tools.get("text_box")
             if isinstance(text_tool, TextBoxTool):
                 text_tool.editing_started.disconnect(
@@ -201,9 +210,6 @@ class SketchEditor:
         # up any in-progress state.
         sketch_element.current_tool.on_deactivate()
 
-        selection = sketch_element.selection
-        selection_changed = False
-
         # 1. Hit Test
         hit_type, hit_obj = sketch_element.hittester.get_hit_data(
             world_x, world_y, sketch_element
@@ -221,31 +227,15 @@ class SketchEditor:
             # promote the selection type to "junction".
             if len(sketch_element.get_lines_at_point(pid)) == 2:
                 target_type = "junction"
-                if selection.junction_pid != pid:
-                    selection.select_junction(pid, is_multi=False)
-                    selection_changed = True
-            else:
-                if pid not in selection.point_ids:
-                    selection.select_point(pid, is_multi=False)
-                    selection_changed = True
 
         elif hit_type == "junction":
             assert isinstance(hit_obj, int)
             pid = hit_obj
             target = sketch_element.sketch.registry.get_point(pid)
 
-            if selection.junction_pid != pid:
-                selection.select_junction(pid, is_multi=False)
-                selection_changed = True
-
         elif hit_type == "entity":
             assert isinstance(hit_obj, Entity)
-            entity = hit_obj
-            target = entity
-
-            if entity.id not in selection.entity_ids:
-                selection.select_entity(entity, is_multi=False)
-                selection_changed = True
+            target = hit_obj
 
         elif hit_type == "constraint":
             assert isinstance(hit_obj, int)
@@ -253,24 +243,6 @@ class SketchEditor:
             if 0 <= idx < len(sketch_element.sketch.constraints):
                 target = sketch_element.sketch.constraints[idx]
 
-                if selection.constraint_idx != idx:
-                    selection.select_constraint(idx, is_multi=False)
-                    selection_changed = True
-
-        elif hit_type is None:
-            if (
-                selection.point_ids
-                or selection.entity_ids
-                or selection.constraint_idx is not None
-                or selection.junction_pid is not None
-            ):
-                selection.clear()
-                selection_changed = True
-
-        if selection_changed:
-            sketch_element.mark_dirty()
-
-        # 3. Pass Context (Sketch, Target, Type)
         self.pie_menu.set_context(sketch_element, target, target_type)
 
         # Since the pie menu is parented to the canvas, we can use the
@@ -306,7 +278,7 @@ class SketchEditor:
             return
 
         ctx = self.sketch_element
-        if action == "construction":
+        if action == "toggle_construction_on_selection":
             ctx.toggle_construction_on_selection()
         elif action == "delete":
             ctx.delete_selection()
@@ -314,6 +286,12 @@ class SketchEditor:
             ctx.add_chamfer_action()
         elif action == "fillet":
             ctx.add_fillet_action()
+        elif action == "set_waypoint_sharp":
+            ctx.set_waypoint_sharp()
+        elif action == "set_waypoint_smooth":
+            ctx.set_waypoint_smooth()
+        elif action == "set_waypoint_symmetric":
+            ctx.set_waypoint_symmetric()
 
         if self.sketch_element.canvas:
             self.sketch_element.canvas.grab_focus()

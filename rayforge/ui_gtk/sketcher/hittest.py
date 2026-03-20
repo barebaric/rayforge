@@ -1,18 +1,21 @@
-import math
-import cairo
-from collections import defaultdict
+import logging
 from typing import Any, List, Optional, Tuple
+
+import cairo
 
 from ...core.sketcher.constraints import (
     CoincidentConstraint,
-    Constraint,
     PointOnLineConstraint,
 )
 from ...core.sketcher.entities import (
     Entity,
     TextBoxEntity,
+    Bezier,
 )
 from ..canvas.worldsurface import WorldSurface
+
+
+logger = logging.getLogger(__name__)
 
 
 class SketchHitTester:
@@ -138,17 +141,17 @@ class SketchHitTester:
             return None
 
         to_screen = self.get_model_to_screen_transform(element)
-        sx_in, sy_in = element.canvas.view_transform.transform_point((wx, wy))
-
-        # Use the visual radius of the point + a small buffer
+        cursor_sx, cursor_sy = element.canvas.view_transform.transform_point(
+            (wx, wy)
+        )
         threshold = element.point_radius + 2.0
         best_pid = None
         min_dist_sq = float("inf")
 
         points = element.sketch.registry.points or []
         for p in points:
-            sx, sy = to_screen.transform_point((p.x, p.y))
-            dist_sq = (sx - sx_in) ** 2 + (sy - sy_in) ** 2
+            pt_sx, pt_sy = to_screen.transform_point((p.x, p.y))
+            dist_sq = (cursor_sx - pt_sx) ** 2 + (cursor_sy - pt_sy) ** 2
             if dist_sq < threshold**2 and dist_sq < min_dist_sq:
                 min_dist_sq = dist_sq
                 best_pid = p.id
@@ -157,73 +160,60 @@ class SketchHitTester:
     def _hit_test_overlays(self, wx, wy, element) -> Tuple[Optional[str], Any]:
         if not element.canvas:
             return None, None
-
-        # Collect all points associated with text boxes to hide their overlays
+        to_screen = self.get_model_to_screen_transform(element)
+        cursor_sx, cursor_sy = element.canvas.view_transform.transform_point(
+            (wx, wy)
+        )
+        constraints = element.sketch.constraints or []
+        for constr in constraints:
+            if not constr.user_visible:
+                continue
+        threshold = 13.0
         text_box_point_ids = set()
         for entity in element.sketch.registry.entities:
             if isinstance(entity, TextBoxEntity):
                 text_box_point_ids.update(
                     entity.get_all_frame_point_ids(element.sketch.registry)
                 )
-
-        to_screen = self.get_model_to_screen_transform(element)
-        sx_in, sy_in = element.canvas.view_transform.transform_point((wx, wy))
-
-        # Test explicit constraints first
-        constraints = element.sketch.constraints or []
-        constraint_idx = self._is_constraint_hit(
-            constraints, sx_in, sy_in, to_screen, element, text_box_point_ids
-        )
-        if constraint_idx is not None:
-            return "constraint", constraint_idx
-
-        # Test implicit junction constraints
-        junction_pid = self._hit_test_junctions(
-            sx_in, sy_in, to_screen, element, text_box_point_ids
-        )
-        if junction_pid is not None:
-            return "junction", junction_pid
-
-        return None, None
-
-    def _hit_test_junctions(
-        self, sx, sy, to_screen, element, text_box_point_ids
-    ) -> Optional[int]:
-        registry = element.sketch.registry
-        point_counts = defaultdict(int)
-        for entity in registry.entities:
-            for pid in entity.get_junction_point_ids():
-                point_counts[pid] += 1
-
-        for pid, count in point_counts.items():
-            if count > 1:
-                if pid in text_box_point_ids:
+        for entity in element.sketch.registry.entities:
+            if isinstance(entity, Bezier):
+                start_pt = element.sketch.registry.get_point(entity.start_idx)
+                end_pt = element.sketch.registry.get_point(entity.end_idx)
+                if start_pt is None or end_pt is None:
                     continue
-                try:
-                    p = registry.get_point(pid)
-                    spx, spy = to_screen.transform_point((p.x, p.y))
-                    if math.hypot(sx - spx, sy - spy) < 13.0:
-                        return pid
-                except IndexError:
-                    continue
-        return None
-
-    def _is_constraint_hit(
-        self,
-        constraints: list[Constraint],
-        sx,
-        sy,
-        to_screen,
-        element,
-        text_box_point_ids,
-    ) -> Optional[int]:
-        """Iterates through constraints and checks for hits polymorphically."""
-        click_radius = 13.0
+                if entity.cp1 is not None:
+                    cp1_abs = (
+                        start_pt.x + entity.cp1[0],
+                        start_pt.y + entity.cp1[1],
+                    )
+                    cp1_sx, cp1_sy = to_screen.transform_point(cp1_abs)
+                    dx = cursor_sx - cp1_sx
+                    dy = cursor_sy - cp1_sy
+                    dist_sq = dx * dx + dy * dy
+                    if dist_sq < threshold**2:
+                        return "control_point_out", (
+                            start_pt.id,
+                            entity.id,
+                            1,
+                        )
+                if entity.cp2 is not None:
+                    cp2_abs = (
+                        end_pt.x + entity.cp2[0],
+                        end_pt.y + entity.cp2[1],
+                    )
+                    cp2_sx, cp2_sy = to_screen.transform_point(cp2_abs)
+                    dx = cursor_sx - cp2_sx
+                    dy = cursor_sy - cp2_sy
+                    dist_sq = dx * dx + dy * dy
+                    if dist_sq < threshold**2:
+                        return "control_point_in", (
+                            end_pt.id,
+                            entity.id,
+                            2,
+                        )
         for idx, constr in enumerate(constraints):
             if not constr.user_visible:
                 continue
-
-            # Skip hit-testing point-based constraints on text box points
             if isinstance(constr, CoincidentConstraint):
                 if (
                     constr.p1 in text_box_point_ids
@@ -233,21 +223,19 @@ class SketchHitTester:
             elif isinstance(constr, PointOnLineConstraint):
                 if constr.point_id in text_box_point_ids:
                     continue
-
             if constr.is_hit(
-                sx,
-                sy,
+                cursor_sx,
+                cursor_sy,
                 element.sketch.registry,
                 to_screen.transform_point,
                 element,
-                click_radius,
+                element.point_radius,
             ):
-                return idx
-        return None
+                return "constraint", idx
+        return None, None
 
     def _hit_test_entities(self, wx, wy, element) -> Optional[Entity]:
         mx, my = self.screen_to_model(wx, wy, element)
-
         scale = 1.0
         if isinstance(element.canvas, WorldSurface):
             scale_x, _ = element.canvas.get_view_scale()
