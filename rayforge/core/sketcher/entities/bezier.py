@@ -1,5 +1,5 @@
-from typing import Dict, Any, List, Sequence, TYPE_CHECKING
-from ...geo import Geometry, Polygon, Rect, primitives
+from typing import Dict, Any, List, Sequence, TYPE_CHECKING, Optional, Tuple
+from ...geo import Geometry, Point as GeoPoint, Polygon, Rect, primitives
 from ...geo.primitives import find_closest_point_on_line_segment
 from .entity import Entity
 
@@ -13,20 +13,57 @@ class Bezier(Entity):
         self,
         id: int,
         start_idx: int,
-        cp1_idx: int,
-        cp2_idx: int,
         end_idx: int,
         construction: bool = False,
+        cp1: Optional[GeoPoint] = None,
+        cp2: Optional[GeoPoint] = None,
     ):
         super().__init__(id, construction)
         self.start_idx = start_idx
-        self.cp1_idx = cp1_idx
-        self.cp2_idx = cp2_idx
         self.end_idx = end_idx
         self.type = "bezier"
+        self.cp1 = cp1
+        self.cp2 = cp2
+
+    def get_control_points(
+        self, registry: "EntityRegistry"
+    ) -> Tuple[
+        Optional[float], Optional[float], Optional[float], Optional[float]
+    ]:
+        cp1_x, cp1_y = None, None
+        cp2_x, cp2_y = None, None
+        if self.cp1 is not None:
+            start = registry.get_point(self.start_idx)
+            if start:
+                cp1_x = start.x + self.cp1[0]
+                cp1_y = start.y + self.cp1[1]
+        if self.cp2 is not None:
+            end = registry.get_point(self.end_idx)
+            if end:
+                cp2_x = end.x + self.cp2[0]
+                cp2_y = end.y + self.cp2[1]
+        return cp1_x, cp1_y, cp2_x, cp2_y
+
+    def get_control_points_or_endpoints(
+        self, registry: "EntityRegistry"
+    ) -> Tuple[float, float, float, float]:
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        cp1_x_opt, cp1_y_opt, cp2_x_opt, cp2_y_opt = self.get_control_points(
+            registry
+        )
+        cp1_x: float = cp1_x_opt if cp1_x_opt is not None else start.x
+        cp1_y: float = cp1_y_opt if cp1_y_opt is not None else start.y
+        cp2_x: float = cp2_x_opt if cp2_x_opt is not None else end.x
+        cp2_y: float = cp2_y_opt if cp2_y_opt is not None else end.y
+        return cp1_x, cp1_y, cp2_x, cp2_y
+
+    def is_line(self, registry: "EntityRegistry") -> bool:
+        cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points(registry)
+        return cp1_x is None and cp2_x is None
 
     def get_point_ids(self) -> List[int]:
-        return [self.start_idx, self.cp1_idx, self.cp2_idx, self.end_idx]
+        return [self.start_idx, self.end_idx]
 
     def get_endpoint_ids(self) -> List[int]:
         return [self.start_idx, self.end_idx]
@@ -42,22 +79,21 @@ class Bezier(Entity):
         registry: "EntityRegistry",
     ) -> bool:
         start = registry.get_point(self.start_idx)
-        cp1 = registry.get_point(self.cp1_idx)
-        cp2 = registry.get_point(self.cp2_idx)
         end = registry.get_point(self.end_idx)
-        if not (start and cp1 and cp2 and end):
+        if not (start and end):
             return False
 
+        if self.is_line(registry):
+            _, _, dist_sq = find_closest_point_on_line_segment(
+                (start.x, start.y), (end.x, end.y), mx, my
+            )
+            return dist_sq < threshold**2
+
+        cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points_or_endpoints(
+            registry
+        )
         points = self._sample_bezier(
-            start.x,
-            start.y,
-            cp1.x,
-            cp1.y,
-            cp2.x,
-            cp2.y,
-            end.x,
-            end.y,
-            20,
+            start.x, start.y, cp1_x, cp1_y, cp2_x, cp2_y, end.x, end.y, 20
         )
 
         min_dist_sq = float("inf")
@@ -74,24 +110,27 @@ class Bezier(Entity):
         self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
     ) -> None:
         start = registry.get_point(self.start_idx)
-        cp1 = registry.get_point(self.cp1_idx)
-        cp2 = registry.get_point(self.cp2_idx)
         end = registry.get_point(self.end_idx)
-        self.constrained = (
-            start.constrained
-            and cp1.constrained
-            and cp2.constrained
-            and end.constrained
-        )
+        self.constrained = start.constrained and end.constrained
 
     def _get_bbox(self, registry: "EntityRegistry") -> Rect:
         start = registry.get_point(self.start_idx)
-        cp1 = registry.get_point(self.cp1_idx)
-        cp2 = registry.get_point(self.cp2_idx)
         end = registry.get_point(self.end_idx)
+        if not (start and end):
+            return (0.0, 0.0, 0.0, 0.0)
 
+        if self.is_line(registry):
+            min_x = min(start.x, end.x)
+            max_x = max(start.x, end.x)
+            min_y = min(start.y, end.y)
+            max_y = max(start.y, end.y)
+            return (min_x, min_y, max_x, max_y)
+
+        cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points_or_endpoints(
+            registry
+        )
         points = self._sample_bezier(
-            start.x, start.y, cp1.x, cp1.y, cp2.x, cp2.y, end.x, end.y, 20
+            start.x, start.y, cp1_x, cp1_y, cp2_x, cp2_y, end.x, end.y, 20
         )
         if not points:
             return (0.0, 0.0, 0.0, 0.0)
@@ -142,20 +181,20 @@ class Bezier(Entity):
         registry: "EntityRegistry",
     ) -> bool:
         start = registry.get_point(self.start_idx)
-        cp1 = registry.get_point(self.cp1_idx)
-        cp2 = registry.get_point(self.cp2_idx)
         end = registry.get_point(self.end_idx)
+        if not (start and end):
+            return False
 
+        if self.is_line(registry):
+            return primitives.line_segment_intersects_rect(
+                start.pos(), end.pos(), rect
+            )
+
+        cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points_or_endpoints(
+            registry
+        )
         points = self._sample_bezier(
-            start.x,
-            start.y,
-            cp1.x,
-            cp1.y,
-            cp2.x,
-            cp2.y,
-            end.x,
-            end.y,
-            20,
+            start.x, start.y, cp1_x, cp1_y, cp2_x, cp2_y, end.x, end.y, 20
         )
 
         for i in range(len(points) - 1):
@@ -174,11 +213,19 @@ class Bezier(Entity):
     def to_geometry(self, registry: "EntityRegistry") -> Geometry:
         geo = Geometry()
         start = registry.get_point(self.start_idx)
-        cp1 = registry.get_point(self.cp1_idx)
-        cp2 = registry.get_point(self.cp2_idx)
         end = registry.get_point(self.end_idx)
+        if not (start and end):
+            return geo
+
         geo.move_to(start.x, start.y)
-        geo.bezier_to(end.x, end.y, cp1.x, cp1.y, cp2.x, cp2.y)
+
+        if self.is_line(registry):
+            geo.line_to(end.x, end.y)
+        else:
+            cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points_or_endpoints(
+                registry
+            )
+            geo.bezier_to(end.x, end.y, cp1_x, cp1_y, cp2_x, cp2_y)
         return geo
 
     def append_to_geometry(
@@ -188,21 +235,23 @@ class Bezier(Entity):
         forward: bool,
     ) -> None:
         start = registry.get_point(self.start_idx)
-        cp1 = registry.get_point(self.cp1_idx)
-        cp2 = registry.get_point(self.cp2_idx)
         end = registry.get_point(self.end_idx)
+        if not (start and end):
+            return
 
-        if forward:
-            geo.bezier_to(end.x, end.y, cp1.x, cp1.y, cp2.x, cp2.y)
+        if self.is_line(registry):
+            if forward:
+                geo.line_to(end.x, end.y)
+            else:
+                geo.line_to(start.x, start.y)
         else:
-            geo.bezier_to(
-                start.x,
-                start.y,
-                cp2.x,
-                cp2.y,
-                cp1.x,
-                cp1.y,
+            cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points_or_endpoints(
+                registry
             )
+            if forward:
+                geo.bezier_to(end.x, end.y, cp1_x, cp1_y, cp2_x, cp2_y)
+            else:
+                geo.bezier_to(start.x, start.y, cp2_x, cp2_y, cp1_x, cp1_y)
 
     def to_polygon_vertices(
         self,
@@ -210,22 +259,21 @@ class Bezier(Entity):
         forward: bool,
     ) -> Polygon:
         start = registry.get_point(self.start_idx)
-        cp1 = registry.get_point(self.cp1_idx)
-        cp2 = registry.get_point(self.cp2_idx)
         end = registry.get_point(self.end_idx)
-        if not (start and cp1 and cp2 and end):
+        if not (start and end):
             return []
 
+        if self.is_line(registry):
+            if forward:
+                return [(end.x, end.y)]
+            else:
+                return [(start.x, start.y)]
+
+        cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points_or_endpoints(
+            registry
+        )
         points = self._sample_bezier(
-            start.x,
-            start.y,
-            cp1.x,
-            cp1.y,
-            cp2.x,
-            cp2.y,
-            end.x,
-            end.y,
-            20,
+            start.x, start.y, cp1_x, cp1_y, cp2_x, cp2_y, end.x, end.y, 20
         )
         if not forward:
             points = list(reversed(points))
@@ -236,27 +284,37 @@ class Bezier(Entity):
         data.update(
             {
                 "start_idx": self.start_idx,
-                "cp1_idx": self.cp1_idx,
-                "cp2_idx": self.cp2_idx,
                 "end_idx": self.end_idx,
             }
         )
+        if self.cp1 is not None:
+            data["cp1_dx"] = self.cp1[0]
+            data["cp1_dy"] = self.cp1[1]
+        if self.cp2 is not None:
+            data["cp2_dx"] = self.cp2[0]
+            data["cp2_dy"] = self.cp2[1]
         return data
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Bezier":
+        cp1 = None
+        if "cp1_dx" in data and "cp1_dy" in data:
+            cp1 = (data["cp1_dx"], data["cp1_dy"])
+        cp2 = None
+        if "cp2_dx" in data and "cp2_dy" in data:
+            cp2 = (data["cp2_dx"], data["cp2_dy"])
         return cls(
             id=data["id"],
             start_idx=data["start_idx"],
-            cp1_idx=data["cp1_idx"],
-            cp2_idx=data["cp2_idx"],
             end_idx=data["end_idx"],
             construction=data.get("construction", False),
+            cp1=cp1,
+            cp2=cp2,
         )
 
     def __repr__(self) -> str:
         return (
             f"Bezier(id={self.id}, start={self.start_idx}, "
-            f"cp1={self.cp1_idx}, cp2={self.cp2_idx}, end={self.end_idx}, "
-            f"construction={self.construction})"
+            f"end={self.end_idx}, construction={self.construction}, "
+            f"cp1={self.cp1}, cp2={self.cp2})"
         )

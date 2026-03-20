@@ -10,12 +10,9 @@ def registry():
 
 
 def test_bezier_serialization_round_trip():
-    """Tests the to_dict and from_dict methods for a single Bezier."""
     original_bezier = Bezier(
         id=10,
         start_idx=1,
-        cp1_idx=2,
-        cp2_idx=3,
         end_idx=4,
         construction=True,
     )
@@ -26,8 +23,6 @@ def test_bezier_serialization_round_trip():
         "type": "bezier",
         "construction": True,
         "start_idx": 1,
-        "cp1_idx": 2,
-        "cp2_idx": 3,
         "end_idx": 4,
     }
 
@@ -35,144 +30,203 @@ def test_bezier_serialization_round_trip():
     assert isinstance(new_bezier, Bezier)
     assert new_bezier.id == original_bezier.id
     assert new_bezier.start_idx == original_bezier.start_idx
-    assert new_bezier.cp1_idx == original_bezier.cp1_idx
-    assert new_bezier.cp2_idx == original_bezier.cp2_idx
     assert new_bezier.end_idx == original_bezier.end_idx
     assert new_bezier.construction == original_bezier.construction
 
 
 def test_bezier_get_point_ids(registry):
-    """Tests that a bezier correctly reports its defining point IDs."""
     p1 = registry.add_point(0, 0)
-    p2 = registry.add_point(5, 10)
-    p3 = registry.add_point(15, 10)
-    p4 = registry.add_point(20, 0)
-    bezier = registry.get_entity(registry.add_bezier(p1, p2, p3, p4))
-    assert set(bezier.get_point_ids()) == {p1, p2, p3, p4}
+    p2 = registry.add_point(20, 0)
+    bezier = registry.get_entity(registry.add_bezier(p1, p2))
+    assert set(bezier.get_point_ids()) == {p1, p2}
 
 
 def test_bezier_get_endpoint_ids(registry):
-    """Tests that a bezier correctly reports its endpoint IDs."""
     p1 = registry.add_point(0, 0)
-    p2 = registry.add_point(5, 10)
-    p3 = registry.add_point(15, 10)
-    p4 = registry.add_point(20, 0)
-    bezier = registry.get_entity(registry.add_bezier(p1, p2, p3, p4))
-    assert bezier.get_endpoint_ids() == [p1, p4]
+    p2 = registry.add_point(20, 0)
+    bezier = registry.get_entity(registry.add_bezier(p1, p2))
+    assert bezier.get_endpoint_ids() == [p1, p2]
 
 
-def test_bezier_to_polygon_vertices(registry):
-    """Tests that a bezier samples into polygon vertices."""
+def test_bezier_as_line(registry):
     start = registry.add_point(0, 0)
-    cp1 = registry.add_point(0, 20)
-    cp2 = registry.add_point(20, 20)
     end = registry.add_point(20, 0)
-    bezier = registry.get_entity(registry.add_bezier(start, cp1, cp2, end))
+    bid = registry.add_bezier(start, end)
+    bezier = registry.get_entity(bid)
+
+    assert bezier.is_line(registry) is True
+
+    vertices = bezier.to_polygon_vertices(registry, forward=True)
+    assert len(vertices) == 1
+    assert vertices[0] == pytest.approx((20.0, 0.0))
+
+    vertices_rev = bezier.to_polygon_vertices(registry, forward=False)
+    assert len(vertices_rev) == 1
+    assert vertices_rev[0] == pytest.approx((0.0, 0.0))
+
+
+def test_bezier_with_control_points(registry):
+    start = registry.add_point(0, 0)
+    end = registry.add_point(20, 0)
+
+    bid = registry.add_bezier(start, end)
+    bezier = registry.get_entity(bid)
+    bezier.cp1 = (5.0, 10.0)
+    bezier.cp2 = (-5.0, 10.0)
+
+    assert bezier.is_line(registry) is False
 
     vertices = bezier.to_polygon_vertices(registry, forward=True)
     assert len(vertices) == 21
     assert vertices[0] == pytest.approx((0.0, 0.0))
     assert vertices[-1] == pytest.approx((20.0, 0.0))
 
-    vertices_rev = bezier.to_polygon_vertices(registry, forward=False)
-    assert len(vertices_rev) == 21
-    assert vertices_rev[0] == pytest.approx((20.0, 0.0))
-    assert vertices_rev[-1] == pytest.approx((0.0, 0.0))
-
 
 def test_bezier_get_junction_point_ids(registry):
-    """Tests that a bezier correctly reports its junction point IDs."""
     p1 = registry.add_point(0, 0)
-    p2 = registry.add_point(5, 10)
-    p3 = registry.add_point(15, 10)
-    p4 = registry.add_point(20, 0)
-    bezier = registry.get_entity(registry.add_bezier(p1, p2, p3, p4))
-    assert set(bezier.get_junction_point_ids()) == {p1, p4}
+    p2 = registry.add_point(20, 0)
+    bezier = registry.get_entity(registry.add_bezier(p1, p2))
+    assert set(bezier.get_junction_point_ids()) == {p1, p2}
 
 
-def test_bezier_hit_test(registry):
-    """Tests Bezier.hit_test method."""
+def test_bezier_hit_test_as_line(registry):
     start = registry.add_point(0, 0)
-    cp1 = registry.add_point(0, 20)
-    cp2 = registry.add_point(20, 20)
     end = registry.add_point(20, 0)
-    bezier = registry.get_entity(registry.add_bezier(start, cp1, cp2, end))
+    bezier = registry.get_entity(registry.add_bezier(start, end))
     threshold = 5.0
 
-    # Point on the bezier (start and end points)
+    assert bezier.hit_test(0, 0, threshold, registry) is True
+    assert bezier.hit_test(20, 0, threshold, registry) is True
+    assert bezier.hit_test(10, 0, threshold, registry) is True
+    assert bezier.hit_test(10, 10, threshold, registry) is False
+
+
+def test_bezier_hit_test_with_control_points(registry):
+    start = registry.add_point(0, 0)
+    end = registry.add_point(20, 0)
+
+    bezier = registry.get_entity(registry.add_bezier(start, end))
+    bezier.cp1 = (0.0, 20.0)
+    bezier.cp2 = (0.0, -20.0)
+
+    threshold = 5.0
+
     assert bezier.hit_test(0, 0, threshold, registry) is True
     assert bezier.hit_test(20, 0, threshold, registry) is True
 
-    # Point near the bezier curve (midpoint at t=0.5 is approximately (5, 15))
-    assert bezier.hit_test(5, 15, threshold, registry) is True
-
-    # Point far from the bezier
-    assert bezier.hit_test(10, -10, threshold, registry) is False
-    assert bezier.hit_test(50, 10, threshold, registry) is False
-
 
 def test_bezier_update_constrained_status(registry):
-    """Test Bezier.update_constrained_status logic."""
     p1 = registry.add_point(0, 0)
-    p2 = registry.add_point(5, 10)
-    p3 = registry.add_point(15, 10)
-    p4 = registry.add_point(20, 0)
-    bid = registry.add_bezier(p1, p2, p3, p4)
+    p2 = registry.add_point(20, 0)
+    bid = registry.add_bezier(p1, p2)
     bezier = registry.get_entity(bid)
 
     pt1 = registry.get_point(p1)
     pt2 = registry.get_point(p2)
-    pt3 = registry.get_point(p3)
-    pt4 = registry.get_point(p4)
 
-    # Initially unconstrained
     pt1.constrained = False
     pt2.constrained = False
-    pt3.constrained = False
-    pt4.constrained = False
     bezier.update_constrained_status(registry, [])
     assert bezier.constrained is False
 
-    # All points constrained
     pt1.constrained = True
     pt2.constrained = True
-    pt3.constrained = True
-    pt4.constrained = True
     bezier.update_constrained_status(registry, [])
     assert bezier.constrained is True
 
 
-def test_bezier_to_geometry(registry):
-    """Test Bezier.to_geometry method."""
+def test_bezier_to_geometry_as_line(registry):
     start = registry.add_point(0, 0)
-    cp1 = registry.add_point(5, 10)
-    cp2 = registry.add_point(15, 10)
     end = registry.add_point(20, 0)
-    bezier = registry.get_entity(registry.add_bezier(start, cp1, cp2, end))
+    bezier = registry.get_entity(registry.add_bezier(start, end))
     geo = bezier.to_geometry(registry)
     assert isinstance(geo, Geometry)
     assert len(geo) == 2
     assert geo.data is not None
-    assert geo.data[0][0] == 1.0  # Move command
-    assert geo.data[1][0] == 4.0  # Bezier command
+    assert geo.data[0][0] == 1.0
+    assert geo.data[1][0] == 2.0
+
+
+def test_bezier_to_geometry_with_control_points(registry):
+    start = registry.add_point(0, 0)
+    end = registry.add_point(20, 0)
+
+    bezier = registry.get_entity(registry.add_bezier(start, end))
+    bezier.cp1 = (5.0, 10.0)
+    bezier.cp2 = (-5.0, 10.0)
+
+    geo = bezier.to_geometry(registry)
+    assert isinstance(geo, Geometry)
+    assert len(geo) == 2
+    assert geo.data is not None
+    assert geo.data[0][0] == 1.0
+    assert geo.data[1][0] == 4.0
 
 
 def test_bezier_get_set_state(registry):
-    """Test state capture and restoration for Undo/Redo."""
     p1 = registry.add_point(0, 0)
-    p2 = registry.add_point(5, 10)
-    p3 = registry.add_point(15, 10)
-    p4 = registry.add_point(20, 0)
-    bid = registry.add_bezier(p1, p2, p3, p4)
+    p2 = registry.add_point(20, 0)
+    bid = registry.add_bezier(p1, p2)
     bezier = registry.get_entity(bid)
 
-    # Verify initial state
     state = bezier.get_state()
     assert state == {"construction": False}
 
-    # Modify state
     bezier.construction = True
 
-    # Restore state
     bezier.set_state(state)
     assert bezier.construction is False
+
+
+def test_bezier_with_own_control_points(registry):
+    start = registry.add_point(0, 0)
+    end = registry.add_point(20, 0)
+
+    bid = registry.add_bezier(start, end)
+    bezier = registry.get_entity(bid)
+    bezier.cp1 = (5.0, 10.0)
+    bezier.cp2 = (-5.0, 10.0)
+
+    assert bezier.is_line(registry) is False
+
+    cp1_x, cp1_y, cp2_x, cp2_y = bezier.get_control_points(registry)
+    assert cp1_x == pytest.approx(5.0)
+    assert cp1_y == pytest.approx(10.0)
+    assert cp2_x == pytest.approx(15.0)
+    assert cp2_y == pytest.approx(10.0)
+
+
+def test_bezier_control_points_serialization():
+    original = Bezier(
+        id=10,
+        start_idx=1,
+        end_idx=4,
+        cp1=(5.0, 10.0),
+        cp2=(-3.0, 7.0),
+    )
+
+    data = original.to_dict()
+    assert data["cp1_dx"] == 5.0
+    assert data["cp1_dy"] == 10.0
+    assert data["cp2_dx"] == -3.0
+    assert data["cp2_dy"] == 7.0
+
+    restored = Bezier.from_dict(data)
+    assert restored.cp1 == (5.0, 10.0)
+    assert restored.cp2 == (-3.0, 7.0)
+
+
+def test_bezier_without_control_points_serialization():
+    original = Bezier(
+        id=10,
+        start_idx=1,
+        end_idx=4,
+    )
+
+    data = original.to_dict()
+    assert "cp1_dx" not in data
+    assert "cp2_dx" not in data
+
+    restored = Bezier.from_dict(data)
+    assert restored.cp1 is None
+    assert restored.cp2 is None

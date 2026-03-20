@@ -14,6 +14,7 @@ from ...core.sketcher.commands import (
     UnstickJunctionCommand,
     ChamferCommand,
     FilletCommand,
+    SetWaypointTypeCommand,
 )
 from ...core.sketcher.constraints import (
     AngleConstraint,
@@ -30,7 +31,15 @@ from ...core.sketcher.constraints import (
     EqualLengthConstraint,
     SymmetryConstraint,
 )
-from ...core.sketcher.entities import Arc, Circle, Entity, Line, Point
+from ...core.sketcher.entities import (
+    Arc,
+    Bezier,
+    Circle,
+    Entity,
+    Line,
+    Point,
+)
+from ...core.sketcher.entities.point import WaypointType
 from ...core.sketcher.selection import SketchSelection
 from .tools import (
     ArcTool,
@@ -346,6 +355,22 @@ class SketchElement(CanvasElement):
             if isinstance(e, Line) and pid in (e.p1_idx, e.p2_idx)
         ]
 
+    def _is_waypoint_at_bezier(self, pid: int) -> bool:
+        """Returns True if the point is a start or end of a Bezier entity."""
+        for entity in self.sketch.registry.entities:
+            if isinstance(entity, Bezier):
+                if pid in (entity.start_idx, entity.end_idx):
+                    return True
+        return False
+
+    def _is_waypoint_at_line(self, pid: int) -> bool:
+        """Returns True if the point is an endpoint of a Line entity."""
+        for entity in self.sketch.registry.entities:
+            if isinstance(entity, Line):
+                if pid in (entity.p1_idx, entity.p2_idx):
+                    return True
+        return False
+
     def is_action_supported(self, action: str) -> bool:
         """
         Determines if a generic action is valid for the current selection.
@@ -374,6 +399,21 @@ class SketchElement(CanvasElement):
                 )
                 return len(lines_at_junction) == 2
             return False
+
+        if action in (
+            "waypoint_sharp",
+            "waypoint_smooth",
+            "waypoint_symmetric",
+        ):
+            if self.selection.junction_pid is not None:
+                pid = self.selection.junction_pid
+            elif len(self.selection.point_ids) == 1:
+                pid = self.selection.point_ids[0]
+            else:
+                return False
+            return self._is_waypoint_at_bezier(
+                pid
+            ) or self._is_waypoint_at_line(pid)
 
         return False
 
@@ -992,6 +1032,33 @@ class SketchElement(CanvasElement):
             line2.id,
             self.sketch.params.evaluate(DEFAULT_RADIUS),
         )
+        self.execute_command(cmd)
+
+    def set_waypoint_sharp(self):
+        """Converts the selected waypoint to sharp (corner) type."""
+        self._set_waypoint_type(WaypointType.SHARP)
+
+    def set_waypoint_smooth(self):
+        """Converts the selected waypoint to smooth type."""
+        self._set_waypoint_type(WaypointType.SMOOTH)
+
+    def set_waypoint_symmetric(self):
+        """Converts the selected waypoint to symmetric type."""
+        self._set_waypoint_type(WaypointType.SYMMETRIC)
+
+    def _set_waypoint_type(self, new_type: WaypointType):
+        """Helper to set waypoint type for the currently selected point."""
+        if not self.editor:
+            return
+
+        pid = self.selection.junction_pid
+        if pid is None and len(self.selection.point_ids) == 1:
+            pid = self.selection.point_ids[0]
+
+        if pid is None:
+            return
+
+        cmd = SetWaypointTypeCommand(self.sketch, pid, new_type)
         self.execute_command(cmd)
 
     def _get_entity_by_id(self, eid: int) -> Optional[Entity]:

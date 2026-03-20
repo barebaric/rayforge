@@ -17,6 +17,7 @@ from ....core.geo import Point as GeoPoint
 from ....core.matrix import Matrix
 from ....core.sketcher.commands import (
     CreateOrEditConstraintCommand,
+    MoveControlPointCommand,
     MovePointCommand,
 )
 from ....core.sketcher.constraints import (
@@ -26,7 +27,14 @@ from ....core.sketcher.constraints import (
     DragConstraint,
     RadiusConstraint,
 )
-from ....core.sketcher.entities import Arc, Circle, Entity, Line, TextBoxEntity
+from ....core.sketcher.entities import (
+    Arc,
+    Bezier,
+    Circle,
+    Entity,
+    Line,
+    TextBoxEntity,
+)
 from ...shared.keyboard import PRIMARY_KEY_NAME
 from .base import SketchTool
 from .text_box_tool import TextBoxTool
@@ -64,6 +72,11 @@ class SelectTool(SketchTool):
         self.dragged_entity: Optional[Entity] = None
         self.drag_start_model_pos: Optional[GeoPoint] = None
 
+        # For dragging control points
+        self.dragged_cp_bezier_id: Optional[int] = None
+        self.dragged_cp_index: Optional[int] = None
+        self.drag_cp_start_offset: Optional[Tuple[float, float]] = None
+
         # State for stabilizing drag calculations and undo snapshots
         self.drag_start_wt_inv: Optional[Matrix] = None
         self.drag_start_ct_inv: Optional[Matrix] = None
@@ -75,10 +88,11 @@ class SelectTool(SketchTool):
         self.drag_point_distances: Dict[int, int] = {}
 
     def _is_dragging(self) -> bool:
-        """Returns True if currently dragging a point or entity."""
+        """Returns True if currently dragging a point, entity, or CP."""
         return (
             self.dragged_point_id is not None
             or self.dragged_entity is not None
+            or self.dragged_cp_bezier_id is not None
         )
 
     def _get_drag_start_world_pos(self) -> Tuple[float, float]:
@@ -238,6 +252,12 @@ class SelectTool(SketchTool):
             self.element.mark_dirty()
             return False
 
+        if hit_type in ("control_point_in", "control_point_out"):
+            point_id, bezier_id, cp_index = hit_obj
+            self._prepare_control_point_drag(bezier_id, cp_index)
+            self.element.mark_dirty()
+            return False
+
         if hit_type == "point":
             pid = cast(int, hit_obj)
             self.element.selection.select_point(pid, is_multi)
@@ -286,7 +306,9 @@ class SelectTool(SketchTool):
                 world_dx += snap_offset_x
                 world_dy += snap_offset_y
 
-        if self.dragged_point_id is not None:
+        if self.dragged_cp_bezier_id is not None:
+            self._handle_control_point_drag(world_dx, world_dy)
+        elif self.dragged_point_id is not None:
             self._handle_point_drag(world_dx, world_dy)
         elif self.dragged_entity is not None:
             self._handle_entity_drag(world_dx, world_dy)
@@ -308,6 +330,34 @@ class SelectTool(SketchTool):
             self.drag_start_world_pos = None
             self.drag_current_world_pos = None
             self.drag_initial_selection = None
+            self.element.mark_dirty()
+            return
+
+        # Handle the end of a Control Point drag
+        if (
+            self.dragged_cp_bezier_id is not None
+            and self.dragged_cp_index is not None
+            and self.drag_cp_start_offset is not None
+        ):
+            bezier_id = self.dragged_cp_bezier_id
+            cp_index = self.dragged_cp_index
+            bezier = self._safe_get_entity(bezier_id)
+            if isinstance(bezier, Bezier):
+                start_offset = self.drag_cp_start_offset
+                end_offset = bezier.cp1 if cp_index == 1 else bezier.cp2
+                if start_offset != end_offset:
+                    cmd = MoveControlPointCommand(
+                        self.element.sketch,
+                        bezier_id,
+                        cp_index,
+                        start_offset,
+                        end_offset,
+                    )
+                    self.element.execute_command(cmd)
+
+            self.dragged_cp_bezier_id = None
+            self.dragged_cp_index = None
+            self.drag_cp_start_offset = None
             self.element.mark_dirty()
             return
 
@@ -619,6 +669,52 @@ class SelectTool(SketchTool):
         self.drag_start_model_pos = (model_x, model_y)
         self._cache_drag_start_state()
 
+    def _prepare_control_point_drag(self, bezier_id: int, cp_index: int):
+        """Sets up state for dragging a control point.
+
+        Does not clear selection.
+        """
+        self.dragged_cp_bezier_id = bezier_id
+        self.dragged_cp_index = cp_index
+        self.dragged_point_id = None
+        self.dragged_entity = None
+        bezier = self._safe_get_entity(bezier_id)
+        if not isinstance(bezier, Bezier):
+            return
+        if cp_index == 1:
+            self.drag_cp_start_offset = bezier.cp1
+        else:
+            self.drag_cp_start_offset = bezier.cp2
+        self._cache_drag_start_state()
+
+    def _handle_control_point_drag(self, world_dx: float, world_dy: float):
+        """Logic for dragging a control point offset."""
+        if self.dragged_cp_bezier_id is None or self.dragged_cp_index is None:
+            return
+        bezier = self._safe_get_entity(self.dragged_cp_bezier_id)
+        if not isinstance(bezier, Bezier):
+            return
+        mdx, mdy = self._get_model_delta(world_dx, world_dy)
+        if self.drag_cp_start_offset is None:
+            base_x, base_y = 0.0, 0.0
+        else:
+            base_x, base_y = self.drag_cp_start_offset
+        new_offset = (base_x + mdx, base_y + mdy)
+
+        if self.dragged_cp_index == 1:
+            bezier.cp1 = new_offset
+            point_id = bezier.start_idx
+        else:
+            bezier.cp2 = new_offset
+            point_id = bezier.end_idx
+
+        p = self._safe_get_point(point_id)
+        if p is not None:
+            registry = self.element.sketch.registry
+            p.apply_constraint(registry, bezier, self.dragged_cp_index)
+
+        self.element.mark_dirty()
+
     def _cache_drag_start_state(self):
         """
         Caches transforms and ALL state (points + entities) at start of drag.
@@ -641,6 +737,12 @@ class SelectTool(SketchTool):
     def _safe_get_point(self, pid):
         try:
             return self.element.sketch.registry.get_point(pid)
+        except IndexError:
+            return None
+
+    def _safe_get_entity(self, eid: int):
+        try:
+            return self.element.sketch.registry.get_entity(eid)
         except IndexError:
             return None
 

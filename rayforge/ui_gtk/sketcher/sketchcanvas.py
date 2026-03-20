@@ -437,3 +437,19 @@ class SketchCanvas(WorldSurface):
             gesture.set_state(Gtk.EventSequenceState.CLAIMED)
         else:
             logger.debug("Tool did not handle press event, gesture continues.")
+
+    def on_click_released(
+        self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
+    ):
+        """
+        Overrides base to handle click release for edit context tools.
+        The base class returns early for edit_context, but sketcher tools
+        need to receive release events for click-without-drag operations.
+        """
+        if self.edit_context:
+            world_x, world_y = self._get_world_coords(x, y)
+            sketch_element = cast(SketchElement, self.edit_context)
+            sketch_element.handle_edit_release(world_x, world_y)
+            return
+
+        super().on_click_released(gesture, n_press, x, y)

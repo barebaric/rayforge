@@ -48,6 +48,7 @@ from .constraints import (
 )
 from .constraints.drag import DragConstraint
 from .entities import Line, Arc, Circle, Bezier, Entity
+from .entities.point import WaypointType
 from .params import ParameterContext
 from .registry import EntityRegistry
 from .solver import Solver
@@ -401,11 +402,20 @@ class Sketch(IAsset):
                 cp2_x = row[COL_C2X]
                 cp2_y = row[COL_C2Y]
 
-                cp1_pid = get_or_add_point(cp1_x, cp1_y)
-                cp2_pid = get_or_add_point(cp2_x, cp2_y)
-                end_pid = get_or_add_point(end_x, end_y)
+                start_pt = sketch.registry.get_point(current_pid)
+                if start_pt:
+                    start_pt.waypoint_type = WaypointType.SMOOTH
 
-                sketch.add_bezier(current_pid, cp1_pid, cp2_pid, end_pid)
+                end_pid = get_or_add_point(end_x, end_y)
+                end_pt = sketch.registry.get_point(end_pid)
+                if end_pt:
+                    end_pt.waypoint_type = WaypointType.SMOOTH
+
+                cp1_offset = (cp1_x - start_pt.x, cp1_y - start_pt.y)
+                cp2_offset = (cp2_x - end_pt.x, cp2_y - end_pt.y)
+                sketch.add_bezier(
+                    current_pid, end_pid, cp1=cp1_offset, cp2=cp2_offset
+                )
                 current_pid = end_pid
                 current_x, current_y = end_x, end_y
 
@@ -439,14 +449,17 @@ class Sketch(IAsset):
     def add_bezier(
         self,
         start: int,
-        cp1: int,
-        cp2: int,
         end: int,
         construction: bool = False,
+        cp1: Optional[Tuple[float, float]] = None,
+        cp2: Optional[Tuple[float, float]] = None,
     ) -> int:
-        """Adds a cubic bezier curve defined by start, two control points,
-        and end point IDs."""
-        return self.registry.add_bezier(start, cp1, cp2, end, construction)
+        """Adds a cubic bezier curve defined by start and end point IDs.
+
+        Control points cp1 and cp2 are relative offsets from start and end
+        points respectively.
+        """
+        return self.registry.add_bezier(start, end, construction, cp1, cp2)
 
     def add_circle(
         self, center: int, radius_pt: int, construction: bool = False
@@ -516,15 +529,14 @@ class Sketch(IAsset):
 
         elif isinstance(entity, Bezier):
             start = self.registry.get_point(entity.start_idx)
-            cp1 = self.registry.get_point(entity.cp1_idx)
             end = self.registry.get_point(entity.end_idx)
-            cp2 = self.registry.get_point(entity.cp2_idx)
+            cp1_x, cp1_y, cp2_x, cp2_y = (
+                entity.get_control_points_or_endpoints(self.registry)
+            )
             if start_pid == start.id:
-                # Tangent at start is direction to cp1
-                return (cp1.x - start.x, cp1.y - start.y)
+                return (cp1_x - start.x, cp1_y - start.y)
             else:
-                # Tangent at end is direction from cp2
-                return (end.x - cp2.x, end.y - cp2.y)
+                return (end.x - cp2_x, end.y - cp2_y)
         return (1.0, 0.0)
 
     def _build_adjacency_list(self) -> Dict[int, List[Dict[str, Any]]]:

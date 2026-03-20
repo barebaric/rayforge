@@ -189,6 +189,24 @@ class SketchPieMenu(PieMenu):
             "action": "add_vertical_constraint",
             "handler": "_on_constraint_clicked",
         },
+        "waypoint_sharp": {
+            "icon": "sketch-bezier-sharp-symbolic",
+            "label": _("Sharp"),
+            "action": "set_waypoint_sharp",
+            "handler": "_on_action_clicked",
+        },
+        "waypoint_smooth": {
+            "icon": "sketch-bezier-smooth-symbolic",
+            "label": _("Smooth"),
+            "action": "set_waypoint_smooth",
+            "handler": "_on_action_clicked",
+        },
+        "waypoint_symmetric": {
+            "icon": "sketch-bezier-symmetric-symbolic",
+            "label": _("Symmetric"),
+            "action": "set_waypoint_symmetric",
+            "handler": "_on_action_clicked",
+        },
     }
 
     def __init__(self, parent_widget: Gtk.Widget):
@@ -295,7 +313,15 @@ class SketchPieMenu(PieMenu):
                     item.visible = not has_target
 
                 # Actions (delete, construction)
-                elif key in ("delete", "construction", "chamfer", "fillet"):
+                elif key in (
+                    "delete",
+                    "construction",
+                    "chamfer",
+                    "fillet",
+                    "waypoint_sharp",
+                    "waypoint_smooth",
+                    "waypoint_symmetric",
+                ):
                     item.visible = self.sketch_element.is_action_supported(key)
 
                 # Constraints (dist, horiz, vert, etc.)
@@ -321,5 +347,7 @@ class SketchPieMenu(PieMenu):
     def _on_action_clicked(self, sender):
         """Handle generic action signals."""
         if sender.data:
-            logger.info(f"Emitting action: {sender.data}")
-            self.action_triggered.send(self, action=sender.data)
+            config = self._MENU_ITEMS.get(sender.data)
+            if config and "action" in config:
+                logger.info(f"Emitting action: {config['action']}")
+                self.action_triggered.send(self, action=config["action"])

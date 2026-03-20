@@ -1,5 +1,7 @@
 from typing import List, Dict, Optional, Any, Set
+
 from ..geo.font_config import FontConfig
+from ..geo.types import Point as GeoPoint
 from .entities.arc import Arc
 from .entities.bezier import Bezier
 from .entities.circle import Circle
@@ -73,19 +75,19 @@ class EntityRegistry:
     def add_bezier(
         self,
         start_idx: int,
-        cp1_idx: int,
-        cp2_idx: int,
         end_idx: int,
         construction: bool = False,
+        cp1: Optional[GeoPoint] = None,
+        cp2: Optional[GeoPoint] = None,
     ) -> int:
         eid = self._id_counter
         entity = Bezier(
             eid,
             start_idx,
-            cp1_idx,
-            cp2_idx,
             end_idx,
             construction=construction,
+            cp1=cp1,
+            cp2=cp2,
         )
         self.entities.append(entity)
         self._entity_map[eid] = entity
