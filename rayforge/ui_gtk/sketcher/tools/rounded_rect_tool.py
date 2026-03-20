@@ -12,6 +12,8 @@ from .dimension_input import DimensionInputHandler
 class RoundedRectTool(SketchTool):
     """Handles creating rounded rectangles."""
 
+    ICON = "sketch-rounded-rect-symbolic"
+    LABEL = _("Rounded Rectangle")
     SHORTCUT = ("go", _("Rounded Rectangle"))
     DEFAULT_RADIUS = 10.0
 
@@ -21,6 +23,12 @@ class RoundedRectTool(SketchTool):
         self._dim_input = DimensionInputHandler(
             field_count=3, field_labels=[_("W"), _("H"), _("R")]
         )
+
+    def is_available(self, target, target_type) -> bool:
+        return target is None
+
+    def shortcut_is_active(self) -> bool:
+        return True
 
     def get_preview_state(self) -> Optional[RoundedRectPreviewState]:
         return self._preview_state

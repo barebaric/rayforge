@@ -23,6 +23,8 @@ class BezierTool(SketchTool):
     - Second click with drag: creates bezier where drag controls the "bow"
     """
 
+    ICON = "sketch-bezier-symbolic"
+    LABEL = _("Bezier")
     SHORTCUT = ("gb", _("Bezier"))
 
     def __init__(self, element):
@@ -35,6 +37,12 @@ class BezierTool(SketchTool):
         self._in_press: bool = False
         self._mirror_cp_offset: Optional[Tuple[float, float]] = None
         self._release_handled: bool = False
+
+    def is_available(self, target, target_type) -> bool:
+        return target is None
+
+    def shortcut_is_active(self) -> bool:
+        return True
 
     def get_preview_state(self) -> Optional[BezierPreviewState]:
         return self._preview_state

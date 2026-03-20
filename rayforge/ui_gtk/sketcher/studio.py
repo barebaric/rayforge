@@ -13,7 +13,6 @@ from ..varset.varset_editor import VarSetEditorWidget
 from .conflicts_widget import ConflictingConstraintsWidget
 from .font_properties import FontPropertiesWidget
 from .menu import SketchMenu
-from .shortcuts import get_active_shortcuts
 from .sketchcanvas import SketchCanvas
 
 logger = logging.getLogger(__name__)
@@ -405,22 +404,18 @@ class SketchStudio(Gtk.Box):
                     display_keys, label, separator=""
                 )
 
-        # Global shortcuts (key sequences split into individual keys)
-        global_shortcuts = get_active_shortcuts(
-            selection=element.selection,
-            sketch=element.sketch,
-            active_tool=tool,
-            is_dragging_fn=is_not_dragging,
-        )
-        for key, label, condition in global_shortcuts:
-            if condition is None or condition():
-                if key == " ":
-                    display_keys = ["Space"]
-                else:
-                    display_keys = [k.upper() for k in key]
-                self.status_bar.add_shortcut_entry(
-                    display_keys, label, separator=""
-                )
+        # Global shortcuts from all tools
+        for tool_instance in element.tools.values():
+            if tool_instance.SHORTCUT and tool_instance.shortcut_is_active():
+                key, label = tool_instance.SHORTCUT
+                if is_not_dragging():
+                    if key == " ":
+                        display_keys = ["Space"]
+                    else:
+                        display_keys = [k.upper() for k in key]
+                    self.status_bar.add_shortcut_entry(
+                        display_keys, label, separator=""
+                    )
 
     def _on_text_editing_started(self, sender):
         """Shows font properties when text editing begins."""

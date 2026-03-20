@@ -9,12 +9,20 @@ from .dimension_input import DimensionInputHandler
 class ArcTool(SketchTool):
     """Handles creating arcs (Center -> Start -> End)."""
 
+    ICON = "sketch-arc-symbolic"
+    LABEL = _("Arc")
     SHORTCUT = ("ga", _("Arc"))
 
     def __init__(self, element):
         super().__init__(element)
         self._preview_state: Optional[ArcPreviewState] = None
         self._dim_input = DimensionInputHandler()
+
+    def is_available(self, target, target_type) -> bool:
+        return target is None
+
+    def shortcut_is_active(self) -> bool:
+        return True
 
     def get_preview_state(self) -> Optional[ArcPreviewState]:
         return self._preview_state

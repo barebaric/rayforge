@@ -12,12 +12,20 @@ from .dimension_input import DimensionInputHandler
 class LineTool(SketchTool):
     """Handles creating lines between points."""
 
+    ICON = "sketch-line-symbolic"
+    LABEL = _("Line")
     SHORTCUT = ("gl", _("Line"))
 
     def __init__(self, element):
         super().__init__(element)
         self._preview_state: Optional[LinePreviewState] = None
         self._dim_input = DimensionInputHandler()
+
+    def is_available(self, target, target_type) -> bool:
+        return target is None
+
+    def shortcut_is_active(self) -> bool:
+        return True
 
     def get_preview_state(self) -> Optional[LinePreviewState]:
         return self._preview_state

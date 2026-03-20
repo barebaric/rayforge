@@ -12,6 +12,8 @@ from .dimension_input import DimensionInputHandler
 class RectangleTool(SketchTool):
     """Handles creating rectangles."""
 
+    ICON = "sketch-rect-symbolic"
+    LABEL = _("Rectangle")
     SHORTCUT = ("gr", _("Rectangle"))
 
     def __init__(self, element):
@@ -20,6 +22,12 @@ class RectangleTool(SketchTool):
         self._dim_input = DimensionInputHandler(
             field_count=2, field_labels=[_("W"), _("H")]
         )
+
+    def is_available(self, target, target_type) -> bool:
+        return target is None
+
+    def shortcut_is_active(self) -> bool:
+        return True
 
     def get_preview_state(self) -> Optional[RectanglePreviewState]:
         return self._preview_state

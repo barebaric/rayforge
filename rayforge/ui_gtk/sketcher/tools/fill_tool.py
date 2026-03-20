@@ -7,7 +7,15 @@ from .base import SketchTool
 class FillTool(SketchTool):
     """Handles creating and removing fills from closed regions."""
 
+    ICON = "sketch-fill-symbolic"
+    LABEL = _("Fill")
     SHORTCUT = ("gf", _("Fill"))
+
+    def is_available(self, target, target_type) -> bool:
+        return target is None
+
+    def shortcut_is_active(self) -> bool:
+        return True
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         if n_press != 1:

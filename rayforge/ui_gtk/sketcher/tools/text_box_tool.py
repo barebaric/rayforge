@@ -33,6 +33,8 @@ class TextBoxState(Enum):
 
 
 class TextBoxTool(SketchTool):
+    ICON = "sketch-text-symbolic"
+    LABEL = _("Text Box")
     SHORTCUT = ("gt", _("Text Box"))
     EDITING_SHORTCUTS = []
 
@@ -59,6 +61,12 @@ class TextBoxTool(SketchTool):
         self.editing_started = Signal()
         self.editing_finished = Signal()
         self.cursor_moved = Signal()
+
+    def is_available(self, target, target_type) -> bool:
+        return target is None
+
+    def shortcut_is_active(self) -> bool:
+        return True
 
     def _get_selection_range(self) -> tuple[int, int]:
         """Returns normalized selection range (start, end)."""
