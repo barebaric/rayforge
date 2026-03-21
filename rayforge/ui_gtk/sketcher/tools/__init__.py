@@ -21,6 +21,7 @@ from .rectangle_tool import RectangleTool
 from .rounded_rect_tool import RoundedRectTool
 from .select_tool import SelectTool
 from .symmetry_constraint_tool import SymmetryConstraintTool
+from .straighten_tool import StraightenTool
 from .tangent_constraint_tool import TangentConstraintTool
 from .text_box_tool import TextBoxTool
 from .vertical_constraint_tool import VerticalConstraintTool
@@ -50,6 +51,7 @@ TOOL_REGISTRY = {
     "rectangle": RectangleTool,
     "rounded_rect": RoundedRectTool,
     "select": SelectTool,
+    "straighten": StraightenTool,
     "symmetry": SymmetryConstraintTool,
     "tangent": TangentConstraintTool,
     "text_box": TextBoxTool,
@@ -96,6 +98,7 @@ __all__ = [
     "SelectTool",
     "SketchTool",
     "SketcherKey",
+    "StraightenTool",
     "SymmetryConstraintTool",
     "TangentConstraintTool",
     "TextBoxTool",

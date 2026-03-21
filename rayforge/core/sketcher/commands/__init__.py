@@ -28,6 +28,7 @@ from .point import (
 )
 from .rectangle import RectangleCommand, RectanglePreviewState
 from .rounded_rect import RoundedRectCommand, RoundedRectPreviewState
+from .straighten import StraightenBezierCommand
 from .symmetry_constraint import (
     SymmetryConstraintCommand,
     SymmetryConstraintParams,
@@ -76,6 +77,7 @@ __all__ = [
     "RoundedRectPreviewState",
     "SetWaypointTypeCommand",
     "SketchChangeCommand",
+    "StraightenBezierCommand",
     "SymmetryConstraintCommand",
     "SymmetryConstraintParams",
     "TangentConstraintCommand",
