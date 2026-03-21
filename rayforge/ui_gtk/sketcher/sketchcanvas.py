@@ -45,6 +45,8 @@ class SketchCanvas(WorldSurface):
             show_axis=show_axis,
             **kwargs,
         )
+        # Clear the gray background for a clean sketching surface
+        self.root.background = (0, 0, 0, 0)
         self.parent_window = parent_window
         self.single_mode = single_mode
         self.set_has_tooltip(True)
@@ -84,6 +86,12 @@ class SketchCanvas(WorldSurface):
         # Replace the model on the existing element. The element's property
         # setter will handle reconnecting signals to the new VarSet.
         self.sketch_element.sketch = sketch
+
+        # Reset content_transform to identity so that update_bounds_from_sketch
+        # calculates the correct offset from a clean state. Without this, the
+        # stale content_transform from a previous sketch causes the bounds
+        # calculation to produce incorrect positioning on subsequent opens.
+        self.sketch_element.content_transform = Matrix.identity()
 
         # Position the sketch element at the center of the canvas world.
         # The subsequent call to update_bounds_from_sketch (in SketchStudio)
