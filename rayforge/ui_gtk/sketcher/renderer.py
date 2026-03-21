@@ -791,52 +791,6 @@ class SketchRenderer:
 
         ctx.restore()
 
-    def _draw_bezier_entity_handles(
-        self, ctx: cairo.Context, to_screen, bezier: Bezier
-    ):
-        """Draw control handles for a selected bezier entity."""
-        if bezier.cp1 is None and bezier.cp2 is None:
-            return
-
-        try:
-            start_pt = self.element.sketch.registry.get_point(bezier.start_idx)
-            end_pt = self.element.sketch.registry.get_point(bezier.end_idx)
-        except IndexError:
-            return
-
-        if not (start_pt and end_pt):
-            return
-
-        start_sx, start_sy = to_screen((start_pt.x, start_pt.y))
-        end_sx, end_sy = to_screen((end_pt.x, end_pt.y))
-
-        ctx.save()
-        ctx.set_line_width(1.0)
-        ctx.set_source_rgba(0.2, 0.6, 1.0, 0.8)
-
-        if bezier.cp1 is not None:
-            cp1_abs = (start_pt.x + bezier.cp1[0], start_pt.y + bezier.cp1[1])
-            cp1_sx, cp1_sy = to_screen(cp1_abs)
-            ctx.move_to(start_sx, start_sy)
-            ctx.line_to(cp1_sx, cp1_sy)
-            ctx.stroke()
-            ctx.set_source_rgba(0.2, 0.6, 1.0, 1.0)
-            ctx.rectangle(cp1_sx - 4, cp1_sy - 4, 8, 8)
-            ctx.fill()
-
-        if bezier.cp2 is not None:
-            cp2_abs = (end_pt.x + bezier.cp2[0], end_pt.y + bezier.cp2[1])
-            cp2_sx, cp2_sy = to_screen(cp2_abs)
-            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.8)
-            ctx.move_to(end_sx, end_sy)
-            ctx.line_to(cp2_sx, cp2_sy)
-            ctx.stroke()
-            ctx.set_source_rgba(0.2, 0.6, 1.0, 1.0)
-            ctx.rectangle(cp2_sx - 4, cp2_sy - 4, 8, 8)
-            ctx.fill()
-
-        ctx.restore()
-
     def _draw_waypoint_handles(
         self,
         ctx: cairo.Context,
