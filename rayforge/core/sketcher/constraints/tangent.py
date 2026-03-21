@@ -6,6 +6,7 @@ from gettext import gettext as _
 from ...geo import Point
 from ...geo.primitives import find_closest_point_on_line
 from ..entities import Line, Arc, Circle
+from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
@@ -21,10 +22,12 @@ class TangentConstraint(Constraint):
     Logic: Distance from shape center to Line equals shape Radius.
     """
 
-    def __init__(self, line_id: int, shape_id: int, user_visible: bool = True):
+    def __init__(
+        self, line_id: EntityID, shape_id: EntityID, user_visible: bool = True
+    ):
         super().__init__(user_visible=user_visible)
-        self.line_id = line_id
-        self.shape_id = shape_id
+        self.line_id: EntityID = line_id
+        self.shape_id: EntityID = shape_id
 
     @classmethod
     def can_apply_to(
@@ -116,10 +119,10 @@ class TangentConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         line = reg.get_entity(self.line_id)
         shape = reg.get_entity(self.shape_id)
-        grad: Dict[int, List[Point]] = {}
+        grad = {}
 
         if not isinstance(line, Line) or not isinstance(shape, (Arc, Circle)):
             return grad

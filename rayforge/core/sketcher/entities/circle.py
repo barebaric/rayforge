@@ -1,6 +1,7 @@
 import math
 from typing import List, Dict, Optional, Any, Sequence, TYPE_CHECKING
 from ...geo import Geometry, Point, Rect, primitives
+from ..types import EntityID
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -11,23 +12,23 @@ if TYPE_CHECKING:
 class Circle(Entity):
     def __init__(
         self,
-        id: int,
-        center_idx: int,
-        radius_pt_idx: int,
+        id: EntityID,
+        center_idx: EntityID,
+        radius_pt_idx: EntityID,
         construction: bool = False,
     ):
         super().__init__(id, construction)
-        self.center_idx = center_idx
-        self.radius_pt_idx = radius_pt_idx
+        self.center_idx: EntityID = center_idx
+        self.radius_pt_idx: EntityID = radius_pt_idx
         self.type = "circle"
 
-    def get_point_ids(self) -> List[int]:
+    def get_point_ids(self) -> List[EntityID]:
         return [self.center_idx, self.radius_pt_idx]
 
-    def get_endpoint_ids(self) -> List[int]:
+    def get_endpoint_ids(self) -> List[EntityID]:
         return []
 
-    def get_junction_point_ids(self) -> List[int]:
+    def get_junction_point_ids(self) -> List[EntityID]:
         return [self.center_idx, self.radius_pt_idx]
 
     def hit_test(
@@ -49,7 +50,7 @@ class Circle(Entity):
         dist_mouse = math.hypot(mx - center.x, my - center.y)
         return abs(dist_mouse - radius) < threshold
 
-    def get_ignorable_unconstrained_points(self) -> List[int]:
+    def get_ignorable_unconstrained_points(self) -> List[EntityID]:
         """
         If the circle is geometrically constrained, the radius point (which
         acts only as a handle for the radius value) does not need to be

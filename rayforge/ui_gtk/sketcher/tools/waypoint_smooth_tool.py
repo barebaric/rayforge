@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Optional, Union
 from ....core.sketcher.entities import Bezier, Entity, Line, Point
 from ....core.sketcher.entities.point import WaypointType
 from ....core.sketcher.commands import SetWaypointTypeCommand
+from ....core.sketcher.types import EntityID
 from .base import SketchTool
 
 if TYPE_CHECKING:
@@ -39,7 +40,7 @@ class WaypointSmoothTool(SketchTool):
         self._set_waypoint_type(WaypointType.SMOOTH)
         self.element.set_tool("select")
 
-    def _get_waypoint_pid(self) -> Optional[int]:
+    def _get_waypoint_pid(self) -> Optional[EntityID]:
         sel = self.element.selection
         if sel.junction_pid is not None:
             return sel.junction_pid
@@ -47,7 +48,7 @@ class WaypointSmoothTool(SketchTool):
             return sel.point_ids[0]
         return None
 
-    def _is_waypoint_at_bezier(self, pid: int) -> bool:
+    def _is_waypoint_at_bezier(self, pid: EntityID) -> bool:
         sketch = self.element.sketch
         for entity in sketch.registry.entities:
             if isinstance(entity, Bezier):
@@ -55,7 +56,7 @@ class WaypointSmoothTool(SketchTool):
                     return True
         return False
 
-    def _is_waypoint_at_line(self, pid: int) -> bool:
+    def _is_waypoint_at_line(self, pid: EntityID) -> bool:
         sketch = self.element.sketch
         for entity in sketch.registry.entities:
             if isinstance(entity, Line):

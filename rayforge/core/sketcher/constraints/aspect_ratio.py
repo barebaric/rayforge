@@ -5,6 +5,7 @@ from typing import Dict, Any, List, TYPE_CHECKING, Callable, Optional
 import cairo
 from ...geo import Point
 from ..entities import Line
+from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
@@ -19,18 +20,18 @@ class AspectRatioConstraint(Constraint):
 
     def __init__(
         self,
-        p1: int,
-        p2: int,
-        p3: int,
-        p4: int,
+        p1: EntityID,
+        p2: EntityID,
+        p3: EntityID,
+        p4: EntityID,
         ratio: float,
         user_visible: bool = True,
     ):
         super().__init__(user_visible=user_visible)
-        self.p1 = p1
-        self.p2 = p2
-        self.p3 = p3
-        self.p4 = p4
+        self.p1: EntityID = p1
+        self.p2: EntityID = p2
+        self.p3: EntityID = p3
+        self.p4: EntityID = p4
         self.ratio = ratio
 
     @classmethod
@@ -104,7 +105,7 @@ class AspectRatioConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         pt3 = reg.get_point(self.p3)
@@ -118,7 +119,7 @@ class AspectRatioConstraint(Constraint):
         dy2 = pt4.y - pt3.y
         dist2 = math.hypot(dx2, dy2)
 
-        grad: Dict[int, List[Point]] = {}
+        grad = {}
 
         def add(pid, gx, gy):
             if pid not in grad:

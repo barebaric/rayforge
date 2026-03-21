@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 from ...geo import Point as GeoPoint, Rect, primitives
+from ..types import EntityID
 from .bezier import Bezier
 
 if TYPE_CHECKING:
@@ -18,13 +19,13 @@ class WaypointType(Enum):
 class Point:
     def __init__(
         self,
-        id: int,
+        id: EntityID,
         x: float,
         y: float,
         fixed: bool = False,
         waypoint_type: WaypointType = WaypointType.SHARP,
     ):
-        self.id = id
+        self.id: EntityID = id
         self.x = x
         self.y = y
         self.fixed = fixed

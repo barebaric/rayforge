@@ -10,6 +10,7 @@ from ..constraints import (
     EqualDistanceConstraint,
     CollinearConstraint,
 )
+from ..types import EntityID
 
 if TYPE_CHECKING:
     from ..sketch import Sketch
@@ -24,9 +25,9 @@ class ChamferCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        corner_pid: int,
-        line1_id: int,
-        line2_id: int,
+        corner_pid: EntityID,
+        line1_id: EntityID,
+        line2_id: EntityID,
         distance: float,
     ):
         super().__init__(sketch, _("Add Chamfer"))
@@ -43,9 +44,9 @@ class ChamferCommand(SketchChangeCommand):
     @staticmethod
     def calculate_geometry(
         reg: "EntityRegistry",
-        corner_pid: int,
-        line1_id: int,
-        line2_id: int,
+        corner_pid: EntityID,
+        line1_id: EntityID,
+        line2_id: EntityID,
         distance: float,
     ) -> Optional[Dict[str, Any]]:
         """

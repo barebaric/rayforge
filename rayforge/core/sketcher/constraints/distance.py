@@ -12,6 +12,7 @@ from typing import (
 from gettext import gettext as _
 from ...geo import Point
 from ...geo.primitives import find_closest_point_on_line_segment
+from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
@@ -27,15 +28,15 @@ class DistanceConstraint(Constraint):
 
     def __init__(
         self,
-        p1: int,
-        p2: int,
+        p1: EntityID,
+        p2: EntityID,
         value: Union[str, float],
         expression: Optional[str] = None,
         user_visible: bool = True,
     ):
         super().__init__(user_visible=user_visible)
-        self.p1 = p1
-        self.p2 = p2
+        self.p1: EntityID = p1
+        self.p2: EntityID = p2
 
         if expression is not None:
             self.expression = expression
@@ -87,7 +88,7 @@ class DistanceConstraint(Constraint):
         return ""
 
     def targets_segment(
-        self, p1: int, p2: int, entity_id: Optional[int]
+        self, p1: EntityID, p2: EntityID, entity_id: Optional[EntityID]
     ) -> bool:
         return {self.p1, self.p2} == {p1, p2}
 
@@ -125,7 +126,7 @@ class DistanceConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         dx = pt2.x - pt1.x

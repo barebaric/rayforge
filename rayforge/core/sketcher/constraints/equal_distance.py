@@ -7,6 +7,7 @@ from gettext import gettext as _
 from ...geo import Point
 from ..entities import Line, Arc, Circle
 from .base import Constraint
+from ..types import EntityID
 
 if TYPE_CHECKING:
     from ..params import ParameterContext
@@ -19,13 +20,18 @@ class EqualDistanceConstraint(Constraint):
     """Enforces that distance(p1, p2) equals distance(p3, p4)."""
 
     def __init__(
-        self, p1: int, p2: int, p3: int, p4: int, user_visible: bool = True
+        self,
+        p1: EntityID,
+        p2: EntityID,
+        p3: EntityID,
+        p4: EntityID,
+        user_visible: bool = True,
     ):
         super().__init__(user_visible=user_visible)
-        self.p1 = p1
-        self.p2 = p2
-        self.p3 = p3
-        self.p4 = p4
+        self.p1: EntityID = p1
+        self.p2: EntityID = p2
+        self.p3: EntityID = p3
+        self.p4: EntityID = p4
 
     @classmethod
     def can_apply_to(
@@ -66,7 +72,7 @@ class EqualDistanceConstraint(Constraint):
         return ""
 
     def targets_segment(
-        self, p1: int, p2: int, entity_id: Optional[int]
+        self, p1: EntityID, p2: EntityID, entity_id: Optional[EntityID]
     ) -> bool:
         target = {p1, p2}
         return target == {self.p1, self.p2} or target == {self.p3, self.p4}
@@ -106,7 +112,7 @@ class EqualDistanceConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         pt3 = reg.get_point(self.p3)
@@ -120,7 +126,7 @@ class EqualDistanceConstraint(Constraint):
         dy2 = pt4.y - pt3.y
         dist2 = math.hypot(dx2, dy2)
 
-        grad: Dict[int, List[Point]] = {}
+        grad: Dict[EntityID, List[Point]] = {}
 
         def add(pid, gx, gy):
             if pid not in grad:

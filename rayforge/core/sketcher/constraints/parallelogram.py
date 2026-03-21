@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Dict, Any, List, TYPE_CHECKING
 from gettext import gettext as _
 from ...geo import Point
+from ..types import EntityID
 from .base import Constraint
 
 if TYPE_CHECKING:
@@ -14,17 +15,17 @@ class ParallelogramConstraint(Constraint):
 
     def __init__(
         self,
-        p_origin: int,
-        p_width: int,
-        p_height: int,
-        p4: int,
+        p_origin: EntityID,
+        p_width: EntityID,
+        p_height: EntityID,
+        p4: EntityID,
         user_visible: bool = False,
     ):
         super().__init__(user_visible=user_visible)
-        self.p_origin = p_origin
-        self.p_width = p_width
-        self.p_height = p_height
-        self.p4 = p4
+        self.p_origin: EntityID = p_origin
+        self.p_width: EntityID = p_width
+        self.p_height: EntityID = p_height
+        self.p4: EntityID = p4
 
     @staticmethod
     def get_type_name() -> str:
@@ -85,7 +86,7 @@ class ParallelogramConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         """Returns the gradient of the error with respect to each point."""
         return {
             self.p_origin: [(-1.0, 0.0), (0.0, -1.0)],

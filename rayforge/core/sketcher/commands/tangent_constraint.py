@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, List
 
 from ..entities import Arc, Circle, Line
+from ..types import EntityID
 
 if TYPE_CHECKING:
     from ..registry import EntityRegistry
@@ -11,15 +12,15 @@ if TYPE_CHECKING:
 
 @dataclass
 class TangentConstraintParams:
-    line_id: int
-    shape_id: int
+    line_id: EntityID
+    shape_id: EntityID
 
 
 class TangentConstraintCommand:
     @staticmethod
     def identify_entities(
         registry: EntityRegistry,
-        entity_ids: list[int],
+        entity_ids: List[EntityID],
     ) -> Optional[TangentConstraintParams]:
         sel_line: Optional[Line] = None
         sel_shape: Optional[Arc | Circle] = None

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, List, Optional, Union
 
 from ....core.sketcher.commands import FilletCommand
 from ....core.sketcher.entities import Entity, Line, Point
+from ....core.sketcher.types import EntityID
 from .base import SketchTool
 
 if TYPE_CHECKING:
@@ -44,7 +45,7 @@ class FilletTool(SketchTool):
         self._add_fillet()
         self.element.set_tool("select")
 
-    def _get_lines_at_point(self, pid: int) -> List[Line]:
+    def _get_lines_at_point(self, pid: EntityID) -> List[Line]:
         sketch = self.element.sketch
         return [
             e

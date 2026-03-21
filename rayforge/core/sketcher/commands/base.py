@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional, Any
+from typing import TYPE_CHECKING, Dict, List, Optional, Any, Set
 
 from ...geo import Point
 from ...undo.command import Command
@@ -22,7 +22,7 @@ class PreviewState:
     after calling cleanup_preview().
     """
 
-    def get_preview_point_ids(self) -> set[int]:
+    def get_preview_point_ids(self) -> Set[int]:
         """
         Returns IDs of temporary preview points that shouldn't be snapped to.
 

@@ -1,5 +1,6 @@
 from typing import List, Dict, Any, Sequence, TYPE_CHECKING, Optional
 from ...geo import Geometry, Polygon, Rect
+from ..types import EntityID
 
 if TYPE_CHECKING:
     from ..constraints import Constraint
@@ -9,8 +10,8 @@ if TYPE_CHECKING:
 class Entity:
     """Base class for geometric primitives."""
 
-    def __init__(self, id: int, construction: bool = False):
-        self.id = id
+    def __init__(self, id: EntityID, construction: bool = False):
+        self.id: EntityID = id
         self.construction = construction
         self.type = "entity"
         # Constrained state is calculated by solver
@@ -41,11 +42,11 @@ class Entity:
         """
         self.constrained = False
 
-    def get_point_ids(self) -> List[int]:
+    def get_point_ids(self) -> List[EntityID]:
         """Returns IDs of all control points used by this entity."""
         return []
 
-    def get_endpoint_ids(self) -> List[int]:
+    def get_endpoint_ids(self) -> List[EntityID]:
         """
         Returns IDs of the two endpoints for path/loop traversal.
         Returns empty list for single-point entities (Circle).
@@ -53,7 +54,7 @@ class Entity:
         """
         return []
 
-    def get_ignorable_unconstrained_points(self) -> List[int]:
+    def get_ignorable_unconstrained_points(self) -> List[EntityID]:
         """
         Returns IDs of points that can remain unconstrained if this entity
         is constrained (e.g. radius handles).
@@ -73,7 +74,7 @@ class Entity:
         """
         return False
 
-    def get_junction_point_ids(self) -> List[int]:
+    def get_junction_point_ids(self) -> List[EntityID]:
         """
         Returns point IDs that should be counted for junction detection.
         These are typically the endpoints of geometric entities.

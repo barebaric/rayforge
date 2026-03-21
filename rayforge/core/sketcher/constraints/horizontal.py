@@ -6,6 +6,7 @@ from typing import Dict, Any, List, Callable, Optional, TYPE_CHECKING
 from gettext import gettext as _
 from ...geo import Point
 from ..entities import Line
+from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
@@ -19,10 +20,10 @@ if TYPE_CHECKING:
 class HorizontalConstraint(Constraint):
     """Enforces two points have the same Y coordinate."""
 
-    def __init__(self, p1: int, p2: int, user_visible: bool = True):
+    def __init__(self, p1: EntityID, p2: EntityID, user_visible: bool = True):
         super().__init__(user_visible=user_visible)
-        self.p1 = p1
-        self.p2 = p2
+        self.p1: EntityID = p1
+        self.p2: EntityID = p2
 
     @classmethod
     def can_apply_to(
@@ -85,7 +86,7 @@ class HorizontalConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         return {
             self.p1: [(0.0, 1.0)],
             self.p2: [(0.0, -1.0)],

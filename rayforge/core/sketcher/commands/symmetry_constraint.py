@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, List
+
+from ..types import EntityID
 
 if TYPE_CHECKING:
     pass
@@ -9,17 +11,17 @@ if TYPE_CHECKING:
 
 @dataclass
 class SymmetryConstraintParams:
-    p1_id: int
-    p2_id: int
-    center_id: Optional[int] = None
-    axis_id: Optional[int] = None
+    p1_id: EntityID
+    p2_id: EntityID
+    center_id: Optional[EntityID] = None
+    axis_id: Optional[EntityID] = None
 
 
 class SymmetryConstraintCommand:
     @staticmethod
     def determine_constraint_params(
-        point_ids: list[int],
-        entity_ids: list[int],
+        point_ids: List[EntityID],
+        entity_ids: List[EntityID],
     ) -> Optional[SymmetryConstraintParams]:
         if len(point_ids) == 3 and not entity_ids:
             return SymmetryConstraintParams(

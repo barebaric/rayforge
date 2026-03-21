@@ -19,6 +19,7 @@ from ...geo.primitives import (
     is_point_on_segment,
 )
 from ..entities import Line, Arc, Circle
+from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
@@ -37,10 +38,12 @@ class PerpendicularConstraint(Constraint):
     - Arc/Arc, Arc/Circle, Circle/Circle: Shapes intersect at a right angle.
     """
 
-    def __init__(self, e1_id: int, e2_id: int, user_visible: bool = True):
+    def __init__(
+        self, e1_id: EntityID, e2_id: EntityID, user_visible: bool = True
+    ):
         super().__init__(user_visible=user_visible)
-        self.e1_id = e1_id
-        self.e2_id = e2_id
+        self.e1_id: EntityID = e1_id
+        self.e2_id: EntityID = e2_id
 
     @classmethod
     def can_apply_to(
@@ -172,10 +175,10 @@ class PerpendicularConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         e1 = reg.get_entity(self.e1_id)
         e2 = reg.get_entity(self.e2_id)
-        grad: Dict[int, List[Point]] = {}
+        grad = {}
 
         if e1 is None or e2 is None:
             return {}

@@ -13,6 +13,7 @@ from typing import (
 from gettext import gettext as _
 from ...geo import Point
 from ..entities import Line, Arc, Circle
+from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
@@ -28,7 +29,7 @@ class EqualLengthConstraint(Constraint):
     - Arc/Circle: Radius
     """
 
-    def __init__(self, entity_ids: List[int], user_visible: bool = True):
+    def __init__(self, entity_ids: List[EntityID], user_visible: bool = True):
         super().__init__(user_visible=user_visible)
         self.entity_ids = entity_ids
 
@@ -48,7 +49,7 @@ class EqualLengthConstraint(Constraint):
         return ""
 
     def targets_segment(
-        self, p1: int, p2: int, entity_id: Optional[int]
+        self, p1: EntityID, p2: EntityID, entity_id: Optional[EntityID]
     ) -> bool:
         if entity_id is not None:
             return entity_id in self.entity_ids
@@ -69,7 +70,7 @@ class EqualLengthConstraint(Constraint):
         )
 
     def constrains_radius(
-        self, registry: "EntityRegistry", entity_id: int
+        self, registry: "EntityRegistry", entity_id: EntityID
     ) -> bool:
         return entity_id in self.entity_ids
 
@@ -108,7 +109,7 @@ class EqualLengthConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         if len(self.entity_ids) < 2:
             return {}
 
@@ -116,7 +117,7 @@ class EqualLengthConstraint(Constraint):
             cast(Union[Line, Arc, Circle], reg.get_entity(eid))
             for eid in self.entity_ids
         ]
-        grad: Dict[int, List[Point]] = {}
+        grad = {}
         num_residuals = len(entities) - 1
 
         # Helper to get points defining length

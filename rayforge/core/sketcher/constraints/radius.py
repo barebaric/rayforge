@@ -5,6 +5,7 @@ from typing import Union, Dict, Any, List, Optional, Callable, TYPE_CHECKING
 from gettext import gettext as _
 from ...geo import Point
 from ..entities import Arc, Circle
+from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
@@ -19,13 +20,13 @@ class RadiusConstraint(Constraint):
 
     def __init__(
         self,
-        entity_id: int,
+        entity_id: EntityID,
         value: Union[str, float],
         expression: Optional[str] = None,
         user_visible: bool = True,
     ):
         super().__init__(user_visible=user_visible)
-        self.entity_id = entity_id
+        self.entity_id: EntityID = entity_id
 
         if expression is not None:
             self.expression = expression
@@ -70,7 +71,7 @@ class RadiusConstraint(Constraint):
         return ""
 
     def targets_segment(
-        self, p1: int, p2: int, entity_id: Optional[int]
+        self, p1: EntityID, p2: EntityID, entity_id: Optional[EntityID]
     ) -> bool:
         return entity_id is not None and self.entity_id == entity_id
 
@@ -95,7 +96,7 @@ class RadiusConstraint(Constraint):
         )
 
     def constrains_radius(
-        self, registry: "EntityRegistry", entity_id: int
+        self, registry: "EntityRegistry", entity_id: EntityID
     ) -> bool:
         return self.entity_id == entity_id
 
@@ -124,7 +125,7 @@ class RadiusConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         entity = reg.get_entity(self.entity_id)
 
         # Type narrowing for Pylance

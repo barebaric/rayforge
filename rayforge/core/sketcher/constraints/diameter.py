@@ -6,6 +6,7 @@ from ...geo import Point
 from ..entities import Circle
 from .base import Constraint, ConstraintStatus
 from .radius import RadiusConstraint
+from ..types import EntityID
 
 if TYPE_CHECKING:
     import cairo
@@ -20,13 +21,13 @@ class DiameterConstraint(Constraint):
 
     def __init__(
         self,
-        circle_id: int,
+        circle_id: EntityID,
         value: Union[str, float],
         expression: Optional[str] = None,
         user_visible: bool = True,
     ):
         super().__init__(user_visible=user_visible)
-        self.circle_id = circle_id
+        self.circle_id: EntityID = circle_id
 
         if expression is not None:
             self.expression = expression
@@ -70,7 +71,7 @@ class DiameterConstraint(Constraint):
         return ""
 
     def targets_segment(
-        self, p1: int, p2: int, entity_id: Optional[int]
+        self, p1: EntityID, p2: EntityID, entity_id: Optional[EntityID]
     ) -> bool:
         return entity_id is not None and self.circle_id == entity_id
 
@@ -95,7 +96,7 @@ class DiameterConstraint(Constraint):
         )
 
     def constrains_radius(
-        self, registry: "EntityRegistry", entity_id: int
+        self, registry: "EntityRegistry", entity_id: EntityID
     ) -> bool:
         return self.circle_id == entity_id
 
@@ -116,7 +117,7 @@ class DiameterConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         entity = reg.get_entity(self.circle_id)
         if isinstance(entity, Circle):
             c = reg.get_point(entity.center_idx)

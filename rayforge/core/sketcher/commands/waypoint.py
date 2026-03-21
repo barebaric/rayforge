@@ -9,6 +9,7 @@ from ...geo.types import Point as GeoPoint
 from .base import SketchChangeCommand
 from ..entities import Bezier, Line
 from ..entities.point import WaypointType
+from ..types import EntityID
 
 if TYPE_CHECKING:
     from ..entities.point import Point
@@ -36,7 +37,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: "Sketch",
-        waypoint_id: int,
+        waypoint_id: EntityID,
         new_type: "WaypointType",
     ):
         label = _("Set Waypoint Type")
@@ -122,8 +123,8 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         return incoming_dir, outgoing_dir
 
     def _find_connected_lines(
-        self, registry: "EntityRegistry", waypoint_id: int
-    ) -> List[Tuple[int, int, int]]:
+        self, registry: "EntityRegistry", waypoint_id: EntityID
+    ) -> List[Tuple[EntityID, EntityID, EntityID]]:
         """Find Line entities connected to this waypoint.
 
         Returns list of (line_id, p1_idx, p2_idx).
@@ -139,8 +140,10 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         return connected
 
     def _convert_lines_to_beziers(
-        self, registry: "EntityRegistry", lines: List[Tuple[int, int, int]]
-    ) -> List[int]:
+        self,
+        registry: "EntityRegistry",
+        lines: List[Tuple[EntityID, EntityID, EntityID]],
+    ) -> List[EntityID]:
         """Remove Line entities and add Bezier entities in their place."""
         bezier_ids = []
         line_ids_to_remove = [lid for lid, unused1, unused2 in lines]
@@ -155,8 +158,8 @@ class SetWaypointTypeCommand(SketchChangeCommand):
     def _restore_lines(
         self,
         registry: "EntityRegistry",
-        lines: List[Tuple[int, int, int]],
-        bezier_ids: List[int],
+        lines: List[Tuple[EntityID, EntityID, EntityID]],
+        bezier_ids: List[EntityID],
     ):
         """Remove Bezier entities and restore Line entities."""
         registry.remove_entities_by_id(bezier_ids)

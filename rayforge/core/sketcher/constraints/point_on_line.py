@@ -5,6 +5,7 @@ from typing import Dict, Any, List, Callable, TYPE_CHECKING
 from gettext import gettext as _
 from ...geo import Point
 from ..entities import Line, Arc, Circle
+from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
@@ -16,11 +17,11 @@ class PointOnLineConstraint(Constraint):
     """Enforces a point lies on the infinite geometry of a shape."""
 
     def __init__(
-        self, point_id: int, shape_id: int, user_visible: bool = True
+        self, point_id: EntityID, shape_id: EntityID, user_visible: bool = True
     ):
         super().__init__(user_visible=user_visible)
-        self.point_id = point_id
-        self.shape_id = shape_id
+        self.point_id: EntityID = point_id
+        self.shape_id: EntityID = shape_id
 
     @staticmethod
     def get_type_name() -> str:
@@ -55,7 +56,7 @@ class PointOnLineConstraint(Constraint):
         )
 
     def constrains_radius(
-        self, registry: "EntityRegistry", entity_id: int
+        self, registry: "EntityRegistry", entity_id: EntityID
     ) -> bool:
         """
         If this constraint forces a point onto the target entity (circle/arc),
@@ -114,14 +115,14 @@ class PointOnLineConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         pt = reg.get_point(self.point_id)
         shape = reg.get_entity(self.shape_id)
 
         if shape is None:
             return {}
 
-        grad: Dict[int, List[Point]] = {}
+        grad = {}
 
         def add_grad(pid, gx, gy):
             if pid not in grad:
@@ -263,6 +264,6 @@ class PointOnLineConstraint(Constraint):
         ctx.stroke()
         ctx.restore()
 
-    def get_draggable_point(self) -> int:
+    def get_draggable_point(self) -> EntityID:
         """Returns the point that lies on the line/shape."""
         return self.point_id

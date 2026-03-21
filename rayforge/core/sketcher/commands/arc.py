@@ -1,11 +1,12 @@
 from __future__ import annotations
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Set
 
 from ...geo import Point as GeoPoint, primitives
 from ..constraints import EqualDistanceConstraint, RadiusConstraint
 from ..entities import Arc, Point
+from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
@@ -20,12 +21,12 @@ class ArcPreviewState(PreviewState):
 
     def __init__(
         self,
-        center_id: int,
+        center_id: EntityID,
         center_temp: bool,
-        start_id: Optional[int] = None,
+        start_id: Optional[EntityID] = None,
         start_temp: bool = False,
-        temp_end_id: Optional[int] = None,
-        temp_entity_id: Optional[int] = None,
+        temp_end_id: Optional[EntityID] = None,
+        temp_entity_id: Optional[EntityID] = None,
     ):
         self.center_id = center_id
         self.center_temp = center_temp
@@ -36,13 +37,13 @@ class ArcPreviewState(PreviewState):
         self.clockwise = False
         self.locked_radius: Optional[float] = None
 
-    def get_preview_point_ids(self) -> set[int]:
+    def get_preview_point_ids(self) -> Set[EntityID]:
         """
         Returns IDs of temp preview points that shouldn't be snapped to.
 
         Excludes center and start points since they may be permanent.
         """
-        result: set[int] = set()
+        result: set[EntityID] = set()
         if self.temp_end_id is not None:
             result.add(self.temp_end_id)
         return result
@@ -133,10 +134,10 @@ class ArcCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        center_id: int,
-        start_id: int,
+        center_id: EntityID,
+        start_id: EntityID,
         end_pos: GeoPoint,
-        end_pid: Optional[int] = None,
+        end_pid: Optional[EntityID] = None,
         is_center_temp: bool = False,
         is_start_temp: bool = False,
         clockwise: bool = False,
@@ -152,10 +153,10 @@ class ArcCommand(SketchChangeCommand):
         self.clockwise = clockwise
         self.fixed_radius = fixed_radius
         self.add_cmd: Optional[AddItemsCommand] = None
-        self._committed_end_id: Optional[int] = None
+        self._committed_end_id: Optional[EntityID] = None
 
     @property
-    def committed_end_id(self) -> Optional[int]:
+    def committed_end_id(self) -> Optional[EntityID]:
         """The final end point ID after execute(), or None."""
         return self._committed_end_id
 
@@ -164,7 +165,7 @@ class ArcCommand(SketchChangeCommand):
         registry: EntityRegistry,
         x: float,
         y: float,
-        snapped_pid: Optional[int] = None,
+        snapped_pid: Optional[EntityID] = None,
         **kwargs,
     ) -> ArcPreviewState:
         """
@@ -196,7 +197,7 @@ class ArcCommand(SketchChangeCommand):
         preview_state: PreviewState,
         x: float,
         y: float,
-        snapped_pid: Optional[int] = None,
+        snapped_pid: Optional[EntityID] = None,
     ) -> None:
         """
         Sets the start point and creates the preview arc entity.
@@ -235,7 +236,7 @@ class ArcCommand(SketchChangeCommand):
         registry: EntityRegistry,
         x: float,
         y: float,
-        snapped_pid: Optional[int] = None,
+        snapped_pid: Optional[EntityID] = None,
         **kwargs,
     ) -> ArcPreviewState:
         """

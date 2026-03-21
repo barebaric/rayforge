@@ -5,6 +5,7 @@ from gettext import gettext as _
 from ...undo.command import Command
 from ...undo.history import COALESCE_THRESHOLD
 from ..entities.text_box import TextBoxEntity
+from ..types import EntityID
 
 if TYPE_CHECKING:
     from ..sketch import Sketch
@@ -14,7 +15,7 @@ class LiveTextEditCommand(Command):
     def __init__(
         self,
         sketch: Sketch,
-        text_entity_id: int,
+        text_entity_id: EntityID,
     ):
         super().__init__(_("Edit Text"))
         self.text_entity_id = text_entity_id

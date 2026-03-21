@@ -2,6 +2,7 @@ from typing import List, Tuple, Dict, Any, Sequence, Optional, TYPE_CHECKING
 from ...geo import primitives, Rect
 from ...geo.geometry import Geometry
 from ...geo.font_config import FontConfig
+from ..types import EntityID
 from .entity import Entity
 from .line import Line
 
@@ -13,31 +14,33 @@ if TYPE_CHECKING:
 class TextBoxEntity(Entity):
     def __init__(
         self,
-        id: int,
-        origin_id: int,
-        width_id: int,
-        height_id: int,
+        id: EntityID,
+        origin_id: EntityID,
+        width_id: EntityID,
+        height_id: EntityID,
         content: str = "",
         font_config: Optional[FontConfig] = None,
         construction: bool = False,
-        construction_line_ids: Optional[List[int]] = None,
+        construction_line_ids: Optional[List[EntityID]] = None,
     ):
         super().__init__(id, construction)
-        self.origin_id = origin_id
-        self.width_id = width_id
-        self.height_id = height_id
+        self.origin_id: EntityID = origin_id
+        self.width_id: EntityID = width_id
+        self.height_id: EntityID = height_id
         self.content = content
         self.font_config = font_config or FontConfig()
-        self.construction_line_ids = construction_line_ids or []
+        self.construction_line_ids: List[EntityID] = (
+            construction_line_ids or []
+        )
         self.type = "text_box"
 
-    def get_point_ids(self) -> List[int]:
+    def get_point_ids(self) -> List[EntityID]:
         return [self.origin_id, self.width_id, self.height_id]
 
-    def get_endpoint_ids(self) -> List[int]:
+    def get_endpoint_ids(self) -> List[EntityID]:
         return []
 
-    def get_junction_point_ids(self) -> List[int]:
+    def get_junction_point_ids(self) -> List[EntityID]:
         return []
 
     def hit_test(
@@ -65,7 +68,9 @@ class TextBoxEntity(Entity):
 
         return primitives.is_point_in_polygon((mx, my), polygon)
 
-    def get_all_frame_point_ids(self, registry: "EntityRegistry") -> List[int]:
+    def get_all_frame_point_ids(
+        self, registry: "EntityRegistry"
+    ) -> List[EntityID]:
         """Returns all 4 corner points of the text box frame."""
         ids = [self.origin_id, self.width_id, self.height_id]
         p4_id = self.get_fourth_corner_id(registry)
@@ -78,7 +83,7 @@ class TextBoxEntity(Entity):
 
     def get_fourth_corner_id(
         self, registry: "EntityRegistry"
-    ) -> Optional[int]:
+    ) -> Optional[EntityID]:
         """Finds the 4th point ID of the text box."""
         for eid in self.construction_line_ids:
             entity = registry.get_entity(eid)

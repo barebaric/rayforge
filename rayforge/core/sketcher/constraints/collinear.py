@@ -3,6 +3,7 @@ from typing import Dict, Any, List, TYPE_CHECKING
 from gettext import gettext as _
 from ...geo import Point
 from .base import Constraint
+from ..types import EntityID
 
 if TYPE_CHECKING:
     from ..params import ParameterContext
@@ -12,11 +13,17 @@ if TYPE_CHECKING:
 class CollinearConstraint(Constraint):
     """Enforces that three points (p1, p2, p3) lie on the same line."""
 
-    def __init__(self, p1: int, p2: int, p3: int, user_visible: bool = True):
+    def __init__(
+        self,
+        p1: EntityID,
+        p2: EntityID,
+        p3: EntityID,
+        user_visible: bool = True,
+    ):
         super().__init__(user_visible=user_visible)
-        self.p1 = p1
-        self.p2 = p2
-        self.p3 = p3
+        self.p1: EntityID = p1
+        self.p2: EntityID = p2
+        self.p3: EntityID = p3
 
     @staticmethod
     def get_type_name() -> str:
@@ -71,7 +78,7 @@ class CollinearConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         p1 = reg.get_point(self.p1)
         p2 = reg.get_point(self.p2)
         p3 = reg.get_point(self.p3)

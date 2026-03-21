@@ -1,6 +1,7 @@
 import math
 from typing import List, Dict, Optional, Any, Sequence, TYPE_CHECKING
 from ...geo import Geometry, Point, Polygon, Rect, primitives
+from ..types import EntityID
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -11,17 +12,17 @@ if TYPE_CHECKING:
 class Arc(Entity):
     def __init__(
         self,
-        id: int,
-        start_idx: int,
-        end_idx: int,
-        center_idx: int,
+        id: EntityID,
+        start_idx: EntityID,
+        end_idx: EntityID,
+        center_idx: EntityID,
         clockwise: bool = False,
         construction: bool = False,
     ):
         super().__init__(id, construction)
-        self.start_idx = start_idx
-        self.end_idx = end_idx
-        self.center_idx = center_idx
+        self.start_idx: EntityID = start_idx
+        self.end_idx: EntityID = end_idx
+        self.center_idx: EntityID = center_idx
         self.clockwise = clockwise
         self.type = "arc"
 
@@ -35,13 +36,13 @@ class Arc(Entity):
         if "clockwise" in state:
             self.clockwise = state["clockwise"]
 
-    def get_point_ids(self) -> List[int]:
+    def get_point_ids(self) -> List[EntityID]:
         return [self.start_idx, self.end_idx, self.center_idx]
 
-    def get_endpoint_ids(self) -> List[int]:
+    def get_endpoint_ids(self) -> List[EntityID]:
         return [self.start_idx, self.end_idx]
 
-    def get_junction_point_ids(self) -> List[int]:
+    def get_junction_point_ids(self) -> List[EntityID]:
         return [self.start_idx, self.end_idx, self.center_idx]
 
     def hit_test(

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from ...geo import Point as GeoPoint
 from ..constraints import (
@@ -9,6 +9,7 @@ from ..constraints import (
     VerticalConstraint,
 )
 from ..entities import Line, Point
+from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
@@ -23,10 +24,10 @@ class RectanglePreviewState(PreviewState):
 
     def __init__(
         self,
-        start_id: int,
+        start_id: EntityID,
         start_temp: bool,
-        p_end_id: int,
-        preview_ids: Dict[str, int],
+        p_end_id: EntityID,
+        preview_ids: Dict[str, EntityID],
     ):
         self.start_id = start_id
         self.start_temp = start_temp
@@ -35,7 +36,7 @@ class RectanglePreviewState(PreviewState):
         self.locked_width: Optional[float] = None
         self.locked_height: Optional[float] = None
 
-    def get_preview_point_ids(self) -> set[int]:
+    def get_preview_point_ids(self) -> Set[EntityID]:
         """
         Returns IDs of temporary preview points that shouldn't be snapped to.
 
@@ -136,9 +137,9 @@ class RectangleCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        start_pid: int,
+        start_pid: EntityID,
         end_pos: GeoPoint,
-        end_pid: Optional[int] = None,
+        end_pid: Optional[EntityID] = None,
         is_start_temp: bool = False,
         fixed_width: Optional[float] = None,
         fixed_height: Optional[float] = None,
@@ -151,10 +152,10 @@ class RectangleCommand(SketchChangeCommand):
         self.fixed_width = fixed_width
         self.fixed_height = fixed_height
         self.add_cmd: Optional[AddItemsCommand] = None
-        self._committed_end_id: Optional[int] = None
+        self._committed_end_id: Optional[EntityID] = None
 
     @property
-    def committed_end_id(self) -> Optional[int]:
+    def committed_end_id(self) -> Optional[EntityID]:
         """
         The final end point ID after execute(), or None if not applicable.
         """
@@ -166,8 +167,8 @@ class RectangleCommand(SketchChangeCommand):
         y1: float,
         x2: float,
         y2: float,
-        start_pid: int,
-        end_pid: Optional[int],
+        start_pid: EntityID,
+        end_pid: Optional[EntityID],
         fixed_width: Optional[float] = None,
         fixed_height: Optional[float] = None,
     ) -> Optional[Dict[str, Any]]:
@@ -241,10 +242,10 @@ class RectangleCommand(SketchChangeCommand):
     @staticmethod
     def create_preview(
         registry: EntityRegistry,
-        start_pid: int,
-        end_pid: int,
-        preview_ids: Optional[Dict[str, int]] = None,
-    ) -> Optional[Dict[str, int]]:
+        start_pid: EntityID,
+        end_pid: EntityID,
+        preview_ids: Optional[Dict[str, EntityID]] = None,
+    ) -> Optional[Dict[str, EntityID]]:
         """
         Creates or updates preview geometry in the registry.
 
@@ -300,7 +301,7 @@ class RectangleCommand(SketchChangeCommand):
         registry: EntityRegistry,
         x: float,
         y: float,
-        snapped_pid: Optional[int] = None,
+        snapped_pid: Optional[EntityID] = None,
         **kwargs,
     ) -> RectanglePreviewState:
         """

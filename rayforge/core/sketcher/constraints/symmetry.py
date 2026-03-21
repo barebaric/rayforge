@@ -6,6 +6,7 @@ from gettext import gettext as _
 from ...geo import Point
 from ..entities import Line
 from .base import Constraint, ConstraintStatus
+from ..types import EntityID
 
 if TYPE_CHECKING:
     from ..params import ParameterContext
@@ -23,10 +24,10 @@ class SymmetryConstraint(Constraint):
 
     def __init__(
         self,
-        p1: int,
-        p2: int,
-        center: Optional[int] = None,
-        axis: Optional[int] = None,
+        p1: EntityID,
+        p2: EntityID,
+        center: Optional[EntityID] = None,
+        axis: Optional[EntityID] = None,
         user_visible: bool = True,
     ):
         super().__init__(user_visible=user_visible)
@@ -135,7 +136,7 @@ class SymmetryConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         if self.center is not None:
             # P1+P2 - 2C = 0. Safe to use dict literal as keys are distinct.
             return {
@@ -159,7 +160,7 @@ class SymmetryConstraint(Constraint):
             mx = (pt1.x + pt2.x) * 0.5
             my = (pt1.y + pt2.y) * 0.5
 
-            grad: Dict[int, List[Point]] = {}
+            grad = {}
             num_residuals = 2
 
             def add(pid, row, gx, gy):
