@@ -1,4 +1,4 @@
-from rayforge.shared.util.size import sizes_are_close
+from rayforge.shared.util.size import format_byte_size, sizes_are_close
 
 
 class TestSizesAreClose:
@@ -36,3 +36,20 @@ class TestSizesAreClose:
 
     def test_mixed_sign_sizes(self):
         assert sizes_are_close((-10.0, 20.0), (-10.0, 20.0)) is True
+
+
+class TestFormatByteSize:
+    def test_bytes(self):
+        assert format_byte_size(0) == "0 B"
+        assert format_byte_size(512) == "512 B"
+        assert format_byte_size(1023) == "1023 B"
+
+    def test_kilobytes(self):
+        assert format_byte_size(1024) == "1.0 KB"
+        assert format_byte_size(1536) == "1.5 KB"
+        assert format_byte_size(1048575) == "1024.0 KB"
+
+    def test_megabytes(self):
+        assert format_byte_size(1048576) == "1.0 MB"
+        assert format_byte_size(1572864) == "1.5 MB"
+        assert format_byte_size(104857600) == "100.0 MB"

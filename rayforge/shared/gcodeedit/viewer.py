@@ -1,8 +1,9 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 from gettext import gettext as _
-from gi.repository import Gtk
+from gi.repository import Gtk, Pango
 from blinker import Signal
+from ...shared.util.size import format_byte_size
 from .editor import GcodeEditor
 
 if TYPE_CHECKING:
@@ -25,6 +26,8 @@ class GcodeViewer(Gtk.Box):
         self.line_activated = Signal()
         self.editor = GcodeEditor()
         self.op_map: Optional[MachineCodeOpMap] = None
+        self._line_count: int = 0
+        self._size_bytes: int = 0
 
         # Configure the internal editor for previewing
         self.editor.text_view.set_editable(False)
@@ -34,6 +37,36 @@ class GcodeViewer(Gtk.Box):
         self.editor.line_activated.connect(self._on_line_activated)
 
         self.append(self.editor)
+        self._create_status_bar()
+
+    def _create_status_bar(self):
+        self.status_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.status_bar.add_css_class("status-bar")
+
+        self.status_label = Gtk.Label()
+        self.status_label.set_halign(Gtk.Align.START)
+        self.status_label.set_hexpand(True)
+        self.status_label.set_margin_start(6)
+        self.status_label.set_margin_end(6)
+        self.status_label.set_margin_top(3)
+        self.status_label.set_margin_bottom(3)
+        self.status_label.set_ellipsize(Pango.EllipsizeMode.END)
+        self.status_bar.append(self.status_label)
+
+        self.append(self.status_bar)
+        self._update_status_bar()
+
+    def _update_status_bar(self):
+        if self._line_count == 0:
+            self.status_label.set_text("")
+            return
+
+        size_str = format_byte_size(self._size_bytes)
+        self.status_label.set_text(
+            _("{line_count:,} lines  ·  {size}").format(
+                line_count=self._line_count, size=size_str
+            )
+        )
 
     def _on_line_activated(self, sender, *, line_number: int):
         self.line_activated.send(self, line_number=line_number)
@@ -48,24 +81,33 @@ class GcodeViewer(Gtk.Box):
         Args:
             gcode: The G-code to display, as a single string.
         """
-        # Check if gcode exceeds the line limit
-        line_count = gcode.count("\n") + 1 if gcode else 0
-        if line_count > 20000:
+        if gcode:
+            self._line_count = gcode.count("\n") + 1
+            self._size_bytes = len(gcode.encode("utf-8"))
+        else:
+            self._line_count = 0
+            self._size_bytes = 0
+
+        if self._line_count > 20000:
             self.editor.set_text(
                 _("G-code too large to preview.")
                 + "\n"
                 + _("({line_count} lines > 20,000 line limit)").format(
-                    line_count=f"{line_count:,}"
+                    line_count=f"{self._line_count:,}"
                 )
             )
         else:
             self.editor.set_text(gcode)
+        self._update_status_bar()
 
     def clear(self):
         """Clears the content of the previewer."""
+        self._line_count = 0
+        self._size_bytes = 0
         self.editor.set_text("")
         self.op_map = None
         self.clear_highlight()
+        self._update_status_bar()
 
     def set_op_map(self, op_map: MachineCodeOpMap):
         self.op_map = op_map
