@@ -1,7 +1,7 @@
 import json
 import uuid
 from pathlib import Path
-from typing import Union, List, Optional, Set, Dict, Any, Tuple
+from typing import ClassVar, Union, List, Optional, Set, Dict, Any, Tuple
 from blinker import Signal
 from collections import defaultdict
 import math
@@ -112,6 +112,14 @@ class Sketch(IAsset, IGeometryProvider):
     and expressions.
     """
 
+    is_addable: ClassVar[bool] = True
+    asset_type_name: ClassVar[str] = "sketch"
+    display_icon_name: ClassVar[str] = "sketch-edit-symbolic"
+    is_reorderable: ClassVar[bool] = False
+    is_draggable_to_canvas: ClassVar[bool] = True
+    type_display_name: ClassVar[str] = _("Sketch")
+    can_edit: ClassVar[bool] = True
+
     def __init__(self, name: str = "New Sketch") -> None:
         self._uid: str = str(uuid.uuid4())
         self._name = name
@@ -181,11 +189,6 @@ class Sketch(IAsset, IGeometryProvider):
             self._updated.send(self)
 
     @property
-    def asset_type_name(self) -> str:
-        """The machine-readable type name for the asset list."""
-        return "sketch"
-
-    @property
     def provider_type_name(self) -> str:
         """The type name for geometry provider identification."""
         return "sketch"
@@ -215,21 +218,6 @@ class Sketch(IAsset, IGeometryProvider):
         clone = Sketch.from_dict(self.to_dict())
         clone.solve(variable_overrides=params)
         return clone.to_geometry(), clone.get_fill_geometries()
-
-    @property
-    def display_icon_name(self) -> str:
-        """The icon name for the asset list."""
-        return "sketch-edit-symbolic"
-
-    @property
-    def is_reorderable(self) -> bool:
-        """Whether this asset type supports reordering in the asset list."""
-        return False
-
-    @property
-    def is_draggable_to_canvas(self) -> bool:
-        """Whether this asset can be dragged from the list onto the canvas."""
-        return True
 
     @property
     def hidden(self) -> bool:

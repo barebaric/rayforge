@@ -14,6 +14,7 @@ from ..context import get_context
 from ..core.geo import Rect
 from ..core.group import Group
 from ..core.item import DocItem
+from ..core.sketcher.sketch import Sketch
 from ..core.step import Step
 from ..core.stock import StockItem
 from ..core.undo import Command, HistoryManager
@@ -413,13 +414,10 @@ class MainWindow(Adw.ApplicationWindow):
         self.asset_list_view = AssetListView(self.doc_editor)
         self.asset_list_view.set_margin_end(12)
         right_pane_box.append(self.asset_list_view)
-        self.asset_list_view.add_sketch_clicked.connect(
-            self.sketch_mode_cmd.on_new_sketch
+        self.asset_list_view.add_asset_requested.connect(
+            self.on_add_asset_requested
         )
-        self.asset_list_view.add_stock_clicked.connect(self.on_add_child)
-        self.asset_list_view.sketch_activated.connect(
-            self.sketch_mode_cmd.on_sketch_definition_activated
-        )
+        self.asset_list_view.asset_activated.connect(self.on_asset_activated)
 
         # Add the Layer list view
         self.layer_list_view = LayerListView(self.doc_editor)
@@ -646,6 +644,20 @@ class MainWindow(Adw.ApplicationWindow):
     def on_add_child(self, sender):
         """Handler for adding a new stock item, called from AssetListView."""
         self.doc_editor.stock.add_stock()
+
+    def on_add_asset_requested(self, sender, *, type_name: str):
+        """Handler for add asset requests, dispatches by asset type."""
+        if type_name == "sketch":
+            self.sketch_mode_cmd.on_new_sketch()
+        elif type_name == "stock":
+            self.doc_editor.stock.add_stock()
+
+    def on_asset_activated(self, sender, *, asset):
+        """Handler for asset activation, dispatches by asset type."""
+        if isinstance(asset, Sketch):
+            self.sketch_mode_cmd.on_sketch_definition_activated(
+                sender, sketch=asset
+            )
 
     def _on_edit_stock_item_requested(self, sender, *, stock_item: StockItem):
         """Signal handler for edit stock item requests from the surface."""
