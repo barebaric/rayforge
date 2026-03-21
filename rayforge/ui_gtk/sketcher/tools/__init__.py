@@ -2,7 +2,6 @@ from .angle_constraint_tool import AngleConstraintTool
 from .arc_tool import ArcTool
 from .aspect_ratio_constraint_tool import AspectRatioConstraintTool
 from .base import SketchTool, SketcherKey
-from .bezier_tool import BezierTool
 from .chamfer_tool import ChamferTool
 from .circle_tool import CircleTool
 from .coincident_constraint_tool import CoincidentConstraintTool
@@ -14,7 +13,7 @@ from .equal_constraint_tool import EqualConstraintTool
 from .fillet_tool import FilletTool
 from .fill_tool import FillTool
 from .horizontal_constraint_tool import HorizontalConstraintTool
-from .line_tool import LineTool
+from .path_tool import PathTool
 from .perpendicular_constraint_tool import PerpendicularConstraintTool
 from .radius_constraint_tool import RadiusConstraintTool
 from .rectangle_tool import RectangleTool
@@ -33,7 +32,6 @@ TOOL_REGISTRY = {
     "angle": AngleConstraintTool,
     "arc": ArcTool,
     "aspect_ratio": AspectRatioConstraintTool,
-    "bezier": BezierTool,
     "chamfer": ChamferTool,
     "circle": CircleTool,
     "coincident": CoincidentConstraintTool,
@@ -45,7 +43,7 @@ TOOL_REGISTRY = {
     "fill": FillTool,
     "fillet": FilletTool,
     "horizontal": HorizontalConstraintTool,
-    "line": LineTool,
+    "path": PathTool,
     "perpendicular": PerpendicularConstraintTool,
     "radius": RadiusConstraintTool,
     "rectangle": RectangleTool,
@@ -77,7 +75,7 @@ __all__ = [
     "AngleConstraintTool",
     "ArcTool",
     "AspectRatioConstraintTool",
-    "BezierTool",
+    "PathTool",
     "ChamferTool",
     "CircleTool",
     "CoincidentConstraintTool",
@@ -90,7 +88,6 @@ __all__ = [
     "FillTool",
     "HorizontalConstraintTool",
     "KEY_TO_TOOL",
-    "LineTool",
     "PerpendicularConstraintTool",
     "RadiusConstraintTool",
     "RectangleTool",

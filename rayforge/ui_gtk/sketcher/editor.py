@@ -144,7 +144,7 @@ class SketchEditor:
 
         # Priority 2: Return a tool-specific cursor.
         tool = self.sketch_element.active_tool_name
-        if tool == "line":
+        if tool == "path":
             return get_tool_cursor("sketch-line-symbolic")
         if tool == "arc":
             return get_tool_cursor("sketch-arc-symbolic")

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 DRAG_THRESHOLD = 2.0
 
 
-class BezierTool(SketchTool):
+class PathTool(SketchTool):
     """
     Handles creating lines and bezier curves with a unified workflow.
 
@@ -24,8 +24,8 @@ class BezierTool(SketchTool):
     """
 
     ICON = "sketch-bezier-symbolic"
-    LABEL = _("Bezier")
-    SHORTCUTS = ["gb"]
+    LABEL = _("Path")
+    SHORTCUTS = ["gp", "gl"]
 
     def __init__(self, element):
         super().__init__(element)
