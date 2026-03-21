@@ -116,8 +116,10 @@ class WorkPieceElement(CanvasElement):
 
         # Connect to sketch updates if this workpiece depends on one
         self._sketch: Optional[Sketch] = None
-        if self.data.sketch_uid and self.data.doc:
-            asset = self.data.doc.get_asset_by_uid(self.data.sketch_uid)
+        if self.data.geometry_provider_uid and self.data.doc:
+            asset = self.data.doc.get_asset_by_uid(
+                self.data.geometry_provider_uid
+            )
             if isinstance(asset, Sketch):
                 self._sketch = asset
                 asset.updated.connect(self._on_sketch_changed)
@@ -578,8 +580,10 @@ class WorkPieceElement(CanvasElement):
         """
         # Check if the workpiece depends on a hidden sketch
         sketch_hidden = False
-        if self.data.sketch_uid and self.data.doc:
-            sketch = self.data.doc.get_asset_by_uid(self.data.sketch_uid)
+        if self.data.geometry_provider_uid and self.data.doc:
+            sketch = self.data.doc.get_asset_by_uid(
+                self.data.geometry_provider_uid
+            )
             if sketch and getattr(sketch, "hidden", False):
                 sketch_hidden = True
 

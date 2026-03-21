@@ -82,7 +82,7 @@ class SketchImporter(Importer):
                     yield from find_workpieces(item.children)
 
         for wp in find_workpieces(payload.items):
-            wp.sketch_uid = self.parsed_sketch.uid
+            wp.geometry_provider_uid = self.parsed_sketch.uid
             wp.name = self.parsed_sketch.name
 
         payload.sketches = [self.parsed_sketch]

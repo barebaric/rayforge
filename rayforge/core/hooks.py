@@ -4,12 +4,18 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 1
-PLUGIN_API_VERSION = 7
+PLUGIN_API_VERSION = 8
 
 
 """
 API Changelog
 =============
+
+Version 8
+---------
+Added ``register_asset_types`` hook to allow addons to register custom
+asset types. Assets are registered via the asset_type_registry and can
+be deserialized from document files dynamically.
 
 Version 7
 ---------
@@ -139,6 +145,17 @@ class RayforgeSpecs:
 
         Args:
             transformer_registry: The global TransformerRegistry instance.
+        """
+
+    @hookspec
+    def register_asset_types(self, asset_type_registry):
+        """
+        Called to allow addons to register custom asset types.
+
+        .. versionadded:: 8
+
+        Args:
+            asset_type_registry: The global AssetTypeRegistry instance.
         """
 
     @hookspec

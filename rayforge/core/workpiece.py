@@ -34,6 +34,7 @@ from .tab import Tab
 if TYPE_CHECKING:
     from ..image.base_renderer import Renderer, RenderSpecification
     from .asset import IAsset
+    from .geometry_provider import IGeometryProvider
     from .layer import Layer
     from .source_asset import SourceAsset
     from .sketcher.sketch import Sketch
@@ -93,13 +94,10 @@ class WorkPiece(DocItem):
         self._renderer: Optional["Renderer"] = None
         self._transient_source_px_dims: Optional[Tuple[int, int]] = None
 
-        # Parametric sketch fields
-        self.sketch_uid: Optional[str] = None
-        self._sketch_params: Dict[str, Any] = {}
-        self._transient_sketch_definition: Optional["Sketch"] = None
+        self.geometry_provider_uid: Optional[str] = None
+        self._geometry_provider_params: Dict[str, Any] = {}
+        self._transient_geometry_provider: Optional["IGeometryProvider"] = None
 
-        # For sketches and other workpieces without a source_segment,
-        # we store the UID of the SourceAsset to track the source file.
         self.source_asset_uid: Optional[str] = None
 
         self._tabs: List[Tab] = []
@@ -116,9 +114,12 @@ class WorkPiece(DocItem):
     def depends_on_asset(self, asset: "IAsset") -> bool:
         """
         Checks if this workpiece depends on the given asset, either through
-        its sketch definition or its source file.
+        its geometry provider or its source file.
         """
-        if self.sketch_uid and self.sketch_uid == asset.uid:
+        if (
+            self.geometry_provider_uid
+            and self.geometry_provider_uid == asset.uid
+        ):
             return True
         if (
             self.source_segment
@@ -175,7 +176,7 @@ class WorkPiece(DocItem):
 
         # 2. Create the instance
         instance = cls(name=sketch.name or "Sketch")
-        instance.sketch_uid = sketch.uid
+        instance.geometry_provider_uid = sketch.uid
         instance.natural_width_mm = width
         instance.natural_height_mm = height
 
@@ -321,7 +322,7 @@ class WorkPiece(DocItem):
             return self._renderer
 
         # If it's a sketch, we know the renderer.
-        if self.sketch_uid:
+        if self.geometry_provider_uid:
             from ..image.sketch.renderer import SKETCH_RENDERER
 
             return SKETCH_RENDERER
@@ -363,26 +364,19 @@ class WorkPiece(DocItem):
             return self._boundaries_cache
         logger.debug("Cache miss: boundaries not present")
 
-        # --- Sketch-based Geometry Generation ---
-        if self.sketch_uid:
-            sketch_def = self.get_sketch_definition()
-            if not sketch_def:
+        # --- GeometryProvider-based Geometry Generation ---
+        if self.geometry_provider_uid:
+            provider = self.get_geometry_provider()
+            if not provider:
                 return None
 
-            from .sketcher.sketch import Sketch
-
-            instance_sketch = Sketch.from_dict(sketch_def.to_dict())
-
-            # Solve the sketch clone with this instance's specific parameter
-            # overrides to generate the correct, unnormalized geometry.
             logger.debug(
-                f"WP {self.uid[:8]}: Solving clone for boundaries with "
-                f"overrides: {self.sketch_params}"
+                f"WP {self.uid[:8]}: Getting geometry with "
+                f"params: {self._geometry_provider_params}"
             )
-            instance_sketch.solve(variable_overrides=self.sketch_params)
-            unnormalized_geo = instance_sketch.to_geometry()
-            # Also get fill geometries from the same solved state.
-            unnormalized_fills = instance_sketch.get_fill_geometries()
+            unnormalized_geo, unnormalized_fills = provider.get_geometry(
+                self._geometry_provider_params
+            )
 
             # Upgrade all generated geometry to be fully scalable
             unnormalized_geo.upgrade_to_scalable()
@@ -396,7 +390,7 @@ class WorkPiece(DocItem):
                 self._fills_cache = unnormalized_fills
                 return self._boundaries_cache
 
-            # Normalize the solved geometry to a 0-1 box (Y-Up) based on
+            # Normalize the geometry to a 0-1 box (Y-Up) based on
             # the boundaries (strokes).
             min_x, min_y, max_x, max_y = unnormalized_geo.rect()
             width = max(max_x - min_x, 1e-9)
@@ -541,8 +535,10 @@ class WorkPiece(DocItem):
         world_wp.matrix = self.get_world_transform()
         world_wp.tabs = deepcopy(self.tabs)
         world_wp.tabs_enabled = self.tabs_enabled
-        world_wp.sketch_uid = self.sketch_uid
-        world_wp.sketch_params = deepcopy(self._sketch_params)
+        world_wp.geometry_provider_uid = self.geometry_provider_uid
+        world_wp.geometry_provider_params = deepcopy(
+            self._geometry_provider_params
+        )
         world_wp.source_asset_uid = self.source_asset_uid
 
         # Ensure any edited boundaries are carried over.
@@ -563,30 +559,29 @@ class WorkPiece(DocItem):
                 )
 
         # Hydrate the transient sketch definition if it exists
-        if self.sketch_uid and self.doc:
-            sketch = self.doc.get_asset_by_uid(self.sketch_uid)
-            if sketch:
-                # We copy the sketch definition so the subprocess has
-                # an independent object
+        if self.geometry_provider_uid and self.doc:
+            provider = self.doc.get_asset_by_uid(self.geometry_provider_uid)
+            if provider:
                 from .sketcher.sketch import Sketch
 
-                world_wp._transient_sketch_definition = Sketch.from_dict(
-                    sketch.to_dict()
+                world_wp._transient_geometry_provider = Sketch.from_dict(
+                    provider.to_dict()
                 )
 
         return world_wp
 
-    def get_sketch_definition(self) -> Optional["Sketch"]:
+    def get_geometry_provider(self) -> Optional["IGeometryProvider"]:
         """
-        Retrieves the Sketch definition for this workpiece, if applicable.
-        Prioritizes the transient definition (for subprocesses), then checks
+        Retrieves the geometry provider for this workpiece, if applicable.
+        Prioritizes the transient provider (for subprocesses), then checks
         the document registry.
         """
-        if self._transient_sketch_definition:
-            return self._transient_sketch_definition
-        if self.sketch_uid and self.doc:
+        if self._transient_geometry_provider:
+            return self._transient_geometry_provider
+        if self.geometry_provider_uid and self.doc:
             return cast(
-                Optional["Sketch"], self.doc.get_asset_by_uid(self.sketch_uid)
+                Optional["IGeometryProvider"],
+                self.doc.get_asset_by_uid(self.geometry_provider_uid),
             )
         return None
 
@@ -602,7 +597,7 @@ class WorkPiece(DocItem):
 
         # For sketches, the "data" is not needed, as the geometry is generated
         # by the `boundaries` property. We pass empty bytes.
-        if self.sketch_uid:
+        if self.geometry_provider_uid:
             from ..image.sketch.renderer import SKETCH_RENDERER
 
             return RenderContext(
@@ -798,8 +793,8 @@ class WorkPiece(DocItem):
                 if self._edited_boundaries
                 else None
             ),
-            "sketch_uid": self.sketch_uid,
-            "sketch_params": self._sketch_params,
+            "geometry_provider_uid": self.geometry_provider_uid,
+            "geometry_provider_params": self._geometry_provider_params,
             "source_asset_uid": self.source_asset_uid,
         }
         if self._data is not None:
@@ -810,9 +805,9 @@ class WorkPiece(DocItem):
             state["renderer_name"] = self._renderer.__class__.__name__
         if self._transient_source_px_dims is not None:
             state["source_px_dims"] = self._transient_source_px_dims
-        if self._transient_sketch_definition is not None:
-            state["transient_sketch_definition"] = (
-                self._transient_sketch_definition.to_dict()
+        if self._transient_geometry_provider is not None:
+            state["transient_geometry_provider"] = (
+                self._transient_geometry_provider.to_dict()
             )
         # Include unknown attributes for forward compatibility
         state.update(self.extra)
@@ -834,13 +829,18 @@ class WorkPiece(DocItem):
             "tabs_enabled",
             "source_segment",
             "edited_boundaries",
-            "sketch_uid",
-            "sketch_params",
+            "geometry_provider_uid",
+            "geometry_provider_params",
             "source_asset_uid",
             "data",
             "original_data",
             "source_px_dims",
             "renderer_name",
+            "transient_geometry_provider",
+            "_geometry_provider_params",
+            # Legacy keys for backward compatibility
+            "sketch_uid",
+            "sketch_params",
             "transient_sketch_definition",
             "_sketch_params",
         }
@@ -869,8 +869,12 @@ class WorkPiece(DocItem):
                 data["edited_boundaries"]
             )
 
-        wp.sketch_uid = data.get("sketch_uid")
-        wp._sketch_params = data.get("sketch_params", {})
+        wp.geometry_provider_uid = data.get(
+            "geometry_provider_uid"
+        ) or data.get("sketch_uid")
+        wp._geometry_provider_params = data.get(
+            "geometry_provider_params", {}
+        ) or data.get("sketch_params", {})
         wp.source_asset_uid = data.get("source_asset_uid")
 
         # Hydrate with transient data if provided for subprocesses
@@ -887,37 +891,34 @@ class WorkPiece(DocItem):
             if renderer_name in renderer_by_name:
                 wp._renderer = renderer_by_name[renderer_name]
 
-        if "transient_sketch_definition" in data:
+        transient_data = data.get("transient_geometry_provider") or data.get(
+            "transient_sketch_definition"
+        )
+        if transient_data:
             from .sketcher.sketch import Sketch
 
-            wp._transient_sketch_definition = Sketch.from_dict(
-                data["transient_sketch_definition"]
-            )
-        if "sketch_params" in data:
-            wp._sketch_params = data.get("sketch_params", {})
-        else:
-            wp._sketch_params = data.get("_sketch_params", {})
+            wp._transient_geometry_provider = Sketch.from_dict(transient_data)
 
-        # Store unknown attributes for forward compatibility
         wp.extra = extra
 
         return wp
 
     @property
-    def sketch_params(self) -> Dict[str, Any]:
-        """Get the sketch parameters for this workpiece."""
-        return self._sketch_params
+    def geometry_provider_params(self) -> Dict[str, Any]:
+        """Get the geometry provider parameters for this workpiece."""
+        return self._geometry_provider_params
 
-    @sketch_params.setter
-    def sketch_params(self, new_params: Dict[str, Any]):
+    @geometry_provider_params.setter
+    def geometry_provider_params(self, new_params: Dict[str, Any]):
         """
-        Set the sketch parameters and trigger regeneration if needed.
+        Set the geometry provider parameters and trigger regeneration if
+        needed.
         """
-        if self._sketch_params != new_params:
-            self._sketch_params = new_params
-            if self.sketch_uid:
+        if self._geometry_provider_params != new_params:
+            self._geometry_provider_params = new_params
+            if self.geometry_provider_uid:
                 # Regenerate the internal geometry and natural size
-                self.regenerate_from_sketch()
+                self.regenerate_from_geometry_provider()
 
     def get_natural_aspect_ratio(self) -> Optional[float]:
         size = self.natural_size
@@ -1392,62 +1393,49 @@ class WorkPiece(DocItem):
 
         return new_workpieces
 
-    def regenerate_from_sketch(self) -> None:
+    def regenerate_from_geometry_provider(self) -> None:
         """
-        Regenerates the workpiece from its sketch definition.
+        Regenerates the workpiece from its geometry provider.
 
         This method:
-        1. Fetches and clones the sketch definition.
-        2. Solves the clone with instance-specific parameter overrides.
-        3. Calculates the new natural size from the solved geometry.
+        1. Fetches the geometry provider.
+        2. Gets geometry with instance-specific parameter overrides.
+        3. Calculates the new natural size from the geometry.
         4. Updates the instance's `natural_width/height_mm`.
         5. It resizes the on-canvas item.
         6. Invalidates caches and signals the UI to redraw.
         """
-        if not self.sketch_uid:
+        if not self.geometry_provider_uid:
             logger.warning(
-                f"WP {self.uid[:8]}: No sketch_uid to regenerate from"
+                f"WP {self.uid[:8]}: No geometry_provider_uid to "
+                f"regenerate from"
             )
             return
 
-        sketch_def = self.get_sketch_definition()
-        if not sketch_def:
+        provider = self.get_geometry_provider()
+        if not provider:
             logger.warning(
-                f"WP {self.uid[:8]}: Could not find sketch definition "
-                f"{self.sketch_uid}"
+                f"WP {self.uid[:8]}: Could not find geometry provider "
+                f"{self.geometry_provider_uid}"
             )
             return
 
         logger.debug(
-            f"WP {self.uid[:8]}: Regenerating from sketch "
-            f"{self.sketch_uid[:8]}"
+            f"WP {self.uid[:8]}: Regenerating from geometry provider "
+            f"{self.geometry_provider_uid[:8]}"
         )
 
-        # Use a clone to ensure we solve independently of shared state,
-        # mirroring the behavior in the `boundaries` property.
-        from .sketcher.sketch import Sketch
-
-        instance_sketch = Sketch.from_dict(sketch_def.to_dict())
-
-        # Solve the sketch with current parameter overrides.
-        variable_overrides = self.sketch_params or {}
+        # Get geometry with current parameter overrides.
+        variable_overrides = self._geometry_provider_params or {}
         logger.debug(
-            f"WP {self.uid[:8]}: Solving clone with overrides: "
+            f"WP {self.uid[:8]}: Getting geometry with params: "
             f"{variable_overrides}"
         )
-        success = instance_sketch.solve(variable_overrides=variable_overrides)
+        geometry, _ = provider.get_geometry(params=variable_overrides)
 
-        if not success:
-            logger.warning(
-                f"WP {self.uid[:8]}: Sketch solve failed during regeneration"
-            )
-            return
-
-        # Get the solved geometry and calculate its bounding box
-        geometry = instance_sketch.to_geometry()
         if geometry.is_empty():
             logger.warning(
-                f"WP {self.uid[:8]}: Sketch geometry is empty after solve. "
+                f"WP {self.uid[:8]}: Geometry is empty. "
                 "Natural size not updated."
             )
         else:

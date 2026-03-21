@@ -1,11 +1,12 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 import json
 from gettext import gettext as _
 from ..base_exporter import Exporter
 from ... import const
 
 if TYPE_CHECKING:
+    from ...core.sketcher.sketch import Sketch
     from ...core.workpiece import WorkPiece
 
 
@@ -45,7 +46,7 @@ class SketchExporter(Exporter):
             ValueError: If the WorkPiece is not derived from a sketch or if
                         the sketch definition is missing.
         """
-        sketch = self.workpiece.get_sketch_definition()
+        sketch = cast("Sketch", self.workpiece.get_geometry_provider())
         if not sketch:
             raise ValueError(
                 "Cannot export: The selected item is not based on a sketch "

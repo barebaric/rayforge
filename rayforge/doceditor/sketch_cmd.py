@@ -31,12 +31,12 @@ class SketchCmd:
 
         with history.transaction(_("Change Sketch Parameters")) as t:
             for wp in workpieces:
-                if not wp.sketch_uid:
+                if not wp.geometry_provider_uid:
                     continue
 
                 # Create the full new dictionary of parameters by merging
                 # the old with the new.
-                old_params = wp.sketch_params.copy()
+                old_params = wp.geometry_provider_params.copy()
                 updated_params = old_params.copy()
                 updated_params.update(new_params)
 

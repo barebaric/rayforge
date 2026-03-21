@@ -199,7 +199,7 @@ def test_sketch_importer_round_trip(complex_sketch: Sketch):
     assert item.source_segment is not None
     assert item.source_segment.source_asset_uid == payload.source.uid
 
-    assert item.sketch_uid == complex_sketch.uid
+    assert item.geometry_provider_uid == complex_sketch.uid
 
     # 5. Verify the dimensions were set correctly on the WorkPiece
     geo = complex_sketch.to_geometry()
@@ -348,7 +348,7 @@ def test_sketch_importer_round_trip_mouse():
     assert item.source_segment is not None
     assert item.source_segment.source_asset_uid == payload.source.uid
 
-    assert item.sketch_uid == original_dict["uid"]
+    assert item.geometry_provider_uid == original_dict["uid"]
 
     # 6. Verify the dimensions were set correctly on the WorkPiece
     # The importer has already solved the sketch, so use the current geometry

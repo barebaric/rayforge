@@ -11,6 +11,7 @@ from ...varset.varsetwidget import VarSetWidget
 from .base import PropertyProvider
 
 if TYPE_CHECKING:
+    from ....core.sketcher.sketch import Sketch
     from ....doceditor.editor import DocEditor
 
 logger = logging.getLogger(__name__)
@@ -31,12 +32,15 @@ class SketchPropertyProvider(PropertyProvider):
 
         first_sketch_uid = None
         for item in items:
-            if not isinstance(item, WorkPiece) or not item.sketch_uid:
+            if (
+                not isinstance(item, WorkPiece)
+                or not item.geometry_provider_uid
+            ):
                 return False  # All items must be sketch-based workpieces
 
             if first_sketch_uid is None:
-                first_sketch_uid = item.sketch_uid
-            elif item.sketch_uid != first_sketch_uid:
+                first_sketch_uid = item.geometry_provider_uid
+            elif item.geometry_provider_uid != first_sketch_uid:
                 return False  # All workpieces must share the same sketch UID
 
         return first_sketch_uid is not None
@@ -67,7 +71,7 @@ class SketchPropertyProvider(PropertyProvider):
             workpieces = cast(List[WorkPiece], self.items)
             first_wp = workpieces[0]
 
-            sketch = first_wp.get_sketch_definition()
+            sketch = cast("Sketch", first_wp.get_geometry_provider())
             if not sketch or not sketch.input_parameters:
                 # To clear the widget, populate it with an empty VarSet.
                 logger.debug("No sketch or params found, clearing widget.")
@@ -106,7 +110,7 @@ class SketchPropertyProvider(PropertyProvider):
             # Build the final set of values: start with defaults, then
             # override.
             final_values = base_varset.get_values()
-            final_values.update(wp.sketch_params)
+            final_values.update(wp.geometry_provider_params)
             logger.debug(
                 f"Single item selected, setting final values: {final_values}"
             )
@@ -119,7 +123,7 @@ class SketchPropertyProvider(PropertyProvider):
             all_values: Set[Any] = set()
             for wp in workpieces:
                 # Get the instance's value, falling back to the Var's default.
-                value = wp.sketch_params.get(key, var.default)
+                value = wp.geometry_provider_params.get(key, var.default)
                 all_values.add(value)
 
             if len(all_values) == 1:

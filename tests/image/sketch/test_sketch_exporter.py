@@ -35,7 +35,7 @@ def test_sketch_exporter_success(simple_sketch: Sketch):
     # 2. Create a workpiece and link it to the sketch via UID.
     #    For this test, it doesn't need a source_segment.
     workpiece = WorkPiece(name="MySketchWP")
-    workpiece.sketch_uid = simple_sketch.uid
+    workpiece.geometry_provider_uid = simple_sketch.uid
     doc.add_workpiece(workpiece)
 
     # 3. Instantiate the exporter and run it

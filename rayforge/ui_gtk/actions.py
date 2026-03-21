@@ -286,7 +286,7 @@ class ActionManager:
         can_export_object = False
         if len(selected_wps) == 1:
             wp = selected_wps[0]
-            if wp.sketch_uid:
+            if wp.geometry_provider_uid:
                 can_edit_sketch = True
             if wp.boundaries is not None and not wp.boundaries.is_empty():
                 can_export_object = True

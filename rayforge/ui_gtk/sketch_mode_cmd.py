@@ -8,9 +8,9 @@ from gi.repository import GLib
 from ..core.sketcher import Sketch
 from ..core.undo import ListItemCommand
 from ..core.workpiece import WorkPiece
+from ..doceditor.asset_cmd import UpdateAssetCommand
 from ..usage import get_usage_tracker
 from .doceditor import file_dialogs
-from .sketcher.cmd import UpdateSketchCommand
 
 if TYPE_CHECKING:
     from .mainwindow import MainWindow
@@ -33,10 +33,12 @@ class SketchModeCmd:
     ):
         """Switches the view to the SketchStudio to edit a workpiece."""
         sketch = None
-        if workpiece.sketch_uid:
+        if workpiece.geometry_provider_uid:
             sketch = cast(
                 Optional[Sketch],
-                self._editor.doc.get_asset_by_uid(workpiece.sketch_uid),
+                self._editor.doc.get_asset_by_uid(
+                    workpiece.geometry_provider_uid
+                ),
             )
 
         if not sketch:
@@ -106,10 +108,10 @@ class SketchModeCmd:
 
     def on_sketch_finished(self, sender, *, sketch: Sketch):
         """Handles the 'finished' signal from the SketchStudio."""
-        cmd = UpdateSketchCommand(
+        cmd = UpdateAssetCommand(
             doc=self._editor.doc,
-            sketch_uid=sketch.uid,
-            new_sketch_dict=sketch.to_dict(),
+            asset_uid=sketch.uid,
+            new_data=sketch.to_dict(),
         )
         self._editor.history_manager.execute(cmd)
 
@@ -153,7 +155,7 @@ class SketchModeCmd:
             selected_items[0], WorkPiece
         ):
             wp = selected_items[0]
-            if wp.sketch_uid:
+            if wp.geometry_provider_uid:
                 self.enter_sketch_mode(wp)
             else:
                 self._win._on_editor_notification(
