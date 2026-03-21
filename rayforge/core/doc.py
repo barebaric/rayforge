@@ -225,6 +225,22 @@ class Doc(DocItem):
             self.assets[uid] for uid in self.asset_order if uid in self.assets
         ]
 
+    def get_assets_by_type(self, type_name: str) -> Dict[str, IAsset]:
+        """
+        Returns a dictionary of all assets of a specific type.
+
+        Args:
+            type_name: The asset type name (e.g., "sketch", "stock", "source")
+
+        Returns:
+            Dictionary mapping UIDs to assets of the specified type.
+        """
+        return {
+            uid: asset
+            for uid, asset in self.assets.items()
+            if asset.asset_type_name == type_name
+        }
+
     @property
     def source_assets(self) -> Dict[str, "SourceAsset"]:
         """
@@ -249,18 +265,6 @@ class Doc(DocItem):
             uid: cast(StockAsset, asset)
             for uid, asset in self.assets.items()
             if asset.asset_type_name == "stock"
-        }
-
-    @property
-    def sketches(self) -> Dict[str, IAsset]:
-        """
-        Returns a dictionary of all Sketches for compatibility.
-        NOTE: The order of this dictionary is not guaranteed.
-        """
-        return {
-            uid: asset
-            for uid, asset in self.assets.items()
-            if asset.asset_type_name == "sketch"
         }
 
     @property

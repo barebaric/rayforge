@@ -436,7 +436,7 @@ class TestCommitItemsToDocument:
         filename = Path("test.svg")
 
         file_cmd._commit_items_to_document(
-            [sample_workpiece], source, filename, sketches=[sketch]
+            [sample_workpiece], source, filename, assets=[sketch]
         )
 
         assert sketch in file_cmd._editor.doc.get_all_assets()

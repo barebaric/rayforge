@@ -30,38 +30,41 @@ def test_doc_initialization(doc):
     assert doc.source_assets == {}
     assert doc.stock_assets == {}
     assert doc.stock_items == []
-    assert doc.sketches == {}
+    assert doc.get_assets_by_type("sketch") == {}
 
 
 @pytest.mark.parametrize(
-    "asset_factory, compatibility_property_name",
+    "asset_factory, get_compatibility_dict",
     [
-        (lambda: StockAsset(name="Test Stock"), "stock_assets"),
-        (lambda: Sketch(name="Test Sketch"), "sketches"),
+        (lambda: StockAsset(name="Test Stock"), lambda d: d.stock_assets),
+        (
+            lambda: Sketch(name="Test Sketch"),
+            lambda d: d.get_assets_by_type("sketch"),
+        ),
         (
             lambda: SourceAsset(
                 source_file=Path("test.svg"),
                 original_data=b"",
                 renderer=SvgRenderer(),
             ),
-            "source_assets",
+            lambda d: d.source_assets,
         ),
     ],
 )
-def test_doc_asset_management(doc, asset_factory, compatibility_property_name):
+def test_doc_asset_management(doc, asset_factory, get_compatibility_dict):
     """Tests adding, removing, and getting all types of assets."""
     asset1 = asset_factory()
     asset2 = asset_factory()
 
     # 1. Test adding assets
     doc.add_asset(asset1)
-    compatibility_property = getattr(doc, compatibility_property_name)
+    compatibility_property = get_compatibility_dict(doc)
     assert len(doc.get_all_assets()) == 1
     assert len(compatibility_property) == 1
     assert asset1.uid in compatibility_property
 
     doc.add_asset(asset2)
-    compatibility_property = getattr(doc, compatibility_property_name)
+    compatibility_property = get_compatibility_dict(doc)
     assert len(doc.get_all_assets()) == 2
     assert len(compatibility_property) == 2
 
@@ -72,7 +75,7 @@ def test_doc_asset_management(doc, asset_factory, compatibility_property_name):
 
     # 3. Test removing asset
     doc.remove_asset(asset1)
-    compatibility_property = getattr(doc, compatibility_property_name)
+    compatibility_property = get_compatibility_dict(doc)
     assert len(doc.get_all_assets()) == 1
     assert len(compatibility_property) == 1
     assert asset1.uid not in compatibility_property
@@ -314,7 +317,7 @@ def test_doc_from_dict_deserialization(doc):
 
         assert isinstance(new_doc, Doc)
         assert len(new_doc.children) == 1
-        assert new_doc.sketches == {}
+        assert new_doc.get_assets_by_type("sketch") == {}
         mock_layer_from_dict.assert_called_once_with(
             {
                 "uid": "layer1-uid",
@@ -365,10 +368,10 @@ def test_doc_from_dict_deserialization_modern_assets():
 
     assert len(new_doc.get_all_assets()) == 3
     assert len(new_doc.stock_assets) == 1
-    assert len(new_doc.sketches) == 1
+    assert len(new_doc.get_assets_by_type("sketch")) == 1
     assert len(new_doc.source_assets) == 1
     assert "s1" in new_doc.stock_assets
-    assert "k1" in new_doc.sketches
+    assert "k1" in new_doc.get_assets_by_type("sketch")
     assert "r1" in new_doc.source_assets
 
 
@@ -432,15 +435,15 @@ def test_doc_deserialization_with_sketches():
     ) as mock_sketch_from_dict:
         mock_sketch = MagicMock(spec=Sketch)
         mock_sketch.uid = "sketch-123"
-        # The mock needs asset_type_name for the .sketches property to work
+        # The mock needs asset_type_name for get_assets_by_type to work
         mock_sketch.asset_type_name = "sketch"
         mock_sketch_from_dict.return_value = mock_sketch
 
         doc = Doc.from_dict(doc_dict)
 
         mock_sketch_from_dict.assert_called_once_with(sketch_data)
-        assert len(doc.sketches) == 1
-        assert "sketch-123" in doc.sketches
+        assert len(doc.get_assets_by_type("sketch")) == 1
+        assert "sketch-123" in doc.get_assets_by_type("sketch")
         assert doc.get_asset_by_uid("sketch-123") is mock_sketch
 
 
@@ -471,8 +474,8 @@ def test_doc_roundtrip_serialization():
     assert len(restored.layers) == 2
 
     # Check that sketches were restored
-    assert len(restored.sketches) == 1
-    assert sketch.uid in restored.sketches
+    assert len(restored.get_assets_by_type("sketch")) == 1
+    assert sketch.uid in restored.get_assets_by_type("sketch")
     restored_sketch = cast(Sketch, restored.get_asset_by_uid(sketch.uid))
     assert isinstance(restored_sketch, Sketch)
     assert restored_sketch.uid == sketch.uid

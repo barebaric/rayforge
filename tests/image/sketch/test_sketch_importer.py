@@ -1,6 +1,7 @@
 import pytest
 import json
 from pathlib import Path
+from typing import cast
 from rayforge.core.sketcher import Sketch
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.sketch.importer import SketchImporter
@@ -185,8 +186,8 @@ def test_sketch_importer_round_trip(complex_sketch: Sketch):
 
     assert payload is not None
     assert importer.parsed_sketch is not None
-    assert len(payload.sketches) == 1
-    imported_sketch_template = payload.sketches[0]
+    assert len(payload.assets) == 1
+    imported_sketch_template = payload.assets[0]
 
     # 4. Check the WorkPiece in the payload
     assert len(payload.items) == 1
@@ -236,7 +237,7 @@ def test_sketch_importer_naming_logic_serialized_priority(
 
     assert payload is not None
     # Should use the name from JSON
-    assert payload.sketches[0].name == "SerializedName"
+    assert payload.assets[0].name == "SerializedName"
     assert payload.items[0].name == "SerializedName"
 
 
@@ -260,7 +261,7 @@ def test_sketch_importer_naming_logic_filename_fallback(
 
     assert payload is not None
     # Should fall back to file stem
-    assert payload.sketches[0].name == "MyDesign"
+    assert payload.assets[0].name == "MyDesign"
     assert payload.items[0].name == "MyDesign"
 
 
@@ -282,7 +283,7 @@ def test_sketch_importer_naming_logic_default_fallback(complex_sketch: Sketch):
 
     assert payload is not None
     # Should fall back to the default name "Untitled".
-    assert payload.sketches[0].name == "Untitled"
+    assert payload.assets[0].name == "Untitled"
     assert payload.items[0].name == "Untitled"
 
 
@@ -334,8 +335,8 @@ def test_sketch_importer_round_trip_mouse():
     assert payload is not None
 
     assert importer.parsed_sketch is not None
-    assert len(payload.sketches) == 1
-    imported_sketch_template = payload.sketches[0]
+    assert len(payload.assets) == 1
+    imported_sketch_template = payload.assets[0]
 
     # 5. Check the WorkPiece in the payload
     assert len(payload.items) == 1
@@ -352,7 +353,8 @@ def test_sketch_importer_round_trip_mouse():
 
     # 6. Verify the dimensions were set correctly on the WorkPiece
     # The importer has already solved the sketch, so use the current geometry
-    geo = imported_sketch_template.to_geometry()
+    imported_sketch = cast(Sketch, imported_sketch_template)
+    geo = imported_sketch.to_geometry()
     min_x, min_y, max_x, max_y = geo.rect()
     expected_width = max_x - min_x
     expected_height = max_y - min_y
