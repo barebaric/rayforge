@@ -230,3 +230,159 @@ def test_bezier_without_control_points_serialization():
     restored = Bezier.from_dict(data)
     assert restored.cp1 is None
     assert restored.cp2 is None
+
+
+def test_bezier_get_control_points_none(registry):
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(100, 0)
+
+    bezier = registry.get_entity(
+        registry.add_bezier(p1, p2, cp1=None, cp2=None)
+    )
+
+    cp1_x, cp1_y, cp2_x, cp2_y = bezier.get_control_points(registry)
+
+    assert cp1_x is None
+    assert cp1_y is None
+    assert cp2_x is None
+    assert cp2_y is None
+
+
+def test_bezier_get_control_points_with_values(registry):
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(100, 0)
+
+    bezier = registry.get_entity(
+        registry.add_bezier(p1, p2, cp1=(20, 10), cp2=(-30, -15))
+    )
+
+    cp1_x, cp1_y, cp2_x, cp2_y = bezier.get_control_points(registry)
+
+    assert cp1_x == 20.0
+    assert cp1_y == 10.0
+    assert cp2_x == 70.0
+    assert cp2_y == -15.0
+
+
+def test_bezier_get_control_points_or_endpoints_with_cps(registry):
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(100, 0)
+
+    bezier = registry.get_entity(
+        registry.add_bezier(p1, p2, cp1=(20, 10), cp2=(-30, -15))
+    )
+
+    cp1_x, cp1_y, cp2_x, cp2_y = bezier.get_control_points_or_endpoints(
+        registry
+    )
+
+    assert cp1_x == 20.0
+    assert cp1_y == 10.0
+    assert cp2_x == 70.0
+    assert cp2_y == -15.0
+
+
+def test_bezier_get_control_points_or_endpoints_without_cps(registry):
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(100, 50)
+
+    bezier = registry.get_entity(
+        registry.add_bezier(p1, p2, cp1=None, cp2=None)
+    )
+
+    cp1_x, cp1_y, cp2_x, cp2_y = bezier.get_control_points_or_endpoints(
+        registry
+    )
+
+    assert cp1_x == 0.0
+    assert cp1_y == 0.0
+    assert cp2_x == 100.0
+    assert cp2_y == 50.0
+
+
+def test_bezier_sample_bezier_linear(registry):
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(100, 0)
+
+    bezier = registry.get_entity(
+        registry.add_bezier(p1, p2, cp1=None, cp2=None)
+    )
+
+    points = bezier._sample_bezier(0, 0, 0, 0, 100, 0, 100, 0, 5)
+
+    assert len(points) == 6
+    assert points[0] == (0.0, 0.0)
+    assert points[5] == (100.0, 0.0)
+
+    for i, (x, y) in enumerate(points):
+        assert y == pytest.approx(0.0)
+
+
+def test_bezier_sample_bezier_curved(registry):
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(100, 0)
+
+    bezier = registry.get_entity(
+        registry.add_bezier(p1, p2, cp1=(0, 100), cp2=(100, 100))
+    )
+
+    points = bezier._sample_bezier(0, 0, 0, 100, 100, 100, 100, 0, 10)
+
+    assert len(points) == 11
+    assert points[0] == (0.0, 0.0)
+    assert points[10] == (100.0, 0.0)
+
+    mid_point = points[5]
+    assert mid_point[0] == pytest.approx(50.0)
+    assert mid_point[1] == pytest.approx(75.0)
+
+
+def test_bezier_sample_bezier_quarter_circle_approximation(registry):
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(100, 0)
+
+    bezier = registry.get_entity(registry.add_bezier(p1, p2))
+
+    k = 0.5522847498
+    points = bezier._sample_bezier(
+        0, 100, k * 100, 100, 100, k * 100, 100, 0, 20
+    )
+
+    assert len(points) == 21
+
+    start = points[0]
+    assert start[0] == pytest.approx(0.0)
+    assert start[1] == pytest.approx(100.0)
+
+    end = points[20]
+    assert end[0] == pytest.approx(100.0)
+    assert end[1] == pytest.approx(0.0)
+
+
+def test_bezier_get_bbox_linear(registry):
+    p1 = registry.add_point(10, 20)
+    p2 = registry.add_point(50, 60)
+
+    bezier = registry.get_entity(
+        registry.add_bezier(p1, p2, cp1=None, cp2=None)
+    )
+
+    bbox = bezier._get_bbox(registry)
+
+    assert bbox == (10.0, 20.0, 50.0, 60.0)
+
+
+def test_bezier_get_bbox_curved(registry):
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(100, 0)
+
+    bezier = registry.get_entity(
+        registry.add_bezier(p1, p2, cp1=(0, 100), cp2=(100, 100))
+    )
+
+    bbox = bezier._get_bbox(registry)
+
+    assert bbox[0] == pytest.approx(0.0)
+    assert bbox[1] == pytest.approx(0.0)
+    assert bbox[2] >= 100.0
+    assert bbox[3] > 50.0
