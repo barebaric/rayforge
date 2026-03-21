@@ -89,13 +89,12 @@ class GcodeViewer(Gtk.Box):
             self._size_bytes = 0
 
         if self._line_count > 20000:
-            self.editor.set_text(
-                _("G-code too large to preview.")
-                + "\n"
-                + _("({line_count} lines > 20,000 line limit)").format(
-                    line_count=f"{self._line_count:,}"
-                )
-            )
+            lines = gcode.split("\n", 20000)
+            truncated = "\n".join(lines[:20000])
+            truncated += "\n\n" + _(
+                "— Truncated (showing first 20,000 of {line_count:,} lines) —"
+            ).format(line_count=self._line_count)
+            self.editor.set_text(truncated)
         else:
             self.editor.set_text(gcode)
         self._update_status_bar()
