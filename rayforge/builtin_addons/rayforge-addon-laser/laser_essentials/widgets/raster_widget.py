@@ -162,6 +162,28 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
         self.add(self.max_power_row)
 
+        power_levels_adj = Gtk.Adjustment(
+            lower=2,
+            upper=256,
+            step_increment=1,
+            value=producer.num_power_levels,
+        )
+        self.power_levels_row = Adw.SpinRow(
+            title=_("Power Levels"),
+            subtitle=_("Number of discrete power steps (lower = fewer moves)"),
+            adjustment=power_levels_adj,
+            digits=0,
+        )
+        self.power_levels_row.connect(
+            "changed",
+            lambda r: self._debounce(
+                self._on_param_changed,
+                "num_power_levels",
+                get_spinrow_int(r),
+            ),
+        )
+        self.add(self.power_levels_row)
+
         self._update_power_labels(producer.invert)
 
         # --- Multi-Pass Settings ---
@@ -295,10 +317,7 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
         self.line_interval_row = Adw.SpinRow(
             title=_("Line Spacing"),
-            subtitle=_(
-                "Distance between scan lines in machine units. "
-                "Leave at 0 to use laser spot size"
-            ),
+            subtitle=_("Distance between scan lines"),
             adjustment=line_interval_adj,
             digits=2,
         )
@@ -309,6 +328,29 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             ),
         )
         group.add(self.line_interval_row)
+
+        sample_interval_adj = Gtk.Adjustment(
+            lower=0.01,
+            upper=10.0,
+            step_increment=0.01,
+            value=producer.sample_interval_mm or 0.1,
+        )
+        self.sample_interval_row = Adw.SpinRow(
+            title=_("Sample Interval"),
+            subtitle=_(
+                "Distance between power samples along scan line. "
+                "Lower values improve accuracy, but increase output size."
+            ),
+            adjustment=sample_interval_adj,
+            digits=2,
+        )
+        self.sample_interval_row.connect(
+            "changed",
+            lambda r: self._debounce(
+                self._on_sample_interval_changed, get_spinrow_float(r)
+            ),
+        )
+        group.add(self.sample_interval_row)
 
         self.invert_row = Adw.SwitchRow(
             title=_("Invert"),
@@ -429,6 +471,8 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
         self.min_power_row.set_visible(is_power_mode)
         self.max_power_row.set_visible(is_power_mode)
+        self.sample_interval_row.set_visible(is_power_mode)
+        self.power_levels_row.set_visible(is_power_mode)
 
         uses_grayscale = is_power_mode or is_multi_pass
         self.histogram_row.set_visible(uses_grayscale)
@@ -513,6 +557,11 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         if value is not None and value <= 0:
             value = None
         self._on_param_changed("line_interval_mm", value)
+
+    def _on_sample_interval_changed(self, value: Optional[float]):
+        if value is not None and value <= 0:
+            value = None
+        self._on_param_changed("sample_interval_mm", value)
 
     def _on_param_changed(self, key: str, value: Any):
         target_dict = self.target_dict.setdefault("params", {})

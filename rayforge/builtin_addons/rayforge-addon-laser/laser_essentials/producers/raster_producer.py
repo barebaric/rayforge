@@ -23,6 +23,7 @@ from .raster_util import (
     calculate_ymax_mm,
     find_mask_bounding_box,
     generate_scan_lines,
+    downsample_power_values,
 )
 
 
@@ -70,9 +71,11 @@ class Rasterizer(OpsProducer):
         min_power: float = 0.0,
         max_power: float = 1.0,
         num_depth_levels: int = 5,
+        num_power_levels: int = 25,
         z_step_down: float = 0.0,
         invert: bool = False,
         line_interval_mm: Optional[float] = None,
+        sample_interval_mm: Optional[float] = None,
         black_point: int = 0,
         white_point: int = 255,
         auto_levels: bool = True,
@@ -87,9 +90,11 @@ class Rasterizer(OpsProducer):
         self.min_power = min_power
         self.max_power = max_power
         self.num_depth_levels = num_depth_levels
+        self.num_power_levels = num_power_levels
         self.z_step_down = z_step_down
         self.invert = invert
         self.line_interval_mm = line_interval_mm
+        self.sample_interval_mm = sample_interval_mm
         self.black_point = black_point
         self.white_point = white_point
         self.auto_levels = auto_levels
@@ -194,6 +199,12 @@ class Rasterizer(OpsProducer):
 
             step_power = settings.get("power", 1.0) if settings else 1.0
 
+            sample_interval_mm = (
+                self.sample_interval_mm
+                if self.sample_interval_mm is not None
+                else laser.spot_size_mm[0]
+            )
+
             angles = [self.scan_angle]
             if self.cross_hatch:
                 angles.append(self.scan_angle + 90.0)
@@ -207,6 +218,7 @@ class Rasterizer(OpsProducer):
                         x_offset_mm,
                         y_offset_mm,
                         line_interval_mm,
+                        sample_interval_mm,
                         step_power,
                         angle,
                     )
@@ -267,6 +279,7 @@ class Rasterizer(OpsProducer):
         offset_x_mm: float,
         offset_y_mm: float,
         line_interval_mm: float,
+        sample_interval_mm: float,
         step_power: float = 1.0,
         angle: float = 0.0,
     ) -> Ops:
@@ -306,6 +319,16 @@ class Rasterizer(OpsProducer):
             power_values = (power_fractions * 255).astype(np.uint8)
             power_values[alpha_values == 0] = 0
 
+            if self.num_power_levels < 256:
+                num_levels = min(256, max(2, self.num_power_levels))
+                power_float = power_values.astype(np.float64)
+                quantized = (
+                    np.round(power_float * (num_levels - 1) / 255.0)
+                    * 255
+                    / (num_levels - 1)
+                )
+                power_values = quantized.astype(np.uint8)
+
             if not np.any(power_values > 0):
                 continue
 
@@ -321,32 +344,50 @@ class Rasterizer(OpsProducer):
                 if power_values[start_idx] == 0:
                     continue
 
-                power_slice = power_values[start_idx:end_idx]
+                seg_pixels = scan_line.pixels[start_idx:end_idx]
+                seg_power = power_values[start_idx:end_idx]
+
+                seg_start_mm = scan_line.pixel_to_mm(
+                    seg_pixels[0, 0], seg_pixels[0, 1], pixels_per_mm
+                )
+                seg_end_mm = scan_line.pixel_to_mm(
+                    seg_pixels[-1, 0], seg_pixels[-1, 1], pixels_per_mm
+                )
+
+                (
+                    ds_power,
+                    ds_x_mm,
+                    ds_y_mm,
+                ) = downsample_power_values(
+                    seg_power,
+                    seg_pixels,
+                    seg_start_mm,
+                    seg_end_mm,
+                    pixels_per_mm,
+                    sample_interval_mm,
+                )
+
+                if len(ds_power) == 0:
+                    continue
 
                 if is_reversed:
-                    seg_start_px = scan_line.pixels[end_idx - 1]
-                    seg_end_px = scan_line.pixels[start_idx]
-                    power_slice = power_slice[::-1]
-                else:
-                    seg_start_px = scan_line.pixels[start_idx]
-                    seg_end_px = scan_line.pixels[end_idx - 1]
+                    ds_power = ds_power[::-1]
+                    ds_x_mm = ds_x_mm[::-1]
+                    ds_y_mm = ds_y_mm[::-1]
 
-                start_mm = scan_line.pixel_to_mm(
-                    seg_start_px[0], seg_start_px[1], pixels_per_mm
-                )
-                end_mm = scan_line.pixel_to_mm(
-                    seg_end_px[0], seg_end_px[1], pixels_per_mm
-                )
+                start_x = ds_x_mm[0]
+                start_y = ds_y_mm[0]
+                end_x = ds_x_mm[-1]
+                end_y = ds_y_mm[-1]
 
-                final_start_y = float(
-                    convert_y_to_output(start_mm[1], ymax_mm)
-                )
-                final_end_y = float(convert_y_to_output(end_mm[1], ymax_mm))
+                if abs(end_x - start_x) < 1e-6 and abs(end_y - start_y) < 1e-6:
+                    continue
 
-                ops.move_to(start_mm[0], final_start_y, 0.0)
-                ops.scan_to(
-                    end_mm[0], final_end_y, 0.0, bytearray(power_slice)
-                )
+                final_start_y = float(convert_y_to_output(start_y, ymax_mm))
+                final_end_y = float(convert_y_to_output(end_y, ymax_mm))
+
+                ops.move_to(start_x, final_start_y, 0.0)
+                ops.scan_to(end_x, final_end_y, 0.0, bytearray(ds_power))
 
         return ops
 
@@ -570,9 +611,11 @@ class Rasterizer(OpsProducer):
                 "min_power": self.min_power,
                 "max_power": self.max_power,
                 "num_depth_levels": self.num_depth_levels,
+                "num_power_levels": self.num_power_levels,
                 "z_step_down": self.z_step_down,
                 "invert": self.invert,
                 "line_interval_mm": self.line_interval_mm,
+                "sample_interval_mm": self.sample_interval_mm,
                 "black_point": self.black_point,
                 "white_point": self.white_point,
                 "auto_levels": self.auto_levels,
@@ -606,9 +649,11 @@ class Rasterizer(OpsProducer):
             "min_power",
             "max_power",
             "num_depth_levels",
+            "num_power_levels",
             "z_step_down",
             "invert",
             "line_interval_mm",
+            "sample_interval_mm",
             "black_point",
             "white_point",
             "auto_levels",
@@ -619,6 +664,9 @@ class Rasterizer(OpsProducer):
 
         if "num_depth_levels" in init_args:
             init_args["num_depth_levels"] = int(init_args["num_depth_levels"])
+
+        if "num_power_levels" in init_args:
+            init_args["num_power_levels"] = int(init_args["num_power_levels"])
 
         depth_mode_str = init_args.get(
             "depth_mode", DepthMode.POWER_MODULATION.name
