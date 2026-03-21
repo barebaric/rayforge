@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, List, Optional
 from ...geo.types import Point as GeoPoint
 from ..entities import Bezier, Line, Point
 from ..entities.point import WaypointType
+from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
@@ -34,11 +35,11 @@ class BezierPreviewState(PreviewState):
 
     def __init__(
         self,
-        start_id: int,
+        start_id: EntityID,
         start_temp: bool,
-        end_id: Optional[int] = None,
+        end_id: Optional[EntityID] = None,
         end_temp: bool = False,
-        temp_entity_id: Optional[int] = None,
+        temp_entity_id: Optional[EntityID] = None,
         is_line_preview: bool = True,
         virtual_cp: Optional[GeoPoint] = None,
     ):
@@ -50,7 +51,7 @@ class BezierPreviewState(PreviewState):
         self.is_line_preview = is_line_preview
         self.virtual_cp = virtual_cp
 
-    def get_preview_point_ids(self) -> set[int]:
+    def get_preview_point_ids(self) -> set[EntityID]:
         result: set[int] = set()
         if self.end_temp and self.end_id is not None:
             result.add(self.end_id)
@@ -83,9 +84,9 @@ class BezierCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        start_id: int,
+        start_id: EntityID,
         end_pos: GeoPoint,
-        end_pid: Optional[int] = None,
+        end_pid: Optional[EntityID] = None,
         is_start_temp: bool = False,
         is_line: bool = True,
         cp1: Optional[GeoPoint] = None,
@@ -101,10 +102,10 @@ class BezierCommand(SketchChangeCommand):
         self.cp1 = cp1
         self.cp2 = cp2
         self.add_cmd: Optional[AddItemsCommand] = None
-        self._committed_end_id: Optional[int] = None
+        self._committed_end_id: Optional[EntityID] = None
 
     @property
-    def committed_end_id(self) -> Optional[int]:
+    def committed_end_id(self) -> Optional[EntityID]:
         return self._committed_end_id
 
     @staticmethod

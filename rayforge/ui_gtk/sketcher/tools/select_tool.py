@@ -35,6 +35,7 @@ from ....core.sketcher.entities import (
     Line,
     TextBoxEntity,
 )
+from ....core.sketcher.types import EntityID
 from ...shared.keyboard import PRIMARY_KEY_NAME
 from .base import SketchTool
 from .text_box_tool import TextBoxTool
@@ -54,10 +55,10 @@ class SelectTool(SketchTool):
 
     def __init__(self, element):
         super().__init__(element)
-        self.hovered_point_id: Optional[int] = None
+        self.hovered_point_id: Optional[EntityID] = None
         self.hovered_constraint_idx: Optional[int] = None
-        self.hovered_junction_pid: Optional[int] = None
-        self.hovered_entity_id: Optional[int] = None
+        self.hovered_junction_pid: Optional[EntityID] = None
+        self.hovered_entity_id: Optional[EntityID] = None
 
         # --- Box Selection State ---
         self.is_box_selecting: bool = False
@@ -67,7 +68,7 @@ class SelectTool(SketchTool):
 
         # --- Drag State ---
         # For dragging a single point
-        self.dragged_point_id: Optional[int] = None
+        self.dragged_point_id: Optional[EntityID] = None
         self.drag_point_start_pos: Optional[GeoPoint] = None
 
         # For dragging entities (lines/arcs)
@@ -75,7 +76,7 @@ class SelectTool(SketchTool):
         self.drag_start_model_pos: Optional[GeoPoint] = None
 
         # For dragging control points
-        self.dragged_cp_bezier_id: Optional[int] = None
+        self.dragged_cp_bezier_id: Optional[EntityID] = None
         self.dragged_cp_index: Optional[int] = None
         self.drag_cp_start_offset: Optional[Tuple[float, float]] = None
 
@@ -84,10 +85,10 @@ class SelectTool(SketchTool):
         self.drag_start_ct_inv: Optional[Matrix] = None
 
         # Snapshots taken at start of drag
-        self.drag_initial_positions: Dict[int, GeoPoint] = {}
-        self.drag_initial_entity_states: Dict[int, Any] = {}
+        self.drag_initial_positions: Dict[EntityID, GeoPoint] = {}
+        self.drag_initial_entity_states: Dict[EntityID, Any] = {}
 
-        self.drag_point_distances: Dict[int, int] = {}
+        self.drag_point_distances: Dict[EntityID, int] = {}
 
     def is_available(self, target, target_type) -> bool:
         return target is None
@@ -157,7 +158,7 @@ class SelectTool(SketchTool):
         # Shift+double click on point to select all connected geometry
         if n_press == 2 and hit_type == "point" and is_shift_pressed:
             logger.debug("Shift+double-click on point detected.")
-            pid = cast(int, hit_obj)
+            pid = cast(EntityID, hit_obj)
             registry = self.element.sketch.registry
             entity_ids = self.element.selection.entity_ids
             entity_ids.clear()
@@ -254,7 +255,7 @@ class SelectTool(SketchTool):
             return False
 
         if hit_type == "junction":
-            pid = cast(int, hit_obj)
+            pid = cast(EntityID, hit_obj)
             self.element.selection.select_junction(pid, is_multi)
             self._prepare_point_drag(pid)
             self.element.mark_dirty()
@@ -267,7 +268,7 @@ class SelectTool(SketchTool):
             return False
 
         if hit_type == "point":
-            pid = cast(int, hit_obj)
+            pid = cast(EntityID, hit_obj)
             self.element.selection.select_point(pid, is_multi)
             self._prepare_point_drag(pid)
             self.element.mark_dirty()
@@ -656,7 +657,7 @@ class SelectTool(SketchTool):
 
     # --- Drag Preparation ---
 
-    def _prepare_point_drag(self, pid: int):
+    def _prepare_point_drag(self, pid: EntityID):
         """Sets up state for dragging a single point."""
         self.dragged_point_id = pid
         self.dragged_entity = None  # Mutually exclusive
@@ -677,7 +678,7 @@ class SelectTool(SketchTool):
         self.drag_start_model_pos = (model_x, model_y)
         self._cache_drag_start_state()
 
-    def _prepare_control_point_drag(self, bezier_id: int, cp_index: int):
+    def _prepare_control_point_drag(self, bezier_id: EntityID, cp_index: int):
         """Sets up state for dragging a control point.
 
         Does not clear selection.
@@ -742,19 +743,19 @@ class SelectTool(SketchTool):
             if state is not None:
                 self.drag_initial_entity_states[e.id] = state
 
-    def _safe_get_point(self, pid):
+    def _safe_get_point(self, pid: EntityID):
         try:
             return self.element.sketch.registry.get_point(pid)
         except IndexError:
             return None
 
-    def _safe_get_entity(self, eid: int):
+    def _safe_get_entity(self, eid: EntityID):
         try:
             return self.element.sketch.registry.get_entity(eid)
         except IndexError:
             return None
 
-    def _calculate_geometric_hops(self, start_pid: int):
+    def _calculate_geometric_hops(self, start_pid: EntityID):
         """
         Calculates distance (in entity hops) from a start point to all others
         using BFS. Results are stored in self.drag_point_distances.
@@ -764,7 +765,9 @@ class SelectTool(SketchTool):
             self.drag_point_distances = {}
             return
 
-        adj: Dict[int, list[int]] = {p.id: [] for p in registry.points}
+        adj: Dict[EntityID, List[EntityID]] = {
+            p.id: [] for p in registry.points
+        }
         for entity in registry.entities:
             if isinstance(entity, Line):
                 p1, p2 = entity.p1_idx, entity.p2_idx

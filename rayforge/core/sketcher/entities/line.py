@@ -4,6 +4,7 @@ from ...geo.primitives import (
     find_closest_point_on_line_segment,
     line_segment_intersects_rect,
 )
+from ..types import EntityID
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -13,20 +14,24 @@ if TYPE_CHECKING:
 
 class Line(Entity):
     def __init__(
-        self, id: int, p1_idx: int, p2_idx: int, construction: bool = False
+        self,
+        id: EntityID,
+        p1_idx: EntityID,
+        p2_idx: EntityID,
+        construction: bool = False,
     ):
         super().__init__(id, construction)
-        self.p1_idx = p1_idx
-        self.p2_idx = p2_idx
+        self.p1_idx: EntityID = p1_idx
+        self.p2_idx: EntityID = p2_idx
         self.type = "line"
 
-    def get_point_ids(self) -> List[int]:
+    def get_point_ids(self) -> List[EntityID]:
         return [self.p1_idx, self.p2_idx]
 
-    def get_endpoint_ids(self) -> List[int]:
+    def get_endpoint_ids(self) -> List[EntityID]:
         return [self.p1_idx, self.p2_idx]
 
-    def get_junction_point_ids(self) -> List[int]:
+    def get_junction_point_ids(self) -> List[EntityID]:
         return [self.p1_idx, self.p2_idx]
 
     def hit_test(

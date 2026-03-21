@@ -17,6 +17,7 @@ from ....core.sketcher.constraints import (
     VerticalConstraint,
 )
 from ....core.sketcher.entities import Line, Point, TextBoxEntity
+from ....core.sketcher.types import EntityID
 from .base import SketchTool, SketcherKey
 
 if TYPE_CHECKING:
@@ -41,7 +42,7 @@ class TextBoxTool(SketchTool):
     def __init__(self, element):
         super().__init__(element)
         self.state = TextBoxState.IDLE
-        self.editing_entity_id: Optional[int] = None
+        self.editing_entity_id: Optional[EntityID] = None
         self.text_buffer = ""
         self.cursor_pos: int = 0
         self.cursor_visible = True
@@ -100,7 +101,7 @@ class TextBoxTool(SketchTool):
             self.selection_start = self.cursor_pos
         self.selection_end = new_pos
 
-    def start_editing(self, entity_id: int):
+    def start_editing(self, entity_id: EntityID):
         """Public method to begin editing an existing text box."""
         from ....core.sketcher.entities import TextBoxEntity
 

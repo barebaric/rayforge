@@ -6,6 +6,7 @@ from gettext import gettext as _
 from ...geo import Point
 from ..entities import Line
 from .base import Constraint, ConstraintStatus
+from ..types import EntityID
 
 if TYPE_CHECKING:
     from ..params import ParameterContext
@@ -17,10 +18,10 @@ if TYPE_CHECKING:
 class VerticalConstraint(Constraint):
     """Enforces two points have the same X coordinate."""
 
-    def __init__(self, p1: int, p2: int, user_visible: bool = True):
+    def __init__(self, p1: EntityID, p2: EntityID, user_visible: bool = True):
         super().__init__(user_visible=user_visible)
-        self.p1 = p1
-        self.p2 = p2
+        self.p1: EntityID = p1
+        self.p2: EntityID = p2
 
     @classmethod
     def can_apply_to(
@@ -83,7 +84,7 @@ class VerticalConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         return {
             self.p1: [(1.0, 0.0)],
             self.p2: [(-1.0, 0.0)],

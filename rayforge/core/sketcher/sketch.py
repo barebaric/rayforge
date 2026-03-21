@@ -52,6 +52,7 @@ from .entities.point import WaypointType
 from .params import ParameterContext
 from .registry import EntityRegistry
 from .solver import Solver
+from .types import EntityID
 
 
 _DEFAULT_VARSET_TITLE = _("Sketch Parameters")
@@ -83,9 +84,9 @@ _CONSTRAINT_CLASSES = {
 class Fill:
     """Represents a filled area bounded by sketch entities."""
 
-    def __init__(self, uid: str, boundary: List[Tuple[int, bool]]):
+    def __init__(self, uid: str, boundary: List[Tuple[EntityID, bool]]):
         self.uid = uid
-        self.boundary = boundary  # List of (entity_id, is_forward_traversal)
+        self.boundary: List[Tuple[EntityID, bool]] = boundary
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -125,7 +126,9 @@ class Sketch(IAsset):
         self._hidden: bool = False
 
         # Initialize the Origin Point (Fixed Anchor)
-        self.origin_id = self.registry.add_point(0.0, 0.0, fixed=True)
+        self.origin_id: EntityID = self.registry.add_point(
+            0.0, 0.0, fixed=True
+        )
 
     def notify_update(self):
         """Public method to signal that the sketch has been modified."""
@@ -223,7 +226,7 @@ class Sketch(IAsset):
             return False
 
         # 2. Calculate point usage counts to ensure exclusive ownership
-        usage_count: Dict[int, int] = {}
+        usage_count: Dict[EntityID, int] = {}
         for e in self.registry.entities:
             for pid in e.get_point_ids():
                 usage_count[pid] = usage_count.get(pid, 0) + 1
@@ -351,16 +354,16 @@ class Sketch(IAsset):
         if data is None or len(data) == 0:
             return sketch
 
-        point_map: Dict[Tuple[float, float], int] = {}
+        point_map: Dict[Tuple[float, float], EntityID] = {}
 
-        def get_or_add_point(x: float, y: float) -> int:
+        def get_or_add_point(x: float, y: float) -> EntityID:
             key = (round(x, 6), round(y, 6))
             if key not in point_map:
                 point_map[key] = sketch.add_point(x, y)
             return point_map[key]
 
         current_x, current_y = 0.0, 0.0
-        current_pid: Optional[int] = None
+        current_pid: Optional[EntityID] = None
 
         for row in data:
             cmd_type = row[COL_TYPE]
@@ -425,22 +428,24 @@ class Sketch(IAsset):
         """Define a parameter like 'width'=100 or 'height'='width/2'."""
         self.params.set(name, value)
 
-    def add_point(self, x: float, y: float, fixed: bool = False) -> int:
+    def add_point(self, x: float, y: float, fixed: bool = False) -> EntityID:
         """Adds a point. Returns its ID."""
         return self.registry.add_point(x, y, fixed)
 
-    def add_line(self, p1: int, p2: int, construction: bool = False) -> int:
+    def add_line(
+        self, p1: EntityID, p2: EntityID, construction: bool = False
+    ) -> EntityID:
         """Adds a line segment between two point IDs."""
         return self.registry.add_line(p1, p2, construction)
 
     def add_arc(
         self,
-        start: int,
-        end: int,
-        center: int,
+        start: EntityID,
+        end: EntityID,
+        center: EntityID,
         clockwise: bool = False,
         construction: bool = False,
-    ) -> int:
+    ) -> EntityID:
         """Adds an arc defined by start, end, and center point IDs."""
         return self.registry.add_arc(
             start, end, center, clockwise, construction
@@ -448,12 +453,12 @@ class Sketch(IAsset):
 
     def add_bezier(
         self,
-        start: int,
-        end: int,
+        start: EntityID,
+        end: EntityID,
         construction: bool = False,
         cp1: Optional[Tuple[float, float]] = None,
         cp2: Optional[Tuple[float, float]] = None,
-    ) -> int:
+    ) -> EntityID:
         """Adds a cubic bezier curve defined by start and end point IDs.
 
         Control points cp1 and cp2 are relative offsets from start and end
@@ -462,8 +467,8 @@ class Sketch(IAsset):
         return self.registry.add_bezier(start, end, construction, cp1, cp2)
 
     def add_circle(
-        self, center: int, radius_pt: int, construction: bool = False
-    ) -> int:
+        self, center: EntityID, radius_pt: EntityID, construction: bool = False
+    ) -> EntityID:
         """Adds a circle defined by a center and a point on its radius."""
         return self.registry.add_circle(center, radius_pt, construction)
 
@@ -478,7 +483,7 @@ class Sketch(IAsset):
         self.registry.remove_entities_by_id(ids_to_remove)
         self._validate_and_cleanup_fills()
 
-    def remove_point_if_unused(self, pid: Optional[int]) -> bool:
+    def remove_point_if_unused(self, pid: Optional[EntityID]) -> bool:
         """
         Removes a point from the registry if it's not part of any entity.
 
@@ -498,7 +503,7 @@ class Sketch(IAsset):
         return False
 
     def _get_edge_tangent_at_start(
-        self, entity: Any, start_pid: int
+        self, entity: Any, start_pid: EntityID
     ) -> Tuple[float, float]:
         """Helper to get the tangent vector for an entity at a given point."""
         if isinstance(entity, Line):
@@ -539,7 +544,7 @@ class Sketch(IAsset):
                 return (end.x - cp2_x, end.y - cp2_y)
         return (1.0, 0.0)
 
-    def _build_adjacency_list(self) -> Dict[int, List[Dict[str, Any]]]:
+    def _build_adjacency_list(self) -> Dict[EntityID, List[Dict[str, Any]]]:
         """
         Builds a map of point_id -> list of outgoing edges.
         Each edge dict contains: {'to': point_id, 'id': entity_id, 'fwd': bool}
@@ -550,7 +555,7 @@ class Sketch(IAsset):
         adj = defaultdict(list)
 
         # Build a mapping from each point to its coincident group
-        point_to_group = {}
+        point_to_group: Dict[EntityID, Set[EntityID]] = {}
         for p in self.registry.points:
             if p.id not in point_to_group:
                 coincident_group = self.get_coincident_points(p.id)
@@ -587,8 +592,8 @@ class Sketch(IAsset):
         return adj
 
     def _sort_edges_by_angle(
-        self, adj: Dict[int, List[Dict[str, Any]]]
-    ) -> Dict[int, List[Dict[str, Any]]]:
+        self, adj: Dict[EntityID, List[Dict[str, Any]]]
+    ) -> Dict[EntityID, List[Dict[str, Any]]]:
         """
         Sorts the outgoing edges at each node by angle (CCW).
         """
@@ -610,10 +615,10 @@ class Sketch(IAsset):
 
     def _get_next_edge_ccw(
         self,
-        current_p_id: int,
-        incoming_entity_id: int,
+        current_p_id: EntityID,
+        incoming_entity_id: EntityID,
         incoming_fwd: bool,
-        sorted_adj: Dict[int, List[Dict[str, Any]]],
+        sorted_adj: Dict[EntityID, List[Dict[str, Any]]],
     ) -> Optional[Dict[str, Any]]:
         """
         Given an incoming edge to a node, picks the next edge in CCW order
@@ -642,7 +647,7 @@ class Sketch(IAsset):
             return None
 
     def _calculate_loop_signed_area(
-        self, loop: List[Tuple[int, bool]]
+        self, loop: List[Tuple[EntityID, bool]]
     ) -> float:
         """Calculates signed area of the loop using Shoelace formula."""
         if not loop:
@@ -739,7 +744,7 @@ class Sketch(IAsset):
 
         return area
 
-    def _find_all_closed_loops(self) -> List[List[Tuple[int, bool]]]:
+    def _find_all_closed_loops(self) -> List[List[Tuple[EntityID, bool]]]:
         """
         Finds all closed loops (faces) in the sketch graph.
         """
@@ -747,7 +752,7 @@ class Sketch(IAsset):
         sorted_adj = self._sort_edges_by_angle(adj)
 
         loops = []
-        visited_half_edges: Set[Tuple[int, int, bool]] = set()
+        visited_half_edges: Set[Tuple[EntityID, EntityID, bool]] = set()
 
         for p_start, edges in sorted_adj.items():
             for start_edge in edges:
@@ -755,8 +760,8 @@ class Sketch(IAsset):
                 if half_edge_key in visited_half_edges:
                     continue
 
-                loop: List[Tuple[int, bool]] = []
-                loop_half_edges: List[Tuple[int, int, bool]] = []
+                loop: List[Tuple[EntityID, bool]] = []
+                loop_half_edges: List[Tuple[EntityID, EntityID, bool]] = []
                 curr_p = p_start
                 curr_edge = start_edge
 
@@ -810,7 +815,7 @@ class Sketch(IAsset):
         return loops
 
     def _loop_to_polygon(
-        self, loop: List[Tuple[int, bool]]
+        self, loop: List[Tuple[EntityID, bool]]
     ) -> List[Tuple[float, float]]:
         """
         Converts a loop of entities into a list of 2D polygon vertices,
@@ -832,7 +837,7 @@ class Sketch(IAsset):
 
     def get_loop_at_point(
         self, mx: float, my: float
-    ) -> Optional[List[Tuple[int, bool]]]:
+    ) -> Optional[List[Tuple[EntityID, bool]]]:
         """
         Finds the smallest closed loop containing the given point.
         Returns None if no loop contains the point.
@@ -877,8 +882,8 @@ class Sketch(IAsset):
     def supports_constraint(
         self,
         constraint_type: str,
-        point_ids: Sequence[int],
-        entity_ids: Sequence[int],
+        point_ids: Sequence[EntityID],
+        entity_ids: Sequence[EntityID],
     ) -> bool:
         """
         Determines if a constraint type is valid for the given selection of
@@ -1033,7 +1038,7 @@ class Sketch(IAsset):
 
     # --- Constraint Shortcuts ---
 
-    def get_coincident_points(self, start_pid: int) -> Set[int]:
+    def get_coincident_points(self, start_pid: EntityID) -> Set[EntityID]:
         """
         Finds all points transitively connected to start_pid via
         CoincidentConstraints.
@@ -1069,58 +1074,60 @@ class Sketch(IAsset):
         return coincident_group
 
     def constrain_distance(
-        self, p1: int, p2: int, dist: Union[str, float]
+        self, p1: EntityID, p2: EntityID, dist: Union[str, float]
     ) -> DistanceConstraint:
         constr = DistanceConstraint(p1, p2, dist)
         self.constraints.append(constr)
         return constr
 
     def constrain_equal_distance(
-        self, p1: int, p2: int, p3: int, p4: int
+        self, p1: EntityID, p2: EntityID, p3: EntityID, p4: EntityID
     ) -> None:
         """Enforces dist(p1, p2) == dist(p3, p4)."""
         self.constraints.append(EqualDistanceConstraint(p1, p2, p3, p4))
 
-    def constrain_horizontal(self, p1: int, p2: int) -> None:
+    def constrain_horizontal(self, p1: EntityID, p2: EntityID) -> None:
         self.constraints.append(HorizontalConstraint(p1, p2))
 
-    def constrain_vertical(self, p1: int, p2: int) -> None:
+    def constrain_vertical(self, p1: EntityID, p2: EntityID) -> None:
         self.constraints.append(VerticalConstraint(p1, p2))
 
-    def constrain_coincident(self, p1: int, p2: int) -> None:
+    def constrain_coincident(self, p1: EntityID, p2: EntityID) -> None:
         self.constraints.append(CoincidentConstraint(p1, p2))
 
-    def constrain_point_on_line(self, point_id: int, shape_id: int) -> None:
+    def constrain_point_on_line(
+        self, point_id: EntityID, shape_id: EntityID
+    ) -> None:
         self.constraints.append(PointOnLineConstraint(point_id, shape_id))
 
     def constrain_radius(
-        self, entity_id: int, radius: Union[str, float]
+        self, entity_id: EntityID, radius: Union[str, float]
     ) -> RadiusConstraint:
         constr = RadiusConstraint(entity_id, radius)
         self.constraints.append(constr)
         return constr
 
     def constrain_diameter(
-        self, circle_id: int, diameter: Union[str, float]
+        self, circle_id: EntityID, diameter: Union[str, float]
     ) -> DiameterConstraint:
         constr = DiameterConstraint(circle_id, diameter)
         self.constraints.append(constr)
         return constr
 
-    def constrain_perpendicular(self, l1: int, l2: int) -> None:
+    def constrain_perpendicular(self, l1: EntityID, l2: EntityID) -> None:
         self.constraints.append(PerpendicularConstraint(l1, l2))
 
-    def constrain_tangent(self, line: int, shape: int) -> None:
+    def constrain_tangent(self, line: EntityID, shape: EntityID) -> None:
         self.constraints.append(TangentConstraint(line, shape))
 
-    def constrain_equal_length(self, entity_ids: List[int]) -> None:
+    def constrain_equal_length(self, entity_ids: List[EntityID]) -> None:
         """Enforces equal length/radius between two or more entities."""
         if len(entity_ids) < 2:
             return
         self.constraints.append(EqualLengthConstraint(entity_ids))
 
     def constrain_symmetry(
-        self, point_ids: List[int], entity_ids: List[int]
+        self, point_ids: List[EntityID], entity_ids: List[EntityID]
     ) -> None:
         """
         Enforces symmetry.
@@ -1143,7 +1150,7 @@ class Sketch(IAsset):
 
     # --- Manipulation & Processing ---
 
-    def move_point(self, pid: int, x: float, y: float) -> bool:
+    def move_point(self, pid: EntityID, x: float, y: float) -> bool:
         """
         Attempts to move a point to a new location and resolve constraints.
         Returns True if the point was moved, False if it is locked/constrained.
@@ -1431,7 +1438,7 @@ class Sketch(IAsset):
         return geo
 
     def get_fill_geometries(
-        self, exclude_ids: Optional[Set[int]] = None
+        self, exclude_ids: Optional[Set[EntityID]] = None
     ) -> List[Geometry]:
         """
         Generates Geometry objects for all defined fills.

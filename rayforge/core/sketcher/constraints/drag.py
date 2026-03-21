@@ -3,6 +3,7 @@
 from __future__ import annotations
 from typing import Dict, List, TYPE_CHECKING
 from ...geo import Point
+from ..types import EntityID
 from .base import Constraint
 
 if TYPE_CHECKING:
@@ -18,7 +19,7 @@ class DragConstraint(Constraint):
 
     def __init__(
         self,
-        point_id: int,
+        point_id: EntityID,
         target_x: float,
         target_y: float,
         weight: float = 0.1,
@@ -40,7 +41,7 @@ class DragConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         return {
             self.point_id: [(self.weight, 0.0), (0.0, self.weight)],
         }

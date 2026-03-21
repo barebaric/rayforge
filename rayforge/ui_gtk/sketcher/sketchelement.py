@@ -7,6 +7,7 @@ from ...core.matrix import Matrix
 from ...core.sketcher import Sketch
 from ...core.sketcher.entities import Line
 from ...core.sketcher.selection import SketchSelection
+from ...core.sketcher.types import EntityID
 from ..canvas import CanvasElement
 from .hittest import SketchHitTester
 from .renderer import SketchRenderer
@@ -298,7 +299,7 @@ class SketchElement(CanvasElement):
             self.selection.entity_ids,
         )
 
-    def get_lines_at_point(self, pid: int) -> List[Line]:
+    def get_lines_at_point(self, pid: EntityID) -> List[Line]:
         return [
             e
             for e in self.sketch.registry.entities

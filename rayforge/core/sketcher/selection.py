@@ -1,18 +1,19 @@
 from typing import List, Optional, TYPE_CHECKING
+from blinker import Signal
+from .types import EntityID
 
 if TYPE_CHECKING:
     from .registry import EntityRegistry
-from blinker import Signal
 
 
 class SketchSelection:
     """Manages the selection state of the sketch editor."""
 
     def __init__(self):
-        self.point_ids: List[int] = []
-        self.entity_ids: List[int] = []
+        self.point_ids: List[EntityID] = []
+        self.entity_ids: List[EntityID] = []
         self.constraint_idx: Optional[int] = None
-        self.junction_pid: Optional[int] = None
+        self.junction_pid: Optional[EntityID] = None
         self.changed = Signal()
 
     def clear(self):
@@ -50,7 +51,7 @@ class SketchSelection:
             self.junction_pid = None
         self.changed.send(self)
 
-    def select_junction(self, pid: int, is_multi: bool):
+    def select_junction(self, pid: EntityID, is_multi: bool):
         """Selects an implicit junction point."""
         self.junction_pid = pid
         if not is_multi:
@@ -59,7 +60,7 @@ class SketchSelection:
             self.constraint_idx = None
         self.changed.send(self)
 
-    def select_point(self, pid: int, is_multi: bool):
+    def select_point(self, pid: EntityID, is_multi: bool):
         """Selects a point by ID."""
         self._update_list(self.point_ids, pid, is_multi)
         if not is_multi:
@@ -84,7 +85,7 @@ class SketchSelection:
         self.changed.send(self)
 
     def _update_list(
-        self, collection: List[int], item_id: int, is_multi: bool
+        self, collection: List[EntityID], item_id: EntityID, is_multi: bool
     ):
         """Helper to handle toggle vs replace selection logic."""
         if is_multi:
@@ -98,7 +99,7 @@ class SketchSelection:
                 collection.append(item_id)
 
     def select_connected_entities(
-        self, entity_id: int, registry: "EntityRegistry"
+        self, entity_id: EntityID, registry: "EntityRegistry"
     ):
         """
         Adds all entities connected to the given entity through shared points

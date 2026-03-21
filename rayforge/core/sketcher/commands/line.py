@@ -1,11 +1,12 @@
 from __future__ import annotations
 from gettext import gettext as _
 import math
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Set
 
 from ...geo import Point as GeoPoint
 from ..constraints import DistanceConstraint
 from ..entities import Line, Point
+from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
@@ -20,10 +21,10 @@ class LinePreviewState(PreviewState):
 
     def __init__(
         self,
-        start_id: int,
+        start_id: EntityID,
         start_temp: bool,
-        end_id: int,
-        entity_id: int,
+        end_id: EntityID,
+        entity_id: EntityID,
     ):
         self.start_id = start_id
         self.start_temp = start_temp
@@ -31,7 +32,7 @@ class LinePreviewState(PreviewState):
         self.entity_id = entity_id
         self.locked_length: Optional[float] = None
 
-    def get_preview_point_ids(self) -> set[int]:
+    def get_preview_point_ids(self) -> Set[EntityID]:
         """
         Returns IDs of temporary preview points that shouldn't be snapped to.
 
@@ -101,9 +102,9 @@ class LineCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        start_id: int,
+        start_id: EntityID,
         end_pos: GeoPoint,
-        end_pid: Optional[int] = None,
+        end_pid: Optional[EntityID] = None,
         is_start_temp: bool = False,
         fixed_length: Optional[float] = None,
     ):
@@ -114,10 +115,10 @@ class LineCommand(SketchChangeCommand):
         self.is_start_temp = is_start_temp
         self.fixed_length = fixed_length
         self.add_cmd: Optional[AddItemsCommand] = None
-        self._committed_end_id: Optional[int] = None
+        self._committed_end_id: Optional[EntityID] = None
 
     @property
-    def committed_end_id(self) -> Optional[int]:
+    def committed_end_id(self) -> Optional[EntityID]:
         """
         The final end point ID after execute(), or None if not applicable.
         """
@@ -128,7 +129,7 @@ class LineCommand(SketchChangeCommand):
         registry: EntityRegistry,
         x: float,
         y: float,
-        snapped_pid: Optional[int] = None,
+        snapped_pid: Optional[EntityID] = None,
         **kwargs,
     ) -> LinePreviewState:
         """

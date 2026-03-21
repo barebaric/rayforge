@@ -1,11 +1,12 @@
 from __future__ import annotations
 from gettext import gettext as _
 import math
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Set
 
 from ...geo import Point as GeoPoint
 from ..constraints import DiameterConstraint
 from ..entities import Circle, Point
+from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
@@ -20,10 +21,10 @@ class CirclePreviewState(PreviewState):
 
     def __init__(
         self,
-        center_id: int,
+        center_id: EntityID,
         center_temp: bool,
-        radius_id: int,
-        entity_id: int,
+        radius_id: EntityID,
+        entity_id: EntityID,
     ):
         self.center_id = center_id
         self.center_temp = center_temp
@@ -31,7 +32,7 @@ class CirclePreviewState(PreviewState):
         self.entity_id = entity_id
         self.locked_diameter: Optional[float] = None
 
-    def get_preview_point_ids(self) -> set[int]:
+    def get_preview_point_ids(self) -> Set[EntityID]:
         """
         Returns IDs of temporary preview points that shouldn't be snapped to.
 
@@ -109,9 +110,9 @@ class CircleCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        center_id: int,
+        center_id: EntityID,
         end_pos: GeoPoint,
-        end_pid: Optional[int] = None,
+        end_pid: Optional[EntityID] = None,
         is_center_temp: bool = False,
         fixed_diameter: Optional[float] = None,
     ):
@@ -122,10 +123,10 @@ class CircleCommand(SketchChangeCommand):
         self.is_center_temp = is_center_temp
         self.fixed_diameter = fixed_diameter
         self.add_cmd: Optional[AddItemsCommand] = None
-        self._committed_end_id: Optional[int] = None
+        self._committed_end_id: Optional[EntityID] = None
 
     @property
-    def committed_end_id(self) -> Optional[int]:
+    def committed_end_id(self) -> Optional[EntityID]:
         """
         The final end point ID after execute(), or None if not applicable.
         """
@@ -136,7 +137,7 @@ class CircleCommand(SketchChangeCommand):
         registry: EntityRegistry,
         x: float,
         y: float,
-        snapped_pid: Optional[int] = None,
+        snapped_pid: Optional[EntityID] = None,
         **kwargs,
     ) -> CirclePreviewState:
         """

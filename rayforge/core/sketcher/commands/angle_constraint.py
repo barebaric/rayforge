@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Optional
 
 from ....core.geo.primitives import line_intersection, normalize_angle
 from ..entities import Line
+from ..types import EntityID
 
 if TYPE_CHECKING:
     from ..registry import EntityRegistry
@@ -16,19 +17,19 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AngleConstraintParams:
-    anchor_id: int
-    other_id: int
+    anchor_id: EntityID
+    other_id: EntityID
     value_deg: float
-    anchor_far_idx: int
-    other_far_idx: int
+    anchor_far_idx: EntityID
+    other_far_idx: EntityID
 
 
 class AngleConstraintCommand:
     @staticmethod
     def calculate_constraint_params(
         registry: EntityRegistry,
-        e1_id: int,
-        e2_id: int,
+        e1_id: EntityID,
+        e2_id: EntityID,
     ) -> Optional[AngleConstraintParams]:
         e1 = registry.get_entity(e1_id)
         e2 = registry.get_entity(e2_id)

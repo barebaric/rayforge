@@ -12,6 +12,7 @@ from ..constraints import (
     CollinearConstraint,
     EqualDistanceConstraint,
 )
+from ..types import EntityID
 
 if TYPE_CHECKING:
     from ..sketch import Sketch
@@ -26,9 +27,9 @@ class FilletCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        corner_pid: int,
-        line1_id: int,
-        line2_id: int,
+        corner_pid: EntityID,
+        line1_id: EntityID,
+        line2_id: EntityID,
         radius: float,
     ):
         super().__init__(sketch, _("Add Fillet"))
@@ -45,9 +46,9 @@ class FilletCommand(SketchChangeCommand):
     @staticmethod
     def calculate_geometry(
         reg: "EntityRegistry",
-        corner_pid: int,
-        line1_id: int,
-        line2_id: int,
+        corner_pid: EntityID,
+        line1_id: EntityID,
+        line2_id: EntityID,
         radius: float,
     ) -> Optional[Dict[str, Any]]:
         """

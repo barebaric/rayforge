@@ -1,6 +1,6 @@
 from __future__ import annotations
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from ...geo import Point as GeoPoint
 from ..constraints import (
@@ -13,6 +13,7 @@ from ..constraints import (
     VerticalConstraint,
 )
 from ..entities import Arc, Line, Point
+from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
@@ -27,10 +28,10 @@ class RoundedRectPreviewState(PreviewState):
 
     def __init__(
         self,
-        start_id: int,
+        start_id: EntityID,
         start_temp: bool,
-        p_end_id: int,
-        preview_ids: Dict[str, int],
+        p_end_id: EntityID,
+        preview_ids: Dict[str, EntityID],
         radius: float,
     ):
         self.start_id = start_id
@@ -42,7 +43,7 @@ class RoundedRectPreviewState(PreviewState):
         self.locked_height: Optional[float] = None
         self.locked_radius: Optional[float] = None
 
-    def get_preview_point_ids(self) -> set[int]:
+    def get_preview_point_ids(self) -> Set[EntityID]:
         """
         Returns IDs of temporary preview points that shouldn't be snapped to.
 
@@ -165,7 +166,7 @@ class RoundedRectCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        start_pid: int,
+        start_pid: EntityID,
         end_pos: GeoPoint,
         radius: float,
         is_start_temp: bool = False,
@@ -182,10 +183,10 @@ class RoundedRectCommand(SketchChangeCommand):
         self.fixed_height = fixed_height
         self.fixed_radius = fixed_radius
         self.add_cmd: Optional[AddItemsCommand] = None
-        self._committed_end_id: Optional[int] = None
+        self._committed_end_id: Optional[EntityID] = None
 
     @property
-    def committed_end_id(self) -> Optional[int]:
+    def committed_end_id(self) -> Optional[EntityID]:
         """
         The final end point ID after execute(), or None if not applicable.
         """
@@ -347,11 +348,11 @@ class RoundedRectCommand(SketchChangeCommand):
     @staticmethod
     def create_preview(
         registry: EntityRegistry,
-        start_pid: int,
-        end_pid: int,
+        start_pid: EntityID,
+        end_pid: EntityID,
         radius: float,
-        preview_ids: Optional[Dict[str, int]] = None,
-    ) -> Optional[Dict[str, int]]:
+        preview_ids: Optional[Dict[str, EntityID]] = None,
+    ) -> Optional[Dict[str, EntityID]]:
         """
         Creates or updates preview geometry in the registry.
 
@@ -464,7 +465,7 @@ class RoundedRectCommand(SketchChangeCommand):
         registry: EntityRegistry,
         x: float,
         y: float,
-        snapped_pid: Optional[int] = None,
+        snapped_pid: Optional[EntityID] = None,
         radius: float = 10.0,
         **kwargs,
     ) -> RoundedRectPreviewState:

@@ -14,6 +14,7 @@ from typing import (
 from locale import format_string
 from ...expression import safe_evaluate
 from ...geo import Point
+from ..types import EntityID
 
 if TYPE_CHECKING:
     import cairo
@@ -61,7 +62,7 @@ class Constraint:
         raise NotImplementedError()
 
     def targets_segment(
-        self, p1: int, p2: int, entity_id: Optional[int]
+        self, p1: EntityID, p2: EntityID, entity_id: Optional[EntityID]
     ) -> bool:
         """
         Returns True if this constraint restricts the length/distance of the
@@ -77,7 +78,7 @@ class Constraint:
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         """
         Calculates the partial derivatives (Jacobian entries) of the error.
         Returns a map: point_id -> list of (d_error/dx, d_error/dy).
@@ -87,7 +88,7 @@ class Constraint:
         return {}
 
     def constrains_radius(
-        self, registry: "EntityRegistry", entity_id: int
+        self, registry: "EntityRegistry", entity_id: EntityID
     ) -> bool:
         """
         Returns True if this constraint explicitly defines or links the
@@ -203,7 +204,7 @@ class Constraint:
             # If there's no expression, it's just a valid numeric constraint.
             self.status = ConstraintStatus.VALID
 
-    def depends_on_points(self, point_ids: Set[int]) -> bool:
+    def depends_on_points(self, point_ids: Set[EntityID]) -> bool:
         """Checks if the constraint references any of the given point IDs."""
         for attr in ["p1", "p2", "p3", "p4", "center", "point_id"]:
             if hasattr(self, attr):
@@ -212,7 +213,7 @@ class Constraint:
                     return True
         return False
 
-    def depends_on_entities(self, entity_ids: Set[int]) -> bool:
+    def depends_on_entities(self, entity_ids: Set[EntityID]) -> bool:
         """Checks if the constraint references any of the given entity IDs."""
         for attr in [
             "e1_id",
@@ -235,7 +236,7 @@ class Constraint:
                     return True
         return False
 
-    def get_draggable_point(self) -> Optional[int]:
+    def get_draggable_point(self) -> Optional[EntityID]:
         """
         Returns a point ID that can be dragged to manipulate this constraint.
 

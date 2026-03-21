@@ -6,6 +6,7 @@ from gettext import gettext as _
 from typing import Dict, Any, List, Callable, Optional, TYPE_CHECKING
 from ...geo import Point
 from .base import Constraint, ConstraintStatus
+from ..types import EntityID
 
 if TYPE_CHECKING:
     import cairo
@@ -18,10 +19,10 @@ if TYPE_CHECKING:
 class CoincidentConstraint(Constraint):
     """Enforces two points are at the same location."""
 
-    def __init__(self, p1: int, p2: int, user_visible: bool = True):
+    def __init__(self, p1: EntityID, p2: EntityID, user_visible: bool = True):
         super().__init__(user_visible=user_visible)
-        self.p1 = p1
-        self.p2 = p2
+        self.p1: EntityID = p1
+        self.p2: EntityID = p2
 
     @classmethod
     def can_apply_to(
@@ -70,7 +71,7 @@ class CoincidentConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         return {
             self.p1: [(1.0, 0.0), (0.0, 1.0)],
             self.p2: [(-1.0, 0.0), (0.0, -1.0)],
@@ -141,6 +142,6 @@ class CoincidentConstraint(Constraint):
         ctx.stroke()
         ctx.restore()
 
-    def get_draggable_point(self) -> int:
+    def get_draggable_point(self) -> EntityID:
         """Returns p1 as the draggable point for coincident constraints."""
         return self.p1

@@ -1,6 +1,7 @@
 from typing import Dict, Any, List, Sequence, TYPE_CHECKING, Optional, Tuple
 from ...geo import Geometry, Point as GeoPoint, Polygon, Rect, primitives
 from ...geo.primitives import find_closest_point_on_line_segment
+from ..types import EntityID
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -11,16 +12,16 @@ if TYPE_CHECKING:
 class Bezier(Entity):
     def __init__(
         self,
-        id: int,
-        start_idx: int,
-        end_idx: int,
+        id: EntityID,
+        start_idx: EntityID,
+        end_idx: EntityID,
         construction: bool = False,
         cp1: Optional[GeoPoint] = None,
         cp2: Optional[GeoPoint] = None,
     ):
         super().__init__(id, construction)
-        self.start_idx = start_idx
-        self.end_idx = end_idx
+        self.start_idx: EntityID = start_idx
+        self.end_idx: EntityID = end_idx
         self.type = "bezier"
         self.cp1 = cp1
         self.cp2 = cp2
@@ -62,13 +63,13 @@ class Bezier(Entity):
         cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points(registry)
         return cp1_x is None and cp2_x is None
 
-    def get_point_ids(self) -> List[int]:
+    def get_point_ids(self) -> List[EntityID]:
         return [self.start_idx, self.end_idx]
 
-    def get_endpoint_ids(self) -> List[int]:
+    def get_endpoint_ids(self) -> List[EntityID]:
         return [self.start_idx, self.end_idx]
 
-    def get_junction_point_ids(self) -> List[int]:
+    def get_junction_point_ids(self) -> List[EntityID]:
         return [self.start_idx, self.end_idx]
 
     def hit_test(

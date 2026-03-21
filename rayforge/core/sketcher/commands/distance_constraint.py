@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, List
 
 from ..entities import Line
+from ..types import EntityID
 
 if TYPE_CHECKING:
     from ..registry import EntityRegistry
@@ -13,8 +14,8 @@ if TYPE_CHECKING:
 
 @dataclass
 class DistanceConstraintParams:
-    p1_id: int
-    p2_id: int
+    p1_id: EntityID
+    p2_id: EntityID
     distance: float
 
 
@@ -22,8 +23,8 @@ class DistanceConstraintCommand:
     @staticmethod
     def calculate_distance(
         registry: EntityRegistry,
-        point_ids: list[int],
-        entity_ids: list[int],
+        point_ids: List[EntityID],
+        entity_ids: List[EntityID],
     ) -> Optional[DistanceConstraintParams]:
         if len(point_ids) == 2:
             p1 = registry.get_point(point_ids[0])

@@ -5,6 +5,7 @@ from gettext import gettext as _
 
 from ...geo import Point as GeoPoint
 from ..entities import Bezier, Line, Arc, Circle, Point
+from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
@@ -20,11 +21,13 @@ class MovePointCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: "Sketch",
-        point_id: int,
+        point_id: EntityID,
         start_pos: GeoPoint,
         end_pos: GeoPoint,
         # snapshot is: (points_dict, entities_dict)
-        snapshot: Optional[tuple[Dict[int, GeoPoint], Dict[int, Any]]] = None,
+        snapshot: Optional[
+            tuple[Dict[EntityID, GeoPoint], Dict[EntityID, Any]]
+        ] = None,
     ):
         super().__init__(sketch, _("Move Point"))
         self.point_id = point_id
@@ -88,7 +91,7 @@ class MoveControlPointCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: "Sketch",
-        bezier_id: int,
+        bezier_id: EntityID,
         cp_index: int,
         start_offset: Optional[GeoPoint],
         end_offset: Optional[GeoPoint],
@@ -126,12 +129,12 @@ class MoveControlPointCommand(SketchChangeCommand):
 class UnstickJunctionCommand(SketchChangeCommand):
     """Command to separate entities at a shared point."""
 
-    def __init__(self, sketch: "Sketch", junction_pid: int):
+    def __init__(self, sketch: "Sketch", junction_pid: EntityID):
         super().__init__(sketch, _("Unstick Junction"))
         self.junction_pid = junction_pid
         self.new_point: Optional[Point] = None
         # Stores {entity_id: (attribute_name, old_pid)}
-        self.modified_map: Dict[int, Tuple[str, int]] = {}
+        self.modified_map: Dict[EntityID, Tuple[str, EntityID]] = {}
 
     def _do_execute(self) -> None:
         try:

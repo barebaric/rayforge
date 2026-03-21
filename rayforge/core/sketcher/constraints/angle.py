@@ -15,6 +15,7 @@ from typing import (
 from ...geo import Point
 from ...geo.primitives import line_intersection, normalize_angle
 from ..entities import Line
+from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
@@ -49,19 +50,19 @@ class AngleConstraint(Constraint):
 
     def __init__(
         self,
-        e1_id: int,
-        e2_id: int,
+        e1_id: EntityID,
+        e2_id: EntityID,
         value: Union[str, float],
         expression: Optional[str] = None,
         user_visible: bool = True,
-        e1_far_idx: Optional[int] = None,
-        e2_far_idx: Optional[int] = None,
+        e1_far_idx: Optional[EntityID] = None,
+        e2_far_idx: Optional[EntityID] = None,
     ):
         super().__init__(user_visible=user_visible)
-        self.e1_id = e1_id
-        self.e2_id = e2_id
-        self.e1_far_idx = e1_far_idx
-        self.e2_far_idx = e2_far_idx
+        self.e1_id: EntityID = e1_id
+        self.e2_id: EntityID = e2_id
+        self.e1_far_idx: Optional[EntityID] = e1_far_idx
+        self.e2_far_idx: Optional[EntityID] = e2_far_idx
 
         if expression is not None:
             self.expression = expression
@@ -217,7 +218,7 @@ class AngleConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[int, List[Point]]:
+    ) -> Dict[EntityID, List[Point]]:
         result = self._get_line_params(reg)
         if result is None:
             return {}

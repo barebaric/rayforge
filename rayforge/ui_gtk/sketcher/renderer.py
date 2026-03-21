@@ -22,6 +22,7 @@ from ...core.sketcher.entities import (
     Point,
     TextBoxEntity,
 )
+from ...core.sketcher.types import EntityID
 from ..canvas import WorldSurface
 from .tools import BezierTool, TextBoxTool
 
@@ -271,7 +272,7 @@ class SketchRenderer:
             else:
                 ctx.set_source_rgb(0.0, 0.0, 0.0)
 
-    def _safe_get_point(self, pid: int) -> Optional[Point]:
+    def _safe_get_point(self, pid: EntityID) -> Optional[Point]:
         try:
             return self.element.sketch.registry.get_point(pid)
         except IndexError:
@@ -491,7 +492,7 @@ class SketchRenderer:
         ctx.stroke_preserve()
         ctx.restore()
 
-    def _get_entity_by_id(self, eid: int) -> Optional[Entity]:
+    def _get_entity_by_id(self, eid: EntityID) -> Optional[Entity]:
         return self.element.sketch.registry.get_entity(eid)
 
     # --- Points ---
