@@ -53,7 +53,7 @@ from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from .layout.align import PositionAtStrategy
 
 if TYPE_CHECKING:
-    from ..core.sketcher.sketch import Sketch
+    from ..core.asset import IAsset
     from ..doceditor.editor import DocEditor
     from ..shared.tasker.manager import TaskManager
 
@@ -442,7 +442,7 @@ class FileCmd:
         items: List[DocItem],
         source: Optional[SourceAsset],
         filename: Path,
-        sketches: Optional[List["Sketch"]] = None,
+        assets: Optional[List["IAsset"]] = None,
         vectorization_spec: Optional[VectorizationSpec] = None,
     ):
         """
@@ -452,9 +452,9 @@ class FileCmd:
         if source:
             self._editor.doc.add_asset(source)
 
-        if sketches:
-            for sketch in sketches:
-                self._editor.doc.add_asset(sketch)
+        if assets:
+            for asset in assets:
+                self._editor.doc.add_asset(asset)
 
         target_layer = cast(Layer, self._editor.default_workpiece_layer)
         cmd_name = _("Import {filename}").format(filename=filename.name)
@@ -521,7 +521,7 @@ class FileCmd:
             payload.items,
             payload.source,
             filename,
-            payload.sketches,
+            payload.assets,
             vectorization_spec,
         )
 

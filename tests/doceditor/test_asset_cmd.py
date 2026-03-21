@@ -91,20 +91,20 @@ def test_delete_sketch_and_workpiece(asset_cmd: AssetCmd):
     doc.add_asset(sketch)
     doc.add_workpiece(workpiece)
 
-    assert len(doc.sketches) == 1
+    assert len(doc.get_assets_by_type("sketch")) == 1
     assert len(doc.all_workpieces) == 1
 
     asset_cmd.delete_asset(sketch)
 
-    assert len(doc.sketches) == 0
+    assert len(doc.get_assets_by_type("sketch")) == 0
     assert len(doc.all_workpieces) == 0
     assert len(doc.history_manager.undo_stack) == 1
 
     # Test undo
     doc.history_manager.undo()
-    assert len(doc.sketches) == 1
+    assert len(doc.get_assets_by_type("sketch")) == 1
     assert len(doc.all_workpieces) == 1
-    restored_sketch = next(iter(doc.sketches.values()))
+    restored_sketch = next(iter(doc.get_assets_by_type("sketch").values()))
     restored_wp = doc.all_workpieces[0]
     assert restored_sketch.uid == sketch.uid
     assert restored_wp.uid == workpiece.uid

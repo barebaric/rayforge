@@ -85,7 +85,7 @@ class SketchImporter(Importer):
             wp.geometry_provider_uid = self.parsed_sketch.uid
             wp.name = self.parsed_sketch.name
 
-        payload.sketches = [self.parsed_sketch]
+        payload.assets = [self.parsed_sketch]
         return payload
 
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:

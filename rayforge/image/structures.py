@@ -4,9 +4,9 @@ from ..core.geo import Geometry, Rect
 from ..core.matrix import Matrix
 
 if TYPE_CHECKING:
+    from ..core.asset import IAsset
     from ..core.item import DocItem
     from ..core.source_asset import SourceAsset
-    from ..core.sketcher.sketch import Sketch
 
 
 @dataclass
@@ -275,7 +275,8 @@ class ImportPayload:
     Attributes:
         source: The SourceAsset representing the imported file.
         items: List of DocItems (WorkPieces or Layers) ready for insertion.
-        sketches: Optional list of Sketch objects for special importers.
+        assets: Optional list of IAsset objects (e.g., Sketches) for special
+                importers that need to create reusable asset definitions.
 
     Error Handling:
     ---------------
@@ -285,7 +286,7 @@ class ImportPayload:
 
     source: "SourceAsset"
     items: List["DocItem"]
-    sketches: List["Sketch"] = field(default_factory=list)
+    assets: List["IAsset"] = field(default_factory=list)
 
 
 @dataclass
