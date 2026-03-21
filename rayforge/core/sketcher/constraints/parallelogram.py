@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Any, List, TYPE_CHECKING
+from typing import Dict, Any, List, Optional, TYPE_CHECKING
 from gettext import gettext as _
 from ...geo import Point
 from ..types import EntityID
@@ -8,6 +8,8 @@ from .base import Constraint
 if TYPE_CHECKING:
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 
 class ParallelogramConstraint(Constraint):
@@ -26,6 +28,15 @@ class ParallelogramConstraint(Constraint):
         self.p_width: EntityID = p_width
         self.p_height: EntityID = p_height
         self.p4: EntityID = p4
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        return (
+            len(selection.point_ids) == 4
+            and not selection.entity_ids
+        )
 
     @staticmethod
     def get_type_name() -> str:

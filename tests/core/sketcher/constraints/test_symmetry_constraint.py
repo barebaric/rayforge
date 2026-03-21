@@ -4,6 +4,8 @@ from scipy.optimize import check_grad
 from functools import partial
 from types import SimpleNamespace
 from unittest.mock import MagicMock
+from rayforge.core.sketcher import Sketch
+from rayforge.core.sketcher.selection import SketchSelection
 from rayforge.core.sketcher.constraints import SymmetryConstraint
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.registry import EntityRegistry
@@ -245,6 +247,33 @@ def test_symmetry_is_hit(setup_env):
     assert c.is_hit(12, 0, reg, to_screen, mock_element, threshold) is True
     # Miss
     assert c.is_hit(50, 50, reg, to_screen, mock_element, threshold) is False
+
+
+def test_symmetry_can_apply_to_three_points():
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+    center = sketch.add_point(5, 0)
+
+    selection = SketchSelection()
+    selection.point_ids = [p1, p2, center]
+    selection.entity_ids = []
+    assert SymmetryConstraint.can_apply_to(selection, sketch) is True
+
+
+def test_symmetry_can_apply_to_two_points_and_line():
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 10)
+    p2 = sketch.add_point(0, -10)
+
+    axis_p1 = sketch.add_point(-5, 0)
+    axis_p2 = sketch.add_point(5, 0)
+    axis_line_id = sketch.add_line(axis_p1, axis_p2)
+
+    selection = SketchSelection()
+    selection.point_ids = [p1, p2]
+    selection.entity_ids = [axis_line_id]
+    assert SymmetryConstraint.can_apply_to(selection, sketch) is True
 
 
 def test_symmetry_draw(setup_env):

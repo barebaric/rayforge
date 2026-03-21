@@ -30,6 +30,10 @@ class TangentConstraint(Constraint):
         self.shape_id: EntityID = shape_id
 
     @classmethod
+    def get_type_key(cls) -> str:
+        return "tangent"
+
+    @classmethod
     def can_apply_to(
         cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
     ) -> bool:

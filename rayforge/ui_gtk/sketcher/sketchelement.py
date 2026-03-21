@@ -292,13 +292,6 @@ class SketchElement(CanvasElement):
         """Dispatches hover events to the currently active tool."""
         self.current_tool.on_hover_motion(world_x, world_y)
 
-    def is_constraint_supported(self, constraint_type: str) -> bool:
-        return self.sketch.supports_constraint(
-            constraint_type,
-            self.selection.point_ids,
-            self.selection.entity_ids,
-        )
-
     def get_lines_at_point(self, pid: EntityID) -> List[Line]:
         return [
             e

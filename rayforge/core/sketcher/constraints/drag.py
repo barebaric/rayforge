@@ -1,7 +1,7 @@
 # constraints/drag.py
 
 from __future__ import annotations
-from typing import Dict, List, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING
 from ...geo import Point
 from ..types import EntityID
 from .base import Constraint
@@ -9,6 +9,8 @@ from .base import Constraint
 if TYPE_CHECKING:
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 
 class DragConstraint(Constraint):
@@ -30,6 +32,12 @@ class DragConstraint(Constraint):
         self.target_y = target_y
         self.weight = weight
         super().__init__(user_visible=user_visible)
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        return False
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"

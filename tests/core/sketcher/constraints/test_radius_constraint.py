@@ -4,6 +4,8 @@ from scipy.optimize import check_grad
 import math
 from types import SimpleNamespace
 from unittest.mock import MagicMock
+from rayforge.core.sketcher import Sketch
+from rayforge.core.sketcher.selection import SketchSelection
 from rayforge.core.sketcher.constraints import RadiusConstraint
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.registry import EntityRegistry
@@ -233,3 +235,28 @@ def test_radius_draw(setup_env):
     c.draw(ctx, reg, to_screen, is_selected=True)
     c.draw(ctx, reg, to_screen, is_hovered=True)
     c.draw(ctx, reg, to_screen, point_radius=10.0)
+
+
+def test_radius_can_apply_to_arc():
+    sketch = Sketch()
+    start = sketch.add_point(10, 0)
+    end = sketch.add_point(0, 10)
+    center = sketch.add_point(0, 0)
+    arc_id = sketch.add_arc(start, end, center)
+
+    selection = SketchSelection()
+    selection.point_ids = []
+    selection.entity_ids = [arc_id]
+    assert RadiusConstraint.can_apply_to(selection, sketch) is True
+
+
+def test_radius_can_apply_to_circle():
+    sketch = Sketch()
+    center = sketch.add_point(0, 0)
+    radius = sketch.add_point(10, 0)
+    circle_id = sketch.add_circle(center, radius)
+
+    selection = SketchSelection()
+    selection.point_ids = []
+    selection.entity_ids = [circle_id]
+    assert RadiusConstraint.can_apply_to(selection, sketch) is True

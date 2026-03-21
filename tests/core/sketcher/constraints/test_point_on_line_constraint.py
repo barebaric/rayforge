@@ -3,6 +3,8 @@ import numpy as np
 from scipy.optimize import check_grad
 from types import SimpleNamespace
 from unittest.mock import MagicMock
+from rayforge.core.sketcher import Sketch
+from rayforge.core.sketcher.selection import SketchSelection
 from rayforge.core.sketcher.constraints import PointOnLineConstraint
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.registry import EntityRegistry
@@ -283,3 +285,32 @@ def test_point_on_line_draw(setup_env):
     c.draw(ctx, reg, to_screen, is_selected=True)
     c.draw(ctx, reg, to_screen, is_hovered=True)
     c.draw(ctx, reg, to_screen, point_radius=10.0)
+
+
+def test_point_on_line_can_apply_to_valid():
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+    line_id = sketch.add_line(p1, p2)
+
+    external_point = sketch.add_point(5, 5)
+
+    selection = SketchSelection()
+    selection.point_ids = [external_point]
+    selection.entity_ids = [line_id]
+    assert PointOnLineConstraint.can_apply_to(selection, sketch) is True
+
+
+def test_point_on_line_can_apply_to_endpoint_invalid():
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+    line_id = sketch.add_line(p1, p2)
+
+    selection = SketchSelection()
+    selection.point_ids = [p1]
+    selection.entity_ids = [line_id]
+    assert PointOnLineConstraint.can_apply_to(selection, sketch) is False
+
+    selection.point_ids = [p2]
+    assert PointOnLineConstraint.can_apply_to(selection, sketch) is False

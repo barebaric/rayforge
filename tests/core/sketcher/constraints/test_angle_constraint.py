@@ -2,6 +2,8 @@ import pytest
 import math
 from types import SimpleNamespace
 from unittest.mock import MagicMock
+from rayforge.core.sketcher import Sketch
+from rayforge.core.sketcher.selection import SketchSelection
 from rayforge.core.sketcher.constraints import AngleConstraint
 from rayforge.core.sketcher.constraints.angle import ARC_RADIUS
 from rayforge.core.sketcher.params import ParameterContext
@@ -205,3 +207,29 @@ def test_angle_draw(setup_env):
 
 def test_angle_constraint_get_type_name():
     assert AngleConstraint.get_type_name() == "Angle"
+
+
+def test_angle_can_apply_to_two_lines():
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+    p3 = sketch.add_point(0, 10)
+    line1_id = sketch.add_line(p1, p2)
+    line2_id = sketch.add_line(p1, p3)
+
+    selection = SketchSelection()
+    selection.point_ids = []
+    selection.entity_ids = [line1_id, line2_id]
+    assert AngleConstraint.can_apply_to(selection, sketch) is True
+
+
+def test_angle_can_apply_to_one_line_invalid():
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+    line_id = sketch.add_line(p1, p2)
+
+    selection = SketchSelection()
+    selection.point_ids = []
+    selection.entity_ids = [line_id]
+    assert AngleConstraint.can_apply_to(selection, sketch) is False

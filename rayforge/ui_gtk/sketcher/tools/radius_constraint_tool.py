@@ -26,9 +26,8 @@ class RadiusConstraintTool(SketchTool):
         target: Optional[Union[Point, Entity, "Constraint"]],
         target_type: Optional[str],
     ) -> bool:
-        sel = self.element.selection
-        return self.element.sketch.supports_constraint(
-            "radius", sel.point_ids, sel.entity_ids
+        return RadiusConstraint.can_apply_to(
+            self.element.selection, self.element.sketch
         )
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:

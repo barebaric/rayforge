@@ -24,6 +24,10 @@ class VerticalConstraint(Constraint):
         self.p2: EntityID = p2
 
     @classmethod
+    def get_type_key(cls) -> str:
+        return "vert"
+
+    @classmethod
     def can_apply_to(
         cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
     ) -> bool:

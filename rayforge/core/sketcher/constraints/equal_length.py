@@ -20,6 +20,8 @@ if TYPE_CHECKING:
     import cairo
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 
 class EqualLengthConstraint(Constraint):
@@ -32,6 +34,27 @@ class EqualLengthConstraint(Constraint):
     def __init__(self, entity_ids: List[EntityID], user_visible: bool = True):
         super().__init__(user_visible=user_visible)
         self.entity_ids = entity_ids
+
+    @classmethod
+    def get_type_key(cls) -> str:
+        return "equal"
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        if selection.point_ids or len(selection.entity_ids) < 2:
+            return False
+        if sketch is None:
+            return False
+        entities = [
+            sketch.registry.get_entity(eid)
+            for eid in selection.entity_ids
+        ]
+        return all(
+            isinstance(e, (Line, Arc, Circle)) and e is not None
+            for e in entities
+        )
 
     @staticmethod
     def get_type_name() -> str:

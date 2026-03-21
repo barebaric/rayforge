@@ -6,6 +6,7 @@ from ....core.sketcher.commands import (
     AddItemsCommand,
     CreateOrEditConstraintCommand,
 )
+from ....core.sketcher.constraints import DiameterConstraint
 from ....core.sketcher.entities import Circle, Entity, Point
 from .base import SketchTool
 
@@ -25,9 +26,8 @@ class DiameterConstraintTool(SketchTool):
         target: Optional[Union[Point, Entity, "Constraint"]],
         target_type: Optional[str],
     ) -> bool:
-        sel = self.element.selection
-        return self.element.sketch.supports_constraint(
-            "diameter", sel.point_ids, sel.entity_ids
+        return DiameterConstraint.can_apply_to(
+            self.element.selection, self.element.sketch
         )
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:

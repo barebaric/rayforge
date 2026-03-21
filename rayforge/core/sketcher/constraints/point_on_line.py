@@ -1,7 +1,7 @@
 from __future__ import annotations
 import math
 import cairo
-from typing import Dict, Any, List, Callable, TYPE_CHECKING
+from typing import Dict, Any, List, Callable, Optional, TYPE_CHECKING
 from gettext import gettext as _
 from ...geo import Point
 from ..entities import Line, Arc, Circle
@@ -11,6 +11,8 @@ from .base import Constraint, ConstraintStatus
 if TYPE_CHECKING:
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 
 class PointOnLineConstraint(Constraint):
@@ -22,6 +24,38 @@ class PointOnLineConstraint(Constraint):
         super().__init__(user_visible=user_visible)
         self.point_id: EntityID = point_id
         self.shape_id: EntityID = shape_id
+
+    @classmethod
+    def get_type_key(cls) -> str:
+        return "point_on_line"
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        if len(selection.point_ids) != 1 or len(selection.entity_ids) != 1:
+            return False
+        if sketch is None:
+            return False
+        entity = sketch.registry.get_entity(selection.entity_ids[0])
+        if not isinstance(entity, (Line, Arc, Circle)):
+            return False
+        pid = selection.point_ids[0]
+        control_points = set()
+        if isinstance(entity, Line):
+            control_points = {entity.p1_idx, entity.p2_idx}
+        elif isinstance(entity, Arc):
+            control_points = {
+                entity.start_idx,
+                entity.end_idx,
+                entity.center_idx,
+            }
+        elif isinstance(entity, Circle):
+            control_points = {
+                entity.center_idx,
+                entity.radius_pt_idx,
+            }
+        return pid not in control_points
 
     @staticmethod
     def get_type_name() -> str:

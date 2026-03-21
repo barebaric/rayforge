@@ -16,6 +16,7 @@ from rayforge.core.geo.constants import (
 from rayforge.core.sketcher import Sketch
 from rayforge.core.sketcher.sketch import Fill
 from rayforge.core.sketcher.constraints import (
+    CoincidentConstraint,
     EqualDistanceConstraint,
     PointOnLineConstraint,
     PerpendicularConstraint,
@@ -421,146 +422,6 @@ def test_sketch_serialization_from_file():
     p_final_s1 = sketch1.registry.get_point(8)  # A point from the sketch
     p_final_s2 = sketch2.registry.get_point(8)
     assert p_final_s1.pos() == pytest.approx(p_final_s2.pos())
-
-
-@pytest.fixture
-def setup_sketch_for_validation():
-    """Provides a sketch with a variety of geometry for validation tests."""
-    s = Sketch()
-    # Points
-    p1 = s.add_point(0, 0)
-    p2 = s.add_point(10, 0)
-    p3 = s.add_point(0, 10)
-    p_ext = s.add_point(5, 5)
-    # Entities
-    l1 = s.add_line(p1, p2)
-    l2 = s.add_line(p1, p3)
-    # Arc points are separate to avoid endpoint conflicts
-    arc_s = s.add_point(20, 0)
-    arc_e = s.add_point(0, 20)
-    arc_c = s.add_point(0, 0)
-    a1 = s.add_arc(arc_s, arc_e, arc_c)
-    c1 = s.add_circle(p1, p2)
-
-    return s, {
-        "p1": p1,
-        "p2": p2,
-        "p3": p3,
-        "p_ext": p_ext,
-        "l1": l1,
-        "l2": l2,
-        "a1": a1,
-        "c1": c1,
-    }
-
-
-def test_sketch_supports_constraint(setup_sketch_for_validation):
-    """Tests the logic of the `supports_constraint` method."""
-    s, ids = setup_sketch_for_validation
-    p1, p2, p3, p_ext = ids["p1"], ids["p2"], ids["p3"], ids["p_ext"]
-    l1, l2, a1, c1 = ids["l1"], ids["l2"], ids["a1"], ids["c1"]
-
-    # Test "dist"
-    assert s.supports_constraint("dist", [p1, p2], []) is True
-    assert s.supports_constraint("dist", [], [l1]) is True
-    assert s.supports_constraint("dist", [p1], []) is False
-    assert s.supports_constraint("dist", [p1, p2, p3], []) is False
-    assert s.supports_constraint("dist", [p1], [l1]) is False
-    assert s.supports_constraint("dist", [], [a1]) is False
-    assert s.supports_constraint("dist", [], [l1, l2]) is False
-
-    # Test "horiz" and "vert"
-    for c_type in ("horiz", "vert"):
-        # Valid cases
-        assert s.supports_constraint(c_type, [p1, p2], []) is True
-        assert s.supports_constraint(c_type, [], [l1]) is True
-        assert s.supports_constraint(c_type, [], [l1, l2]) is True  # FIXED
-        # Invalid cases
-        assert s.supports_constraint(c_type, [p1], []) is False
-        assert s.supports_constraint(c_type, [p1, p2, p3], []) is False
-        assert s.supports_constraint(c_type, [p1], [l1]) is False
-        assert s.supports_constraint(c_type, [], [a1]) is False
-
-    # Test "radius"
-    assert s.supports_constraint("radius", [], [a1]) is True
-    assert s.supports_constraint("radius", [], [c1]) is True
-    assert s.supports_constraint("radius", [], [l1]) is False
-    assert s.supports_constraint("radius", [p1], [a1]) is False
-    assert s.supports_constraint("radius", [], [a1, c1]) is False
-
-    # Test "diameter"
-    assert s.supports_constraint("diameter", [], [c1]) is True
-    assert s.supports_constraint("diameter", [], [a1]) is False
-    assert s.supports_constraint("diameter", [], [l1]) is False
-    assert s.supports_constraint("diameter", [p1], [c1]) is False
-
-    # Test "perp"
-    assert s.supports_constraint("perp", [], [l1, l2]) is True
-    assert s.supports_constraint("perp", [], [l1]) is False
-    assert s.supports_constraint("perp", [], [l1, a1]) is True
-    assert s.supports_constraint("perp", [], [a1, c1]) is True
-    assert s.supports_constraint("perp", [], [l1, l2, l1]) is False
-
-    # Test "tangent"
-    assert s.supports_constraint("tangent", [], [l1, a1]) is True
-    assert s.supports_constraint("tangent", [], [l1, c1]) is True
-    assert s.supports_constraint("tangent", [], [l1, l2]) is False
-    assert s.supports_constraint("tangent", [], [a1, c1]) is False
-    assert s.supports_constraint("tangent", [], [l1]) is False
-    assert s.supports_constraint("tangent", [], [a1]) is False
-
-    # Test "equal"
-    assert s.supports_constraint("equal", [], [l1, l2]) is True
-    assert s.supports_constraint("equal", [], [l1, a1]) is True
-    assert s.supports_constraint("equal", [], [l1, c1, a1]) is True
-    assert s.supports_constraint("equal", [], [l1]) is False  # Needs >= 2
-    assert s.supports_constraint("equal", [p1], [l1, l2]) is False
-    assert s.supports_constraint("equal", [], []) is False
-
-    # Test "align" (covers coincident and point-on-line)
-    # Coincident (2 points)
-    assert s.supports_constraint("align", [p1, p_ext], []) is True
-    # Point-on-Shape (1 point, 1 shape)
-    assert s.supports_constraint("align", [p_ext], [l1]) is True
-    assert s.supports_constraint("align", [p_ext], [a1]) is True
-    assert s.supports_constraint("align", [p_ext], [c1]) is True
-
-    # Invalid: Endpoint on its own line
-    assert s.supports_constraint("align", [p1], [l1]) is False
-    # Invalid: Control point on its own shape
-    arc_start_id = s.registry.get_entity(a1).start_idx
-    assert s.supports_constraint("align", [arc_start_id], [a1]) is False
-    circle_center_id = s.registry.get_entity(c1).center_idx
-    assert s.supports_constraint("align", [circle_center_id], [c1]) is False
-
-    # Invalid: Other combos
-    assert s.supports_constraint("align", [p1, p2, p3], []) is False
-    assert s.supports_constraint("align", [p_ext], [l1, l2]) is False
-
-    # Test "coincident" (internal use)
-    assert s.supports_constraint("coincident", [p1, p2], []) is True
-    assert s.supports_constraint("coincident", [p1], []) is False
-    assert s.supports_constraint("coincident", [p1], [l1]) is False
-
-    # Test "point_on_line" (internal use, now means point-on-shape)
-    assert s.supports_constraint("point_on_line", [p_ext], [l1]) is True
-    assert s.supports_constraint("point_on_line", [p_ext], [a1]) is True
-    assert s.supports_constraint("point_on_line", [p_ext], [c1]) is True
-    # Invalid: Endpoint on its own line
-    assert s.supports_constraint("point_on_line", [p1], [l1]) is False
-    # Invalid: wrong number of items
-    assert s.supports_constraint("point_on_line", [p1, p_ext], [l1]) is False
-    assert s.supports_constraint("point_on_line", [p_ext], [l1, l2]) is False
-
-    # Test "symmetry"
-    # Case A: 3 Points
-    assert s.supports_constraint("symmetry", [p1, p2, p3], []) is True
-    # Case B: 2 Points + 1 Line
-    assert s.supports_constraint("symmetry", [p1, p2], [l1]) is True
-    # Invalid
-    assert s.supports_constraint("symmetry", [p1, p2], []) is False
-    assert s.supports_constraint("symmetry", [p1], [l1]) is False
-    assert s.supports_constraint("symmetry", [p1, p2], [l1, l2]) is False
 
 
 def test_sketch_initializes_with_empty_varset():
@@ -1318,3 +1179,70 @@ def test_sketch_fill_geometry_generation_arc_shape():
 
     # Direction check
     assert not bool(cmd_arc[COL_CW])
+
+
+def test_get_coincident_points_no_constraints():
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    sketch.add_point(10, 0)
+
+    result = sketch.get_coincident_points(p1)
+
+    assert result == {p1}
+
+
+def test_get_coincident_points_single_pair():
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+
+    sketch.constraints.append(CoincidentConstraint(p1, p2))
+
+    result = sketch.get_coincident_points(p1)
+
+    assert result == {p1, p2}
+
+
+def test_get_coincident_points_transitive():
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+    p3 = sketch.add_point(20, 0)
+
+    sketch.constraints.append(CoincidentConstraint(p1, p2))
+    sketch.constraints.append(CoincidentConstraint(p2, p3))
+
+    result = sketch.get_coincident_points(p1)
+
+    assert result == {p1, p2, p3}
+
+
+def test_get_coincident_points_chain_from_middle():
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+    p3 = sketch.add_point(20, 0)
+
+    sketch.constraints.append(CoincidentConstraint(p1, p2))
+    sketch.constraints.append(CoincidentConstraint(p2, p3))
+
+    result = sketch.get_coincident_points(p2)
+
+    assert result == {p1, p2, p3}
+
+
+def test_get_coincident_points_separate_groups():
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+    p3 = sketch.add_point(20, 0)
+    p4 = sketch.add_point(30, 0)
+
+    sketch.constraints.append(CoincidentConstraint(p1, p2))
+    sketch.constraints.append(CoincidentConstraint(p3, p4))
+
+    result1 = sketch.get_coincident_points(p1)
+    result3 = sketch.get_coincident_points(p3)
+
+    assert result1 == {p1, p2}
+    assert result3 == {p3, p4}

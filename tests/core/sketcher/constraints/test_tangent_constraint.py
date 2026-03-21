@@ -4,6 +4,8 @@ from scipy.optimize import check_grad
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+from rayforge.core.sketcher import Sketch
+from rayforge.core.sketcher.selection import SketchSelection
 from rayforge.core.sketcher.constraints import TangentConstraint
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.registry import EntityRegistry
@@ -274,3 +276,36 @@ def test_tangent_draw(setup_env):
     c.draw(ctx, reg, to_screen, is_selected=True)
     c.draw(ctx, reg, to_screen, is_hovered=True)
     c.draw(ctx, reg, to_screen, point_radius=10.0)
+
+
+def test_tangent_can_apply_to_line_and_arc():
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+    line_id = sketch.add_line(p1, p2)
+
+    start = sketch.add_point(50, 0)
+    end = sketch.add_point(0, 50)
+    center = sketch.add_point(0, 0)
+    arc_id = sketch.add_arc(start, end, center)
+
+    selection = SketchSelection()
+    selection.point_ids = []
+    selection.entity_ids = [line_id, arc_id]
+    assert TangentConstraint.can_apply_to(selection, sketch) is True
+
+
+def test_tangent_can_apply_to_line_and_circle():
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+    line_id = sketch.add_line(p1, p2)
+
+    center = sketch.add_point(50, 0)
+    radius = sketch.add_point(60, 0)
+    circle_id = sketch.add_circle(center, radius)
+
+    selection = SketchSelection()
+    selection.point_ids = []
+    selection.entity_ids = [line_id, circle_id]
+    assert TangentConstraint.can_apply_to(selection, sketch) is True
