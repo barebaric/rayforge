@@ -158,21 +158,16 @@ class GcodeEncoder(OpsEncoder):
         prev_x, prev_y, prev_z = self.current_pos
 
         if self.dialect.omit_unchanged_coords:
-            x_cmd = (
-                f" X{self._format_coord(x)}"
-                if not math.isclose(x, prev_x)
-                else ""
-            )
-            y_cmd = (
-                f" Y{self._format_coord(y)}"
-                if not math.isclose(y, prev_y)
-                else ""
-            )
-            z_cmd = (
-                f" Z{self._format_coord(z)}"
-                if not math.isclose(z, prev_z)
-                else ""
-            )
+            x_changed = not math.isclose(x, prev_x)
+            y_changed = not math.isclose(y, prev_y)
+            z_changed = not math.isclose(z, prev_z)
+
+            x_cmd = f" X{self._format_coord(x)}" if x_changed else ""
+            y_cmd = f" Y{self._format_coord(y)}" if y_changed else ""
+            z_cmd = f" Z{self._format_coord(z)}" if z_changed else ""
+
+            if not (x_changed or y_changed or z_changed):
+                x_cmd = f" X{self._format_coord(x)}"
         else:
             x_cmd = f" X{self._format_coord(x)}"
             y_cmd = f" Y{self._format_coord(y)}"
