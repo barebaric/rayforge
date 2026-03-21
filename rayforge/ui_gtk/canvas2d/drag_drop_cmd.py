@@ -546,8 +546,8 @@ class DragDropCmd:
 
             edit_cmd = self.main_window.doc_editor.edit
 
-            # Create the sketch instance at the drop position
-            new_workpiece = edit_cmd.add_sketch_instance(
+            # Create the geometry provider instance at the drop position
+            new_workpiece = edit_cmd.add_geometry_provider_instance(
                 sketch_uid, position_mm
             )
 

@@ -10,7 +10,8 @@ from ..core.workflow import Workflow
 from .stock_cmd import RemoveStockAssetCommand
 
 if TYPE_CHECKING:
-    from ..core.sketcher.sketch import Sketch
+    from ..core.asset import IAsset
+    from ..core.geometry_provider import IGeometryProvider
     from ..core.source_asset import SourceAsset
     from .editor import DocEditor
 
@@ -183,11 +184,11 @@ class EditCmd:
         self,
         items: List[DocItem],
         source_assets: Optional[List["SourceAsset"]] = None,
-        sketches: Optional[List["Sketch"]] = None,
+        assets: Optional[List["IAsset"]] = None,
         name: str = "Add item(s)",
     ) -> List[DocItem]:
         """
-        Adds a list of items and their associated source assets/sketches to the
+        Adds a list of items and their associated source assets to the
         document.
         """
         if not items:
@@ -203,10 +204,10 @@ class EditCmd:
                 for asset in source_assets:
                     self._editor.doc.add_asset(asset)
 
-            # Register sketches.
-            if sketches:
-                for sketch in sketches:
-                    self._editor.doc.add_asset(sketch)
+            # Register assets.
+            if assets:
+                for asset in assets:
+                    self._editor.doc.add_asset(asset)
 
             for item in items:
                 command = ListItemCommand(
@@ -303,14 +304,14 @@ class EditCmd:
             logger.debug("Paste counter reset to 0 due to context change.")
             self._paste_counter = 0
 
-    def add_sketch_instance(
-        self, sketch_uid: str, position_mm: Tuple[float, float]
+    def add_geometry_provider_instance(
+        self, provider_uid: str, position_mm: Tuple[float, float]
     ) -> WorkPiece:
         """
-        Creates a new WorkPiece instance from a sketch definition.
+        Creates a new WorkPiece instance from a geometry provider.
 
         Args:
-            sketch_uid: The UID of the sketch definition to instantiate
+            provider_uid: The UID of the geometry provider to instantiate
             position_mm: The (x, y) position in mm where to place the instance
 
         Returns:
@@ -319,15 +320,18 @@ class EditCmd:
         history = self._editor.history_manager
         target_layer = self._editor.doc.active_layer
 
-        sketch_def = cast(
-            Optional["Sketch"], self._editor.doc.get_asset_by_uid(sketch_uid)
+        provider = cast(
+            Optional["IGeometryProvider"],
+            self._editor.doc.get_asset_by_uid(provider_uid),
         )
-        if not sketch_def:
-            raise ValueError(f"Sketch with UID {sketch_uid} not found.")
+        if not provider:
+            raise ValueError(
+                f"Geometry provider with UID {provider_uid} not found."
+            )
 
         # Create new WorkPiece using the factory method which handles
         # correct sizing and initialization.
-        new_workpiece = WorkPiece.from_geometry_provider(sketch_def)
+        new_workpiece = WorkPiece.from_geometry_provider(provider)
 
         width, height = new_workpiece.natural_size
         new_workpiece.pos = (
@@ -335,13 +339,13 @@ class EditCmd:
             position_mm[1] - height / 2,
         )
 
-        with history.transaction(_("Add Sketch Instance")) as t:
+        with history.transaction(_(f"Add {provider.name} Instance")) as t:
             command = ListItemCommand(
                 owner_obj=target_layer,
                 item=new_workpiece,
                 undo_command="remove_child",
                 redo_command="add_child",
-                name=_("Add Sketch Instance"),
+                name=_(f"Add {provider.name} Instance"),
             )
             t.execute(command)
 

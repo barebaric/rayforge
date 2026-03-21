@@ -118,7 +118,7 @@ class SketchModeCmd:
         if self._is_editing_new_sketch:
             center_x = self._win.sketch_studio.width_mm / 2
             center_y = self._win.sketch_studio.height_mm / 2
-            self._editor.edit.add_sketch_instance(
+            self._editor.edit.add_geometry_provider_instance(
                 sketch.uid, (center_x, center_y)
             )
 
