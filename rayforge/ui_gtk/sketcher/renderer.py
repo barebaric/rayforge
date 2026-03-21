@@ -510,23 +510,12 @@ class SketchRenderer:
 
         for eid in self.element.selection.entity_ids:
             ent = self._get_entity_by_id(eid)
-            if isinstance(ent, Line):
-                entity_points.add(ent.p1_idx)
-                entity_points.add(ent.p2_idx)
-            elif isinstance(ent, Arc):
-                entity_points.add(ent.start_idx)
-                entity_points.add(ent.end_idx)
-                entity_points.add(ent.center_idx)
-            elif isinstance(ent, Bezier):
-                entity_points.add(ent.start_idx)
-                entity_points.add(ent.end_idx)
-            elif isinstance(ent, Circle):
-                entity_points.add(ent.center_idx)
-                entity_points.add(ent.radius_pt_idx)
-            elif isinstance(ent, TextBoxEntity):
+            if isinstance(ent, TextBoxEntity):
                 entity_points.update(
                     ent.get_all_frame_point_ids(self.element.sketch.registry)
                 )
+            elif ent:
+                entity_points.update(ent.get_point_ids())
 
         to_screen = to_screen_matrix.transform_point
 
