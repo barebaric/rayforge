@@ -25,8 +25,6 @@ from ...shared.util.colors import ColorSet
 from ..canvas import WorldSurface, Canvas, CanvasElement
 from ..shared.gtk_color import GtkColorResolver
 from ..shared.keyboard import is_primary_modifier
-from ..sketcher.editor import SketchEditor
-from ..sketcher.sketchelement import SketchElement
 from .elements.axis_extent_frame import (
     AxisExtentFrameElement,
     WorkareaBackgroundElement,
@@ -105,10 +103,6 @@ class WorkSurface(WorldSurface):
         # interfere with popover/menu closing logic.
         # We'll manage focus manually.
         self.set_focus_on_click(False)
-
-        # The SketchEditor manages sketch editing sessions. It is activated
-        # when a SketchElement becomes the edit_context.
-        self.sketch_editor = SketchEditor(parent_window)
 
         # DotElement size is in world units (mm) and is dynamically
         # updated to maintain a constant pixel size on screen.
@@ -265,10 +259,6 @@ class WorkSurface(WorldSurface):
         """
         if self._click_to_zero_mode and n_press == 1:
             self.click_to_zero_cancelled.send(self)
-            return
-
-        if isinstance(self.edit_context, SketchElement):
-            self.sketch_editor.handle_right_click(gesture, n_press, x, y)
             return
 
         self.right_click_context = None  # Reset context on each click
@@ -498,7 +488,6 @@ class WorkSurface(WorldSurface):
             f"Button press: n_press={n_press}, pos=({x:.2f}, {y:.2f})"
         )
 
-        old_context = self.edit_context
         # The base class method handles hit testing and updates
         # self.edit_context
         super().on_button_press(gesture, n_press, x, y)
@@ -523,13 +512,6 @@ class WorkSurface(WorldSurface):
                     self, stock_item=stock_item
                 )
                 return
-
-        # Manage SketchEditor activation based on context changes.
-        if old_context is not new_context:
-            if isinstance(old_context, SketchElement):
-                self.sketch_editor.deactivate()
-            if isinstance(new_context, SketchElement):
-                self.sketch_editor.activate(new_context)
 
         # After the click, check if the active element dictates a layer change.
         if new_context and isinstance(new_context.data, WorkPiece):
@@ -1142,11 +1124,6 @@ class WorkSurface(WorldSurface):
         state: Gdk.ModifierType,
     ) -> bool:
         """Handles key press events for the work surface."""
-        # First, dispatch to sketch editor if a sketch is active
-        if isinstance(self.edit_context, SketchElement):
-            if self.sketch_editor.handle_key_press(keyval, keycode, state):
-                return True  # Event handled by sketch editor
-
         # Let the base WorldSurface class handle generic keys (e.g., '1')
         if super().on_key_pressed(controller, keyval, keycode, state):
             return True
