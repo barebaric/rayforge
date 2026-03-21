@@ -27,12 +27,17 @@ class SourceAsset(IAsset):
     height_px: Optional[int] = None
     width_mm: float = 0.0
     height_mm: float = 0.0
-    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+    _uid: str = field(init=False, default_factory=lambda: str(uuid.uuid4()))
     _name: str = field(init=False, repr=False)
     extra: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         self._name = self.source_file.name
+
+    @property
+    def uid(self) -> str:
+        """The unique identifier of the asset instance."""
+        return self._uid
 
     # --- IAsset Protocol Implementation ---
 
@@ -127,7 +132,6 @@ class SourceAsset(IAsset):
         )
 
         instance = cls(
-            uid=data["uid"],
             source_file=Path(data["source_file"]),
             original_data=original_data,
             base_render_data=base_render_data,
@@ -138,6 +142,8 @@ class SourceAsset(IAsset):
             width_mm=data.get("width_mm", 0.0),
             height_mm=data.get("height_mm", 0.0),
         )
+        if "uid" in data:
+            instance._uid = data["uid"]
         if "name" in data:
             instance.name = data["name"]
         instance.extra = extra

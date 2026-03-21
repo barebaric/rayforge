@@ -327,7 +327,7 @@ class EditCmd:
 
         # Create new WorkPiece using the factory method which handles
         # correct sizing and initialization.
-        new_workpiece = WorkPiece.from_sketch(sketch_def)
+        new_workpiece = WorkPiece.from_geometry_provider(sketch_def)
 
         width, height = new_workpiece.natural_size
         new_workpiece.pos = (

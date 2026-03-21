@@ -254,8 +254,7 @@ class WorkSurface(WorldSurface):
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
     ):
         """
-        Handles right-clicks. Dispatches to the SketchEditor if a sketch is
-        being edited, otherwise shows the standard WorkSurface context menu.
+        Handles right-clicks. Shows the standard WorkSurface context menu.
         """
         if self._click_to_zero_mode and n_press == 1:
             self.click_to_zero_cancelled.send(self)
@@ -459,8 +458,8 @@ class WorkSurface(WorldSurface):
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
         """
-        Overrides base to add application-specific layer selection logic,
-        handle double-click editing, and manage the SketchEditor lifecycle.
+        Overrides base to add application-specific layer selection logic
+        and handle double-click editing.
         """
         logger.debug("WorkSurface.on_button_press fired")
 

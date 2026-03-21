@@ -32,9 +32,9 @@ class AssetTypeRegistry:
         from .source_asset import SourceAsset
         from .stock_asset import StockAsset
 
+        self._types["sketch"] = Sketch
         self._types["stock"] = StockAsset
         self._types["source"] = SourceAsset
-        self._types["sketch"] = Sketch
         self._builtins_registered = True
 
     def register(

@@ -10,8 +10,10 @@ class IAsset(Protocol):
     that provides these properties will be considered an IAsset.
     """
 
-    uid: str
-    """The unique identifier of the asset instance."""
+    @property
+    def uid(self) -> str:
+        """The unique identifier of the asset instance."""
+        ...
 
     @property
     def name(self) -> str:

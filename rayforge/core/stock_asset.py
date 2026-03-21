@@ -22,7 +22,7 @@ class StockAsset(IAsset):
     def __init__(
         self, name: str = "Stock", geometry: Optional[Geometry] = None
     ):
-        self.uid: str = str(uuid.uuid4())
+        self._uid: str = str(uuid.uuid4())
         self._name: str = name
         self.geometry: Geometry = (
             geometry if geometry is not None else Geometry()
@@ -30,8 +30,23 @@ class StockAsset(IAsset):
         self.thickness: Optional[float] = None
         self.material_uid: Optional[str] = None
         self._hidden: bool = False
-        self.updated = Signal()
+        self._updated = Signal()
         self.extra: Dict[str, Any] = {}
+
+    @property
+    def uid(self) -> str:
+        """The unique identifier of the asset instance."""
+        return self._uid
+
+    @uid.setter
+    def uid(self, value: str) -> None:
+        """Set the unique identifier. Used for deserialization."""
+        self._uid = value
+
+    @property
+    def updated(self) -> Signal:
+        """Signal emitted when the stock asset changes."""
+        return self._updated
 
     @property
     def name(self) -> str:
@@ -43,7 +58,7 @@ class StockAsset(IAsset):
         """Sets the asset name and sends an update signal if changed."""
         if self._name != value:
             self._name = value
-            self.updated.send(self)
+            self._updated.send(self)
 
     @property
     def asset_type_name(self) -> str:
@@ -110,7 +125,7 @@ class StockAsset(IAsset):
         """Setter method for use with undo commands."""
         if self.thickness != value:
             self.thickness = value
-            self.updated.send(self)
+            self._updated.send(self)
 
     @property
     def material(self) -> Optional["Material"]:
@@ -136,7 +151,7 @@ class StockAsset(IAsset):
         """
         if self.material_uid != material_uid:
             self.material_uid = material_uid
-            self.updated.send(self)
+            self._updated.send(self)
 
     def get_natural_size(self) -> tuple[float, float]:
         """
@@ -159,7 +174,7 @@ class StockAsset(IAsset):
         """Sets the hidden state and sends an update signal if changed."""
         if self._hidden != value:
             self._hidden = value
-            self.updated.send(self)
+            self._updated.send(self)
 
     def set_hidden(self, value: bool):
         """Setter method for use with undo commands."""
