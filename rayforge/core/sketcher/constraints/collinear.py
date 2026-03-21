@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Any, List, TYPE_CHECKING
+from typing import Dict, Any, List, Optional, TYPE_CHECKING
 from gettext import gettext as _
 from ...geo import Point
 from .base import Constraint
@@ -8,6 +8,8 @@ from ..types import EntityID
 if TYPE_CHECKING:
     from ..params import ParameterContext
     from ..registry import EntityRegistry
+    from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 
 class CollinearConstraint(Constraint):
@@ -24,6 +26,15 @@ class CollinearConstraint(Constraint):
         self.p1: EntityID = p1
         self.p2: EntityID = p2
         self.p3: EntityID = p3
+
+    @classmethod
+    def can_apply_to(
+        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+    ) -> bool:
+        return (
+            len(selection.point_ids) == 3
+            and not selection.entity_ids
+        )
 
     @staticmethod
     def get_type_name() -> str:

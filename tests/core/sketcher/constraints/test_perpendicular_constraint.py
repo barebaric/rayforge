@@ -4,6 +4,8 @@ from scipy.optimize import check_grad
 import math
 from types import SimpleNamespace
 from unittest.mock import MagicMock
+from rayforge.core.sketcher import Sketch
+from rayforge.core.sketcher.selection import SketchSelection
 from rayforge.core.sketcher.constraints import PerpendicularConstraint
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.registry import EntityRegistry
@@ -352,3 +354,17 @@ def test_perpendicular_draw(setup_env):
     c.draw(ctx, reg, to_screen, is_selected=True)
     c.draw(ctx, reg, to_screen, is_hovered=True)
     c.draw(ctx, reg, to_screen, point_radius=10.0)
+
+
+def test_perpendicular_can_apply_to_two_lines():
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+    p3 = sketch.add_point(0, 10)
+    line1_id = sketch.add_line(p1, p2)
+    line2_id = sketch.add_line(p1, p3)
+
+    selection = SketchSelection()
+    selection.point_ids = []
+    selection.entity_ids = [line1_id, line2_id]
+    assert PerpendicularConstraint.can_apply_to(selection, sketch) is True

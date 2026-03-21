@@ -46,6 +46,10 @@ class PerpendicularConstraint(Constraint):
         self.e2_id: EntityID = e2_id
 
     @classmethod
+    def get_type_key(cls) -> str:
+        return "perp"
+
+    @classmethod
     def can_apply_to(
         cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
     ) -> bool:

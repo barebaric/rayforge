@@ -56,6 +56,14 @@ class Constraint:
         """
         return False
 
+    @classmethod
+    def get_type_key(cls) -> Optional[str]:
+        """
+        Returns the string key used to identify this constraint type.
+        Returns None for constraints that cannot be created by users.
+        """
+        return None
+
     @staticmethod
     def get_type_name() -> str:
         """Returns to human-readable name of this constraint type."""

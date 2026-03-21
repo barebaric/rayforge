@@ -4,6 +4,8 @@ from scipy.optimize import check_grad
 from functools import partial
 from types import SimpleNamespace
 from unittest.mock import MagicMock
+from rayforge.core.sketcher import Sketch
+from rayforge.core.sketcher.selection import SketchSelection
 from rayforge.core.sketcher.constraints import CoincidentConstraint
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.registry import EntityRegistry
@@ -147,3 +149,14 @@ def test_coincident_draw(setup_env):
     c.draw(ctx, reg, to_screen, is_selected=True)
     c.draw(ctx, reg, to_screen, is_hovered=True)
     c.draw(ctx, reg, to_screen, point_radius=10.0)
+
+
+def test_coincident_can_apply_to():
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+
+    selection = SketchSelection()
+    selection.point_ids = [p1, p2]
+    selection.entity_ids = []
+    assert CoincidentConstraint.can_apply_to(selection, sketch) is True

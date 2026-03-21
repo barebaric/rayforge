@@ -28,10 +28,9 @@ class CoincidentConstraintTool(SketchTool):
     ) -> bool:
         sel = self.element.selection
         sketch = self.element.sketch
-        return sketch.supports_constraint(
-            "coincident", sel.point_ids, sel.entity_ids
-        ) or sketch.supports_constraint(
-            "point_on_line", sel.point_ids, sel.entity_ids
+        return (
+            CoincidentConstraint.can_apply_to(sel, sketch)
+            or PointOnLineConstraint.can_apply_to(sel, sketch)
         )
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
@@ -51,9 +50,7 @@ class CoincidentConstraintTool(SketchTool):
         sel = self.element.selection
         sketch = self.element.sketch
 
-        if sketch.supports_constraint(
-            "coincident", sel.point_ids, sel.entity_ids
-        ):
+        if CoincidentConstraint.can_apply_to(sel, sketch):
             p1_id, p2_id = sel.point_ids
             constr = CoincidentConstraint(p1_id, p2_id)
             cmd = AddItemsCommand(
@@ -62,9 +59,7 @@ class CoincidentConstraintTool(SketchTool):
                 constraints=[constr],
             )
             self.element.execute_command(cmd)
-        elif sketch.supports_constraint(
-            "point_on_line", sel.point_ids, sel.entity_ids
-        ):
+        elif PointOnLineConstraint.can_apply_to(sel, sketch):
             sel_entity_id = sel.entity_ids[0]
             target_pid = sel.point_ids[0]
             constr = PointOnLineConstraint(target_pid, sel_entity_id)
