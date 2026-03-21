@@ -1,8 +1,8 @@
 from __future__ import annotations
 import uuid
-from typing import Dict, Any, Optional, TYPE_CHECKING
+from typing import Dict, Any, Optional, TYPE_CHECKING, ClassVar
+from gettext import gettext as _
 from blinker import Signal
-
 from ..context import get_context
 from .geo import Geometry
 from .asset import IAsset
@@ -18,6 +18,14 @@ class StockAsset(IAsset):
     This is not a DocItem and does not exist in the document hierarchy.
     It defines the properties of a stock that can be instanced as a StockItem.
     """
+
+    is_addable: ClassVar[bool] = True
+    asset_type_name: ClassVar[str] = "stock"
+    display_icon_name: ClassVar[str] = "stock-symbolic"
+    is_reorderable: ClassVar[bool] = True
+    is_draggable_to_canvas: ClassVar[bool] = False
+    type_display_name: ClassVar[str] = _("Stock Material")
+    can_edit: ClassVar[bool] = True
 
     def __init__(
         self, name: str = "Stock", geometry: Optional[Geometry] = None
@@ -59,26 +67,6 @@ class StockAsset(IAsset):
         if self._name != value:
             self._name = value
             self._updated.send(self)
-
-    @property
-    def asset_type_name(self) -> str:
-        """The machine-readable type name for the asset list."""
-        return "stock"
-
-    @property
-    def display_icon_name(self) -> str:
-        """The icon name for the asset list."""
-        return "stock-symbolic"
-
-    @property
-    def is_reorderable(self) -> bool:
-        """Whether this asset type supports reordering in the asset list."""
-        return True
-
-    @property
-    def is_draggable_to_canvas(self) -> bool:
-        """Whether this asset can be dragged from the list onto the canvas."""
-        return False
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the StockAsset to a dictionary."""

@@ -2,8 +2,9 @@ from __future__ import annotations
 import base64
 import uuid
 from pathlib import Path
-from typing import Optional, Dict, Any, TYPE_CHECKING
+from typing import Optional, Dict, Any, TYPE_CHECKING, ClassVar
 from dataclasses import dataclass, field
+from gettext import gettext as _
 
 from .asset import IAsset
 
@@ -17,6 +18,14 @@ class SourceAsset(IAsset):
     An immutable data record for a raw imported file and its base render.
     This is stored once per file in the document's central asset registry.
     """
+
+    is_addable: ClassVar[bool] = False
+    asset_type_name: ClassVar[str] = "source"
+    display_icon_name: ClassVar[str] = "image-x-generic-symbolic"
+    is_reorderable: ClassVar[bool] = False
+    is_draggable_to_canvas: ClassVar[bool] = True
+    type_display_name: ClassVar[str] = _("Source")
+    can_edit: ClassVar[bool] = False
 
     source_file: Path
     original_data: bytes
@@ -50,26 +59,6 @@ class SourceAsset(IAsset):
     def name(self, value: str) -> None:
         """Sets the asset name. Provided for protocol compatibility."""
         self._name = value
-
-    @property
-    def asset_type_name(self) -> str:
-        """A unique, machine-readable name like "source" or "sketch"."""
-        return "source"
-
-    @property
-    def display_icon_name(self) -> str:
-        """The name of the icon representing the asset type."""
-        return "image-x-generic-symbolic"
-
-    @property
-    def is_reorderable(self) -> bool:
-        """Indicates if this asset type supports manual reordering."""
-        return False
-
-    @property
-    def is_draggable_to_canvas(self) -> bool:
-        """Indicates if this asset can be dragged onto the canvas."""
-        return True
 
     @property
     def hidden(self) -> bool:

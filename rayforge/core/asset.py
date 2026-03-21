@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable, Dict, Any
+from typing import Protocol, runtime_checkable, Dict, Any, ClassVar
 
 
 @runtime_checkable
@@ -9,6 +9,14 @@ class IAsset(Protocol):
     This allows for structural subtyping (static duck typing), so any class
     that provides these properties will be considered an IAsset.
     """
+
+    is_addable: ClassVar[bool]
+    asset_type_name: ClassVar[str]
+    display_icon_name: ClassVar[str]
+    is_reorderable: ClassVar[bool]
+    is_draggable_to_canvas: ClassVar[bool]
+    type_display_name: ClassVar[str]
+    can_edit: ClassVar[bool]
 
     @property
     def uid(self) -> str:
@@ -30,26 +38,6 @@ class IAsset(Protocol):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "IAsset":
         """Deserializes the asset from a dictionary."""
-        ...
-
-    @property
-    def asset_type_name(self) -> str:
-        """A unique, machine-readable name like "stock" or "sketch"."""
-        ...
-
-    @property
-    def display_icon_name(self) -> str:
-        """The name of the icon representing the asset type."""
-        ...
-
-    @property
-    def is_reorderable(self) -> bool:
-        """Indicates if this asset type supports manual reordering."""
-        ...
-
-    @property
-    def is_draggable_to_canvas(self) -> bool:
-        """Indicates if this asset can be dragged onto the canvas."""
         ...
 
     @property
