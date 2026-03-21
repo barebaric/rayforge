@@ -37,6 +37,7 @@ class TextBoxTool(SketchTool):
     ICON = "sketch-text-symbolic"
     LABEL = _("Text Box")
     SHORTCUTS = ["gt"]
+    CURSOR_ICON = "sketch-text-symbolic"
     EDITING_SHORTCUTS = []
 
     def __init__(self, element):

@@ -15,6 +15,7 @@ class RectangleTool(SketchTool):
     ICON = "sketch-rect-symbolic"
     LABEL = _("Rectangle")
     SHORTCUTS = ["gr"]
+    CURSOR_ICON = "sketch-rect-symbolic"
 
     def __init__(self, element):
         super().__init__(element)
