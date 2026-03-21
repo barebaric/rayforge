@@ -31,7 +31,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
     - Converts connected Line entities to Bezier entities
 
     When converting from SMOOTH/SYMMETRIC to SHARP:
-    - Removes control point offsets from connected beziers
+    - Control points are preserved, but co-linearity is no longer enforced
     """
 
     def __init__(
@@ -186,13 +186,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
 
         self._old_waypoint_type = waypoint.waypoint_type
 
-        if self.new_type == WaypointType.SHARP:
-            for b in connected_beziers:
-                if b.start_idx == waypoint.id:
-                    b.cp1 = None
-                if b.end_idx == waypoint.id:
-                    b.cp2 = None
-        elif self.new_type in (WaypointType.SMOOTH, WaypointType.SYMMETRIC):
+        if self.new_type in (WaypointType.SMOOTH, WaypointType.SYMMETRIC):
             connected_lines = self._find_connected_lines(registry, waypoint.id)
             if connected_lines:
                 self._converted_lines = connected_lines
