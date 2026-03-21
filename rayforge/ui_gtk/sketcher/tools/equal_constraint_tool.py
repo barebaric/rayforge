@@ -2,7 +2,11 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional, Union
 
-from ....core.sketcher.commands import AddItemsCommand, RemoveItemsCommand
+from ....core.sketcher.commands import (
+    AddItemsCommand,
+    EqualConstraintCommand,
+    RemoveItemsCommand,
+)
 from ....core.sketcher.constraints import EqualLengthConstraint
 from ....core.sketcher.entities import Entity, Point
 from .base import SketchTool
@@ -49,20 +53,17 @@ class EqualConstraintTool(SketchTool):
         if not editor:
             return
 
-        selected_ids = set(sel.entity_ids)
-        existing_constraints_to_merge = []
-        final_ids = set(selected_ids)
+        result = EqualConstraintCommand.find_and_merge_constraints(
+            sketch, sel.entity_ids
+        )
 
-        for constr in sketch.constraints:
-            if isinstance(constr, EqualLengthConstraint):
-                if not selected_ids.isdisjoint(constr.entity_ids):
-                    existing_constraints_to_merge.append(constr)
-                    final_ids.update(constr.entity_ids)
+        if result is None:
+            return
 
         remove_cmd = RemoveItemsCommand(
-            sketch, "", constraints=existing_constraints_to_merge
+            sketch, "", constraints=result.constraints_to_remove
         )
-        new_constr = EqualLengthConstraint(list(final_ids))
+        new_constr = EqualLengthConstraint(result.final_entity_ids)
         add_cmd = AddItemsCommand(
             sketch, _("Add Equal Constraint"), constraints=[new_constr]
         )

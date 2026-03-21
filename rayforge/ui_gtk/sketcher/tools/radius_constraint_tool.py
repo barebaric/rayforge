@@ -1,9 +1,11 @@
 import logging
-import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional, Union
 
-from ....core.sketcher.commands import AddItemsCommand
+from ....core.sketcher.commands import (
+    AddItemsCommand,
+    CreateOrEditConstraintCommand,
+)
 from ....core.sketcher.constraints import RadiusConstraint
 from ....core.sketcher.entities import Arc, Circle, Entity, Point
 from .base import SketchTool
@@ -53,20 +55,15 @@ class RadiusConstraintTool(SketchTool):
         eid = sel.entity_ids[0]
         e = sketch.registry.get_entity(eid)
 
-        radius = 0.0
-        if isinstance(e, Arc):
-            s = sketch.registry.get_point(e.start_idx)
-            c = sketch.registry.get_point(e.center_idx)
-            if s and c:
-                radius = math.hypot(s.x - c.x, s.y - c.y)
-        elif isinstance(e, Circle):
-            r_pt = sketch.registry.get_point(e.radius_pt_idx)
-            c = sketch.registry.get_point(e.center_idx)
-            if r_pt and c:
-                radius = math.hypot(r_pt.x - c.x, r_pt.y - c.y)
+        if not isinstance(e, (Arc, Circle)):
+            logger.warning("Could not add radius constraint.")
+            return
 
-        if radius > 0 and e:
-            constr = RadiusConstraint(e.id, radius)
+        constr = CreateOrEditConstraintCommand.create_constraint_for_entity(
+            sketch, e
+        )
+
+        if constr and isinstance(constr, RadiusConstraint):
             cmd = AddItemsCommand(
                 sketch, _("Add Radius Constraint"), constraints=[constr]
             )

@@ -2,7 +2,10 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional, Union
 
-from ....core.sketcher.commands import AddItemsCommand
+from ....core.sketcher.commands import (
+    AddItemsCommand,
+    SymmetryConstraintCommand,
+)
 from ....core.sketcher.constraints import SymmetryConstraint
 from ....core.sketcher.entities import Entity, Point
 from .base import SketchTool
@@ -49,23 +52,23 @@ class SymmetryConstraintTool(SketchTool):
         if not editor:
             return
 
-        point_ids = sel.point_ids
-        entity_ids = sel.entity_ids
-        constr = None
+        params = SymmetryConstraintCommand.determine_constraint_params(
+            sel.point_ids, sel.entity_ids
+        )
 
-        if len(point_ids) == 3 and not entity_ids:
-            p1 = point_ids[0]
-            p2 = point_ids[1]
-            center = point_ids[2]
-            constr = SymmetryConstraint(p1, p2, center=center)
-        elif len(point_ids) == 2 and len(entity_ids) == 1:
-            p1 = point_ids[0]
-            p2 = point_ids[1]
-            axis = entity_ids[0]
-            constr = SymmetryConstraint(p1, p2, axis=axis)
+        if params is None:
+            return
 
-        if constr:
-            cmd = AddItemsCommand(
-                sketch, _("Add Symmetry Constraint"), constraints=[constr]
+        if params.center_id is not None:
+            constr = SymmetryConstraint(
+                params.p1_id, params.p2_id, center=params.center_id
             )
-            self.element.execute_command(cmd)
+        else:
+            constr = SymmetryConstraint(
+                params.p1_id, params.p2_id, axis=params.axis_id
+            )
+
+        cmd = AddItemsCommand(
+            sketch, _("Add Symmetry Constraint"), constraints=[constr]
+        )
+        self.element.execute_command(cmd)
