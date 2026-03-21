@@ -182,10 +182,4 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
             self._add_cmd._do_undo()
 
     def _get_command_label(self, constraint: Constraint) -> str:
-        if isinstance(constraint, RadiusConstraint):
-            return _("Add Radius")
-        elif isinstance(constraint, DistanceConstraint):
-            return _("Add Distance")
-        elif isinstance(constraint, DiameterConstraint):
-            return _("Add Diameter")
-        return ""
+        return _("Add {}").format(constraint.get_type_name())
