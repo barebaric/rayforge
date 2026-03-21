@@ -256,3 +256,120 @@ def test_text_box_get_set_state(registry):
     # Restore state
     tb.set_state(state)
     assert tb.construction is False
+
+
+def test_text_box_get_fourth_corner_id(registry):
+    """Tests finding the fourth corner of a text box frame."""
+    origin = registry.add_point(0, 0)
+    width = registry.add_point(100, 0)
+    height = registry.add_point(0, 50)
+    p4 = registry.add_point(100, 50)
+
+    line2 = registry.add_line(width, p4)
+
+    box = TextBoxEntity(
+        id=100,
+        origin_id=origin,
+        width_id=width,
+        height_id=height,
+        content="Test",
+        construction_line_ids=[line2],
+    )
+    registry.entities.append(box)
+
+    result = box.get_fourth_corner_id(registry)
+
+    assert result == p4
+
+
+def test_text_box_get_fourth_corner_id_from_reverse_line(registry):
+    """Tests finding fourth corner from a line going the other direction."""
+    origin = registry.add_point(0, 0)
+    width = registry.add_point(100, 0)
+    height = registry.add_point(0, 50)
+    p4 = registry.add_point(100, 50)
+
+    line2 = registry.add_line(p4, width)
+
+    box = TextBoxEntity(
+        id=100,
+        origin_id=origin,
+        width_id=width,
+        height_id=height,
+        content="Test",
+        construction_line_ids=[line2],
+    )
+    registry.entities.append(box)
+
+    result = box.get_fourth_corner_id(registry)
+
+    assert result == p4
+
+
+def test_text_box_get_fourth_corner_id_no_construction_lines(registry):
+    """Tests that None is returned when no construction lines exist."""
+    origin = registry.add_point(0, 0)
+    width = registry.add_point(100, 0)
+    height = registry.add_point(0, 50)
+
+    box = TextBoxEntity(
+        id=100,
+        origin_id=origin,
+        width_id=width,
+        height_id=height,
+        content="Test",
+        construction_line_ids=[],
+    )
+    registry.entities.append(box)
+
+    result = box.get_fourth_corner_id(registry)
+
+    assert result is None
+
+
+def test_text_box_get_fourth_corner_id_wrong_line(registry):
+    """Tests that None is returned when no line connects to width point."""
+    origin = registry.add_point(0, 0)
+    width = registry.add_point(100, 0)
+    height = registry.add_point(0, 50)
+    other = registry.add_point(200, 200)
+
+    wrong_line = registry.add_line(origin, other)
+
+    box = TextBoxEntity(
+        id=100,
+        origin_id=origin,
+        width_id=width,
+        height_id=height,
+        content="Test",
+        construction_line_ids=[wrong_line],
+    )
+    registry.entities.append(box)
+
+    result = box.get_fourth_corner_id(registry)
+
+    assert result is None
+
+
+def test_text_box_get_fourth_corner_id_ignores_origin_and_height(registry):
+    """Tests that lines to origin or height are ignored."""
+    origin = registry.add_point(0, 0)
+    width = registry.add_point(100, 0)
+    height = registry.add_point(0, 50)
+
+    line_to_origin = registry.add_line(width, origin)
+    line_to_height = registry.add_line(width, height)
+
+    box = TextBoxEntity(
+        id=100,
+        origin_id=origin,
+        width_id=width,
+        height_id=height,
+        content="Test",
+        construction_line_ids=[line_to_origin, line_to_height],
+    )
+    registry.entities.append(box)
+
+    result = box.get_fourth_corner_id(registry)
+
+    assert result is None
