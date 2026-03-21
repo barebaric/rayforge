@@ -208,7 +208,7 @@ class AIWorkpieceGeneratorDialog(PatchedDialogWindow):
         """Add a sketch-based workpiece to the document."""
         self._editor.doc.add_asset(sketch)
 
-        workpiece = WorkPiece.from_sketch(sketch)
+        workpiece = WorkPiece.from_geometry_provider(sketch)
 
         machine_dims = self._editor.machine_dimensions
         if machine_dims:

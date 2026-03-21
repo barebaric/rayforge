@@ -20,7 +20,6 @@ from .source_asset import SourceAsset
 from .workpiece import WorkPiece
 
 if TYPE_CHECKING:
-    from .sketcher.sketch import Sketch
     from .stock import StockItem
     from .stock_asset import StockAsset
 
@@ -59,7 +58,6 @@ class Doc(DocItem):
         """Deserializes the document from a dictionary."""
         from .stock import StockItem
         from .stock_asset import StockAsset
-        from .sketcher.sketch import Sketch
         from .source_asset import SourceAsset
         from .geo import Geometry
         from .matrix import Matrix
@@ -103,7 +101,9 @@ class Doc(DocItem):
             doc.add_asset(StockAsset.from_dict(sa_data))
         sketches_data = data.get("sketches", {})
         for uid, s_data in sketches_data.items():
-            doc.add_asset(Sketch.from_dict(s_data))
+            sketch_cls = asset_type_registry.get("sketch")
+            if sketch_cls:
+                doc.add_asset(sketch_cls.from_dict(s_data))
         source_assets_data = data.get("source_assets", {})
         for uid, src_data in source_assets_data.items():
             doc.add_asset(SourceAsset.from_dict(src_data))
@@ -252,15 +252,13 @@ class Doc(DocItem):
         }
 
     @property
-    def sketches(self) -> Dict[str, "Sketch"]:
+    def sketches(self) -> Dict[str, IAsset]:
         """
         Returns a dictionary of all Sketches for compatibility.
         NOTE: The order of this dictionary is not guaranteed.
         """
-        from .sketcher.sketch import Sketch
-
         return {
-            uid: cast(Sketch, asset)
+            uid: asset
             for uid, asset in self.assets.items()
             if asset.asset_type_name == "sketch"
         }

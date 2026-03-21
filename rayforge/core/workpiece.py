@@ -25,7 +25,9 @@ with warnings.catch_warnings():
     import pyvips
 
 from ..context import get_context
+from .asset_registry import asset_type_registry
 from .geo import Geometry, Rect, Point
+from .geometry_provider import IGeometryProvider
 from .item import DocItem
 from .matrix import Matrix
 from .source_asset_segment import SourceAssetSegment
@@ -34,10 +36,8 @@ from .tab import Tab
 if TYPE_CHECKING:
     from ..image.base_renderer import Renderer, RenderSpecification
     from .asset import IAsset
-    from .geometry_provider import IGeometryProvider
     from .layer import Layer
     from .source_asset import SourceAsset
-    from .sketcher.sketch import Sketch
 
 
 logger = logging.getLogger(__name__)
@@ -97,6 +97,7 @@ class WorkPiece(DocItem):
         self.geometry_provider_uid: Optional[str] = None
         self._geometry_provider_params: Dict[str, Any] = {}
         self._transient_geometry_provider: Optional["IGeometryProvider"] = None
+        self._geometry_provider_connection: Optional[Any] = None
 
         self.source_asset_uid: Optional[str] = None
 
@@ -129,29 +130,23 @@ class WorkPiece(DocItem):
         return False
 
     @classmethod
-    def from_sketch(cls, sketch: "Sketch") -> "WorkPiece":
+    def from_geometry_provider(
+        cls, provider: "IGeometryProvider"
+    ) -> "WorkPiece":
         """
-        Factory method to create a WorkPiece from a Sketch definition.
+        Factory method to create a WorkPiece from an IGeometryProvider.
 
-        This method performs a transient solve of the sketch to determine
+        This method generates geometry from the provider to determine
         its natural dimensions and initialize the WorkPiece's transformation
         matrix correctly before it is added to the document.
         """
-        from .sketcher.sketch import (
-            Sketch,
-        )  # Lazy import to avoid circular dep
-
-        # 1. Solve a transient copy to determine natural size without side
-        # effects.
+        # 1. Generate geometry to determine natural size.
         geometry = None
         fill_geometries = []
         min_x, min_y = 0.0, 0.0
 
         try:
-            temp_sketch = Sketch.from_dict(sketch.to_dict())
-            temp_sketch.solve()
-            geometry = temp_sketch.to_geometry()
-            fill_geometries = temp_sketch.get_fill_geometries()
+            geometry, fill_geometries = provider.get_geometry()
 
             # Upgrade all generated geometry to be fully scalable
             geometry.upgrade_to_scalable()
@@ -166,8 +161,8 @@ class WorkPiece(DocItem):
                 width, height = 0.0, 0.0
         except Exception as e:
             logger.warning(
-                f"Failed to calculate initial geometry for sketch "
-                f"{sketch.uid}: {e}"
+                f"Failed to calculate initial geometry for provider "
+                f"{provider.provider_type_name}: {e}"
             )
             width, height = 0.0, 0.0
 
@@ -175,8 +170,10 @@ class WorkPiece(DocItem):
             fill_geometries = []
 
         # 2. Create the instance
-        instance = cls(name=sketch.name or "Sketch")
-        instance.geometry_provider_uid = sketch.uid
+        instance = cls(
+            name=provider.name or provider.provider_type_name.capitalize()
+        )
+        instance.geometry_provider_uid = provider.uid
         instance.natural_width_mm = width
         instance.natural_height_mm = height
 
@@ -321,11 +318,10 @@ class WorkPiece(DocItem):
         if self._renderer is not None:
             return self._renderer
 
-        # If it's a sketch, we know the renderer.
-        if self.geometry_provider_uid:
-            from ..image.sketch.renderer import SKETCH_RENDERER
-
-            return SKETCH_RENDERER
+        # If we have a geometry provider, use its renderer.
+        provider = self.get_geometry_provider()
+        if provider:
+            return provider.renderer
 
         source = self.source
         return source.renderer if source else None
@@ -558,15 +554,18 @@ class WorkPiece(DocItem):
                     source.height_px,
                 )
 
-        # Hydrate the transient sketch definition if it exists
+        # Hydrate the transient geometry provider if it exists
         if self.geometry_provider_uid and self.doc:
             provider = self.doc.get_asset_by_uid(self.geometry_provider_uid)
             if provider:
-                from .sketcher.sketch import Sketch
-
-                world_wp._transient_geometry_provider = Sketch.from_dict(
-                    provider.to_dict()
-                )
+                provider_dict = provider.to_dict()
+                provider_type = provider_dict.get("type")
+                if provider_type:
+                    provider_cls = asset_type_registry.get(provider_type)
+                    if provider_cls:
+                        hydrated = provider_cls.from_dict(provider_dict)
+                        if isinstance(hydrated, IGeometryProvider):
+                            world_wp._transient_geometry_provider = hydrated
 
         return world_wp
 
@@ -579,11 +578,30 @@ class WorkPiece(DocItem):
         if self._transient_geometry_provider:
             return self._transient_geometry_provider
         if self.geometry_provider_uid and self.doc:
-            return cast(
-                Optional["IGeometryProvider"],
-                self.doc.get_asset_by_uid(self.geometry_provider_uid),
-            )
+            provider = self.doc.get_asset_by_uid(self.geometry_provider_uid)
+            assert isinstance(provider, IGeometryProvider)
+            if provider and self._geometry_provider_connection is None:
+                self._subscribe_to_geometry_provider(provider)
+            return provider
         return None
+
+    def _subscribe_to_geometry_provider(
+        self, provider: "IGeometryProvider"
+    ) -> None:
+        """
+        Subscribe to geometry provider updates.
+        When the provider changes, we clear caches and emit updated.
+        """
+        self._geometry_provider_connection = provider.updated.connect(
+            self._on_geometry_provider_updated
+        )
+
+    def _on_geometry_provider_updated(self, sender, **kwargs) -> None:
+        """Handler for when the geometry provider changes."""
+        self.clear_render_cache()
+        self._boundaries_cache = None
+        self._fills_cache = None
+        self.updated.send(self)
 
     def _resolve_render_context(self) -> Optional[RenderContext]:
         """
@@ -595,15 +613,18 @@ class WorkPiece(DocItem):
         boundaries = self.boundaries
         fills = self._fills_cache
 
-        # For sketches, the "data" is not needed, as the geometry is generated
-        # by the `boundaries` property. We pass empty bytes.
+        # For geometry providers, the "data" is not needed, as the geometry
+        # is generated by the `boundaries` property. We pass empty bytes.
         if self.geometry_provider_uid:
-            from ..image.sketch.renderer import SKETCH_RENDERER
+            provider = self.get_geometry_provider()
+            renderer = provider.renderer if provider else None
+            if not renderer:
+                return None
 
             return RenderContext(
                 data=b"",
                 original_data=None,
-                renderer=SKETCH_RENDERER,
+                renderer=renderer,
                 source_pixel_dims=None,
                 metadata={"is_vector": True},
                 boundaries=boundaries,
@@ -895,9 +916,13 @@ class WorkPiece(DocItem):
             "transient_sketch_definition"
         )
         if transient_data:
-            from .sketcher.sketch import Sketch
-
-            wp._transient_geometry_provider = Sketch.from_dict(transient_data)
+            provider_type = transient_data.get("type")
+            if provider_type:
+                provider_cls = asset_type_registry.get(provider_type)
+                if provider_cls:
+                    hydrated = provider_cls.from_dict(transient_data)
+                    if isinstance(hydrated, IGeometryProvider):
+                        wp._transient_geometry_provider = hydrated
 
         wp.extra = extra
 

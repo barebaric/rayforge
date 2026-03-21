@@ -38,7 +38,7 @@ def test_rename_sketch_asset(asset_cmd: AssetCmd):
     """Test renaming a Sketch asset also renames its dependent WorkPiece."""
     doc = asset_cmd.doc
     sketch = Sketch(name="Old Sketch Name")
-    workpiece = WorkPiece.from_sketch(sketch)
+    workpiece = WorkPiece.from_geometry_provider(sketch)
     workpiece.name = "Old Sketch Name"  # Match the asset name
     doc.add_asset(sketch)
     doc.add_workpiece(workpiece)
@@ -87,7 +87,7 @@ def test_delete_sketch_and_workpiece(asset_cmd: AssetCmd):
     """Test deleting a Sketch also removes its dependent WorkPiece."""
     doc = asset_cmd.doc
     sketch = Sketch(name="Sketch To Delete")
-    workpiece = WorkPiece.from_sketch(sketch)
+    workpiece = WorkPiece.from_geometry_provider(sketch)
     doc.add_asset(sketch)
     doc.add_workpiece(workpiece)
 

@@ -731,9 +731,9 @@ class TestWorkPiece:
         )
         wp.source_segment = segment
 
-    def test_from_sketch_factory_behavior(self):
+    def test_from_geometry_provider_factory_behavior(self):
         """
-        Tests the WorkPiece.from_sketch factory method logic.
+        Tests the WorkPiece.from_geometry_provider factory method logic.
         """
         # We patch the Sketch class inside rayforge.core.sketcher.sketch
         # because the module under test (workpiece.py) imports it locally.
@@ -751,15 +751,16 @@ class TestWorkPiece:
             mock_instance.to_geometry.return_value = mock_geo
             mock_instance.solve.return_value = True
             mock_instance.name = "TestSketch"
+            mock_instance.provider_type_name = "sketch"
 
             # Create a dummy sketch object to pass in (the factory calls
             # to_dict on it)
             dummy_sketch = Sketch()
-            dummy_sketch.uid = "sketch-123"
-            dummy_sketch.name = "TestSketch"
+            dummy_sketch._uid = "sketch-123"
+            dummy_sketch._name = "TestSketch"
 
             # Run factory
-            wp = WorkPiece.from_sketch(dummy_sketch)
+            wp = WorkPiece.from_geometry_provider(dummy_sketch)
 
             # Assertions
             assert wp.geometry_provider_uid == dummy_sketch.uid
@@ -774,7 +775,7 @@ class TestWorkPiece:
 
             # 2. Test empty/failing sketch fallback
             mock_instance.to_geometry.return_value = Geometry()  # Empty
-            wp_empty = WorkPiece.from_sketch(dummy_sketch)
+            wp_empty = WorkPiece.from_geometry_provider(dummy_sketch)
 
             assert wp_empty.natural_width_mm == 0.0
             assert wp_empty.natural_height_mm == 0.0

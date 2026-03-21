@@ -113,7 +113,7 @@ class Sketch(IAsset, IGeometryProvider):
     """
 
     def __init__(self, name: str = "New Sketch") -> None:
-        self.uid: str = str(uuid.uuid4())
+        self._uid: str = str(uuid.uuid4())
         self._name = name
         self.params = ParameterContext()
         self.registry = EntityRegistry()
@@ -123,7 +123,7 @@ class Sketch(IAsset, IGeometryProvider):
             title=_DEFAULT_VARSET_TITLE,
             description=_DEFAULT_VARSET_DESCRIPTION,
         )
-        self.updated = Signal()
+        self._updated = Signal()
         self._hidden: bool = False
 
         # Initialize the Origin Point (Fixed Anchor)
@@ -133,7 +133,7 @@ class Sketch(IAsset, IGeometryProvider):
 
     def notify_update(self):
         """Public method to signal that the sketch has been modified."""
-        self.updated.send(self)
+        self._updated.send(self)
 
     def _validate_and_cleanup_fills(self):
         """
@@ -154,6 +154,21 @@ class Sketch(IAsset, IGeometryProvider):
         self.fills = valid_fills
 
     @property
+    def uid(self) -> str:
+        """The unique identifier of the asset instance."""
+        return self._uid
+
+    @uid.setter
+    def uid(self, value: str) -> None:
+        """Set the unique identifier. Used for deserialization."""
+        self._uid = value
+
+    @property
+    def updated(self) -> "Signal":
+        """Signal emitted when the sketch changes."""
+        return self._updated
+
+    @property
     def name(self) -> str:
         """The user-facing name of the asset."""
         return self._name
@@ -163,7 +178,7 @@ class Sketch(IAsset, IGeometryProvider):
         """Sets the asset name and sends an update signal if changed."""
         if self._name != value:
             self._name = value
-            self.updated.send(self)
+            self._updated.send(self)
 
     @property
     def asset_type_name(self) -> str:
@@ -174,6 +189,13 @@ class Sketch(IAsset, IGeometryProvider):
     def provider_type_name(self) -> str:
         """The type name for geometry provider identification."""
         return "sketch"
+
+    @property
+    def renderer(self):
+        """The renderer to use for rendering this sketch's geometry."""
+        from ...image.sketch.renderer import SKETCH_RENDERER
+
+        return SKETCH_RENDERER
 
     def get_geometry(
         self, params: Optional[Dict[str, Any]] = None
@@ -219,7 +241,7 @@ class Sketch(IAsset, IGeometryProvider):
         """Sets the hidden state and sends an update signal if changed."""
         if self._hidden != value:
             self._hidden = value
-            self.updated.send(self)
+            self._updated.send(self)
 
     def set_hidden(self, value: bool):
         """Setter method for use with undo commands."""
@@ -321,7 +343,7 @@ class Sketch(IAsset, IGeometryProvider):
             )
 
         new_sketch = cls()
-        new_sketch.uid = data.get("uid", str(uuid.uuid4()))
+        new_sketch._uid = data.get("uid", str(uuid.uuid4()))
         new_sketch.name = data.get("name", "")
 
         # Handle backward compatibility for input_parameters
