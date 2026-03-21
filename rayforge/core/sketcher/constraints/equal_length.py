@@ -48,8 +48,7 @@ class EqualLengthConstraint(Constraint):
         if sketch is None:
             return False
         entities = [
-            sketch.registry.get_entity(eid)
-            for eid in selection.entity_ids
+            sketch.registry.get_entity(eid) for eid in selection.entity_ids
         ]
         return all(
             isinstance(e, (Line, Arc, Circle)) and e is not None

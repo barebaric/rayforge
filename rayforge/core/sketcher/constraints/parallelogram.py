@@ -33,10 +33,7 @@ class ParallelogramConstraint(Constraint):
     def can_apply_to(
         cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
     ) -> bool:
-        return (
-            len(selection.point_ids) == 4
-            and not selection.entity_ids
-        )
+        return len(selection.point_ids) == 4 and not selection.entity_ids
 
     @staticmethod
     def get_type_name() -> str:

@@ -77,7 +77,7 @@ class FilletCommand(SketchChangeCommand):
         v2 = (other2_pt.x - corner_point.x, other2_pt.y - corner_point.y)
         len1, len2 = math.hypot(v1[0], v1[1]), math.hypot(v2[0], v2[1])
 
-        if len1 < 1e-9 or len2 < 1e-9:
+        if len1 < 1e-6 or len2 < 1e-6:
             return None
 
         u1 = (v1[0] / len1, v1[1] / len1)

@@ -28,10 +28,9 @@ class CoincidentConstraintTool(SketchTool):
     ) -> bool:
         sel = self.element.selection
         sketch = self.element.sketch
-        return (
-            CoincidentConstraint.can_apply_to(sel, sketch)
-            or PointOnLineConstraint.can_apply_to(sel, sketch)
-        )
+        return CoincidentConstraint.can_apply_to(
+            sel, sketch
+        ) or PointOnLineConstraint.can_apply_to(sel, sketch)
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         return True

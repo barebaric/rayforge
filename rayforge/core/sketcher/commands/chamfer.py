@@ -73,7 +73,7 @@ class ChamferCommand(SketchChangeCommand):
 
         v1 = (other1_pt.x - corner_point.x, other1_pt.y - corner_point.y)
         len1 = math.hypot(v1[0], v1[1])
-        if len1 < distance:  # Not enough length for chamfer
+        if len1 < 1e-6 or len1 < distance:  # Not enough length for chamfer
             return None
         u1 = (v1[0] / len1, v1[1] / len1) if len1 > 1e-9 else (0.0, 0.0)
         p_new1_pos = (
@@ -83,7 +83,7 @@ class ChamferCommand(SketchChangeCommand):
 
         v2 = (other2_pt.x - corner_point.x, other2_pt.y - corner_point.y)
         len2 = math.hypot(v2[0], v2[1])
-        if len2 < distance:  # Not enough length for chamfer
+        if len2 < 1e-6 or len2 < distance:  # Not enough length for chamfer
             return None
         u2 = (v2[0] / len2, v2[1] / len2) if len2 > 1e-9 else (0.0, 0.0)
         p_new2_pos = (
