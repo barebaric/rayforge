@@ -152,6 +152,7 @@ class RayforgeContext:
         )
         from .pipeline.producer.registry import producer_registry
         from .pipeline.transformer.registry import transformer_registry
+        from .core.asset_registry import asset_type_registry
 
         register_builtin_layout_strategies()
 
@@ -175,6 +176,9 @@ class RayforgeContext:
         )
         self.plugin_mgr.hook.register_transformers(
             transformer_registry=transformer_registry
+        )
+        self.plugin_mgr.hook.register_asset_types(
+            asset_type_registry=asset_type_registry
         )
         self.plugin_mgr.hook.register_steps(step_registry=step_registry)
         self.plugin_mgr.hook.register_layout_strategies(

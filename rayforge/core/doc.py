@@ -60,23 +60,19 @@ class Doc(DocItem):
         from .stock import StockItem
         from .stock_asset import StockAsset
         from .sketcher.sketch import Sketch
+        from .source_asset import SourceAsset
         from .geo import Geometry
         from .matrix import Matrix
-        from .source_asset import SourceAsset
+        from .asset_registry import asset_type_registry
 
         # --- Polymorphic Deserialization Factories ---
-        asset_class_map = {
-            "stock": StockAsset,
-            "sketch": Sketch,
-            "source": SourceAsset,
-        }
         item_class_map = {"layer": Layer, "stockitem": StockItem}
 
         def _deserialize_asset(asset_data: Dict) -> IAsset:
             asset_type = asset_data.get("type")
-            asset_class = None
-            if asset_type:
-                asset_class = asset_class_map.get(asset_type)
+            if not asset_type:
+                raise TypeError("Asset data missing 'type' field")
+            asset_class = asset_type_registry.get(asset_type)
             if not asset_class:
                 raise TypeError(f"Unknown asset type '{asset_type}'")
             return asset_class.from_dict(asset_data)

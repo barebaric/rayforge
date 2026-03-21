@@ -8,11 +8,11 @@ from ...core.item import DocItem
 from ...core.sketcher import Sketch
 from ...core.workpiece import WorkPiece
 from ...core.varset import ChoiceVar, SliderFloatVar, TextAreaVar, Var
+from ...doceditor.asset_cmd import UpdateAssetCommand
 from ..shared.adwfix import get_spinrow_int
 from ..shared.expander import Expander
 from ..varset.var_row_factory import VarRowFactory
 from ..varset.varsetwidget import NULL_CHOICE_LABEL
-from ..sketcher.cmd import UpdateSketchCommand
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -59,9 +59,9 @@ class SketchPropertiesWidget(Expander):
         items = items or []
         if len(items) == 1 and isinstance(items[0], WorkPiece):
             item = items[0]
-            if item.sketch_uid:
+            if item.geometry_provider_uid:
                 sketch_asset = self.editor.doc.get_asset_by_uid(
-                    item.sketch_uid
+                    item.geometry_provider_uid
                 )
                 if isinstance(sketch_asset, Sketch):
                     self.workpiece = item
@@ -139,10 +139,10 @@ class SketchPropertiesWidget(Expander):
             if var_data["key"] in new_ui_values:
                 var_data["value"] = new_ui_values[var_data["key"]]
 
-        cmd = UpdateSketchCommand(
+        cmd = UpdateAssetCommand(
             doc=self.editor.doc,
-            sketch_uid=self.sketch.uid,
-            new_sketch_dict=sketch_dict,
+            asset_uid=self.sketch.uid,
+            new_data=sketch_dict,
             name=_("Change Sketch Parameter"),
         )
         self.editor.history_manager.execute(cmd)
@@ -151,9 +151,9 @@ class SketchPropertiesWidget(Expander):
         """Handles data changes from the WorkPiece model (e.g., undo/redo)."""
         logger.debug("Workpiece updated, refreshing sketch properties UI.")
         # Re-fetch sketch as it might have been replaced by undo/redo
-        if workpiece.sketch_uid:
+        if workpiece.geometry_provider_uid:
             sketch_asset = self.editor.doc.get_asset_by_uid(
-                workpiece.sketch_uid
+                workpiece.geometry_provider_uid
             )
             if isinstance(sketch_asset, Sketch):
                 # If the parameters definition changed, we need a full rebuild

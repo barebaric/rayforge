@@ -294,7 +294,7 @@ class WorkSurface(WorldSurface):
             wp_view = cast(WorkPieceElement, hit_elem)
 
             # Check if this is a sketch workpiece using the new method
-            is_sketch = bool(wp_view.data.sketch_uid)
+            is_sketch = bool(wp_view.data.geometry_provider_uid)
 
             # Check path proximity
             location = wp_view.get_closest_point_on_path(
@@ -514,7 +514,7 @@ class WorkSurface(WorldSurface):
             if isinstance(hit_elem, WorkPieceElement):
                 wp = hit_elem.data
                 # The new, correct logic:
-                if wp.sketch_uid:
+                if wp.geometry_provider_uid:
                     self.edit_sketch_requested.send(self, workpiece=wp)
                     return
             elif isinstance(hit_elem, StockElement):

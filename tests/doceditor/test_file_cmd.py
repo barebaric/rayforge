@@ -881,7 +881,7 @@ class TestProjectRoundTrip:
         assert wp1.natural_width_mm == wp2.natural_width_mm
         assert wp1.natural_height_mm == wp2.natural_height_mm
         assert wp1.tabs_enabled == wp2.tabs_enabled
-        assert wp1.sketch_uid == wp2.sketch_uid
+        assert wp1.geometry_provider_uid == wp2.geometry_provider_uid
         assert wp1.source_asset_uid == wp2.source_asset_uid
         assert len(wp1.tabs) == len(wp2.tabs)
 
@@ -1078,7 +1078,7 @@ class TestProjectRoundTrip:
         # Verify workpieces with sketches
         workpieces = file_cmd._editor.doc.all_workpieces
         assert len(workpieces) == 1
-        assert workpieces[0].sketch_uid is not None
+        assert workpieces[0].geometry_provider_uid is not None
 
         # Export project
         result = file_cmd.save_project_to_path(export_file)

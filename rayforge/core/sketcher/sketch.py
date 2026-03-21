@@ -25,6 +25,7 @@ from ..geo.constants import (
     COL_C2X,
     COL_C2Y,
 )
+from ..geometry_provider import IGeometryProvider
 from ..varset import VarSet
 from .constraints import (
     AngleConstraint,
@@ -105,7 +106,7 @@ class Fill:
         )
 
 
-class Sketch(IAsset):
+class Sketch(IAsset, IGeometryProvider):
     """
     A parametric sketcher that allows defining geometry via constraints
     and expressions.
@@ -168,6 +169,30 @@ class Sketch(IAsset):
     def asset_type_name(self) -> str:
         """The machine-readable type name for the asset list."""
         return "sketch"
+
+    @property
+    def provider_type_name(self) -> str:
+        """The type name for geometry provider identification."""
+        return "sketch"
+
+    def get_geometry(
+        self, params: Optional[Dict[str, Any]] = None
+    ) -> Tuple[Geometry, List[Geometry]]:
+        """
+        Generate geometry with optional parameter overrides.
+
+        Creates a clone, solves it with the given parameters, and returns
+        the stroke and fill geometries.
+
+        Args:
+            params: Optional dictionary of parameter values to override.
+
+        Returns:
+            A tuple of (stroke_geometry, fill_geometries).
+        """
+        clone = Sketch.from_dict(self.to_dict())
+        clone.solve(variable_overrides=params)
+        return clone.to_geometry(), clone.get_fill_geometries()
 
     @property
     def display_icon_name(self) -> str:

@@ -92,9 +92,9 @@ class TestWorkPiece:
         assert wp.tabs_enabled is True
         assert wp.source_segment is not None
         assert wp._edited_boundaries is None
-        assert wp.sketch_uid is None
-        assert wp.sketch_params == {}
-        assert wp._transient_sketch_definition is None
+        assert wp.geometry_provider_uid is None
+        assert wp.geometry_provider_params == {}
+        assert wp._transient_geometry_provider is None
 
         # New check for view cache initialization
         assert hasattr(wp, "_view_cache")
@@ -110,8 +110,8 @@ class TestWorkPiece:
         # Setup sketch data for serialization
         sketch = Sketch()
         doc.add_asset(sketch)
-        wp.sketch_uid = sketch.uid
-        wp.sketch_params = {"width": 123.45}
+        wp.geometry_provider_uid = sketch.uid
+        wp.geometry_provider_params = {"width": 123.45}
 
         wp.set_size(80.0, 40.0)
         wp.pos = (10.5, 20.2)
@@ -137,8 +137,8 @@ class TestWorkPiece:
         assert "source_segment" in data_dict
         assert data_dict["source_segment"]["source_asset_uid"] == source.uid
         assert "edited_boundaries" in data_dict
-        assert data_dict["sketch_uid"] == sketch.uid
-        assert data_dict["sketch_params"] == {"width": 123.45}
+        assert data_dict["geometry_provider_uid"] == sketch.uid
+        assert data_dict["geometry_provider_params"] == {"width": 123.45}
 
         new_wp = WorkPiece.from_dict(data_dict)
 
@@ -163,8 +163,8 @@ class TestWorkPiece:
         assert new_wp.source_segment.source_asset_uid == source.uid
         assert new_wp._edited_boundaries is not None
         assert len(new_wp._edited_boundaries) == len(edited_geo)
-        assert new_wp.sketch_uid == sketch.uid
-        assert new_wp.sketch_params == {"width": 123.45}
+        assert new_wp.geometry_provider_uid == sketch.uid
+        assert new_wp.geometry_provider_params == {"width": 123.45}
 
     def test_in_world_hydrates_sketch_definition(self, doc_with_workpiece):
         """
@@ -181,70 +181,70 @@ class TestWorkPiece:
 
         with patch.object(Sketch, "to_dict", return_value=mock_dict):
             doc.add_asset(sketch)
-            wp.sketch_uid = sketch.uid
-            wp.sketch_params = {"width": 50.0}
+            wp.geometry_provider_uid = sketch.uid
+            wp.geometry_provider_params = {"width": 50.0}
 
             # The method under test
             world_wp = wp.in_world()
 
         # Check that the main properties are copied
-        assert world_wp.sketch_uid == sketch.uid
-        assert world_wp.sketch_params == {"width": 50.0}
+        assert world_wp.geometry_provider_uid == sketch.uid
+        assert world_wp.geometry_provider_params == {"width": 50.0}
 
         # Check that the transient definition is hydrated correctly
-        transient_def = world_wp._transient_sketch_definition
+        transient_def = world_wp._transient_geometry_provider
         assert transient_def is not None
         assert isinstance(transient_def, Sketch)
         assert transient_def is not sketch  # Must be a copy
         assert transient_def.uid == sketch.uid
 
-    def test_get_sketch_definition(self, doc_with_workpiece):
+    def test_get_geometry_provider(self, doc_with_workpiece):
         """
-        Tests retrieving the sketch definition from the document or from the
+        Tests retrieving the geometry provider from the document or from the
         transient field.
         """
         doc, wp, _ = doc_with_workpiece
 
-        # Case 1: No sketch UID is set, should return None
-        assert wp.sketch_uid is None
-        assert wp.get_sketch_definition() is None
+        # Case 1: No geometry provider UID is set, should return None
+        assert wp.geometry_provider_uid is None
+        assert wp.get_geometry_provider() is None
 
-        # Case 2: Sketch UID is set, should retrieve the sketch from the
-        # document
+        # Case 2: Geometry provider UID is set, should retrieve the provider
+        # from the document
         sketch_from_doc = Sketch()
         doc.add_asset(sketch_from_doc)
-        wp.sketch_uid = sketch_from_doc.uid
+        wp.geometry_provider_uid = sketch_from_doc.uid
 
-        retrieved_sketch = wp.get_sketch_definition()
-        assert retrieved_sketch is not None
+        retrieved_provider = wp.get_geometry_provider()
+        assert retrieved_provider is not None
         # It should be the exact same instance from the document's registry
-        assert retrieved_sketch is sketch_from_doc
-        assert retrieved_sketch.uid == sketch_from_doc.uid
+        assert retrieved_provider is sketch_from_doc
+        assert retrieved_provider.uid == sketch_from_doc.uid
 
-        # Case 3: A transient sketch definition exists and takes precedence
+        # Case 3: A transient geometry provider exists and takes precedence
         # This simulates a WorkPiece that has been prepared by `in_world()`
         # for use in a subprocess.
-        transient_sketch = Sketch()
-        transient_sketch.uid = "transient-uid-123"
+        transient_provider = Sketch()
+        transient_provider.uid = "transient-uid-123"
 
         # Use a new WorkPiece instance to avoid side effects
         wp_with_transient = WorkPiece(
             "transient_test", source_segment=wp.source_segment
         )
-        # Assign the doc-based sketch_uid to prove the transient one is used
-        # instead
-        wp_with_transient.sketch_uid = sketch_from_doc.uid
-        wp_with_transient._transient_sketch_definition = transient_sketch
+        # Assign the doc-based geometry_provider_uid to prove the transient
+        # one is used instead
+        wp_with_transient.geometry_provider_uid = sketch_from_doc.uid
+        wp_with_transient._transient_geometry_provider = transient_provider
 
         # Add it to the doc so that a doc lookup *could* work, but shouldn't.
         doc.active_layer.add_child(wp_with_transient)
 
-        retrieved_transient = wp_with_transient.get_sketch_definition()
+        retrieved_transient = wp_with_transient.get_geometry_provider()
         assert retrieved_transient is not None
         # It should be the transient instance, not the one from the doc
-        assert retrieved_transient is transient_sketch
+        assert retrieved_transient is transient_provider
         assert retrieved_transient is not sketch_from_doc
-        assert retrieved_transient.uid == "transient-uid-123"
+        assert cast(Sketch, retrieved_transient).uid == "transient-uid-123"
 
     def test_boundaries_override(self, workpiece_instance):
         """
@@ -762,7 +762,7 @@ class TestWorkPiece:
             wp = WorkPiece.from_sketch(dummy_sketch)
 
             # Assertions
-            assert wp.sketch_uid == dummy_sketch.uid
+            assert wp.geometry_provider_uid == dummy_sketch.uid
             assert wp.name == "TestSketch"
             assert wp.natural_width_mm == pytest.approx(10.0)
             assert wp.natural_height_mm == pytest.approx(20.0)
@@ -789,7 +789,7 @@ class TestWorkPiece:
         # We create a mock sketch that returns specific geometry when solved
         sketch = Sketch()
         doc.add_asset(sketch)
-        wp.sketch_uid = sketch.uid
+        wp.geometry_provider_uid = sketch.uid
 
         updated_signals = []
         wp.updated.connect(lambda s: updated_signals.append(s), weak=False)
@@ -812,10 +812,10 @@ class TestWorkPiece:
 
             # Action: Change params
             new_params = {"W": 50, "H": 25}
-            wp.sketch_params = new_params
+            wp.geometry_provider_params = new_params
 
             # Assertions
-            assert wp.sketch_params == new_params
+            assert wp.geometry_provider_params == new_params
             assert len(updated_signals) > 0
 
             # Verify regenerate logic was called
@@ -837,7 +837,7 @@ class TestWorkPiece:
 
         sketch = Sketch()
         doc.add_asset(sketch)
-        wp.sketch_uid = sketch.uid
+        wp.geometry_provider_uid = sketch.uid
         wp.clear_render_cache()
 
         # Patch Sketch at its definition
