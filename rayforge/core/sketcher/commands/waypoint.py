@@ -175,10 +175,6 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         except IndexError:
             return
 
-        old_type = waypoint.waypoint_type
-        if old_type == self.new_type:
-            return
-
         connected_beziers = waypoint.get_connected_beziers(registry)
         self._old_bezier_states = {}
         for b in connected_beziers:
@@ -223,12 +219,13 @@ class SetWaypointTypeCommand(SketchChangeCommand):
             cp_out = (avg_dir[0] * cp_length, avg_dir[1] * cp_length)
 
             for b in connected_beziers:
-                if b.start_idx == waypoint.id:
+                if b.start_idx == waypoint.id and b.cp1 is None:
                     b.cp1 = cp_out
-                if b.end_idx == waypoint.id:
+                if b.end_idx == waypoint.id and b.cp2 is None:
                     b.cp2 = cp_in
 
         waypoint.waypoint_type = self.new_type
+        waypoint.enforce_constraint(registry)
 
     def _do_undo(self) -> None:
         if self._old_waypoint_type is None:

@@ -135,6 +135,55 @@ class Point:
                 direction[1] * other_length,
             )
 
+    def enforce_constraint(self, registry: "EntityRegistry") -> None:
+        if self.is_sharp():
+            return
+
+        beziers = self.get_connected_beziers(registry)
+        if len(beziers) < 2:
+            return
+
+        cp_data = []
+        for b in beziers:
+            if b.start_idx == self.id and b.cp1 is not None:
+                cp_data.append((b, "cp1", b.cp1))
+            elif b.end_idx == self.id and b.cp2 is not None:
+                cp_data.append((b, "cp2", b.cp2))
+
+        if len(cp_data) < 2:
+            return
+
+        b1, attr1, cp1 = cp_data[0]
+        b2, attr2, cp2 = cp_data[1]
+
+        if self.is_symmetric():
+            avg_length = (
+                math.sqrt(cp1[0] ** 2 + cp1[1] ** 2)
+                + math.sqrt(cp2[0] ** 2 + cp2[1] ** 2)
+            ) / 2
+            if avg_length < 1e-10:
+                return
+
+            direction = (
+                cp1[0] - cp2[0],
+                cp1[1] - cp2[1],
+            )
+            length = math.sqrt(direction[0] ** 2 + direction[1] ** 2)
+            if length < 1e-10:
+                return
+            direction = (direction[0] / length, direction[1] / length)
+
+            setattr(
+                b1,
+                attr1,
+                (direction[0] * avg_length, direction[1] * avg_length),
+            )
+            setattr(
+                b2,
+                attr2,
+                (-direction[0] * avg_length, -direction[1] * avg_length),
+            )
+
     def pos(self) -> GeoPoint:
         return (self.x, self.y)
 

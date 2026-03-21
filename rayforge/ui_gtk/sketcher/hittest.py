@@ -148,11 +148,6 @@ class SketchHitTester:
         best_pid = None
         min_dist_sq = float("inf")
 
-        logger.debug(
-            f"  _hit_test_points: screen=({cursor_sx:.1f}, {cursor_sy:.1f}), "
-            f"threshold={threshold:.1f}"
-        )
-
         points = element.sketch.registry.points or []
         for p in points:
             pt_sx, pt_sy = to_screen.transform_point((p.x, p.y))

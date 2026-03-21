@@ -9,7 +9,7 @@ from .base import SketchTool
 logger = logging.getLogger(__name__)
 
 
-DRAG_THRESHOLD = 5.0
+DRAG_THRESHOLD = 2.0
 
 
 class BezierTool(SketchTool):
