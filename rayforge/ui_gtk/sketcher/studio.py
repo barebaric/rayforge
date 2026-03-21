@@ -217,10 +217,9 @@ class SketchStudio(Gtk.Box):
         # Tool selection actions
         tool_map = {
             "tool_arc": "arc",
-            "tool_bezier": "bezier",
+            "tool_path": "path",
             "tool_circle": "circle",
             "tool_fill": "fill",
-            "tool_line": "line",
             "tool_rectangle": "rectangle",
             "tool_rounded_rect": "rounded_rect",
             "tool_select": "select",
@@ -243,7 +242,7 @@ class SketchStudio(Gtk.Box):
             "sketch.delete": ["Delete"],
             "sketch.view_fit": ["f"],
             "sketch.tool_select": ["s"],
-            "sketch.tool_line": ["l"],
+            "sketch.tool_path": ["l"],
             "sketch.tool_circle": ["c"],
             "sketch.tool_arc": ["a"],
             "sketch.tool_fill": ["i"],

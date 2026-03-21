@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from rayforge.ui_gtk.sketcher.tools.bezier_tool import BezierTool
+from rayforge.ui_gtk.sketcher.tools.path_tool import PathTool
 from rayforge.core.sketcher.commands.bezier import BezierPreviewState
 
 
@@ -36,30 +36,30 @@ def mock_element():
 
 
 @pytest.fixture
-def bezier_tool(mock_element):
-    """Create a BezierTool instance for testing."""
-    return BezierTool(mock_element)
+def path_tool(mock_element):
+    """Create a PathTool instance for testing."""
+    return PathTool(mock_element)
 
 
-def test_bezier_tool_initialization(bezier_tool, mock_element):
+def test_path_tool_initialization(path_tool, mock_element):
     """Test that BezierTool initializes correctly."""
-    assert bezier_tool.element == mock_element
-    assert bezier_tool._preview_state is None
-    assert bezier_tool._press_pos is None
-    assert bezier_tool._dragging is False
+    assert path_tool.element == mock_element
+    assert path_tool._preview_state is None
+    assert path_tool._press_pos is None
+    assert path_tool._dragging is False
 
 
-def test_bezier_tool_on_deactivate_no_preview(bezier_tool, mock_element):
+def test_path_tool_on_deactivate_no_preview(path_tool, mock_element):
     """Test that on_deactivate works when no preview state."""
-    bezier_tool.on_deactivate()
-    assert bezier_tool._preview_state is None
-    assert bezier_tool._press_pos is None
-    assert bezier_tool._dragging is False
+    path_tool.on_deactivate()
+    assert path_tool._preview_state is None
+    assert path_tool._press_pos is None
+    assert path_tool._dragging is False
 
 
-def test_bezier_tool_on_deactivate_with_preview(bezier_tool, mock_element):
+def test_path_tool_on_deactivate_with_preview(path_tool, mock_element):
     """Test that on_deactivate cleans up preview state."""
-    bezier_tool._preview_state = BezierPreviewState(
+    path_tool._preview_state = BezierPreviewState(
         start_id=1,
         start_temp=True,
         end_id=2,
@@ -69,23 +69,22 @@ def test_bezier_tool_on_deactivate_with_preview(bezier_tool, mock_element):
     )
 
     with patch(
-        "rayforge.ui_gtk.sketcher.tools.bezier_tool"
+        "rayforge.ui_gtk.sketcher.tools.path_tool"
         ".BezierCommand.cleanup_preview"
     ):
-        bezier_tool.on_deactivate()
+        path_tool.on_deactivate()
 
-    assert bezier_tool._preview_state is None
+    assert path_tool._preview_state is None
     mock_element.remove_point_if_unused.assert_called_once_with(1)
 
 
-def test_bezier_tool_first_press_starts_preview(bezier_tool, mock_element):
+def test_path_tool_first_press_starts_preview(path_tool, mock_element):
     """Test first press starts line preview."""
     mock_element.hittester.get_hit_data.return_value = (None, None)
     mock_element.hittester.screen_to_model.return_value = (10.0, 20.0)
 
     with patch(
-        "rayforge.ui_gtk.sketcher.tools.bezier_tool"
-        ".BezierCommand.start_preview"
+        "rayforge.ui_gtk.sketcher.tools.path_tool.BezierCommand.start_preview"
     ) as mock_start:
         mock_start.return_value = BezierPreviewState(
             start_id=0,
@@ -95,20 +94,20 @@ def test_bezier_tool_first_press_starts_preview(bezier_tool, mock_element):
             temp_entity_id=2,
             is_line_preview=True,
         )
-        result = bezier_tool.on_press(100.0, 200.0, 1)
+        result = path_tool.on_press(100.0, 200.0, 1)
 
     assert result is False
-    assert bezier_tool._preview_state is not None
-    assert bezier_tool._waypoint_model_pos == (10.0, 20.0)
-    assert bezier_tool._press_pos == (100.0, 200.0)
-    assert bezier_tool._dragging is False
+    assert path_tool._preview_state is not None
+    assert path_tool._waypoint_model_pos == (10.0, 20.0)
+    assert path_tool._press_pos == (100.0, 200.0)
+    assert path_tool._dragging is False
 
 
-def test_bezier_tool_on_drag_below_threshold(bezier_tool, mock_element):
+def test_path_tool_on_drag_below_threshold(path_tool, mock_element):
     """Test on_drag does nothing below threshold."""
-    bezier_tool._press_pos = (100.0, 200.0)
-    bezier_tool._waypoint_model_pos = (10.0, 20.0)
-    bezier_tool._preview_state = BezierPreviewState(
+    path_tool._press_pos = (100.0, 200.0)
+    path_tool._waypoint_model_pos = (10.0, 20.0)
+    path_tool._preview_state = BezierPreviewState(
         start_id=0,
         start_temp=True,
         end_id=1,
@@ -117,16 +116,16 @@ def test_bezier_tool_on_drag_below_threshold(bezier_tool, mock_element):
         is_line_preview=True,
     )
 
-    bezier_tool.on_drag(2.0, 2.0)
+    path_tool.on_drag(2.0, 2.0)
 
-    assert bezier_tool._dragging is False
+    assert path_tool._dragging is False
 
 
-def test_bezier_tool_on_drag_starts_bezier(bezier_tool, mock_element):
+def test_path_tool_on_drag_starts_bezier(path_tool, mock_element):
     """Test on_drag converts line to bezier above threshold."""
-    bezier_tool._press_pos = (100.0, 200.0)
-    bezier_tool._waypoint_model_pos = (10.0, 20.0)
-    bezier_tool._preview_state = BezierPreviewState(
+    path_tool._press_pos = (100.0, 200.0)
+    path_tool._waypoint_model_pos = (10.0, 20.0)
+    path_tool._preview_state = BezierPreviewState(
         start_id=0,
         start_temp=True,
         end_id=1,
@@ -146,14 +145,14 @@ def test_bezier_tool_on_drag_starts_bezier(bezier_tool, mock_element):
     mock_element.hittester.screen_to_model.return_value = (15.0, 25.0)
 
     with patch(
-        "rayforge.ui_gtk.sketcher.tools.bezier_tool"
+        "rayforge.ui_gtk.sketcher.tools.path_tool"
         ".BezierCommand.convert_to_bezier"
     ) as mock_convert:
-        bezier_tool.on_drag(10.0, 10.0)
+        path_tool.on_drag(10.0, 10.0)
 
         mock_convert.assert_called_once_with(
             mock_element.sketch.registry,
-            bezier_tool._preview_state,
+            path_tool._preview_state,
             10.0,
             20.0,
             15.0,
@@ -161,18 +160,18 @@ def test_bezier_tool_on_drag_starts_bezier(bezier_tool, mock_element):
             mirror_cp_offset=None,
         )
 
-    assert bezier_tool._dragging is True
+    assert path_tool._dragging is True
 
 
-def test_bezier_tool_on_release_without_drag_creates_line(
-    bezier_tool, mock_element
+def test_path_tool_on_release_without_drag_creates_line(
+    path_tool, mock_element
 ):
     """Test on_release creates line when not dragging and end has moved."""
-    bezier_tool._press_pos = (100.0, 200.0)
-    bezier_tool._waypoint_model_pos = (20.0, 30.0)
-    bezier_tool._dragging = False
-    bezier_tool._snapped_pid = None
-    bezier_tool._preview_state = BezierPreviewState(
+    path_tool._press_pos = (100.0, 200.0)
+    path_tool._waypoint_model_pos = (20.0, 30.0)
+    path_tool._dragging = False
+    path_tool._snapped_pid = None
+    path_tool._preview_state = BezierPreviewState(
         start_id=0,
         start_temp=True,
         end_id=1,
@@ -190,25 +189,25 @@ def test_bezier_tool_on_release_without_drag_creates_line(
     mock_element.sketch.registry.get_point.side_effect = get_point_side_effect
 
     with patch(
-        "rayforge.ui_gtk.sketcher.tools.bezier_tool"
+        "rayforge.ui_gtk.sketcher.tools.path_tool"
         ".BezierCommand.cleanup_preview"
     ):
-        bezier_tool.on_release(100.0, 200.0)
+        path_tool.on_release(100.0, 200.0)
 
         mock_element.execute_command.assert_called_once()
         cmd = mock_element.execute_command.call_args[0][0]
         assert cmd.is_line is True
 
 
-def test_bezier_tool_on_release_with_drag_creates_bezier(
-    bezier_tool, mock_element
+def test_path_tool_on_release_with_drag_creates_bezier(
+    path_tool, mock_element
 ):
     """Test on_release creates bezier when dragging."""
-    bezier_tool._press_pos = (100.0, 200.0)
-    bezier_tool._waypoint_model_pos = (10.0, 20.0)
-    bezier_tool._dragging = True
-    bezier_tool._snapped_pid = None
-    bezier_tool._preview_state = BezierPreviewState(
+    path_tool._press_pos = (100.0, 200.0)
+    path_tool._waypoint_model_pos = (10.0, 20.0)
+    path_tool._dragging = True
+    path_tool._snapped_pid = None
+    path_tool._preview_state = BezierPreviewState(
         start_id=0,
         start_temp=True,
         end_id=1,
@@ -240,21 +239,19 @@ def test_bezier_tool_on_release_with_drag_creates_bezier(
     )
 
     with patch(
-        "rayforge.ui_gtk.sketcher.tools.bezier_tool"
+        "rayforge.ui_gtk.sketcher.tools.path_tool"
         ".BezierCommand.cleanup_preview"
     ):
-        bezier_tool.on_release(100.0, 200.0)
+        path_tool.on_release(100.0, 200.0)
 
         mock_element.execute_command.assert_called_once()
         cmd = mock_element.execute_command.call_args[0][0]
         assert cmd.is_line is False
 
 
-def test_bezier_tool_on_hover_motion_updates_preview(
-    bezier_tool, mock_element
-):
+def test_path_tool_on_hover_motion_updates_preview(path_tool, mock_element):
     """Test on_hover_motion updates preview when in preview stage."""
-    bezier_tool._preview_state = BezierPreviewState(
+    path_tool._preview_state = BezierPreviewState(
         start_id=0,
         start_temp=True,
         end_id=1,
@@ -262,23 +259,22 @@ def test_bezier_tool_on_hover_motion_updates_preview(
         temp_entity_id=2,
         is_line_preview=True,
     )
-    bezier_tool._in_press = False
+    path_tool._in_press = False
     mock_element.hittester.screen_to_model.return_value = (15.0, 25.0)
 
     with patch(
-        "rayforge.ui_gtk.sketcher.tools.bezier_tool"
-        ".BezierCommand.update_preview"
+        "rayforge.ui_gtk.sketcher.tools.path_tool.BezierCommand.update_preview"
     ):
-        bezier_tool.on_hover_motion(100.0, 200.0)
+        path_tool.on_hover_motion(100.0, 200.0)
 
     mock_element.mark_dirty.assert_called()
 
 
-def test_bezier_tool_on_hover_motion_skips_when_in_press(
-    bezier_tool, mock_element
+def test_path_tool_on_hover_motion_skips_when_in_press(
+    path_tool, mock_element
 ):
     """Test on_hover_motion skips when in press sequence."""
-    bezier_tool._preview_state = BezierPreviewState(
+    path_tool._preview_state = BezierPreviewState(
         start_id=0,
         start_temp=True,
         end_id=1,
@@ -286,13 +282,13 @@ def test_bezier_tool_on_hover_motion_skips_when_in_press(
         temp_entity_id=2,
         is_line_preview=False,
     )
-    bezier_tool._in_press = True
+    path_tool._in_press = True
 
-    bezier_tool.on_hover_motion(100.0, 200.0)
+    path_tool.on_hover_motion(100.0, 200.0)
 
     mock_element.mark_dirty.assert_not_called()
 
 
-def test_bezier_tool_shortcut(bezier_tool):
-    """Test that BezierTool has the correct shortcut."""
-    assert BezierTool.SHORTCUTS == ["gb"]
+def test_path_tool_shortcut(path_tool):
+    """Test that PathTool has the correct shortcut."""
+    assert PathTool.SHORTCUTS == ["gp", "gl"]

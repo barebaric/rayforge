@@ -24,7 +24,7 @@ from ...core.sketcher.entities import (
 )
 from ...core.sketcher.types import EntityID
 from ..canvas import WorldSurface
-from .tools import BezierTool, TextBoxTool
+from .tools import PathTool, TextBoxTool
 
 if TYPE_CHECKING:
     from .sketchelement import SketchElement
@@ -658,7 +658,7 @@ class SketchRenderer:
 
         tool = self.element.current_tool
         preview_state = None
-        if isinstance(tool, BezierTool):
+        if isinstance(tool, PathTool):
             preview_state = tool.get_preview_state()
 
         if isinstance(preview_state, BezierPreviewState):
