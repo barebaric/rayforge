@@ -199,13 +199,17 @@ class SketchEditor:
             assert isinstance(hit_obj, int)
             pid = hit_obj
             target = sketch_element.sketch.registry.get_point(pid)
-            if pid not in sel.point_ids:
-                sketch_element.selection.select_point(pid, is_multi=False)
 
             # Check if this point is a valid chamfer corner (2 lines). If so,
-            # promote the selection type to "junction".
+            # select it as a junction instead of a point.
             if len(sketch_element.get_lines_at_point(pid)) == 2:
+                if sel.junction_pid != pid:
+                    sketch_element.selection.select_junction(
+                        pid, is_multi=False
+                    )
                 target_type = "junction"
+            elif pid not in sel.point_ids:
+                sketch_element.selection.select_point(pid, is_multi=False)
 
         elif hit_type == "junction":
             assert isinstance(hit_obj, int)

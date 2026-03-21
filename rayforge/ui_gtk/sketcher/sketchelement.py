@@ -325,9 +325,28 @@ class SketchElement(CanvasElement):
 
     def is_action_supported(self, action: str) -> bool:
         tool = self.tools.get(action)
-        if tool:
-            return tool.is_available(None, None)
-        return False
+        if not tool:
+            return False
+
+        sel = self.selection
+        target = None
+        target_type = None
+
+        if sel.junction_pid is not None:
+            target = self.sketch.registry.get_point(sel.junction_pid)
+            target_type = "junction"
+        elif sel.point_ids:
+            target = self.sketch.registry.get_point(sel.point_ids[0])
+            target_type = "point"
+        elif sel.entity_ids:
+            target = self.sketch.registry.get_entity(sel.entity_ids[0])
+            target_type = "entity"
+        elif sel.constraint_idx is not None:
+            if 0 <= sel.constraint_idx < len(self.sketch.constraints):
+                target = self.sketch.constraints[sel.constraint_idx]
+            target_type = "constraint"
+
+        return tool.is_available(target, target_type)
 
     def add_alignment_constraint(self):
         self.tools["coincident"]._add_constraint()
