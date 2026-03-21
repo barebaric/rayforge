@@ -466,3 +466,75 @@ def convert_y_to_output(y_mm: float, ymax_mm: float) -> float:
         Y coordinate in output space.
     """
     return ymax_mm - y_mm
+
+
+def downsample_power_values(
+    power_values: np.ndarray,
+    pixels: np.ndarray,
+    start_mm: Tuple[float, float],
+    end_mm: Tuple[float, float],
+    pixels_per_mm: Tuple[float, float],
+    sample_interval_mm: float,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Resample power values at evenly spaced intervals along the scan line.
+
+    This reduces the number of power samples by looking up the nearest
+    pixel's power at each sample position.
+
+    Args:
+        power_values: Array of power values (0-255) for each pixel.
+        pixels: Array of (x, y) pixel coordinates, shape (N, 2).
+        start_mm: Starting (x, y) position in mm (first pixel's mm position).
+        end_mm: Ending (x, y) position in mm (last pixel's mm position).
+        pixels_per_mm: (x, y) pixels per millimeter.
+        sample_interval_mm: Sample interval size in millimeters.
+
+    Returns:
+        Tuple of (resampled_power, resampled_x_mm, resampled_y_mm):
+        - resampled_power: Power values at evenly spaced positions.
+        - resampled_x_mm: X positions in mm (evenly spaced from start to end).
+        - resampled_y_mm: Y positions in mm (evenly spaced from start to end).
+    """
+    if len(power_values) == 0:
+        return np.array([], dtype=np.uint8), np.array([]), np.array([])
+
+    dx = end_mm[0] - start_mm[0]
+    dy = end_mm[1] - start_mm[1]
+    segment_length = math.sqrt(dx * dx + dy * dy)
+
+    if segment_length < 1e-9 or len(power_values) == 1:
+        return (
+            np.array([power_values[0]], dtype=np.uint8),
+            np.array([start_mm[0]]),
+            np.array([start_mm[1]]),
+        )
+
+    pixel_spacing = segment_length / max(1, len(power_values) - 1)
+    if sample_interval_mm <= pixel_spacing * 1.5:
+        t = np.linspace(0.0, 1.0, len(power_values))
+        x_pos = start_mm[0] + t * dx
+        y_pos = start_mm[1] + t * dy
+        return (
+            np.array(power_values, dtype=np.uint8),
+            x_pos,
+            y_pos,
+        )
+
+    num_samples = max(2, int(math.ceil(segment_length / sample_interval_mm)))
+
+    sample_t = np.linspace(0.0, 1.0, num_samples)
+    resampled_x = start_mm[0] + sample_t * dx
+    resampled_y = start_mm[1] + sample_t * dy
+
+    pixel_t = np.arange(len(power_values)) / max(1, len(power_values) - 1)
+
+    sample_indices = (
+        np.searchsorted(pixel_t, sample_t, side="left")
+        .clip(0, len(power_values) - 1)
+        .astype(int)
+    )
+
+    resampled_power = power_values[sample_indices]
+
+    return resampled_power, resampled_x, resampled_y
