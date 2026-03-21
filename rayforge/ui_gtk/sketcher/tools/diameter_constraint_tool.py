@@ -1,10 +1,11 @@
 import logging
-import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional, Union
 
-from ....core.sketcher.commands import AddItemsCommand
-from ....core.sketcher.constraints import DiameterConstraint
+from ....core.sketcher.commands import (
+    AddItemsCommand,
+    CreateOrEditConstraintCommand,
+)
 from ....core.sketcher.entities import Circle, Entity, Point
 from .base import SketchTool
 
@@ -53,17 +54,18 @@ class DiameterConstraintTool(SketchTool):
         eid = sel.entity_ids[0]
         e = sketch.registry.get_entity(eid)
 
-        if isinstance(e, Circle):
-            c = sketch.registry.get_point(e.center_idx)
-            r_pt = sketch.registry.get_point(e.radius_pt_idx)
-            if c and r_pt:
-                radius = math.hypot(r_pt.x - c.x, r_pt.y - c.y)
-                constr = DiameterConstraint(e.id, radius * 2.0)
-                cmd = AddItemsCommand(
-                    sketch,
-                    _("Add Diameter Constraint"),
-                    constraints=[constr],
-                )
-                self.element.execute_command(cmd)
-        else:
+        if not isinstance(e, Circle):
             logger.warning("Selected entity is not a Circle.")
+            return
+
+        constr = CreateOrEditConstraintCommand.create_constraint_for_entity(
+            sketch, e
+        )
+
+        if constr:
+            cmd = AddItemsCommand(
+                sketch,
+                _("Add Diameter Constraint"),
+                constraints=[constr],
+            )
+            self.element.execute_command(cmd)

@@ -1,12 +1,13 @@
 import logging
-import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional, Union
 
-from ....core.geo.primitives import line_intersection, normalize_angle
-from ....core.sketcher.commands import AddItemsCommand
+from ....core.sketcher.commands import (
+    AddItemsCommand,
+    AngleConstraintCommand,
+)
 from ....core.sketcher.constraints import AngleConstraint
-from ....core.sketcher.entities import Entity, Line, Point
+from ....core.sketcher.entities import Entity, Point
 from .base import SketchTool
 
 if TYPE_CHECKING:
@@ -51,80 +52,26 @@ class AngleConstraintTool(SketchTool):
         if not editor:
             return
 
-        e1_id = sel.entity_ids[0]
-        e2_id = sel.entity_ids[1]
-
-        e1 = sketch.registry.get_entity(e1_id)
-        e2 = sketch.registry.get_entity(e2_id)
-
-        if not (isinstance(e1, Line) and isinstance(e2, Line)):
+        if len(sel.entity_ids) < 2:
             logger.warning("Angle constraint requires exactly 2 lines.")
             return
 
-        p1 = sketch.registry.get_point(e1.p1_idx)
-        p2 = sketch.registry.get_point(e1.p2_idx)
-        p3 = sketch.registry.get_point(e2.p1_idx)
-        p4 = sketch.registry.get_point(e2.p2_idx)
+        e1_id = sel.entity_ids[0]
+        e2_id = sel.entity_ids[1]
 
-        if not (p1 and p2 and p3 and p4):
-            return
-
-        intersection = line_intersection(
-            (p1.x, p1.y), (p2.x, p2.y), (p3.x, p3.y), (p4.x, p4.y)
+        params = AngleConstraintCommand.calculate_constraint_params(
+            sketch.registry, e1_id, e2_id
         )
 
-        if intersection is None:
-            logger.warning(
-                "Lines are parallel, cannot create angle constraint."
-            )
+        if params is None:
             return
-
-        ix, iy = intersection
-
-        def get_far_point(px1, px2):
-            d1 = (px1.x - ix) ** 2 + (px1.y - iy) ** 2
-            d2 = (px2.x - ix) ** 2 + (px2.y - iy) ** 2
-            return px1 if d1 > d2 else px2
-
-        far1 = get_far_point(p1, p2)
-        far2 = get_far_point(p3, p4)
-
-        dir1 = math.atan2(far1.y - iy, far1.x - ix)
-        dir2 = math.atan2(far2.y - iy, far2.x - ix)
-
-        cw_e1_to_e2 = normalize_angle(dir1 - dir2)
-        cw_e1_to_e2_deg = math.degrees(cw_e1_to_e2)
-
-        if cw_e1_to_e2 <= math.pi:
-            anchor_id = e1_id
-            other_id = e2_id
-            value_deg = cw_e1_to_e2_deg
-            anchor_far_idx = far1.id
-            other_far_idx = far2.id
-        else:
-            anchor_id = e2_id
-            other_id = e1_id
-            value_deg = 360 - cw_e1_to_e2_deg
-            anchor_far_idx = far2.id
-            other_far_idx = far1.id
-
-        logger.debug(
-            f"add_angle_constraint: e1_id={e1_id}, e2_id={e2_id}, "
-            f"e1.p1_idx={e1.p1_idx}, e1.p2_idx={e1.p2_idx}, "
-            f"e2.p1_idx={e2.p1_idx}, e2.p2_idx={e2.p2_idx}, "
-            f"far1.id={far1.id}, far2.id={far2.id}, "
-            f"cw_e1_to_e2_deg={cw_e1_to_e2_deg:.1f}°, "
-            f"anchor_id={anchor_id}, other_id={other_id}, "
-            f"value_deg={value_deg:.1f}°, "
-            f"anchor_far_idx={anchor_far_idx}, other_far_idx={other_far_idx}"
-        )
 
         constr = AngleConstraint(
-            anchor_id,
-            other_id,
-            value_deg,
-            e1_far_idx=anchor_far_idx,
-            e2_far_idx=other_far_idx,
+            params.anchor_id,
+            params.other_id,
+            params.value_deg,
+            e1_far_idx=params.anchor_far_idx,
+            e2_far_idx=params.other_far_idx,
         )
         cmd = AddItemsCommand(
             sketch,

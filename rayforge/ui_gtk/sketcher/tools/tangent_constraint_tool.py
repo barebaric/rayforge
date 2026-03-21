@@ -2,9 +2,12 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional, Union
 
-from ....core.sketcher.commands import AddItemsCommand
+from ....core.sketcher.commands import (
+    AddItemsCommand,
+    TangentConstraintCommand,
+)
 from ....core.sketcher.constraints import TangentConstraint
-from ....core.sketcher.entities import Arc, Circle, Entity, Line, Point
+from ....core.sketcher.entities import Entity, Point
 from .base import SketchTool
 
 if TYPE_CHECKING:
@@ -49,21 +52,16 @@ class TangentConstraintTool(SketchTool):
         if not editor:
             return
 
-        sel_line = None
-        sel_shape = None
+        params = TangentConstraintCommand.identify_entities(
+            sketch.registry, sel.entity_ids
+        )
 
-        for eid in sel.entity_ids:
-            e = sketch.registry.get_entity(eid)
-            if isinstance(e, Line):
-                sel_line = e
-            elif isinstance(e, (Arc, Circle)):
-                sel_shape = e
-
-        if sel_line and sel_shape:
-            constr = TangentConstraint(sel_line.id, sel_shape.id)
-            cmd = AddItemsCommand(
-                sketch, _("Add Tangent Constraint"), constraints=[constr]
-            )
-            self.element.execute_command(cmd)
-        else:
+        if params is None:
             logger.warning("Select 1 Line and 1 Arc/Circle for Tangent.")
+            return
+
+        constr = TangentConstraint(params.line_id, params.shape_id)
+        cmd = AddItemsCommand(
+            sketch, _("Add Tangent Constraint"), constraints=[constr]
+        )
+        self.element.execute_command(cmd)
