@@ -60,50 +60,93 @@ class TextureEncoder(OpsEncoder):
                     current_pos_mm = end_mm
                     continue
 
-                # Convert start/end from mm (Y-up) to pixel (Y-down) space
-                start_px_vec = np.array(
-                    [
-                        start_mm[0] * px_per_mm_x,
-                        height_px - (start_mm[1] * px_per_mm_y),
-                    ]
+                start_px = (
+                    int(round(start_mm[0] * px_per_mm_x)),
+                    int(round(height_px - (start_mm[1] * px_per_mm_y))),
                 )
-                end_px_vec = np.array(
-                    [
-                        end_mm[0] * px_per_mm_x,
-                        height_px - (end_mm[1] * px_per_mm_y),
-                    ]
+                end_px = (
+                    int(round(end_mm[0] * px_per_mm_x)),
+                    int(round(height_px - (end_mm[1] * px_per_mm_y))),
                 )
 
-                # Generate integer pixel coordinates for each step along the
-                # line
-                x_coords = np.linspace(
-                    start_px_vec[0], end_px_vec[0], num_steps, dtype=np.int32
-                )
-                y_coords = np.linspace(
-                    start_px_vec[1], end_px_vec[1], num_steps, dtype=np.int32
-                )
+                power_array = np.frombuffer(power_values, dtype=np.uint8)
 
-                # Create a mask to filter out any coordinates that fall outside
-                # the buffer dimensions due to rounding or other artifacts.
-                valid_mask = (
-                    (x_coords >= 0)
-                    & (x_coords < width_px)
-                    & (y_coords >= 0)
-                    & (y_coords < height_px)
-                )
+                for i in range(num_steps):
+                    t_start = i / num_steps
+                    t_end = (i + 1) / num_steps
 
-                valid_x = x_coords[valid_mask]
-                valid_y = y_coords[valid_mask]
-                # Ensure power_values is a numpy array for boolean indexing
-                valid_power = np.frombuffer(power_values, dtype=np.uint8)[
-                    valid_mask
-                ]
+                    seg_start_x = int(
+                        round(
+                            start_px[0] + t_start * (end_px[0] - start_px[0])
+                        )
+                    )
+                    seg_start_y = int(
+                        round(
+                            start_px[1] + t_start * (end_px[1] - start_px[1])
+                        )
+                    )
+                    seg_end_x = int(
+                        round(start_px[0] + t_end * (end_px[0] - start_px[0]))
+                    )
+                    seg_end_y = int(
+                        round(start_px[1] + t_end * (end_px[1] - start_px[1]))
+                    )
 
-                # Use advanced indexing to efficiently set pixel values
-                # Additive approach: take maximum power at each pixel
-                buffer[valid_y, valid_x] = np.maximum(
-                    buffer[valid_y, valid_x], valid_power
-                )
+                    power = power_array[i]
+                    if power == 0:
+                        continue
+
+                    self._draw_line(
+                        buffer,
+                        seg_start_x,
+                        seg_start_y,
+                        seg_end_x,
+                        seg_end_y,
+                        power,
+                    )
 
                 current_pos_mm = end_mm
         return buffer
+
+    def _draw_line(
+        self,
+        buffer: np.ndarray,
+        x0: int,
+        y0: int,
+        x1: int,
+        y1: int,
+        power: int,
+    ):
+        """
+        Draw a line segment using Bresenham's algorithm.
+
+        Args:
+            buffer: The texture buffer to draw into.
+            x0, y0: Start pixel coordinates.
+            x1, y1: End pixel coordinates.
+            power: The power value to set for pixels along the line.
+        """
+        height_px, width_px = buffer.shape
+
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
+        sx = 1 if x0 < x1 else -1
+        sy = 1 if y0 < y1 else -1
+        err = dx - dy
+
+        x, y = x0, y0
+
+        while True:
+            if 0 <= x < width_px and 0 <= y < height_px:
+                buffer[y, x] = max(buffer[y, x], power)
+
+            if x == x1 and y == y1:
+                break
+
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                x += sx
+            if e2 < dx:
+                err += dx
+                y += sy
