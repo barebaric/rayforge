@@ -1,17 +1,17 @@
 import math
 import logging
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 import cairo
 from gi.repository import Gdk, GLib
+from ...shared.util.colors import ColorRGBA
 from ..icons import get_icon_pixbuf
 from .region import ElementRegion, ROTATE_HANDLES
 
 logger = logging.getLogger(__name__)
 
-# Module-level caches for custom-rendered cursors to avoid recreating them.
 _cursor_cache: Dict[int, Gdk.Cursor] = {}
 _arc_cursor_cache: Dict[int, Gdk.Cursor] = {}
-_tool_cursor_cache: Dict[str, Gdk.Cursor] = {}
+_tool_cursor_cache: Dict[Tuple[str, ColorRGBA], Gdk.Cursor] = {}
 
 # This map defines the base angle for each resize handle, using a standard
 # counter-clockwise (CCW) convention where 0 degrees is to the right.
@@ -38,7 +38,9 @@ _region_angles = {
 
 
 def get_tool_cursor(
-    icon_name: str, fallback_cursor_name: str = "crosshair"
+    icon_name: str,
+    color: Optional[ColorRGBA] = None,
+    fallback_cursor_name: str = "crosshair",
 ) -> Optional[Gdk.Cursor]:
     """
     Creates or retrieves from cache a custom cursor with a tool icon.
@@ -47,14 +49,19 @@ def get_tool_cursor(
 
     Args:
         icon_name: The symbolic name of the icon to use.
+        color: Optional RGBA color tuple for the crosshair. If None,
+               defaults to white.
         fallback_cursor_name: The name of the GDK cursor to use if the
                               icon cannot be loaded.
 
     Returns:
         A Gdk.Cursor object, or None if the fallback cursor fails.
     """
-    if icon_name in _tool_cursor_cache:
-        return _tool_cursor_cache[icon_name]
+    default_color: ColorRGBA = (1.0, 1.0, 1.0, 1.0)
+    rgba = color if color else default_color
+    cache_key = (icon_name, rgba)
+    if cache_key in _tool_cursor_cache:
+        return _tool_cursor_cache[cache_key]
 
     size = 32
     hotspot = 16  # Center of the crosshair
@@ -83,7 +90,7 @@ def get_tool_cursor(
     ctx.line_to(size - 4, hotspot)
     ctx.stroke()
 
-    ctx.set_source_rgb(1, 1, 1)  # White inner
+    ctx.set_source_rgba(*rgba)  # Foreground color inner
     ctx.set_line_width(1)
     ctx.move_to(hotspot, 4)
     ctx.line_to(hotspot, size - 4)
@@ -91,9 +98,18 @@ def get_tool_cursor(
     ctx.line_to(size - 4, hotspot)
     ctx.stroke()
 
-    # Draw the icon onto the surface
-    Gdk.cairo_set_source_pixbuf(ctx, pixbuf, hotspot + 2, hotspot + 2)
+    # Draw the icon onto the surface, tinted with the foreground color
+    icon_x = hotspot + 2
+    icon_y = hotspot + 2
+    Gdk.cairo_set_source_pixbuf(ctx, pixbuf, icon_x, icon_y)
     ctx.paint()
+
+    # Tint the icon area by multiplying with the foreground color
+    ctx.set_operator(cairo.Operator.ATOP)
+    ctx.set_source_rgba(*rgba)
+    ctx.rectangle(icon_x, icon_y, pixbuf.get_width(), pixbuf.get_height())
+    ctx.fill()
+    ctx.set_operator(cairo.Operator.OVER)
 
     # 2. Convert Cairo surface to Gdk.Texture
     data = surface.get_data()
@@ -108,7 +124,7 @@ def get_tool_cursor(
 
     # 3. Create Gdk.Cursor from the texture and cache it
     cursor = Gdk.Cursor.new_from_texture(texture, hotspot, hotspot)
-    _tool_cursor_cache[icon_name] = cursor
+    _tool_cursor_cache[cache_key] = cursor
     return cursor
 
 

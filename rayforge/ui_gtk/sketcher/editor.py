@@ -142,25 +142,16 @@ class SketchEditor:
         if isinstance(current_tool, TextBoxTool) and current_tool.is_hovering:
             return Gdk.Cursor.new_from_name("text")
 
-        # Priority 2: Return a tool-specific cursor.
-        tool = self.sketch_element.active_tool_name
-        if tool == "path":
-            return get_tool_cursor("sketch-line-symbolic")
-        if tool == "arc":
-            return get_tool_cursor("sketch-arc-symbolic")
-        if tool == "circle":
-            return get_tool_cursor("sketch-circle-symbolic")
-        if tool == "fill":
-            return get_tool_cursor("sketch-fill-symbolic")
-        if tool == "rectangle":
-            return get_tool_cursor("sketch-rect-symbolic")
-        if tool == "rounded_rect":
-            return get_tool_cursor("sketch-rounded-rect-symbolic")
-        if tool == "text_box":
-            return get_tool_cursor("sketch-text-symbolic")
+        if current_tool.CURSOR_ICON:
+            canvas = self.sketch_element.canvas
+            if canvas:
+                fg_color = canvas.get_color()
+                color = (fg_color.red, fg_color.green, fg_color.blue, 1.0)
+            else:
+                color = None
+            return get_tool_cursor(current_tool.CURSOR_ICON, color)
 
-        # Default cursor for 'select' tool or any other case.
-        return Gdk.Cursor.new_from_name("default")
+        return None
 
     def on_pie_menu_right_click(self, sender, gesture, n_press, x, y):
         """

@@ -14,6 +14,7 @@ from .conflicts_widget import ConflictingConstraintsWidget
 from .font_properties import FontPropertiesWidget
 from .menu import SketchMenu
 from .sketchcanvas import SketchCanvas
+from .tools import ACTION_TOOL_MAP, STUDIO_SHORTCUTS
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +198,6 @@ class SketchStudio(Gtk.Box):
         """Initializes the action group and shortcut controller."""
         self.action_group = Gio.SimpleActionGroup()
 
-        # Define actions mapping: (name, callback)
         actions = [
             ("finish", self._on_finish_clicked),
             ("cancel", self._on_cancel_clicked),
@@ -214,17 +214,7 @@ class SketchStudio(Gtk.Box):
             action.connect("activate", cb)
             self.action_group.add_action(action)
 
-        # Tool selection actions
-        tool_map = {
-            "tool_arc": "arc",
-            "tool_path": "path",
-            "tool_circle": "circle",
-            "tool_fill": "fill",
-            "tool_rectangle": "rectangle",
-            "tool_rounded_rect": "rounded_rect",
-            "tool_select": "select",
-        }
-        for action_name, tool_id in tool_map.items():
+        for action_name, tool_id in ACTION_TOOL_MAP.items():
             action = Gio.SimpleAction.new(action_name, None)
             action.connect(
                 "activate",
@@ -232,7 +222,6 @@ class SketchStudio(Gtk.Box):
             )
             self.action_group.add_action(action)
 
-        # Create shortcut controller
         self.shortcut_controller = Gtk.ShortcutController()
         self.shortcut_controller.set_scope(Gtk.ShortcutScope.MANAGED)
 
@@ -241,13 +230,9 @@ class SketchStudio(Gtk.Box):
             "sketch.redo": [f"{PRIMARY_ACCEL}y", f"{PRIMARY_ACCEL}<Shift>z"],
             "sketch.delete": ["Delete"],
             "sketch.view_fit": ["f"],
-            "sketch.tool_select": ["s"],
-            "sketch.tool_path": ["l"],
-            "sketch.tool_circle": ["c"],
-            "sketch.tool_arc": ["a"],
-            "sketch.tool_fill": ["i"],
             "sketch.finish": [f"{PRIMARY_ACCEL}Return"],
         }
+        shortcuts.update(STUDIO_SHORTCUTS)
 
         for action_name, accels in shortcuts.items():
             for accel in accels:

@@ -26,6 +26,8 @@ class PathTool(SketchTool):
     ICON = "sketch-bezier-symbolic"
     LABEL = _("Path")
     SHORTCUTS = ["gp", "gl"]
+    ACTION_SHORTCUT = "l"
+    CURSOR_ICON = "sketch-line-symbolic"
 
     def __init__(self, element):
         super().__init__(element)

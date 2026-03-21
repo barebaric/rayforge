@@ -15,6 +15,7 @@ class RoundedRectTool(SketchTool):
     ICON = "sketch-rounded-rect-symbolic"
     LABEL = _("Rounded Rectangle")
     SHORTCUTS = ["go"]
+    CURSOR_ICON = "sketch-rounded-rect-symbolic"
     DEFAULT_RADIUS = 10.0
 
     def __init__(self, element):
