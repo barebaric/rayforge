@@ -29,15 +29,12 @@ class SketchPieMenu(PieMenu):
 
         self.tool_selected = Signal()
 
-        self._action_to_keys = {}
+        self._tool_to_display_key: dict[str, str] = {}
         for tool_name, tool_cls in TOOL_REGISTRY.items():
-            if tool_cls.SHORTCUT:
-                key, _label = tool_cls.SHORTCUT
-                action = f"set_tool:{tool_name}"
-                if action not in self._action_to_keys:
-                    self._action_to_keys[action] = []
+            if tool_cls.SHORTCUTS:
+                key = tool_cls.SHORTCUTS[0]
                 display_key = "Space" if key == " " else key.upper()
-                self._action_to_keys[action].append(display_key)
+                self._tool_to_display_key[tool_name] = display_key
 
     def set_context(
         self,
@@ -87,20 +84,16 @@ class SketchPieMenu(PieMenu):
 
     def _get_tool_label(self, tool_name: str, base_label: str) -> str:
         """Get label with shortcut hint if available."""
-        action = f"set_tool:{tool_name}"
-        keys = self._action_to_keys.get(action, [])
-
-        if not keys:
+        key = self._tool_to_display_key.get(tool_name)
+        if not key:
             return base_label
 
-        formatted_keys = []
-        for key in sorted(keys):
-            if len(key) > 1 and key != "Space":
-                formatted_keys.append("-".join(key))
-            else:
-                formatted_keys.append(key)
+        if len(key) > 1 and key != "Space":
+            formatted_key = "-".join(key)
+        else:
+            formatted_key = key
 
-        return f"{base_label} ({', '.join(formatted_keys)})"
+        return f"{base_label} ({formatted_key})"
 
     def _on_tool_clicked(self, sender):
         """Handle tool selection signals."""

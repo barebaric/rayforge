@@ -14,7 +14,7 @@ class LineTool(SketchTool):
 
     ICON = "sketch-line-symbolic"
     LABEL = _("Line")
-    SHORTCUT = ("gl", _("Line"))
+    SHORTCUTS = ["gl"]
 
     def __init__(self, element):
         super().__init__(element)

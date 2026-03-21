@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class AspectRatioConstraintTool(SketchTool):
     ICON = "sketch-constrain-aspect-symbolic"
     LABEL = _("Aspect Ratio")
-    SHORTCUT = ("kx", _("Aspect Ratio"))
+    SHORTCUTS = ["kx"]
 
     def is_available(
         self,

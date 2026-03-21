@@ -59,6 +59,18 @@ TOOL_REGISTRY = {
     "waypoint_symmetric": WaypointSymmetricTool,
 }
 
+
+def build_key_to_tool_map() -> dict[str, str]:
+    """Build reverse lookup: key sequence -> tool name."""
+    key_map = {}
+    for tool_name, tool_cls in TOOL_REGISTRY.items():
+        for key in tool_cls.SHORTCUTS:
+            key_map[key] = tool_name
+    return key_map
+
+
+KEY_TO_TOOL = build_key_to_tool_map()
+
 __all__ = [
     "AngleConstraintTool",
     "ArcTool",
@@ -75,6 +87,7 @@ __all__ = [
     "FilletTool",
     "FillTool",
     "HorizontalConstraintTool",
+    "KEY_TO_TOOL",
     "LineTool",
     "PerpendicularConstraintTool",
     "RadiusConstraintTool",

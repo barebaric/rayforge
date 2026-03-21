@@ -14,7 +14,7 @@ class RectangleTool(SketchTool):
 
     ICON = "sketch-rect-symbolic"
     LABEL = _("Rectangle")
-    SHORTCUT = ("gr", _("Rectangle"))
+    SHORTCUTS = ["gr"]
 
     def __init__(self, element):
         super().__init__(element)

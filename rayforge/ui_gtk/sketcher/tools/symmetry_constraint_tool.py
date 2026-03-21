@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class SymmetryConstraintTool(SketchTool):
     ICON = "sketch-constrain-symmetric-symbolic"
     LABEL = _("Symmetry")
-    SHORTCUT = ("s", _("Symmetry"))
+    SHORTCUTS = ["s"]
 
     def is_available(
         self,

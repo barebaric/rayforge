@@ -50,7 +50,7 @@ class SelectTool(SketchTool):
 
     ICON = "sketch-select-symbolic"
     LABEL = _("Select")
-    SHORTCUT = (" ", _("Select"))
+    SHORTCUTS = [" "]
 
     def __init__(self, element):
         super().__init__(element)

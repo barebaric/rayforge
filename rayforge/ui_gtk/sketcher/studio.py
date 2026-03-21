@@ -406,8 +406,9 @@ class SketchStudio(Gtk.Box):
 
         # Global shortcuts from all tools
         for tool_instance in element.tools.values():
-            if tool_instance.SHORTCUT and tool_instance.shortcut_is_active():
-                key, label = tool_instance.SHORTCUT
+            if tool_instance.SHORTCUTS and tool_instance.shortcut_is_active():
+                key = tool_instance.SHORTCUTS[0]
+                label = tool_instance.LABEL or ""
                 if is_not_dragging():
                     if key == " ":
                         display_keys = ["Space"]

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class FilletTool(SketchTool):
     ICON = "sketch-fillet-symbolic"
     LABEL = _("Fillet")
-    SHORTCUT = ("cf", _("Fillet"))
+    SHORTCUTS = ["cf"]
     DEFAULT_RADIUS = 10.0
 
     def is_available(

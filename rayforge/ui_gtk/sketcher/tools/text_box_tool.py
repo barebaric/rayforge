@@ -35,7 +35,7 @@ class TextBoxState(Enum):
 class TextBoxTool(SketchTool):
     ICON = "sketch-text-symbolic"
     LABEL = _("Text Box")
-    SHORTCUT = ("gt", _("Text Box"))
+    SHORTCUTS = ["gt"]
     EDITING_SHORTCUTS = []
 
     def __init__(self, element):

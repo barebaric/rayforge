@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class CoincidentConstraintTool(SketchTool):
     ICON = "sketch-constrain-point-on-x-symbolic"
     LABEL = _("Coincident")
-    SHORTCUT = ("o", _("Coincident"))
+    SHORTCUTS = ["o", "c"]
 
     def is_available(
         self,

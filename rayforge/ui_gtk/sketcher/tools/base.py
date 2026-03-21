@@ -38,7 +38,7 @@ class SketchTool(ABC):
 
     ICON: Optional[str] = None
     LABEL: Optional[str] = None
-    SHORTCUT: Optional[Tuple[str, str]] = None
+    SHORTCUTS: List[str] = []
 
     def __init__(self, element: SketchElement):
         self.element = element

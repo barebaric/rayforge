@@ -11,7 +11,7 @@ class ArcTool(SketchTool):
 
     ICON = "sketch-arc-symbolic"
     LABEL = _("Arc")
-    SHORTCUT = ("ga", _("Arc"))
+    SHORTCUTS = ["ga"]
 
     def __init__(self, element):
         super().__init__(element)

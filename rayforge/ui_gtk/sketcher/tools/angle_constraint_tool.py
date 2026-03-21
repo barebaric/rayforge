@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class AngleConstraintTool(SketchTool):
     ICON = "sketch-constrain-angle-symbolic"
     LABEL = _("Angle")
-    SHORTCUT = ("ka", _("Angle"))
+    SHORTCUTS = ["ka"]
 
     def is_available(
         self,
