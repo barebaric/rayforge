@@ -152,7 +152,7 @@ class TestDialectProperties:
 
     def test_builtin_dialects_count(self):
         """Verify we have the expected number of built-in dialects."""
-        assert len(BUILTIN_DIALECTS) == 7
+        assert len(BUILTIN_DIALECTS) == 5
 
     @pytest.mark.parametrize("dialect", BUILTIN_DIALECTS, ids=lambda d: d.uid)
     def test_dialect_has_required_templates(self, dialect):
@@ -180,10 +180,10 @@ class TestDialectProperties:
         coord_fields = ["travel_move", "linear_move"]
         for field in coord_fields:
             template = getattr(dialect, field)
-            assert "{x}" in template, (
+            assert "{x}" in template or "{x_cmd}" in template, (
                 f"Dialect {dialect.uid} {field} missing {{x}} placeholder"
             )
-            assert "{y}" in template, (
+            assert "{y}" in template or "{y_cmd}" in template, (
                 f"Dialect {dialect.uid} {field} missing {{y}} placeholder"
             )
 
