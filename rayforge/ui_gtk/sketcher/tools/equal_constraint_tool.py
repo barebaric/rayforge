@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class EqualConstraintTool(SketchTool):
     ICON = "sketch-constrain-equal-symbolic"
     LABEL = _("Equal")
-    SHORTCUT = ("e", _("Equal"))
+    SHORTCUTS = ["e"]
 
     def is_available(
         self,

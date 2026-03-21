@@ -295,4 +295,4 @@ def test_bezier_tool_on_hover_motion_skips_when_in_press(
 
 def test_bezier_tool_shortcut(bezier_tool):
     """Test that BezierTool has the correct shortcut."""
-    assert BezierTool.SHORTCUT == ("gb", "Bezier")
+    assert BezierTool.SHORTCUTS == ["gb"]

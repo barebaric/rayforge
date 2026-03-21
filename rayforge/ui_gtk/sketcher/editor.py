@@ -9,7 +9,7 @@ from ...core.undo import HistoryManager
 from ..canvas.cursor import get_tool_cursor
 from ..shared.keyboard import is_primary_modifier
 from .piemenu import SketchPieMenu
-from .tools import TOOL_REGISTRY, SelectTool, TextBoxTool
+from .tools import KEY_TO_TOOL, SelectTool, TextBoxTool
 from .tools.base import SketcherKey
 from .tools.text_box_tool import TextBoxState
 
@@ -55,18 +55,9 @@ class SketchEditor:
         self.pie_menu.right_clicked.connect(self.on_pie_menu_right_click)
 
     def _init_shortcuts(self):
-        """Builds keyboard shortcut mappings from tool registry."""
-        self.shortcuts = {}
-
-        for tool_name, tool_cls in TOOL_REGISTRY.items():
-            if tool_cls.SHORTCUT:
-                key, _label = tool_cls.SHORTCUT
-                self.shortcuts[key] = f"set_tool:{tool_name}"
-
-        self.shortcuts["c"] = "set_tool:coincident"
-
+        """Build prefix set for multi-key sequences."""
         self.shortcut_prefixes = {
-            s[:i] for s in self.shortcuts for i in range(1, len(s))
+            k[:i] for k in KEY_TO_TOOL for i in range(1, len(k))
         }
 
     def activate(self, sketch_element: "SketchElement"):
@@ -440,23 +431,10 @@ class SketchEditor:
         logger.debug(f"Key sequence: {current_sequence}")
 
         # Check for a complete shortcut match
-        if current_sequence in self.shortcuts:
-            action_str = self.shortcuts[current_sequence]
-            logger.info(
-                f"Shortcut '{current_sequence}' triggered: {action_str}"
-            )
-
-            # Special handling for methods with arguments (e.g., set_tool:line)
-            if ":" in action_str:
-                method_name, arg = action_str.split(":", 1)
-                method = getattr(self.sketch_element, method_name, None)
-                if method and callable(method):
-                    method(arg)
-            else:
-                method = getattr(self.sketch_element, action_str, None)
-                if method and callable(method):
-                    method()
-
+        if current_sequence in KEY_TO_TOOL:
+            tool_name = KEY_TO_TOOL[current_sequence]
+            logger.info(f"Shortcut '{current_sequence}' -> tool '{tool_name}'")
+            self.sketch_element.set_tool(tool_name)
             self._reset_key_sequence()
             return True
 

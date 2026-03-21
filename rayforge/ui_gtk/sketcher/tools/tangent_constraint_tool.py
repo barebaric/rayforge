@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class TangentConstraintTool(SketchTool):
     ICON = "sketch-constrain-tangential-symbolic"
     LABEL = _("Tangent")
-    SHORTCUT = ("t", _("Tangent"))
+    SHORTCUTS = ["t"]
 
     def is_available(
         self,

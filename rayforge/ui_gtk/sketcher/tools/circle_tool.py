@@ -11,7 +11,7 @@ class CircleTool(SketchTool):
 
     ICON = "sketch-circle-symbolic"
     LABEL = _("Circle")
-    SHORTCUT = ("gc", _("Circle"))
+    SHORTCUTS = ["gc"]
 
     def __init__(self, element):
         super().__init__(element)

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class ConstructionTool(SketchTool):
     ICON = "sketch-construction-symbolic"
     LABEL = _("Construction")
-    SHORTCUT = ("gn", _("Construction"))
+    SHORTCUTS = ["gn"]
 
     def is_available(
         self,

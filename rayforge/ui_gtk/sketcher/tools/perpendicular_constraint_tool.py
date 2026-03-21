@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class PerpendicularConstraintTool(SketchTool):
     ICON = "sketch-constrain-perpendicular-symbolic"
     LABEL = _("Perpendicular")
-    SHORTCUT = ("n", _("Perpendicular"))
+    SHORTCUTS = ["n"]
 
     def is_available(
         self,

@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class DistanceConstraintTool(SketchTool):
     ICON = "sketch-distance-symbolic"
     LABEL = _("Distance")
-    SHORTCUT = ("kd", _("Distance"))
+    SHORTCUTS = ["kd"]
 
     def is_available(
         self,

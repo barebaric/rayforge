@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class RadiusConstraintTool(SketchTool):
     ICON = "sketch-radius-symbolic"
     LABEL = _("Radius")
-    SHORTCUT = ("kr", _("Radius"))
+    SHORTCUTS = ["kr"]
 
     def is_available(
         self,

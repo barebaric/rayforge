@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class ChamferTool(SketchTool):
     ICON = "sketch-chamfer-symbolic"
     LABEL = _("Chamfer")
-    SHORTCUT = ("ch", _("Chamfer"))
+    SHORTCUTS = ["ch"]
     DEFAULT_DISTANCE = 10.0
 
     def is_available(

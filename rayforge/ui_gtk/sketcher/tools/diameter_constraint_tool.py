@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class DiameterConstraintTool(SketchTool):
     ICON = "sketch-diameter-symbolic"
     LABEL = _("Diameter")
-    SHORTCUT = ("ko", _("Diameter"))
+    SHORTCUTS = ["ko"]
 
     def is_available(
         self,

@@ -9,7 +9,7 @@ class FillTool(SketchTool):
 
     ICON = "sketch-fill-symbolic"
     LABEL = _("Fill")
-    SHORTCUT = ("gf", _("Fill"))
+    SHORTCUTS = ["gf"]
 
     def is_available(self, target, target_type) -> bool:
         return target is None

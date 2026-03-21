@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class VerticalConstraintTool(SketchTool):
     ICON = "sketch-constrain-vertical-symbolic"
     LABEL = _("Vertical")
-    SHORTCUT = ("v", _("Vertical"))
+    SHORTCUTS = ["v"]
 
     def is_available(
         self,

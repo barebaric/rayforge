@@ -25,7 +25,7 @@ class BezierTool(SketchTool):
 
     ICON = "sketch-bezier-symbolic"
     LABEL = _("Bezier")
-    SHORTCUT = ("gb", _("Bezier"))
+    SHORTCUTS = ["gb"]
 
     def __init__(self, element):
         super().__init__(element)

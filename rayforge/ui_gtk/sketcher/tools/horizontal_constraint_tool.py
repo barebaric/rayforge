@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class HorizontalConstraintTool(SketchTool):
     ICON = "sketch-constrain-horizontal-symbolic"
     LABEL = _("Horizontal")
-    SHORTCUT = ("h", _("Horizontal"))
+    SHORTCUTS = ["h"]
 
     def is_available(
         self,
