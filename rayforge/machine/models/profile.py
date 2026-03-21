@@ -301,7 +301,7 @@ PROFILES: List[MachineProfile] = [
     MachineProfile(
         name="OMTech K40+",
         driver_class_name="GrblSerialDriver",
-        dialect_uid="grbl_dynamic_noz",
+        dialect_uid="grbl_dynamic",
         gcode_precision=3,
         axis_extents=(300.0, 200.0),
         work_margins=(5.0, 5.0, 5.0, 5.0),

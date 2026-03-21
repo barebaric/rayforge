@@ -141,6 +141,52 @@ class GcodeEncoder(OpsEncoder):
             formatted = formatted.rstrip("0").rstrip(".")
         return formatted
 
+    def _build_coord_commands(self, x: float, y: float, z: float) -> dict:
+        """
+        Build coordinate template variables, with conditional commands
+        that omit unchanged axes when omit_unchanged_coords is enabled.
+
+        Args:
+            x: Target X coordinate.
+            y: Target Y coordinate.
+            z: Target Z coordinate.
+
+        Returns:
+            A dict with 'x', 'y', 'z' (always populated) and
+            'x_cmd', 'y_cmd', 'z_cmd' (conditional, include axis letter).
+        """
+        prev_x, prev_y, prev_z = self.current_pos
+
+        if self.dialect.omit_unchanged_coords:
+            x_cmd = (
+                f" X{self._format_coord(x)}"
+                if not math.isclose(x, prev_x)
+                else ""
+            )
+            y_cmd = (
+                f" Y{self._format_coord(y)}"
+                if not math.isclose(y, prev_y)
+                else ""
+            )
+            z_cmd = (
+                f" Z{self._format_coord(z)}"
+                if not math.isclose(z, prev_z)
+                else ""
+            )
+        else:
+            x_cmd = f" X{self._format_coord(x)}"
+            y_cmd = f" Y{self._format_coord(y)}"
+            z_cmd = f" Z{self._format_coord(z)}"
+
+        return {
+            "x": self._format_coord(x),
+            "y": self._format_coord(y),
+            "z": self._format_coord(z),
+            "x_cmd": x_cmd,
+            "y_cmd": y_cmd,
+            "z_cmd": z_cmd,
+        }
+
     def encode(
         self, ops: Ops, machine: "Machine", doc: "Doc"
     ) -> Tuple[str, MachineCodeOpMap]:
@@ -391,14 +437,17 @@ class GcodeEncoder(OpsEncoder):
         """Rapid movement with laser safety"""
         self._laser_off(context, gcode)
 
-        f_command = ""
+        coord_vars = self._build_coord_commands(x, y, z)
         template_vars = {
-            "x": self._format_coord(x),
-            "y": self._format_coord(y),
-            "z": self._format_coord(z),
+            "x": coord_vars["x"],
+            "y": coord_vars["y"],
+            "z": coord_vars["z"],
+            "x_cmd": coord_vars["x_cmd"],
+            "y_cmd": coord_vars["y_cmd"],
+            "z_cmd": coord_vars["z_cmd"],
         }
 
-        # Check the dialect capability directly
+        f_command = ""
         if self.dialect.can_g0_with_speed:
             self._emit_modal_speed(gcode, self.travel_speed or 0)
             if self.travel_speed is not None:
@@ -431,10 +480,14 @@ class GcodeEncoder(OpsEncoder):
             power_abs = self.power * current_laser.max_power
             s_command = f" S{self._format_power(power_abs)}"
 
+        coord_vars = self._build_coord_commands(x, y, z)
         template_vars = {
-            "x": self._format_coord(x),
-            "y": self._format_coord(y),
-            "z": self._format_coord(z),
+            "x": coord_vars["x"],
+            "y": coord_vars["y"],
+            "z": coord_vars["z"],
+            "x_cmd": coord_vars["x_cmd"],
+            "y_cmd": coord_vars["y_cmd"],
+            "z_cmd": coord_vars["z_cmd"],
             "f_command": f_command,
             "s_command": s_command,
             "power": power_abs,
@@ -469,11 +522,15 @@ class GcodeEncoder(OpsEncoder):
             power_abs = self.power * current_laser.max_power
             s_command = f" S{self._format_power(power_abs)}"
 
+        coord_vars = self._build_coord_commands(x, y, z)
         gcode.append(
             template.format(
-                x=self._format_coord(x),
-                y=self._format_coord(y),
-                z=self._format_coord(z),
+                x=coord_vars["x"],
+                y=coord_vars["y"],
+                z=coord_vars["z"],
+                x_cmd=coord_vars["x_cmd"],
+                y_cmd=coord_vars["y_cmd"],
+                z_cmd=coord_vars["z_cmd"],
                 i=self._format_coord(i),
                 j=self._format_coord(j),
                 f_command=f_command,

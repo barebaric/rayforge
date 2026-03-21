@@ -213,8 +213,8 @@ class TestGrblSerialDriver:
         )
 
         gcode_lines = [
-            b"G0 X10 Y10 Z0\n",
-            b"G1 X20 Y20 Z0\n",
+            b"G0 X10 Y10\n",
+            b"G1 X20 Y20\n",
         ]
 
         for line in gcode_lines:
@@ -753,11 +753,11 @@ class TestGrblSerialDriver:
         )
 
         await asyncio.sleep(0.01)
-        send_mock.assert_any_call(b"G0 X10 Y10 Z0\n")
+        send_mock.assert_any_call(b"G0 X10 Y10\n")
         driver.on_serial_data_received(transport_mock, b"ok\r\n")
         await asyncio.sleep(0.01)
 
-        send_mock.assert_any_call(b"G1 X20 Y20 Z0\n")
+        send_mock.assert_any_call(b"G1 X20 Y20\n")
         driver.on_serial_data_received(transport_mock, b"ok\r\n")
         await asyncio.sleep(0.01)
 

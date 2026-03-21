@@ -73,6 +73,7 @@ class GcodeDialect:
 
     inject_wcs_after_preamble: bool = True
     can_g0_with_speed: bool = False
+    omit_unchanged_coords: bool = True
 
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
     is_custom: bool = False
