@@ -1075,6 +1075,7 @@ class FileCmd:
             doc_dict = json.loads(file_content)
 
             from ..core.doc import Doc
+            from ..core.asset import UnknownAsset
 
             new_doc = Doc.from_dict(doc_dict)
 
@@ -1082,6 +1083,20 @@ class FileCmd:
             self._editor.set_file_path(file_path)
             self._editor.mark_as_saved()
             self._editor.doc.updated.send(self._editor.doc)
+
+            unknown_assets = [
+                asset
+                for asset in new_doc.get_all_assets()
+                if isinstance(asset, UnknownAsset)
+            ]
+            if unknown_assets:
+                self._editor.notification_requested.send(
+                    self,
+                    message=_(
+                        "{count} asset(s) require disabled addon(s)"
+                    ).format(count=len(unknown_assets)),
+                    persistent=True,
+                )
 
             logger.info(f"Successfully loaded project from {file_path}")
             return True

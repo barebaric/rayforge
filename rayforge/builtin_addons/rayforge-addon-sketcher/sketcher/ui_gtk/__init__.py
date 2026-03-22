@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Optional
+import logging
 
 from gi.repository import Gio, GLib
 from gettext import gettext as _
@@ -10,6 +11,7 @@ from rayforge.ui_gtk.action_registry import (
     action_registry,
 )
 from rayforge.ui_gtk.actions import action_extension_registry
+from rayforge.ui_gtk.shared.keyboard import PRIMARY_ACCEL
 from rayforge.ui_gtk.canvas2d.context_menu import (
     context_menu_extension_registry,
 )
@@ -25,6 +27,8 @@ from .property_provider import SketchPropertyProvider
 from .sketch_mode_cmd import SketchModeCmd
 from .sketchelement import SketchElement
 
+logger = logging.getLogger(__name__)
+
 if TYPE_CHECKING:
     from gi.repository import Gtk
 
@@ -38,6 +42,7 @@ if TYPE_CHECKING:
 
 _sketch_studio: Optional["SketchStudio"] = None
 _sketch_mode_cmd: Optional["SketchModeCmd"] = None
+_main_window: Optional["MainWindow"] = None
 
 
 def _build_sketch_context_menu_items(
@@ -95,7 +100,7 @@ def setup_sketch_page(main_window: "MainWindow") -> "SketchStudio":
     Returns:
         The created SketchStudio instance
     """
-    global _sketch_studio, _sketch_mode_cmd
+    global _sketch_studio, _sketch_mode_cmd, _main_window
 
     if _sketch_studio is not None:
         return _sketch_studio
@@ -113,6 +118,7 @@ def setup_sketch_page(main_window: "MainWindow") -> "SketchStudio":
     )
 
     _sketch_mode_cmd = SketchModeCmd(main_window, main_window.doc_editor)
+    _main_window = main_window
 
     sketch_studio.finished.connect(_sketch_mode_cmd.on_sketch_finished)
     sketch_studio.cancelled.connect(_sketch_mode_cmd.on_sketch_cancelled)
@@ -124,6 +130,40 @@ def setup_sketch_page(main_window: "MainWindow") -> "SketchStudio":
     _sketch_studio = sketch_studio
 
     return sketch_studio
+
+
+def teardown_sketch_page():
+    """
+    Clean up the sketch studio page when the addon is disabled.
+
+    This disconnects signals and removes the studio from the main window.
+    """
+    global _sketch_studio, _sketch_mode_cmd, _main_window
+
+    logger.info(
+        f"teardown_sketch_page called, studio={_sketch_studio}, "
+        f"main_window={_main_window}"
+    )
+
+    if _sketch_studio is None:
+        logger.info("teardown_sketch_page: _sketch_studio is None, returning")
+        return
+
+    get_context().config.changed.disconnect(_on_config_changed)
+
+    if _sketch_mode_cmd is not None:
+        _sketch_studio.finished.disconnect(_sketch_mode_cmd.on_sketch_finished)
+        _sketch_studio.cancelled.disconnect(
+            _sketch_mode_cmd.on_sketch_cancelled
+        )
+
+    if _main_window is not None:
+        _main_window.remove_stack_page("sketch")
+
+    _sketch_studio = None
+    _sketch_mode_cmd = None
+    _main_window = None
+    logger.info("teardown_sketch_page completed")
 
 
 def get_sketch_studio() -> Optional["SketchStudio"]:
@@ -152,6 +192,7 @@ def _register_actions(action_manager: "ActionManager"):
         action=action,
         addon_name="sketcher",
         label=_("New Sketch"),
+        shortcut=f"{PRIMARY_ACCEL}n",
         menu=MenuPlacement(menu_id="object", priority=50),
     )
 
@@ -210,11 +251,17 @@ def register():
     This function is called during application initialization to
     register sketch-specific components with their respective registries.
     """
-    property_provider_registry.register(SketchPropertyProvider)
-    asset_row_widget_registry.register(Sketch, SketchAssetRowWidget)
-    context_menu_extension_registry.register(_build_sketch_context_menu_items)
-    action_extension_registry.register_setup(_register_actions)
-    action_extension_registry.register_state_update(_update_action_states)
+    property_provider_registry.register(SketchPropertyProvider, "sketcher")
+    asset_row_widget_registry.register(
+        Sketch, SketchAssetRowWidget, "sketcher"
+    )
+    context_menu_extension_registry.register(
+        _build_sketch_context_menu_items, "sketcher"
+    )
+    action_extension_registry.register_setup(_register_actions, "sketcher")
+    action_extension_registry.register_state_update(
+        _update_action_states, "sketcher"
+    )
 
 
 # Auto-register when module is imported
@@ -228,4 +275,5 @@ __all__ = [
     "get_sketch_mode_cmd",
     "get_sketch_studio",
     "setup_sketch_page",
+    "teardown_sketch_page",
 ]

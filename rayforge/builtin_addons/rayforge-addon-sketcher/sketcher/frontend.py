@@ -5,9 +5,12 @@ Registers UI widgets with the main application.
 """
 
 import gettext
+import logging
 from pathlib import Path
 
 from rayforge.core.hooks import hookimpl
+
+logger = logging.getLogger(__name__)
 
 _localedir = Path(__file__).parent.parent / "locale"
 _t = gettext.translation("sketcher", localedir=_localedir, fallback=True)
@@ -28,3 +31,12 @@ def main_window_ready(main_window):
     from .ui_gtk import setup_sketch_page
 
     setup_sketch_page(main_window)
+
+
+@hookimpl
+def on_unload():
+    """Clean up sketch studio when addon is disabled."""
+    logger.info("on_unload hook called, tearing down sketch page")
+    from .ui_gtk import teardown_sketch_page
+
+    teardown_sketch_page()

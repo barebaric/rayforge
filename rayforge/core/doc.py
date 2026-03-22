@@ -23,7 +23,6 @@ if TYPE_CHECKING:
     from .stock import StockItem
     from .stock_asset import StockAsset
 
-
 logger = logging.getLogger(__name__)
 
 # For generic type hinting in add_child
@@ -72,6 +71,9 @@ class Doc(DocItem):
                 raise TypeError("Asset data missing 'type' field")
             asset_class = asset_type_registry.get(asset_type)
             if not asset_class:
+                logger.warning(
+                    f"Unknown asset type '{asset_type}', creating UnknownAsset"
+                )
                 return UnknownAsset.from_dict(asset_data)
             return asset_class.from_dict(asset_data)
 

@@ -23,19 +23,26 @@ class AssetRowWidgetRegistry:
 
     def __init__(self):
         self._widgets: Dict[str, Type[BaseAssetRowWidget]] = {}
+        self._addon_map: Dict[str, str] = {}
 
     def register(
-        self, asset_cls: Type[IAsset], widget_cls: Type[BaseAssetRowWidget]
+        self,
+        asset_cls: Type[IAsset],
+        widget_cls: Type[BaseAssetRowWidget],
+        addon_name: str,
     ):
         """
         Register a widget class for an asset type.
 
         Args:
-            asset_cls: The asset class (e.g., Sketch, StockAsset)
+            asset_cls: The asset class (e.g., StockAsset)
             widget_cls: The widget class to create for this asset type
+            addon_name: Optional addon name for cleanup during unload
         """
         type_name = asset_cls.asset_type_name
         self._widgets[type_name] = widget_cls
+        if addon_name:
+            self._addon_map[type_name] = addon_name
         logger.debug(
             f"Registered asset row widget for '{type_name}': "
             f"{widget_cls.__name__}"
@@ -50,8 +57,34 @@ class AssetRowWidgetRegistry:
         type_name = asset_cls.asset_type_name
         if type_name in self._widgets:
             del self._widgets[type_name]
+            self._addon_map.pop(type_name, None)
             return True
         return False
+
+    def unregister_all_from_addon(self, addon_name: str) -> int:
+        """
+        Unregister all widgets registered by a specific addon.
+
+        Args:
+            addon_name: The name of the addon to clean up
+
+        Returns:
+            The number of widgets unregistered
+        """
+        to_remove = [
+            type_name
+            for type_name, name in self._addon_map.items()
+            if name == addon_name
+        ]
+        for type_name in to_remove:
+            del self._widgets[type_name]
+            del self._addon_map[type_name]
+        if to_remove:
+            logger.debug(
+                f"Unregistered {len(to_remove)} asset row widgets "
+                f"from addon '{addon_name}'"
+            )
+        return len(to_remove)
 
     def create(
         self, asset: IAsset, doc: "Doc", editor: "DocEditor"
@@ -84,7 +117,7 @@ def register_builtin_widgets():
     """
     from ...core.stock_asset import StockAsset
 
-    asset_row_widget_registry.register(StockAsset, StockAssetRowWidget)
+    asset_row_widget_registry.register(StockAsset, StockAssetRowWidget, "")
 
 
 def create_asset_row_widget(

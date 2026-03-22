@@ -572,14 +572,16 @@ class WorkPiece(DocItem):
     def get_geometry_provider(self) -> Optional["IGeometryProvider"]:
         """
         Retrieves the geometry provider for this workpiece, if applicable.
-        Prioritizes the transient provider (for subprocesses), then checks
+        Prioritizes the transient provider (subprocesses), then checks
         the document registry.
+        Returns None if the provider is missing or is an UnknownAsset.
         """
         if self._transient_geometry_provider:
             return self._transient_geometry_provider
         if self.geometry_provider_uid and self.doc:
             provider = self.doc.get_asset_by_uid(self.geometry_provider_uid)
-            assert isinstance(provider, IGeometryProvider)
+            if not isinstance(provider, IGeometryProvider):
+                return None
             if provider and self._geometry_provider_connection is None:
                 self._subscribe_to_geometry_provider(provider)
             return provider

@@ -5,9 +5,9 @@ from .workpiece import WorkpieceInfoProvider, TabsPropertyProvider
 
 def register_builtin_providers():
     """Register all built-in property providers."""
-    property_provider_registry.register(TransformPropertyProvider)
-    property_provider_registry.register(WorkpieceInfoProvider)
-    property_provider_registry.register(TabsPropertyProvider)
+    property_provider_registry.register(TransformPropertyProvider, "")
+    property_provider_registry.register(WorkpieceInfoProvider, "")
+    property_provider_registry.register(TabsPropertyProvider, "")
 
 
 __all__ = [
