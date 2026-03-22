@@ -153,6 +153,10 @@ class WorkSurface(WorldSurface):
         # Sends: (item, gesture, menu)
         self.context_menu_requested = Signal()
 
+        # Signal emitted when an asset is dropped onto the canvas
+        # Sends: (uid, position_mm) where position_mm is (x, y) in world coords
+        self.item_dropped = Signal()
+
         # Connect to generic signals from the base Canvas class
         self.move_begin.connect(self._on_any_transform_begin)
         self.resize_begin.connect(self._on_resize_begin)

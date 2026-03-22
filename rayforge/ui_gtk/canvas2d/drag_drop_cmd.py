@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Optional, Tuple, List
 from gettext import gettext as _
 from gi.repository import GObject, Gdk, Gtk, Gio, GLib, Adw
 from ...context import get_context
-from ...core.sketcher import Sketch
 from ...doceditor.file_cmd import ImportAction
 from ...image import ImporterFeature, importers
 
@@ -39,7 +38,7 @@ class DragDropCmd:
         self._drop_overlay_label: Optional[Gtk.Label] = None
 
         # Keep references to controllers
-        self._sketch_target: Optional[Gtk.DropTarget] = None
+        self._asset_drop_target: Optional[Gtk.DropTarget] = None
         self._file_target: Optional[Gtk.DropTarget] = None
 
         self._apply_drop_overlay_css()
@@ -71,19 +70,19 @@ class DragDropCmd:
     def setup_drop_targets(self):
         """
         Configure the canvas to accept file drops for importing.
-        Supports local files and file lists, as well as internal Sketch
-        objects.
+        Supports local files and file lists, as well as internal asset
+        UIDs (Strings) for generic asset drops.
         """
-        # We use separate drop targets for Sketches (Strings) and Files.
+        # We use separate drop targets for Asset UIDs (Strings) and Files.
         # This avoids issues with mixed types in a single controller.
 
-        # --- 1. Sketch Target (Strings) ---
-        self._sketch_target = Gtk.DropTarget.new(
+        # --- 1. Asset UID Target (Strings) ---
+        self._asset_drop_target = Gtk.DropTarget.new(
             GObject.TYPE_STRING, Gdk.DragAction.COPY
         )
-        self._sketch_target.connect("drop", self._on_sketch_drop)
-        self._sketch_target.connect("enter", self._on_sketch_drag_enter)
-        self.surface.add_controller(self._sketch_target)
+        self._asset_drop_target.connect("drop", self._on_asset_drop)
+        self._asset_drop_target.connect("enter", self._on_asset_drag_enter)
+        self.surface.add_controller(self._asset_drop_target)
 
         # --- 2. File Target (Files & FileLists) ---
         # Initialize with a valid type (Gio.File) then extend to FileList
@@ -95,22 +94,26 @@ class DragDropCmd:
         self.surface.add_controller(self._file_target)
 
         logger.debug(
-            "Split drop targets (Sketch/File) configured for WorkSurface"
+            "Split drop targets (Asset/File) configured for WorkSurface"
         )
 
-    # --- Sketch Handlers ---
+    # --- Asset Drop Handlers ---
 
-    def _on_sketch_drag_enter(self, drop_target, x, y):
-        # We accept copy for sketches. No overlay needed.
-        logger.debug("Sketch drag entered surface")
+    def _on_asset_drag_enter(self, drop_target, x, y):
+        # We accept copy for asset UIDs. No overlay needed.
+        logger.debug("Asset drag entered surface")
         return Gdk.DragAction.COPY
 
-    def _on_sketch_drop(self, drop_target, value, x, y):
-        logger.debug(f"Sketch drop event: value={value}")
+    def _on_asset_drop(self, drop_target, value, x, y):
+        logger.debug(f"Asset drop event: value={value}")
         if isinstance(value, str):
             # Convert widget coordinates to world coordinates (mm)
             world_x_mm, world_y_mm = self.surface._get_world_coords(x, y)
-            return self._handle_sketch_drop(value, (world_x_mm, world_y_mm))
+            # Emit the signal for asset handlers to process
+            self.surface.item_dropped.send(
+                self.surface, uid=value, position_mm=(world_x_mm, world_y_mm)
+            )
+            return True
         return False
 
     # --- File Handlers ---
@@ -491,7 +494,7 @@ class DragDropCmd:
 
         return False  # Don't repeat
 
-    def _show_clipboard_error(self) -> bool:
+    def _show_clipboard_error(self):
         """
         Show error notification for clipboard import failure.
 
@@ -502,67 +505,3 @@ class DragDropCmd:
             Adw.Toast.new(_("Failed to import image from clipboard"))
         )
         return False
-
-    def _handle_sketch_drop(
-        self, sketch_uid: str, position_mm: Tuple[float, float]
-    ) -> bool:
-        """
-        Handle a sketch UID dropped onto the canvas.
-
-        Args:
-            sketch_uid: The UID of the sketch being dropped
-            position_mm: The (x, y) position in mm where to place the instance
-
-        Returns:
-            True if the drop was handled successfully
-        """
-        try:
-            # Retrieve the sketch asset from the document
-            doc = self.main_window.doc_editor.doc
-            sketch = doc.get_asset_by_uid(sketch_uid)
-
-            if not isinstance(sketch, Sketch):
-                logger.warning(
-                    f"Dropped sketch UID {sketch_uid} not found in document"
-                )
-                return False
-
-            # Check if the sketch is empty.
-            # A fresh sketch always has 1 point (the origin), so we check for
-            # entities (lines, arcs, circles) to determine if it has content.
-            if sketch.is_empty:
-                dialog = Adw.MessageDialog(
-                    transient_for=self.main_window,
-                    heading=_("Empty Sketch"),
-                    body=_(
-                        "The selected sketch contains no geometry. Please "
-                        "edit the sketch to add lines or shapes before "
-                        "placing on the canvas."
-                    ),
-                )
-                dialog.add_response("close", _("Close"))
-                dialog.present()
-                return False
-
-            edit_cmd = self.main_window.doc_editor.edit
-
-            # Create the geometry provider instance at the drop position
-            new_workpiece = edit_cmd.add_geometry_provider_instance(
-                sketch_uid, position_mm
-            )
-
-            if new_workpiece:
-                logger.info(
-                    f"Created sketch instance {new_workpiece.uid[:8]} "
-                    f"from sketch {sketch_uid[:8]} at {position_mm}"
-                )
-                return True
-            else:
-                logger.warning(
-                    f"Failed to create sketch instance from {sketch_uid}"
-                )
-                return False
-
-        except Exception as e:
-            logger.exception(f"Error handling sketch drop: {e}")
-            return False

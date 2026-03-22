@@ -2,8 +2,6 @@ import pytest
 
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
-from rayforge.core.sketcher.sketch import Sketch
-from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.asset_cmd import AssetCmd
 
 
@@ -34,28 +32,6 @@ def test_rename_stock_asset(asset_cmd: AssetCmd):
     assert item.name == "Old Stock Name"
 
 
-def test_rename_sketch_asset(asset_cmd: AssetCmd):
-    """Test renaming a Sketch asset also renames its dependent WorkPiece."""
-    doc = asset_cmd.doc
-    sketch = Sketch(name="Old Sketch Name")
-    workpiece = WorkPiece.from_geometry_provider(sketch)
-    workpiece.name = "Old Sketch Name"  # Match the asset name
-    doc.add_asset(sketch)
-    doc.add_workpiece(workpiece)
-
-    new_name = "New Sketch Name"
-    asset_cmd.rename_asset(sketch, new_name)
-
-    assert sketch.name == new_name
-    assert workpiece.name == new_name
-    assert len(doc.history_manager.undo_stack) == 1
-
-    # Test undo
-    doc.history_manager.undo()
-    assert sketch.name == "Old Sketch Name"
-    assert workpiece.name == "Old Sketch Name"
-
-
 def test_delete_stock_asset_and_item(asset_cmd: AssetCmd):
     """Test deleting a StockAsset also removes its dependent StockItem."""
     doc = asset_cmd.doc
@@ -81,30 +57,3 @@ def test_delete_stock_asset_and_item(asset_cmd: AssetCmd):
     restored_item = doc.stock_items[0]
     assert restored_asset.uid == asset.uid
     assert restored_item.uid == item.uid
-
-
-def test_delete_sketch_and_workpiece(asset_cmd: AssetCmd):
-    """Test deleting a Sketch also removes its dependent WorkPiece."""
-    doc = asset_cmd.doc
-    sketch = Sketch(name="Sketch To Delete")
-    workpiece = WorkPiece.from_geometry_provider(sketch)
-    doc.add_asset(sketch)
-    doc.add_workpiece(workpiece)
-
-    assert len(doc.get_assets_by_type("sketch")) == 1
-    assert len(doc.all_workpieces) == 1
-
-    asset_cmd.delete_asset(sketch)
-
-    assert len(doc.get_assets_by_type("sketch")) == 0
-    assert len(doc.all_workpieces) == 0
-    assert len(doc.history_manager.undo_stack) == 1
-
-    # Test undo
-    doc.history_manager.undo()
-    assert len(doc.get_assets_by_type("sketch")) == 1
-    assert len(doc.all_workpieces) == 1
-    restored_sketch = next(iter(doc.get_assets_by_type("sketch").values()))
-    restored_wp = doc.all_workpieces[0]
-    assert restored_sketch.uid == sketch.uid
-    assert restored_wp.uid == workpiece.uid

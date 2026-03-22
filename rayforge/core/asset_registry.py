@@ -28,11 +28,9 @@ class AssetTypeRegistry:
         if self._builtins_registered:
             return
 
-        from .sketcher.sketch import Sketch
         from .source_asset import SourceAsset
         from .stock_asset import StockAsset
 
-        self._types["sketch"] = Sketch
         self._types["stock"] = StockAsset
         self._types["source"] = SourceAsset
         self._builtins_registered = True

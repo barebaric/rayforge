@@ -4,12 +4,23 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 1
-PLUGIN_API_VERSION = 8
+PLUGIN_API_VERSION = 9
 
 
 """
 API Changelog
-=============
+============
+
+Version 9
+---------
+Added ``main_window_ready`` hook to allow addons to register UI pages,
+commands, and other components that require access to the main window.
+Added ``register_exporters`` hook to allow addons to register file
+exporters.
+Added ``register_importers`` hook to allow addons to register file
+importers.
+Added ``register_renderers`` hook to allow addons to register custom
+renderers for their asset types.
 
 Version 8
 ---------
@@ -241,4 +252,61 @@ class RayforgeSpecs:
 
         Args:
             library_manager: The global LibraryManager instance.
+        """
+
+    @hookspec
+    def register_exporters(self, exporter_registry):
+        """
+        Called to allow addons to register file exporters.
+
+        Addons should call ``exporter_registry.register(exporter_cls)`` to
+        register exporter classes for their supported file formats.
+
+        .. versionadded:: 9
+
+        Args:
+            exporter_registry: The global ExporterRegistry instance.
+        """
+
+    @hookspec
+    def register_importers(self, importer_registry):
+        """
+        Called to allow addons to register file importers.
+
+        Addons should call ``importer_registry.register(importer_cls)`` to
+        register importer classes for their supported file formats.
+
+        .. versionadded:: 10
+
+        Args:
+            importer_registry: The global ImporterRegistry instance.
+        """
+
+    @hookspec
+    def register_renderers(self, renderer_registry):
+        """
+        Called to allow addons to register custom renderers.
+
+        Addons should call ``renderer_registry.register(renderer)`` to
+        register renderer instances. The renderer's class name is used as
+        the registry key.
+
+        .. versionadded:: 9
+
+        Args:
+            renderer_registry: The global RendererRegistry instance.
+        """
+
+    @hookspec
+    def main_window_ready(self, main_window):
+        """
+        Called when the main window is fully initialized.
+
+        Addons can use this hook to register custom UI pages, commands,
+        or other components that require access to the main window.
+
+        .. versionadded:: 9
+
+        Args:
+            main_window: The MainWindow instance.
         """

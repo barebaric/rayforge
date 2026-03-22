@@ -1,0 +1,160 @@
+from typing import List, Dict, Any, Sequence, TYPE_CHECKING, Optional
+from rayforge.core.geo import Geometry, Polygon, Rect
+from ..types import EntityID
+
+if TYPE_CHECKING:
+    from ..constraints import Constraint
+    from ..registry import EntityRegistry
+
+
+class Entity:
+    """Base class for geometric primitives."""
+
+    def __init__(self, id: EntityID, construction: bool = False):
+        self.id: EntityID = id
+        self.construction = construction
+        self.type = "entity"
+        # Constrained state is calculated by solver
+        self.constrained = False
+
+    def get_state(self) -> Optional[Dict[str, Any]]:
+        """
+        Returns a dictionary of solver-relevant discrete state (e.g. winding),
+        or None if the entity has no mutable discrete state.
+        Used for Undo/Redo snapshots.
+        """
+        # Construction state affects solver topology/rendering, so we capture
+        # it. Subclasses should call super().get_state() or merge dicts if
+        # they have more state.
+        return {"construction": self.construction}
+
+    def set_state(self, state: Dict[str, Any]) -> None:
+        """Restores state from a snapshot."""
+        if "construction" in state:
+            self.construction = state["construction"]
+
+    def update_constrained_status(
+        self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
+    ) -> None:
+        """
+        Updates self.constrained based on the status of defining points
+        and relevant constraints.
+        """
+        self.constrained = False
+
+    def get_point_ids(self) -> List[EntityID]:
+        """Returns IDs of all control points used by this entity."""
+        return []
+
+    def get_endpoint_ids(self) -> List[EntityID]:
+        """
+        Returns IDs of the two endpoints for path/loop traversal.
+        Returns empty list for single-point entities (Circle).
+        Index 0 is the start, index 1 is the end.
+        """
+        return []
+
+    def get_ignorable_unconstrained_points(self) -> List[EntityID]:
+        """
+        Returns IDs of points that can remain unconstrained if this entity
+        is constrained (e.g. radius handles).
+        """
+        return []
+
+    def hit_test(
+        self,
+        mx: float,
+        my: float,
+        threshold: float,
+        registry: "EntityRegistry",
+    ) -> bool:
+        """
+        Returns True if the point (mx, my) is within threshold distance of
+        this entity in model coordinates.
+        """
+        return False
+
+    def get_junction_point_ids(self) -> List[EntityID]:
+        """
+        Returns point IDs that should be counted for junction detection.
+        These are typically the endpoints of geometric entities.
+        """
+        return []
+
+    def is_contained_by(
+        self,
+        rect: Rect,
+        registry: "EntityRegistry",
+    ) -> bool:
+        """
+        Returns True if the entity is fully strictly contained within the rect.
+        Used for Window Selection.
+        """
+        return False
+
+    def intersects_rect(
+        self,
+        rect: Rect,
+        registry: "EntityRegistry",
+    ) -> bool:
+        """
+        Returns True if the entity intersects the rect or is contained by it.
+        Used for Crossing Selection.
+        """
+        return False
+
+    def to_geometry(self, registry: "EntityRegistry") -> Geometry:
+        """Converts the entity to a Geometry object."""
+        return Geometry()
+
+    def create_fill_geometry(
+        self, registry: "EntityRegistry"
+    ) -> Optional[Geometry]:
+        """
+        Creates a fill geometry for single-entity loops.
+        Returns None if the entity does not support fill geometry.
+        """
+        return None
+
+    def append_to_geometry(
+        self,
+        geo: Geometry,
+        registry: "EntityRegistry",
+        forward: bool,
+    ) -> None:
+        """
+        Appends this entity to an existing geometry object.
+        Used for multi-segment loops.
+        """
+        pass
+
+    def to_polygon_vertices(
+        self,
+        registry: "EntityRegistry",
+        forward: bool,
+    ) -> Polygon:
+        """
+        Converts this entity to a list of polygon vertices for hit testing.
+        Curves should be sampled/linearized appropriately.
+        """
+        return []
+
+    def create_text_fill_geometry(
+        self, registry: "EntityRegistry"
+    ) -> Optional[Geometry]:
+        """
+        Creates a fill geometry for text entities.
+        Returns None if the entity does not support text fill geometry.
+        """
+        return None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Base serialization method for entities."""
+        return {
+            "id": self.id,
+            "type": self.type,
+            "construction": self.construction,
+        }
+
+    def __repr__(self) -> str:
+        return f"Entity(id={self.id}, type={self.type})"

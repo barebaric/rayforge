@@ -96,7 +96,7 @@ class SourceAsset(IAsset):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SourceAsset":
         """Deserializes a dictionary into a SourceAsset instance."""
-        from ..image import renderer_by_name
+        from ..image import renderer_registry
 
         known_keys = {
             "uid",
@@ -114,7 +114,12 @@ class SourceAsset(IAsset):
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
-        renderer = renderer_by_name[data["renderer_name"]]
+        renderer = renderer_registry.get(data["renderer_name"])
+        if renderer is None:
+            raise ValueError(
+                f"Unknown renderer: {data['renderer_name']}. "
+                f"Ensure the required addon is enabled."
+            )
 
         original_data = base64.b64decode(data["original_data"])
         base_render_data = (

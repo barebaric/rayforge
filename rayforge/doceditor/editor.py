@@ -12,12 +12,12 @@ from ..pipeline.artifact import JobArtifactHandle, JobArtifact
 from ..pipeline.pipeline import Pipeline
 from ..pipeline.view import ViewManager
 from .asset_cmd import AssetCmd
+from .command_registry import command_registry
 from .edit_cmd import EditCmd
 from .file_cmd import FileCmd
 from .group_cmd import GroupCmd
 from .layer_cmd import LayerCmd
 from .layout_cmd import LayoutCmd
-from .sketch_cmd import SketchCmd
 from .split_cmd import SplitCmd
 from .step_cmd import StepCmd
 from .stock_cmd import StockCmd
@@ -112,12 +112,15 @@ class DocEditor:
         self.group = GroupCmd(self, self.task_manager)
         self.layer = LayerCmd(self)
         self.layout = LayoutCmd(self, self.task_manager)
-        self.sketch = SketchCmd(self)
         self.split = SplitCmd(self)
         self.stock = StockCmd(self)
         self.step = StepCmd(self)
         self.tab = TabCmd(self)
         self.transform = TransformCmd(self)
+
+        # Instantiate addon-registered commands.
+        for name, cmd_class in command_registry.all_commands().items():
+            setattr(self, name, cmd_class(self))
 
     def cleanup(self):
         """

@@ -1,12 +1,10 @@
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-
 from rayforge.core.doc import Doc
 from rayforge.core.group import Group
 from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
-from rayforge.core.sketcher.sketch import Sketch
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.vectorization_spec import TraceSpec
@@ -127,8 +125,8 @@ class TestScanImportFile:
         mock_importer_class.return_value = mock_importer_instance
 
         with patch(
-            "rayforge.doceditor.file_cmd.importer_by_mime_type",
-            {mime_type: mock_importer_class},
+            "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+            return_value=mock_importer_class,
         ):
             result = file_cmd.scan_import_file(svg_bytes, file_path, mime_type)
 
@@ -144,9 +142,14 @@ class TestScanImportFile:
         file_path = Path("test.unknown")
         mime_type = "application/octet-stream"
 
-        with patch("rayforge.doceditor.file_cmd.importer_by_mime_type", {}):
+        with patch(
+            "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+            return_value=None,
+        ):
             with patch(
-                "rayforge.doceditor.file_cmd.importer_by_extension", {}
+                "rayforge.doceditor.file_cmd.importer_registry"
+                ".get_by_extension",
+                return_value=None,
             ):
                 result = file_cmd.scan_import_file(
                     some_bytes, file_path, mime_type
@@ -174,8 +177,8 @@ class TestScanImportFile:
         mock_importer_class.return_value = mock_importer_instance
 
         with patch(
-            "rayforge.doceditor.file_cmd.importer_by_mime_type",
-            {mime_type: mock_importer_class},
+            "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+            return_value=mock_importer_class,
         ):
             result = file_cmd.scan_import_file(svg_bytes, file_path, mime_type)
 
@@ -425,22 +428,6 @@ class TestCommitItemsToDocument:
         assert source in file_cmd._editor.doc.get_all_assets()
         assert sample_layer in file_cmd._editor.doc.children
 
-    def test_commit_with_sketches(self, file_cmd, sample_workpiece):
-        """Test committing items with sketches."""
-        source = SourceAsset(
-            source_file=Path("test.svg"),
-            original_data=b"<svg></svg>",
-            renderer=SVG_RENDERER,
-        )
-        sketch = Sketch(name="Test Sketch")
-        filename = Path("test.svg")
-
-        file_cmd._commit_items_to_document(
-            [sample_workpiece], source, filename, assets=[sketch]
-        )
-
-        assert sketch in file_cmd._editor.doc.get_all_assets()
-
 
 class TestFinalizeImportOnMainThread:
     """Tests for _finalize_import_on_main_thread method."""
@@ -618,93 +605,6 @@ class TestExportGcodeToPath:
             assert not export_path.exists()
 
 
-class TestExportObjectToPath:
-    """Tests for export_object_to_path method."""
-
-    def test_export_sketch_success(self, file_cmd, sample_workpiece, tmp_path):
-        """Test successful sketch export."""
-        export_path = tmp_path / "test_sketch.rfs"
-
-        with patch(
-            "rayforge.doceditor.file_cmd.SketchExporter"
-        ) as mock_exporter_cls:
-            mock_exporter = MagicMock()
-            mock_exporter.export.return_value = b'{"test": "data"}'
-            mock_exporter_cls.return_value = mock_exporter
-
-            result = file_cmd.export_object_to_path(
-                export_path, sample_workpiece
-            )
-
-            assert result is True
-            assert export_path.exists()
-            assert export_path.read_bytes() == b'{"test": "data"}'
-            mock_exporter_cls.assert_called_once_with(sample_workpiece)
-            mock_exporter.export.assert_called_once()
-
-    def test_export_sketch_failure(self, file_cmd, sample_workpiece, tmp_path):
-        """Test sketch export failure when exporter raises exception."""
-        export_path = tmp_path / "test_sketch.rfs"
-
-        with patch(
-            "rayforge.doceditor.file_cmd.SketchExporter"
-        ) as mock_exporter_cls:
-            mock_exporter = MagicMock()
-            mock_exporter.export.side_effect = ValueError("No sketch found")
-            mock_exporter_cls.return_value = mock_exporter
-
-            result = file_cmd.export_object_to_path(
-                export_path, sample_workpiece
-            )
-
-            assert result is False
-            assert not export_path.exists()
-
-    def test_export_sketch_write_failure(
-        self, file_cmd, sample_workpiece, tmp_path
-    ):
-        """Test sketch export when file write fails."""
-        export_path = tmp_path / "test_sketch.rfs"
-
-        with patch(
-            "rayforge.doceditor.file_cmd.SketchExporter"
-        ) as mock_exporter_cls:
-            mock_exporter = MagicMock()
-            mock_exporter.export.return_value = b'{"test": "data"}'
-            mock_exporter_cls.return_value = mock_exporter
-
-            with patch.object(
-                Path, "write_bytes", side_effect=OSError("Disk full")
-            ):
-                result = file_cmd.export_object_to_path(
-                    export_path, sample_workpiece
-                )
-
-                assert result is False
-
-    def test_export_object_sends_notification(
-        self, file_cmd, sample_workpiece, tmp_path
-    ):
-        """Test that successful export sends notification."""
-        export_path = tmp_path / "test_sketch.rfs"
-
-        with patch(
-            "rayforge.doceditor.file_cmd.SketchExporter"
-        ) as mock_exporter_cls:
-            mock_exporter = MagicMock()
-            mock_exporter.export.return_value = b'{"test": "data"}'
-            mock_exporter_cls.return_value = mock_exporter
-
-            with patch.object(
-                file_cmd._editor.notification_requested, "send"
-            ) as mock_send:
-                file_cmd.export_object_to_path(export_path, sample_workpiece)
-
-                mock_send.assert_called_once()
-                call_args = mock_send.call_args
-                assert "exported successfully" in str(call_args)
-
-
 class TestGetSupportedImportFilters:
     """Tests for get_supported_import_filters method."""
 
@@ -729,8 +629,8 @@ class TestGetImporterInfo:
         mock_importer = MagicMock()
         mock_importer.features = {ImporterFeature.DIRECT_VECTOR}
         with patch(
-            "rayforge.doceditor.file_cmd.importer_by_mime_type",
-            {"image/vnd.dxf": mock_importer},
+            "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+            return_value=mock_importer,
         ):
             cls, features = file_cmd.get_importer_info(
                 Path("f.dxf"), "image/vnd.dxf"
@@ -742,10 +642,14 @@ class TestGetImporterInfo:
         """Test fallback to extension matching."""
         mock_importer = MagicMock()
         mock_importer.features = {ImporterFeature.BITMAP_TRACING}
-        with patch("rayforge.doceditor.file_cmd.importer_by_mime_type", {}):
+        with patch(
+            "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+            return_value=None,
+        ):
             with patch(
-                "rayforge.doceditor.file_cmd.importer_by_extension",
-                {".png": mock_importer},
+                "rayforge.doceditor.file_cmd.importer_registry"
+                ".get_by_extension",
+                return_value=mock_importer,
             ):
                 cls, features = file_cmd.get_importer_info(Path("f.png"), None)
                 assert cls is mock_importer
@@ -753,9 +657,14 @@ class TestGetImporterInfo:
 
     def test_get_info_not_found(self, file_cmd):
         """Test case where no importer is found."""
-        with patch("rayforge.doceditor.file_cmd.importer_by_mime_type", {}):
+        with patch(
+            "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+            return_value=None,
+        ):
             with patch(
-                "rayforge.doceditor.file_cmd.importer_by_extension", {}
+                "rayforge.doceditor.file_cmd.importer_registry"
+                ".get_by_extension",
+                return_value=None,
             ):
                 cls, features = file_cmd.get_importer_info(
                     Path("f.txt"), "text/plain"
@@ -777,8 +686,8 @@ class TestAnalyzeImportTarget:
             ImporterFeature.LAYER_SELECTION,
         }
         with patch(
-            "rayforge.doceditor.file_cmd.importer_by_mime_type",
-            {"image/svg+xml": mock_importer},
+            "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+            return_value=mock_importer,
         ):
             action = file_cmd.analyze_import_target(path, "image/svg+xml")
             assert action == ImportAction.INTERACTIVE_CONFIG
@@ -789,8 +698,8 @@ class TestAnalyzeImportTarget:
         mock_importer = MagicMock()
         mock_importer.features = {ImporterFeature.BITMAP_TRACING}
         with patch(
-            "rayforge.doceditor.file_cmd.importer_by_mime_type",
-            {"image/png": mock_importer},
+            "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+            return_value=mock_importer,
         ):
             action = file_cmd.analyze_import_target(path, "image/png")
             assert action == ImportAction.INTERACTIVE_CONFIG
@@ -806,16 +715,16 @@ class TestAnalyzeImportTarget:
 
         # Test with explicit mime
         with patch(
-            "rayforge.doceditor.file_cmd.importer_by_mime_type",
-            {"image/vnd.dxf": mock_importer},
+            "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+            return_value=mock_importer,
         ):
             action = file_cmd.analyze_import_target(path, "image/vnd.dxf")
             assert action == ImportAction.INTERACTIVE_CONFIG
 
         # Test extension fallback
         with patch(
-            "rayforge.doceditor.file_cmd.importer_by_extension",
-            {".dxf": mock_importer},
+            "rayforge.doceditor.file_cmd.importer_registry.get_by_extension",
+            return_value=mock_importer,
         ):
             action = file_cmd.analyze_import_target(path, None)
             assert action == ImportAction.INTERACTIVE_CONFIG
@@ -824,9 +733,14 @@ class TestAnalyzeImportTarget:
         """Test that unknown files return unsupported."""
         path = Path("test.exe")
         # Ensure no importers match
-        with patch("rayforge.doceditor.file_cmd.importer_by_mime_type", {}):
+        with patch(
+            "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+            return_value=None,
+        ):
             with patch(
-                "rayforge.doceditor.file_cmd.importer_by_extension", {}
+                "rayforge.doceditor.file_cmd.importer_registry"
+                ".get_by_extension",
+                return_value=None,
             ):
                 action = file_cmd.analyze_import_target(
                     path, "application/octet-stream"
@@ -1057,46 +971,6 @@ class TestProjectRoundTrip:
         assert len(stock_items) == 2
         assert stock_items[1].visible is False
 
-    def test_round_trip_sketch(self, file_cmd, tmp_path):
-        """Test round trip for project with sketches."""
-        import_file = Path(__file__).parent / "assets" / "sketch_project.ryp"
-        export_file = tmp_path / "sketch_export.ryp"
-
-        # Import project
-        result = file_cmd.load_project_from_path(import_file)
-        assert result is True
-
-        # Verify sketches loaded
-        sketches = [
-            a
-            for a in file_cmd._editor.doc.get_all_assets()
-            if isinstance(a, Sketch)
-        ]
-        assert len(sketches) == 1
-        assert sketches[0].name == "Rectangle"
-
-        # Verify workpieces with sketches
-        workpieces = file_cmd._editor.doc.all_workpieces
-        assert len(workpieces) == 1
-        assert workpieces[0].geometry_provider_uid is not None
-
-        # Export project
-        result = file_cmd.save_project_to_path(export_file)
-        assert result is True
-        assert export_file.exists()
-
-        # Import exported project
-        result = file_cmd.load_project_from_path(export_file)
-        assert result is True
-
-        # Verify sketches after round trip
-        sketches = [
-            a
-            for a in file_cmd._editor.doc.get_all_assets()
-            if isinstance(a, Sketch)
-        ]
-        assert len(sketches) == 1
-
     def test_round_trip_comprehensive(self, file_cmd, tmp_path):
         """Test round trip for comprehensive project with all features."""
         import_file = (
@@ -1106,6 +980,7 @@ class TestProjectRoundTrip:
 
         # Import project
         result = file_cmd.load_project_from_path(import_file)
+
         assert result is True
 
         # Verify comprehensive features loaded
@@ -1130,7 +1005,10 @@ class TestProjectRoundTrip:
         assert len(file_cmd._editor.doc.all_workpieces) == 2
 
     def test_round_trip_all_project_files(self, file_cmd, tmp_path):
-        """Test round trip for all project files in assets directory."""
+        """
+        Test round trip for all project files in assets directory.
+        Skips files that require sketcher addon if not available.
+        """
         assets_dir = Path(__file__).parent / "assets"
         project_files = list(assets_dir.glob("*.ryp"))
 
