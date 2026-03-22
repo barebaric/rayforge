@@ -56,10 +56,10 @@ from .machine.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
 from .settings.settings_dialog import SettingsWindow
 from .project_cmd import ProjectCmd
-from .sketch_mode_cmd import SketchModeCmd
-from .sketcher.studio import SketchStudio
 from .shared.gtk import get_monitor_geometry
 from .shared.usage_consent_dialog import UsageConsentDialog
+from .sketcher import setup_sketch_page
+from .sketcher.sketch_mode_cmd import SketchModeCmd
 from .task_bar import TaskBar
 from .toolbar import MainToolbar
 from .view_mode_cmd import ViewModeCmd
@@ -205,6 +205,9 @@ class MainWindow(Adw.ApplicationWindow):
         main_ui_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.main_stack.add_named(main_ui_box, "main")
 
+        # Set up the sketch studio page (handled by sketcher module)
+        self.sketch_studio = setup_sketch_page(self)
+
         # Create and add the main toolbar.
         self.toolbar = MainToolbar()
         self._connect_toolbar_signals()
@@ -230,7 +233,6 @@ class MainWindow(Adw.ApplicationWindow):
         context = get_context()
         config = context.config
         if config.machine:
-            width_mm, height_mm = config.machine.axis_extents
             area = config.machine.work_area
             canvas3d_w, canvas3d_h = float(area[2]), float(area[3])
             y_down = config.machine.y_axis_down
@@ -239,7 +241,6 @@ class MainWindow(Adw.ApplicationWindow):
             reverse_y = config.machine.reverse_y_axis
         else:
             # Default to a square aspect ratio if no machine is configured
-            width_mm, height_mm = 100.0, 100.0
             canvas3d_w, canvas3d_h = 100.0, 100.0
             y_down, x_right, reverse_x, reverse_y = (
                 False,
@@ -247,18 +248,6 @@ class MainWindow(Adw.ApplicationWindow):
                 False,
                 False,
             )
-
-        # Create the Sketch Studio, passing the machine dimensions.
-        self.sketch_studio = SketchStudio(
-            self, width_mm=width_mm, height_mm=height_mm
-        )
-        self.main_stack.add_named(self.sketch_studio, "sketch")
-        self.sketch_studio.finished.connect(
-            self.sketch_mode_cmd.on_sketch_finished
-        )
-        self.sketch_studio.cancelled.connect(
-            self.sketch_mode_cmd.on_sketch_cancelled
-        )
 
         self.surface = WorkSurface(
             editor=self.doc_editor,
@@ -632,6 +621,47 @@ class MainWindow(Adw.ApplicationWindow):
         )
         if control_panel_action and config.control_panel_visible:
             control_panel_action.change_state(GLib.Variant.new_boolean(True))
+
+    def add_stack_page(self, name: str, widget: Gtk.Widget):
+        """Add a page to the main stack.
+
+        This is a public API for addons to add their own pages to the
+        main stack (e.g., editor views).
+
+        Args:
+            name: The name/identifier for the page
+            widget: The widget to add as a page
+        """
+        self.main_stack.add_named(widget, name)
+
+    def show_stack_page(self, name: str):
+        """Switch to a named page in the main stack.
+
+        Args:
+            name: The name of the page to show
+        """
+        self.main_stack.set_visible_child_name(name)
+
+    def remove_stack_page(self, name: str):
+        """Remove a page from the main stack.
+
+        Args:
+            name: The name of the page to remove
+        """
+        child = self.main_stack.get_child_by_name(name)
+        if child:
+            self.main_stack.remove(child)
+
+    def get_stack_page(self, name: str) -> Optional[Gtk.Widget]:
+        """Get a page widget from the main stack by name.
+
+        Args:
+            name: The name of the page to get
+
+        Returns:
+            The widget if found, None otherwise
+        """
+        return self.main_stack.get_child_by_name(name)
 
     def on_add_child(self, sender):
         """Handler for adding a new stock item, called from AssetListView."""
@@ -1434,7 +1464,6 @@ class MainWindow(Adw.ApplicationWindow):
         # Define new machine dimensions
         new_machine = config.machine
         if new_machine:
-            width_mm, height_mm = new_machine.axis_extents
             area = new_machine.work_area
             canvas3d_w, canvas3d_h = float(area[2]), float(area[3])
             y_down = new_machine.y_axis_down
@@ -1442,7 +1471,6 @@ class MainWindow(Adw.ApplicationWindow):
             reverse_x = new_machine.reverse_x_axis
             reverse_y = new_machine.reverse_y_axis
         else:
-            width_mm, height_mm = 100.0, 100.0
             canvas3d_w, canvas3d_h = 100.0, 100.0
             y_down, x_right, reverse_x, reverse_y = (
                 False,
@@ -1483,9 +1511,8 @@ class MainWindow(Adw.ApplicationWindow):
         # Update the control panel to use the new machine
         self.control_panel.set_machine(config.machine, self.machine_cmd)
 
-        # Update the main WorkSurface AND the SketchStudio to use the new size
+        # Update the main WorkSurface to use the new size
         self.surface.set_machine(config.machine)
-        self.sketch_studio.set_world_size(width_mm, height_mm)
 
         self.surface.update_from_doc()
         self._update_macros_menu()
