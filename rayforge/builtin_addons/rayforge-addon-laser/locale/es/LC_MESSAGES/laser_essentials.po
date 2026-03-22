@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-09 22:05+0100\n"
+"POT-Creation-Date: 2026-03-21 16:34+0100\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -112,6 +112,14 @@ msgstr ""
 "paso."
 
 #: laser_essentials/widgets/raster_widget.py
+msgid "Power Levels"
+msgstr "Niveles de potencia"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Number of discrete power steps (lower = fewer moves)"
+msgstr "Número de pasos de potencia discretos (menor = menos movimientos)"
+
+#: laser_essentials/widgets/raster_widget.py
 msgid "Number of Depth Levels"
 msgstr "Número de niveles de profundidad"
 
@@ -157,12 +165,20 @@ msgid "Line Spacing"
 msgstr "Espaciado de línea"
 
 #: laser_essentials/widgets/raster_widget.py
+msgid "Distance between scan lines"
+msgstr "Distancia entre líneas de escaneo"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Sample Interval"
+msgstr "Intervalo de muestreo"
+
+#: laser_essentials/widgets/raster_widget.py
 msgid ""
-"Distance between scan lines in machine units. Leave at 0 to use laser spot "
-"size"
+"Distance between power samples along scan line. Lower values improve "
+"accuracy, but increase output size."
 msgstr ""
-"Distancia entre líneas de escaneo en unidades de máquina. Dejar en 0 para "
-"usar el tamaño del punto láser"
+"Distancia entre muestras de potencia a lo largo de la línea de escaneo. Los "
+"valores más bajos mejoran la precisión, pero aumentan el tamaño de salida."
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Invert"
