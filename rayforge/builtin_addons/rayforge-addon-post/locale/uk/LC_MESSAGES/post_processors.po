@@ -1,0 +1,277 @@
+# Ukrainian translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-18 23:38+0100\n"
+"PO-Revision-Date: 2026-03-18 23:38+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Enable Overscan"
+msgstr "Увімкнути перебіг"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Automatic Distance"
+msgstr "Автоматична відстань"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Calculate distance based on speed and acceleration with safety factor"
+msgstr ""
+"Обчислити відстань на основі швидкості та прискорення з коефіцієнтом безпеки"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Overscan Distance"
+msgstr "Відстань перебігу"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Manual distance setting"
+msgstr "Ручне налаштування відстані"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Toggle Overscan"
+msgstr "Перемкнути перебіг"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Toggle Auto Overscan"
+msgstr "Перемкнути автоматичний перебіг"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Auto Calculate Overscan Distance"
+msgstr "Автоматично обчислити відстань перебігу"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Disable Auto Overscan"
+msgstr "Вимкнути автоматичний перебіг"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Change Overscan Distance"
+msgstr "Змінити відстань перебігу"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Enable Optimization"
+msgstr "Увімкнути оптимізацію"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Minimizes travel distance by reordering segments"
+msgstr "Мінімізує відстань переміщення шляхом зміни порядку сегментів"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Allow Flipping"
+msgstr "Дозволити перевертання"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Allow reversing path direction for shorter travel"
+msgstr "Дозволити зміну напрямку контуру для скорочення переміщення"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Preserve First Workpiece"
+msgstr "Зберегти першу деталь"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Keep the first workpiece at its original position"
+msgstr "Залишити першу деталь на її початковій позиції"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Toggle Path Optimization"
+msgstr "Перемкнути оптимізацію контуру"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Toggle Flipping"
+msgstr "Перемкнути перевертання"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Toggle Preserve First Workpiece"
+msgstr "Перемкнути збереження першої деталі"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Enable Crop-to-Stock"
+msgstr "Увімкнути обрізання до заготовки"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Removes toolpaths extending beyond stock boundary"
+msgstr "Видаляє траєкторії інструменту, що виходять за межі заготовки"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Offset"
+msgstr "Зміщення"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Grow/shrink stock boundary before cropping"
+msgstr "Збільшити/зменшити межу заготовки перед обрізанням"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Toggle Crop-to-Stock"
+msgstr "Перемкнути обрізання до заготовки"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Change Crop Offset"
+msgstr "Змінити зміщення обрізання"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Enable Smoothing"
+msgstr "Увімкнути згладжування"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Smooths jagged edges using a Gaussian filter"
+msgstr "Згладжує нерівні краї за допомогою фільтра Гауса"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Smoothness"
+msgstr "Згладжування"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Higher values produce smoother curves"
+msgstr "Більші значення створюють більш плавні криві"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Corner Angle Threshold"
+msgstr "Поріг кута кута"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Angles sharper than this are kept as corners (degrees)"
+msgstr "Кути, гостріші за це, зберігаються як кути (градуси)"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Toggle Smoothing"
+msgstr "Перемкнути згладжування"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Change smoothness"
+msgstr "Змінити згладжування"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Change corner angle"
+msgstr "Змінити кут кута"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Number of Passes"
+msgstr "Кількість проходів"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "How often to repeat the entire step"
+msgstr "Як часто повторювати весь крок"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Z Step-Down per Pass"
+msgstr "Зниження Z за прохід"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Distance to lower Z-axis for each subsequent pass in machine units"
+msgstr ""
+"Відстань зниження осі Z для кожного наступного проходу в одиницях машини"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Change number of passes"
+msgstr "Змінити кількість проходів"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Change Z Step-Down"
+msgstr "Змінити зниження Z"
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Optimize Path"
+msgstr "Оптимізувати контур"
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Minimizes travel distance by reordering segments."
+msgstr "Мінімізує відстань переміщення шляхом зміни порядку сегментів."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Analyzing workpieces..."
+msgstr "Аналіз деталей..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Optimizing workpiece order..."
+msgstr "Оптимізація порядку деталей..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Applying 2-opt refinement..."
+msgstr "Застосування 2-opt уточнення..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Reassembling optimized workpieces..."
+msgstr "Повторна збірка оптимізованих деталей..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Workpiece optimization complete"
+msgstr "Оптимізація деталей завершена"
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Preprocessing for optimization..."
+msgstr "Попередня обробка для оптимізації..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Analyzing and bucketing path segments..."
+msgstr "Аналіз та групування сегментів контуру..."
+
+#: post_processors/transformers/optimize_transformer.py
+#, python-brace-format
+msgid "Optimizing segment {i}/{total}..."
+msgstr "Оптимізація сегмента {i}/{total}..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Finding nearest paths..."
+msgstr "Пошук найближчих контурів..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Reassembling optimized paths..."
+msgstr "Повторна збірка оптимізованих контурів..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Optimization complete"
+msgstr "Оптимізація завершена"
+
+#: post_processors/transformers/smooth_transformer.py
+msgid "Smooth Path"
+msgstr "Згладити контур"
+
+#: post_processors/transformers/smooth_transformer.py
+msgid "Smooths the path by applying a Gaussian filter."
+msgstr "Згладжує контур, застосовуючи фільтр Гауса."
+
+#: post_processors/transformers/overscan_transformer.py
+msgid "Overscan"
+msgstr "Перебіг"
+
+#: post_processors/transformers/overscan_transformer.py
+msgid "Extends raster lines to ensure constant engraving speed."
+msgstr ""
+"Розширює растрові лінії для забезпечення постійної швидкості гравіювання."
+
+#: post_processors/transformers/crop_transformer.py
+msgid "Crop to Stock"
+msgstr "Обрізати до заготовки"
+
+#: post_processors/transformers/crop_transformer.py
+msgid "Crops cutting lines to stock boundary."
+msgstr "Обрізає лінії різання до межі заготовки."
+
+#: post_processors/transformers/multipass_transformer.py
+msgid "Multi-Pass"
+msgstr "Багатопрохідний"
+
+#: post_processors/transformers/multipass_transformer.py
+msgid "Repeats the path multiple times, optionally stepping down in Z."
+msgstr "Повторює контур кілька разів, опціонально знижуючи по осі Z."
+
+#: post_processors/transformers/tabs_transformer.py
+msgid "Tabs"
+msgstr "Закладки"
+
+#: post_processors/transformers/tabs_transformer.py
+msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
+msgstr ""
+"Створює утримувальні закладки шляхом додавання проміжків або зменшення "
+"потужності на контурах різання"

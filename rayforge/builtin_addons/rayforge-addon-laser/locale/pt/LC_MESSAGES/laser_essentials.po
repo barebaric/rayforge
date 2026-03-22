@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-09 22:05+0100\n"
+"POT-Creation-Date: 2026-03-21 16:34+0100\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -112,6 +112,14 @@ msgstr ""
 "etapa"
 
 #: laser_essentials/widgets/raster_widget.py
+msgid "Power Levels"
+msgstr "Níveis de Potência"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Number of discrete power steps (lower = fewer moves)"
+msgstr "Número de etapas discretas de potência (menor = menos movimentos)"
+
+#: laser_essentials/widgets/raster_widget.py
 msgid "Number of Depth Levels"
 msgstr "Número de Níveis de Profundidade"
 
@@ -157,12 +165,20 @@ msgid "Line Spacing"
 msgstr "Espaçamento de Linha"
 
 #: laser_essentials/widgets/raster_widget.py
+msgid "Distance between scan lines"
+msgstr "Distância entre linhas de varredura"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Sample Interval"
+msgstr "Intervalo de Amostragem"
+
+#: laser_essentials/widgets/raster_widget.py
 msgid ""
-"Distance between scan lines in machine units. Leave at 0 to use laser spot "
-"size"
+"Distance between power samples along scan line. Lower values improve "
+"accuracy, but increase output size."
 msgstr ""
-"Distância entre linhas de varredura em unidades de máquina. Deixar em 0 para "
-"usar o tamanho do ponto do laser"
+"Distância entre amostras de potência ao longo da linha de varredura. Valores "
+"mais baixos melhoram a precisão, mas aumentam o tamanho da saída."
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Invert"

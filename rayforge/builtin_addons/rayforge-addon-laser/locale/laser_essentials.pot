@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-09 22:05+0100\n"
+"POT-Creation-Date: 2026-03-21 16:34+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -109,6 +109,14 @@ msgid "Power for darkest areas, as a % of the step's main power"
 msgstr ""
 
 #: laser_essentials/widgets/raster_widget.py
+msgid "Power Levels"
+msgstr ""
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Number of discrete power steps (lower = fewer moves)"
+msgstr ""
+
+#: laser_essentials/widgets/raster_widget.py
 msgid "Number of Depth Levels"
 msgstr ""
 
@@ -153,9 +161,17 @@ msgid "Line Spacing"
 msgstr ""
 
 #: laser_essentials/widgets/raster_widget.py
+msgid "Distance between scan lines"
+msgstr ""
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Sample Interval"
+msgstr ""
+
+#: laser_essentials/widgets/raster_widget.py
 msgid ""
-"Distance between scan lines in machine units. Leave at 0 to use laser spot "
-"size"
+"Distance between power samples along scan line. Lower values improve "
+"accuracy, but increase output size."
 msgstr ""
 
 #: laser_essentials/widgets/raster_widget.py

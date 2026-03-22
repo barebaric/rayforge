@@ -1,0 +1,271 @@
+# English translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-18 23:38+0100\n"
+"PO-Revision-Date: 2026-03-18 23:38+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Enable Overscan"
+msgstr "Enable Overscan"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Automatic Distance"
+msgstr "Automatic Distance"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Calculate distance based on speed and acceleration with safety factor"
+msgstr "Calculate distance based on speed and acceleration with safety factor"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Overscan Distance"
+msgstr "Overscan Distance"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Manual distance setting"
+msgstr "Manual distance setting"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Toggle Overscan"
+msgstr "Toggle Overscan"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Toggle Auto Overscan"
+msgstr "Toggle Auto Overscan"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Auto Calculate Overscan Distance"
+msgstr "Auto Calculate Overscan Distance"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Disable Auto Overscan"
+msgstr "Disable Auto Overscan"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Change Overscan Distance"
+msgstr "Change Overscan Distance"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Enable Optimization"
+msgstr "Enable Optimization"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Minimizes travel distance by reordering segments"
+msgstr "Minimizes travel distance by reordering segments"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Allow Flipping"
+msgstr "Allow Flipping"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Allow reversing path direction for shorter travel"
+msgstr "Allow reversing path direction for shorter travel"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Preserve First Workpiece"
+msgstr "Preserve First Workpiece"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Keep the first workpiece at its original position"
+msgstr "Keep the first workpiece at its original position"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Toggle Path Optimization"
+msgstr "Toggle Path Optimization"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Toggle Flipping"
+msgstr "Toggle Flipping"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Toggle Preserve First Workpiece"
+msgstr "Toggle Preserve First Workpiece"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Enable Crop-to-Stock"
+msgstr "Enable Crop-to-Stock"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Removes toolpaths extending beyond stock boundary"
+msgstr "Removes toolpaths extending beyond stock boundary"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Offset"
+msgstr "Offset"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Grow/shrink stock boundary before cropping"
+msgstr "Grow/shrink stock boundary before cropping"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Toggle Crop-to-Stock"
+msgstr "Toggle Crop-to-Stock"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Change Crop Offset"
+msgstr "Change Crop Offset"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Enable Smoothing"
+msgstr "Enable Smoothing"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Smooths jagged edges using a Gaussian filter"
+msgstr "Smooths jagged edges using a Gaussian filter"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Smoothness"
+msgstr "Smoothness"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Higher values produce smoother curves"
+msgstr "Higher values produce smoother curves"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Corner Angle Threshold"
+msgstr "Corner Angle Threshold"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Angles sharper than this are kept as corners (degrees)"
+msgstr "Angles sharper than this are kept as corners (degrees)"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Toggle Smoothing"
+msgstr "Toggle Smoothing"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Change smoothness"
+msgstr "Change smoothness"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Change corner angle"
+msgstr "Change corner angle"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Number of Passes"
+msgstr "Number of Passes"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "How often to repeat the entire step"
+msgstr "How often to repeat the entire step"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Z Step-Down per Pass"
+msgstr "Z Step-Down per Pass"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Distance to lower Z-axis for each subsequent pass in machine units"
+msgstr "Distance to lower Z-axis for each subsequent pass in machine units"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Change number of passes"
+msgstr "Change number of passes"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Change Z Step-Down"
+msgstr "Change Z Step-Down"
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Optimize Path"
+msgstr "Optimize Path"
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Minimizes travel distance by reordering segments."
+msgstr "Minimizes travel distance by reordering segments."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Analyzing workpieces..."
+msgstr "Analyzing workpieces..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Optimizing workpiece order..."
+msgstr "Optimizing workpiece order..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Applying 2-opt refinement..."
+msgstr "Applying 2-opt refinement..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Reassembling optimized workpieces..."
+msgstr "Reassembling optimized workpieces..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Workpiece optimization complete"
+msgstr "Workpiece optimization complete"
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Preprocessing for optimization..."
+msgstr "Preprocessing for optimization..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Analyzing and bucketing path segments..."
+msgstr "Analyzing and bucketing path segments..."
+
+#: post_processors/transformers/optimize_transformer.py
+#, python-brace-format
+msgid "Optimizing segment {i}/{total}..."
+msgstr "Optimizing segment {i}/{total}..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Finding nearest paths..."
+msgstr "Finding nearest paths..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Reassembling optimized paths..."
+msgstr "Reassembling optimized paths..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Optimization complete"
+msgstr "Optimization complete"
+
+#: post_processors/transformers/smooth_transformer.py
+msgid "Smooth Path"
+msgstr "Smooth Path"
+
+#: post_processors/transformers/smooth_transformer.py
+msgid "Smooths the path by applying a Gaussian filter."
+msgstr "Smooths the path by applying a Gaussian filter."
+
+#: post_processors/transformers/overscan_transformer.py
+msgid "Overscan"
+msgstr "Overscan"
+
+#: post_processors/transformers/overscan_transformer.py
+msgid "Extends raster lines to ensure constant engraving speed."
+msgstr "Extends raster lines to ensure constant engraving speed."
+
+#: post_processors/transformers/crop_transformer.py
+msgid "Crop to Stock"
+msgstr "Crop to Stock"
+
+#: post_processors/transformers/crop_transformer.py
+msgid "Crops cutting lines to stock boundary."
+msgstr "Crops cutting lines to stock boundary."
+
+#: post_processors/transformers/multipass_transformer.py
+msgid "Multi-Pass"
+msgstr "Multi-Pass"
+
+#: post_processors/transformers/multipass_transformer.py
+msgid "Repeats the path multiple times, optionally stepping down in Z."
+msgstr "Repeats the path multiple times, optionally stepping down in Z."
+
+#: post_processors/transformers/tabs_transformer.py
+msgid "Tabs"
+msgstr "Tabs"
+
+#: post_processors/transformers/tabs_transformer.py
+msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
+msgstr "Creates holding tabs by adding gaps or reducing power on cut paths"

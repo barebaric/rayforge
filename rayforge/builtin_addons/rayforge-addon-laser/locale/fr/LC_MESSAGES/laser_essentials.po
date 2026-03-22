@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-09 22:05+0100\n"
+"POT-Creation-Date: 2026-03-21 16:34+0100\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -114,6 +114,14 @@ msgstr ""
 "de l’étape"
 
 #: laser_essentials/widgets/raster_widget.py
+msgid "Power Levels"
+msgstr "Niveaux de puissance"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Number of discrete power steps (lower = fewer moves)"
+msgstr "Nombre de pas de puissance discrets (plus bas = moins de déplacements)"
+
+#: laser_essentials/widgets/raster_widget.py
 msgid "Number of Depth Levels"
 msgstr "Nombre de niveaux de profondeur"
 
@@ -159,12 +167,21 @@ msgid "Line Spacing"
 msgstr "Espacement des lignes"
 
 #: laser_essentials/widgets/raster_widget.py
+msgid "Distance between scan lines"
+msgstr "Distance entre les lignes de balayage"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Sample Interval"
+msgstr "Intervalle d'échantillonnage"
+
+#: laser_essentials/widgets/raster_widget.py
 msgid ""
-"Distance between scan lines in machine units. Leave at 0 to use laser spot "
-"size"
+"Distance between power samples along scan line. Lower values improve "
+"accuracy, but increase output size."
 msgstr ""
-"Distance entre les lignes de balayage en unités machine. Laisser à 0 pour "
-"utiliser la taille du point laser"
+"Distance entre les échantillons de puissance le long de la ligne de "
+"balayage. Des valeurs plus faibles améliorent la précision, mais augmentent "
+"la taille de sortie."
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Invert"

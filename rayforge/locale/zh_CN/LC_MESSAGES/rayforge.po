@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-19 01:07+0100\n"
+"POT-Creation-Date: 2026-03-22 19:54+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -163,6 +163,14 @@ msgstr "划线"
 msgid "Score Speed"
 msgstr "划线速度"
 
+#: rayforge/core/stock_asset.py
+msgid "Stock Material"
+msgstr "原材料"
+
+#: rayforge/core/source_asset.py
+msgid "Source"
+msgstr "来源"
+
 #: rayforge/core/expression/errors.py
 #, python-brace-format
 msgid "Syntax Error: {message}"
@@ -177,170 +185,6 @@ msgstr "未知的变量或函数：'{name}'"
 #, python-brace-format
 msgid "Cannot use operator '{op}' between types '{left}' and '{right}'"
 msgstr "不能在类型 '{left}' 和 '{right}' 之间使用运算符 '{op}'"
-
-#: rayforge/core/sketcher/sketch.py
-#: rayforge/ui_gtk/doceditor/sketch_properties.py
-#: rayforge/ui_gtk/doceditor/property_providers/sketch.py
-msgid "Sketch Parameters"
-msgstr "草图参数"
-
-#: rayforge/core/sketcher/sketch.py
-msgid "Parameters that control this sketch's geometry"
-msgstr "控制此草图几何形状的参数"
-
-#: rayforge/core/sketcher/constraints/equal_length.py
-msgid "Equal Length"
-msgstr "等长"
-
-#: rayforge/core/sketcher/constraints/parallelogram.py
-msgid "Parallelogram"
-msgstr "平行四边形"
-
-#: rayforge/core/sketcher/constraints/point_on_line.py
-msgid "Point on Line"
-msgstr "点在线上"
-
-#: rayforge/core/sketcher/constraints/collinear.py
-msgid "Collinear"
-msgstr "共线"
-
-#: rayforge/core/sketcher/constraints/tangent.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Tangent"
-msgstr "相切"
-
-#: rayforge/core/sketcher/constraints/distance.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Distance"
-msgstr "距离"
-
-#: rayforge/core/sketcher/constraints/vertical.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Vertical"
-msgstr "垂直"
-
-#: rayforge/core/sketcher/constraints/equal_distance.py
-msgid "Equal Distance"
-msgstr "等距"
-
-#: rayforge/core/sketcher/constraints/perpendicular.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Perpendicular"
-msgstr "垂直"
-
-#: rayforge/core/sketcher/constraints/symmetry.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Symmetry"
-msgstr "对称"
-
-#: rayforge/core/sketcher/constraints/horizontal.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Horizontal"
-msgstr "水平"
-
-#: rayforge/core/sketcher/constraints/angle.py
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Angle"
-msgstr "角度"
-
-#: rayforge/core/sketcher/constraints/diameter.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Diameter"
-msgstr "直径"
-
-#: rayforge/core/sketcher/constraints/coincident.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Coincident"
-msgstr "重合"
-
-#: rayforge/core/sketcher/constraints/radius.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Radius"
-msgstr "半径"
-
-#: rayforge/core/sketcher/constraints/aspect_ratio.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Aspect Ratio"
-msgstr "宽高比"
-
-#: rayforge/core/sketcher/commands/circle.py
-msgid "Add Circle"
-msgstr "添加圆形"
-
-#: rayforge/core/sketcher/commands/fillet.py
-msgid "Add Fillet"
-msgstr "添加圆角"
-
-#: rayforge/core/sketcher/commands/text_box.py
-#: rayforge/ui_gtk/sketcher/tools/text_box_tool.py
-msgid "Add Text Box"
-msgstr "添加文本框"
-
-#: rayforge/core/sketcher/commands/fill.py
-msgid "Add Fill"
-msgstr "添加填充"
-
-#: rayforge/core/sketcher/commands/fill.py
-msgid "Remove Fill"
-msgstr "移除填充"
-
-#: rayforge/core/sketcher/commands/constraint.py
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Edit Constraint"
-msgstr "编辑约束"
-
-#: rayforge/core/sketcher/commands/constraint_create.py
-msgid "Add Constraint"
-msgstr "添加约束"
-
-#: rayforge/core/sketcher/commands/constraint_create.py
-msgid "Add Radius"
-msgstr "添加半径"
-
-#: rayforge/core/sketcher/commands/constraint_create.py
-msgid "Add Distance"
-msgstr "添加距离"
-
-#: rayforge/core/sketcher/commands/constraint_create.py
-msgid "Add Diameter"
-msgstr "添加直径"
-
-#: rayforge/core/sketcher/commands/line.py
-msgid "Add Line"
-msgstr "添加直线"
-
-#: rayforge/core/sketcher/commands/chamfer.py
-msgid "Add Chamfer"
-msgstr "添加倒角"
-
-#: rayforge/core/sketcher/commands/arc.py
-msgid "Add Arc"
-msgstr "添加圆弧"
-
-#: rayforge/core/sketcher/commands/rounded_rect.py
-msgid "Add Rounded Rectangle"
-msgstr "添加圆角矩形"
-
-#: rayforge/core/sketcher/commands/rectangle.py
-msgid "Add Rectangle"
-msgstr "添加矩形"
-
-#: rayforge/core/sketcher/commands/text_property.py
-msgid "Modify Text Property"
-msgstr "修改文本属性"
-
-#: rayforge/core/sketcher/commands/point.py
-msgid "Move Point"
-msgstr "移动点"
-
-#: rayforge/core/sketcher/commands/point.py
-msgid "Unstick Junction"
-msgstr "取消连接点"
-
-#: rayforge/core/sketcher/commands/live_text_edit.py
-msgid "Edit Text"
-msgstr "编辑文本"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Command Letter"
@@ -994,26 +838,6 @@ msgstr "未找到驱动'{driver}'。"
 msgid "An unexpected error occurred during validation: {error}"
 msgstr "验证期间发生意外错误：{error}"
 
-#: rayforge/machine/models/dialect/grbl_noz.py
-msgid "Grbl (Compat, no Z axis)"
-msgstr "Grbl（兼容，无Z轴）"
-
-#: rayforge/machine/models/dialect/grbl_noz.py
-msgid ""
-"Grbl dialect with highest compatibility, but removes Z axis commands for "
-"more efficient G-code"
-msgstr "Grbl方言具有最高兼容性，但移除Z轴命令以获得更高效的G代码"
-
-#: rayforge/machine/models/dialect/grbl_dynamic_noz.py
-msgid "GRBL Dynamic (no Z axis)"
-msgstr "GRBL动态（无Z轴）"
-
-#: rayforge/machine/models/dialect/grbl_dynamic_noz.py
-msgid ""
-"GRBL with M4 dynamic power (Depth-Aware) mode, but removes Z axis commands "
-"for more efficient G-code"
-msgstr "具有M4动态功率（深度感知）模式的GRBL，但移除Z轴命令以获得更高效的G代码"
-
 #: rayforge/machine/models/dialect/mach4_m67.py
 msgid "Mach4 (M67 Analog)"
 msgstr "Mach4 (M67 模拟输出)"
@@ -1339,8 +1163,6 @@ msgstr "此机器配置文件及其所有设置将被永久删除。此操作无
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 #: rayforge/ui_gtk/doceditor/import_handler.py
-#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "Cancel"
 msgstr "取消"
 
@@ -1350,9 +1172,6 @@ msgstr "取消"
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
-#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Delete"
 msgstr "删除"
 
@@ -1501,7 +1320,6 @@ msgstr "此AI提供商将被永久删除。此操作无法撤销。"
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-#: rayforge/ui_gtk/sketcher/studio.py
 msgid "Name"
 msgstr "名称"
 
@@ -1721,26 +1539,6 @@ msgstr ""
 "<a href=\"https://rayforge.org/docs/general-info/usage-tracking\">了解更多</"
 "a>关于使用跟踪和隐私的信息。"
 
-#: rayforge/ui_gtk/sketch_mode_cmd.py rayforge/ui_gtk/main_menu.py
-msgid "New Sketch"
-msgstr "新建草图"
-
-#: rayforge/ui_gtk/sketch_mode_cmd.py
-msgid "Create Sketch Definition"
-msgstr "创建草图定义"
-
-#: rayforge/ui_gtk/sketch_mode_cmd.py
-msgid "Selected item is not an editable sketch."
-msgstr "选定的项目不是可编辑的草图。"
-
-#: rayforge/ui_gtk/sketch_mode_cmd.py
-msgid "Please select a single sketch to edit."
-msgstr "请选择一个草图进行编辑。"
-
-#: rayforge/ui_gtk/sketch_mode_cmd.py
-msgid "Please select a single object to export."
-msgstr "请选择一个对象进行导出。"
-
 #: rayforge/ui_gtk/canvas2d/elements/tab_handle.py
 msgid "Move Tab"
 msgstr "移动标签"
@@ -1766,14 +1564,6 @@ msgid "Convert to Stock"
 msgstr "转换为材料"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
-msgid "Edit Sketch"
-msgstr "编辑草图"
-
-#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
-msgid "Export Object..."
-msgstr "导出对象..."
-
-#: rayforge/ui_gtk/canvas2d/context_menu.py
 msgid "Add Tab Here"
 msgstr "在此添加标签"
 
@@ -1782,8 +1572,6 @@ msgid "Remove Tab"
 msgstr "移除标签"
 
 #: rayforge/ui_gtk/canvas2d/simulation_controls.py
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/line_tool.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Line"
 msgstr "直线"
 
@@ -1798,22 +1586,6 @@ msgstr "从剪贴板导入的图像"
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid "Failed to import image from clipboard"
 msgstr "从剪贴板导入图像失败"
-
-#: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
-msgid "Empty Sketch"
-msgstr "空草图"
-
-#: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
-msgid ""
-"The selected sketch contains no geometry. Please edit the sketch to add "
-"lines or shapes before placing on the canvas."
-msgstr ""
-"所选草图不包含几何图形。请编辑草图以添加线条或形状，然后再放置到画布上。"
-
-#: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Close"
-msgstr "关闭"
 
 #: rayforge/ui_gtk/view_mode_cmd.py
 msgid "3D view is not available due to missing dependencies."
@@ -1960,7 +1732,6 @@ msgid "Clear All Points"
 msgstr "清除所有点"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
-#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
 msgid "Apply"
 msgstr "应用"
 
@@ -2071,6 +1842,10 @@ msgstr "切向 2 (p2)"
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Second order tangential distortion"
 msgstr "二阶切向畸变"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Close"
+msgstr "关闭"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 #, python-brace-format
@@ -2660,7 +2435,6 @@ msgstr "此方言仍被以下机器使用：{machines}"
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "OK"
 msgstr "确定"
 
@@ -3501,7 +3275,6 @@ msgid "Redo the last action"
 msgstr "重做上一步操作"
 
 #: rayforge/ui_gtk/shared/preferences_group.py
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "No parameters"
 msgstr "无参数"
 
@@ -3542,17 +3315,15 @@ msgstr "导出文档..."
 msgid "Quit"
 msgstr "退出"
 
-#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/main_menu.py
 msgid "_File"
 msgstr "文件(_F)"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
-#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Undo"
 msgstr "撤销"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
-#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Redo"
 msgstr "重做"
 
@@ -3576,7 +3347,7 @@ msgstr "全选"
 msgid "Clear Document"
 msgstr "清空文档"
 
-#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/main_menu.py
 msgid "_Edit"
 msgstr "编辑(_E)"
 
@@ -3628,7 +3399,7 @@ msgstr "等轴测视图"
 msgid "Toggle Perspective"
 msgstr "切换透视"
 
-#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/main_menu.py
 msgid "_View"
 msgstr "视图(_V)"
 
@@ -4304,14 +4075,6 @@ msgid "Add Asset"
 msgstr "添加资产"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
-msgid "Add Stock Material"
-msgstr "添加毛坯材料"
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
-msgid "Add Sketch"
-msgstr "添加草图"
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
 #, python-brace-format
 msgid "{count} asset"
 msgstr "{count} 个资产"
@@ -4341,8 +4104,7 @@ msgstr "G代码文件"
 msgid "Export Object"
 msgstr "导出对象"
 
-#: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/sketch/exporter.py
-#: rayforge/image/sketch/importer.py
+#: rayforge/ui_gtk/doceditor/file_dialogs.py
 #, python-brace-format
 msgid "{app_name} Sketch"
 msgstr "{app_name} 草图"
@@ -4445,9 +4207,6 @@ msgid "Material thickness"
 msgstr "材料厚度"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/select_tool.py
-#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Select"
 msgstr "选择"
 
@@ -4455,38 +4214,17 @@ msgstr "选择"
 msgid "None"
 msgstr "无"
 
-#: rayforge/ui_gtk/doceditor/sketch_properties.py
-msgid "Change Sketch Parameter"
-msgstr "更改草图参数"
-
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Edit this sketch"
-msgstr "编辑此草图"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Delete this sketch"
-msgstr "删除此草图"
+msgid "Delete this asset"
+msgstr "删除此资产"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "Toggle visibility"
 msgstr "切换可见性"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "1 parameter"
-msgstr "1 个参数"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-#, python-brace-format
-msgid "{count} parameters"
-msgstr "{count} 个参数"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "Edit stock properties"
 msgstr "编辑毛坯属性"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Delete this stock asset"
-msgstr "删除此毛坯资产"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 #, python-brace-format
@@ -4524,10 +4262,6 @@ msgstr "选择材料"
 #: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "Choose a material from the available libraries."
 msgstr "从可用库中选择材料。"
-
-#: rayforge/ui_gtk/doceditor/property_providers/sketch.py
-msgid "Mixed Values"
-msgstr "混合值"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 #, python-brace-format
@@ -4577,6 +4311,10 @@ msgstr "重置为自然高度"
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset to natural aspect ratio"
 msgstr "重置为自然宽高比"
+
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Angle"
+msgstr "角度"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Clockwise is positive"
@@ -4916,271 +4654,6 @@ msgstr " (+{tasks} 更多)"
 msgid "{tasks} tasks"
 msgstr "{tasks} 个任务"
 
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/arc_tool.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Arc"
-msgstr "圆弧"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/text_box_tool.py
-msgid "Text Box"
-msgstr "文本框"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/circle_tool.py
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Circle"
-msgstr "圆形"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Rectangle"
-msgstr "矩形"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Rounded Rectangle"
-msgstr "圆角矩形"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/fill_tool.py
-msgid "Fill"
-msgstr "填充"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Construction"
-msgstr "构造"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Chamfer"
-msgstr "倒角"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Fillet"
-msgstr "圆角"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Toggle Construction"
-msgstr "切换构造线"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Delete Selection"
-msgstr "删除选中项"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Horizontal Constraint"
-msgstr "添加水平约束"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Vertical Constraint"
-msgstr "添加垂直约束"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Distance Constraint"
-msgstr "添加距离约束"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Radius Constraint"
-msgstr "添加半径约束"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Diameter Constraint"
-msgstr "添加直径约束"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Coincident Constraint"
-msgstr "添加重合约束"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Point On Shape"
-msgstr "添加点在形状上"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Perpendicular Constraint"
-msgstr "添加垂直约束"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Angle Constraint"
-msgstr "添加角度约束"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Tangent Constraint"
-msgstr "添加相切约束"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Equal Constraint"
-msgstr "添加相等约束"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Symmetry Constraint"
-msgstr "添加对称约束"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Aspect Ratio Constraint"
-msgstr "添加宽高比约束"
-
-#: rayforge/ui_gtk/sketcher/studio.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Cancel Sketch"
-msgstr "取消草图"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Sketch Studio"
-msgstr "草图工作室"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid ""
-"Right-click background to draw, objects to edit. Double-click dimensions to "
-"edit values."
-msgstr "右键单击背景进行绘制，右键单击对象进行编辑。双击尺寸以编辑值。"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Finish"
-msgstr "完成"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Properties"
-msgstr "属性"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Configure the sketch name and basic properties"
-msgstr "配置草图名称和基本属性"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Rename Sketch"
-msgstr "重命名草图"
-
-#: rayforge/ui_gtk/sketcher/tools/select_tool.py
-msgid "Snap to Grid"
-msgstr "对齐网格"
-
-#: rayforge/ui_gtk/sketcher/tools/select_tool.py
-msgid "Select Connected"
-msgstr "选择相连对象"
-
-#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
-msgid "Next field"
-msgstr "下一个字段"
-
-#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
-msgid "Prev field"
-msgstr "上一个字段"
-
-#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
-#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
-msgid "W"
-msgstr "宽"
-
-#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
-#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
-msgid "H"
-msgstr "高"
-
-#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
-msgid "Type dimensions (W H)"
-msgstr "输入尺寸（宽 高）"
-
-#: rayforge/ui_gtk/sketcher/tools/arc_tool.py
-msgid "Type radius"
-msgstr "输入半径"
-
-#: rayforge/ui_gtk/sketcher/tools/circle_tool.py
-msgid "Type diameter"
-msgstr "输入直径"
-
-#: rayforge/ui_gtk/sketcher/tools/line_tool.py
-msgid "Type length"
-msgstr "输入长度"
-
-#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
-msgid "R"
-msgstr "R"
-
-#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
-msgid "Type dimensions (W H R)"
-msgstr "输入尺寸（宽 高 R）"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Finish Sketch"
-msgstr "完成草图"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Fill Area"
-msgstr "填充区域"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Tools"
-msgstr "工具"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Chamfer Corner"
-msgstr "倒角"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Modify"
-msgstr "修改"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "_Sketch"
-msgstr "草图(_S)"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Fit View"
-msgstr "适应视图"
-
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Equal"
-msgstr "相等"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Font Properties"
-msgstr "字体属性"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Configure font family, size, and style for text boxes"
-msgstr "配置文本框的字体系列、大小和样式"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Font Family"
-msgstr "字体系列"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Font Size"
-msgstr "字体大小"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Bold"
-msgstr "粗体"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Italic"
-msgstr "斜体"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Select Font"
-msgstr "选择字体"
-
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Enter radius or expression (e.g. 'width/2')."
-msgstr "输入半径或表达式（例如 'width/2'）。"
-
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Enter diameter or expression."
-msgstr "输入直径或表达式。"
-
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Enter angle in degrees or expression."
-msgstr "输入角度（度）或表达式。"
-
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Enter length or expression."
-msgstr "输入长度或表达式。"
-
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Enter value or expression."
-msgstr "输入值或表达式。"
-
 #: rayforge/ui_gtk/about.py
 msgid "Not found"
 msgstr "未找到"
@@ -5308,14 +4781,28 @@ msgstr "英寸/秒²"
 msgid "ft/s²"
 msgstr "英尺/秒²"
 
-#: rayforge/shared/gcodeedit/viewer.py
-msgid "G-code too large to preview."
-msgstr "G代码太大，无法预览。"
+#: rayforge/shared/util/size.py
+#, python-brace-format
+msgid "{size} B"
+msgstr "{size} 字节"
+
+#: rayforge/shared/util/size.py
+#, python-brace-format
+msgid "{size:.1f} KB"
+msgstr "{size:.1f} KB"
+
+#: rayforge/shared/util/size.py
+#, python-brace-format
+msgid "{size:.1f} MB"
+msgstr "{size:.1f} MB"
 
 #: rayforge/shared/gcodeedit/viewer.py
-#, python-brace-format
-msgid "({line_count} lines > 20,000 line limit)"
-msgstr "({line_count} 行 > 20,000 行限制)"
+msgid "{line_count:,} lines  ·  {size}"
+msgstr "{line_count:,} 行  ·  {size}"
+
+#: rayforge/shared/gcodeedit/viewer.py
+msgid "— Truncated (showing first 20,000 of {line_count:,} lines) —"
+msgstr "— 已截断（显示 {line_count:,} 行中的前 20,000 行）—"
 
 #: rayforge/addon_mgr/update_cmd.py
 msgid "Checking for addon updates..."
@@ -5617,9 +5104,9 @@ msgstr "更改项目角度"
 msgid "Change item shear"
 msgstr "更改项目剪切"
 
-#: rayforge/doceditor/sketch_cmd.py
-msgid "Change Sketch Parameters"
-msgstr "更改草图参数"
+#: rayforge/doceditor/asset_cmd.py
+msgid "Update Asset"
+msgstr "更新资产"
 
 #: rayforge/doceditor/asset_cmd.py
 msgid "Rename Asset"
@@ -5860,10 +5347,6 @@ msgstr "移除所有工件"
 #: rayforge/doceditor/edit_cmd.py
 msgid "Clear Layer Items"
 msgstr "清除图层项目"
-
-#: rayforge/doceditor/edit_cmd.py
-msgid "Add Sketch Instance"
-msgstr "添加草图实例"
 
 #: rayforge/doceditor/layout_cmd.py
 msgid "Position at Point"

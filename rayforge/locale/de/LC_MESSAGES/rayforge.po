@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-19 01:07+0100\n"
+"POT-Creation-Date: 2026-03-22 19:54+0100\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -163,6 +163,14 @@ msgstr "Ritzen"
 msgid "Score Speed"
 msgstr "Ritzgeschwindigkeit"
 
+#: rayforge/core/stock_asset.py
+msgid "Stock Material"
+msgstr "Rohmaterial"
+
+#: rayforge/core/source_asset.py
+msgid "Source"
+msgstr "Quelle"
+
 #: rayforge/core/expression/errors.py
 #, python-brace-format
 msgid "Syntax Error: {message}"
@@ -179,170 +187,6 @@ msgid "Cannot use operator '{op}' between types '{left}' and '{right}'"
 msgstr ""
 "Operator '{op}' kann nicht zwischen den Typen '{left}' und '{right}' "
 "verwendet werden."
-
-#: rayforge/core/sketcher/sketch.py
-#: rayforge/ui_gtk/doceditor/sketch_properties.py
-#: rayforge/ui_gtk/doceditor/property_providers/sketch.py
-msgid "Sketch Parameters"
-msgstr "Skizzenparameter"
-
-#: rayforge/core/sketcher/sketch.py
-msgid "Parameters that control this sketch's geometry"
-msgstr "Parameter, die die Geometrie dieser Skizze steuern"
-
-#: rayforge/core/sketcher/constraints/equal_length.py
-msgid "Equal Length"
-msgstr "Gleiche Länge"
-
-#: rayforge/core/sketcher/constraints/parallelogram.py
-msgid "Parallelogram"
-msgstr "Parallelogramm"
-
-#: rayforge/core/sketcher/constraints/point_on_line.py
-msgid "Point on Line"
-msgstr "Punkt auf Linie"
-
-#: rayforge/core/sketcher/constraints/collinear.py
-msgid "Collinear"
-msgstr "Kollinear"
-
-#: rayforge/core/sketcher/constraints/tangent.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Tangent"
-msgstr "Tangente"
-
-#: rayforge/core/sketcher/constraints/distance.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Distance"
-msgstr "Abstand"
-
-#: rayforge/core/sketcher/constraints/vertical.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Vertical"
-msgstr "Vertikal"
-
-#: rayforge/core/sketcher/constraints/equal_distance.py
-msgid "Equal Distance"
-msgstr "Gleiche Abstand"
-
-#: rayforge/core/sketcher/constraints/perpendicular.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Perpendicular"
-msgstr "Senkrecht"
-
-#: rayforge/core/sketcher/constraints/symmetry.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Symmetry"
-msgstr "Symmetrie"
-
-#: rayforge/core/sketcher/constraints/horizontal.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Horizontal"
-msgstr "Horizontal"
-
-#: rayforge/core/sketcher/constraints/angle.py
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Angle"
-msgstr "Winkel"
-
-#: rayforge/core/sketcher/constraints/diameter.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Diameter"
-msgstr "Durchmesser"
-
-#: rayforge/core/sketcher/constraints/coincident.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Coincident"
-msgstr "Koinzident"
-
-#: rayforge/core/sketcher/constraints/radius.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Radius"
-msgstr "Radius"
-
-#: rayforge/core/sketcher/constraints/aspect_ratio.py
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Aspect Ratio"
-msgstr "Seitenverhältnis"
-
-#: rayforge/core/sketcher/commands/circle.py
-msgid "Add Circle"
-msgstr "Kreis hinzufügen"
-
-#: rayforge/core/sketcher/commands/fillet.py
-msgid "Add Fillet"
-msgstr "Abrundung hinzufügen"
-
-#: rayforge/core/sketcher/commands/text_box.py
-#: rayforge/ui_gtk/sketcher/tools/text_box_tool.py
-msgid "Add Text Box"
-msgstr "Textfeld hinzufügen"
-
-#: rayforge/core/sketcher/commands/fill.py
-msgid "Add Fill"
-msgstr "Füllung hinzufügen"
-
-#: rayforge/core/sketcher/commands/fill.py
-msgid "Remove Fill"
-msgstr "Füllung entfernen"
-
-#: rayforge/core/sketcher/commands/constraint.py
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Edit Constraint"
-msgstr "Bedingung bearbeiten"
-
-#: rayforge/core/sketcher/commands/constraint_create.py
-msgid "Add Constraint"
-msgstr "Bedingung hinzufügen"
-
-#: rayforge/core/sketcher/commands/constraint_create.py
-msgid "Add Radius"
-msgstr "Radius hinzufügen"
-
-#: rayforge/core/sketcher/commands/constraint_create.py
-msgid "Add Distance"
-msgstr "Abstand hinzufügen"
-
-#: rayforge/core/sketcher/commands/constraint_create.py
-msgid "Add Diameter"
-msgstr "Durchmesser hinzufügen"
-
-#: rayforge/core/sketcher/commands/line.py
-msgid "Add Line"
-msgstr "Linie hinzufügen"
-
-#: rayforge/core/sketcher/commands/chamfer.py
-msgid "Add Chamfer"
-msgstr "Fase hinzufügen"
-
-#: rayforge/core/sketcher/commands/arc.py
-msgid "Add Arc"
-msgstr "Bogen hinzufügen"
-
-#: rayforge/core/sketcher/commands/rounded_rect.py
-msgid "Add Rounded Rectangle"
-msgstr "Abgerundetes Rechteck hinzufügen"
-
-#: rayforge/core/sketcher/commands/rectangle.py
-msgid "Add Rectangle"
-msgstr "Rechteck hinzufügen"
-
-#: rayforge/core/sketcher/commands/text_property.py
-msgid "Modify Text Property"
-msgstr "Texteigenschaft ändern"
-
-#: rayforge/core/sketcher/commands/point.py
-msgid "Move Point"
-msgstr "Punkt verschieben"
-
-#: rayforge/core/sketcher/commands/point.py
-msgid "Unstick Junction"
-msgstr "Verbindung lösen"
-
-#: rayforge/core/sketcher/commands/live_text_edit.py
-msgid "Edit Text"
-msgstr "Text bearbeiten"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Command Letter"
@@ -1077,30 +921,6 @@ msgid "An unexpected error occurred during validation: {error}"
 msgstr ""
 "Während der Validierung ist ein unerwarteter Fehler aufgetreten: {error}"
 
-#: rayforge/machine/models/dialect/grbl_noz.py
-msgid "Grbl (Compat, no Z axis)"
-msgstr "Grbl (Kompatibilität, keine Z-Achse)"
-
-#: rayforge/machine/models/dialect/grbl_noz.py
-msgid ""
-"Grbl dialect with highest compatibility, but removes Z axis commands for "
-"more efficient G-code"
-msgstr ""
-"Grbl-Dialekt mit höchster Kompatibilität, entfernt aber Z-Achsen-Befehle für "
-"effizienteren G-Code"
-
-#: rayforge/machine/models/dialect/grbl_dynamic_noz.py
-msgid "GRBL Dynamic (no Z axis)"
-msgstr "GRBL Dynamisch (keine Z-Achse)"
-
-#: rayforge/machine/models/dialect/grbl_dynamic_noz.py
-msgid ""
-"GRBL with M4 dynamic power (Depth-Aware) mode, but removes Z axis commands "
-"for more efficient G-code"
-msgstr ""
-"GRBL mit M4 dynamischem Leistungsmodus (Tiefenabhängig), entfernt aber Z-"
-"Achsen-Befehle für effizienteren G-Code"
-
 #: rayforge/machine/models/dialect/mach4_m67.py
 msgid "Mach4 (M67 Analog)"
 msgstr "Mach4 (M67 Analog)"
@@ -1438,8 +1258,6 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 #: rayforge/ui_gtk/doceditor/import_handler.py
-#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "Cancel"
 msgstr "Abbrechen"
 
@@ -1449,9 +1267,6 @@ msgstr "Abbrechen"
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
-#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Delete"
 msgstr "Löschen"
 
@@ -1607,7 +1422,6 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-#: rayforge/ui_gtk/sketcher/studio.py
 msgid "Name"
 msgstr "Name"
 
@@ -1839,26 +1653,6 @@ msgstr ""
 "<a href=\"https://rayforge.org/docs/general-info/usage-tracking\">Mehr "
 "erfahren</a> über Nutzungsstatistiken und Datenschutz."
 
-#: rayforge/ui_gtk/sketch_mode_cmd.py rayforge/ui_gtk/main_menu.py
-msgid "New Sketch"
-msgstr "Neue Skizze"
-
-#: rayforge/ui_gtk/sketch_mode_cmd.py
-msgid "Create Sketch Definition"
-msgstr "Skizzendefinition erstellen"
-
-#: rayforge/ui_gtk/sketch_mode_cmd.py
-msgid "Selected item is not an editable sketch."
-msgstr "Das ausgewählte Element ist keine bearbeitbare Skizze."
-
-#: rayforge/ui_gtk/sketch_mode_cmd.py
-msgid "Please select a single sketch to edit."
-msgstr "Bitte wähle eine einzelne Skizze zum Bearbeiten aus."
-
-#: rayforge/ui_gtk/sketch_mode_cmd.py
-msgid "Please select a single object to export."
-msgstr "Bitte wähle ein einzelnes Objekt zum Exportieren aus."
-
 #: rayforge/ui_gtk/canvas2d/elements/tab_handle.py
 msgid "Move Tab"
 msgstr "Haltesteg verschieben"
@@ -1884,14 +1678,6 @@ msgid "Convert to Stock"
 msgstr "In Material umwandeln"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
-msgid "Edit Sketch"
-msgstr "Skizze bearbeiten"
-
-#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
-msgid "Export Object..."
-msgstr "Objekt exportieren..."
-
-#: rayforge/ui_gtk/canvas2d/context_menu.py
 msgid "Add Tab Here"
 msgstr "Haltesteg hier hinzufügen"
 
@@ -1900,8 +1686,6 @@ msgid "Remove Tab"
 msgstr "Haltesteg entfernen"
 
 #: rayforge/ui_gtk/canvas2d/simulation_controls.py
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/line_tool.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Line"
 msgstr "Linie"
 
@@ -1916,24 +1700,6 @@ msgstr "Bild aus Zwischenablage importiert"
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid "Failed to import image from clipboard"
 msgstr "Fehler beim Importieren des Bildes aus der Zwischenablage"
-
-#: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
-msgid "Empty Sketch"
-msgstr "Leere Skizze"
-
-#: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
-msgid ""
-"The selected sketch contains no geometry. Please edit the sketch to add "
-"lines or shapes before placing on the canvas."
-msgstr ""
-"Die ausgewählte Skizze enthält keine Geometrie. Bitte bearbeite die Skizze, "
-"um Linien oder Formen hinzuzufügen, bevor du sie auf der Arbeitsfläche "
-"platzierst."
-
-#: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Close"
-msgstr "Schließen"
 
 #: rayforge/ui_gtk/view_mode_cmd.py
 msgid "3D view is not available due to missing dependencies."
@@ -2081,7 +1847,6 @@ msgid "Clear All Points"
 msgstr "Alle Punkte löschen"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
-#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
 msgid "Apply"
 msgstr "Anwenden"
 
@@ -2194,6 +1959,10 @@ msgstr "Tangential 2 (p2)"
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Second order tangential distortion"
 msgstr "Tangentialverzerrung zweiter Ordnung"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Close"
+msgstr "Schließen"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 #, python-brace-format
@@ -2820,7 +2589,6 @@ msgstr ""
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "OK"
 msgstr "OK"
 
@@ -3685,7 +3453,6 @@ msgid "Redo the last action"
 msgstr "Letzte Aktion wiederholen"
 
 #: rayforge/ui_gtk/shared/preferences_group.py
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "No parameters"
 msgstr "Keine Parameter"
 
@@ -3726,17 +3493,15 @@ msgstr "Dokument exportieren..."
 msgid "Quit"
 msgstr "Beenden"
 
-#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/main_menu.py
 msgid "_File"
 msgstr "_Datei"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
-#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Undo"
 msgstr "Rückgängig"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
-#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Redo"
 msgstr "Wiederholen"
 
@@ -3760,7 +3525,7 @@ msgstr "Alles auswählen"
 msgid "Clear Document"
 msgstr "Dokument leeren"
 
-#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/main_menu.py
 msgid "_Edit"
 msgstr "_Bearbeiten"
 
@@ -3812,7 +3577,7 @@ msgstr "Isometrische Ansicht"
 msgid "Toggle Perspective"
 msgstr "Perspektive umschalten"
 
-#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/main_menu.py
 msgid "_View"
 msgstr "_Ansicht"
 
@@ -4504,14 +4269,6 @@ msgid "Add Asset"
 msgstr "Element hinzufügen"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
-msgid "Add Stock Material"
-msgstr "Rohmaterial hinzufügen"
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
-msgid "Add Sketch"
-msgstr "Skizze hinzufügen"
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
 #, python-brace-format
 msgid "{count} asset"
 msgstr "{count} Element"
@@ -4541,8 +4298,7 @@ msgstr "G-Code-Dateien"
 msgid "Export Object"
 msgstr "Objekt exportieren"
 
-#: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/sketch/exporter.py
-#: rayforge/image/sketch/importer.py
+#: rayforge/ui_gtk/doceditor/file_dialogs.py
 #, python-brace-format
 msgid "{app_name} Sketch"
 msgstr "{app_name}-Skizze"
@@ -4648,9 +4404,6 @@ msgid "Material thickness"
 msgstr "Materialdicke"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/select_tool.py
-#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Select"
 msgstr "Auswählen"
 
@@ -4658,38 +4411,17 @@ msgstr "Auswählen"
 msgid "None"
 msgstr "Keine"
 
-#: rayforge/ui_gtk/doceditor/sketch_properties.py
-msgid "Change Sketch Parameter"
-msgstr "Skizzenparameter ändern"
-
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Edit this sketch"
-msgstr "Diese Skizze bearbeiten"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Delete this sketch"
-msgstr "Diese Skizze löschen"
+msgid "Delete this asset"
+msgstr "Dieses Objekt löschen"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "Toggle visibility"
 msgstr "Sichtbarkeit umschalten"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "1 parameter"
-msgstr "1 Parameter"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-#, python-brace-format
-msgid "{count} parameters"
-msgstr "{count} Parameter"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "Edit stock properties"
 msgstr "Materialeigenschaften bearbeiten"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Delete this stock asset"
-msgstr "Dieses Materialelement löschen"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 #, python-brace-format
@@ -4727,10 +4459,6 @@ msgstr "Material auswählen"
 #: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "Choose a material from the available libraries."
 msgstr "Wähle ein Material aus den verfügbaren Bibliotheken."
-
-#: rayforge/ui_gtk/doceditor/property_providers/sketch.py
-msgid "Mixed Values"
-msgstr "Gemischte Werte"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 #, python-brace-format
@@ -4780,6 +4508,10 @@ msgstr "Auf natürliche Höhe zurücksetzen"
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset to natural aspect ratio"
 msgstr "Auf natürliches Seitenverhältnis zurücksetzen"
+
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Angle"
+msgstr "Winkel"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Clockwise is positive"
@@ -5128,273 +4860,6 @@ msgstr " (+{tasks} weitere)"
 msgid "{tasks} tasks"
 msgstr "{tasks} Aufgaben"
 
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/arc_tool.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Arc"
-msgstr "Bogen"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/text_box_tool.py
-msgid "Text Box"
-msgstr "Textfeld"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/circle_tool.py
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Circle"
-msgstr "Kreis"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Rectangle"
-msgstr "Rechteck"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Rounded Rectangle"
-msgstr "Abgerundetes Rechteck"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-#: rayforge/ui_gtk/sketcher/tools/fill_tool.py
-msgid "Fill"
-msgstr "Füllung"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Construction"
-msgstr "Konstruktion"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Chamfer"
-msgstr "Fase"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Fillet"
-msgstr "Abrundung"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Toggle Construction"
-msgstr "Konstruktion umschalten"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Delete Selection"
-msgstr "Auswahl löschen"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Horizontal Constraint"
-msgstr "Horizontale Bedingung hinzufügen"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Vertical Constraint"
-msgstr "Vertikale Bedingung hinzufügen"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Distance Constraint"
-msgstr "Abstandsbedingung hinzufügen"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Radius Constraint"
-msgstr "Radiusbedingung hinzufügen"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Diameter Constraint"
-msgstr "Durchmesserbedingung hinzufügen"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Coincident Constraint"
-msgstr "Deckungsgleiche Bedingung hinzufügen"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Point On Shape"
-msgstr "Punkt auf Form hinzufügen"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Perpendicular Constraint"
-msgstr "Rechtwinklige Bedingung hinzufügen"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Angle Constraint"
-msgstr "Winkelbedingung hinzufügen"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Tangent Constraint"
-msgstr "Tangentiale Bedingung hinzufügen"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Equal Constraint"
-msgstr "Gleiche-Länge-Bedingung hinzufügen"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Symmetry Constraint"
-msgstr "Symmetriebedingung hinzufügen"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Aspect Ratio Constraint"
-msgstr "Seitenverhältnisbedingung hinzufügen"
-
-#: rayforge/ui_gtk/sketcher/studio.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Cancel Sketch"
-msgstr "Skizze abbrechen"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Sketch Studio"
-msgstr "Skizzen-Studio"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid ""
-"Right-click background to draw, objects to edit. Double-click dimensions to "
-"edit values."
-msgstr ""
-"Rechtsklick auf Hintergrund zum Zeichnen, auf Objekte zum Bearbeiten. "
-"Doppelklick auf Maße, um Werte zu bearbeiten."
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Finish"
-msgstr "Fertigstellen"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Properties"
-msgstr "Eigenschaften"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Configure the sketch name and basic properties"
-msgstr "Skizzennamen und grundlegende Eigenschaften konfigurieren"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Rename Sketch"
-msgstr "Skizze umbenennen"
-
-#: rayforge/ui_gtk/sketcher/tools/select_tool.py
-msgid "Snap to Grid"
-msgstr "Am Raster ausrichten"
-
-#: rayforge/ui_gtk/sketcher/tools/select_tool.py
-msgid "Select Connected"
-msgstr "Verbundene auswählen"
-
-#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
-msgid "Next field"
-msgstr "Nächstes Feld"
-
-#: rayforge/ui_gtk/sketcher/tools/dimension_input.py
-msgid "Prev field"
-msgstr "Vorheriges Feld"
-
-#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
-#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
-msgid "W"
-msgstr "B"
-
-#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
-#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
-msgid "H"
-msgstr "H"
-
-#: rayforge/ui_gtk/sketcher/tools/rectangle_tool.py
-msgid "Type dimensions (W H)"
-msgstr "Maße eingeben (B H)"
-
-#: rayforge/ui_gtk/sketcher/tools/arc_tool.py
-msgid "Type radius"
-msgstr "Radius eingeben"
-
-#: rayforge/ui_gtk/sketcher/tools/circle_tool.py
-msgid "Type diameter"
-msgstr "Durchmesser eingeben"
-
-#: rayforge/ui_gtk/sketcher/tools/line_tool.py
-msgid "Type length"
-msgstr "Länge eingeben"
-
-#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
-msgid "R"
-msgstr "R"
-
-#: rayforge/ui_gtk/sketcher/tools/rounded_rect_tool.py
-msgid "Type dimensions (W H R)"
-msgstr "Maße eingeben (B H R)"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Finish Sketch"
-msgstr "Skizze fertigstellen"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Fill Area"
-msgstr "Fläche füllen"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Tools"
-msgstr "Werkzeuge"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Chamfer Corner"
-msgstr "Ecke abfasen"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Modify"
-msgstr "Ändern"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "_Sketch"
-msgstr "_Skizze"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Fit View"
-msgstr "Ansicht anpassen"
-
-#: rayforge/ui_gtk/sketcher/shortcuts.py
-msgid "Equal"
-msgstr "Gleich"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Font Properties"
-msgstr "Schriftarteigenschaften"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Configure font family, size, and style for text boxes"
-msgstr "Schriftfamilie, Größe und Stil für Textfelder konfigurieren"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Font Family"
-msgstr "Schriftfamilie"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Font Size"
-msgstr "Schriftgröße"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Bold"
-msgstr "Fett"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Italic"
-msgstr "Kursiv"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Select Font"
-msgstr "Schriftart auswählen"
-
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Enter radius or expression (e.g. 'width/2')."
-msgstr "Radius oder Ausdruck eingeben (z. B. 'Breite/2')."
-
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Enter diameter or expression."
-msgstr "Durchmesser oder Ausdruck eingeben."
-
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Enter angle in degrees or expression."
-msgstr "Winkel in Grad oder Ausdruck eingeben."
-
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Enter length or expression."
-msgstr "Länge oder Ausdruck eingeben."
-
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Enter value or expression."
-msgstr "Wert oder Ausdruck eingeben."
-
 #: rayforge/ui_gtk/about.py
 msgid "Not found"
 msgstr "Nicht gefunden"
@@ -5524,14 +4989,28 @@ msgstr "in/s²"
 msgid "ft/s²"
 msgstr "ft/s²"
 
-#: rayforge/shared/gcodeedit/viewer.py
-msgid "G-code too large to preview."
-msgstr "G-Code zu groß für die Vorschau."
+#: rayforge/shared/util/size.py
+#, python-brace-format
+msgid "{size} B"
+msgstr "{size} B"
+
+#: rayforge/shared/util/size.py
+#, python-brace-format
+msgid "{size:.1f} KB"
+msgstr "{size:.1f} KB"
+
+#: rayforge/shared/util/size.py
+#, python-brace-format
+msgid "{size:.1f} MB"
+msgstr "{size:.1f} MB"
 
 #: rayforge/shared/gcodeedit/viewer.py
-#, python-brace-format
-msgid "({line_count} lines > 20,000 line limit)"
-msgstr "({line_count} Zeilen > 20.000 Zeilen-Limit)"
+msgid "{line_count:,} lines  ·  {size}"
+msgstr "{line_count:,} Zeilen  ·  {size}"
+
+#: rayforge/shared/gcodeedit/viewer.py
+msgid "— Truncated (showing first 20,000 of {line_count:,} lines) —"
+msgstr "— Abgeschnitten (zeigt die ersten 20.000 von {line_count:,} Zeilen) —"
 
 #: rayforge/addon_mgr/update_cmd.py
 msgid "Checking for addon updates..."
@@ -5845,9 +5324,9 @@ msgstr "Elementwinkel ändern"
 msgid "Change item shear"
 msgstr "Elementscherung ändern"
 
-#: rayforge/doceditor/sketch_cmd.py
-msgid "Change Sketch Parameters"
-msgstr "Skizzenparameter ändern"
+#: rayforge/doceditor/asset_cmd.py
+msgid "Update Asset"
+msgstr "Objekt aktualisieren"
 
 #: rayforge/doceditor/asset_cmd.py
 msgid "Rename Asset"
@@ -6092,10 +5571,6 @@ msgstr "Alle Werkstücke entfernen"
 #: rayforge/doceditor/edit_cmd.py
 msgid "Clear Layer Items"
 msgstr "Elemente der Ebene löschen"
-
-#: rayforge/doceditor/edit_cmd.py
-msgid "Add Sketch Instance"
-msgstr "Skizzeninstanz hinzufügen"
 
 #: rayforge/doceditor/layout_cmd.py
 msgid "Position at Point"

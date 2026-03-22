@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-09 22:05+0100\n"
+"POT-Creation-Date: 2026-03-21 16:34+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -110,6 +110,14 @@ msgid "Power for darkest areas, as a % of the step's main power"
 msgstr "Потужність для найтемніших ділянок, у % від основної потужності кроку"
 
 #: laser_essentials/widgets/raster_widget.py
+msgid "Power Levels"
+msgstr "Рівні потужності"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Number of discrete power steps (lower = fewer moves)"
+msgstr "Кількість дискретних кроків потужності (менше = менше рухів)"
+
+#: laser_essentials/widgets/raster_widget.py
 msgid "Number of Depth Levels"
 msgstr "Кількість рівнів глибини"
 
@@ -154,12 +162,20 @@ msgid "Line Spacing"
 msgstr "Інтервал між лініями"
 
 #: laser_essentials/widgets/raster_widget.py
+msgid "Distance between scan lines"
+msgstr "Відстань між лініями сканування"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Sample Interval"
+msgstr "Інтервал вибірки"
+
+#: laser_essentials/widgets/raster_widget.py
 msgid ""
-"Distance between scan lines in machine units. Leave at 0 to use laser spot "
-"size"
+"Distance between power samples along scan line. Lower values improve "
+"accuracy, but increase output size."
 msgstr ""
-"Відстань між лініями сканування в одиницях верстата. Залиште 0, щоб "
-"використовувати розмір плями лазера"
+"Відстань між вибірками потужності вздовж лінії сканування. Менші значення "
+"покращують точність, але збільшують розмір виводу."
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Invert"

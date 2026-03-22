@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-09 22:05+0100\n"
+"POT-Creation-Date: 2026-03-21 16:34+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -109,6 +109,14 @@ msgid "Power for darkest areas, as a % of the step's main power"
 msgstr "最暗区域的功率，占该步骤主功率的百分比"
 
 #: laser_essentials/widgets/raster_widget.py
+msgid "Power Levels"
+msgstr "功率级别"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Number of discrete power steps (lower = fewer moves)"
+msgstr "离散功率步数（越低=移动越少）"
+
+#: laser_essentials/widgets/raster_widget.py
 msgid "Number of Depth Levels"
 msgstr "深度层级数"
 
@@ -153,10 +161,18 @@ msgid "Line Spacing"
 msgstr "线间距"
 
 #: laser_essentials/widgets/raster_widget.py
+msgid "Distance between scan lines"
+msgstr "扫描线之间的距离"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Sample Interval"
+msgstr "采样间隔"
+
+#: laser_essentials/widgets/raster_widget.py
 msgid ""
-"Distance between scan lines in machine units. Leave at 0 to use laser spot "
-"size"
-msgstr "扫描线之间的距离（以机器单位）。留0使用激光光斑大小"
+"Distance between power samples along scan line. Lower values improve "
+"accuracy, but increase output size."
+msgstr "扫描线上功率采样点之间的距离。较低的值可提高精度，但会增加输出大小。"
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Invert"
