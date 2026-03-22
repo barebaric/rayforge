@@ -6,7 +6,27 @@ if TYPE_CHECKING:
     from ..core.item import DocItem
 
 
-class Exporter(ABC):
+class BaseExporter(ABC):
+    """
+    Abstract base class for exporters that work with Geometry objects.
+    """
+
+    label: str
+    extensions: Tuple[str, ...]
+    mime_types: Tuple[str, ...]
+
+    @abstractmethod
+    def export(self) -> bytes:
+        """
+        Performs the export operation.
+
+        Returns:
+            The exported data as a bytes object.
+        """
+        raise NotImplementedError
+
+
+class Exporter(BaseExporter):
     """
     An abstract base class that defines the interface for all exporters.
     An exporter takes a DocItem and converts it to a specific file format
@@ -25,33 +45,3 @@ class Exporter(ABC):
             doc_item: The DocItem instance to export.
         """
         self.doc_item = doc_item
-
-    @abstractmethod
-    def export(self) -> bytes:
-        """
-        Performs the export operation.
-
-        Returns:
-            The exported data as a bytes object.
-        """
-        raise NotImplementedError
-
-
-class GeometryExporter(ABC):
-    """
-    Abstract base class for exporters that work with Geometry objects.
-    """
-
-    label: str
-    extensions: Tuple[str, ...]
-    mime_types: Tuple[str, ...]
-
-    @abstractmethod
-    def export(self) -> bytes:
-        """
-        Performs the export operation.
-
-        Returns:
-            The exported data as a bytes object.
-        """
-        raise NotImplementedError

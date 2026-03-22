@@ -36,6 +36,8 @@ from .ruida.importer import RuidaImporter
 from .ruida.renderer import RUIDA_RENDERER
 from .svg.importer import SvgImporter
 from .svg.renderer import SVG_RENDERER
+from .svg.exporter import GeometrySvgExporter
+from .dxf.exporter import GeometryDxfExporter
 from .registry import (
     exporter_registry,
     importer_registry,
@@ -234,6 +236,9 @@ renderer_by_name: Dict[str, Renderer] = {
 
 for renderer in renderer_by_name.values():
     renderer_registry.register(renderer)
+
+exporter_registry.register(GeometrySvgExporter)
+exporter_registry.register(GeometryDxfExporter)
 
 
 def get_renderer_for_asset(asset_type: str) -> Optional[Renderer]:

@@ -614,11 +614,10 @@ class TestGetSupportedImportFilters:
         assert isinstance(filters, list)
         assert len(filters) > 0
 
-        # Verify structure of first filter
         first = filters[0]
-        assert "label" in first
-        assert "extensions" in first
-        assert "mime_types" in first
+        assert hasattr(first, "label")
+        assert hasattr(first, "extensions")
+        assert hasattr(first, "mime_types")
 
 
 class TestGetImporterInfo:

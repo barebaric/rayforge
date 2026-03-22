@@ -1,9 +1,18 @@
 import logging
-from typing import Optional, Type, Dict
+from dataclasses import dataclass
+from typing import List, Optional, Type, Dict, Tuple
 
-from .base_exporter import Exporter
+from .base_exporter import BaseExporter
 from .base_importer import Importer
 from .base_renderer import Renderer
+
+
+@dataclass(frozen=True)
+class FileFilter:
+    label: str
+    extensions: Tuple[str, ...]
+    mime_types: Tuple[str, ...]
+
 
 logger = logging.getLogger(__name__)
 
@@ -131,13 +140,13 @@ class ExporterRegistry:
     """Registry for file exporters."""
 
     def __init__(self):
-        self._exporters_by_ext: Dict[str, Type[Exporter]] = {}
-        self._exporters_by_mime: Dict[str, Type[Exporter]] = {}
+        self._exporters_by_ext: Dict[str, Type[BaseExporter]] = {}
+        self._exporters_by_mime: Dict[str, Type[BaseExporter]] = {}
         self._addon_items: Dict[str, set[str]] = {}
 
     def register(
         self,
-        exporter_cls: Type[Exporter],
+        exporter_cls: Type[BaseExporter],
         addon_name: Optional[str] = None,
     ) -> None:
         """Register an exporter for its extensions and MIME types."""
@@ -179,13 +188,34 @@ class ExporterRegistry:
                 del self._exporters_by_mime[mime]
         return count
 
-    def get_by_extension(self, file_ext: str) -> Optional[Type[Exporter]]:
+    def get_by_extension(self, file_ext: str) -> Optional[Type[BaseExporter]]:
         """Get exporter class for a file extension."""
         return self._exporters_by_ext.get(file_ext)
 
-    def get_by_mime_type(self, mime_type: str) -> Optional[Type[Exporter]]:
+    def get_by_mime_type(self, mime_type: str) -> Optional[Type[BaseExporter]]:
         """Get exporter class for a MIME type."""
         return self._exporters_by_mime.get(mime_type)
+
+    def get_all_filters(self) -> List[FileFilter]:
+        """
+        Get all supported export filters.
+
+        Returns:
+            A list of FileFilter objects.
+        """
+        seen_exts = set()
+        filters = []
+        for exporter_cls in set(self._exporters_by_ext.values()):
+            if exporter_cls.extensions[0] not in seen_exts:
+                seen_exts.update(exporter_cls.extensions)
+                filters.append(
+                    FileFilter(
+                        label=exporter_cls.label,
+                        extensions=exporter_cls.extensions,
+                        mime_types=exporter_cls.mime_types,
+                    )
+                )
+        return filters
 
 
 importer_registry = ImporterRegistry()

@@ -11,10 +11,10 @@ from ...core.geo.constants import (
     CMD_TYPE_ARC,
     CMD_TYPE_BEZIER,
 )
-from ..base_exporter import GeometryExporter
+from ..base_exporter import BaseExporter
 
 
-class GeometryDxfExporter(GeometryExporter):
+class GeometryDxfExporter(BaseExporter):
     """
     Exports a Geometry object to DXF format.
     """
@@ -146,7 +146,7 @@ class GeometryDxfExporter(GeometryExporter):
         return points
 
 
-class MultiGeometryDxfExporter(GeometryExporter):
+class MultiGeometryDxfExporter(BaseExporter):
     """
     Exports multiple Geometry objects to a single DXF file.
     """
