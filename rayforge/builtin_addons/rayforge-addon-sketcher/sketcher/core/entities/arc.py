@@ -1,0 +1,265 @@
+import math
+from typing import List, Dict, Optional, Any, Sequence, TYPE_CHECKING
+from rayforge.core.geo import Geometry, Point, Polygon, Rect, primitives
+from ..types import EntityID
+from .entity import Entity
+
+if TYPE_CHECKING:
+    from ..constraints import Constraint
+    from ..registry import EntityRegistry
+
+
+class Arc(Entity):
+    def __init__(
+        self,
+        id: EntityID,
+        start_idx: EntityID,
+        end_idx: EntityID,
+        center_idx: EntityID,
+        clockwise: bool = False,
+        construction: bool = False,
+    ):
+        super().__init__(id, construction)
+        self.start_idx: EntityID = start_idx
+        self.end_idx: EntityID = end_idx
+        self.center_idx: EntityID = center_idx
+        self.clockwise = clockwise
+        self.type = "arc"
+
+    def get_state(self) -> Optional[Dict[str, Any]]:
+        state = super().get_state() or {}
+        state["clockwise"] = self.clockwise
+        return state
+
+    def set_state(self, state: Dict[str, Any]) -> None:
+        super().set_state(state)
+        if "clockwise" in state:
+            self.clockwise = state["clockwise"]
+
+    def get_point_ids(self) -> List[EntityID]:
+        return [self.start_idx, self.end_idx, self.center_idx]
+
+    def get_endpoint_ids(self) -> List[EntityID]:
+        return [self.start_idx, self.end_idx]
+
+    def get_junction_point_ids(self) -> List[EntityID]:
+        return [self.start_idx, self.end_idx, self.center_idx]
+
+    def hit_test(
+        self,
+        mx: float,
+        my: float,
+        threshold: float,
+        registry: "EntityRegistry",
+    ) -> bool:
+        center = registry.get_point(self.center_idx)
+        start = registry.get_point(self.start_idx)
+        if not (center and start):
+            return False
+
+        radius = math.hypot(start.x - center.x, start.y - center.y)
+        if radius == 0.0:
+            return False
+
+        dist_mouse = math.hypot(mx - center.x, my - center.y)
+        if abs(dist_mouse - radius) >= threshold:
+            return False
+
+        angle_mouse = math.atan2(my - center.y, mx - center.x)
+        return self.is_angle_within_sweep(angle_mouse, registry)
+
+    def update_constrained_status(
+        self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
+    ) -> None:
+        s = registry.get_point(self.start_idx)
+        e = registry.get_point(self.end_idx)
+        c = registry.get_point(self.center_idx)
+        self.constrained = s.constrained and e.constrained and c.constrained
+
+    def _get_bbox(self, registry: "EntityRegistry") -> Rect:
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        center = registry.get_point(self.center_idx)
+
+        # Reuse core primitive utility for exact arc bounding box
+        # Note: primitive expects center_offset relative to start, so:
+        # center = start + offset. Here center is absolute.
+        # offset = center - start.
+        return primitives.get_arc_bounding_box(
+            start.pos(),
+            end.pos(),
+            (center.x - start.x, center.y - start.y),
+            self.clockwise,
+        )
+
+    def is_contained_by(
+        self,
+        rect: Rect,
+        registry: "EntityRegistry",
+    ) -> bool:
+        # For an arc to be strictly inside, its entire bounding box must be
+        # inside
+        arc_box = self._get_bbox(registry)
+        return primitives.rect_a_contains_rect_b(rect, arc_box)
+
+    def intersects_rect(
+        self,
+        rect: Rect,
+        registry: "EntityRegistry",
+    ) -> bool:
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        center = registry.get_point(self.center_idx)
+        return primitives.arc_intersects_rect(
+            start.pos(), end.pos(), center.pos(), self.clockwise, rect
+        )
+
+    def to_geometry(self, registry: "EntityRegistry") -> Geometry:
+        """Converts the arc to a Geometry object."""
+        geo = Geometry()
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        center = registry.get_point(self.center_idx)
+        i = center.x - start.x
+        j = center.y - start.y
+        geo.move_to(start.x, start.y)
+        geo.arc_to(end.x, end.y, i, j, clockwise=self.clockwise)
+        return geo
+
+    def append_to_geometry(
+        self,
+        geo: Geometry,
+        registry: "EntityRegistry",
+        forward: bool,
+    ) -> None:
+        """Appends this arc to an existing geometry object."""
+        arc_start_pt = registry.get_point(self.start_idx)
+        arc_end_pt = registry.get_point(self.end_idx)
+        center_pt = registry.get_point(self.center_idx)
+
+        target_pt = arc_end_pt if forward else arc_start_pt
+        current_pt = arc_start_pt if forward else arc_end_pt
+
+        offset_x = center_pt.x - current_pt.x
+        offset_y = center_pt.y - current_pt.y
+
+        is_cw = self.clockwise if forward else not self.clockwise
+
+        geo.arc_to(
+            target_pt.x,
+            target_pt.y,
+            offset_x,
+            offset_y,
+            clockwise=is_cw,
+        )
+
+    def to_polygon_vertices(
+        self,
+        registry: "EntityRegistry",
+        forward: bool,
+    ) -> Polygon:
+        start_pt = registry.get_point(self.start_idx)
+        end_pt = registry.get_point(self.end_idx)
+        center_pt = registry.get_point(self.center_idx)
+        if not (start_pt and end_pt and center_pt):
+            return []
+
+        radius = math.hypot(start_pt.x - center_pt.x, start_pt.y - center_pt.y)
+        start_a = math.atan2(
+            start_pt.y - center_pt.y, start_pt.x - center_pt.x
+        )
+        end_a = math.atan2(end_pt.y - center_pt.y, end_pt.x - center_pt.x)
+
+        vertices: Polygon = []
+        num_segments = 16
+
+        if forward:
+            if self.clockwise:
+                if end_a > start_a:
+                    end_a -= 2 * math.pi
+            else:
+                if end_a < start_a:
+                    end_a += 2 * math.pi
+            for i in range(num_segments + 1):
+                t = i / num_segments
+                a = start_a + t * (end_a - start_a)
+                px = center_pt.x + radius * math.cos(a)
+                py = center_pt.y + radius * math.sin(a)
+                vertices.append((px, py))
+        else:
+            if self.clockwise:
+                if start_a > end_a:
+                    start_a -= 2 * math.pi
+            else:
+                if start_a < end_a:
+                    start_a += 2 * math.pi
+            for i in range(num_segments + 1):
+                t = i / num_segments
+                a = end_a + t * (start_a - end_a)
+                px = center_pt.x + radius * math.cos(a)
+                py = center_pt.y + radius * math.sin(a)
+                vertices.append((px, py))
+
+        return vertices
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the Arc to a dictionary."""
+        data = super().to_dict()
+        data.update(
+            {
+                "start_idx": self.start_idx,
+                "end_idx": self.end_idx,
+                "center_idx": self.center_idx,
+                "clockwise": self.clockwise,
+            }
+        )
+        return data
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Arc":
+        """Deserializes a dictionary into an Arc instance."""
+        return cls(
+            id=data["id"],
+            start_idx=data["start_idx"],
+            end_idx=data["end_idx"],
+            center_idx=data["center_idx"],
+            clockwise=data.get("clockwise", False),
+            construction=data.get("construction", False),
+        )
+
+    def get_midpoint(self, registry: "EntityRegistry") -> Optional[Point]:
+        """
+        Calculates the midpoint coordinates along the arc's circumference.
+        """
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        center = registry.get_point(self.center_idx)
+        if not (start and end and center):
+            return None
+        return primitives.get_arc_midpoint(
+            start.pos(), end.pos(), center.pos(), self.clockwise
+        )
+
+    def is_angle_within_sweep(
+        self, angle: float, registry: "EntityRegistry"
+    ) -> bool:
+        """Checks if a given angle is within the arc's sweep."""
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        center = registry.get_point(self.center_idx)
+        if not (start and end and center):
+            return False
+
+        start_angle = math.atan2(start.y - center.y, start.x - center.x)
+        end_angle = math.atan2(end.y - center.y, end.x - center.x)
+
+        return primitives.is_angle_between(
+            angle, start_angle, end_angle, self.clockwise
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"Arc(id={self.id}, start={self.start_idx}, end={self.end_idx}, "
+            f"center={self.center_idx}, cw={self.clockwise}, "
+            f"construction={self.construction})"
+        )

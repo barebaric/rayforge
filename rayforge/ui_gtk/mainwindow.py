@@ -34,7 +34,7 @@ from ..shared.util.time_format import format_hours_to_hm
 from ..usage import get_usage_tracker
 from .about import AboutDialog
 from .action_registry import action_registry
-from .actions import ActionManager
+from .actions import ActionManager, action_extension_registry
 from .canvas import CanvasElement
 from .canvas2d.drag_drop_cmd import DragDropCmd
 from .canvas2d.elements.stock import StockElement
@@ -58,8 +58,6 @@ from .settings.settings_dialog import SettingsWindow
 from .project_cmd import ProjectCmd
 from .shared.gtk import get_monitor_geometry
 from .shared.usage_consent_dialog import UsageConsentDialog
-from .sketcher import setup_sketch_page
-from .sketcher.sketch_mode_cmd import SketchModeCmd
 from .task_bar import TaskBar
 from .toolbar import MainToolbar
 from .view_mode_cmd import ViewModeCmd
@@ -130,6 +128,9 @@ class MainWindow(Adw.ApplicationWindow):
         # Pipeline.
         context = get_context()
         self.doc_editor = DocEditor(task_mgr, context)
+        context.addon_mgr.addon_state_changed.connect(
+            self._on_addon_state_changed
+        )
         self.machine_cmd = MachineCmd(self.doc_editor)
         self.machine_cmd.job_started.connect(self._on_job_started)
 
@@ -142,7 +143,6 @@ class MainWindow(Adw.ApplicationWindow):
         # Instantiate UI-specific command handlers
         self.view_cmd = ViewModeCmd(self.doc_editor, self)
         self.simulator_cmd = SimulatorCmd(self)
-        self.sketch_mode_cmd = SketchModeCmd(self, self.doc_editor)
         self.project_cmd = ProjectCmd(self, self.doc_editor)
 
         # Add a key controller to handle ESC key for exiting simulation mode
@@ -204,9 +204,6 @@ class MainWindow(Adw.ApplicationWindow):
         # Create a container for the main UI
         main_ui_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.main_stack.add_named(main_ui_box, "main")
-
-        # Set up the sketch studio page (handled by sketcher module)
-        self.sketch_studio = setup_sketch_page(self)
 
         # Create and add the main toolbar.
         self.toolbar = MainToolbar()
@@ -513,6 +510,9 @@ class MainWindow(Adw.ApplicationWindow):
         # Apply saved visibility state
         self._apply_saved_visibility_state()
 
+        # Notify addons that main window is ready
+        context.plugin_mgr.hook.main_window_ready(main_window=self)
+
         # Trigger startup tasks when window is shown
         self.connect("map", self._trigger_startup_tasks)
 
@@ -726,6 +726,14 @@ class MainWindow(Adw.ApplicationWindow):
             is_granular = config.machine.reports_granular_progress
         self.status_monitor.start_live_view(is_granular)
         self._update_actions_and_ui()
+
+    def _on_addon_state_changed(self, sender, *, addon_name, enabled):
+        """Handle addon enable/disable to refresh action handlers."""
+        if enabled:
+            action_extension_registry.invoke_setup_handlers(
+                self.action_manager
+            )
+            self.action_manager.update_action_states()
 
     def _on_job_progress_updated(self, metrics: dict):
         """Callback for when job progress is updated."""

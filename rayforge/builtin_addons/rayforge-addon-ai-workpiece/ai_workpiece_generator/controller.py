@@ -2,16 +2,35 @@ import asyncio
 import io
 import logging
 from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional, Protocol, cast
 
 from svgelements import SVG, Path as SvgPath
 
+from rayforge.core.asset_registry import asset_type_registry
 from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
-from rayforge.core.sketcher import Sketch
 from rayforge.image.svg.svgutil import PPI
 from rayforge.shared.tasker import task_mgr
 from .generator import generate_svg
+
+if TYPE_CHECKING:
+    from rayforge.core.geometry_provider import IGeometryProvider
+
+
+class SketchInstanceProtocol(Protocol):
+    """Protocol for Sketch instance with name attribute."""
+
+    name: str
+
+
+class SketchClassProtocol(Protocol):
+    """Protocol for Sketch class with from_geometry classmethod."""
+
+    @classmethod
+    def from_geometry(cls, geometry: Geometry) -> SketchInstanceProtocol:
+        """Create a Sketch from Geometry."""
+        ...
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +39,7 @@ logger = logging.getLogger(__name__)
 class GenerationResult:
     """Result of AI generation with optional sketch conversion."""
 
-    sketch: Optional[Sketch] = None
+    sketch: Optional["IGeometryProvider"] = None
     svg_content: Optional[str] = None
     geometry: Optional[Geometry] = None
     error: Optional[str] = None
@@ -217,9 +236,13 @@ class AISvgGeneratorController:
                     result.geometry = geometry
 
                     if not geometry.is_empty():
-                        sketch = Sketch.from_geometry(geometry)
-                        sketch.name = prompt[:50]
-                        result.sketch = sketch
+                        sketch_cls = asset_type_registry.get("sketch")
+                        if sketch_cls:
+                            sketch = cast(
+                                SketchClassProtocol, sketch_cls
+                            ).from_geometry(geometry)
+                            sketch.name = prompt[:50]
+                            result.sketch = cast("IGeometryProvider", sketch)
                         logger.info(
                             "Successfully converted AI-generated SVG to "
                             "editable sketch"

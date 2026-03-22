@@ -13,7 +13,7 @@ from gettext import gettext as _
 from blinker import Signal
 from ..core.undo import HistoryManager
 from ..pipeline.producer.registry import producer_registry
-from .asset import IAsset
+from .asset import IAsset, UnknownAsset
 from .item import DocItem
 from .layer import Layer
 from .source_asset import SourceAsset
@@ -72,7 +72,7 @@ class Doc(DocItem):
                 raise TypeError("Asset data missing 'type' field")
             asset_class = asset_type_registry.get(asset_type)
             if not asset_class:
-                raise TypeError(f"Unknown asset type '{asset_type}'")
+                return UnknownAsset.from_dict(asset_data)
             return asset_class.from_dict(asset_data)
 
         def _deserialize_item(item_data: Dict) -> DocItem:

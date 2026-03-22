@@ -1,0 +1,178 @@
+import math
+from typing import List, Dict, Optional, Any, Sequence, TYPE_CHECKING
+from rayforge.core.geo import Geometry, Point, Rect, primitives
+from ..types import EntityID
+from .entity import Entity
+
+if TYPE_CHECKING:
+    from ..constraints import Constraint
+    from ..registry import EntityRegistry
+
+
+class Circle(Entity):
+    def __init__(
+        self,
+        id: EntityID,
+        center_idx: EntityID,
+        radius_pt_idx: EntityID,
+        construction: bool = False,
+    ):
+        super().__init__(id, construction)
+        self.center_idx: EntityID = center_idx
+        self.radius_pt_idx: EntityID = radius_pt_idx
+        self.type = "circle"
+
+    def get_point_ids(self) -> List[EntityID]:
+        return [self.center_idx, self.radius_pt_idx]
+
+    def get_endpoint_ids(self) -> List[EntityID]:
+        return []
+
+    def get_junction_point_ids(self) -> List[EntityID]:
+        return [self.center_idx, self.radius_pt_idx]
+
+    def hit_test(
+        self,
+        mx: float,
+        my: float,
+        threshold: float,
+        registry: "EntityRegistry",
+    ) -> bool:
+        center = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        if not (center and radius_pt):
+            return False
+
+        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+        if radius == 0.0:
+            return False
+
+        dist_mouse = math.hypot(mx - center.x, my - center.y)
+        return abs(dist_mouse - radius) < threshold
+
+    def get_ignorable_unconstrained_points(self) -> List[EntityID]:
+        """
+        If the circle is geometrically constrained, the radius point (which
+        acts only as a handle for the radius value) does not need to be
+        constrained rotationally.
+        """
+        if self.constrained:
+            return [self.radius_pt_idx]
+        return []
+
+    def update_constrained_status(
+        self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
+    ) -> None:
+        center_pt = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+
+        # A circle's geometry is defined by its center and radius.
+        center_is_constrained = center_pt.constrained
+
+        # The radius is defined if:
+        # 1. The radius point itself is fully constrained.
+        # 2. Or, a constraint explicitly defines the radius.
+        radius_is_defined = radius_pt.constrained
+        if not radius_is_defined:
+            for constr in constraints:
+                if constr.constrains_radius(registry, self.id):
+                    radius_is_defined = True
+                    break
+
+        self.constrained = center_is_constrained and radius_is_defined
+
+    def is_contained_by(
+        self,
+        rect: Rect,
+        registry: "EntityRegistry",
+    ) -> bool:
+        center = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+        return primitives.circle_is_contained_by_rect(
+            center.pos(), radius, rect
+        )
+
+    def intersects_rect(
+        self,
+        rect: Rect,
+        registry: "EntityRegistry",
+    ) -> bool:
+        center = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+
+        # A circle that is contained by a rect also intersects it.
+        # The primitive for intersection seems to miss this case, so we check
+        # for containment first.
+        if primitives.circle_is_contained_by_rect(center.pos(), radius, rect):
+            return True
+
+        return primitives.circle_intersects_rect(center.pos(), radius, rect)
+
+    def to_geometry(self, registry: "EntityRegistry") -> Geometry:
+        """Converts the circle to a Geometry object."""
+        geo = Geometry()
+        center = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        dx = radius_pt.x - center.x
+        dy = radius_pt.y - center.y
+        opposite_pt_x = center.x - dx
+        opposite_pt_y = center.y - dy
+        i1, j1 = -dx, -dy
+        i2, j2 = dx, dy
+        geo.move_to(radius_pt.x, radius_pt.y)
+        geo.arc_to(opposite_pt_x, opposite_pt_y, i1, j1, clockwise=False)
+        geo.arc_to(radius_pt.x, radius_pt.y, i2, j2, clockwise=False)
+        return geo
+
+    def create_fill_geometry(
+        self, registry: "EntityRegistry"
+    ) -> Optional[Geometry]:
+        """Creates a fill geometry for a single-entity circle loop."""
+        geo = Geometry()
+        center = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        dx = radius_pt.x - center.x
+        dy = radius_pt.y - center.y
+        opposite_pt_x = center.x - dx
+        opposite_pt_y = center.y - dy
+        geo.move_to(radius_pt.x, radius_pt.y)
+        geo.arc_to(opposite_pt_x, opposite_pt_y, -dx, -dy, clockwise=False)
+        geo.arc_to(radius_pt.x, radius_pt.y, dx, dy, clockwise=False)
+        return geo
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the Circle to a dictionary."""
+        data = super().to_dict()
+        data.update(
+            {
+                "center_idx": self.center_idx,
+                "radius_pt_idx": self.radius_pt_idx,
+            }
+        )
+        return data
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Circle":
+        """Deserializes a dictionary into a Circle instance."""
+        return cls(
+            id=data["id"],
+            center_idx=data["center_idx"],
+            radius_pt_idx=data["radius_pt_idx"],
+            construction=data.get("construction", False),
+        )
+
+    def get_midpoint(self, registry: "EntityRegistry") -> Optional[Point]:
+        """Returns a point on the circumference (the radius point)."""
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        if not radius_pt:
+            return None
+        return radius_pt.pos()
+
+    def __repr__(self) -> str:
+        return (
+            f"Circle(id={self.id}, center={self.center_idx}, "
+            f"radius_pt={self.radius_pt_idx}, "
+            f"construction={self.construction})"
+        )

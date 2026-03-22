@@ -140,6 +140,7 @@ class AddonManager:
         self.license_validator = license_validator
 
         self.addon_reloaded = Signal()
+        self.addon_state_changed = Signal()
 
         if license_validator:
             license_validator.changed.connect(self._on_license_changed)
@@ -1059,6 +1060,9 @@ class AddonManager:
 
         self._build_and_update_manifest()
         self._restart_workers()
+        self.addon_state_changed.send(
+            self, addon_name=addon_name, enabled=True
+        )
         return True
 
     def disable_addon(self, addon_name: str) -> bool:
@@ -1088,6 +1092,9 @@ class AddonManager:
         self._do_unload_addon(addon_name, addon)
         self._build_and_update_manifest()
         self._restart_workers()
+        self.addon_state_changed.send(
+            self, addon_name=addon_name, enabled=False
+        )
         return True
 
     def _do_unload_addon(self, addon_name: str, addon: Addon):
@@ -1150,6 +1157,11 @@ class AddonManager:
         action_registry = self.registries.get("action_registry")
         layout_registry = self.registries.get("layout_registry")
         library_manager = self.registries.get("library_manager")
+        asset_type_registry = self.registries.get("asset_type_registry")
+        command_registry = self.registries.get("command_registry")
+        renderer_registry = self.registries.get("renderer_registry")
+        exporter_registry = self.registries.get("exporter_registry")
+        importer_registry = self.registries.get("importer_registry")
 
         if step_registry:
             self.plugin_mgr.hook.register_steps(step_registry=step_registry)
@@ -1173,6 +1185,26 @@ class AddonManager:
             logger.debug("Calling register_material_libraries hook")
             self.plugin_mgr.hook.register_material_libraries(
                 library_manager=library_manager
+            )
+        if asset_type_registry is not None:
+            self.plugin_mgr.hook.register_asset_types(
+                asset_type_registry=asset_type_registry
+            )
+        if command_registry is not None:
+            self.plugin_mgr.hook.register_commands(
+                command_registry=command_registry
+            )
+        if renderer_registry is not None:
+            self.plugin_mgr.hook.register_renderers(
+                renderer_registry=renderer_registry
+            )
+        if exporter_registry is not None:
+            self.plugin_mgr.hook.register_exporters(
+                exporter_registry=exporter_registry
+            )
+        if importer_registry is not None:
+            self.plugin_mgr.hook.register_importers(
+                importer_registry=importer_registry
             )
 
     def complete_pending_unloads(self) -> List[str]:

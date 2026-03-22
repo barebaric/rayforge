@@ -2,8 +2,8 @@ name: ai_workpiece_generator
 display_name: "AI Workpiece Generator"
 description: "Generate workpieces using AI directly within Rayforge"
 api_version: 3
-depends:
-  - rayforge>=0.27.0
+requires:
+  - sketcher
 author:
   name: "Rayforge Team"
   email: "noreply@rayforge.org"

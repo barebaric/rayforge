@@ -38,15 +38,14 @@ from ..core.vectorization_spec import (
 )
 from ..core.workpiece import WorkPiece
 from ..image import (
-    importer_by_extension,
-    importer_by_mime_type,
+    exporter_registry,
+    importer_registry,
     importers,
     ImporterFeature,
     ImportManifest,
     Importer,
 )
 from ..image.dxf.exporter import GeometryDxfExporter
-from ..image.sketch.exporter import SketchExporter
 from ..image.svg.exporter import GeometrySvgExporter
 from ..image.structures import ImportPayload, ImportResult, ParsingResult
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
@@ -124,10 +123,12 @@ class FileCmd:
 
         importer_cls = None
         if mime_type:
-            importer_cls = importer_by_mime_type.get(mime_type)
+            importer_cls = importer_registry.get_by_mime_type(mime_type)
 
         if not importer_cls and file_path.suffix:
-            importer_cls = importer_by_extension.get(file_path.suffix.lower())
+            importer_cls = importer_registry.get_by_extension(
+                file_path.suffix.lower()
+            )
 
         if importer_cls:
             return importer_cls, importer_cls.features
@@ -955,7 +956,12 @@ class FileCmd:
         self, file_path: Path, workpiece: WorkPiece
     ) -> bool:
         """Export a sketch-based workpiece to RFS format."""
-        exporter = SketchExporter(workpiece)
+        exporter_cls = exporter_registry.get_by_extension(file_path.suffix)
+        if not exporter_cls:
+            raise ValueError(
+                f"No exporter registered for extension {file_path.suffix}"
+            )
+        exporter = exporter_cls(workpiece)
         return self._do_export(file_path, exporter)
 
     def _do_export(self, file_path: Path, exporter) -> bool:

@@ -1,4 +1,6 @@
+import uuid
 from typing import Protocol, runtime_checkable, Dict, Any, ClassVar, Optional
+from dataclasses import dataclass, field
 
 
 @runtime_checkable
@@ -47,3 +49,55 @@ class IAsset(Protocol):
     def hidden(self) -> bool:
         """Indicates if this asset should be hidden from UI."""
         return False
+
+
+@dataclass
+class UnknownAsset(IAsset):
+    """Placeholder for unknown asset types during deserialization."""
+
+    is_addable: ClassVar[bool] = False
+    asset_type_name: ClassVar[str] = "unknown"
+    display_icon_name: ClassVar[str] = "dialog-question-symbolic"
+    is_reorderable: ClassVar[bool] = False
+    is_draggable_to_canvas: ClassVar[bool] = False
+    type_display_name: ClassVar[str] = "Unknown Asset"
+    can_edit: ClassVar[bool] = False
+    add_action: ClassVar[Optional[str]] = None
+    activate_action: ClassVar[Optional[str]] = None
+    edit_item_action: ClassVar[Optional[str]] = None
+
+    _original_type: str = field(init=False)
+    _data: Dict[str, Any] = field(init=False, default_factory=dict)
+    _uid: str = field(init=False, default_factory=lambda: str(uuid.uuid4()))
+    _name: str = field(init=False)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "UnknownAsset":
+        """Deserializes a dictionary into an UnknownAsset instance."""
+        instance = cls.__new__(cls)
+        instance._original_type = data.get("type", "unknown")
+        instance._data = dict(data)
+        instance._uid = instance._data.get("uid", str(uuid.uuid4()))
+        default_name = f"Unknown ({instance._original_type})"
+        instance._name = instance._data.get("name", default_name)
+        return instance
+
+    @property
+    def uid(self) -> str:
+        """The unique identifier of the asset instance."""
+        return self._uid
+
+    @property
+    def name(self) -> str:
+        """The user-facing name of the asset instance."""
+        return self._name
+
+    @name.setter
+    def name(self, value: str) -> None:
+        """Sets the asset name."""
+        self._name = value
+        self._data["name"] = value
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes UnknownAsset to the original dictionary."""
+        return self._data

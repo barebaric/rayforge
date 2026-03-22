@@ -1,0 +1,449 @@
+import logging
+from typing import TYPE_CHECKING, Optional, Union
+
+from gi.repository import Gdk, GLib, Gtk
+
+from rayforge.core.undo import HistoryManager
+from rayforge.ui_gtk.canvas.cursor import get_tool_cursor
+from rayforge.ui_gtk.shared.keyboard import is_primary_modifier
+from ..core.constraints import Constraint
+from ..core.entities import Entity, Point
+from .piemenu import SketchPieMenu
+from .tools import KEY_TO_TOOL, SelectTool, TextBoxTool
+from .tools.base import SketcherKey
+from .tools.text_box_tool import TextBoxState
+
+if TYPE_CHECKING:
+    from .sketchelement import SketchElement
+
+
+logger = logging.getLogger(__name__)
+
+
+class SketchEditor:
+    """
+    The SketchEditor provides a controller for an interactive sketch editing
+    session. It is not a widget, but rather a host that manages the UI
+    (PieMenu), state (HistoryManager), and input delegation for a given
+    SketchElement. It can be used by any canvas-like widget.
+    """
+
+    KEY_SEQUENCE_TIMEOUT_MS = 1500  # 1.5 seconds
+
+    def __init__(self, parent_window: Gtk.Window):
+        self.parent_window = parent_window
+        self.sketch_element: Optional["SketchElement"] = None
+
+        # The SketchEditor manages its own undo/redo history, separate from
+        # the main document editor.
+        self.history_manager = HistoryManager()
+
+        # 1. Key Press Handling State
+        self.key_sequence = []
+        self.key_sequence_timer_id: Optional[int] = None
+        self.text_edit_cursor_timer_id: Optional[int] = None
+        self._init_shortcuts()
+
+        # 2. Pie Menu Setup
+        # The pie menu is initially parented to the window, but will be
+        # re-parented to the canvas when a sketch is activated for more
+        # reliable positioning (especially on Windows).
+        self.pie_menu = SketchPieMenu(self.parent_window)
+
+        # Connect signals
+        self.pie_menu.tool_selected.connect(self.on_tool_selected)
+        self.pie_menu.right_clicked.connect(self.on_pie_menu_right_click)
+
+    def _init_shortcuts(self):
+        """Build prefix set for multi-key sequences."""
+        self.shortcut_prefixes = {
+            k[:i] for k in KEY_TO_TOOL for i in range(1, len(k))
+        }
+
+    def activate(self, sketch_element: "SketchElement"):
+        """Begins an editing session on the given SketchElement."""
+        logger.debug(f"Activating SketchEditor for element {sketch_element}")
+        self.sketch_element = sketch_element
+        self.sketch_element.editor = self
+
+        # Re-parent the pie menu to the canvas for more reliable positioning
+        # (translate_coordinates doesn't work reliably on Windows when the
+        # popover is parented to a different widget in the hierarchy)
+        if sketch_element.canvas:
+            self.pie_menu.unparent()
+            self.pie_menu.set_parent(sketch_element.canvas)
+
+        self.history_manager.changed.connect(self._on_history_changed)
+
+        # Connect to TextBoxTool signals for UI management
+        text_tool = self.sketch_element.tools.get("text_box")
+        if isinstance(text_tool, TextBoxTool):
+            text_tool.editing_started.connect(self._on_text_editing_started)
+            text_tool.editing_finished.connect(self._on_text_editing_finished)
+            text_tool.cursor_moved.connect(self._on_text_cursor_moved)
+
+    def _on_history_changed(self, sender, command):
+        """Called when the undo/redo history changes."""
+        if self.sketch_element:
+            self.sketch_element.mark_dirty()
+
+    def deactivate(self):
+        """Ends the current editing session."""
+        logger.debug("Deactivating SketchEditor")
+        self._reset_key_sequence()
+        self._stop_text_cursor_timer()
+        if self.sketch_element:
+            # Disconnect signals
+            self.history_manager.changed.disconnect(self._on_history_changed)
+
+            text_tool = self.sketch_element.tools.get("text_box")
+            if isinstance(text_tool, TextBoxTool):
+                text_tool.editing_started.disconnect(
+                    self._on_text_editing_started
+                )
+                text_tool.editing_finished.disconnect(
+                    self._on_text_editing_finished
+                )
+                text_tool.cursor_moved.disconnect(self._on_text_cursor_moved)
+
+            # Clean up any in-progress tool state
+            self.sketch_element.current_tool.on_deactivate()
+            if self.sketch_element.canvas:
+                # Reset cursor to default
+                self.sketch_element.canvas.set_cursor(None)
+            self.sketch_element.editor = None
+        self.sketch_element = None
+        if self.pie_menu.is_visible():
+            self.pie_menu.popdown()
+
+        # Re-parent the pie menu back to the window
+        self.pie_menu.unparent()
+        self.pie_menu.set_parent(self.parent_window)
+
+    def get_current_cursor(self) -> Optional[Gdk.Cursor]:
+        """
+        Determines the appropriate cursor based on the current tool and
+        context (e.g., hovering over a point).
+        """
+        if not self.sketch_element:
+            return None
+
+        # Priority 1: Check for specific hover states in the 'select' tool.
+        select_tool = self.sketch_element.tools.get("select")
+        if (
+            self.sketch_element.active_tool_name == "select"
+            and isinstance(select_tool, SelectTool)
+            and select_tool.hovered_point_id is not None
+        ):
+            return Gdk.Cursor.new_from_name("move")
+
+        # Priority 1.5: Text Editing Cursor
+        current_tool = self.sketch_element.current_tool
+        if isinstance(current_tool, TextBoxTool) and current_tool.is_hovering:
+            return Gdk.Cursor.new_from_name("text")
+
+        if current_tool.CURSOR_ICON:
+            canvas = self.sketch_element.canvas
+            if canvas:
+                fg_color = canvas.get_color()
+                color = (fg_color.red, fg_color.green, fg_color.blue, 1.0)
+            else:
+                color = None
+            return get_tool_cursor(current_tool.CURSOR_ICON, color)
+
+        return None
+
+    def on_pie_menu_right_click(self, sender, gesture, n_press, x, y):
+        """
+        Handles a right-click on the PieMenu. Just closes it - the user
+        can right-click again to reposition.
+        """
+        self.pie_menu.popdown()
+        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+
+    def handle_right_click(
+        self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
+    ):
+        """
+        Opens the pie menu at the cursor location with resolved context.
+        This is the primary entry point for right-click handling.
+        """
+        sketch_element = self.sketch_element
+        if not sketch_element or not sketch_element.canvas:
+            return
+
+        if self.pie_menu.is_visible():
+            self.pie_menu.popdown()
+
+        # Use the element's canvas to convert from widget to world coordinates
+        world_x, world_y = sketch_element.canvas._get_world_coords(x, y)
+
+        target: Optional[Union[Point, Entity, Constraint]] = None
+        target_type: Optional[str] = None
+
+        # Before showing the menu, we deactivate the current tool to clean
+        # up any in-progress state.
+        sketch_element.current_tool.on_deactivate()
+
+        # 1. Hit Test
+        hit_type, hit_obj = sketch_element.hittester.get_hit_data(
+            world_x, world_y, sketch_element
+        )
+        target_type = hit_type
+
+        # 2. Resolve Hit Object to Concrete Type AND Update Selection
+        # Only change selection if the clicked item is not already selected.
+        sel = sketch_element.selection
+
+        if hit_type == "point":
+            assert isinstance(hit_obj, int)
+            pid = hit_obj
+            target = sketch_element.sketch.registry.get_point(pid)
+
+            # Check if this point is a valid chamfer corner (2 lines). If so,
+            # select it as a junction instead of a point.
+            if len(sketch_element.get_lines_at_point(pid)) == 2:
+                if sel.junction_pid != pid:
+                    sketch_element.selection.select_junction(
+                        pid, is_multi=False
+                    )
+                target_type = "junction"
+            elif pid not in sel.point_ids:
+                sketch_element.selection.select_point(pid, is_multi=False)
+
+        elif hit_type == "junction":
+            assert isinstance(hit_obj, int)
+            pid = hit_obj
+            target = sketch_element.sketch.registry.get_point(pid)
+            if sel.junction_pid != pid:
+                sketch_element.selection.select_junction(pid, is_multi=False)
+
+        elif hit_type == "entity":
+            assert isinstance(hit_obj, Entity)
+            target = hit_obj
+            if target.id not in sel.entity_ids:
+                sketch_element.selection.select_entity(target, is_multi=False)
+
+        elif hit_type == "constraint":
+            assert isinstance(hit_obj, int)
+            idx = hit_obj
+            if 0 <= idx < len(sketch_element.sketch.constraints):
+                target = sketch_element.sketch.constraints[idx]
+                if sel.constraint_idx != idx:
+                    sketch_element.selection.select_constraint(
+                        idx, is_multi=False
+                    )
+
+        self.pie_menu.set_context(sketch_element, target, target_type)
+
+        if not self.pie_menu.has_items():
+            logger.debug("No tools available for this context")
+            return
+
+        logger.info(f"Opening Pie Menu at {x}, {y} (Type: {target_type})")
+        self.pie_menu.popup_at_location(x, y)
+
+        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+
+    def on_tool_selected(self, sender, tool: str):
+        logger.info(f"Tool activated: {tool}")
+        if self.sketch_element:
+            self.sketch_element.set_tool(tool)
+            if self.sketch_element.canvas:
+                self.sketch_element.canvas.grab_focus()
+
+    # --- Text Box UI Management ---
+
+    def _on_text_editing_started(self, sender: TextBoxTool):
+        """Starts the cursor blinking timer when text editing begins."""
+        self._stop_text_cursor_timer()  # Ensure no old timer is running
+
+        def toggle_cursor_callback():
+            # This callback continues as long as the tool that started it
+            # is still in the editing state.
+            if sender.state == TextBoxState.EDITING:
+                sender.toggle_cursor_visibility()
+                return GLib.SOURCE_CONTINUE  # Keep timer running
+
+            # If state is no longer editing, the timer should stop.
+            # This is a safety net; the timer is usually stopped explicitly.
+            self.text_edit_cursor_timer_id = None
+            return GLib.SOURCE_REMOVE
+
+        self.text_edit_cursor_timer_id = GLib.timeout_add(
+            500, toggle_cursor_callback
+        )
+
+    def _on_text_editing_finished(self, sender: TextBoxTool):
+        """Stops the cursor blinking timer."""
+        self._stop_text_cursor_timer()
+
+    def _on_text_cursor_moved(self, sender: TextBoxTool):
+        """
+        Resets the cursor blink timer to ensure visibility immediately
+        after moving.
+        """
+        self._on_text_editing_started(sender)
+
+    def _stop_text_cursor_timer(self):
+        """Safely removes the GLib timer source."""
+        if self.text_edit_cursor_timer_id is not None:
+            GLib.source_remove(self.text_edit_cursor_timer_id)
+            self.text_edit_cursor_timer_id = None
+
+    # --- Key Handling ---
+
+    def _on_key_sequence_timeout(self) -> bool:
+        """Callback to reset the key sequence after a delay."""
+        logger.debug("Key sequence timed out.")
+        self.key_sequence_timer_id = None
+        self._reset_key_sequence()
+        return GLib.SOURCE_REMOVE
+
+    def _reset_key_sequence(self):
+        """Clears the key sequence and cancels any pending timeout."""
+        self.key_sequence.clear()
+        if self.key_sequence_timer_id:
+            GLib.source_remove(self.key_sequence_timer_id)
+            self.key_sequence_timer_id = None
+
+    def handle_key_press(
+        self, keyval: int, keycode: int, state: Gdk.ModifierType
+    ) -> bool:
+        """Handles key press events for the sketcher session."""
+        if not self.sketch_element:
+            return False
+
+        is_primary = is_primary_modifier(state)
+        is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
+
+        # Priority 0: Active text editing
+        tool = self.sketch_element.current_tool
+        if (
+            isinstance(tool, TextBoxTool)
+            and tool.state == TextBoxState.EDITING
+        ):
+            key_map = {
+                Gdk.KEY_BackSpace: SketcherKey.BACKSPACE,
+                Gdk.KEY_Delete: SketcherKey.DELETE,
+                Gdk.KEY_Left: SketcherKey.ARROW_LEFT,
+                Gdk.KEY_Right: SketcherKey.ARROW_RIGHT,
+                Gdk.KEY_Return: SketcherKey.RETURN,
+                Gdk.KEY_Escape: SketcherKey.ESCAPE,
+                Gdk.KEY_Home: SketcherKey.HOME,
+                Gdk.KEY_End: SketcherKey.END,
+                Gdk.KEY_KP_Home: SketcherKey.HOME,
+                Gdk.KEY_KP_End: SketcherKey.END,
+            }
+            if is_primary:
+                key_map[Gdk.KEY_z] = SketcherKey.UNDO
+                key_map[Gdk.KEY_y] = SketcherKey.REDO
+                key_map[Gdk.KEY_c] = SketcherKey.COPY
+                key_map[Gdk.KEY_x] = SketcherKey.CUT
+                key_map[Gdk.KEY_v] = SketcherKey.PASTE
+                key_map[Gdk.KEY_a] = SketcherKey.SELECT_ALL
+            if keyval in key_map:
+                return tool.handle_key_event(
+                    key_map[keyval], shift=is_shift, ctrl=is_primary
+                )
+
+            if is_primary:
+                return False
+
+            key_unicode = Gdk.keyval_to_unicode(keyval)
+            if key_unicode != 0:
+                return tool.handle_text_input(chr(key_unicode))
+            return False  # Unhandled key during text edit
+
+        is_primary = is_primary_modifier(state)
+
+        # Priority 0.5: Tool dimension input during preview
+        preview_state = tool.get_preview_state() if tool else None
+        if preview_state is not None and not is_primary:
+            dim_key_map = {
+                Gdk.KEY_BackSpace: SketcherKey.BACKSPACE,
+                Gdk.KEY_Delete: SketcherKey.DELETE,
+                Gdk.KEY_Return: SketcherKey.RETURN,
+                Gdk.KEY_KP_Enter: SketcherKey.RETURN,
+                Gdk.KEY_Escape: SketcherKey.ESCAPE,
+                Gdk.KEY_Tab: SketcherKey.TAB,
+                Gdk.KEY_ISO_Left_Tab: SketcherKey.TAB,
+            }
+            if keyval in dim_key_map:
+                handled = tool.handle_key_event(
+                    dim_key_map[keyval], shift=is_shift
+                )
+                if handled:
+                    return True
+
+            key_unicode = Gdk.keyval_to_unicode(keyval)
+            if key_unicode != 0:
+                char = chr(key_unicode)
+                if char.isdigit() or char in ".," or char == " ":
+                    handled = tool.handle_text_input(char)
+                    if handled:
+                        return True
+
+        # Priority 1: Immediate actions (Undo/Redo, Delete)
+        if is_primary:
+            if keyval == Gdk.KEY_z:
+                self.history_manager.undo()
+                self._reset_key_sequence()
+                return True
+            if keyval == Gdk.KEY_y:
+                self.history_manager.redo()
+                self._reset_key_sequence()
+                return True
+
+        if keyval == Gdk.KEY_Delete:
+            self.sketch_element.delete_selection()
+            self._reset_key_sequence()
+            return True
+
+        # Priority 2: Escape key logic
+        if keyval == Gdk.KEY_Escape:
+            self._reset_key_sequence()
+            # If a tool is active, switch to select tool
+            if self.sketch_element.active_tool_name != "select":
+                self.sketch_element.set_tool("select")
+                return True
+            # If elements are selected, unselect them
+            if self.sketch_element.get_selected_elements():
+                self.sketch_element.unselect_all()
+                return True
+            return False  # Propagate up if nothing else to do
+
+        # Priority 3: Shortcut sequence handling for normal keys
+        key_unicode = Gdk.keyval_to_unicode(keyval)
+        if key_unicode == 0:
+            # Not a printable character, ignore for sequences.
+            return False
+
+        char = chr(key_unicode).lower()
+        self.key_sequence.append(char)
+        current_sequence = "".join(self.key_sequence)
+
+        logger.debug(f"Key sequence: {current_sequence}")
+
+        # Check for a complete shortcut match
+        if current_sequence in KEY_TO_TOOL:
+            tool_name = KEY_TO_TOOL[current_sequence]
+            logger.info(f"Shortcut '{current_sequence}' -> tool '{tool_name}'")
+            self.sketch_element.set_tool(tool_name)
+            self._reset_key_sequence()
+            return True
+
+        # If it's not a full match, check if it's a prefix of another shortcut
+        if current_sequence in self.shortcut_prefixes:
+            # It's a valid start, so reset the timeout timer and wait for the
+            # next key.
+            if self.key_sequence_timer_id:
+                GLib.source_remove(self.key_sequence_timer_id)
+            self.key_sequence_timer_id = GLib.timeout_add(
+                self.KEY_SEQUENCE_TIMEOUT_MS, self._on_key_sequence_timeout
+            )
+            return True
+
+        # If the sequence is not a match and not a prefix, it's invalid.
+        self._reset_key_sequence()
+        return False

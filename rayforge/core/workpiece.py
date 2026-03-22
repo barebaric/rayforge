@@ -907,10 +907,11 @@ class WorkPiece(DocItem):
             wp._transient_source_px_dims = tuple(data["source_px_dims"])
         if "renderer_name" in data:
             renderer_name = data["renderer_name"]
-            from ..image import renderer_by_name
+            from ..image import renderer_registry
 
-            if renderer_name in renderer_by_name:
-                wp._renderer = renderer_by_name[renderer_name]
+            renderer = renderer_registry.get(renderer_name)
+            if renderer:
+                wp._renderer = renderer
 
         transient_data = data.get("transient_geometry_provider") or data.get(
             "transient_sketch_definition"

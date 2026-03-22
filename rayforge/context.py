@@ -152,7 +152,6 @@ class RayforgeContext:
         )
         from .pipeline.producer.registry import producer_registry
         from .pipeline.transformer.registry import transformer_registry
-        from .core.asset_registry import asset_type_registry
 
         register_builtin_layout_strategies()
 
@@ -164,9 +163,21 @@ class RayforgeContext:
         }
 
         if not self._headless:
+            from .core.asset_registry import asset_type_registry
+            from .doceditor.command_registry import command_registry
+            from .image import (
+                exporter_registry,
+                importer_registry,
+                renderer_registry,
+            )
             from .ui_gtk.action_registry import action_registry
 
             registries["action_registry"] = action_registry
+            registries["asset_type_registry"] = asset_type_registry
+            registries["command_registry"] = command_registry
+            registries["renderer_registry"] = renderer_registry
+            registries["exporter_registry"] = exporter_registry
+            registries["importer_registry"] = importer_registry
 
         self._addon_mgr.set_registries(registries)
         self._addon_mgr.load_installed_addons(backend_only=self._headless)
@@ -177,13 +188,28 @@ class RayforgeContext:
         self.plugin_mgr.hook.register_transformers(
             transformer_registry=transformer_registry
         )
-        self.plugin_mgr.hook.register_asset_types(
-            asset_type_registry=asset_type_registry
-        )
         self.plugin_mgr.hook.register_steps(step_registry=step_registry)
         self.plugin_mgr.hook.register_layout_strategies(
             layout_registry=layout_registry
         )
+
+        if not self._headless:
+            self.plugin_mgr.hook.register_asset_types(
+                asset_type_registry=registries["asset_type_registry"]
+            )
+            self.plugin_mgr.hook.register_commands(
+                command_registry=registries["command_registry"]
+            )
+            self.plugin_mgr.hook.register_renderers(
+                renderer_registry=registries["renderer_registry"]
+            )
+            self.plugin_mgr.hook.register_exporters(
+                exporter_registry=registries["exporter_registry"]
+            )
+            self.plugin_mgr.hook.register_importers(
+                importer_registry=registries["importer_registry"]
+            )
+
         self.plugin_mgr.hook.rayforge_init(context=self)
 
         logger.info(f"Addons loaded (headless={self._headless})")

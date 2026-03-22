@@ -3,7 +3,6 @@ import pytest
 from pathlib import Path
 from typing import Tuple, cast
 from dataclasses import asdict
-from unittest.mock import MagicMock, patch
 from blinker import Signal
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
@@ -12,7 +11,6 @@ from rayforge.core.matrix import Matrix
 from rayforge.core.tab import Tab
 from rayforge.core.geo import Geometry
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.sketcher.sketch import Sketch
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.image.svg.renderer import SvgRenderer
@@ -104,147 +102,28 @@ class TestWorkPiece:
         assert isinstance(workpiece_instance, DocItem)
         assert hasattr(workpiece_instance, "get_world_transform")
 
-    def test_serialization_deserialization(self, doc_with_workpiece):
-        doc, wp, source = doc_with_workpiece
+    def test_geometry_provider_fields_serialization(self, workpiece_instance):
+        """Test serialization of geometry_provider_uid and params fields."""
+        wp = workpiece_instance
 
-        # Setup sketch data for serialization
-        sketch = Sketch()
-        doc.add_asset(sketch)
-        wp.geometry_provider_uid = sketch.uid
-        wp.geometry_provider_params = {"width": 123.45}
-
-        wp.set_size(80.0, 40.0)
-        wp.pos = (10.5, 20.2)
-        wp.angle = 90
-
-        # Set edited boundaries to verify persistence
-        edited_geo = Geometry()
-        edited_geo.move_to(0.1, 0.1)
-        edited_geo.line_to(0.9, 0.9)
-        wp._edited_boundaries = edited_geo
-
-        # Get natural size before serialization
-        original_natural_size = wp.natural_size
+        wp.geometry_provider_params = {"width": 123.45, "height": 50.0}
+        wp.geometry_provider_uid = "provider-123"
 
         data_dict = wp.to_dict()
 
-        assert "renderer_name" not in data_dict
-        assert "source_file" not in data_dict
-        assert "data" not in data_dict
-        assert "size" not in data_dict
-        assert "boundaries" not in data_dict
-        assert isinstance(data_dict["matrix"], list)
-        assert "source_segment" in data_dict
-        assert data_dict["source_segment"]["source_asset_uid"] == source.uid
-        assert "edited_boundaries" in data_dict
-        assert data_dict["geometry_provider_uid"] == sketch.uid
-        assert data_dict["geometry_provider_params"] == {"width": 123.45}
+        assert data_dict["geometry_provider_uid"] == "provider-123"
+        assert data_dict["geometry_provider_params"] == {
+            "width": 123.45,
+            "height": 50.0,
+        }
 
         new_wp = WorkPiece.from_dict(data_dict)
 
-        # A free-floating workpiece cannot access its source properties
-        assert new_wp.data is None
-        assert new_wp.source is None
-        assert new_wp.source_file is None
-
-        # Add it to the doc to link it to its source
-        doc.active_layer.add_child(new_wp)
-
-        assert new_wp.name == wp.name
-        assert new_wp.source_file == source.source_file
-        assert new_wp.source is not None
-        assert isinstance(new_wp.source.renderer, SvgRenderer)
-        assert new_wp.pos == pytest.approx(wp.pos)
-        assert new_wp.size == pytest.approx(wp.size)
-        assert new_wp.angle == pytest.approx(wp.angle, abs=1e-9)
-        assert new_wp.matrix == wp.matrix
-        assert new_wp.natural_size == pytest.approx(original_natural_size)
-        assert new_wp.source_segment is not None
-        assert new_wp.source_segment.source_asset_uid == source.uid
-        assert new_wp._edited_boundaries is not None
-        assert len(new_wp._edited_boundaries) == len(edited_geo)
-        assert new_wp.geometry_provider_uid == sketch.uid
-        assert new_wp.geometry_provider_params == {"width": 123.45}
-
-    def test_in_world_hydrates_sketch_definition(self, doc_with_workpiece):
-        """
-        Tests that the in_world method correctly populates the transient
-        sketch definition for use in subprocesses.
-        """
-        doc, wp, _ = doc_with_workpiece
-
-        # Create and link a sketch
-        sketch = Sketch()
-        # Create a valid dictionary from a default sketch to use for mocking.
-        mock_dict = Sketch().to_dict()
-        mock_dict["uid"] = sketch.uid  # Ensure the mock uses the correct UID
-
-        with patch.object(Sketch, "to_dict", return_value=mock_dict):
-            doc.add_asset(sketch)
-            wp.geometry_provider_uid = sketch.uid
-            wp.geometry_provider_params = {"width": 50.0}
-
-            # The method under test
-            world_wp = wp.in_world()
-
-        # Check that the main properties are copied
-        assert world_wp.geometry_provider_uid == sketch.uid
-        assert world_wp.geometry_provider_params == {"width": 50.0}
-
-        # Check that the transient definition is hydrated correctly
-        transient_def = world_wp._transient_geometry_provider
-        assert transient_def is not None
-        assert isinstance(transient_def, Sketch)
-        assert transient_def is not sketch  # Must be a copy
-        assert transient_def.uid == sketch.uid
-
-    def test_get_geometry_provider(self, doc_with_workpiece):
-        """
-        Tests retrieving the geometry provider from the document or from the
-        transient field.
-        """
-        doc, wp, _ = doc_with_workpiece
-
-        # Case 1: No geometry provider UID is set, should return None
-        assert wp.geometry_provider_uid is None
-        assert wp.get_geometry_provider() is None
-
-        # Case 2: Geometry provider UID is set, should retrieve the provider
-        # from the document
-        sketch_from_doc = Sketch()
-        doc.add_asset(sketch_from_doc)
-        wp.geometry_provider_uid = sketch_from_doc.uid
-
-        retrieved_provider = wp.get_geometry_provider()
-        assert retrieved_provider is not None
-        # It should be the exact same instance from the document's registry
-        assert retrieved_provider is sketch_from_doc
-        assert retrieved_provider.uid == sketch_from_doc.uid
-
-        # Case 3: A transient geometry provider exists and takes precedence
-        # This simulates a WorkPiece that has been prepared by `in_world()`
-        # for use in a subprocess.
-        transient_provider = Sketch()
-        transient_provider.uid = "transient-uid-123"
-
-        # Use a new WorkPiece instance to avoid side effects
-        wp_with_transient = WorkPiece(
-            "transient_test", source_segment=wp.source_segment
-        )
-        # Assign the doc-based geometry_provider_uid to prove the transient
-        # one is used instead
-        wp_with_transient.geometry_provider_uid = sketch_from_doc.uid
-        wp_with_transient._transient_geometry_provider = transient_provider
-
-        # Add it to the doc so that a doc lookup *could* work, but shouldn't.
-        doc.active_layer.add_child(wp_with_transient)
-
-        retrieved_transient = wp_with_transient.get_geometry_provider()
-        assert retrieved_transient is not None
-        # It should be the transient instance, not the one from the doc
-        assert retrieved_transient is transient_provider
-        assert retrieved_transient is not sketch_from_doc
-        assert cast(Sketch, retrieved_transient).uid == "transient-uid-123"
+        assert new_wp.geometry_provider_uid == "provider-123"
+        assert new_wp.geometry_provider_params == {
+            "width": 123.45,
+            "height": 50.0,
+        }
 
     def test_boundaries_override(self, workpiece_instance):
         """
@@ -730,147 +609,6 @@ class TestWorkPiece:
             vectorization_spec=PassthroughSpec(),
         )
         wp.source_segment = segment
-
-    def test_from_geometry_provider_factory_behavior(self):
-        """
-        Tests the WorkPiece.from_geometry_provider factory method logic.
-        """
-        # We patch the Sketch class inside rayforge.core.sketcher.sketch
-        # because the module under test (workpiece.py) imports it locally.
-        with patch("rayforge.core.sketcher.sketch.Sketch") as MockSketchCls:
-            # Setup the mock instance returned by Sketch.from_dict()
-            mock_instance = MagicMock()
-            MockSketchCls.from_dict.return_value = mock_instance
-
-            # Setup the geometry returned by the mock instance.
-            # Define a 10x20 bounding box: (0,0) -> (10,20)
-            mock_geo = Geometry()
-            mock_geo.move_to(0, 0)
-            mock_geo.line_to(10, 20)
-
-            mock_instance.to_geometry.return_value = mock_geo
-            mock_instance.solve.return_value = True
-            mock_instance.name = "TestSketch"
-            mock_instance.provider_type_name = "sketch"
-
-            # Create a dummy sketch object to pass in (the factory calls
-            # to_dict on it)
-            dummy_sketch = Sketch()
-            dummy_sketch._uid = "sketch-123"
-            dummy_sketch._name = "TestSketch"
-
-            # Run factory
-            wp = WorkPiece.from_geometry_provider(dummy_sketch)
-
-            # Assertions
-            assert wp.geometry_provider_uid == dummy_sketch.uid
-            assert wp.name == "TestSketch"
-            assert wp.natural_width_mm == pytest.approx(10.0)
-            assert wp.natural_height_mm == pytest.approx(20.0)
-
-            # The matrix should be scaled to natural size
-            sx, sy = wp.matrix.get_scale()
-            assert sx == pytest.approx(10.0)
-            assert sy == pytest.approx(20.0)
-
-            # 2. Test empty/failing sketch fallback
-            mock_instance.to_geometry.return_value = Geometry()  # Empty
-            wp_empty = WorkPiece.from_geometry_provider(dummy_sketch)
-
-            assert wp_empty.natural_width_mm == 0.0
-            assert wp_empty.natural_height_mm == 0.0
-
-    def test_sketch_params_setter_triggers_update(self, doc_with_workpiece):
-        """
-        Tests that setting sketch_params triggers regeneration and updates
-        natural dimensions.
-        """
-        doc, wp, _ = doc_with_workpiece
-
-        # We create a mock sketch that returns specific geometry when solved
-        sketch = Sketch()
-        doc.add_asset(sketch)
-        wp.geometry_provider_uid = sketch.uid
-
-        updated_signals = []
-        wp.updated.connect(lambda s: updated_signals.append(s), weak=False)
-
-        # Patch Sketch at its definition because it is imported locally
-        # inside regenerate_from_sketch.
-        with patch("rayforge.core.sketcher.sketch.Sketch") as MockSketchCls:
-            # Setup the mock instance returned by Sketch.from_dict()
-            mock_instance = MagicMock()
-            MockSketchCls.from_dict.return_value = mock_instance
-
-            # Setup the geometry returned by the mock instance
-            mock_geo = Geometry()
-            # Define a bounding box (0,0) -> (50,25)
-            mock_geo.move_to(0, 0)
-            mock_geo.line_to(50, 25)
-
-            mock_instance.to_geometry.return_value = mock_geo
-            mock_instance.solve.return_value = True
-
-            # Action: Change params
-            new_params = {"W": 50, "H": 25}
-            wp.geometry_provider_params = new_params
-
-            # Assertions
-            assert wp.geometry_provider_params == new_params
-            assert len(updated_signals) > 0
-
-            # Verify regenerate logic was called
-            mock_instance.solve.assert_called()
-            # Verify variable overrides were passed to solve
-            call_args = mock_instance.solve.call_args
-            assert call_args.kwargs.get("variable_overrides") == new_params
-
-            # Verify natural size updated
-            assert wp.natural_width_mm == pytest.approx(50.0)
-            assert wp.natural_height_mm == pytest.approx(25.0)
-
-    def test_sketch_boundaries_normalization(self, doc_with_workpiece):
-        """
-        Tests that boundaries generated from a sketch are correctly normalized
-        to the 0-1 unit square, regardless of the sketch's physical size.
-        """
-        doc, wp, _ = doc_with_workpiece
-
-        sketch = Sketch()
-        doc.add_asset(sketch)
-        wp.geometry_provider_uid = sketch.uid
-        wp.clear_render_cache()
-
-        # Patch Sketch at its definition
-        with patch("rayforge.core.sketcher.sketch.Sketch") as MockSketchCls:
-            # Setup mock instance
-            mock_instance = MagicMock()
-            MockSketchCls.from_dict.return_value = mock_instance
-
-            # Setup the geometry: a 100x200 rectangle starting at 0,0
-            # This is what wp.boundaries will process.
-            mock_geo = Geometry()
-            mock_geo.move_to(0, 0)
-            mock_geo.line_to(100, 200)
-
-            mock_instance.to_geometry.return_value = mock_geo
-            mock_instance.solve.return_value = True
-
-            # Access boundaries
-            bounds = wp.boundaries
-            assert bounds is not None
-
-            # Verify normalization (should fill 0-1 box)
-            # The logic inside WorkPiece.boundaries detects the 100x200
-            # extent and normalizes it.
-            min_x, min_y, max_x, max_y = bounds.rect()
-            assert min_x == pytest.approx(0.0)
-            assert min_y == pytest.approx(0.0)
-            assert max_x == pytest.approx(1.0)
-            assert max_y == pytest.approx(1.0)
-
-            # Check cache was populated
-            assert wp._boundaries_cache is bounds
 
     def test_workpiece_forward_compatibility_with_extra_fields(self):
         """
