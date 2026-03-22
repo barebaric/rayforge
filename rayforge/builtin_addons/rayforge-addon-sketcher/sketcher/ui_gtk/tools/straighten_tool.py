@@ -36,13 +36,20 @@ class StraightenTool(SketchTool):
         sketch = self.element.sketch
         editor = self.element.editor
 
-        if not editor or len(sel.entity_ids) != 1:
+        if not editor or not sel.entity_ids:
             return
 
-        entity = sketch.registry.get_entity(sel.entity_ids[0])
-        if not isinstance(entity, Bezier):
+        bezier_ids = []
+        for entity_id in sel.entity_ids:
+            entity = sketch.registry.get_entity(entity_id)
+            if isinstance(entity, Bezier):
+                bezier_ids.append(entity_id)
+
+        if not bezier_ids:
             return
 
-        cmd = StraightenBezierCommand(sketch, entity.id)
-        self.element.execute_command(cmd)
+        for bezier_id in bezier_ids:
+            cmd = StraightenBezierCommand(sketch, bezier_id)
+            self.element.execute_command(cmd)
+
         self.element.set_tool("select")
