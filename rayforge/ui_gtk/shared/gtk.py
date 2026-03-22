@@ -1,7 +1,9 @@
 import logging
+from gettext import gettext as _
 from typing import Optional, Tuple, cast
-from ...shared.util.once import once_per_object
 from gi.repository import Gtk, Gdk
+from ...image.registry import FileFilter
+from ...shared.util.once import once_per_object
 
 logger = logging.getLogger(__name__)
 
@@ -64,3 +66,26 @@ def apply_css(css: str):
         provider,
         Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
     )
+
+
+def file_filter_to_gtk(
+    filt: FileFilter, translate: bool = True
+) -> Gtk.FileFilter:
+    """
+    Convert a FileFilter dataclass to a Gtk.FileFilter.
+
+    Args:
+        filt: The FileFilter to convert.
+        translate: Whether to translate the label using gettext.
+
+    Returns:
+        A configured Gtk.FileFilter instance.
+    """
+    gtk_filter = Gtk.FileFilter()
+    label = _(filt.label) if translate else filt.label
+    gtk_filter.set_name(label)
+    for ext in filt.extensions:
+        gtk_filter.add_pattern(f"*{ext}")
+    for mime_type in filt.mime_types:
+        gtk_filter.add_mime_type(mime_type)
+    return gtk_filter

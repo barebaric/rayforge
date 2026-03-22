@@ -9,10 +9,10 @@ from ...core.geo.constants import (
     CMD_TYPE_ARC,
     CMD_TYPE_BEZIER,
 )
-from ..base_exporter import GeometryExporter
+from ..base_exporter import BaseExporter
 
 
-class GeometrySvgExporter(GeometryExporter):
+class GeometrySvgExporter(BaseExporter):
     """
     Exports a Geometry object to SVG format.
     """
@@ -166,7 +166,7 @@ class GeometrySvgExporter(GeometryExporter):
         return 0
 
 
-class MultiGeometrySvgExporter(GeometryExporter):
+class MultiGeometrySvgExporter(BaseExporter):
     """
     Exports multiple Geometry objects to a single SVG file.
     """

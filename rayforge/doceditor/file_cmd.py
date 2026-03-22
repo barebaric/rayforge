@@ -9,9 +9,7 @@ from gettext import gettext as _
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
-    Any,
     Callable,
-    Dict,
     List,
     Optional,
     Tuple,
@@ -45,6 +43,8 @@ from ..image import (
     ImportManifest,
     Importer,
 )
+from ..image.registry import FileFilter
+from ..image.base_exporter import Exporter
 from ..image.dxf.exporter import GeometryDxfExporter
 from ..image.svg.exporter import GeometrySvgExporter
 from ..image.structures import ImportPayload, ImportResult, ParsingResult
@@ -95,20 +95,19 @@ class FileCmd:
         self._editor = editor
         self._task_manager = task_manager
 
-    def get_supported_import_filters(self) -> List[Dict[str, Any]]:
+    def get_supported_import_filters(self) -> List[FileFilter]:
         """
-        Returns a list of dictionaries describing supported file types
+        Returns a list of FileFilter objects describing supported file types
         for UI dialogs.
-        Each dict has 'label', 'extensions', and 'mime_types'.
         """
         filters = []
         for imp in importers:
             filters.append(
-                {
-                    "label": imp.label,
-                    "extensions": imp.extensions,
-                    "mime_types": imp.mime_types,
-                }
+                FileFilter(
+                    label=imp.label,
+                    extensions=imp.extensions,
+                    mime_types=imp.mime_types,
+                )
             )
         return filters
 
@@ -961,7 +960,7 @@ class FileCmd:
             raise ValueError(
                 f"No exporter registered for extension {file_path.suffix}"
             )
-        exporter = exporter_cls(workpiece)
+        exporter = cast(Type[Exporter], exporter_cls)(workpiece)
         return self._do_export(file_path, exporter)
 
     def _do_export(self, file_path: Path, exporter) -> bool:
