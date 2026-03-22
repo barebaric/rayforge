@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 class WorkpieceInfoProvider(PropertyProvider):
     """Provides UI for Workpiece-specific info (source file, metadata)."""
 
+    priority = 20
+
     def can_handle(self, items: List[DocItem]) -> bool:
         return len(items) == 1 and isinstance(items[0], WorkPiece)
 
@@ -125,6 +127,8 @@ class WorkpieceInfoProvider(PropertyProvider):
 
 class TabsPropertyProvider(PropertyProvider):
     """Provides UI for managing tabs on a Workpiece."""
+
+    priority = 30
 
     def can_handle(self, items: List[DocItem]) -> bool:
         return (

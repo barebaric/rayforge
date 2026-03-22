@@ -1,14 +1,15 @@
 import logging
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from gettext import gettext as _
-from gi.repository import Gtk, Gdk, Pango
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
 from blinker import Signal
+from gi.repository import Gdk, Gtk, Pango
+
+from ...context import get_context
 from ...core.asset import IAsset
 from ...core.doc import Doc
 from ...core.stock_asset import StockAsset
-from ...core.sketcher.sketch import Sketch
 from ...shared.units.formatter import format_value
-from ...context import get_context
 from ..icons import get_icon
 from .stock_properties_dialog import StockPropertiesDialog
 
@@ -172,48 +173,6 @@ class BaseAssetRowWidget(Gtk.Box):
         else:
             self.visibility_button.set_child(self._visibility_icon_on)
             self.visibility_button.set_active(True)
-
-
-class SketchAssetRowWidget(BaseAssetRowWidget):
-    """A widget representing a single Sketch asset in a list."""
-
-    def __init__(self, doc: Doc, asset: Sketch, editor: "DocEditor"):
-        super().__init__(doc, asset, editor)
-        self._sketch: Sketch = asset
-        self.add_css_class("sketch-asset-row")
-        self._build_common_structure(
-            show_edit_button=True,
-            edit_tooltip=_("Edit this sketch"),
-        )
-        self._sketch.updated.connect(self.on_asset_changed)
-        self.update_ui()
-
-    def do_destroy(self):
-        self._sketch.updated.disconnect(self.on_asset_changed)
-
-    def on_asset_changed(self, sender, **kwargs):
-        self.update_ui()
-
-    def get_drag_content(self) -> Gdk.ContentProvider:
-        """Provides the content for a drag operation."""
-        logger.debug(
-            "Providing drag content for sketch UID: %s",
-            repr(self._sketch.uid),
-        )
-        return Gdk.ContentProvider.new_for_value(str(self._sketch.uid))
-
-    def update_ui(self):
-        super().update_ui()
-        param_count = len(self._sketch.input_parameters)
-        if param_count == 0:
-            subtitle_text = _("No parameters")
-        elif param_count == 1:
-            subtitle_text = _("1 parameter")
-        else:
-            subtitle_text = _("{count} parameters").format(count=param_count)
-
-        self.subtitle_label.set_label(subtitle_text)
-        self.subtitle_label.set_tooltip_text(subtitle_text)
 
 
 class StockAssetRowWidget(BaseAssetRowWidget):

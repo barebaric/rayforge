@@ -26,6 +26,9 @@ class SourceAsset(IAsset):
     is_draggable_to_canvas: ClassVar[bool] = True
     type_display_name: ClassVar[str] = _("Source")
     can_edit: ClassVar[bool] = False
+    add_action: ClassVar[Optional[str]] = None
+    activate_action: ClassVar[Optional[str]] = None
+    edit_item_action: ClassVar[Optional[str]] = None
 
     source_file: Path
     original_data: bytes

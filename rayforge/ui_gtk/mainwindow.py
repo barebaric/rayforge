@@ -13,10 +13,9 @@ from .. import const
 from ..context import get_context
 from ..core.geo import Rect
 from ..core.group import Group
+from ..core.asset_registry import asset_type_registry
 from ..core.item import DocItem
-from ..core.sketcher.sketch import Sketch
 from ..core.step import Step
-from ..core.stock import StockItem
 from ..core.undo import Command, HistoryManager
 from ..core.workpiece import WorkPiece
 from ..doceditor.editor import DocEditor
@@ -44,12 +43,12 @@ from .canvas2d.surface import WorkSurface
 from .canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .doceditor import file_dialogs
 from .doceditor.asset_list_view import AssetListView
+from .doceditor.asset_row_factory import register_builtin_widgets
 from .doceditor.import_handler import start_interactive_import
 from .doceditor.item_properties import DocItemPropertiesWidget
 from .doceditor.layer_list import LayerListView
 from .doceditor.missing_features_dialog import MissingFeaturesDialog
-from .doceditor.stock_properties_dialog import StockPropertiesDialog
-from .doceditor.sketch_properties import SketchPropertiesWidget
+from .doceditor.property_providers import register_builtin_providers
 from .doceditor.workflow_view import WorkflowView
 from .machine.control_panel import MachineControlPanel
 from .machine.machine_selector import MachineSelector
@@ -410,6 +409,9 @@ class MainWindow(Adw.ApplicationWindow):
         right_pane_box.set_size_request(400, -1)
         right_pane_scrolled_window.set_child(right_pane_box)
 
+        # Register built-in asset row widgets before creating the view
+        register_builtin_widgets()
+
         # Add the unified Asset list view
         self.asset_list_view = AssetListView(self.doc_editor)
         self.asset_list_view.set_margin_end(12)
@@ -437,6 +439,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.workflowview.set_margin_end(12)
         right_pane_box.append(self.workflowview)
 
+        # Register built-in property providers before creating the widget
+        register_builtin_providers()
+
         # Add the WorkpiecePropertiesWidget
         self.item_props_widget = DocItemPropertiesWidget(
             editor=self.doc_editor
@@ -454,14 +459,6 @@ class MainWindow(Adw.ApplicationWindow):
         )
         right_pane_box.append(self.item_revealer)
 
-        # Add the SketchPropertiesWidget
-        self.sketch_props_widget = SketchPropertiesWidget(
-            editor=self.doc_editor
-        )
-        self.sketch_props_widget.set_margin_top(20)
-        self.sketch_props_widget.set_margin_end(12)
-        right_pane_box.append(self.sketch_props_widget)
-
         # Connect signals for item selection and actions
         self.surface.selection_changed.connect(self._on_selection_changed)
         self.surface.elements_deleted.connect(self.on_elements_deleted)
@@ -478,13 +475,8 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_click_to_zero_cancelled
         )
 
-        # Connect new signal from WorkSurface for edit sketch requests
-        self.surface.edit_sketch_requested.connect(
-            self.sketch_mode_cmd.on_edit_sketch_requested
-        )
-        self.surface.edit_stock_item_requested.connect(
-            self._on_edit_stock_item_requested
-        )
+        # Connect new signal from WorkSurface for edit item requests
+        self.surface.edit_item_requested.connect(self._on_edit_item_requested)
 
         # Create the control panel
         config = get_context().config
@@ -646,26 +638,26 @@ class MainWindow(Adw.ApplicationWindow):
         self.doc_editor.stock.add_stock()
 
     def on_add_asset_requested(self, sender, *, type_name: str):
-        """Handler for add asset requests, dispatches by asset type."""
-        if type_name == "sketch":
-            self.sketch_mode_cmd.on_new_sketch()
-        elif type_name == "stock":
-            self.doc_editor.stock.add_stock()
+        """Handler for add asset requests, dispatches via action lookup."""
+        asset_cls = asset_type_registry.get(type_name)
+        if asset_cls and asset_cls.add_action:
+            action = self.action_manager.get_action(asset_cls.add_action)
+            if action:
+                action.activate(None)
 
     def on_asset_activated(self, sender, *, asset):
-        """Handler for asset activation, dispatches by asset type."""
-        if isinstance(asset, Sketch):
-            self.sketch_mode_cmd.on_sketch_definition_activated(
-                sender, sketch=asset
-            )
+        """Handler for asset activation, dispatches via action lookup."""
+        asset_cls = type(asset)
+        if asset_cls.activate_action:
+            action = self.action_manager.get_action(asset_cls.activate_action)
+            if action:
+                action.activate(GLib.Variant.new_string(asset.uid))
 
-    def _on_edit_stock_item_requested(self, sender, *, stock_item: StockItem):
-        """Signal handler for edit stock item requests from the surface."""
-        logger.debug(
-            f"Stock properties requested for stock item {stock_item.name}"
-        )
-        dialog = StockPropertiesDialog(self, stock_item, self.doc_editor)
-        dialog.present()
+    def _on_edit_item_requested(self, sender, *, item, action_name: str):
+        """Signal handler for edit item requests from the surface."""
+        action = self.action_manager.get_action(action_name)
+        if action:
+            action.activate(GLib.Variant.new_string(item.uid))
 
     def load_project(self, file_path: Path):
         """Public method to load a project from a given path."""
@@ -1394,7 +1386,6 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.item_props_widget.set_items(selected_items)
         self.item_revealer.set_reveal_child(bool(selected_items))
-        self.sketch_props_widget.set_items(selected_items)
         self.control_panel.update_position_menu_sensitivity()
         self._update_actions_and_ui()
 

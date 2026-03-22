@@ -26,6 +26,9 @@ class StockAsset(IAsset):
     is_draggable_to_canvas: ClassVar[bool] = False
     type_display_name: ClassVar[str] = _("Stock Material")
     can_edit: ClassVar[bool] = True
+    add_action: ClassVar[Optional[str]] = "add-stock"
+    activate_action: ClassVar[Optional[str]] = None
+    edit_item_action: ClassVar[Optional[str]] = "edit-stock-item"
 
     def __init__(
         self, name: str = "Stock", geometry: Optional[Geometry] = None

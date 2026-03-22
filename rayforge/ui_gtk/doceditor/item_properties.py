@@ -11,9 +11,7 @@ from ...core.workpiece import WorkPiece
 from ..shared.expander import Expander
 from .property_providers import (
     PropertyProvider,
-    TransformPropertyProvider,
-    WorkpieceInfoProvider,
-    TabsPropertyProvider,
+    property_provider_registry,
 )
 
 if TYPE_CHECKING:
@@ -52,12 +50,10 @@ class DocItemPropertiesWidget(Expander):
         self.set_title(_("Item Properties"))
         self.set_expanded(True)
 
-        # Register and instantiate the providers that will build the UI.
-        self.providers: List[PropertyProvider] = [
-            TransformPropertyProvider(),
-            WorkpieceInfoProvider(),
-            TabsPropertyProvider(),
-        ]
+        # Get providers from registry instead of hardcoding
+        self.providers: List[PropertyProvider] = (
+            property_provider_registry.create_instances()
+        )
         # This will hold tuples of (provider, [list_of_widgets])
         self._provider_widget_map: List[
             Tuple[PropertyProvider, List[Gtk.Widget]]

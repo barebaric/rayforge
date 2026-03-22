@@ -1,12 +1,16 @@
 from typing import TYPE_CHECKING, Dict, Callable, List, Optional, cast
 from gi.repository import Gtk, Gio, GLib
+from gettext import gettext as _
 from ..context import get_context
 from ..core.group import Group
 from ..core.item import DocItem
 from ..core.layer import Layer
+from ..core.stock import StockItem
 from ..core.workpiece import WorkPiece
+from ..doceditor.layout.registry import layout_registry
 from .action_registry import action_registry, MenuPlacement, ToolbarPlacement
 from .doceditor.add_tabs_popover import AddTabsPopover
+from .doceditor.stock_properties_dialog import StockPropertiesDialog
 from .shared.keyboard import PRIMARY_ACCEL
 
 
@@ -135,10 +139,28 @@ class ActionManager:
             "export_object", self.win.sketch_mode_cmd.on_export_object
         )
 
+        # Asset Actions
+        self._add_action("add-sketch", self.win.sketch_mode_cmd.on_new_sketch)
+        self._add_action(
+            "activate-sketch",
+            self.win.sketch_mode_cmd.on_activate_sketch,
+            GLib.VariantType.new("s"),
+        )
+        self._add_action(
+            "edit-sketch-item",
+            self.win.sketch_mode_cmd.on_edit_sketch_item,
+            GLib.VariantType.new("s"),
+        )
+        self._add_action("add-stock", self.on_add_stock)
+        self._add_action(
+            "edit-stock-item",
+            self.on_edit_stock_item,
+            GLib.VariantType.new("s"),
+        )
+
         # Layer Management Actions
         self._add_action("layer-move-up", self.on_layer_move_up)
         self._add_action("layer-move-down", self.on_layer_move_down)
-        self._add_action("add_stock", self.on_add_stock)
 
         # Grouping Actions
         self._add_action("group", self.on_group_action)
@@ -216,9 +238,6 @@ class ActionManager:
 
     def _register_layout_actions(self):
         """Register layout strategy actions with menu and toolbar placement."""
-        from ..doceditor.layout.registry import layout_registry
-        from gettext import gettext as _
-
         for strategy_class in layout_registry.list_all():
             name = layout_registry.list_names()[
                 list(layout_registry.list_all()).index(strategy_class)
@@ -239,8 +258,8 @@ class ActionManager:
 
     def update_action_states(self, *args, **kwargs):
         """Updates the enabled state of actions based on document state."""
-        self.actions["add_stock"].set_enabled(True)
-        self.actions["new_sketch"].set_enabled(True)
+        self.actions["add-stock"].set_enabled(True)
+        self.actions["add-sketch"].set_enabled(True)
 
         # Update save action state based on saved state
         is_unsaved = not self.editor.is_saved
@@ -297,8 +316,16 @@ class ActionManager:
             self.actions["edit_sketch"].set_enabled(can_edit_sketch)
 
     def on_add_stock(self, action, param):
-        """Handler for the 'add_stock' action."""
+        """Handler for the 'add-stock' action."""
         self.editor.stock.add_stock()
+
+    def on_edit_stock_item(self, action, param):
+        """Handler for the 'edit-stock-item' action."""
+        item_uid = param.get_string()
+        item = self.doc.find_descendant_by_uid(item_uid)
+        if isinstance(item, StockItem):
+            dialog = StockPropertiesDialog(self.win, item, self.editor)
+            dialog.present()
 
     def _get_workpieces_for_tabbing(self) -> list[WorkPiece]:
         """
