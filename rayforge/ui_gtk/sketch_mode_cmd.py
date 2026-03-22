@@ -171,6 +171,20 @@ class SketchModeCmd:
         logger.debug(f"Sketch edit requested for workpiece {workpiece.name}")
         self.enter_sketch_mode(workpiece)
 
+    def on_activate_sketch(self, action, param):
+        """Action handler for activating a sketch definition."""
+        asset_uid = param.get_string()
+        sketch = self._editor.doc.get_asset_by_uid(asset_uid)
+        if isinstance(sketch, Sketch):
+            self.enter_sketch_definition_mode(sketch)
+
+    def on_edit_sketch_item(self, action, param):
+        """Action handler for editing a sketch-based workpiece."""
+        item_uid = param.get_string()
+        item = self._editor.doc.find_descendant_by_uid(item_uid)
+        if isinstance(item, WorkPiece) and item.geometry_provider_uid:
+            self.enter_sketch_mode(item)
+
     def on_export_object(self, action, param):
         """Action handler for exporting the selected object."""
         selected_items = self._win.surface.get_selected_workpieces()

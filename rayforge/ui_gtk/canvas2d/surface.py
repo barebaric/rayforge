@@ -17,6 +17,7 @@ from ...core.group import Group
 from ...core.item import DocItem
 from ...core.layer import Layer
 from ...core.stock import StockItem
+from ...core.stock_asset import StockAsset
 from ...core.workpiece import WorkPiece
 from ...machine.models.colors import OpsColorSet
 from ...machine.models.machine import Machine
@@ -138,9 +139,9 @@ class WorkSurface(WorldSurface):
         self.context_changed = Signal()
         self.transform_initiated = Signal()
 
-        # Signal to request editing a sketch (handled by MainWindow)
-        self.edit_sketch_requested = Signal()
-        self.edit_stock_item_requested = Signal()
+        # Signal to request editing an item (handled by MainWindow)
+        # Sends: (item, action_name)
+        self.edit_item_requested = Signal()
 
         # Signal to set work zero at clicked position
         self.work_zero_requested = Signal()
@@ -492,7 +493,7 @@ class WorkSurface(WorldSurface):
         super().on_button_press(gesture, n_press, x, y)
         new_context = self.edit_context
 
-        # Check for double-click to edit sketches.
+        # Check for double-click to edit items.
         if n_press == 2:
             world_x, world_y = self._get_world_coords(x, y)
             hit_elem = self.root.get_elem_hit(
@@ -501,16 +502,24 @@ class WorkSurface(WorldSurface):
 
             if isinstance(hit_elem, WorkPieceElement):
                 wp = hit_elem.data
-                # The new, correct logic:
                 if wp.geometry_provider_uid:
-                    self.edit_sketch_requested.send(self, workpiece=wp)
-                    return
+                    asset = self.doc.get_asset_by_uid(wp.geometry_provider_uid)
+                    if asset:
+                        asset_cls = type(asset)
+                        action_name = asset_cls.edit_item_action
+                        if action_name:
+                            self.edit_item_requested.send(
+                                self, item=wp, action_name=action_name
+                            )
+                            return
             elif isinstance(hit_elem, StockElement):
                 stock_item = cast(StockItem, hit_elem.data)
-                self.edit_stock_item_requested.send(
-                    self, stock_item=stock_item
-                )
-                return
+                action_name = StockAsset.edit_item_action
+                if action_name:
+                    self.edit_item_requested.send(
+                        self, item=stock_item, action_name=action_name
+                    )
+                    return
 
         # After the click, check if the active element dictates a layer change.
         if new_context and isinstance(new_context.data, WorkPiece):

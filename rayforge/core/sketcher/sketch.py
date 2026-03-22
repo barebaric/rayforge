@@ -119,6 +119,9 @@ class Sketch(IAsset, IGeometryProvider):
     is_draggable_to_canvas: ClassVar[bool] = True
     type_display_name: ClassVar[str] = _("Sketch")
     can_edit: ClassVar[bool] = True
+    add_action: ClassVar[Optional[str]] = "add-sketch"
+    activate_action: ClassVar[Optional[str]] = "activate-sketch"
+    edit_item_action: ClassVar[Optional[str]] = "edit-sketch-item"
 
     def __init__(self, name: str = "New Sketch") -> None:
         self._uid: str = str(uuid.uuid4())

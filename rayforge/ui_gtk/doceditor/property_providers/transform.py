@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 class TransformPropertyProvider(PropertyProvider):
     """Provides UI for common transformation properties (pos, size, angle)."""
 
+    priority = 10
+
     def can_handle(self, items: List[DocItem]) -> bool:
         return bool(items)
 

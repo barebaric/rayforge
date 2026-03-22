@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable, Dict, Any, ClassVar
+from typing import Protocol, runtime_checkable, Dict, Any, ClassVar, Optional
 
 
 @runtime_checkable
@@ -17,6 +17,9 @@ class IAsset(Protocol):
     is_draggable_to_canvas: ClassVar[bool]
     type_display_name: ClassVar[str]
     can_edit: ClassVar[bool]
+    add_action: ClassVar[Optional[str]]
+    activate_action: ClassVar[Optional[str]]
+    edit_item_action: ClassVar[Optional[str]]
 
     @property
     def uid(self) -> str:

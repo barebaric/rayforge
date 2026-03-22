@@ -1,7 +1,9 @@
 import logging
 from abc import ABC, abstractmethod
+from typing import List, Type, TYPE_CHECKING
+
 from gi.repository import Gtk
-from typing import List, TYPE_CHECKING
+
 from ....core.item import DocItem
 
 if TYPE_CHECKING:
@@ -10,11 +12,71 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class PropertyProviderRegistry:
+    """
+    Registry for property provider classes.
+
+    Allows registration of providers that can create UI widgets for
+    specific types of document items. Providers are sorted by priority
+    (lower priority appears first in UI).
+    """
+
+    def __init__(self):
+        self._providers: List[Type["PropertyProvider"]] = []
+
+    def register(self, provider_cls: Type["PropertyProvider"]) -> None:
+        """
+        Register a property provider class.
+
+        Providers are sorted by priority when instances are created.
+        """
+        if provider_cls not in self._providers:
+            self._providers.append(provider_cls)
+            logger.debug(
+                f"Registered property provider: {provider_cls.__name__}"
+            )
+
+    def unregister(self, provider_cls: Type["PropertyProvider"]) -> bool:
+        """
+        Unregister a property provider class.
+
+        Returns True if the provider was found and removed.
+        """
+        if provider_cls in self._providers:
+            self._providers.remove(provider_cls)
+            return True
+        return False
+
+    def create_instances(self) -> List["PropertyProvider"]:
+        """
+        Create instances of all registered providers, sorted by priority.
+
+        Lower priority values appear first in the UI.
+
+        Returns a list of provider instances ready for use.
+        """
+        sorted_providers = sorted(
+            self._providers,
+            key=lambda cls: getattr(cls, "priority", 100),
+        )
+        return [cls() for cls in sorted_providers]
+
+    def all(self) -> List[Type["PropertyProvider"]]:
+        """Return all registered provider classes."""
+        return self._providers.copy()
+
+
+property_provider_registry = PropertyProviderRegistry()
+
+
 class PropertyProvider(ABC):
     """
     Defines the contract for a component that can provide UI for a specific
     aspect of one or more DocItems.
     """
+
+    priority: int = 100
+    """Lower priority values appear first in the UI."""
 
     def __init__(self):
         self.editor: "DocEditor"
