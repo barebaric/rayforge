@@ -5,18 +5,26 @@ from gettext import gettext as _
 
 from gi.repository import GLib
 
-from ..core.sketcher import Sketch
-from ..core.undo import ListItemCommand
-from ..core.workpiece import WorkPiece
-from ..doceditor.asset_cmd import UpdateAssetCommand
-from ..usage import get_usage_tracker
-from .doceditor import file_dialogs
+from ...core.sketcher import Sketch
+from ...core.undo import ListItemCommand
+from ...core.workpiece import WorkPiece
+from ...doceditor.asset_cmd import UpdateAssetCommand
+from ...usage import get_usage_tracker
+from ..doceditor import file_dialogs
 
 if TYPE_CHECKING:
-    from .mainwindow import MainWindow
-    from ..doceditor.editor import DocEditor
+    from ...doceditor.editor import DocEditor
+    from ..mainwindow import MainWindow
+    from .studio import SketchStudio
 
 logger = logging.getLogger(__name__)
+
+
+def _get_sketch_studio() -> Optional["SketchStudio"]:
+    """Get the SketchStudio instance, avoiding circular imports."""
+    from . import get_sketch_studio
+
+    return get_sketch_studio()
 
 
 class SketchModeCmd:
@@ -46,21 +54,20 @@ class SketchModeCmd:
             return
 
         try:
+            sketch_studio = _get_sketch_studio()
+            if not sketch_studio:
+                logger.error("SketchStudio not initialized")
+                return
+
             self.active_sketch_workpiece = workpiece
             self._is_editing_new_sketch = is_new_sketch
-            self._win.sketch_studio.set_sketch(sketch)
-            self._win.main_stack.set_visible_child_name("sketch")
+            sketch_studio.set_sketch(sketch)
+            self._win.show_stack_page("sketch")
             get_usage_tracker().track_page_view("/sketcher", "Sketch Editor")
 
-            self._win.menubar.set_menu_model(
-                self._win.sketch_studio.menu_model
-            )
-            self._win.insert_action_group(
-                "sketch", self._win.sketch_studio.action_group
-            )
-            self._win.add_controller(
-                self._win.sketch_studio.shortcut_controller
-            )
+            self._win.menubar.set_menu_model(sketch_studio.menu_model)
+            self._win.insert_action_group("sketch", sketch_studio.action_group)
+            self._win.add_controller(sketch_studio.shortcut_controller)
         except Exception as e:
             logger.error(
                 f"Failed to load sketch for editing: {e}", exc_info=True
@@ -68,34 +75,33 @@ class SketchModeCmd:
 
     def exit_sketch_mode(self):
         """Returns to the main 2D/3D view from the SketchStudio."""
+        sketch_studio = _get_sketch_studio()
         self._win.menubar.set_menu_model(self._win.menu_model)
         self._win.insert_action_group("sketch", None)
-        self._win.remove_controller(
-            self._win.sketch_studio.shortcut_controller
-        )
+        if sketch_studio:
+            self._win.remove_controller(sketch_studio.shortcut_controller)
 
-        self._win.main_stack.set_visible_child_name("main")
+        self._win.show_stack_page("main")
         self.active_sketch_workpiece = None
         self._is_editing_new_sketch = False
 
     def enter_sketch_definition_mode(self, sketch: Sketch):
         """Switches to SketchStudio to edit a sketch definition directly."""
         try:
+            sketch_studio = _get_sketch_studio()
+            if not sketch_studio:
+                logger.error("SketchStudio not initialized")
+                return
+
             self.active_sketch_workpiece = None
             self._is_editing_new_sketch = False
-            self._win.sketch_studio.set_sketch(sketch)
-            self._win.main_stack.set_visible_child_name("sketch")
+            sketch_studio.set_sketch(sketch)
+            self._win.show_stack_page("sketch")
             get_usage_tracker().track_page_view("/sketcher", "Sketch Editor")
 
-            self._win.menubar.set_menu_model(
-                self._win.sketch_studio.menu_model
-            )
-            self._win.insert_action_group(
-                "sketch", self._win.sketch_studio.action_group
-            )
-            self._win.add_controller(
-                self._win.sketch_studio.shortcut_controller
-            )
+            self._win.menubar.set_menu_model(sketch_studio.menu_model)
+            self._win.insert_action_group("sketch", sketch_studio.action_group)
+            self._win.add_controller(sketch_studio.shortcut_controller)
         except Exception as e:
             logger.error(
                 f"Failed to load sketch definition for editing: {e}",
@@ -116,11 +122,13 @@ class SketchModeCmd:
         self._editor.history_manager.execute(cmd)
 
         if self._is_editing_new_sketch:
-            center_x = self._win.sketch_studio.width_mm / 2
-            center_y = self._win.sketch_studio.height_mm / 2
-            self._editor.edit.add_geometry_provider_instance(
-                sketch.uid, (center_x, center_y)
-            )
+            sketch_studio = _get_sketch_studio()
+            if sketch_studio:
+                center_x = sketch_studio.width_mm / 2
+                center_y = sketch_studio.height_mm / 2
+                self._editor.edit.add_geometry_provider_instance(
+                    sketch.uid, (center_x, center_y)
+                )
 
         self.exit_sketch_mode()
 

@@ -1,3 +1,4 @@
+import logging
 from typing import TYPE_CHECKING, Dict, Callable, List, Optional, cast
 from gi.repository import Gtk, Gio, GLib
 from gettext import gettext as _
@@ -16,6 +17,81 @@ from .shared.keyboard import PRIMARY_ACCEL
 
 if TYPE_CHECKING:
     from .mainwindow import MainWindow
+
+logger = logging.getLogger(__name__)
+
+
+ActionSetupHandler = Callable[["ActionManager"], None]
+ActionStateUpdateHandler = Callable[["ActionManager"], None]
+
+
+class ActionExtensionRegistry:
+    """
+    Registry for action extension handlers.
+
+    Allows modules to register their own actions and state update
+    handlers, enabling decoupling of functionality like the sketcher.
+    """
+
+    def __init__(self):
+        self._setup_handlers: List[ActionSetupHandler] = []
+        self._state_update_handlers: List[ActionStateUpdateHandler] = []
+
+    def register_setup(self, handler: ActionSetupHandler):
+        """Register a handler to be called during action setup."""
+        self._setup_handlers.append(handler)
+        logger.debug(f"Registered action setup handler: {handler.__name__}")
+
+    def unregister_setup(self, handler: ActionSetupHandler) -> bool:
+        """Unregister an action setup handler."""
+        try:
+            self._setup_handlers.remove(handler)
+            return True
+        except ValueError:
+            return False
+
+    def register_state_update(self, handler: ActionStateUpdateHandler):
+        """Register a handler to be called during action state updates."""
+        self._state_update_handlers.append(handler)
+        logger.debug(
+            f"Registered action state update handler: {handler.__name__}"
+        )
+
+    def unregister_state_update(
+        self, handler: ActionStateUpdateHandler
+    ) -> bool:
+        """Unregister an action state update handler."""
+        try:
+            self._state_update_handlers.remove(handler)
+            return True
+        except ValueError:
+            return False
+
+    def invoke_setup_handlers(self, action_manager: "ActionManager"):
+        """Invoke all registered setup handlers."""
+        for handler in self._setup_handlers:
+            try:
+                handler(action_manager)
+            except Exception as e:
+                logger.error(
+                    f"Error in action setup handler {handler.__name__}: {e}",
+                    exc_info=True,
+                )
+
+    def invoke_state_update_handlers(self, action_manager: "ActionManager"):
+        """Invoke all registered state update handlers."""
+        for handler in self._state_update_handlers:
+            try:
+                handler(action_manager)
+            except Exception as e:
+                logger.error(
+                    f"Error in action state update handler "
+                    f"{handler.__name__}: {e}",
+                    exc_info=True,
+                )
+
+
+action_extension_registry = ActionExtensionRegistry()
 
 
 class ActionManager:
@@ -130,27 +206,7 @@ class ActionManager:
         self._add_action("remove", self.win.on_menu_remove)
         self._add_action("clear", self.win.on_clear_clicked)
 
-        # Item Actions
-        self._add_action("new_sketch", self.win.sketch_mode_cmd.on_new_sketch)
-        self._add_action(
-            "edit_sketch", self.win.sketch_mode_cmd.on_edit_sketch
-        )
-        self._add_action(
-            "export_object", self.win.sketch_mode_cmd.on_export_object
-        )
-
         # Asset Actions
-        self._add_action("add-sketch", self.win.sketch_mode_cmd.on_new_sketch)
-        self._add_action(
-            "activate-sketch",
-            self.win.sketch_mode_cmd.on_activate_sketch,
-            GLib.VariantType.new("s"),
-        )
-        self._add_action(
-            "edit-sketch-item",
-            self.win.sketch_mode_cmd.on_edit_sketch_item,
-            GLib.VariantType.new("s"),
-        )
         self._add_action("add-stock", self.on_add_stock)
         self._add_action(
             "edit-stock-item",
@@ -234,6 +290,8 @@ class ActionManager:
             GLib.VariantType.new("s"),
         )
 
+        action_extension_registry.invoke_setup_handlers(self)
+
         self.update_action_states()
 
     def _register_layout_actions(self):
@@ -259,9 +317,7 @@ class ActionManager:
     def update_action_states(self, *args, **kwargs):
         """Updates the enabled state of actions based on document state."""
         self.actions["add-stock"].set_enabled(True)
-        self.actions["add-sketch"].set_enabled(True)
 
-        # Update save action state based on saved state
         is_unsaved = not self.editor.is_saved
         self.actions["save"].set_enabled(is_unsaved)
 
@@ -270,17 +326,12 @@ class ActionManager:
         self.actions["add-tabs-equidistant"].set_enabled(can_add_tabs)
         self.actions["add-tabs-cardinal"].set_enabled(can_add_tabs)
 
-        # Update context-sensitive tab actions based on the surface's public
-        # state
         context = self.win.surface.right_click_context
         can_add_single_tab = context and context.get("type") == "geometry"
         can_remove_single_tab = context and context.get("type") == "tab"
         self.actions["tab-add"].set_enabled(bool(can_add_single_tab))
         self.actions["tab-remove"].set_enabled(bool(can_remove_single_tab))
 
-        # Update layout-pixel-perfect action state
-        # Enabled when there are selected workpieces, or when nothing is
-        # selected but the active layer has workpieces (layout all)
         selected_wps = self.win.surface.get_selected_workpieces()
         if selected_wps:
             has_workpieces = True
@@ -294,26 +345,9 @@ class ActionManager:
         if layout_info and layout_info.action:
             layout_info.action.set_enabled(has_workpieces)
 
-        # Update split action state
-        selected_wps = self.win.surface.get_selected_workpieces()
         self.actions["split"].set_enabled(bool(selected_wps))
 
-        # Update edit_sketch and export_object action states
-        # edit_sketch: Only enable for sketch-based workpieces
-        # export_object: Enable for any workpiece with geometry
-        can_edit_sketch = False
-        can_export_object = False
-        if len(selected_wps) == 1:
-            wp = selected_wps[0]
-            if wp.geometry_provider_uid:
-                can_edit_sketch = True
-            if wp.boundaries is not None and not wp.boundaries.is_empty():
-                can_export_object = True
-
-        if "export_object" in self.actions:
-            self.actions["export_object"].set_enabled(can_export_object)
-        if "edit_sketch" in self.actions:
-            self.actions["edit_sketch"].set_enabled(can_edit_sketch)
+        action_extension_registry.invoke_state_update_handlers(self)
 
     def on_add_stock(self, action, param):
         """Handler for the 'add-stock' action."""
