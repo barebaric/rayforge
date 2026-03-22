@@ -1,13 +1,65 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Callable, List
 from gettext import gettext as _
 from gi.repository import Gtk, Gio
 
 if TYPE_CHECKING:
+    from ...core.item import DocItem
     from .surface import WorkSurface
 
 logger = logging.getLogger(__name__)
+
+# Type for context menu extension handlers
+# Handlers receive: (surface, item, gesture, menu)
+ContextMenuHandler = Callable[
+    ["WorkSurface", Optional["DocItem"], Gtk.Gesture, Gio.Menu], None
+]
+
+
+class ContextMenuExtensionRegistry:
+    """
+    Registry for context menu extension handlers.
+
+    Handlers are called when a context menu is about to be shown,
+    allowing addons to add custom menu items.
+    """
+
+    def __init__(self):
+        self._handlers: List[ContextMenuHandler] = []
+
+    def register(self, handler: ContextMenuHandler):
+        """Register a context menu extension handler."""
+        self._handlers.append(handler)
+        logger.debug(f"Registered context menu handler: {handler.__name__}")
+
+    def unregister(self, handler: ContextMenuHandler) -> bool:
+        """Unregister a context menu extension handler."""
+        try:
+            self._handlers.remove(handler)
+            return True
+        except ValueError:
+            return False
+
+    def invoke_all(
+        self,
+        surface: "WorkSurface",
+        item: Optional["DocItem"],
+        gesture: Gtk.Gesture,
+        menu: Gio.Menu,
+    ):
+        """Invoke all registered handlers."""
+        for handler in self._handlers:
+            try:
+                handler(surface, item, gesture, menu)
+            except Exception as e:
+                logger.error(
+                    f"Error in context menu handler {handler.__name__}: {e}",
+                    exc_info=True,
+                )
+
+
+context_menu_extension_registry = ContextMenuExtensionRegistry()
 
 
 def _populate_standard_items(menu: Gio.Menu):
@@ -48,21 +100,6 @@ def _create_item_context_menu() -> Gio.Menu:
     return menu
 
 
-def _create_sketch_item_context_menu() -> Gio.Menu:
-    """Builds the context menu for Sketch WorkPieces."""
-    menu = Gio.Menu.new()
-    menu.append_item(Gio.MenuItem.new(_("Edit Sketch"), "win.edit_sketch"))
-    menu.append_item(
-        Gio.MenuItem.new(_("Export Object..."), "win.export_object")
-    )
-
-    # Separator before standard items
-    menu.append_section(None, Gio.Menu.new())
-
-    _populate_standard_items(menu)
-    return menu
-
-
 def _create_geometry_context_menu() -> Gio.Menu:
     """Builds the context menu for interacting with a workpiece's path."""
     menu = Gio.Menu.new()
@@ -80,7 +117,6 @@ def _create_tab_context_menu() -> Gio.Menu:
 # Pre-build and cache the menu models once when the module is loaded.
 _MENU_MODELS = {
     "item": _create_item_context_menu(),
-    "sketch-item": _create_sketch_item_context_menu(),
     "geometry": _create_geometry_context_menu(),
     "tab": _create_tab_context_menu(),
 }
@@ -105,20 +141,30 @@ def _show_popover(
     popover.popup()
 
 
-def show_item_context_menu(surface: "WorkSurface", gesture: Gtk.Gesture):
-    """
-    Displays the context menu for general items like WorkPieces or Groups.
-    """
-    _show_popover(surface, gesture, _MENU_MODELS["item"])
-
-
-def show_sketch_item_context_menu(
-    surface: "WorkSurface", gesture: Gtk.Gesture
+def show_item_context_menu(
+    surface: "WorkSurface",
+    gesture: Gtk.Gesture,
+    item: Optional["DocItem"] = None,
 ):
     """
-    Displays the context menu for Sketch items.
+    Displays the context menu for general items like WorkPieces or Groups.
+
+    Emits the context_menu_requested signal and invokes registered extension
+    handlers to allow addons to add custom menu items. The item parameter is
+    passed to handlers so they can determine if the menu should be extended.
     """
-    _show_popover(surface, gesture, _MENU_MODELS["sketch-item"])
+    menu = Gio.Menu.new()
+    _populate_standard_items(menu)
+
+    # Invoke registered extension handlers
+    context_menu_extension_registry.invoke_all(surface, item, gesture, menu)
+
+    # Also emit signal for direct connections
+    surface.context_menu_requested.send(
+        surface, item=item, gesture=gesture, menu=menu
+    )
+
+    _show_popover(surface, gesture, menu)
 
 
 def show_geometry_context_menu(surface: "WorkSurface", gesture: Gtk.Gesture):
