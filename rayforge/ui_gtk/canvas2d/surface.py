@@ -149,6 +149,10 @@ class WorkSurface(WorldSurface):
         # Signal to cancel click-to-zero mode
         self.click_to_zero_cancelled = Signal()
 
+        # Signal for context menu extension - addons can connect to add items
+        # Sends: (item, gesture, menu)
+        self.context_menu_requested = Signal()
+
         # Connect to generic signals from the base Canvas class
         self.move_begin.connect(self._on_any_transform_begin)
         self.resize_begin.connect(self._on_resize_begin)
@@ -283,9 +287,6 @@ class WorkSurface(WorldSurface):
         elif isinstance(hit_elem, WorkPieceElement):
             wp_view = cast(WorkPieceElement, hit_elem)
 
-            # Check if this is a sketch workpiece using the new method
-            is_sketch = bool(wp_view.data.geometry_provider_uid)
-
             # Check path proximity
             location = wp_view.get_closest_point_on_path(
                 world_x, world_y, threshold_px=5.0
@@ -297,10 +298,7 @@ class WorkSurface(WorldSurface):
                     "location": location,
                 }
             else:
-                if is_sketch:
-                    self.right_click_context = {"type": "sketch-item"}
-                else:
-                    self.right_click_context = {"type": "item"}
+                self.right_click_context = {"type": "item"}
         # Case 3: Clicked on another selectable item (e.g., a Group)
         elif hit_elem.selectable:
             self.right_click_context = {"type": "item"}
@@ -316,13 +314,9 @@ class WorkSurface(WorldSurface):
                     self.unselect_all()
                     hit_elem.selected = True
                     self._finalize_selection_state()
-                context_menu.show_item_context_menu(self, gesture)
-            elif context_type == "sketch-item":
-                if not hit_elem.selected:
-                    self.unselect_all()
-                    hit_elem.selected = True
-                    self._finalize_selection_state()
-                context_menu.show_sketch_item_context_menu(self, gesture)
+                context_menu.show_item_context_menu(
+                    self, gesture, item=hit_elem.data
+                )
             elif context_type == "geometry":
                 context_menu.show_geometry_context_menu(self, gesture)
             elif context_type == "tab":
