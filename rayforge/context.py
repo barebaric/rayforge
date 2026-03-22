@@ -171,13 +171,31 @@ class RayforgeContext:
                 renderer_registry,
             )
             from .ui_gtk.action_registry import action_registry
+            from .ui_gtk.actions import action_extension_registry
+            from .ui_gtk.canvas2d.context_menu import (
+                context_menu_extension_registry,
+            )
+            from .ui_gtk.doceditor.asset_row_factory import (
+                asset_row_widget_registry,
+            )
+            from .ui_gtk.doceditor.property_providers import (
+                property_provider_registry,
+            )
 
             registries["action_registry"] = action_registry
+            registries["action_extension_registry"] = action_extension_registry
+            registries["asset_row_widget_registry"] = asset_row_widget_registry
             registries["asset_type_registry"] = asset_type_registry
             registries["command_registry"] = command_registry
-            registries["renderer_registry"] = renderer_registry
+            registries["context_menu_extension_registry"] = (
+                context_menu_extension_registry
+            )
             registries["exporter_registry"] = exporter_registry
             registries["importer_registry"] = importer_registry
+            registries["property_provider_registry"] = (
+                property_provider_registry
+            )
+            registries["renderer_registry"] = renderer_registry
 
         self._addon_mgr.set_registries(registries)
         self._addon_mgr.load_installed_addons(backend_only=self._headless)

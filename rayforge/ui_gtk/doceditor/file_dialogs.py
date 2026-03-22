@@ -113,10 +113,11 @@ def show_export_object_dialog(
     workpiece: Optional["WorkPiece"] = None,
 ):
     """
-    Shows the save file dialog for exporting a sketch-based workpiece.
+    Shows the save file dialog for exporting a geometry-provider--based
+    workpiece.
 
     Supports multiple formats:
-    - Rayforge Sketch (.rfs) - parametric sketch with constraints
+    - Rayforge Sketch (.rfs) - parametric geometry with constraints
     - SVG (.svg) - scalable vector graphics
     - DXF (.dxf) - CAD exchange format
 
@@ -138,10 +139,10 @@ def show_export_object_dialog(
             dialog.set_initial_folder(folder)
         except Exception:
             logger.debug(
-                "Could not set initial folder for sketch export dialog"
+                "Could not set initial folder for object export dialog"
             )
     else:
-        dialog.set_initial_name("sketch.rfs")
+        dialog.set_initial_name("object.rfs")
 
     filter_list = Gio.ListStore.new(Gtk.FileFilter)
 

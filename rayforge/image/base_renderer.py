@@ -189,3 +189,54 @@ class RasterRenderer(Renderer):
             data=source_context.data,
             apply_mask=True,
         )
+
+
+class UnknownRenderer(Renderer):
+    """
+    A placeholder renderer used when the actual renderer is not available
+    (e.g., when its addon is disabled).
+    """
+
+    def compute_render_spec(
+        self,
+        segment: Optional["SourceAssetSegment"],
+        target_size: Tuple[int, int],
+        source_context: "RenderContext",
+    ) -> "RenderSpecification":
+        """
+        Always returns minimal render spec to avoid crashes.
+        """
+        return RenderSpecification(
+            width=target_size[0],
+            height=target_size[1],
+            data=b"",  # Empty data since we can't render
+            apply_mask=False,
+        )
+
+    def render_base_image(
+        self,
+        data: bytes,
+        width: int,
+        height: int,
+        **kwargs,
+    ) -> Optional[pyvips.Image]:
+        """
+        Always returns None since we can't render without the actual renderer.
+        """
+        logger.warning(
+            f"Attempted to render with UnknownRenderer "
+            f"(width={width}, height={height}), "
+            f"renderer likely from disabled addon"
+        )
+        return None
+
+    def render_preview_image(
+        self,
+        import_result: "ImportResult",
+        target_width: int,
+        target_height: int,
+    ) -> Optional[pyvips.Image]:
+        """
+        Always returns None since we can't render without the actual renderer.
+        """
+        return None

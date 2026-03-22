@@ -139,7 +139,6 @@ class AddonManager:
         self._task_mgr = task_mgr
         self.license_validator = license_validator
 
-        self.addon_reloaded = Signal()
         self.addon_state_changed = Signal()
 
         if license_validator:
@@ -1060,9 +1059,7 @@ class AddonManager:
 
         self._build_and_update_manifest()
         self._restart_workers()
-        self.addon_state_changed.send(
-            self, addon_name=addon_name, enabled=True
-        )
+        self.addon_state_changed.send(self, addon_name=addon_name)
         return True
 
     def disable_addon(self, addon_name: str) -> bool:
@@ -1092,9 +1089,7 @@ class AddonManager:
         self._do_unload_addon(addon_name, addon)
         self._build_and_update_manifest()
         self._restart_workers()
-        self.addon_state_changed.send(
-            self, addon_name=addon_name, enabled=False
-        )
+        self.addon_state_changed.send(self, addon_name=addon_name)
         return True
 
     def _do_unload_addon(self, addon_name: str, addon: Addon):
@@ -1308,9 +1303,9 @@ class AddonManager:
         self._call_registration_hooks()
         if addon_name in self.loaded_addons:
             logger.info(f"Addon '{addon_name}' reloaded successfully")
-            self.addon_reloaded.send(self, addon_name=addon_name)
             self._build_and_update_manifest()
             self._restart_workers()
+            self.addon_state_changed.send(self, addon_name=addon_name)
             return True
         else:
             logger.error(f"Failed to reload addon '{addon_name}'")

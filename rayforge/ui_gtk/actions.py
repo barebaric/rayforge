@@ -36,23 +36,32 @@ class ActionExtensionRegistry:
     def __init__(self):
         self._setup_handlers: List[ActionSetupHandler] = []
         self._state_update_handlers: List[ActionStateUpdateHandler] = []
+        self._setup_addon_map: Dict[str, str] = {}
+        self._state_update_addon_map: Dict[str, str] = {}
 
-    def register_setup(self, handler: ActionSetupHandler):
+    def register_setup(self, handler: ActionSetupHandler, addon_name: str):
         """Register a handler to be called during action setup."""
         self._setup_handlers.append(handler)
+        if addon_name:
+            self._setup_addon_map[handler.__name__] = addon_name
         logger.debug(f"Registered action setup handler: {handler.__name__}")
 
     def unregister_setup(self, handler: ActionSetupHandler) -> bool:
         """Unregister an action setup handler."""
         try:
             self._setup_handlers.remove(handler)
+            self._setup_addon_map.pop(handler.__name__, None)
             return True
         except ValueError:
             return False
 
-    def register_state_update(self, handler: ActionStateUpdateHandler):
+    def register_state_update(
+        self, handler: ActionStateUpdateHandler, addon_name: str
+    ):
         """Register a handler to be called during action state updates."""
         self._state_update_handlers.append(handler)
+        if addon_name:
+            self._state_update_addon_map[handler.__name__] = addon_name
         logger.debug(
             f"Registered action state update handler: {handler.__name__}"
         )
@@ -63,9 +72,49 @@ class ActionExtensionRegistry:
         """Unregister an action state update handler."""
         try:
             self._state_update_handlers.remove(handler)
+            self._state_update_addon_map.pop(handler.__name__, None)
             return True
         except ValueError:
             return False
+
+    def unregister_all_from_addon(self, addon_name: str) -> int:
+        """
+        Unregister all handlers registered by a specific addon.
+
+        Args:
+            addon_name: The name of the addon to clean up
+
+        Returns:
+            The number of handlers unregistered
+        """
+        count = 0
+
+        setup_to_remove = [
+            h
+            for h in self._setup_handlers
+            if self._setup_addon_map.get(h.__name__) == addon_name
+        ]
+        for h in setup_to_remove:
+            self._setup_handlers.remove(h)
+            self._setup_addon_map.pop(h.__name__, None)
+        count += len(setup_to_remove)
+
+        state_to_remove = [
+            h
+            for h in self._state_update_handlers
+            if self._state_update_addon_map.get(h.__name__) == addon_name
+        ]
+        for h in state_to_remove:
+            self._state_update_handlers.remove(h)
+            self._state_update_addon_map.pop(h.__name__, None)
+        count += len(state_to_remove)
+
+        if count > 0:
+            logger.debug(
+                f"Unregistered {count} action extension handlers "
+                f"from addon '{addon_name}'"
+            )
+        return count
 
     def invoke_setup_handlers(self, action_manager: "ActionManager"):
         """Invoke all registered setup handlers."""
@@ -490,7 +539,6 @@ class ActionManager:
             "win.view_toggle_perspective": "p",
             # Object
             "win.add_stock": "<Ctrl><Alt>s",
-            "win.new_sketch": f"{PRIMARY_ACCEL}n",
             "win.add-tabs-equidistant": "<Ctrl><Alt>t",
             # Arrange
             "win.group": f"{PRIMARY_ACCEL}g",

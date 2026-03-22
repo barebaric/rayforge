@@ -193,7 +193,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.vertical_paned.set_shrink_end_child(False)
         vbox.append(self.vertical_paned)
 
-        # Create a stack for switching between main view and sketch studio
+        # Create a stack for switching between main view and addon pages
         self.main_stack = Gtk.Stack()
         self.main_stack.set_vexpand(True)
         self.main_stack.set_transition_type(
@@ -727,13 +727,10 @@ class MainWindow(Adw.ApplicationWindow):
         self.status_monitor.start_live_view(is_granular)
         self._update_actions_and_ui()
 
-    def _on_addon_state_changed(self, sender, *, addon_name, enabled):
+    def _on_addon_state_changed(self, sender, addon_name):
         """Handle addon enable/disable to refresh action handlers."""
-        if enabled:
-            action_extension_registry.invoke_setup_handlers(
-                self.action_manager
-            )
-            self.action_manager.update_action_states()
+        action_extension_registry.invoke_setup_handlers(self.action_manager)
+        self.action_manager.update_action_states()
 
     def _on_job_progress_updated(self, metrics: dict):
         """Callback for when job progress is updated."""

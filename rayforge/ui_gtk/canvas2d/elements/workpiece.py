@@ -560,16 +560,16 @@ class WorkPieceElement(CanvasElement):
         Args:
             ctx: The cairo context to draw on.
         """
-        # Check if the workpiece depends on a hidden sketch
-        sketch_hidden = False
+        # Check if the workpiece depends on a hidden geometry provider
+        provider_hidden = False
         if self.data.geometry_provider_uid and self.data.doc:
-            sketch = self.data.doc.get_asset_by_uid(
+            provider = self.data.doc.get_asset_by_uid(
                 self.data.geometry_provider_uid
             )
-            if sketch and getattr(sketch, "hidden", False):
-                sketch_hidden = True
+            if provider and getattr(provider, "hidden", False):
+                provider_hidden = True
 
-        if self._base_image_visible and not sketch_hidden:
+        if self._base_image_visible and not provider_hidden:
             # This handles the Y-flip for the base image and restores the
             # context, leaving it Y-UP for the next drawing operation.
             super().draw(ctx)

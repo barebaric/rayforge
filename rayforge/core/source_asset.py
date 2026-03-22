@@ -1,12 +1,15 @@
 from __future__ import annotations
 import base64
 import uuid
+import logging
 from pathlib import Path
 from typing import Optional, Dict, Any, TYPE_CHECKING, ClassVar
 from dataclasses import dataclass, field
 from gettext import gettext as _
 
 from .asset import IAsset
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from ..image.base_renderer import Renderer
@@ -97,6 +100,7 @@ class SourceAsset(IAsset):
     def from_dict(cls, data: Dict[str, Any]) -> "SourceAsset":
         """Deserializes a dictionary into a SourceAsset instance."""
         from ..image import renderer_registry
+        from ..image.base_renderer import UnknownRenderer
 
         known_keys = {
             "uid",
@@ -116,10 +120,11 @@ class SourceAsset(IAsset):
 
         renderer = renderer_registry.get(data["renderer_name"])
         if renderer is None:
-            raise ValueError(
+            logger.warning(
                 f"Unknown renderer: {data['renderer_name']}. "
-                f"Ensure the required addon is enabled."
+                f"Using UnknownRenderer as fallback."
             )
+            renderer = UnknownRenderer()
 
         original_data = base64.b64decode(data["original_data"])
         base_render_data = (

@@ -253,7 +253,7 @@ def main():
                     self.win.load_project(file_path)
                     continue
 
-                mime_type, _ = mimetypes.guess_type(file_path)
+                mime_type, __ = mimetypes.guess_type(file_path)
 
                 importer_cls, features = editor.file.get_importer_info(
                     file_path, mime_type
@@ -261,6 +261,13 @@ def main():
                 if not importer_cls:
                     logger.warning(
                         f"No importer found for '{file_path.name}'. Skipping."
+                    )
+
+                    editor.notification_requested.send(
+                        self,
+                        message=_(
+                            "Cannot open '{file}'. The required addon may be disabled."
+                        ).format(file=file_path.name),
                     )
                     continue
 

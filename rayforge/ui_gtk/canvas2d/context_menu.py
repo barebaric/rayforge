@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Optional, Callable, List
+from typing import TYPE_CHECKING, Optional, Callable, List, Dict
 from gettext import gettext as _
 from gi.repository import Gtk, Gio
 
@@ -10,8 +10,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Type for context menu extension handlers
-# Handlers receive: (surface, item, gesture, menu)
 ContextMenuHandler = Callable[
     ["WorkSurface", Optional["DocItem"], Gtk.Gesture, Gio.Menu], None
 ]
@@ -27,19 +25,48 @@ class ContextMenuExtensionRegistry:
 
     def __init__(self):
         self._handlers: List[ContextMenuHandler] = []
+        self._addon_map: Dict[str, str] = {}
 
-    def register(self, handler: ContextMenuHandler):
+    def register(self, handler: ContextMenuHandler, addon_name: str):
         """Register a context menu extension handler."""
         self._handlers.append(handler)
+        if addon_name:
+            self._addon_map[handler.__name__] = addon_name
         logger.debug(f"Registered context menu handler: {handler.__name__}")
 
     def unregister(self, handler: ContextMenuHandler) -> bool:
         """Unregister a context menu extension handler."""
         try:
             self._handlers.remove(handler)
+            self._addon_map.pop(handler.__name__, None)
             return True
         except ValueError:
             return False
+
+    def unregister_all_from_addon(self, addon_name: str) -> int:
+        """
+        Unregister all handlers registered by a specific addon.
+
+        Args:
+            addon_name: The name of the addon to clean up
+
+        Returns:
+            The number of handlers unregistered
+        """
+        to_remove = [
+            h
+            for h in self._handlers
+            if self._addon_map.get(h.__name__) == addon_name
+        ]
+        for h in to_remove:
+            self._handlers.remove(h)
+            self._addon_map.pop(h.__name__, None)
+        if to_remove:
+            logger.debug(
+                f"Unregistered {len(to_remove)} context menu handlers "
+                f"from addon '{addon_name}'"
+            )
+        return len(to_remove)
 
     def invoke_all(
         self,
