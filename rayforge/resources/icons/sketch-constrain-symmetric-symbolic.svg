@@ -7,7 +7,7 @@
    version="1.1"
    id="svg1"
    sodipodi:docname="sketch-constrain-symmetric-symbolic.svg"
-   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -37,7 +37,7 @@
      id="path1"
      sodipodi:nodetypes="cccccccccccccc" />
   <path
-     style="fill:none;stroke:#000000;stroke-width:3.0667;stroke-dasharray:3.0667,82.8;stroke-dashoffset:0;stroke-opacity:1"
-     d="M 15.8916 28.8217 V 2.6005"
+     style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:2.73866667;stroke-dasharray:none;stroke-opacity:1"
+     d="M 16.144469,5.3453722 V 28.207674"
      id="path2" />
 </svg>
