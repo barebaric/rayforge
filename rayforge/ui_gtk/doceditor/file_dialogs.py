@@ -3,7 +3,7 @@ from typing import Callable, TYPE_CHECKING, Any, Optional, cast
 from gettext import gettext as _
 from gi.repository import Gtk, Gio
 from ... import const
-from ...image.registry import exporter_registry
+from ...image.registry import exporter_registry, importer_registry
 from ..shared.gtk import file_filter_to_gtk
 
 if TYPE_CHECKING:
@@ -25,7 +25,7 @@ def show_import_dialog(
 
     Args:
         win: The parent Gtk.Window.
-        editor: The DocEditor instance to retrieve supported file types.
+        editor: The DocEditor instance (for future extensibility).
         callback: The function to call with (dialog, result, user_data) upon
                   response.
         user_data: Custom data to pass to the callback.
@@ -37,8 +37,7 @@ def show_import_dialog(
     all_supported = Gtk.FileFilter()
     all_supported.set_name(_("All supported"))
 
-    # Get supported filters from the backend
-    supported_types = editor.file.get_supported_import_filters()
+    supported_types = importer_registry.get_all_filters()
 
     for file_type in supported_types:
         if file_type.extensions:

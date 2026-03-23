@@ -9,7 +9,7 @@ from rayforge.core.source_asset import SourceAsset
 from rayforge.core.matrix import Matrix
 from rayforge.image.jpg.importer import JpgImporter
 from rayforge.image.jpg.renderer import JPG_RENDERER
-from rayforge.image import renderer_by_name
+from rayforge.image.registry import renderer_registry
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.geo import Geometry
 from rayforge.image.base_importer import ImporterFeature
@@ -267,7 +267,7 @@ class TestJpgImporter:
         assert state["renderer_name"] == "JpgRenderer"
 
         # Check that the real renderer is in the registry for from_dict to work
-        assert "JpgRenderer" in renderer_by_name
+        assert renderer_registry.get("JpgRenderer") is JPG_RENDERER
 
         # Deserialize from dict
         restored_source = SourceAsset.from_dict(state)

@@ -11,7 +11,7 @@ from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.geo import Geometry
 from rayforge.image.png.importer import PngImporter
 from rayforge.image.png.renderer import PNG_RENDERER
-from rayforge.image import renderer_by_name
+from rayforge.image.registry import renderer_registry
 from rayforge.image.base_importer import ImporterFeature
 
 # Assume the test PNGs are in the same directory as this test file
@@ -319,7 +319,7 @@ class TestPngImporter:
         assert state["renderer_name"] == "PngRenderer"
 
         # Check that the real renderer is in the registry for from_dict to work
-        assert "PngRenderer" in renderer_by_name
+        assert renderer_registry.get("PngRenderer") is PNG_RENDERER
 
         # Deserialize from dict
         restored_source = SourceAsset.from_dict(state)

@@ -3,6 +3,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch
 from rayforge.core.source_asset import SourceAsset
+from rayforge.image.registry import renderer_registry
 from rayforge.image.svg.renderer import SvgRenderer
 
 
@@ -72,10 +73,10 @@ class TestSourceAsset:
             "renderer_name": "SvgRenderer",
             "metadata": {"natural_size": [100, 50]},
         }
-        with patch.dict(
-            "rayforge.image.renderer_by_name",
+        with patch.object(
+            renderer_registry,
+            "_renderers",
             {"SvgRenderer": SvgRenderer()},
-            clear=True,
         ):
             new_asset = SourceAsset.from_dict(data_dict)
 
@@ -92,10 +93,10 @@ class TestSourceAsset:
         basic_asset.base_render_data = b"RENDER_DATA"
         data_dict = basic_asset.to_dict()
 
-        with patch.dict(
-            "rayforge.image.renderer_by_name",
+        with patch.object(
+            renderer_registry,
+            "_renderers",
             {"SvgRenderer": SvgRenderer()},
-            clear=True,
         ):
             restored_asset = SourceAsset.from_dict(data_dict)
 
