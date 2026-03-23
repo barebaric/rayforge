@@ -46,8 +46,8 @@ class GridCommand(SketchChangeCommand):
         Calculates points, entities, and constraints for a grid.
 
         Args:
-            rows: Number of rows (horizontal lines)
-            cols: Number of columns (vertical lines)
+            rows: Number of cell rows (horizontal bands)
+            cols: Number of cell columns (vertical bands)
             origin: Bottom-left corner of the grid
             cell_width: Width of each cell
             cell_height: Height of each cell
@@ -57,11 +57,13 @@ class GridCommand(SketchChangeCommand):
             Dict with 'points', 'entities', and 'constraints' keys, or None
             if invalid.
         """
-        if rows < 2 or cols < 2:
+        if rows < 1 or cols < 1:
             return None
         if cell_width <= 0 or cell_height <= 0:
             return None
 
+        rows = rows + 1
+        cols = cols + 1
         ox, oy = origin
         temp_id_counter = -1
 

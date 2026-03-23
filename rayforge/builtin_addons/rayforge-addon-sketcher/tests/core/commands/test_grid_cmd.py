@@ -7,27 +7,28 @@ from sketcher.core.entities import Line
 def test_grid_calculate_geometry_2x2():
     result = GridCommand.calculate_geometry(2, 2, (0, 0), 10, 10)
     assert result is not None
-    assert len(result["points"]) == 4
-    assert len(result["entities"]) == 4
-    assert len(result["constraints"]) == 4
+    assert len(result["points"]) == 9
+    assert len(result["entities"]) == 12
+    assert len(result["constraints"]) == 12
 
 
 def test_grid_calculate_geometry_3x3():
     result = GridCommand.calculate_geometry(3, 3, (0, 0), 10, 10)
     assert result is not None
-    assert len(result["points"]) == 9
-    assert len(result["entities"]) == 12
-    assert len(result["constraints"]) == 12
+    assert len(result["points"]) == 16
+    assert len(result["entities"]) == 24
+    assert len(result["constraints"]) == 24
 
 
 def test_grid_calculate_geometry_with_origin():
     result = GridCommand.calculate_geometry(2, 2, (50, 100), 10, 20)
     assert result is not None
     points = result["points"]
+    assert len(points) == 9
     assert points[0].x == 50 and points[0].y == 100
-    assert points[1].x == 60 and points[1].y == 100
-    assert points[2].x == 50 and points[2].y == 120
-    assert points[3].x == 60 and points[3].y == 120
+    assert points[2].x == 70 and points[2].y == 100
+    assert points[6].x == 50 and points[6].y == 140
+    assert points[8].x == 70 and points[8].y == 140
 
 
 def test_grid_calculate_geometry_construction_flag():
@@ -47,12 +48,10 @@ def test_grid_calculate_geometry_construction_flag():
 
 
 def test_grid_calculate_geometry_invalid_rows():
-    assert GridCommand.calculate_geometry(1, 2, (0, 0), 10, 10) is None
     assert GridCommand.calculate_geometry(0, 2, (0, 0), 10, 10) is None
 
 
 def test_grid_calculate_geometry_invalid_cols():
-    assert GridCommand.calculate_geometry(2, 1, (0, 0), 10, 10) is None
     assert GridCommand.calculate_geometry(2, 0, (0, 0), 10, 10) is None
 
 
@@ -68,8 +67,8 @@ def test_grid_command_execute():
     cmd = GridCommand(sketch, 3, 4, (0, 0), 10, 10)
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_count + 12
-    assert len(sketch.registry.entities) == 17
+    assert len(sketch.registry.points) == initial_count + 20
+    assert len(sketch.registry.entities) == 31
 
 
 def test_grid_command_execute_with_origin():
@@ -79,12 +78,12 @@ def test_grid_command_execute_with_origin():
     cmd.execute()
 
     points = sketch.registry.points
-    assert len(points) == initial_count + 4
+    assert len(points) == initial_count + 9
 
     p0 = points[initial_count]
-    p3 = points[initial_count + 3]
+    p8 = points[initial_count + 8]
     assert p0.x == 100 and p0.y == 200
-    assert p3.x == 150 and p3.y == 275
+    assert p8.x == 200 and p8.y == 350
 
 
 def test_grid_command_execute_construction():
@@ -113,8 +112,8 @@ def test_grid_command_undo():
     cmd = GridCommand(sketch, 2, 2, (0, 0), 10, 10)
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_point_count + 4
-    assert len(sketch.registry.entities) == initial_entity_count + 4
+    assert len(sketch.registry.points) == initial_point_count + 9
+    assert len(sketch.registry.entities) == initial_entity_count + 12
 
     cmd.undo()
 
@@ -126,7 +125,7 @@ def test_grid_command_invalid_does_nothing():
     sketch = Sketch()
     initial_point_count = len(sketch.registry.points)
 
-    cmd = GridCommand(sketch, 1, 1, (0, 0), 10, 10)
+    cmd = GridCommand(sketch, 0, 0, (0, 0), 10, 10)
     cmd.execute()
 
     assert len(sketch.registry.points) == initial_point_count
@@ -147,7 +146,7 @@ def test_grid_command_horizontal_line_count():
         )
         < 1e-6
     ]
-    expected_horizontal = 3 * (5 - 1)
+    expected_horizontal = (3 + 1) * 5
     assert len(horizontal_lines) == expected_horizontal
 
 
@@ -166,7 +165,7 @@ def test_grid_command_vertical_line_count():
         )
         < 1e-6
     ]
-    expected_vertical = 5 * (3 - 1)
+    expected_vertical = (5 + 1) * 3
     assert len(vertical_lines) == expected_vertical
 
 
@@ -178,7 +177,7 @@ def test_grid_command_creates_horizontal_constraints():
     horizontal_constraints = [
         c for c in sketch.constraints if isinstance(c, HorizontalConstraint)
     ]
-    expected_horizontal = 3 * (5 - 1)
+    expected_horizontal = (3 + 1) * 5
     assert len(horizontal_constraints) == expected_horizontal
 
 
@@ -190,7 +189,7 @@ def test_grid_command_creates_vertical_constraints():
     vertical_constraints = [
         c for c in sketch.constraints if isinstance(c, VerticalConstraint)
     ]
-    expected_vertical = 5 * (3 - 1)
+    expected_vertical = (5 + 1) * 3
     assert len(vertical_constraints) == expected_vertical
 
 
@@ -200,8 +199,8 @@ def test_grid_command_constraints_count():
     cmd = GridCommand(sketch, 2, 3, (0, 0), 10, 10)
     cmd.execute()
 
-    horizontal_lines = 2 * (3 - 1)
-    vertical_lines = 3 * (2 - 1)
+    horizontal_lines = (2 + 1) * 3
+    vertical_lines = (3 + 1) * 2
     expected_constraints = horizontal_lines + vertical_lines
     assert (
         len(sketch.constraints)
@@ -216,7 +215,10 @@ def test_grid_command_undo_removes_constraints():
     cmd = GridCommand(sketch, 2, 2, (0, 0), 10, 10)
     cmd.execute()
 
-    assert len(sketch.constraints) == initial_constraint_count + 4
+    horizontal_lines = (2 + 1) * 2
+    vertical_lines = (2 + 1) * 2
+    expected = horizontal_lines + vertical_lines
+    assert len(sketch.constraints) == initial_constraint_count + expected
 
     cmd.undo()
 
