@@ -110,6 +110,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._current_machine: Optional[Machine] = None  # For signal handling
         self._last_gcode_previewer_width = 350
         self._last_control_panel_height = 200
+        self._saved_control_panel_visible = False
         self._live_3d_view_connected = False
         self._old_doc = None  # Track previous document for signal reconnection
         self.canvas3d: Optional[Canvas3D] = None
@@ -662,6 +663,29 @@ class MainWindow(Adw.ApplicationWindow):
             The widget if found, None otherwise
         """
         return self.main_stack.get_child_by_name(name)
+
+    def open_modal_page(self, name: str):
+        """Open a modal page, hiding auxiliary panels.
+
+        This is used for full-screen editor modes (like the sketcher) that
+        should hide panels like the control panel.
+
+        Args:
+            name: The name of the modal page to show
+        """
+        self._saved_control_panel_visible = self.control_panel.get_visible()
+        if self._saved_control_panel_visible:
+            self.control_panel.set_visible(False)
+        self.main_stack.set_visible_child_name(name)
+
+    def close_modal_page(self):
+        """Close the current modal page and return to main view.
+
+        Restores the visibility of auxiliary panels that were hidden.
+        """
+        if self._saved_control_panel_visible:
+            self.control_panel.set_visible(True)
+        self.main_stack.set_visible_child_name("main")
 
     def on_add_child(self, sender):
         """Handler for adding a new stock item, called from AssetListView."""

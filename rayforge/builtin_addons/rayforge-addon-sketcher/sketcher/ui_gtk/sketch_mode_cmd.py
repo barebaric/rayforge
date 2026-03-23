@@ -63,7 +63,7 @@ class SketchModeCmd:
             self.active_sketch_workpiece = workpiece
             self._is_editing_new_sketch = is_new_sketch
             sketch_studio.set_sketch(sketch)
-            self._win.show_stack_page("sketch")
+            self._win.open_modal_page("sketch")
             get_usage_tracker().track_page_view("/sketcher", "Sketch Editor")
 
             self._win.menubar.set_menu_model(sketch_studio.menu_model)
@@ -82,7 +82,7 @@ class SketchModeCmd:
         if sketch_studio:
             self._win.remove_controller(sketch_studio.shortcut_controller)
 
-        self._win.show_stack_page("main")
+        self._win.close_modal_page()
         self.active_sketch_workpiece = None
         self._is_editing_new_sketch = False
 
@@ -97,7 +97,7 @@ class SketchModeCmd:
             self.active_sketch_workpiece = None
             self._is_editing_new_sketch = False
             sketch_studio.set_sketch(sketch)
-            self._win.show_stack_page("sketch")
+            self._win.open_modal_page("sketch")
             get_usage_tracker().track_page_view("/sketcher", "Sketch Editor")
 
             self._win.menubar.set_menu_model(sketch_studio.menu_model)
