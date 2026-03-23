@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
    height="24px"
-   viewBox="0 -960 960 960"
+   viewBox="0 0 32 32"
    width="24px"
    fill="#000000"
    version="1.1"
@@ -33,35 +33,35 @@
   <defs
      id="defs1" />
   <path
-     style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:49.7582;stroke-dasharray:none;stroke-opacity:1"
-     d="m 116.42894,-246.59321 c 0,0 8.46893,-298.77081 362.86963,-292.28297 354.40072,6.48783 362.86965,292.28297 362.86965,292.28297"
+     style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1.6586;stroke-dasharray:none;stroke-opacity:1"
+     d="m 3.881 23.7802 c 0 0 0.2823 -9.959 12.0957 -9.7428 11.8134 0.2163 12.0957 9.7428 12.0957 9.7428"
      id="path1"
      sodipodi:nodetypes="czc" />
   <rect
-     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:44.9452;stroke-dasharray:none;stroke-opacity:1"
+     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.4982;stroke-dasharray:none;stroke-opacity:1"
      id="rect1"
      width="133.2917"
      height="126.77201"
-     x="-608.22644"
-     y="-188.71368"
+     x="-20.2742"
+     y="25.7095"
      transform="rotate(90)" />
   <circle
-     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:125;stroke-dasharray:none;stroke-opacity:1"
+     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:4.1667;stroke-dasharray:none;stroke-opacity:1"
      id="circle1"
-     cx="-541.58057"
-     cy="-480"
-     r="81.264114"
+     cx="-18.0527"
+     cy="16"
+     r="2.7088"
      transform="rotate(90)" />
   <rect
-     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:44.9452;stroke-dasharray:none;stroke-opacity:1"
+     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.4982;stroke-dasharray:none;stroke-opacity:1"
      id="rect2"
      width="133.2917"
      height="126.77201"
-     x="-608.22644"
-     y="-899.50372"
+     x="-20.2742"
+     y="2.0165"
      transform="rotate(90)" />
   <path
-     style="fill:none;stroke:#000000;stroke-width:40"
-     d="M 122.43792,-541.58057 H 837.56208"
+     style="fill:none;stroke:#000000;stroke-width:1.3333"
+     d="M 4.0813 13.9473 H 27.9187"
      id="path2" />
 </svg>
