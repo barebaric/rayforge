@@ -40,18 +40,21 @@ def circle_tool(mock_element):
     return CircleTool(mock_element)
 
 
+@pytest.mark.ui
 def test_circle_tool_initialization(circle_tool, mock_element):
     """Test that CircleTool initializes correctly."""
     assert circle_tool.element == mock_element
     assert circle_tool._preview_state is None
 
 
+@pytest.mark.ui
 def test_circle_tool_on_deactivate_no_preview(circle_tool, mock_element):
     """Test that on_deactivate works when no preview state."""
     circle_tool.on_deactivate()
     assert circle_tool._preview_state is None
 
 
+@pytest.mark.ui
 def test_circle_tool_on_deactivate_with_preview(circle_tool, mock_element):
     """Test that on_deactivate cleans up preview state."""
     circle_tool._preview_state = CirclePreviewState(
@@ -70,6 +73,7 @@ def test_circle_tool_on_deactivate_with_preview(circle_tool, mock_element):
     mock_element.remove_point_if_unused.assert_called_once_with(1)
 
 
+@pytest.mark.ui
 def test_circle_tool_on_press_no_hit(circle_tool, mock_element):
     """Test on_press when no point is hit."""
     mock_element.hittester.get_hit_data.return_value = (None, None)
@@ -93,18 +97,21 @@ def test_circle_tool_on_press_no_hit(circle_tool, mock_element):
     assert circle_tool._preview_state.center_id == 0
 
 
+@pytest.mark.ui
 def test_circle_tool_on_drag(circle_tool):
     """Test on_drag does nothing."""
     circle_tool.on_drag(10.0, 20.0)
     assert True
 
 
+@pytest.mark.ui
 def test_circle_tool_on_release(circle_tool):
     """Test on_release does nothing."""
     circle_tool.on_release(10.0, 20.0)
     assert True
 
 
+@pytest.mark.ui
 def test_circle_tool_on_hover_motion_no_preview(circle_tool):
     """Test on_hover_motion when not in preview stage."""
     circle_tool._preview_state = None
@@ -112,6 +119,7 @@ def test_circle_tool_on_hover_motion_no_preview(circle_tool):
     assert True
 
 
+@pytest.mark.ui
 def test_circle_tool_on_hover_motion_with_preview(circle_tool, mock_element):
     """Test on_hover_motion updates preview when in preview stage."""
     circle_tool._preview_state = CirclePreviewState(
@@ -132,6 +140,7 @@ def test_circle_tool_on_hover_motion_with_preview(circle_tool, mock_element):
     mock_element.mark_dirty.assert_called()
 
 
+@pytest.mark.ui
 def test_circle_tool_handle_click_center_point(circle_tool, mock_element):
     """Test _handle_click for setting center point."""
     mock_element.hittester.screen_to_model.return_value = (10.0, 20.0)

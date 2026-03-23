@@ -28,11 +28,13 @@ def fill_tool(mock_element):
     return FillTool(mock_element)
 
 
+@pytest.mark.ui
 def test_fill_tool_initialization(fill_tool, mock_element):
     """Test that FillTool initializes correctly."""
     assert fill_tool.element == mock_element
 
 
+@pytest.mark.ui
 def test_fill_tool_on_press_no_loops(fill_tool, mock_element):
     """Test on_press when no loops are found."""
     mock_element.sketch.get_loop_at_point.return_value = None
@@ -42,6 +44,7 @@ def test_fill_tool_on_press_no_loops(fill_tool, mock_element):
     assert result is False
 
 
+@pytest.mark.ui
 def test_fill_tool_on_press_double_click(fill_tool):
     """Test on_press with double click (n_press != 1)."""
     result = fill_tool.on_press(100.0, 200.0, 2)
@@ -49,18 +52,21 @@ def test_fill_tool_on_press_double_click(fill_tool):
     assert result is False
 
 
+@pytest.mark.ui
 def test_fill_tool_on_drag(fill_tool):
     """Test on_drag does nothing."""
     fill_tool.on_drag(10.0, 20.0)
     assert True
 
 
+@pytest.mark.ui
 def test_fill_tool_on_release(fill_tool):
     """Test on_release does nothing."""
     fill_tool.on_release(10.0, 20.0)
     assert True
 
 
+@pytest.mark.ui
 def test_fill_tool_on_press_with_loop(fill_tool, mock_element):
     """Test on_press when a loop is found."""
     mock_element.sketch.get_loop_at_point.return_value = [(1, True), (2, True)]
@@ -71,6 +77,7 @@ def test_fill_tool_on_press_with_loop(fill_tool, mock_element):
     assert result is True
 
 
+@pytest.mark.ui
 def test_fill_tool_on_press_existing_fill(fill_tool, mock_element):
     """Test on_press when a fill already exists."""
     existing_fill = Fill(uid="test", boundary=[(1, True), (2, True)])

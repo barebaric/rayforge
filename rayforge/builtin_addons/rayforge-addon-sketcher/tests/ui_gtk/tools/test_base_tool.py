@@ -28,23 +28,27 @@ def sketch_tool(mock_element):
     return ConcreteSketchTool(mock_element)
 
 
+@pytest.mark.ui
 def test_sketch_tool_initialization(sketch_tool, mock_element):
     """Test that SketchTool initializes correctly."""
     assert sketch_tool.element == mock_element
 
 
+@pytest.mark.ui
 def test_sketch_tool_on_hover_motion_default(sketch_tool):
     """Test that on_hover_motion does nothing by default."""
     sketch_tool.on_hover_motion(100.0, 200.0)
     assert True
 
 
+@pytest.mark.ui
 def test_sketch_tool_on_deactivate_default(sketch_tool):
     """Test that on_deactivate does nothing by default."""
     sketch_tool.on_deactivate()
     assert True
 
 
+@pytest.mark.ui
 def test_sketch_tool_draw_overlay_default(sketch_tool):
     """Test that draw_overlay does nothing by default."""
     ctx = Mock(spec=cairo.Context)

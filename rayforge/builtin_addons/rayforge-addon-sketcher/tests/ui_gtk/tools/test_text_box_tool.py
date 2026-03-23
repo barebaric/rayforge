@@ -32,6 +32,7 @@ def text_box_tool(mock_element):
     return TextBoxTool(mock_element)
 
 
+@pytest.mark.ui
 def test_text_box_tool_initialization(text_box_tool):
     """Test tool's initial state."""
     assert text_box_tool.state == TextBoxState.IDLE
@@ -41,6 +42,7 @@ def test_text_box_tool_initialization(text_box_tool):
     assert text_box_tool.cursor_visible is True
 
 
+@pytest.mark.ui
 def test_text_box_tool_on_press_creates_box(text_box_tool, mock_element):
     """Test that first press creates a text box and enters EDITING state."""
     mock_element.hittester.screen_to_model.return_value = (10, 20)
@@ -74,6 +76,7 @@ def test_text_box_tool_on_press_creates_box(text_box_tool, mock_element):
     mock_element.mark_dirty.assert_called()
 
 
+@pytest.mark.ui
 def test_text_box_tool_on_press_outside_box_creates_new(
     text_box_tool, mock_element
 ):
@@ -132,6 +135,7 @@ def test_text_box_tool_on_press_outside_box_creates_new(
     assert mock_element.execute_command.call_count == 2
 
 
+@pytest.mark.ui
 def test_text_box_tool_handle_text_input_appends_character(
     text_box_tool, mock_element
 ):
@@ -145,6 +149,7 @@ def test_text_box_tool_handle_text_input_appends_character(
     assert text_box_tool.cursor_pos == 1
 
 
+@pytest.mark.ui
 def test_text_box_tool_handle_text_input_inserts_at_cursor(
     text_box_tool, mock_element
 ):
@@ -160,6 +165,7 @@ def test_text_box_tool_handle_text_input_inserts_at_cursor(
     assert text_box_tool.cursor_pos == 2
 
 
+@pytest.mark.ui
 def test_text_box_tool_handle_key_event_backspace(text_box_tool, mock_element):
     """Test that backspace key is handled."""
     text_box_tool.state = TextBoxState.EDITING
@@ -173,6 +179,7 @@ def test_text_box_tool_handle_key_event_backspace(text_box_tool, mock_element):
     assert text_box_tool.cursor_pos == 3
 
 
+@pytest.mark.ui
 def test_text_box_tool_handle_key_event_delete(text_box_tool, mock_element):
     """Test that delete key is handled."""
     text_box_tool.state = TextBoxState.EDITING
@@ -186,6 +193,7 @@ def test_text_box_tool_handle_key_event_delete(text_box_tool, mock_element):
     assert text_box_tool.cursor_pos == 1
 
 
+@pytest.mark.ui
 def test_text_box_tool_handle_key_event_arrow_left(
     text_box_tool, mock_element
 ):
@@ -201,6 +209,7 @@ def test_text_box_tool_handle_key_event_arrow_left(
     mock_element.mark_dirty.assert_called()
 
 
+@pytest.mark.ui
 def test_text_box_tool_handle_key_event_arrow_right(
     text_box_tool, mock_element
 ):
@@ -216,6 +225,7 @@ def test_text_box_tool_handle_key_event_arrow_right(
     mock_element.mark_dirty.assert_called()
 
 
+@pytest.mark.ui
 def test_text_box_tool_handle_key_event_return(text_box_tool, mock_element):
     """Test that return key finalizes edit."""
     text_box_tool.state = TextBoxState.EDITING
@@ -238,6 +248,7 @@ def test_text_box_tool_handle_key_event_return(text_box_tool, mock_element):
     mock_element.execute_command.assert_called_once()
 
 
+@pytest.mark.ui
 def test_text_box_tool_handle_key_event_escape(text_box_tool, mock_element):
     """Test that escape key cancels edit."""
     text_box_tool.state = TextBoxState.EDITING
@@ -257,6 +268,7 @@ def test_text_box_tool_handle_key_event_escape(text_box_tool, mock_element):
     assert text_box_tool.text_buffer == ""
 
 
+@pytest.mark.ui
 def test_text_box_tool_handle_key_event_idle_state(
     text_box_tool, mock_element
 ):
@@ -269,6 +281,7 @@ def test_text_box_tool_handle_key_event_idle_state(
     mock_element.mark_dirty.assert_not_called()
 
 
+@pytest.mark.ui
 def test_text_box_tool_handle_text_input_idle_state(
     text_box_tool, mock_element
 ):
@@ -281,6 +294,7 @@ def test_text_box_tool_handle_text_input_idle_state(
     mock_element.mark_dirty.assert_not_called()
 
 
+@pytest.mark.ui
 def test_text_box_tool_start_editing(text_box_tool, mock_element):
     """Test starting to edit an existing text box."""
     mock_entity = TextBoxEntity(
@@ -301,6 +315,7 @@ def test_text_box_tool_start_editing(text_box_tool, mock_element):
     mock_element.mark_dirty.assert_called()
 
 
+@pytest.mark.ui
 def test_text_box_tool_on_deactivate(text_box_tool, mock_element):
     """Test that deactivating cleans up state."""
     text_box_tool.state = TextBoxState.EDITING
@@ -316,6 +331,7 @@ def test_text_box_tool_on_deactivate(text_box_tool, mock_element):
     assert text_box_tool.cursor_pos == 0
 
 
+@pytest.mark.ui
 def test_text_box_tool_toggle_cursor_visibility(text_box_tool, mock_element):
     """Test toggling cursor visibility."""
     text_box_tool.state = TextBoxState.EDITING
@@ -331,6 +347,7 @@ def test_text_box_tool_toggle_cursor_visibility(text_box_tool, mock_element):
     assert text_box_tool.cursor_visible is True
 
 
+@pytest.mark.ui
 def test_text_box_tool_on_drag_does_nothing(text_box_tool, mock_element):
     """Test that drag does nothing."""
     result = text_box_tool.on_drag(10, 20)
@@ -338,6 +355,7 @@ def test_text_box_tool_on_drag_does_nothing(text_box_tool, mock_element):
     assert result is None
 
 
+@pytest.mark.ui
 def test_text_box_tool_on_release_does_nothing(text_box_tool, mock_element):
     """Test that release does nothing."""
     result = text_box_tool.on_release(10, 20)
@@ -345,6 +363,7 @@ def test_text_box_tool_on_release_does_nothing(text_box_tool, mock_element):
     assert result is None
 
 
+@pytest.mark.ui
 def test_text_box_tool_is_click_outside_box(text_box_tool, mock_element):
     """Test checking if click is outside box bounds."""
     text_box_tool.editing_entity_id = 5
@@ -372,6 +391,7 @@ def test_text_box_tool_is_click_outside_box(text_box_tool, mock_element):
     assert result is False
 
 
+@pytest.mark.ui
 def test_text_box_tool_is_click_inside_box(text_box_tool, mock_element):
     """Test checking if click is inside box bounds."""
     text_box_tool.editing_entity_id = 5
@@ -399,6 +419,7 @@ def test_text_box_tool_is_click_inside_box(text_box_tool, mock_element):
     assert result is True
 
 
+@pytest.mark.ui
 def test_text_box_tool_draw_overlay_idle_state(text_box_tool, mock_element):
     """Test that draw_overlay does nothing in IDLE state."""
     ctx = MagicMock()
@@ -408,6 +429,7 @@ def test_text_box_tool_draw_overlay_idle_state(text_box_tool, mock_element):
     ctx.save.assert_not_called()
 
 
+@pytest.mark.ui
 def test_text_box_tool_draw_overlay_editing_state(text_box_tool, mock_element):
     """Test that draw_overlay draws in EDITING state."""
     text_box_tool.state = TextBoxState.EDITING

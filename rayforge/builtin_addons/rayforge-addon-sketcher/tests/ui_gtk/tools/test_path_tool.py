@@ -41,6 +41,7 @@ def path_tool(mock_element):
     return PathTool(mock_element)
 
 
+@pytest.mark.ui
 def test_path_tool_initialization(path_tool, mock_element):
     """Test that BezierTool initializes correctly."""
     assert path_tool.element == mock_element
@@ -49,6 +50,7 @@ def test_path_tool_initialization(path_tool, mock_element):
     assert path_tool._dragging is False
 
 
+@pytest.mark.ui
 def test_path_tool_on_deactivate_no_preview(path_tool, mock_element):
     """Test that on_deactivate works when no preview state."""
     path_tool.on_deactivate()
@@ -57,6 +59,7 @@ def test_path_tool_on_deactivate_no_preview(path_tool, mock_element):
     assert path_tool._dragging is False
 
 
+@pytest.mark.ui
 def test_path_tool_on_deactivate_with_preview(path_tool, mock_element):
     """Test that on_deactivate cleans up preview state."""
     path_tool._preview_state = BezierPreviewState(
@@ -77,6 +80,7 @@ def test_path_tool_on_deactivate_with_preview(path_tool, mock_element):
     mock_element.remove_point_if_unused.assert_called_once_with(1)
 
 
+@pytest.mark.ui
 def test_path_tool_first_press_starts_preview(path_tool, mock_element):
     """Test first press starts line preview."""
     mock_element.hittester.get_hit_data.return_value = (None, None)
@@ -102,6 +106,7 @@ def test_path_tool_first_press_starts_preview(path_tool, mock_element):
     assert path_tool._dragging is False
 
 
+@pytest.mark.ui
 def test_path_tool_on_drag_below_threshold(path_tool, mock_element):
     """Test on_drag does nothing below threshold."""
     path_tool._press_pos = (100.0, 200.0)
@@ -120,6 +125,7 @@ def test_path_tool_on_drag_below_threshold(path_tool, mock_element):
     assert path_tool._dragging is False
 
 
+@pytest.mark.ui
 def test_path_tool_on_drag_starts_bezier(path_tool, mock_element):
     """Test on_drag converts line to bezier above threshold."""
     path_tool._press_pos = (100.0, 200.0)
@@ -161,6 +167,7 @@ def test_path_tool_on_drag_starts_bezier(path_tool, mock_element):
     assert path_tool._dragging is True
 
 
+@pytest.mark.ui
 def test_path_tool_on_release_without_drag_creates_line(
     path_tool, mock_element
 ):
@@ -196,6 +203,7 @@ def test_path_tool_on_release_without_drag_creates_line(
         assert cmd.is_line is True
 
 
+@pytest.mark.ui
 def test_path_tool_on_release_with_drag_creates_bezier(
     path_tool, mock_element
 ):
@@ -245,6 +253,7 @@ def test_path_tool_on_release_with_drag_creates_bezier(
         assert cmd.is_line is False
 
 
+@pytest.mark.ui
 def test_path_tool_on_hover_motion_updates_preview(path_tool, mock_element):
     """Test on_hover_motion updates preview when in preview stage."""
     path_tool._preview_state = BezierPreviewState(
@@ -264,6 +273,7 @@ def test_path_tool_on_hover_motion_updates_preview(path_tool, mock_element):
     mock_element.mark_dirty.assert_called()
 
 
+@pytest.mark.ui
 def test_path_tool_on_hover_motion_skips_when_in_press(
     path_tool, mock_element
 ):
@@ -283,6 +293,7 @@ def test_path_tool_on_hover_motion_skips_when_in_press(
     mock_element.mark_dirty.assert_not_called()
 
 
+@pytest.mark.ui
 def test_path_tool_shortcut(path_tool):
     """Test that PathTool has correct shortcut."""
     assert PathTool.SHORTCUTS == ["gp", "gl"]

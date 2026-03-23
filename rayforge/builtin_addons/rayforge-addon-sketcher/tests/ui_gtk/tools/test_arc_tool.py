@@ -35,12 +35,14 @@ def arc_tool(mock_element):
     return ArcTool(mock_element)
 
 
+@pytest.mark.ui
 def test_arc_tool_initialization(arc_tool, mock_element):
     """Test that ArcTool initializes correctly."""
     assert arc_tool.element == mock_element
     assert arc_tool._preview_state is None
 
 
+@pytest.mark.ui
 def test_arc_tool_on_deactivate(arc_tool, mock_element):
     """Test that on_deactivate cleans up state."""
     arc_tool._preview_state = ArcPreviewState(
@@ -58,6 +60,7 @@ def test_arc_tool_on_deactivate(arc_tool, mock_element):
     mock_element.mark_dirty.assert_called_once()
 
 
+@pytest.mark.ui
 def test_arc_tool_on_press_no_hit(arc_tool, mock_element):
     """Test on_press when no point is hit."""
     mock_element.hittester.get_hit_data.return_value = (None, None)
@@ -72,18 +75,21 @@ def test_arc_tool_on_press_no_hit(arc_tool, mock_element):
     assert arc_tool._preview_state.center_temp is True
 
 
+@pytest.mark.ui
 def test_arc_tool_on_drag(arc_tool):
     """Test on_drag does nothing."""
     arc_tool.on_drag(10.0, 20.0)
     assert True
 
 
+@pytest.mark.ui
 def test_arc_tool_on_release(arc_tool):
     """Test on_release does nothing."""
     arc_tool.on_release(10.0, 20.0)
     assert True
 
 
+@pytest.mark.ui
 def test_arc_tool_on_hover_motion_no_preview(arc_tool):
     """Test on_hover_motion when not in preview stage."""
     arc_tool._preview_state = None
@@ -91,6 +97,7 @@ def test_arc_tool_on_hover_motion_no_preview(arc_tool):
     assert True
 
 
+@pytest.mark.ui
 def test_arc_tool_on_hover_motion_with_preview(arc_tool, mock_element):
     """Test on_hover_motion updates preview when in preview stage."""
     arc_tool._preview_state = ArcPreviewState(
@@ -127,6 +134,7 @@ def test_arc_tool_on_hover_motion_with_preview(arc_tool, mock_element):
     mock_element.mark_dirty.assert_called()
 
 
+@pytest.mark.ui
 def test_arc_tool_handle_click_center_point(arc_tool, mock_element):
     """Test _handle_click for setting center point."""
     mock_element.hittester.screen_to_model.return_value = (10.0, 20.0)
