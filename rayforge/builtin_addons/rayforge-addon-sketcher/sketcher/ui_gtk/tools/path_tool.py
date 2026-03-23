@@ -1,7 +1,7 @@
 from gettext import gettext as _
 import logging
-from typing import Optional, Tuple
-
+from typing import Callable, List, Optional, Tuple, Union
+from rayforge.ui_gtk.shared.keyboard import PRIMARY_KEY_NAME
 from ...core.commands import BezierCommand, BezierPreviewState
 from ...core.entities import Bezier
 from .base import SketchTool
@@ -46,6 +46,18 @@ class PathTool(SketchTool):
 
     def shortcut_is_active(self) -> bool:
         return True
+
+    def get_active_shortcuts(
+        self,
+    ) -> List[Tuple[Union[str, List[str]], str, Optional[Callable[[], bool]]]]:
+        return [
+            (PRIMARY_KEY_NAME, _("Snap to Grid"), lambda: self._dragging),
+            (
+                "Shift",
+                _("Constrain to Axis"),
+                lambda: self._preview_state is not None,
+            ),
+        ]
 
     def get_preview_state(self) -> Optional[BezierPreviewState]:
         return self._preview_state
@@ -149,6 +161,25 @@ class PathTool(SketchTool):
         self.element.mark_dirty()
         return False
 
+    def _constrain_to_axis(self, mx: float, my: float) -> Tuple[float, float]:
+        """Constrain model position to horizontal or vertical from start."""
+        if self._preview_state is None:
+            return mx, my
+        try:
+            start_pt = self.element.sketch.registry.get_point(
+                self._preview_state.start_id
+            )
+            if start_pt:
+                dx = mx - start_pt.x
+                dy = my - start_pt.y
+                if abs(dx) > abs(dy):
+                    return mx, start_pt.y
+                else:
+                    return start_pt.x, my
+        except IndexError:
+            pass
+        return mx, my
+
     def on_drag(self, world_dx: float, world_dy: float):
         ps = self._preview_state
         is_line = ps.is_line_preview if ps else None
@@ -169,6 +200,9 @@ class PathTool(SketchTool):
         mx, my = self.element.hittester.screen_to_model(
             current_x, current_y, self.element
         )
+
+        if self.element.canvas and self.element.canvas._shift_pressed:
+            mx, my = self._constrain_to_axis(mx, my)
 
         if not self._preview_state.is_line_preview:
             self._dragging = True
@@ -495,6 +529,9 @@ class PathTool(SketchTool):
         mx, my = self.element.hittester.screen_to_model(
             world_x, world_y, self.element
         )
+
+        if self.element.canvas and self.element.canvas._shift_pressed:
+            mx, my = self._constrain_to_axis(mx, my)
 
         hit_type, hit_obj = self.element.hittester.get_hit_data(
             world_x, world_y, self.element

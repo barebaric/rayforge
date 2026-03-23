@@ -32,6 +32,8 @@ def mock_element():
     element.update_bounds_from_sketch = Mock()
     element.execute_command = Mock()
     element.editor = None
+    element.canvas = Mock()
+    element.canvas._shift_pressed = False
     return element
 
 

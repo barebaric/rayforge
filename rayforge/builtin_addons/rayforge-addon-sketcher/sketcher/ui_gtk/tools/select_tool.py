@@ -127,6 +127,7 @@ class SelectTool(SketchTool):
         """Returns shortcuts available based on current tool state."""
         return [
             (PRIMARY_KEY_NAME, _("Snap to Grid"), lambda: self._is_dragging()),
+            ("Shift", _("Constrain to Axis"), lambda: self._is_dragging()),
             (
                 ["Shift", "Doubleclick"],
                 _("Select Connected"),
@@ -303,6 +304,11 @@ class SelectTool(SketchTool):
     def on_drag(self, world_dx: float, world_dy: float):
         if self._is_dragging() and self.element.canvas:
             canvas = self.element.canvas
+            if canvas._shift_pressed:
+                if abs(world_dx) > abs(world_dy):
+                    world_dy = 0.0
+                else:
+                    world_dx = 0.0
             if canvas._ctrl_pressed and canvas.grid_size > 0:
                 start_x, start_y = self._get_drag_start_world_pos()
                 target_x = start_x + world_dx
