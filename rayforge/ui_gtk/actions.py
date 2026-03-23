@@ -180,6 +180,7 @@ class ActionManager:
         )
         self._add_action("import", self.win.on_menu_import)
         self._add_action("export", self.win.on_export_clicked)
+        self._add_action("export-object", self.win.on_export_object_clicked)
         self._add_action("about", self.win.show_about_dialog)
         self._add_action("donate", self.win.on_donate_clicked)
         self._add_action("save_debug_log", self.win.on_save_debug_log)
@@ -395,6 +396,7 @@ class ActionManager:
             layout_info.action.set_enabled(has_workpieces)
 
         self.actions["split"].set_enabled(bool(selected_wps))
+        self.actions["export-object"].set_enabled(len(selected_wps) == 1)
 
         action_extension_registry.invoke_state_update_handlers(self)
 
