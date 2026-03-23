@@ -35,6 +35,7 @@ Generate the following files in `media/[release]/drafts/`:
   Update the documentation accordingly, but keep it user-centric - this is not intended as developer documentation.
 - Depending on the changes listed in the changelog, re-create relevant screenshots for the docs using the `scripts/media/take_screenshot.py` tool.
 
+Style-wise, avoid using bullet-point style lists - use a friendly and approachable style that users enjoy reading.
 In the text files, use a maximum line length of 100 chars.
 Ensure you use proper links for discord and patreon and the homepage and github, not placeholders.
 

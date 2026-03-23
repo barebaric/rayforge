@@ -151,6 +151,15 @@ module.exports = {
         'developer/driver',
       ],
     },
-    'developer/addon-docs',
+    {
+      type: 'category',
+      label: 'Addon Development',
+      items: [
+        'developer/addon-overview',
+        'developer/addon-manifest',
+        'developer/addon-hooks',
+        'developer/addon-registries',
+      ],
+    },
   ],
 };

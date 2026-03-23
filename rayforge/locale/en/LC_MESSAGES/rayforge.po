@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-22 19:54+0100\n"
+"POT-Creation-Date: 2026-03-23 12:54+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -3379,6 +3379,10 @@ msgstr ""
 msgid "Split"
 msgstr ""
 
+#: rayforge/ui_gtk/main_menu.py
+msgid "Export Object..."
+msgstr ""
+
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
 msgid "Add Equidistant Tabs…"
 msgstr ""
@@ -3550,6 +3554,10 @@ msgstr ""
 
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Pause machine"
+msgstr ""
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Please select a single object to export."
 msgstr ""
 
 #: rayforge/ui_gtk/mainwindow.py
@@ -4071,8 +4079,7 @@ msgid "Export Object"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
-#, python-brace-format
-msgid "{app_name} Sketch"
+msgid "Export Document"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/svg/exporter.py
@@ -4081,10 +4088,6 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/dxf/exporter.py
 msgid "DXF (CAD Exchange Format)"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/file_dialogs.py
-msgid "Export Document"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
@@ -4834,6 +4837,11 @@ msgid "All addon updates installed!"
 msgstr ""
 
 #: rayforge/app.py
+#, python-brace-format
+msgid "Cannot open '{file}'. The required addon may be disabled."
+msgstr ""
+
+#: rayforge/app.py
 msgid "A GCode generator for laser cutters."
 msgstr ""
 
@@ -5177,6 +5185,11 @@ msgid "File not found: {name}"
 msgstr ""
 
 #: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid "{count} asset(s) require disabled addon(s)"
+msgstr ""
+
+#: rayforge/doceditor/file_cmd.py
 msgid "Invalid project file format"
 msgstr ""
 
@@ -5258,6 +5271,11 @@ msgstr ""
 
 #: rayforge/doceditor/layer_cmd.py
 msgid "Reorder layers"
+msgstr ""
+
+#: rayforge/doceditor/editor.py
+#, python-brace-format
+msgid "{count} asset(s) require disabled addon '{addon}'"
 msgstr ""
 
 #: rayforge/doceditor/group_cmd.py

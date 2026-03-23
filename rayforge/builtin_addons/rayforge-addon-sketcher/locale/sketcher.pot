@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-22 19:54+0100\n"
+"POT-Creation-Date: 2026-03-23 12:55+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -200,6 +200,10 @@ msgstr ""
 msgid "Add {}"
 msgstr ""
 
+#: sketcher/core/commands/grid.py
+msgid "Add Grid"
+msgstr ""
+
 #: sketcher/core/commands/chamfer.py
 msgid "Add Chamfer"
 msgstr ""
@@ -279,18 +283,18 @@ msgid "Export Object..."
 msgstr ""
 
 #: sketcher/ui_gtk/studio.py
-#: sketcher/ui_gtk/menu.py
-msgid "Cancel Sketch"
+msgid "Toggle constraints"
 msgstr ""
 
 #: sketcher/ui_gtk/studio.py
-msgid "Sketch Studio"
+msgid "Toggle construction geometry"
 msgstr ""
 
 #: sketcher/ui_gtk/studio.py
-msgid ""
-"Right-click background to draw, objects to edit. Double-click dimensions to "
-"edit values."
+#: sketcher/ui_gtk/tools/dimension_input.py
+#: sketcher/ui_gtk/tools/grid_tool.py
+#: sketcher/ui_gtk/sketchcanvas.py
+msgid "Cancel"
 msgstr ""
 
 #: sketcher/ui_gtk/studio.py
@@ -327,7 +331,13 @@ msgid "Select"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/select_tool.py
+#: sketcher/ui_gtk/tools/path_tool.py
 msgid "Snap to Grid"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/select_tool.py
+#: sketcher/ui_gtk/tools/path_tool.py
+msgid "Constrain to Axis"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/select_tool.py
@@ -340,11 +350,6 @@ msgstr ""
 
 #: sketcher/ui_gtk/tools/dimension_input.py
 msgid "Apply"
-msgstr ""
-
-#: sketcher/ui_gtk/tools/dimension_input.py
-#: sketcher/ui_gtk/sketchcanvas.py
-msgid "Cancel"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/dimension_input.py
@@ -408,6 +413,26 @@ msgstr ""
 
 #: sketcher/ui_gtk/tools/arc_tool.py
 msgid "Type radius"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Grid"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Create Grid"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Rows"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Columns"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Create"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/tangent_constraint_tool.py
@@ -523,6 +548,10 @@ msgstr ""
 
 #: sketcher/ui_gtk/menu.py
 msgid "Finish Sketch"
+msgstr ""
+
+#: sketcher/ui_gtk/menu.py
+msgid "Cancel Sketch"
 msgstr ""
 
 #: sketcher/ui_gtk/menu.py

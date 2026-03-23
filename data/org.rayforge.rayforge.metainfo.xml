@@ -66,6 +66,42 @@
   </screenshots>
 
   <releases>
+    <release version="1.3" date="2026-03-23">
+      <description>
+        <p>Bezier Curves in Sketcher and Modular Architecture</p>
+        <p>Major Changes:</p>
+        <ul>
+          <li>Full bezier curve support in the parametric sketcher</li>
+          <li>Sketcher moved to an optional add-on</li>
+          <li>New unified path tool combining lines and curves</li>
+          <li>More compact G-code output</li>
+        </ul>
+        <p>Sketcher Improvements:</p>
+        <ul>
+          <li>Intuitive bezier editing with drag handles</li>
+          <li>Connect curves to existing geometry</li>
+          <li>Smooth or symmetric endpoints for connected paths</li>
+          <li>Straighten tool to convert beziers to lines</li>
+          <li>Grid tool for visual reference</li>
+          <li>Show/hide construction geometry and constraints</li>
+          <li>Hold Shift to constrain movement to axis</li>
+          <li>Conflicting constraints shown in panel</li>
+        </ul>
+        <p>G-code Improvements:</p>
+        <ul>
+          <li>Unchanged coordinates now omitted for smaller files</li>
+          <li>G-code viewer shows line count and byte size</li>
+          <li>Raster operation gains sample interval and power levels settings</li>
+        </ul>
+        <p>Fixed:</p>
+        <ul>
+          <li>Most icons not displayed on systems with Gtk &gt; 4.21</li>
+          <li>Fillet and chamfer tools not working correctly</li>
+          <li>Texture encoder drawing spaced dots instead of lines</li>
+          <li>Loading project files with unknown assets</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.2.1" date="2026-03-19">
       <description>
         <p>Bug fix release</p>

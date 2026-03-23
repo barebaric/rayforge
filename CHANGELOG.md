@@ -5,6 +5,39 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.3
+
+### Added
+
+- Sketcher: full support for bezier curves with intuitive handle-based editing
+- Sketcher: new unified path tool that combines lines and curves
+- Sketcher: grid tool for visual reference and alignment
+- Sketcher: toggle buttons to show/hide construction geometry and constraints
+- Sketcher: hold Shift to constrain movement to the nearest axis
+- Sketcher: endpoints connected by coincident constraint can be made smooth or symmetric
+- Sketcher: "straighten" tool to convert bezier curves to straight lines
+- Sketcher: path edit tool can now connect to existing points
+- Sketcher: conflicting constraints now shown in the panel
+- Raster operation: sample interval and power levels settings
+- G-code viewer now shows line count and byte size
+
+### Changed
+
+- Sketcher moved to an add-on (installed and enabled by default)
+- G-code now omits unchanged coordinates for more compact output
+- Removed obsolete "no-Z" G-code dialect variants
+- G-code viewer always shows at least the first 20,000 lines
+- Sketcher: hide gray background area for cleaner editing
+- AI workpiece generator now creates sketches when geometry can be mapped
+
+### Fixed
+
+- Most icons not displayed on systems with Gtk 4.21 or higher
+- Fillet and chamfer tools not working correctly
+- Texture encoder drawing spaced dots instead of lines in some cases
+- G1 emitted without coordinates when all coordinates unchanged
+- Loading project files with unknown assets
+
 ## 1.2.1
 
 ### Added

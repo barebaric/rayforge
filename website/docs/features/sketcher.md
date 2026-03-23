@@ -33,9 +33,10 @@ ensures your designs maintain their intended geometry even when dimensions are m
 
 The sketcher supports creating the following basic geometric elements:
 
-- **Lines**: Draw straight line segments between points
-- **Circles**: Create circles by defining a center point and radius
+- **Paths (Lines and Bezier Curves)**: Draw straight lines and smooth bezier curves
+  using the unified path tool. Click to place points, drag to create bezier handles.
 - **Arcs**: Draw arcs by specifying a center point, start point, and end point
+- **Circles**: Create circles by defining a center point and radius
 - **Rectangles**: Draw rectangles by specifying two opposite corners
 - **Rounded Rectangles**: Draw rectangles with rounded corners
 - **Text Boxes**: Add text elements to your sketch
@@ -44,6 +45,33 @@ The sketcher supports creating the following basic geometric elements:
 These elements form the foundation of your 2D designs and can be combined to create
 complex shapes. Fills are particularly useful for creating solid regions that will
 be engraved or cut as a single piece.
+
+## Working with Bezier Curves
+
+The path tool supports bezier curves for creating smooth, organic shapes:
+
+### Drawing Bezier Curves
+
+1. Select the path tool from the pie menu or use the keyboard shortcut
+2. Click to place points - each click creates a new point
+3. Drag after clicking to create bezier handles for smooth curves
+4. Continue adding points to build your path
+5. Press Escape or double-click to finish the path
+
+### Editing Bezier Curves
+
+- **Move points**: Click and drag any point to reposition it
+- **Adjust handles**: Drag the handle endpoints to modify the curve shape
+- **Connect to existing points**: When editing a path, you can snap to existing
+  points in your sketch
+- **Make smooth/symmetric**: Points connected by a coincident constraint can be
+  made smooth (continuous tangent) or symmetric (mirrored handles)
+
+### Converting Curves to Lines
+
+Use the **straighten tool** to convert bezier curves back to straight lines.
+This is useful when you need clean, simple geometry. Select the bezier segments
+you want to convert and apply the straighten action.
 
 ## Parametric Constraint System
 
@@ -95,18 +123,20 @@ The sketcher provides keyboard shortcuts for efficient workflow:
 
 ### Tool Shortcuts
 - `Space`: Select tool
-- `G+L`: Line tool
+- `G+P`: Path tool (lines and bezier curves)
 - `G+A`: Arc tool
 - `G+C`: Circle tool
 - `G+R`: Rectangle tool
 - `G+O`: Rounded Rectangle tool
 - `G+F`: Fill Area tool
 - `G+T`: Text Box tool
+- `G+G`: Grid tool (toggle grid visibility)
 - `G+N`: Toggle construction mode on selection
 
 ### Action Shortcuts
 - `C+H`: Add Chamfer corner
 - `C+F`: Add Fillet corner
+- `C+S`: Straighten selected bezier curves to lines
 
 ### Constraint Shortcuts
 - `H`: Apply Horizontal constraint
@@ -144,6 +174,31 @@ Construction entities are useful for:
 - Creating reference lines and circles
 - Defining temporary geometry for alignment
 - Building complex shapes from a framework of guides
+
+## Grid and Visibility Controls
+
+### Grid Tool
+
+The grid tool provides a visual reference for alignment and sizing:
+
+- Toggle the grid on/off using the grid tool button or `G+G`
+- The grid adapts to your zoom level for consistent spacing
+- Hold `Ctrl` while placing or moving points to snap to the grid
+
+### Show/Hide Controls
+
+The sketcher toolbar includes toggle buttons to control visibility:
+
+- **Show/hide construction geometry**: Toggle visibility of construction entities
+- **Show/hide constraints**: Toggle visibility of constraint markers
+
+These controls help reduce visual clutter when working on complex sketches.
+
+### Axis-Constrained Movement
+
+When dragging points or geometry, hold `Shift` to constrain movement to the
+nearest axis (horizontal or vertical). This is useful for maintaining alignment
+while making adjustments.
 
 ## Chamfer and Fillet
 
@@ -190,9 +245,11 @@ dimensional relationships.
 1. **Start with Rough Geometry**: Create basic shapes first, then refine with constraints
 2. **Use Constraints Early**: Apply constraints as you build to maintain design intent
 3. **Check Constraint Status**: The system indicates when sketches are fully constrained
-4. **Watch for Conflicts**: Constraints that conflict with each other are highlighted in red
+4. **Watch for Conflicts**: Constraints that conflict with each other are highlighted in
+   red and shown in the constraints panel for easy identification
 5. **Utilize Symmetry**: Symmetry constraints can significantly speed up complex designs
-6. **Iterate and Refine**: Don't hesitate to modify constraints to achieve the desired
+6. **Use the Grid**: Enable the grid for precise alignment, and use Ctrl to snap to grid
+7. **Iterate and Refine**: Don't hesitate to modify constraints to achieve the desired
    result
 
 ## Editing Features

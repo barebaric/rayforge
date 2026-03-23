@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-22 19:54+0100\n"
+"POT-Creation-Date: 2026-03-23 12:54+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -3411,6 +3411,10 @@ msgstr "添加毛坯"
 msgid "Split"
 msgstr "分割"
 
+#: rayforge/ui_gtk/main_menu.py
+msgid "Export Object..."
+msgstr "导出对象..."
+
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
 msgid "Add Equidistant Tabs…"
 msgstr "添加等距标签…"
@@ -3583,6 +3587,10 @@ msgstr "恢复机器"
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Pause machine"
 msgstr "暂停机器"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Please select a single object to export."
+msgstr "请选择单个对象以导出。"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Failed to create debug archive."
@@ -4105,9 +4113,8 @@ msgid "Export Object"
 msgstr "导出对象"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
-#, python-brace-format
-msgid "{app_name} Sketch"
-msgstr "{app_name} 草图"
+msgid "Export Document"
+msgstr "导出文档"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/svg/exporter.py
 msgid "SVG (Scalable Vector Graphics)"
@@ -4116,10 +4123,6 @@ msgstr "SVG（可缩放矢量图形）"
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/dxf/exporter.py
 msgid "DXF (CAD Exchange Format)"
 msgstr "DXF（CAD交换格式）"
-
-#: rayforge/ui_gtk/doceditor/file_dialogs.py
-msgid "Export Document"
-msgstr "导出文档"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 #, python-brace-format
@@ -4870,6 +4873,11 @@ msgid "All addon updates installed!"
 msgstr "所有插件更新已安装！"
 
 #: rayforge/app.py
+#, python-brace-format
+msgid "Cannot open '{file}'. The required addon may be disabled."
+msgstr "'{file}' 无法打开。所需的附加组件可能已被禁用。"
+
+#: rayforge/app.py
 msgid "A GCode generator for laser cutters."
 msgstr "激光切割机的G代码生成器。"
 
@@ -5213,6 +5221,11 @@ msgid "File not found: {name}"
 msgstr "文件未找到：{name}"
 
 #: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid "{count} asset(s) require disabled addon(s)"
+msgstr "{count} 个资源需要已禁用的插件"
+
+#: rayforge/doceditor/file_cmd.py
 msgid "Invalid project file format"
 msgstr "无效的项目文件格式"
 
@@ -5295,6 +5308,11 @@ msgstr "移除图层 '{name}'"
 #: rayforge/doceditor/layer_cmd.py
 msgid "Reorder layers"
 msgstr "重新排序图层"
+
+#: rayforge/doceditor/editor.py
+#, python-brace-format
+msgid "{count} asset(s) require disabled addon '{addon}'"
+msgstr "{count} 个资源需要已禁用的插件 '{addon}'"
 
 #: rayforge/doceditor/group_cmd.py
 msgid "Grouping items..."
