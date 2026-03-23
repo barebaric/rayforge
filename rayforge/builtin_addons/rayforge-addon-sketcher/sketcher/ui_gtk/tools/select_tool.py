@@ -721,7 +721,9 @@ class SelectTool(SketchTool):
         p = self._safe_get_point(point_id)
         if p is not None:
             registry = self.element.sketch.registry
-            p.apply_constraint(registry, bezier, self.dragged_cp_index)
+            p.apply_constraint(
+                registry, bezier, self.dragged_cp_index, self.element.sketch
+            )
 
         self.element.mark_dirty()
 

@@ -8,6 +8,7 @@ from .bezier import Bezier
 
 if TYPE_CHECKING:
     from ..registry import EntityRegistry
+    from ..sketch import Sketch
 
 
 class WaypointType(Enum):
@@ -42,19 +43,29 @@ class Point:
         return self.waypoint_type == WaypointType.SYMMETRIC
 
     def get_connected_beziers(
-        self, registry: "EntityRegistry"
+        self,
+        registry: "EntityRegistry",
+        sketch: Optional["Sketch"] = None,
     ) -> List["Bezier"]:
         connected = []
+        point_ids = {self.id}
+        if sketch is not None:
+            point_ids.update(sketch.get_coincident_points(self.id))
         for entity in registry.entities:
             if isinstance(entity, Bezier):
-                if self.id in (entity.start_idx, entity.end_idx):
+                if (
+                    entity.start_idx in point_ids
+                    or entity.end_idx in point_ids
+                ):
                     connected.append(entity)
         return connected
 
     def get_paired_beziers(
-        self, registry: "EntityRegistry"
+        self,
+        registry: "EntityRegistry",
+        sketch: Optional["Sketch"] = None,
     ) -> Tuple[Optional["Bezier"], Optional["Bezier"]]:
-        connected = self.get_connected_beziers(registry)
+        connected = self.get_connected_beziers(registry, sketch)
         if len(connected) >= 2:
             return connected[0], connected[1]
         elif len(connected) == 1:
@@ -66,41 +77,46 @@ class Point:
         registry: "EntityRegistry",
         bezier: "Bezier",
         cp_index: int,
+        sketch: Optional["Sketch"] = None,
     ) -> None:
         if self.is_sharp():
             return
 
-        b1, b2 = self.get_paired_beziers(registry)
+        b1, b2 = self.get_paired_beziers(registry, sketch)
         if b1 is None or b2 is None:
             return
 
         other_bezier = b2 if bezier == b1 else b1
 
-        if bezier.start_idx == self.id and cp_index == 1:
+        point_ids = {self.id}
+        if sketch is not None:
+            point_ids.update(sketch.get_coincident_points(self.id))
+
+        if bezier.start_idx in point_ids and cp_index == 1:
             cp_out = bezier.cp1
             if cp_out is not None:
-                if other_bezier.end_idx == self.id:
+                if other_bezier.end_idx in point_ids:
                     other_bezier.cp2 = self._compute_constrained_cp(
                         cp_out,
                         other_bezier.cp2,
                         symmetric=self.is_symmetric(),
                     )
-                elif other_bezier.start_idx == self.id:
+                elif other_bezier.start_idx in point_ids:
                     other_bezier.cp1 = self._compute_constrained_cp(
                         cp_out,
                         other_bezier.cp1,
                         symmetric=self.is_symmetric(),
                     )
-        elif bezier.end_idx == self.id and cp_index == 2:
+        elif bezier.end_idx in point_ids and cp_index == 2:
             cp_in = bezier.cp2
             if cp_in is not None:
-                if other_bezier.start_idx == self.id:
+                if other_bezier.start_idx in point_ids:
                     other_bezier.cp1 = self._compute_constrained_cp(
                         cp_in,
                         other_bezier.cp1,
                         symmetric=self.is_symmetric(),
                     )
-                elif other_bezier.end_idx == self.id:
+                elif other_bezier.end_idx in point_ids:
                     other_bezier.cp2 = self._compute_constrained_cp(
                         cp_in,
                         other_bezier.cp2,
@@ -135,19 +151,27 @@ class Point:
                 direction[1] * other_length,
             )
 
-    def enforce_constraint(self, registry: "EntityRegistry") -> None:
+    def enforce_constraint(
+        self,
+        registry: "EntityRegistry",
+        sketch: Optional["Sketch"] = None,
+    ) -> None:
         if self.is_sharp():
             return
 
-        beziers = self.get_connected_beziers(registry)
+        beziers = self.get_connected_beziers(registry, sketch)
         if len(beziers) < 2:
             return
 
+        point_ids = {self.id}
+        if sketch is not None:
+            point_ids.update(sketch.get_coincident_points(self.id))
+
         cp_data = []
         for b in beziers:
-            if b.start_idx == self.id and b.cp1 is not None:
+            if b.start_idx in point_ids and b.cp1 is not None:
                 cp_data.append((b, "cp1", b.cp1))
-            elif b.end_idx == self.id and b.cp2 is not None:
+            elif b.end_idx in point_ids and b.cp2 is not None:
                 cp_data.append((b, "cp2", b.cp2))
 
         if len(cp_data) < 2:

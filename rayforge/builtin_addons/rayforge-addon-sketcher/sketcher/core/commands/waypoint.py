@@ -62,9 +62,12 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         incoming_dir: Optional[GeoPoint] = None
         outgoing_dir: Optional[GeoPoint] = None
 
+        point_ids = {waypoint.id}
+        point_ids.update(self.sketch.get_coincident_points(waypoint.id))
+
         for entity in registry.entities:
             if isinstance(entity, Line):
-                if entity.p2_idx == waypoint.id:
+                if entity.p2_idx in point_ids:
                     p1 = registry.get_point(entity.p1_idx)
                     if p1:
                         dx = waypoint.x - p1.x
@@ -72,7 +75,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
                         length = math.hypot(dx, dy)
                         if length > 1e-9:
                             incoming_dir = (dx / length, dy / length)
-                elif entity.p1_idx == waypoint.id:
+                elif entity.p1_idx in point_ids:
                     p2 = registry.get_point(entity.p2_idx)
                     if p2:
                         dx = p2.x - waypoint.x
@@ -81,7 +84,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
                         if length > 1e-9:
                             outgoing_dir = (dx / length, dy / length)
             elif isinstance(entity, Bezier):
-                if entity.end_idx == waypoint.id:
+                if entity.end_idx in point_ids:
                     if entity.cp2 is not None:
                         cp_abs = (
                             waypoint.x + entity.cp2[0],
@@ -100,7 +103,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
                             length = math.hypot(dx, dy)
                             if length > 1e-9:
                                 incoming_dir = (dx / length, dy / length)
-                elif entity.start_idx == waypoint.id:
+                elif entity.start_idx in point_ids:
                     if entity.cp1 is not None:
                         cp_abs = (
                             waypoint.x + entity.cp1[0],
@@ -129,13 +132,13 @@ class SetWaypointTypeCommand(SketchChangeCommand):
 
         Returns list of (line_id, p1_idx, p2_idx).
         """
+        point_ids = {waypoint_id}
+        point_ids.update(self.sketch.get_coincident_points(waypoint_id))
+
         connected = []
         for entity in registry.entities:
             if isinstance(entity, Line):
-                if (
-                    entity.p1_idx == waypoint_id
-                    or entity.p2_idx == waypoint_id
-                ):
+                if entity.p1_idx in point_ids or entity.p2_idx in point_ids:
                     connected.append((entity.id, entity.p1_idx, entity.p2_idx))
         return connected
 
@@ -175,7 +178,9 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         except IndexError:
             return
 
-        connected_beziers = waypoint.get_connected_beziers(registry)
+        connected_beziers = waypoint.get_connected_beziers(
+            registry, self.sketch
+        )
         self._old_bezier_states = {}
         for b in connected_beziers:
             self._old_bezier_states[b.id] = (b.cp1, b.cp2)
@@ -189,7 +194,9 @@ class SetWaypointTypeCommand(SketchChangeCommand):
                 self._added_bezier_ids = self._convert_lines_to_beziers(
                     registry, connected_lines
                 )
-                connected_beziers = waypoint.get_connected_beziers(registry)
+                connected_beziers = waypoint.get_connected_beziers(
+                    registry, self.sketch
+                )
 
             incoming_dir, outgoing_dir = self._get_segment_directions(
                 registry, waypoint
@@ -218,14 +225,17 @@ class SetWaypointTypeCommand(SketchChangeCommand):
             cp_in = (-avg_dir[0] * cp_length, -avg_dir[1] * cp_length)
             cp_out = (avg_dir[0] * cp_length, avg_dir[1] * cp_length)
 
+            point_ids = {waypoint.id}
+            point_ids.update(self.sketch.get_coincident_points(waypoint.id))
+
             for b in connected_beziers:
-                if b.start_idx == waypoint.id and b.cp1 is None:
+                if b.start_idx in point_ids and b.cp1 is None:
                     b.cp1 = cp_out
-                if b.end_idx == waypoint.id and b.cp2 is None:
+                if b.end_idx in point_ids and b.cp2 is None:
                     b.cp2 = cp_in
 
         waypoint.waypoint_type = self.new_type
-        waypoint.enforce_constraint(registry)
+        waypoint.enforce_constraint(registry, self.sketch)
 
     def _do_undo(self) -> None:
         if self._old_waypoint_type is None:

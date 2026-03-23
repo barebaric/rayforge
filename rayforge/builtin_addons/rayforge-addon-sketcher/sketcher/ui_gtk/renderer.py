@@ -798,8 +798,9 @@ class SketchRenderer:
         waypoint: Point,
     ):
         """Draw control handles for all beziers connected to a waypoint."""
+        sketch = self.element.sketch
         connected_beziers = waypoint.get_connected_beziers(
-            self.element.sketch.registry
+            sketch.registry, sketch
         )
 
         if not connected_beziers:
@@ -807,12 +808,15 @@ class SketchRenderer:
 
         wp_sx, wp_sy = to_screen((waypoint.x, waypoint.y))
 
+        point_ids = {waypoint.id}
+        point_ids.update(sketch.get_coincident_points(waypoint.id))
+
         ctx.save()
         ctx.set_line_width(1.0)
         ctx.set_source_rgba(0.2, 0.6, 1.0, 0.8)
 
         for bezier in connected_beziers:
-            if bezier.start_idx == waypoint.id and bezier.cp1 is not None:
+            if bezier.start_idx in point_ids and bezier.cp1 is not None:
                 cp_abs = (
                     waypoint.x + bezier.cp1[0],
                     waypoint.y + bezier.cp1[1],
@@ -826,7 +830,7 @@ class SketchRenderer:
                 ctx.fill()
                 ctx.set_source_rgba(0.2, 0.6, 1.0, 0.8)
 
-            if bezier.end_idx == waypoint.id and bezier.cp2 is not None:
+            if bezier.end_idx in point_ids and bezier.cp2 is not None:
                 cp_abs = (
                     waypoint.x + bezier.cp2[0],
                     waypoint.y + bezier.cp2[1],
