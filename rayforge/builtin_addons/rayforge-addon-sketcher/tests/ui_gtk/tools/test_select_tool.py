@@ -43,6 +43,7 @@ def select_tool(mock_element):
     return SelectTool(mock_element)
 
 
+@pytest.mark.ui
 def test_select_tool_initialization(select_tool, mock_element):
     """Test that SelectTool initializes correctly."""
     assert select_tool.element == mock_element
@@ -58,6 +59,7 @@ def test_select_tool_initialization(select_tool, mock_element):
     assert select_tool.drag_start_model_pos is None
 
 
+@pytest.mark.ui
 def test_select_tool_on_press_no_hit(select_tool, mock_element):
     """Test on_press when nothing is hit."""
     mock_element.hittester.get_hit_data.return_value = (None, None)
@@ -72,6 +74,7 @@ def test_select_tool_on_press_no_hit(select_tool, mock_element):
     assert select_tool.drag_start_world_pos == (100.0, 200.0)
 
 
+@pytest.mark.ui
 def test_select_tool_on_press_point_hit(select_tool, mock_element):
     """Test on_press when a point is hit."""
     mock_element.hittester.get_hit_data.return_value = ("point", 5)
@@ -82,6 +85,7 @@ def test_select_tool_on_press_point_hit(select_tool, mock_element):
     mock_element.selection.select_point.assert_called_once_with(5, False)
 
 
+@pytest.mark.ui
 def test_select_tool_on_press_entity_hit(select_tool, mock_element):
     """Test on_press when an entity is hit."""
     mock_entity = Mock(spec=Line)
@@ -97,12 +101,14 @@ def test_select_tool_on_press_entity_hit(select_tool, mock_element):
     mock_element.selection.select_entity.assert_called_once()
 
 
+@pytest.mark.ui
 def test_select_tool_on_drag_no_state(select_tool):
     """Test on_drag when no drag state is set."""
     select_tool.on_drag(10.0, 20.0)
     assert True
 
 
+@pytest.mark.ui
 def test_select_tool_on_drag_box_select(select_tool, mock_element):
     """Test on_drag during box selection."""
     select_tool.is_box_selecting = True
@@ -116,6 +122,7 @@ def test_select_tool_on_drag_box_select(select_tool, mock_element):
     mock_element.mark_dirty.assert_called_once()
 
 
+@pytest.mark.ui
 def test_select_tool_on_release_box_select(select_tool):
     """Test on_release after box selection."""
     select_tool.is_box_selecting = True
@@ -129,6 +136,7 @@ def test_select_tool_on_release_box_select(select_tool):
     assert select_tool.drag_current_world_pos is None
 
 
+@pytest.mark.ui
 def test_select_tool_on_hover_motion_no_change(select_tool, mock_element):
     """Test on_hover_motion when hit type doesn't change."""
     mock_element.hittester.get_hit_data.return_value = ("point", 5)
@@ -139,6 +147,7 @@ def test_select_tool_on_hover_motion_no_change(select_tool, mock_element):
     mock_element.mark_dirty.assert_not_called()
 
 
+@pytest.mark.ui
 def test_select_tool_on_hover_motion_change(select_tool, mock_element):
     """Test on_hover_motion when hit type changes."""
     mock_element.hittester.get_hit_data.return_value = ("point", 5)
@@ -150,6 +159,7 @@ def test_select_tool_on_hover_motion_change(select_tool, mock_element):
     mock_element.mark_dirty.assert_called_once()
 
 
+@pytest.mark.ui
 def test_select_tool_prepare_point_drag(select_tool, mock_element):
     """Test _prepare_point_drag sets up drag state."""
     mock_point = Mock()
@@ -166,6 +176,7 @@ def test_select_tool_prepare_point_drag(select_tool, mock_element):
     assert select_tool.dragged_entity is None
 
 
+@pytest.mark.ui
 def test_select_tool_draw_overlay_no_box(select_tool):
     """Test draw_overlay when not box selecting."""
     ctx = Mock(spec=cairo.Context)
@@ -176,6 +187,7 @@ def test_select_tool_draw_overlay_no_box(select_tool):
     ctx.save.assert_not_called()
 
 
+@pytest.mark.ui
 def test_select_tool_draw_overlay_with_box(select_tool, mock_element):
     """Test draw_overlay when box selecting."""
     ctx = Mock(spec=cairo.Context)

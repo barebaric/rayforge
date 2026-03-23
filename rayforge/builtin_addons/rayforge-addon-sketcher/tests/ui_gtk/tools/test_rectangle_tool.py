@@ -26,11 +26,13 @@ def rect_tool(mock_element):
     return RectangleTool(mock_element)
 
 
+@pytest.mark.ui
 def test_rectangle_tool_initialization(rect_tool):
     """Test tool's initial state."""
     assert rect_tool._preview_state is None
 
 
+@pytest.mark.ui
 def test_first_click_no_hit_starts_preview(rect_tool, mock_element):
     """Test that first click on an empty space starts preview mode."""
     mock_element.sketch.registry.add_point.side_effect = [0, 1]
@@ -50,6 +52,7 @@ def test_first_click_no_hit_starts_preview(rect_tool, mock_element):
     mock_element.sketch.registry.add_point.assert_called()
 
 
+@pytest.mark.ui
 def test_first_click_with_hit_starts_preview(rect_tool, mock_element):
     """
     Test that first click on an existing point starts preview mode.
@@ -71,6 +74,7 @@ def test_first_click_with_hit_starts_preview(rect_tool, mock_element):
     assert rect_tool._preview_state.p_end_id == 6
 
 
+@pytest.mark.ui
 def test_second_click_no_hit_creates_rectangle(rect_tool, mock_element):
     """Test that second click creates final rectangle geometry."""
     # --- Setup first click state ---
@@ -103,6 +107,7 @@ def test_second_click_no_hit_creates_rectangle(rect_tool, mock_element):
     assert rect_tool._preview_state is None
 
 
+@pytest.mark.ui
 def test_second_click_with_hit_creates_rectangle(rect_tool, mock_element):
     """Test creating a rectangle by snapping to second corner a point."""
     # --- Setup first click state ---
@@ -134,6 +139,7 @@ def test_second_click_with_hit_creates_rectangle(rect_tool, mock_element):
     assert cmd.is_start_temp is False
 
 
+@pytest.mark.ui
 def test_on_hover_motion_updates_preview(rect_tool, mock_element):
     """Test that hovering updates preview geometry."""
     rect_tool._preview_state = RectanglePreviewState(
@@ -154,6 +160,7 @@ def test_on_hover_motion_updates_preview(rect_tool, mock_element):
         mock_element.mark_dirty.assert_called_once()
 
 
+@pytest.mark.ui
 def test_on_deactivate_cleans_up(rect_tool, mock_element):
     """Test that deactivating tool cleans up temporary state."""
     rect_tool._preview_state = RectanglePreviewState(
@@ -169,6 +176,7 @@ def test_on_deactivate_cleans_up(rect_tool, mock_element):
     mock_element.mark_dirty.assert_called()
 
 
+@pytest.mark.ui
 def test_degenerate_rectangle_aborts_creation(rect_tool, mock_element):
     """Test that a zero-width or zero-height rect is not created."""
     rect_tool._preview_state = RectanglePreviewState(

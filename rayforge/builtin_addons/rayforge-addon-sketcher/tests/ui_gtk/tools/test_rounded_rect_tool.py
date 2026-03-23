@@ -27,11 +27,13 @@ def tool(mock_element):
     return RoundedRectTool(mock_element)
 
 
+@pytest.mark.ui
 def test_rounded_rect_tool_initialization(tool):
     """Test tool's initial state."""
     assert tool._preview_state is None
 
 
+@pytest.mark.ui
 def test_first_click_no_hit_starts_preview(tool, mock_element):
     """Test that first click on an empty space starts preview mode."""
     mock_element.sketch.registry.add_point.side_effect = [0, 1]
@@ -51,6 +53,7 @@ def test_first_click_no_hit_starts_preview(tool, mock_element):
     mock_element.sketch.registry.add_point.assert_called()
 
 
+@pytest.mark.ui
 def test_first_click_with_hit_starts_preview(tool, mock_element):
     """Test a first click on an existing point starts preview mode."""
     mock_element.hittester.get_hit_data.return_value = ("point", 5)
@@ -70,6 +73,7 @@ def test_first_click_with_hit_starts_preview(tool, mock_element):
     assert tool._preview_state.p_end_id == 6
 
 
+@pytest.mark.ui
 def test_second_click_creates_rounded_rectangle(tool, mock_element):
     """Test a second click creates final rounded rectangle geometry."""
     tool._preview_state = RoundedRectPreviewState(
@@ -95,6 +99,7 @@ def test_second_click_creates_rounded_rectangle(tool, mock_element):
     assert tool._preview_state is None
 
 
+@pytest.mark.ui
 def test_on_hover_motion_updates_preview(tool, mock_element):
     """Test that hovering updates preview geometry."""
     tool._preview_state = RoundedRectPreviewState(
@@ -116,6 +121,7 @@ def test_on_hover_motion_updates_preview(tool, mock_element):
         mock_element.mark_dirty.assert_called_once()
 
 
+@pytest.mark.ui
 def test_on_deactivate_cleans_up(tool, mock_element):
     """Test that deactivating tool cleans up temporary state."""
     tool._preview_state = RoundedRectPreviewState(
@@ -132,6 +138,7 @@ def test_on_deactivate_cleans_up(tool, mock_element):
     mock_element.mark_dirty.assert_called()
 
 
+@pytest.mark.ui
 def test_degenerate_rounded_rectangle_aborts_creation(tool, mock_element):
     """Test that a zero-width or zero-height rect is not created."""
     # --- Setup first click state ---
