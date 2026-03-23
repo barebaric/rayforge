@@ -79,6 +79,7 @@ pyinstaller --onedir --hide-console hide-early \
   --add-binary "${WIN_MSYS2_PATH}\\mingw64\\bin\\libGLESv2.dll;." \
   --add-binary "${WIN_MSYS2_PATH}\\mingw64\\bin\\libvips-42.dll;." \
   --hidden-import "gi._gi_cairo" \
+  --collect-submodules "rayforge" \
   rayforge/app.py
 
 echo "✅ PyInstaller build complete: dist/${BUNDLE_NAME}/"

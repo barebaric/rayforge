@@ -8,6 +8,7 @@ hiddenimports += collect_submodules('rayforge.ui_gtk.canvas2d')
 hiddenimports += collect_submodules('rayforge.ui_gtk.canvas2d.elements')
 hiddenimports += collect_submodules('rayforge.ui_gtk.shared')
 hiddenimports += collect_submodules('rayforge.image')
+hiddenimports += collect_submodules('rayforge.core')
 hiddenimports.append('rayforge.ui_gtk.canvas2d.elements.workpiece')
 
 a = Analysis(
