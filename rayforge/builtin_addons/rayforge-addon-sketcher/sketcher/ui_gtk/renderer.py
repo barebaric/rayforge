@@ -506,6 +506,13 @@ class SketchRenderer:
         origin_id = getattr(self.element.sketch, "origin_id", -1)
         hover_pid = self.element.tools["select"].hovered_point_id
 
+        if self.element.active_tool_name == "path":
+            path_tool = self.element.tools.get("path")
+            if path_tool is not None:
+                path_hover_pid = path_tool.hovered_point_id
+                if path_hover_pid is not None:
+                    hover_pid = path_hover_pid
+
         entity_points = set()
 
         for eid in self.element.selection.entity_ids:
@@ -542,6 +549,13 @@ class SketchRenderer:
                 continue  # Always skip drawing solid dot for origin
 
             r = self.element.point_radius
+
+            if is_hovered:
+                ctx.save()
+                ctx.set_source_rgba(1.0, 0.4, 0.2, 0.4)
+                ctx.arc(sx, sy, r + 5, 0, 2 * math.pi)
+                ctx.fill()
+                ctx.restore()
 
             # 1. Selection Glow Underlay
             if is_explicit_sel or is_implicit_sel:

@@ -39,6 +39,7 @@ class PathTool(SketchTool):
         self._in_press: bool = False
         self._mirror_cp_offset: Optional[Tuple[float, float]] = None
         self._release_handled: bool = False
+        self.hovered_point_id: Optional[int] = None
 
     def is_available(self, target, target_type) -> bool:
         return target is None
@@ -75,6 +76,7 @@ class PathTool(SketchTool):
         self._in_press = False
         self._mirror_cp_offset = None
         self._release_handled = False
+        self.hovered_point_id = None
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         mx, my = self.element.hittester.screen_to_model(
@@ -89,6 +91,44 @@ class PathTool(SketchTool):
             f"on_press: preview_state={self._preview_state is not None}, "
             f"snapped={pid_hit}"
         )
+
+        if (
+            self._preview_state is not None
+            and pid_hit is not None
+            and pid_hit not in self._preview_state.get_preview_point_ids()
+        ):
+            self._snapped_pid = pid_hit
+            try:
+                snapped_pt = self.element.sketch.registry.get_point(pid_hit)
+                BezierCommand.update_preview(
+                    self.element.sketch.registry,
+                    self._preview_state,
+                    snapped_pt.x,
+                    snapped_pt.y,
+                )
+            except (IndexError, KeyError):
+                pass
+
+            is_line = self._preview_state.is_line_preview
+            if is_line:
+                self._finalize_line_segment()
+            else:
+                self._finalize_bezier_segment()
+
+            if self._preview_state is not None:
+                BezierCommand.cleanup_preview(
+                    self.element.sketch.registry, self._preview_state
+                )
+                self._preview_state = None
+
+            self._press_pos = None
+            self._waypoint_model_pos = None
+            self._snapped_pid = None
+            self._dragging = False
+            self._mirror_cp_offset = None
+            self.hovered_point_id = None
+            self.element.mark_dirty()
+            return False
 
         self._press_pos = (world_x, world_y)
         self._waypoint_model_pos = (mx, my)
@@ -456,10 +496,37 @@ class PathTool(SketchTool):
             world_x, world_y, self.element
         )
 
+        hit_type, hit_obj = self.element.hittester.get_hit_data(
+            world_x, world_y, self.element
+        )
+
+        new_hovered_pid = None
+        if hit_type == "point":
+            pid = hit_obj
+            preview_ids = self._preview_state.get_preview_point_ids()
+            if pid not in preview_ids:
+                new_hovered_pid = pid
+
+        if self.hovered_point_id != new_hovered_pid:
+            self.hovered_point_id = new_hovered_pid
+            self.element.mark_dirty()
+
         try:
-            BezierCommand.update_preview(
-                self.element.sketch.registry, self._preview_state, mx, my
-            )
+            if new_hovered_pid is not None:
+                snapped_pt = self.element.sketch.registry.get_point(
+                    new_hovered_pid
+                )
+                if snapped_pt:
+                    BezierCommand.update_preview(
+                        self.element.sketch.registry,
+                        self._preview_state,
+                        snapped_pt.x,
+                        snapped_pt.y,
+                    )
+            else:
+                BezierCommand.update_preview(
+                    self.element.sketch.registry, self._preview_state, mx, my
+                )
             self.element.mark_dirty()
         except (IndexError, KeyError):
             self.on_deactivate()
