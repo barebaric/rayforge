@@ -52,7 +52,6 @@ class SelectTool(SketchTool):
     ICON = "sketch-select-symbolic"
     LABEL = _("Select")
     SHORTCUTS = [" "]
-    ACTION_SHORTCUT = "s"
 
     def __init__(self, element):
         super().__init__(element)

@@ -80,19 +80,8 @@ def build_action_tool_map() -> dict[str, str]:
     return action_map
 
 
-def build_studio_shortcuts() -> dict[str, list[str]]:
-    """Build mapping: action name -> shortcut for ACTION_SHORTCUT tools."""
-    shortcuts = {}
-    for tool_name, tool_cls in TOOL_REGISTRY.items():
-        if tool_cls.ACTION_SHORTCUT is not None:
-            action_name = f"sketch.tool_{tool_name}"
-            shortcuts[action_name] = [tool_cls.ACTION_SHORTCUT]
-    return shortcuts
-
-
 KEY_TO_TOOL = build_key_to_tool_map()
 ACTION_TOOL_MAP = build_action_tool_map()
-STUDIO_SHORTCUTS = build_studio_shortcuts()
 
 __all__ = [
     "ACTION_TOOL_MAP",
@@ -120,7 +109,6 @@ __all__ = [
     "SelectTool",
     "SketchTool",
     "SketcherKey",
-    "STUDIO_SHORTCUTS",
     "StraightenTool",
     "SymmetryConstraintTool",
     "TangentConstraintTool",

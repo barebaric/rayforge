@@ -14,7 +14,7 @@ from .conflicts_widget import ConflictingConstraintsWidget
 from .font_properties import FontPropertiesWidget
 from .menu import SketchMenu
 from .sketchcanvas import SketchCanvas
-from .tools import ACTION_TOOL_MAP, STUDIO_SHORTCUTS
+from .tools import ACTION_TOOL_MAP
 
 logger = logging.getLogger(__name__)
 
@@ -224,10 +224,9 @@ class SketchStudio(Gtk.Box):
             "sketch.undo": [f"{PRIMARY_ACCEL}z"],
             "sketch.redo": [f"{PRIMARY_ACCEL}y", f"{PRIMARY_ACCEL}<Shift>z"],
             "sketch.delete": ["Delete"],
-            "sketch.view_fit": ["f"],
+            "sketch.view_fit": ["1"],
             "sketch.finish": [f"{PRIMARY_ACCEL}Return"],
         }
-        shortcuts.update(STUDIO_SHORTCUTS)
 
         for action_name, accels in shortcuts.items():
             for accel in accels:
