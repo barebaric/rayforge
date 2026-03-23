@@ -372,6 +372,7 @@ class RayforgeContext:
         from .core.config import ConfigManager as CoreConfigManager
         from .machine.models.manager import MachineManager
 
+        self._headless = True
         self._machine_mgr = MachineManager(machine_dir)
 
         if not self._machine_mgr.machines:
