@@ -171,8 +171,10 @@ class SketchRenderer:
             if is_being_edited:
                 continue
 
-            # If not in edit mode, skip drawing construction geometry.
-            if not is_editing and entity.construction:
+            # Skip construction geometry if not in edit mode or if hidden
+            if entity.construction and (
+                not is_editing or not self.element.show_construction_geometry
+            ):
                 continue
 
             is_sel = entity.id in self.element.selection.entity_ids
@@ -370,6 +372,9 @@ class SketchRenderer:
     # --- Overlays (Constraints & Junctions) ---
 
     def _draw_overlays(self, ctx: cairo.Context):
+        if not self.element.show_constraints:
+            return
+
         # --- Stage 0: Get Hover State ---
         select_tool = self.element.tools.get("select")
         hovered_constraint_idx = (
@@ -390,6 +395,15 @@ class SketchRenderer:
                     )
                 )
 
+        # Collect construction entity IDs and their point IDs
+        construction_entity_ids = set()
+        construction_point_ids = set()
+        if not self.element.show_construction_geometry:
+            for entity in self.element.sketch.registry.entities:
+                if entity.construction:
+                    construction_entity_ids.add(entity.id)
+                    construction_point_ids.update(entity.get_point_ids())
+
         to_screen_transform = (
             self.element.hittester.get_model_to_screen_transform(self.element)
         )
@@ -408,6 +422,13 @@ class SketchRenderer:
                 if constr.depends_on_points(text_box_point_ids):
                     continue
 
+            # Hide constraints referencing construction geometry when hidden
+            if construction_entity_ids or construction_point_ids:
+                if constr.depends_on_entities(
+                    construction_entity_ids
+                ) or constr.depends_on_points(construction_point_ids):
+                    continue
+
             is_sel = idx == self.element.selection.constraint_idx
             is_hovered = idx == hovered_constraint_idx
 
@@ -421,14 +442,19 @@ class SketchRenderer:
             )
 
         # Draw implicit junction constraints
-        self._draw_junctions(ctx, to_screen_func, text_box_point_ids)
+        self._draw_junctions(
+            ctx, to_screen_func, text_box_point_ids, construction_point_ids
+        )
 
     def _draw_junctions(
         self,
         ctx: cairo.Context,
         to_screen: Callable[[GeoPoint], GeoPoint],
         text_box_point_ids: Set[int],
+        construction_point_ids: Set[int] | None = None,
     ) -> None:
+        if construction_point_ids is None:
+            construction_point_ids = set()
         registry = self.element.sketch.registry
         select_tool = self.element.tools.get("select")
         hovered_junction_pid = (
@@ -455,6 +481,10 @@ class SketchRenderer:
             if count > 1:
                 # Hide junction visuals for text box points
                 if pid in text_box_point_ids:
+                    continue
+
+                # Hide junction visuals for construction geometry when hidden
+                if pid in construction_point_ids:
                     continue
 
                 is_sel = pid == self.element.selection.junction_pid
@@ -524,9 +554,19 @@ class SketchRenderer:
             elif ent:
                 entity_points.update(ent.get_point_ids())
 
+        # Collect construction point IDs to hide when construction is hidden
+        construction_point_ids = set()
+        if not self.element.show_construction_geometry:
+            for entity in self.element.sketch.registry.entities:
+                if entity.construction:
+                    construction_point_ids.update(entity.get_point_ids())
+
         to_screen = to_screen_matrix.transform_point
 
         for p in points:
+            # Hide points belonging to construction geometry when hidden
+            if p.id in construction_point_ids:
+                continue
             sx, sy = to_screen((p.x, p.y))
 
             is_hovered = p.id == hover_pid

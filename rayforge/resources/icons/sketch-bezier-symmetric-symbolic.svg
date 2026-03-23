@@ -6,7 +6,7 @@
    fill="#000000"
    version="1.1"
    id="svg1"
-   sodipodi:docname="sketch-bezier-symmetry-symbolic.svg"
+   sodipodi:docname="sketch-bezier-symmetric-symbolic.svg"
    inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -21,9 +21,9 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="36.916667"
-     inkscape:cx="12"
-     inkscape:cy="12"
+     inkscape:zoom="18.458334"
+     inkscape:cx="5.9322799"
+     inkscape:cy="-22.699774"
      inkscape:window-width="3840"
      inkscape:window-height="2020"
      inkscape:window-x="0"
@@ -33,35 +33,35 @@
   <defs
      id="defs1" />
   <path
-     style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1.6586;stroke-dasharray:none;stroke-opacity:1"
+     style="fill:none;stroke:#000000;stroke-width:1.3333"
+     d="M 4.0813,13.730595 H 27.9187"
+     id="path2" />
+  <path
+     style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:2.05866667;stroke-dasharray:none;stroke-opacity:1"
      d="m 3.881 23.7802 c 0 0 0.2823 -9.959 12.0957 -9.7428 11.8134 0.2163 12.0957 9.7428 12.0957 9.7428"
      id="path1"
      sodipodi:nodetypes="czc" />
   <rect
-     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.4982;stroke-dasharray:none;stroke-opacity:1"
+     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.0465867;stroke-dasharray:none;stroke-opacity:1"
      id="rect1"
-     width="133.2917"
-     height="126.77201"
-     x="-20.2742"
-     y="25.7095"
+     width="4.1447177"
+     height="3.941987"
+     x="11.622149"
+     y="-6.3141685"
      transform="rotate(90)" />
   <circle
      style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:4.1667;stroke-dasharray:none;stroke-opacity:1"
      id="circle1"
-     cx="-18.0527"
-     cy="16"
-     r="2.7088"
+     cx="13.694509"
+     cy="-16"
+     r="2.7088001"
      transform="rotate(90)" />
   <rect
-     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.4982;stroke-dasharray:none;stroke-opacity:1"
+     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.0465867;stroke-dasharray:none;stroke-opacity:1"
      id="rect2"
-     width="133.2917"
-     height="126.77201"
-     x="-20.2742"
-     y="2.0165"
+     width="4.1447177"
+     height="3.941987"
+     x="11.622149"
+     y="-29.778309"
      transform="rotate(90)" />
-  <path
-     style="fill:none;stroke:#000000;stroke-width:1.3333"
-     d="M 4.0813 13.9473 H 27.9187"
-     id="path2" />
 </svg>

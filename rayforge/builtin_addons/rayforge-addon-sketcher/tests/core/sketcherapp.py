@@ -60,16 +60,12 @@ class SketcherApp(Adw.Application):
         btn_open = Gtk.Button(label="Open...")
         btn_open.set_tooltip_text("Open Sketch from File")
         btn_open.connect("clicked", self.on_open_clicked)
-        # Insert after the Cancel button
-        self.studio.session_bar.insert_child_after(
-            btn_open, self.studio.btn_cancel
-        )
+        self.studio.insert_child_after(btn_open, None)
 
         btn_save = Gtk.Button(label="Save...")
         btn_save.set_tooltip_text("Save Sketch to File")
         btn_save.connect("clicked", self.on_save_clicked)
-        # Insert after the Open button
-        self.studio.session_bar.insert_child_after(btn_save, btn_open)
+        self.studio.insert_child_after(btn_save, btn_open)
         # --- End of added buttons ---
 
         # Connect signals for testing
