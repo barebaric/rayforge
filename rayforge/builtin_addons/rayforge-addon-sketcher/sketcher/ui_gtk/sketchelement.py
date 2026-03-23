@@ -71,6 +71,10 @@ class SketchElement(CanvasElement):
         self.point_radius = 5.0
         self.line_width = 2.0
 
+        # Visibility toggles
+        self.show_constraints = True
+        self.show_construction_geometry = True
+
     @property
     def sketch(self) -> Sketch:
         return self._sketch

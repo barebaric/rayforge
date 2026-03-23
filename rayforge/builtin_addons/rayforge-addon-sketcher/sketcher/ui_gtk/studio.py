@@ -54,61 +54,53 @@ class SketchStudio(Gtk.Box):
         if self.canvas:
             self.canvas.set_size(width_mm, height_mm)
 
+    def _build_toolbar(self):
+        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        toolbar.set_margin_bottom(2)
+        toolbar.set_margin_top(2)
+        toolbar.set_margin_start(12)
+        toolbar.set_margin_end(12)
+        self.append(toolbar)
+
+        self.constraints_button = Gtk.ToggleButton()
+        self.constraints_button.set_child(
+            get_icon("sketch-constrain-point-symbolic")
+        )
+        self.constraints_button.set_active(True)
+        self.constraints_button.set_tooltip_text(_("Toggle constraints"))
+        self.constraints_button.connect("toggled", self._on_toggle_constraints)
+        toolbar.append(self.constraints_button)
+
+        self.construction_button = Gtk.ToggleButton()
+        self.construction_button.set_child(
+            get_icon("sketch-construction-symbolic")
+        )
+        self.construction_button.set_active(True)
+        self.construction_button.set_tooltip_text(
+            _("Toggle construction geometry")
+        )
+        self.construction_button.connect(
+            "toggled", self._on_toggle_construction_visibility
+        )
+        toolbar.append(self.construction_button)
+
+        spacer = Gtk.Box()
+        spacer.set_hexpand(True)
+        toolbar.append(spacer)
+
+        cancel_button = Gtk.Button(label=_("Cancel"))
+        cancel_button.connect("clicked", self._on_cancel_clicked)
+        toolbar.append(cancel_button)
+
+        finish_button = Gtk.Button(label=_("Finish"))
+        finish_button.add_css_class("suggested-action")
+        finish_button.connect("clicked", self._on_finish_clicked)
+        toolbar.append(finish_button)
+
     def _build_ui(self):
-        # 1. Session Bar (Header)
-        # We use a Gtk.Box styled as a toolbar to hold the session controls.
-        self.session_bar = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL, spacing=6
-        )
-        self.session_bar.add_css_class("toolbar")
-        self.session_bar.set_margin_top(6)
-        self.session_bar.set_margin_bottom(6)
-        self.session_bar.set_margin_start(12)
-        self.session_bar.set_margin_end(12)
-        self.append(self.session_bar)
+        self._build_toolbar()
 
-        # Left: Cancel
-        self.btn_cancel = Gtk.Button(child=get_icon("close-symbolic"))
-        self.btn_cancel.set_tooltip_text(_("Cancel Sketch"))
-        self.btn_cancel.connect("clicked", self._on_cancel_clicked)
-        self.btn_cancel.set_can_focus(False)
-        self.session_bar.append(self.btn_cancel)
-
-        # Center: Title (using spacers to center it roughly)
-        spacer_l = Gtk.Box()
-        spacer_l.set_hexpand(True)
-        self.session_bar.append(spacer_l)
-
-        # We need a vertical box to stack Title and Subtitle
-        title_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        title_box.set_valign(Gtk.Align.CENTER)
-
-        self.lbl_title = Gtk.Label(label=_("Sketch Studio"))
-        self.lbl_title.add_css_class("title-3")
-        title_box.append(self.lbl_title)
-
-        self.lbl_subtitle = Gtk.Label(
-            label=_(
-                "Right-click background to draw, objects to edit. "
-                "Double-click dimensions to edit values."
-            )
-        )
-        self.lbl_subtitle.add_css_class("caption")
-        title_box.append(self.lbl_subtitle)
-
-        self.session_bar.append(title_box)
-
-        spacer_r = Gtk.Box()
-        spacer_r.set_hexpand(True)
-        self.session_bar.append(spacer_r)
-
-        # Right: Finish
-        self.btn_finish = Gtk.Button(label=_("Finish"))
-        self.btn_finish.add_css_class("suggested-action")
-        self.btn_finish.connect("clicked", self._on_finish_clicked)
-        self.session_bar.append(self.btn_finish)
-
-        # 2. Main Content Area (Side Panel + Canvas)
+        # Main Content Area (Side Panel + Canvas)
         # Use a Paned widget to allow resizing between the panel and canvas
         main_paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         main_paned.set_vexpand(True)
@@ -267,6 +259,14 @@ class SketchStudio(Gtk.Box):
             self.canvas.edit_drag_begin.connect(self._on_edit_drag_begin)
             self.canvas.edit_drag_end.connect(self._on_edit_drag_end)
             self._on_selection_changed(self.canvas.sketch_element.selection)
+
+            # Sync toolbar button states with sketch element
+            self.constraints_button.set_active(
+                self.canvas.sketch_element.show_constraints
+            )
+            self.construction_button.set_active(
+                self.canvas.sketch_element.show_construction_geometry
+            )
 
             # Connect conflicts widget to sketch element
             self.conflicts_widget.set_sketch_element(
@@ -433,6 +433,18 @@ class SketchStudio(Gtk.Box):
     def _on_chamfer(self, action, param):
         if self.canvas.sketch_element:
             self.canvas.sketch_element.add_chamfer_action()
+
+    def _on_toggle_constraints(self, btn):
+        if self.canvas.sketch_element:
+            self.canvas.sketch_element.show_constraints = btn.get_active()
+            self.canvas.sketch_element.mark_dirty()
+
+    def _on_toggle_construction_visibility(self, btn):
+        if self.canvas.sketch_element:
+            self.canvas.sketch_element.show_construction_geometry = (
+                btn.get_active()
+            )
+            self.canvas.sketch_element.mark_dirty()
 
     def _on_cancel_clicked(self, btn, *args):
         logger.info("SketchStudio: Cancel clicked")
