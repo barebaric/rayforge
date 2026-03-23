@@ -33,9 +33,10 @@ garante que seus designs mantenham sua geometria pretendida mesmo quando as dime
 
 O desenhista suporta a criação dos seguintes elementos geométricos básicos:
 
-- **Linhas**: Desenhe segmentos de linha reta entre pontos
-- **Círculos**: Crie círculos definindo um ponto central e raio
+- **Caminhos (Linhas e Curvas de Bézier)**: Desenhe linhas retas e curvas de bézier
+  suaves usando a ferramenta de caminho unificada. Clique para colocar pontos, arraste para criar alças de bézier.
 - **Arcos**: Desenhe arcos especificando um ponto central, ponto inicial e ponto final
+- **Círculos**: Crie círculos definindo um ponto central e raio
 - **Retângulos**: Desenhe retângulos especificando dois cantos opostos
 - **Retângulos Arredondados**: Desenhe retângulos com cantos arredondados
 - **Caixas de Texto**: Adicione elementos de texto ao seu esboço
@@ -44,6 +45,31 @@ O desenhista suporta a criação dos seguintes elementos geométricos básicos:
 Esses elementos formam a base dos seus designs 2D e podem ser combinados para criar
 formas complexas. Preenchimentos são particularmente úteis para criar regiões sólidas que
 serão gravadas ou cortadas como uma única peça.
+
+## Trabalhando com Curvas de Bézier
+
+A ferramenta de caminho suporta curvas de bézier para criar formas suaves e orgânicas:
+
+### Desenhando Curvas de Bézier
+
+1. Selecione a ferramenta de caminho no menu circular ou use o atalho de teclado
+2. Clique para colocar pontos - cada clique cria um novo ponto
+3. Arraste após clicar para criar alças de bézier para curvas suaves
+4. Continue adicionando pontos para construir seu caminho
+5. Pressione Escape ou clique duas vezes para finalizar o caminho
+
+### Editando Curvas de Bézier
+
+- **Mover pontos**: Clique e arraste qualquer ponto para reposicioná-lo
+- **Ajustar alças**: Arraste as extremidades das alças para modificar a forma da curva
+- **Conectar a pontos existentes**: Ao editar um caminho, você pode encaixar em pontos existentes no seu esboço
+- **Tornar suave/simétrico**: Pontos conectados por uma restrição coincidente podem ser tornados suaves (tangente contínua) ou simétricos (alças espelhadas)
+
+### Convertendo Curvas em Linhas
+
+Use a **ferramenta de endireitar** para converter curvas de bézier de volta em linhas retas.
+Isso é útil quando você precisa de geometria limpa e simples. Selecione os segmentos de bézier
+que deseja converter e aplique a ação de endireitar.
 
 ## Sistema de Restrições Paramétricas
 
@@ -73,7 +99,7 @@ relações geométricas precisas:
   especificado
 - **Comprimento/Raio Igual**: Força múltiplos elementos (linhas, arcos ou círculos) a ter
   o mesmo comprimento ou raio
-- **Distância Igual**: Faz dois line segments ter same length (diferente de Comprimento/Raio, which also applies to arcs, circles)
+- **Distância Igual**: Faz dois segmentos de linha terem o mesmo comprimento
 
 ## Interface do Menu Circular
 
@@ -93,18 +119,20 @@ O desenhista fornece atalhos de teclado para um fluxo de trabalho eficiente:
 
 ### Atalhos de Ferramentas
 - `Espaço`: Ferramenta Seleção
-- `G+L`: Ferramenta Linha
+- `G+P`: Ferramenta Caminho (linhas e curvas de bézier)
 - `G+A`: Ferramenta Arco
 - `G+C`: Ferramenta Círculo
 - `G+R`: Ferramenta Retângulo
 - `G+O`: Ferramenta Retângulo Arredondado
 - `G+F`: Ferramenta Preencher Área
 - `G+T`: Ferramenta Caixa de Texto
+- `G+G`: Ferramenta Grade (alternar visibilidade da grade)
 - `G+N`: Alternar modo de construção na seleção
 
 ### Atalhos de Ação
 - `C+H`: Adicionar canto Chanfro
 - `C+F`: Adicionar canto Filete
+- `C+S`: Endireitar curvas de bézier selecionadas para linhas
 
 ### Atalhos de Restrição
 - `H`: Aplicar restrição Horizontal
@@ -142,6 +170,31 @@ Entidades de construção são úteis para:
 - Criar linhas e círculos de referência
 - Definir geometria temporária para alinhamento
 - Construir formas complexas a partir de uma estrutura de guias
+
+## Grade e Controles de Visibilidade
+
+### Ferramenta Grade
+
+A ferramenta de grade fornece uma referência visual para alinhamento e dimensionamento:
+
+- Alternar grade on/off usando o botão da ferramenta grade ou `G+G`
+- A grade se adapta ao seu nível de zoom para espaçamento consistente
+- Segure `Ctrl` enquanto coloca ou move pontos para encaixar na grade
+
+### Controles de Mostrar/Ocultar
+
+A barra de ferramentas do desenhista inclui botões de alternância para controlar visibilidade:
+
+- **Mostrar/ocultar geometria de construção**: Alternar visibilidade de entidades de construção
+- **Mostrar/ocultar restrições**: Alternar visibilidade de marcadores de restrições
+
+Estes controles ajudam a reduzir a desordem visual ao trabalhar em esboços complexos.
+
+### Movimento Restrito ao Eixo
+
+Ao arrastar pontos ou geometria, segure `Shift` para restringir o movimento ao
+eixo mais próximo (horizontal ou vertical). Isso é útil para manter o alinhamento
+enquanto faz ajustes.
 
 ## Chanfro e Filete
 
@@ -188,10 +241,10 @@ relações dimensionais.
 1. **Comece com Geometria Aproximada**: Crie formas básicas primeiro, depois refine com restrições
 2. **Use Restrições Cedo**: Aplique restrições enquanto constrói para manter a intenção do design
 3. **Verifique o Status das Restrições**: O sistema indica quando esboços estão totalmente restringidos
-4. **Observe Conflitos**: Restrições que conflitam entre si são destacadas em vermelho
+4. **Observe Conflitos**: Restrições que conflitam entre si são destacadas em vermelho e mostradas no painel de restrições para fácil identificação
 5. **Utilize Simetria**: Restrições de simetria podem acelerar significativamente designs complexos
-6. **Itere e Refine**: Não hesite em modificar restrições para alcançar o resultado
-   desejado
+6. **Use a Grade**: Habilite a grade para alinhamento preciso, e use Ctrl para encaixar na grade
+7. **Itere e Refine**: Não hesite em modificar restrições para alcançar o resultado desejado
 
 ## Recursos de Edição
 

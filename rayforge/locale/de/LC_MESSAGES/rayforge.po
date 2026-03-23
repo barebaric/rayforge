@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-22 19:54+0100\n"
+"POT-Creation-Date: 2026-03-23 12:54+0100\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -3589,6 +3589,10 @@ msgstr "Material hinzufügen"
 msgid "Split"
 msgstr "Teilen"
 
+#: rayforge/ui_gtk/main_menu.py
+msgid "Export Object..."
+msgstr "Objekt exportieren..."
+
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
 msgid "Add Equidistant Tabs…"
 msgstr "Äquidistante Haltestege hinzufügen…"
@@ -3763,6 +3767,10 @@ msgstr "Maschine fortsetzen"
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Pause machine"
 msgstr "Maschine pausieren"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Please select a single object to export."
+msgstr "Bitte wähle ein einzelnes Objekt zum Exportieren aus."
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Failed to create debug archive."
@@ -4299,9 +4307,8 @@ msgid "Export Object"
 msgstr "Objekt exportieren"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
-#, python-brace-format
-msgid "{app_name} Sketch"
-msgstr "{app_name}-Skizze"
+msgid "Export Document"
+msgstr "Dokument exportieren"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/svg/exporter.py
 msgid "SVG (Scalable Vector Graphics)"
@@ -4310,10 +4317,6 @@ msgstr "SVG (Skalierbare Vektorgrafik)"
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/dxf/exporter.py
 msgid "DXF (CAD Exchange Format)"
 msgstr "DXF (CAD-Austauschformat)"
-
-#: rayforge/ui_gtk/doceditor/file_dialogs.py
-msgid "Export Document"
-msgstr "Dokument exportieren"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 #, python-brace-format
@@ -5080,6 +5083,13 @@ msgid "All addon updates installed!"
 msgstr "Alle Erweiterungs-Updates installiert!"
 
 #: rayforge/app.py
+#, python-brace-format
+msgid "Cannot open '{file}'. The required addon may be disabled."
+msgstr ""
+"'{file}' kann nicht geöffnet werden. Das benötigte Addon ist möglicherweise "
+"deaktiviert."
+
+#: rayforge/app.py
 msgid "A GCode generator for laser cutters."
 msgstr "Ein G-Code-Generator für Laserschneider."
 
@@ -5437,6 +5447,11 @@ msgid "File not found: {name}"
 msgstr "Datei nicht gefunden: {name}"
 
 #: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid "{count} asset(s) require disabled addon(s)"
+msgstr "{count} Asset(s) benötigen deaktivierte(s) Addon(s)"
+
+#: rayforge/doceditor/file_cmd.py
 msgid "Invalid project file format"
 msgstr "Ungültiges Projektdateiformat"
 
@@ -5519,6 +5534,11 @@ msgstr "Ebene „{name}“ entfernen"
 #: rayforge/doceditor/layer_cmd.py
 msgid "Reorder layers"
 msgstr "Ebenen neu anordnen"
+
+#: rayforge/doceditor/editor.py
+#, python-brace-format
+msgid "{count} asset(s) require disabled addon '{addon}'"
+msgstr "{count} Asset(s) benötigen deaktiviertes Addon '{addon}'"
 
 #: rayforge/doceditor/group_cmd.py
 msgid "Grouping items..."

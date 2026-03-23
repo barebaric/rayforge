@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-22 19:54+0100\n"
+"POT-Creation-Date: 2026-03-23 12:54+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -3547,6 +3547,10 @@ msgstr "Додати матеріал"
 msgid "Split"
 msgstr "Розділити"
 
+#: rayforge/ui_gtk/main_menu.py
+msgid "Export Object..."
+msgstr "Експортувати об'єкт..."
+
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
 msgid "Add Equidistant Tabs…"
 msgstr "Додати рівновіддалені вкладки…"
@@ -3721,6 +3725,10 @@ msgstr "Відновити верстат"
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Pause machine"
 msgstr "Призупинити верстат"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Please select a single object to export."
+msgstr "Будь ласка, будь ласка, виберіть один об'єкт для експорту."
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Failed to create debug archive."
@@ -4251,9 +4259,8 @@ msgid "Export Object"
 msgstr "Експортувати об'єкт"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
-#, python-brace-format
-msgid "{app_name} Sketch"
-msgstr "Ескіз {app_name}"
+msgid "Export Document"
+msgstr "Експортувати документ"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/svg/exporter.py
 msgid "SVG (Scalable Vector Graphics)"
@@ -4262,10 +4269,6 @@ msgstr "SVG (масштабована векторна графіка)"
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/dxf/exporter.py
 msgid "DXF (CAD Exchange Format)"
 msgstr "DXF (формат обміну CAD)"
-
-#: rayforge/ui_gtk/doceditor/file_dialogs.py
-msgid "Export Document"
-msgstr "Експортувати документ"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 #, python-brace-format
@@ -5029,6 +5032,13 @@ msgid "All addon updates installed!"
 msgstr "Всі оновлення додатків встановлено!"
 
 #: rayforge/app.py
+#, python-brace-format
+msgid "Cannot open '{file}'. The required addon may be disabled."
+msgstr ""
+"Неможливо відкрити '{file}'. Необхідний необхідний додаток може бути "
+"вимкнено."
+
+#: rayforge/app.py
 msgid "A GCode generator for laser cutters."
 msgstr "Генератор G-коду для лазерних різаків."
 
@@ -5385,6 +5395,11 @@ msgid "File not found: {name}"
 msgstr "Файл не знайдено: {name}"
 
 #: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid "{count} asset(s) require disabled addon(s)"
+msgstr "{count} ресурс(и) потребують вимкнені розширення"
+
+#: rayforge/doceditor/file_cmd.py
 msgid "Invalid project file format"
 msgstr "Неправильний формат файлу проекту"
 
@@ -5467,6 +5482,11 @@ msgstr "Видалити шар '{name}'"
 #: rayforge/doceditor/layer_cmd.py
 msgid "Reorder layers"
 msgstr "Змінити порядок шарів"
+
+#: rayforge/doceditor/editor.py
+#, python-brace-format
+msgid "{count} asset(s) require disabled addon '{addon}'"
+msgstr "{count} ресурс(и) потребують вимкнене розширення '{addon}'"
 
 #: rayforge/doceditor/group_cmd.py
 msgid "Grouping items..."

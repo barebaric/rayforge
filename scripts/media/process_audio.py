@@ -20,7 +20,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-DEFAULT_TEMPO = 1.05
+DEFAULT_TEMPO = 1.065
 
 
 def build_audio_filter_chain(tempo: float = 1.0) -> str:

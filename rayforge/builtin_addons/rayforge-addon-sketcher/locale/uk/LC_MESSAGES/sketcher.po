@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-22 19:54+0100\n"
+"POT-Creation-Date: 2026-03-23 12:55+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -196,6 +196,10 @@ msgstr "Додати обмеження"
 msgid "Add {}"
 msgstr "Додати {}"
 
+#: sketcher/core/commands/grid.py
+msgid "Add Grid"
+msgstr "Додати сітку"
+
 #: sketcher/core/commands/chamfer.py
 msgid "Add Chamfer"
 msgstr "Додати фаску"
@@ -273,21 +277,18 @@ msgstr "Редагувати ескіз"
 msgid "Export Object..."
 msgstr "Експортувати об'єкт..."
 
-#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/menu.py
-msgid "Cancel Sketch"
-msgstr "Скасувати ескіз"
+#: sketcher/ui_gtk/studio.py
+msgid "Toggle constraints"
+msgstr "Перемкнути обмеження"
 
 #: sketcher/ui_gtk/studio.py
-msgid "Sketch Studio"
-msgstr "Студія ескізів"
+msgid "Toggle construction geometry"
+msgstr "Перемкнути допоміжну геометрію"
 
-#: sketcher/ui_gtk/studio.py
-msgid ""
-"Right-click background to draw, objects to edit. Double-click dimensions to "
-"edit values."
-msgstr ""
-"Клацніть правою кнопкою на фоні для малювання, на об'єктах — для "
-"редагування. Двічі клацніть на розмірах для зміни значень."
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/dimension_input.py
+#: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/sketchcanvas.py
+msgid "Cancel"
+msgstr "Скасувати"
 
 #: sketcher/ui_gtk/studio.py
 msgid "Finish"
@@ -321,9 +322,13 @@ msgstr "Додати обмеження симетрії"
 msgid "Select"
 msgstr "Вибрати"
 
-#: sketcher/ui_gtk/tools/select_tool.py
+#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
 msgid "Snap to Grid"
 msgstr "Прив'язати до сітки"
+
+#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
+msgid "Constrain to Axis"
+msgstr "Обмежити до осі"
 
 #: sketcher/ui_gtk/tools/select_tool.py
 msgid "Select Connected"
@@ -336,10 +341,6 @@ msgstr "Скруглення"
 #: sketcher/ui_gtk/tools/dimension_input.py
 msgid "Apply"
 msgstr "Застосувати"
-
-#: sketcher/ui_gtk/tools/dimension_input.py sketcher/ui_gtk/sketchcanvas.py
-msgid "Cancel"
-msgstr "Скасувати"
 
 #: sketcher/ui_gtk/tools/dimension_input.py
 #: sketcher/ui_gtk/tools/delete_tool.py sketcher/ui_gtk/menu.py
@@ -399,6 +400,26 @@ msgstr "Дуга"
 #: sketcher/ui_gtk/tools/arc_tool.py
 msgid "Type radius"
 msgstr "Введіть радіус"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Grid"
+msgstr "Сітка"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Create Grid"
+msgstr "Створити сітку"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Rows"
+msgstr "Рядки"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Columns"
+msgstr "Стовпці"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Create"
+msgstr "Створити"
 
 #: sketcher/ui_gtk/tools/tangent_constraint_tool.py
 msgid "Add Tangent Constraint"
@@ -511,6 +532,10 @@ msgstr "Змішані значення"
 #: sketcher/ui_gtk/menu.py
 msgid "Finish Sketch"
 msgstr "Завершити ескіз"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Cancel Sketch"
+msgstr "Скасувати ескіз"
 
 #: sketcher/ui_gtk/menu.py
 msgid "_File"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-22 19:54+0100\n"
+"POT-Creation-Date: 2026-03-23 12:55+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -195,6 +195,10 @@ msgstr "添加约束"
 msgid "Add {}"
 msgstr "添加 {}"
 
+#: sketcher/core/commands/grid.py
+msgid "Add Grid"
+msgstr "添加网格"
+
 #: sketcher/core/commands/chamfer.py
 msgid "Add Chamfer"
 msgstr "添加倒角"
@@ -272,19 +276,18 @@ msgstr "编辑草图"
 msgid "Export Object..."
 msgstr "导出对象..."
 
-#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/menu.py
-msgid "Cancel Sketch"
-msgstr "取消草图"
+#: sketcher/ui_gtk/studio.py
+msgid "Toggle constraints"
+msgstr "切换约束"
 
 #: sketcher/ui_gtk/studio.py
-msgid "Sketch Studio"
-msgstr "草图工作室"
+msgid "Toggle construction geometry"
+msgstr "切换辅助几何"
 
-#: sketcher/ui_gtk/studio.py
-msgid ""
-"Right-click background to draw, objects to edit. Double-click dimensions to "
-"edit values."
-msgstr "右键单击背景进行绘制，右键单击对象进行编辑。双击尺寸以编辑值。"
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/dimension_input.py
+#: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/sketchcanvas.py
+msgid "Cancel"
+msgstr "取消"
 
 #: sketcher/ui_gtk/studio.py
 msgid "Finish"
@@ -318,9 +321,13 @@ msgstr "添加对称约束"
 msgid "Select"
 msgstr "选择"
 
-#: sketcher/ui_gtk/tools/select_tool.py
+#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
 msgid "Snap to Grid"
 msgstr "对齐网格"
+
+#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
+msgid "Constrain to Axis"
+msgstr "约束到轴"
 
 #: sketcher/ui_gtk/tools/select_tool.py
 msgid "Select Connected"
@@ -333,10 +340,6 @@ msgstr "圆角"
 #: sketcher/ui_gtk/tools/dimension_input.py
 msgid "Apply"
 msgstr "应用"
-
-#: sketcher/ui_gtk/tools/dimension_input.py sketcher/ui_gtk/sketchcanvas.py
-msgid "Cancel"
-msgstr "取消"
 
 #: sketcher/ui_gtk/tools/dimension_input.py
 #: sketcher/ui_gtk/tools/delete_tool.py sketcher/ui_gtk/menu.py
@@ -396,6 +399,26 @@ msgstr "圆弧"
 #: sketcher/ui_gtk/tools/arc_tool.py
 msgid "Type radius"
 msgstr "输入半径"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Grid"
+msgstr "网格"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Create Grid"
+msgstr "创建网格"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Rows"
+msgstr "行"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Columns"
+msgstr "列"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Create"
+msgstr "创建"
 
 #: sketcher/ui_gtk/tools/tangent_constraint_tool.py
 msgid "Add Tangent Constraint"
@@ -508,6 +531,10 @@ msgstr "混合值"
 #: sketcher/ui_gtk/menu.py
 msgid "Finish Sketch"
 msgstr "完成草图"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Cancel Sketch"
+msgstr "取消草图"
 
 #: sketcher/ui_gtk/menu.py
 msgid "_File"

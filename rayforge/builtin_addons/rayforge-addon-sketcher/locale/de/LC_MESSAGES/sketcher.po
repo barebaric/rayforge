@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-22 19:54+0100\n"
+"POT-Creation-Date: 2026-03-23 12:55+0100\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -195,6 +195,10 @@ msgstr "Bedingung hinzufügen"
 msgid "Add {}"
 msgstr "{} hinzufügen"
 
+#: sketcher/core/commands/grid.py
+msgid "Add Grid"
+msgstr "Raster hinzufügen"
+
 #: sketcher/core/commands/chamfer.py
 msgid "Add Chamfer"
 msgstr "Fase hinzufügen"
@@ -272,21 +276,18 @@ msgstr "Skizze bearbeiten"
 msgid "Export Object..."
 msgstr "Objekt exportieren..."
 
-#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/menu.py
-msgid "Cancel Sketch"
-msgstr "Skizze abbrechen"
+#: sketcher/ui_gtk/studio.py
+msgid "Toggle constraints"
+msgstr "Bedingungen umschalten"
 
 #: sketcher/ui_gtk/studio.py
-msgid "Sketch Studio"
-msgstr "Skizzen-Studio"
+msgid "Toggle construction geometry"
+msgstr "Konstruktionsgeometrie umschalten"
 
-#: sketcher/ui_gtk/studio.py
-msgid ""
-"Right-click background to draw, objects to edit. Double-click dimensions to "
-"edit values."
-msgstr ""
-"Rechtsklick auf Hintergrund zum Zeichnen, auf Objekte zum Bearbeiten. "
-"Doppelklick auf Maße, um Werte zu bearbeiten."
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/dimension_input.py
+#: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/sketchcanvas.py
+msgid "Cancel"
+msgstr "Abbrechen"
 
 #: sketcher/ui_gtk/studio.py
 msgid "Finish"
@@ -320,9 +321,13 @@ msgstr "Symmetriebedingung hinzufügen"
 msgid "Select"
 msgstr "Auswählen"
 
-#: sketcher/ui_gtk/tools/select_tool.py
+#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
 msgid "Snap to Grid"
 msgstr "Am Raster ausrichten"
+
+#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
+msgid "Constrain to Axis"
+msgstr "An Achse binden"
 
 #: sketcher/ui_gtk/tools/select_tool.py
 msgid "Select Connected"
@@ -335,10 +340,6 @@ msgstr "Abrundung"
 #: sketcher/ui_gtk/tools/dimension_input.py
 msgid "Apply"
 msgstr "Anwenden"
-
-#: sketcher/ui_gtk/tools/dimension_input.py sketcher/ui_gtk/sketchcanvas.py
-msgid "Cancel"
-msgstr "Abbrechen"
 
 #: sketcher/ui_gtk/tools/dimension_input.py
 #: sketcher/ui_gtk/tools/delete_tool.py sketcher/ui_gtk/menu.py
@@ -398,6 +399,26 @@ msgstr "Bogen"
 #: sketcher/ui_gtk/tools/arc_tool.py
 msgid "Type radius"
 msgstr "Radius eingeben"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Grid"
+msgstr "Gitter"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Create Grid"
+msgstr "Raster erstellen"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Rows"
+msgstr "Zeilen"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Columns"
+msgstr "Spalten"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Create"
+msgstr "Erstellen"
 
 #: sketcher/ui_gtk/tools/tangent_constraint_tool.py
 msgid "Add Tangent Constraint"
@@ -510,6 +531,10 @@ msgstr "Gemischte Werte"
 #: sketcher/ui_gtk/menu.py
 msgid "Finish Sketch"
 msgstr "Skizze fertigstellen"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Cancel Sketch"
+msgstr "Skizze abbrechen"
 
 #: sketcher/ui_gtk/menu.py
 msgid "_File"

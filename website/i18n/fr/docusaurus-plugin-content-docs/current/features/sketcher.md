@@ -27,15 +27,42 @@ Le dessinateur fournit un ensemble complet d'outils pour créer des formes géom
 
 Le dessinateur supporte la création des éléments géométriques de base suivants :
 
-- **Lignes** : Dessinez des segments de ligne droite entre des points
-- **Cercles** : Créez des cercles en définissant un point central et un rayon
+- **Tracés (Lignes et Courbes de Bézier)** : Dessinez des lignes droites et des courbes
+  de bézier fluides avec l'outil de tracé unifié. Cliquez pour placer des points,
+  glissez pour créer des poignées de bézier.
 - **Arcs** : Dessinez des arcs en spécifiant un point central, un point de départ et un point de fin
+- **Cercles** : Créez des cercles en définissant un point central et un rayon
 - **Rectangles** : Dessinez des rectangles en spécifiant deux coins opposés
 - **Rectangles Arrondis** : Dessinez des rectangles avec des coins arrondis
 - **Zones de Texte** : Ajoutez des éléments de texte à votre esquisse
 - **Remplissages** : Remplissez des régions fermées pour créer des zones solides
 
 Ces éléments forment la base de vos designs 2D et peuvent être combinés pour créer des formes complexes. Les remplissages sont particulièrement utiles pour créer des régions solides qui seront gravées ou coupées comme une seule pièce.
+
+## Travailler avec les Courbes de Bézier
+
+L'outil de tracé supporte les courbes de bézier pour créer des formes fluides et organiques :
+
+### Dessiner des Courbes de Bézier
+
+1. Sélectionnez l'outil de tracé depuis le menu circulaire ou utilisez le raccourci clavier
+2. Cliquez pour placer des points - chaque clic crée un nouveau point
+3. Glissez après avoir cliqué pour créer des poignées de bézier pour des courbes fluides
+4. Continuez à ajouter des points pour construire votre tracé
+5. Pressez Échap ou double-cliquez pour terminer le tracé
+
+### Éditer des Courbes de Bézier
+
+- **Déplacer des points** : Cliquez et glissez n'importe quel point pour le repositionner
+- **Ajuster les poignées** : Glissez les extrémités des poignées pour modifier la forme de la courbe
+- **Connecter à des points existants** : Lors de l'édition d'un tracé, vous pouvez vous aligner sur des points existants dans votre esquisse
+- **Rendre fluide/symétrique** : Les points connectés par une contrainte coïncidente peuvent être rendus fluides (tangente continue) ou symétriques (poignées en miroir)
+
+### Convertir des Courbes en Lignes
+
+Utilisez l'**outil de redressement** pour convertir les courbes de bézier en lignes droites.
+Ceci est utile lorsque vous avez besoin d'une géométrie simple et propre. Sélectionnez les segments
+de bézier que vous souhaitez convertir et appliquez l'action de redressement.
 
 ## Système de Contraintes Paramétriques
 
@@ -77,18 +104,20 @@ Le dessinateur fournit des raccourcis clavier pour un flux de travail efficace :
 
 ### Raccourcis d'Outils
 - `Espace` : Outil de sélection
-- `G+L` : Outil ligne
+- `G+P` : Outil tracé (lignes et courbes de bézier)
 - `G+A` : Outil arc
 - `G+C` : Outil cercle
 - `G+R` : Outil rectangle
 - `G+O` : Outil rectangle arrondi
 - `G+F` : Outil zone de remplissage
 - `G+T` : Outil zone de texte
+- `G+G` : Outil grille (basculer la visibilité de la grille)
 - `G+N` : Basculer le mode construction sur la sélection
 
 ### Raccourcis d'Action
 - `C+H` : Ajouter un coin de chanfrein
 - `C+F` : Ajouter un coin de congé
+- `C+S` : Redresser les courbes de bézier sélectionnées en lignes
 
 ### Raccourcis de Contrainte
 - `H` : Appliquer la contrainte Horizontale
@@ -123,6 +152,31 @@ Les entités de construction sont utiles pour :
 - Créer des lignes et cercles de référence
 - Définir une géométrie temporaire pour l'alignement
 - Construire des formes complexes à partir d'un cadre de guides
+
+## Grille et Contrôles de Visibilité
+
+### Outil Grille
+
+L'outil grille fournit une référence visuelle pour l'alignement et le dimensionnement :
+
+- Basculer la grille on/off en utilisant le bouton de l'outil grille ou `G+G`
+- La grille s'adapte à votre niveau de zoom pour un espacement constant
+- Maintenez `Ctrl` en plaçant ou déplaçant des points pour s'aligner sur la grille
+
+### Contrôles Afficher/Masquer
+
+La barre d'outils du dessinateur inclut des boutons de basculement pour contrôler la visibilité :
+
+- **Afficher/masquer la géométrie de construction** : Basculer la visibilité des entités de construction
+- **Afficher/masquer les contraintes** : Basculer la visibilité des marqueurs de contraintes
+
+Ces contrôles aident à réduire l'encombrement visuel lors du travail sur des esquisses complexes.
+
+### Mouvement Contraint à l'Axe
+
+Lors du déplacement de points ou de géométrie, maintenez `Maj` pour contraindre le mouvement
+à l'axe le plus proche (horizontal ou vertical). Ceci est utile pour maintenir l'alignement
+lors des ajustements.
 
 ## Chanfrein et Congé
 
@@ -162,9 +216,10 @@ Les esquisses sauvegardées peuvent être importées dans tout espace de travail
 1. **Commencez avec une Géométrie Approximative** : Créez d'abord des formes de base, puis affinez avec des contraintes
 2. **Utilisez les Contraintes Tôt** : Appliquez des contraintes pendant que vous construisez pour maintenir l'intention du design
 3. **Vérifiez le Statut des Contraintes** : Le système indique quand les esquisses sont totalement contraintes
-4. **Surveillez les Conflits** : Les contraintes qui entrent en conflit les unes avec les autres sont surlignées en rouge
+4. **Surveillez les Conflits** : Les contraintes qui entrent en conflit les unes avec les autres sont surlignées en rouge et affichées dans le panneau des contraintes pour une identification facile
 5. **Utilisez la Symétrie** : Les contraintes de symétrie peuvent accélérer significativement les designs complexes
-6. **Itérez et Affinez** : N'hésitez pas à modifier les contraintes pour obtenir le résultat souhaité
+6. **Utilisez la Grille** : Activez la grille pour un alignement précis, et utilisez Ctrl pour s'aligner sur la grille
+7. **Itérez et Affinez** : N'hésitez pas à modifier les contraintes pour obtenir le résultat souhaité
 
 ## Fonctionnalités d'Édition
 

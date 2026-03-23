@@ -27,15 +27,41 @@ El dibujador proporciona un conjunto completo de herramientas para crear formas 
 
 El dibujador soporta crear los siguientes elementos geométricos básicos:
 
-- **Líneas**: Dibuja segmentos de línea recta entre puntos
-- **Círculos**: Crea círculos definiendo un punto central y radio
+- **Trayectos (Líneas y Curvas Bezier)**: Dibuja líneas rectas y curvas bezier suaves
+  usando la herramienta de trayecto unificada. Haz clic para colocar puntos, arrastra para crear manipuladores bezier.
 - **Arcos**: Dibuja arcos especificando un punto central, punto inicial y punto final
+- **Círculos**: Crea círculos definiendo un punto central y radio
 - **Rectángulos**: Dibuja rectángulos especificando dos esquinas opuestas
 - **Rectángulos Redondeados**: Dibuja rectángulos con esquinas redondeadas
 - **Cajas de Texto**: Añade elementos de texto a tu boceto
 - **Rellenos**: Rellena regiones cerradas para crear áreas sólidas
 
 Estos elementos forman la base de tus diseños 2D y pueden combinarse para crear formas complejas. Los rellenos son particularmente útiles para crear regiones sólidas que serán grabadas o cortadas como una sola pieza.
+
+## Trabajando con Curvas Bezier
+
+La herramienta de trayecto soporta curvas bezier para crear formas suaves y orgánicas:
+
+### Dibujando Curvas Bezier
+
+1. Selecciona la herramienta de trayecto desde el menú circular o usa el atajo de teclado
+2. Haz clic para colocar puntos - cada clic crea un nuevo punto
+3. Arrastra después de hacer clic para crear manipuladores bezier para curvas suaves
+4. Continúa añadiendo puntos para construir tu trayecto
+5. Presiona Escape o doble clic para finalizar el trayecto
+
+### Editando Curvas Bezier
+
+- **Mover puntos**: Haz clic y arrastra cualquier punto para reposicionarlo
+- **Ajustar manipuladores**: Arrastra los extremos de los manipuladores para modificar la forma de la curva
+- **Conectar a puntos existentes**: Al editar un trayecto, puedes ajustar a puntos existentes en tu boceto
+- **Hacer suave/simétrico**: Los puntos conectados por una restricción coincidente pueden hacerse suaves (tangente continua) o simétricos (manipuladores reflejados)
+
+### Convertir Curvas a Líneas
+
+Usa la **herramienta de enderezar** para convertir curvas bezier de vuelta a líneas rectas.
+Esto es útil cuando necesitas geometría limpia y simple. Selecciona los segmentos bezier
+que quieres convertir y aplica la acción de enderezar.
 
 ## Sistema de Restricciones Paramétricas
 
@@ -78,18 +104,20 @@ El dibujador proporciona atajos de teclado para un flujo de trabajo eficiente:
 
 ### Atajos de Herramientas
 - `Espacio`: Herramienta de selección
-- `G+L`: Herramienta de línea
+- `G+P`: Herramienta de trayecto (líneas y curvas bezier)
 - `G+A`: Herramienta de arco
 - `G+C`: Herramienta de círculo
 - `G+R`: Herramienta de rectángulo
 - `G+O`: Herramienta de rectángulo redondeado
 - `G+F`: Herramienta de relleno de área
 - `G+T`: Herramienta de caja de texto
+- `G+G`: Herramienta de cuadrícula (alternar visibilidad de cuadrícula)
 - `G+N`: Alternar modo construcción en la selección
 
 ### Atajos de Acción
 - `C+H`: Añadir chaflán en esquina
 - `C+F`: Añadir redondeo en esquina
+- `C+S`: Enderezar curvas bezier seleccionadas a líneas
 
 ### Atajos de Restricciones
 - `H`: Aplicar restricción Horizontal
@@ -124,6 +152,31 @@ Las entidades de construcción son útiles para:
 - Crear líneas y círculos de referencia
 - Definir geometría temporal para alineación
 - Construir formas complejas a partir de un marco de guías
+
+## Cuadrícula y Controles de Visibilidad
+
+### Herramienta de Cuadrícula
+
+La herramienta de cuadrícula proporciona una referencia visual para alineación y dimensionado:
+
+- Alterna la cuadrícula on/off usando el botón de herramienta de cuadrícula o `G+G`
+- La cuadrícula se adapta a tu nivel de zoom para espaciado consistente
+- Mantén `Ctrl` mientras colocas o mueves puntos para ajustar a la cuadrícula
+
+### Controles de Mostrar/Ocultar
+
+La barra de herramientas del dibujante incluye botones de alternar para controlar visibilidad:
+
+- **Mostrar/ocultar geometría de construcción**: Alterna visibilidad de entidades de construcción
+- **Mostrar/ocultar restricciones**: Alterna visibilidad de marcadores de restricciones
+
+Estos controles ayudan a reducir el desorden visual cuando trabajas en bocetos complejos.
+
+### Movimiento Restringido a Eje
+
+Al arrastrar puntos o geometría, mantén `Shift` para restringir el movimiento al
+eje más cercano (horizontal o vertical). Esto es útil para mantener la alineación
+mientras haces ajustes.
 
 ## Chaflán y Redondeo
 
@@ -163,9 +216,10 @@ Los bocetos guardados pueden importarse a cualquier espacio de trabajo, permiti�
 1. **Comienza con Geometría Básica**: Crea formas básicas primero, luego refina con restricciones
 2. **Usa Restricciones Temprano**: Aplica restricciones mientras construyes para mantener la intención del diseño
 3. **Verifica Estado de Restricciones**: El sistema indica cuándo los bocetos están completamente restringidos
-4. **Observa Conflictos**: Las restricciones que entran en conflicto entre sí se resaltan en rojo
+4. **Observa Conflictos**: Las restricciones que entran en conflicto entre sí se resaltan en rojo y se muestran en el panel de restricciones para fácil identificación
 5. **Utiliza Simetría**: Las restricciones de simetría pueden acelerar significativamente diseños complejos
-6. **Itera y Refina**: No dudes en modificar restricciones para lograr el resultado deseado
+6. **Usa la Cuadrícula**: Habilita la cuadrícula para alineación precisa, y usa Ctrl para ajustar a la cuadrícula
+7. **Itera y Refina**: No dudes en modificar restricciones para lograr el resultado deseado
 
 ## Funciones de Edición
 
