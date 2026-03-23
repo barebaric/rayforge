@@ -38,12 +38,10 @@ from ..core.workpiece import WorkPiece
 from ..image import (
     exporter_registry,
     importer_registry,
-    importers,
     ImporterFeature,
     ImportManifest,
     Importer,
 )
-from ..image.registry import FileFilter
 from ..image.base_exporter import Exporter
 from ..image.dxf.exporter import GeometryDxfExporter
 from ..image.svg.exporter import GeometrySvgExporter
@@ -94,22 +92,6 @@ class FileCmd:
     ):
         self._editor = editor
         self._task_manager = task_manager
-
-    def get_supported_import_filters(self) -> List[FileFilter]:
-        """
-        Returns a list of FileFilter objects describing supported file types
-        for UI dialogs.
-        """
-        filters = []
-        for imp in importers:
-            filters.append(
-                FileFilter(
-                    label=imp.label,
-                    extensions=imp.extensions,
-                    mime_types=imp.mime_types,
-                )
-            )
-        return filters
 
     def get_importer_info(
         self, file_path: Path, mime_type: Optional[str]

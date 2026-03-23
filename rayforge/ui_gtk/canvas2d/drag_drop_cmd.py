@@ -13,7 +13,8 @@ from gettext import gettext as _
 from gi.repository import GObject, Gdk, Gtk, Gio, GLib, Adw
 from ...context import get_context
 from ...doceditor.file_cmd import ImportAction
-from ...image import ImporterFeature, importers
+from ...image import ImporterFeature
+from ...image.registry import importer_registry
 
 if TYPE_CHECKING:
     from ...ui_gtk.mainwindow import MainWindow
@@ -331,12 +332,9 @@ class DragDropCmd:
         formats = clipboard.get_formats()
 
         # Get all bitmap mime types from the backend
-        supported_bitmap_mimes = {
-            mime
-            for importer in importers
-            if ImporterFeature.BITMAP_TRACING in importer.features
-            for mime in importer.mime_types
-        }
+        supported_bitmap_mimes = importer_registry.mime_types_by_feature(
+            ImporterFeature.BITMAP_TRACING
+        )
 
         # Check for any supported bitmap image formats
         has_image = any(

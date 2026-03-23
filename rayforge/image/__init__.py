@@ -2,7 +2,7 @@ import inspect
 import logging
 import mimetypes
 from pathlib import Path
-from typing import Dict, Optional, Type, Union, List
+from typing import Optional, Type, Union, List
 from ..core.vectorization_spec import VectorizationSpec, PassthroughSpec
 from ..core.workpiece import WorkPiece
 from ..core.item import DocItem
@@ -11,6 +11,7 @@ from .base_importer import (
     Importer,
     ImporterFeature,
 )
+from .base_exporter import BaseExporter
 from .structures import (
     ImportPayload,
     ImportResult,
@@ -55,23 +56,22 @@ def isimporter(obj):
     )
 
 
-importers = [obj for name, obj in list(locals().items()) if isimporter(obj)]
-
-importer_by_name = {imp.__name__: imp for imp in importers}
-
-for importer_cls in importers:
-    importer_registry.register(importer_cls)
+for name, obj in list(locals().items()):
+    if isimporter(obj):
+        importer_registry.register(obj)
 
 
-def get_importer_for_file(file_path: Path) -> Optional[Type[Importer]]:
-    """Get the appropriate importer for a file path."""
-    mime_type, _ = mimetypes.guess_type(file_path)
-    if mime_type:
-        importer_cls = importer_registry.get_by_mime_type(mime_type)
-        if importer_cls:
-            return importer_cls
-    file_ext = file_path.suffix.lower()
-    return importer_registry.get_by_extension(file_ext)
+def isexporter(obj):
+    return (
+        inspect.isclass(obj)
+        and issubclass(obj, BaseExporter)
+        and obj is not BaseExporter
+    )
+
+
+for name, obj in list(locals().items()):
+    if isexporter(obj):
+        exporter_registry.register(obj)
 
 
 def _hydrate_workpieces_for_preview(
@@ -221,24 +221,21 @@ def import_file(
         return None
 
 
-renderer_by_name: Dict[str, Renderer] = {
-    "BmpRenderer": BMP_RENDERER,
-    "DxfRenderer": DXF_RENDERER,
-    "ProceduralRenderer": PROCEDURAL_RENDERER,
-    "JpgRenderer": JPG_RENDERER,
-    "MaterialTestRenderer": MaterialTestRenderer(),
-    "OpsRenderer": OPS_RENDERER,
-    "PngRenderer": PNG_RENDERER,
-    "PdfRenderer": PDF_RENDERER,
-    "RuidaRenderer": RUIDA_RENDERER,
-    "SvgRenderer": SVG_RENDERER,
-}
+_RENDERERS = [
+    BMP_RENDERER,
+    DXF_RENDERER,
+    PROCEDURAL_RENDERER,
+    JPG_RENDERER,
+    MaterialTestRenderer(),
+    OPS_RENDERER,
+    PNG_RENDERER,
+    PDF_RENDERER,
+    RUIDA_RENDERER,
+    SVG_RENDERER,
+]
 
-for renderer in renderer_by_name.values():
+for renderer in _RENDERERS:
     renderer_registry.register(renderer)
-
-exporter_registry.register(GeometrySvgExporter)
-exporter_registry.register(GeometryDxfExporter)
 
 
 def get_renderer_for_asset(asset_type: str) -> Optional[Renderer]:
@@ -262,12 +259,10 @@ __all__ = [
     "LayerInfo",
     "import_file",
     "import_file_from_bytes",
-    "importers",
-    "importer_by_name",
-    "renderer_by_name",
     "exporter_registry",
+    "GeometryDxfExporter",
+    "GeometrySvgExporter",
     "importer_registry",
     "renderer_registry",
-    "get_importer_for_file",
     "get_renderer_for_asset",
 ]

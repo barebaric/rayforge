@@ -2,6 +2,7 @@ from typing import cast
 import pytest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
+from rayforge.image.registry import renderer_registry
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
@@ -349,10 +350,10 @@ def test_doc_from_dict_deserialization_modern_assets():
         ],
     }
 
-    with patch.dict(
-        "rayforge.image.renderer_by_name",
+    with patch.object(
+        renderer_registry,
+        "_renderers",
         {"SvgRenderer": SvgRenderer()},
-        clear=True,
     ):
         new_doc = Doc.from_dict(doc_dict)
 

@@ -605,21 +605,6 @@ class TestExportGcodeToPath:
             assert not export_path.exists()
 
 
-class TestGetSupportedImportFilters:
-    """Tests for get_supported_import_filters method."""
-
-    def test_get_supported_import_filters(self, file_cmd):
-        """Test retrieving supported import filters."""
-        filters = file_cmd.get_supported_import_filters()
-        assert isinstance(filters, list)
-        assert len(filters) > 0
-
-        first = filters[0]
-        assert hasattr(first, "label")
-        assert hasattr(first, "extensions")
-        assert hasattr(first, "mime_types")
-
-
 class TestGetImporterInfo:
     """Tests for the get_importer_info method."""
 
