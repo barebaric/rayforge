@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Tuple
 from gettext import gettext as _
 
 from blinker import Signal
-from gi.repository import Adw, Gdk, GLib, Gtk
+from gi.repository import Adw, GLib, Gtk
 
 from ...context import get_context
 from ...core.step import Step
@@ -13,7 +13,6 @@ from ...pipeline.transformer import OpsTransformer
 from ...pipeline.transformer.placeholder import PlaceholderTransformer
 from ..icons import get_icon
 from ..shared.adwfix import get_spinrow_float
-from ..shared.keyboard import is_primary_modifier
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.preferences_page import TrackedPreferencesPage
 from ..shared.slider import create_slider_row
@@ -521,11 +520,6 @@ class StepSettingsDialog(PatchedDialogWindow):
         self.set_hide_on_close(False)
         self.connect("close-request", self._on_close_request)
 
-        # Add a key controller to close the dialog on Escape press
-        key_controller = Gtk.EventControllerKey()
-        key_controller.connect("key-pressed", self._on_key_pressed)
-        self.add_controller(key_controller)
-
         # --- Page 1: Main Step Settings ---
         self.general_view = GeneralStepSettingsView(self.editor, self.step)
         scrolled_page1 = Gtk.ScrolledWindow(
@@ -597,15 +591,6 @@ class StepSettingsDialog(PatchedDialogWindow):
         box.append(icon)
         box.append(label)
         return box
-
-    def _on_key_pressed(self, controller, keyval, keycode, state):
-        """Handle key press events, closing dialog on Escape or Cmd/Ctrl+W."""
-        has_primary = is_primary_modifier(state)
-
-        if keyval == Gdk.KEY_Escape or (has_primary and keyval == Gdk.KEY_w):
-            self.close()
-            return True
-        return False
 
     def _on_close_request(self, window):
         # Clean up the debounce timer in the general view when the window is
