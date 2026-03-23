@@ -40,7 +40,6 @@ class SketchTool(ABC):
     ICON: Optional[str] = None
     LABEL: Optional[str] = None
     SHORTCUTS: List[str] = []
-    ACTION_SHORTCUT: Optional[str] = None
     CURSOR_ICON: Optional[str] = None
 
     def __init__(self, element: SketchElement):
