@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
    height="24px"
-   viewBox="0 -960 960 960"
+   viewBox="0 0 32 32"
    width="24px"
    fill="#000000"
    version="1.1"
@@ -34,14 +34,14 @@
      inkscape:current-layer="svg1" />
   <g
      id="g3"
-     transform="translate(-43.449463,23.531275)">
+     transform="translate(-1.4483,0.7844)">
     <path
-       style="fill:none;stroke:#000000;stroke-width:90.6667;stroke-dasharray:none;stroke-opacity:1"
-       d="m 291.89036,-822.01844 544.67531,568.56457"
+       style="fill:none;stroke:#000000;stroke-width:3.0222;stroke-dasharray:none;stroke-opacity:1"
+       d="m 9.7297 4.5994 18.1558 18.9522"
        id="path2" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:90.6667;stroke-dasharray:none"
-       d="m 177.69752,-615.44018 c 0,0 165.4769,0.36551 316.60562,136.29106 151.12872,135.92555 150.3921,325.28908 150.3921,325.28908"
+       style="fill:none;stroke:#000000;stroke-width:3.0222;stroke-dasharray:none"
+       d="m 5.9233 11.4853 c 0 0 5.5159 0.0122 10.5535 4.543 5.0376 4.5309 5.0131 10.843 5.0131 10.843"
        id="path3"
        sodipodi:nodetypes="czc" />
   </g>
