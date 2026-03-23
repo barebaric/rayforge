@@ -13,6 +13,8 @@ def mock_element():
     element.editor.parent_window = MagicMock()
     element.execute_command = MagicMock()
     element.selection.entity_ids = []
+    element.canvas = MagicMock()
+    element.canvas._shift_pressed = False
     return element
 
 
@@ -58,10 +60,8 @@ def test_grid_tool_show_dialog_creates_command_on_create(
     grid_tool, mock_element
 ):
     mock_dialog = MagicMock()
-    mock_rows_entry = MagicMock()
-    mock_rows_entry.get_text.return_value = "4"
-    mock_cols_entry = MagicMock()
-    mock_cols_entry.get_text.return_value = "5"
+    mock_rows_row = MagicMock()
+    mock_cols_row = MagicMock()
 
     responses = {}
 
@@ -72,22 +72,26 @@ def test_grid_tool_show_dialog_creates_command_on_create(
     mock_dialog.present = MagicMock()
 
     with patch("gi.repository.Adw.MessageDialog") as MockDialog:
-        with patch("gi.repository.Adw.EntryRow") as MockEntryRow:
+        with patch("gi.repository.Adw.SpinRow") as MockSpinRow:
             with patch("gi.repository.Gtk.ListBox") as MockListBox:
-                MockDialog.return_value = mock_dialog
-                MockEntryRow.side_effect = [mock_rows_entry, mock_cols_entry]
-                MockListBox.return_value = MagicMock()
+                with patch(
+                    "sketcher.ui_gtk.tools.grid_tool.get_spinrow_int"
+                ) as mock_get_spinrow:
+                    MockDialog.return_value = mock_dialog
+                    MockSpinRow.side_effect = [mock_rows_row, mock_cols_row]
+                    MockListBox.return_value = MagicMock()
+                    mock_get_spinrow.side_effect = [4, 5]
 
-                grid_tool._show_dialog()
+                    grid_tool._show_dialog()
 
-                assert "response" in responses
-                responses["response"](mock_dialog, "create")
+                    assert "response" in responses
+                    responses["response"](mock_dialog, "create")
 
-                mock_element.execute_command.assert_called_once()
-                cmd = mock_element.execute_command.call_args[0][0]
-                assert isinstance(cmd, GridCommand)
-                assert cmd.rows == 4
-                assert cmd.cols == 5
+                    mock_element.execute_command.assert_called_once()
+                    cmd = mock_element.execute_command.call_args[0][0]
+                    assert isinstance(cmd, GridCommand)
+                    assert cmd.rows == 4
+                    assert cmd.cols == 5
 
 
 @pytest.mark.ui
@@ -102,10 +106,10 @@ def test_grid_tool_show_dialog_cancels_on_cancel(grid_tool, mock_element):
     mock_dialog.present = MagicMock()
 
     with patch("gi.repository.Adw.MessageDialog") as MockDialog:
-        with patch("gi.repository.Adw.EntryRow") as MockEntryRow:
+        with patch("gi.repository.Adw.SpinRow") as MockSpinRow:
             with patch("gi.repository.Gtk.ListBox") as MockListBox:
                 MockDialog.return_value = mock_dialog
-                MockEntryRow.return_value = MagicMock()
+                MockSpinRow.return_value = MagicMock()
                 MockListBox.return_value = MagicMock()
 
                 grid_tool._show_dialog()
@@ -118,10 +122,8 @@ def test_grid_tool_show_dialog_cancels_on_cancel(grid_tool, mock_element):
 @pytest.mark.ui
 def test_grid_tool_show_dialog_handles_invalid_input(grid_tool, mock_element):
     mock_dialog = MagicMock()
-    mock_rows_entry = MagicMock()
-    mock_rows_entry.get_text.return_value = "invalid"
-    mock_cols_entry = MagicMock()
-    mock_cols_entry.get_text.return_value = "5"
+    mock_rows_row = MagicMock()
+    mock_cols_row = MagicMock()
 
     responses = {}
 
@@ -132,26 +134,31 @@ def test_grid_tool_show_dialog_handles_invalid_input(grid_tool, mock_element):
     mock_dialog.present = MagicMock()
 
     with patch("gi.repository.Adw.MessageDialog") as MockDialog:
-        with patch("gi.repository.Adw.EntryRow") as MockEntryRow:
+        with patch("gi.repository.Adw.SpinRow") as MockSpinRow:
             with patch("gi.repository.Gtk.ListBox") as MockListBox:
-                MockDialog.return_value = mock_dialog
-                MockEntryRow.side_effect = [mock_rows_entry, mock_cols_entry]
-                MockListBox.return_value = MagicMock()
+                with patch(
+                    "sketcher.ui_gtk.tools.grid_tool.get_spinrow_int"
+                ) as mock_get_spinrow:
+                    MockDialog.return_value = mock_dialog
+                    MockSpinRow.side_effect = [mock_rows_row, mock_cols_row]
+                    MockListBox.return_value = MagicMock()
+                    mock_get_spinrow.side_effect = [2, 2]
 
-                grid_tool._show_dialog()
+                    grid_tool._show_dialog()
 
-                responses["response"](mock_dialog, "create")
+                    responses["response"](mock_dialog, "create")
 
-                mock_element.execute_command.assert_not_called()
+                    mock_element.execute_command.assert_called_once()
+                    cmd = mock_element.execute_command.call_args[0][0]
+                    assert cmd.rows == 2
+                    assert cmd.cols == 2
 
 
 @pytest.mark.ui
 def test_grid_tool_show_dialog_handles_too_small_grid(grid_tool, mock_element):
     mock_dialog = MagicMock()
-    mock_rows_entry = MagicMock()
-    mock_rows_entry.get_text.return_value = "1"
-    mock_cols_entry = MagicMock()
-    mock_cols_entry.get_text.return_value = "1"
+    mock_rows_row = MagicMock()
+    mock_cols_row = MagicMock()
 
     responses = {}
 
@@ -162,17 +169,24 @@ def test_grid_tool_show_dialog_handles_too_small_grid(grid_tool, mock_element):
     mock_dialog.present = MagicMock()
 
     with patch("gi.repository.Adw.MessageDialog") as MockDialog:
-        with patch("gi.repository.Adw.EntryRow") as MockEntryRow:
+        with patch("gi.repository.Adw.SpinRow") as MockSpinRow:
             with patch("gi.repository.Gtk.ListBox") as MockListBox:
-                MockDialog.return_value = mock_dialog
-                MockEntryRow.side_effect = [mock_rows_entry, mock_cols_entry]
-                MockListBox.return_value = MagicMock()
+                with patch(
+                    "sketcher.ui_gtk.tools.grid_tool.get_spinrow_int"
+                ) as mock_get_spinrow:
+                    MockDialog.return_value = mock_dialog
+                    MockSpinRow.side_effect = [mock_rows_row, mock_cols_row]
+                    MockListBox.return_value = MagicMock()
+                    mock_get_spinrow.side_effect = [2, 3]
 
-                grid_tool._show_dialog()
+                    grid_tool._show_dialog()
 
-                responses["response"](mock_dialog, "create")
+                    responses["response"](mock_dialog, "create")
 
-                mock_element.execute_command.assert_not_called()
+                    mock_element.execute_command.assert_called_once()
+                    cmd = mock_element.execute_command.call_args[0][0]
+                    assert cmd.rows == 2
+                    assert cmd.cols == 3
 
 
 @pytest.mark.ui
@@ -180,10 +194,8 @@ def test_grid_tool_creates_construction_geometry_by_default(
     grid_tool, mock_element
 ):
     mock_dialog = MagicMock()
-    mock_rows_entry = MagicMock()
-    mock_rows_entry.get_text.return_value = "2"
-    mock_cols_entry = MagicMock()
-    mock_cols_entry.get_text.return_value = "2"
+    mock_rows_row = MagicMock()
+    mock_cols_row = MagicMock()
 
     responses = {}
 
@@ -194,15 +206,19 @@ def test_grid_tool_creates_construction_geometry_by_default(
     mock_dialog.present = MagicMock()
 
     with patch("gi.repository.Adw.MessageDialog") as MockDialog:
-        with patch("gi.repository.Adw.EntryRow") as MockEntryRow:
+        with patch("gi.repository.Adw.SpinRow") as MockSpinRow:
             with patch("gi.repository.Gtk.ListBox") as MockListBox:
-                MockDialog.return_value = mock_dialog
-                MockEntryRow.side_effect = [mock_rows_entry, mock_cols_entry]
-                MockListBox.return_value = MagicMock()
+                with patch(
+                    "sketcher.ui_gtk.tools.grid_tool.get_spinrow_int"
+                ) as mock_get_spinrow:
+                    MockDialog.return_value = mock_dialog
+                    MockSpinRow.side_effect = [mock_rows_row, mock_cols_row]
+                    MockListBox.return_value = MagicMock()
+                    mock_get_spinrow.side_effect = [2, 2]
 
-                grid_tool._show_dialog()
+                    grid_tool._show_dialog()
 
-                responses["response"](mock_dialog, "create")
+                    responses["response"](mock_dialog, "create")
 
-                cmd = mock_element.execute_command.call_args[0][0]
-                assert cmd.construction is True
+                    cmd = mock_element.execute_command.call_args[0][0]
+                    assert cmd.construction is True

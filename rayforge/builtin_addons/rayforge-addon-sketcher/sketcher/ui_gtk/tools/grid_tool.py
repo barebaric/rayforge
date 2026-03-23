@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Optional, Union, cast
 
 from gi.repository import Adw, Gtk
 
+from rayforge.ui_gtk.shared.adwfix import get_spinrow_int
 from ...core.commands import GridCommand
 from ...core.entities import Entity, Point
 from .base import SketchTool
@@ -50,20 +51,28 @@ class GridTool(SketchTool):
             heading=_("Create Grid"),
         )
 
-        rows_entry = Adw.EntryRow(title=_("Rows"))
-        rows_entry.set_input_purpose(Gtk.InputPurpose.NUMBER)
-        rows_entry.set_text("3")
+        rows_adj = Gtk.Adjustment(lower=2, upper=100, step_increment=1)
+        rows_row = Adw.SpinRow(
+            title=_("Rows"),
+            adjustment=rows_adj,
+            digits=0,
+            value=3,
+        )
 
-        cols_entry = Adw.EntryRow(title=_("Columns"))
-        cols_entry.set_input_purpose(Gtk.InputPurpose.NUMBER)
-        cols_entry.set_text("3")
+        cols_adj = Gtk.Adjustment(lower=2, upper=100, step_increment=1)
+        cols_row = Adw.SpinRow(
+            title=_("Columns"),
+            adjustment=cols_adj,
+            digits=0,
+            value=3,
+        )
 
         list_box = Gtk.ListBox(
             selection_mode=Gtk.SelectionMode.NONE,
             css_classes=["boxed-list"],
         )
-        list_box.append(rows_entry)
-        list_box.append(cols_entry)
+        list_box.append(rows_row)
+        list_box.append(cols_row)
         dialog.set_extra_child(list_box)
 
         dialog.add_response("cancel", _("Cancel"))
@@ -76,14 +85,8 @@ class GridTool(SketchTool):
 
         def on_response(source, response_id):
             if response_id == "create":
-                try:
-                    rows = int(rows_entry.get_text())
-                    cols = int(cols_entry.get_text())
-                except ValueError:
-                    return
-
-                if rows < 2 or cols < 2:
-                    return
+                rows = get_spinrow_int(rows_row)
+                cols = get_spinrow_int(cols_row)
 
                 cmd = GridCommand(
                     self.element.sketch,

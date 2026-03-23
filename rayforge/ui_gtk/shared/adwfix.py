@@ -9,7 +9,7 @@ def get_spinrow_int(spinrow):
         value = int(spinrow.get_value())
     lower = spinrow.get_adjustment().get_lower()
     upper = spinrow.get_adjustment().get_upper()
-    return max(lower, min(value, upper))
+    return int(max(lower, min(value, upper)))
 
 
 def get_spinrow_float(spinrow):
