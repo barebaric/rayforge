@@ -3,7 +3,7 @@
    height="24px"
    version="1.1"
    id="svg1"
-   viewBox="0 0 32 32"
+   viewBox="0 0 16 16"
    width="24px"
    fill="#000000"
    sodipodi:docname="go-previous-symbolic.svg"
@@ -33,6 +33,6 @@
      inkscape:window-maximized="1"
      inkscape:current-layer="svg1" />
   <path
-     d="M 18.6667 24 10.6667 16 l 8 -8 1.8667 1.8667 -6.1333 6.1333 6.1333 6.1333 -1.8667 1.8667 Z"
+     d="M 9.3333 12 5.3334 8 l 4 -4 0.9334 0.9334 -3.0667 3.0667 3.0667 3.0667 -0.9334 0.9334 Z"
      id="path1" />
 </svg>

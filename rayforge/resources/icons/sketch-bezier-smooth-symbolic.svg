@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
    height="24px"
-   viewBox="0 0 32 32"
+   viewBox="0 0 16 16"
    width="24px"
    fill="#000000"
    version="1.1"
@@ -33,15 +33,15 @@
   <defs
      id="defs1" />
   <path
-     style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:2.192;stroke-dasharray:none;stroke-opacity:1"
-     d="m 3.881 23.7802 c 0 0 0.2101 -9.8868 12.0957 -9.7428 11.8856 0.144 12.0957 9.7428 12.0957 9.7428"
+     style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1.096;stroke-dasharray:none;stroke-opacity:1"
+     d="m 1.9405 11.8901 c 0 0 0.1051 -4.9434 6.0479 -4.8714 5.9428 0.072 6.0479 4.8714 6.0479 4.8714"
      id="path1"
      sodipodi:nodetypes="czc" />
   <circle
-     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:4.1667;stroke-dasharray:none;stroke-opacity:1"
+     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:2.0833;stroke-dasharray:none;stroke-opacity:1"
      id="circle1"
-     cx="14.354889"
-     cy="-16"
-     r="2.7088001"
+     cx="7.1774"
+     cy="-8"
+     r="1.3544"
      transform="rotate(90)" />
 </svg>
