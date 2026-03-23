@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from gi.repository import Adw, Gdk, Gtk
+from gi.repository import Adw, Gtk
 
 from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
@@ -86,11 +86,6 @@ class SettingsWindow(PatchedDialogWindow):
         initial_row = self.sidebar_list.get_row_at_index(initial_index)
         self.sidebar_list.select_row(initial_row)
 
-        # Key controller
-        key_controller = Gtk.EventControllerKey()
-        key_controller.connect("key-pressed", self._on_key_pressed)
-        self.add_controller(key_controller)
-
     def _add_page(self, page_class):
         page = page_class()
         page_name = page.get_title()
@@ -121,9 +116,3 @@ class SettingsWindow(PatchedDialogWindow):
             self.content_stack.set_visible_child(widget_to_show)
             page_title = stack_page.get_title()
             self.content_page.set_title(page_title)
-
-    def _on_key_pressed(self, controller, keyval, keycode, state):
-        if keyval == Gdk.KEY_Escape:
-            self.close()
-            return True
-        return False

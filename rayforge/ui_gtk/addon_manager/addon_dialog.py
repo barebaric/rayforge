@@ -3,7 +3,7 @@ import threading
 from typing import List
 from gettext import gettext as _
 
-from gi.repository import Adw, Gdk, GLib, Gtk
+from gi.repository import Adw, GLib, Gtk
 
 from ... import __version__
 from ...context import get_context
@@ -104,20 +104,8 @@ class AddonRegistryDialog(PatchedDialogWindow):
         self.error_box.set_description(_("Could not reach the registry."))
         self.stack.add_named(self.error_box, "error")
 
-        # Handle Escape key press to close the dialog
-        controller = Gtk.EventControllerKey()
-        controller.connect("key-pressed", self._on_key_pressed)
-        self.add_controller(controller)
-
         # Start fetching
         self._fetch_registry()
-
-    def _on_key_pressed(self, controller, keyval, keycode, state):
-        """Close the dialog when the Escape key is pressed."""
-        if keyval == Gdk.KEY_Escape:
-            self.close()
-            return True
-        return False
 
     def _fetch_registry(self):
         """Fetches the registry using the AddonManager in a thread."""

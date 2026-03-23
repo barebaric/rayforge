@@ -1,14 +1,13 @@
 from typing import Optional
 from gettext import gettext as _
 
-from gi.repository import Adw, Gdk, Gtk
+from gi.repository import Adw, Gtk
 
 from ...camera.models import Camera
 from ...context import get_context
 from ...machine.models.machine import Machine
 from ..camera.camera_preferences_page import CameraPreferencesPage
 from ..icons import get_icon
-from ..shared.keyboard import is_primary_modifier
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from .advanced_preferences_page import AdvancedPreferencesPage
 from .device_settings_page import DeviceSettingsPage
@@ -158,11 +157,6 @@ class MachineSettingsDialog(PatchedDialogWindow):
         camera_mgr.controller_removed.connect(self._sync_camera_page)
         self.connect("destroy", self._on_destroy)
 
-        # Add a key controller to close the dialog on Escape press
-        key_controller = Gtk.EventControllerKey()
-        key_controller.connect("key-pressed", self._on_key_pressed)
-        self.add_controller(key_controller)
-
         # Initial population of all dependent pages
         self._sync_camera_page()
 
@@ -247,15 +241,6 @@ class MachineSettingsDialog(PatchedDialogWindow):
             if c.config.device_id in machine_camera_device_ids
         ]
         self.camera_page.set_controllers(relevant_controllers)
-
-    def _on_key_pressed(self, controller, keyval, keycode, state):
-        """Handle key press events, closing dialog on Escape or primary+W."""
-        has_primary = is_primary_modifier(state)
-
-        if keyval == Gdk.KEY_Escape or (has_primary and keyval == Gdk.KEY_w):
-            self.close()
-            return True
-        return False
 
     def _on_destroy(self, *args):
         """Disconnects signals to prevent memory leaks."""
