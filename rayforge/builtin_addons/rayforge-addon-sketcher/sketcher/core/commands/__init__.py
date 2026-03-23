@@ -18,6 +18,7 @@ from .equal_constraint import (
 )
 from .fillet import FilletCommand
 from .fill import AddFillCommand, RemoveFillCommand
+from .grid import GridCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 from .line import LineCommand, LinePreviewState
 from .live_text_edit import LiveTextEditCommand
@@ -61,6 +62,7 @@ __all__ = [
     "EqualConstraintCommand",
     "EqualConstraintMergeResult",
     "FilletCommand",
+    "GridCommand",
     "LineCommand",
     "LinePreviewState",
     "LiveTextEditCommand",

@@ -12,6 +12,7 @@ from .distance_constraint_tool import DistanceConstraintTool
 from .equal_constraint_tool import EqualConstraintTool
 from .fillet_tool import FilletTool
 from .fill_tool import FillTool
+from .grid_tool import GridTool
 from .horizontal_constraint_tool import HorizontalConstraintTool
 from .path_tool import PathTool
 from .perpendicular_constraint_tool import PerpendicularConstraintTool
@@ -42,6 +43,7 @@ TOOL_REGISTRY = {
     "equal": EqualConstraintTool,
     "fill": FillTool,
     "fillet": FilletTool,
+    "grid": GridTool,
     "horizontal": HorizontalConstraintTool,
     "path": PathTool,
     "perpendicular": PerpendicularConstraintTool,
@@ -107,6 +109,7 @@ __all__ = [
     "DistanceConstraintTool",
     "EqualConstraintTool",
     "FilletTool",
+    "GridTool",
     "FillTool",
     "HorizontalConstraintTool",
     "KEY_TO_TOOL",
