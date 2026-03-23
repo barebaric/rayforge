@@ -1883,6 +1883,33 @@ class MainWindow(Adw.ApplicationWindow):
             self, self._on_export_document_response, initial_name
         )
 
+    def on_export_object_clicked(self, action, param=None):
+        selected = self.surface.get_selected_workpieces()
+        if len(selected) == 1:
+            file_dialogs.show_export_object_dialog(
+                self, self._on_export_object_response, selected[0]
+            )
+        else:
+            self._on_editor_notification(
+                self, _("Please select a single object to export.")
+            )
+
+    def _on_export_object_response(self, dialog, result, user_data):
+        try:
+            file = dialog.save_finish(result)
+            if not file:
+                return
+            file_path = Path(file.get_path())
+
+            selected = self.surface.get_selected_workpieces()
+            if len(selected) != 1:
+                return
+
+            self.doc_editor.file.export_object_to_path(file_path, selected[0])
+
+        except GLib.Error as e:
+            logger.error(f"Error exporting object: {e.message}")
+
     def _on_export_document_response(self, dialog, result, user_data):
         try:
             file = dialog.save_finish(result)

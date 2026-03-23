@@ -118,6 +118,7 @@ class MainMenu(Gio.Menu):
 
         other_group = Gio.Menu()
         other_group.append(_("Split"), "win.split")
+        other_group.append(_("Export Object..."), "win.export-object")
         object_menu.append_section(None, other_group)
 
         # Addon section for Object menu
