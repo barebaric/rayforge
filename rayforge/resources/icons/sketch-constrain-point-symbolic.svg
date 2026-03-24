@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
    height="24px"
-   viewBox="0 0 16 16"
+   viewBox="0 0 24 24"
    width="24px"
    fill="#000000"
    version="1.1"
@@ -23,9 +23,9 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="13.052013"
-     inkscape:cx="16.089472"
-     inkscape:cy="45.127139"
+     inkscape:zoom="6.5260065"
+     inkscape:cx="-37.235636"
+     inkscape:cy="61.599693"
      inkscape:window-width="3840"
      inkscape:window-height="2020"
      inkscape:window-x="0"
@@ -36,25 +36,25 @@
      id="g6"
      transform="matrix(0.82281092,-0.82281092,0.82281092,0.82281092,480.00001,309.89848)">
     <path
-       d="m -103.36619,-468.63761 c -0.2241,0 -0.4359,-0.043 -0.6353,-0.1291 -0.1995,-0.0861 -0.3737,-0.2036 -0.5226,-0.3525 -0.1489,-0.1489 -0.2665,-0.3231 -0.3525,-0.5226 -0.0861,-0.1995 -0.1291,-0.4113 -0.1291,-0.6353 0,-0.2268 0.043,-0.4393 0.1291,-0.6374 0.0861,-0.1981 0.2036,-0.3716 0.3525,-0.5206 0.1489,-0.1489 0.3231,-0.2665 0.5226,-0.3525 0.1995,-0.0861 0.4113,-0.1291 0.6353,-0.1291 0.2268,0 0.4393,0.043 0.6374,0.1291 0.1981,0.0861 0.3716,0.2036 0.5206,0.3525 0.1489,0.1489 0.2665,0.3225 0.3525,0.5206 0.0861,0.1981 0.1291,0.4106 0.1291,0.6374 0,0.2241 -0.043,0.4359 -0.1291,0.6353 -0.0861,0.1995 -0.2036,0.3737 -0.3525,0.5226 -0.1489,0.1489 -0.3225,0.2665 -0.5206,0.3525 -0.1981,0.0861 -0.4106,0.1291 -0.6374,0.1291 z"
+       d="m -103.36623,-462.95643 c -0.3362,0 -0.6539,-0.0645 -0.9529,-0.1936 -0.2993,-0.1291 -0.5605,-0.3054 -0.7839,-0.5287 -0.2233,-0.2233 -0.3998,-0.4847 -0.5287,-0.7839 -0.1291,-0.2993 -0.1936,-0.6169 -0.1936,-0.9529 0,-0.3402 0.0645,-0.659 0.1936,-0.9561 0.1291,-0.2972 0.3054,-0.5574 0.5287,-0.7809 0.2233,-0.2233 0.4847,-0.3998 0.7839,-0.5287 0.2993,-0.1291 0.6169,-0.1936 0.9529,-0.1936 0.3402,0 0.659,0.0645 0.9561,0.1936 0.2972,0.1291 0.5574,0.3054 0.7809,0.5287 0.2233,0.2233 0.3998,0.4838 0.5287,0.7809 0.1291,0.2972 0.1936,0.6159 0.1936,0.9561 0,0.3362 -0.0645,0.6539 -0.1936,0.9529 -0.1291,0.2993 -0.3054,0.5605 -0.5287,0.7839 -0.2233,0.2233 -0.4838,0.3998 -0.7809,0.5287 -0.2972,0.1291 -0.6159,0.1936 -0.9561,0.1936 z"
        id="path1"
-       style="stroke:none;stroke-width:0.0041"
+       style="stroke:none;stroke-width:0.0062"
        sodipodi:nodetypes="sssssssssssssssss" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:1.5714;stroke-dasharray:none;stroke-dashoffset:0"
-       d="m -110.06949,-470.27721 h 3.6839"
+       style="fill:none;stroke:#000000;stroke-width:2.3571;stroke-dasharray:none;stroke-dashoffset:0"
+       d="m -113.42113,-465.41583 h 5.5259"
        id="path2" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:1.5714;stroke-dasharray:none;stroke-dashoffset:0"
-       d="m -100.34669,-470.27721 h 3.684002"
+       style="fill:none;stroke:#000000;stroke-width:2.3571;stroke-dasharray:none;stroke-dashoffset:0"
+       d="m -98.836931,-465.41583 h 5.526"
        id="path3" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:1.5714;stroke-dasharray:none;stroke-dashoffset:0"
-       d="m -103.36619,-476.98061 v 3.6839"
+       style="fill:none;stroke:#000000;stroke-width:2.3571;stroke-dasharray:none;stroke-dashoffset:0"
+       d="m -103.36623,-475.47093 v 5.5259"
        id="path5" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:1.5714;stroke-dasharray:none;stroke-dashoffset:0"
-       d="m -103.36619,-467.25781 v 3.6839"
+       style="fill:none;stroke:#000000;stroke-width:2.3571;stroke-dasharray:none;stroke-dashoffset:0"
+       d="m -103.36623,-460.88673 v 5.5259"
        id="path6" />
   </g>
 </svg>

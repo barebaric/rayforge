@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
    height="24px"
-   viewBox="0 0 16 16"
+   viewBox="0 0 24 24"
    width="24px"
    fill="#000000"
    version="1.1"
@@ -11,6 +11,6 @@
   <defs
      id="defs1" />
   <path
-     d="M 3.3333 12.6667 v -6.6666 h 1.3334 v 4.4 l 7.7333 -7.7333 0.9334 0.9334 -7.7333 7.7333 h 4.4 v 1.3334 H 3.3333 Z"
+     d="M 5 19.0001 v -9.9999 h 2.0001 v 6.6 l 11.5999 -11.5999 1.4001 1.4001 -11.5999 11.5999 h 6.6 v 2.0001 H 5 Z"
      id="path1" />
 </svg>

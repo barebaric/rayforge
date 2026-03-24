@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
    height="24px"
-   viewBox="0 0 16 16"
+   viewBox="0 0 24 24"
    width="24px"
    fill="#000000"
    version="1.1"
@@ -24,7 +24,7 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:zoom="36.916666"
-     inkscape:cx="6.2573365"
+     inkscape:cx="6.2844245"
      inkscape:cy="15.670429"
      inkscape:window-width="3192"
      inkscape:window-height="1763"
@@ -33,10 +33,10 @@
      inkscape:window-maximized="0"
      inkscape:current-layer="svg1" />
   <rect
-     style="fill:none;stroke:#000000;stroke-width:1.2229;stroke-dasharray:none;stroke-opacity:1"
+     style="fill:none;stroke:#000000;stroke-width:1.34643;stroke-dasharray:none;stroke-opacity:1"
      id="rect1"
-     width="22.018837"
-     height="15.957185"
-     x="2.4953"
-     y="4.0107" />
+     width="16.161617"
+     height="11.712421"
+     x="3.9191914"
+     y="6.1437893" />
 </svg>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
    height="24px"
-   viewBox="0 0 16 16"
+   viewBox="0 0 24 24"
    width="24px"
    fill="#000000"
    version="1.1"
@@ -36,12 +36,12 @@
      id="g1"
      transform="matrix(1.0899311,0,0,1.0899311,-3.5330911,1.5026065)">
     <path
-       d="m 3.742 10.9288 4.4885 -4.4885 -2.4395 -0.0118 V 5.1085 h 4.7141 v 4.7141 h -1.3199 l -0.0118 -2.4395 -4.4885 4.4885 z"
+       d="m 5.613 16.3932 6.7328 -6.7328 -3.6592 -0.0177 V 7.6628 h 7.0712 v 7.0712 h -1.9799 l -0.0177 -3.6592 -6.7328 6.7328 z"
        id="path1"
        sodipodi:nodetypes="cccccccccc" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:1.5111;stroke-dasharray:none"
-       d="m 5.6405 2.1852 c 0 0 2.758 0.0061 5.2767 2.2715 2.5188 2.2654 2.5065 5.4215 2.5065 5.4215"
+       style="fill:none;stroke:#000000;stroke-width:2.2667;stroke-dasharray:none"
+       d="m 8.4608 3.2778 c 0 0 4.137 0.0092 7.915 3.4073 3.7782 3.3981 3.7597 8.1322 3.7597 8.1322"
        id="path3"
        sodipodi:nodetypes="czc" />
   </g>
