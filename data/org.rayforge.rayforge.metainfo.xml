@@ -66,6 +66,16 @@
   </screenshots>
 
   <releases>
+    <release version="1.3.1" date="2026-03-24">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>Fixed icon sizing issues on systems with Gtk 4.21</li>
+          <li>Fixed Windows and macOS build issues</li>
+          <li>Fixed conflicting menu shortcuts in the sketcher</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.3" date="2026-03-23">
       <description>
         <p>Bezier Curves in Sketcher and Modular Architecture</p>
