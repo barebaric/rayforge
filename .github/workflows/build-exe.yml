@@ -141,6 +141,10 @@ jobs:
     needs: build
     runs-on: windows-latest
     steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
@@ -151,7 +155,7 @@ jobs:
         run: |
           unzip rayforge-v${{ needs.build.outputs.version }}-windows-bundle.zip
 
-      - name: Test Executable
+      - name: Test Executable (CLI)
         shell: bash
         run: |
           echo "Listing files in current directory:"
@@ -166,6 +170,13 @@ jobs:
 
           echo "Running executable directly:"
           ./"${BUNDLE_DIR}/${EXECUTABLE_NAME}" --help
+
+      - name: Test Executable (UI Smoke Test)
+        shell: bash
+        run: |
+          bash scripts/win/win_run_ui_test.sh \
+            "dist/rayforge-v${{ needs.build.outputs.version }}" \
+            "rayforge-v${{ needs.build.outputs.version }}.exe"
 
   release:
     name: Create GitHub Release
