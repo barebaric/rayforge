@@ -16,9 +16,9 @@ def create_slider(
         orientation=Gtk.Orientation.HORIZONTAL,
         adjustment=adjustment,
         digits=digits,
-        draw_value=False,
+        draw_value=draw_value,
     )
-    scale.set_size_request(SLIDER_TRACK_WIDTH, -1)
+    scale.set_size_request(SLIDER_TRACK_WIDTH, 60 if draw_value else -1)
     scale.set_valign(Gtk.Align.CENTER)
 
     if on_value_changed:
@@ -39,7 +39,7 @@ def create_slider_row(
     scale = create_slider(
         adjustment=adjustment,
         digits=digits,
-        draw_value=draw_value,
+        draw_value=False,
         on_value_changed=on_value_changed,
     )
 

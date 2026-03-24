@@ -272,17 +272,16 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         angle_adj = Gtk.Adjustment(
             lower=0,
             upper=360,
-            step_increment=1,
+            step_increment=0.1,
             page_increment=15,
             value=producer.scan_angle,
         )
         self.angle_scale = create_slider(
             adjustment=angle_adj,
-            digits=0,
+            digits=1,
+            draw_value=True,
             on_value_changed=lambda s: self._on_angle_changed(s),
         )
-        self.angle_scale.set_margin_top(30)
-        self.angle_scale.set_margin_bottom(30)
 
         self.direction_preview = DirectionPreview(
             producer.scan_angle, producer.cross_hatch
