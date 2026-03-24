@@ -79,7 +79,14 @@ pyinstaller --onedir --hide-console hide-early \
   --add-binary "${WIN_MSYS2_PATH}\\mingw64\\bin\\libGLESv2.dll;." \
   --add-binary "${WIN_MSYS2_PATH}\\mingw64\\bin\\libvips-42.dll;." \
   --hidden-import "gi._gi_cairo" \
-  --collect-submodules "rayforge" \
+  --hidden-import "rayforge.core.expression" \
+  --hidden-import "rayforge.core.expression.evaluator" \
+  --hidden-import "rayforge.core.expression.context" \
+  --hidden-import "rayforge.core.expression.errors" \
+  --hidden-import "rayforge.core.expression.parser" \
+  --hidden-import "rayforge.core.expression.tokenizer" \
+  --hidden-import "rayforge.core.expression.validator" \
+  --additional-hooks-dir "hooks" \
   rayforge/app.py
 
 echo "✅ PyInstaller build complete: dist/${BUNDLE_NAME}/"
