@@ -1042,10 +1042,10 @@ def test_sketch_fill_geometry_generation_circle():
     sketch.fills.append(fill)
 
     # Generate geometries
-    geos = sketch.get_fill_geometries()
+    render_data = sketch.get_fill_render_data()
 
-    assert len(geos) == 1
-    geo = geos[0]
+    assert len(render_data) == 1
+    geo = render_data[0].geometry
     data = geo.data
     assert data is not None
 
@@ -1093,9 +1093,9 @@ def test_sketch_fill_geometry_generation_rect():
     fill = Fill(uid="fill_rect", boundary=boundary)
     sketch.fills.append(fill)
 
-    geos = sketch.get_fill_geometries()
-    assert len(geos) == 1
-    geo = geos[0]
+    render_data = sketch.get_fill_render_data()
+    assert len(render_data) == 1
+    geo = render_data[0].geometry
     data = geo.data
     assert data is not None
 
@@ -1149,9 +1149,9 @@ def test_sketch_fill_geometry_generation_arc_shape():
     fill = Fill(uid="fill_arc", boundary=boundary)
     sketch.fills.append(fill)
 
-    geos = sketch.get_fill_geometries()
-    assert len(geos) == 1
-    geo = geos[0]
+    render_data = sketch.get_fill_render_data()
+    assert len(render_data) == 1
+    geo = render_data[0].geometry
     data = geo.data
     assert data is not None
 
@@ -1166,7 +1166,7 @@ def test_sketch_fill_geometry_generation_arc_shape():
 
     # 3. ArcTo back to (-10, 0)
     # Entity is CW. Traversal is Reverse.
-    # In `get_fill_geometries`: is_cw = not entity.clockwise if not fwd.
+    # In `get_fill_render_data`: is_cw = not entity.clockwise if not fwd.
     # So is_cw should be False (CCW).
 
     cmd_arc = data[2]

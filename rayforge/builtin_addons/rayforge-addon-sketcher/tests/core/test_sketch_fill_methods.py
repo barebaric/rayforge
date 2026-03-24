@@ -79,12 +79,12 @@ def test_validate_and_cleanup_fills_keeps_all_valid(triangle_sketch):
     assert fill in triangle_sketch.fills
 
 
-def test_get_fill_geometries_empty(sketch):
-    result = sketch.get_fill_geometries()
+def test_get_fill_render_data_empty(sketch):
+    result = sketch.get_fill_render_data()
     assert result == []
 
 
-def test_get_fill_geometries_circle(sketch):
+def test_get_fill_render_data_circle(sketch):
     center = sketch.add_point(50, 50)
     radius = sketch.add_point(70, 50)
     circle_id = sketch.add_circle(center, radius)
@@ -92,12 +92,12 @@ def test_get_fill_geometries_circle(sketch):
     fill = Fill("circle-fill", [(circle_id, True)])
     sketch.fills.append(fill)
 
-    geometries = sketch.get_fill_geometries()
+    render_data = sketch.get_fill_render_data()
 
-    assert len(geometries) == 1
+    assert len(render_data) == 1
 
 
-def test_get_fill_geometries_triangle(triangle_sketch):
+def test_get_fill_render_data_triangle(triangle_sketch):
     line_ids = [
         e.id for e in triangle_sketch.registry.entities if isinstance(e, Line)
     ]
@@ -108,12 +108,12 @@ def test_get_fill_geometries_triangle(triangle_sketch):
     )
     triangle_sketch.fills.append(fill)
 
-    geometries = triangle_sketch.get_fill_geometries()
+    render_data = triangle_sketch.get_fill_render_data()
 
-    assert len(geometries) == 1
+    assert len(render_data) == 1
 
 
-def test_get_fill_geometries_excludes_ids(sketch):
+def test_get_fill_render_data_excludes_ids(sketch):
     center = sketch.add_point(50, 50)
     radius = sketch.add_point(70, 50)
     circle_id = sketch.add_circle(center, radius)
@@ -121,18 +121,18 @@ def test_get_fill_geometries_excludes_ids(sketch):
     fill = Fill("circle-fill", [(circle_id, True)])
     sketch.fills.append(fill)
 
-    geometries = sketch.get_fill_geometries(exclude_ids={circle_id})
+    render_data = sketch.get_fill_render_data(exclude_ids={circle_id})
 
-    assert len(geometries) == 0
+    assert len(render_data) == 0
 
 
-def test_get_fill_geometries_missing_entity(sketch):
+def test_get_fill_render_data_missing_entity(sketch):
     fill = Fill("missing-fill", [(9999, True)])
     sketch.fills.append(fill)
 
-    geometries = sketch.get_fill_geometries()
+    render_data = sketch.get_fill_render_data()
 
-    assert len(geometries) == 0
+    assert len(render_data) == 0
 
 
 def test_get_loop_at_point_inside_triangle(triangle_sketch):

@@ -35,6 +35,7 @@ from .tab import Tab
 
 if TYPE_CHECKING:
     from ..image.base_renderer import Renderer, RenderSpecification
+    from ..image.structures import FillRenderData
     from .asset import IAsset
     from .layer import Layer
     from .source_asset import SourceAsset
@@ -53,9 +54,8 @@ class RenderContext(NamedTuple):
     renderer: "Renderer"
     source_pixel_dims: Optional[Tuple[int, int]]
     metadata: Dict[str, Any]
-    # Add geometry fields for vector-based renderers
     boundaries: Optional[Geometry]
-    fills: Optional[List[Geometry]]
+    fills: Optional[List["FillRenderData"]]
 
 
 class WorkPiece(DocItem):
@@ -73,7 +73,7 @@ class WorkPiece(DocItem):
         super().__init__(name=name)
         self._source_segment = source_segment
         self._boundaries_cache: Optional[Geometry] = None
-        self._fills_cache: Optional[List[Geometry]] = None
+        self._fills_cache: Optional[List["FillRenderData"]] = None
 
         # Natural (untransformed) dimensions of the workpiece content.
         self.natural_width_mm: float = 0.0
@@ -140,18 +140,16 @@ class WorkPiece(DocItem):
         its natural dimensions and initialize the WorkPiece's transformation
         matrix correctly before it is added to the document.
         """
-        # 1. Generate geometry to determine natural size.
         geometry = None
-        fill_geometries = []
+        fill_data = []
         min_x, min_y = 0.0, 0.0
 
         try:
-            geometry, fill_geometries = provider.get_geometry()
+            geometry, fill_data = provider.get_geometry()
 
-            # Upgrade all generated geometry to be fully scalable
             geometry.upgrade_to_scalable()
-            for fill_geo in fill_geometries:
-                fill_geo.upgrade_to_scalable()
+            for fd in fill_data:
+                fd.geometry.upgrade_to_scalable()
 
             if not geometry.is_empty():
                 min_x, min_y, max_x, max_y = geometry.rect()
@@ -167,7 +165,7 @@ class WorkPiece(DocItem):
             width, height = 0.0, 0.0
 
             geometry = Geometry()
-            fill_geometries = []
+            fill_data = []
 
         # 2. Create the instance
         instance = cls(
@@ -189,12 +187,12 @@ class WorkPiece(DocItem):
                 1.0 / width, 1.0 / height
             ) @ Matrix.translation(-min_x, -min_y)
             geometry.transform(norm_matrix.to_4x4_numpy())
-            for fill_geo in fill_geometries:
-                fill_geo.transform(norm_matrix.to_4x4_numpy())
+            for fd in fill_data:
+                fd.geometry.transform(norm_matrix.to_4x4_numpy())
 
         # Cache the results (even if empty) to ensure fast rendering
         instance._boundaries_cache = geometry
-        instance._fills_cache = fill_geometries
+        instance._fills_cache = fill_data
 
         return instance
 
@@ -376,8 +374,8 @@ class WorkPiece(DocItem):
 
             # Upgrade all generated geometry to be fully scalable
             unnormalized_geo.upgrade_to_scalable()
-            for fill_geo in unnormalized_fills:
-                fill_geo.upgrade_to_scalable()
+            for fill_data in unnormalized_fills:
+                fill_data.geometry.upgrade_to_scalable()
 
             # Cache the geometry even if it is empty, to prevent
             # re-solving on every render frame.
@@ -411,8 +409,8 @@ class WorkPiece(DocItem):
 
             # Apply same normalization to both strokes and fills
             unnormalized_geo.transform(norm_matrix.to_4x4_numpy())
-            for fill_geo in unnormalized_fills:
-                fill_geo.transform(norm_matrix.to_4x4_numpy())
+            for fill_data in unnormalized_fills:
+                fill_data.geometry.transform(norm_matrix.to_4x4_numpy())
 
             self._boundaries_cache = unnormalized_geo
             self._fills_cache = unnormalized_fills

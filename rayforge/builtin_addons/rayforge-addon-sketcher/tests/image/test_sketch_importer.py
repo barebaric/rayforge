@@ -402,5 +402,17 @@ def test_sketch_importer_round_trip_mouse():
     # Check constraints
     assert parsed_sketch_dict["constraints"] == original_dict["constraints"]
 
-    # Check fills (should now be lists, not tuples)
-    assert parsed_sketch_dict["fills"] == original_dict["fills"]
+    # Check fills - compare boundary and uid, allow for new style/color fields
+    assert len(parsed_sketch_dict["fills"]) == len(original_dict["fills"])
+    for orig_fill, parsed_fill in zip(
+        original_dict["fills"], parsed_sketch_dict["fills"]
+    ):
+        assert orig_fill["uid"] == parsed_fill["uid"]
+        assert orig_fill["boundary"] == parsed_fill["boundary"]
+        # New fields have defaults if not present in original
+        if "style" in orig_fill:
+            assert orig_fill["style"] == parsed_fill["style"]
+        else:
+            assert parsed_fill["style"] == "solid"
+        if "color" in orig_fill:
+            assert orig_fill["color"] == parsed_fill["color"]

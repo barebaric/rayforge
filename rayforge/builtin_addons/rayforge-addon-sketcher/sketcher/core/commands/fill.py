@@ -3,9 +3,10 @@ import logging
 import uuid
 from typing import TYPE_CHECKING, List, Tuple, Optional
 from gettext import gettext as _
-
+from rayforge.image.structures import FillStyle
+from rayforge.shared.util.colors import ColorRGBA
+from ..sketch import Fill, DEFAULT_FILL_COLOR
 from .base import SketchChangeCommand
-from ..sketch import Fill
 
 if TYPE_CHECKING:
     from ..sketch import Sketch
@@ -20,15 +21,30 @@ class AddFillCommand(SketchChangeCommand):
         self,
         sketch: "Sketch",
         boundary: List[Tuple[int, bool]],
+        style: FillStyle = FillStyle.SOLID,
+        color: ColorRGBA = DEFAULT_FILL_COLOR,
+        gradient_stops: Optional[List[Tuple[float, ColorRGBA]]] = None,
+        gradient_angle: float = 0.0,
         name: str = _("Add Fill"),
     ):
         super().__init__(sketch, name)
         self.fill: Optional[Fill] = None
         self._boundary = boundary
+        self._style = style
+        self._color = color
+        self._gradient_stops = gradient_stops
+        self._gradient_angle = gradient_angle
 
     def _do_execute(self) -> None:
         if self.fill is None:
-            self.fill = Fill(uid=str(uuid.uuid4()), boundary=self._boundary)
+            self.fill = Fill(
+                uid=str(uuid.uuid4()),
+                boundary=self._boundary,
+                style=self._style,
+                color=self._color,
+                gradient_stops=self._gradient_stops,
+                gradient_angle=self._gradient_angle,
+            )
         self.sketch.fills.append(self.fill)
 
     def _do_undo(self) -> None:

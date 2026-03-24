@@ -1,6 +1,8 @@
 from gettext import gettext as _
 
+from rayforge.shared.util.colors import ColorRGBA
 from ...core.commands import AddFillCommand, RemoveFillCommand
+from ...core.sketch import FillStyle, DEFAULT_FILL_COLOR
 from .base import SketchTool
 
 
@@ -11,6 +13,32 @@ class FillTool(SketchTool):
     LABEL = _("Fill")
     SHORTCUTS = ["gf"]
     CURSOR_ICON = "sketch-fill-symbolic"
+
+    _current_color: ColorRGBA = DEFAULT_FILL_COLOR
+    _current_style: FillStyle = FillStyle.SOLID
+
+    def __init__(self, element):
+        super().__init__(element)
+
+    @classmethod
+    def get_current_color(cls) -> ColorRGBA:
+        """Get the current fill color for new fills."""
+        return cls._current_color
+
+    @classmethod
+    def set_current_color(cls, color: ColorRGBA):
+        """Set the current fill color for new fills."""
+        cls._current_color = color
+
+    @classmethod
+    def get_current_style(cls) -> FillStyle:
+        """Get the current fill style for new fills."""
+        return cls._current_style
+
+    @classmethod
+    def set_current_style(cls, style: FillStyle):
+        """Set the current fill style for new fills."""
+        cls._current_style = style
 
     def is_available(self, target, target_type) -> bool:
         return target is None
@@ -41,7 +69,12 @@ class FillTool(SketchTool):
         if existing_fill:
             cmd = RemoveFillCommand(sketch, existing_fill)
         else:
-            cmd = AddFillCommand(sketch, target_loop)
+            cmd = AddFillCommand(
+                sketch,
+                target_loop,
+                style=self._current_style,
+                color=self._current_color,
+            )
 
         self.element.execute_command(cmd)
         self.element.mark_dirty()
