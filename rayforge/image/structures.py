@@ -1,12 +1,33 @@
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import List, Tuple, Optional, Dict, TYPE_CHECKING
 from ..core.geo import Geometry, Rect
 from ..core.matrix import Matrix
+from ..shared.util.colors import ColorRGBA
 
 if TYPE_CHECKING:
     from ..core.asset import IAsset
     from ..core.item import DocItem
     from ..core.source_asset import SourceAsset
+
+
+class FillStyle(Enum):
+    """Fill rendering style."""
+
+    SOLID = "solid"
+    LINEAR_GRADIENT = "linear_gradient"
+    RADIAL_GRADIENT = "radial_gradient"
+
+
+@dataclass
+class FillRenderData:
+    """Data needed to render a fill region."""
+
+    geometry: Geometry
+    style: FillStyle
+    color: ColorRGBA
+    gradient_stops: Optional[List[Tuple[float, ColorRGBA]]] = None
+    gradient_angle: float = 0.0
 
 
 @dataclass
@@ -206,7 +227,7 @@ class VectorizationResult:
 
     geometries_by_layer: Dict[Optional[str], Geometry]
     source_parse_result: ParsingResult
-    fills_by_layer: Dict[Optional[str], List[Geometry]] = field(
+    fills_by_layer: Dict[Optional[str], List[FillRenderData]] = field(
         default_factory=dict
     )
 

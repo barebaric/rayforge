@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import Optional, TYPE_CHECKING, List, Tuple
+from typing import Optional, TYPE_CHECKING, Tuple
 import warnings
 from rayforge.core.geo import Geometry
 from rayforge.core.geo.constants import (
@@ -10,11 +10,13 @@ from rayforge.core.geo.constants import (
     CMD_TYPE_BEZIER,
 )
 from rayforge.image.base_renderer import Renderer, RenderSpecification
+from rayforge.image.structures import FillRenderData, FillStyle
 from rayforge.image.svg.svg_fallback import (
     SVG_LOAD_AVAILABLE,
     render_svg_to_cairo,
     cairo_surface_to_vips,
 )
+from rayforge.shared.util.colors import ColorRGBA
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -141,10 +143,18 @@ class SketchRenderer(Renderer):
 
         normalized_fills = []
         for fill_list in vec_result.fills_by_layer.values():
-            for fill_geo in fill_list:
-                norm_fill = fill_geo.copy()
+            for fill_data in fill_list:
+                norm_fill = fill_data.geometry.copy()
                 norm_fill.transform(norm_matrix.to_4x4_numpy())
-                normalized_fills.append(norm_fill)
+                normalized_fills.append(
+                    FillRenderData(
+                        geometry=norm_fill,
+                        style=fill_data.style,
+                        color=fill_data.color,
+                        gradient_stops=fill_data.gradient_stops,
+                        gradient_angle=fill_data.gradient_angle,
+                    )
+                )
 
         return self.render_base_image(
             data=b"",
@@ -164,7 +174,7 @@ class SketchRenderer(Renderer):
         """
         Renders the sketch's vector data to a pyvips Image.
         It expects 'boundaries' (strokes) and optionally 'fills'
-        (solid regions) in kwargs, as Geometry objects.
+        (FillRenderData or Geometry objects) in kwargs.
         """
         logger.debug(
             f"SketchRenderer.render_base_image called. "
@@ -172,7 +182,7 @@ class SketchRenderer(Renderer):
         )
 
         boundaries: Optional[Geometry] = kwargs.get("boundaries")
-        fills: Optional[List[Geometry]] = kwargs.get("fills")
+        fills = kwargs.get("fills")
 
         if not boundaries and not fills:
             return None
@@ -183,12 +193,13 @@ class SketchRenderer(Renderer):
         ]
 
         if fills:
-            for fill_geo in fills:
-                path_d = _geometry_to_svg_path(fill_geo, width, height)
+            for fill_data in fills:
+                path_d = _geometry_to_svg_path(
+                    fill_data.geometry, width, height
+                )
                 if path_d:
-                    svg_parts.append(
-                        f'<path d="{path_d}" fill="#1A1A1A" stroke="none" />'
-                    )
+                    fill_svg = self._fill_to_svg(fill_data, path_d)
+                    svg_parts.append(fill_svg)
 
         if boundaries:
             stroke_width = 1.0
@@ -224,6 +235,99 @@ class SketchRenderer(Renderer):
             logger.error(f"Failed to render sketch SVG with Vips: {e}")
             logger.debug(f"Failed SVG content:\n{svg_string}")
             return None
+
+    def _fill_to_svg(self, fill_data: FillRenderData, path_d: str) -> str:
+        """Convert FillRenderData to an SVG path element."""
+        if fill_data.style == FillStyle.SOLID:
+            color = self._rgba_to_svg_color(fill_data.color)
+            return f'<path d="{path_d}" fill="{color}" stroke="none" />'
+
+        if fill_data.style == FillStyle.LINEAR_GRADIENT:
+            return self._linear_gradient_to_svg(fill_data, path_d)
+
+        if fill_data.style == FillStyle.RADIAL_GRADIENT:
+            return self._radial_gradient_to_svg(fill_data, path_d)
+
+        color = self._rgba_to_svg_color(fill_data.color)
+        return f'<path d="{path_d}" fill="{color}" stroke="none" />'
+
+    def _rgba_to_svg_color(self, color: ColorRGBA) -> str:
+        """Convert RGBA tuple to SVG color string."""
+        r = int(color[0] * 255)
+        g = int(color[1] * 255)
+        b = int(color[2] * 255)
+        return f"rgb({r},{g},{b})"
+
+    def _linear_gradient_to_svg(
+        self, fill_data: FillRenderData, path_d: str
+    ) -> str:
+        """Create SVG with linear gradient."""
+        import uuid
+
+        grad_id = f"grad_{uuid.uuid4().hex[:8]}"
+
+        angle_rad = math.radians(fill_data.gradient_angle)
+        x1 = 50 - 50 * math.cos(angle_rad)
+        y1 = 50 - 50 * math.sin(angle_rad)
+        x2 = 50 + 50 * math.cos(angle_rad)
+        y2 = 50 + 50 * math.sin(angle_rad)
+
+        stops = self._get_gradient_stops(fill_data)
+        gradient_svg = (
+            f'<linearGradient id="{grad_id}" '
+            f'x1="{x1}%" y1="{y1}%" x2="{x2}%" y2="{y2}%" '
+            f'gradientUnits="userSpaceOnUse">'
+            f"{stops}"
+            f"</linearGradient>"
+        )
+
+        return (
+            f"<defs>{gradient_svg}</defs>"
+            f'<path d="{path_d}" fill="url(#{grad_id})" stroke="none" />'
+        )
+
+    def _radial_gradient_to_svg(
+        self, fill_data: FillRenderData, path_d: str
+    ) -> str:
+        """Create SVG with radial gradient."""
+        import uuid
+
+        grad_id = f"grad_{uuid.uuid4().hex[:8]}"
+
+        stops = self._get_gradient_stops(fill_data)
+        gradient_svg = (
+            f'<radialGradient id="{grad_id}" '
+            f'cx="50%" cy="50%" r="50%" fx="50%" fy="50%">'
+            f"{stops}"
+            f"</radialGradient>"
+        )
+
+        return (
+            f"<defs>{gradient_svg}</defs>"
+            f'<path d="{path_d}" fill="url(#{grad_id})" stroke="none" />'
+        )
+
+    def _get_gradient_stops(self, fill_data: FillRenderData) -> str:
+        """Generate SVG gradient stop elements."""
+        if not fill_data.gradient_stops:
+            color = self._rgba_to_svg_color(fill_data.color)
+            opacity = fill_data.color[3]
+            return (
+                f'<stop offset="0%" stop-color="{color}" '
+                f'stop-opacity="{opacity}"/>'
+                f'<stop offset="100%" stop-color="{color}" '
+                f'stop-opacity="{opacity}"/>'
+            )
+
+        stops = []
+        for pos, color in fill_data.gradient_stops:
+            svg_color = self._rgba_to_svg_color(color)
+            opacity = color[3]
+            stops.append(
+                f'<stop offset="{pos * 100}%" stop-color="{svg_color}" '
+                f'stop-opacity="{opacity}"/>'
+            )
+        return "".join(stops)
 
 
 SKETCH_RENDERER = SketchRenderer()

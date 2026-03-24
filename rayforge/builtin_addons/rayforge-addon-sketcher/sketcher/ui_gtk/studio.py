@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from gi.repository import Gtk, Gio, Adw, GLib
+from gi.repository import Gtk, Gio, Adw, GLib, Gdk
 from blinker import Signal
 from rayforge.core.undo.property_cmd import ChangePropertyCommand
 from rayforge.core.varset import FloatVar, IntVar, SliderFloatVar
@@ -8,13 +8,14 @@ from rayforge.ui_gtk.icons import get_icon
 from rayforge.ui_gtk.shared.keyboard import PRIMARY_ACCEL
 from rayforge.ui_gtk.shared.status_bar import StatusBar
 from rayforge.ui_gtk.varset.varset_editor import VarSetEditorWidget
-from ..core.sketch import Sketch
+from ..core.sketch import Sketch, DEFAULT_FILL_COLOR
 from ..core.entities.text_box import TextBoxEntity
 from .conflicts_widget import ConflictingConstraintsWidget
 from .font_properties import FontPropertiesWidget
 from .menu import SketchMenu
 from .sketchcanvas import SketchCanvas
 from .tools import ACTION_TOOL_MAP
+from .tools.fill_tool import FillTool
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +85,35 @@ class SketchStudio(Gtk.Box):
         )
         toolbar.append(self.construction_button)
 
+        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        toolbar.append(sep)
+
+        color = FillTool.get_current_color()
+        logger.debug(f"FillTool current color: {color}")
+        if color[3] == 0:
+            color = DEFAULT_FILL_COLOR
+            FillTool.set_current_color(color)
+            logger.debug(f"Using default color: {color}")
+
+        self._fill_color = color
+        self.fill_color_swatch = Gtk.DrawingArea()
+        self.fill_color_swatch.set_size_request(24, 24)
+        self.fill_color_swatch.set_draw_func(self._on_draw_color_swatch)
+
+        self.fill_color_button = Gtk.Button()
+        self.fill_color_button.set_child(self.fill_color_swatch)
+        self.fill_color_button.connect(
+            "clicked", self._on_color_button_clicked
+        )
+
+        color_label = Gtk.Label(label=_("Fill color:"))
+        color_label.set_margin_start(6)
+
+        color_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        color_box.append(color_label)
+        color_box.append(self.fill_color_button)
+        toolbar.append(color_box)
+
         spacer = Gtk.Box()
         spacer.set_hexpand(True)
         toolbar.append(spacer)
@@ -96,6 +126,44 @@ class SketchStudio(Gtk.Box):
         finish_button.add_css_class("suggested-action")
         finish_button.connect("clicked", self._on_finish_clicked)
         toolbar.append(finish_button)
+
+    def _on_draw_color_swatch(self, area, cr, width, height):
+        """Draw the color swatch."""
+        r, g, b, a = self._fill_color
+        cr.set_source_rgba(r, g, b, a)
+        cr.rectangle(0, 0, width, height)
+        cr.fill()
+
+    def _on_color_button_clicked(self, button):
+        """Show color chooser dialog."""
+        dialog = Gtk.ColorChooserDialog(
+            transient_for=self.parent_window,
+            modal=True,
+        )
+        dialog.set_use_alpha(True)
+        rgba = Gdk.RGBA()
+        rgba.red, rgba.green, rgba.blue, rgba.alpha = self._fill_color
+        dialog.set_rgba(rgba)
+
+        def on_response(dialog, response):
+            if response == Gtk.ResponseType.OK:
+                rgba = dialog.get_rgba()
+                self._fill_color = (
+                    rgba.red,
+                    rgba.green,
+                    rgba.blue,
+                    rgba.alpha,
+                )
+                FillTool.set_current_color(self._fill_color)
+                self.fill_color_swatch.queue_draw()
+            dialog.destroy()
+
+        dialog.connect("response", on_response)
+        dialog.show()
+
+    def _on_fill_color_changed(self, button):
+        """Handle fill color change from the color button."""
+        pass
 
     def _build_ui(self):
         self._build_toolbar()
@@ -241,6 +309,10 @@ class SketchStudio(Gtk.Box):
         logger.debug(
             f"Called with sketch '{sketch.name}' (id: {id(sketch)}) and "
             f"VarSet (id: {id(sketch.input_parameters)})"
+        )
+        r, g, b, a = self._fill_color
+        logger.debug(
+            f"set_sketch: fill color = red={r}, green={g}, blue={b}, alpha={a}"
         )
         # Load sketch into the canvas element
         self.canvas.set_sketch(sketch)

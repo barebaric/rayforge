@@ -24,6 +24,7 @@ from ..core.entities import (
     TextBoxEntity,
 )
 from ..core.types import EntityID
+from ..core.sketch import FillStyle
 from .tools import PathTool, TextBoxTool
 
 if TYPE_CHECKING:
@@ -122,7 +123,6 @@ class SketchRenderer:
 
     def _draw_fills(self, ctx: cairo.Context):
         """Draws the filled regions of the sketch."""
-        # Identify the text box being edited to exclude its fill
         exclude_ids = set()
         text_tool = self.element.tools.get("text_box")
         if (
@@ -132,19 +132,149 @@ class SketchRenderer:
         ):
             exclude_ids.add(text_tool.editing_entity_id)
 
-        fill_geometries = self.element.sketch.get_fill_geometries(
-            exclude_ids=exclude_ids
-        )
+        sketch = self.element.sketch
 
-        for geo in fill_geometries:
+        for fill in sketch.fills:
+            if not fill.boundary:
+                continue
+
+            geo = self._get_fill_geometry(fill, exclude_ids)
+            if geo is None:
+                continue
+
             ctx.new_path()
             geo.to_cairo(ctx)
             ctx.close_path()
 
             ctx.save()
-            ctx.set_source_rgba(0.85, 0.85, 0.85, 0.7)
+            self._apply_fill_style(ctx, fill)
             ctx.fill()
             ctx.restore()
+
+        self._draw_text_box_fills(ctx, exclude_ids)
+
+    def _get_fill_geometry(self, fill, exclude_ids):
+        """Generate geometry for a single fill."""
+        if len(fill.boundary) == 1:
+            eid, _ = fill.boundary[0]
+            if eid in exclude_ids:
+                return None
+            entity = self.element.sketch.registry.get_entity(eid)
+            if entity:
+                return entity.create_fill_geometry(
+                    self.element.sketch.registry
+                )
+            return None
+
+        try:
+            first_eid, first_fwd = fill.boundary[0]
+            if first_eid in exclude_ids:
+                return None
+            first_ent = self.element.sketch.registry.get_entity(first_eid)
+            if not first_ent:
+                return None
+
+            p_ids = first_ent.get_endpoint_ids()
+            start_pid = p_ids[0] if first_fwd else p_ids[1]
+            start_pt = self.element.sketch.registry.get_point(start_pid)
+
+            from rayforge.core.geo import Geometry
+
+            geo = Geometry()
+            geo.move_to(start_pt.x, start_pt.y)
+
+            valid_loop = True
+            for eid, fwd in fill.boundary:
+                if eid in exclude_ids:
+                    valid_loop = False
+                    break
+                entity = self.element.sketch.registry.get_entity(eid)
+                if not entity:
+                    valid_loop = False
+                    break
+                entity.append_to_geometry(
+                    geo, self.element.sketch.registry, fwd
+                )
+
+            if valid_loop:
+                return geo
+        except (IndexError, AttributeError):
+            pass
+        return None
+
+    def _apply_fill_style(self, ctx: cairo.Context, fill):
+        """Apply fill color or gradient to the cairo context."""
+        if fill.style == FillStyle.SOLID:
+            ctx.set_source_rgba(*fill.color)
+        elif fill.style == FillStyle.LINEAR_GRADIENT:
+            self._apply_linear_gradient(ctx, fill)
+        elif fill.style == FillStyle.RADIAL_GRADIENT:
+            self._apply_radial_gradient(ctx, fill)
+        else:
+            ctx.set_source_rgba(*fill.color)
+
+    def _apply_linear_gradient(self, ctx: cairo.Context, fill):
+        """Apply a linear gradient fill."""
+        ext = ctx.path_extents()
+        x1, y1, x2, y2 = ext
+
+        angle_rad = math.radians(fill.gradient_angle)
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+        half_w = (x2 - x1) / 2
+        half_h = (y2 - y1) / 2
+
+        dx = math.cos(angle_rad) * max(half_w, half_h)
+        dy = math.sin(angle_rad) * max(half_w, half_h)
+
+        grad = cairo.LinearGradient(cx - dx, cy - dy, cx + dx, cy + dy)
+
+        if fill.gradient_stops:
+            for pos, color in fill.gradient_stops:
+                grad.add_color_stop_rgba(pos, *color)
+        else:
+            grad.add_color_stop_rgba(0.0, *fill.color)
+            grad.add_color_stop_rgba(1.0, *fill.color)
+
+        ctx.set_source(grad)
+
+    def _apply_radial_gradient(self, ctx: cairo.Context, fill):
+        """Apply a radial gradient fill."""
+        ext = ctx.path_extents()
+        x1, y1, x2, y2 = ext
+
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+        radius = max((x2 - x1) / 2, (y2 - y1) / 2)
+
+        grad = cairo.RadialGradient(cx, cy, 0, cx, cy, radius)
+
+        if fill.gradient_stops:
+            for pos, color in fill.gradient_stops:
+                grad.add_color_stop_rgba(pos, *color)
+        else:
+            grad.add_color_stop_rgba(0.0, *fill.color)
+            grad.add_color_stop_rgba(1.0, *fill.color)
+
+        ctx.set_source(grad)
+
+    def _draw_text_box_fills(self, ctx: cairo.Context, exclude_ids: set):
+        """Draw fills for text box entities."""
+        for entity in self.element.sketch.registry.entities:
+            if entity.id in exclude_ids:
+                continue
+            if not entity.construction:
+                text_geo = entity.create_text_fill_geometry(
+                    self.element.sketch.registry
+                )
+                if text_geo:
+                    ctx.new_path()
+                    text_geo.to_cairo(ctx)
+                    ctx.close_path()
+                    ctx.save()
+                    ctx.set_source_rgba(0.85, 0.85, 0.85, 0.7)
+                    ctx.fill()
+                    ctx.restore()
 
     # --- Entities ---
 

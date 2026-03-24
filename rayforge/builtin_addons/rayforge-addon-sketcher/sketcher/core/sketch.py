@@ -27,6 +27,8 @@ from rayforge.core.geo.constants import (
 )
 from rayforge.core.geometry_provider import IGeometryProvider
 from rayforge.core.varset import VarSet
+from rayforge.image.structures import FillRenderData, FillStyle
+from rayforge.shared.util.colors import ColorRGBA
 from .constraints import (
     AngleConstraint,
     AspectRatioConstraint,
@@ -56,6 +58,7 @@ from .solver import Solver
 from .types import EntityID
 
 
+DEFAULT_FILL_COLOR: ColorRGBA = (0.85, 0.85, 0.85, 0.7)
 _DEFAULT_VARSET_TITLE = _("Sketch Parameters")
 _DEFAULT_VARSET_DESCRIPTION = _(
     "Parameters that control this sketch's geometry"
@@ -85,24 +88,55 @@ _CONSTRAINT_CLASSES = {
 class Fill:
     """Represents a filled area bounded by sketch entities."""
 
-    def __init__(self, uid: str, boundary: List[Tuple[EntityID, bool]]):
+    def __init__(
+        self,
+        uid: str,
+        boundary: List[Tuple[EntityID, bool]],
+        style: FillStyle = FillStyle.SOLID,
+        color: ColorRGBA = DEFAULT_FILL_COLOR,
+        gradient_stops: Optional[List[Tuple[float, ColorRGBA]]] = None,
+        gradient_angle: float = 0.0,
+    ):
         self.uid = uid
         self.boundary: List[Tuple[EntityID, bool]] = boundary
+        self.style = style
+        self.color = color
+        self.gradient_stops = gradient_stops or []
+        self.gradient_angle = gradient_angle
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        data = {
             "uid": self.uid,
             "boundary": [list(item) for item in self.boundary],
+            "style": self.style.value,
+            "color": list(self.color),
         }
+        if self.gradient_stops:
+            data["gradient_stops"] = [
+                [pos, list(c)] for pos, c in self.gradient_stops
+            ]
+        if self.gradient_angle != 0.0:
+            data["gradient_angle"] = self.gradient_angle
+        return data
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Fill":
-        # JSON deserializes tuples as lists. Convert back to tuples so they
-        # are hashable (required for FillTool set operations).
         boundary = [tuple(item) for item in data["boundary"]]
+        style = FillStyle(data.get("style", "solid"))
+        color = tuple(data.get("color", list(DEFAULT_FILL_COLOR)))
+        gradient_stops = None
+        if "gradient_stops" in data:
+            gradient_stops = [
+                (pos, tuple(c)) for pos, c in data["gradient_stops"]
+            ]
+        gradient_angle = data.get("gradient_angle", 0.0)
         return cls(
             uid=data.get("uid", str(uuid.uuid4())),
             boundary=boundary,
+            style=style,
+            color=color,
+            gradient_stops=gradient_stops,
+            gradient_angle=gradient_angle,
         )
 
 
@@ -205,7 +239,7 @@ class Sketch(IAsset, IGeometryProvider):
 
     def get_geometry(
         self, params: Optional[Dict[str, Any]] = None
-    ) -> Tuple[Geometry, List[Geometry]]:
+    ) -> Tuple[Geometry, List[FillRenderData]]:
         """
         Generate geometry with optional parameter overrides.
 
@@ -216,11 +250,11 @@ class Sketch(IAsset, IGeometryProvider):
             params: Optional dictionary of parameter values to override.
 
         Returns:
-            A tuple of (stroke_geometry, fill_geometries).
+            A tuple of (stroke_geometry, fill_render_data).
         """
         clone = Sketch.from_dict(self.to_dict())
         clone.solve(variable_overrides=params)
-        return clone.to_geometry(), clone.get_fill_geometries()
+        return clone.to_geometry(), clone.get_fill_render_data()
 
     @property
     def hidden(self) -> bool:
@@ -1316,12 +1350,14 @@ class Sketch(IAsset, IGeometryProvider):
 
         return geo
 
-    def get_fill_geometries(
+    def get_fill_render_data(
         self, exclude_ids: Optional[Set[EntityID]] = None
-    ) -> List[Geometry]:
+    ) -> List[FillRenderData]:
         """
-        Generates Geometry objects for all defined fills.
-        Each geometry object represents a single closed filled region.
+        Generates FillRenderData objects for all defined fills.
+
+        Each FillRenderData contains the geometry and styling information
+        needed to render a fill region.
 
         Args:
             exclude_ids: Optional set of entity IDs to exclude from fill
@@ -1330,65 +1366,76 @@ class Sketch(IAsset, IGeometryProvider):
         if exclude_ids is None:
             exclude_ids = set()
 
-        fill_geometries = []
+        render_data = []
         for fill in self.fills:
             if not fill.boundary:
                 continue
 
-            # Case 1: Single entity loop (Circle)
-            if len(fill.boundary) == 1:
-                eid, _ = fill.boundary[0]
-                if eid in exclude_ids:
-                    continue
-                entity = self.registry.get_entity(eid)
-                if entity:
-                    fill_geo = entity.create_fill_geometry(self.registry)
-                    if fill_geo:
-                        fill_geometries.append(fill_geo)
-                continue
+            geo = self._create_fill_geometry(fill, exclude_ids)
+            if geo is not None:
+                render_data.append(
+                    FillRenderData(
+                        geometry=geo,
+                        style=fill.style,
+                        color=fill.color,
+                        gradient_stops=fill.gradient_stops,
+                        gradient_angle=fill.gradient_angle,
+                    )
+                )
 
-            # Case 2: Multi-segment loop
-            try:
-                first_eid, first_fwd = fill.boundary[0]
-                if first_eid in exclude_ids:
-                    continue
-                first_ent = self.registry.get_entity(first_eid)
-                if not first_ent:
-                    continue
-
-                p_ids = first_ent.get_endpoint_ids()
-                start_pid = p_ids[0] if first_fwd else p_ids[1]
-                start_pt = self.registry.get_point(start_pid)
-
-                geo = Geometry()
-                geo.move_to(start_pt.x, start_pt.y)
-
-                valid_loop = True
-
-                for eid, fwd in fill.boundary:
-                    if eid in exclude_ids:
-                        valid_loop = False
-                        break
-                    entity = self.registry.get_entity(eid)
-                    if not entity:
-                        valid_loop = False
-                        break
-
-                    entity.append_to_geometry(geo, self.registry, fwd)
-
-                if valid_loop:
-                    fill_geometries.append(geo)
-
-            except (IndexError, AttributeError):
-                continue
-
-        # Add text fills for non-construction text entities
         for entity in self.registry.entities:
             if entity.id in exclude_ids:
                 continue
             if not entity.construction:
                 text_geo = entity.create_text_fill_geometry(self.registry)
                 if text_geo:
-                    fill_geometries.append(text_geo)
+                    render_data.append(
+                        FillRenderData(
+                            geometry=text_geo,
+                            style=FillStyle.SOLID,
+                            color=DEFAULT_FILL_COLOR,
+                        )
+                    )
 
-        return fill_geometries
+        return render_data
+
+    def _create_fill_geometry(
+        self, fill: "Fill", exclude_ids: Set[EntityID]
+    ) -> Optional[Geometry]:
+        """Create geometry for a single fill."""
+        if len(fill.boundary) == 1:
+            eid, _ = fill.boundary[0]
+            if eid in exclude_ids:
+                return None
+            entity = self.registry.get_entity(eid)
+            if entity:
+                return entity.create_fill_geometry(self.registry)
+            return None
+
+        try:
+            first_eid, first_fwd = fill.boundary[0]
+            if first_eid in exclude_ids:
+                return None
+            first_ent = self.registry.get_entity(first_eid)
+            if not first_ent:
+                return None
+
+            p_ids = first_ent.get_endpoint_ids()
+            start_pid = p_ids[0] if first_fwd else p_ids[1]
+            start_pt = self.registry.get_point(start_pid)
+
+            geo = Geometry()
+            geo.move_to(start_pt.x, start_pt.y)
+
+            for eid, fwd in fill.boundary:
+                if eid in exclude_ids:
+                    return None
+                entity = self.registry.get_entity(eid)
+                if not entity:
+                    return None
+                entity.append_to_geometry(geo, self.registry, fwd)
+
+            return geo
+
+        except (IndexError, AttributeError):
+            return None

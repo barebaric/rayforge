@@ -12,6 +12,7 @@ from blinker import Signal
 
 if TYPE_CHECKING:
     from ..image.base_renderer import Renderer
+    from ..image.structures import FillRenderData
     from .geo import Geometry
 
 
@@ -46,7 +47,7 @@ class IGeometryProvider(Protocol):
 
     def get_geometry(
         self, params: Optional[Dict[str, Any]] = None
-    ) -> Tuple["Geometry", List["Geometry"]]:
+    ) -> Tuple["Geometry", List["FillRenderData"]]:
         """
         Generate geometry with optional parameter overrides.
 
@@ -55,7 +56,7 @@ class IGeometryProvider(Protocol):
                     the provider's default values.
 
         Returns:
-            A tuple of (stroke_geometry, fill_geometries).
+            A tuple of (stroke_geometry, fill_render_data).
         """
         ...
 
