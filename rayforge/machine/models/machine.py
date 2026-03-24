@@ -290,7 +290,15 @@ class Machine:
         """Get the current dialect instance for this machine."""
         if self._hydrated_dialect:
             return self._hydrated_dialect
-        return get_dialect(self.dialect_uid)
+        try:
+            return get_dialect(self.dialect_uid)
+        except ValueError:
+            logger.warning(
+                f"Dialect '{self.dialect_uid}' not found for machine "
+                f"'{self.name}'. Falling back to 'grbl'."
+            )
+            self.dialect_uid = "grbl"
+            return get_dialect("grbl")
 
     def hydrate(self):
         """
@@ -298,7 +306,15 @@ class Machine:
         This ensures that when serialized, the machine carries the full
         dialect definition.
         """
-        self._hydrated_dialect = get_dialect(self.dialect_uid)
+        try:
+            self._hydrated_dialect = get_dialect(self.dialect_uid)
+        except ValueError:
+            logger.warning(
+                f"Dialect '{self.dialect_uid}' not found for machine "
+                f"'{self.name}'. Falling back to 'grbl'."
+            )
+            self.dialect_uid = "grbl"
+            self._hydrated_dialect = get_dialect("grbl")
 
     def set_dialect_uid(self, dialect_uid: str):
         if self.dialect_uid == dialect_uid:
