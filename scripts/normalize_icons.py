@@ -70,7 +70,7 @@ def tokenize_path(path_data):
     return tokens
 
 
-def transform_path(path_data, min_x, min_y, width, height, target_size=16):
+def transform_path(path_data, min_x, min_y, width, height, target_size=24):
     """
     Transform path data from original viewBox to target 0-32 viewBox.
     Returns the transformed path data string.
@@ -228,7 +228,7 @@ def transform_style(style_str, scale):
     )
 
 
-def normalize_svg(content, target_size=16):
+def normalize_svg(content, target_size=24):
     """
     Normalize SVG content.
 
