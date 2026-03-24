@@ -980,6 +980,45 @@ class TestMachine:
         changed_spy.assert_called_once_with(machine)
 
     @pytest.mark.asyncio
+    async def test_dialect_fallback_to_grbl_on_invalid_uid(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """
+        Test that when dialect_uid is set to a non-existent dialect,
+        the dialect property falls back to 'grbl' instead of crashing.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Set dialect_uid to a non-existent value
+        machine.dialect_uid = "nonexistent_dialect"
+
+        # Accessing the dialect property should not raise an exception
+        # but should fall back to 'grbl'
+        dialect = machine.dialect
+        assert dialect == GRBL_DIALECT
+        assert machine.dialect_uid == "grbl"
+
+    @pytest.mark.asyncio
+    async def test_hydrate_fallback_to_grbl_on_invalid_uid(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """
+        Test that when hydrate is called with a non-existent dialect_uid,
+        it falls back to 'grbl' instead of crashing.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Set dialect_uid to a non-existent value
+        machine.dialect_uid = "nonexistent_dialect"
+
+        # Hydrating should not raise an exception
+        machine.hydrate()
+
+        # Should fall back to grbl
+        assert machine._hydrated_dialect == GRBL_DIALECT
+        assert machine.dialect_uid == "grbl"
+
+    @pytest.mark.asyncio
     async def test_can_g0_with_speed(
         self, machine: Machine, task_mgr: TaskManager
     ):
