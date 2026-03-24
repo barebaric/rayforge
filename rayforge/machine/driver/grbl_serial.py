@@ -296,7 +296,6 @@ class GrblSerialDriver(Driver):
     async def _connection_loop(self) -> None:
         logger.debug("Entering _connection_loop.")
         while self.keep_running:
-            self._update_connection_status(TransportStatus.CONNECTING)
             logger.debug("Attempting connection…")
 
             try:
