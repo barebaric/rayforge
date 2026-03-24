@@ -369,7 +369,9 @@ class GrblSerialDriver(Driver):
 
             except (serial.serialutil.SerialException, OSError) as e:
                 logger.error(f"Connection error: {e}")
-                self._update_connection_status(TransportStatus.ERROR, str(e))
+                # Don't update status here - the transport's status_changed
+                # signal already sent ERROR status via
+                # on_serial_status_changed.
             except asyncio.CancelledError:
                 logger.info("Connection loop cancelled.")
                 break
