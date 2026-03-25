@@ -61,6 +61,15 @@ class SketchTool(ABC):
         """Optional hook for hover effects."""
         pass
 
+    def on_modifier_change(self, shift: bool = False, ctrl: bool = False):
+        """
+        Called when modifier keys (Shift/Ctrl) change during tool operation.
+
+        Override in subclasses that need to respond to modifier key changes
+        during drag operations.
+        """
+        pass
+
     def on_deactivate(self):
         """
         Called when the tool is about to be switched or deactivated.

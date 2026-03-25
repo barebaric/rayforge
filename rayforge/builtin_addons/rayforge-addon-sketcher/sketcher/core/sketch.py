@@ -50,7 +50,7 @@ from .constraints import (
     VerticalConstraint,
 )
 from .constraints.drag import DragConstraint
-from .entities import Line, Arc, Circle, Bezier, Entity
+from .entities import Line, Arc, Circle, Bezier, Entity, Ellipse
 from .entities.point import WaypointType
 from .params import ParameterContext
 from .registry import EntityRegistry
@@ -736,6 +736,17 @@ class Sketch(IAsset, IGeometryProvider):
                 )
                 # By convention, a single circle loop is CCW -> positive area
                 return math.pi * radius**2
+            if isinstance(entity, Ellipse):
+                center = self.registry.get_point(entity.center_idx)
+                radius_x_pt = self.registry.get_point(entity.radius_x_pt_idx)
+                radius_y_pt = self.registry.get_point(entity.radius_y_pt_idx)
+                rx = math.hypot(
+                    radius_x_pt.x - center.x, radius_x_pt.y - center.y
+                )
+                ry = math.hypot(
+                    radius_y_pt.x - center.x, radius_y_pt.y - center.y
+                )
+                return math.pi * rx * ry
 
         points = []
         first_ent = self.registry.get_entity(loop[0][0])
@@ -884,6 +895,11 @@ class Sketch(IAsset, IGeometryProvider):
             if isinstance(e, Circle):
                 loops.append([(e.id, True)])
 
+        # Add ellipses as single-entity loops
+        for e in self.registry.entities:
+            if isinstance(e, Ellipse):
+                loops.append([(e.id, True)])
+
         return loops
 
     def _loop_to_polygon(
@@ -932,6 +948,37 @@ class Sketch(IAsset, IGeometryProvider):
                         dist_sq = (mx - center.x) ** 2 + (my - center.y) ** 2
                         if dist_sq <= radius**2:
                             is_hit = True
+                elif isinstance(entity, Ellipse):
+                    center = self.registry.get_point(entity.center_idx)
+                    radius_x_pt = self.registry.get_point(
+                        entity.radius_x_pt_idx
+                    )
+                    radius_y_pt = self.registry.get_point(
+                        entity.radius_y_pt_idx
+                    )
+                    if center and radius_x_pt and radius_y_pt:
+                        rx = math.hypot(
+                            radius_x_pt.x - center.x, radius_x_pt.y - center.y
+                        )
+                        ry = math.hypot(
+                            radius_y_pt.x - center.x, radius_y_pt.y - center.y
+                        )
+                        if rx > 1e-9 and ry > 1e-9:
+                            rotation = math.atan2(
+                                radius_x_pt.y - center.y,
+                                radius_x_pt.x - center.x,
+                            )
+                            cos_a = math.cos(-rotation)
+                            sin_a = math.sin(-rotation)
+                            dx = mx - center.x
+                            dy = my - center.y
+                            local_x = dx * cos_a - dy * sin_a
+                            local_y = dx * sin_a + dy * cos_a
+                            ellipse_dist = (local_x / rx) ** 2 + (
+                                local_y / ry
+                            ) ** 2
+                            if ellipse_dist <= 1.0:
+                                is_hit = True
             else:
                 polygon = self._loop_to_polygon(loop)
                 if polygon and primitives.is_point_in_polygon(
@@ -1206,6 +1253,8 @@ class Sketch(IAsset, IGeometryProvider):
 
         for e in self.registry.entities:
             if e.construction:
+                continue
+            if e.invisible:
                 continue
             if isinstance(e, (Line, Arc, Bezier)):
                 chainable.append(e)

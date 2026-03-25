@@ -18,6 +18,7 @@ from ..core.entities import (
     Arc,
     Bezier,
     Circle,
+    Ellipse,
     Entity,
     Line,
     Point,
@@ -307,6 +308,9 @@ class SketchRenderer:
             ):
                 continue
 
+            if entity.invisible:
+                continue
+
             is_sel = entity.id in self.element.selection.entity_ids
             is_hovered = entity.id == hovered_entity_id
             ctx.save()
@@ -321,6 +325,8 @@ class SketchRenderer:
                 has_path = self._define_bezier_path(ctx, entity)
             elif isinstance(entity, Circle):
                 has_path = self._define_circle_path(ctx, entity)
+            elif isinstance(entity, Ellipse):
+                has_path = self._define_ellipse_path(ctx, entity)
             elif isinstance(entity, TextBoxEntity):
                 has_path = self._define_text_box_path(ctx, entity)
 
@@ -449,6 +455,34 @@ class SketchRenderer:
         radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
         ctx.new_sub_path()
         ctx.arc(center.x, center.y, radius, 0, 2 * math.pi)
+        return True
+
+    def _define_ellipse_path(
+        self, ctx: cairo.Context, ellipse: Ellipse
+    ) -> bool:
+        """Defines the path for an ellipse without stroking."""
+        center = self._safe_get_point(ellipse.center_idx)
+        radius_x_pt = self._safe_get_point(ellipse.radius_x_pt_idx)
+        radius_y_pt = self._safe_get_point(ellipse.radius_y_pt_idx)
+        if not (center and radius_x_pt and radius_y_pt):
+            return False
+
+        rx = math.hypot(radius_x_pt.x - center.x, radius_x_pt.y - center.y)
+        ry = math.hypot(radius_y_pt.x - center.x, radius_y_pt.y - center.y)
+        if rx < 1e-9 or ry < 1e-9:
+            return False
+
+        rotation = math.atan2(
+            radius_x_pt.y - center.y, radius_x_pt.x - center.x
+        )
+
+        ctx.save()
+        ctx.translate(center.x, center.y)
+        ctx.rotate(rotation)
+        ctx.scale(rx, ry)
+        ctx.new_sub_path()
+        ctx.arc(0, 0, 1, 0, 2 * math.pi)
+        ctx.restore()
         return True
 
     def _define_bezier_path(self, ctx: cairo.Context, bezier: Bezier) -> bool:
@@ -606,6 +640,10 @@ class SketchRenderer:
             elif isinstance(entity, Circle):
                 point_counts[entity.center_idx] += 1
                 point_counts[entity.radius_pt_idx] += 1
+            elif isinstance(entity, Ellipse):
+                point_counts[entity.center_idx] += 1
+                point_counts[entity.radius_x_pt_idx] += 1
+                point_counts[entity.radius_y_pt_idx] += 1
 
         for pid, count in point_counts.items():
             if count > 1:
@@ -691,11 +729,20 @@ class SketchRenderer:
                 if entity.construction:
                     construction_point_ids.update(entity.get_point_ids())
 
+        # Collect hidden point IDs from active tool preview
+        hidden_point_ids = set()
+        preview_state = self.element.current_tool.get_preview_state()
+        if preview_state is not None:
+            hidden_point_ids = preview_state.get_hidden_point_ids()
+
         to_screen = to_screen_matrix.transform_point
 
         for p in points:
             # Hide points belonging to construction geometry when hidden
             if p.id in construction_point_ids:
+                continue
+            # Hide points marked as hidden by active tool preview
+            if p.id in hidden_point_ids:
                 continue
             sx, sy = to_screen((p.x, p.y))
 

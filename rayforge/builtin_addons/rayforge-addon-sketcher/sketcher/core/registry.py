@@ -5,6 +5,7 @@ from rayforge.core.geo.types import Point as GeoPoint
 from .entities.arc import Arc
 from .entities.bezier import Bezier
 from .entities.circle import Circle
+from .entities.ellipse import Ellipse
 from .entities.entity import Entity
 from .entities.line import Line
 from .entities.point import Point
@@ -15,6 +16,7 @@ _ENTITY_CLASSES = {
     "arc": Arc,
     "bezier": Bezier,
     "circle": Circle,
+    "ellipse": Ellipse,
     "line": Line,
     "text_box": TextBoxEntity,
 }
@@ -104,6 +106,26 @@ class EntityRegistry:
         eid = self._id_counter
         entity = Circle(
             eid, center_idx, radius_pt_idx, construction=construction
+        )
+        self.entities.append(entity)
+        self._entity_map[eid] = entity
+        self._id_counter += 1
+        return eid
+
+    def add_ellipse(
+        self,
+        center_idx: EntityID,
+        radius_x_pt_idx: EntityID,
+        radius_y_pt_idx: EntityID,
+        construction: bool = False,
+    ) -> EntityID:
+        eid = self._id_counter
+        entity = Ellipse(
+            eid,
+            center_idx,
+            radius_x_pt_idx,
+            radius_y_pt_idx,
+            construction=construction,
         )
         self.entities.append(entity)
         self._entity_map[eid] = entity
@@ -214,3 +236,17 @@ class EntityRegistry:
                             points_to_visit.add(ep)
 
         return connected_entities
+
+    def get_rigidly_connected_points(
+        self, point_id: EntityID
+    ) -> List[EntityID]:
+        """
+        Returns point IDs that should move together with the given point
+        as a rigid body during dragging. Iterates over all entities to find
+        any that have rigid connections for this point.
+        """
+        result = []
+        for entity in self.entities:
+            rigid_points = entity.get_rigidly_connected_points(point_id)
+            result.extend(rigid_points)
+        return list(set(result))

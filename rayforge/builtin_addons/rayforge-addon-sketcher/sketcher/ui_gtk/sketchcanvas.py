@@ -362,9 +362,15 @@ class SketchCanvas(WorldSurface):
 
         world_x, world_y = self._get_world_coords(x, y)
 
+        state = gesture.get_current_event_state()
+        shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
+        ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+
         # Let the active tool update its hover state (e.g., for snapping)
         if self.sketch_element:
-            self.sketch_element.on_hover_motion(world_x, world_y)
+            self.sketch_element.on_hover_motion(
+                world_x, world_y, shift=shift, ctrl=ctrl
+            )
 
         # Update tooltip based on constraint hover state
         self._update_constraint_tooltip()

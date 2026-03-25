@@ -36,6 +36,19 @@ class PreviewState:
         """
         return set()
 
+    def get_hidden_point_ids(self) -> Set[int]:
+        """
+        Returns IDs of points that should be hidden during preview.
+
+        Subclasses should override this to return the IDs of points that
+        should not be rendered during the preview phase (e.g., the start
+        point of a drag operation).
+
+        Returns:
+            Set of point IDs that should be hidden from rendering.
+        """
+        return set()
+
     def get_dimensions(
         self, registry: "EntityRegistry"
     ) -> List["DimensionData"]:
