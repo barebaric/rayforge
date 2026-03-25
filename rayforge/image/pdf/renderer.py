@@ -1,13 +1,17 @@
+import io
 import warnings
 import logging
-from typing import Optional, TYPE_CHECKING
-from ..base_renderer import RasterRenderer
+from typing import Optional, Tuple, TYPE_CHECKING
+from pypdf import PdfReader
+from ..base_renderer import RasterRenderer, RenderSpecification
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
 if TYPE_CHECKING:
+    from ...core.source_asset_segment import SourceAssetSegment
+    from ...core.workpiece import RenderContext
     from ...image.structures import ImportResult
 
 logger = logging.getLogger(__name__)
@@ -15,6 +19,19 @@ logger = logging.getLogger(__name__)
 
 class PdfRenderer(RasterRenderer):
     """Renders PDF data."""
+
+    def compute_render_spec(
+        self,
+        segment: Optional["SourceAssetSegment"],
+        target_size: Tuple[int, int],
+        source_context: "RenderContext",
+    ) -> "RenderSpecification":
+        return RenderSpecification(
+            width=target_size[0],
+            height=target_size[1],
+            data=source_context.data,
+            apply_mask=False,
+        )
 
     def render_preview_image(
         self,
@@ -66,29 +83,18 @@ class PdfRenderer(RasterRenderer):
         if not data:
             return None
 
+        # Check if data is pre-rendered PNG (from trace import)
+        if data[:4] == b"\x89PNG":
+            try:
+                image = pyvips.Image.new_from_buffer(data, "")
+                return image.thumbnail_image(width, height=height, size="both")
+            except pyvips.Error as e:
+                logger.warning(f"Failed to load PNG data: {e}")
+                return None
+
         # For PDFs, we must determine a DPI to request from the loader
         # to achieve the target pixel dimensions.
-        # Since we don't have access to metadata here, we rely on the
-        # loader's "scale" parameter if available or default DPI handling.
-        # pyvips.pdfload_buffer takes a 'scale' parameter which is easier
-        # than DPI if we want target pixels, but 'scale' is relative to 72DPI.
-
-        # However, to correctly calculate the DPI/scale, we would need the
-        # original PDF point size. Since renderers are now dumb, we rely
-        # on a best-effort approach using a standard DPI or we could parse
-        # it here locally if strictly necessary.
-        # BUT: The architectural decision is that renderers just render.
-        # The PdfImporter calculates the required pixel dimensions based on
-        # the physical size it knows. The renderer's job is to hit that
-        # pixel count.
-
-        # To hit exact pixel count with PDF, we need the original point size.
-        # We'll do a lightweight parse here solely for scaling purposes.
         try:
-            # We use a very fast peek just for the MediaBox to calc DPI
-            from pypdf import PdfReader
-            import io
-
             reader = PdfReader(io.BytesIO(data))
             media_box = reader.pages[0].mediabox
             w_pt = float(media_box.width)
@@ -102,7 +108,7 @@ class PdfRenderer(RasterRenderer):
             else:
                 dpi = 300.0
         except Exception:
-            dpi = 300.0  # Fallback
+            dpi = 300.0
 
         try:
             image = pyvips.Image.pdfload_buffer(data, dpi=dpi)

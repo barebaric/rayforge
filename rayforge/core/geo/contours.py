@@ -1,10 +1,12 @@
 from __future__ import annotations
 import logging
-from typing import List, Tuple, TYPE_CHECKING, Dict
+from typing import List, Tuple, TypedDict, Optional
 import numpy as np
-from .analysis import get_subpath_area_from_array
-from .primitives import is_point_in_polygon
-from .split import split_into_contours
+from .analysis import (
+    get_subpath_area_from_array,
+    get_subpath_vertices_from_array,
+    is_closed,
+)
 from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
@@ -22,17 +24,33 @@ from .constants import (
     COL_C2X,
     COL_C2Y,
 )
+from .geometry import Geometry
+from .primitives import is_point_in_polygon
+from .split import split_into_contours
+from .types import Point, Rect
 
 
-if TYPE_CHECKING:
-    from .geometry import Geometry
+class ContourData(TypedDict):
+    geo: Geometry
+    vertices: List[Point]
+    is_closed: bool
+    original_index: int
+
+
+class _NormalizeContourData(TypedDict):
+    geo: Geometry
+    verts: List[Point]
+    rect: Rect
+    test_point: Point
+    is_closed: bool
+
 
 logger = logging.getLogger(__name__)
 
 
 def get_valid_contours_data(
-    contour_geometries: List["Geometry"],
-) -> List[Dict]:
+    contour_geometries: List[Geometry],
+) -> List[ContourData]:
     """
     Filters degenerate contours and pre-calculates their data.
 
@@ -56,10 +74,7 @@ def get_valid_contours_data(
         in the result. The function requires contours to start with a MoveTo
         command and have at least 2 commands.
     """
-    from .constants import CMD_TYPE_MOVE, COL_TYPE
-    from .analysis import is_closed, get_subpath_vertices_from_array
-
-    contour_data = []
+    contour_data: List[ContourData] = []
     for i, contour_geo in enumerate(contour_geometries):
         if contour_geo.is_empty():
             continue
@@ -94,8 +109,6 @@ def get_valid_contours_data(
 
 def reverse_contour(contour: Geometry) -> Geometry:
     """Reverses the direction of a single-contour Geometry object."""
-    from .geometry import Geometry
-
     contour._sync_to_numpy()
     data = contour._data
     if data is None or len(data) == 0:
@@ -219,7 +232,7 @@ def split_inner_and_outer_contours(
     return internal_contours, external_contours
 
 
-def close_all_contours(geometry: "Geometry") -> "Geometry":
+def close_all_contours(geometry: Geometry) -> Geometry:
     """
     Closes all open contours in the given geometry.
 
@@ -232,9 +245,6 @@ def close_all_contours(geometry: "Geometry") -> "Geometry":
     Returns:
         A new Geometry with all contours closed.
     """
-    from .geometry import Geometry
-    from .split import split_into_contours
-
     if geometry.is_empty():
         return geometry.copy()
 
@@ -261,6 +271,9 @@ def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
     This is crucial for ensuring that filtering algorithms based on the
     even-odd rule work correctly, especially with vector data from sources
     that do not guarantee winding order.
+
+    Note: Open paths are passed through unchanged since winding order
+    only applies to closed contours.
     """
     if not contours:
         return []
@@ -268,8 +281,8 @@ def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
     count = len(contours)
 
     # 1. Pre-calculate data to avoid re-computing per iteration
-    # Store: (geometry, start_point_2d, bounding_box)
-    contour_data = []
+    # Store: (geometry, start_point_2d, bounding_box, is_closed)
+    contour_data: List[Optional[_NormalizeContourData]] = []
 
     for c in contours:
         if c.is_empty():
@@ -284,9 +297,11 @@ def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
             contour_data.append(None)
             continue
 
+        c_is_closed = is_closed(c.data)
+
         # Get vertices for point-in-poly check
         verts_3d = segments[0]
-        verts_2d = [p[:2] for p in verts_3d]
+        verts_2d: List[Point] = [p[:2] for p in verts_3d]
 
         # Get Bounding Box (min_x, min_y, max_x, max_y)
         rect = c.rect()
@@ -300,6 +315,7 @@ def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
                 "verts": verts_2d,
                 "rect": rect,
                 "test_point": test_point,
+                "is_closed": c_is_closed,
             }
         )
 
@@ -310,17 +326,25 @@ def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
         if current is None:
             continue
 
+        # Open paths pass through unchanged - winding order only
+        # matters for closed contours (fill vs hole determination)
+        if not current["is_closed"]:
+            normalized_contours.append(current["geo"])
+            continue
+
         nesting_level = 0
         tx, ty = current["test_point"]
 
         # Optimization: Filter candidates by Bounding Box first
         # We check if 'current' is inside 'other'
+        # Only check against CLOSED contours for nesting
+        # Open paths cannot contain other paths
         for j in range(count):
             if i == j:
                 continue
 
             other = contour_data[j]
-            if other is None:
+            if other is None or not other["is_closed"]:
                 continue
 
             # Bounding Box Check:
@@ -407,8 +431,6 @@ def remove_inner_edges(geometry: Geometry) -> Geometry:
         A new Geometry object containing only the external contours and all
         original open paths.
     """
-    from .geometry import Geometry  # For creating the new object
-
     if geometry.is_empty():
         return Geometry()
 
