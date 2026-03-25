@@ -6,6 +6,7 @@ to Ops objects for various post-processing operations.
 """
 
 from .crop_transformer import CropTransformer
+from .merge_lines_transformer import MergeLinesTransformer
 from .multipass_transformer import MultiPassTransformer
 from .optimize_transformer import (
     Optimize,
@@ -19,6 +20,7 @@ from .tabs_transformer import TabOpsTransformer
 
 __all__ = [
     "CropTransformer",
+    "MergeLinesTransformer",
     "MultiPassTransformer",
     "Optimize",
     "OverscanTransformer",

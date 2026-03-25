@@ -28,10 +28,14 @@ class FrameStep(Step):
     def get_default_transformers_dicts(cls) -> tuple[list, list]:
         TabOpsTransformer = transformer_registry.get("TabOpsTransformer")
         CropTransformer = transformer_registry.get("CropTransformer")
+        MergeLinesTransformer = transformer_registry.get(
+            "MergeLinesTransformer"
+        )
         Optimize = transformer_registry.get("Optimize")
         MultiPassTransformer = transformer_registry.get("MultiPassTransformer")
         assert TabOpsTransformer is not None
         assert CropTransformer is not None
+        assert MergeLinesTransformer is not None
         assert Optimize is not None
         assert MultiPassTransformer is not None
         optimize_dict = Optimize().to_dict()
@@ -40,6 +44,7 @@ class FrameStep(Step):
             CropTransformer(enabled=False).to_dict(),
             optimize_dict,
         ], [
+            MergeLinesTransformer().to_dict(),
             optimize_dict,
             MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
         ]

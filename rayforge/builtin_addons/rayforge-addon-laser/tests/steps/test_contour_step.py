@@ -38,7 +38,7 @@ class TestContourStep:
         assert step.opsproducer_dict is not None
         assert step.opsproducer_dict["type"] == "ContourProducer"
         assert len(step.per_workpiece_transformers_dicts) == 4
-        assert len(step.per_step_transformers_dicts) == 2
+        assert len(step.per_step_transformers_dicts) == 3
         assert step.selected_laser_uid == "test-laser-uid"
 
     def test_create_without_optimize(self, mock_context):
@@ -93,8 +93,9 @@ class TestContourStep:
         assert "Smooth" in wp_names
         assert "CropTransformer" in wp_names
         assert "Optimize" in wp_names
-        assert len(restored.per_step_transformers_dicts) == 2
+        assert len(restored.per_step_transformers_dicts) == 3
         step_names = [t["name"] for t in restored.per_step_transformers_dicts]
+        assert "MergeLinesTransformer" in step_names
         assert "Optimize" in step_names
         assert "MultiPassTransformer" in step_names
 
