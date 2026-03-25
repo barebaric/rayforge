@@ -12,6 +12,7 @@ GRBL_DYNAMIC_DIALECT = GcodeDialect(
     omit_unchanged_coords=True,
     laser_on="M4 S0",
     laser_off="M5",
+    focus_laser_on="M4 S{power:.0f}",
     tool_change="T{tool_number}",
     set_speed="",
     travel_move="G0{x_cmd}{y_cmd}{z_cmd}",

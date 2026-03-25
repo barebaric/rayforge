@@ -440,6 +440,20 @@ class Driver(ABC):
         """
         pass
 
+    @abstractmethod
+    async def set_focus_power(self, head: "Laser", percent: float) -> None:
+        """
+        Sets the laser power for focus mode.
+
+        Some lasers use different commands for focusing vs cutting
+        (e.g., M3 for constant power vs M4 for dynamic power).
+
+        Args:
+            head: The laser head to control.
+            percent: Power percentage (0-1.0). 0 disables power.
+        """
+        pass
+
     def can_jog(self, axis: Optional["Axis"] = None) -> bool:
         """
         Check if this device supports jogging for the given axis or axes.

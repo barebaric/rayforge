@@ -13,6 +13,7 @@ MACH4_M67_DIALECT = GcodeDialect(
     omit_unchanged_coords=True,
     laser_on="M67 E0 Q{power:.0f}",
     laser_off="M67 E0 Q0",
+    focus_laser_on="M67 E0 Q{power:.0f}",
     tool_change="M6 T{tool_number}",
     set_speed="",
     travel_move="G0{x_cmd}{y_cmd}{z_cmd}",

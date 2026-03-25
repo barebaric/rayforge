@@ -50,6 +50,7 @@ class GcodeDialect:
 
     laser_on: str
     laser_off: str
+    focus_laser_on: str
     tool_change: str
     set_speed: str
     travel_move: str
@@ -109,6 +110,7 @@ class GcodeDialect:
         template_fields = [
             ("laser_on", _("Laser On")),
             ("laser_off", _("Laser Off")),
+            ("focus_laser_on", _("Focus Laser On")),
             ("travel_move", _("Travel Move")),
             ("linear_move", _("Linear Move")),
             ("arc_cw", _("Arc (CW)")),

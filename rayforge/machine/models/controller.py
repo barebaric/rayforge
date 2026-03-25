@@ -371,6 +371,28 @@ class MachineController:
 
         await self.driver.set_power(head, percent)
 
+    async def set_focus_power(
+        self, head: Optional["Laser"] = None, percent: float = 0.0
+    ) -> None:
+        """
+        Sets the laser power for focus mode.
+
+        Args:
+            head: The laser head to control. If None, uses the default head.
+            percent: Power percentage (0-1.0). 0 disables power.
+        """
+        logger.debug(
+            f"Head {head.uid if head else None} focus power "
+            f"to {percent * 100}%"
+        )
+        if not self.driver:
+            raise ValueError("No driver configured for this machine.")
+
+        if head is None:
+            head = self.machine.get_default_head()
+
+        await self.driver.set_focus_power(head, percent)
+
     async def set_work_origin(
         self, x: float, y: float, z: float, wcs_slot: Optional[str] = None
     ):

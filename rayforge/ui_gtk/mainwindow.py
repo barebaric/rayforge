@@ -2058,9 +2058,9 @@ class MainWindow(Adw.ApplicationWindow):
         head = config.machine.get_default_head()
 
         if is_focus_on:
-            self.machine_cmd.set_power(head, head.focus_power_percent)
+            self.machine_cmd.set_focus_power(head, head.focus_power_percent)
         else:
-            self.machine_cmd.set_power(head, 0)
+            self.machine_cmd.set_focus_power(head, 0)
         action.set_state(value)
 
         # Update the toolbar button icon

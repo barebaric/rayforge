@@ -953,6 +953,7 @@ class TestMachine:
             uid=current_dialect.uid,
             laser_on="M3 S{power:.0f}",
             laser_off="M5",
+            focus_laser_on="M3 S{power:.0f}",
             travel_move=current_dialect.travel_move,
             linear_move=current_dialect.linear_move,
             is_custom=True,
