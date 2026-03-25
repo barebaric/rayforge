@@ -471,6 +471,47 @@ def scale_polygon(
     return [(p[0] * sx, p[1] * sy) for p in polygon]
 
 
+def flip_polygon_numpy(
+    polygon: np.ndarray, flip_h: bool, flip_v: bool
+) -> np.ndarray:
+    """
+    Flip a polygon horizontally and/or vertically.
+
+    Args:
+        polygon: NumPy array of shape (N, 2) containing (x, y) coordinates.
+        flip_h: If True, flip horizontally (mirror across Y axis).
+        flip_v: If True, flip vertically (mirror across X axis).
+
+    Returns:
+        Flipped polygon as NumPy array.
+    """
+    result = polygon.copy()
+    if flip_h:
+        result[:, 0] = -result[:, 0]
+    if flip_v:
+        result[:, 1] = -result[:, 1]
+    return result
+
+
+def flip_polygons_numpy(
+    polygons: List[np.ndarray], flip_h: bool, flip_v: bool
+) -> List[np.ndarray]:
+    """
+    Flip multiple polygons horizontally and/or vertically.
+
+    Args:
+        polygons: List of NumPy arrays, each of shape (N, 2).
+        flip_h: If True, flip horizontally (mirror across Y axis).
+        flip_v: If True, flip vertically (mirror across X axis).
+
+    Returns:
+        List of flipped polygons.
+    """
+    if not flip_h and not flip_v:
+        return polygons
+    return [flip_polygon_numpy(p, flip_h, flip_v) for p in polygons]
+
+
 def _cross(o: Point, a: Point, b: Point) -> float:
     """Calculate the cross product of vectors OA and OB."""
     return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
