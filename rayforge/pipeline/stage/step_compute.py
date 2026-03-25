@@ -60,6 +60,9 @@ def _create_workpiece_placement_matrix(
     return Matrix.compose(tx, ty, angle, 1.0, math.copysign(1.0, sy), skew)
 
 
+MAX_TEXTURE_DIMENSION = 8192
+
+
 def _calculate_texture_dimensions(
     artifact: WorkPieceArtifact,
 ) -> Tuple[int, int, float, float]:
@@ -76,8 +79,17 @@ def _calculate_texture_dimensions(
         Tuple of (width_px, height_px, px_per_mm_x, px_per_mm_y).
     """
     px_per_mm_x = px_per_mm_y = 50.0
-    width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
-    height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
+    width_mm, height_mm = artifact.generation_size
+
+    if width_mm > 0 and height_mm > 0:
+        max_dim = max(width_mm * px_per_mm_x, height_mm * px_per_mm_y)
+        if max_dim > MAX_TEXTURE_DIMENSION:
+            scale = MAX_TEXTURE_DIMENSION / max_dim
+            px_per_mm_x *= scale
+            px_per_mm_y *= scale
+
+    width_px = int(round(width_mm * px_per_mm_x))
+    height_px = int(round(height_mm * px_per_mm_y))
     return width_px, height_px, px_per_mm_x, px_per_mm_y
 
 

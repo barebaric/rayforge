@@ -31,7 +31,7 @@ class TextureArtifactRenderer(BaseRenderer):
         self.texture: int = 0
         self.color_lut_texture: int = 0
         self.is_initialized: bool = False
-        # A list to hold dictionaries for each texture instance
+        self.max_texture_size: int = 0
         self.instances: List[Dict[str, Any]] = []
 
     def init_gl(self):
@@ -44,7 +44,11 @@ class TextureArtifactRenderer(BaseRenderer):
         if self.is_initialized:
             return
 
-        # Create vertex buffer for a simple quad
+        max_size = GL.GLint()
+        GL.glGetIntegerv(GL.GL_MAX_TEXTURE_SIZE, max_size)
+        self.max_texture_size = max_size.value
+        logger.debug(f"OpenGL max texture size: {self.max_texture_size}")
+
         self.vbo = self._create_vbo()
         self.vao = self._create_vao()
         self.texture = self._create_texture()
@@ -137,6 +141,17 @@ class TextureArtifactRenderer(BaseRenderer):
         except Exception as e:
             logger.warning(f"TextureArtifactRenderer cleanup warning: {e}")
 
+    def _downsample_texture(
+        self, data: np.ndarray, new_height: int, new_width: int
+    ) -> np.ndarray:
+        """Downsamples texture data using nearest-neighbor sampling."""
+        h, w = data.shape
+        y_step = h / new_height
+        x_step = w / new_width
+        y_coords = (np.arange(new_height) * y_step).astype(int)
+        x_coords = (np.arange(new_width) * x_step).astype(int)
+        return data[y_coords][:, x_coords].astype(np.uint8)
+
     def clear(self):
         """Clears all instances and their associated textures."""
         if not self.is_initialized:
@@ -175,7 +190,26 @@ class TextureArtifactRenderer(BaseRenderer):
         )
 
         height, width = texture_data.power_texture_data.shape
-        # Tell OpenGL that our data is tightly packed (1-byte alignment).
+
+        if width > self.max_texture_size or height > self.max_texture_size:
+            scale = min(
+                self.max_texture_size / width,
+                self.max_texture_size / height,
+            )
+            new_width = int(width * scale)
+            new_height = int(height * scale)
+            logger.warning(
+                f"Texture size {width}x{height} exceeds max "
+                f"{self.max_texture_size}, downsampling to "
+                f"{new_width}x{new_height}"
+            )
+            power_data = self._downsample_texture(
+                texture_data.power_texture_data, new_height, new_width
+            )
+            height, width = new_height, new_width
+        else:
+            power_data = texture_data.power_texture_data
+
         GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
         GL.glTexImage2D(
             GL.GL_TEXTURE_2D,
@@ -186,7 +220,7 @@ class TextureArtifactRenderer(BaseRenderer):
             0,
             GL.GL_RED,
             GL.GL_UNSIGNED_BYTE,
-            texture_data.power_texture_data,
+            power_data,
         )
         # Restore the default alignment.
         GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 4)
