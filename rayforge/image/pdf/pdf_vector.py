@@ -16,6 +16,7 @@ from ..base_importer import Importer, ImporterFeature
 from ..structures import (
     ParsingResult,
     LayerGeometry,
+    LayerInfo,
     VectorizationResult,
     ImportManifest,
 )
@@ -39,7 +40,7 @@ class PdfVectorImporter(Importer):
     label = "PDF (Vector Strategy)"
     mime_types = ()
     extensions = ()
-    features = {ImporterFeature.DIRECT_VECTOR}
+    features = {ImporterFeature.DIRECT_VECTOR, ImporterFeature.LAYER_SELECTION}
 
     def __init__(self, data: bytes, source_file: Optional[Path] = None):
         super().__init__(data, source_file)
@@ -47,6 +48,7 @@ class PdfVectorImporter(Importer):
         self._page: Optional[pymupdf.Page] = None
         self._page_width_pt: float = 0.0
         self._page_height_pt: float = 0.0
+        self._geometries_by_layer: Dict[Optional[str], Geometry] = {}
 
     def scan(self) -> ImportManifest:
         try:
@@ -65,10 +67,25 @@ class PdfVectorImporter(Importer):
             size_mm = (to_mm(width_pt, "pt"), to_mm(height_pt, "pt"))
 
             title = (doc.metadata or {}).get("title") or self.source_file.name
+
+            ocgs = doc.get_ocgs()
+            layers = []
+            if ocgs:
+                for ocg_id, ocg_info in ocgs.items():
+                    layer_name = ocg_info.get("name", str(ocg_id))
+                    layers.append(
+                        LayerInfo(
+                            id=layer_name,
+                            name=layer_name,
+                            default_active=ocg_info.get("on", True),
+                        )
+                    )
+
             doc.close()
 
             return ImportManifest(
                 title=title,
+                layers=layers,
                 natural_size_mm=size_mm,
                 warnings=self._warnings,
                 errors=self._errors,
@@ -128,6 +145,8 @@ class PdfVectorImporter(Importer):
             )
 
             geometries = self._extract_page_geometry()
+            self._geometries_by_layer = geometries
+
             if not geometries or all(
                 g.is_empty() for g in geometries.values()
             ):
@@ -182,16 +201,43 @@ class PdfVectorImporter(Importer):
                 geometries_by_layer={}, source_parse_result=parse_result
             )
 
-        geometries = self._extract_page_geometry()
+        split_layers = False
+        active_layers_set = None
+        if isinstance(spec, PassthroughSpec):
+            split_layers = spec.create_new_layers
+            if spec.active_layer_ids:
+                active_layers_set = set(spec.active_layer_ids)
+
+        geometries: Dict[Optional[str], Geometry] = self._geometries_by_layer
         if not geometries:
-            geometries["__default__"] = Geometry()
-        elif None in geometries:
-            geometries["__default__"] = geometries.pop(None)
+            geometries = {None: Geometry()}
+
+        geometries_to_process: Dict[Optional[str], Geometry]
+        if active_layers_set:
+            geometries_to_process = {
+                layer_id: geo
+                for layer_id, geo in geometries.items()
+                if layer_id in active_layers_set
+            }
+        else:
+            geometries_to_process = geometries
+
+        final_geometries: Dict[Optional[str], Geometry]
+        if split_layers:
+            final_geometries = {}
+            for layer_id, geo in geometries_to_process.items():
+                final_layer_id = layer_id or "__default__"
+                final_geometries[final_layer_id] = geo
+        else:
+            merged_geo = Geometry()
+            for geo in geometries_to_process.values():
+                merged_geo.extend(geo)
+            final_geometries = {"__default__": merged_geo}
 
         self._close_document()
 
         return VectorizationResult(
-            geometries_by_layer=geometries,
+            geometries_by_layer=final_geometries,
             source_parse_result=parse_result,
         )
 
@@ -224,16 +270,24 @@ class PdfVectorImporter(Importer):
         if self._page is None:
             return {None: Geometry()}
 
-        geometry = Geometry()
+        geometries_by_layer: Dict[Optional[str], Geometry] = {}
 
         try:
             drawings = self._page.get_drawings()
             for drawing in drawings:
-                self._add_drawing_to_geometry(drawing, geometry)
+                layer_name: Optional[str] = drawing.get("layer")
+                if layer_name not in geometries_by_layer:
+                    geometries_by_layer[layer_name] = Geometry()
+                self._add_drawing_to_geometry(
+                    drawing, geometries_by_layer[layer_name]
+                )
         except Exception as e:
             logger.warning(f"Failed to extract drawings: {e}")
 
-        return {None: geometry}
+        if not geometries_by_layer:
+            geometries_by_layer[None] = Geometry()
+
+        return geometries_by_layer
 
     def _add_drawing_to_geometry(
         self, drawing: Dict[str, Any], geometry: Geometry
