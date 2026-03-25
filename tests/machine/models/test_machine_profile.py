@@ -130,6 +130,7 @@ async def test_inject_wcs_after_preamble_flag(carvera_air_machine: "Machine"):
         description="Dialect without WCS injection",
         laser_on="",
         laser_off="",
+        focus_laser_on="",
         tool_change="",
         set_speed="",
         travel_move="",

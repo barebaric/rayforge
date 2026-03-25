@@ -839,6 +839,24 @@ class GrblSerialDriver(Driver):
 
         await self._execute_command(cmd)
 
+    async def set_focus_power(self, head: "Laser", percent: float) -> None:
+        """
+        Sets the laser power for focus mode using the focus_laser_on command.
+
+        Args:
+            head: The laser head to control.
+            percent: Power percentage (0.0-1.0). 0 disables power.
+        """
+        dialect = self._machine.dialect
+
+        if percent <= 0:
+            cmd = dialect.laser_off
+        else:
+            power_abs = percent * head.max_power
+            cmd = dialect.focus_laser_on.format(power=power_abs)
+
+        await self._execute_command(cmd)
+
     def can_jog(self, axis: Optional[Axis] = None) -> bool:
         """GRBL supports jogging for all axes."""
         return True

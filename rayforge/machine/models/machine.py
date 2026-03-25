@@ -776,6 +776,18 @@ class Machine:
         """
         await self.controller.set_power(head, percent)
 
+    async def set_focus_power(
+        self, head: Optional["Laser"] = None, percent: float = 0.0
+    ) -> None:
+        """
+        Sets the laser power for focus mode.
+
+        Args:
+            head: The laser head to control. If None, uses the default head.
+            percent: Power percentage (0-1.0). 0 disables power.
+        """
+        await self.controller.set_focus_power(head, percent)
+
     def get_active_wcs_offset(self) -> Point3D:
         """
         Returns the (x, y, z) offset for the currently active WCS.

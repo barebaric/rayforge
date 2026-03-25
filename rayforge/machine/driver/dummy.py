@@ -196,6 +196,19 @@ class NoDeviceDriver(Driver):
             extra={"log_category": "DRIVER_CMD"},
         )
 
+    async def set_focus_power(self, head: "Laser", percent: float) -> None:
+        """
+        Sets the laser power for focus mode.
+
+        Args:
+            head: The laser head to control.
+            percent: Power percentage (0.0-1.0). 0 disables power.
+        """
+        logger.info(
+            f"set_focus_power: head {head.uid} at {percent * 100:.1f}%",
+            extra={"log_category": "DRIVER_CMD"},
+        )
+
     def can_jog(self, axis: Optional[Axis] = None) -> bool:
         """Dummy driver supports jogging for all axes."""
         return True

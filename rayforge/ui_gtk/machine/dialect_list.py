@@ -218,6 +218,7 @@ class DialectListEditor(PreferencesGroupWithButton):
             description=_("A new custom dialect"),
             laser_on="M4 S{power}",
             laser_off="M5",
+            focus_laser_on="M3 S{power}",
             travel_move="G0 X{x} Y{y}",
             linear_move="G1 X{x} Y{y}{f_command}",
             is_custom=True,
