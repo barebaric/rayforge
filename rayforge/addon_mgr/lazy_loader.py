@@ -3,6 +3,7 @@ import importlib.machinery
 import importlib.util
 import logging
 import sys
+import time
 import types
 from pathlib import Path
 from typing import Optional
@@ -41,6 +42,16 @@ class AddonModuleFinder(importlib.abc.MetaPathFinder):
 
         manifest = self._shared_dict.get("addon_manifest")
         if not manifest:
+            logger.debug("Manifest not ready, waiting")
+            for _ in range(10):
+                time.sleep(0.05)
+                manifest = self._shared_dict.get("addon_manifest")
+                if manifest:
+                    logger.debug("Manifest ready")
+                    break
+
+        if not manifest:
+            logger.warning("Manifest not ready, giving up")
             return None
 
         # Check for actual python modules

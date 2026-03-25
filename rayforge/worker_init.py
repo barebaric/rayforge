@@ -33,9 +33,10 @@ def ensure_addons_loaded():
         else None
     )
 
-    _worker_addons_loaded = True
     if not manifest:
         return
+
+    _worker_addons_loaded = True
 
     from rayforge.context import get_context
     from rayforge.core.asset_registry import asset_type_registry
@@ -158,12 +159,13 @@ def initialize_worker(shared_state: Optional[Dict] = None):
 
     manifest = shared_state.get("addon_manifest")
     if not manifest:
-        logger.warning(
+        logger.debug(
             "Addon manifest not yet available in shared state. "
-            "Addon finder will be installed lazily."
+            "Addon finder will resolve modules when manifest arrives."
         )
-    else:
-        install_addon_finder(shared_dict=shared_state)
+
+    install_addon_finder(shared_dict=shared_state)
+    if manifest:
         ensure_addon_namespaces(manifest)
 
     logger.debug("Worker process initialized.")
