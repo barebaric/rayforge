@@ -12,6 +12,7 @@ from .distance_constraint import (
     DistanceConstraintCommand,
     DistanceConstraintParams,
 )
+from .ellipse import EllipseCommand, EllipsePreviewState
 from .equal_constraint import (
     EqualConstraintCommand,
     EqualConstraintMergeResult,
@@ -59,6 +60,8 @@ __all__ = [
     "DimensionData",
     "DistanceConstraintCommand",
     "DistanceConstraintParams",
+    "EllipseCommand",
+    "EllipsePreviewState",
     "EqualConstraintCommand",
     "EqualConstraintMergeResult",
     "FilletCommand",

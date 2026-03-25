@@ -122,6 +122,8 @@ class SketchHitTester:
 
         # 2. Check Entities
         for e in registry.entities:
+            if e.invisible:
+                continue
             is_match = False
             if strict_containment:
                 if e.is_contained_by(rect, registry):
@@ -245,6 +247,8 @@ class SketchHitTester:
         registry = element.sketch.registry
         entities = registry.entities or []
         for entity in entities:
+            if entity.invisible:
+                continue
             if entity.hit_test(mx, my, threshold, registry):
                 return entity
         return None

@@ -293,9 +293,17 @@ class SketchElement(CanvasElement):
     def handle_edit_release(self, world_x: float, world_y: float):
         self.current_tool.on_release(world_x, world_y)
 
-    def on_hover_motion(self, world_x: float, world_y: float):
+    def on_hover_motion(
+        self,
+        world_x: float,
+        world_y: float,
+        shift: bool = False,
+        ctrl: bool = False,
+    ):
         """Dispatches hover events to the currently active tool."""
-        self.current_tool.on_hover_motion(world_x, world_y)
+        tool = self.current_tool
+        tool.on_modifier_change(shift=shift, ctrl=ctrl)
+        tool.on_hover_motion(world_x, world_y)
 
     def get_lines_at_point(self, pid: EntityID) -> List[Line]:
         return [

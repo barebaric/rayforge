@@ -13,6 +13,7 @@ class Entity:
     def __init__(self, id: EntityID, construction: bool = False):
         self.id: EntityID = id
         self.construction = construction
+        self.invisible = False
         self.type = "entity"
         # Constrained state is calculated by solver
         self.constrained = False
@@ -78,6 +79,17 @@ class Entity:
         """
         Returns point IDs that should be counted for junction detection.
         These are typically the endpoints of geometric entities.
+        """
+        return []
+
+    def get_rigidly_connected_points(
+        self, point_id: EntityID
+    ) -> List[EntityID]:
+        """
+        Returns point IDs that should move together with the given point
+        as a rigid body during dragging. Used for entities where certain
+        points should maintain their relative positions (e.g., ellipse center
+        should drag all points together).
         """
         return []
 
@@ -150,10 +162,22 @@ class Entity:
 
     def to_dict(self) -> Dict[str, Any]:
         """Base serialization method for entities."""
-        return {
+        data = {
             "id": self.id,
             "type": self.type,
             "construction": self.construction,
+        }
+        if self.invisible:
+            data["invisible"] = True
+        return data
+
+    @classmethod
+    def _from_dict_base(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract base entity attributes from a dictionary."""
+        return {
+            "id": data["id"],
+            "construction": data.get("construction", False),
+            "invisible": data.get("invisible", False),
         }
 
     def __repr__(self) -> str:

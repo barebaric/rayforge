@@ -579,11 +579,48 @@ class SelectTool(SketchTool):
             self.dragged_point_id
         )
 
-        # Apply a strong drag constraint to ALL points in the group.
+        # Check if any point in the coincident group is fixed - if so,
+        # the dragged point can't move and we shouldn't apply rigid drag.
+        any_fixed = False
+        for pid in coincident_group:
+            p = self._safe_get_point(pid)
+            if p and p.fixed:
+                any_fixed = True
+                break
+
+        # Apply a strong drag constraint to ALL points in the coincident
+        # group (they all move to the same target position).
         for pid in coincident_group:
             drag_constraints.append(
                 DragConstraint(pid, target_x, target_y, weight=0.1)
             )
+
+        # Also include rigidly connected points (e.g., ellipse center drag
+        # should move all ellipse points together). These move by the same
+        # delta from their initial positions, not to the same target.
+        # Skip this if the dragged point is fixed (coincident with fixed).
+        dragged_group = coincident_group
+        if not any_fixed:
+            rigid_points = (
+                self.element.sketch.registry.get_rigidly_connected_points(
+                    self.dragged_point_id
+                )
+            )
+            for pid in rigid_points:
+                if pid in coincident_group:
+                    continue
+                initial_pos = self.drag_initial_positions.get(pid)
+                if initial_pos:
+                    p = self._safe_get_point(pid)
+                    if p and not p.fixed:
+                        rigid_target_x = initial_pos[0] + mdx
+                        rigid_target_y = initial_pos[1] + mdy
+                        drag_constraints.append(
+                            DragConstraint(
+                                pid, rigid_target_x, rigid_target_y, weight=0.1
+                            )
+                        )
+            dragged_group = coincident_group | set(rigid_points)
 
         base_hold_weight = 0.01
         max_hops = max(
@@ -591,7 +628,7 @@ class SelectTool(SketchTool):
         )
         for pid, pos in self.drag_initial_positions.items():
             # Skip any point that is part of the actively dragged group.
-            if pid in coincident_group:
+            if pid in dragged_group:
                 continue
 
             p = self._safe_get_point(pid)

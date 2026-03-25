@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, List, Optional, Sequence, Dict, Tuple
-from ..entities import Arc, TextBoxEntity
+from ..entities import Arc, Ellipse, TextBoxEntity
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
@@ -138,19 +138,23 @@ class RemoveItemsCommand(SketchChangeCommand):
             # A. Unity Logic for compound objects like TextBoxEntity
             all_entities = list(sketch.registry.entities)
             for e in all_entities:
-                if isinstance(e, TextBoxEntity) and e.construction_line_ids:
+                helper_ids = None
+                if isinstance(e, TextBoxEntity):
+                    helper_ids = e.construction_line_ids
+                elif isinstance(e, Ellipse):
+                    helper_ids = e.helper_line_ids
+
+                if helper_ids:
                     is_part_of_delete_set = (
                         e.id in to_delete_entity_ids
-                        or not to_delete_entity_ids.isdisjoint(
-                            e.construction_line_ids
-                        )
+                        or not to_delete_entity_ids.isdisjoint(helper_ids)
                         or not to_delete_point_ids.isdisjoint(
                             e.get_point_ids()
                         )
                     )
                     if is_part_of_delete_set:
                         to_delete_entity_ids.add(e.id)
-                        to_delete_entity_ids.update(e.construction_line_ids)
+                        to_delete_entity_ids.update(helper_ids)
                         to_delete_point_ids.update(e.get_point_ids())
 
             # B. Cascading: If points are deleted, find entities that use them
