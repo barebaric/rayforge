@@ -87,6 +87,15 @@ modules:
       - type: file
         url: https://files.pythonhosted.org/packages/2c/83/2cacc506eb322bb31b747bc06ccb82cc9aa03e19ee9c1245e538e49d52be/pypdf-6.0.0-py3-none-any.whl
         sha256: 56ea60100ce9f11fc3eec4f359da15e9aec3821b036c1f06d2b660d35683abb8
+  - name: python3-pymupdf
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+        --prefix=${FLATPAK_DEST} "PyMuPDF==1.27.2.2" --no-build-isolation
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/22/8e/85e9d9f11dbf34036eb1df283805ef6b885f2005a56d6533bb58ab0b8a11/pymupdf-1.27.2.2-cp310-abi3-manylinux_2_28_x86_64.whl
+        sha256: 892698c9768457eb0991c102c96a856c0a7062539371df5e6bee0816f3ef498e
   - name: python3-pyserial_asyncio
     buildsystem: simple
     build-commands:

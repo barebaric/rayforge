@@ -5,14 +5,14 @@ from pathlib import Path
 from typing import cast
 from unittest.mock import Mock
 
+from rayforge.core.geo import Geometry
+from rayforge.core.matrix import Matrix
+from rayforge.core.source_asset import SourceAsset
+from rayforge.core.source_asset_segment import SourceAssetSegment
+from rayforge.core.vectorization_spec import TraceSpec, PassthroughSpec
+from rayforge.core.workpiece import WorkPiece
 from rayforge.image.pdf.importer import PdfImporter
 from rayforge.image.pdf.renderer import PDF_RENDERER
-from rayforge.core.workpiece import WorkPiece
-from rayforge.core.source_asset import SourceAsset
-from rayforge.core.matrix import Matrix
-from rayforge.core.vectorization_spec import TraceSpec
-from rayforge.core.source_asset_segment import SourceAssetSegment
-from rayforge.core.geo import Geometry
 
 
 def create_pdf_data(width_pt: float, height_pt: float) -> bytes:
@@ -23,6 +23,31 @@ def create_pdf_data(width_pt: float, height_pt: float) -> bytes:
     cr.set_source_rgb(1, 1, 0)  # Yellow
     cr.rectangle(0, 0, width_pt, height_pt)
     cr.fill()
+    surface.finish()
+    buf.seek(0)
+    return buf.getvalue()
+
+
+def create_pdf_with_shapes() -> bytes:
+    """Create a PDF with various shapes for testing."""
+    buf = io.BytesIO()
+    surface = cairo.PDFSurface(buf, 200, 200)
+    cr = cairo.Context(surface)
+
+    # Draw a rectangle
+    cr.set_source_rgb(0, 0, 0)
+    cr.rectangle(10, 10, 50, 30)
+    cr.stroke()
+
+    # Draw a circle
+    cr.arc(120, 40, 25, 0, 2 * 3.14159)
+    cr.stroke()
+
+    # Draw a line
+    cr.move_to(10, 100)
+    cr.line_to(190, 100)
+    cr.stroke()
+
     surface.finish()
     buf.seek(0)
     return buf.getvalue()
@@ -65,6 +90,11 @@ def _setup_workpiece_with_context(
 def basic_pdf_data() -> bytes:
     """PDF data for a 100pt x 50pt page."""
     return create_pdf_data(100, 50)
+
+
+@pytest.fixture
+def shapes_pdf_data() -> bytes:
+    return create_pdf_with_shapes()
 
 
 @pytest.fixture
@@ -130,6 +160,34 @@ class TestPdfImporter:
         assert import_result.payload is None
         assert import_result.parse_result is None
         assert len(import_result.errors) > 0
+
+    def test_facade_delegates_to_vector_importer_with_passthrough_spec(
+        self, shapes_pdf_data: bytes
+    ):
+        importer = PdfImporter(shapes_pdf_data)
+        import_result = importer.get_doc_items(
+            vectorization_spec=PassthroughSpec()
+        )
+        assert import_result is not None
+        assert import_result.payload is not None
+        assert len(import_result.payload.items) == 1
+
+        wp = cast(WorkPiece, import_result.payload.items[0])
+        assert wp.boundaries is not None
+        assert not wp.boundaries.is_empty()
+
+    def test_facade_delegates_to_trace_importer_with_trace_spec(
+        self, shapes_pdf_data: bytes
+    ):
+        importer = PdfImporter(shapes_pdf_data)
+        import_result = importer.get_doc_items(vectorization_spec=TraceSpec())
+        assert import_result is not None
+        assert import_result.payload is not None
+        assert len(import_result.payload.items) == 1
+
+        wp = cast(WorkPiece, import_result.payload.items[0])
+        assert wp.boundaries is not None
+        assert not wp.boundaries.is_empty()
 
 
 class TestPdfRenderer:

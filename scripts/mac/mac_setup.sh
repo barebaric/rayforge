@@ -166,6 +166,7 @@ if (( RUN_APP == 0 )); then
         openslide
         pkg-config
         meson
+        mupdf
         ninja
         cairo
         pango

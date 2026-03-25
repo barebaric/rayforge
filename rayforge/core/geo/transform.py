@@ -1,6 +1,6 @@
 import math
 import logging
-from typing import Optional, TYPE_CHECKING, TypeVar, List, Dict
+from typing import Optional, TYPE_CHECKING, TypeVar, List, Dict, TypedDict
 import numpy as np
 import pyclipper
 from .constants import (
@@ -19,11 +19,22 @@ from .constants import (
     COL_C2X,
     COL_C2Y,
 )
+from .contours import ContourData
 from .linearize import linearize_arc
-from .types import IntPolygon, Point, Polygon
+from .types import IntPolygon, Point, Polygon, Rect
 
 if TYPE_CHECKING:
     from .geometry import Geometry
+
+
+class _ContourItem(TypedDict):
+    geo: "Geometry"
+    verts: List[Point]
+    path: IntPolygon
+    rect: Rect
+    area: float
+    id: int
+
 
 # Define a TypeVar to make the function generic over Geometry and its
 # subclasses.
@@ -35,8 +46,8 @@ CLIPPER_SCALE = int(1e7)
 
 
 def _prepare_contour_items(
-    contour_data: List[Dict], scale: int = CLIPPER_SCALE
-) -> List[Dict]:
+    contour_data: List[ContourData], scale: int = CLIPPER_SCALE
+) -> List[_ContourItem]:
     """
     Prepares contour data items for hierarchy analysis.
 
@@ -47,7 +58,7 @@ def _prepare_contour_items(
     Returns:
         List of dicts with 'geo', 'verts', 'path', 'rect', 'area', 'id'.
     """
-    items = []
+    items: List[_ContourItem] = []
 
     for data in contour_data:
         if not data["is_closed"]:
@@ -90,7 +101,7 @@ def _prepare_contour_items(
 
 
 def _build_containment_hierarchy(
-    items: List[Dict],
+    items: List[_ContourItem],
     check_intersection_fn,
     is_point_in_polygon_fn,
 ) -> List[int]:
