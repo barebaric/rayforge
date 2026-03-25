@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from collections import defaultdict
 from typing import (
     Optional,
     Dict,
@@ -11,6 +12,7 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    DefaultDict,
 )
 from gettext import gettext as _
 
@@ -186,6 +188,23 @@ class MergeLinesTransformer(OpsTransformer):
             and all(isinstance(c, LineToCommand) for c in segment[1:])
         )
 
+    def _get_cell_keys(
+        self, seg: LineSegment, cell_size: float
+    ) -> Set[Tuple[int, int]]:
+        min_x = min(seg.start[0], seg.end[0])
+        max_x = max(seg.start[0], seg.end[0])
+        min_y = min(seg.start[1], seg.end[1])
+        max_y = max(seg.start[1], seg.end[1])
+        cx1 = int(math.floor((min_x - self._tolerance) / cell_size))
+        cx2 = int(math.floor((max_x + self._tolerance) / cell_size))
+        cy1 = int(math.floor((min_y - self._tolerance) / cell_size))
+        cy2 = int(math.floor((max_y + self._tolerance) / cell_size))
+        return {
+            (cx, cy)
+            for cx in range(cx1, cx2 + 1)
+            for cy in range(cy1, cy2 + 1)
+        }
+
     def _extract_line_segments(
         self, segments: List[List[Command]]
     ) -> List[LineSegment]:
@@ -214,35 +233,53 @@ class MergeLinesTransformer(OpsTransformer):
         return line_segments
 
     def _find_duplicates(self, line_segments: List[LineSegment]) -> Set[int]:
+        if not line_segments:
+            return set()
+
+        cell_size = max(self._tolerance * 10, 1.0)
         to_remove: Set[int] = set()
+        checked_pairs: Set[Tuple[int, int]] = set()
 
-        for i in range(len(line_segments)):
-            if i in to_remove:
+        index: DefaultDict[Tuple[int, int], List[int]] = defaultdict(list)
+
+        for i, seg in enumerate(line_segments):
+            for cell_key in self._get_cell_keys(seg, cell_size):
+                index[(cell_key[0], cell_key[1])].append(i)
+
+        for cell_key, indices in index.items():
+            if len(indices) < 2:
                 continue
 
-            seg1 = line_segments[i]
-            if seg1.removed:
-                continue
-
-            for j in range(i + 1, len(line_segments)):
-                if j in to_remove:
+            for i, idx1 in enumerate(indices):
+                if idx1 in to_remove:
+                    continue
+                seg1 = line_segments[idx1]
+                if seg1.removed:
                     continue
 
-                seg2 = line_segments[j]
-                if seg2.removed:
-                    continue
+                for idx2 in indices[i + 1 :]:
+                    if idx2 in to_remove:
+                        continue
+                    seg2 = line_segments[idx2]
+                    if seg2.removed:
+                        continue
 
-                if self._are_identical(seg1, seg2):
-                    to_remove.add(j)
-                    seg2.removed = True
-                elif self._segments_overlap(seg1, seg2):
-                    if seg1.length() >= seg2.length():
-                        to_remove.add(j)
+                    pair = (idx1, idx2) if idx1 < idx2 else (idx2, idx1)
+                    if pair in checked_pairs:
+                        continue
+                    checked_pairs.add(pair)
+
+                    if self._are_identical(seg1, seg2):
+                        to_remove.add(idx2)
                         seg2.removed = True
-                    else:
-                        to_remove.add(i)
-                        seg1.removed = True
-                        break
+                    elif self._segments_overlap(seg1, seg2):
+                        if seg1.length() >= seg2.length():
+                            to_remove.add(idx2)
+                            seg2.removed = True
+                        else:
+                            to_remove.add(idx1)
+                            seg1.removed = True
+                            break
 
         return to_remove
 
