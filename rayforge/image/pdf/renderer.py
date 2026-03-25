@@ -26,9 +26,43 @@ class PdfRenderer(RasterRenderer):
         target_size: Tuple[int, int],
         source_context: "RenderContext",
     ) -> "RenderSpecification":
+        target_width, target_height = target_size
+        original_data = source_context.original_data
+        source_px_dims = source_context.source_pixel_dims
+
+        if (
+            segment
+            and segment.crop_window_px is not None
+            and original_data
+            and source_px_dims
+        ):
+            source_w, source_h = source_px_dims
+            crop_x_f, crop_y_f, crop_w_f, crop_h_f = segment.crop_window_px
+            crop_w, crop_h = float(crop_w_f), float(crop_h_f)
+
+            if crop_w > 0 and crop_h > 0:
+                scale_x = target_width / crop_w
+                scale_y = target_height / crop_h
+                render_width = max(1, int(source_w * scale_x))
+                render_height = max(1, int(source_h * scale_y))
+
+                scaled_x = int(crop_x_f * scale_x)
+                scaled_y = int(crop_y_f * scale_y)
+                scaled_w = int(crop_w * scale_x)
+                scaled_h = int(crop_h * scale_y)
+                crop_rect = (scaled_x, scaled_y, scaled_w, scaled_h)
+
+                return RenderSpecification(
+                    width=render_width,
+                    height=render_height,
+                    data=original_data,
+                    crop_rect=crop_rect,
+                    apply_mask=False,
+                )
+
         return RenderSpecification(
-            width=target_size[0],
-            height=target_size[1],
+            width=target_width,
+            height=target_height,
             data=source_context.data,
             apply_mask=False,
         )
