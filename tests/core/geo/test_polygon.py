@@ -9,6 +9,8 @@ import numpy as np
 from rayforge.core.geo.polygon import (
     Polygon,
     almost_equal,
+    flip_polygon_numpy,
+    flip_polygons_numpy,
     polygon_area,
     polygon_area_numpy,
     polygon_bounds,
@@ -1065,3 +1067,92 @@ class TestExtractPolygonEdges:
         assert len(edges) == 2
         assert edges[0] == ((0, 0), (10, 0))
         assert edges[1] == ((10, 0), (0, 0))
+
+
+class TestFlipPolygonNumpy:
+    def test_flip_horizontal(self):
+        polygon = PN((1, 2), (3, 4), (5, 6))
+        flipped = flip_polygon_numpy(polygon, flip_h=True, flip_v=False)
+        assert flipped[0, 0] == -1
+        assert flipped[0, 1] == 2
+        assert flipped[1, 0] == -3
+        assert flipped[1, 1] == 4
+        assert flipped[2, 0] == -5
+        assert flipped[2, 1] == 6
+
+    def test_flip_vertical(self):
+        polygon = PN((1, 2), (3, 4), (5, 6))
+        flipped = flip_polygon_numpy(polygon, flip_h=False, flip_v=True)
+        assert flipped[0, 0] == 1
+        assert flipped[0, 1] == -2
+        assert flipped[1, 0] == 3
+        assert flipped[1, 1] == -4
+        assert flipped[2, 0] == 5
+        assert flipped[2, 1] == -6
+
+    def test_flip_both(self):
+        polygon = PN((1, 2), (3, 4), (5, 6))
+        flipped = flip_polygon_numpy(polygon, flip_h=True, flip_v=True)
+        assert flipped[0, 0] == -1
+        assert flipped[0, 1] == -2
+        assert flipped[1, 0] == -3
+        assert flipped[1, 1] == -4
+        assert flipped[2, 0] == -5
+        assert flipped[2, 1] == -6
+
+    def test_no_flip(self):
+        polygon = PN((1, 2), (3, 4))
+        flipped = flip_polygon_numpy(polygon, flip_h=False, flip_v=False)
+        np.testing.assert_array_almost_equal(flipped, polygon)
+
+    def test_returns_copy(self):
+        polygon = PN((1, 2), (3, 4))
+        flipped = flip_polygon_numpy(polygon, flip_h=False, flip_v=False)
+        assert flipped is not polygon
+
+
+class TestFlipPolygonsNumpy:
+    def test_flip_multiple_horizontal(self):
+        poly1 = PN((1, 2), (3, 4))
+        poly2 = PN((5, 6), (7, 8))
+        flipped = flip_polygons_numpy(
+            [poly1, poly2], flip_h=True, flip_v=False
+        )
+        assert len(flipped) == 2
+        assert flipped[0][0, 0] == -1
+        assert flipped[0][0, 1] == 2
+        assert flipped[1][0, 0] == -5
+        assert flipped[1][0, 1] == 6
+
+    def test_flip_multiple_vertical(self):
+        poly1 = PN((1, 2), (3, 4))
+        poly2 = PN((5, 6), (7, 8))
+        flipped = flip_polygons_numpy(
+            [poly1, poly2], flip_h=False, flip_v=True
+        )
+        assert len(flipped) == 2
+        assert flipped[0][0, 0] == 1
+        assert flipped[0][0, 1] == -2
+        assert flipped[1][0, 0] == 5
+        assert flipped[1][0, 1] == -6
+
+    def test_flip_multiple_both(self):
+        poly1 = PN((1, 2), (3, 4))
+        poly2 = PN((5, 6), (7, 8))
+        flipped = flip_polygons_numpy([poly1, poly2], flip_h=True, flip_v=True)
+        assert len(flipped) == 2
+        assert flipped[0][0, 0] == -1
+        assert flipped[0][0, 1] == -2
+        assert flipped[1][0, 0] == -5
+        assert flipped[1][0, 1] == -6
+
+    def test_no_flip_returns_same_list(self):
+        poly1 = PN((1, 2), (3, 4))
+        poly2 = PN((5, 6), (7, 8))
+        polygons = [poly1, poly2]
+        flipped = flip_polygons_numpy(polygons, flip_h=False, flip_v=False)
+        assert flipped is polygons
+
+    def test_empty_list(self):
+        flipped = flip_polygons_numpy([], flip_h=True, flip_v=True)
+        assert flipped == []
