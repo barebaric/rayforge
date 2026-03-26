@@ -25,6 +25,7 @@ class DialectDefinition:
     label: Optional[str] = None
     description: Optional[str] = None
     laser_on: Optional[str] = None
+    focus_laser_on: Optional[str] = None
     laser_off: Optional[str] = None
     tool_change: Optional[str] = None
     set_speed: Optional[str] = None
@@ -265,6 +266,28 @@ PROFILES: List[MachineProfile] = [
                 "spot_size_mm": [0.1, 0.1],
             }
         ],
+    ),
+    MachineProfile(
+        name="Acmer S1",
+        driver_class_name="GrblSerialDriver",
+        dialect_uid="grbl",
+        gcode_precision=3,
+        axis_extents=(130.0, 130.0),
+        origin=Origin.BOTTOM_LEFT,
+        max_travel_speed=3000,
+        max_cut_speed=3000,
+        home_on_start=True,
+        heads=[
+            {
+                "max_power": 1000,
+                "frame_power_percent": 1.0,
+                "focus_power_percent": 1.0,
+                "spot_size_mm": [0.1, 0.1],
+            }
+        ],
+        dialect_definition=DialectDefinition(
+            focus_laser_on="M3 S{power:.0f}",
+        ),
     ),
     MachineProfile(
         name="xTool D1 Pro",
