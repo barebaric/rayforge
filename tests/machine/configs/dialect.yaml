@@ -1,0 +1,27 @@
+label: New Dialect
+description: A new custom dialect
+laser_on: M4 S{power}
+laser_off: M5
+tool_change: ''
+set_speed: ''
+travel_move: G0 X{x} Y{y}
+linear_move: G1 X{x} Y{y}{f_command}
+arc_cw: ''
+arc_ccw: ''
+air_assist_on: ''
+air_assist_off: ''
+home_all: ''
+home_axis: ''
+move_to: ''
+jog: ''
+clear_alarm: ''
+set_wcs_offset: ''
+probe_cycle: ''
+preamble: []
+postscript: []
+inject_wcs_after_preamble: true
+can_g0_with_speed: false
+uid: 32533adc-ddac-4a69-ad02-63b2ee5cca7d
+is_custom: true
+parent_uid: null
+extra: {}

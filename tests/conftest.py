@@ -1,6 +1,13 @@
 # flake8: noqa: E402
 import sys
 import multiprocessing
+import os
+import tempfile
+from pathlib import Path
+
+# MUST be set before any rayforge imports to isolate config directories
+_TEST_CONFIG_DIR = Path(tempfile.gettempdir()) / "rayforge_test_config"
+os.environ["RAYFORGE_CONFIG_DIR"] = str(_TEST_CONFIG_DIR)
 
 try:
     import gi
@@ -59,6 +66,21 @@ def pytest_configure(config):
         pyvips_logger.handlers = []
 
     logging.getLogger().addFilter(PyvipsLogFilter())
+
+    # Ensure test config directory exists and is clean
+    if _TEST_CONFIG_DIR.exists():
+        import shutil
+
+        shutil.rmtree(_TEST_CONFIG_DIR, ignore_errors=True)
+    _TEST_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def pytest_unconfigure(config):
+    """Clean up test config directory after all tests complete."""
+    if _TEST_CONFIG_DIR.exists():
+        import shutil
+
+        shutil.rmtree(_TEST_CONFIG_DIR, ignore_errors=True)
 
 
 if TYPE_CHECKING:
@@ -301,6 +323,7 @@ def lite_context(tmp_path, task_mgr, monkeypatch):
     from rayforge.context import get_context
     from rayforge import context as context_module
     from rayforge.shared import tasker
+    from rayforge.machine.models.dialect_manager import DialectManager
 
     temp_config_dir = tmp_path / "config"
     temp_dialect_dir = temp_config_dir / "dialects"
@@ -313,6 +336,7 @@ def lite_context(tmp_path, task_mgr, monkeypatch):
 
     context = get_context()
     context.initialize_lite_context(temp_machine_dir)
+    context._dialect_mgr = DialectManager(temp_dialect_dir)
     yield context
 
     if task_mgr.has_tasks():

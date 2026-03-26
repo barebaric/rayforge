@@ -1,0 +1,112 @@
+machine:
+  active_wcs: G54
+  arc_tolerance: 0.024999999999999994
+  auto_connect: true
+  axis_extents:
+  - 120.0
+  - 120.0
+  cameras:
+  - brightness: -100.0
+    contrast: 0.0
+    denoise: 0.375
+    device_id: '2'
+    distortion_k1: -0.307
+    distortion_k2: -0.12100000000000002
+    distortion_p1: 0.004999999999999924
+    distortion_p2: 0.006000000000000007
+    enabled: true
+    image_to_world:
+    - image: 26.535807489556873, 86.67303128493175
+      world: 0.0, 0.0
+    - image: 412.44306537249804, 82.52478886321221
+      world: 120.0, 0.0
+    - image: 33.96531593431128, 467.1258568113395
+      world: 0.0, 120.0
+    - image: 416.35169867689837, 467.1917139307384
+      world: 120.0, 120.0
+    name: Camera 2
+    torch_enabled: false
+    transparency: 0.17613636363636365
+    white_balance: null
+  clear_alarm_on_connect: false
+  dialect_uid: grbl
+  driver: GrblSerialDriver
+  driver_args:
+    baudrate: '115200'
+    poll_status_while_running: true
+    port: /dev/ttyUSB0
+  gcode:
+    gcode_precision: 3
+  heads:
+  - cut_color: '#ff00ff'
+    focus_power_percent: 0.0
+    frame_power_percent: 0.0
+    max_power: 1000
+    name: Laser Head
+    raster_color: '#1a5fb4'
+    spot_size_mm:
+    - 0.1
+    - 0.1
+    tool_number: 0
+    uid: 7ebc0ee2-1cdf-4193-81b2-e39de49daeed
+  home_on_start: false
+  hookmacros: {}
+  machine_hours:
+    counters: {}
+    total_hours: 0.14115991522153226
+  macros: {}
+  name: Default Machine
+  origin: bottom_left
+  reverse_x_axis: false
+  reverse_y_axis: false
+  reverse_z_axis: false
+  single_axis_homing_enabled: true
+  soft_limits: null
+  speeds:
+    acceleration: 1000
+    max_cut_speed: 1000
+    max_travel_speed: 3000
+  supports_arcs: true
+  wcs_offsets:
+    G54:
+    - 0.0
+    - 0.0
+    - 0.0
+    G55:
+    - 10.0
+    - 10.0
+    - 0.0
+    G56:
+    - 0.0
+    - 0.0
+    - 0.0
+    G57:
+    - 0.0
+    - 0.0
+    - 0.0
+    G58:
+    - 0.0
+    - 0.0
+    - 0.0
+    G59:
+    - 0.0
+    - 0.0
+    - 0.0
+    MACHINE:
+    - 0.0
+    - 0.0
+    - 0.0
+    REF0:
+    - 0.0
+    - 0.0
+    - 0.0
+    REF1:
+    - 0.0
+    - 0.0
+    - 0.0
+  wcs_origin_is_workarea_origin: false
+  work_margins:
+  - 0
+  - 0
+  - 0
+  - 0

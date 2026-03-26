@@ -505,7 +505,7 @@ class TestMachine:
 
     @pytest.mark.asyncio
     async def test_serialization_migration_from_negative_to_reverse(
-        self, task_mgr: TaskManager
+        self, lite_context, task_mgr: TaskManager
     ):
         """
         Tests that legacy x_axis_negative configs are migrated to the new
@@ -1230,7 +1230,9 @@ class TestMachine:
         assert machine.reports_granular_progress
 
     @pytest.mark.asyncio
-    async def test_hook_migration_full(self, task_mgr: TaskManager):
+    async def test_hook_migration_full(
+        self, lite_context, task_mgr: TaskManager
+    ):
         """
         Tests that legacy JOB_START and JOB_END hooks are migrated to a new
         custom dialect upon loading a machine.
@@ -1270,7 +1272,9 @@ class TestMachine:
         assert "Legacy Machine" in migrated_dialect.label
 
     @pytest.mark.asyncio
-    async def test_hook_migration_partial(self, task_mgr: TaskManager):
+    async def test_hook_migration_partial(
+        self, lite_context, task_mgr: TaskManager
+    ):
         """
         Tests that migration works correctly if only one legacy hook is
         present.
@@ -1304,9 +1308,12 @@ class TestMachine:
         assert migrated_dialect.postscript == base_dialect.postscript
 
     @pytest.mark.asyncio
-    async def test_hook_migration_not_needed(self, task_mgr: TaskManager):
+    async def test_hook_migration_not_needed(
+        self, lite_context, task_mgr: TaskManager
+    ):
         """
-        Tests that no migration occurs for a modern machine configuration.
+        Tests that no hook migration occurs for a modern machine configuration.
+        (Built-in dialect migration still happens - that's separate.)
         """
         initial_dialect_count = len(_DIALECT_REGISTRY)
 
@@ -1318,13 +1325,11 @@ class TestMachine:
             }
         }
 
-        # Act
         new_machine = Machine.from_dict(modern_data)
         await wait_for_tasks_to_finish(task_mgr)
 
-        # Assert No Migration
-        assert len(_DIALECT_REGISTRY) == initial_dialect_count
-        assert new_machine.dialect_uid == "smoothieware"
+        assert len(_DIALECT_REGISTRY) == initial_dialect_count + 1
+        assert new_machine.dialect_uid != "smoothieware"
         assert MacroTrigger.LAYER_START in new_machine.hookmacros
 
     @pytest.mark.parametrize(

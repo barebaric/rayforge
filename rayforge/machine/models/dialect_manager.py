@@ -1,12 +1,15 @@
 import logging
-from typing import List, TYPE_CHECKING
+from dataclasses import replace
+from typing import List, Tuple, TYPE_CHECKING
 import yaml
 from pathlib import Path
 from blinker import Signal
+from gettext import gettext as _
 from .dialect import (
     BUILTIN_DIALECTS,
     GcodeDialect,
     _DIALECT_REGISTRY,
+    get_dialect,
     register_dialect,
 )
 
@@ -23,6 +26,41 @@ class DialectManager:
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self.dialects_changed = Signal()
         self.load_all()
+
+    def migrate_builtin_dialect_to_copy(
+        self, dialect_uid: str, machine_name: str
+    ) -> Tuple[str, bool]:
+        """
+        If dialect_uid references a built-in dialect, creates an isolated
+        copy and returns the new UID with migrated=True. Otherwise returns
+        the original UID with migrated=False.
+
+        This ensures user configurations are isolated from built-in dialect
+        changes during app upgrades.
+        """
+        try:
+            dialect = get_dialect(dialect_uid)
+        except ValueError:
+            logger.warning(
+                f"Dialect '{dialect_uid}' not found, falling back to 'grbl'."
+            )
+            dialect = get_dialect("grbl")
+
+        if not dialect.is_custom:
+            new_label = _("{label} (for {machine_name})").format(
+                label=dialect.label,
+                machine_name=machine_name,
+            )
+            new_dialect = dialect.copy_as_custom(new_label=new_label)
+            new_dialect = replace(new_dialect, parent_uid=None)
+            self.add_dialect(new_dialect)
+            logger.info(
+                f"Migrated built-in dialect '{dialect_uid}' to isolated "
+                f"copy '{new_dialect.uid}' for machine '{machine_name}'."
+            )
+            return new_dialect.uid, True
+
+        return dialect_uid, False
 
     def _load_builtins(self):
         """Loads the hardcoded, built-in dialects into the registry."""
