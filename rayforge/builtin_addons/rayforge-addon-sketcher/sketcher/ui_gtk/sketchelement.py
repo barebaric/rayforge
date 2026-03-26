@@ -8,6 +8,15 @@ from rayforge.ui_gtk.canvas import CanvasElement
 from ..core.sketch import Sketch
 from ..core.entities import Line
 from ..core.selection import SketchSelection
+from ..core.snap import SnapEngine
+from ..core.snap.producers import (
+    EntityPointsProducer,
+    MidpointsProducer,
+    IntersectionsProducer,
+    EquidistantLinesProducer,
+    CentersProducer,
+    OnEntityProducer,
+)
 from ..core.types import EntityID
 from .hittest import SketchHitTester
 from .renderer import SketchRenderer
@@ -57,6 +66,7 @@ class SketchElement(CanvasElement):
         self.hittester = SketchHitTester()
         self.renderer = SketchRenderer(self)
         self.editor: Optional["SketchEditor"]
+        self.snap_engine = self._create_snap_engine()
 
         # This must be set after self.selection is initialized
         self.sketch = sketch if sketch is not None else Sketch()
@@ -119,32 +129,36 @@ class SketchElement(CanvasElement):
     def _disconnect_signals(self):
         """Disconnects signals to prevent leaks."""
         self.sketch.updated.disconnect(self._on_model_changed)
-        if self.sketch and self.sketch.input_parameters is not None:
-            logger.debug(
-                "Disconnecting from VarSet signals on "
-                f"{type(self.sketch.input_parameters).__name__} "
-                f"(id: {id(self.sketch.input_parameters)})"
+        try:
+            self.sketch.input_parameters.var_added.disconnect(
+                self._on_model_changed
             )
-            try:
-                self.sketch.input_parameters.var_added.disconnect(
-                    self._on_model_changed
-                )
-                self.sketch.input_parameters.var_removed.disconnect(
-                    self._on_model_changed
-                )
-                self.sketch.input_parameters.var_value_changed.disconnect(
-                    self._on_model_changed
-                )
-                self.sketch.input_parameters.var_definition_changed.disconnect(
-                    self._on_model_changed
-                )
-                self.sketch.input_parameters.cleared.disconnect(
-                    self._on_model_changed
-                )
-            except Exception as e:
-                logger.warning(
-                    f"Error during signal disconnection (safe to ignore): {e}"
-                )
+            self.sketch.input_parameters.var_removed.disconnect(
+                self._on_model_changed
+            )
+            self.sketch.input_parameters.var_value_changed.disconnect(
+                self._on_model_changed
+            )
+            self.sketch.input_parameters.var_definition_changed.disconnect(
+                self._on_model_changed
+            )
+            self.sketch.input_parameters.cleared.disconnect(
+                self._on_model_changed
+            )
+        except Exception as e:
+            logger.warning(
+                f"Error during signal disconnection (safe to ignore): {e}"
+            )
+
+    def _create_snap_engine(self) -> SnapEngine:
+        engine = SnapEngine()
+        engine.register_producer(EntityPointsProducer())
+        engine.register_producer(OnEntityProducer())
+        engine.register_producer(MidpointsProducer())
+        engine.register_producer(IntersectionsProducer())
+        engine.register_producer(EquidistantLinesProducer())
+        engine.register_producer(CentersProducer())
+        return engine
 
     def _on_model_changed(self, sender, **kwargs):
         """
