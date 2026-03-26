@@ -1,5 +1,4 @@
 import logging
-import os
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -7,7 +6,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Set,
     Tuple,
     Union,
     cast,
@@ -24,33 +22,22 @@ from ...core.commands import (
 )
 from ...core.constraints import (
     AngleConstraint,
-    CoincidentConstraint,
     DiameterConstraint,
     DistanceConstraint,
     DragConstraint,
-    PointOnLineConstraint,
     RadiusConstraint,
-    SymmetryConstraint,
 )
-from ...core.constraints.symmetry import draw_symmetry_arrows
 from ...core.entities import (
     Arc,
     Bezier,
     Circle,
     Entity,
     Line,
-    Point,
     TextBoxEntity,
-)
-from ...core.snap import (
-    SnapResult,
-    DragContext,
-    SnapLineType,
-    SNAP_LINE_STYLES,
-    SnapLineStyle,
 )
 from ...core.types import EntityID
 from .base import SketchTool, SketcherKey
+from .snap_mixin import SnapMixin
 from .text_box_tool import TextBoxTool
 
 if TYPE_CHECKING:
@@ -59,16 +46,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-DEBUG_SNAPPING = os.environ.get("DEBUG_SNAPPING", "").lower() in (
-    "1",
-    "true",
-    "yes",
-)
-if DEBUG_SNAPPING:
-    print("DEBUG_SNAPPING mode enabled")
 
-
-class SelectTool(SketchTool):
+class SelectTool(SnapMixin, SketchTool):
     """Handles selection and point dragging."""
 
     ICON = "sketch-select-symbolic"
@@ -112,10 +91,6 @@ class SelectTool(SketchTool):
 
         self.drag_point_distances: Dict[EntityID, int] = {}
 
-        # --- Magnetic Snap State ---
-        self.current_snap_result: Optional[SnapResult] = None
-        self.magnetic_snap_enabled: bool = True
-
     def is_available(self, target, target_type) -> bool:
         return target is None
 
@@ -156,12 +131,7 @@ class SelectTool(SketchTool):
         self, key: SketcherKey, shift: bool = False, ctrl: bool = False
     ) -> bool:
         """Handle key events for toggling magnetic snap."""
-        if key == SketcherKey.TAB and self._is_dragging():
-            self.magnetic_snap_enabled = not self.magnetic_snap_enabled
-            state = "enabled" if self.magnetic_snap_enabled else "disabled"
-            logger.debug(f"Magnetic snap {state}")
-            return True
-        return False
+        return self.handle_snap_key_event(key, is_active=self._is_dragging())
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         hit_type, hit_obj = self.element.hittester.get_hit_data(
@@ -409,7 +379,9 @@ class SelectTool(SketchTool):
                         self.drag_initial_positions.copy(),
                         self.drag_initial_entity_states.copy(),
                     )
-                    snap_constraints = self._build_snap_constraints()
+                    snap_constraints = self.build_snap_constraints(
+                        self.dragged_point_id
+                    )
                     cmd = MovePointCommand(
                         self.element.sketch,
                         self.dragged_point_id,
@@ -480,11 +452,10 @@ class SelectTool(SketchTool):
         if self.is_box_selecting:
             self._draw_selection_box(ctx)
 
-        if self._is_dragging() and self.current_snap_result is not None:
-            self._draw_snap_lines(ctx)
+        if self._is_dragging():
+            self.draw_snap_feedback(ctx, self.element)
 
-        if DEBUG_SNAPPING and not self._is_dragging():
-            self._draw_debug_snap_lines(ctx)
+        self.draw_debug_snap_lines(ctx, self.element)
 
     def _draw_selection_box(self, ctx: cairo.Context):
         if not self.drag_start_world_pos or not self.drag_current_world_pos:
@@ -599,13 +570,17 @@ class SelectTool(SketchTool):
         target_x = start_x + mdx
         target_y = start_y + mdy
 
-        if self.magnetic_snap_enabled and self.element.canvas:
-            snap_result = self._query_magnetic_snap((target_x, target_y))
-            if snap_result.snapped:
-                target_x, target_y = snap_result.position
-                self.current_snap_result = snap_result
-            else:
-                self.current_snap_result = None
+        if self.magnetic_snap_enabled:
+            coincident_group = self.element.sketch.get_coincident_points(
+                self.dragged_point_id
+            )
+            target_x, target_y = self.query_snap_for_drag(
+                self.element,
+                target_x,
+                target_y,
+                dragged_point_ids=coincident_group,
+                initial_positions=self.drag_initial_positions,
+            )
         else:
             self.current_snap_result = None
 
@@ -705,26 +680,25 @@ class SelectTool(SketchTool):
                     first_entity_point = entity_points[0]
 
         # 2. Magnetic snap: use first entity point as reference
-        if self.magnetic_snap_enabled and self.element.canvas:
-            if first_entity_point is not None:
-                initial_pos = self.drag_initial_positions.get(
-                    first_entity_point
+        if self.magnetic_snap_enabled and first_entity_point is not None:
+            initial_pos = self.drag_initial_positions.get(first_entity_point)
+            if initial_pos:
+                ref_target_x = initial_pos[0] + mdx
+                ref_target_y = initial_pos[1] + mdy
+                snapped_x, snapped_y = self.query_snap_for_drag(
+                    self.element,
+                    ref_target_x,
+                    ref_target_y,
+                    dragged_point_ids=points_to_drag,
+                    dragged_entity_ids=set(self.element.selection.entity_ids),
+                    initial_positions=self.drag_initial_positions,
                 )
-                if initial_pos:
-                    ref_target_x = initial_pos[0] + mdx
-                    ref_target_y = initial_pos[1] + mdy
-                    snap_result = self._query_magnetic_snap(
-                        (ref_target_x, ref_target_y)
-                    )
-                    if snap_result.snapped:
-                        snapped_x, snapped_y = snap_result.position
-                        mdx = snapped_x - initial_pos[0]
-                        mdy = snapped_y - initial_pos[1]
-                        self.current_snap_result = snap_result
-                    else:
-                        self.current_snap_result = None
-            else:
-                self.current_snap_result = None
+                if (
+                    self.current_snap_result
+                    and self.current_snap_result.snapped
+                ):
+                    mdx = snapped_x - initial_pos[0]
+                    mdy = snapped_y - initial_pos[1]
         else:
             self.current_snap_result = None
 
@@ -912,301 +886,3 @@ class SelectTool(SketchTool):
                     q.append((neighbor_pid, dist + 1))
 
         self.drag_point_distances = distances
-
-    def _get_magnetic_snap_context(self) -> DragContext:
-        dragged_point_ids: Set[EntityID] = set()
-        dragged_entity_ids: Set[EntityID] = set()
-
-        if self.dragged_point_id is not None:
-            dragged_point_ids.add(self.dragged_point_id)
-            dragged_point_ids.update(
-                self.element.sketch.get_coincident_points(
-                    self.dragged_point_id
-                )
-            )
-        elif self.dragged_entity is not None:
-            dragged_entity_ids.add(self.dragged_entity.id)
-            for eid in self.element.selection.entity_ids:
-                dragged_entity_ids.add(eid)
-                entity = self.element.sketch.registry.get_entity(eid)
-                if entity:
-                    dragged_point_ids.update(entity.get_point_ids())
-
-        return DragContext(
-            dragged_point_ids=dragged_point_ids,
-            dragged_entity_ids=dragged_entity_ids,
-            initial_positions=self.drag_initial_positions,
-        )
-
-    def _query_magnetic_snap(self, position: GeoPoint) -> SnapResult:
-        context = self._get_magnetic_snap_context()
-        if self.element.canvas:
-            scale_x, _ = self.element.canvas.view_transform.get_scale()
-            if scale_x > 0:
-                self.element.snap_engine.threshold = 5.0 / scale_x
-        return self.element.snap_engine.query(
-            self.element.sketch.registry, position, context
-        )
-
-    def _build_snap_constraints(self) -> List[Any]:
-        constraints: List[Any] = []
-
-        if (
-            not self.current_snap_result
-            or not self.current_snap_result.primary_snap_point
-            or self.dragged_point_id is None
-        ):
-            return constraints
-
-        sp = self.current_snap_result.primary_snap_point
-
-        if sp.line_type == SnapLineType.MIDPOINT:
-            if isinstance(sp.source, Line):
-                line = sp.source
-                if self.dragged_point_id not in (line.p1_idx, line.p2_idx):
-                    constraints.append(
-                        SymmetryConstraint(
-                            p1=line.p1_idx,
-                            p2=line.p2_idx,
-                            center=self.dragged_point_id,
-                        )
-                    )
-
-        elif sp.line_type == SnapLineType.ENTITY_POINT:
-            if isinstance(sp.source, Point):
-                target_point = sp.source
-                if target_point.id != self.dragged_point_id:
-                    constraints.append(
-                        CoincidentConstraint(
-                            p1=self.dragged_point_id,
-                            p2=target_point.id,
-                        )
-                    )
-
-        elif sp.line_type == SnapLineType.ON_ENTITY:
-            if isinstance(sp.source, (Line, Arc, Circle)):
-                entity = sp.source
-                constraints.append(
-                    PointOnLineConstraint(
-                        point_id=self.dragged_point_id,
-                        shape_id=entity.id,
-                    )
-                )
-
-        return constraints
-
-    def _draw_snap_lines(self, ctx: cairo.Context) -> None:
-        if not self.current_snap_result or not self.element.canvas:
-            return
-
-        to_screen = self.element.hittester.get_model_to_screen_transform(
-            self.element
-        )
-
-        canvas_width = self.element.canvas.get_width()
-        canvas_height = self.element.canvas.get_height()
-
-        ctx.save()
-
-        sp = self.current_snap_result.primary_snap_point
-        skip_snap_lines = sp is not None and sp.line_type in (
-            SnapLineType.ENTITY_POINT,
-            SnapLineType.MIDPOINT,
-            SnapLineType.ON_ENTITY,
-        )
-
-        if not skip_snap_lines:
-            for snap_line in self.current_snap_result.snap_lines:
-                style = snap_line.style
-                ctx.set_source_rgba(*style.color)
-                if style.dash:
-                    ctx.set_dash(style.dash)
-                else:
-                    ctx.set_dash([])
-                ctx.set_line_width(style.line_width)
-
-                if snap_line.is_horizontal:
-                    _, screen_y = to_screen.transform_point(
-                        (0, snap_line.coordinate)
-                    )
-                    ctx.move_to(0, screen_y)
-                    ctx.line_to(canvas_width, screen_y)
-                else:
-                    screen_x, _ = to_screen.transform_point(
-                        (snap_line.coordinate, 0)
-                    )
-                    ctx.move_to(screen_x, 0)
-                    ctx.line_to(screen_x, canvas_height)
-                ctx.stroke()
-
-        if self.current_snap_result.primary_snap_point:
-            sp = self.current_snap_result.primary_snap_point
-            sx, sy = to_screen.transform_point((sp.x, sp.y))
-            if sp.line_type == SnapLineType.EQUIDISTANT and sp.spacing:
-                style = SNAP_LINE_STYLES.get(sp.line_type, SnapLineStyle())
-                ctx.set_source_rgba(*style.color)
-                ctx.set_dash([])
-                ctx.set_line_width(2.0)
-                scale_x, _ = to_screen.get_scale()
-                head_len = min(sp.spacing * scale_x * 0.15, 8)
-                head_width = 4
-                tick_len = 6
-
-                coords = (
-                    sp.pattern_coords
-                    if sp.pattern_coords
-                    else (sp.y if sp.is_horizontal else sp.x,)
-                )
-
-                def draw_double_arrow(
-                    ctx, x1, y1, x2, y2, head_len, head_width
-                ):
-                    dx = x2 - x1
-                    dy = y2 - y1
-                    length = (dx * dx + dy * dy) ** 0.5
-                    if length < 1e-6:
-                        return
-                    ux, uy = dx / length, dy / length
-                    ctx.move_to(x1, y1)
-                    ctx.line_to(x2, y2)
-                    for px, py, direction in [(x1, y1, -1), (x2, y2, 1)]:
-                        hx = px - direction * ux * head_len
-                        hy = py - direction * uy * head_len
-                        ctx.move_to(hx - uy * head_width, hy + ux * head_width)
-                        ctx.line_to(px, py)
-                        ctx.line_to(hx + uy * head_width, hy - ux * head_width)
-
-                if sp.is_horizontal:
-                    axis_x = (
-                        sp.axis_coord if sp.axis_coord is not None else sp.x
-                    )
-                    for i in range(len(coords) - 1):
-                        y1, y2 = coords[i], coords[i + 1]
-                        if abs(y2 - y1 - sp.spacing) > 0.5:
-                            continue
-                        sy1 = to_screen.transform_point((axis_x, y1))[1]
-                        sy2 = to_screen.transform_point((axis_x, y2))[1]
-                        sx = to_screen.transform_point((axis_x, sp.y))[0]
-                        draw_double_arrow(
-                            ctx, sx, sy1, sx, sy2, head_len, head_width
-                        )
-                        ctx.move_to(sx - tick_len, sy1)
-                        ctx.line_to(sx + tick_len, sy1)
-                        ctx.move_to(sx - tick_len, sy2)
-                        ctx.line_to(sx + tick_len, sy2)
-                else:
-                    axis_y = (
-                        sp.axis_coord if sp.axis_coord is not None else sp.y
-                    )
-                    for i in range(len(coords) - 1):
-                        x1, x2 = coords[i], coords[i + 1]
-                        if abs(x2 - x1 - sp.spacing) > 0.5:
-                            continue
-                        sx1 = to_screen.transform_point((x1, axis_y))[0]
-                        sx2 = to_screen.transform_point((x2, axis_y))[0]
-                        sy = to_screen.transform_point((sp.x, axis_y))[1]
-                        draw_double_arrow(
-                            ctx, sx1, sy, sx2, sy, head_len, head_width
-                        )
-                        ctx.move_to(sx1, sy - tick_len)
-                        ctx.line_to(sx1, sy + tick_len)
-                        ctx.move_to(sx2, sy - tick_len)
-                        ctx.line_to(sx2, sy + tick_len)
-                ctx.stroke()
-            elif sp.line_type == SnapLineType.MIDPOINT:
-                if isinstance(sp.source, Line):
-                    line = sp.source
-                    p1 = self._safe_get_point(line.p1_idx)
-                    p2 = self._safe_get_point(line.p2_idx)
-                    if p1 and p2:
-                        s1 = to_screen.transform_point((p1.x, p1.y))
-                        s2 = to_screen.transform_point((p2.x, p2.y))
-                        style = SNAP_LINE_STYLES.get(
-                            sp.line_type, SnapLineStyle()
-                        )
-                        ctx.set_source_rgba(*style.color)
-                        ctx.set_dash([])
-                        ctx.set_line_width(1.5)
-                        draw_symmetry_arrows(ctx, s1, s2)
-                        ctx.stroke()
-            elif sp.line_type == SnapLineType.ENTITY_POINT:
-                style = SNAP_LINE_STYLES.get(sp.line_type, SnapLineStyle())
-                ctx.set_source_rgba(*style.color)
-                ctx.set_dash([])
-                ctx.set_line_width(2.0)
-                ctx.arc(sx, sy, 8, 0, 2 * 3.14159)
-                ctx.stroke()
-            elif sp.line_type == SnapLineType.ON_ENTITY:
-                if sp.source is not None:
-                    style = SNAP_LINE_STYLES.get(
-                        SnapLineType.ON_ENTITY, SnapLineStyle()
-                    )
-                    ctx.save()
-                    ctx.transform(cairo.Matrix(*to_screen.for_cairo()))
-                    scale_x, _ = to_screen.get_scale()
-                    scale = scale_x if scale_x > 1e-9 else 1.0
-                    self.element.renderer.draw_entity_highlight(
-                        ctx, sp.source, style.color, line_width=3.0 / scale
-                    )
-                    ctx.restore()
-            else:
-                ctx.set_source_rgba(1.0, 0.0, 1.0, 0.8)
-                ctx.arc(sx, sy, 5, 0, 2 * 3.14159)
-                ctx.fill()
-
-        ctx.restore()
-
-    def _draw_debug_snap_lines(self, ctx: cairo.Context) -> None:
-        if not self.element.canvas:
-            return
-
-        to_screen = self.element.hittester.get_model_to_screen_transform(
-            self.element
-        )
-
-        canvas_width = self.element.canvas.get_width()
-        canvas_height = self.element.canvas.get_height()
-
-        center_x = canvas_width / 2
-        center_y = canvas_height / 2
-        view_transform = self.element.canvas.view_transform
-        model_center = view_transform.invert().transform_point(
-            (center_x, center_y)
-        )
-
-        old_threshold = self.element.snap_engine.threshold
-        self.element.snap_engine.threshold = 1e9
-        snap_lines = self.element.snap_engine.get_visible_snap_lines(
-            self.element.sketch.registry,
-            model_center,
-            DragContext(),
-        )
-        self.element.snap_engine.threshold = old_threshold
-
-        print(f"DEBUG_SNAPPING: found {len(snap_lines)} snap lines")
-
-        ctx.save()
-        for snap_line in snap_lines:
-            style = snap_line.style
-            ctx.set_source_rgba(*style.color)
-            if style.dash:
-                ctx.set_dash(style.dash)
-            else:
-                ctx.set_dash([])
-            ctx.set_line_width(style.line_width)
-
-            if snap_line.is_horizontal:
-                _, screen_y = to_screen.transform_point(
-                    (0, snap_line.coordinate)
-                )
-                ctx.move_to(0, screen_y)
-                ctx.line_to(canvas_width, screen_y)
-            else:
-                screen_x, _ = to_screen.transform_point(
-                    (snap_line.coordinate, 0)
-                )
-                ctx.move_to(screen_x, 0)
-                ctx.line_to(screen_x, canvas_height)
-            ctx.stroke()
-
-        ctx.restore()

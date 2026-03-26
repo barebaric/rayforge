@@ -91,6 +91,7 @@ class BezierCommand(SketchChangeCommand):
         is_line: bool = True,
         cp1: Optional[GeoPoint] = None,
         cp2: Optional[GeoPoint] = None,
+        constraints: Optional[List] = None,
     ):
         label = _("Add Line") if is_line else _("Add Bezier")
         super().__init__(sketch, label)
@@ -101,6 +102,7 @@ class BezierCommand(SketchChangeCommand):
         self.is_line = is_line
         self.cp1 = cp1
         self.cp2 = cp2
+        self.constraints = constraints or []
         self.add_cmd: Optional[AddItemsCommand] = None
         self._committed_end_id: Optional[EntityID] = None
 
@@ -406,7 +408,7 @@ class BezierCommand(SketchChangeCommand):
             "",
             points=points_to_add,
             entities=[new_entity],
-            constraints=[],
+            constraints=self.constraints,
         )
         self.add_cmd._do_execute()
         self._committed_end_id = end_pid

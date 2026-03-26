@@ -1,13 +1,18 @@
 from gettext import gettext as _
 from typing import Callable, List, Optional, Tuple, Union
+import cairo
 
 from ...core.commands import ArcCommand, ArcPreviewState
 from .base import SketchTool, SketcherKey
 from .dimension_input import DimensionInputHandler
+from .snap_mixin import SnapMixin
 
 
-class ArcTool(SketchTool):
-    """Handles creating arcs (Center -> Start -> End)."""
+class ArcTool(SnapMixin, SketchTool):
+    """Handles creating arcs (Center -> Start -> End).
+
+    - Tab: toggle magnetic snap
+    """
 
     ICON = "sketch-arc-symbolic"
     LABEL = _("Arc")
@@ -47,17 +52,25 @@ class ArcTool(SketchTool):
                 )
 
             self._preview_state = None
+            self.element.preview_changed.send(self.element)
 
+        self.clear_snap_result()
         self.element.mark_dirty()
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         mx, my = self.element.hittester.screen_to_model(
             world_x, world_y, self.element
         )
-        hit_type, hit_obj = self.element.hittester.get_hit_data(
-            world_x, world_y, self.element
+
+        exclude_points = set()
+        if self._preview_state is not None:
+            exclude_points = self._preview_state.get_preview_point_ids()
+
+        mx, my = self.query_snap_for_creation(
+            self.element, mx, my, exclude_points
         )
-        pid_hit = hit_obj if hit_type == "point" else None
+        pid_hit = self.get_snapped_point_id()
+
         return self._handle_click(pid_hit, mx, my)
 
     def on_drag(self, world_dx: float, world_dy: float):
@@ -69,6 +82,7 @@ class ArcTool(SketchTool):
     def on_hover_motion(self, world_x: float, world_y: float):
         """Updates the live preview of the arc."""
         if self._preview_state is None:
+            self.clear_snap_result()
             return
 
         if not self._preview_state.has_start_point:
@@ -81,6 +95,11 @@ class ArcTool(SketchTool):
             world_x, world_y, self.element
         )
 
+        preview_ids = self._preview_state.get_preview_point_ids()
+        mx, my = self.query_snap_for_creation(
+            self.element, mx, my, preview_ids
+        )
+
         try:
             ArcCommand.update_preview(
                 self.element.sketch.registry, self._preview_state, mx, my
@@ -88,6 +107,11 @@ class ArcTool(SketchTool):
             self.element.mark_dirty()
         except IndexError:
             self.on_deactivate()
+
+    def draw_overlay(self, ctx: cairo.Context):
+        """Draw snap feedback during creation."""
+        if self._preview_state is not None:
+            self.draw_snap_feedback(ctx, self.element)
 
     def _handle_click(self, pid_hit, mx, my) -> bool:
         # State machine: Center -> Start -> End
@@ -106,6 +130,7 @@ class ArcTool(SketchTool):
             self._preview_state = ArcCommand.start_center_preview(
                 self.element.sketch.registry, mx, my, snapped_pid=pid_hit
             )
+            self.element.preview_changed.send(self.element)
             self.element.update_bounds_from_sketch()
 
         elif not self._preview_state.has_start_point:
@@ -142,6 +167,7 @@ class ArcTool(SketchTool):
             )
 
             self._preview_state = None
+            self.element.preview_changed.send(self.element)
             self._dim_input.cancel()
 
             final_pid = None if pid_hit in preview_ids else pid_hit
@@ -157,6 +183,8 @@ class ArcTool(SketchTool):
                 clockwise=clockwise,
             )
             self.element.execute_command(cmd)
+
+            self.clear_snap_result()
 
         self.element.mark_dirty()
         return True
@@ -184,6 +212,14 @@ class ArcTool(SketchTool):
         if self._preview_state is None:
             return False
 
+        if key == SketcherKey.TAB:
+            if self._dim_input.is_active():
+                self._apply_dimension_input()
+                return True
+            else:
+                self.toggle_magnetic_snap()
+                return True
+
         if not self._preview_state.has_start_point:
             return False
 
@@ -198,12 +234,6 @@ class ArcTool(SketchTool):
             if self._dim_input.is_active():
                 self._dim_input.handle_delete()
                 self.element.mark_dirty()
-                return True
-            return False
-
-        if key == SketcherKey.TAB:
-            if self._dim_input.is_active():
-                self._apply_dimension_input()
                 return True
             return False
 
@@ -260,6 +290,7 @@ class ArcTool(SketchTool):
             )
         except IndexError:
             self._preview_state = None
+            self.element.preview_changed.send(self.element)
             self._dim_input.cancel()
             self.element.mark_dirty()
             return
@@ -270,6 +301,7 @@ class ArcTool(SketchTool):
             self.element.sketch.registry, self._preview_state
         )
         self._preview_state = None
+        self.element.preview_changed.send(self.element)
         self._dim_input.cancel()
         cmd = ArcCommand(
             self.element.sketch,
@@ -283,6 +315,7 @@ class ArcTool(SketchTool):
             fixed_radius=fixed_radius,
         )
         self.element.execute_command(cmd)
+        self.clear_snap_result()
         self.element.mark_dirty()
 
     def get_active_shortcuts(
@@ -295,5 +328,9 @@ class ArcTool(SketchTool):
                     return self._dim_input.get_active_shortcuts()
                 return [
                     ("0-9", _("Type radius"), None),
+                    ("Tab", _("Toggle Magnetic Snap"), None),
                 ]
+            return [
+                ("Tab", _("Toggle Magnetic Snap"), None),
+            ]
         return []

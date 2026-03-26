@@ -27,6 +27,12 @@ class CentersProducer(SnapLineProducer):
             if not self._include_construction and entity.construction:
                 continue
 
+            if not isinstance(entity, (Arc, Circle, Ellipse)):
+                continue
+
+            if drag_context.is_point_dragged(entity.center_idx):
+                continue
+
             center = self._get_center(entity, registry)
             if center is None:
                 continue
@@ -59,6 +65,12 @@ class CentersProducer(SnapLineProducer):
             if drag_context.is_entity_dragged(entity.id):
                 continue
             if not self._include_construction and entity.construction:
+                continue
+
+            if not isinstance(entity, (Arc, Circle, Ellipse)):
+                continue
+
+            if drag_context.is_point_dragged(entity.center_idx):
                 continue
 
             center = self._get_center(entity, registry)

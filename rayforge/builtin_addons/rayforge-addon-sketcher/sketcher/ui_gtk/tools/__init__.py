@@ -20,6 +20,7 @@ from .radius_constraint_tool import RadiusConstraintTool
 from .rectangle_tool import RectangleTool
 from .rounded_rect_tool import RoundedRectTool
 from .select_tool import SelectTool
+from .snap_mixin import SnapMixin
 from .symmetry_constraint_tool import SymmetryConstraintTool
 from .straighten_tool import StraightenTool
 from .tangent_constraint_tool import TangentConstraintTool
@@ -109,6 +110,7 @@ __all__ = [
     "SelectTool",
     "SketchTool",
     "SketcherKey",
+    "SnapMixin",
     "StraightenTool",
     "SymmetryConstraintTool",
     "TangentConstraintTool",
