@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 from gettext import gettext as _
 
 from rayforge.core.geo import Point as GeoPoint
@@ -10,6 +10,7 @@ from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
     from rayforge.core.undo.command import Command
+    from ..constraints import Constraint
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
@@ -28,12 +29,15 @@ class MovePointCommand(SketchChangeCommand):
         snapshot: Optional[
             tuple[Dict[EntityID, GeoPoint], Dict[EntityID, Any]]
         ] = None,
+        snap_constraints: Optional[List["Constraint"]] = None,
     ):
         super().__init__(sketch, _("Move Point"))
         self.point_id = point_id
         self.start_pos = start_pos
         self.end_pos = end_pos
         self._point_ref: Optional[Point] = None
+        self._snap_constraints: List["Constraint"] = snap_constraints or []
+        self._created_constraints: List["Constraint"] = []
 
         # If we are provided a snapshot (from the tool), use it.
         # This is critical because the drag operation changes coordinates
@@ -60,12 +64,21 @@ class MovePointCommand(SketchChangeCommand):
         if p:
             p.x, p.y = self.end_pos
 
+        for constraint in self._snap_constraints:
+            self.sketch.constraints.append(constraint)
+            self._created_constraints.append(constraint)
+
     def _do_undo(self) -> None:
         # Revert the specific point (though restore_snapshot does this for
         # all).
         p = self._get_point()
         if p:
             p.x, p.y = self.start_pos
+
+        for constraint in self._created_constraints:
+            if constraint in self.sketch.constraints:
+                self.sketch.constraints.remove(constraint)
+        self._created_constraints.clear()
 
     def can_coalesce_with(self, next_command: Command) -> bool:
         return (

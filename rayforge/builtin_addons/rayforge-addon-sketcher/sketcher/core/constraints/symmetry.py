@@ -8,6 +8,40 @@ from ..entities import Line
 from .base import Constraint, ConstraintStatus
 from ..types import EntityID
 
+
+def draw_symmetry_arrows(
+    ctx: "cairo.Context",
+    s1: Point,
+    s2: Point,
+) -> None:
+    mx = (s1[0] + s2[0]) / 2.0
+    my = (s1[1] + s2[1]) / 2.0
+    angle = math.atan2(s2[1] - s1[1], s2[0] - s1[0])
+    offset = 12.0
+
+    lx = mx - offset * math.cos(angle)
+    ly = my - offset * math.sin(angle)
+
+    ctx.save()
+    ctx.translate(lx, ly)
+    ctx.rotate(angle)
+    ctx.move_to(-3, -4)
+    ctx.line_to(3, 0)
+    ctx.line_to(-3, 4)
+    ctx.restore()
+
+    rx = mx + offset * math.cos(angle)
+    ry = my + offset * math.sin(angle)
+
+    ctx.save()
+    ctx.translate(rx, ry)
+    ctx.rotate(angle)
+    ctx.move_to(3, -4)
+    ctx.line_to(-3, 0)
+    ctx.line_to(3, 4)
+    ctx.restore()
+
+
 if TYPE_CHECKING:
     from ..params import ParameterContext
     from ..registry import EntityRegistry
@@ -237,39 +271,11 @@ class SymmetryConstraint(Constraint):
         s1 = to_screen((p1.x, p1.y))
         s2 = to_screen((p2.x, p2.y))
 
-        mx = (s1[0] + s2[0]) / 2.0
-        my = (s1[1] + s2[1]) / 2.0
-
-        angle = math.atan2(s2[1] - s1[1], s2[0] - s1[0])
-
-        offset = 12.0
-
         ctx.save()
         ctx.set_line_width(1.5)
-
         ctx.new_sub_path()
 
-        lx = mx - offset * math.cos(angle)
-        ly = my - offset * math.sin(angle)
-
-        ctx.save()
-        ctx.translate(lx, ly)
-        ctx.rotate(angle)
-        ctx.move_to(-3, -4)
-        ctx.line_to(3, 0)
-        ctx.line_to(-3, 4)
-        ctx.restore()
-
-        rx = mx + offset * math.cos(angle)
-        ry = my + offset * math.sin(angle)
-
-        ctx.save()
-        ctx.translate(rx, ry)
-        ctx.rotate(angle)
-        ctx.move_to(3, -4)
-        ctx.line_to(-3, 0)
-        ctx.line_to(3, 4)
-        ctx.restore()
+        draw_symmetry_arrows(ctx, s1, s2)
 
         if is_selected:
             self._draw_selection_underlay(ctx)

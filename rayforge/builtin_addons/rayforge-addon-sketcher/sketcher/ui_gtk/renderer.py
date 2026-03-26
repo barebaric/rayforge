@@ -92,6 +92,38 @@ class SketchRenderer:
         self._draw_preview_dimensions(ctx)
         self._draw_bezier_control_handles(ctx)
 
+    def draw_entity_highlight(
+        self,
+        ctx: cairo.Context,
+        entity: Entity,
+        color: tuple,
+        line_width: float = 3.0,
+    ) -> bool:
+        """
+        Draws an entity with a highlight color in model coordinates.
+        The caller should set up the appropriate coordinate transform.
+        Returns True if the entity was drawn successfully.
+        """
+        has_path = False
+        if isinstance(entity, Line):
+            has_path = self._define_line_path(ctx, entity)
+        elif isinstance(entity, Arc):
+            has_path = self._define_arc_path(ctx, entity)
+        elif isinstance(entity, Circle):
+            has_path = self._define_circle_path(ctx, entity)
+        elif isinstance(entity, Bezier):
+            has_path = self._define_bezier_path(ctx, entity)
+        elif isinstance(entity, Ellipse):
+            has_path = self._define_ellipse_path(ctx, entity)
+
+        if has_path:
+            ctx.set_source_rgba(*color)
+            ctx.set_dash([])
+            ctx.set_line_width(line_width)
+            ctx.stroke()
+
+        return has_path
+
     def _draw_origin(self, ctx: cairo.Context):
         """Draws a fixed symbol at (0,0)."""
         # The Origin is physically at 0,0 in Model Space
