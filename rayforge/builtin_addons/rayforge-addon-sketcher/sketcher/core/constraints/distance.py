@@ -12,6 +12,7 @@ from typing import (
 from gettext import gettext as _
 from rayforge.core.geo import Point
 from rayforge.core.geo.primitives import find_closest_point_on_line_segment
+from ..entities import Line
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
@@ -177,14 +178,26 @@ class DistanceConstraint(Constraint):
     ) -> bool:
         p1 = reg.get_point(self.p1)
         p2 = reg.get_point(self.p2)
+
+        has_geometry = False
         if p1 and p2:
-            s1 = to_screen((p1.x, p1.y))
-            s2 = to_screen((p2.x, p2.y))
+            entities = reg.entities or []
+            for entity in entities:
+                if isinstance(entity, Line):
+                    if {entity.p1_idx, entity.p2_idx} == {self.p1, self.p2}:
+                        has_geometry = True
+                        break
 
-            _, _, dist_sq = find_closest_point_on_line_segment(s1, s2, sx, sy)
+            if not has_geometry:
+                s1 = to_screen((p1.x, p1.y))
+                s2 = to_screen((p2.x, p2.y))
 
-            if dist_sq < threshold**2:
-                return True
+                _, _, dist_sq = find_closest_point_on_line_segment(
+                    s1, s2, sx, sy
+                )
+
+                if dist_sq < threshold**2:
+                    return True
 
         pos_data = self.get_label_pos(reg, to_screen, element)
         if pos_data:
