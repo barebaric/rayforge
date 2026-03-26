@@ -1,0 +1,66 @@
+machine:
+  name: Legacy Hooks Machine
+  active_wcs: G54
+  arc_tolerance: 0.025
+  auto_connect: true
+  axis_extents:
+  - 200.0
+  - 200.0
+  cameras: []
+  clear_alarm_on_connect: false
+  dialect_uid: grbl
+  driver: GrblSerialDriver
+  driver_args:
+    baudrate: '115200'
+    port: /dev/ttyUSB0
+  gcode:
+    gcode_precision: 3
+  heads:
+  - cut_color: '#ff00ff'
+    focus_power_percent: 1.0
+    frame_power_percent: 1.0
+    max_power: 1000
+    name: Laser Head
+    spot_size_mm:
+    - 0.1
+    - 0.1
+    uid: hooks-head-uid-1
+  home_on_start: false
+  hookmacros:
+    JOB_START:
+      code:
+      - G21 ; Set units to mm
+      - G90 ; Absolute positioning
+      - M3 S0 ; Laser on at 0
+      - "; Custom job start hook"
+    JOB_END:
+      code:
+      - M5 ; Laser off
+      - G0 X0 Y0 ; Return home
+      - "; Custom job end hook"
+  machine_hours:
+    counters: {}
+    total_hours: 0.0
+  macros: {}
+  origin: bottom_left
+  reverse_x_axis: false
+  reverse_y_axis: false
+  reverse_z_axis: false
+  single_axis_homing_enabled: true
+  soft_limits: null
+  speeds:
+    acceleration: 1000
+    max_cut_speed: 1000
+    max_travel_speed: 3000
+  supports_arcs: true
+  wcs_offsets:
+    G54:
+    - 0.0
+    - 0.0
+    - 0.0
+  wcs_origin_is_workarea_origin: false
+  work_margins:
+  - 0
+  - 0
+  - 0
+  - 0

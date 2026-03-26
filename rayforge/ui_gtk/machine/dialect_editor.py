@@ -8,6 +8,7 @@ from ...pipeline.encoder.context import GcodeContext
 from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..varset.varsetwidget import VarSetWidget
+from .template_selector import DialectTemplateSelectorDialog
 
 
 def _text_to_list(text: str) -> List[str]:
@@ -103,6 +104,14 @@ class DialectEditorDialog(PatchedDialogWindow):
         self.save_button.get_style_context().add_class("suggested-action")
         self.save_button.connect("clicked", self._on_save_clicked)
         header.pack_end(self.save_button)
+
+        self.update_from_template_button = Gtk.Button(
+            label=_("Update from Template")
+        )
+        self.update_from_template_button.connect(
+            "clicked", self._on_update_from_template_clicked
+        )
+        header.pack_end(self.update_from_template_button)
 
         # Get the editor definition from the model
         varsets = self.dialect.get_editor_varsets()
@@ -246,3 +255,47 @@ class DialectEditorDialog(PatchedDialogWindow):
         self._update_dialect_from_ui()
         self.saved = True
         self.close()
+
+    def _on_update_from_template_clicked(self, button: Gtk.Button):
+        """Opens template selector to update dialect from a template."""
+        parent = cast(Gtk.Window, self.get_transient_for())
+        dialog = DialectTemplateSelectorDialog(
+            transient_for=parent,
+            title=_("Update from Template"),
+            body=_(
+                "Select a template to copy its settings. "
+                "Your label and description will be preserved."
+            ),
+            on_selected=self._on_template_selected,
+        )
+        dialog.present()
+
+    def _on_template_selected(self, template: GcodeDialect):
+        """Updates the dialect from the selected template."""
+        current_label = self.dialect.label
+        current_description = self.dialect.description
+
+        preserved_fields = {"uid", "is_custom", "label", "description"}
+        for field in template.__dataclass_fields__:
+            if field not in preserved_fields:
+                value = getattr(template, field)
+                setattr(self.dialect, field, copy.deepcopy(value))
+
+        self.dialect.label = current_label
+        self.dialect.description = current_description
+
+        self._refresh_ui_from_dialect()
+        self.present()
+
+    def _refresh_ui_from_dialect(self):
+        """Refreshes the UI widgets from the dialect object."""
+        self.info_widget.clear_dynamic_rows()
+        self.templates_widget.clear_dynamic_rows()
+        self.scripts_widget.clear_dynamic_rows()
+
+        varsets = self.dialect.get_editor_varsets()
+        self.info_widget.populate(varsets["info"])
+        self.templates_widget.populate(varsets["templates"])
+        self.scripts_widget.populate(varsets["scripts"])
+        self._connect_validation_signals()
+        self._validate_all_rows()

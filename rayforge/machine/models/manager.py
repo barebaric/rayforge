@@ -221,6 +221,14 @@ class MachineManager:
         machine.id = machine_id
         self.machines[machine.id] = machine
         machine.changed.connect(self.on_machine_changed)
+
+        if machine.dialect_migrated:
+            logger.info(
+                f"Saving machine '{machine.name}' after dialect migration."
+            )
+            self.save_machine(machine)
+            machine.dialect_migrated = False
+
         return machine
 
     def on_machine_changed(self, machine, **kwargs):

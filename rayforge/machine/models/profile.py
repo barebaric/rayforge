@@ -131,9 +131,11 @@ class MachineProfile:
             m.dialect_uid = new_dialect.uid
 
         elif self.dialect_uid is not None:
-            # No custom definition, just use the specified built-in or
-            # existing dialect UID.
-            m.dialect_uid = self.dialect_uid
+            m.dialect_uid, _migrated = (
+                context.dialect_mgr.migrate_builtin_dialect_to_copy(
+                    self.dialect_uid, self.name
+                )
+            )
 
         if self.gcode_precision is not None:
             m.gcode_precision = self.gcode_precision

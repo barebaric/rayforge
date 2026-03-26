@@ -99,6 +99,7 @@ class Machine:
         self.clear_alarm_on_connect: bool = False
         self.single_axis_homing_enabled: bool = True
         self.dialect_uid: str = "grbl"
+        self.dialect_migrated: bool = False
         self._hydrated_dialect: Optional[GcodeDialect] = None
         self.gcode_precision: int = 3
         self.supports_arcs: bool = True
@@ -1238,6 +1239,12 @@ class Machine:
             hook_data, dialect_uid, ma.name, context
         )
 
+        dialect_uid, migrated = (
+            context.dialect_mgr.migrate_builtin_dialect_to_copy(
+                dialect_uid, ma.name
+            )
+        )
+        ma.dialect_migrated = migrated
         ma.dialect_uid = dialect_uid
         ma.active_wcs = ma_data.get("active_wcs", ma.active_wcs)
         if "wcs_offsets" in ma_data:
