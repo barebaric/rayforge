@@ -6,6 +6,8 @@ from sketcher.core.commands import (
     RectanglePreviewState,
 )
 from sketcher.core.entities import Point
+from sketcher.core.snap import SnapLineType
+from sketcher.core.entities import Point as SketchPoint
 from sketcher.ui_gtk.tools import RectangleTool
 
 
@@ -17,6 +19,20 @@ def mock_element():
     element.sketch.registry._id_counter = 0
     element.hittester.get_hit_data.return_value = (None, None)
     element.execute_command = MagicMock()
+    element.canvas = MagicMock()
+    element.canvas.view_transform = MagicMock()
+    element.canvas.view_transform.get_scale = MagicMock(
+        return_value=(1.0, 1.0)
+    )
+    element.snap_engine = MagicMock()
+    element.snap_engine.query = MagicMock(
+        return_value=MagicMock(
+            snapped=False,
+            position=(0.0, 0.0),
+            snap_lines=[],
+            primary_snap_point=None,
+        )
+    )
     return element
 
 
@@ -57,7 +73,18 @@ def test_first_click_with_hit_starts_preview(rect_tool, mock_element):
     """
     Test that first click on an existing point starts preview mode.
     """
-    mock_element.hittester.get_hit_data.return_value = ("point", 5)
+    mock_point = SketchPoint(5, 10, 20)
+    mock_snap_point = MagicMock()
+    mock_snap_point.line_type = SnapLineType.ENTITY_POINT
+    mock_snap_point.source = mock_point
+    mock_snap_point.x = 10.0
+    mock_snap_point.y = 20.0
+    mock_element.snap_engine.query.return_value = MagicMock(
+        snapped=True,
+        position=(10.0, 20.0),
+        snap_lines=[],
+        primary_snap_point=mock_snap_point,
+    )
     mock_element.sketch.registry.add_point.return_value = 6
     mock_element.hittester.screen_to_model.return_value = (10, 20)
 
@@ -119,11 +146,22 @@ def test_second_click_with_hit_creates_rectangle(rect_tool, mock_element):
     )
     mock_element.sketch.registry.get_point.side_effect = [
         Point(0, 0, 0),
-        Point(7, 100, 50),
+        SketchPoint(7, 100, 50),
     ]
 
     # --- Simulate second click ---
-    mock_element.hittester.get_hit_data.return_value = ("point", 7)
+    mock_point = SketchPoint(7, 100, 50)
+    mock_snap_point = MagicMock()
+    mock_snap_point.line_type = SnapLineType.ENTITY_POINT
+    mock_snap_point.source = mock_point
+    mock_snap_point.x = 100.0
+    mock_snap_point.y = 50.0
+    mock_element.snap_engine.query.return_value = MagicMock(
+        snapped=True,
+        position=(100.0, 50.0),
+        snap_lines=[],
+        primary_snap_point=mock_snap_point,
+    )
     mock_element.hittester.screen_to_model.return_value = (100, 50)
     result = rect_tool.on_press(100, 200, 1)
 

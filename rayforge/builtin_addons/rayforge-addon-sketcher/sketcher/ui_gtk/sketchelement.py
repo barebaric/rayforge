@@ -56,6 +56,7 @@ class SketchElement(CanvasElement):
         self.constraint_edit_requested = Signal()
         self.tool_changed = Signal()
         self.solved = Signal()
+        self.preview_changed = Signal()
 
         # Model
         self._sketch: Sketch

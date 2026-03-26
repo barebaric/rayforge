@@ -3,6 +3,8 @@ from unittest.mock import Mock, MagicMock, patch
 from sketcher.ui_gtk.tools.circle_tool import CircleTool
 from sketcher.core.commands.ellipse import EllipsePreviewState
 from sketcher.ui_gtk.tools.base import SketcherKey
+from sketcher.core.snap import SnapLineType
+from sketcher.core.entities import Point as SketchPoint
 
 
 @pytest.fixture
@@ -32,6 +34,19 @@ def mock_element():
     element.update_bounds_from_sketch = Mock()
     element.execute_command = Mock()
     element.editor = None
+    element.canvas = Mock()
+    element.canvas._shift_pressed = False
+    element.canvas.view_transform = Mock()
+    element.canvas.view_transform.get_scale = Mock(return_value=(1.0, 1.0))
+    element.snap_engine = Mock()
+    element.snap_engine.query = Mock(
+        return_value=MagicMock(
+            snapped=False,
+            position=(0.0, 0.0),
+            snap_lines=[],
+            primary_snap_point=None,
+        )
+    )
     return element
 
 
@@ -158,8 +173,19 @@ def test_circle_tool_on_press_no_hit(circle_tool, mock_element):
 @pytest.mark.ui
 def test_circle_tool_on_press_with_snapped_point(circle_tool, mock_element):
     """Test on_press when snapping to an existing point."""
-    mock_element.hittester.get_hit_data.return_value = ("point", 99)
     mock_element.hittester.screen_to_model.return_value = (10.0, 20.0)
+    mock_point = SketchPoint(99, 10.0, 20.0)
+    mock_snap_point = MagicMock()
+    mock_snap_point.line_type = SnapLineType.ENTITY_POINT
+    mock_snap_point.source = mock_point
+    mock_snap_point.x = 10.0
+    mock_snap_point.y = 20.0
+    mock_element.snap_engine.query.return_value = MagicMock(
+        snapped=True,
+        position=(10.0, 20.0),
+        snap_lines=[],
+        primary_snap_point=mock_snap_point,
+    )
 
     with patch(
         "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.start_preview"
@@ -253,7 +279,18 @@ def test_circle_tool_on_release_with_snapped_endpoint(
         entity_id=5,
     )
     mock_element.hittester.screen_to_model.return_value = (50.0, 50.0)
-    mock_element.hittester.get_hit_data.return_value = ("point", 99)
+    mock_point = SketchPoint(99, 50.0, 50.0)
+    mock_snap_point = MagicMock()
+    mock_snap_point.line_type = SnapLineType.ENTITY_POINT
+    mock_snap_point.source = mock_point
+    mock_snap_point.x = 50.0
+    mock_snap_point.y = 50.0
+    mock_element.snap_engine.query.return_value = MagicMock(
+        snapped=True,
+        position=(50.0, 50.0),
+        snap_lines=[],
+        primary_snap_point=mock_snap_point,
+    )
 
     with patch(
         "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
@@ -283,7 +320,18 @@ def test_circle_tool_on_release_ignores_preview_points(
         entity_id=5,
     )
     mock_element.hittester.screen_to_model.return_value = (50.0, 50.0)
-    mock_element.hittester.get_hit_data.return_value = ("point", 2)
+    mock_point = SketchPoint(3, 50.0, 50.0)
+    mock_snap_point = MagicMock()
+    mock_snap_point.line_type = SnapLineType.ENTITY_POINT
+    mock_snap_point.source = mock_point
+    mock_snap_point.x = 50.0
+    mock_snap_point.y = 50.0
+    mock_element.snap_engine.query.return_value = MagicMock(
+        snapped=True,
+        position=(50.0, 50.0),
+        snap_lines=[],
+        primary_snap_point=mock_snap_point,
+    )
 
     with patch(
         "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
@@ -569,10 +617,11 @@ def test_circle_tool_get_active_shortcuts_with_preview(circle_tool):
 
     shortcuts = circle_tool.get_active_shortcuts()
 
-    assert len(shortcuts) == 3
+    assert len(shortcuts) == 4
     keys = [s[0] for s in shortcuts]
     assert "Shift" in keys
     assert "Ctrl" in keys
+    assert "Tab" in keys
     assert "Esc" in keys
 
 

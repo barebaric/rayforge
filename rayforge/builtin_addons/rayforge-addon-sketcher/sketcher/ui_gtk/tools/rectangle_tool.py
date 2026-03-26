@@ -1,5 +1,6 @@
 from gettext import gettext as _
 from typing import Callable, List, Optional, Tuple, Union
+import cairo
 
 from ...core.commands import (
     RectangleCommand,
@@ -7,10 +8,14 @@ from ...core.commands import (
 )
 from .base import SketchTool, SketcherKey
 from .dimension_input import DimensionInputHandler
+from .snap_mixin import SnapMixin
 
 
-class RectangleTool(SketchTool):
-    """Handles creating rectangles."""
+class RectangleTool(SnapMixin, SketchTool):
+    """Handles creating rectangles.
+
+    - Tab: toggle magnetic snap
+    """
 
     ICON = "sketch-rect-symbolic"
     LABEL = _("Rectangle")
@@ -44,25 +49,35 @@ class RectangleTool(SketchTool):
                 self.element.sketch.registry, self._preview_state
             )
             self._preview_state = None
+            self.element.preview_changed.send(self.element)
 
             if start_temp:
                 self.element.remove_point_if_unused(start_id)
 
             self.element.mark_dirty()
 
+        self.clear_snap_result()
+
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         mx, my = self.element.hittester.screen_to_model(
             world_x, world_y, self.element
         )
-        hit_type, hit_obj = self.element.hittester.get_hit_data(
-            world_x, world_y, self.element
+
+        exclude_points = set()
+        if self._preview_state is not None:
+            exclude_points = self._preview_state.get_preview_point_ids()
+
+        mx, my = self.query_snap_for_creation(
+            self.element, mx, my, exclude_points
         )
-        pid_hit = hit_obj if hit_type == "point" else None
+        pid_hit = self.get_snapped_point_id()
+
         return self._handle_click(pid_hit, mx, my)
 
     def on_hover_motion(self, world_x: float, world_y: float):
         """Updates the live preview of the rectangle."""
         if self._preview_state is None:
+            self.clear_snap_result()
             return
 
         if self._dim_input.is_active():
@@ -70,6 +85,11 @@ class RectangleTool(SketchTool):
 
         mx, my = self.element.hittester.screen_to_model(
             world_x, world_y, self.element
+        )
+
+        preview_ids = self._preview_state.get_preview_point_ids()
+        mx, my = self.query_snap_for_creation(
+            self.element, mx, my, preview_ids
         )
 
         try:
@@ -80,6 +100,11 @@ class RectangleTool(SketchTool):
         except (IndexError, KeyError):
             self.on_deactivate()
 
+    def draw_overlay(self, ctx: cairo.Context):
+        """Draw snap feedback during creation."""
+        if self._preview_state is not None:
+            self.draw_snap_feedback(ctx, self.element)
+
     def _handle_click(
         self, pid_hit: Optional[int], mx: float, my: float
     ) -> bool:
@@ -87,6 +112,7 @@ class RectangleTool(SketchTool):
             self._preview_state = RectangleCommand.start_preview(
                 self.element.sketch.registry, mx, my, snapped_pid=pid_hit
             )
+            self.element.preview_changed.send(self.element)
         else:
             preview_ids = self._preview_state.get_preview_point_ids()
             start_id = self._preview_state.start_id
@@ -96,6 +122,7 @@ class RectangleTool(SketchTool):
                 self.element.sketch.registry, self._preview_state
             )
             self._preview_state = None
+            self.element.preview_changed.send(self.element)
             self._dim_input.cancel()
 
             final_pid = None if pid_hit in preview_ids else pid_hit
@@ -108,6 +135,8 @@ class RectangleTool(SketchTool):
                 is_start_temp=start_temp,
             )
             self.element.execute_command(cmd)
+
+            self.clear_snap_result()
 
         self.element.mark_dirty()
         return True
@@ -138,20 +167,6 @@ class RectangleTool(SketchTool):
         if self._preview_state is None:
             return False
 
-        if key == SketcherKey.BACKSPACE:
-            if self._dim_input.is_active():
-                self._dim_input.handle_backspace()
-                self.element.mark_dirty()
-                return True
-            return False
-
-        if key == SketcherKey.DELETE:
-            if self._dim_input.is_active():
-                self._dim_input.handle_delete()
-                self.element.mark_dirty()
-                return True
-            return False
-
         if key == SketcherKey.TAB:
             if self._dim_input.is_active():
                 handled, should_apply, committed_field = (
@@ -164,6 +179,22 @@ class RectangleTool(SketchTool):
                     self.element.mark_dirty()
                 elif handled:
                     self.element.mark_dirty()
+                return True
+            else:
+                self.toggle_magnetic_snap()
+                return True
+
+        if key == SketcherKey.BACKSPACE:
+            if self._dim_input.is_active():
+                self._dim_input.handle_backspace()
+                self.element.mark_dirty()
+                return True
+            return False
+
+        if key == SketcherKey.DELETE:
+            if self._dim_input.is_active():
+                self._dim_input.handle_delete()
+                self.element.mark_dirty()
                 return True
             return False
 
@@ -233,6 +264,7 @@ class RectangleTool(SketchTool):
             )
         except IndexError:
             self._preview_state = None
+            self.element.preview_changed.send(self.element)
             self._dim_input.cancel()
             self.element.mark_dirty()
             return
@@ -242,6 +274,7 @@ class RectangleTool(SketchTool):
             self.element.sketch.registry, self._preview_state
         )
         self._preview_state = None
+        self.element.preview_changed.send(self.element)
         self._dim_input.cancel()
         cmd = RectangleCommand(
             self.element.sketch,
@@ -253,6 +286,7 @@ class RectangleTool(SketchTool):
             fixed_height=fixed_height,
         )
         self.element.execute_command(cmd)
+        self.clear_snap_result()
         self.element.mark_dirty()
 
     def get_active_shortcuts(
@@ -264,5 +298,6 @@ class RectangleTool(SketchTool):
                 return self._dim_input.get_active_shortcuts()
             return [
                 ("0-9", _("Type dimensions (W H)"), None),
+                ("Tab", _("Toggle Magnetic Snap"), None),
             ]
         return []

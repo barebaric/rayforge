@@ -1,10 +1,13 @@
 from gettext import gettext as _
 import logging
 from typing import Callable, List, Optional, Tuple, Union
+import cairo
+
 from rayforge.ui_gtk.shared.keyboard import PRIMARY_KEY_NAME
 from ...core.commands import BezierCommand, BezierPreviewState
 from ...core.entities import Bezier
-from .base import SketchTool
+from .base import SketchTool, SketcherKey
+from .snap_mixin import SnapMixin
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +15,7 @@ logger = logging.getLogger(__name__)
 DRAG_THRESHOLD = 2.0
 
 
-class PathTool(SketchTool):
+class PathTool(SnapMixin, SketchTool):
     """
     Handles creating lines and bezier curves with a unified workflow.
 
@@ -21,6 +24,7 @@ class PathTool(SketchTool):
     - Hover: live preview of line segment
     - Second click without drag: creates line segment, starts next preview
     - Second click with drag: creates bezier where drag controls the "bow"
+    - Tab: toggle magnetic snap
     """
 
     ICON = "sketch-bezier-symbolic"
@@ -49,14 +53,22 @@ class PathTool(SketchTool):
     def get_active_shortcuts(
         self,
     ) -> List[Tuple[Union[str, List[str]], str, Optional[Callable[[], bool]]]]:
-        return [
+        shortcuts = []
+        if self._preview_state is not None:
+            shortcuts.extend(
+                [
+                    ("Tab", _("Toggle Magnetic Snap"), None),
+                    (
+                        "Shift",
+                        _("Constrain to Axis"),
+                        None,
+                    ),
+                ]
+            )
+        shortcuts.append(
             (PRIMARY_KEY_NAME, _("Snap to Grid"), lambda: self._dragging),
-            (
-                "Shift",
-                _("Constrain to Axis"),
-                lambda: self._preview_state is not None,
-            ),
-        ]
+        )
+        return shortcuts
 
     def get_preview_state(self) -> Optional[BezierPreviewState]:
         return self._preview_state
@@ -74,6 +86,7 @@ class PathTool(SketchTool):
                 self.element.sketch.registry, self._preview_state
             )
             self._preview_state = None
+            self.element.preview_changed.send(self.element)
 
             if start_temp:
                 self.element.remove_point_if_unused(start_id)
@@ -88,15 +101,21 @@ class PathTool(SketchTool):
         self._mirror_cp_offset = None
         self._release_handled = False
         self.hovered_point_id = None
+        self.clear_snap_result()
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         mx, my = self.element.hittester.screen_to_model(
             world_x, world_y, self.element
         )
-        hit_type, hit_obj = self.element.hittester.get_hit_data(
-            world_x, world_y, self.element
+
+        exclude_points = set()
+        if self._preview_state is not None:
+            exclude_points = self._preview_state.get_preview_point_ids()
+
+        mx, my = self.query_snap_for_creation(
+            self.element, mx, my, exclude_points
         )
-        pid_hit = hit_obj if hit_type == "point" else None
+        pid_hit = self.get_snapped_point_id()
 
         logger.debug(
             f"on_press: preview_state={self._preview_state is not None}, "
@@ -131,6 +150,7 @@ class PathTool(SketchTool):
                     self.element.sketch.registry, self._preview_state
                 )
                 self._preview_state = None
+                self.element.preview_changed.send(self.element)
 
             self._press_pos = None
             self._waypoint_model_pos = None
@@ -156,6 +176,7 @@ class PathTool(SketchTool):
                 f"start_preview created: entity_id="
                 f"{self._preview_state.temp_entity_id}"
             )
+            self.element.preview_changed.send(self.element)
 
         self.element.mark_dirty()
         return False
@@ -393,6 +414,10 @@ class PathTool(SketchTool):
         self._preview_state = None
         self._mirror_cp_offset = None
 
+        snap_constraints = self.build_snap_constraints(end_id)
+        if final_pid is not None:
+            snap_constraints = []
+
         cmd = BezierCommand(
             self.element.sketch,
             start_id,
@@ -400,6 +425,7 @@ class PathTool(SketchTool):
             end_pid=final_pid,
             is_start_temp=start_temp,
             is_line=not has_virtual_cp,
+            constraints=snap_constraints,
         )
         self.element.execute_command(cmd)
 
@@ -416,6 +442,8 @@ class PathTool(SketchTool):
                 )
             except IndexError:
                 pass
+
+        self.clear_snap_result()
 
     def _finalize_bezier_segment(self):
         """Finalize the current segment as a bezier and start a new preview."""
@@ -490,6 +518,10 @@ class PathTool(SketchTool):
         )
         self._preview_state = None
 
+        snap_constraints = self.build_snap_constraints(end_id)
+        if final_pid is not None:
+            snap_constraints = []
+
         cmd = BezierCommand(
             self.element.sketch,
             start_id,
@@ -499,6 +531,7 @@ class PathTool(SketchTool):
             is_line=False,
             cp1=cp1,
             cp2=cp2,
+            constraints=snap_constraints,
         )
         self.element.execute_command(cmd)
 
@@ -517,9 +550,12 @@ class PathTool(SketchTool):
             except IndexError:
                 pass
 
+        self.clear_snap_result()
+
     def on_hover_motion(self, world_x: float, world_y: float):
         """Updates the live preview of the line/bezier."""
         if self._preview_state is None:
+            self.clear_snap_result()
             return
 
         if self._in_press:
@@ -532,16 +568,16 @@ class PathTool(SketchTool):
         if self.element.canvas and self.element.canvas._shift_pressed:
             mx, my = self._constrain_to_axis(mx, my)
 
-        hit_type, hit_obj = self.element.hittester.get_hit_data(
-            world_x, world_y, self.element
+        preview_ids = self._preview_state.get_preview_point_ids()
+        mx, my = self.query_snap_for_creation(
+            self.element, mx, my, preview_ids
         )
 
+        pid_hit = self.get_snapped_point_id()
+
         new_hovered_pid = None
-        if hit_type == "point":
-            pid = hit_obj
-            preview_ids = self._preview_state.get_preview_point_ids()
-            if pid not in preview_ids:
-                new_hovered_pid = pid
+        if pid_hit is not None and pid_hit not in preview_ids:
+            new_hovered_pid = pid_hit
 
         if self.hovered_point_id != new_hovered_pid:
             self.hovered_point_id = new_hovered_pid
@@ -566,3 +602,23 @@ class PathTool(SketchTool):
             self.element.mark_dirty()
         except (IndexError, KeyError):
             self.on_deactivate()
+
+    def draw_overlay(self, ctx: cairo.Context):
+        """Draw snap feedback during creation."""
+        if self._preview_state is not None:
+            self.draw_snap_feedback(ctx, self.element)
+
+    def handle_key_event(
+        self, key: SketcherKey, shift: bool = False, ctrl: bool = False
+    ) -> bool:
+        """Handle key events."""
+        if self._preview_state is not None:
+            if key == SketcherKey.ESCAPE:
+                self.on_deactivate()
+                return True
+
+            if key == SketcherKey.TAB:
+                self.toggle_magnetic_snap()
+                return True
+
+        return False

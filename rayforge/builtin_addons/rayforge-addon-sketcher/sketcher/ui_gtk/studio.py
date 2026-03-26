@@ -330,6 +330,9 @@ class SketchStudio(Gtk.Box):
                 self._on_tool_changed
             )
             self.canvas.sketch_element.solved.connect(self._on_sketch_solved)
+            self.canvas.sketch_element.preview_changed.connect(
+                self._on_preview_changed
+            )
             self.canvas.edit_drag_begin.connect(self._on_edit_drag_begin)
             self.canvas.edit_drag_end.connect(self._on_edit_drag_end)
             self._on_selection_changed(self.canvas.sketch_element.selection)
@@ -432,6 +435,10 @@ class SketchStudio(Gtk.Box):
 
     def _on_edit_drag_end(self, sender):
         """Handles end of edit mode drag to restore default shortcuts."""
+        self._update_status_bar()
+
+    def _on_preview_changed(self, sender):
+        """Handles preview state changes to update status bar shortcuts."""
         self._update_status_bar()
 
     def _on_sketch_solved(self, sender):

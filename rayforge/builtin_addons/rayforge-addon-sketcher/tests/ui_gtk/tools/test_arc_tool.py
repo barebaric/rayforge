@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 from sketcher.ui_gtk.tools.arc_tool import ArcTool
 from sketcher.core.commands import ArcPreviewState
 
@@ -26,6 +26,18 @@ def mock_element():
     element.mark_dirty = Mock()
     element.update_bounds_from_sketch = Mock()
     element.editor = None
+    element.canvas = Mock()
+    element.canvas.view_transform = Mock()
+    element.canvas.view_transform.get_scale = Mock(return_value=(1.0, 1.0))
+    element.snap_engine = Mock()
+    element.snap_engine.query = Mock(
+        return_value=MagicMock(
+            snapped=False,
+            position=(0.0, 0.0),
+            snap_lines=[],
+            primary_snap_point=None,
+        )
+    )
     return element
 
 

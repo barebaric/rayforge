@@ -34,6 +34,17 @@ def mock_element():
     element.editor = None
     element.canvas = Mock()
     element.canvas._shift_pressed = False
+    element.canvas.view_transform = Mock()
+    element.canvas.view_transform.get_scale = Mock(return_value=(1.0, 1.0))
+    element.snap_engine = Mock()
+    element.snap_engine.query = Mock(
+        return_value=MagicMock(
+            snapped=False,
+            position=(0.0, 0.0),
+            snap_lines=[],
+            primary_snap_point=None,
+        )
+    )
     return element
 
 
