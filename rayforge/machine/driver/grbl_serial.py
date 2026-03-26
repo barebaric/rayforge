@@ -343,10 +343,15 @@ class GrblSerialDriver(Driver):
 
                     async with self._cmd_lock:
                         try:
-                            logger.debug("Sending status poll")
                             payload = b"?"
+                            if self.serial_transport:
+                                self._rx_buffer_count += len(payload)
+                            buf_info = (
+                                f"buf: {self._rx_buffer_count}/"
+                                f"{GRBL_RX_BUFFER_SIZE}"
+                            )
                             logger.debug(
-                                f"TX: {payload!r}",
+                                f"TX: {payload!r} ({buf_info})",
                                 extra={
                                     "log_category": "RAW_IO",
                                     "direction": "TX",
@@ -354,7 +359,6 @@ class GrblSerialDriver(Driver):
                                 },
                             )
                             if self.serial_transport:
-                                self._rx_buffer_count += len(payload)
                                 await self.serial_transport.send(payload)
                         except ConnectionError as e:
                             logger.warning(
@@ -563,14 +567,6 @@ class GrblSerialDriver(Driver):
                             "Serial transport disconnected during job."
                         )
 
-                    logger.debug(
-                        f"TX: {command_bytes!r}",
-                        extra={
-                            "log_category": "RAW_IO",
-                            "direction": "TX",
-                            "data": command_bytes,
-                        },
-                    )
                     logger.info(line, extra=self._log_extra("USER_COMMAND"))
 
                     # Add to queue BEFORE sending.
@@ -579,6 +575,17 @@ class GrblSerialDriver(Driver):
                     # an empty queue and drops the 'ok', causing a deadlock.
                     self._rx_buffer_count += command_len
                     self._sent_gcode_queue.put_nowait((command_len, op_index))
+                    buf_info = (
+                        f"buf: {self._rx_buffer_count}/{GRBL_RX_BUFFER_SIZE}"
+                    )
+                    logger.debug(
+                        f"TX: {command_bytes!r} ({buf_info})",
+                        extra={
+                            "log_category": "RAW_IO",
+                            "direction": "TX",
+                            "data": command_bytes,
+                        },
+                    )
                     await self.serial_transport.send(command_bytes)
 
                 # Yield to the event loop to allow status polling (and other
@@ -1017,8 +1024,9 @@ class GrblSerialDriver(Driver):
         Primary handler for incoming serial data. Decodes, buffers, and
         delegates processing of complete messages.
         """
+        buf_info = f"buf: {self._rx_buffer_count}/{GRBL_RX_BUFFER_SIZE}"
         logger.debug(
-            f"RX: {data!r}",
+            f"RX: {data!r} ({buf_info})",
             extra={"log_category": "RAW_IO", "direction": "RX", "data": data},
         )
         self._handshake_received.set()
@@ -1062,12 +1070,13 @@ class GrblSerialDriver(Driver):
         Parses a GRBL status report (e.g., '<Idle|WPos:0,0,0|...>')
         and updates the device state.
         """
-        logger.debug(f"Processing received status message: {report}")
-        logger.info(report, extra=self._log_extra("STATUS_POLL"))
-
         self._rx_buffer_count -= 1
         if self._rx_buffer_count < 0:
             self._rx_buffer_count = 0
+        buf_info = f"buf: {self._rx_buffer_count}/{GRBL_RX_BUFFER_SIZE}"
+        logger.debug(f"Processing status report: {report} ({buf_info})")
+        logger.info(report, extra=self._log_extra("STATUS_POLL"))
+
         task_mgr.loop.call_soon_threadsafe(self._buffer_has_space.set)
 
         state = parse_state(
@@ -1160,6 +1169,10 @@ class GrblSerialDriver(Driver):
                         op_index,
                     ) = self._sent_gcode_queue.get_nowait()
                     self._rx_buffer_count -= command_len
+                    logger.debug(
+                        f"Processed 'ok', freed {command_len} bytes "
+                        f"(buf: {self._rx_buffer_count}/{GRBL_RX_BUFFER_SIZE})"
+                    )
                     self._sent_gcode_queue.task_done()
                     task_mgr.loop.call_soon_threadsafe(
                         self._buffer_has_space.set
