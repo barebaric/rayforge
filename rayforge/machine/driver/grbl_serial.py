@@ -354,6 +354,7 @@ class GrblSerialDriver(Driver):
                                 },
                             )
                             if self.serial_transport:
+                                self._rx_buffer_count += len(payload)
                                 await self.serial_transport.send(payload)
                         except ConnectionError as e:
                             logger.warning(
@@ -1063,6 +1064,12 @@ class GrblSerialDriver(Driver):
         """
         logger.debug(f"Processing received status message: {report}")
         logger.info(report, extra=self._log_extra("STATUS_POLL"))
+
+        self._rx_buffer_count -= 1
+        if self._rx_buffer_count < 0:
+            self._rx_buffer_count = 0
+        task_mgr.loop.call_soon_threadsafe(self._buffer_has_space.set)
+
         state = parse_state(
             report, self.state, lambda message: logger.info(message)
         )
