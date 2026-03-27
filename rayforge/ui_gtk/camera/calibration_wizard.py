@@ -148,7 +148,7 @@ class CalibrationCaptureSurface(Gtk.Widget):
 
 class CalibrationWizard(PatchedDialogWindow):
     MIN_FRAMES = 5
-    RECOMMENDED_FRAMES = 15
+    RECOMMENDED_FRAMES = 8
     DEFAULT_CARD_RATIO = 0.7
 
     def __init__(
@@ -421,9 +421,9 @@ class CalibrationWizard(PatchedDialogWindow):
         info_group = Adw.PreferencesGroup(
             title=_("Instructions"),
             description=_(
-                "Place the calibration card at different positions and "
-                "angles. Capture at least 15 frames covering different "
-                "areas of the view."
+                "Capture the card at different positions. Important: "
+                "include the image corners and edges for accurate "
+                "distortion correction."
             ),
         )
         settings_box.append(info_group)
@@ -435,12 +435,16 @@ class CalibrationWizard(PatchedDialogWindow):
         settings_box.append(status_group)
 
         self.frames_row = Adw.ActionRow(title=_("Captured Frames"))
-        self.frames_row.set_subtitle("0 / 15")
+        self.frames_row.set_subtitle("0")
         status_group.add(self.frames_row)
 
         self.corners_row = Adw.ActionRow(title=_("Corners Detected"))
         self.corners_row.set_subtitle("0")
         status_group.add(self.corners_row)
+
+        self.coverage_row = Adw.ActionRow(title=_("Coverage"))
+        self.coverage_row.set_subtitle(_("Not started"))
+        status_group.add(self.coverage_row)
 
         self.status_row = Adw.ActionRow(title=_("Status"))
         self.status_row.set_subtitle(_("Move card to capture more positions"))
@@ -557,14 +561,23 @@ class CalibrationWizard(PatchedDialogWindow):
         frame_count = self.calibrator.frame_count
         total_corners = self.calibrator.total_corners
 
-        self.frames_row.set_subtitle(
-            f"{frame_count} / {self.RECOMMENDED_FRAMES}"
-        )
+        self.frames_row.set_subtitle(f"{frame_count}")
 
         avg_per_frame = total_corners / frame_count if frame_count > 0 else 0
         self.corners_row.set_subtitle(
             f"{total_corners} total ({avg_per_frame:.0f} per frame avg)"
         )
+
+        if frame_count > 0:
+            coverage_level, _msg = self.calibrator.get_coverage_quality()
+            if coverage_level == "good":
+                self.coverage_row.set_subtitle(_("Good"))
+            elif coverage_level == "warning":
+                self.coverage_row.set_subtitle(_("Limited — reach edges"))
+            else:
+                self.coverage_row.set_subtitle(_("Poor — reach all corners"))
+        else:
+            self.coverage_row.set_subtitle(_("Not started"))
 
         can_calibrate, status_msg = self.calibrator.calibration_status()
         self.status_row.set_subtitle(status_msg)

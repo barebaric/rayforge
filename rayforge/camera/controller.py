@@ -505,10 +505,22 @@ class CameraController:
 
     def _get_effective_calibration(self, h, w):
         if self.config.has_calibration:
-            return (
-                self.config.get_camera_matrix(),
-                self.config.get_distortion_coeffs(),
-            )
+            calib_size = self.config.calibration_image_size
+            cam_mat = self.config.get_camera_matrix()
+            dist = self.config.get_distortion_coeffs()
+
+            if calib_size is not None and cam_mat is not None:
+                calib_w, calib_h = calib_size
+                if calib_w != w or calib_h != h:
+                    scale_x = w / calib_w
+                    scale_y = h / calib_h
+                    cam_mat = cam_mat.copy()
+                    cam_mat[0, 0] *= scale_x
+                    cam_mat[1, 1] *= scale_y
+                    cam_mat[0, 2] *= scale_x
+                    cam_mat[1, 2] *= scale_y
+
+            return cam_mat, dist
 
         k1 = self.config.distortion_k1
         k2 = self.config.distortion_k2
