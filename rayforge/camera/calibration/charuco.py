@@ -59,7 +59,10 @@ class CharucoBoard:
         )
         charuco_params = cv2.aruco.CharucoParameters()
         detector_params = cv2.aruco.DetectorParameters()
-        detector_params.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_NONE
+        detector_params.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+        detector_params.cornerRefinementWinSize = 5
+        detector_params.cornerRefinementMaxIterations = 30
+        detector_params.cornerRefinementMinAccuracy = 0.1
         refine_params = cv2.aruco.RefineParameters()
         self._detector = cv2.aruco.CharucoDetector(
             self._board, charuco_params, detector_params, refine_params

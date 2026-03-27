@@ -13,12 +13,14 @@ logger = logging.getLogger(__name__)
 class CameraCalibrator:
     MIN_FRAMES = 3
     MIN_CORNERS_PER_FRAME = 4
+    MIN_UNIQUE_CORNERS = 10
 
     def __init__(self, board: CharucoBoard):
         self.board = board
         self._all_corners: List[List[Tuple[float, float]]] = []
         self._all_ids: List[List[int]] = []
         self._frame_count = 0
+        self._image_size: Optional[Tuple[int, int]] = None
 
         self.frame_added = Signal()
         self.frame_rejected = Signal()
@@ -43,6 +45,7 @@ class CameraCalibrator:
         self._all_corners.clear()
         self._all_ids.clear()
         self._frame_count = 0
+        self._image_size = None
 
     def detect_and_add_frame(
         self, image: np.ndarray
@@ -61,6 +64,10 @@ class CameraCalibrator:
             )
             return False, len(corners), corners
 
+        if self._image_size is None:
+            h, w = image.shape[:2]
+            self._image_size = (w, h)
+
         self._all_corners.append(corners)
         self._all_ids.append(ids)
         self._frame_count += 1
@@ -78,7 +85,59 @@ class CameraCalibrator:
             {corner for ids in self._all_ids for corner in ids}
         )
 
-        return total_unique_corners >= 10
+        return total_unique_corners >= self.MIN_UNIQUE_CORNERS
+
+    def get_coverage(self) -> Tuple[float, float, float, float]:
+        """
+        Get the spatial coverage of detected corners.
+
+        Returns normalized coverage (0-1) for each quadrant:
+        (top-left, top-right, bottom-left, bottom-right)
+        """
+        if self._image_size is None or not self._all_corners:
+            return (0.0, 0.0, 0.0, 0.0)
+
+        w, h = self._image_size
+        mid_x, mid_y = w / 2, h / 2
+
+        quadrants = [[0, 0], [0, 0], [0, 0], [0, 0]]
+        corner_count = self.board.chessboard_corners
+
+        for corners in self._all_corners:
+            for x, y in corners:
+                q = (1 if x > mid_x else 0) + (2 if y > mid_y else 0)
+                quadrants[q][0] += 1
+
+        for q in quadrants:
+            q[1] = len([c for c in self._all_corners for _ in c])
+
+        coverage = tuple(
+            min(1.0, q[0] / max(1, corner_count)) for q in quadrants
+        )
+        return (coverage[0], coverage[1], coverage[2], coverage[3])
+
+    def get_coverage_quality(self) -> Tuple[str, str]:
+        """
+        Assess the quality of spatial coverage.
+
+        Returns (level, message) where level is 'good', 'warning', or 'poor'.
+        """
+        coverage = self.get_coverage()
+        min_coverage = min(coverage)
+        avg_coverage = sum(coverage) / 4
+
+        if min_coverage < 0.2:
+            return (
+                "poor",
+                "Poor coverage: move card to all corners of the view",
+            )
+        elif min_coverage < 0.4 or avg_coverage < 0.5:
+            return (
+                "warning",
+                "Limited coverage: ensure card reaches image edges",
+            )
+        else:
+            return ("good", "Good coverage")
 
     def calibration_status(self) -> Tuple[bool, str]:
         if self._frame_count < self.MIN_FRAMES:
@@ -92,12 +151,19 @@ class CameraCalibrator:
             {corner for ids in self._all_ids for corner in ids}
         )
 
-        if total_unique_corners < 10:
+        if total_unique_corners < self.MIN_UNIQUE_CORNERS:
             return (
                 False,
-                f"Need 10+ unique corners (have {total_unique_corners}). "
+                f"Need {self.MIN_UNIQUE_CORNERS}+ unique corners "
+                f"(have {total_unique_corners}). "
                 f"Move card to different positions.",
             )
+
+        coverage_level, coverage_msg = self.get_coverage_quality()
+        if coverage_level == "poor":
+            return (True, coverage_msg)
+        elif coverage_level == "warning":
+            return (True, f"Ready ({coverage_msg})")
 
         return True, "Ready to calibrate"
 
