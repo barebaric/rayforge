@@ -845,6 +845,12 @@ _AXIS_CALIBRATION_VARS = [
         var_type=float,
         description="Z-axis travel resolution, step/mm",
     ),
+    Var(
+        key="103",
+        label="$103",
+        var_type=float,
+        description="A-axis travel resolution, step/degree",
+    ),
 ]
 
 _AXIS_KINEMATICS_VARS = [
@@ -867,6 +873,12 @@ _AXIS_KINEMATICS_VARS = [
         description="Z-axis maximum rate, mm/min",
     ),
     Var(
+        key="113",
+        label="$113",
+        var_type=float,
+        description="A-axis maximum rate, degrees/min",
+    ),
+    Var(
         key="120",
         label="$120",
         var_type=float,
@@ -883,6 +895,12 @@ _AXIS_KINEMATICS_VARS = [
         label="$122",
         var_type=float,
         description="Z-axis acceleration, mm/sec^2",
+    ),
+    Var(
+        key="123",
+        label="$123",
+        var_type=float,
+        description="A-axis acceleration, degrees/sec^2",
     ),
 ]
 
@@ -904,6 +922,12 @@ _AXIS_TRAVEL_VARS = [
         label="$132",
         var_type=float,
         description="Z-axis maximum travel, mm",
+    ),
+    Var(
+        key="133",
+        label="$133",
+        var_type=float,
+        description="A-axis maximum travel, degrees",
     ),
 ]
 

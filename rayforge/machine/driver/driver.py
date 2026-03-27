@@ -121,6 +121,7 @@ class Axis(IntFlag):
     X = 1
     Y = 2
     Z = 4
+    A = 8
 
 
 @dataclass
