@@ -58,6 +58,8 @@ def make_step_artifact_in_subprocess(
     travel_speed: float,
     acceleration: float,
     creator_tag: str,
+    rotary_enabled: bool = False,
+    rotary_diameter: float = 25.0,
 ) -> int:
     """
     Aggregates WorkPieceArtifacts, creates a StepArtifact, sends its handle
@@ -118,6 +120,8 @@ def make_step_artifact_in_subprocess(
         generation_id=generation_id,
         context=context,
         stock_geometries=stock_geometries,
+        rotary_enabled=rotary_enabled,
+        rotary_diameter=rotary_diameter,
     )
 
     proxy.set_message(_("Storing step data..."))
