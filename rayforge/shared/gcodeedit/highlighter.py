@@ -168,7 +168,7 @@ class GcodeHighlighter:
                 tag_name = "gcode"
             elif first_char == "M":
                 tag_name = "mcode"
-            elif first_char in "XYZIJK":
+            elif first_char in "XYZIJKABCUVW":
                 tag_name = "coord"
             elif first_char in "FSPTH":
                 tag_name = "param"

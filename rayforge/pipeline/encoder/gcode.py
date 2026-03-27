@@ -66,6 +66,8 @@ class GcodeEncoder(OpsEncoder):
         self._coord_format: str = "{:.3f}"  # Default format
         self._feed_format: str = "{:.3f}"
         self._power_format: str = "{:.3f}"
+        self.rotary_enabled: bool = False
+        self.rotary_diameter: float = 25.0
 
     @classmethod
     def for_machine(cls, machine: "Machine") -> "GcodeEncoder":
@@ -141,6 +143,21 @@ class GcodeEncoder(OpsEncoder):
             formatted = formatted.rstrip("0").rstrip(".")
         return formatted
 
+    def _mu_to_degrees(self, mu: float) -> float:
+        """
+        Convert machine units to degrees for rotary axis.
+
+        Args:
+            mu: Distance in machine units along the cylinder surface.
+
+        Returns:
+            Angle in degrees for the A-axis.
+        """
+        if self.rotary_diameter <= 0:
+            return 0.0
+        circumference = self.rotary_diameter * math.pi
+        return (mu / circumference) * 360.0
+
     def _build_coord_commands(self, x: float, y: float, z: float) -> dict:
         """
         Build coordinate template variables, with conditional commands
@@ -148,7 +165,7 @@ class GcodeEncoder(OpsEncoder):
 
         Args:
             x: Target X coordinate.
-            y: Target Y coordinate.
+            y: Target Y coordinate (or rotary angle in mm before conversion).
             z: Target Z coordinate.
 
         Returns:
@@ -157,29 +174,37 @@ class GcodeEncoder(OpsEncoder):
         """
         prev_x, prev_y, prev_z = self.current_pos
 
+        if self.rotary_enabled:
+            y_axis_letter = "A"
+            y_for_output = self._mu_to_degrees(y)
+            prev_y_for_output = self._mu_to_degrees(prev_y)
+        else:
+            y_axis_letter = "Y"
+            y_for_output = y
+            prev_y_for_output = prev_y
+
+        x_cmd = f" X{self._format_coord(x)}"
+        y_cmd = f" {y_axis_letter}{self._format_coord(y_for_output)}"
+        z_cmd = f" Z{self._format_coord(z)}"
+
         if self.dialect.omit_unchanged_coords:
             x_changed = not math.isclose(x, prev_x)
-            y_changed = not math.isclose(y, prev_y)
+            y_changed = not math.isclose(y_for_output, prev_y_for_output)
             z_changed = not math.isclose(z, prev_z)
+            none_changed = not (x_changed or y_changed or z_changed)
 
-            x_cmd = f" X{self._format_coord(x)}" if x_changed else ""
-            y_cmd = f" Y{self._format_coord(y)}" if y_changed else ""
-            z_cmd = f" Z{self._format_coord(z)}" if z_changed else ""
-
-            if not (x_changed or y_changed or z_changed):
-                x_cmd = f" X{self._format_coord(x)}"
-        else:
-            x_cmd = f" X{self._format_coord(x)}"
-            y_cmd = f" Y{self._format_coord(y)}"
-            z_cmd = f" Z{self._format_coord(z)}"
+            x_cmd = x_cmd if x_changed or none_changed else ""
+            y_cmd = y_cmd if y_changed else ""
+            z_cmd = z_cmd if z_changed else ""
 
         return {
             "x": self._format_coord(x),
-            "y": self._format_coord(y),
+            "y": self._format_coord(y_for_output),
             "z": self._format_coord(z),
             "x_cmd": x_cmd,
             "y_cmd": y_cmd,
             "z_cmd": z_cmd,
+            "y_axis_letter": y_axis_letter,
         }
 
     def encode(
@@ -193,6 +218,14 @@ class GcodeEncoder(OpsEncoder):
         self.current_pos = (0.0, 0.0, 0.0)
         self.active_laser_uid = None
         self.emitted_power = None
+
+        workflow = doc.active_layer.workflow if doc.active_layer else None
+        if workflow:
+            self.rotary_enabled = workflow.rotary_enabled
+            self.rotary_diameter = workflow.rotary_diameter
+        else:
+            self.rotary_enabled = False
+            self.rotary_diameter = 25.0
 
         context = GcodeContext(
             machine=machine, doc=doc, job=JobInfo(extents=ops.rect())

@@ -85,7 +85,6 @@ class Expander(Gtk.Box):
         )
         self.header.append(header_content_box)
 
-        # Header content
         label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         label_box.set_hexpand(True)
         header_content_box.append(label_box)
@@ -97,6 +96,9 @@ class Expander(Gtk.Box):
         self.subtitle_label = Gtk.Label(xalign=0)
         self.subtitle_label.add_css_class("expander-subtitle")
         label_box.append(self.subtitle_label)
+
+        self.suffix_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        header_content_box.append(self.suffix_box)
 
         self.arrow = get_icon("chevron-right-symbolic")
         self.arrow.add_css_class("expander-arrow")
@@ -118,6 +120,10 @@ class Expander(Gtk.Box):
 
     def set_subtitle(self, subtitle: str):
         self.subtitle_label.set_text(subtitle)
+
+    def add_suffix(self, widget: Gtk.Widget):
+        """Add a widget to the suffix area (between title and arrow)."""
+        self.suffix_box.append(widget)
 
     def set_expanded(self, expanded: bool):
         self.revealer.set_reveal_child(expanded)
