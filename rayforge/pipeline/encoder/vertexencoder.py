@@ -1,4 +1,5 @@
 from __future__ import annotations
+import math
 from typing import List
 import numpy as np
 from ...core.geo import Point3D
@@ -13,6 +14,76 @@ from ...core.ops.commands import (
 from ...core.geo.linearize import linearize_arc
 from .base import OpsEncoder
 from ..artifact.base import VertexData
+
+
+def transform_to_cylinder(verts: np.ndarray, diameter: float) -> np.ndarray:
+    """
+    Transform flat XY vertices to cylindrical coordinates.
+
+    X remains unchanged (along cylinder axis).
+    Y maps to rotation angle around cylinder.
+    Z is computed from the angle.
+
+    Line segments are subdivided as needed to follow the cylinder surface
+    instead of cutting through the interior.
+
+    Args:
+        verts: Array of shape (N, 3) with X, Y, Z coordinates.
+               Vertices are in pairs (line segments for GL_LINES).
+        diameter: Cylinder diameter in mm.
+
+    Returns:
+        Transformed vertices array. May contain more vertices than input
+        if segments were split.
+    """
+    if verts.size == 0 or diameter <= 0:
+        return verts
+
+    radius = diameter / 2.0
+    circumference = diameter * math.pi
+    max_angle_per_segment = math.radians(15)
+
+    def cyl_point(x, y):
+        theta = (y / circumference) * 2.0 * math.pi
+        return [x, radius * math.sin(theta), radius * math.cos(theta)]
+
+    def normalize_angle_diff(delta):
+        while delta > math.pi:
+            delta -= 2 * math.pi
+        while delta < -math.pi:
+            delta += 2 * math.pi
+        return delta
+
+    result_verts = []
+
+    for i in range(0, verts.shape[0], 2):
+        if i + 1 >= verts.shape[0]:
+            break
+
+        x1, y1, _ = verts[i]
+        x2, y2, _ = verts[i + 1]
+
+        theta1 = (y1 / circumference) * 2.0 * math.pi
+        theta2 = (y2 / circumference) * 2.0 * math.pi
+
+        delta_theta = abs(normalize_angle_diff(theta2 - theta1))
+
+        num_subdivisions = max(
+            1, int(math.ceil(delta_theta / max_angle_per_segment))
+        )
+
+        prev_x, prev_y = x1, y1
+        for j in range(1, num_subdivisions + 1):
+            t = j / num_subdivisions
+            curr_x = x1 + t * (x2 - x1)
+            curr_y = y1 + t * (y2 - y1)
+
+            result_verts.append(cyl_point(prev_x, prev_y))
+            result_verts.append(cyl_point(curr_x, curr_y))
+
+            prev_x, prev_y = curr_x, curr_y
+
+    return np.array(result_verts, dtype=np.float32)
 
 
 class VertexEncoder(OpsEncoder):
@@ -38,12 +109,19 @@ class VertexEncoder(OpsEncoder):
         lut[:, 3] = 1.0  # A
         return lut
 
-    def encode(self, ops: Ops) -> VertexData:
+    def encode(
+        self,
+        ops: Ops,
+        rotary_enabled: bool = False,
+        rotary_diameter: float = 25.0,
+    ) -> VertexData:
         """
         Converts Ops into vertex arrays for different path types.
 
         Args:
             ops: The Ops object to encode
+            rotary_enabled: Whether to apply cylindrical transformation.
+            rotary_diameter: The diameter of the cylinder in mm.
 
         Returns:
             A VertexData object containing the computed vertex arrays.
@@ -119,20 +197,28 @@ class VertexEncoder(OpsEncoder):
                         current_pos = cmd.end
                         is_initial_position = False
 
-        # Convert lists to numpy arrays and return a VertexData object
+        powered_verts = np.array(powered_v, dtype=np.float32).reshape(-1, 3)
+        travel_verts = np.array(travel_v, dtype=np.float32).reshape(-1, 3)
+        zero_power_verts = np.array(zero_power_v, dtype=np.float32).reshape(
+            -1, 3
+        )
+
+        if rotary_enabled and rotary_diameter > 0:
+            powered_verts = transform_to_cylinder(
+                powered_verts, rotary_diameter
+            )
+            travel_verts = transform_to_cylinder(travel_verts, rotary_diameter)
+            zero_power_verts = transform_to_cylinder(
+                zero_power_verts, rotary_diameter
+            )
+
         return VertexData(
-            powered_vertices=np.array(powered_v, dtype=np.float32).reshape(
-                -1, 3
-            ),
+            powered_vertices=powered_verts,
             powered_colors=np.array(powered_c, dtype=np.float32).reshape(
                 -1, 4
             ),
-            travel_vertices=np.array(travel_v, dtype=np.float32).reshape(
-                -1, 3
-            ),
-            zero_power_vertices=np.array(
-                zero_power_v, dtype=np.float32
-            ).reshape(-1, 3),
+            travel_vertices=travel_verts,
+            zero_power_vertices=zero_power_verts,
         )
 
     def _handle_scanline(

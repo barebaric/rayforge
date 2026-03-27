@@ -1,5 +1,4 @@
 import logging
-import math
 from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
 import numpy as np
 from gi.repository import Gdk, Gtk, Pango
@@ -41,95 +40,21 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def transform_to_cylinder(verts: np.ndarray, diameter: float) -> np.ndarray:
-    """
-    Transform flat XY vertices to cylindrical coordinates.
-
-    X remains unchanged (along cylinder axis).
-    Y maps to rotation angle around cylinder.
-    Z is computed from the angle.
-
-    Line segments are subdivided as needed to follow the cylinder surface
-    instead of cutting through the interior.
-
-    Args:
-        verts: Array of shape (N, 3) with X, Y, Z coordinates.
-               Vertices are in pairs (line segments for GL_LINES).
-        diameter: Cylinder diameter in mm.
-
-    Returns:
-        Transformed vertices array. May contain more vertices than input
-        if segments were split.
-    """
-    if verts.size == 0 or diameter <= 0:
-        return verts
-
-    radius = diameter / 2.0
-    circumference = diameter * math.pi
-    max_angle_per_segment = math.radians(15)
-
-    def cyl_point(x, y):
-        theta = (y / circumference) * 2.0 * math.pi
-        return [x, radius * math.sin(theta), radius * math.cos(theta)]
-
-    def normalize_angle_diff(delta):
-        while delta > math.pi:
-            delta -= 2 * math.pi
-        while delta < -math.pi:
-            delta += 2 * math.pi
-        return delta
-
-    result_verts = []
-
-    for i in range(0, verts.shape[0], 2):
-        if i + 1 >= verts.shape[0]:
-            break
-
-        x1, y1, _ = verts[i]
-        x2, y2, _ = verts[i + 1]
-
-        theta1 = (y1 / circumference) * 2.0 * math.pi
-        theta2 = (y2 / circumference) * 2.0 * math.pi
-
-        delta_theta = abs(normalize_angle_diff(theta2 - theta1))
-
-        num_subdivisions = max(
-            1, int(math.ceil(delta_theta / max_angle_per_segment))
-        )
-
-        prev_x, prev_y = x1, y1
-        for j in range(1, num_subdivisions + 1):
-            t = j / num_subdivisions
-            curr_x = x1 + t * (x2 - x1)
-            curr_y = y1 + t * (y2 - y1)
-
-            result_verts.append(cyl_point(prev_x, prev_y))
-            result_verts.append(cyl_point(curr_x, curr_y))
-
-            prev_x, prev_y = curr_x, curr_y
-
-    return np.array(result_verts, dtype=np.float32)
-
-
 def prepare_scene_vertices_async(
     artifact_store: ArtifactStore,
     scene_description: SceneDescription,
     color_set: ColorSet,
     laser_color_sets: Dict[str, ColorSet],
     scene_model_matrix: np.ndarray,
-    rotary_enabled: bool = False,
-    rotary_diameter: float = 25.0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     A background task that prepares all vertex data for an entire scene.
 
     It iterates through a lightweight SceneDescription of StepArtifacts,
-    loads the pre-computed vertex data, applies the global scene transform
-    (e.g., for Y-down view), and aggregates the results into VBO-ready
-    numpy arrays.
-
-    When rotary mode is enabled, vertices are transformed to cylindrical
-    coordinates for 3D visualization on a cylinder surface.
+    loads the pre-computed vertex data (which may already be in cylindrical
+    coordinates if rotary mode was enabled during encoding), applies the
+    global scene transform (e.g., for Y-down view), and aggregates the
+    results into VBO-ready numpy arrays.
     """
     all_powered_verts: List[np.ndarray] = []
     all_powered_colors: List[np.ndarray] = []
@@ -245,22 +170,6 @@ def prepare_scene_vertices_async(
         travel_verts_3d[:, 2] += Z_OFFSET_NON_POWERED
     if zero_power_verts_3d.size > 0:
         zero_power_verts_3d[:, 2] += Z_OFFSET_NON_POWERED
-
-    if rotary_enabled and rotary_diameter > 0:
-        if final_powered_verts.size > 0:
-            powered_3d = final_powered_verts.reshape(-1, 3)
-            powered_cyl = transform_to_cylinder(powered_3d, rotary_diameter)
-            final_powered_verts = powered_cyl.flatten()
-        if travel_verts_3d.size > 0:
-            travel_cyl = transform_to_cylinder(
-                travel_verts_3d, rotary_diameter
-            )
-            travel_verts_3d = travel_cyl
-        if zero_power_verts_3d.size > 0:
-            zp_cyl = transform_to_cylinder(
-                zero_power_verts_3d, rotary_diameter
-            )
-            zero_power_verts_3d = zp_cyl
 
     final_travel_verts = travel_verts_3d.flatten()
     final_zero_power_verts = zero_power_verts_3d.flatten()
@@ -1258,8 +1167,6 @@ class Canvas3D(Gtk.GLArea):
                 self._color_set,
                 self._laser_color_sets,
                 content_model_matrix,
-                self._rotary_enabled,
-                self._rotary_diameter,
                 key=task_key,
                 when_done=self._on_scene_prepared,
             )

@@ -244,6 +244,12 @@ class StepPipelineStage(PipelineStage):
 
         assert self._machine is not None
 
+        rotary_enabled = False
+        rotary_diameter = 25.0
+        if step.layer and step.layer.workflow:
+            rotary_enabled = step.layer.workflow.rotary_enabled
+            rotary_diameter = step.layer.workflow.rotary_diameter
+
         task = self._task_manager.run_process(
             make_step_artifact_in_subprocess,
             self._artifact_manager.get_store(),
@@ -255,6 +261,8 @@ class StepPipelineStage(PipelineStage):
             self._machine.max_travel_speed,
             self._machine.acceleration,
             "step",
+            rotary_enabled,
+            rotary_diameter,
             key=task_key,
             when_done=lambda t: self.on_task_complete(
                 t, task_key, step, generation_id, context
