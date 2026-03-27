@@ -2,42 +2,46 @@ import logging
 from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from ...camera.controller import CameraController
-from ..shared.patched_dialog_window import PatchedMessageDialog
+from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.slider import create_slider_row
 from .display_widget import CameraDisplay
 
 logger = logging.getLogger(__name__)
 
 
-class CameraImageSettingsDialog(PatchedMessageDialog):
+class CameraImageSettingsDialog(PatchedDialogWindow):
     def __init__(self, parent, controller: CameraController, **kwargs):
         super().__init__(
             transient_for=parent,
             modal=True,
-            heading=_("{camera_name} - Camera Image Settings").format(
+            default_width=1150,
+            default_height=750,
+            title=_("{camera_name} - Camera Image Settings").format(
                 camera_name=controller.config.name
             ),
-            close_response="cancel",
             **kwargs,
         )
         self.controller = controller
         self.camera = controller.config
 
-        # Main Horizontal Box for Side-by-Side layout
+        self._setup_ui()
+
+    def _setup_ui(self):
+        self.toast_overlay = Adw.ToastOverlay()
+        self.set_content(self.toast_overlay)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.toast_overlay.set_child(content)
+
+        header = Adw.HeaderBar()
+        content.append(header)
+
         main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
-        main_box.set_margin_start(16)
-        main_box.set_margin_end(16)
-        main_box.set_margin_top(16)
-        main_box.set_margin_bottom(16)
+        main_box.set_margin_start(12)
+        main_box.set_margin_top(12)
+        main_box.set_margin_bottom(12)
+        content.append(main_box)
 
-        # Force the overall dialog to be significantly larger
-        # so everything fits without needing to scroll
-        main_box.set_size_request(1150, 750)
-        self.set_extra_child(main_box)
-
-        # ==========================================
-        # LEFT SIDE: Camera Display
-        # ==========================================
         left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         left_box.set_hexpand(True)
         left_box.set_vexpand(True)
@@ -45,38 +49,33 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
         self.camera_display = CameraDisplay(self.controller)
         self.camera_display.set_hexpand(True)
         self.camera_display.set_vexpand(True)
-
-        # PREVENT STRETCHING: Center the widget instead of forcing it to fill.
-        # This preserves the camera's correct aspect ratio.
-        self.camera_display.set_halign(Gtk.Align.CENTER)
-        self.camera_display.set_valign(Gtk.Align.CENTER)
+        self.camera_display.set_halign(Gtk.Align.FILL)
 
         left_box.append(self.camera_display)
         main_box.append(left_box)
 
-        # ==========================================
-        # RIGHT SIDE: Settings Panel
-        # ==========================================
         right_scroll = Gtk.ScrolledWindow()
         right_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        right_scroll.set_propagate_natural_width(True)
-        right_scroll.set_propagate_natural_height(True)
-        right_scroll.set_min_content_width(480)
         main_box.append(right_scroll)
 
         settings_box = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL, spacing=16
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=12,
+            width_request=500,
+            hexpand=False,
         )
+        settings_box.set_margin_start(12)
+        settings_box.set_margin_end(32)
+        settings_box.set_margin_top(4)
+        settings_box.set_margin_bottom(12)
         right_scroll.set_child(settings_box)
 
-        # --- Group: Camera Image Settings ---
         image_group = Adw.PreferencesGroup(
             title=_("Camera Image Settings"),
             description=_("Adjust image quality and appearance parameters."),
         )
         settings_box.append(image_group)
 
-        # Auto White Balance Switch
         self.auto_white_balance_row = Adw.ActionRow(
             title=_("Auto White Balance"),
             subtitle=_("Automatically adjust white balance"),
@@ -95,7 +94,6 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
         )
         image_group.add(self.auto_white_balance_row)
 
-        # White Balance Manual Slider
         initial_wb = (
             self.camera.white_balance
             if self.camera.white_balance is not None
@@ -121,7 +119,6 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
             self.camera.white_balance is not None
         )
 
-        # Other Sliders
         row, self.contrast_scale = self._create_slider_row(
             title=_("Contrast"),
             subtitle=_("Difference between light and dark areas"),
@@ -174,53 +171,62 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
         )
         image_group.add(row)
 
-        # --- Group: Lens Distortion ---
-        distortion_group = Adw.PreferencesGroup(
-            title=_("Lens Distortion Correction"),
+        calibration_group = Adw.PreferencesGroup(
+            title=_("Lens Calibration"),
             description=_(
-                "Straighten bowed lines using Radial (k1, k2) and Tangential "
-                "(p1, p2) parameters."
+                "Correct lens distortion for straighter lines. "
+                "Use the wizard for automatic calibration or adjust manually."
             ),
+            margin_top=12,
         )
-        settings_box.append(distortion_group)
 
-        distortion_group.add(
-            self._create_spin_row(
+        self.wizard_button = Gtk.Button(
+            label=_("Wizard"), valign=Gtk.Align.CENTER, margin_start=8
+        )
+        self.wizard_button.connect("clicked", self._on_wizard_clicked)
+        calibration_group.set_header_suffix(self.wizard_button)
+
+        settings_box.append(calibration_group)
+
+        self._distortion_rows = {}
+        for key, title, subtitle in [
+            (
+                "distortion_k1",
                 _("Radial 1 (k1)"),
                 _("First order radial distortion"),
-                self.camera.distortion_k1,
-                "distortion_k1",
-            )
-        )
-        distortion_group.add(
-            self._create_spin_row(
+            ),
+            (
+                "distortion_k2",
                 _("Radial 2 (k2)"),
                 _("Second order radial distortion"),
-                self.camera.distortion_k2,
-                "distortion_k2",
-            )
-        )
-        distortion_group.add(
-            self._create_spin_row(
+            ),
+            (
+                "distortion_k3",
+                _("Radial 3 (k3)"),
+                _("Third order radial distortion"),
+            ),
+            (
+                "distortion_p1",
                 _("Tangential 1 (p1)"),
                 _("First order tangential distortion"),
-                self.camera.distortion_p1,
-                "distortion_p1",
-            )
-        )
-        distortion_group.add(
-            self._create_spin_row(
+            ),
+            (
+                "distortion_p2",
                 _("Tangential 2 (p2)"),
                 _("Second order tangential distortion"),
-                self.camera.distortion_p2,
-                "distortion_p2",
+            ),
+        ]:
+            row = self._create_spin_row(
+                title, subtitle, getattr(self.camera, key), key
             )
-        )
+            self._distortion_rows[key] = row
+            calibration_group.add(row)
 
-        # Buttons
-        self.add_response("close", _("Close"))
-        self.set_default_response("cancel")
-        self.connect("response", self.on_dialog_response)
+        self.camera.settings_changed.connect(self._on_camera_settings_changed)
+
+    def _on_camera_settings_changed(self, camera):
+        for key, row in self._distortion_rows.items():
+            row.set_value(getattr(camera, key))
 
     def _create_slider_row(
         self,
@@ -270,7 +276,6 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
         )
         return row
 
-    # --- Callbacks ---
     def on_white_balance_changed(self, scale):
         if not self.auto_white_balance_switch.get_active():
             self.camera.white_balance = scale.get_value()
@@ -303,11 +308,22 @@ class CameraImageSettingsDialog(PatchedMessageDialog):
     ):
         setattr(self.camera, config_key, spin_row.get_value())
 
-    def on_dialog_response(self, dialog, response_id):
-        if response_id == "close" or response_id == "cancel":
-            logger.debug(
-                "CameraImageSettingsDialog closing, calling "
-                f"CameraDisplay.stop() for camera {self.camera.name}"
-            )
-            self.camera_display.stop()
-            self.close()
+    def _on_wizard_clicked(self, button):
+        from .calibration_wizard import CalibrationWizard
+
+        window = self.get_ancestor(Gtk.Window)
+        if not isinstance(window, Gtk.Window):
+            return
+
+        wizard = CalibrationWizard(window, self.controller)
+        wizard.present()
+
+    def do_close_request(self, *args) -> bool:
+        logger.debug(
+            f"CameraImageSettingsDialog closing for camera {self.camera.name}"
+        )
+        self.camera.settings_changed.disconnect(
+            self._on_camera_settings_changed
+        )
+        self.camera_display.stop()
+        return False

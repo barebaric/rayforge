@@ -7,8 +7,8 @@ logger = logging.getLogger(__name__)
 
 
 class CameraDisplay(Gtk.DrawingArea):
-    def __init__(self, controller: CameraController):
-        super().__init__()
+    def __init__(self, controller: CameraController, **kwargs):
+        super().__init__(**kwargs)
         self.controller = controller
         self.camera = controller.config
         self.set_hexpand(True)
@@ -56,7 +56,7 @@ class CameraDisplay(Gtk.DrawingArea):
     def do_snapshot(self, snapshot):
         """
         Draw handler for the Gtk.DrawingArea. Scales and draws the camera's
-        pixbuf.
+        pixbuf while maintaining aspect ratio.
         """
         width, height = self.get_width(), self.get_height()
         ctx = snapshot.append_cairo(Graphene.Rect().init(0, 0, width, height))
@@ -74,41 +74,41 @@ class CameraDisplay(Gtk.DrawingArea):
         if width <= 0 or height <= 0:
             return
 
+        img_width = pixbuf.get_width()
+        img_height = pixbuf.get_height()
+
+        scale = min(width / img_width, height / img_height)
+        scaled_w = img_width * scale
+        scaled_h = img_height * scale
+        offset_x = (width - scaled_w) / 2
+        offset_y = (height - scaled_h) / 2
+
         scaled_pixbuf = pixbuf.scale_simple(
-            width, height, GdkPixbuf.InterpType.BILINEAR
+            int(scaled_w), int(scaled_h), GdkPixbuf.InterpType.BILINEAR
         )
 
         if scaled_pixbuf:
-            Gdk.cairo_set_source_pixbuf(ctx, scaled_pixbuf, 0, 0)
+            Gdk.cairo_set_source_pixbuf(ctx, scaled_pixbuf, offset_x, offset_y)
             ctx.paint()
 
-        # Draw markers for marked points
         if self.marked_points:
-            display_width, display_height = width, height
-            img_width, img_height = self.controller.resolution
-            scale_x = display_width / img_width
-            scale_y = display_height / img_height
-
             for i, point_data in enumerate(self.marked_points):
                 if point_data is None:
                     continue
                 x, y = point_data
-                display_x = x * scale_x
-                display_y = display_height - (y * scale_y)
+                display_x = offset_x + x * scale
+                display_y = offset_y + scaled_h - (y * scale)
 
-                # Set colors based on whether the point is active
                 if i == self.active_point_index:
-                    # Orange fill with darker orange border
-                    ctx.set_source_rgb(1.0, 0.5, 0.0)  # Orange
+                    ctx.set_source_rgb(1.0, 0.5, 0.0)
                     ctx.arc(display_x, display_y, 6, 0, 2 * 3.1416)
                     ctx.fill_preserve()
-                    ctx.set_source_rgb(0.8, 0.4, 0.0)  # Darker orange
+                    ctx.set_source_rgb(0.8, 0.4, 0.0)
                 else:
-                    # Light blue fill with darker blue border
-                    ctx.set_source_rgb(0.53, 0.81, 0.98)  # Light blue
+                    ctx.set_source_rgb(0.53, 0.81, 0.98)
                     ctx.arc(display_x, display_y, 6, 0, 2 * 3.1416)
                     ctx.fill_preserve()
-                    ctx.set_source_rgb(0.0, 0.0, 0.5)  # Darker blue
+                    ctx.set_source_rgb(0.0, 0.0, 0.5)
                 ctx.set_line_width(1.5)
                 ctx.stroke()
 
