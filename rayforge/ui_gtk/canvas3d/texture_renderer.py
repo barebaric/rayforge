@@ -3,6 +3,7 @@ A renderer for visualizing texture-based artifacts using GPU texture rendering.
 """
 
 import logging
+import math
 from typing import List, Dict, Any, Optional
 import numpy as np
 from OpenGL import GL
@@ -33,6 +34,9 @@ class TextureArtifactRenderer(BaseRenderer):
         self.is_initialized: bool = False
         self.max_texture_size: int = 0
         self.instances: List[Dict[str, Any]] = []
+        self.cylinder_vao: int = 0
+        self.cylinder_vbo: int = 0
+        self._cylinder_cache: Optional[Dict[str, Any]] = None
 
     def init_gl(self):
         """
@@ -127,6 +131,9 @@ class TextureArtifactRenderer(BaseRenderer):
         )
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
+        self.cylinder_vbo = self._create_vbo()
+        self.cylinder_vao = self._create_vao()
+
         self.is_initialized = True
         logger.debug("TextureArtifactRenderer initialized")
 
@@ -151,6 +158,82 @@ class TextureArtifactRenderer(BaseRenderer):
         y_coords = (np.arange(new_height) * y_step).astype(int)
         x_coords = (np.arange(new_width) * x_step).astype(int)
         return data[y_coords][:, x_coords].astype(np.uint8)
+
+    def _generate_cylinder_vertices(
+        self,
+        length: float,
+        angle_start: float,
+        angle_end: float,
+        diameter: float,
+        segments: int = 32,
+    ) -> np.ndarray:
+        """
+        Generate vertices for a cylinder segment.
+
+        Args:
+            length: Length along the X-axis (cylinder axis).
+            angle_start: Start angle in radians.
+            angle_end: End angle in radians.
+            diameter: Cylinder diameter.
+            segments: Number of segments around the arc.
+
+        Returns:
+            Array of vertices with position (x, y, z) and tex coords (s, t).
+        """
+        radius = diameter / 2.0
+        vertices = []
+
+        for i in range(segments):
+            t0 = i / segments
+            t1 = (i + 1) / segments
+
+            theta0 = angle_start + t0 * (angle_end - angle_start)
+            theta1 = angle_start + t1 * (angle_end - angle_start)
+
+            y0 = radius * math.sin(theta0)
+            z0 = radius * math.cos(theta0)
+            y1 = radius * math.sin(theta1)
+            z1 = radius * math.cos(theta1)
+
+            s0 = 1.0 - t0
+            s1 = 1.0 - t1
+
+            vertices.extend(
+                [
+                    0.0,
+                    y0,
+                    z0,
+                    0.0,
+                    s0,
+                    length,
+                    y0,
+                    z0,
+                    1.0,
+                    s0,
+                    length,
+                    y1,
+                    z1,
+                    1.0,
+                    s1,
+                    0.0,
+                    y0,
+                    z0,
+                    0.0,
+                    s0,
+                    length,
+                    y1,
+                    z1,
+                    1.0,
+                    s1,
+                    0.0,
+                    y1,
+                    z1,
+                    0.0,
+                    s1,
+                ]
+            )
+
+        return np.array(vertices, dtype=np.float32)
 
     def clear(self):
         """Clears all instances and their associated textures."""
@@ -271,7 +354,6 @@ class TextureArtifactRenderer(BaseRenderer):
 
         shader.use()
 
-        # Bind shared resources once
         GL.glActiveTexture(GL.GL_TEXTURE0)
         shader.set_int("uTexture", 0)
         GL.glActiveTexture(GL.GL_TEXTURE1)
@@ -279,7 +361,6 @@ class TextureArtifactRenderer(BaseRenderer):
         GL.glBindVertexArray(self.vao)
 
         for instance in self.instances:
-            # Combine the base VPS with this instance's specific model matrix
             final_mvp = view_proj_scene_matrix @ instance["model_matrix"]
             shader.set_mat4("uMVP", final_mvp.T)
 
@@ -308,9 +389,135 @@ class TextureArtifactRenderer(BaseRenderer):
 
             GL.glDrawArrays(GL.GL_TRIANGLE_FAN, 0, 4)
 
-        # Unbind all
         GL.glBindVertexArray(0)
         GL.glActiveTexture(GL.GL_TEXTURE1)
-        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)  # Unbind as 2D
+        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+        GL.glActiveTexture(GL.GL_TEXTURE0)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+
+    def render_cylinder(
+        self,
+        view_proj_scene_matrix: np.ndarray,
+        shader: Shader,
+        rotary_diameter: float,
+    ):
+        """
+        Renders all texture instances mapped onto a cylinder.
+
+        Args:
+            view_proj_scene_matrix: The combined Projection * View * SceneModel
+              matrix (P*V*M_scene), not transposed.
+            shader: The shader to use for rendering.
+            rotary_diameter: The diameter of the cylinder in mm.
+        """
+        if not self.is_initialized or not self.instances:
+            return
+
+        shader.use()
+
+        GL.glActiveTexture(GL.GL_TEXTURE0)
+        shader.set_int("uTexture", 0)
+        GL.glActiveTexture(GL.GL_TEXTURE1)
+        shader.set_int("uColorLUT", 1)
+
+        for instance in self.instances:
+            model_matrix = instance["model_matrix"]
+
+            origin = model_matrix @ np.array([0.0, 0.0, 0.0, 1.0])
+            corner_x = model_matrix @ np.array([1.0, 0.0, 0.0, 1.0])
+            corner_y = model_matrix @ np.array([0.0, 1.0, 0.0, 1.0])
+
+            tex_width_mm = corner_x[0] - origin[0]
+            tex_height_mm = corner_y[1] - origin[1]
+            tex_x_offset = origin[0]
+            tex_y_offset = origin[1]
+
+            logger.debug(
+                f"Texture cylinder: width={tex_width_mm}, "
+                f"height={tex_height_mm}, x_off={tex_x_offset}, "
+                f"y_off={tex_y_offset}"
+            )
+
+            circumference = rotary_diameter * math.pi
+            angle_start = (tex_y_offset / circumference) * 2.0 * math.pi
+            angle_end = (
+                ((tex_y_offset + tex_height_mm) / circumference)
+                * 2.0
+                * math.pi
+            )
+
+            cache_key = (tex_width_mm, angle_start, angle_end, rotary_diameter)
+            if (
+                self._cylinder_cache is None
+                or self._cylinder_cache["key"] != cache_key
+            ):
+                vertices = self._generate_cylinder_vertices(
+                    length=tex_width_mm,
+                    angle_start=angle_start,
+                    angle_end=angle_end,
+                    diameter=rotary_diameter,
+                    segments=48,
+                )
+                GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.cylinder_vbo)
+                GL.glBufferData(
+                    GL.GL_ARRAY_BUFFER,
+                    vertices.nbytes,
+                    vertices,
+                    GL.GL_DYNAMIC_DRAW,
+                )
+
+                GL.glBindVertexArray(self.cylinder_vao)
+                GL.glVertexAttribPointer(
+                    0, 3, GL.GL_FLOAT, GL.GL_FALSE, 5 * 4, GL.GLvoidp(0)
+                )
+                GL.glEnableVertexAttribArray(0)
+                GL.glVertexAttribPointer(
+                    1, 2, GL.GL_FLOAT, GL.GL_FALSE, 5 * 4, GL.GLvoidp(3 * 4)
+                )
+                GL.glEnableVertexAttribArray(1)
+                GL.glBindVertexArray(0)
+
+                self._cylinder_cache = {
+                    "key": cache_key,
+                    "vertex_count": len(vertices) // 5,
+                }
+
+            if instance["color_lut"] is not None:
+                lut_data = np.ascontiguousarray(
+                    instance["color_lut"], dtype=np.float32
+                )
+                GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)
+                GL.glTexImage2D(
+                    GL.GL_TEXTURE_2D,
+                    0,
+                    GL.GL_RGBA32F,
+                    lut_data.shape[0],
+                    1,
+                    0,
+                    GL.GL_RGBA,
+                    GL.GL_FLOAT,
+                    lut_data,
+                )
+                GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+
+            translation = np.identity(4, dtype=np.float32)
+            translation[0, 3] = tex_x_offset
+
+            final_mvp = view_proj_scene_matrix @ translation
+            shader.set_mat4("uMVP", final_mvp.T)
+
+            GL.glActiveTexture(GL.GL_TEXTURE1)
+            GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)
+            GL.glActiveTexture(GL.GL_TEXTURE0)
+            GL.glBindTexture(GL.GL_TEXTURE_2D, instance["texture_id"])
+
+            GL.glBindVertexArray(self.cylinder_vao)
+            GL.glDrawArrays(
+                GL.GL_TRIANGLES, 0, self._cylinder_cache["vertex_count"]
+            )
+            GL.glBindVertexArray(0)
+
+        GL.glActiveTexture(GL.GL_TEXTURE1)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
         GL.glActiveTexture(GL.GL_TEXTURE0)
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
