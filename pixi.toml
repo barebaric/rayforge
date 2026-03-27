@@ -115,7 +115,7 @@ fetch-stats = "python3 scripts/fetch_download_stats.py"
 normalize-icons = "python3 scripts/normalize_icons.py"
 
 [tasks.clean]
-cmd = "find . -type d \\( -name __pycache__ -o -name \"*.egg-info\" \\) -print0 | xargs -0 rm -rf"
+cmd = "bash scripts/clean.sh"
 
 [tasks.rayforge]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
