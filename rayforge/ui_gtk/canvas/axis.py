@@ -39,6 +39,7 @@ class AxisRenderer:
         show_grid: bool = True,
         show_axis: bool = True,
         label_font_size: float = 12.0,
+        rotary_mode: bool = False,
     ):
         self.grid_size_mm: float = grid_size_mm
         self.width_mm: float = width_mm
@@ -57,6 +58,14 @@ class AxisRenderer:
         self.show_axis: bool = show_axis
         self.label_font_size: float = label_font_size
         self.min_grid_spacing_px = 50.0
+        self.rotary_mode: bool = rotary_mode
+        self.rotary_diameter: float = 25.0
+
+    def get_effective_height(self) -> float:
+        """Returns the effective height for layout calculations."""
+        if self.rotary_mode:
+            return math.pi * self.rotary_diameter
+        return self.height_mm
 
     def get_content_layout(
         self, widget_w: int, widget_h: int
@@ -101,10 +110,11 @@ class AxisRenderer:
             return left_padding, top_padding, 0.0, 0.0
 
         # 3. Calculate the target aspect ratio from mm dimensions.
-        if self.width_mm <= 0 or self.height_mm <= 0:
+        effective_height = self.get_effective_height()
+        if self.width_mm <= 0 or effective_height <= 0:
             return left_padding, top_padding, available_width, available_height
 
-        world_aspect_ratio = self.width_mm / self.height_mm
+        world_aspect_ratio = self.width_mm / effective_height
 
         # 4. Calculate content dimensions that fit and match aspect ratio.
         available_aspect_ratio = available_width / available_height
@@ -134,11 +144,12 @@ class AxisRenderer:
         _, _, content_w, content_h = self.get_content_layout(
             widget_w, widget_h
         )
-        if self.width_mm <= 0 or self.height_mm <= 0:
+        effective_height = self.get_effective_height()
+        if self.width_mm <= 0 or effective_height <= 0:
             return 1.0
 
         base_ppm_x = content_w / self.width_mm
-        base_ppm_y = content_h / self.height_mm
+        base_ppm_y = content_h / effective_height
         return min(base_ppm_x, base_ppm_y)
 
     def _get_adaptive_grid_size(self, pixels_per_mm: float) -> float:
@@ -279,15 +290,17 @@ class AxisRenderer:
             ctx.stroke()
 
         # Horizontal lines (along Y) aligned to WCS Y
-        k_start_y = math.ceil((min_y - wcs_world_y) / grid_size_mm)
-        k_end_y = math.floor((max_y - wcs_world_y) / grid_size_mm)
-        for k in range(k_start_y, k_end_y + 1):
-            y_mm = wcs_world_y + k * grid_size_mm
-            p1_px = view_transform.transform_point((min_x, y_mm))
-            p2_px = view_transform.transform_point((max_x, y_mm))
-            ctx.move_to(p1_px[0], p1_px[1])
-            ctx.line_to(p2_px[0], p2_px[1])
-            ctx.stroke()
+        # Skip in rotary mode since Y becomes rotation angle
+        if not self.rotary_mode:
+            k_start_y = math.ceil((min_y - wcs_world_y) / grid_size_mm)
+            k_end_y = math.floor((max_y - wcs_world_y) / grid_size_mm)
+            for k in range(k_start_y, k_end_y + 1):
+                y_mm = wcs_world_y + k * grid_size_mm
+                p1_px = view_transform.transform_point((min_x, y_mm))
+                p2_px = view_transform.transform_point((max_x, y_mm))
+                ctx.move_to(p1_px[0], p1_px[1])
+                ctx.line_to(p2_px[0], p2_px[1])
+                ctx.stroke()
 
     def _draw_axis_and_labels(
         self,
@@ -362,9 +375,11 @@ class AxisRenderer:
         ctx.move_to(x_start_px[0], x_start_px[1])
         ctx.line_to(x_end_px[0], x_end_px[1])
         ctx.stroke()
-        ctx.move_to(y_start_px[0], y_start_px[1])
-        ctx.line_to(y_end_px[0], y_end_px[1])
-        ctx.stroke()
+        # Skip Y-axis line in rotary mode
+        if not self.rotary_mode:
+            ctx.move_to(y_start_px[0], y_start_px[1])
+            ctx.line_to(y_end_px[0], y_end_px[1])
+            ctx.stroke()
 
         # --- Draw Labels ---
         corner_x_label_value = None
@@ -408,51 +423,52 @@ class AxisRenderer:
             )
             ctx.show_text(label)
 
-        # Draw Y Labels
-        min_delta_y = workarea_top - wcs_world_y
-        max_delta_y = workarea_bottom - wcs_world_y
+        # Draw Y Labels (skip in rotary mode)
+        if not self.rotary_mode:
+            min_delta_y = workarea_top - wcs_world_y
+            max_delta_y = workarea_bottom - wcs_world_y
 
-        k_start_y = math.ceil(min_delta_y / grid_size_mm)
-        k_end_y = math.floor(max_delta_y / grid_size_mm)
+            k_start_y = math.ceil(min_delta_y / grid_size_mm)
+            k_end_y = math.floor(max_delta_y / grid_size_mm)
 
-        for k in range(k_start_y, k_end_y + 1):
-            delta = k * grid_size_mm
-            world_y = wcs_world_y + delta
+            for k in range(k_start_y, k_end_y + 1):
+                delta = k * grid_size_mm
+                world_y = wcs_world_y + delta
 
-            if self.y_axis_down:
-                # Canvas Y increases Up. Machine Y increases Down.
-                label_val = -delta
-            else:
-                label_val = delta
+                if self.y_axis_down:
+                    # Canvas Y increases Up. Machine Y increases Down.
+                    label_val = -delta
+                else:
+                    label_val = delta
 
-            if self.y_axis_negative:
-                label_val = -label_val
+                if self.y_axis_negative:
+                    label_val = -label_val
 
-            # Check if this label is at the corner where the X-axis is drawn
-            is_at_corner = abs(world_y - x_axis_y) < 1e-3
+                # Check if this label is at the corner where X-axis is drawn
+                is_at_corner = abs(world_y - x_axis_y) < 1e-3
 
-            # Skip drawing the Y label if it's at the corner AND its value
-            # is the same as the X label's value at that corner.
-            if (
-                is_at_corner
-                and corner_x_label_value is not None
-                and abs(label_val - corner_x_label_value) < 1e-9
-            ):
-                continue
+                # Skip drawing the Y label if it's at the corner AND its value
+                # is the same as the X label's value at that corner.
+                if (
+                    is_at_corner
+                    and corner_x_label_value is not None
+                    and abs(label_val - corner_x_label_value) < 1e-9
+                ):
+                    continue
 
-            label = f"{round(label_val, precision):g}"
-            extents = ctx.text_extents(label)
+                label = f"{round(label_val, precision):g}"
+                extents = ctx.text_extents(label)
 
-            label_pos_px = view_transform.transform_point(
-                (world_x_for_y_labels, world_y)
-            )
+                label_pos_px = view_transform.transform_point(
+                    (world_x_for_y_labels, world_y)
+                )
 
-            x_offset = 4 if self.x_axis_right else -extents.width - 4
-            ctx.move_to(
-                label_pos_px[0] + x_offset,
-                label_pos_px[1] + extents.height / 2,
-            )
-            ctx.show_text(label)
+                x_offset = 4 if self.x_axis_right else -extents.width - 4
+                ctx.move_to(
+                    label_pos_px[0] + x_offset,
+                    label_pos_px[1] + extents.height / 2,
+                )
+                ctx.show_text(label)
 
     def get_x_axis_height(self) -> int:
         """Calculates the maximum height of the X-axis labels."""
@@ -506,6 +522,10 @@ class AxisRenderer:
 
     def set_y_axis_negative(self, y_axis_negative: bool):
         self.y_axis_negative = y_axis_negative
+
+    def set_rotary_mode(self, rotary_mode: bool, diameter: float = 25.0):
+        self.rotary_mode = rotary_mode
+        self.rotary_diameter = diameter
 
     def set_fg_color(self, fg_color: Tuple[float, float, float, float]):
         self.fg_color = fg_color

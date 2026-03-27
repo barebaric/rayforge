@@ -1,4 +1,5 @@
 import logging
+import math
 from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
 import numpy as np
 from gi.repository import Gdk, Gtk, Pango
@@ -9,10 +10,11 @@ from ...machine.models.colors import OpsColorSet
 from ...pipeline.artifact import ArtifactStore, StepRenderArtifact
 from ...pipeline.pipeline import Pipeline
 from ...shared.util.colors import ColorSet
-from ..shared.gtk_color import GtkColorResolver, ColorSpecDict
 from ...shared.tasker import task_mgr, Task
+from ..shared.gtk_color import GtkColorResolver, ColorSpecDict
 from .axis_renderer_3d import AxisRenderer3D
 from .camera import Camera, rotation_matrix_from_axis_angle
+from .cylinder_renderer import CylinderRenderer
 from .gl_utils import Shader
 from .ops_renderer import OpsRenderer
 from .scene_assembler import (
@@ -39,12 +41,84 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def transform_to_cylinder(verts: np.ndarray, diameter: float) -> np.ndarray:
+    """
+    Transform flat XY vertices to cylindrical coordinates.
+
+    X remains unchanged (along cylinder axis).
+    Y maps to rotation angle around cylinder.
+    Z is computed from the angle.
+
+    Line segments are subdivided as needed to follow the cylinder surface
+    instead of cutting through the interior.
+
+    Args:
+        verts: Array of shape (N, 3) with X, Y, Z coordinates.
+               Vertices are in pairs (line segments for GL_LINES).
+        diameter: Cylinder diameter in mm.
+
+    Returns:
+        Transformed vertices array. May contain more vertices than input
+        if segments were split.
+    """
+    if verts.size == 0 or diameter <= 0:
+        return verts
+
+    radius = diameter / 2.0
+    circumference = diameter * math.pi
+    max_angle_per_segment = math.radians(15)
+
+    def cyl_point(x, y):
+        theta = (y / circumference) * 2.0 * math.pi
+        return [x, radius * math.sin(theta), radius * math.cos(theta)]
+
+    def normalize_angle_diff(delta):
+        while delta > math.pi:
+            delta -= 2 * math.pi
+        while delta < -math.pi:
+            delta += 2 * math.pi
+        return delta
+
+    result_verts = []
+
+    for i in range(0, verts.shape[0], 2):
+        if i + 1 >= verts.shape[0]:
+            break
+
+        x1, y1, _ = verts[i]
+        x2, y2, _ = verts[i + 1]
+
+        theta1 = (y1 / circumference) * 2.0 * math.pi
+        theta2 = (y2 / circumference) * 2.0 * math.pi
+
+        delta_theta = abs(normalize_angle_diff(theta2 - theta1))
+
+        num_subdivisions = max(
+            1, int(math.ceil(delta_theta / max_angle_per_segment))
+        )
+
+        prev_x, prev_y = x1, y1
+        for j in range(1, num_subdivisions + 1):
+            t = j / num_subdivisions
+            curr_x = x1 + t * (x2 - x1)
+            curr_y = y1 + t * (y2 - y1)
+
+            result_verts.append(cyl_point(prev_x, prev_y))
+            result_verts.append(cyl_point(curr_x, curr_y))
+
+            prev_x, prev_y = curr_x, curr_y
+
+    return np.array(result_verts, dtype=np.float32)
+
+
 def prepare_scene_vertices_async(
     artifact_store: ArtifactStore,
     scene_description: SceneDescription,
     color_set: ColorSet,
     laser_color_sets: Dict[str, ColorSet],
     scene_model_matrix: np.ndarray,
+    rotary_enabled: bool = False,
+    rotary_diameter: float = 25.0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     A background task that prepares all vertex data for an entire scene.
@@ -53,6 +127,9 @@ def prepare_scene_vertices_async(
     loads the pre-computed vertex data, applies the global scene transform
     (e.g., for Y-down view), and aggregates the results into VBO-ready
     numpy arrays.
+
+    When rotary mode is enabled, vertices are transformed to cylindrical
+    coordinates for 3D visualization on a cylinder surface.
     """
     all_powered_verts: List[np.ndarray] = []
     all_powered_colors: List[np.ndarray] = []
@@ -169,6 +246,22 @@ def prepare_scene_vertices_async(
     if zero_power_verts_3d.size > 0:
         zero_power_verts_3d[:, 2] += Z_OFFSET_NON_POWERED
 
+    if rotary_enabled and rotary_diameter > 0:
+        if final_powered_verts.size > 0:
+            powered_3d = final_powered_verts.reshape(-1, 3)
+            powered_cyl = transform_to_cylinder(powered_3d, rotary_diameter)
+            final_powered_verts = powered_cyl.flatten()
+        if travel_verts_3d.size > 0:
+            travel_cyl = transform_to_cylinder(
+                travel_verts_3d, rotary_diameter
+            )
+            travel_verts_3d = travel_cyl
+        if zero_power_verts_3d.size > 0:
+            zp_cyl = transform_to_cylinder(
+                zero_power_verts_3d, rotary_diameter
+            )
+            zero_power_verts_3d = zp_cyl
+
     final_travel_verts = travel_verts_3d.flatten()
     final_zero_power_verts = zero_power_verts_3d.flatten()
 
@@ -222,6 +315,7 @@ class Canvas3D(Gtk.GLArea):
         self.sphere_renderer: Optional[SphereRenderer] = None
         self.texture_renderer: Optional[TextureArtifactRenderer] = None
         self.texture_shader: Optional[Shader] = None
+        self.cylinder_renderer: Optional[CylinderRenderer] = None
         self._scene_preparation_task: Optional[Task] = None
         self._scene_vtx_cache: Optional[
             Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
@@ -231,6 +325,8 @@ class Canvas3D(Gtk.GLArea):
         self._is_z_rotating = False
         self._gl_initialized = False
         self._wcs_offset_mm: Point3D = (0.0, 0.0, 0.0)
+        self._rotary_enabled = False
+        self._rotary_diameter = 25.0
 
         # This matrix transforms the grid and axes from a standard Y-up,
         # X-right system to match the machine's coordinate system.
@@ -293,6 +389,16 @@ class Canvas3D(Gtk.GLArea):
     def pipeline(self) -> "Pipeline":
         """Returns the current pipeline from the editor."""
         return self._doc_editor.pipeline
+
+    @property
+    def rotary_enabled(self) -> bool:
+        """Returns True if rotary mode is currently active."""
+        return self._rotary_enabled
+
+    @property
+    def rotary_diameter(self) -> float:
+        """Returns the current rotary diameter in mm."""
+        return self._rotary_diameter
 
     def _on_wcs_updated(self, machine: "Machine", **kwargs):
         """Handler for when the machine's WCS state changes."""
@@ -435,6 +541,37 @@ class Canvas3D(Gtk.GLArea):
         self._clear_drag_state()
         self.queue_render()
 
+    def reset_view_rotary(self):
+        """
+        Resets the camera for optimal viewing of rotary/cylindrical mode.
+
+        The camera is positioned to look at the cylinder from a 3/4 angle,
+        showing both the length and circumference clearly.
+        """
+        if not self.camera:
+            return
+        logger.info("Resetting to rotary view.")
+
+        center_x = self.width_mm / 2.0
+        radius = (
+            self._rotary_diameter / 2.0 if self._rotary_diameter > 0 else 12.5
+        )
+        max_dim = max(self.width_mm, radius * 2)
+
+        self.camera.target = np.array(
+            [center_x, 0.0, radius], dtype=np.float64
+        )
+
+        direction = np.array([0.0, -0.3, 1.0])
+        direction = direction / np.linalg.norm(direction)
+
+        distance = max_dim * 1.1
+        self.camera.position = self.camera.target + direction * distance
+        self.camera.up = np.array([0.0, 0.0, 1.0], dtype=np.float64)
+
+        self._clear_drag_state()
+        self.queue_render()
+
     def on_realize(self, area) -> None:
         """Called when the GLArea is ready to have its context made current."""
         logger.info("GLArea realized.")
@@ -479,6 +616,8 @@ class Canvas3D(Gtk.GLArea):
                 self.sphere_renderer.cleanup()
             if self.texture_renderer:
                 self.texture_renderer.cleanup()
+            if self.cylinder_renderer:
+                self.cylinder_renderer.cleanup()
             if self.main_shader:
                 self.main_shader.cleanup()
             if self.text_shader:
@@ -677,6 +816,7 @@ class Canvas3D(Gtk.GLArea):
                     y_down=self.y_down,
                     x_negative=self.x_negative,
                     y_negative=self.y_negative,
+                    rotary_mode=self._rotary_enabled,
                 )
             if self.ops_renderer and self.main_shader:
                 # The ops vertices are in machine absolute coordinates
@@ -689,11 +829,27 @@ class Canvas3D(Gtk.GLArea):
                     colors=self._color_set,
                     show_travel_moves=self._show_travel_moves,
                 )
-            if self.texture_renderer and self.texture_shader:
-                # Textures are also in machine absolute coordinates.
-                self.texture_renderer.render(
-                    mvp_matrix_ui, self.texture_shader
+
+            if (
+                self._rotary_enabled
+                and self.cylinder_renderer
+                and self.main_shader
+            ):
+                self.cylinder_renderer.render(
+                    self.main_shader, mvp_matrix_ui_gl
                 )
+
+            if self.texture_renderer and self.texture_shader:
+                if self._rotary_enabled:
+                    self.texture_renderer.render_cylinder(
+                        mvp_matrix_ui,
+                        self.texture_shader,
+                        self._rotary_diameter,
+                    )
+                else:
+                    self.texture_renderer.render(
+                        mvp_matrix_ui, self.texture_shader
+                    )
 
         except Exception as e:
             logger.error(f"OpenGL Render Error: {e}", exc_info=True)
@@ -963,6 +1119,57 @@ class Canvas3D(Gtk.GLArea):
         )
         self.queue_render()
 
+    def _update_rotary_mode(self):
+        """
+        Checks the document for rotary mode settings and updates the
+        cylinder renderer accordingly.
+        """
+        rotary_enabled = False
+        rotary_diameter = 25.0
+
+        for layer in self.doc.layers:
+            if hasattr(layer, "workflow") and layer.workflow:
+                if layer.workflow.rotary_enabled:
+                    rotary_enabled = True
+                    rotary_diameter = layer.workflow.rotary_diameter
+                    break
+
+        diameter_changed = rotary_diameter != self._rotary_diameter
+        mode_changed = rotary_enabled != self._rotary_enabled
+
+        self._rotary_enabled = rotary_enabled
+        self._rotary_diameter = rotary_diameter
+
+        if rotary_enabled and self._gl_initialized:
+            if mode_changed or diameter_changed or not self.cylinder_renderer:
+                self._init_cylinder_renderer()
+
+        if mode_changed and self.camera:
+            if rotary_enabled:
+                self.reset_view_rotary()
+            else:
+                self.reset_view_front()
+
+    def _init_cylinder_renderer(self):
+        """Initialize or update the cylinder renderer for rotary mode."""
+        self.make_current()
+
+        if self.cylinder_renderer:
+            self.cylinder_renderer.cleanup()
+
+        self.cylinder_renderer = CylinderRenderer(
+            diameter=self._rotary_diameter,
+            length=self.width_mm,
+            rings=24,
+            length_segments=12,
+        )
+        self.cylinder_renderer.set_color((0.4, 0.6, 0.8, 0.25))
+        self.cylinder_renderer.init_gl()
+        logger.debug(
+            f"Initialized cylinder renderer: "
+            f"diameter={self._rotary_diameter}mm, length={self.width_mm}mm"
+        )
+
     def update_scene_from_doc(self):
         """
         Updates the entire scene content from the document. This is the main
@@ -979,6 +1186,9 @@ class Canvas3D(Gtk.GLArea):
         if not self._color_set:
             logger.warning("Cannot update scene, color set not resolved.")
             return
+
+        # Check for rotary mode from the document's workflow
+        self._update_rotary_mode()
 
         # 1. Quickly generate the lightweight scene description
         scene_description = generate_scene_description(self.doc, self.pipeline)
@@ -1048,6 +1258,8 @@ class Canvas3D(Gtk.GLArea):
                 self._color_set,
                 self._laser_color_sets,
                 content_model_matrix,
+                self._rotary_enabled,
+                self._rotary_diameter,
                 key=task_key,
                 when_done=self._on_scene_prepared,
             )

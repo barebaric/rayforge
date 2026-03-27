@@ -1,4 +1,5 @@
 import logging
+import math
 from blinker import Signal
 from typing import (
     TYPE_CHECKING,
@@ -69,6 +70,8 @@ class WorkSurface(WorldSurface):
         self._show_travel_moves = False
         self._workpieces_visible = True
         self._tracked_axis_extents: Tuple[float, float] = (0.0, 0.0)
+        self._rotary_enabled: bool = False
+        self._rotary_diameter: float = 25.0
         coordinate_space = None
         if machine:
             self._tracked_axis_extents = machine.axis_extents
@@ -860,6 +863,7 @@ class WorkSurface(WorldSurface):
 
         self.root.children.sort(key=sort_key)
 
+        self._update_rotary_mode()
         self.queue_draw()
 
     def remove_all(self):
@@ -1040,6 +1044,11 @@ class WorkSurface(WorldSurface):
         self._update_extent_frame()
 
         super().reset_view()
+
+        if self._rotary_enabled:
+            circumference = math.pi * self._rotary_diameter
+            self.set_pan(0.0, -circumference / 2.0)
+
         new_ratio = width_mm / height_mm if height_mm > 0 else 1.0
         self.aspect_ratio_changed.send(self, ratio=new_ratio)
         self._sync_camera_elements()
@@ -1084,9 +1093,39 @@ class WorkSurface(WorldSurface):
             float(workarea_w), float(workarea_h)
         )
         self._workarea_bg_element.set_pos(float(ml), float(mb))
-        self._workarea_bg_element.set_visible(True)
+        self._workarea_bg_element.set_visible(not self._rotary_enabled)
 
         self.queue_draw()
+
+    def _update_rotary_mode(self):
+        """
+        Checks the document for rotary mode settings and updates the
+        axis renderer accordingly.
+        """
+        rotary_enabled = False
+        rotary_diameter = 25.0
+
+        for layer in self.doc.layers:
+            if hasattr(layer, "workflow") and layer.workflow:
+                if layer.workflow.rotary_enabled:
+                    rotary_enabled = True
+                    rotary_diameter = layer.workflow.rotary_diameter
+                    break
+
+        mode_changed = rotary_enabled != self._rotary_enabled
+        diameter_changed = rotary_diameter != self._rotary_diameter
+
+        if mode_changed or diameter_changed:
+            self._rotary_enabled = rotary_enabled
+            self._rotary_diameter = rotary_diameter
+            self._axis_renderer.set_rotary_mode(
+                rotary_enabled, rotary_diameter
+            )
+            self._extent_frame_element.set_rotary_mode(
+                rotary_enabled, rotary_diameter
+            )
+            self._update_extent_frame()
+            self.reset_view()
 
     def _on_aspect_ratio_changed(self, sender, **kwargs) -> None:
         """
