@@ -206,6 +206,7 @@ class CameraController:
     def __init__(self, config: Camera):
         self.config = config
         self._image_data: Optional[np.ndarray] = None
+        self._raw_image_data: Optional[np.ndarray] = None
         # For Temporal Smoothing
         self._accumulator: Optional[np.ndarray] = None
         self._active_subscribers: int = 0
@@ -260,6 +261,10 @@ class CameraController:
     @property
     def image_data(self) -> Optional[np.ndarray]:
         return self._image_data
+
+    @property
+    def raw_image_data(self) -> Optional[np.ndarray]:
+        return self._raw_image_data
 
     @property
     def pixbuf(self) -> Optional["GdkPixbuf.Pixbuf"]:
@@ -358,18 +363,6 @@ class CameraController:
         image_points_y_up = [
             (p[0], image_height - p[1]) for p in image_points_raw
         ]
-
-        if (
-            self.config._camera_matrix is not None
-            and self.config._dist_coeffs is not None
-        ):
-            # Undistort image points if calibration parameters are available
-            image_points_y_up = cv2.undistortPoints(
-                np.array(image_points_y_up, dtype=np.float32),
-                self.config._camera_matrix,
-                self.config._dist_coeffs,
-            )
-            image_points_y_up = image_points_y_up.reshape(-1, 2)
 
         # Compute homography (world to image_y_up)
         H, _ = cv2.findHomography(
@@ -511,25 +504,27 @@ class CameraController:
             logger.warning(f"Could not apply one or more camera settings: {e}")
 
     def _get_effective_calibration(self, h, w):
-        """Returns the camera matrix and distortion coefficients."""
-        k1 = getattr(self.config, "distortion_k1", 0.0)
-        k2 = getattr(self.config, "distortion_k2", 0.0)
-        p1 = getattr(self.config, "distortion_p1", 0.0)
-        p2 = getattr(self.config, "distortion_p2", 0.0)
+        if self.config.has_calibration:
+            return (
+                self.config.get_camera_matrix(),
+                self.config.get_distortion_coeffs(),
+            )
 
-        if k1 != 0.0 or k2 != 0.0 or p1 != 0.0 or p2 != 0.0:
-            cam_mat = self.config._camera_matrix
-            if cam_mat is None:
-                # Use a heuristic focal length based on wide-angle geometry
-                f = max(h, w)
-                cam_mat = np.array(
-                    [[f, 0, w / 2], [0, f, h / 2], [0, 0, 1]], dtype=np.float32
-                )
+        k1 = self.config.distortion_k1
+        k2 = self.config.distortion_k2
+        p1 = self.config.distortion_p1
+        p2 = self.config.distortion_p2
+        k3 = self.config.distortion_k3
 
-            dist_coeffs = np.array([k1, k2, p1, p2, 0.0], dtype=np.float32)
+        if k1 != 0.0 or k2 != 0.0 or p1 != 0.0 or p2 != 0.0 or k3 != 0.0:
+            f = max(h, w)
+            cam_mat = np.array(
+                [[f, 0, w / 2], [0, f, h / 2], [0, 0, 1]], dtype=np.float32
+            )
+            dist_coeffs = np.array([k1, k2, p1, p2, k3], dtype=np.float32)
             return cam_mat, dist_coeffs
 
-        return self.config._camera_matrix, self.config._dist_coeffs
+        return None, None
 
     def _process_frame(self, frame: np.ndarray) -> np.ndarray:
         """Applies denoise, fisheye correction, and boundary stretching."""
@@ -574,7 +569,10 @@ class CameraController:
             if not ret or frame is None:
                 logger.warning("Failed to capture frame from camera.")
                 self._image_data = None
+                self._raw_image_data = None
                 return False
+
+            self._raw_image_data = frame.copy()
 
             # Apply all visual corrections
             self._image_data = self._process_frame(frame)
