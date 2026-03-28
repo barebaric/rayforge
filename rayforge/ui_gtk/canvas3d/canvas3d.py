@@ -46,19 +46,18 @@ def prepare_scene_vertices_async(
     scene_description: SceneDescription,
     color_set: ColorSet,
     laser_color_sets: Dict[str, ColorSet],
-    scene_model_matrix: np.ndarray,
+    content_model_matrix: np.ndarray,
     rotary_enabled: bool = False,
     rotary_diameter: float = 25.0,
-    wcs_offset_mm: Point3D = (0.0, 0.0, 0.0),
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     A background task that prepares all vertex data for an entire scene.
 
     It iterates through a lightweight SceneDescription of StepArtifacts,
     loads the pre-computed vertex data (flat coordinates), applies the
-    global scene transform (e.g., margin offset), and if rotary mode is
-    enabled, wraps the vertices onto a cylinder surface. Finally, it
-    aggregates the results into VBO-ready numpy arrays.
+    global scene transform (mapping World Space to Local Grid Space or
+    Local Cylinder Space). Finally, it wraps them onto a cylinder surface
+    if rotary mode is enabled, and aggregates the results.
     """
     all_powered_verts: List[np.ndarray] = []
     all_powered_colors: List[np.ndarray] = []
@@ -126,29 +125,25 @@ def prepare_scene_vertices_async(
             return transformed_points[:, :3].astype(np.float32)
 
         if p_verts.size > 0:
-            transformed = _transform_vertices(p_verts, scene_model_matrix)
+            transformed = _transform_vertices(p_verts, content_model_matrix)
             if rotary_enabled and rotary_diameter > 0:
-                transformed[:, 0] -= wcs_offset_mm[0]
-                transformed[:, 1] -= wcs_offset_mm[1]
                 transformed = transform_to_cylinder(
                     transformed, rotary_diameter
                 )
             all_powered_verts.append(transformed)
             all_powered_colors.append(p_colors)
+
         if t_verts.size > 0:
-            transformed = _transform_vertices(t_verts, scene_model_matrix)
+            transformed = _transform_vertices(t_verts, content_model_matrix)
             if rotary_enabled and rotary_diameter > 0:
-                transformed[:, 0] -= wcs_offset_mm[0]
-                transformed[:, 1] -= wcs_offset_mm[1]
                 transformed = transform_to_cylinder(
                     transformed, rotary_diameter
                 )
             all_travel_verts.append(transformed)
+
         if zp_verts.size > 0:
-            transformed = _transform_vertices(zp_verts, scene_model_matrix)
+            transformed = _transform_vertices(zp_verts, content_model_matrix)
             if rotary_enabled and rotary_diameter > 0:
-                transformed[:, 0] -= wcs_offset_mm[0]
-                transformed[:, 1] -= wcs_offset_mm[1]
                 transformed = transform_to_cylinder(
                     transformed, rotary_diameter
                 )
@@ -672,7 +667,7 @@ class Canvas3D(Gtk.GLArea):
             # Base MVP for UI elements that should not be model-transformed
             mvp_matrix_ui = proj_matrix @ view_matrix
 
-            # Create WCS translation matrix (Corrected: Col 3 Translation)
+            # Create WCS translation matrix
             offset_x, offset_y, offset_z = self._wcs_offset_mm
             wcs_translation_matrix = np.array(
                 [
@@ -689,7 +684,6 @@ class Canvas3D(Gtk.GLArea):
             # 1. Apply wcs_translation (shift by offset).
             # 2. Apply _model_matrix (orient to machine coords).
             # Note: matrix order A @ B applies B then A.
-            # grid_model_matrix = self._model_matrix @ wcs_translation_matrix
             # This order applies WCS translation locally, THEN applies the
             # machine flip/origin shift.
             grid_model_matrix = self._model_matrix @ wcs_translation_matrix
@@ -700,11 +694,6 @@ class Canvas3D(Gtk.GLArea):
             # Convert to column-major for OpenGL
             mvp_matrix_ui_gl = mvp_matrix_ui.T
             mvp_matrix_scene_gl = mvp_matrix_scene.T
-
-            cylinder_translation = np.identity(4, dtype=np.float32)
-            cylinder_translation[0, 3] = offset_x
-            cylinder_translation[1, 3] = offset_y
-            cylinder_translation[2, 3] = offset_z
 
             if self.axis_renderer and self.main_shader and self.text_shader:
                 self.axis_renderer.render(
@@ -720,18 +709,18 @@ class Canvas3D(Gtk.GLArea):
                     x_negative=self.x_negative,
                     y_negative=self.y_negative,
                 )
+
             if self.ops_renderer and self.main_shader:
+                # Vertices are correctly passed to us in Visual Space or
+                # Local Cylinder Space (which is then drawn via Grid Space).
                 if self._rotary_enabled:
-                    ops_mvp = (
-                        mvp_matrix_ui
-                        @ self._model_matrix
-                        @ cylinder_translation
-                    )
+                    ops_mvp = mvp_matrix_scene_gl
                 else:
-                    ops_mvp = mvp_matrix_ui
+                    ops_mvp = mvp_matrix_ui_gl
+
                 self.ops_renderer.render(
                     self.main_shader,
-                    ops_mvp.T,
+                    ops_mvp,
                     colors=self._color_set,
                     show_travel_moves=self._show_travel_moves,
                 )
@@ -741,24 +730,18 @@ class Canvas3D(Gtk.GLArea):
                 and self.cylinder_renderer
                 and self.main_shader
             ):
-                cylinder_mvp = (
-                    mvp_matrix_ui @ self._model_matrix @ cylinder_translation
+                # The cylinder natively lives in Grid Space, shifted by WCS.
+                self.cylinder_renderer.render(
+                    self.main_shader, mvp_matrix_scene_gl
                 )
-                self.cylinder_renderer.render(self.main_shader, cylinder_mvp.T)
 
             if self.texture_renderer and self.texture_shader:
                 if self._rotary_enabled:
-                    cylinder_tex_mvp = (
-                        mvp_matrix_ui
-                        @ self._model_matrix
-                        @ cylinder_translation
-                    )
+                    # Cylinder Textures natively output to Grid Space, shifted by WCS.
                     self.texture_renderer.render_cylinder(
-                        cylinder_tex_mvp,
+                        mvp_matrix_scene,
                         self.texture_shader,
                         self._rotary_diameter,
-                        wcs_x_offset=offset_x,
-                        wcs_y_offset=offset_y,
                     )
                 else:
                     self.texture_renderer.render(
@@ -1098,13 +1081,34 @@ class Canvas3D(Gtk.GLArea):
         # 1. Quickly generate the lightweight scene description
         scene_description = generate_scene_description(self.doc, self.pipeline)
 
-        # Calculate margin offset for positioning ops/textures in workarea
-        margin_offset = np.identity(4, dtype=np.float32)
-        machine = self.context.config.machine
+        world_to_visual = np.identity(4, dtype=np.float32)
+        world_to_grid = np.identity(4, dtype=np.float32)
+        world_to_cyl_local = np.identity(4, dtype=np.float32)
+
+        machine = self.context.machine
         if machine:
             ml, mt, mr, mb = machine.work_margins
-            margin_offset[0, 3] = -ml
-            margin_offset[1, 3] = -mb
+            world_to_visual[0, 3] = ml
+            world_to_visual[1, 3] = mb
+
+            try:
+                visual_to_grid = np.linalg.inv(self._model_matrix)
+            except np.linalg.LinAlgError:
+                visual_to_grid = np.identity(4, dtype=np.float32)
+
+            world_to_grid = visual_to_grid @ world_to_visual
+
+            cyl_to_grid = np.identity(4, dtype=np.float32)
+            cyl_to_grid[0, 3] = self._wcs_offset_mm[0]
+            cyl_to_grid[1, 3] = self._wcs_offset_mm[1]
+            cyl_to_grid[2, 3] = self._wcs_offset_mm[2]
+
+            try:
+                grid_to_cyl = np.linalg.inv(cyl_to_grid)
+            except np.linalg.LinAlgError:
+                grid_to_cyl = np.identity(4, dtype=np.float32)
+
+            world_to_cyl_local = grid_to_cyl @ world_to_grid
 
         # 2. Handle texture instances immediately on the main thread (fast)
         self.texture_renderer.clear()
@@ -1123,9 +1127,15 @@ class Canvas3D(Gtk.GLArea):
                     else None
                 )
                 for tex_instance in artifact.texture_instances:
-                    adjusted_transform = (
-                        margin_offset @ tex_instance.world_transform
-                    )
+                    if self._rotary_enabled:
+                        adjusted_transform = (
+                            world_to_cyl_local @ tex_instance.world_transform
+                        )
+                    else:
+                        adjusted_transform = (
+                            world_to_visual @ tex_instance.world_transform
+                        )
+
                     self.texture_renderer.add_instance(
                         tex_instance.texture_data,
                         adjusted_transform,
@@ -1133,17 +1143,15 @@ class Canvas3D(Gtk.GLArea):
                     )
 
         # 3. Schedule the expensive vector preparation for a background thread
-        # Ops vertices are in work-area coordinates. Apply margin offset
-        # only in flat mode to compensate for the grid positioning.
-        # In rotary mode, vertices must remain in work-area coordinates
-        # so they align correctly with the cylinder surface.
-        content_model_matrix = margin_offset
+        content_model_matrix = (
+            world_to_cyl_local if self._rotary_enabled else world_to_visual
+        )
+
         self._schedule_scene_preparation(
             scene_description,
             content_model_matrix,
             self._rotary_enabled,
             self._rotary_diameter,
-            self._wcs_offset_mm,
         )
 
     def _schedule_scene_preparation(
@@ -1152,7 +1160,6 @@ class Canvas3D(Gtk.GLArea):
         content_model_matrix: np.ndarray,
         rotary_enabled: bool = False,
         rotary_diameter: float = 25.0,
-        wcs_offset_mm: Point3D = (0.0, 0.0, 0.0),
     ):
         """
         Schedules the given SceneDescription to be prepared for rendering in
@@ -1174,7 +1181,6 @@ class Canvas3D(Gtk.GLArea):
                 content_model_matrix,
                 rotary_enabled,
                 rotary_diameter,
-                wcs_offset_mm,
                 key=task_key,
                 when_done=self._on_scene_prepared,
             )

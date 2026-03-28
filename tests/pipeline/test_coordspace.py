@@ -386,10 +386,25 @@ class TestCoordinateSpaceTransforms:
         assert result[0] == pytest.approx(90.0)
         assert result[1] == pytest.approx(80.0)
 
+    def test_world_to_command_matrix(self):
+        space = MachineSpace(
+            origin=OriginCorner.TOP_RIGHT,
+            x_positive_direction=AxisDirection.POSITIVE_LEFT,
+            y_positive_direction=AxisDirection.POSITIVE_DOWN,
+            extents=(100.0, 100.0),
+            margins=(10.0, 20.0, 30.0, 40.0),
+            reverse_x=True,
+            reverse_y=False,
+        )
+        wcs = (10.0, 5.0, 0.0)
+        c2w = space.get_command_to_world_matrix(wcs_offset=wcs)
+        w2c = space.get_world_to_command_matrix(wcs_offset=wcs)
+
+        identity = c2w @ w2c
+        np.testing.assert_array_almost_equal(identity, np.identity(4))
+
     def test_command_point_to_world_wcs_mode(self):
-        """
-        Test helper method converts command points directly (WCS offsets).
-        """
+        """Test helper method converts command points directly (WCS offsets)."""
         space = MachineSpace(
             origin=OriginCorner.BOTTOM_LEFT,
             x_positive_direction=AxisDirection.POSITIVE_RIGHT,
@@ -409,9 +424,7 @@ class TestCoordinateSpaceTransforms:
         assert world_pt == pytest.approx((20.0, 30.0))
 
     def test_command_point_to_world_workarea_mode(self):
-        """
-        Test helper method converts command points directly (Workarea origin).
-        """
+        """Test helper method converts command points directly (Workarea origin)."""
         space = MachineSpace(
             origin=OriginCorner.TOP_LEFT,
             x_positive_direction=AxisDirection.POSITIVE_RIGHT,
@@ -423,8 +436,7 @@ class TestCoordinateSpaceTransforms:
         # TL origin, so workarea origin in machine space is (ml, mt) = (10, 20)
         # World pt: (20, 50)
         # Mach: (wx, 100 - wy) -> (20, 50)
-        # Cmd in Workarea mode = Mach - WorkareaOrigin
-        #  = (20 - 10, 50 - 20) = (10, 30)
+        # Cmd in Workarea mode = Mach - WorkareaOrigin = (20 - 10, 50 - 20) = (10, 30)
         world_pt = space.command_point_to_world(
             cmd_x=10.0, cmd_y=30.0, wcs_is_workarea_origin=True
         )
