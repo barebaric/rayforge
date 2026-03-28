@@ -159,16 +159,37 @@ class MachineCmd:
         head = machine.get_default_head()
         if not head.frame_power_percent:
             logger.warning("Framing cancelled: Frame power is zero.")
-            return  # This is a successful cancellation, not an error
+            return
 
-        frame_ops = ops.get_frame(
-            power=head.frame_power_percent,
-            speed=machine.max_travel_speed,
+        frame_speed = (
+            head.frame_speed
+            if head.frame_speed > 0
+            else machine.max_travel_speed
         )
 
-        frame_with_laser = Ops()
-        frame_with_laser.set_laser(head.uid)
-        frame_with_laser += frame_ops * 20
+        min_x, min_y, max_x, max_y = ops.rect()
+
+        frame_ops = Ops()
+        frame_ops.set_laser(head.uid)
+        frame_ops.set_power(head.frame_power_percent)
+        frame_ops.set_cut_speed(frame_speed)
+
+        corners = [
+            (min_x, min_y),
+            (min_x, max_y),
+            (max_x, max_y),
+            (max_x, min_y),
+            (min_x, min_y),
+        ]
+        prev = corners[0]
+        for corner in corners[1:]:
+            frame_ops.move_to(*prev)
+            frame_ops.line_to(*corner)
+            if head.frame_corner_pause > 0:
+                frame_ops.dwell(head.frame_corner_pause * 1000)
+            prev = corner
+
+        frame_with_laser = frame_ops * head.frame_repeat_count
 
         machine_code, op_map = machine.encode_ops(
             frame_with_laser, self._editor.doc

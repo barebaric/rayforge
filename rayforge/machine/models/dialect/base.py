@@ -68,6 +68,7 @@ class GcodeDialect:
     clear_alarm: str
     set_wcs_offset: str
     probe_cycle: str
+    dwell: str = "G4 P{seconds:.3f}"
 
     preamble: List[str] = field(default_factory=list)
     postscript: List[str] = field(default_factory=list)
@@ -126,6 +127,7 @@ class GcodeDialect:
             ("clear_alarm", _("Clear Alarm")),
             ("set_wcs_offset", _("Set WCS Offset")),
             ("probe_cycle", _("Probe Cycle")),
+            ("dwell", _("Dwell")),
         ]
         for key, label in template_fields:
             templates_vs.add(Var(key, label, str, value=getattr(self, key)))

@@ -376,6 +376,17 @@ class OpsSectionEndCommand(Command):
         return d
 
 
+class DwellCommand(Command):
+    def __init__(self, duration_ms: float) -> None:
+        super().__init__()
+        self.duration_ms: float = duration_ms
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["duration_ms"] = self.duration_ms
+        return d
+
+
 class ScanLinePowerCommand(MovingCommand):
     """
     A specialized command for raster engraving that encodes a line segment
@@ -510,6 +521,7 @@ COMMAND_TYPE_MAP = {
     LineToCommand: 2,
     ArcToCommand: 3,
     ScanLinePowerCommand: 4,
+    DwellCommand: 5,
     SetPowerCommand: 10,
     SetCutSpeedCommand: 11,
     SetTravelSpeedCommand: 12,
