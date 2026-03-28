@@ -15,7 +15,6 @@ import math
 import pytest
 
 from rayforge.core.doc import Doc
-from rayforge.core.layer import Layer
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
 from rayforge.machine.driver.driver import Axis
 from rayforge.machine.models.machine import Machine, Origin
@@ -487,11 +486,8 @@ class TestMachineSerialization:
 @pytest.fixture
 def rotary_doc():
     doc = Doc()
-    layer = doc.active_layer
-    assert isinstance(layer, Layer)
-    assert layer.workflow is not None
-    layer.workflow.set_rotary_enabled(True)
-    layer.workflow.set_rotary_diameter(25.0)
+    doc.set_rotary_enabled(True)
+    doc.set_rotary_diameter(25.0)
     return doc
 
 
@@ -517,10 +513,7 @@ class TestRotaryAxisGcodeOutput:
 
     def test_non_rotary_uses_y(self, isolated_machine):
         doc = Doc()
-        layer = doc.active_layer
-        assert isinstance(layer, Layer)
-        assert layer.workflow is not None
-        layer.workflow.set_rotary_enabled(False)
+        doc.set_rotary_enabled(False)
         gcode = _encode_rotary_line(isolated_machine, doc)
         assert " Y" in gcode
 

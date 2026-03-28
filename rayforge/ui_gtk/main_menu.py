@@ -42,6 +42,10 @@ class MainMenu(Gio.Menu):
         )
         file_menu.append_section(None, import_export_group)
 
+        project_group = Gio.Menu()
+        project_group.append(_("Project Settings"), "win.project-settings")
+        file_menu.append_section(None, project_group)
+
         quit_group = Gio.Menu()
         quit_group.append(_("Quit"), "win.quit")
         file_menu.append_section(None, quit_group)

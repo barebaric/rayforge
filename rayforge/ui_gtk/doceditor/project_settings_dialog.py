@@ -2,22 +2,20 @@ from gettext import gettext as _
 
 from gi.repository import Adw, Gtk
 
-from ...core.workflow import Workflow
+from ...core.doc import Doc
 from ..shared.adwfix import get_spinrow_float
 from ..shared.patched_dialog_window import PatchedDialogWindow
 
 
-class WorkflowSettingsDialog(PatchedDialogWindow):
-    """Dialog for configuring workflow settings including rotary attachment."""
+class ProjectSettingsDialog(PatchedDialogWindow):
+    """Dialog for configuring project-level settings including rotary."""
 
-    def __init__(
-        self, workflow: Workflow, transient_for: Gtk.Window, **kwargs
-    ):
+    def __init__(self, doc: Doc, transient_for: Gtk.Window, **kwargs):
         super().__init__(transient_for=transient_for, **kwargs)
-        self.workflow = workflow
+        self.doc = doc
         self._is_initializing = True
 
-        self.set_title(_("Workflow Settings"))
+        self.set_title(_("Project Settings"))
         self.set_default_size(600, -1)
         self.set_modal(True)
 
@@ -50,7 +48,7 @@ class WorkflowSettingsDialog(PatchedDialogWindow):
         self.rotary_enabled_row.set_subtitle(
             _("Convert Y-axis to rotary axis")
         )
-        self.rotary_enabled_row.set_active(workflow.rotary_enabled)
+        self.rotary_enabled_row.set_active(doc.rotary_enabled)
         self.rotary_enabled_row.connect(
             "notify::active", self._on_rotary_enabled_changed
         )
@@ -61,15 +59,15 @@ class WorkflowSettingsDialog(PatchedDialogWindow):
         )
         self.rotary_diameter_row = Adw.SpinRow(
             title=_("Object Diameter"),
-            subtitle=_("Diameter of the cylindrical object in mm"),
+            subtitle=_("Diameter of the cylindrical object in machine units"),
             adjustment=rotary_diameter_adjustment,
             digits=2,
         )
-        rotary_diameter_adjustment.set_value(workflow.rotary_diameter)
+        rotary_diameter_adjustment.set_value(doc.rotary_diameter)
         self.rotary_diameter_row.connect(
             "notify::value", self._on_rotary_diameter_changed
         )
-        self.rotary_diameter_row.set_sensitive(workflow.rotary_enabled)
+        self.rotary_diameter_row.set_sensitive(doc.rotary_enabled)
         rotary_group.add(self.rotary_diameter_row)
 
         self._is_initializing = False
@@ -79,10 +77,10 @@ class WorkflowSettingsDialog(PatchedDialogWindow):
             return
         enabled = row.get_active()
         self.rotary_diameter_row.set_sensitive(enabled)
-        self.workflow.set_rotary_enabled(enabled)
+        self.doc.set_rotary_enabled(enabled)
 
     def _on_rotary_diameter_changed(self, spinrow, _param):
         if self._is_initializing:
             return
         diameter = get_spinrow_float(spinrow)
-        self.workflow.set_rotary_diameter(diameter)
+        self.doc.set_rotary_diameter(diameter)

@@ -1033,15 +1033,8 @@ class Canvas3D(Gtk.GLArea):
         Checks the document for rotary mode settings and updates the
         cylinder renderer accordingly.
         """
-        rotary_enabled = False
-        rotary_diameter = 25.0
-
-        for layer in self.doc.layers:
-            if hasattr(layer, "workflow") and layer.workflow:
-                if layer.workflow.rotary_enabled:
-                    rotary_enabled = True
-                    rotary_diameter = layer.workflow.rotary_diameter
-                    break
+        rotary_enabled = self.doc.rotary_enabled
+        rotary_diameter = self.doc.rotary_diameter
 
         diameter_changed = rotary_diameter != self._rotary_diameter
         mode_changed = rotary_enabled != self._rotary_enabled
