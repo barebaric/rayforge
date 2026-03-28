@@ -82,6 +82,18 @@ class ProjectCmd:
         from ..core.doc import Doc
 
         new_doc = Doc()
+
+        machine = self._editor.context.machine
+        if machine:
+            for layer in new_doc.layers:
+                if layer.workflow:
+                    layer.workflow.set_rotary_enabled(
+                        machine.rotary_enabled_default
+                    )
+                    layer.workflow.set_rotary_diameter(
+                        machine.rotary_diameter_default
+                    )
+
         self._editor.set_doc(new_doc)
         self._editor.set_file_path(None)
         self._editor.mark_as_saved()

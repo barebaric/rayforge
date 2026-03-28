@@ -82,7 +82,14 @@ class AddLayerAndSetActiveCommand(Command):
                     continue  # Ignore names that don't parse correctly
 
         new_name = f"{base_name} {highest_num + 1}"
-        return Layer(name=new_name)
+        layer = Layer(name=new_name)
+
+        machine = self._editor.context.machine
+        if machine and layer.workflow:
+            layer.workflow.set_rotary_enabled(machine.rotary_enabled_default)
+            layer.workflow.set_rotary_diameter(machine.rotary_diameter_default)
+
+        return layer
 
     def execute(self):
         """Adds the layer and makes it active."""

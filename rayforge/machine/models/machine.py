@@ -126,6 +126,8 @@ class Machine:
         self.reverse_y_axis: bool = False
         self.reverse_z_axis: bool = False
         self.rotary_axis: Axis = Axis.A
+        self.rotary_enabled_default: bool = False
+        self.rotary_diameter_default: float = 25.0
         self.soft_limits_enabled: bool = True
         self.wcs_origin_is_workarea_origin: bool = False
         self._settings_lock = asyncio.Lock()
@@ -485,6 +487,18 @@ class Machine:
         if self.rotary_axis == axis:
             return
         self.rotary_axis = axis
+        self.changed.send(self)
+
+    def set_rotary_enabled_default(self, enabled: bool):
+        if self.rotary_enabled_default == enabled:
+            return
+        self.rotary_enabled_default = enabled
+        self.changed.send(self)
+
+    def set_rotary_diameter_default(self, diameter: float):
+        if self.rotary_diameter_default == diameter:
+            return
+        self.rotary_diameter_default = diameter
         self.changed.send(self)
 
     def set_wcs_origin_is_workarea_origin(self, value: bool):
@@ -1128,6 +1142,8 @@ class Machine:
                 "reverse_y_axis": self.reverse_y_axis,
                 "reverse_z_axis": self.reverse_z_axis,
                 "rotary_axis": self.rotary_axis.name,
+                "rotary_enabled_default": self.rotary_enabled_default,
+                "rotary_diameter_default": self.rotary_diameter_default,
                 "wcs_origin_is_workarea_origin": (
                     self.wcs_origin_is_workarea_origin
                 ),
@@ -1288,6 +1304,12 @@ class Machine:
         ma.reverse_y_axis = ma_data.get("reverse_y_axis", False)
         ma.reverse_z_axis = ma_data.get("reverse_z_axis", False)
         ma.rotary_axis = Axis[ma_data.get("rotary_axis", "A")]
+        ma.rotary_enabled_default = ma_data.get(
+            "rotary_enabled_default", False
+        )
+        ma.rotary_diameter_default = ma_data.get(
+            "rotary_diameter_default", 25.0
+        )
 
         # Migrate from old "negative" settings if present
         if "x_axis_negative" in ma_data:

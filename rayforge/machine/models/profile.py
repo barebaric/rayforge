@@ -72,6 +72,8 @@ class MachineProfile:
     hookmacros: Optional[List[Dict[str, Any]]] = None
     dialect_definition: Optional[DialectDefinition] = None
     rotary_axis: Optional[Axis] = None
+    rotary_enabled_default: Optional[bool] = None
+    rotary_diameter_default: Optional[float] = None
 
     def create_machine(self, context: "RayforgeContext") -> Machine:
         """
@@ -160,6 +162,10 @@ class MachineProfile:
             m.home_on_start = self.home_on_start
         if self.rotary_axis is not None:
             m.rotary_axis = self.rotary_axis
+        if self.rotary_enabled_default is not None:
+            m.rotary_enabled_default = self.rotary_enabled_default
+        if self.rotary_diameter_default is not None:
+            m.rotary_diameter_default = self.rotary_diameter_default
         if self.hookmacros is not None:
             for s_data in self.hookmacros:
                 try:
