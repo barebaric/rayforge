@@ -34,7 +34,7 @@ status_url = command_url.format(command="?")
 
 
 # GRBL Regex Parsers
-pos_re = re.compile(r":(-?\d+\.?\d*),(-?\d+\.?\d*),(-?\d+\.?\d*)")
+pos_re = re.compile(r":(-?\d+\.?\d*),(-?\d+\.?\d*)(?:,(-?\d+\.?\d*))?")
 fs_re = re.compile(r"FS:(\d+),(\d+)")
 bf_re = re.compile(r"Bf:(\d+),(\d+)")
 grbl_setting_re = re.compile(r"\$(\d+)=([\d\.-]+)")
@@ -401,10 +401,10 @@ def _parse_pos_triplet(pos: str) -> Optional[Pos]:
     match = pos_re.search(pos)
     if not match:
         return None
-    pos_triplet = tuple(float(i) for i in match.groups())
-    if len(pos_triplet) != 3:
-        return None
-    return pos_triplet
+    values = [float(g) if g else 0.0 for g in match.groups()]
+    while len(values) < 3:
+        values.append(0.0)
+    return (values[0], values[1], values[2])
 
 
 def error_code_to_device_error(error_code: str) -> DeviceError:
