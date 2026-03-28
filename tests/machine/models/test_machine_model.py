@@ -10,8 +10,14 @@ The Machine class delegates driver lifecycle and command logic to
 MachineController, so this module focuses on the data model aspects.
 """
 
+import math
+
 import pytest
 
+from rayforge.core.doc import Doc
+from rayforge.core.layer import Layer
+from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
+from rayforge.machine.driver.driver import Axis
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.transport import TransportStatus
 
@@ -366,6 +372,30 @@ class TestMachineChangeSignals:
         machine.set_soft_limits(10, 20, 300, 400)
         assert len(signal_calls) == 0
 
+    def test_no_signal_on_same_rotary_axis(self, isolated_machine):
+        calls = []
+
+        def on_changed(sender):
+            calls.append(True)
+
+        isolated_machine.changed.connect(on_changed)
+        isolated_machine.set_rotary_axis(Axis.A)
+        assert calls == []
+
+    def test_signal_on_set_rotary_axis(self, isolated_machine):
+        calls = []
+
+        def on_changed(sender):
+            calls.append(True)
+
+        isolated_machine.changed.connect(on_changed)
+        isolated_machine.set_rotary_axis(Axis.U)
+        assert len(calls) == 1
+
+    def test_set_rotary_axis_rejects_combined_flags(self, isolated_machine):
+        with pytest.raises(ValueError):
+            isolated_machine.set_rotary_axis(Axis.X | Axis.A)
+
 
 @pytest.mark.usefixtures("lite_context")
 class TestMachineSerialization:
@@ -436,3 +466,68 @@ class TestMachineSerialization:
         machine2 = Machine.from_dict(data)
         assert machine2.axis_extents == (500, 600)
         assert machine2.work_margins == (100, 150, 100, 100)
+
+    def test_to_dict_includes_rotary_axis(self, isolated_machine):
+        isolated_machine.set_rotary_axis(Axis.U)
+        data = isolated_machine.to_dict()
+        assert data["machine"]["rotary_axis"] == "U"
+
+    def test_from_dict_restores_rotary_axis(self, isolated_machine):
+        isolated_machine.set_rotary_axis(Axis.U)
+        data = isolated_machine.to_dict()
+        restored = Machine.from_dict(data)
+        assert restored.rotary_axis == Axis.U
+
+    def test_from_dict_rotary_axis_defaults_to_a(self):
+        data = {"machine": {"name": "test"}}
+        machine = Machine.from_dict(data)
+        assert machine.rotary_axis == Axis.A
+
+
+@pytest.fixture
+def rotary_doc():
+    doc = Doc()
+    layer = doc.active_layer
+    assert isinstance(layer, Layer)
+    assert layer.workflow is not None
+    layer.workflow.set_rotary_enabled(True)
+    layer.workflow.set_rotary_diameter(25.0)
+    return doc
+
+
+def _encode_rotary_line(machine, doc):
+    ops = Ops()
+    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
+    ops.add(LineToCommand((10.0, 10.0, 0.0)))
+    gcode, _ = machine.encode_ops(ops, doc)
+    return gcode
+
+
+class TestRotaryAxisGcodeOutput:
+    def test_default_axis_uses_a(self, isolated_machine, rotary_doc):
+        gcode = _encode_rotary_line(isolated_machine, rotary_doc)
+        assert "A" in gcode
+
+    def test_custom_axis_uses_configured_letter(
+        self, isolated_machine, rotary_doc
+    ):
+        isolated_machine.set_rotary_axis(Axis.U)
+        gcode = _encode_rotary_line(isolated_machine, rotary_doc)
+        assert "U" in gcode
+
+    def test_non_rotary_uses_y(self, isolated_machine):
+        doc = Doc()
+        layer = doc.active_layer
+        assert isinstance(layer, Layer)
+        assert layer.workflow is not None
+        layer.workflow.set_rotary_enabled(False)
+        gcode = _encode_rotary_line(isolated_machine, doc)
+        assert " Y" in gcode
+
+    def test_rotary_axis_degree_conversion(self, isolated_machine, rotary_doc):
+        gcode = _encode_rotary_line(isolated_machine, rotary_doc)
+        diameter = 25.0
+        circumference = diameter * math.pi
+        expected_deg = (10.0 / circumference) * 360.0
+        formatted_deg = f"{expected_deg:.3f}".rstrip("0").rstrip(".")
+        assert formatted_deg in gcode

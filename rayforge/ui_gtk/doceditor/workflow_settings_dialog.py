@@ -39,8 +39,8 @@ class WorkflowSettingsDialog(PatchedDialogWindow):
             title=_("Rotary Attachment"),
             description=_(
                 "Configure rotary attachment for cylindrical objects. "
-                "When enabled, Y-axis movements are converted to A-axis "
-                "(rotational) movements in degrees."
+                "When enabled, Y-axis movements are converted to "
+                "rotational movements in degrees."
             ),
         )
         content.add(rotary_group)
@@ -48,7 +48,7 @@ class WorkflowSettingsDialog(PatchedDialogWindow):
         self.rotary_enabled_row = Adw.SwitchRow()
         self.rotary_enabled_row.set_title(_("Enable Rotary Mode"))
         self.rotary_enabled_row.set_subtitle(
-            _("Convert Y-axis to rotary A-axis")
+            _("Convert Y-axis to rotary axis")
         )
         self.rotary_enabled_row.set_active(workflow.rotary_enabled)
         self.rotary_enabled_row.connect(
