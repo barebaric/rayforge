@@ -400,6 +400,8 @@ class TextureArtifactRenderer(BaseRenderer):
         view_proj_scene_matrix: np.ndarray,
         shader: Shader,
         rotary_diameter: float,
+        wcs_x_offset: float = 0.0,
+        wcs_y_offset: float = 0.0,
     ):
         """
         Renders all texture instances mapped onto a cylinder.
@@ -409,6 +411,8 @@ class TextureArtifactRenderer(BaseRenderer):
               matrix (P*V*M_scene), not transposed.
             shader: The shader to use for rendering.
             rotary_diameter: The diameter of the cylinder in mm.
+            wcs_x_offset: The X offset of the WCS origin in workarea coords.
+            wcs_y_offset: The Y offset of the WCS origin in workarea coords.
         """
         if not self.is_initialized or not self.instances:
             return
@@ -429,8 +433,8 @@ class TextureArtifactRenderer(BaseRenderer):
 
             tex_width_mm = corner_x[0] - origin[0]
             tex_height_mm = corner_y[1] - origin[1]
-            tex_x_offset = origin[0]
-            tex_y_offset = origin[1]
+            tex_x_offset = origin[0] - wcs_x_offset
+            tex_y_offset = origin[1] - wcs_y_offset
 
             logger.debug(
                 f"Texture cylinder: width={tex_width_mm}, "

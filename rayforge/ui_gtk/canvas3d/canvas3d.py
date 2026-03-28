@@ -7,6 +7,7 @@ from ...context import RayforgeContext
 from ...core.geo import Point, Point3D, Rect
 from ...machine.models.colors import OpsColorSet
 from ...pipeline.artifact import ArtifactStore, StepRenderArtifact
+from ...pipeline.encoder.vertexencoder import transform_to_cylinder
 from ...pipeline.pipeline import Pipeline
 from ...shared.util.colors import ColorSet
 from ...shared.tasker import task_mgr, Task
@@ -46,15 +47,18 @@ def prepare_scene_vertices_async(
     color_set: ColorSet,
     laser_color_sets: Dict[str, ColorSet],
     scene_model_matrix: np.ndarray,
+    rotary_enabled: bool = False,
+    rotary_diameter: float = 25.0,
+    wcs_offset_mm: Point3D = (0.0, 0.0, 0.0),
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     A background task that prepares all vertex data for an entire scene.
 
     It iterates through a lightweight SceneDescription of StepArtifacts,
-    loads the pre-computed vertex data (which may already be in cylindrical
-    coordinates if rotary mode was enabled during encoding), applies the
-    global scene transform (e.g., for Y-down view), and aggregates the
-    results into VBO-ready numpy arrays.
+    loads the pre-computed vertex data (flat coordinates), applies the
+    global scene transform (e.g., margin offset), and if rotary mode is
+    enabled, wraps the vertices onto a cylinder surface. Finally, it
+    aggregates the results into VBO-ready numpy arrays.
     """
     all_powered_verts: List[np.ndarray] = []
     all_powered_colors: List[np.ndarray] = []
@@ -122,18 +126,33 @@ def prepare_scene_vertices_async(
             return transformed_points[:, :3].astype(np.float32)
 
         if p_verts.size > 0:
-            all_powered_verts.append(
-                _transform_vertices(p_verts, scene_model_matrix)
-            )
+            transformed = _transform_vertices(p_verts, scene_model_matrix)
+            if rotary_enabled and rotary_diameter > 0:
+                transformed[:, 0] -= wcs_offset_mm[0]
+                transformed[:, 1] -= wcs_offset_mm[1]
+                transformed = transform_to_cylinder(
+                    transformed, rotary_diameter
+                )
+            all_powered_verts.append(transformed)
             all_powered_colors.append(p_colors)
         if t_verts.size > 0:
-            all_travel_verts.append(
-                _transform_vertices(t_verts, scene_model_matrix)
-            )
+            transformed = _transform_vertices(t_verts, scene_model_matrix)
+            if rotary_enabled and rotary_diameter > 0:
+                transformed[:, 0] -= wcs_offset_mm[0]
+                transformed[:, 1] -= wcs_offset_mm[1]
+                transformed = transform_to_cylinder(
+                    transformed, rotary_diameter
+                )
+            all_travel_verts.append(transformed)
         if zp_verts.size > 0:
-            all_zero_power_verts.append(
-                _transform_vertices(zp_verts, scene_model_matrix)
-            )
+            transformed = _transform_vertices(zp_verts, scene_model_matrix)
+            if rotary_enabled and rotary_diameter > 0:
+                transformed[:, 0] -= wcs_offset_mm[0]
+                transformed[:, 1] -= wcs_offset_mm[1]
+                transformed = transform_to_cylinder(
+                    transformed, rotary_diameter
+                )
+            all_zero_power_verts.append(transformed)
             all_zero_power_colors.append(zp_colors)
 
     # 4. Concatenate all results into single arrays
@@ -165,11 +184,12 @@ def prepare_scene_vertices_async(
 
     # Add a small Z-offset to non-powered moves to prevent Z-fighting with
     # the texture quad, which is drawn at Z=0.
-    Z_OFFSET_NON_POWERED = 0.01
-    if travel_verts_3d.size > 0:
-        travel_verts_3d[:, 2] += Z_OFFSET_NON_POWERED
-    if zero_power_verts_3d.size > 0:
-        zero_power_verts_3d[:, 2] += Z_OFFSET_NON_POWERED
+    if not rotary_enabled:
+        Z_OFFSET_NON_POWERED = 0.01
+        if travel_verts_3d.size > 0:
+            travel_verts_3d[:, 2] += Z_OFFSET_NON_POWERED
+        if zero_power_verts_3d.size > 0:
+            zero_power_verts_3d[:, 2] += Z_OFFSET_NON_POWERED
 
     final_travel_verts = travel_verts_3d.flatten()
     final_zero_power_verts = zero_power_verts_3d.flatten()
@@ -450,37 +470,6 @@ class Canvas3D(Gtk.GLArea):
         self._clear_drag_state()
         self.queue_render()
 
-    def reset_view_rotary(self):
-        """
-        Resets the camera for optimal viewing of rotary/cylindrical mode.
-
-        The camera is positioned to look at the cylinder from a 3/4 angle,
-        showing both the length and circumference clearly.
-        """
-        if not self.camera:
-            return
-        logger.info("Resetting to rotary view.")
-
-        center_x = self.width_mm / 2.0
-        radius = (
-            self._rotary_diameter / 2.0 if self._rotary_diameter > 0 else 12.5
-        )
-        max_dim = max(self.width_mm, radius * 2)
-
-        self.camera.target = np.array(
-            [center_x, 0.0, radius], dtype=np.float64
-        )
-
-        direction = np.array([0.0, -0.3, 1.0])
-        direction = direction / np.linalg.norm(direction)
-
-        distance = max_dim * 1.1
-        self.camera.position = self.camera.target + direction * distance
-        self.camera.up = np.array([0.0, 0.0, 1.0], dtype=np.float64)
-
-        self._clear_drag_state()
-        self.queue_render()
-
     def on_realize(self, area) -> None:
         """Called when the GLArea is ready to have its context made current."""
         logger.info("GLArea realized.")
@@ -712,6 +701,11 @@ class Canvas3D(Gtk.GLArea):
             mvp_matrix_ui_gl = mvp_matrix_ui.T
             mvp_matrix_scene_gl = mvp_matrix_scene.T
 
+            cylinder_translation = np.identity(4, dtype=np.float32)
+            cylinder_translation[0, 3] = offset_x
+            cylinder_translation[1, 3] = offset_y
+            cylinder_translation[2, 3] = offset_z
+
             if self.axis_renderer and self.main_shader and self.text_shader:
                 self.axis_renderer.render(
                     self.main_shader,
@@ -719,22 +713,25 @@ class Canvas3D(Gtk.GLArea):
                     mvp_matrix_scene_gl,  # Pass the final grid MVP
                     mvp_matrix_ui_gl,  # For text (no model/WCS transform)
                     view_matrix,
-                    self._model_matrix,  # Pass model matrix for labels
+                    self._model_matrix,
                     origin_offset_mm=self._wcs_offset_mm,
                     x_right=self.x_right,
                     y_down=self.y_down,
                     x_negative=self.x_negative,
                     y_negative=self.y_negative,
-                    rotary_mode=self._rotary_enabled,
                 )
             if self.ops_renderer and self.main_shader:
-                # The ops vertices are in machine absolute coordinates
-                # (Y-up internal). We use the UI matrix (Identity model) so
-                # they are placed relative to the machine bed, ignoring the
-                # WCS grid offset.
+                if self._rotary_enabled:
+                    ops_mvp = (
+                        mvp_matrix_ui
+                        @ self._model_matrix
+                        @ cylinder_translation
+                    )
+                else:
+                    ops_mvp = mvp_matrix_ui
                 self.ops_renderer.render(
                     self.main_shader,
-                    mvp_matrix_ui_gl,
+                    ops_mvp.T,
                     colors=self._color_set,
                     show_travel_moves=self._show_travel_moves,
                 )
@@ -744,16 +741,24 @@ class Canvas3D(Gtk.GLArea):
                 and self.cylinder_renderer
                 and self.main_shader
             ):
-                self.cylinder_renderer.render(
-                    self.main_shader, mvp_matrix_ui_gl
+                cylinder_mvp = (
+                    mvp_matrix_ui @ self._model_matrix @ cylinder_translation
                 )
+                self.cylinder_renderer.render(self.main_shader, cylinder_mvp.T)
 
             if self.texture_renderer and self.texture_shader:
                 if self._rotary_enabled:
+                    cylinder_tex_mvp = (
+                        mvp_matrix_ui
+                        @ self._model_matrix
+                        @ cylinder_translation
+                    )
                     self.texture_renderer.render_cylinder(
-                        mvp_matrix_ui,
+                        cylinder_tex_mvp,
                         self.texture_shader,
                         self._rotary_diameter,
+                        wcs_x_offset=offset_x,
+                        wcs_y_offset=offset_y,
                     )
                 else:
                     self.texture_renderer.render(
@@ -1047,9 +1052,7 @@ class Canvas3D(Gtk.GLArea):
                 self._init_cylinder_renderer()
 
         if mode_changed and self.camera:
-            if rotary_enabled:
-                self.reset_view_rotary()
-            else:
+            if not rotary_enabled:
                 self.reset_view_front()
 
     def _init_cylinder_renderer(self):
@@ -1130,17 +1133,26 @@ class Canvas3D(Gtk.GLArea):
                     )
 
         # 3. Schedule the expensive vector preparation for a background thread
-        # Ops vertices are in machine coordinates, but the 3D canvas shows
-        # the workarea. Apply margin offset to position them correctly.
+        # Ops vertices are in work-area coordinates. Apply margin offset
+        # only in flat mode to compensate for the grid positioning.
+        # In rotary mode, vertices must remain in work-area coordinates
+        # so they align correctly with the cylinder surface.
         content_model_matrix = margin_offset
         self._schedule_scene_preparation(
-            scene_description, content_model_matrix
+            scene_description,
+            content_model_matrix,
+            self._rotary_enabled,
+            self._rotary_diameter,
+            self._wcs_offset_mm,
         )
 
     def _schedule_scene_preparation(
         self,
         scene_description: SceneDescription,
         content_model_matrix: np.ndarray,
+        rotary_enabled: bool = False,
+        rotary_diameter: float = 25.0,
+        wcs_offset_mm: Point3D = (0.0, 0.0, 0.0),
     ):
         """
         Schedules the given SceneDescription to be prepared for rendering in
@@ -1160,6 +1172,9 @@ class Canvas3D(Gtk.GLArea):
                 self._color_set,
                 self._laser_color_sets,
                 content_model_matrix,
+                rotary_enabled,
+                rotary_diameter,
+                wcs_offset_mm,
                 key=task_key,
                 when_done=self._on_scene_prepared,
             )

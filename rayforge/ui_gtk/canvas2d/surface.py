@@ -1,5 +1,4 @@
 import logging
-import math
 from blinker import Signal
 from typing import (
     TYPE_CHECKING,
@@ -35,6 +34,7 @@ from .elements.camera_image import CameraImageElement
 from .elements.dot import DotElement
 from .elements.group import GroupElement
 from .elements.layer import LayerElement
+from .elements.rotary_surface import RotarySurfaceElement
 from .elements.simulation_overlay import SimulationOverlay
 from .elements.stock import StockElement
 from .elements.tab_handle import TabHandleElement
@@ -70,8 +70,6 @@ class WorkSurface(WorldSurface):
         self._show_travel_moves = False
         self._workpieces_visible = True
         self._tracked_axis_extents: Tuple[float, float] = (0.0, 0.0)
-        self._rotary_enabled: bool = False
-        self._rotary_diameter: float = 25.0
         coordinate_space = None
         if machine:
             self._tracked_axis_extents = machine.axis_extents
@@ -132,6 +130,11 @@ class WorkSurface(WorldSurface):
         self._extent_frame_element = AxisExtentFrameElement()
         self._extent_frame_element.set_visible(False)
         self.root.add(self._extent_frame_element)
+
+        # Add the Rotary Diameter element (dashed rectangle for cylinder)
+        self._rotary_surface_element = RotarySurfaceElement()
+        self._rotary_surface_element.set_visible(False)
+        self.root.add(self._rotary_surface_element)
 
         # Signals for clipboard and duplication operations
         self.cut_requested = Signal()
@@ -585,6 +588,7 @@ class WorkSurface(WorldSurface):
 
         self._work_origin_element.set_pos(canvas_x, canvas_y)
         self._work_origin_element.set_visible(True)
+        self._update_rotary_surface_element()
         self.queue_draw()
 
     def _on_machine_state_changed(self, machine: Machine, state):
@@ -858,12 +862,15 @@ class WorkSurface(WorldSurface):
             if isinstance(element, AxisExtentFrameElement):
                 # Extent frame is above camera but below everything else
                 return -1.5
+            if isinstance(element, RotarySurfaceElement):
+                # Rotary surface is above extent frame but below stock
+                return -1.25
             # Other elements are above the camera but below stock and layers.
             return -1
 
         self.root.children.sort(key=sort_key)
 
-        self._update_rotary_mode()
+        self._update_rotary_surface_element()
         self.queue_draw()
 
     def remove_all(self):
@@ -1045,10 +1052,6 @@ class WorkSurface(WorldSurface):
 
         super().reset_view()
 
-        if self._rotary_enabled:
-            circumference = math.pi * self._rotary_diameter
-            self.set_pan(0.0, -circumference / 2.0)
-
         new_ratio = width_mm / height_mm if height_mm > 0 else 1.0
         self.aspect_ratio_changed.send(self, ratio=new_ratio)
         self._sync_camera_elements()
@@ -1093,32 +1096,38 @@ class WorkSurface(WorldSurface):
             float(workarea_w), float(workarea_h)
         )
         self._workarea_bg_element.set_pos(float(ml), float(mb))
-        self._workarea_bg_element.set_visible(not self._rotary_enabled)
+        self._workarea_bg_element.set_visible(True)
 
         self.queue_draw()
 
-    def _update_rotary_mode(self):
+    def _update_rotary_surface_element(self):
         """
-        Checks the document for rotary mode settings and updates the
-        axis renderer accordingly.
+        Updates the rotary diameter indicator element based on document
+        settings and current WCS origin position.
         """
         rotary_enabled = self.doc.rotary_enabled
+
+        if not rotary_enabled or not self.machine:
+            self._rotary_surface_element.set_visible(False)
+            return
+
         rotary_diameter = self.doc.rotary_diameter
+        space = self.machine.get_coordinate_space()
 
-        mode_changed = rotary_enabled != self._rotary_enabled
-        diameter_changed = rotary_diameter != self._rotary_diameter
+        if self.machine.wcs_origin_is_workarea_origin:
+            canvas_x, canvas_y = space.get_workarea_origin_in_machine()
+        else:
+            wcs_x, wcs_y, _ = self.machine.get_active_wcs_offset()
+            canvas_x, canvas_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
 
-        if mode_changed or diameter_changed:
-            self._rotary_enabled = rotary_enabled
-            self._rotary_diameter = rotary_diameter
-            self._axis_renderer.set_rotary_mode(
-                rotary_enabled, rotary_diameter
-            )
-            self._extent_frame_element.set_rotary_mode(
-                rotary_enabled, rotary_diameter
-            )
-            self._update_extent_frame()
-            self.reset_view()
+        self._rotary_surface_element.set_x_axis_right(
+            self.machine.x_axis_right
+        )
+        self._rotary_surface_element.set_origin(canvas_x, canvas_y)
+        self._rotary_surface_element.update_for_diameter(
+            rotary_diameter, self.machine.axis_extents[0]
+        )
+        self._rotary_surface_element.set_visible(True)
 
     def _on_aspect_ratio_changed(self, sender, **kwargs) -> None:
         """
