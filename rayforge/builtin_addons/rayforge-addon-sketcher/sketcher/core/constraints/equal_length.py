@@ -12,7 +12,7 @@ from typing import (
 )
 from gettext import gettext as _
 from rayforge.core.geo import Point
-from ..entities import Line, Arc, Circle
+from ..entities import Line, Arc, Circle, Ellipse
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
@@ -29,6 +29,7 @@ class EqualLengthConstraint(Constraint):
     Enforces that all entities in a set have the same characteristic length.
     - Line: Length
     - Arc/Circle: Radius
+    - Ellipse: Both radii (X and Y)
     """
 
     def __init__(self, entity_ids: List[EntityID], user_visible: bool = True):
@@ -51,7 +52,7 @@ class EqualLengthConstraint(Constraint):
             sketch.registry.get_entity(eid) for eid in selection.entity_ids
         ]
         return all(
-            isinstance(e, (Line, Arc, Circle)) and e is not None
+            isinstance(e, (Line, Arc, Circle, Ellipse)) and e is not None
             for e in entities
         )
 
@@ -96,6 +97,28 @@ class EqualLengthConstraint(Constraint):
     ) -> bool:
         return entity_id in self.entity_ids
 
+    @staticmethod
+    def _get_length_pairs(entity):
+        """Returns point-index pairs defining the entity's length(s)."""
+        if isinstance(entity, Line):
+            return [(entity.p1_idx, entity.p2_idx)]
+        elif isinstance(entity, Arc):
+            return [(entity.center_idx, entity.start_idx)]
+        elif isinstance(entity, Circle):
+            return [(entity.center_idx, entity.radius_pt_idx)]
+        elif isinstance(entity, Ellipse):
+            return [
+                (entity.center_idx, entity.radius_x_pt_idx),
+                (entity.center_idx, entity.radius_y_pt_idx),
+            ]
+        return []
+
+    @staticmethod
+    def _pair_dist(pa_idx, pb_idx, reg):
+        pa = reg.get_point(pa_idx)
+        pb = reg.get_point(pb_idx)
+        return math.hypot(pb.x - pa.x, pb.y - pa.y)
+
     def _get_length(self, entity, reg: "EntityRegistry") -> float:
         if isinstance(entity, Line):
             p1 = reg.get_point(entity.p1_idx)
@@ -109,6 +132,9 @@ class EqualLengthConstraint(Constraint):
             c = reg.get_point(entity.center_idx)
             r = reg.get_point(entity.radius_pt_idx)
             return math.hypot(r.x - c.x, r.y - c.y)
+        elif isinstance(entity, Ellipse):
+            rx, ry = entity._get_radii(reg)
+            return (rx + ry) / 2.0
         return 0.0
 
     def error(
@@ -121,12 +147,21 @@ class EqualLengthConstraint(Constraint):
         if any(e is None for e in entities):
             return []
 
-        # All lengths should equal the length of the first entity.
-        base_len = self._get_length(entities[0], reg)
         errors = []
+        base = entities[0]
+        base_pairs = self._get_length_pairs(base)
+        base_lens = [self._pair_dist(pa, pb, reg) for pa, pb in base_pairs]
+
         for i in range(1, len(entities)):
-            other_len = self._get_length(entities[i], reg)
-            errors.append(other_len - base_len)
+            ent = entities[i]
+            ent_pairs = self._get_length_pairs(ent)
+            ent_lens = [self._pair_dist(pa, pb, reg) for pa, pb in ent_pairs]
+
+            n = max(len(base_pairs), len(ent_pairs))
+            for j in range(n):
+                bl = base_lens[j] if j < len(base_lens) else base_lens[0]
+                el = ent_lens[j] if j < len(ent_lens) else ent_lens[0]
+                errors.append(el - bl)
         return errors
 
     def gradient(
@@ -136,64 +171,64 @@ class EqualLengthConstraint(Constraint):
             return {}
 
         entities = [
-            cast(Union[Line, Arc, Circle], reg.get_entity(eid))
+            cast(Union[Line, Arc, Circle, Ellipse], reg.get_entity(eid))
             for eid in self.entity_ids
         ]
+        if any(e is None for e in entities):
+            return {}
+
+        base_pairs = self._get_length_pairs(entities[0])
+        num_residuals = 0
+        for i in range(1, len(entities)):
+            ent_pairs = self._get_length_pairs(entities[i])
+            num_residuals += max(len(base_pairs), len(ent_pairs))
+
         grad = {}
-        num_residuals = len(entities) - 1
-
-        # Helper to get points defining length
-        def get_pts(ent):
-            if isinstance(ent, Line):
-                return ent.p1_idx, ent.p2_idx
-            elif isinstance(ent, Arc):
-                return ent.center_idx, ent.start_idx
-            elif isinstance(ent, Circle):
-                return ent.center_idx, ent.radius_pt_idx
-            return -1, -1
-
-        # Base entity properties (index 0)
-        p0a, p0b = get_pts(entities[0])
-        pt0a = reg.get_point(p0a)
-        pt0b = reg.get_point(p0b)
-        dx0 = pt0b.x - pt0a.x
-        dy0 = pt0b.y - pt0a.y
-        len0 = math.hypot(dx0, dy0)
-
-        # Precompute unit vectors for base entity
-        u0x, u0y = 0.0, 0.0
-        if len0 > 1e-9:
-            u0x, u0y = dx0 / len0, dy0 / len0
 
         def add_grad(pid, r_idx, gx, gy):
             if pid not in grad:
                 grad[pid] = [(0.0, 0.0)] * num_residuals
-            # Copy list to modify specific row
             curr = list(grad[pid])
             ox, oy = curr[r_idx]
             curr[r_idx] = (ox + gx, oy + gy)
             grad[pid] = curr
 
-        for row in range(num_residuals):
-            # Base entity derivs (negative)
-            # L_i - L_0
-            # d/dP0a = -dLo/dP0a = -(-u0) = u0
-            # d/dP0b = -dLo/dP0b = -(u0) = -u0
-            add_grad(p0a, row, u0x, u0y)
-            add_grad(p0b, row, -u0x, -u0y)
+        row = 0
+        for i in range(1, len(entities)):
+            ent = entities[i]
+            ent_pairs = self._get_length_pairs(ent)
+            n = max(len(base_pairs), len(ent_pairs))
 
-            # Current entity derivs (positive)
-            ent = entities[row + 1]
-            pa, pb = get_pts(ent)
-            pta, ptb = reg.get_point(pa), reg.get_point(pb)
-            dx, dy = ptb.x - pta.x, ptb.y - pta.y
-            dist = math.hypot(dx, dy)
-            if dist > 1e-9:
-                ux, uy = dx / dist, dy / dist
-                # dLi/dPa = -u
-                # dLi/dPb = u
-                add_grad(pa, row, -ux, -uy)
-                add_grad(pb, row, ux, uy)
+            for j in range(n):
+                bp = base_pairs[j] if j < len(base_pairs) else base_pairs[0]
+                ep = ent_pairs[j] if j < len(ent_pairs) else ent_pairs[0]
+
+                b_pta = reg.get_point(bp[0])
+                b_ptb = reg.get_point(bp[1])
+                b_dx = b_ptb.x - b_pta.x
+                b_dy = b_ptb.y - b_pta.y
+                b_len = math.hypot(b_dx, b_dy)
+                if b_len > 1e-9:
+                    b_ux, b_uy = b_dx / b_len, b_dy / b_len
+                else:
+                    b_ux, b_uy = 0.0, 0.0
+
+                e_pta = reg.get_point(ep[0])
+                e_ptb = reg.get_point(ep[1])
+                e_dx = e_ptb.x - e_pta.x
+                e_dy = e_ptb.y - e_pta.y
+                e_len = math.hypot(e_dx, e_dy)
+                if e_len > 1e-9:
+                    e_ux, e_uy = e_dx / e_len, e_dy / e_len
+                else:
+                    e_ux, e_uy = 0.0, 0.0
+
+                add_grad(bp[0], row, b_ux, b_uy)
+                add_grad(bp[1], row, -b_ux, -b_uy)
+                add_grad(ep[0], row, -e_ux, -e_uy)
+                add_grad(ep[1], row, e_ux, e_uy)
+
+                row += 1
 
         return grad
 
@@ -214,7 +249,7 @@ class EqualLengthConstraint(Constraint):
             mid_y = (p1.y + p2.y) / 2.0
             tangent_angle = math.atan2(p2.y - p1.y, p2.x - p1.x)
             normal_angle = tangent_angle - (math.pi / 2.0)
-        elif isinstance(entity, (Arc, Circle)):
+        elif isinstance(entity, (Arc, Circle, Ellipse)):
             midpoint = entity.get_midpoint(reg)
             if not midpoint:
                 return None
