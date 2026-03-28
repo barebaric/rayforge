@@ -52,8 +52,10 @@ class AddItemsCommand(SketchChangeCommand):
                 registry._id_counter += 1
             if old_id != e.id:
                 id_map[old_id] = e.id
+            new_entities.append(e)
 
-            # Update point references within the entity
+        # Update point references within the entity
+        for e in new_entities:
             for attr, value in vars(e).items():
                 if isinstance(value, int) and value in id_map:
                     setattr(e, attr, id_map[value])
@@ -61,7 +63,6 @@ class AddItemsCommand(SketchChangeCommand):
                 elif isinstance(value, list) and attr.endswith("_ids"):
                     new_ids = [id_map.get(old, old) for old in value]
                     setattr(e, attr, new_ids)
-            new_entities.append(e)
         registry.entities.extend(new_entities)
 
         # Update point and entity references within constraints
