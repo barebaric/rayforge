@@ -127,23 +127,25 @@ class HardwarePage(TrackedPreferencesPage):
         rotary_group = Adw.PreferencesGroup(title=_("Rotary"))
         rotary_group.set_description(
             _(
-                "Default rotary settings for new layers. "
-                "Individual layers can override these."
+                "Default rotary settings for new projects. "
+                "Can be overridden in the project settings."
             )
         )
         self.add(rotary_group)
 
-        rotary_axis_store = Gtk.StringList()
         excluded = (Axis.X, Axis.Y)
-        for member in Axis:
-            if member not in excluded:
-                rotary_axis_store.append(member.name or "")
+        valid_axes = sorted(
+            [a for a in Axis if a not in excluded],
+            key=lambda a: str(a.name or ""),
+        )
+        rotary_axis_store = Gtk.StringList()
+        for a in valid_axes:
+            rotary_axis_store.append(a.name or "")
         self.rotary_axis_row = Adw.ComboRow(
             title=_("Rotary Axis"),
             subtitle=_("The axis letter used for rotary attachment movements"),
             model=rotary_axis_store,
         )
-        valid_axes = [a for a in Axis if a not in excluded]
         try:
             selected = valid_axes.index(machine.rotary_axis)
         except ValueError:
@@ -156,7 +158,7 @@ class HardwarePage(TrackedPreferencesPage):
 
         self.rotary_enabled_default_row = Adw.SwitchRow(
             title=_("Enable Rotary by Default"),
-            subtitle=_("New layers will default to rotary mode"),
+            subtitle=_("New projects will default to rotary mode"),
         )
         self.rotary_enabled_default_row.set_active(
             machine.rotary_enabled_default
@@ -171,7 +173,7 @@ class HardwarePage(TrackedPreferencesPage):
         )
         self.rotary_diameter_default_row = Adw.SpinRow(
             title=_("Default Rotary Diameter"),
-            subtitle=_("Workpiece diameter in mm for new layers"),
+            subtitle=_("Workpiece diameter in machine units for new projects"),
             adjustment=rotary_diameter_adjustment,
             digits=1,
         )

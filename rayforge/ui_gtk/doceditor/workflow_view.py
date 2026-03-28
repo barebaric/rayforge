@@ -10,7 +10,6 @@ from ..shared.expander import Expander
 from ..shared.popover_menu import PopoverMenu
 from .step_box import StepBox
 from .step_settings_dialog import StepSettingsDialog
-from .workflow_settings_dialog import WorkflowSettingsDialog
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -36,15 +35,6 @@ class WorkflowView(Expander):
         self.step_factories = step_factories
         self.editor = editor
         self.set_expanded(True)
-
-        settings_button = Gtk.Button()
-        settings_button.add_css_class("flat")
-        settings_button.set_tooltip_text(_("Workflow Settings"))
-        settings_button.set_valign(Gtk.Align.CENTER)
-        settings_icon = get_icon("settings-symbolic")
-        settings_button.set_child(settings_icon)
-        settings_button.connect("clicked", self._on_settings_clicked)
-        self.add_suffix(settings_button)
 
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.set_child(content_box)
@@ -233,15 +223,3 @@ class WorkflowView(Expander):
             name=_("Reorder steps"),
         )
         self.workflow.doc.history_manager.execute(command)
-
-    def _on_settings_clicked(self, button):
-        """Opens the workflow settings dialog."""
-        if not self.workflow:
-            return
-        parent_window = self.get_root()
-        if not isinstance(parent_window, Gtk.Window):
-            return
-        dialog = WorkflowSettingsDialog(
-            self.workflow, transient_for=parent_window
-        )
-        dialog.present()

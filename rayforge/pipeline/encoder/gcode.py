@@ -220,10 +220,9 @@ class GcodeEncoder(OpsEncoder):
         self.active_laser_uid = None
         self.emitted_power = None
 
-        workflow = doc.active_layer.workflow if doc.active_layer else None
-        if workflow:
-            self.rotary_enabled = workflow.rotary_enabled
-            self.rotary_diameter = workflow.rotary_diameter
+        if doc:
+            self.rotary_enabled = doc.rotary_enabled
+            self.rotary_diameter = doc.rotary_diameter
         else:
             self.rotary_enabled = False
             self.rotary_diameter = 25.0

@@ -246,9 +246,10 @@ class StepPipelineStage(PipelineStage):
 
         rotary_enabled = False
         rotary_diameter = 25.0
-        if step.layer and step.layer.workflow:
-            rotary_enabled = step.layer.workflow.rotary_enabled
-            rotary_diameter = step.layer.workflow.rotary_diameter
+        doc = step.layer.doc if step.layer else None
+        if doc:
+            rotary_enabled = doc.rotary_enabled
+            rotary_diameter = doc.rotary_diameter
 
         task = self._task_manager.run_process(
             make_step_artifact_in_subprocess,

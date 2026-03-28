@@ -186,6 +186,7 @@ class ActionManager:
         self._add_action("save_debug_log", self.win.on_save_debug_log)
         self._add_action("settings", self.win.show_settings)
         self._add_action("machine-settings", self.win.show_machine_settings)
+        self._add_action("project-settings", self.win.show_project_settings)
 
         # View Actions
         self._add_stateful_action(
@@ -560,6 +561,7 @@ class ActionManager:
             "win.flip-vertical": "<Shift>v",
             # Machine & Help
             "win.machine-settings": f"{PRIMARY_ACCEL}less",
+            "win.project-settings": f"{PRIMARY_ACCEL}p",
             "win.about": "F1",
         }
 

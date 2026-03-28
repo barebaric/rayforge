@@ -4,7 +4,6 @@ Defines the Workflow class, which holds an ordered sequence of Steps.
 
 from __future__ import annotations
 import logging
-import math
 from typing import List, Optional, TypeVar, Iterable, Dict, Any
 from blinker import Signal
 from .item import DocItem
@@ -38,9 +37,6 @@ class Workflow(DocItem):
         super().__init__(name=name)
         self.per_step_transformer_changed = Signal()
 
-        self.rotary_enabled: bool = False
-        self.rotary_diameter: float = 25.0
-
         # Forward compatibility: store unknown attributes
         self.extra: Dict[str, Any] = {}
 
@@ -52,8 +48,6 @@ class Workflow(DocItem):
             "name": self.name,
             "matrix": self.matrix.to_list(),
             "children": [child.to_dict() for child in self.children],
-            "rotary_enabled": self.rotary_enabled,
-            "rotary_diameter": self.rotary_diameter,
         }
         result.update(self.extra)
         return result
@@ -67,8 +61,6 @@ class Workflow(DocItem):
             "name",
             "matrix",
             "children",
-            "rotary_enabled",
-            "rotary_diameter",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -76,8 +68,6 @@ class Workflow(DocItem):
         workflow.uid = data["uid"]
         workflow.matrix = Matrix.from_list(data["matrix"])
         workflow.extra = extra
-        workflow.rotary_enabled = data.get("rotary_enabled", False)
-        workflow.rotary_diameter = data.get("rotary_diameter", 25.0)
 
         steps = [
             Step.from_dict(d)
@@ -148,32 +138,3 @@ class Workflow(DocItem):
     def has_steps(self) -> bool:
         """Checks if the work plan contains any steps."""
         return len(self.steps) > 0
-
-    def set_rotary_enabled(self, enabled: bool):
-        """Enable or disable rotary attachment mode."""
-        if self.rotary_enabled == enabled:
-            return
-        self.rotary_enabled = enabled
-        self.updated.send(self)
-
-    def set_rotary_diameter(self, diameter: float):
-        """Set the diameter of the object on the rotary attachment."""
-        if self.rotary_diameter == diameter:
-            return
-        self.rotary_diameter = diameter
-        self.updated.send(self)
-
-    def mu_to_degrees(self, mu: float) -> float:
-        """
-        Convert machine units to degrees for rotary axis.
-
-        Args:
-            mu: Distance in machine units along the cylinder surface.
-
-        Returns:
-            Angle in degrees for the rotary axis.
-        """
-        if self.rotary_diameter <= 0:
-            return 0.0
-        circumference = self.rotary_diameter * math.pi
-        return (mu / circumference) * 360.0
