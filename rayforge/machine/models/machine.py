@@ -965,8 +965,9 @@ class Machine:
         Prepares an Ops object for encoding by applying machine-specific
         coordinate transformations.
 
-        The pipeline produces ops in machine coordinates. This method
-        converts them to command coordinates for the G-code output.
+        The pipeline produces ops in world coordinates. This method converts
+        them to machine coordinates, and then to command coordinates for the
+        G-code output.
 
         Args:
             ops: The Ops object to prepare.
@@ -977,79 +978,26 @@ class Machine:
         ops_for_encoder = ops.copy()
         space = self.get_coordinate_space()
 
-        # First, apply origin transform to convert from world coords
-        # (bottom-left origin, Y-up) to machine coords.
-        needs_transform = (
-            self.origin != Origin.BOTTOM_LEFT
-            or self.reverse_x_axis
-            or self.reverse_y_axis
-        )
-
-        if needs_transform:
-            transform = space.get_transform_to_world(space.extents)
+        # 1. Transform coordinates from WORLD to MACHINE space
+        transform = space.get_world_to_machine_matrix()
+        if not np.allclose(transform, np.identity(4)):
             ops_for_encoder.transform(transform)
 
-        # Apply reverse_x/reverse_y sign flip to match world_point_to_machine
-        # The transform handles origin position but not controller sign flip
-        if self.reverse_x_axis or self.reverse_y_axis:
-            sign_flip = np.identity(4, dtype=np.float64)
-            if self.reverse_x_axis:
-                sign_flip[0, 0] = -1.0
-            if self.reverse_y_axis:
-                sign_flip[1, 1] = -1.0
-            ops_for_encoder.transform(sign_flip)
+        # 2. Convert from MACHINE coords to COMMAND coords
+        wcs_offset = self.get_active_wcs_offset()
+        x_offset, y_offset, z_offset = space.get_command_offset(
+            wcs_offset=wcs_offset,
+            wcs_is_workarea_origin=self.wcs_origin_is_workarea_origin,
+        )
 
-        # Now ops are in machine coords. Convert to command coords.
-        if self.wcs_origin_is_workarea_origin:
-            # Workarea origin is treated as coordinate zero.
-            # Convert from machine coords to workarea-relative coords.
-            ml, mt, mr, mb = self._work_margins
-            width, height = self._axis_extents
-
-            # Calculate workarea origin position in machine coords
-            # For reversed axes, the transform flips the sign
-            if self.x_axis_right:
-                if self.reverse_x_axis:
-                    x_offset = -mr
-                else:
-                    x_offset = mr
-            else:
-                if self.reverse_x_axis:
-                    x_offset = -ml
-                else:
-                    x_offset = ml
-
-            if self.y_axis_down:
-                if self.reverse_y_axis:
-                    y_offset = -mt
-                else:
-                    y_offset = mt
-            else:
-                if self.reverse_y_axis:
-                    y_offset = -mb
-                else:
-                    y_offset = mb
-
+        if x_offset != 0.0 or y_offset != 0.0 or z_offset != 0.0:
             for command in ops_for_encoder.commands:
                 if isinstance(command, MovingCommand):
-                    base_end = command.end or (0, 0, 0)
-                    result_x = base_end[0] - x_offset
-                    result_y = base_end[1] - y_offset
-                    result_z = base_end[2]
-                    # For right/top origins, positive axis points toward
-                    # smaller machine coords, so negate the result
-                    command.end = (result_x, result_y, result_z)
-        else:
-            # Standard WCS mode: subtract WCS offset to convert from
-            # machine coordinates to command coordinates.
-            wcs_x, wcs_y, wcs_z = self.get_active_wcs_offset()
-            for command in ops_for_encoder.commands:
-                if isinstance(command, MovingCommand):
-                    base_end = command.end or (0, 0, 0)
+                    base_end = command.end or (0.0, 0.0, 0.0)
                     command.end = (
-                        base_end[0] - wcs_x,
-                        base_end[1] - wcs_y,
-                        base_end[2] - wcs_z,
+                        base_end[0] - x_offset,
+                        base_end[1] - y_offset,
+                        base_end[2] - z_offset,
                     )
 
         return ops_for_encoder

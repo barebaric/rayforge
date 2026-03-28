@@ -234,6 +234,131 @@ class MachineSpace(CoordinateSpace):
             reverse_y=machine.reverse_y_axis,
         )
 
+    def get_transform_from_world(self) -> np.ndarray:
+        """
+        Returns the inverse transformation matrix (world → machine).
+
+        This is the inverse of get_transform_to_world(), used to convert
+        coordinates from world space to machine space.
+
+        Note: This matrix handles origin corner transformation only.
+        The reverse_x/reverse_y sign flips are applied separately in
+        world_point_to_machine().
+
+        Returns:
+            A 4x4 numpy array representing the inverse transformation matrix.
+        """
+        return np.linalg.inv(self.get_transform_to_world(self.extents))
+
+    def get_world_to_machine_matrix(self) -> np.ndarray:
+        """
+        Returns the full 4x4 transformation matrix to convert from world space
+        to machine space for the encoding pipeline.
+
+        This combines the origin corner transformation with the axis
+        reversal sign flips.
+        """
+        # The reflection matrix to apply origin shift works identically in both
+        # directions (to_world / from_world) because it is its own inverse.
+        matrix = self.get_transform_to_world(self.extents)
+
+        if self.reverse_x or self.reverse_y:
+            sign_flip = np.identity(4, dtype=np.float64)
+            if self.reverse_x:
+                sign_flip[0, 0] = -1.0
+            if self.reverse_y:
+                sign_flip[1, 1] = -1.0
+            matrix = sign_flip @ matrix
+
+        return matrix
+
+    def get_machine_to_world_matrix(self) -> np.ndarray:
+        """
+        Returns the full 4x4 transformation matrix to convert from machine
+        space to world space for the encoding pipeline.
+        Inverse of get_world_to_machine_matrix().
+        """
+        return np.linalg.inv(self.get_world_to_machine_matrix())
+
+    def get_command_offset(
+        self,
+        wcs_offset: Point3D = (0.0, 0.0, 0.0),
+        wcs_is_workarea_origin: bool = False,
+    ) -> Point3D:
+        """
+        Calculates the offset to subtract from pipeline machine coordinates
+        to obtain command coordinates (G-code output).
+        """
+        if wcs_is_workarea_origin:
+            ml, mt, mr, mb = self.margins
+
+            origin_is_right = self.origin in (
+                OriginCorner.TOP_RIGHT,
+                OriginCorner.BOTTOM_RIGHT,
+            )
+            origin_is_top = self.origin in (
+                OriginCorner.TOP_LEFT,
+                OriginCorner.TOP_RIGHT,
+            )
+
+            if origin_is_right:
+                x_offset = -mr if self.reverse_x else mr
+            else:
+                x_offset = -ml if self.reverse_x else ml
+
+            if origin_is_top:
+                y_offset = -mt if self.reverse_y else mt
+            else:
+                y_offset = -mb if self.reverse_y else mb
+
+            return (float(x_offset), float(y_offset), 0.0)
+        else:
+            return wcs_offset
+
+    def get_command_to_world_matrix(
+        self,
+        wcs_offset: Point3D = (0.0, 0.0, 0.0),
+        wcs_is_workarea_origin: bool = False,
+    ) -> np.ndarray:
+        """
+        Returns the full 4x4 transformation matrix to convert from command
+        space (G-code output) to world space.
+        """
+        x_off, y_off, z_off = self.get_command_offset(
+            wcs_offset, wcs_is_workarea_origin
+        )
+
+        # Translation matrix from command to machine
+        # (machine_coords = cmd_coords + offset)
+        t_cmd_to_mach = np.identity(4, dtype=np.float64)
+        t_cmd_to_mach[0, 3] = x_off
+        t_cmd_to_mach[1, 3] = y_off
+        t_cmd_to_mach[2, 3] = z_off
+
+        # Machine to world matrix
+        m_mach_to_world = self.get_machine_to_world_matrix()
+
+        return m_mach_to_world @ t_cmd_to_mach
+
+    def command_point_to_world(
+        self,
+        cmd_x: float,
+        cmd_y: float,
+        wcs_offset: Point3D = (0.0, 0.0, 0.0),
+        wcs_is_workarea_origin: bool = False,
+    ) -> Point:
+        """
+        Convert a point from command space (G-code output) back to world space.
+
+        This applies the inverse of the encoding pipeline transformations.
+        """
+        matrix = self.get_command_to_world_matrix(
+            wcs_offset, wcs_is_workarea_origin
+        )
+        point = np.array([cmd_x, cmd_y, 0.0, 1.0])
+        result = matrix @ point
+        return float(result[0]), float(result[1])
+
     @property
     def workarea_size(self) -> Tuple[float, float]:
         """Returns the (width, height) of the workarea in mm."""
@@ -280,29 +405,8 @@ class MachineSpace(CoordinateSpace):
         The workarea origin is at the corner specified by the machine's
         origin setting, offset by the margins.
         """
-        ml, mt, mr, mb = self.margins
-        width, height = self.extents
-
-        origin_is_top = self.origin in (
-            OriginCorner.TOP_LEFT,
-            OriginCorner.TOP_RIGHT,
-        )
-        origin_is_right = self.origin in (
-            OriginCorner.TOP_RIGHT,
-            OriginCorner.BOTTOM_RIGHT,
-        )
-
-        if origin_is_right:
-            x = width - mr
-        else:
-            x = ml
-
-        if origin_is_top:
-            y = height - mt
-        else:
-            y = mb
-
-        return x, y
+        x_off, y_off, _ = self.get_command_offset(wcs_is_workarea_origin=True)
+        return x_off, y_off
 
     def get_axis_label_origin(
         self,
@@ -386,21 +490,35 @@ class MachineSpace(CoordinateSpace):
         else:
             return machine_x - wcs_offset[0], machine_y - wcs_offset[1]
 
-    def get_transform_from_world(self) -> np.ndarray:
+    def from_command_coords(
+        self,
+        cmd_x: float,
+        cmd_y: float,
+        wcs_offset: Point3D,
+        wcs_is_workarea_origin: bool = False,
+    ) -> Point:
         """
-        Returns the inverse transformation matrix (world → machine).
+        Convert command coordinates (G-code output) back to machine
+        coordinates.
 
-        This is the inverse of get_transform_to_world(), used to convert
-        coordinates from world space to machine space.
-
-        Note: This matrix handles origin corner transformation only.
-        The reverse_x/reverse_y sign flips are applied separately in
-        world_point_to_machine().
+        Args:
+            cmd_x: X coordinate in command space.
+            cmd_y: Y coordinate in command space.
+            wcs_offset: The (x, y, z) WCS offset.
+            wcs_is_workarea_origin: If True, workarea origin is coordinate
+              zero.
 
         Returns:
-            A 4x4 numpy array representing the inverse transformation matrix.
+            Tuple of (x, y) in machine space.
         """
-        return np.linalg.inv(self.get_transform_to_world(self.extents))
+        if wcs_is_workarea_origin:
+            workarea_origin = self.get_workarea_origin_in_machine()
+            return (
+                cmd_x + workarea_origin[0],
+                cmd_y + workarea_origin[1],
+            )
+        else:
+            return cmd_x + wcs_offset[0], cmd_y + wcs_offset[1]
 
     def world_point_to_machine(self, x: float, y: float) -> Point:
         """
