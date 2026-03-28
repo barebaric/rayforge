@@ -112,16 +112,12 @@ class VertexEncoder(OpsEncoder):
     def encode(
         self,
         ops: Ops,
-        rotary_enabled: bool = False,
-        rotary_diameter: float = 25.0,
     ) -> VertexData:
         """
         Converts Ops into vertex arrays for different path types.
 
         Args:
             ops: The Ops object to encode
-            rotary_enabled: Whether to apply cylindrical transformation.
-            rotary_diameter: The diameter of the cylinder in mm.
 
         Returns:
             A VertexData object containing the computed vertex arrays.
@@ -202,15 +198,6 @@ class VertexEncoder(OpsEncoder):
         zero_power_verts = np.array(zero_power_v, dtype=np.float32).reshape(
             -1, 3
         )
-
-        if rotary_enabled and rotary_diameter > 0:
-            powered_verts = transform_to_cylinder(
-                powered_verts, rotary_diameter
-            )
-            travel_verts = transform_to_cylinder(travel_verts, rotary_diameter)
-            zero_power_verts = transform_to_cylinder(
-                zero_power_verts, rotary_diameter
-            )
 
         return VertexData(
             powered_vertices=powered_verts,

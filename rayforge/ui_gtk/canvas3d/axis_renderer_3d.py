@@ -276,7 +276,6 @@ class AxisRenderer3D(BaseRenderer):
         y_down: bool = False,
         x_negative: bool = False,
         y_negative: bool = False,
-        rotary_mode: bool = False,
     ) -> None:
         """
         Orchestrates the rendering of all components in the correct order.
@@ -294,7 +293,6 @@ class AxisRenderer3D(BaseRenderer):
             y_down: True if the machine origin is at the top.
             x_negative: True if the X-axis counts down from the origin.
             y_negative: True if the Y-axis counts down from the origin.
-            rotary_mode: True if rotary mode is active (hides Y axis/plane).
         """
         if not all(
             (
@@ -322,29 +320,24 @@ class AxisRenderer3D(BaseRenderer):
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         line_shader.use()
 
-        if not rotary_mode:
-            # Draw background plane
-            GL.glDepthMask(GL.GL_FALSE)
-            self.background_renderer.render(line_shader, grid_mvp)
-            GL.glDepthMask(GL.GL_TRUE)
+        # Draw background plane
+        GL.glDepthMask(GL.GL_FALSE)
+        self.background_renderer.render(line_shader, grid_mvp)
+        GL.glDepthMask(GL.GL_TRUE)
 
-            # Draw grid
-            line_shader.set_mat4("uMVP", grid_mvp)
-            line_shader.set_vec4("uColor", self.grid_color)
-            self._set_line_width(1.0)
-            GL.glBindVertexArray(self.grid_vao)
-            GL.glDrawArrays(GL.GL_LINES, 0, self.grid_vertex_count)
+        # Draw grid
+        line_shader.set_mat4("uMVP", grid_mvp)
+        line_shader.set_vec4("uColor", self.grid_color)
+        self._set_line_width(1.0)
+        GL.glBindVertexArray(self.grid_vao)
+        GL.glDrawArrays(GL.GL_LINES, 0, self.grid_vertex_count)
 
-        # Draw axes (in rotary mode, only X axis is meaningful)
+        # Draw axes
         line_shader.set_mat4("uMVP", grid_mvp)
         line_shader.set_vec4("uColor", self.axis_color)
         self._set_line_width(2.0)
         GL.glBindVertexArray(self.axes_vao)
-        if rotary_mode:
-            # Only draw X axis line (first 2 vertices)
-            GL.glDrawArrays(GL.GL_LINES, 0, 2)
-        else:
-            GL.glDrawArrays(GL.GL_LINES, 0, self.axes_vertex_count)
+        GL.glDrawArrays(GL.GL_LINES, 0, self.axes_vertex_count)
 
         # 3. Draw the WCS origin marker
         wcs_translation_matrix = np.identity(4, dtype=np.float32)
@@ -377,7 +370,6 @@ class AxisRenderer3D(BaseRenderer):
             y_down=y_down,
             x_negative=x_negative,
             y_negative=y_negative,
-            rotary_mode=rotary_mode,
         )
         GL.glDisable(GL.GL_BLEND)
 
@@ -407,7 +399,6 @@ class AxisRenderer3D(BaseRenderer):
         y_down: bool = False,
         x_negative: bool = False,
         y_negative: bool = False,
-        rotary_mode: bool = False,
     ) -> None:
         """Helper method to render text labels along the axes."""
         if not self.text_renderer:
@@ -463,40 +454,39 @@ class AxisRenderer3D(BaseRenderer):
                 view_matrix,
             )
 
-        # Y-axis labels (skip in rotary mode)
-        if not rotary_mode:
-            y_label_align = "right"
-            if x_right:
-                y_label_align = "left"
+        # Y-axis labels
+        y_label_align = "right"
+        if x_right:
+            y_label_align = "left"
 
-            min_delta_y = 0.0 - wcs_local_y
-            max_delta_y = self.height_mm - wcs_local_y
-            k_start_y = math.ceil(min_delta_y / self.grid_size_mm)
-            k_end_y = math.floor(max_delta_y / self.grid_size_mm)
+        min_delta_y = 0.0 - wcs_local_y
+        max_delta_y = self.height_mm - wcs_local_y
+        k_start_y = math.ceil(min_delta_y / self.grid_size_mm)
+        k_end_y = math.floor(max_delta_y / self.grid_size_mm)
 
-            for k in range(k_start_y, k_end_y + 1):
-                delta = k * self.grid_size_mm
+        for k in range(k_start_y, k_end_y + 1):
+            delta = k * self.grid_size_mm
 
-                # Physical position of the grid line in local space
-                y_phys_local = wcs_local_y + delta
+            # Physical position of the grid line in local space
+            y_phys_local = wcs_local_y + delta
 
-                # Position of the label text next to the grid line
-                pos_local = np.array(
-                    [-y_axis_label_x_offset, y_phys_local, 0.0, 1.0]
-                )
-                pos_final = (model_matrix @ pos_local)[:3]
+            # Position of the label text next to the grid line
+            pos_local = np.array(
+                [-y_axis_label_x_offset, y_phys_local, 0.0, 1.0]
+            )
+            pos_final = (model_matrix @ pos_local)[:3]
 
-                # Label value logic: same as X
-                label_val = -delta if y_negative else delta
-                label_text = str(int(round(label_val)))
+            # Label value logic: same as X
+            label_val = -delta if y_negative else delta
+            label_text = str(int(round(label_val)))
 
-                self.text_renderer.render_text(
-                    text_shader,
-                    label_text,
-                    pos_final,
-                    label_height_mm,
-                    self.label_color,
-                    text_mvp_matrix,
-                    view_matrix,
-                    align=y_label_align,
-                )
+            self.text_renderer.render_text(
+                text_shader,
+                label_text,
+                pos_final,
+                label_height_mm,
+                self.label_color,
+                text_mvp_matrix,
+                view_matrix,
+                align=y_label_align,
+            )

@@ -78,11 +78,11 @@ class ViewModeCmd:
 
     def set_view_top(self, canvas3d: Optional["Canvas3D"]):
         """
-        Sets the 3D view to a top-down orientation (or rotary if enabled).
+        Sets the 3D view to a top-down orientation (or iso if rotary enabled).
         """
         if canvas3d:
             if canvas3d.rotary_enabled:
-                canvas3d.reset_view_rotary()
+                canvas3d.reset_view_iso()
             else:
                 canvas3d.reset_view_top()
 
