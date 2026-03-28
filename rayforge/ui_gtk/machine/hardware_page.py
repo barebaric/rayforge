@@ -124,6 +124,15 @@ class HardwarePage(TrackedPreferencesPage):
         )
         axes_group.add(self.reverse_z_axis_row)
 
+        rotary_group = Adw.PreferencesGroup(title=_("Rotary"))
+        rotary_group.set_description(
+            _(
+                "Default rotary settings for new layers. "
+                "Individual layers can override these."
+            )
+        )
+        self.add(rotary_group)
+
         rotary_axis_store = Gtk.StringList()
         excluded = (Axis.X, Axis.Y)
         for member in Axis:
@@ -143,7 +152,37 @@ class HardwarePage(TrackedPreferencesPage):
         self.rotary_axis_row.connect(
             "notify::selected", self.on_rotary_axis_changed
         )
-        axes_group.add(self.rotary_axis_row)
+        rotary_group.add(self.rotary_axis_row)
+
+        self.rotary_enabled_default_row = Adw.SwitchRow(
+            title=_("Enable Rotary by Default"),
+            subtitle=_("New layers will default to rotary mode"),
+        )
+        self.rotary_enabled_default_row.set_active(
+            machine.rotary_enabled_default
+        )
+        self.rotary_enabled_default_row.connect(
+            "notify::active", self.on_rotary_enabled_default_changed
+        )
+        rotary_group.add(self.rotary_enabled_default_row)
+
+        rotary_diameter_adjustment = Gtk.Adjustment(
+            lower=1, upper=10000, step_increment=1, page_increment=10
+        )
+        self.rotary_diameter_default_row = Adw.SpinRow(
+            title=_("Default Rotary Diameter"),
+            subtitle=_("Workpiece diameter in mm for new layers"),
+            adjustment=rotary_diameter_adjustment,
+            digits=1,
+        )
+        rotary_diameter_adjustment.set_value(machine.rotary_diameter_default)
+        self.rotary_diameter_default_row.connect(
+            "notify::value", self.on_rotary_diameter_default_changed
+        )
+        self.rotary_diameter_default_row.set_sensitive(
+            machine.rotary_enabled_default
+        )
+        rotary_group.add(self.rotary_diameter_default_row)
 
         work_area_group = Adw.PreferencesGroup(title=_("Work Area"))
         work_area_group.set_description(
@@ -381,6 +420,14 @@ class HardwarePage(TrackedPreferencesPage):
         selected = row.get_selected()
         if selected < len(valid_axes):
             self.machine.set_rotary_axis(valid_axes[selected])
+
+    def on_rotary_enabled_default_changed(self, row, _):
+        enabled = row.get_active()
+        self.machine.set_rotary_enabled_default(enabled)
+        self.rotary_diameter_default_row.set_sensitive(enabled)
+
+    def on_rotary_diameter_default_changed(self, spinrow, _param):
+        self.machine.set_rotary_diameter_default(get_spinrow_float(spinrow))
 
     def on_x_extent_changed(self, spinrow, _param):
         x = get_spinrow_float(spinrow)

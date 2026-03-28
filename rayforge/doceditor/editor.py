@@ -65,6 +65,16 @@ class DocEditor:
         self.task_manager = task_manager
         self._config_manager = context.config_mgr
         self.doc = doc or Doc()
+
+        if doc is None and context.machine:
+            for layer in self.doc.layers:
+                if layer.workflow:
+                    layer.workflow.set_rotary_enabled(
+                        context.machine.rotary_enabled_default
+                    )
+                    layer.workflow.set_rotary_diameter(
+                        context.machine.rotary_diameter_default
+                    )
         self.pipeline = Pipeline(
             self.doc,
             self.task_manager,
