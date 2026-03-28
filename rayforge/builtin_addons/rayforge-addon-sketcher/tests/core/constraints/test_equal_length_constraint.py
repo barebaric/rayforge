@@ -299,3 +299,206 @@ def test_equal_length_can_apply_to_line_and_circle():
     selection.point_ids = []
     selection.entity_ids = [line_id, circle_id]
     assert EqualLengthConstraint.can_apply_to(selection, sketch) is True
+
+
+def test_equal_length_error_two_ellipses(setup_env):
+    reg, params = setup_env
+    c1 = reg.add_point(0, 0)
+    rx1 = reg.add_point(5, 0)
+    ry1 = reg.add_point(0, 3)
+    e1 = reg.add_ellipse(c1, rx1, ry1)
+
+    c2 = reg.add_point(20, 0)
+    rx2 = reg.add_point(28, 0)
+    ry2 = reg.add_point(20, 5)
+    e2 = reg.add_ellipse(c2, rx2, ry2)
+
+    constr = EqualLengthConstraint([e1, e2])
+    err = constr.error(reg, params)
+    assert len(err) == 2
+    assert err[0] == pytest.approx(8.0 - 5.0)
+    assert err[1] == pytest.approx(5.0 - 3.0)
+
+
+def test_equal_length_error_three_ellipses(setup_env):
+    reg, params = setup_env
+    c1 = reg.add_point(0, 0)
+    rx1 = reg.add_point(10, 0)
+    ry1 = reg.add_point(0, 4)
+    e1 = reg.add_ellipse(c1, rx1, ry1)
+
+    c2 = reg.add_point(30, 0)
+    rx2 = reg.add_point(37, 0)
+    ry2 = reg.add_point(30, 9)
+    e2 = reg.add_ellipse(c2, rx2, ry2)
+
+    c3 = reg.add_point(60, 0)
+    rx3 = reg.add_point(65, 0)
+    ry3 = reg.add_point(60, 2)
+    e3 = reg.add_ellipse(c3, rx3, ry3)
+
+    constr = EqualLengthConstraint([e1, e2, e3])
+    err = constr.error(reg, params)
+    assert len(err) == 4
+    assert err[0] == pytest.approx(7.0 - 10.0)
+    assert err[1] == pytest.approx(9.0 - 4.0)
+    assert err[2] == pytest.approx(5.0 - 10.0)
+    assert err[3] == pytest.approx(2.0 - 4.0)
+
+
+def test_equal_length_error_ellipse_and_circle(setup_env):
+    reg, params = setup_env
+    cc = reg.add_point(0, 0)
+    cr = reg.add_point(6, 0)
+    circ = reg.add_circle(cc, cr)
+
+    ec = reg.add_point(20, 0)
+    erx = reg.add_point(25, 0)
+    ery = reg.add_point(20, 3)
+    ell = reg.add_ellipse(ec, erx, ery)
+
+    constr = EqualLengthConstraint([circ, ell])
+    err = constr.error(reg, params)
+    assert len(err) == 2
+    assert err[0] == pytest.approx(5.0 - 6.0)
+    assert err[1] == pytest.approx(3.0 - 6.0)
+
+
+def test_equal_length_gradient_two_ellipses(setup_env):
+    reg, params = setup_env
+    c1 = reg.add_point(0, 0)
+    rx1 = reg.add_point(5, 0)
+    ry1 = reg.add_point(0, 3)
+    e1 = reg.add_ellipse(c1, rx1, ry1)
+
+    c2 = reg.add_point(20, 0)
+    rx2 = reg.add_point(28, 0)
+    ry2 = reg.add_point(20, 5)
+    e2 = reg.add_ellipse(c2, rx2, ry2)
+
+    mutable_pids = [c1, rx1, ry1, c2, rx2, ry2]
+
+    constraint = EqualLengthConstraint(entity_ids=[e1, e2])
+
+    pid_to_idx_map = {pid: i for i, pid in enumerate(mutable_pids)}
+
+    def update_state_from_vec(x_vec):
+        for pid, i in pid_to_idx_map.items():
+            pt = reg.get_point(pid)
+            pt.x = x_vec[i * 2]
+            pt.y = x_vec[i * 2 + 1]
+
+    def func_wrapper(x_vec, error_index=0):
+        update_state_from_vec(x_vec)
+        err = constraint.error(reg, params)
+        return err[error_index]
+
+    def grad_wrapper(x_vec, error_index=0):
+        update_state_from_vec(x_vec)
+        grad_map = constraint.gradient(reg, params)
+        grad_vec = np.zeros_like(x_vec)
+        for pid, grads in grad_map.items():
+            if pid in pid_to_idx_map:
+                idx = pid_to_idx_map[pid] * 2
+                if error_index < len(grads):
+                    dx, dy = grads[error_index]
+                    grad_vec[idx] = dx
+                    grad_vec[idx + 1] = dy
+        return grad_vec
+
+    x0 = np.array([0, 0, 5, 0, 0, 3, 20, 0, 28, 0, 20, 5], dtype=float)
+
+    for error_idx in range(2):
+        func = partial(func_wrapper, error_index=error_idx)
+        grad = partial(grad_wrapper, error_index=error_idx)
+        diff = check_grad(func, grad, x0, epsilon=1e-6)
+        assert diff < 1e-5, (
+            f"Gradient check failed for error index {error_idx}: {diff}"
+        )
+
+
+def test_equal_length_gradient_ellipse_circle(setup_env):
+    reg, params = setup_env
+    cc = reg.add_point(0, 0)
+    cr = reg.add_point(6, 0)
+    circ = reg.add_circle(cc, cr)
+
+    ec = reg.add_point(20, 0)
+    erx = reg.add_point(25, 0)
+    ery = reg.add_point(20, 3)
+    ell = reg.add_ellipse(ec, erx, ery)
+
+    mutable_pids = [cc, cr, ec, erx, ery]
+
+    constraint = EqualLengthConstraint(entity_ids=[circ, ell])
+
+    pid_to_idx_map = {pid: i for i, pid in enumerate(mutable_pids)}
+
+    def update_state_from_vec(x_vec):
+        for pid, i in pid_to_idx_map.items():
+            pt = reg.get_point(pid)
+            pt.x = x_vec[i * 2]
+            pt.y = x_vec[i * 2 + 1]
+
+    def func_wrapper(x_vec, error_index=0):
+        update_state_from_vec(x_vec)
+        err = constraint.error(reg, params)
+        return err[error_index]
+
+    def grad_wrapper(x_vec, error_index=0):
+        update_state_from_vec(x_vec)
+        grad_map = constraint.gradient(reg, params)
+        grad_vec = np.zeros_like(x_vec)
+        for pid, grads in grad_map.items():
+            if pid in pid_to_idx_map:
+                idx = pid_to_idx_map[pid] * 2
+                if error_index < len(grads):
+                    dx, dy = grads[error_index]
+                    grad_vec[idx] = dx
+                    grad_vec[idx + 1] = dy
+        return grad_vec
+
+    x0 = np.array([0, 0, 6, 0, 20, 0, 25, 0, 20, 3], dtype=float)
+
+    for error_idx in range(2):
+        func = partial(func_wrapper, error_index=error_idx)
+        grad = partial(grad_wrapper, error_index=error_idx)
+        diff = check_grad(func, grad, x0, epsilon=1e-6)
+        assert diff < 1e-5, (
+            f"Gradient check failed for error index {error_idx}: {diff}"
+        )
+
+
+def test_equal_length_can_apply_to_two_ellipses():
+    sketch = Sketch()
+    c1 = sketch.add_point(0, 0)
+    rx1 = sketch.add_point(5, 0)
+    ry1 = sketch.add_point(0, 3)
+    e1 = sketch.registry.add_ellipse(c1, rx1, ry1)
+
+    c2 = sketch.add_point(20, 0)
+    rx2 = sketch.add_point(25, 0)
+    ry2 = sketch.add_point(20, 3)
+    e2 = sketch.registry.add_ellipse(c2, rx2, ry2)
+
+    selection = SketchSelection()
+    selection.point_ids = []
+    selection.entity_ids = [e1, e2]
+    assert EqualLengthConstraint.can_apply_to(selection, sketch) is True
+
+
+def test_equal_length_can_apply_to_ellipse_and_circle():
+    sketch = Sketch()
+    cc = sketch.add_point(0, 0)
+    cr = sketch.add_point(5, 0)
+    circ = sketch.add_circle(cc, cr)
+
+    ec = sketch.add_point(20, 0)
+    erx = sketch.add_point(25, 0)
+    ery = sketch.add_point(20, 3)
+    ell = sketch.registry.add_ellipse(ec, erx, ery)
+
+    selection = SketchSelection()
+    selection.point_ids = []
+    selection.entity_ids = [circ, ell]
+    assert EqualLengthConstraint.can_apply_to(selection, sketch) is True
