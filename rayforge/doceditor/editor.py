@@ -67,8 +67,10 @@ class DocEditor:
         self.doc = doc or Doc()
 
         if doc is None and context.machine:
-            self.doc.set_rotary_enabled(context.machine.rotary_enabled_default)
-            self.doc.set_rotary_diameter(
+            self.doc.active_layer.set_rotary_enabled(
+                context.machine.rotary_enabled_default
+            )
+            self.doc.active_layer.set_rotary_diameter(
                 context.machine.rotary_diameter_default
             )
         self.pipeline = Pipeline(

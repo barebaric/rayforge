@@ -5,6 +5,7 @@ workpieces within a document.
 
 from __future__ import annotations
 import logging
+import math
 from gettext import gettext as _
 from typing import (
     List,
@@ -47,6 +48,8 @@ class Layer(DocItem):
         """
         super().__init__(name=name)
         self.visible: bool = True
+        self.rotary_enabled: bool = False
+        self.rotary_diameter: float = 25.0
 
         # Signals for notifying other parts of the application of changes.
         # This one is special and is bubbled manually.
@@ -67,6 +70,8 @@ class Layer(DocItem):
             "name": self.name,
             "matrix": self.matrix.to_list(),
             "visible": self.visible,
+            "rotary_enabled": self.rotary_enabled,
+            "rotary_diameter": self.rotary_diameter,
             "children": [child.to_dict() for child in self.children],
         }
         result.update(self.extra)
@@ -81,6 +86,8 @@ class Layer(DocItem):
             "name",
             "matrix",
             "visible",
+            "rotary_enabled",
+            "rotary_diameter",
             "children",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -89,6 +96,8 @@ class Layer(DocItem):
         layer.uid = data["uid"]
         layer.matrix = Matrix.from_list(data["matrix"])
         layer.visible = data.get("visible", True)
+        layer.rotary_enabled = data.get("rotary_enabled", False)
+        layer.rotary_diameter = data.get("rotary_diameter", 25.0)
         layer.extra = extra
 
         children = []
@@ -213,6 +222,27 @@ class Layer(DocItem):
             return
         self.visible = visible
         self.updated.send(self)
+
+    def set_rotary_enabled(self, enabled: bool):
+        """Enable or disable rotary attachment mode."""
+        if self.rotary_enabled == enabled:
+            return
+        self.rotary_enabled = enabled
+        self.updated.send(self)
+
+    def set_rotary_diameter(self, diameter: float):
+        """Set the diameter of the object on the rotary attachment."""
+        if self.rotary_diameter == diameter:
+            return
+        self.rotary_diameter = diameter
+        self.updated.send(self)
+
+    def mu_to_degrees(self, mu: float) -> float:
+        """Convert machine units to degrees for rotary axis."""
+        if self.rotary_diameter <= 0:
+            return 0.0
+        circumference = self.rotary_diameter * math.pi
+        return (mu / circumference) * 360.0
 
     def add_workpiece(self, workpiece: "WorkPiece"):
         """Adds a single workpiece to the layer."""

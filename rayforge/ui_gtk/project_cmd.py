@@ -85,8 +85,12 @@ class ProjectCmd:
 
         machine = self._editor.context.machine
         if machine:
-            new_doc.set_rotary_enabled(machine.rotary_enabled_default)
-            new_doc.set_rotary_diameter(machine.rotary_diameter_default)
+            new_doc.active_layer.set_rotary_enabled(
+                machine.rotary_enabled_default
+            )
+            new_doc.active_layer.set_rotary_diameter(
+                machine.rotary_diameter_default
+            )
 
         self._editor.set_doc(new_doc)
         self._editor.set_file_path(None)

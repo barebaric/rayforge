@@ -1,4 +1,3 @@
-import math
 from typing import cast
 import pytest
 from unittest.mock import MagicMock, patch
@@ -794,55 +793,3 @@ def test_from_dict_legacy_layer_stock_item_uid():
     )
     assert "stock_item_uid" in layer_dict
     assert layer_dict["stock_item_uid"] == "stock-item-1"
-
-
-class TestDocRotary:
-    def test_rotary_defaults(self, doc):
-        assert doc.rotary_enabled is False
-        assert doc.rotary_diameter == 25.0
-
-    def test_set_rotary_enabled(self, doc):
-        handler = MagicMock()
-        doc.updated.connect(handler)
-        doc.set_rotary_enabled(True)
-        assert doc.rotary_enabled is True
-        handler.assert_called_once_with(doc)
-
-    def test_set_rotary_enabled_no_change(self, doc):
-        handler = MagicMock()
-        doc.updated.connect(handler)
-        doc.set_rotary_enabled(False)
-        handler.assert_not_called()
-
-    def test_set_rotary_diameter(self, doc):
-        handler = MagicMock()
-        doc.updated.connect(handler)
-        doc.set_rotary_diameter(50.0)
-        assert doc.rotary_diameter == 50.0
-        handler.assert_called_once_with(doc)
-
-    def test_set_rotary_diameter_no_change(self, doc):
-        handler = MagicMock()
-        doc.updated.connect(handler)
-        doc.set_rotary_diameter(25.0)
-        handler.assert_not_called()
-
-    def test_mu_to_degrees(self, doc):
-        doc.set_rotary_diameter(25.0)
-        circumference = 25.0 * math.pi
-        expected = (10.0 / circumference) * 360.0
-        assert abs(doc.mu_to_degrees(10.0) - expected) < 1e-6
-
-    def test_mu_to_degrees_zero_diameter(self, doc):
-        doc.rotary_diameter = 0.0
-        assert doc.mu_to_degrees(10.0) == 0.0
-
-    def test_rotary_serialization_roundtrip(self, doc):
-        doc.set_rotary_enabled(True)
-        doc.set_rotary_diameter(50.0)
-        data = doc.to_dict()
-        assert data["rotary_enabled"] is True
-        assert data["rotary_diameter"] == 50.0
-        restored = Doc.from_dict(data)
-        assert restored.rotary_enabled is True
-        assert restored.rotary_diameter == 50.0

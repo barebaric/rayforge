@@ -7,6 +7,7 @@ from ...core.doc import Doc
 from ...core.layer import Layer
 from ..icons import get_icon
 from ..shared.gtk import apply_css
+from .layer_settings_dialog import LayerSettingsDialog
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -108,6 +109,11 @@ class LayerView(Gtk.Box):
         self.visibility_on_icon = get_icon("visibility-on-symbolic")
         self.visibility_off_icon = get_icon("visibility-off-symbolic")
 
+        self.settings_button = Gtk.Button(child=get_icon("settings-symbolic"))
+        self.settings_button.set_tooltip_text(_("Layer Settings"))
+        self.settings_button.connect("clicked", self.on_settings_clicked)
+        suffix_box.append(self.settings_button)
+
         self.delete_button = Gtk.Button(child=get_icon("delete-symbolic"))
         self.delete_button.set_tooltip_text(_("Delete this layer"))
         self.delete_button.connect("clicked", self.on_delete_clicked)
@@ -181,6 +187,14 @@ class LayerView(Gtk.Box):
     def on_delete_clicked(self, button):
         """Emits a signal when the delete button is clicked."""
         self.delete_clicked.send(self)
+
+    def on_settings_clicked(self, button):
+        """Opens the layer settings dialog."""
+        toplevel = self.get_ancestor(Gtk.Window)
+        if not toplevel:
+            return
+        dialog = LayerSettingsDialog(self.layer, transient_for=toplevel)
+        dialog.present()
 
     def on_name_apply(self, widget, *args):
         """Handles applying the name change from the entry."""
