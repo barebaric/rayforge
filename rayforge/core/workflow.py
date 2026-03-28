@@ -171,7 +171,7 @@ class Workflow(DocItem):
             mu: Distance in machine units along the cylinder surface.
 
         Returns:
-            Angle in degrees for the A-axis.
+            Angle in degrees for the rotary axis.
         """
         if self.rotary_diameter <= 0:
             return 0.0

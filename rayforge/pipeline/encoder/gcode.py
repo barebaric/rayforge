@@ -68,6 +68,7 @@ class GcodeEncoder(OpsEncoder):
         self._power_format: str = "{:.3f}"
         self.rotary_enabled: bool = False
         self.rotary_diameter: float = 25.0
+        self.rotary_axis: str = "A"
 
     @classmethod
     def for_machine(cls, machine: "Machine") -> "GcodeEncoder":
@@ -151,7 +152,7 @@ class GcodeEncoder(OpsEncoder):
             mu: Distance in machine units along the cylinder surface.
 
         Returns:
-            Angle in degrees for the A-axis.
+            Angle in degrees for the rotary axis.
         """
         if self.rotary_diameter <= 0:
             return 0.0
@@ -175,7 +176,7 @@ class GcodeEncoder(OpsEncoder):
         prev_x, prev_y, prev_z = self.current_pos
 
         if self.rotary_enabled:
-            y_axis_letter = "A"
+            y_axis_letter = self.rotary_axis
             y_for_output = self._mu_to_degrees(y)
             prev_y_for_output = self._mu_to_degrees(prev_y)
         else:
@@ -226,6 +227,7 @@ class GcodeEncoder(OpsEncoder):
         else:
             self.rotary_enabled = False
             self.rotary_diameter = 25.0
+        self.rotary_axis = machine.rotary_axis.name or "A"
 
         context = GcodeContext(
             machine=machine, doc=doc, job=JobInfo(extents=ops.rect())
