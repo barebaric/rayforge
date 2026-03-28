@@ -1,9 +1,13 @@
 from __future__ import annotations
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, Set, Tuple
+from typing import TYPE_CHECKING, List, Optional, Set, Tuple
 
 from rayforge.core.geo import Point as GeoPoint
-from ..constraints import PerpendicularConstraint
+from ..constraints import (
+    Constraint,
+    EqualDistanceConstraint,
+    PerpendicularConstraint,
+)
 from ..entities import Ellipse, Line, Point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
@@ -257,6 +261,18 @@ class EllipseCommand(SketchChangeCommand):
             line_x_id, line_y_id, user_visible=False
         )
 
+        constraints: List[Constraint] = [perp_constraint]
+        if self.constrain_circle:
+            constraints.append(
+                EqualDistanceConstraint(
+                    center_id,
+                    radius_x_id,
+                    center_id,
+                    radius_y_id,
+                    user_visible=True,
+                )
+            )
+
         points_to_add = [new_center, new_radius_x, new_radius_y]
 
         if self.is_start_temp:
@@ -273,7 +289,7 @@ class EllipseCommand(SketchChangeCommand):
                 visible_line_x,
                 visible_line_y,
             ],
-            constraints=[perp_constraint],
+            constraints=constraints,
         )
         self.add_cmd._do_execute()
 
