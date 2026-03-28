@@ -303,6 +303,22 @@ class TestParseState:
         assert result.error is not None
         assert result.error.code == 1
 
+    def test_parse_state_with_two_axis_mpos(self):
+        """Test parsing 2-axis MPos (Z defaults to 0)."""
+        default = DeviceState()
+        result = parse_state(
+            "<Idle|MPos:20.000,20.000|FS:0,0|WCO:0.000,0.000>", default
+        )
+        assert result.machine_pos == (20.0, 20.0, 0.0)
+        assert result.work_pos == (20.0, 20.0, 0.0)
+
+    def test_parse_state_with_two_axis_mpos_no_wco(self):
+        """Test parsing 2-axis MPos without WCO."""
+        default = DeviceState(wco=(1.0, 2.0, 3.0))
+        result = parse_state("<Idle|MPos:20.000,20.000|FS:0,0>", default)
+        assert result.machine_pos == (20.0, 20.0, 0.0)
+        assert result.work_pos == (19.0, 18.0, -3.0)
+
     def test_parse_state_recalculates_wpos(self):
         """Test that WPos is recalculated from MPos and WCO."""
         default = DeviceState()
@@ -397,9 +413,14 @@ class TestParsePosTriplet:
         result = _parse_pos_triplet("Invalid")
         assert result is None
 
-    def test_parse_incomplete_position_returns_none(self):
-        """Test that incomplete position returns None."""
+    def test_parse_two_axis_position_pads_z(self):
+        """Test that 2-axis position gets Z padded with 0.0."""
         result = _parse_pos_triplet("MPos:10,20")
+        assert result == (10.0, 20.0, 0.0)
+
+    def test_parse_single_axis_position_pads_y_z(self):
+        """Test that 1-axis position gets Y,Z padded with 0.0."""
+        result = _parse_pos_triplet("MPos:10")
         assert result is None
 
 
