@@ -1,9 +1,13 @@
+import io
+import json
+import os
 import sys
 import logging
 import importlib.util
 import urllib.request
 import shutil
 import tempfile
+import zipfile
 from enum import Enum, auto
 from pathlib import Path
 from typing import (
@@ -18,7 +22,7 @@ from typing import (
     runtime_checkable,
     TYPE_CHECKING,
 )
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 import pluggy
 import yaml
@@ -36,13 +40,32 @@ from ..shared.util.versioning import (
     parse_requirement,
     UnknownVersion,
 )
-from .addon import Addon, AddonMetadata, AddonValidationError
+from .addon import (
+    Addon,
+    AddonMetadata,
+    AddonValidationError,
+    VersionType,
+)
 from .manifest import AddonManifest
 
 if TYPE_CHECKING:
     from ..shared.tasker.manager import TaskManagerProxy
 
 logger = logging.getLogger(__name__)
+
+GITHUB_ZIP_URL = (
+    "https://github.com/{owner}/{repo}/archive/refs/heads/main.zip"
+)
+GITHUB_TAGS_URL = "https://api.github.com/repos/{owner}/{repo}/tags?per_page=1"
+GITLAB_ZIP_URL = (
+    "https://gitlab.com/{owner}/{repo}/-/archive/main/{repo}-main.zip"
+)
+GITLAB_TAGS_URL = (
+    "https://gitlab.com/api/v4/projects/{encoded}"
+    "/repository/tags?per_page=1&order_by=version"
+)
+GITEA_ZIP_URL = "https://{host}/{owner}/{repo}/archive/main.zip"
+GITEA_TAGS_URL = "https://{host}/api/v1/repos/{owner}/{repo}/tags?limit=1"
 
 
 @runtime_checkable
@@ -522,7 +545,12 @@ class AddonManager:
         # Build manifest at the end of the batch load
         self._build_and_update_manifest()
 
-    def load_addon(self, addon_path: Path, backend_only: bool = False):
+    def load_addon(
+        self,
+        addon_path: Path,
+        backend_only: bool = False,
+        version: Optional[VersionType] = None,
+    ):
         """
         Loads a single addon from a directory.
 
@@ -531,6 +559,8 @@ class AddonManager:
             backend_only: If True, only load backend entry points (skip
                 frontend/widgets to avoid pulling in GTK dependencies).
                 Used by worker processes.
+            version: If provided, skip version resolution and use
+                this version directly.
         """
         try:
             # 1. Load addon structure without resolving version yet to get
@@ -542,7 +572,9 @@ class AddonManager:
 
             # 2. Resolve version using the proper addon_name
             is_builtin = not addon_path.is_relative_to(self.install_dir)
-            if is_builtin:
+            if version is not None:
+                resolved_version = version
+            elif is_builtin:
                 resolved_version = UnknownVersion
             else:
                 resolved_version = None
@@ -556,11 +588,19 @@ class AddonManager:
                         resolved_version = get_git_tag_version(addon_path)
                     except RuntimeError:
                         logger.warning(
-                            f"No stored version for addon '{addon_name}' "
-                            f"at {addon_path} and no git tags found, using "
-                            "UnknownVersion"
+                            f"No stored version for addon "
+                            f"'{addon_name}' at {addon_path} "
+                            "and no git tags found, "
+                            "using UnknownVersion"
                         )
                         resolved_version = UnknownVersion
+                        if resolved_version is UnknownVersion:
+                            logger.warning(
+                                f"No stored version for addon "
+                                f"'{addon_name}' at {addon_path} "
+                                "and no git tags found, "
+                                "using UnknownVersion"
+                            )
 
             addon.metadata.version = resolved_version
 
@@ -844,72 +884,125 @@ class AddonManager:
             logger.info(f"Compiled {compiled_count} translation file(s)")
         return compiled_count
 
+    @staticmethod
+    def _import_git():
+        if os.environ.get("RAYFORGE_NOGIT"):
+            raise ImportError("RAYFORGE_NOGIT is set")
+        if importlib.util.find_spec("git") is None:
+            raise ImportError("git module not found")
+
+    def _fetch_addon_source(self, git_url: str, dest: Path) -> bool:
+        """
+        Download addon source to a staging directory.
+
+        Uses git clone when GitPython is available, otherwise falls
+        back to downloading a zip archive. Returns True on success.
+        """
+        try:
+            self._import_git()
+        except ImportError:
+            logger.info("GitPython not available, trying zip download...")
+            return self._download_addon_zip(git_url, dest)
+
+        from git import Repo
+
+        logger.info(f"Cloning {git_url} to staging area...")
+        try:
+            Repo.clone_from(git_url, dest)
+            logger.info(f"Successfully cloned {git_url}")
+            return True
+        except Exception as e:
+            logger.error(f"Git clone failed: {e}")
+            return False
+
+    def _resolve_addon_version(
+        self, staging_path: Path, git_url: Optional[str] = None
+    ) -> VersionType:
+        """
+        Determine the version of an addon in a staging directory.
+
+        Tries git tags first (when GitPython is available), then
+        falls back to querying the remote tag API, then to the
+        version field in the manifest.
+        """
+        try:
+            self._import_git()
+        except ImportError:
+            if git_url:
+                remote = self._get_remote_tag_version(git_url)
+                if remote:
+                    return remote
+            return self._version_from_manifest(staging_path) or UnknownVersion
+
+        try:
+            return get_git_tag_version(staging_path)
+        except RuntimeError:
+            pass
+        return self._version_from_manifest(staging_path) or UnknownVersion
+
+    def _finalize_addon_install(
+        self,
+        addon: Addon,
+        git_url: str,
+        addon_id: Optional[str],
+    ) -> Path:
+        """
+        Copy validated addon from staging to the install directory
+        and register it with the manager.
+
+        Returns the final installation path.
+        """
+        addon_name = addon.metadata.name
+        version = addon.metadata.version
+        install_dir_name = addon_id or self._extract_repo_name(git_url)
+        final_path = self.install_dir / install_dir_name
+
+        if final_path.exists():
+            logger.info(f"Upgrading existing addon at {final_path}")
+            self.uninstall_addon(addon_name)
+
+        shutil.copytree(addon.root_path, final_path, dirs_exist_ok=True)
+        self.compile_translations(final_path, force=True)
+
+        if self.addon_config and version is not UnknownVersion:
+            self.addon_config.set_version(addon_name, str(version))
+
+        logger.info(f"Successfully installed addon to {final_path}")
+        self.load_addon(final_path, version=version)
+        self._call_registration_hooks()
+        self._build_and_update_manifest()
+        self._restart_workers()
+        return final_path
+
     def install_addon(
         self, git_url: str, addon_id: Optional[str] = None
     ) -> Optional[Path]:
         """
         Install an addon from a remote Git repository.
 
+        Falls back to downloading a zip archive if GitPython is not
+        available.
+
         Args:
             git_url (str): The URL of the repository to clone.
             addon_id (Optional[str]): The canonical ID for the addon,
-                provided by the registry. If None, it's derived from the URL
-                (for manual installs).
+                provided by the registry. If None, it's derived from
+                the URL (for manual installs).
         """
-        try:
-            importlib.import_module("git")
-        except ImportError:
-            logger.error("GitPython is required for addon installation.")
-            return None
-
-        from git import Repo
-
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            logger.info(f"Cloning {git_url} to staging area...")
 
-            try:
-                Repo.clone_from(git_url, temp_path)
-            except Exception as e:
-                logger.error(f"Git clone failed: {e}")
+            if not self._fetch_addon_source(git_url, temp_path):
                 return None
 
-            try:
-                version = get_git_tag_version(temp_path)
-            except RuntimeError as e:
-                logger.error(f"Failed to get addon version: {e}")
-                return None
+            version = self._resolve_addon_version(temp_path, git_url)
 
             try:
                 logger.info("Validating addon structure and code safety...")
                 addon = Addon.load_from_directory(temp_path, version=version)
                 addon.validate()
                 logger.info("Validation passed.")
-
-                addon_name = addon.metadata.name
-                install_dir_name = addon_id or self._extract_repo_name(git_url)
-                final_path = self.install_dir / install_dir_name
-
-                if final_path.exists():
-                    logger.info(f"Upgrading existing addon at {final_path}")
-                    # Attempt uninstall by true ID
-                    self.uninstall_addon(addon_name)
-
-                shutil.copytree(temp_path, final_path, dirs_exist_ok=True)
-
-                self.compile_translations(final_path, force=True)
-
-                if self.addon_config:
-                    self.addon_config.set_version(addon_name, version)
-
-                logger.info(f"Successfully installed addon to {final_path}")
-                self.load_addon(final_path)
-                self._call_registration_hooks()
-
-                self._build_and_update_manifest()
-                self._restart_workers()
-                return final_path
-
+                return self._finalize_addon_install(addon, git_url, addon_id)
             except AddonValidationError as e:
                 logger.error(f"Addon validation failed: {e}")
                 return None
@@ -1006,6 +1099,145 @@ class AddonManager:
         except Exception as e:
             logger.error(f"Failed to uninstall {addon_name}: {e}")
             return False
+
+    @staticmethod
+    def _parse_git_url(
+        git_url: str,
+    ) -> Optional[Tuple[str, str, str]]:
+        """
+        Extract (host, owner, repo) from an HTTPS git URL.
+
+        Returns None for non-HTTP URLs or malformed paths.
+        """
+        parsed = urlparse(git_url)
+        if parsed.scheme not in ("http", "https") or not parsed.path:
+            return None
+        if not parsed.hostname:
+            return None
+        path = parsed.path.rstrip("/")
+        if path.endswith(".git"):
+            path = path[:-4]
+        parts = path.strip("/").split("/")
+        if len(parts) < 2:
+            return None
+        return parsed.hostname, parts[0], parts[1]
+
+    def _get_remote_tag_version(self, git_url: str) -> Optional[str]:
+        """
+        Query the platform REST API for the latest tag.
+
+        Supports GitHub, GitLab, and Gitea. Returns the tag name
+        (without 'v' prefix) or None if no tags are found.
+        """
+        parsed = self._parse_git_url(git_url)
+        if parsed is None:
+            return None
+        host, owner, repo = parsed
+        if host == "github.com":
+            api_url = GITHUB_TAGS_URL.format(owner=owner, repo=repo)
+        elif host == "gitlab.com":
+            encoded = quote(f"{owner}/{repo}", safe="")
+            api_url = GITLAB_TAGS_URL.format(encoded=encoded)
+        else:
+            api_url = GITEA_TAGS_URL.format(host=host, owner=owner, repo=repo)
+        try:
+            req = urllib.request.Request(
+                api_url, headers={"Accept": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status != 200:
+                    return None
+                tags = json.loads(resp.read())
+        except Exception as e:
+            logger.debug(f"Remote tag lookup failed for {git_url}: {e}")
+            return None
+        if not tags or not isinstance(tags, list):
+            return None
+        name = tags[0].get("name", "")
+        if name.startswith("v"):
+            name = name[1:]
+        return name or None
+
+    @staticmethod
+    def _git_url_to_zip(git_url: str) -> Optional[str]:
+        """Convert a git repository URL to a downloadable zip URL."""
+        parsed = AddonManager._parse_git_url(git_url)
+        if parsed is None:
+            return None
+        host, owner, repo = parsed
+        if host == "github.com":
+            return GITHUB_ZIP_URL.format(owner=owner, repo=repo)
+        if host == "gitlab.com":
+            return GITLAB_ZIP_URL.format(owner=owner, repo=repo)
+        return GITEA_ZIP_URL.format(host=host, owner=owner, repo=repo)
+
+    @staticmethod
+    def _version_from_manifest(addon_path: Path) -> Optional[str]:
+        """Read the version field from rayforge-addon.yaml."""
+        manifest = addon_path / "rayforge-addon.yaml"
+        if manifest.exists():
+            try:
+                data = yaml.safe_load(manifest.read_text())
+                v = data.get("version") if isinstance(data, dict) else None
+                return str(v) if v else None
+            except Exception:
+                pass
+        return None
+
+    @staticmethod
+    def _fetch_zip_data(zip_url: str) -> Optional[io.BytesIO]:
+        """Download a zip archive from a URL. Returns None on failure."""
+        try:
+            with urllib.request.urlopen(zip_url, timeout=30) as resp:
+                if resp.status != 200:
+                    logger.error(f"Zip download failed: HTTP {resp.status}")
+                    return None
+                return io.BytesIO(resp.read())
+        except Exception as e:
+            logger.error(f"Zip download failed: {e}")
+            return None
+
+    @staticmethod
+    def _extract_zip_archive(data: io.BytesIO, dest: Path) -> bool:
+        """
+        Extract a zip archive, stripping the top-level directory.
+
+        Handles the common case where GitHub/GitLab zips wrap
+        everything in a "repo-branch/" prefix.
+        """
+        try:
+            with zipfile.ZipFile(data) as zf:
+                names = zf.namelist()
+                if not names:
+                    logger.error("Downloaded zip archive is empty")
+                    return False
+                prefix = names[0].split("/")[0] + "/"
+                for member in zf.infolist():
+                    if member.filename.startswith(prefix):
+                        member.filename = member.filename[len(prefix) :]
+                        if member.filename:
+                            zf.extract(member, dest)
+                return True
+        except zipfile.BadZipFile as e:
+            logger.error(f"Downloaded file is not a valid zip: {e}")
+            return False
+
+    def _download_addon_zip(self, git_url: str, dest: Path) -> bool:
+        """Download a repository as a zip archive and extract to dest."""
+        zip_url = self._git_url_to_zip(git_url)
+        if not zip_url:
+            logger.error(f"Cannot convert URL to zip download: {git_url}")
+            return False
+
+        data = self._fetch_zip_data(zip_url)
+        if data is None:
+            return False
+        logger.info(f"Successfully downloaded {zip_url}")
+
+        result = self._extract_zip_archive(data, dest)
+        if result:
+            logger.info(f"Successfully extracted {zip_url}")
+        return result
 
     def _extract_repo_name(self, git_url: str) -> str:
         """

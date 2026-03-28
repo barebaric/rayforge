@@ -1,5 +1,8 @@
+import io
 import sys
 import tempfile
+import yaml
+import zipfile
 from pathlib import Path
 from typing import List, Optional
 from unittest.mock import Mock, MagicMock, patch
@@ -20,6 +23,55 @@ from rayforge.core.addon_config import (
 )
 from rayforge.shared.util.versioning import UnknownVersion
 from rayforge.shared.util.versioning import parse_requirement
+
+
+def create_addon_files(
+    dest: Path,
+    name: str = "test_plugin",
+    version: str = "1.0.0",
+    author_name: str = "Test Author",
+    author_email: str = "test@example.com",
+    backend: Optional[str] = "test_plugin.backend",
+    api_version: int = 9,
+) -> Path:
+    """Create a minimal valid addon directory on disk."""
+    addon_dir = dest / name
+    addon_dir.mkdir(parents=True, exist_ok=True)
+
+    manifest = {
+        "name": name,
+        "version": version,
+        "description": "A test addon",
+        "api_version": api_version,
+        "author": {"name": author_name, "email": author_email},
+    }
+    if backend:
+        manifest["provides"] = {"backend": backend}
+
+    (addon_dir / "rayforge-addon.yaml").write_text(yaml_safe_dump(manifest))
+
+    if backend:
+        pkg_dir = addon_dir / backend.rsplit(".", 1)[0]
+        pkg_dir.mkdir(exist_ok=True)
+        (pkg_dir / "__init__.py").write_text("")
+        (pkg_dir / "backend.py").write_text("")
+
+    return addon_dir
+
+
+def create_addon_zip(addon_dir: Path) -> bytes:
+    """Zip an addon directory, wrapping in a top-level 'repo-main/' dir."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        for file_path in addon_dir.rglob("*"):
+            if file_path.is_file():
+                arcname = f"repo-main/{file_path.relative_to(addon_dir)}"
+                zf.write(file_path, arcname)
+    return buf.getvalue()
+
+
+def yaml_safe_dump(data):
+    return yaml.safe_dump(data, default_flow_style=False)
 
 
 @pytest.fixture
@@ -240,27 +292,18 @@ provides:
 class TestAddonManagerInstallation:
     """Tests related to installing new addons."""
 
-    def test_install_addon_git_not_available(self, manager):
-        with patch("importlib.import_module", side_effect=ImportError):
-            result = manager.install_addon("some_url")
+    def test_install_addon_git_not_available_zip_fails(self, manager):
+        """When both git and zip fallback fail, return None."""
+        with patch.object(manager, "_fetch_addon_source", return_value=False):
+            result = manager.install_addon("https://github.com/user/repo.git")
             assert result is None
-
-    def test_install_addon_clone_failure(self, manager):
-        with patch(
-            "git.Repo.clone_from", side_effect=Exception("network error")
-        ):
-            result = manager.install_addon("some_url")
-            assert result is None
-            if not manager.install_dir.exists():
-                manager.install_dir.mkdir()
-            assert not any(manager.install_dir.iterdir())
 
     def test_install_addon_validation_failure(self, manager):
         mock_addon = create_mock_addon()
         mock_addon.validate.side_effect = AddonValidationError("Missing asset")
 
         with (
-            patch("git.Repo.clone_from"),
+            patch.object(manager, "_fetch_addon_source", return_value=True),
             patch(
                 "rayforge.addon_mgr.addon_manager.Addon.load_from_directory",
                 return_value=mock_addon,
@@ -283,7 +326,7 @@ class TestAddonManagerInstallation:
         mock_addon_for_validation = create_mock_addon()
 
         with (
-            patch("git.Repo.clone_from"),
+            patch.object(manager, "_fetch_addon_source", return_value=True),
             patch(
                 "rayforge.addon_mgr.addon_manager.get_git_tag_version",
                 return_value="1.0.0",
@@ -299,7 +342,9 @@ class TestAddonManagerInstallation:
             manager.install_addon(git_url, addon_id=install_name)
 
             mock_uninstall.assert_called_once_with("test_plugin")
-            mock_load_addon.assert_called_once_with(final_path)
+            mock_load_addon.assert_called_once_with(
+                final_path, version="1.0.0"
+            )
 
     def test_install_addon_success(self, manager):
         manager.install_dir.mkdir()
@@ -309,7 +354,7 @@ class TestAddonManagerInstallation:
         mock_addon_for_validation = create_mock_addon()
 
         with (
-            patch("git.Repo.clone_from"),
+            patch.object(manager, "_fetch_addon_source", return_value=True),
             patch(
                 "rayforge.addon_mgr.addon_manager.get_git_tag_version",
                 return_value="1.0.0",
@@ -325,7 +370,177 @@ class TestAddonManagerInstallation:
 
             final_path = manager.install_dir / install_name
             assert result == final_path
-            mock_load_addon.assert_called_once_with(final_path)
+            mock_load_addon.assert_called_once_with(
+                final_path, version="1.0.0"
+            )
+
+    def test_install_addon_zip_fallback_success(self, manager):
+        """
+        End-to-end: when git is unavailable, install via zip download.
+        Only the HTTP response is mocked; real zip extraction,
+        manifest parsing, validation, and file copy all run.
+        """
+        with tempfile.TemporaryDirectory() as src:
+            addon_src = create_addon_files(Path(src))
+            zip_bytes = create_addon_zip(addon_src)
+
+        mock_resp = Mock()
+        mock_resp.status = 200
+        mock_resp.read.return_value = zip_bytes
+        mock_resp.__enter__ = Mock(return_value=mock_resp)
+        mock_resp.__exit__ = Mock(return_value=False)
+
+        with (
+            patch.object(manager, "_fetch_addon_source") as mock_fetch,
+            patch.object(manager, "_restart_workers"),
+        ):
+            mock_fetch.side_effect = (
+                lambda url, dest: manager._download_addon_zip(url, dest)
+            )
+            with patch("urllib.request.urlopen", return_value=mock_resp):
+                result = manager.install_addon(
+                    "https://github.com/user/repo.git"
+                )
+
+        assert result is not None
+        assert (result / "rayforge-addon.yaml").exists()
+        addon = manager.loaded_addons.get("test_plugin")
+        assert addon is not None
+        assert addon.metadata.version == "1.0.0"
+
+    def test_install_addon_zip_fallback_unknown_version(self, manager):
+        """
+        Zip fallback uses UnknownVersion when manifest has no version
+        field. Real addon files on disk, only HTTP is mocked.
+        """
+        with tempfile.TemporaryDirectory() as src:
+            addon_src = create_addon_files(Path(src), version="")
+            zip_bytes = create_addon_zip(addon_src)
+
+        mock_resp = Mock()
+        mock_resp.status = 200
+        mock_resp.read.return_value = zip_bytes
+        mock_resp.__enter__ = Mock(return_value=mock_resp)
+        mock_resp.__exit__ = Mock(return_value=False)
+
+        with (
+            patch.object(manager, "_fetch_addon_source") as mock_fetch,
+            patch.object(manager, "_restart_workers"),
+        ):
+            mock_fetch.side_effect = (
+                lambda url, dest: manager._download_addon_zip(url, dest)
+            )
+            with patch("urllib.request.urlopen", return_value=mock_resp):
+                result = manager.install_addon(
+                    "https://github.com/user/repo.git"
+                )
+
+        assert result is not None
+        addon = manager.loaded_addons.get("test_plugin")
+        assert addon is not None
+        assert addon.metadata.version is UnknownVersion
+
+    def test_install_addon_zip_unsupported_url(self, manager):
+        """Zip fallback returns None for SSH-style URLs."""
+        with patch.object(manager, "_fetch_addon_source", return_value=False):
+            result = manager.install_addon("git@github.com:user/repo.git")
+            assert result is None
+
+    def test_install_addon_prefers_git_over_zip(self, manager):
+        """When git is available, it is used instead of zip fallback."""
+        manager.install_dir.mkdir()
+        git_url = "https://github.com/user/repo.git"
+
+        mock_addon_for_validation = create_mock_addon()
+
+        with (
+            patch.object(
+                manager, "_fetch_addon_source", return_value=True
+            ) as mock_fetch,
+            patch(
+                "rayforge.addon_mgr.addon_manager.get_git_tag_version",
+                return_value="1.0.0",
+            ),
+            patch.object(
+                manager,
+                "_download_addon_zip",
+                return_value=True,
+            ) as mock_zip,
+            patch(
+                "rayforge.addon_mgr.addon_manager.Addon.load_from_directory",
+                return_value=mock_addon_for_validation,
+            ),
+            patch("shutil.copytree"),
+            patch.object(manager, "load_addon"),
+        ):
+            manager.install_addon(git_url)
+
+            mock_fetch.assert_called_once()
+            mock_zip.assert_not_called()
+
+    def test_install_addon_git_fails_no_zip_fallback(self, manager):
+        """When git clone fails, don't fall back to zip (git is present)."""
+        manager.install_dir.mkdir()
+
+        with (
+            patch.object(manager, "_fetch_addon_source", return_value=False),
+            patch.object(
+                manager, "_download_addon_zip", return_value=True
+            ) as mock_zip,
+        ):
+            result = manager.install_addon("https://github.com/u/r.git")
+            assert result is None
+            mock_zip.assert_not_called()
+
+    def test_install_addon_zip_upgrades_existing(self, manager):
+        """
+        Zip fallback replaces an already-installed addon.
+        Real filesystem, only HTTP is mocked.
+        """
+        manager.install_dir.mkdir()
+        git_url = "https://github.com/user/repo.git"
+
+        with tempfile.TemporaryDirectory() as src:
+            addon_v1 = create_addon_files(Path(src), version="1.0.0")
+            zip_bytes = create_addon_zip(addon_v1)
+
+        mock_resp = Mock()
+        mock_resp.status = 200
+        mock_resp.read.return_value = zip_bytes
+        mock_resp.__enter__ = Mock(return_value=mock_resp)
+        mock_resp.__exit__ = Mock(return_value=False)
+
+        with (
+            patch.object(manager, "_fetch_addon_source") as mock_fetch,
+            patch.object(manager, "_restart_workers"),
+        ):
+            mock_fetch.side_effect = (
+                lambda url, dest: manager._download_addon_zip(url, dest)
+            )
+            with patch("urllib.request.urlopen", return_value=mock_resp):
+                result1 = manager.install_addon(git_url)
+                assert result1 is not None
+
+        with tempfile.TemporaryDirectory() as src:
+            addon_v2 = create_addon_files(Path(src), version="2.0.0")
+            zip_bytes = create_addon_zip(addon_v2)
+
+        mock_resp.read.return_value = zip_bytes
+
+        with (
+            patch.object(manager, "_fetch_addon_source") as mock_fetch,
+            patch.object(manager, "_restart_workers"),
+        ):
+            mock_fetch.side_effect = (
+                lambda url, dest: manager._download_addon_zip(url, dest)
+            )
+            with patch("urllib.request.urlopen", return_value=mock_resp):
+                result2 = manager.install_addon(git_url)
+                assert result2 is not None
+
+        addon = manager.loaded_addons.get("test_plugin")
+        assert addon is not None
+        assert addon.metadata.version == "2.0.0"
 
 
 class TestAddonManagerUninstall:
@@ -509,6 +724,143 @@ class TestAddonManagerHelpers:
     )
     def test_extract_repo_name(self, manager, url, expected):
         assert manager._extract_repo_name(url) == expected
+
+    @pytest.mark.parametrize(
+        "url, expected",
+        [
+            (
+                "https://github.com/user/repo.git",
+                "https://github.com/user/repo/archive/refs/heads/main.zip",
+            ),
+            (
+                "https://github.com/user/repo",
+                "https://github.com/user/repo/archive/refs/heads/main.zip",
+            ),
+            (
+                "https://gitlab.com/user/repo.git",
+                "https://gitlab.com/user/repo/-/archive/main/repo-main.zip",
+            ),
+            (
+                "https://gitea.example.com/user/repo.git",
+                "https://gitea.example.com/user/repo/archive/main.zip",
+            ),
+        ],
+    )
+    def test_git_url_to_zip(self, url, expected):
+        assert AddonManager._git_url_to_zip(url) == expected
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "git@github.com:user/repo",
+            "ftp://example.com/repo",
+            "https://example.com/onlyonepath",
+            "",
+        ],
+    )
+    def test_git_url_to_zip_unsupported(self, url):
+        assert AddonManager._git_url_to_zip(url) is None
+
+    def test_version_from_manifest(self, tmp_path):
+        manifest = tmp_path / "rayforge-addon.yaml"
+        manifest.write_text("name: test\nversion: '1.2.3'\n")
+        assert AddonManager._version_from_manifest(tmp_path) == "1.2.3"
+
+    def test_version_from_manifest_missing(self, tmp_path):
+        assert AddonManager._version_from_manifest(tmp_path) is None
+
+    def test_version_from_manifest_no_version(self, tmp_path):
+        manifest = tmp_path / "rayforge-addon.yaml"
+        manifest.write_text("name: test\n")
+        assert AddonManager._version_from_manifest(tmp_path) is None
+
+    def test_version_from_manifest_invalid_yaml(self, tmp_path):
+        manifest = tmp_path / "rayforge-addon.yaml"
+        manifest.write_text("{{invalid")
+        assert AddonManager._version_from_manifest(tmp_path) is None
+
+    def test_download_addon_zip_extracts_correctly(self, manager, tmp_path):
+        """Test that _download_addon_zip strips the top-level directory."""
+        import io
+        import zipfile
+
+        zip_buf = io.BytesIO()
+        with zipfile.ZipFile(zip_buf, "w") as zf:
+            zf.writestr("repo-main/rayforge-addon.yaml", "name: test\n")
+            zf.writestr("repo-main/subdir/code.py", "print('hi')\n")
+        zip_data = zip_buf.getvalue()
+
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_resp = Mock()
+            mock_resp.status = 200
+            mock_resp.read.return_value = zip_data
+            mock_resp.__enter__ = Mock(return_value=mock_resp)
+            mock_resp.__exit__ = Mock(return_value=False)
+            mock_urlopen.return_value = mock_resp
+
+            dest = tmp_path / "output"
+            dest.mkdir()
+            result = manager._download_addon_zip(
+                "https://github.com/user/repo.git", dest
+            )
+
+            assert result is True
+            assert (dest / "rayforge-addon.yaml").exists()
+            assert (dest / "subdir" / "code.py").exists()
+            assert not (dest / "repo-main").exists()
+
+    def test_download_addon_zip_http_error(self, manager, tmp_path):
+        """Test that _download_addon_zip returns False on HTTP error."""
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_resp = Mock()
+            mock_resp.status = 404
+            mock_resp.__enter__ = Mock(return_value=mock_resp)
+            mock_resp.__exit__ = Mock(return_value=False)
+            mock_urlopen.return_value = mock_resp
+
+            dest = tmp_path / "output"
+            dest.mkdir()
+            result = manager._download_addon_zip(
+                "https://github.com/user/repo.git", dest
+            )
+            assert result is False
+
+    def test_download_addon_zip_network_failure(self, manager, tmp_path):
+        """Test that _download_addon_zip returns False on network error."""
+        with patch(
+            "urllib.request.urlopen",
+            side_effect=Exception("Connection refused"),
+        ):
+            dest = tmp_path / "output"
+            dest.mkdir()
+            result = manager._download_addon_zip(
+                "https://github.com/user/repo.git", dest
+            )
+            assert result is False
+
+    def test_download_addon_zip_bad_zip(self, manager, tmp_path):
+        """Test that _download_addon_zip returns False on bad zip data."""
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_resp = Mock()
+            mock_resp.status = 200
+            mock_resp.read.return_value = b"not a zip file"
+            mock_resp.__enter__ = Mock(return_value=mock_resp)
+            mock_resp.__exit__ = Mock(return_value=False)
+            mock_urlopen.return_value = mock_resp
+
+            dest = tmp_path / "output"
+            dest.mkdir()
+            result = manager._download_addon_zip(
+                "https://github.com/user/repo.git", dest
+            )
+            assert result is False
+
+    def test_download_addon_zip_unsupported_url(self, manager, tmp_path):
+        """Test that _download_addon_zip returns False for bad URLs."""
+        dest = tmp_path / "output"
+        dest.mkdir()
+        result = manager._download_addon_zip("git@github.com:u/r.git", dest)
+        assert result is False
 
     def test_get_all_addons_empty(self, manager):
         """Test get_all_addons returns empty dict when no addons."""

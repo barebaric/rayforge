@@ -162,7 +162,8 @@ class AddonRow(Gtk.Box):
         parts = []
         version = self.addon.metadata.version
         if version is UnknownVersion:
-            parts.append(__version__)
+            if self.is_builtin:
+                parts.append(__version__)
         elif version:
             parts.append(str(version))
         if self.addon.metadata.author.name:
