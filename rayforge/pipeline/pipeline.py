@@ -23,6 +23,7 @@ from ..core.matrix import Matrix
 from ..core.ops import Ops
 from ..core.step import Step
 from ..core.stock import StockItem
+from ..core.workflow import Workflow
 from ..core.workpiece import WorkPiece
 from .artifact import (
     ArtifactManager,
@@ -582,7 +583,7 @@ class Pipeline:
         self,
         sender: Any,
         *,
-        origin: Union[Step, WorkPiece],
+        origin: Union[Step, WorkPiece, Workflow],
         parent_of_origin: DocItem,
     ) -> None:
         """
@@ -599,7 +600,7 @@ class Pipeline:
 
         Args:
             sender: The signal sender.
-            origin: The Step or WorkPiece that was updated.
+            origin: The Step, WorkPiece, or Workflow that was updated.
             parent_of_origin: The parent of the updated item.
         """
         logger.debug(
@@ -620,6 +621,17 @@ class Pipeline:
                         origin.uid, step.uid
                     )
                     self._invalidate_node(wp_step_key)
+        elif isinstance(origin, Workflow):
+            layer = origin.parent if isinstance(origin.parent, Layer) else None
+            if layer:
+                for step in origin.steps:
+                    step_key = ArtifactKey.for_step(step.uid)
+                    self._invalidate_node(step_key)
+                    for wp in layer.all_workpieces:
+                        wp_step_key = ArtifactKey.for_workpiece(
+                            wp.uid, step.uid
+                        )
+                        self._invalidate_node(wp_step_key)
 
         self._schedule_reconciliation()
 
