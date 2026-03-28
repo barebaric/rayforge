@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 import math
-from typing import Optional, Dict, Any, List, TYPE_CHECKING
+from typing import Optional, Dict, Any, List, Callable, TYPE_CHECKING
 from gettext import gettext as _
 from rayforge.core.geo import Point
 from ..entities import Line, Arc, Circle
-from .base import Constraint
 from ..types import EntityID
+from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
+    import cairo
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection
@@ -146,3 +147,88 @@ class EqualDistanceConstraint(Constraint):
             add(self.p4, -u2x, -u2y)  # -(u2)
 
         return grad
+
+    def _get_symbol_pos(
+        self,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Point], Point],
+    ):
+        """Calculates screen position for the equality symbol."""
+        pa = reg.get_point(self.p1)
+        pb = reg.get_point(self.p2)
+        pc = reg.get_point(self.p3)
+        pd = reg.get_point(self.p4)
+        if not (pa and pb and pc and pd):
+            return None
+
+        mid1_x = (pa.x + pb.x) / 2.0
+        mid1_y = (pa.y + pb.y) / 2.0
+        mid2_x = (pc.x + pd.x) / 2.0
+        mid2_y = (pc.y + pd.y) / 2.0
+
+        sym_x = (mid1_x + mid2_x) / 2.0
+        sym_y = (mid1_y + mid2_y) / 2.0
+
+        dx = pb.x - pa.x
+        dy = pb.y - pa.y
+        tangent_angle = math.atan2(dy, dx)
+        normal_angle = tangent_angle - (math.pi / 2.0)
+
+        p0 = to_screen((0, 0))
+        p1 = to_screen((1, 0))
+        scale = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
+        if scale < 1e-9:
+            scale = 1.0
+
+        offset_dist_model = 15.0 / scale
+        final_x = sym_x + offset_dist_model * math.cos(normal_angle)
+        final_y = sym_y + offset_dist_model * math.sin(normal_angle)
+        return to_screen((final_x, final_y))
+
+    def is_hit(
+        self,
+        sx: float,
+        sy: float,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Point], Point],
+        element: Any,
+        threshold: float,
+    ) -> bool:
+        pos = self._get_symbol_pos(reg, to_screen)
+        if pos:
+            return math.hypot(sx - pos[0], sy - pos[1]) < threshold
+        return False
+
+    def draw(
+        self,
+        ctx: "cairo.Context",
+        registry: "EntityRegistry",
+        to_screen: Callable[[Point], Point],
+        is_selected: bool = False,
+        is_hovered: bool = False,
+        point_radius: float = 5.0,
+    ) -> None:
+        pos = self._get_symbol_pos(registry, to_screen)
+        if not pos:
+            return
+
+        sx, sy = pos
+        ctx.save()
+
+        if is_selected:
+            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
+            ctx.arc(sx, sy, 10, 0, 2 * math.pi)
+            ctx.fill()
+
+        if self.status == ConstraintStatus.CONFLICTING:
+            ctx.set_source_rgba(1.0, 0.2, 0.2, 0.5)
+            ctx.arc(sx, sy, 12, 0, 2 * math.pi)
+            ctx.fill()
+
+        self._set_color(ctx, is_hovered)
+        ctx.set_font_size(16)
+        ext = ctx.text_extents("=")
+        ctx.move_to(sx - ext.width / 2, sy + ext.height / 2)
+        ctx.show_text("=")
+        ctx.restore()
+        ctx.new_path()

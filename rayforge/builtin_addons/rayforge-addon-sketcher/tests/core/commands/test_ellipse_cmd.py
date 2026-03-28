@@ -1,5 +1,6 @@
 from sketcher.core import Sketch
 from sketcher.core.commands import EllipseCommand, EllipsePreviewState
+from sketcher.core.constraints import EqualDistanceConstraint
 from sketcher.core.entities import Ellipse, Point, Line
 
 
@@ -415,3 +416,36 @@ def test_ellipse_creates_perpendicular_constraint():
     cmd.execute()
 
     assert len(sketch.constraints) == 1
+
+
+def test_ellipse_constrain_circle_creates_equal_distance():
+    """Test that constrain_circle adds an EqualDistanceConstraint on radii."""
+    sketch = Sketch()
+    start_pid = sketch.add_point(0, 0)
+    cmd = EllipseCommand(sketch, start_pid, (100, 50), constrain_circle=True)
+    cmd.execute()
+
+    assert len(sketch.constraints) == 2
+    equal_constr = next(
+        c for c in sketch.constraints if isinstance(c, EqualDistanceConstraint)
+    )
+    assert equal_constr is not None
+    ellipse = next(
+        e for e in sketch.registry.entities if isinstance(e, Ellipse)
+    )
+    assert equal_constr.p1 == ellipse.center_idx
+    assert equal_constr.p2 == ellipse.radius_x_pt_idx
+    assert equal_constr.p3 == ellipse.center_idx
+    assert equal_constr.p4 == ellipse.radius_y_pt_idx
+
+
+def test_ellipse_no_constrain_circle_no_equal_distance():
+    """Test that without constrain_circle, no EqualDistanceConstraint."""
+    sketch = Sketch()
+    start_pid = sketch.add_point(0, 0)
+    cmd = EllipseCommand(sketch, start_pid, (100, 50))
+    cmd.execute()
+
+    assert not any(
+        isinstance(c, EqualDistanceConstraint) for c in sketch.constraints
+    )
