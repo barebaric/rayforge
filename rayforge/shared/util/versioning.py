@@ -14,7 +14,8 @@ class _UnknownVersion:
     Sentinel class representing an unknown or undetermined version.
 
     Used for Git repositories where version cannot be determined.
-    When displayed, the UI should fall back to rayforge.__version__.
+    When displayed, built-in addons should fall back to
+    rayforge.__version__; external addons should show no version.
     """
 
     __slots__ = ()
