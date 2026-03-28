@@ -48,7 +48,6 @@ from .doceditor.import_handler import start_interactive_import
 from .doceditor.item_properties import DocItemPropertiesWidget
 from .doceditor.layer_list import LayerListView
 from .doceditor.missing_features_dialog import MissingFeaturesDialog
-from .doceditor.project_settings_dialog import ProjectSettingsDialog
 from .doceditor.property_providers import register_builtin_providers
 from .doceditor.workflow_view import WorkflowView
 from .machine.control_panel import MachineControlPanel
@@ -2215,11 +2214,6 @@ class MainWindow(Adw.ApplicationWindow):
             machine=config.machine,
             transient_for=self,
         )
-        dialog.present()
-
-    def show_project_settings(self, action, param):
-        """Opens the project settings dialog."""
-        dialog = ProjectSettingsDialog(self.doc_editor.doc, transient_for=self)
         dialog.present()
 
     def _on_settings_dialog_closed(self, dialog):

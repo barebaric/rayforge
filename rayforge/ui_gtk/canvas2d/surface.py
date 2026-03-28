@@ -1102,16 +1102,17 @@ class WorkSurface(WorldSurface):
 
     def _update_rotary_surface_element(self):
         """
-        Updates the rotary diameter indicator element based on document
-        settings and current WCS origin position.
+        Updates the rotary diameter indicator element based on the active
+        layer's settings and current WCS origin position.
         """
-        rotary_enabled = self.doc.rotary_enabled
+        active_layer = self.doc.active_layer
+        rotary_enabled = active_layer.rotary_enabled
 
         if not rotary_enabled or not self.machine:
             self._rotary_surface_element.set_visible(False)
             return
 
-        rotary_diameter = self.doc.rotary_diameter
+        rotary_diameter = active_layer.rotary_diameter
         space = self.machine.get_coordinate_space()
 
         if self.machine.wcs_origin_is_workarea_origin:

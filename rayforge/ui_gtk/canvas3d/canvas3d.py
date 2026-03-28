@@ -1018,11 +1018,12 @@ class Canvas3D(Gtk.GLArea):
 
     def _update_rotary_mode(self):
         """
-        Checks the document for rotary mode settings and updates the
+        Checks the active layer for rotary mode settings and updates the
         cylinder renderer accordingly.
         """
-        rotary_enabled = self.doc.rotary_enabled
-        rotary_diameter = self.doc.rotary_diameter
+        active_layer = self.doc.active_layer
+        rotary_enabled = active_layer.rotary_enabled
+        rotary_diameter = active_layer.rotary_diameter
 
         diameter_changed = rotary_diameter != self._rotary_diameter
         mode_changed = rotary_enabled != self._rotary_enabled
