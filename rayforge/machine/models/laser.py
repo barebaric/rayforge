@@ -12,6 +12,9 @@ class Laser:
         self.max_power: int = 1000  # Max power (0-1000 for GRBL)
         self.frame_power_percent: float = 0  # in percent (0-1.0)
         self.focus_power_percent: float = 0  # in percent (0-1.0)
+        self.frame_speed: int = 0  # mm/min, 0 = use machine max travel speed
+        self.frame_repeat_count: int = 1
+        self.frame_corner_pause: float = 0  # seconds
         self.spot_size_mm: Tuple[float, float] = 0.1, 0.1  # millimeters
         self.cut_color: str = "#ff00ff"  # Magenta for cut
         self.raster_color: str = "#000000"  # Black for raster
@@ -38,6 +41,18 @@ class Laser:
     def set_focus_power(self, power):
         """Set focus power in percent (0.0 - 1.0)."""
         self.focus_power_percent = power
+        self.changed.send(self)
+
+    def set_frame_speed(self, speed: int):
+        self.frame_speed = speed
+        self.changed.send(self)
+
+    def set_frame_repeat_count(self, count: int):
+        self.frame_repeat_count = count
+        self.changed.send(self)
+
+    def set_frame_corner_pause(self, duration: float):
+        self.frame_corner_pause = duration
         self.changed.send(self)
 
     def _gcode_to_percent(self, gcode_value) -> float:
@@ -70,6 +85,9 @@ class Laser:
             "max_power": self.max_power,
             "frame_power_percent": self.frame_power_percent * 100,
             "focus_power_percent": self.focus_power_percent * 100,
+            "frame_speed": self.frame_speed,
+            "frame_repeat_count": self.frame_repeat_count,
+            "frame_corner_pause": self.frame_corner_pause,
             "spot_size_mm": self.spot_size_mm,
             "cut_color": self.cut_color,
             "raster_color": self.raster_color,
@@ -86,9 +104,12 @@ class Laser:
             "max_power",
             "frame_power_percent",
             "focus_power_percent",
-            "spot_size_mm",
             "frame_power",
             "focus_power",
+            "frame_speed",
+            "frame_repeat_count",
+            "frame_corner_pause",
+            "spot_size_mm",
             "cut_color",
             "raster_color",
         }
@@ -119,6 +140,13 @@ class Laser:
         lh.spot_size_mm = data.get("spot_size_mm", lh.spot_size_mm)
         lh.cut_color = data.get("cut_color", lh.cut_color)
         lh.raster_color = data.get("raster_color", lh.raster_color)
+        lh.frame_speed = data.get("frame_speed", lh.frame_speed)
+        lh.frame_repeat_count = data.get(
+            "frame_repeat_count", lh.frame_repeat_count
+        )
+        lh.frame_corner_pause = data.get(
+            "frame_corner_pause", lh.frame_corner_pause
+        )
         lh.extra = extra
         return lh
 

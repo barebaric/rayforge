@@ -4,6 +4,7 @@ from gi.repository import Adw, Gtk, Gdk
 from ...machine.models.laser import Laser
 from ...machine.models.machine import Machine
 from ..shared.adwfix import get_spinrow_int, get_spinrow_float
+from ..shared.unit_spin_row import UnitSpinRowHelper
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
 from ..icons import get_icon
@@ -258,23 +259,6 @@ class LaserPreferencesPage(TrackedPreferencesPage):
         )
         self.laserhead_config_group.add(self.max_power_row)
 
-        frame_power_adjustment = Gtk.Adjustment(
-            lower=0, upper=100, step_increment=0.1, page_increment=1
-        )
-        self.frame_power_row = Adw.SpinRow(
-            title=_("Frame Power"),
-            subtitle=_(
-                "Power value in percent to use when framing. 0 to disable"
-            ),
-            adjustment=frame_power_adjustment,
-            digits=2,
-        )
-        frame_power_adjustment.set_value(0)
-        self.handler_ids["frame_power"] = self.frame_power_row.connect(
-            "changed", self.on_frame_power_changed
-        )
-        self.laserhead_config_group.add(self.frame_power_row)
-
         focus_power_adjustment = Gtk.Adjustment(
             lower=0, upper=100, step_increment=0.1, page_increment=1
         )
@@ -354,6 +338,91 @@ class LaserPreferencesPage(TrackedPreferencesPage):
         )
         self.laserhead_config_group.add(self.raster_color_row)
 
+        # Framing preferences group
+        self.frame_group = Adw.PreferencesGroup(
+            title=_("Framing"),
+            description=_(
+                "Settings for the frame outline operation that "
+                "traces the job boundary."
+            ),
+        )
+        self.add(self.frame_group)
+
+        frame_power_adjustment = Gtk.Adjustment(
+            lower=0, upper=100, step_increment=0.1, page_increment=1
+        )
+        self.frame_power_row = Adw.SpinRow(
+            title=_("Frame Power"),
+            subtitle=_(
+                "Power value in percent to use when framing. 0 to disable"
+            ),
+            adjustment=frame_power_adjustment,
+            digits=2,
+        )
+        frame_power_adjustment.set_value(0)
+        self.handler_ids["frame_power"] = self.frame_power_row.connect(
+            "changed", self.on_frame_power_changed
+        )
+        self.frame_group.add(self.frame_power_row)
+
+        frame_speed_adjustment = Gtk.Adjustment(
+            lower=0,
+            upper=60000,
+            step_increment=10,
+            page_increment=100,
+        )
+        frame_speed_row = Adw.SpinRow(
+            title=_("Frame Speed"),
+            subtitle=_(
+                "Speed for frame outline. Leave at 0 to use "
+                "the machine's max travel speed"
+            ),
+            adjustment=frame_speed_adjustment,
+        )
+        self.frame_speed_helper = UnitSpinRowHelper(
+            spin_row=frame_speed_row,
+            quantity="speed",
+        )
+        self.frame_speed_row = frame_speed_row
+        self.handler_ids["frame_speed"] = frame_speed_row.connect(
+            "changed", self.on_frame_speed_changed
+        )
+        self.frame_group.add(frame_speed_row)
+
+        frame_repeat_adjustment = Gtk.Adjustment(
+            lower=1, upper=100, step_increment=1, page_increment=5
+        )
+        self.frame_repeat_row = Adw.SpinRow(
+            title=_("Repeat Count"),
+            subtitle=_("Number of times to trace the frame outline"),
+            adjustment=frame_repeat_adjustment,
+        )
+        frame_repeat_adjustment.set_value(1)
+        self.handler_ids["frame_repeat"] = self.frame_repeat_row.connect(
+            "changed", self.on_frame_repeat_changed
+        )
+        self.frame_group.add(self.frame_repeat_row)
+
+        frame_corner_pause_adjustment = Gtk.Adjustment(
+            lower=0, upper=10, step_increment=0.1, page_increment=1
+        )
+        self.frame_corner_pause_row = Adw.SpinRow(
+            title=_("Pause at Corners"),
+            subtitle=_(
+                "Pause duration in seconds at each corner "
+                "of the frame outline. 0 to disable"
+            ),
+            adjustment=frame_corner_pause_adjustment,
+            digits=1,
+        )
+        frame_corner_pause_adjustment.set_value(0)
+        self.handler_ids["frame_corner_pause"] = (
+            self.frame_corner_pause_row.connect(
+                "changed", self.on_frame_corner_pause_changed
+            )
+        )
+        self.frame_group.add(self.frame_corner_pause_row)
+
         # Connect signals
         self.laser_list_editor.list_box.connect(
             "row-selected", self.on_laserhead_selected
@@ -372,18 +441,26 @@ class LaserPreferencesPage(TrackedPreferencesPage):
         """Update the configuration panel when a Laser is selected."""
         has_selection = row is not None
         self.laserhead_config_group.set_visible(has_selection)
+        self.frame_group.set_visible(has_selection)
         if has_selection:
             # Block handlers to prevent feedback loop
             self.name_row.handler_block(self.handler_ids["name"])
             self.tool_number_row.handler_block(self.handler_ids["tool_number"])
             self.max_power_row.handler_block(self.handler_ids["max_power"])
-            self.frame_power_row.handler_block(self.handler_ids["frame_power"])
             self.focus_power_row.handler_block(self.handler_ids["focus_power"])
             self.spot_size_x_row.handler_block(self.handler_ids["spot_x"])
             self.spot_size_y_row.handler_block(self.handler_ids["spot_y"])
             self.cut_color_button.handler_block(self.handler_ids["cut_color"])
             self.raster_color_button.handler_block(
                 self.handler_ids["raster_color"]
+            )
+            self.frame_power_row.handler_block(self.handler_ids["frame_power"])
+            self.frame_speed_row.handler_block(self.handler_ids["frame_speed"])
+            self.frame_repeat_row.handler_block(
+                self.handler_ids["frame_repeat"]
+            )
+            self.frame_corner_pause_row.handler_block(
+                self.handler_ids["frame_corner_pause"]
             )
 
             selected_head = self._get_selected_laser()
@@ -393,9 +470,6 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             self.name_row.set_text(selected_head.name)
             self.tool_number_row.set_value(selected_head.tool_number)
             self.max_power_row.set_value(selected_head.max_power)
-            self.frame_power_row.set_value(
-                selected_head.frame_power_percent * 100
-            )
             self.focus_power_row.set_value(
                 selected_head.focus_power_percent * 100
             )
@@ -408,6 +482,16 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             self._set_color_button(
                 self.raster_color_button, selected_head.raster_color
             )
+            self.frame_power_row.set_value(
+                selected_head.frame_power_percent * 100
+            )
+            self.frame_speed_helper.set_value_in_base_units(
+                selected_head.frame_speed
+            )
+            self.frame_repeat_row.set_value(selected_head.frame_repeat_count)
+            self.frame_corner_pause_row.set_value(
+                selected_head.frame_corner_pause
+            )
 
             # Unblock handlers
             self.name_row.handler_unblock(self.handler_ids["name"])
@@ -415,9 +499,6 @@ class LaserPreferencesPage(TrackedPreferencesPage):
                 self.handler_ids["tool_number"]
             )
             self.max_power_row.handler_unblock(self.handler_ids["max_power"])
-            self.frame_power_row.handler_unblock(
-                self.handler_ids["frame_power"]
-            )
             self.focus_power_row.handler_unblock(
                 self.handler_ids["focus_power"]
             )
@@ -428,6 +509,18 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             )
             self.raster_color_button.handler_unblock(
                 self.handler_ids["raster_color"]
+            )
+            self.frame_power_row.handler_unblock(
+                self.handler_ids["frame_power"]
+            )
+            self.frame_speed_row.handler_unblock(
+                self.handler_ids["frame_speed"]
+            )
+            self.frame_repeat_row.handler_unblock(
+                self.handler_ids["frame_repeat"]
+            )
+            self.frame_corner_pause_row.handler_unblock(
+                self.handler_ids["frame_corner_pause"]
             )
 
     def _get_selected_laser(self):
@@ -510,3 +603,25 @@ class LaserPreferencesPage(TrackedPreferencesPage):
         if not selected_laser:
             return
         selected_laser.set_raster_color(self._get_hex_color(button))
+
+    def on_frame_speed_changed(self, spinrow):
+        """Update the frame speed of the selected Laser."""
+        selected_laser = self._get_selected_laser()
+        if not selected_laser:
+            return
+        value = self.frame_speed_helper.get_value_in_base_units()
+        selected_laser.set_frame_speed(int(value))
+
+    def on_frame_repeat_changed(self, spinrow):
+        """Update the frame repeat count of the selected Laser."""
+        selected_laser = self._get_selected_laser()
+        if not selected_laser:
+            return
+        selected_laser.set_frame_repeat_count(get_spinrow_int(spinrow))
+
+    def on_frame_corner_pause_changed(self, spinrow):
+        """Update the frame corner pause of the selected Laser."""
+        selected_laser = self._get_selected_laser()
+        if not selected_laser:
+            return
+        selected_laser.set_frame_corner_pause(get_spinrow_float(spinrow))

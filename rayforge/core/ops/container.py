@@ -24,6 +24,7 @@ from .commands import (
     MoveToCommand,
     LineToCommand,
     ArcToCommand,
+    DwellCommand,
     SetPowerCommand,
     SetCutSpeedCommand,
     SetTravelSpeedCommand,
@@ -100,6 +101,8 @@ class Ops:
                 center_offset=tuple(cmd_data["center_offset"]),
                 clockwise=cmd_data["clockwise"],
             )
+        elif cmd_type == "DwellCommand":
+            return DwellCommand(duration_ms=cmd_data["duration_ms"])
         elif cmd_type == "SetPowerCommand":
             return SetPowerCommand(power=cmd_data["power"])
         elif cmd_type == "SetCutSpeedCommand":
@@ -536,6 +539,9 @@ class Ops:
         """
         cmd = SetTravelSpeedCommand(int(speed))
         self.commands.append(cmd)
+
+    def dwell(self, duration_ms: float) -> None:
+        self.commands.append(DwellCommand(duration_ms))
 
     def enable_air_assist(self, enable: bool = True) -> None:
         """

@@ -6,6 +6,7 @@ from ...core.layer import Layer
 from ...core.ops import (
     Ops,
     Command,
+    DwellCommand,
     SetPowerCommand,
     SetCutSpeedCommand,
     SetTravelSpeedCommand,
@@ -327,6 +328,14 @@ class GcodeEncoder(OpsEncoder):
                     context, gcode, cmd.end, cmd.center_offset, cmd.clockwise
                 )
                 self.current_pos = cmd.end
+            case DwellCommand():
+                if self.dialect.dwell:
+                    gcode.append(
+                        self.dialect.dwell.format(
+                            seconds=cmd.duration_ms / 1000.0,
+                            milliseconds=cmd.duration_ms,
+                        )
+                    )
             case JobStartCommand():
                 # 1. Emit Preamble
                 gcode.extend(
