@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
 import numpy as np
 from gi.repository import Gdk, Gtk, Pango
@@ -41,6 +42,24 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class VertexGroup:
+    powered_verts: np.ndarray
+    powered_colors: np.ndarray
+    travel_verts: np.ndarray
+    zero_power_verts: np.ndarray
+    zero_power_colors: np.ndarray
+
+    @classmethod
+    def from_lists(cls, pv, pc, tv, zpv, zpc):
+        def _cat(lst):
+            if not lst:
+                return np.array([], dtype=np.float32)
+            return np.concatenate(lst).flatten()
+
+        return cls(_cat(pv), _cat(pc), _cat(tv), _cat(zpv), _cat(zpc))
+
+
 def prepare_scene_vertices_async(
     artifact_store: ArtifactStore,
     scene_description: SceneDescription,
@@ -48,10 +67,7 @@ def prepare_scene_vertices_async(
     laser_color_sets: Dict[str, ColorSet],
     world_to_visual: np.ndarray,
     world_to_cyl_local: np.ndarray,
-) -> Tuple[
-    Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray],
-    Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray],
-]:
+) -> Tuple[VertexGroup, VertexGroup]:
     """
     A background task that prepares all vertex data for an entire scene.
 
@@ -211,46 +227,26 @@ def prepare_scene_vertices_async(
             flat_zpv_2d[:, 2] += Z_OFFSET_NON_POWERED
         flat_zero_power_verts = [flat_zpv_2d]
 
-    # 4. Concatenate each group into single arrays
-    def _finalize(verts_list, colors_list):
-        powered = (
-            np.concatenate(verts_list).flatten()
-            if verts_list
-            else np.array([], dtype=np.float32)
-        )
-        colors = (
-            np.concatenate(colors_list).flatten()
-            if colors_list
-            else np.array([], dtype=np.float32)
-        )
-        return powered, colors
-
-    flat_pv, flat_pc = _finalize(flat_powered_verts, flat_powered_colors)
-    flat_tv = (
-        np.concatenate(flat_travel_verts).flatten()
-        if flat_travel_verts
-        else np.array([], dtype=np.float32)
+    flat_group = VertexGroup.from_lists(
+        flat_powered_verts,
+        flat_powered_colors,
+        flat_travel_verts,
+        flat_zero_power_verts,
+        flat_zero_power_colors,
     )
-    flat_zpv, flat_zpc = _finalize(
-        flat_zero_power_verts, flat_zero_power_colors
+    rotary_group = VertexGroup.from_lists(
+        rot_powered_verts,
+        rot_powered_colors,
+        rot_travel_verts,
+        rot_zero_power_verts,
+        rot_zero_power_colors,
     )
-
-    rot_pv, rot_pc = _finalize(rot_powered_verts, rot_powered_colors)
-    rot_tv = (
-        np.concatenate(rot_travel_verts).flatten()
-        if rot_travel_verts
-        else np.array([], dtype=np.float32)
-    )
-    rot_zpv, rot_zpc = _finalize(rot_zero_power_verts, rot_zero_power_colors)
 
     logger.debug(
         f"Total scene vertices prepared. "
-        f"Flat powered: {flat_pv.size // 3}, "
-        f"Rotary powered: {rot_pv.size // 3}"
+        f"Flat powered: {flat_group.powered_verts.size // 3}, "
+        f"Rotary powered: {rotary_group.powered_verts.size // 3}"
     )
-
-    flat_group = (flat_pv, flat_pc, flat_tv, flat_zpv, flat_zpc)
-    rotary_group = (rot_pv, rot_pc, rot_tv, rot_zpv, rot_zpc)
 
     return flat_group, rotary_group
 
@@ -294,16 +290,7 @@ class Canvas3D(Gtk.GLArea):
         self._cylinder_renderers: Dict[float, CylinderRenderer] = {}
         self._had_rotary_layers = False
         self._scene_preparation_task: Optional[Task] = None
-        self._scene_vtx_cache: Optional[
-            Tuple[
-                Tuple[
-                    np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray
-                ],
-                Tuple[
-                    np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray
-                ],
-            ]
-        ] = None
+        self._scene_vtx_cache: Optional[Tuple[VertexGroup, VertexGroup]] = None
         self._show_travel_moves = False
         self._is_orbiting = False
         self._is_z_rotating = False
@@ -1047,26 +1034,30 @@ class Canvas3D(Gtk.GLArea):
 
         flat_group, rotary_group = self._scene_vtx_cache
 
-        def _apply_group(renderer, pv, pc, tv, zpv, zpc):
+        def _apply_group(renderer, group: VertexGroup):
             if self._show_travel_moves:
                 # When travel is shown, zero-power cuts are also shown.
                 # They are conceptually similar (non-cutting moves). We
                 # append them to the powered buffer as they use vertex
                 # colors.
-                pv_final = np.concatenate((pv, zpv))
-                pc_final = np.concatenate((pc, zpc))
-                tv_final = tv
+                pv_final = np.concatenate(
+                    (group.powered_verts, group.zero_power_verts)
+                )
+                pc_final = np.concatenate(
+                    (group.powered_colors, group.zero_power_colors)
+                )
+                tv_final = group.travel_verts
             else:
                 # When travel is hidden, hide zero-power cuts as well.
-                pv_final = pv
-                pc_final = pc
+                pv_final = group.powered_verts
+                pc_final = group.powered_colors
                 tv_final = np.array([], dtype=np.float32)
 
             # This part runs on the main thread and is fast (just GPU uploads)
             renderer.update_from_vertex_data(pv_final, pc_final, tv_final)
 
-        _apply_group(self.ops_renderer_flat, *flat_group)
-        _apply_group(self.ops_renderer_rotary, *rotary_group)
+        _apply_group(self.ops_renderer_flat, flat_group)
+        _apply_group(self.ops_renderer_rotary, rotary_group)
         self.queue_render()
 
     def _update_cylinder_renderers(self):
