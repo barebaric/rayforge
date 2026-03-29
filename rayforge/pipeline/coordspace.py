@@ -366,12 +366,12 @@ class MachineSpace(CoordinateSpace):
         )
 
         if origin_is_right:
-            x = width - mr
+            x = mr
         else:
             x = ml
 
         if origin_is_top:
-            y = height - mt
+            y = mt
         else:
             y = mb
 

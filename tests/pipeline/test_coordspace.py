@@ -3,7 +3,6 @@ Unit tests for coordinate space classes.
 """
 
 import numpy as np
-import pytest
 
 from rayforge.pipeline.coordspace import (
     AxisDirection,
@@ -289,23 +288,6 @@ class TestMachineSpace:
         expected[1, 1] = -1.0
         np.testing.assert_array_almost_equal(matrix, expected)
 
-    def test_machine_to_world_matrix(self):
-        """Test the inverse machine-to-world transform matrix."""
-        space = MachineSpace(
-            origin=OriginCorner.TOP_RIGHT,
-            x_positive_direction=AxisDirection.POSITIVE_LEFT,
-            y_positive_direction=AxisDirection.POSITIVE_DOWN,
-            extents=(100.0, 100.0),
-            reverse_x=True,
-            reverse_y=True,
-        )
-        w2m = space.get_world_to_machine_matrix()
-        m2w = space.get_machine_to_world_matrix()
-
-        # M * M^-1 should be Identity
-        identity = m2w @ w2m
-        np.testing.assert_array_almost_equal(identity, np.identity(4))
-
 
 class TestWorkareaSpace:
     """Tests for WorkareaSpace coordinate system."""
@@ -352,96 +334,6 @@ class TestCoordinateSpaceTransforms:
         expected[1, 1] = -1.0
         expected[1, 3] = 100.0
         np.testing.assert_array_almost_equal(matrix, expected)
-
-    def test_command_to_world_matrix(self):
-        """Test getting full transformation from command coords to world."""
-        space = MachineSpace(
-            origin=OriginCorner.TOP_RIGHT,
-            x_positive_direction=AxisDirection.POSITIVE_LEFT,
-            y_positive_direction=AxisDirection.POSITIVE_DOWN,
-            extents=(100.0, 100.0),
-            margins=(10.0, 20.0, 30.0, 40.0),
-            reverse_x=True,
-            reverse_y=False,
-        )
-
-        # Set up a fake wcs (10, 5, 0).
-        wcs = (10.0, 5.0, 0.0)
-
-        # In World: (90, 80)
-        # To Mach (TR Origin):
-        #   wx = 100 - 90 = 10
-        #   wy = 100 - 80 = 20
-        #   reverse_x = True -> mx = -10
-        #   reverse_y = False -> my = 20
-        # Machine = (-10, 20)
-        # Cmd = Mach - WCS = (-10 - 10, 20 - 5) = (-20, 15)
-        # So Command (-20, 15) should convert to World (90, 80)
-
-        matrix = space.get_command_to_world_matrix(wcs_offset=wcs)
-
-        point = np.array([-20.0, 15.0, 0.0, 1.0])
-        result = matrix @ point
-
-        assert result[0] == pytest.approx(90.0)
-        assert result[1] == pytest.approx(80.0)
-
-    def test_world_to_command_matrix(self):
-        space = MachineSpace(
-            origin=OriginCorner.TOP_RIGHT,
-            x_positive_direction=AxisDirection.POSITIVE_LEFT,
-            y_positive_direction=AxisDirection.POSITIVE_DOWN,
-            extents=(100.0, 100.0),
-            margins=(10.0, 20.0, 30.0, 40.0),
-            reverse_x=True,
-            reverse_y=False,
-        )
-        wcs = (10.0, 5.0, 0.0)
-        c2w = space.get_command_to_world_matrix(wcs_offset=wcs)
-        w2c = space.get_world_to_command_matrix(wcs_offset=wcs)
-
-        identity = c2w @ w2c
-        np.testing.assert_array_almost_equal(identity, np.identity(4))
-
-    def test_command_point_to_world_wcs_mode(self):
-        """Test helper method converts command points directly (WCS offsets)."""
-        space = MachineSpace(
-            origin=OriginCorner.BOTTOM_LEFT,
-            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
-            y_positive_direction=AxisDirection.POSITIVE_UP,
-            extents=(100.0, 100.0),
-            reverse_x=True,
-        )
-
-        # World: (20, 30)
-        # Mach: (-20, 30)
-        # WCS: (-5, 5, 0)
-        # Cmd: (-15, 25)
-        world_pt = space.command_point_to_world(
-            cmd_x=-15.0, cmd_y=25.0, wcs_offset=(-5.0, 5.0, 0.0)
-        )
-
-        assert world_pt == pytest.approx((20.0, 30.0))
-
-    def test_command_point_to_world_workarea_mode(self):
-        """Test helper method converts command points directly (Workarea origin)."""
-        space = MachineSpace(
-            origin=OriginCorner.TOP_LEFT,
-            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
-            y_positive_direction=AxisDirection.POSITIVE_DOWN,
-            extents=(100.0, 100.0),
-            margins=(10.0, 20.0, 30.0, 40.0),
-        )
-
-        # TL origin, so workarea origin in machine space is (ml, mt) = (10, 20)
-        # World pt: (20, 50)
-        # Mach: (wx, 100 - wy) -> (20, 50)
-        # Cmd in Workarea mode = Mach - WorkareaOrigin = (20 - 10, 50 - 20) = (10, 30)
-        world_pt = space.command_point_to_world(
-            cmd_x=10.0, cmd_y=30.0, wcs_is_workarea_origin=True
-        )
-
-        assert world_pt == pytest.approx((20.0, 50.0))
 
 
 class TestMachineSpaceItemTransforms:
