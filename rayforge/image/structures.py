@@ -86,6 +86,7 @@ class ImportManifest:
     title: Optional[str] = None
     warnings: List[str] = field(default_factory=list)
     errors: List[str] = field(default_factory=list)
+    is_unitless: bool = False
 
 
 @dataclass
