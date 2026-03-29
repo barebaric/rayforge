@@ -630,6 +630,70 @@ class TestMachine:
         assert received_doc is doc
 
     @pytest.mark.asyncio
+    async def test_frame_job_repeats_and_laser_off(
+        self,
+        doc: Doc,
+        machine: Machine,
+        doc_editor: DocEditor,
+        mocker,
+        lite_context,
+        task_mgr: TaskManager,
+        contour_step_class,
+    ):
+        """
+        Regression test for framing bugs:
+        a) Framing should repeat the frame path for each configured
+           repeat count (frame_repeat_count).
+        b) The laser must be turned off after the framing job completes.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        head = machine.get_default_head()
+        head.set_frame_power(1)
+        head.set_frame_repeat_count(3)
+
+        step = contour_step_class.create(lite_context)
+        workflow = doc.active_layer.workflow
+        assert workflow is not None
+        workflow.add_step(step)
+
+        workpiece, source = create_test_workpiece_and_source()
+        doc.add_asset(source)
+        doc.active_layer.add_child(workpiece)
+
+        await doc_editor.wait_until_settled()
+        await wait_for_tasks_to_finish(task_mgr)
+
+        run_spy = mocker.spy(machine.driver, "run")
+        machine_cmd = MachineCmd(doc_editor)
+
+        await machine_cmd.frame_job(machine)
+        await wait_for_tasks_to_finish(task_mgr)
+
+        run_spy.assert_called_once()
+        machine_code = run_spy.call_args.args[0]
+
+        # Each frame cycle traces a rectangle (4 sides). With
+        # frame_repeat_count=3, the laser should turn on 4*3=12 times.
+        laser_on_count = machine_code.count("M4")
+        assert laser_on_count == 12, (
+            f"Expected 12 laser-on commands (4 sides × 3 cycles), "
+            f"but got {laser_on_count}"
+        )
+
+        # The laser must be off after framing completes. The last
+        # meaningful G-code line should not be a cutting move.
+        lines = [
+            line.strip()
+            for line in machine_code.strip().splitlines()
+            if line.strip()
+        ]
+        last_line = lines[-1]
+        assert not last_line.startswith(("G1", "G2", "G3")), (
+            f"Laser left on after framing. Last G-code line: '{last_line}'"
+        )
+
+    @pytest.mark.asyncio
     async def test_can_focus(self, machine: Machine, task_mgr: TaskManager):
         """Test that can_focus returns True when any head has focus power."""
         await wait_for_tasks_to_finish(task_mgr)
