@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-23 12:55+0100\n"
+"POT-Creation-Date: 2026-03-28 02:12+0100\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -240,6 +240,10 @@ msgstr "Mover Ponto de Controle"
 msgid "Unstick Junction"
 msgstr "Descolar Junção"
 
+#: sketcher/core/commands/ellipse.py
+msgid "Add Ellipse"
+msgstr "Adicionar elipse"
+
 #: sketcher/core/commands/live_text_edit.py
 msgid "Edit Text"
 msgstr "Editar Texto"
@@ -284,8 +288,13 @@ msgstr "Mostrar/Ocultar restrições"
 msgid "Toggle construction geometry"
 msgstr "Mostrar/Ocultar geometria de construção"
 
+#: sketcher/ui_gtk/studio.py
+msgid "Fill color:"
+msgstr "Cor de preenchimento:"
+
 #: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/dimension_input.py
-#: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/sketchcanvas.py
+#: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/tools/circle_tool.py
+#: sketcher/ui_gtk/sketchcanvas.py
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -322,12 +331,14 @@ msgid "Select"
 msgstr "Selecionar"
 
 #: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
-msgid "Snap to Grid"
-msgstr "Ajustar à Grade"
-
-#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
 msgid "Constrain to Axis"
 msgstr "Restringir ao Eixo"
+
+#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
+#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/arc_tool.py
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Toggle Magnetic Snap"
+msgstr "Alternar ajuste magnético"
 
 #: sketcher/ui_gtk/tools/select_tool.py
 msgid "Select Connected"
@@ -357,6 +368,10 @@ msgstr "Campo anterior"
 #: sketcher/ui_gtk/tools/path_tool.py sketcher/ui_gtk/menu.py
 msgid "Path"
 msgstr "Caminho"
+
+#: sketcher/ui_gtk/tools/path_tool.py
+msgid "Snap to Grid"
+msgstr "Ajustar à Grade"
 
 #: sketcher/ui_gtk/tools/waypoint_sharp_tool.py
 msgid "Sharp"
@@ -424,13 +439,17 @@ msgstr "Criar"
 msgid "Add Tangent Constraint"
 msgstr "Adicionar Restrição de Tangente"
 
-#: sketcher/ui_gtk/tools/circle_tool.py sketcher/ui_gtk/menu.py
-msgid "Circle"
-msgstr "Círculo"
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Ellipse"
+msgstr "Elipse"
 
 #: sketcher/ui_gtk/tools/circle_tool.py
-msgid "Type diameter"
-msgstr "Digitar diâmetro"
+msgid "Center on start point"
+msgstr "Centralizar no ponto inicial"
+
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Constrain to circle"
+msgstr "Restringir a círculo"
 
 #: sketcher/ui_gtk/tools/vertical_constraint_tool.py
 msgid "Add Vertical Constraint"
@@ -551,6 +570,10 @@ msgstr "Refazer"
 #: sketcher/ui_gtk/menu.py
 msgid "_Edit"
 msgstr "_Editar"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Circle"
+msgstr "Círculo"
 
 #: sketcher/ui_gtk/menu.py
 msgid "Fill Area"

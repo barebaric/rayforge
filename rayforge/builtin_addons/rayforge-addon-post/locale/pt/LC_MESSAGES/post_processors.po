@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-18 23:38+0100\n"
+"POT-Creation-Date: 2026-03-25 22:24+0100\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -155,6 +155,30 @@ msgstr "Alterar suavidade"
 msgid "Change corner angle"
 msgstr "Alterar ângulo do canto"
 
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Enable Merge Lines"
+msgstr "Ativar fusão de linhas"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Merges overlapping line segments to avoid double passing"
+msgstr "Funde segmentos de linha sobrepostos para evitar passagens duplas"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Tolerance"
+msgstr "Tolerância"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Maximum distance for lines to be considered overlapping"
+msgstr "Distância máxima para que as linhas sejam consideradas sobrepostas"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Toggle Merge Lines"
+msgstr "Alternar fusão de linhas"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Change merge tolerance"
+msgstr "Alterar tolerância de fusão"
+
 #: post_processors/widgets/multipass_widget.py
 msgid "Number of Passes"
 msgstr "Número de Passagens"
@@ -241,6 +265,14 @@ msgstr "Suavizar Caminho"
 #: post_processors/transformers/smooth_transformer.py
 msgid "Smooths the path by applying a Gaussian filter."
 msgstr "Suaviza o caminho aplicando um filtro gaussiano."
+
+#: post_processors/transformers/merge_lines_transformer.py
+msgid "Merge Lines"
+msgstr "Fundir linhas"
+
+#: post_processors/transformers/merge_lines_transformer.py
+msgid "Merges overlapping lines to avoid double passing."
+msgstr "Funde linhas sobrepostas para evitar passagens duplas."
 
 #: post_processors/transformers/overscan_transformer.py
 msgid "Overscan"

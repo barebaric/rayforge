@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-23 12:55+0100\n"
+"POT-Creation-Date: 2026-03-28 02:12+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -240,6 +240,10 @@ msgstr ""
 msgid "Unstick Junction"
 msgstr ""
 
+#: sketcher/core/commands/ellipse.py
+msgid "Add Ellipse"
+msgstr ""
+
 #: sketcher/core/commands/live_text_edit.py
 msgid "Edit Text"
 msgstr ""
@@ -284,8 +288,13 @@ msgstr ""
 msgid "Toggle construction geometry"
 msgstr ""
 
+#: sketcher/ui_gtk/studio.py
+msgid "Fill color:"
+msgstr ""
+
 #: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/dimension_input.py
-#: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/sketchcanvas.py
+#: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/tools/circle_tool.py
+#: sketcher/ui_gtk/sketchcanvas.py
 msgid "Cancel"
 msgstr ""
 
@@ -322,11 +331,13 @@ msgid "Select"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
-msgid "Snap to Grid"
+msgid "Constrain to Axis"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
-msgid "Constrain to Axis"
+#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/arc_tool.py
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Toggle Magnetic Snap"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/select_tool.py
@@ -356,6 +367,10 @@ msgstr ""
 
 #: sketcher/ui_gtk/tools/path_tool.py sketcher/ui_gtk/menu.py
 msgid "Path"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/path_tool.py
+msgid "Snap to Grid"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/waypoint_sharp_tool.py
@@ -424,12 +439,16 @@ msgstr ""
 msgid "Add Tangent Constraint"
 msgstr ""
 
-#: sketcher/ui_gtk/tools/circle_tool.py sketcher/ui_gtk/menu.py
-msgid "Circle"
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Ellipse"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/circle_tool.py
-msgid "Type diameter"
+msgid "Center on start point"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Constrain to circle"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/vertical_constraint_tool.py
@@ -550,6 +569,10 @@ msgstr ""
 
 #: sketcher/ui_gtk/menu.py
 msgid "_Edit"
+msgstr ""
+
+#: sketcher/ui_gtk/menu.py
+msgid "Circle"
 msgstr ""
 
 #: sketcher/ui_gtk/menu.py

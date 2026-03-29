@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-23 12:55+0100\n"
+"POT-Creation-Date: 2026-03-28 02:12+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -240,6 +240,10 @@ msgstr "移动控制点"
 msgid "Unstick Junction"
 msgstr "取消连接点"
 
+#: sketcher/core/commands/ellipse.py
+msgid "Add Ellipse"
+msgstr "添加椭圆"
+
 #: sketcher/core/commands/live_text_edit.py
 msgid "Edit Text"
 msgstr "编辑文本"
@@ -284,8 +288,13 @@ msgstr "切换约束"
 msgid "Toggle construction geometry"
 msgstr "切换辅助几何"
 
+#: sketcher/ui_gtk/studio.py
+msgid "Fill color:"
+msgstr "填充颜色："
+
 #: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/dimension_input.py
-#: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/sketchcanvas.py
+#: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/tools/circle_tool.py
+#: sketcher/ui_gtk/sketchcanvas.py
 msgid "Cancel"
 msgstr "取消"
 
@@ -322,12 +331,14 @@ msgid "Select"
 msgstr "选择"
 
 #: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
-msgid "Snap to Grid"
-msgstr "对齐网格"
-
-#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
 msgid "Constrain to Axis"
 msgstr "约束到轴"
+
+#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
+#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/arc_tool.py
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Toggle Magnetic Snap"
+msgstr "切换磁力吸附"
 
 #: sketcher/ui_gtk/tools/select_tool.py
 msgid "Select Connected"
@@ -357,6 +368,10 @@ msgstr "上一个字段"
 #: sketcher/ui_gtk/tools/path_tool.py sketcher/ui_gtk/menu.py
 msgid "Path"
 msgstr "路径"
+
+#: sketcher/ui_gtk/tools/path_tool.py
+msgid "Snap to Grid"
+msgstr "对齐网格"
 
 #: sketcher/ui_gtk/tools/waypoint_sharp_tool.py
 msgid "Sharp"
@@ -424,13 +439,17 @@ msgstr "创建"
 msgid "Add Tangent Constraint"
 msgstr "添加相切约束"
 
-#: sketcher/ui_gtk/tools/circle_tool.py sketcher/ui_gtk/menu.py
-msgid "Circle"
-msgstr "圆形"
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Ellipse"
+msgstr "椭圆"
 
 #: sketcher/ui_gtk/tools/circle_tool.py
-msgid "Type diameter"
-msgstr "输入直径"
+msgid "Center on start point"
+msgstr "以起点为中心"
+
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Constrain to circle"
+msgstr "约束为圆形"
 
 #: sketcher/ui_gtk/tools/vertical_constraint_tool.py
 msgid "Add Vertical Constraint"
@@ -551,6 +570,10 @@ msgstr "重做"
 #: sketcher/ui_gtk/menu.py
 msgid "_Edit"
 msgstr "编辑(_E)"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Circle"
+msgstr "圆形"
 
 #: sketcher/ui_gtk/menu.py
 msgid "Fill Area"

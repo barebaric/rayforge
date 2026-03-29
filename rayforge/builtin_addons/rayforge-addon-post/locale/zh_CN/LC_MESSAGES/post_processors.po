@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-18 23:38+0100\n"
+"POT-Creation-Date: 2026-03-25 22:24+0100\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -152,6 +152,30 @@ msgstr "更改平滑度"
 msgid "Change corner angle"
 msgstr "更改拐角角度"
 
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Enable Merge Lines"
+msgstr "启用合并线条"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Merges overlapping line segments to avoid double passing"
+msgstr "合并重叠的线段以避免重复通过"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Tolerance"
+msgstr "容差"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Maximum distance for lines to be considered overlapping"
+msgstr "线条被视为重叠的最大距离"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Toggle Merge Lines"
+msgstr "切换合并线条"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Change merge tolerance"
+msgstr "更改合并容差"
+
 #: post_processors/widgets/multipass_widget.py
 msgid "Number of Passes"
 msgstr "通过次数"
@@ -236,6 +260,14 @@ msgstr "平滑路径"
 #: post_processors/transformers/smooth_transformer.py
 msgid "Smooths the path by applying a Gaussian filter."
 msgstr "通过应用高斯滤波器平滑路径。"
+
+#: post_processors/transformers/merge_lines_transformer.py
+msgid "Merge Lines"
+msgstr "合并线条"
+
+#: post_processors/transformers/merge_lines_transformer.py
+msgid "Merges overlapping lines to avoid double passing."
+msgstr "合并重叠线条以避免重复通过。"
 
 #: post_processors/transformers/overscan_transformer.py
 msgid "Overscan"

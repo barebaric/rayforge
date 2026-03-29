@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-23 12:55+0100\n"
+"POT-Creation-Date: 2026-03-28 02:12+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -241,6 +241,10 @@ msgstr "Перемістити контрольну точку"
 msgid "Unstick Junction"
 msgstr "Від'єднати вузол"
 
+#: sketcher/core/commands/ellipse.py
+msgid "Add Ellipse"
+msgstr "Додати еліпс"
+
 #: sketcher/core/commands/live_text_edit.py
 msgid "Edit Text"
 msgstr "Редагувати текст"
@@ -285,8 +289,13 @@ msgstr "Перемкнути обмеження"
 msgid "Toggle construction geometry"
 msgstr "Перемкнути допоміжну геометрію"
 
+#: sketcher/ui_gtk/studio.py
+msgid "Fill color:"
+msgstr "Колір заливки:"
+
 #: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/dimension_input.py
-#: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/sketchcanvas.py
+#: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/tools/circle_tool.py
+#: sketcher/ui_gtk/sketchcanvas.py
 msgid "Cancel"
 msgstr "Скасувати"
 
@@ -323,12 +332,14 @@ msgid "Select"
 msgstr "Вибрати"
 
 #: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
-msgid "Snap to Grid"
-msgstr "Прив'язати до сітки"
-
-#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
 msgid "Constrain to Axis"
 msgstr "Обмежити до осі"
+
+#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
+#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/arc_tool.py
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Toggle Magnetic Snap"
+msgstr "Перемкнути магнітне прив'язування"
 
 #: sketcher/ui_gtk/tools/select_tool.py
 msgid "Select Connected"
@@ -358,6 +369,10 @@ msgstr "Попереднє поле"
 #: sketcher/ui_gtk/tools/path_tool.py sketcher/ui_gtk/menu.py
 msgid "Path"
 msgstr "Контур"
+
+#: sketcher/ui_gtk/tools/path_tool.py
+msgid "Snap to Grid"
+msgstr "Прив'язати до сітки"
 
 #: sketcher/ui_gtk/tools/waypoint_sharp_tool.py
 msgid "Sharp"
@@ -425,13 +440,17 @@ msgstr "Створити"
 msgid "Add Tangent Constraint"
 msgstr "Додати обмеження дотику"
 
-#: sketcher/ui_gtk/tools/circle_tool.py sketcher/ui_gtk/menu.py
-msgid "Circle"
-msgstr "Коло"
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Ellipse"
+msgstr "Еліпс"
 
 #: sketcher/ui_gtk/tools/circle_tool.py
-msgid "Type diameter"
-msgstr "Введіть діаметр"
+msgid "Center on start point"
+msgstr "Центр на початковій точці"
+
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Constrain to circle"
+msgstr "Обмежити до кола"
 
 #: sketcher/ui_gtk/tools/vertical_constraint_tool.py
 msgid "Add Vertical Constraint"
@@ -552,6 +571,10 @@ msgstr "Повторити"
 #: sketcher/ui_gtk/menu.py
 msgid "_Edit"
 msgstr "_Редагування"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Circle"
+msgstr "Коло"
 
 #: sketcher/ui_gtk/menu.py
 msgid "Fill Area"
