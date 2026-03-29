@@ -112,15 +112,29 @@ class AddonRegistryDialog(PatchedDialogWindow):
         context = get_context()
 
         def _worker():
-            return context.addon_mgr.fetch_registry()
+            try:
+                logger.info("Fetching addon registry in background thread")
+                result = context.addon_mgr.fetch_registry()
+                logger.info(f"Registry fetch complete: {len(result)} items")
+                return result
+            except Exception:
+                logger.exception(
+                    "Unhandled exception in registry fetch worker"
+                )
+                return []
 
         def _done(data):
-            self._populate_list(data)
-            self.stack.set_visible_child_name("list")
+            if data is not None:
+                self._populate_list(data)
+                self.stack.set_visible_child_name("list")
+            else:
+                self.stack.set_visible_child_name("error")
 
-        thread = threading.Thread(
-            target=lambda: GLib.idle_add(_done, _worker()), daemon=True
-        )
+        def _thread_target():
+            result = _worker()
+            GLib.idle_add(_done, result)
+
+        thread = threading.Thread(target=_thread_target, daemon=True)
         thread.start()
 
     def _is_license_valid(self, addon: AddonMetadata) -> bool:
