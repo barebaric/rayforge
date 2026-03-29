@@ -31,6 +31,8 @@ class RenderItem:
     step_uid: str
     workpiece_uid: str
     laser_uid: str  # For per-laser color lookup
+    rotary_enabled: bool = False
+    rotary_diameter: float = 25.0
 
 
 @dataclass
@@ -51,26 +53,30 @@ def generate_scene_description(
     self-contained "render bundle" with all necessary data for the 3D canvas.
     """
     render_items: List[RenderItem] = []
-    visible_steps = set()
+    seen_steps: set = set()
 
     for layer in doc.layers:
         if layer.visible and layer.workflow:
             for step in layer.workflow.steps:
-                visible_steps.add(step)
-
-    for step in visible_steps:
-        # Use the new lightweight render artifact for UI consumption
-        handle = pipeline.get_step_render_artifact_handle(step.uid)
-        if handle:
-            item = RenderItem(
-                artifact_handle=handle,
-                texture_data=None,
-                world_transform=np.identity(4, dtype=np.float32),
-                workpiece_size=(0.0, 0.0),  # Not applicable at step level
-                step_uid=step.uid,
-                workpiece_uid="",  # Not applicable at step level
-                laser_uid=step.selected_laser_uid or "",
-            )
-            render_items.append(item)
+                if step.uid in seen_steps:
+                    continue
+                seen_steps.add(step.uid)
+                handle = pipeline.get_step_render_artifact_handle(step.uid)
+                if handle:
+                    item = RenderItem(
+                        artifact_handle=handle,
+                        texture_data=None,
+                        world_transform=np.identity(4, dtype=np.float32),
+                        workpiece_size=(
+                            0.0,
+                            0.0,
+                        ),
+                        step_uid=step.uid,
+                        workpiece_uid="",
+                        laser_uid=step.selected_laser_uid or "",
+                        rotary_enabled=layer.rotary_enabled,
+                        rotary_diameter=layer.rotary_diameter,
+                    )
+                    render_items.append(item)
 
     return SceneDescription(render_items=render_items)
