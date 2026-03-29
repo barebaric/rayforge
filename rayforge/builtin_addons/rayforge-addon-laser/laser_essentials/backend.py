@@ -64,6 +64,12 @@ def register_steps(step_registry):
 
 
 @hookimpl
+def register_commands(command_registry):
+    """Register editor command handlers."""
+    command_registry.register("material_test", MaterialTestCmd, ADDON_NAME)
+
+
+@hookimpl
 def register_actions(action_registry):
     """Register actions with menu placement."""
     action = Gio.SimpleAction.new("material_test", None)
@@ -71,8 +77,7 @@ def register_actions(action_registry):
     def on_activate(action, param):
         window = action_registry.window
         editor = window.doc_editor
-        cmd = MaterialTestCmd(editor)
-        cmd.create_test_grid()
+        editor.material_test.create_test_grid()
 
     action.connect("activate", on_activate)
     action_registry.register(

@@ -45,8 +45,8 @@ def get_material_test_proportional_size(
     spacing = params.get("spacing", 2.0)
     include_labels = params.get("include_labels", True)
 
-    base_margin_left = 15.0
-    base_margin_top = 15.0
+    base_margin_left = min(shape_size * 1.5, 15.0)
+    base_margin_top = min(shape_size * 1.5, 15.0)
     width = (cols * shape_size) + ((cols - 1) * spacing)
     height = (rows * shape_size) + ((rows - 1) * spacing)
     if include_labels:
@@ -254,8 +254,11 @@ class MaterialTestGridProducer(OpsProducer):
         speed_step = (max_speed - min_speed) / (rows - 1) if rows > 1 else 0
         power_step = (max_power - min_power) / (cols - 1) if cols > 1 else 0
 
+        base_margin = min(shape_size * 1.5, 15.0)
         margin_left, margin_top = (
-            (15.0 * scale_x, 15.0 * scale_y) if include_labels else (0.0, 0.0)
+            (base_margin * scale_x, base_margin * scale_y)
+            if include_labels
+            else (0.0, 0.0)
         )
         shape_w, shape_h = shape_size * scale_x, shape_size * scale_y
         spacing_x, spacing_y = spacing * scale_x, spacing * scale_y
