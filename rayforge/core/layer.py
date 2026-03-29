@@ -50,6 +50,7 @@ class Layer(DocItem):
         self.visible: bool = True
         self.rotary_enabled: bool = False
         self.rotary_diameter: float = 25.0
+        self.rotary_module_uid: Optional[str] = None
 
         # Signals for notifying other parts of the application of changes.
         # This one is special and is bubbled manually.
@@ -72,6 +73,7 @@ class Layer(DocItem):
             "visible": self.visible,
             "rotary_enabled": self.rotary_enabled,
             "rotary_diameter": self.rotary_diameter,
+            "rotary_module_uid": self.rotary_module_uid,
             "children": [child.to_dict() for child in self.children],
         }
         result.update(self.extra)
@@ -88,6 +90,7 @@ class Layer(DocItem):
             "visible",
             "rotary_enabled",
             "rotary_diameter",
+            "rotary_module_uid",
             "children",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -98,6 +101,7 @@ class Layer(DocItem):
         layer.visible = data.get("visible", True)
         layer.rotary_enabled = data.get("rotary_enabled", False)
         layer.rotary_diameter = data.get("rotary_diameter", 25.0)
+        layer.rotary_module_uid = data.get("rotary_module_uid")
         layer.extra = extra
 
         children = []
@@ -235,6 +239,12 @@ class Layer(DocItem):
         if self.rotary_diameter == diameter:
             return
         self.rotary_diameter = diameter
+        self.updated.send(self)
+
+    def set_rotary_module_uid(self, uid: Optional[str]):
+        if self.rotary_module_uid == uid:
+            return
+        self.rotary_module_uid = uid
         self.updated.send(self)
 
     def mu_to_degrees(self, mu: float) -> float:
