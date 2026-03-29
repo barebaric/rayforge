@@ -164,19 +164,20 @@ def prepare_scene_vertices_async(
                 transformed = _transform_vertices(
                     p_verts, content_model_matrix
                 )
+                expanded_colors = p_colors
                 if item_diameter > 0:
-                    transformed = transform_to_cylinder(
-                        transformed, item_diameter
+                    transformed, expanded_colors = transform_to_cylinder(
+                        transformed, item_diameter, p_colors
                     )
                 rot_powered_verts.append(transformed)
-                rot_powered_colors.append(p_colors)
+                rot_powered_colors.append(expanded_colors)
 
             if t_verts.size > 0:
                 transformed = _transform_vertices(
                     t_verts, content_model_matrix
                 )
                 if item_diameter > 0:
-                    transformed = transform_to_cylinder(
+                    transformed, _ = transform_to_cylinder(
                         transformed, item_diameter
                     )
                 rot_travel_verts.append(transformed)
@@ -185,12 +186,13 @@ def prepare_scene_vertices_async(
                 transformed = _transform_vertices(
                     zp_verts, content_model_matrix
                 )
+                expanded_zp_colors = zp_colors
                 if item_diameter > 0:
-                    transformed = transform_to_cylinder(
-                        transformed, item_diameter
+                    transformed, expanded_zp_colors = transform_to_cylinder(
+                        transformed, item_diameter, zp_colors
                     )
                 rot_zero_power_verts.append(transformed)
-                rot_zero_power_colors.append(zp_colors)
+                rot_zero_power_colors.append(expanded_zp_colors)
         else:
             if p_verts.size > 0:
                 transformed = _transform_vertices(
