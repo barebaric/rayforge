@@ -190,6 +190,7 @@ class MachineCmd:
             prev = corner
 
         frame_with_laser = frame_ops * head.frame_repeat_count
+        frame_with_laser.job_end()
 
         machine_code, op_map = machine.encode_ops(
             frame_with_laser, self._editor.doc

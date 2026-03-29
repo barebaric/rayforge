@@ -13,7 +13,7 @@ class Laser:
         self.frame_power_percent: float = 0  # in percent (0-1.0)
         self.focus_power_percent: float = 0  # in percent (0-1.0)
         self.frame_speed: int = 0  # mm/min, 0 = use machine max travel speed
-        self.frame_repeat_count: int = 1
+        self.frame_repeat_count: int = 20
         self.frame_corner_pause: float = 0  # seconds
         self.spot_size_mm: Tuple[float, float] = 0.1, 0.1  # millimeters
         self.cut_color: str = "#ff00ff"  # Magenta for cut
