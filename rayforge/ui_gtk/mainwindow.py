@@ -290,6 +290,7 @@ class MainWindow(Adw.ApplicationWindow):
         doc.updated.connect(self.on_doc_changed)
         doc.descendant_added.connect(self.on_doc_changed)
         doc.descendant_removed.connect(self.on_doc_changed)
+        doc.descendant_updated.connect(self.on_doc_changed)
         doc.active_layer_changed.connect(self._on_active_layer_changed)
         doc.history_manager.changed.connect(self.on_history_changed)
 
@@ -1188,6 +1189,7 @@ class MainWindow(Adw.ApplicationWindow):
             self._old_doc.updated.disconnect(self.on_doc_changed)
             self._old_doc.descendant_added.disconnect(self.on_doc_changed)
             self._old_doc.descendant_removed.disconnect(self.on_doc_changed)
+            self._old_doc.descendant_updated.disconnect(self.on_doc_changed)
             self._old_doc.active_layer_changed.disconnect(
                 self._on_active_layer_changed
             )
@@ -1199,6 +1201,7 @@ class MainWindow(Adw.ApplicationWindow):
         new_doc.updated.connect(self.on_doc_changed)
         new_doc.descendant_added.connect(self.on_doc_changed)
         new_doc.descendant_removed.connect(self.on_doc_changed)
+        new_doc.descendant_updated.connect(self.on_doc_changed)
         new_doc.active_layer_changed.connect(self._on_active_layer_changed)
         new_doc.history_manager.changed.connect(self.on_history_changed)
 
