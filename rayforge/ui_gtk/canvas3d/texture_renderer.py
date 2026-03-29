@@ -167,10 +167,12 @@ class TextureArtifactRenderer(BaseRenderer):
         grid_t: int = 64,
     ) -> np.ndarray:
         """
-        Generate vertices for a cylinder segment directly from a transform matrix.
+        Generate vertices for a cylinder segment directly from
+        a transform matrix.
 
-        The grid_matrix transforms [0,1] texture coords to Local Cylinder Space.
-        The resulting Y coordinate is then natively wrapped into the cylinder Z/Y planes.
+        The grid_matrix transforms [0,1] texture coords to
+        Local Cylinder Space. The resulting Y coordinate is
+        then natively wrapped into the cylinder Z/Y planes.
         """
         radius = diameter / 2.0
         circumference = diameter * math.pi
@@ -484,7 +486,8 @@ class TextureArtifactRenderer(BaseRenderer):
                 )
                 GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
-            # Draw using the full Scene Matrix, so it correctly inherits WCS and _model_matrix.
+            # Draw using the full Scene Matrix, so it correctly
+            # inherits WCS and _model_matrix.
             shader.set_mat4("uMVP", view_proj_scene_matrix.T)
 
             GL.glActiveTexture(GL.GL_TEXTURE1)

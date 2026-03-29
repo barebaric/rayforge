@@ -737,7 +737,8 @@ class Canvas3D(Gtk.GLArea):
 
             if self.texture_renderer and self.texture_shader:
                 if self._rotary_enabled:
-                    # Cylinder Textures natively output to Grid Space, shifted by WCS.
+                    # Cylinder Textures natively output to Grid Space,
+                    # shifted by WCS.
                     self.texture_renderer.render_cylinder(
                         mvp_matrix_scene,
                         self.texture_shader,
@@ -1089,8 +1090,8 @@ class Canvas3D(Gtk.GLArea):
         machine = self.context.machine
         if machine:
             ml, mt, mr, mb = machine.work_margins
-            world_to_visual[0, 3] = ml
-            world_to_visual[1, 3] = mb
+            world_to_visual[0, 3] = -ml
+            world_to_visual[1, 3] = -mb
 
             try:
                 visual_to_grid = np.linalg.inv(self._model_matrix)
