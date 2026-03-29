@@ -23,6 +23,8 @@ class RotaryModule:
         self.extra: Dict[str, Any] = {}
 
     def set_name(self, name: str):
+        if self.name == name:
+            return
         self.name = name
         self.changed.send(self)
 
@@ -34,28 +36,40 @@ class RotaryModule:
         self.changed.send(self)
 
     def set_position(self, x: float, y: float, z: float):
+        if self.x == x and self.y == y and self.z == z:
+            return
         self.x = x
         self.y = y
         self.z = z
         self.changed.send(self)
 
     def set_length(self, length: float):
+        if self.length == length:
+            return
         self.length = length
         self.changed.send(self)
 
     def set_chuck_diameter(self, diameter: float):
+        if self.chuck_diameter == diameter:
+            return
         self.chuck_diameter = diameter
         self.changed.send(self)
 
     def set_tailstock_diameter(self, diameter: float):
+        if self.tailstock_diameter == diameter:
+            return
         self.tailstock_diameter = diameter
         self.changed.send(self)
 
     def set_max_height(self, height: float):
+        if self.max_height == height:
+            return
         self.max_height = height
         self.changed.send(self)
 
     def set_default_diameter(self, diameter: float):
+        if self.default_diameter == diameter:
+            return
         self.default_diameter = diameter
         self.changed.send(self)
 
