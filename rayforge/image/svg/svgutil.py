@@ -212,12 +212,38 @@ def trim_svg(data: bytes) -> bytes:
         return data
 
 
-def get_natural_size(data: bytes) -> Optional[Tuple[float, float]]:
+def is_unitless_svg(data: bytes) -> bool:
+    """
+    Returns True if the SVG's dimensions have no physical unit, meaning the
+    physical size depends on a DPI assumption. This is the case when:
+
+    - width/height attributes are missing (viewBox-only), or
+    - width/height use no unit (bare number) or the "px" unit.
+    """
+    if not data:
+        return False
+    try:
+        root = ET.fromstring(data)
+        w_str = root.get("width")
+        h_str = root.get("height")
+        if not w_str or not h_str:
+            return True
+        _, w_unit = parse_length(w_str)
+        _, h_unit = parse_length(h_str)
+        return w_unit in ("", "px") and h_unit in ("", "px")
+    except (ValueError, ET.ParseError):
+        return False
+
+
+def get_natural_size(
+    data: bytes, ppi: float = PPI
+) -> Optional[Tuple[float, float]]:
     """
     Analyzes raw SVG data to extract its natural, untrimmed dimensions in mm.
 
     Args:
         data: The raw SVG data in bytes.
+        ppi: Pixels per inch used for converting unitless/px values to mm.
 
     Returns:
         A tuple of (width_mm, height_mm), or None if dimensions cannot be
@@ -237,9 +263,9 @@ def get_natural_size(data: bytes) -> Optional[Tuple[float, float]]:
         w_val, w_unit = parse_length(w_str)
         h_val, h_unit = parse_length(h_str)
 
-        # Use the MM_PER_PX constant for conversion
-        width_mm = to_mm(w_val, w_unit, px_factor=MM_PER_PX)
-        height_mm = to_mm(h_val, h_unit, px_factor=MM_PER_PX)
+        mm_per_px = 25.4 / ppi
+        width_mm = to_mm(w_val, w_unit, px_factor=mm_per_px)
+        height_mm = to_mm(h_val, h_unit, px_factor=mm_per_px)
 
         return width_mm, height_mm
 

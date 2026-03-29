@@ -142,10 +142,27 @@ class ImportDialog(PatchedDialogWindow):
             "notify::active", self._on_import_mode_toggled
         )
         mode_group.add(self.use_vectors_switch)
-        # Show this group only if the importer supports both vector and trace
+
+        self.dpi_adjustment = Gtk.Adjustment.new(
+            96.0, 1.0, 10000.0, 1.0, 10.0, 0
+        )
+        self.dpi_row = Adw.SpinRow(
+            title=_("DPI"),
+            subtitle=_("Pixels per inch for unitless SVG dimensions"),
+            adjustment=self.dpi_adjustment,
+            numeric=True,
+        )
+        self.dpi_row.connect("changed", self._schedule_preview_update)
+        self.dpi_row.set_visible(False)
+        mode_group.add(self.dpi_row)
+
+        # Show this group if the importer supports both vector and trace,
+        # or if DPI is relevant (detected later from manifest)
         can_trace = ImporterFeature.BITMAP_TRACING in self.features
         can_vector = ImporterFeature.DIRECT_VECTOR in self.features
-        mode_group.set_visible(can_trace and can_vector)
+        self._mode_group = mode_group
+        self._mode_visible = can_trace and can_vector
+        mode_group.set_visible(self._mode_visible)
 
         # Layers Group (Dynamic)
         self.layers_group = Adw.PreferencesGroup(title=_("Layers"))
@@ -283,6 +300,11 @@ class ImportDialog(PatchedDialogWindow):
                         f"Scan error for {self.file_path.name}: {error}"
                     )
             self._populate_layers_ui()
+            if self._manifest and self._manifest.is_unitless:
+                self.dpi_row.set_visible(True)
+                if not self._mode_visible:
+                    self._mode_visible = True
+                    self._mode_group.set_visible(True)
         except Exception:
             logger.error(
                 f"Failed to read import file {self.file_path}", exc_info=True
@@ -340,6 +362,7 @@ class ImportDialog(PatchedDialogWindow):
         """
         Constructs a VectorizationSpec from the current UI control values.
         """
+        ppi = self.dpi_adjustment.get_value()
         if (
             ImporterFeature.DIRECT_VECTOR in self.features
             and self.use_vectors_switch.get_active()
@@ -347,6 +370,7 @@ class ImportDialog(PatchedDialogWindow):
             return PassthroughSpec(
                 active_layer_ids=self._get_active_layer_ids(),
                 create_new_layers=self.create_new_layers_switch.get_active(),
+                ppi=ppi,
             )
         else:
             if self.import_whole_image_switch.get_active():
@@ -354,11 +378,13 @@ class ImportDialog(PatchedDialogWindow):
                     threshold=1.0,
                     auto_threshold=False,
                     invert=False,
+                    ppi=ppi,
                 )
             return TraceSpec(
                 threshold=self.threshold_adjustment.get_value(),
                 auto_threshold=self.auto_threshold_switch.get_active(),
                 invert=self.invert_switch.get_active(),
+                ppi=ppi,
             )
 
     def _schedule_preview_update(self, *args):
