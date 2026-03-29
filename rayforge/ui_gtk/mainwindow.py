@@ -16,6 +16,7 @@ from ..core.group import Group
 from ..core.asset_registry import asset_type_registry
 from ..core.item import DocItem
 from ..core.step import Step
+from ..core.step_registry import step_registry
 from ..core.undo import Command, HistoryManager
 from ..core.workpiece import WorkPiece
 from ..doceditor.editor import DocEditor
@@ -27,7 +28,6 @@ from ..machine.transport import TransportStatus
 from ..addon_mgr.update_cmd import UpdateCommand
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from ..pipeline.encoder.gcode import MachineCodeOpMap
-from ..pipeline.steps import step_registry
 from ..shared.gcodeedit.viewer import GcodeViewer
 from ..shared.tasker import task_mgr
 from ..shared.util.time_format import format_hours_to_hm
