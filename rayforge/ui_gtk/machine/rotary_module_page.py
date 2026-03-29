@@ -218,8 +218,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             **kwargs,
         )
         self.machine = machine
-        self._is_initializing = True
-        self.handler_ids = {}
+        self._is_updating = True
 
         defaults_group = Adw.PreferencesGroup(
             title=_("Rotary Defaults"),
@@ -260,9 +259,7 @@ class RotaryModulePage(TrackedPreferencesPage):
         self.add(self.config_group)
 
         self.name_row = Adw.EntryRow(title=_("Name"))
-        self.handler_ids["name"] = self.name_row.connect(
-            "changed", self._on_name_changed
-        )
+        self.name_row.connect("changed", self._on_name_changed)
         self.name_row.connect("activate", self._on_name_applied)
         name_focus_ctrl = Gtk.EventControllerFocus()
         name_focus_ctrl.connect("leave", self._on_name_focus_left)
@@ -284,7 +281,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             subtitle=_("Axis letter for this module"),
             model=module_axis_store,
         )
-        self.handler_ids["module_axis"] = self.module_axis_row.connect(
+        self.module_axis_row.connect(
             "notify::selected", self._on_module_axis_changed
         )
         self.config_group.add(self.module_axis_row)
@@ -298,10 +295,8 @@ class RotaryModulePage(TrackedPreferencesPage):
             adjustment=default_diam_adj,
             digits=1,
         )
-        self.handler_ids["default_diameter"] = (
-            self.default_diameter_row.connect(
-                "notify::value", self._on_default_diameter_changed
-            )
+        self.default_diameter_row.connect(
+            "notify::value", self._on_default_diameter_changed
         )
         self.config_group.add(self.default_diameter_row)
 
@@ -314,9 +309,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             adjustment=x_adj,
             digits=2,
         )
-        self.handler_ids["x"] = self.x_row.connect(
-            "notify::value", self._on_position_changed
-        )
+        self.x_row.connect("notify::value", self._on_position_changed)
         self.config_group.add(self.x_row)
 
         y_adj = Gtk.Adjustment(
@@ -328,9 +321,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             adjustment=y_adj,
             digits=2,
         )
-        self.handler_ids["y"] = self.y_row.connect(
-            "notify::value", self._on_position_changed
-        )
+        self.y_row.connect("notify::value", self._on_position_changed)
         self.config_group.add(self.y_row)
 
         z_adj = Gtk.Adjustment(
@@ -342,9 +333,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             adjustment=z_adj,
             digits=2,
         )
-        self.handler_ids["z"] = self.z_row.connect(
-            "notify::value", self._on_position_changed
-        )
+        self.z_row.connect("notify::value", self._on_position_changed)
         self.config_group.add(self.z_row)
 
         length_adj = Gtk.Adjustment(
@@ -356,9 +345,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             adjustment=length_adj,
             digits=1,
         )
-        self.handler_ids["length"] = self.length_row.connect(
-            "notify::value", self._on_length_changed
-        )
+        self.length_row.connect("notify::value", self._on_length_changed)
         self.config_group.add(self.length_row)
 
         chuck_adj = Gtk.Adjustment(
@@ -370,7 +357,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             adjustment=chuck_adj,
             digits=1,
         )
-        self.handler_ids["chuck"] = self.chuck_diameter_row.connect(
+        self.chuck_diameter_row.connect(
             "notify::value", self._on_chuck_diameter_changed
         )
         self.config_group.add(self.chuck_diameter_row)
@@ -384,7 +371,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             adjustment=tailstock_adj,
             digits=1,
         )
-        self.handler_ids["tailstock"] = self.tailstock_diameter_row.connect(
+        self.tailstock_diameter_row.connect(
             "notify::value", self._on_tailstock_diameter_changed
         )
         self.config_group.add(self.tailstock_diameter_row)
@@ -398,7 +385,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             adjustment=height_adj,
             digits=1,
         )
-        self.handler_ids["height"] = self.max_height_row.connect(
+        self.max_height_row.connect(
             "notify::value", self._on_max_height_changed
         )
         self.config_group.add(self.max_height_row)
@@ -411,7 +398,7 @@ class RotaryModulePage(TrackedPreferencesPage):
         self.connect("map", self._on_page_mapped)
         self.connect("destroy", self._on_destroy)
 
-        self._is_initializing = False
+        self._is_updating = False
         initial_row = self.module_list_editor.list_box.get_selected_row()
         self._on_module_selected(self.module_list_editor.list_box, initial_row)
 
@@ -432,8 +419,7 @@ class RotaryModulePage(TrackedPreferencesPage):
         if not module:
             return
 
-        for key in self.handler_ids:
-            self.handler_ids[key] = self._block_handler(key)
+        self._is_updating = True
 
         self.name_row.set_text(module.name)
         try:
@@ -450,44 +436,15 @@ class RotaryModulePage(TrackedPreferencesPage):
         self.tailstock_diameter_row.set_value(module.tailstock_diameter)
         self.max_height_row.set_value(module.max_height)
 
-        for key in self.handler_ids:
-            self._unblock_handler(key)
-
-    def _block_handler(self, key: str):
-        hid = self.handler_ids[key]
-        widget = self._get_widget_for_key(key)
-        if widget:
-            widget.handler_block(hid)
-        return hid
-
-    def _unblock_handler(self, key: str):
-        hid = self.handler_ids[key]
-        widget = self._get_widget_for_key(key)
-        if widget:
-            widget.handler_unblock(hid)
-
-    def _get_widget_for_key(self, key: str):
-        mapping = {
-            "name": self.name_row,
-            "module_axis": self.module_axis_row,
-            "default_diameter": self.default_diameter_row,
-            "x": self.x_row,
-            "y": self.y_row,
-            "z": self.z_row,
-            "length": self.length_row,
-            "chuck": self.chuck_diameter_row,
-            "tailstock": self.tailstock_diameter_row,
-            "height": self.max_height_row,
-        }
-        return mapping.get(key)
+        self._is_updating = False
 
     def _on_rotary_enabled_default_changed(self, row, _param):
-        if self._is_initializing:
+        if self._is_updating:
             return
         self.machine.set_rotary_enabled_default(row.get_active())
 
     def _on_name_changed(self, entry_row):
-        if self._is_initializing:
+        if self._is_updating:
             return
         module = self._get_selected_module()
         if module:
@@ -497,11 +454,11 @@ class RotaryModulePage(TrackedPreferencesPage):
         self.module_list_editor._rebuild()
 
     def _on_name_focus_left(self, controller):
-        if not self._is_initializing:
+        if not self._is_updating:
             self.module_list_editor._rebuild()
 
     def _on_module_axis_changed(self, row, _param):
-        if self._is_initializing:
+        if self._is_updating:
             return
         module = self._get_selected_module()
         if not module:
@@ -511,14 +468,14 @@ class RotaryModulePage(TrackedPreferencesPage):
             module.set_axis(self._valid_axes[selected])
 
     def _on_default_diameter_changed(self, spinrow, _param):
-        if self._is_initializing:
+        if self._is_updating:
             return
         module = self._get_selected_module()
         if module:
             module.set_default_diameter(get_spinrow_float(spinrow))
 
     def _on_position_changed(self, _spinrow, _param):
-        if self._is_initializing:
+        if self._is_updating:
             return
         module = self._get_selected_module()
         if not module:
@@ -529,43 +486,46 @@ class RotaryModulePage(TrackedPreferencesPage):
         module.set_position(x, y, z)
 
     def _on_length_changed(self, spinrow, _param):
-        if self._is_initializing:
+        if self._is_updating:
             return
         module = self._get_selected_module()
         if module:
             module.set_length(get_spinrow_float(spinrow))
 
     def _on_chuck_diameter_changed(self, spinrow, _param):
-        if self._is_initializing:
+        if self._is_updating:
             return
         module = self._get_selected_module()
         if module:
             module.set_chuck_diameter(get_spinrow_float(spinrow))
 
     def _on_tailstock_diameter_changed(self, spinrow, _param):
-        if self._is_initializing:
+        if self._is_updating:
             return
         module = self._get_selected_module()
         if module:
             module.set_tailstock_diameter(get_spinrow_float(spinrow))
 
     def _on_max_height_changed(self, spinrow, _param):
-        if self._is_initializing:
+        if self._is_updating:
             return
         module = self._get_selected_module()
         if module:
             module.set_max_height(get_spinrow_float(spinrow))
 
     def _on_machine_changed(self, sender, **kwargs):
-        if self._is_initializing:
+        if self._is_updating:
             return
         self.rotary_enabled_default_row.set_active(
             self.machine.rotary_enabled_default
         )
 
     def _on_page_mapped(self, widget):
-        if not self._is_initializing:
+        if not self._is_updating:
             self.module_list_editor._rebuild()
 
     def _on_destroy(self, *args):
         self.machine.changed.disconnect(self._on_machine_changed)
+        self.machine.changed.disconnect(
+            self.module_list_editor._on_machine_changed
+        )
