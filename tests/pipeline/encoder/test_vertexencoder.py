@@ -1,6 +1,7 @@
+import math
 import pytest
 import numpy as np
-from rayforge.core.ops import Ops
+from rayforge.core.ops import Ops, SectionType
 from rayforge.pipeline.encoder.vertexencoder import VertexEncoder
 
 
@@ -213,3 +214,68 @@ class TestVertexEncoder:
         assert powered_coords[1][2] == 5.0  # Second vertex Z=5
         assert powered_coords[2][2] == 5.0  # Third vertex Z=5
         assert powered_coords[3][2] == 0.0  # Fourth vertex Z=0
+
+    def test_encode_multi_workpiece_contour(self, encoder: VertexEncoder):
+        """
+        Simulates the exact command stream produced by compute_step_artifacts
+        for a contour step with multiple workpieces, each wrapped in
+        WorkpieceStart/End and OpsSection markers.
+        """
+        combined_ops = Ops()
+
+        num_contours = 5
+        points_per_contour = 20
+
+        for wp_idx in range(3):
+            wp_uid = f"workpiece-{wp_idx}"
+
+            combined_ops.workpiece_start(wp_uid)
+
+            combined_ops.set_power(1.0)
+            combined_ops.set_cut_speed(1000)
+            combined_ops.set_travel_speed(3000)
+            combined_ops.enable_air_assist(True)
+            combined_ops.set_laser("laser-1")
+
+            combined_ops.ops_section_start(SectionType.VECTOR_OUTLINE, wp_uid)
+            for c_idx in range(num_contours):
+                cx = wp_idx * 100.0 + c_idx * 10.0
+                cy = 0.0
+                combined_ops.move_to(cx, cy, 0.0)
+                for p_idx in range(points_per_contour):
+                    angle = 2.0 * math.pi * p_idx / points_per_contour
+                    nx = cx + 5.0 * math.cos(angle)
+                    ny = cy + 5.0 * math.sin(angle)
+                    combined_ops.line_to(nx, ny, 0.0)
+                combined_ops.line_to(cx, cy, 0.0)
+
+            combined_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+            combined_ops.disable_air_assist()
+
+            combined_ops.workpiece_end(wp_uid)
+
+        result = encoder.encode(combined_ops)
+
+        total_contours = 3 * num_contours
+        points_per_contour_with_close = points_per_contour + 1
+        expected_powered_verts = (
+            total_contours * points_per_contour_with_close * 2
+        )
+        expected_travel_verts = (total_contours - 1) * 2
+
+        actual_powered = result.powered_vertices.shape[0]
+        actual_travel = result.travel_vertices.shape[0]
+
+        assert actual_powered == expected_powered_verts, (
+            f"Expected {expected_powered_verts} powered vertices, "
+            f"got {actual_powered}"
+        )
+        assert actual_travel == expected_travel_verts, (
+            f"Expected {expected_travel_verts} travel vertices, "
+            f"got {actual_travel}"
+        )
+
+        last_powered = result.powered_vertices[-1]
+        assert last_powered[0] == pytest.approx(2 * 100.0 + 4 * 10.0)
+        assert last_powered[1] == pytest.approx(0.0)
+        assert last_powered[2] == pytest.approx(0.0)
