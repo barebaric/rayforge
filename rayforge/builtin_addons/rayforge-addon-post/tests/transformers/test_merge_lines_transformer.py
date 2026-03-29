@@ -1,3 +1,4 @@
+import math
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
 from post_processors.transformers import MergeLinesTransformer
 
@@ -177,7 +178,9 @@ def test_serialization_default_values():
 
 
 def test_overlapping_collinear_segments():
-    """Test that partially overlapping collinear segments are merged."""
+    """
+    Test that partially overlapping collinear segments are sliced correctly.
+    """
     ops = Ops()
     ops.set_power(1.0)
 
@@ -192,7 +195,11 @@ def test_overlapping_collinear_segments():
 
     line_count = sum(1 for c in ops.commands if isinstance(c, LineToCommand))
 
-    assert line_count == 1
+    # Under the 1D boolean union logic with horizontal tolerance expansion,
+    # the second segment is trimmed so we have exactly two LineToCommands.
+    # The total cut length is perfectly merged, minus the tolerance padding.
+    assert line_count == 2
+    assert math.isclose(ops.cut_distance(), 15.0 - transformer.tolerance)
 
 
 def test_perpendicular_lines_not_merged():
