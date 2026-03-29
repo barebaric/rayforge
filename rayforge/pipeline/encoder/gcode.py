@@ -293,13 +293,9 @@ class GcodeEncoder(OpsEncoder):
             case SetPowerCommand():
                 self._update_power(context, gcode, cmd.power)
             case SetCutSpeedCommand():
-                # We limit to max travel speed, not max cut speed, to
-                # allow framing operations to go faster. Cut limits should
-                # should be kept by ensuring an Ops object is created
-                # with limits in mind.
-                self.cut_speed = min(
-                    cmd.speed, context.machine.max_travel_speed
-                )
+                # Cut speed limits are the responsibility of the Ops
+                # producer. The encoder trusts the value it receives.
+                self.cut_speed = cmd.speed
             case SetTravelSpeedCommand():
                 self.travel_speed = min(
                     cmd.speed, context.machine.max_travel_speed

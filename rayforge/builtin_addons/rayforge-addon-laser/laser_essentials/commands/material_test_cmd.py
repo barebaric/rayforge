@@ -24,13 +24,40 @@ logger = logging.getLogger(__name__)
 
 
 class MaterialTestCmd:
-    """Handles creation and updates for material test grids."""
+    """Handles creation and updates for material test grids.
+
+    Registered with the command registry so it persists for the
+    editor's lifetime.  This is essential because the instance holds
+    a blinker signal connection to ``doc.descendant_updated``; if the
+    instance were garbage-collected the connection would be lost and
+    preview updates would stop working.
+    """
 
     def __init__(self, editor: "DocEditor"):
         self._editor = editor
-        self._doc = editor.doc
-        self._history_manager = editor.history_manager
+        self._connect_doc_signals()
+        editor.document_changed.connect(self._on_document_changed)
+
+    @property
+    def _doc(self):
+        return self._editor.doc
+
+    @property
+    def _history_manager(self):
+        return self._editor.history_manager
+
+    def _connect_doc_signals(self):
         self._doc.descendant_updated.connect(self._on_step_updated)
+
+    def _disconnect_doc_signals(self):
+        try:
+            self._doc.descendant_updated.disconnect(self._on_step_updated)
+        except Exception:
+            pass
+
+    def _on_document_changed(self, sender):
+        self._disconnect_doc_signals()
+        self._connect_doc_signals()
 
     def create_test_grid(self):
         """
@@ -154,12 +181,10 @@ class MaterialTestCmd:
             logger.error(f"Could not update procedural source data: {e}")
             return
 
-        # Invalidate render cache and notify UI of content change.
-        workpiece_to_update.clear_render_cache()
-        workpiece_to_update.updated.send(workpiece_to_update)
-
-        # Recalculate size and update the workpiece.
+        # Recalculate size first so the re-render uses correct dimensions.
         new_width_mm, new_height_mm = get_material_test_proportional_size(
             new_params
         )
+        workpiece_to_update.clear_render_cache()
         workpiece_to_update.set_size(new_width_mm, new_height_mm)
+        workpiece_to_update.updated.send(workpiece_to_update)
