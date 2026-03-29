@@ -23,9 +23,15 @@ def surface(mock_work_origin):
 
     # Inject dependencies that would usually be created in __init__
     s._work_origin_element = mock_work_origin
+    s._rotary_surface_element = MagicMock()
     s.queue_draw = MagicMock()
     s.width_mm = 100.0
     s.height_mm = 100.0
+
+    active_layer = MagicMock()
+    active_layer.rotary_enabled = False
+    s.editor = MagicMock()
+    s.editor.doc.active_layer = active_layer
 
     return s
 
