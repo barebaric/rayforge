@@ -15,6 +15,7 @@ TARGETS = {
     "main:standard": "main_standard",
     "main:simulation": "main_simulation",
     "main:3d": "main_3d",
+    "main:3d-rotary": "main_3d_rotary",
     "app-settings:general": "app_settings_general",
     "app-settings:machines": "app_settings_machines",
     "app-settings:materials": "app_settings_materials",

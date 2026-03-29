@@ -7,7 +7,8 @@ machine:
   - 200
   cameras: []
   clear_alarm_on_connect: false
-  dialect_uid: grbl_dynamic
+  default_rotary_module_uid: null
+  dialect_uid: 23dc0985-8851-49aa-812d-95692000b81e
   driver: NoDeviceDriver
   driver_args: {}
   gcode:
@@ -15,7 +16,10 @@ machine:
   heads:
   - cut_color: '#ff00ff'
     focus_power_percent: 1.0
+    frame_corner_pause: 0
     frame_power_percent: 1.0
+    frame_repeat_count: 20
+    frame_speed: 0
     max_power: 1000
     name: Laser Head
     raster_color: '#000000'
@@ -41,6 +45,8 @@ machine:
   reverse_x_axis: false
   reverse_y_axis: false
   reverse_z_axis: false
+  rotary_enabled_default: false
+  rotary_modules: []
   single_axis_homing_enabled: true
   soft_limits: null
   speeds:

@@ -98,12 +98,25 @@ SVG-Dateien mit bestehender Ebenenstruktur importieren:
 
 Jede Ebene hat:
 
-| Eigenschaft    | Beschreibung                                                            |
-| -------------- | ----------------------------------------------------------------------- |
-| **Name**       | Der Name, der in der Ebenenliste angezeigt wird                         |
-| **Sichtbar**   | Sichtbarkeit in Arbeitsfläche und Vorschau umschalten                   |
-| **Workflow**   | Die Operation(en), die auf Werkstücke in dieser Ebene angewendet werden |
-| **Werkstücke** | Die Formen/Bilder, die in dieser Ebene enthalten sind                   |
+| Eigenschaft        | Beschreibung                                                            |
+| ------------------ | ----------------------------------------------------------------------- |
+| **Name**           | Der Name, der in der Ebenenliste angezeigt wird                         |
+| **Sichtbar**       | Sichtbarkeit in Arbeitsfläche und Vorschau umschalten                   |
+| **Workflow**       | Die Operation(en), die auf Werkstücke in dieser Ebene angewendet werden |
+| **Rotationsmodus** | Ob diese Ebene im Rotationsmodus ausgeführt wird                        |
+| **Werkstücke**     | Die Formen/Bilder, die in dieser Ebene enthalten sind                   |
+
+### Rotationsmodus pro Ebene
+
+Wenn du einen [Rotationsaufsatz](../machine/rotary) konfiguriert hast, kannst du
+den Rotationsmodus für einzelne Ebenen aktivieren. Dies ermöglicht es dir,
+Flachbett- und zylindrische Arbeit im selben Projekt zu kombinieren — zum
+Beispiel ein Design auf den flachen Deckel einer Box auf einer Ebene zu gravieren
+und Text um den zylindrischen Körper auf einer anderen Ebene zu wickeln.
+
+Ebenen mit aktivem Rotationsmodus zeigen ein kleines Rotations-Symbol in der
+Ebenenliste. Jede Ebene speichert ihre eigene Rotationsmodus-Einstellung,
+sodass du frei kombinieren kannst.
 
 :::note Ebenen als Container
 Ebenen sind Container für deine Werkstücke. Beim Importieren von SVG-Dateien mit Ebenen wird jede Ebene aus deinem Design zu einer separaten Ebene in Rayforge.

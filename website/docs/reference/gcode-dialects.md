@@ -1,6 +1,7 @@
 # G-code Dialect Support
 
-Rayforge supports multiple G-code dialects to work with different controller firmware.
+Rayforge supports multiple G-code dialects to work with different controller
+firmware.
 
 ## Supported Dialects
 
@@ -19,20 +20,26 @@ Rayforge currently supports these G-code dialects:
 :::note Recommended Dialects
 :::
 
-**Grbl (Compat)** is the most tested and recommended dialect for standard laser applications.
+**Grbl (Compat)** is the most tested and recommended dialect for standard laser
+applications.
 
-**GRBL Dynamic (Depth-Aware)** is recommended for Depth-Aware laser engraving where power varies during cuts (e.g., variable depth engraving).
+**GRBL Dynamic (Depth-Aware)** is recommended for Depth-Aware laser engraving
+where power varies during cuts (e.g., variable depth engraving).
 
 ---
 
 ## Mach4 (M67 Analog)
 
-The **Mach4 (M67 Analog)** dialect is designed for high-speed raster engraving with Mach4 controllers. It uses the M67 command with analog output for precise laser power control.
+The **Mach4 (M67 Analog)** dialect is designed for high-speed raster engraving
+with Mach4 controllers. It uses the M67 command with analog output for precise
+laser power control.
 
 ### Key Features
 
-- **M67 Analog Output**: Uses `M67 E0 Q<0-255>` for laser power instead of inline S commands
-- **Reduced Buffer Pressure**: By separating power commands from motion commands, the controller buffer is less stressed during high-speed operations
+- **M67 Analog Output**: Uses `M67 E0 Q<0-255>` for laser power instead of
+  inline S commands
+- **Reduced Buffer Pressure**: By separating power commands from motion
+  commands, the controller buffer is less stressed during high-speed operations
 - **High-Speed Raster**: Optimized for fast raster engraving operations
 
 ### When to Use
@@ -64,7 +71,17 @@ To create a custom G-code dialect based on a built-in dialect:
 3. Edit the dialect settings as needed
 4. Save your custom dialect
 
-Custom dialects are stored in your configuration directory and can be shared.
+Each custom dialect is an independent copy. Changing one dialect never affects
+others, so you can freely experiment without worrying about breaking an existing
+setup. Custom dialects are stored in your configuration directory and can be
+shared.
+
+### Separate Laser-On Command for Focusing
+
+Some dialects support configuring a separate command for turning the laser on at
+low power, which is useful for focus mode. This lets you use a different command
+for the visual "laser pointer" behavior than what is used during actual cutting
+or engraving. Check your dialect's settings page for this option.
 
 ---
 

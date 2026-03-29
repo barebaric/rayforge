@@ -1,6 +1,8 @@
 # Camera Integration
 
-Rayforge supports USB camera integration for precise material alignment and positioning. The camera overlay feature allows you to see exactly where your laser will cut or engrave on the material, eliminating guesswork and reducing material waste.
+Rayforge supports USB camera integration for precise material alignment and positioning.
+The camera overlay feature allows you to see exactly where your laser will cut or
+engrave on the material, eliminating guesswork and reducing material waste.
 
 ![Camera Settings](/screenshots/machine-camera.png)
 
@@ -70,7 +72,8 @@ The camera integration provides:
 
 ## Camera Alignment
 
-Camera alignment calibrates the relationship between camera pixels and real-world coordinates, enabling accurate positioning.
+Camera alignment calibrates the relationship between camera pixels and real-world
+coordinates, enabling accurate positioning.
 
 ### Why Alignment is Necessary
 
@@ -119,6 +122,7 @@ Alignment creates a transformation matrix that maps camera pixels to machine coo
 ### Alignment Tips
 
 :::tip Best Practices
+
 - Use points at the corners of your work area for maximum coverage
 - Avoid clustering points in one area
 - Measure world coordinates carefully - accuracy here determines overall alignment quality
@@ -214,21 +218,30 @@ Once aligned, the camera overlay helps position jobs accurately.
 
 ### Camera Calibration (Lens Distortion Correction)
 
-For precise work, you can calibrate the camera to correct barrel/pincushion distortion:
+If your camera has a wide-angle lens or is mounted at an angle, the image may show
+visible curvature — straight lines appear bent, especially near the edges of the frame.
+This is called lens distortion, and it can throw off alignment even if your alignment
+points are carefully measured.
 
-1. **Print a checkerboard pattern** (e.g., 8×6 grid with 25mm squares)
-2. **Capture 10+ images** of the pattern from different angles/positions
-3. **Use OpenCV calibration tools** to calculate camera matrix and distortion coefficients
-4. **Apply calibration** in Rayforge (advanced settings)
+Rayforge includes a guided calibration wizard that corrects this distortion
+automatically. Here is how it works:
+
+1. **Print the calibration card** — Rayforge provides a printable pattern (a grid of
+   markers) that you place on your laser bed
+2. **Follow the wizard** — The calibration wizard walks you through capturing several
+   images of the card from different positions on the bed
+3. **Apply the correction** — Rayforge computes a distortion model from the captured
+   images and uses it to straighten the camera overlay
+
+Once calibrated, the camera overlay will show a noticeably more accurate representation
+of what is on the bed. This is especially helpful for wide-angle lenses, cameras mounted
+off-center, or work that requires tight alignment tolerances.
 
 :::note When to Calibrate
-Lens distortion correction is only necessary for:
-
-- Wide-angle lenses with noticeable barrel distortion
-- Precision work requiring <1mm accuracy
-- Large work areas where distortion accumulates
-
-Most standard webcams work fine without calibration for typical laser work.
+Calibration is most useful when you notice the camera overlay does not line up well with
+the real bed, even after careful alignment. If your current alignment looks good, you may
+not need it. But if things seem slightly off — especially toward the edges of the frame —
+running through the calibration wizard usually helps.
 :::
 
 ### Multiple Cameras

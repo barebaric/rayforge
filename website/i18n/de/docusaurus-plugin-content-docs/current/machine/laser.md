@@ -50,6 +50,14 @@ Schneiden).
 - Auf 0 setzen, um Rahmen zu deaktivieren
 - Passe ihn basierend auf deinem Laser und Material an
 
+#### Rahmen-Geschwindigkeit
+
+Die Geschwindigkeit, mit der sich der Laserkopf während des Einrahmens bewegt.
+Dies wird pro Laserkopf eingestellt, sodass du bei Maschinen mit mehreren Lasern
+mit unterschiedlichen Eigenschaften eine angemessene Geschwindigkeit für jeden
+wählen kannst. Langsamere Geschwindigkeiten machen den Rahmen-Pfad leichter
+visuell verfolgbar.
+
 #### Fokus-Leistung
 
 Die Leistungsstufe, die verwendet wird, wenn der Fokusmodus aktiviert ist.

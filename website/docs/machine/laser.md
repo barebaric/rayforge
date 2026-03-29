@@ -1,12 +1,14 @@
 # Laser Settings
 
-The Laser page in Machine Settings configures your laser head(s) and their properties.
+The Laser page in Machine Settings configures your laser head(s) and their
+properties.
 
 ![Laser Settings](/screenshots/machine-laser.png)
 
 ## Laser Heads
 
-Rayforge supports machines with multiple laser heads. Each laser head has its own configuration.
+Rayforge supports machines with multiple laser heads. Each laser head has its
+own configuration.
 
 ### Adding a Laser Head
 
@@ -49,18 +51,25 @@ The power level used for framing operations (outlining without cutting).
 - Set to 0 to disable framing
 - Adjust based on your laser and material
 
+#### Frame Speed
+
+The speed at which the laser head moves during framing. This is set per laser
+head, so if your machine has multiple lasers with different characteristics you
+can choose an appropriate speed for each one. Slower speeds make the frame path
+easier to follow by eye.
+
 #### Focus Power
 
-The power level used when focus mode is enabled. Focus mode turns on the
-laser at low power to act as a "laser pointer" for positioning.
+The power level used when focus mode is enabled. Focus mode turns on the laser
+at low power to act as a "laser pointer" for positioning.
 
 - Set to 0 to disable the focus mode feature
 - Use for visual alignment and positioning
 
 :::tip Using Focus Mode
-Click the focus button (laser icon) in the toolbar to toggle focus mode.
-The laser will turn on at this power level, helping you see exactly where
-the laser is positioned. See [Workpiece Positioning](../features/workpiece-positioning)
+Click the focus button (laser icon) in the toolbar to toggle focus mode. The
+laser will turn on at this power level, helping you see exactly where the laser
+is positioned. See [Workpiece Positioning](../features/workpiece-positioning)
 for more information.
 :::
 
@@ -81,8 +90,8 @@ To measure your spot size:
 
 #### Cut Color
 
-The color used to display cutting operations for this laser in the canvas and
-3D preview. This helps you visually distinguish which laser will perform each
+The color used to display cutting operations for this laser in the canvas and 3D
+preview. This helps you visually distinguish which laser will perform each
 cutting operation when working with multiple laser heads.
 
 - Click the color swatch to open a color picker
@@ -99,10 +108,9 @@ canvas and 3D preview.
 - Each laser can have its own distinct raster color
 
 :::tip Multi-Laser Workflows
-When using multiple laser heads, assigning different colors to each laser
-makes it easy to see which operations will be performed by which laser.
-For example, use red for your main cutting laser and blue for a secondary
-engraving laser.
+When using multiple laser heads, assigning different colors to each laser makes
+it easy to see which operations will be performed by which laser. For example,
+use red for your main cutting laser and blue for a secondary engraving laser.
 :::
 
 ## See Also

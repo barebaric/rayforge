@@ -1,22 +1,23 @@
 # Supported File Formats
 
-This page provides detailed information about all file formats supported by Rayforge, including capabilities, limitations, and recommendations.
+This page provides detailed information about all file formats supported by
+Rayforge, including capabilities, limitations, and recommendations.
 
 ## Format Overview
 
 ### Quick Reference
 
-| Format               | Type    | Import   | Export          | Recommended Use           |
-| -------------------- | ------- | -------- | --------------- | ------------------------- |
-| **SVG**              | Vector  | ✓ Direct | ✓ Object export | Primary design format     |
-| **DXF**              | Vector  | ✓ Direct | ✓ Object export | CAD interchange           |
-| **PDF**              | Mixed   | ✓ Trace  | –               | Document export (limited) |
-| **PNG**              | Raster  | ✓ Trace  | –               | Photos, images            |
-| **JPEG**             | Raster  | ✓ Trace  | –               | Photos                    |
-| **BMP**              | Raster  | ✓ Trace  | –               | Simple graphics           |
-| **RFS**              | Sketch  | ✓ Direct | ✓ Object export | Parametric sketches       |
-| **G-code**           | Control | –        | ✓ Primary       | Machine output            |
-| **Rayforge Project** | Project | ✓        | ✓               | Save/load projects        |
+| Format               | Type    | Import           | Export          | Recommended Use               |
+| -------------------- | ------- | ---------------- | --------------- | ----------------------------- |
+| **SVG**              | Vector  | ✓ Direct / Trace | ✓ Object export | Primary design format         |
+| **DXF**              | Vector  | ✓ Direct         | ✓ Object export | CAD interchange               |
+| **PDF**              | Mixed   | ✓ Direct / Trace | –               | Documents with vector content |
+| **PNG**              | Raster  | ✓ Trace          | –               | Photos, images                |
+| **JPEG**             | Raster  | ✓ Trace          | –               | Photos                        |
+| **BMP**              | Raster  | ✓ Trace          | –               | Simple graphics               |
+| **RFS**              | Sketch  | ✓ Direct         | ✓ Object export | Parametric sketches           |
+| **G-code**           | Control | –                | ✓ Primary       | Machine output                |
+| **Rayforge Project** | Project | ✓                | ✓               | Save/load projects            |
 
 ---
 
@@ -31,7 +32,8 @@ This page provides detailed information about all file formats supported by Rayf
 
 **What is SVG?**
 
-SVG is an XML-based vector image format. It's the **preferred format** for importing designs into Rayforge.
+SVG is an XML-based vector image format. It's the **preferred format** for
+importing designs into Rayforge.
 
 **Supported Features:**
 
@@ -54,7 +56,8 @@ SVG is an XML-based vector image format. It's the **preferred format** for impor
 
 **Export Notes:**
 
-When exporting a workpiece to SVG, Rayforge exports the geometry as vector paths with:
+When exporting a workpiece to SVG, Rayforge exports the geometry as vector paths
+with:
 
 - Stroke-only rendering (no fill)
 - Millimeter units
@@ -154,43 +157,41 @@ editable sketches.
 
 **Extension:** `.pdf`
 **MIME Type:** `application/pdf`
-**Import:** Rendered to bitmap, then traced
+**Import:** Direct vectors (with layer support) or render-and-trace
 **Export:** Not supported
 
 **What is PDF Import?**
 
-Rayforge can import PDF files by rasterizing them first, then tracing to vectors.
+PDF files can contain actual vector paths, and Rayforge imports them directly
+when available — giving you the same clean geometry you would get from an SVG.
+If the PDF has layers, each layer can be imported as a separate workpiece.
 
-**Process:**
+For PDFs without usable vector content (scanned documents, photos), Rayforge
+falls back to rendering and tracing.
 
-1. PDF rendered to raster image (default 300 DPI)
-2. Raster traced to create vector paths
-3. Paths added to document
+**Capabilities:**
+
+- ✓ **Direct vector import** for vector-based PDFs
+- ✓ **Layer detection and selection** — pick which layers to import
+- ✓ Fallback render-and-trace for raster content
 
 **Limitations:**
 
-- **Not true vector import** - Even vector PDFs are rasterized
-- **Quality loss** from rasterization
-- **First page only** - Multi-page PDFs only import page 1
-- **Slow for complex PDFs** - Rendering and tracing takes time
+- First page only — multi-page PDFs import page 1
+- Text may need to be converted to outlines in the source application
 
 **When to Use:**
 
-- Last resort when SVG/DXF not available
-- Quick import of simple designs
-- Documents with mixed content
-
-**Better Alternatives:**
-
-- **Export SVG from source** instead of PDF
-- **Use vector formats** (SVG, DXF) when possible
-- **For text:** Export with text converted to outlines
+- PDFs received from designers that contain vector artwork
+- Any PDF with well-organized layers
+- When SVG or DXF is not available from the source
 
 ---
 
 ## Raster Formats
 
-All raster formats are **imported by tracing** - converted to vector paths automatically.
+All raster formats are **imported by tracing** - converted to vector paths
+automatically.
 
 ### PNG (Portable Network Graphics)
 
@@ -205,7 +206,7 @@ All raster formats are **imported by tracing** - converted to vector paths autom
 - **Transparency support** - Alpha channel preserved
 - **Good for:** Logos, line art, screenshots, anything needing transparency
 
-**Tracing Quality:**  (Excellent for high-contrast images)
+**Tracing Quality:**  (Excellent for high-contrast images)
 
 **Best Practices:**
 
@@ -228,7 +229,7 @@ All raster formats are **imported by tracing** - converted to vector paths autom
 - **No transparency** - Always has background
 - **Good for:** Photos, continuous-tone images
 
-**Tracing Quality:**  (Good for photos, but complex)
+**Tracing Quality:**  (Good for photos, but complex)
 
 **Best Practices:**
 
@@ -252,7 +253,7 @@ All raster formats are **imported by tracing** - converted to vector paths autom
 - **Simple format** - Widely compatible
 - **Good for:** Simple graphics, old software output
 
-**Tracing Quality:**  (Good, but no better than PNG)
+**Tracing Quality:**  (Good, but no better than PNG)
 
 **Best Practices:**
 

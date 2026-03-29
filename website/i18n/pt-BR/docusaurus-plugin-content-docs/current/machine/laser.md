@@ -1,16 +1,19 @@
 # Configurações do Laser
 
-A página Laser nas Configurações da Máquina configura sua(s) cabeça(s) de laser e suas propriedades.
+A página Laser nas Configurações da Máquina configura sua(s) cabeça(s) de
+laser e suas propriedades.
 
 ![Configurações do Laser](/screenshots/machine-laser.png)
 
 ## Cabeças de Laser
 
-O Rayforge suporta máquinas com múltiplas cabeças de laser. Cada cabeça de laser tem sua própria configuração.
+O Rayforge suporta máquinas com múltiplas cabeças de laser. Cada cabeça de
+laser tem sua própria configuração.
 
 ### Adicionando uma Cabeça de Laser
 
-Clique no botão **Adicionar Laser** para criar uma nova configuração de cabeça de laser.
+Clique no botão **Adicionar Laser** para criar uma nova configuração de
+cabeça de laser.
 
 ### Propriedades da Cabeça de Laser
 
@@ -27,7 +30,8 @@ Exemplos:
 
 #### Número da Ferramenta
 
-O índice da ferramenta para esta cabeça de laser. Usado no G-code com o comando T.
+O índice da ferramenta para esta cabeça de laser. Usado no G-code com o
+comando T.
 
 - Máquinas de cabeça única: Use 0
 - Máquinas multi-cabeça: Atribua números únicos (0, 1, 2, etc.)
@@ -49,6 +53,14 @@ cortar).
 
 - Defina como 0 para desabilitar enquadramento
 - Ajuste com base no seu laser e material
+
+#### Velocidade de Enquadramento
+
+A velocidade na qual a cabeça de laser se move durante o enquadramento. Isso é
+definido por cabeça de laser, portanto, se sua máquina tiver vários lasers com
+características diferentes, você poderá escolher uma velocidade apropriada para
+cada um. Velocidades mais lentas tornam o caminho do enquadramento mais fácil
+de ser seguido visualmente.
 
 #### Potência de Foco
 
@@ -102,9 +114,9 @@ na visualização 3D.
 
 :::tip Fluxos de Trabalho Multi-Laser
 Ao usar múltiplas cabeças de laser, atribuir cores diferentes a cada laser
-facilita ver quais operações serão realizadas por qual laser.
-Por exemplo, use vermelho para seu laser de corte principal e azul para um
-laser de gravação secundário.
+facilita ver quais operações serão realizadas por qual laser. Por exemplo, use
+vermelho para seu laser de corte principal e azul para um laser de gravação
+secundário.
 :::
 
 ## Veja Também

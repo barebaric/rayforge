@@ -29,7 +29,9 @@ Der Sketcher unterstützt das Erstellen der folgenden grundlegenden geometrische
 
 - **Pfade (Linien und Bezier-Kurven)**: Gerade Linien und glatte Bezier-Kurven mit dem vereinheitlichten Pfad-Werkzeug zeichnen. Klicke um Punkte zu setzen, ziehe um Bezier-Griffpunkte zu erstellen.
 - **Bögen**: Bögen durch Angeben eines Mittelpunkts, Startpunkts und Endpunkts zeichnen
-- **Kreise**: Kreise durch Definieren eines Mittelpunkts und Radius erstellen
+- **Ellipsen**: Erstelle Ellipsen (und Kreise) durch Definieren eines Mittelpunkts
+  und Ziehen, um Größe und Seitenverhältnis festzulegen. Halte `Strg` während
+  des Ziehens gedrückt, um auf einen perfekten Kreis zu beschränken.
 - **Rechtecke**: Rechtecke durch Angeben von zwei gegenüberliegenden Ecken zeichnen
 - **Abgerundete Rechtecke**: Rechtecke mit abgerundeten Ecken zeichnen
 - **Textfelder**: Textelemente zu deiner Skizze hinzufügen
@@ -151,30 +153,49 @@ Konstruktions-Entitäten sind nützlich für:
 - Definieren temporärer Geometrie zur Ausrichtung
 - Aufbauen komplexer Formen aus einem Rahmen von Hilfslinien
 
-## Raster und Sichtbarkeits-Steuerung
+## Raster, Einrasten und Sichtbarkeits-Steuerung
 
 ### Raster-Werkzeug
 
-Das Raster-Werkzeug bietet eine visuelle Referenz für Ausrichtung und Größenbestimmung:
+Das Raster-Werkzeug bietet eine visuelle Referenz für Ausrichtung und
+Größenbestimmung:
 
 - Raster ein/ausschalten mit dem Raster-Werkzeug-Button oder `G+G`
 - Das Raster passt sich an deinen Zoom-Level an für konsistente Abstände
-- Halte `Strg` beim Platzieren oder Verschieben von Punkten um am Raster einzurasten
+
+### Magnetisches Einrasten
+
+Beim Erstellen oder Verschieben von Geometrie zieht Rayforge deinen Cursor
+automatisch zu nahegelegenen Elementen — Endpunkten, Linienmittelpunkten,
+Schnittpunkten und anderen Referenzpunkten. Dies macht es einfach, Formen präzise
+zu verbinden, ohne jeden Punkt manuell zu platzieren. Der Einrast-Indikator wird
+hervorgehoben, wenn dein Cursor nahe an einem Einrast-Ziel ist.
+
+### Automatische Einschränkung bei Erstellung
+
+Viele Zeichenwerkzeuge wenden automatisch Einschränkungen an, während du Geometrie
+erstellst. Wenn du beispielsweise eine Linie nahe der Horizontalen oder Vertikalen
+zeichnest, bietet der Sketcher an, sie an Ort und Stelle zu fixieren. Dies hilft,
+deine Skizze von Anfang an ordentlich zu halten, anstatt nachträglich Korrekturen
+vorzunehmen.
 
 ### Anzeigen/Verbergen-Steuerung
 
 Die Sketcher-Symbolleiste enthält Umschalt-Buttons zur Sichtbarkeitssteuerung:
 
-- **Konstruktionsgeometrie anzeigen/verbergen**: Sichtbarkeit von Konstruktions-Entitäten umschalten
-- **Einschränkungen anzeigen/verbergen**: Sichtbarkeit von Einschränkungs-Markierungen umschalten
+- **Konstruktionsgeometrie anzeigen/verbergen**: Sichtbarkeit von
+  Konstruktions-Entitäten umschalten
+- **Einschränkungen anzeigen/verbergen**: Sichtbarkeit von
+  Einschränkungs-Markierungen umschalten
 
-Diese Steuerungen helfen, visuelle Unordnung bei der Arbeit an komplexen Skizzen zu reduzieren.
+Diese Steuerungen helfen, visuelle Unordnung bei der Arbeit an komplexen Skizzen
+zu reduzieren.
 
 ### Achsenbeschränkte Bewegung
 
 Beim Ziehen von Punkten oder Geometrie, halte `Umschalt` um die Bewegung auf die
-nächstgelegene Achse (horizontal oder vertikal) zu beschränken. Dies ist nützlich um
-die Ausrichtung bei Anpassungen beizubehalten.
+nächstgelegene Achse (horizontal oder vertikal) zu beschränken. Dies ist nützlich,
+um die Ausrichtung bei Anpassungen beizubehalten.
 
 ## Fase und Verrundung
 

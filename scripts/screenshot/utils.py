@@ -511,7 +511,7 @@ def open_recipe_editor(
 
 def open_material_test(win: "MainWindow") -> "StepSettingsDialog":
     """Open material test grid dialog."""
-    from rayforge.pipeline.steps import step_registry
+    from rayforge.core.step_registry import step_registry
     from rayforge.ui_gtk.doceditor.step_settings_dialog import (
         StepSettingsDialog,
     )
