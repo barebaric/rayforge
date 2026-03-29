@@ -1,3 +1,4 @@
+import math
 import pytest
 from unittest.mock import MagicMock, patch
 from blinker import Signal
@@ -308,6 +309,58 @@ def test_layer_backward_compatibility_with_legacy_stock_item_uid():
 
     # Verify layer loads correctly
     assert layer.name == "Legacy Layer"
-    # The stock_item_uid is stored in extra for forward compatibility
     assert "stock_item_uid" in layer.extra
     assert layer.extra["stock_item_uid"] == "old-stock-uid"
+
+
+class TestLayerRotary:
+    def test_rotary_defaults(self, layer):
+        assert layer.rotary_enabled is False
+        assert layer.rotary_diameter == 25.0
+
+    def test_set_rotary_enabled(self, layer):
+        handler = MagicMock()
+        layer.updated.connect(handler)
+        layer.set_rotary_enabled(True)
+        assert layer.rotary_enabled is True
+        handler.assert_called_once_with(layer)
+
+    def test_set_rotary_enabled_no_change(self, layer):
+        handler = MagicMock()
+        layer.updated.connect(handler)
+        layer.set_rotary_enabled(False)
+        handler.assert_not_called()
+
+    def test_set_rotary_diameter(self, layer):
+        handler = MagicMock()
+        layer.updated.connect(handler)
+        layer.set_rotary_diameter(50.0)
+        assert layer.rotary_diameter == 50.0
+        handler.assert_called_once_with(layer)
+
+    def test_set_rotary_diameter_no_change(self, layer):
+        handler = MagicMock()
+        layer.updated.connect(handler)
+        layer.set_rotary_diameter(25.0)
+        handler.assert_not_called()
+
+    def test_mu_to_degrees(self, layer):
+        layer.set_rotary_diameter(25.0)
+        circumference = 25.0 * math.pi
+        expected = (10.0 / circumference) * 360.0
+        assert abs(layer.mu_to_degrees(10.0) - expected) < 1e-6
+
+    def test_mu_to_degrees_zero_diameter(self, layer):
+        layer.rotary_diameter = 0.0
+        assert layer.mu_to_degrees(10.0) == 0.0
+
+    def test_rotary_serialization_roundtrip(self):
+        layer = Layer("Rotary Layer")
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_diameter(50.0)
+        data = layer.to_dict()
+        assert data["rotary_enabled"] is True
+        assert data["rotary_diameter"] == 50.0
+        restored = Layer.from_dict(data)
+        assert restored.rotary_enabled is True
+        assert restored.rotary_diameter == 50.0

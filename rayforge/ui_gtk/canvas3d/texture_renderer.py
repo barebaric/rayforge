@@ -159,79 +159,85 @@ class TextureArtifactRenderer(BaseRenderer):
         x_coords = (np.arange(new_width) * x_step).astype(int)
         return data[y_coords][:, x_coords].astype(np.uint8)
 
-    def _generate_cylinder_vertices(
+    def _generate_cylinder_vertices_from_matrix(
         self,
-        length: float,
-        angle_start: float,
-        angle_end: float,
+        grid_matrix: np.ndarray,
         diameter: float,
-        segments: int = 32,
+        grid_s: int = 8,
+        grid_t: int = 64,
     ) -> np.ndarray:
         """
-        Generate vertices for a cylinder segment.
+        Generate vertices for a cylinder segment directly from
+        a transform matrix.
 
-        Args:
-            length: Length along the X-axis (cylinder axis).
-            angle_start: Start angle in radians.
-            angle_end: End angle in radians.
-            diameter: Cylinder diameter.
-            segments: Number of segments around the arc.
-
-        Returns:
-            Array of vertices with position (x, y, z) and tex coords (s, t).
+        The grid_matrix transforms [0,1] texture coords to
+        Local Cylinder Space. The resulting Y coordinate is
+        then natively wrapped into the cylinder Z/Y planes.
         """
         radius = diameter / 2.0
+        circumference = diameter * math.pi
         vertices = []
 
-        for i in range(segments):
-            t0 = i / segments
-            t1 = (i + 1) / segments
-
-            theta0 = angle_start + t0 * (angle_end - angle_start)
-            theta1 = angle_start + t1 * (angle_end - angle_start)
-
-            y0 = radius * math.sin(theta0)
-            z0 = radius * math.cos(theta0)
-            y1 = radius * math.sin(theta1)
-            z1 = radius * math.cos(theta1)
-
-            s0 = 1.0 - t0
-            s1 = 1.0 - t1
-
-            vertices.extend(
-                [
-                    0.0,
-                    y0,
-                    z0,
-                    0.0,
-                    s0,
-                    length,
-                    y0,
-                    z0,
-                    1.0,
-                    s0,
-                    length,
-                    y1,
-                    z1,
-                    1.0,
-                    s1,
-                    0.0,
-                    y0,
-                    z0,
-                    0.0,
-                    s0,
-                    length,
-                    y1,
-                    z1,
-                    1.0,
-                    s1,
-                    0.0,
-                    y1,
-                    z1,
-                    0.0,
-                    s1,
-                ]
+        def get_pt(lx, ly):
+            p_cyl = grid_matrix @ np.array(
+                [lx, ly, 0.0, 1.0], dtype=np.float32
             )
+            cyl_x = p_cyl[0]
+            cyl_y = p_cyl[1]
+            theta = (cyl_y / circumference) * 2.0 * math.pi
+            return cyl_x, radius * math.sin(theta), radius * math.cos(theta)
+
+        for i in range(grid_s):
+            for j in range(grid_t):
+                lx0, lx1 = i / grid_s, (i + 1) / grid_s
+                ly0, ly1 = j / grid_t, (j + 1) / grid_t
+
+                x00, y00, z00 = get_pt(lx0, ly0)
+                x10, y10, z10 = get_pt(lx1, ly0)
+                x01, y01, z01 = get_pt(lx0, ly1)
+                x11, y11, z11 = get_pt(lx1, ly1)
+
+                # OpenGL textures are bottom-up.
+                # Since lx=0, ly=0 is the bottom-left of the texture quad,
+                # s=0, t=1.
+                s0, s1 = lx0, lx1
+                t0, t1 = 1.0 - ly0, 1.0 - ly1
+
+                # Two triangles per cell
+                vertices.extend(
+                    [
+                        x00,
+                        y00,
+                        z00,
+                        s0,
+                        t0,
+                        x10,
+                        y10,
+                        z10,
+                        s1,
+                        t0,
+                        x01,
+                        y01,
+                        z01,
+                        s0,
+                        t1,
+                        x10,
+                        y10,
+                        z10,
+                        s1,
+                        t0,
+                        x11,
+                        y11,
+                        z11,
+                        s1,
+                        t1,
+                        x01,
+                        y01,
+                        z01,
+                        s0,
+                        t1,
+                    ]
+                )
 
         return np.array(vertices, dtype=np.float32)
 
@@ -252,6 +258,8 @@ class TextureArtifactRenderer(BaseRenderer):
         texture_data: TextureData,
         final_model_matrix: np.ndarray,
         color_lut: Optional[np.ndarray] = None,
+        rotary_enabled: bool = False,
+        rotary_diameter: float = 25.0,
     ):
         """Adds a texture artifact to be rendered in the next frame."""
         if not self.is_initialized:
@@ -314,6 +322,8 @@ class TextureArtifactRenderer(BaseRenderer):
                 "texture_id": texture_id,
                 "model_matrix": final_model_matrix,
                 "color_lut": color_lut,
+                "rotary_enabled": rotary_enabled,
+                "rotary_diameter": rotary_diameter,
             }
         )
 
@@ -342,7 +352,7 @@ class TextureArtifactRenderer(BaseRenderer):
 
     def render(self, view_proj_scene_matrix: np.ndarray, shader: Shader):
         """
-        Renders all texture instances.
+        Renders all flat (non-rotary) texture instances.
 
         Args:
             view_proj_scene_matrix: The combined Projection * View * SceneModel
@@ -361,6 +371,9 @@ class TextureArtifactRenderer(BaseRenderer):
         GL.glBindVertexArray(self.vao)
 
         for instance in self.instances:
+            if instance["rotary_enabled"]:
+                continue
+
             final_mvp = view_proj_scene_matrix @ instance["model_matrix"]
             shader.set_mat4("uMVP", final_mvp.T)
 
@@ -399,7 +412,6 @@ class TextureArtifactRenderer(BaseRenderer):
         self,
         view_proj_scene_matrix: np.ndarray,
         shader: Shader,
-        rotary_diameter: float,
     ):
         """
         Renders all texture instances mapped onto a cylinder.
@@ -408,7 +420,6 @@ class TextureArtifactRenderer(BaseRenderer):
             view_proj_scene_matrix: The combined Projection * View * SceneModel
               matrix (P*V*M_scene), not transposed.
             shader: The shader to use for rendering.
-            rotary_diameter: The diameter of the cylinder in mm.
         """
         if not self.is_initialized or not self.instances:
             return
@@ -421,43 +432,25 @@ class TextureArtifactRenderer(BaseRenderer):
         shader.set_int("uColorLUT", 1)
 
         for instance in self.instances:
-            model_matrix = instance["model_matrix"]
+            if not instance["rotary_enabled"]:
+                continue
 
-            origin = model_matrix @ np.array([0.0, 0.0, 0.0, 1.0])
-            corner_x = model_matrix @ np.array([1.0, 0.0, 0.0, 1.0])
-            corner_y = model_matrix @ np.array([0.0, 1.0, 0.0, 1.0])
+            grid_matrix = instance["model_matrix"]
+            diameter = instance["rotary_diameter"]
 
-            tex_width_mm = corner_x[0] - origin[0]
-            tex_height_mm = corner_y[1] - origin[1]
-            tex_x_offset = origin[0]
-            tex_y_offset = origin[1]
+            cache_key = tuple(np.round(grid_matrix.flatten(), 4)) + (diameter,)
 
-            logger.debug(
-                f"Texture cylinder: width={tex_width_mm}, "
-                f"height={tex_height_mm}, x_off={tex_x_offset}, "
-                f"y_off={tex_y_offset}"
-            )
-
-            circumference = rotary_diameter * math.pi
-            angle_start = (tex_y_offset / circumference) * 2.0 * math.pi
-            angle_end = (
-                ((tex_y_offset + tex_height_mm) / circumference)
-                * 2.0
-                * math.pi
-            )
-
-            cache_key = (tex_width_mm, angle_start, angle_end, rotary_diameter)
             if (
                 self._cylinder_cache is None
                 or self._cylinder_cache["key"] != cache_key
             ):
-                vertices = self._generate_cylinder_vertices(
-                    length=tex_width_mm,
-                    angle_start=angle_start,
-                    angle_end=angle_end,
-                    diameter=rotary_diameter,
-                    segments=48,
+                vertices = self._generate_cylinder_vertices_from_matrix(
+                    grid_matrix=grid_matrix,
+                    diameter=diameter,
+                    grid_s=8,
+                    grid_t=64,
                 )
+
                 GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.cylinder_vbo)
                 GL.glBufferData(
                     GL.GL_ARRAY_BUFFER,
@@ -500,11 +493,9 @@ class TextureArtifactRenderer(BaseRenderer):
                 )
                 GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
-            translation = np.identity(4, dtype=np.float32)
-            translation[0, 3] = tex_x_offset
-
-            final_mvp = view_proj_scene_matrix @ translation
-            shader.set_mat4("uMVP", final_mvp.T)
+            # Draw using the full Scene Matrix, so it correctly
+            # inherits WCS and _model_matrix.
+            shader.set_mat4("uMVP", view_proj_scene_matrix.T)
 
             GL.glActiveTexture(GL.GL_TEXTURE1)
             GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)

@@ -486,8 +486,8 @@ class TestMachineSerialization:
 @pytest.fixture
 def rotary_doc():
     doc = Doc()
-    doc.set_rotary_enabled(True)
-    doc.set_rotary_diameter(25.0)
+    doc.active_layer.set_rotary_enabled(True)
+    doc.active_layer.set_rotary_diameter(25.0)
     return doc
 
 
@@ -513,7 +513,7 @@ class TestRotaryAxisGcodeOutput:
 
     def test_non_rotary_uses_y(self, isolated_machine):
         doc = Doc()
-        doc.set_rotary_enabled(False)
+        doc.active_layer.set_rotary_enabled(False)
         gcode = _encode_rotary_line(isolated_machine, doc)
         assert " Y" in gcode
 

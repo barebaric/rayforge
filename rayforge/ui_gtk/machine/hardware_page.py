@@ -126,10 +126,7 @@ class HardwarePage(TrackedPreferencesPage):
 
         rotary_group = Adw.PreferencesGroup(title=_("Rotary"))
         rotary_group.set_description(
-            _(
-                "Default rotary settings for new projects. "
-                "Can be overridden in the project settings."
-            )
+            _("Default rotary settings for new layers.")
         )
         self.add(rotary_group)
 
@@ -158,7 +155,7 @@ class HardwarePage(TrackedPreferencesPage):
 
         self.rotary_enabled_default_row = Adw.SwitchRow(
             title=_("Enable Rotary by Default"),
-            subtitle=_("New projects will default to rotary mode"),
+            subtitle=_("New layers will default to rotary mode"),
         )
         self.rotary_enabled_default_row.set_active(
             machine.rotary_enabled_default
@@ -173,7 +170,7 @@ class HardwarePage(TrackedPreferencesPage):
         )
         self.rotary_diameter_default_row = Adw.SpinRow(
             title=_("Default Rotary Diameter"),
-            subtitle=_("Workpiece diameter in machine units for new projects"),
+            subtitle=_("Workpiece diameter in machine units for new layers"),
             adjustment=rotary_diameter_adjustment,
             digits=1,
         )

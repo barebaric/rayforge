@@ -2,20 +2,20 @@ from gettext import gettext as _
 
 from gi.repository import Adw, Gtk
 
-from ...core.doc import Doc
+from ...core.layer import Layer
 from ..shared.adwfix import get_spinrow_float
 from ..shared.patched_dialog_window import PatchedDialogWindow
 
 
-class ProjectSettingsDialog(PatchedDialogWindow):
-    """Dialog for configuring project-level settings including rotary."""
+class LayerSettingsDialog(PatchedDialogWindow):
+    """Dialog for configuring layer-level settings including rotary."""
 
-    def __init__(self, doc: Doc, transient_for: Gtk.Window, **kwargs):
+    def __init__(self, layer: Layer, transient_for: Gtk.Window, **kwargs):
         super().__init__(transient_for=transient_for, **kwargs)
-        self.doc = doc
+        self.layer = layer
         self._is_initializing = True
 
-        self.set_title(_("Project Settings"))
+        self.set_title(_("Layer Settings"))
         self.set_default_size(600, -1)
         self.set_modal(True)
 
@@ -48,7 +48,7 @@ class ProjectSettingsDialog(PatchedDialogWindow):
         self.rotary_enabled_row.set_subtitle(
             _("Convert Y-axis to rotary axis")
         )
-        self.rotary_enabled_row.set_active(doc.rotary_enabled)
+        self.rotary_enabled_row.set_active(layer.rotary_enabled)
         self.rotary_enabled_row.connect(
             "notify::active", self._on_rotary_enabled_changed
         )
@@ -63,11 +63,11 @@ class ProjectSettingsDialog(PatchedDialogWindow):
             adjustment=rotary_diameter_adjustment,
             digits=2,
         )
-        rotary_diameter_adjustment.set_value(doc.rotary_diameter)
+        rotary_diameter_adjustment.set_value(layer.rotary_diameter)
         self.rotary_diameter_row.connect(
             "notify::value", self._on_rotary_diameter_changed
         )
-        self.rotary_diameter_row.set_sensitive(doc.rotary_enabled)
+        self.rotary_diameter_row.set_sensitive(layer.rotary_enabled)
         rotary_group.add(self.rotary_diameter_row)
 
         self._is_initializing = False
@@ -77,10 +77,10 @@ class ProjectSettingsDialog(PatchedDialogWindow):
             return
         enabled = row.get_active()
         self.rotary_diameter_row.set_sensitive(enabled)
-        self.doc.set_rotary_enabled(enabled)
+        self.layer.set_rotary_enabled(enabled)
 
     def _on_rotary_diameter_changed(self, spinrow, _param):
         if self._is_initializing:
             return
         diameter = get_spinrow_float(spinrow)
-        self.doc.set_rotary_diameter(diameter)
+        self.layer.set_rotary_diameter(diameter)
