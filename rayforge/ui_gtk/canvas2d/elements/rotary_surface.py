@@ -30,6 +30,8 @@ class RotarySurfaceElement(CanvasElement):
         self._origin_x = 0.0
         self._origin_y = 0.0
         self._x_axis_right = False
+        self._diameter = 25.0
+        self._bed_width = 200.0
 
     def set_origin(self, x: float, y: float):
         """Sets the WCS origin position in world (canvas) coordinates."""
@@ -38,8 +40,6 @@ class RotarySurfaceElement(CanvasElement):
         self._origin_x = x
         self._origin_y = y
         self._update_geometry()
-        if self.canvas:
-            self.canvas.queue_draw()
 
     def set_x_axis_right(self, x_axis_right: bool):
         """Sets whether X axis origin is on the right."""
@@ -47,19 +47,10 @@ class RotarySurfaceElement(CanvasElement):
             return
         self._x_axis_right = x_axis_right
         self._update_geometry()
-        if self.canvas:
-            self.canvas.queue_draw()
 
     def _update_geometry(self):
         """Recalculates position and size from diameter and origin."""
-        pass
-
-    def update_for_diameter(self, diameter: float, bed_width: float):
-        """
-        Updates the element geometry for the given cylinder diameter
-        and machine bed width.
-        """
-        circumference = math.pi * diameter
+        circumference = math.pi * self._diameter
         half_circ = circumference / 2.0
 
         y = self._origin_y - half_circ
@@ -70,13 +61,24 @@ class RotarySurfaceElement(CanvasElement):
             width = self._origin_x
         else:
             x = self._origin_x
-            width = bed_width - self._origin_x
+            width = self._bed_width - self._origin_x
 
         if width < 0:
             width = 0.0
 
-        self.set_pos(x, y)
         self.set_size(width, height)
+        self.set_pos(x, y)
+
+    def update_for_diameter(self, diameter: float, bed_width: float):
+        """
+        Updates the element geometry for the given cylinder diameter
+        and machine bed width.
+        """
+        self._diameter = diameter
+        self._bed_width = bed_width
+        self._update_geometry()
+        if self.canvas:
+            self.canvas.queue_draw()
 
     def draw(self, ctx: cairo.Context):
         """Renders the cylinder extent indicator as a dashed rectangle."""
