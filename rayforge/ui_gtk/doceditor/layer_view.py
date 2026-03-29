@@ -234,7 +234,12 @@ class LayerView(Gtk.Box):
         if old_icon := self.icon_container.get_first_child():
             self.icon_container.remove(old_icon)
 
-        self.icon_container.append(get_icon("layer-symbolic"))
+        icon_name = (
+            "rotary-symbolic"
+            if self.layer.rotary_enabled
+            else "layer-symbolic"
+        )
+        self.icon_container.append(get_icon(icon_name))
         self.name_entry.set_editable(True)
         if not self.name_entry.has_focus():
             self.name_entry.set_text(self.layer.name)
