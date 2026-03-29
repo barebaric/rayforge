@@ -1,6 +1,7 @@
 # Suporte a Dialeto G-code
 
-O Rayforge suporta múltiplos dialetos G-code para trabalhar com diferentes firmware de controlador.
+O Rayforge suporta múltiplos dialetos G-code para trabalhar com diferentes
+firmware de controlador.
 
 ## Dialeto Suportados
 
@@ -19,21 +20,30 @@ O Rayforge atualmente suporta estes dialetos G-code:
 :::note Dialeto Recomendados
 :::
 
-**GRBL (universal)** é o dialeto mais testado e recomendado para aplicações de laser padrão.
+**GRBL (universal)** é o dialeto mais testado e recomendado para aplicações de
+laser padrão.
 
-**GRBL Dinâmico (Sensível à Profundidade)** é recomendado para gravação a laser sensível à profundidade onde a potência varia durante os cortes (ex., gravação de profundidade variável).
+**GRBL Dinâmico (Sensível à Profundidade)** é recomendado para gravação a laser
+sensível à profundidade onde a potência varia durante os cortes (ex., gravação
+de profundidade variável).
 
 ---
 
 ## Mach4 (M67 Analog)
 
-O dialeto **Mach4 (M67 Analog)** é projetado para gravação raster de alta velocidade com controladores Mach4. Ele usa o comando M67 com saída analógica para controle preciso de potência do laser.
+O dialeto **Mach4 (M67 Analog)** é projetado para gravação raster de alta
+velocidade com controladores Mach4. Ele usa o comando M67 com saída analógica
+para controle preciso de potência do laser.
 
 ### Recursos Principais
 
-- **Saída Analógica M67**: Usa `M67 E0 Q<0-255>` para potência do laser em vez de comandos S inline
-- **Pressão de Buffer Reduzida**: Ao separar comandos de potência de comandos de movimento, o buffer do controlador é menos estressado durante operações de alta velocidade
-- **Raster de Alta Velocidade**: Otimizado para operações de gravação raster rápidas
+- **Saída Analógica M67**: Usa `M67 E0 Q<0-255>` para potência do laser em vez
+  de comandos S inline
+- **Pressão de Buffer Reduzida**: Ao separar comandos de potência de comandos de
+  movimento, o buffer do controlador é menos estressado durante operações de alta
+  velocidade
+- **Raster de Alta Velocidade**: Otimizado para operações de gravação raster
+  rápidas
 
 ### Quando Usar
 
@@ -60,11 +70,23 @@ M67 E0 Q0    ; Desligar laser
 Para criar um dialeto G-code personalizado baseado em um dialeto embutido:
 
 1. Abra **Configurações de Máquina** → **Dialeto G-code**
-2. Clique no ícone **Copiar** em um dialeto embutido para criar um novo dialeto personalizado
+2. Clique no ícone **Copiar** em um dialeto embutido para criar um novo dialeto
+   personalizado
 3. Edite as configurações do dialeto conforme necessário
 4. Salve seu dialeto personalizado
 
-Dialeto personalizados são armazenados no seu diretório de configuração e podem ser compartilhados.
+Cada dialeto personalizado é uma cópia independente. Alterar um dialeto nunca
+afeta os outros, então você pode experimentar livremente sem se preocupar em
+danificar uma configuração existente. Dialeto personalizados são armazenados no
+seu diretório de configuração e podem ser compartilhados.
+
+### Comando Separado de Ativação do Laser para Focagem
+
+Alguns dialetos suportam a configuração de um comando separado para ligar o
+laser em baixa potência, o que é útil para o modo de focagem. Isso permite usar
+um comando diferente para o comportamento visual de «ponteiro laser» daquele
+usado durante o corte ou gravação real. Verifique a página de configurações do
+seu dialeto para esta opção.
 
 ---
 

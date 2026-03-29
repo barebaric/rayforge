@@ -1,22 +1,23 @@
 # Unterstützte Dateiformate
 
-Diese Seite bietet detaillierte Informationen über alle von Rayforge unterstützten Dateiformate, einschließlich Fähigkeiten, Einschränkungen und Empfehlungen.
+Diese Seite bietet detaillierte Informationen über alle von Rayforge unterstützten
+Dateiformate, einschließlich Fähigkeiten, Einschränkungen und Empfehlungen.
 
 ## Format-Übersicht
 
 ### Schnellreferenz
 
-| Format               | Typ     | Import        | Export          | Empfohlene Verwendung     |
-| -------------------- | ------- | ------------- | --------------- | ------------------------- |
-| **SVG**              | Vektor  | ✓ Direkt      | ✓ Objekt-Export | Primäres Design-Format    |
-| **DXF**              | Vektor  | ✓ Direkt      | ✓ Objekt-Export | CAD-Datenaustausch        |
-| **PDF**              | Gemischt| ✓ Nachverfolgung | –            | Dokumenten-Export (begrenzt) |
-| **PNG**              | Raster  | ✓ Nachverfolgung | –            | Fotos, Bilder             |
-| **JPEG**             | Raster  | ✓ Nachverfolgung | –            | Fotos                     |
-| **BMP**              | Raster  | ✓ Nachverfolgung | –            | Einfache Grafiken         |
-| **RFS**              | Skizze  | ✓ Direkt      | ✓ Objekt-Export | Parametrische Skizzen     |
-| **G-Code**           | Steuerung| –           | ✓ Primär       | Maschinenausgabe          |
-| **Rayforge-Projekt** | Projekt | ✓             | ✓               | Projekte speichern/laden  |
+| Format               | Typ       | Import             | Export          | Empfohlene Verwendung      |
+| -------------------- | --------- | ------------------ | --------------- | -------------------------- |
+| **SVG**              | Vektor    | ✓ Direkt / Tracing | ✓ Objekt-Export | Primäres Design-Format     |
+| **DXF**              | Vektor    | ✓ Direkt           | ✓ Objekt-Export | CAD-Datenaustausch         |
+| **PDF**              | Gemischt  | ✓ Direkt / Tracing | –               | Dokumente mit Vektorinhalt |
+| **PNG**              | Raster    | ✓ Tracing          | –               | Fotos, Bilder              |
+| **JPEG**             | Raster    | ✓ Tracing          | –               | Fotos                      |
+| **BMP**              | Raster    | ✓ Tracing          | –               | Einfache Grafiken          |
+| **RFS**              | Skizze    | ✓ Direkt           | ✓ Objekt-Export | Parametrische Skizzen      |
+| **G-Code**           | Steuerung | –                  | ✓ Primär        | Maschinenausgabe           |
+| **Rayforge-Projekt** | Projekt   | ✓                  | ✓               | Projekte speichern/laden   |
 
 ---
 
@@ -26,12 +27,13 @@ Diese Seite bietet detaillierte Informationen über alle von Rayforge unterstüt
 
 **Erweiterung:** `.svg`
 **MIME-Typ:** `image/svg+xml`
-**Import:** Direktes Vektor-Parsing oder Bitmap-Nachverfolgung
+**Import:** Direktes Vektor-Parsing oder Bitmap-Tracing
 **Export:** Objekt-Export (nur Geometrie)
 
 **Was ist SVG?**
 
-SVG ist ein XML-basiertes Vektorbildformat. Es ist das **bevorzugte Format** für den Import von Designs in Rayforge.
+SVG ist ein XML-basiertes Vektorbildformat. Es ist das **bevorzugte Format** für
+den Import von Designs in Rayforge.
 
 **Unterstützte Funktionen:**
 
@@ -47,14 +49,17 @@ SVG ist ein XML-basiertes Vektorbildformat. Es ist das **bevorzugte Format** fü
 - ✗ Text (muss zuerst in Pfade konvertiert werden)
 - ✗ Farbverläufe (vereinfacht oder ignoriert)
 - ✗ Filter und Effekte (ignoriert)
-- ✗ Masken und Beschneidungspfade (funktionieren möglicherweise nicht korrekt)
+- ✗ Masken und Beschneidungspfade (funktionieren möglicherweise nicht
+  korrekt)
 - ✗ Eingebettete Rasterbilder (separat importiert wenn möglich)
 - ✗ Komplexe Strichstile (Strichelungen können vereinfacht werden)
-- ✗ Symbole und use-Elemente (Instanzen aktualisieren sich möglicherweise nicht)
+- ✗ Symbole und use-Elemente (Instanzen aktualisieren sich möglicherweise
+  nicht)
 
 **Export-Hinweise:**
 
-Beim Exportieren eines Werkstücks nach SVG exportiert Rayforge die Geometrie als Vektorpfade mit:
+Beim Exportieren eines Werkstücks nach SVG exportiert Rayforge die Geometrie als
+Vektorpfade mit:
 
 - Nur-Strich-Rendering (keine Füllung)
 - Millimeter-Einheiten
@@ -62,7 +67,8 @@ Beim Exportieren eines Werkstücks nach SVG exportiert Rayforge die Geometrie al
 
 **Best Practices:**
 
-1. **Plain SVG-Format verwenden** (nicht Inkscape SVG oder andere werkzeugspezifische Varianten)
+1. **Plain SVG-Format verwenden** (nicht Inkscape SVG oder andere
+   werkzeugspezifische Varianten)
 2. **Text in Pfade konvertieren** vor dem Export
 3. **Komplexe Pfade vereinfachen** um Knotenanzahl zu reduzieren
 4. **Gruppen abflachen** wenn möglich
@@ -84,7 +90,8 @@ Beim Exportieren eines Werkstücks nach SVG exportiert Rayforge die Geometrie al
 
 **Was ist DXF?**
 
-DXF ist ein AutoCAD-Zeichnungsformat, weit verbreitet für CAD-Datenaustausch.
+DXF ist ein AutoCAD-Zeichnungsformat, weit verbreitet für
+CAD-Datenaustausch.
 
 **Unterstützte Versionen:**
 
@@ -131,7 +138,9 @@ Beim Exportieren eines Werkstücks nach DXF exportiert Rayforge:
 
 **Was ist RFS?**
 
-RFS ist Rayforge's natives parametrisches Skizzenformat. Es bewahrt alle geometrischen Elemente und parametrischen Bedingungen, sodass du vollständig bearbeitbare Skizzen speichern und teilen kannst.
+RFS ist Rayforge's natives parametrisches Skizzenformat. Es bewahrt alle
+geometrischen Elemente und parametrischen Bedingungen, sodass du vollständig
+bearbeitbare Skizzen speichern und teilen kannst.
 
 **Funktionen:**
 
@@ -152,49 +161,48 @@ RFS ist Rayforge's natives parametrisches Skizzenformat. Es bewahrt alle geometr
 
 **Erweiterung:** `.pdf`
 **MIME-Typ:** `application/pdf`
-**Import:** Zu Bitmap gerendert, dann nachverfolgt
+**Import:** Direkte Vektoren (mit Ebenen-Unterstützung) oder Rendern und Tracing
 **Export:** Nicht unterstützt
 
 **Was ist PDF-Import?**
 
-Rayforge kann PDF-Dateien importieren, indem sie zuerst rastert und dann zu Vektoren nachverfolgt.
+PDF-Dateien können echte Vektorpfade enthalten, die Rayforge direkt importiert,
+wenn verfügbar — und dir so dieselbe saubere Geometrie liefert wie ein SVG. Wenn
+das PDF Ebenen hat, kann jede Ebene als separates Werkstück importiert werden.
 
-**Prozess:**
+Für PDFs ohne nutzbaren Vektorinhalt (gescannte Dokumente, Fotos) greift
+Rayforge auf Rendern und Tracing zurück.
 
-1. PDF zu Rasterbild gerendert (Standard 300 DPI)
-2. Raster nachverfolgt um Vektorpfade zu erstellen
-3. Pfade zum Dokument hinzugefügt
+**Funktionen:**
+
+- ✓ **Direkter Vektor-Import** für vektorbasierte PDFs
+- ✓ **Ebenen-Erkennung und -Auswahl** — wähle aus, welche Ebenen importiert
+  werden
+- ✓ Fallback auf Rendern und Tracing für Rasterinhalte
 
 **Einschränkungen:**
 
-- **Kein echter Vektor-Import** - Selbst Vektor-PDFs werden gerastert
-- **Qualitätsverlust** durch Rasterung
-- **Nur erste Seite** - Mehrseitige PDFs importieren nur Seite 1
-- **Langsam für komplexe PDFs** - Rendern und Nachverfolgen dauert Zeit
+- Nur erste Seite — mehrseitige PDFs importieren Seite 1
+- Text muss möglicherweise in der Quellanwendung in Umrisse konvertiert werden
 
 **Wann zu verwenden:**
 
-- Letzte Option wenn SVG/DXF nicht verfügbar
-- Schneller Import einfacher Designs
-- Dokumente mit gemischtem Inhalt
-
-**Bessere Alternativen:**
-
-- **SVG aus Quelle exportieren** statt PDF
-- **Vektorformate verwenden** (SVG, DXF) wenn möglich
-- **Für Text:** Export mit in Umrisse konvertiertem Text
+- PDFs von Designern, die Vektorgrafiken enthalten
+- Jedes PDF mit gut organisierten Ebenen
+- Wenn SVG oder DXF aus der Quelle nicht verfügbar ist
 
 ---
 
 ## Rasterformate
 
-Alle Rasterformate werden **durch Nachverfolgung importiert** - automatisch in Vektorpfade konvertiert.
+Alle Rasterformate werden **durch Tracing importiert** - automatisch in
+Vektorpfade konvertiert.
 
 ### PNG (Portable Network Graphics)
 
 **Erweiterung:** `.png`
 **MIME-Typ:** `image/png`
-**Import:** Zu Vektoren nachverfolgen
+**Import:** Tracing zu Vektoren
 **Export:** Nicht unterstützt
 
 **Eigenschaften:**
@@ -203,7 +211,7 @@ Alle Rasterformate werden **durch Nachverfolgung importiert** - automatisch in V
 - **Transparenz-Unterstützung** - Alpha-Kanal bewahrt
 - **Gut für:** Logos, Strichzeichnungen, Screenshots, alles mit Transparenz
 
-**Nachverfolgungsqualität:** (Ausgezeichnet für hochkontrastige Bilder)
+**Tracing-Qualität:** (Ausgezeichnet für hochkontrastige Bilder)
 
 **Best Practices:**
 
@@ -217,7 +225,7 @@ Alle Rasterformate werden **durch Nachverfolgung importiert** - automatisch in V
 
 **Erweiterung:** `.jpg`, `.jpeg`
 **MIME-Typ:** `image/jpeg`
-**Import:** Zu Vektoren nachverfolgen
+**Import:** Tracing zu Vektoren
 **Export:** Nicht unterstützt
 
 **Eigenschaften:**
@@ -226,7 +234,7 @@ Alle Rasterformate werden **durch Nachverfolgung importiert** - automatisch in V
 - **Keine Transparenz** - Hat immer Hintergrund
 - **Gut für:** Fotos, Bilder mit kontinuierlichen Tönen
 
-**Nachverfolgungsqualität:** (Gut für Fotos, aber komplex)
+**Tracing-Qualität:** (Gut für Fotos, aber komplex)
 
 **Best Practices:**
 
@@ -241,7 +249,7 @@ Alle Rasterformate werden **durch Nachverfolgung importiert** - automatisch in V
 
 **Erweiterung:** `.bmp`
 **MIME-Typ:** `image/bmp`
-**Import:** Zu Vektoren nachverfolgen
+**Import:** Tracing zu Vektoren
 **Export:** Nicht unterstützt
 
 **Eigenschaften:**
@@ -250,7 +258,7 @@ Alle Rasterformate werden **durch Nachverfolgung importiert** - automatisch in V
 - **Einfaches Format** - Weit kompatibel
 - **Gut für:** Einfache Grafiken, Ausgabe alter Software
 
-**Nachverfolgungsqualität:** (Gut, aber nicht besser als PNG)
+**Tracing-Qualität:** (Gut, aber nicht besser als PNG)
 
 **Best Practices:**
 

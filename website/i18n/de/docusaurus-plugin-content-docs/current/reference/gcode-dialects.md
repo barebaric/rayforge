@@ -64,7 +64,19 @@ Um einen benutzerdefinierten G-Code-Dialekt basierend auf einem integrierten Dia
 3. Bearbeite die Dialekteinstellungen nach Bedarf
 4. Speichere deinen benutzerdefinierten Dialekt
 
-Benutzerdefinierte Dialekte werden in deinem Konfigurationsverzeichnis gespeichert und können geteilt werden.
+Jeder benutzerdefinierte Dialekt ist eine unabhängige Kopie. Die Änderung eines
+Dialekts beeinflusst niemals andere, sodass du frei experimentieren kannst, ohne
+dir Sorgen machen zu müssen, eine bestehende Konfiguration zu beschädigen.
+Benutzerdefinierte Dialekte werden in deinem Konfigurationsverzeichnis gespeichert
+und können geteilt werden.
+
+### Separater Laser-Ein-Befehl zur Fokussierung
+
+Einige Dialekte unterstützen die Konfiguration eines separaten Befehls zum
+Einschalten des Lasers bei niedriger Leistung, was für den Fokusmodus nützlich
+ist. Dies ermöglicht dir, einen anderen Befehl für das visuelle
+"Laserzeiger"-Verhalten zu verwenden als beim tatsächlichen Schneiden oder
+Gravieren. Überprüfe die Einstellungsseite deines Dialekts auf diese Option.
 
 ---
 

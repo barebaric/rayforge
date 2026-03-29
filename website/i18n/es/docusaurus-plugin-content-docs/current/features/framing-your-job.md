@@ -1,99 +1,118 @@
-# Enmarcando Tu Trabajo
+# Enmarcando su trabajo
 
-Aprende a usar la función de enmarcado para previsualizar los límites de tu trabajo y asegurar una alineación correcta antes de cortar.
+Aprenda a utilizar la función de enmarcado para previsualizar los límites de
+su trabajo y asegurar una alineación correcta antes de cortar.
 
 ## Resumen
 
-El enmarcado te permite previsualizar los límites exactos de tu trabajo láser trazando un contorno con el láser a baja potencia o con el láser apagado. Esto ayuda a verificar el posicionamiento y prevenir errores costosos.
+El enmarcado le permite previsualizar los límites exactos de su trabajo láser
+trazando un contorno con el láser a baja potencia o con el láser apagado. Esto
+ayuda a verificar la posición y evitar errores costosos.
 
-## Cuándo Usar Enmarcado
+## Cuándo usar el enmarcado
 
-- **Configuraciones por primera vez**: Verificar colocación del material
-- **Posicionamiento preciso**: Asegurar que el diseño cabe dentro de los límites del material
-- **Múltiples trabajos**: Confirmar alineación antes de cada ejecución
-- **Materiales costosos**: Verificar doblemente antes de comprometerse a cortes
+- **Configuraciones iniciales**: Verificar la colocación del material
+- **Posicionamiento preciso**: Asegurar que el diseño cabe dentro de los
+  límites del material
+- **Múltiples trabajos**: Confirmar la alineación antes de cada pasada
+- **Materiales costosos**: Verificar antes de realizar los cortes
 
-## Cómo Enmarcar
+## Cómo enmarcar
 
-### Método 1: Solo Contorno
+### Método 1: Solo contorno
 
 Trazar el límite del trabajo sin encender el láser:
 
-1. **Carga tu diseño** en Rayforge
-2. **Coloca el material** en la cama láser
-3. **Haz clic en el botón Enmarcar** en la barra de herramientas
-4. **Observa el cabezal láser** trazar el rectángulo del límite
-5. **Verifica el posicionamiento** y ajusta el material si es necesario
+1. **Cargue su diseño** en Rayforge
+2. **Coloque el material** en la cama del láser
+3. **Haga clic en el botón Enmarcar** en la barra de herramientas
+4. **Observe la cabeza láser** trazar el rectángulo delimitador
+5. **Verifique la posición** y ajuste el material si es necesario
 
-### Método 2: Previsualización de Baja Potencia
+### Método 2: Vista previa con baja potencia
 
-Algunas máquinas soportan enmarcado de baja potencia con un haz visible:
+Algunas máquinas soportan enmarcado a baja potencia con un haz visible:
 
-1. **Habilita el modo de baja potencia** en ajustes de máquina
-2. **Configura potencia de enmarcado** (típicamente 1-5%)
-3. **Ejecuta la operación de enmarcado**
-4. **Observa el contorno** trazado en la superficie del material
+1. **Active el modo de baja potencia** en la configuración de la máquina
+2. **Configure la potencia de enmarcado** (típicamente 1-5 %)
+3. **Ejecute la operación de enmarcado**
+4. **Observe el contorno** trazado en la superficie del material
 
-:::warning Verifica Tu Máquina
-No todos los láseres soportan enmarcado de baja potencia de manera segura. Consulta la documentación de tu máquina antes de usar esta función.
+:::warning Verifique su máquina
+No todos los láseres soportan el enmarcado a baja potencia de forma segura.
+Consulte la documentación de su máquina antes de usar esta función.
 :::
 
+## Configuración de enmarcado
 
-## Ajustes de Enmarcado
+Configure el comportamiento del enmarcado en los ajustes de la cabeza láser de
+su máquina:
 
-Configura el comportamiento de enmarcado en Ajustes → Máquina:
+- **Velocidad de enmarcado**: Qué tan rápido se mueve la cabeza láser durante
+  el enmarcado. Se configura por cabeza láser, por lo que si su máquina tiene
+  múltiples láseres puede usar diferentes velocidades para cada uno.
+- **Potencia de enmarcado**: Potencia del láser durante el enmarcado (0 para
+  apagado, % bajo para trazo visible)
+- **Tiempo de pausa en esquinas**: Una breve pausa en cada esquina del
+  contorno. Esto le da un momento para ver exactamente dónde cae cada esquina
+  — especialmente útil a velocidades de enmarcado más altas.
+- **Cantidad de repeticiones**: Número de veces que se traza el contorno.
+  Establecer un valor mayor a uno puede hacer que la ruta sea más fácil de
+  seguir a simple vista.
 
-- **Velocidad de enmarcado**: Qué tan rápido se mueve el cabezal láser durante el enmarcado
-- **Potencia de enmarcado**: Potencia del láser durante el enmarcado (0 para apagado, bajo % para trazo visible)
-- **Pausa en esquinas**: Breve pausa en cada esquina para visibilidad
-- **Conteo de repeticiones**: Número de veces que se traza el contorno
+## Uso de los resultados del enmarcado
 
-## Usando Resultados del Enmarcado
+Después de enmarcar, puede:
 
-Después de enmarcar, puedes:
-
-- **Ajustar posición del material** si es necesario
-- **Volver a enmarcar** para verificar la nueva posición
+- **Ajustar la posición del material** si es necesario
+- **Enmarcar nuevamente** para verificar la nueva posición
 - **Proceder con el trabajo** una vez satisfecho con la colocación
 
-## Consejos para Enmarcado Efectivo
+## Consejos para un enmarcado efectivo
 
-- **Marca esquinas**: Coloca pequeños trozos de cinta en las esquinas como referencia
-- **Verifica espacio**: Asegura espacio adecuado alrededor de tu diseño
-- **Verifica orientación**: Confirma que el material está orientado correctamente
-- **Considera el kerf**: Recuerda que los cortes serán ligeramente más anchos que los contornos
+- **Marque las esquinas**: Coloque pequeños trozos de cinta en las esquinas
+  como referencia
+- **Verifique el espacio**: Asegure espacio adecuado alrededor de su diseño
+- **Confirme la orientación**: Verifique que el material esté orientado
+  correctamente
+- **Considere la holgura de corte**: Recuerde que los cortes serán ligeramente
+  más anchos que los contornos
 
-## Enmarcado con Cámara
+## Enmarcado con cámara
 
-Si tu máquina tiene soporte de cámara, puedes:
+Si su máquina tiene soporte de cámara, puede:
 
-1. **Capturar imagen de cámara** de la colocación del material
-2. **Superponer diseño** en la vista de cámara
-3. **Ajustar posición** virtualmente antes de enmarcar
-4. **Enmarcar para confirmar** alineación física
+1. **Capturar imagen de la cámara** de la colocación del material
+2. **Superponer el diseño** en la vista de cámara
+3. **Ajustar la posición** virtualmente antes de enmarcar
+4. **Enmarcar para confirmar** la alineación física
 
-Ver [Integración de Cámara](../machine/camera) para detalles.
+Consulte [Integración de cámara](../machine/camera) para más detalles.
 
-## Solución de Problemas
+## Solución de problemas
 
-**El enmarcado no coincide con el diseño**: Verifica el origen del trabajo y ajustes del sistema de coordenadas
+**El marco no coincide con el diseño**: Verifique el origen del trabajo y la
+configuración del sistema de coordenadas
 
-**El láser dispara durante el enmarcado**: Deshabilita la potencia de enmarcado o verifica los ajustes de máquina
+**El láser dispara durante el enmarcado**: Desactive la potencia de enmarcado
+o revise la configuración de la máquina
 
-**El enmarcado es muy rápido para ver**: Reduce la velocidad de enmarcado en ajustes
+**El marco es demasiado rápido para ver**: Reduzca la velocidad de enmarcado
+en la configuración
 
-**El cabezal no alcanza las esquinas**: Verifica que el diseño esté dentro del área de trabajo de la máquina
+**La cabeza no alcanza las esquinas**: Verifique que el diseño está dentro del
+área de trabajo de la máquina
 
-## Notas de Seguridad
+## Notas de seguridad
 
-- **Nunca dejes la máquina sin supervisión** durante el enmarcado
-- **Verifica que el láser esté apagado** si usas enmarcado de potencia cero
-- **Mantén las manos alejadas** de la ruta del cabezal láser
-- **Observa obstrucciones** que podrían interferir con el movimiento
+- **Nunca deje la máquina desatendida** durante el enmarcado
+- **Verifique que el láser esté apagado** si usa enmarcado sin potencia
+- **Mantenga las manos alejadas** de la trayectoria de la cabeza láser
+- **Esté atento a obstrucciones** que puedan interferir con el movimiento
 
-## Temas Relacionados
+## Temas relacionados
 
-- [Posicionamiento de Piezas de Trabajo](workpiece-positioning) - Guía
-  completa de posicionamiento
-- [Integración de Cámara](../machine/camera)
-- [Guía de Inicio Rápido](../getting-started/quick-start)
+- [Posicionamiento de pieza](workpiece-positioning) - Guía completa de
+  posicionamiento
+- [Integración de cámara](../machine/camera)
+- [Guía de inicio rápido](../getting-started/quick-start)

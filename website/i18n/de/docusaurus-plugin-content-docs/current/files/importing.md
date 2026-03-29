@@ -1,30 +1,34 @@
 # Dateien importieren
 
-Rayforge unterstützt das Importieren verschiedener Dateiformate, sowohl Vektor- als auch Rasterformate. Diese Seite erklärt, wie du Dateien importierst und für beste Ergebnisse optimierst.
+Rayforge unterstützt das Importieren verschiedener Dateiformate, sowohl Vektor- als auch
+Rasterformate. Diese Seite erklärt, wie du Dateien importierst und für beste Ergebnisse
+optimierst.
 
 ## Unterstützte Dateiformate
 
 ### Vektorformate
 
-| Format    | Erweiterung | Importmethode        | Am besten für                        |
-| --------- | ----------- | -------------------- | ------------------------------------ |
-| **SVG**   | `.svg`      | Direkte Vektoren oder Nachverfolgung | Vektorgrafiken, Logos, Designs |
-| **DXF**   | `.dxf`      | Direkte Vektoren     | CAD-Zeichnungen, technische Designs  |
-| **PDF**   | `.pdf`      | Rendern und nachverfolgen | Dokumente mit Vektorinhalt      |
-| **Ruida** | `.rd`       | Direkte Vektoren     | Ruida-Controller-Auftragsdateien     |
+| Format    | Erweiterung | Importmethode                 | Am besten für                       |
+| --------- | ----------- | ----------------------------- | ----------------------------------- |
+| **SVG**   | `.svg`      | Direkte Vektoren oder Tracing | Vektorgrafiken, Logos, Designs      |
+| **DXF**   | `.dxf`      | Direkte Vektoren              | CAD-Zeichnungen, technische Designs |
+| **PDF**   | `.pdf`      | Direkte Vektoren oder Tracing | Dokumente mit Vektorinhalt          |
+| **Ruida** | `.rd`       | Direkte Vektoren              | Ruida-Controller-Auftragsdateien    |
 
 ### Rasterformate
 
-| Format   | Erweiterung  | Importmethode      | Am besten für                         |
-| -------- | ------------ | ------------------ | ------------------------------------- |
-| **PNG**  | `.png`       | Nachverfolgung zu Vektoren | Fotos, Bilder mit Transparenz |
-| **JPEG** | `.jpg`, `.jpeg` | Nachverfolgung zu Vektoren | Fotos, Bilder mit kontinuierlichen Tönen |
-| **BMP**  | `.bmp`       | Nachverfolgung zu Vektoren | Einfache Grafiken, Screenshots  |
+| Format   | Erweiterung     | Importmethode       | Am besten für                            |
+| -------- | --------------- | ------------------- | ---------------------------------------- |
+| **PNG**  | `.png`          | Tracing zu Vektoren | Fotos, Bilder mit Transparenz            |
+| **JPEG** | `.jpg`, `.jpeg` | Tracing zu Vektoren | Fotos, Bilder mit kontinuierlichen Tönen |
+| **BMP**  | `.bmp`          | Tracing zu Vektoren | Einfache Grafiken, Screenshots           |
 
 :::note Raster-Import
 :::
 
-Alle Rasterbilder werden **nachverfolgt**, um Vektorpfade zu erstellen, die für Laseroperationen verwendet werden können. Die Qualität hängt von der Nachverfolgungskonfiguration ab.
+Alle Rasterbilder werden **traced**, um Vektorpfade zu erstellen, die für
+Laseroperationen verwendet werden können. Die Qualität hängt von der
+Tracing-Konfiguration ab.
 
 ---
 
@@ -32,11 +36,13 @@ Alle Rasterbilder werden **nachverfolgt**, um Vektorpfade zu erstellen, die für
 
 ### Der Import-Dialog
 
-Rayforge verfügt über einen einheitlichen Import-Dialog, der Live-Vorschau und Konfigurationsoptionen für alle unterstützten Dateitypen bietet. Der Dialog ermöglicht dir:
+Rayforge verfügt über einen einheitlichen Import-Dialog, der Live-Vorschau und
+Konfigurationsoptionen für alle unterstützten Dateitypen bietet. Der Dialog
+ermöglicht dir:
 
 - **Import voranschauen**, bevor er zum Dokument hinzugefügt wird
-- **Nachverfolgungseinstellungen konfigurieren** für Rasterbilder
-- **Importmethode wählen** für SVG-Dateien (direkte Vektoren oder Nachverfolgung)
+- **Tracing-Einstellungen konfigurieren** für Rasterbilder
+- **Importmethode wählen** für SVG-Dateien (direkte Vektoren oder Tracing)
 - **Parameter anpassen** wie Schwellenwert, Invertieren und Auto-Schwellenwert
 
 ![Import-Dialog](/screenshots/import-dialog.png)
@@ -69,7 +75,8 @@ rayforge datei1.svg datei2.dxf
 
 ### Automatische Größenanpassung beim Import
 
-Beim Importieren von Dateien, die größer als der Arbeitsbereich deiner Maschine sind, wird Rayforge automatisch:
+Beim Importieren von Dateien, die größer als der Arbeitsbereich deiner Maschine sind,
+wird Rayforge automatisch:
 
 1. **Herunterskalieren** des importierten Inhalts, um in die Maschinengrenzen zu passen
 2. **Seitenverhältnis beibehalten** während der Skalierung
@@ -78,11 +85,15 @@ Beim Importieren von Dateien, die größer als der Arbeitsbereich deiner Maschin
 
 Die Größenänderungs-Benachrichtigung erscheint als Toast-Meldung:
 
-- ⚠️ "Importiertes Element war größer als der Arbeitsbereich und wurde herunterskaliert um zu passen."
-- Enthält eine **"Zurücksetzen"-Schaltfläche** um die automatische Größenanpassung rückgängig zu machen
-- Der Toast bleibt sichtbar bis er geschlossen wird oder die Zurücksetzen-Aktion ausgeführt wird
+- ⚠️ "Importiertes Element war größer als der Arbeitsbereich und wurde
+  herunterskaliert um zu passen."
+- Enthält eine **"Zurücksetzen"-Schaltfläche** um die automatische Größenänderung
+  rückgängig zu machen
+- Der Toast bleibt sichtbar bis er geschlossen wird oder die Zurücksetzen-Aktion
+  ausgeführt wird
 
-Dies stellt sicher, dass deine Designs immer in die Fähigkeiten deiner Maschine passen, während du die Flexibilität hast, die Originalgröße bei Bedarf wiederherzustellen.
+Dies stellt sicher, dass deine Designs immer in die Fähigkeiten deiner Maschine passen,
+während du die Flexibilität hast, die Originalgröße bei Bedarf wiederherzustellen.
 
 ---
 
@@ -92,7 +103,8 @@ SVG (Scalable Vector Graphics) ist das **empfohlene Format** für Vektor-Designs
 
 ### Importoptionen im Dialog
 
-Beim Importieren von SVG bietet der Import-Dialog einen Umschalter um zwischen zwei Methoden zu wählen:
+Beim Importieren von SVG bietet der Import-Dialog einen Umschalter, um zwischen zwei
+Methoden zu wählen:
 
 #### 1. Originalvektoren verwenden (Empfohlen)
 
@@ -121,15 +133,15 @@ Diese Option ist im Import-Dialog standardmäßig aktiviert.
 - Einfache bis mittlere Komplexität
 - Designs ohne fortgeschrittene SVG-Funktionen
 
-#### 2. Bitmap nachverfolgen
+#### 2. Bitmap tracen
 
-Deaktiviere "Originalvektoren verwenden" um diese Methode zu nutzen.
+Deaktiviere "Originalvektoren verwenden", um diese Methode zu nutzen.
 
 **Wie es funktioniert:**
 
 - Rendert SVG zuerst in ein Rasterbild
-- Verfolgt das gerenderte Bild um Vektoren zu erstellen
-- Kompatibler aber weniger präzise
+- Traced das gerenderte Bild, um Vektoren zu erstellen
+- Kompatibler, aber weniger präzise
 
 **Vorteile:**
 
@@ -154,7 +166,7 @@ Deaktiviere "Originalvektoren verwenden" um diese Methode zu nutzen.
 Der Import-Dialog zeigt eine Live-Vorschau, wie dein SVG importiert wird:
 
 - Vektorpfade werden als blaues Overlay angezeigt
-- Für Nachverfolgungsmodus wird das Originalbild mit den nachverfolgten Pfaden angezeigt
+- Für Tracing-Modus wird das Originalbild mit den getraceten Pfaden angezeigt
 - Vorschau aktualisiert sich in Echtzeit beim Ändern der Einstellungen
 
 ### SVG-Best Practices
@@ -162,27 +174,22 @@ Der Import-Dialog zeigt eine Live-Vorschau, wie dein SVG importiert wird:
 **Bereite dein SVG für beste Ergebnisse vor:**
 
 1. **Text in Pfade konvertieren:**
-
    - Inkscape: `Pfad → Objekt in Pfad`
    - Illustrator: `Typ → Umrisse erstellen`
 
 2. **Komplexe Pfade vereinfachen:**
-
    - Inkscape: `Pfad → Vereinfachen` (Strg+L)
    - Unnötige Knoten entfernen
 
 3. **Verschachtelte Gruppen auflösen:**
-
    - Hierarchie wo möglich abflachen
    - `Objekt → Gruppierung aufheben` (Strg+Umschalt+G)
 
 4. **Versteckte Elemente entfernen:**
-
    - Hilfslinien, Raster, Konstruktionslinien löschen
    - Unsichtbare/transparente Objekte entfernen
 
 5. **Als Plain SVG speichern:**
-
    - Inkscape: "Plain SVG" oder "Optimiertes SVG"
    - Nicht "Inkscape SVG" (hat zusätzliche Metadaten)
 
@@ -219,23 +226,20 @@ Rayforge unterstützt Standard-DXF-Formate:
 **Vor dem Export aus CAD:**
 
 1. **Zeichnung vereinfachen:**
-
    - Unnötige Ebenen entfernen
    - Bemaßungen und Anmerkungen löschen
    - 3D-Objekte entfernen (2D-Projektion verwenden)
 
 2. **Einheiten prüfen:**
-
    - Zeichnungseinheiten verifizieren (mm vs. Zoll)
    - Rayforge geht standardmäßig von mm aus
 
 3. **Ebenen abflachen:**
-
    - Erwäge, nur relevante Ebenen zu exportieren
    - Konstruktions-Ebenen ausblenden oder löschen
 
 4. **Angemessene Präzision verwenden:**
-   - Laser-Präzision ist typischerweise 0,1mm
+   - Laser-Präzision ist typischerweise 0,1 mm
    - Präzision nicht überspezifizieren
 
 **Nach dem Import:**
@@ -250,51 +254,51 @@ Rayforge unterstützt Standard-DXF-Formate:
 
 PDF-Dateien können Vektorgrafiken, Rasterbilder oder beides enthalten.
 
-### Wie PDF-Import funktioniert
+### Direkter Vektorimport
 
-Beim Importieren von PDF-Dateien über den Import-Dialog **rendert Rayforge das PDF** in ein Bild und **verfolgt** es dann, um Vektoren zu erstellen.
+Beim Importieren eines PDFs, das Vektorpfade enthält, kann Rayforge diese direkt
+importieren – genau wie SVG- oder DXF-Dateien. Das liefert dir saubere, skalierbare
+Geometrie ohne Qualitätsverlust durch Rasterung.
 
-**Prozess:**
+Wenn das PDF Ebenen enthält, erkennt Rayforge diese und du kannst auswählen, welche
+importiert werden sollen. Jede Ebene wird zu einem separaten Werkstück in deinem
+Dokument. Dies funktioniert genauso wie der SVG-Ebenenimport: aktiviere oder
+deaktiviere einzelne Ebenen im Import-Dialog vor dem Importieren.
 
-1. PDF gerendert und im Import-Dialog-Vorschau angezeigt
-2. Du kannst Nachverfolgungseinstellungen in Echtzeit anpassen
-3. Gerendertes Bild mit Vektorisierung mit deinen Einstellungen nachverfolgt
-4. Resultierende Pfade zum Dokument hinzugefügt, wenn du auf Import klicken
+Dies ist besonders nützlich für PDFs, die aus Design-Software wie Illustrator oder
+Inkscape exportiert wurden, wo die Vektorpfade sauber und gut organisiert sind.
 
-**Einschränkungen:**
+### Fallback: Rendern und Tracen
 
-- Text wird gerastert (nicht als Pfade bearbeitbar)
-- Vektorqualität hängt vom Rendering-DPI ab
-- Mehrseitige PDFs: nur erste Seite importiert
+Für PDFs, die keine verwendbaren Vektordaten enthalten – gescannte Dokumente,
+eingebettete Fotos oder PDFs, bei denen Text nicht in Pfade umgewandelt wurde –
+kann Rayforge auf das Rendern des PDFs als Bild und dessen Tracing
+zurückgreifen. Dies funktioniert genauso wie der Rasterbild-Import.
 
 ### PDF-Import-Tipps
 
 **Beste Ergebnisse:**
 
-1. **Vektor-PDFs verwenden:**
+1. **Vektor-PDFs verwenden**: PDFs, die aus Vektorsoftware erstellt wurden
+   (Illustrator, Inkscape), liefern die saubersten Ergebnisse beim direkten Import.
 
-   - PDFs aus Vektorsoftware erstellt (Illustrator, Inkscape)
-   - Nicht gescannte Dokumente oder eingebettete Bilder
+2. **Auf Ebenen prüfen**: Wenn dein PDF Ebenen hat, werden diese im Import-Dialog
+   aufgelistet. Wähle nur die Ebenen aus, die du benötigst.
 
-2. **SVG exportieren wenn möglich:**
+3. **Für Dokumente mit Text**: Als SVG mit in Pfade konvertierten Schriftarten
+   exportieren für beste Qualität, oder das Rendern-und-Tracing-Fallback verwenden.
 
-   - Die meisten Design-Software kann SVG direkt exportieren
-   - SVG wird bessere Qualität haben als PDF-Import
-
-3. **Für Dokumente mit Text:**
-
-   - Als SVG mit in Pfade konvertierten Schriftarten exportieren
-   - Oder PDF mit hohem DPI (600+) rendern und nachverfolgen
-
-4. **Import-Dialog-Vorschau verwenden:**
-   - Schwellenwert- und Invertierungseinstellungen für beste Ergebnisse anpassen
-   - Vorschau zeigt genau, wie das PDF nachverfolgt wird
+4. **Import-Dialog-Vorschau verwenden**: Schwellenwert- und Invertierungseinstellungen
+   im Tracing-Modus anpassen. Die Vorschau zeigt genau, wie das PDF
+   getraced wird.
 
 ---
 
 ## Ruida-Import
 
-Ruida-Dateien (.rd) sind proprietäre binäre Auftragsdateien, die von Ruida-Controllern in vielen Laserschneidmaschinen verwendet werden. Diese Dateien enthalten sowohl Vektorgeometrie als auch Lasereinstellungen, organisiert in Ebenen (Farben).
+Ruida-Dateien (.rd) sind proprietäre binäre Auftragsdateien, die von Ruida-Controllern
+in vielen Laserschneidmaschinen verwendet werden. Diese Dateien enthalten sowohl
+Vektorgeometrie als auch Lasereinstellungen, organisiert in Ebenen (Farben).
 
 **Nach dem Import:**
 
@@ -306,57 +310,56 @@ Ruida-Dateien (.rd) sind proprietäre binäre Auftragsdateien, die von Ruida-Con
 
 - **Nur-Lese-Import** – Ruida-Dateien können nur importiert, nicht exportiert werden
 - **Binärformat** – Direktes Bearbeiten von Original-.rd-Dateien nicht unterstützt
-- **Proprietäre Funktionen** – Einige fortgeschrittene Ruida-Funktionen werden möglicherweise nicht vollständig unterstützt
+- **Proprietäre Funktionen** – Einige fortgeschrittene Ruida-Funktionen werden
+  möglicherweise nicht vollständig unterstützt
 
 ---
 
 ## Rasterbild-Import (PNG, JPG, BMP)
 
-Rasterbilder werden **nachverfolgt**, um Vektorpfade über den Import-Dialog zu erstellen.
+Rasterbilder werden **traced**, um Vektorpfade über den Import-Dialog zu erstellen.
 
-### Nachverfolgungsprozess im Dialog
+### Tracing-Prozess im Dialog
 
 **Wie es funktioniert:**
 
 1. **Bild geladen** in den Import-Dialog
-2. **Live-Vorschau** zeigt das nachverfolgte Ergebnis
-3. **Nachverfolgungseinstellungen** können in Echtzeit angepasst werden
-4. **Vektorpfade erstellt** aus den nachverfolgten Kanten
+2. **Live-Vorschau** zeigt das Tracing-Ergebnis
+3. **Tracing-Einstellungen** können in Echtzeit angepasst werden
+4. **Vektorpfade erstellt** aus den getraceten Kanten
 5. **Pfade hinzugefügt** zum Dokument als Werkstücke beim Importieren
 
-### Nachverfolgungskonfiguration im Dialog
+### Tracing-Konfiguration im Dialog
 
 Der Import-Dialog bietet diese einstellbaren Parameter:
 
-| Parameter          | Beschreibung       | Effekt                                              |
-| ------------------ | ------------------ | --------------------------------------------------- |
-| **Auto-Schwellenwert** | Automatische Erkennung | Wenn aktiviert, findet automatisch optimalen Schwellenwert |
-| **Schwellenwert**  | Schwarz/Weiß-Grenze| Niedriger = mehr Details, höher = einfacher         |
-| **Invertieren**    | Farben umkehren    | Helle Objekte auf dunklem Hintergrund nachverfolgen |
+| Parameter              | Beschreibung           | Effekt                                                     |
+| ---------------------- | ---------------------- | ---------------------------------------------------------- |
+| **Auto-Schwellenwert** | Automatische Erkennung | Wenn aktiviert, automatisch optimalen Schwellenwert finden |
+| **Schwellenwert**      | Schwarz/Weiß-Grenze    | Niedriger = mehr Details, höher = einfacher                |
+| **Invertieren**        | Farben umkehren        | Helle Objekte auf dunklem Hintergrund tracen               |
 
-**Standardeinstellungen** funktionieren gut für die meisten Bilder. Der Dialog zeigt eine Live-Vorschau, die sich beim Anpassen dieser Einstellungen aktualisiert, sodass du die Nachverfolgung vor dem Importieren feinabstimmen kannst.
+**Standardeinstellungen** funktionieren gut für die meisten Bilder. Der Dialog zeigt
+eine Live-Vorschau, die sich beim Anpassen dieser Einstellungen aktualisiert, sodass
+du das Tracing vor dem Importieren feinabstimmen kannst.
 
-### Bilder für Nachverfolgung vorbereiten
+### Bilder für Tracing vorbereiten
 
 **Für beste Ergebnisse:**
 
 1. **Hoher Kontrast:**
-
    - Helligkeit/Kontrast im Bildeditor anpassen
    - Klare Unterscheidung zwischen Vordergrund und Hintergrund
 
 2. **Sauberer Hintergrund:**
-
    - Rauschen und Artefakte entfernen
    - Solider weißer oder transparenter Hintergrund
 
 3. **Angemessene Auflösung:**
-
    - 300-500 DPI für Fotos
-   - Zu hoch = langsame Nachverfolgung, zu niedrig = schlechte Qualität
+   - Zu hoch = langsames Tracing, zu niedrig = schlechte Qualität
 
 4. **Auf Inhalt zuschneiden:**
-
    - Unnötige Ränder entfernen
    - Auf den zu gravierenden/schneidenden Bereich fokussieren
 
@@ -371,16 +374,16 @@ Der Import-Dialog bietet diese einstellbaren Parameter:
 - Krita (kostenlos)
 - Paint.NET (kostenlos, Windows)
 
-### Nachverfolgungsqualität
+### Tracing-Qualität
 
-**Gute Nachverfolgungskandidaten:**
+**Gute Tracing-Kandidaten:**
 
 - Logos mit klaren Kanten
 - Hochkontrastbilder
 - Strichzeichnungen und Skizzen
 - Text (obwohl besser als Vektor)
 
-**Schlechte Nachverfolgungskandidaten:**
+**Schlechte Tracing-Kandidaten:**
 
 - Niedrigauflösende Bilder
 - Fotos mit weichen Kanten

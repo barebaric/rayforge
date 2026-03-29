@@ -1,22 +1,24 @@
-# Formats de fichiers pris en charge
+# Formats de fichier pris en charge
 
-Cette page fournit des informations détaillées sur tous les formats de fichiers pris en charge par Rayforge, y compris les capacités, les limitations et les recommandations.
+Cette page fournit des informations détaillées sur tous les formats de fichier
+pris en charge par Rayforge, y compris les capacités, les limitations et les
+recommandations.
 
 ## Aperçu des formats
 
 ### Référence rapide
 
-| Format                 | Type     | Importation | Exportation         | Utilisation recommandée       |
-| ---------------------- | -------- | ----------- | ------------------- | ----------------------------- |
-| **SVG**                | Vecteur  | ✓ Direct    | ✓ Export d'objet    | Format de conception principal|
-| **DXF**                | Vecteur  | ✓ Direct    | ✓ Export d'objet    | Échange CAD                   |
-| **PDF**                | Mixte    | ✓ Traçage   | –                   | Export de documents (limité)  |
-| **PNG**                | Raster   | ✓ Traçage   | –                   | Photos, images                |
-| **JPEG**               | Raster   | ✓ Traçage   | –                   | Photos                        |
-| **BMP**                | Raster   | ✓ Traçage   | –                   | Graphiques simples            |
-| **RFS**                | Croquis  | ✓ Direct    | ✓ Export d'objet    | Croquis paramétriques         |
-| **G-code**             | Contrôle | –           | ✓ Principal         | Sortie machine                |
-| **Projet Rayforge**    | Projet   | ✓           | ✓                   | Enregistrer/charger des projets|
+| Format              | Type      | Importation      | Exportation   | Utilisation recommandée          |
+| ------------------- | --------- | ---------------- | ------------- | -------------------------------- |
+| **SVG**             | Vecteur   | ✓ Direct / Trace | ✓ Export obj. | Format de conception principal   |
+| **DXF**             | Vecteur   | ✓ Direct         | ✓ Export obj. | Échange CAO                      |
+| **PDF**             | Mixte     | ✓ Direct / Trace | –             | Documents avec contenu vectoriel |
+| **PNG**             | Matriciel | ✓ Trace          | –             | Photos, images                   |
+| **JPEG**            | Matriciel | ✓ Trace          | –             | Photos                           |
+| **BMP**             | Matriciel | ✓ Trace          | –             | Graphiques simples               |
+| **RFS**             | Croquis   | ✓ Direct         | ✓ Export obj. | Croquis paramétriques            |
+| **G-code**          | Commande  | –                | ✓ Principal   | Sortie machine                   |
+| **Projet Rayforge** | Projet    | ✓                | ✓             | Enregistrer/charger projets      |
 
 ---
 
@@ -26,52 +28,55 @@ Cette page fournit des informations détaillées sur tous les formats de fichier
 
 **Extension :** `.svg`
 **Type MIME :** `image/svg+xml`
-**Importation :** Analyse vectorielle directe ou traçage bitmap
+**Importation :** Analyse vectorielle directe ou tracé bitmap
 **Exportation :** Export d'objet (géométrie uniquement)
 
 **Qu'est-ce que le SVG ?**
 
-SVG est un format d'image vectorielle basé sur XML. C'est le **format préféré** pour importer des conceptions dans Rayforge.
+Le SVG est un format d'image vectorielle basé sur XML. C'est le **format
+préféré** pour importer des conceptions dans Rayforge.
 
 **Fonctionnalités prises en charge :**
 
 - ✓ Chemins (lignes, courbes, arcs)
 - ✓ Formes de base (rectangles, cercles, ellipses, polygones)
 - ✓ Groupes et transformations
-- ✓ Couleurs de contour et de remplissage
+- ✓ Couleurs de trait et de remplissage
 - ✓ Plusieurs calques
-- ✓ Transformations de coordonnées (translation, rotation, échelle)
+- ✓ Transformations de coordonnées (translation, rotation, mise à l'échelle)
 
 **Fonctionnalités non prises en charge/limitées :**
 
-- ✗ Texte (doit être converti en chemins d'abord)
+- ✗ Texte (doit être converti en chemins au préalable)
 - ✗ Dégradés (simplifiés ou ignorés)
 - ✗ Filtres et effets (ignorés)
 - ✗ Masques et chemins de détourage (peuvent ne pas fonctionner correctement)
-- ✗ Images raster intégrées (importées séparément si possible)
-- ✗ Styles de contour complexes (les tirets peuvent être simplifiés)
+- ✗ Images matricielles intégrées (importées séparément si possible)
+- ✗ Styles de trait complexes (les tirets peuvent être simplifiés)
 - ✗ Symboles et éléments use (les instances peuvent ne pas se mettre à jour)
 
 **Notes d'exportation :**
 
-Lors de l'exportation d'une pièce vers SVG, Rayforge exporte la géométrie sous forme de chemins vectoriels avec :
+Lors de l'exportation d'une pièce vers SVG, Rayforge exporte la géométrie sous
+forme de chemins vectoriels avec :
 
-- Rendu contour uniquement (pas de remplissage)
-- Unités millimétriques
-- Couleur de contour noire
+- Rendu trait uniquement (sans remplissage)
+- Unités en millimètres
+- Couleur de trait noire
 
-**Meilleures pratiques :**
+**Bonnes pratiques :**
 
-1. **Utilisez le format SVG simple** (pas SVG Inkscape ou autres variantes spécifiques à un outil)
-2. **Convertissez le texte en chemins** avant d'exporter
+1. **Utilisez le format SVG simple** (pas Inkscape SVG ni d'autres variantes
+   spécifiques à un outil)
+2. **Convertissez le texte en chemins** avant l'exportation
 3. **Simplifiez les chemins complexes** pour réduire le nombre de nœuds
-4. **Aplatissez les groupes** lorsque possible
-5. **Supprimez les éléments inutilisés** (guides, grilles, calques cachés)
+4. **Aplatissez les groupes** lorsque c'est possible
+5. **Supprimez les éléments inutilisés** (guides, grilles, calques masqués)
 6. **Définissez les unités du document** en mm (unité native de Rayforge)
 
 **Recommandations logicielles :**
 
-- **Inkscape** (gratuit) - Excellent support SVG, format natif
+- **Inkscape** (gratuit) - Excellente prise en charge SVG, format natif
 
 ---
 
@@ -84,13 +89,14 @@ Lors de l'exportation d'une pièce vers SVG, Rayforge exporte la géométrie sou
 
 **Qu'est-ce que le DXF ?**
 
-DXF est un format de dessin AutoCAD, largement utilisé pour l'échange CAD.
+Le DXF est un format de dessin AutoCAD, largement utilisé pour l'échange de
+données CAO.
 
 **Versions prises en charge :**
 
-- ✓ **R12/LT2** (recommandé - meilleure compatibilité)
+- ✓ **R12/LT2** (recommandée - meilleure compatibilité)
 - ✓ R13, R14
-- ✓ R2000 et versions ultérieures (fonctionne généralement, mais R12 est plus sûr)
+- ✓ R2000 et ultérieures (fonctionne généralement, mais R12 est plus sûre)
 
 **Entités prises en charge :**
 
@@ -104,21 +110,21 @@ DXF est un format de dessin AutoCAD, largement utilisé pour l'échange CAD.
 
 **Fonctionnalités non prises en charge/limitées :**
 
-- ✗ Entités 3D (utilisez une projection 2D)
-- ✗ Dimensions et annotations (ignorées)
-- ✗ Blocs/insertions (peuvent ne pas s'instancier correctement)
-- ✗ Types de ligne complexes (simplifiés en solide)
-- ✗ Texte (ignoré, convertissez en contours d'abord)
+- ✗ Entités 3D (utilisez la projection 2D)
+- ✗ Cotations et annotations (ignorées)
+- ✗ Blocs/insertions (l'instanciation peut ne pas fonctionner correctement)
+- ✗ Types de ligne complexes (simplifiés en ligne continue)
+- ✗ Texte (ignoré, convertissez en contours au préalable)
 - ✗ Hachures (peuvent être simplifiées ou ignorées)
 
 **Notes d'exportation :**
 
 Lors de l'exportation d'une pièce vers DXF, Rayforge exporte :
 
-- Lignes en tant qu'entités LWPOLYLINE
-- Arcs en tant qu'entités ARC
-- Courbes de Bézier en tant qu'entités SPLINE
-- Unités millimétriques (INSUNITS = 4)
+- Les lignes en tant qu'entités LWPOLYLINE
+- Les arcs en tant qu'entités ARC
+- Les courbes de Bézier en tant qu'entités SPLINE
+- Les unités en millimètres (INSUNITS = 4)
 
 ---
 
@@ -126,14 +132,14 @@ Lors de l'exportation d'une pièce vers DXF, Rayforge exporte :
 
 **Extension :** `.rfs`
 **Type MIME :** `application/x-rayforge-sketch`
-**Importation :** Direct (pièces basées sur croquis)
-**Exportation :** Export d'objet (pièces basées sur croquis)
+**Importation :** Directe (pièces basées sur des croquis)
+**Exportation :** Export d'objet (pièces basées sur des croquis)
 
 **Qu'est-ce que le RFS ?**
 
-RFS est le format de croquis paramétrique natif de Rayforge. Il préserve tous les éléments
-géométriques et contraintes paramétriques, vous permettant d'enregistrer et partager des
-croquis entièrement modifiables.
+Le RFS est le format natif de croquis paramétrique de Rayforge. Il préserve
+tous les éléments géométriques et contraintes paramétriques, vous permettant
+d'enregistrer et de partager des croquis entièrement modifiables.
 
 **Fonctionnalités :**
 
@@ -145,8 +151,8 @@ croquis entièrement modifiables.
 **Quand l'utiliser :**
 
 - Enregistrer des conceptions paramétriques réutilisables
-- Partager des croquis modifiables avec d'autres utilisateurs Rayforge
-- Archiver un travail en cours
+- Partager des croquis modifiables avec d'autres utilisateurs de Rayforge
+- Archiver des travaux en cours
 
 ---
 
@@ -154,64 +160,65 @@ croquis entièrement modifiables.
 
 **Extension :** `.pdf`
 **Type MIME :** `application/pdf`
-**Importation :** Rendu en bitmap, puis tracé
-**Exportation :** Non prise en charge
+**Importation :** Vecteurs directs (avec prise en charge des calques) ou
+rendu et tracé
+**Exportation :** Non pris en charge
 
 **Qu'est-ce que l'importation PDF ?**
 
-Rayforge peut importer des fichiers PDF en les rastérisant d'abord, puis en les traçant en vecteurs.
+Les fichiers PDF peuvent contenir des chemins vectoriels réels, et Rayforge les
+importe directement lorsqu'ils sont disponibles — vous offrant la même
+géométrie propre que celle obtenue à partir d'un SVG. Si le PDF contient des
+calques, chaque calque peut être importé comme une pièce distincte.
 
-**Processus :**
+Pour les PDF sans contenu vectoriel exploitable (documents numérisés, photos),
+Rayforge a recours au rendu et au tracé.
 
-1. PDF rendu en image raster (300 DPI par défaut)
-2. Raster tracé pour créer des chemins vectoriels
-3. Chemins ajoutés au document
+**Capacités :**
+
+- ✓ **Importation vectorielle directe** pour les PDF vectoriels
+- ✓ **Détection et sélection des calques** — choisissez les calques à importer
+- ✓ Rendu et tracé de secours pour le contenu matriciel
 
 **Limitations :**
 
-- **Pas de véritable importation vectorielle** - Même les PDF vectoriels sont rastérisés
-- **Perte de qualité** due à la rastérisation
-- **Première page uniquement** - Les PDF multipages n'importent que la page 1
-- **Lent pour les PDF complexes** - Le rendu et le traçage prennent du temps
+- Première page uniquement — les PDF multipages importent la page 1
+- Le texte peut nécessiter une conversion en contours dans l'application source
 
 **Quand l'utiliser :**
 
-- Dernier recours lorsque SVG/DXF n'est pas disponible
-- Importation rapide de conceptions simples
-- Documents avec contenu mixte
-
-**Meilleures alternatives :**
-
-- **Exportez en SVG depuis la source** au lieu de PDF
-- **Utilisez des formats vectoriels** (SVG, DXF) lorsque possible
-- **Pour le texte :** Exportez avec le texte converti en contours
+- PDF reçus de designers contenant des illustrations vectorielles
+- Tout PDF avec des calques bien organisés
+- Lorsque SVG ou DXF n'est pas disponible depuis la source
 
 ---
 
-## Formats raster
+## Formats matriciels
 
-Tous les formats raster sont **importés par traçage** - convertis automatiquement en chemins vectoriels.
+Tous les formats matriciels sont **importés par tracé** — convertis
+automatiquement en chemins vectoriels.
 
 ### PNG (Portable Network Graphics)
 
 **Extension :** `.png`
 **Type MIME :** `image/png`
 **Importation :** Tracer en vecteurs
-**Exportation :** Non prise en charge
+**Exportation :** Non pris en charge
 
 **Caractéristiques :**
 
-- **Compression sans perte** - Pas de perte de qualité
-- **Support de la transparence** - Canal alpha préservé
-- **Bon pour :** Logos, art linéaire, captures d'écran, tout ce qui nécessite de la transparence
+- **Compression sans perte** - Aucune perte de qualité
+- **Prise en charge de la transparence** - Canal alpha préservé
+- **Idéal pour :** Logos, dessins au trait, captures d'écran, tout élément
+  nécessitant de la transparence
 
-**Qualité de traçage :** ★★★★★ (Excellent pour les images à fort contraste)
+**Qualité de tracé :** (Excellente pour les images à contraste élevé)
 
-**Meilleures pratiques :**
+**Bonnes pratiques :**
 
-- Utilisez PNG pour les logos et graphiques avec des bords nets
-- Assurez un fort contraste entre le premier plan et l'arrière-plan
-- L'arrière-plan transparent fonctionne mieux que blanc
+- Utilisez PNG pour les logos et graphiques aux bords nets
+- Assurez un contraste élevé entre le premier plan et l'arrière-plan
+- L'arrière-plan transparent fonctionne mieux que le blanc
 
 ---
 
@@ -220,21 +227,21 @@ Tous les formats raster sont **importés par traçage** - convertis automatiquem
 **Extension :** `.jpg`, `.jpeg`
 **Type MIME :** `image/jpeg`
 **Importation :** Tracer en vecteurs
-**Exportation :** Non prise en charge
+**Exportation :** Non pris en charge
 
 **Caractéristiques :**
 
-- **Compression avec perte** - Quelque perte de qualité
+- **Compression avec perte** - Certaine perte de qualité
 - **Pas de transparence** - A toujours un arrière-plan
-- **Bon pour :** Photos, images à tons continus
+- **Idéal pour :** Photos, images à tons continus
 
-**Qualité de traçage :** ★★★☆☆ (Bon pour les photos, mais complexe)
+**Qualité de tracé :** (Bonne pour les photos, mais complexe)
 
-**Meilleures pratiques :**
+**Bonnes pratiques :**
 
-- Utilisez un JPEG de haute qualité (faible compression)
-- Augmentez le contraste avant d'importer
-- Envisagez un pré-traitement dans un éditeur d'images
+- Utilisez des JPEG de haute qualité (faible compression)
+- Augmentez le contraste avant l'importation
+- Envisagez un prétraitement dans un éditeur d'images
 - Mieux vaut convertir en PNG d'abord si possible
 
 ---
@@ -244,24 +251,25 @@ Tous les formats raster sont **importés par traçage** - convertis automatiquem
 **Extension :** `.bmp`
 **Type MIME :** `image/bmp`
 **Importation :** Tracer en vecteurs
-**Exportation :** Non prise en charge
+**Exportation :** Non pris en charge
 
 **Caractéristiques :**
 
-- **Non compressé** - Fichiers volumineux
+- **Non compressé** - Tailles de fichier importantes
 - **Format simple** - Largement compatible
-- **Bon pour :** Graphiques simples, sortie de logiciels anciens
+- **Idéal pour :** Graphiques simples, sorties de logiciels anciens
 
-**Qualité de traçage :** ★★★★☆ (Bon, mais pas mieux que PNG)
+**Qualité de tracé :** (Bonne, mais pas meilleure que PNG)
 
-**Meilleures pratiques :**
+**Bonnes pratiques :**
 
-- Convertissez en PNG pour une taille de fichier plus petite (pas de différence de qualité)
-- Utilisez uniquement si le logiciel source ne peut pas exporter en PNG/SVG
+- Convertissez en PNG pour une taille de fichier réduite (aucune différence
+  de qualité)
+- À utiliser uniquement si le logiciel source ne peut pas exporter en PNG/SVG
 
 ---
 
-## Pages connexes
+## Pages associées
 
 - [Importer des fichiers](importing) - Comment importer chaque format
 - [Exporter](exporting) - Options d'exportation G-code

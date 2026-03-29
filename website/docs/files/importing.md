@@ -1,7 +1,7 @@
 # Importing Files
 
-Rayforge supports importing various file formats, both vector and raster. This page explains
-how to import files and optimize them for best results.
+Rayforge supports importing various file formats, both vector and raster. This
+page explains how to import files and optimize them for best results.
 
 ## Supported File Formats
 
@@ -11,7 +11,7 @@ how to import files and optimize them for best results.
 | --------- | --------- | ----------------------- | ------------------------------- |
 | **SVG**   | `.svg`    | Direct vectors or trace | Vector graphics, logos, designs |
 | **DXF**   | `.dxf`    | Direct vectors          | CAD drawings, technical designs |
-| **PDF**   | `.pdf`    | Render and trace        | Documents with vector content   |
+| **PDF**   | `.pdf`    | Direct vectors or trace | Documents with vector content   |
 | **Ruida** | `.rd`     | Direct vectors          | Ruida controller job files      |
 
 ### Raster Formats
@@ -25,7 +25,8 @@ how to import files and optimize them for best results.
 :::note Raster Import
 :::
 
-All raster images are **traced** to create vector paths that can be used for laser operations. The quality depends on the tracing configuration.
+All raster images are **traced** to create vector paths that can be used for
+laser operations. The quality depends on the tracing configuration.
 
 ---
 
@@ -71,8 +72,8 @@ rayforge file1.svg file2.dxf
 
 ### Auto-Resize on Import
 
-When importing files that are larger than your machine's work area, Rayforge will
-automatically:
+When importing files that are larger than your machine's work area, Rayforge
+will automatically:
 
 1. **Scale down** the imported content to fit within the machine boundaries
 2. **Preserve aspect ratio** during scaling
@@ -81,12 +82,13 @@ automatically:
 
 The resize notification appears as a toast message:
 
-- ⚠️ "Imported item was larger than the work area and has been scaled down to fit."
+- ⚠️ "Imported item was larger than the work area and has been scaled down to
+  fit."
 - Includes a **"Reset"** button to undo the auto-resize
 - The toast remains visible until dismissed or the reset action is taken
 
-This ensures your designs always fit within your machine's capabilities while giving you
-the flexibility to restore the original size if needed.
+This ensures your designs always fit within your machine's capabilities while
+giving you the flexibility to restore the original size if needed.
 
 ---
 
@@ -96,8 +98,8 @@ SVG (Scalable Vector Graphics) is the **recommended format** for vector designs.
 
 ### Import Options in the Dialog
 
-When importing SVG, the import dialog provides a toggle switch to choose
-between two methods:
+When importing SVG, the import dialog provides a toggle switch to choose between
+two methods:
 
 #### 1. Use Original Vectors (Recommended)
 
@@ -255,54 +257,50 @@ Rayforge supports standard DXF formats:
 
 PDF files can contain vector graphics, raster images, or both.
 
-### How PDF Import Works
+### Direct Vector Import
 
-When importing PDF files through the import dialog, Rayforge **renders the PDF**
-to an image, then **traces** it to create vectors.
+When importing a PDF that contains vector paths, Rayforge can import them
+directly — just like SVG or DXF files. This gives you clean, scalable geometry
+without any quality loss from rasterization.
 
-**Process:**
+If the PDF contains layers, Rayforge detects them and lets you pick which ones
+to import. Each layer becomes a separate workpiece in your document. This works
+the same way as SVG layer import: enable or disable individual layers in the
+import dialog before importing.
 
-1. PDF rendered and displayed in the import dialog preview
-2. You can adjust tracing settings in real-time
-3. Rendered image traced using vectorization with your settings
-4. Resulting paths added to document when you click Import
+This is especially useful for PDFs exported from design software like
+Illustrator or Inkscape where the vector paths are clean and well-organized.
 
-**Limitations:**
+### Fallback: Render and Trace
 
-- Text is rasterized (not editable as paths)
-- Vector quality depends on rendering DPI
-- Multi-page PDFs: only first page imported
+For PDFs that do not contain usable vector data — scanned documents, embedded
+photos, or PDFs where text has not been converted to outlines — Rayforge can
+fall back to rendering the PDF to an image and tracing it. This works the same
+way as raster image import.
 
 ### PDF Import Tips
 
 **Best results:**
 
-1. **Use vector PDFs:**
+1. **Use vector PDFs**: PDFs created from vector software (Illustrator, Inkscape)
+   give the cleanest results with direct import.
 
-   - PDFs created from vector software (Illustrator, Inkscape)
-   - Not scanned documents or embedded images
+2. **Check for layers**: If your PDF has layers, you will see them listed in the
+   import dialog. Select only the layers you need.
 
-2. **Export SVG instead if possible:**
+3. **For documents with text**: Export as SVG with fonts converted to paths for
+   the best quality, or use the render-and-trace fallback.
 
-   - Most design software can export SVG directly
-   - SVG will have better quality than PDF import
-
-3. **For documents with text:**
-
-   - Export as SVG with fonts converted to paths
-   - Or render PDF at high DPI (600+) and trace
-
-4. **Use the import dialog preview:**
-   - Adjust threshold and invert settings for best results
-   - Preview shows exactly how the PDF will be traced
+4. **Use the import dialog preview**: Adjust threshold and invert settings when
+   using trace mode. The preview shows exactly how the PDF will be traced.
 
 ---
 
 ## Ruida Import
 
-Ruida (.rd) files are proprietary binary job files used by Ruida controllers in many
-laser cutting machines. These files contain both vector geometry and laser settings
-organized in layers (colors).
+Ruida (.rd) files are proprietary binary job files used by Ruida controllers in
+many laser cutting machines. These files contain both vector geometry and laser
+settings organized in layers (colors).
 
 **After import:**
 
@@ -314,7 +312,8 @@ organized in layers (colors).
 
 - **Read-only import** - Ruida files can only be imported, not exported
 - **Binary format** - Direct editing of original .rd files not supported
-- **Proprietary features** - Some advanced Ruida features may not be fully supported
+- **Proprietary features** - Some advanced Ruida features may not be fully
+  supported
 
 ---
 

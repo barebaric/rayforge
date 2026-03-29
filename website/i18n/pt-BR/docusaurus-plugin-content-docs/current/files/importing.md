@@ -1,135 +1,149 @@
-# Importando Arquivos
+# Importando arquivos
 
-O Rayforge suporta importação de vários formatos de arquivo, tanto vetoriais quanto raster. Esta página explica como importar arquivos e otimizá-los para melhores resultados.
+O Rayforge suporta a importação de vários formatos de arquivo, vetoriais e
+raster. Esta página explica como importar arquivos e otimizá-los para obter os
+melhores resultados.
 
-## Formatos de Arquivo Suportados
+## Formatos de arquivo suportados
 
-### Formatos Vetoriais
+### Formatos vetoriais
 
-| Formato    | Extensão | Método de Importação           | Melhor Para                        |
-| --------- | --------- | ----------------------- | ------------------------------- |
-| **SVG**   | `.svg`    | Vetores diretos ou traço | Gráficos vetoriais, logos, designs |
-| **DXF**   | `.dxf`    | Vetores diretos          | Desenhos CAD, designs técnicos |
-| **PDF**   | `.pdf`    | Renderizar e traçar        | Documentos com conteúdo vetorial   |
-| **Ruida** | `.rd`     | Vetores diretos          | Arquivos de trabalho de controlador Ruida      |
+| Formato   | Extensão | Método de importação           | Ideal para                             |
+| --------- | -------- | ------------------------------ | -------------------------------------- |
+| **SVG**   | `.svg`   | Vetores diretos ou vetorização | Gráficos vetoriais, logos, designs     |
+| **DXF**   | `.dxf`   | Vetores diretos                | Desenhos CAD, projetos técnicos        |
+| **PDF**   | `.pdf`   | Vetores diretos ou vetorização | Documentos com conteúdo vetorial       |
+| **Ruida** | `.rd`    | Vetores diretos                | Arquivos de trabalho controlador Ruida |
 
-### Formatos Raster
+### Formatos raster
 
-| Formato   | Extensão       | Método de Importação    | Melhor Para                         |
-| -------- | --------------- | ---------------- | -------------------------------- |
-| **PNG**  | `.png`          | Traçar para vetores | Fotos, imagens com transparência |
-| **JPEG** | `.jpg`, `.jpeg` | Traçar para vetores | Fotos, imagens de tom contínuo   |
-| **BMP**  | `.bmp`          | Traçar para vetores | Gráficos simples, capturas de tela     |
+| Formato  | Extensão        | Método de importação | Ideal para                         |
+| -------- | --------------- | -------------------- | ---------------------------------- |
+| **PNG**  | `.png`          | Vetorização          | Fotos, imagens com transparência   |
+| **JPEG** | `.jpg`, `.jpeg` | Vetorização          | Fotos, imagens de tom contínuo     |
+| **BMP**  | `.bmp`          | Vetorização          | Gráficos simples, capturas de tela |
 
-:::note Importação Raster
+:::note Importação de imagens raster
 :::
 
-Todas imagens raster são **traçadas** para criar caminhos vetoriais que podem ser usados para operações de laser. A qualidade depende da configuração de traçamento.
+Todas as imagens raster são **vetorizadas** para criar caminhos vetoriais que
+podem ser usados em operações a laser. A qualidade depende da configuração da
+vetorização.
 
 ---
 
-## Importando Arquivos
+## Importando arquivos
 
-### O Diálogo de Importação
+### O diálogo de importação
 
-O Rayforge apresenta um diálogo de importação unificado que fornece pré-visualização ao vivo e opções de configuração para todos os tipos de arquivo suportados. O diálogo permite:
+O Rayforge possui um diálogo de importação unificado que oferece visualização em
+tempo real e opções de configuração para todos os tipos de arquivo suportados. O
+diálogo permite:
 
-- **Pré-visualizar sua importação** antes de adicionar ao documento
-- **Configurar configurações de traçamento** para imagens raster
-- **Escolher método de importação** para arquivos SVG (vetores diretos ou traço)
-- **Ajustar parâmetros** como limiar, inverter e auto-limiar
+- **Visualizar a importação** antes de adicioná-la ao documento
+- **Configurar as definições de vetorização** para imagens raster
+- **Escolher o método de importação** para arquivos SVG (vetores diretos ou
+  vetorização)
+- **Ajustar parâmetros** como limiar, inverter e limiar automático
 
-![Diálogo de Importação](/screenshots/import-dialog.png)
+![Diálogo de importação](/screenshots/import-dialog.png)
 
 ### Método 1: Menu Arquivo
 
-1. **Arquivo Importar** (ou Ctrl+I)
-2. **Selecione seu arquivo** no seletor de arquivos
-3. **Configure configurações de importação** no diálogo de importação
-4. **Pré-visualize** o resultado antes de importar
-5. **Clique em Importar** para adicionar à tela e árvore de documento
+1. **Importar arquivo** (ou Ctrl+I)
+2. **Selecionar o arquivo** no seletor de arquivos
+3. **Configurar as definições de importação** no diálogo de importação
+4. **Visualizar** o resultado antes de importar
+5. **Clicar em Importar** para adicionar à tela e à árvore do documento
 
-### Método 2: Arrastar e Soltar
+### Método 2: Arrastar e soltar
 
-1. **Arraste o arquivo** do seu gerenciador de arquivos
-2. **Solte na** tela do Rayforge
-3. **Configure configurações de importação** no diálogo de importação
-4. **Pré-visualize** o resultado antes de importar
-5. **Clique em Importar** para adicionar à tela e árvore de documento
+1. **Arrastar o arquivo** do gerenciador de arquivos
+2. **Soltar sobre** a tela do Rayforge
+3. **Configurar as definições de importação** no diálogo de importação
+4. **Visualizar** o resultado antes de importar
+5. **Clicar em Importar** para adicionar à tela e à árvore do documento
 
-### Método 3: Linha de Comando
+### Método 3: Linha de comando
 
 ```bash
-# Abrir Rayforge com um arquivo
-rayforge meuarquivo.svg
+# Abrir o Rayforge com um arquivo
+rayforge myfile.svg
 
 # Múltiplos arquivos
-rayforge arquivo1.svg arquivo2.dxf
+rayforge file1.svg file2.dxf
 ```
 
-### Auto-Redimensionamento na Importação
+### Redimensionamento automático na importação
 
-Ao importar arquivos maiores que a área de trabalho da sua máquina, o Rayforge automaticamente:
+Ao importar arquivos maiores que a área de trabalho da sua máquina, o Rayforge
+automaticamente:
 
-1. **Redimensiona para baixo** o conteúdo importado para caber dentro dos limites da máquina
-2. **Preserva proporção** durante redimensionamento
-3. **Centraliza** o conteúdo redimensionado na área de trabalho
-4. **Mostra uma notificação** com a opção de desfazer o redimensionamento
+1. **Reduz a escala** do conteúdo importado para caber dentro dos limites da
+   máquina
+2. **Preserva a proporção** durante o redimensionamento
+3. **Centraliza** o conteúdo redimensionado no espaço de trabalho
+4. **Exibe uma notificação** com a opção de desfazer o redimensionamento
 
-A notificação de redimensionamento aparece como mensagem toast:
+A notificação de redimensionamento aparece como uma mensagem toast:
 
-- ⚠️ "Item importado era maior que a área de trabalho e foi redimensionado para caber."
-- Inclui um botão **"Resetar"** para desfazer o auto-redimensionamento
-- O toast permanece visível até ser dispensado ou a ação de reset ser tomada
+- ⚠️ "O item importado era maior que a área de trabalho e foi reduzido para
+  caber."
+- Inclui um botão **"Redefinir"** para desfazer o redimensionamento automático
+- O toast permanece visível até ser descartado ou a ação de redefinição ser
+  executada
 
-Isso garante que seus designs sempre caibam dentro das capacidades da sua máquina enquanto lhe dá a flexibilidade de restaurar o tamanho original se necessário.
+Isso garante que seus designs sempre se ajustem às capacidades da sua máquina,
+dando-lhe a flexibilidade de restaurar o tamanho original, se necessário.
 
 ---
 
 ## Importação SVG
 
-SVG (Scalable Vector Graphics) é o **formato recomendado** para designs vetoriais.
+SVG (Scalable Vector Graphics) é o **formato recomendado** para designs
+vetoriais.
 
-### Opções de Importação no Diálogo
+### Opções de importação no diálogo
 
-Ao importar SVG, o diálogo de importação fornece um interruptor para escolher entre dois métodos:
+Ao importar SVG, o diálogo de importação oferece um interruptor para escolher
+entre dois métodos:
 
-#### 1. Usar Vetores Originais (Recomendado)
+#### 1. Usar vetores originais (Recomendado)
 
 Esta opção está habilitada por padrão no diálogo de importação.
 
 **Como funciona:**
 
-- Analisa SVG e converte caminhos diretamente para geometria Rayforge
+- Analisa o SVG e converte caminhos diretamente em geometria do Rayforge
 - Preservação de alta fidelidade de curvas e formas
-- Mantém dados vetoriais exatos
+- Mantém os dados vetoriais exatos
 
 **Vantagens:**
 
 - Melhor qualidade e precisão
 - Caminhos editáveis
-- Tamanho de arquivo pequeno
+- Menor tamanho de arquivo
 
 **Desvantagens:**
 
-- Alguns recursos SVG avançados não suportados
-- SVGs complexos podem ter problemas
+- Alguns recursos SVG avançados não são suportados
+- SVGs complexos podem apresentar problemas
 
-**Use para:**
+**Usar para:**
 
-- Designs vetoriais limpos de Inkscape, Illustrator
-- Complexidade simples a moderada
+- Designs vetoriais limpos do Inkscape, Illustrator
+- Complexidade de simples a moderada
 - Designs sem recursos SVG avançados
 
-#### 2. Traçar Bitmap
+#### 2. Vetorizar bitmap
 
-Desabilite "Usar Vetores Originais" para usar este método.
+Desative "Usar vetores originais" para usar este método.
 
 **Como funciona:**
 
-- Renderiza SVG para imagem raster primeiro
-- Traça a imagem renderizada para criar vetores
-- Mais compatível mas menos preciso
+- Renderiza o SVG primeiro como imagem raster
+- Vetoriza a imagem renderizada para criar vetores
+- Mais compatível, porém menos preciso
 
 **Vantagens:**
 
@@ -139,70 +153,67 @@ Desabilite "Usar Vetores Originais" para usar este método.
 
 **Desvantagens:**
 
-- Perda de qualidade da rasterização
+- Perda de qualidade por rasterização
 - Tamanhos de arquivo maiores
-- Não tão preciso
+- Menos preciso
 
-**Use para:**
+**Usar para:**
 
-- SVGs que falham na importação direta
+- SVGs cuja importação direta falha
 - SVGs com efeitos, filtros, gradientes
-- Quando importação direta produz erros
+- Quando a importação direta produz erros
 
-### Pré-visualização ao Vivo
+### Visualização em tempo real
 
-O diálogo de importação mostra uma pré-visualização ao vivo de como seu SVG será importado:
+O diálogo de importação mostra uma visualização em tempo real de como seu SVG
+será importado:
 
-- Caminhos vetoriais são exibidos em sobreposição azul
-- Para modo de traço, a imagem original é mostrada com os caminhos traçados
-- Pré-visualização atualiza em tempo real conforme você muda configurações
+- Os caminhos vetoriais são exibidos em sobreposição azul
+- No modo de vetorização, a imagem original é mostrada com os caminhos
+  vetorizados
+- A visualização atualiza em tempo real conforme você altera as definições
 
-### Melhores Práticas SVG
+### Boas práticas SVG
 
-**Prepare seu SVG para melhores resultados:**
+**Prepare seu SVG para obter os melhores resultados:**
 
-1. **Converta texto para caminhos:**
+1. **Converter texto em caminhos:**
+   - Inkscape: `Caminho → Objeto para caminho`
+   - Illustrator: `Tipo → Criar contornos`
 
-   - Inkscape: `Caminho → Objeto para Caminho`
-   - Illustrator: `Tipo → Criar Contornos`
-
-2. **Simplifique caminhos complexos:**
-
+2. **Simplificar caminhos complexos:**
    - Inkscape: `Caminho → Simplificar` (Ctrl+L)
-   - Remova nós desnecessários
+   - Remover nós desnecessários
 
-3. **Desagrupe grupos aninhados:**
-
-   - Achate hierarquia onde possível
+3. **Desagrupar grupos aninhados:**
+   - Achatar a hierarquia quando possível
    - `Objeto → Desagrupar` (Ctrl+Shift+G)
 
-4. **Remova elementos ocultos:**
+4. **Remover elementos ocultos:**
+   - Excluir guias, grades, linhas de construção
+   - Remover objetos invisíveis/transparentes
 
-   - Exclua guias, grades, linhas de construção
-   - Remova objetos invisíveis/transparentes
+5. **Salvar como SVG simples:**
+   - Inkscape: "SVG simples" ou "SVG otimizado"
+   - Não "SVG do Inkscape" (contém metadados extras)
 
-5. **Salve como SVG Simples:**
+6. **Verificar unidades do documento:**
+   - Definir como mm ou polegadas, conforme apropriado
+   - O Rayforge usa mm internamente
 
-   - Inkscape: "SVG Simples" ou "SVG Otimizado"
-   - Não "SVG Inkscape" (tem metadados extras)
+**Recursos SVG comuns que podem não ser importados:**
 
-6. **Verifique unidades do documento:**
-   - Defina para mm ou polegadas conforme apropriado
-   - Rayforge usa mm internamente
-
-**Recursos SVG comuns que podem não importar:**
-
-- Gradientes (converta para preenchimentos sólidos ou raster)
+- Gradientes (converter em preenchimentos sólidos ou raster)
 - Filtros e efeitos (achatar para caminhos)
 - Máscaras e caminhos de recorte (expandir/achatar)
-- Imagens raster embutidas (exporte separadamente)
-- Texto (converta para caminhos primeiro)
+- Imagens raster incorporadas (exportar separadamente)
+- Texto (converter em caminhos primeiro)
 
 ---
 
 ## Importação DXF
 
-DXF (Drawing Exchange Format) é comum para software CAD.
+DXF (Drawing Exchange Format) é comum em softwares CAD.
 
 ### Versões DXF
 
@@ -212,175 +223,178 @@ O Rayforge suporta formatos DXF padrão:
 - **R13, R14** - Bom suporte
 - **R2000+** - Geralmente funciona, mas R12 é mais seguro
 
-**Dica:** Exporte como DXF R12/LT2 para máxima compatibilidade.
+**Dica:** Exporte como DXF R12/LT2 para compatibilidade máxima.
 
-### Dicas de Importação DXF
+### Dicas para importação DXF
 
 **Antes de exportar do CAD:**
 
-1. **Simplifique o desenho:**
+1. **Simplificar o desenho:**
+   - Remover camadas desnecessárias
+   - Excluir dimensões e anotações
+   - Remover objetos 3D (usar projeção 2D)
 
-   - Remova camadas desnecessárias
-   - Exclua cotas e anotações
-   - Remova objetos 3D (use projeção 2D)
+2. **Verificar unidades:**
+   - Confirmar as unidades do desenho (mm vs polegadas)
+   - O Rayforge assume mm por padrão
 
-2. **Verifique unidades:**
+3. **Achatar camadas:**
+   - Considerar exportar apenas camadas relevantes
+   - Ocultar ou excluir camadas de construção
 
-   - Verifique unidades do desenho (mm vs polegadas)
-   - Rayforge assume mm por padrão
+4. **Usar precisão adequada:**
+   - A precisão do laser é tipicamente 0,1 mm
+   - Não exagere na especificação de precisão
 
-3. **Achate camadas:**
+**Após a importação:**
 
-   - Considere exportar apenas camadas relevantes
-   - Oculte ou exclua camadas de construção
-
-4. **Use precisão apropriada:**
-   - Precisão de laser é tipicamente 0.1mm
-   - Não superespecifique precisão
-
-**Após importação:**
-
-- Verifique escala (unidades DXF podem precisar de ajuste)
-- Verifique se todos caminhos importaram corretamente
-- Exclua quaisquer elementos de construção indesejados
+- Verificar a escala (unidades DXF podem precisar de ajuste)
+- Confirmar se todos os caminhos foram importados corretamente
+- Excluir elementos de construção indesejados
 
 ---
 
 ## Importação PDF
 
-Arquivos PDF podem conter gráficos vetoriais, imagens raster ou ambos.
+Os arquivos PDF podem conter gráficos vetoriais, imagens raster, ou ambos.
 
-### Como Funciona a Importação PDF
+### Importação vetorial direta
 
-Ao importar arquivos PDF através do diálogo de importação, o Rayforge **renderiza o PDF** para uma imagem, depois **traça** para criar vetores.
+Ao importar um PDF que contém caminhos vetoriais, o Rayforge pode importá-los
+diretamente — assim como arquivos SVG ou DXF. Isso fornece geometria limpa e
+escalável sem perda de qualidade por rasterização.
 
-**Processo:**
+Se o PDF contiver camadas, o Rayforge as detecta e permite escolher quais
+importar. Cada camada torna-se uma peça de trabalho separada no seu documento.
+Isso funciona da mesma forma que a importação de camadas SVG: ative ou desative
+camadas individuais no diálogo de importação antes de importar.
 
-1. PDF renderizado e exibido na pré-visualização do diálogo de importação
-2. Você pode ajustar configurações de traçamento em tempo real
-3. Imagem renderizada traçada usando vetorização com suas configurações
-4. Caminhos resultantes adicionados ao documento quando você clica em Importar
+Isso é especialmente útil para PDFs exportados de softwares de design como
+Illustrator ou Inkscape, onde os caminhos vetoriais estão limpos e bem
+organizados.
 
-**Limitações:**
+### Fallback: Renderizar e vetorizar
 
-- Texto é rasterizado (não editável como caminhos)
-- Qualidade vetorial depende do DPI de renderização
-- PDFs multi-página: apenas primeira página importada
+Para PDFs que não contêm dados vetoriais utilizáveis — documentos digitalizados,
+fotos incorporadas, ou PDFs onde o texto não foi convertido em contornos — o
+Rayforge pode recorrer à renderização do PDF como imagem e vetorizá-lo. Isso
+funciona da mesma forma que a importação de imagens raster.
 
-### Dicas de Importação PDF
+### Dicas para importação PDF
 
 **Melhores resultados:**
 
-1. **Use PDFs vetoriais:**
+1. **Usar PDFs vetoriais**: PDFs criados a partir de softwares vetoriais
+   (Illustrator, Inkscape) produzem os resultados mais limpos com importação
+   direta.
 
-   - PDFs criados de software vetorial (Illustrator, Inkscape)
-   - Não documentos escaneados ou imagens embutidas
+2. **Verificar camadas**: Se o seu PDF tiver camadas, elas serão listadas no
+   diálogo de importação. Selecione apenas as camadas necessárias.
 
-2. **Exporte SVG em vez se possível:**
+3. **Para documentos com texto**: Exporte como SVG com fontes convertidas em
+   caminhos para melhor qualidade, ou use o fallback de renderizar e vetorizar.
 
-   - Maioria do software de design pode exportar SVG diretamente
-   - SVG terá melhor qualidade que importação PDF
-
-3. **Para documentos com texto:**
-
-   - Exporte como SVG com fontes convertidas para caminhos
-   - Ou renderize PDF em alto DPI (600+) e traçe
-
-4. **Use a pré-visualização do diálogo de importação:**
-   - Ajuste configurações de limiar e inverter para melhores resultados
-   - Pré-visualização mostra exatamente como o PDF será traçado
+4. **Usar a visualização do diálogo de importação**: Ajuste as definições de
+   limiar e inversão ao usar o modo de vetorização. A visualização mostra
+   exatamente como o PDF será vetorizado.
 
 ---
 
 ## Importação Ruida
 
-Arquivos Ruida (.rd) são arquivos de trabalho binários proprietários usados por controladores Ruida em muitas máquinas de corte a laser. Estes arquivos contêm tanto geometria vetorial quanto configurações de laser organizados em camadas (cores).
+Os arquivos Ruida (.rd) são arquivos de trabalho binários proprietários usados
+pelos controladores Ruida em muitas máquinas de corte a laser. Esses arquivos
+contêm tanto geometria vetorial quanto configurações do laser organizadas em
+camadas (cores).
 
-**Após importação:**
+**Após a importação:**
 
-- **Verifique escala** - Verifique se dimensões correspondem ao tamanho esperado
-- **Revise camadas** - Certifique-se de que todas camadas importaram corretamente
-- **Valide caminhos** - Confirme que todos caminhos de corte estão presentes
+- **Verificar escala** - Confirmar se as dimensões correspondem ao tamanho
+  esperado
+- **Revisar camadas** - Garantir que todas as camadas foram importadas
+  corretamente
+- **Validar caminhos** - Confirmar se todos os caminhos de corte estão presentes
 
 ### Limitações
 
-- **Importação somente leitura** - Arquivos Ruida só podem ser importados, não exportados
-- **Formato binário** - Edição direta de arquivos .rd originais não suportada
-- **Recursos proprietários** - Alguns recursos Ruida avançados podem não ser totalmente suportados
+- **Importação somente leitura** - Arquivos Ruida só podem ser importados, não
+  exportados
+- **Formato binário** - Edição direta dos arquivos .rd originais não é suportada
+- **Recursos proprietários** - Alguns recursos avançados do Ruida podem não ser
+  totalmente suportados
 
 ---
 
-## Importação de Imagem Raster (PNG, JPG, BMP)
+## Importação de imagens raster (PNG, JPG, BMP)
 
-Imagens raster são **traçadas** para criar caminhos vetoriais usando o diálogo de importação.
+As imagens raster são **vetorizadas** para criar caminhos vetoriais usando o
+diálogo de importação.
 
-### Processo de Traçamento no Diálogo
+### Processo de vetorização no diálogo
 
 **Como funciona:**
 
 1. **Imagem carregada** no diálogo de importação
-2. **Pré-visualização ao vivo** mostra o resultado traçado
-3. **Configurações de traçamento** podem ser ajustadas em tempo real
-4. **Caminhos vetoriais criados** das bordas traçadas
-5. **Caminhos adicionados** ao documento como peças quando importados
+2. **Visualização em tempo real** mostra o resultado da vetorização
+3. **Definições de vetorização** podem ser ajustadas em tempo real
+4. **Caminhos vetoriais criados** a partir das bordas vetorizadas
+5. **Caminhos adicionados** ao documento como peças de trabalho ao importar
 
-### Configuração de Traçamento no Diálogo
+### Configuração da vetorização no diálogo
 
 O diálogo de importação fornece estes parâmetros ajustáveis:
 
-| Parâmetro          | Descrição         | Efeito                                              |
-| ------------------ | ------------------- | --------------------------------------------------- |
-| **Auto Limiar** | Detecção automática | Quando habilitado, encontra automaticamente limiar ótimo |
-| **Limiar**      | Corte preto/branco  | Menor = mais detalhe, maior = mais simples               |
-| **Inverter**         | Inverter cores      | Traçar objetos claros em fundo escuro              |
+| Parâmetro             | Descrição           | Efeito                                                  |
+| --------------------- | ------------------- | ------------------------------------------------------- |
+| **Limiar automático** | Detecção automática | Quando ativado, encontra automaticamente o limiar ideal |
+| **Limiar**            | Corte preto/branco  | Menor = mais detalhes, maior = mais simples             |
+| **Inverter**          | Inverter cores      | Vetoriza objetos claros em fundo escuro                 |
 
-**Configurações padrão** funcionam bem para a maioria das imagens. O diálogo mostra uma pré-visualização ao vivo que atualiza conforme você ajusta essas configurações, permitindo ajustar o traçamento antes de importar.
+**As definições padrão** funcionam bem para a maioria das imagens. O diálogo
+mostra uma visualização em tempo real que atualiza conforme você ajusta esses
+parâmetros, permitindo refinar a vetorização antes de importar.
 
-### Preparando Imagens para Traçamento
+### Preparando imagens para vetorização
 
 **Para melhores resultados:**
 
 1. **Alto contraste:**
-
-   - Ajuste brilho/contraste em editor de imagem
+   - Ajustar brilho/contraste em um editor de imagens
    - Distinção clara entre primeiro plano e fundo
 
 2. **Fundo limpo:**
-
-   - Remova ruído e artefatos
+   - Remover ruído e artefatos
    - Fundo branco sólido ou transparente
 
-3. **Resolução apropriada:**
-
+3. **Resolução adequada:**
    - 300-500 DPI para fotos
-   - Muito alto = traçamento lento, muito baixo = qualidade ruim
+   - Muito alta = vetorização lenta, muito baixa = qualidade ruim
 
-4. **Recortar para conteúdo:**
+4. **Recortar ao conteúdo:**
+   - Remover bordas desnecessárias
+   - Focar na área a ser gravada/cortada
 
-   - Remova bordas desnecessárias
-   - Foque na área a ser gravada/cortada
+5. **Converter para preto e branco:**
+   - Para corte: preto e branco puro
+   - Para gravação: tons de cinza são aceitáveis
 
-5. **Converta para preto e branco:**
-   - Para corte: B&W puro
-   - Para gravação: escala de cinza está bem
-
-**Ferramentas de edição de imagem:**
+**Ferramentas de edição de imagens:**
 
 - GIMP (gratuito)
 - Photoshop
 - Krita (gratuito)
 - Paint.NET (gratuito, Windows)
 
-### Qualidade do Traçamento
+### Qualidade da vetorização
 
-**Bons candidatos a traçado:**
+**Bons candidatos para vetorização:**
 
-- Logos com bordas claras
+- Logos com bordas definidas
 - Imagens de alto contraste
 - Arte linear e desenhos
-- Texto (embora melhor como vetor)
+- Texto (embora vetorial seja melhor)
 
-**Maus candidatos a traçado:**
+**Maus candidatos para vetorização:**
 
 - Imagens de baixa resolução
 - Fotos com bordas suaves
@@ -389,8 +403,8 @@ O diálogo de importação fornece estes parâmetros ajustáveis:
 
 ---
 
-## Páginas Relacionadas
+## Páginas relacionadas
 
-- [Formatos Suportados](formats) - Especificações detalhadas de formato
+- [Formatos suportados](formats) - Especificações detalhadas dos formatos
 - [Exportando G-code](exporting) - Opções de saída
-- [Início Rápido](../getting-started/quick-start) - Tutorial de primeira importação
+- [Início rápido](../getting-started/quick-start) - Tutorial de primeira importação
