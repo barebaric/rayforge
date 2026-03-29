@@ -258,6 +258,8 @@ class TextureArtifactRenderer(BaseRenderer):
         texture_data: TextureData,
         final_model_matrix: np.ndarray,
         color_lut: Optional[np.ndarray] = None,
+        rotary_enabled: bool = False,
+        rotary_diameter: float = 25.0,
     ):
         """Adds a texture artifact to be rendered in the next frame."""
         if not self.is_initialized:
@@ -320,6 +322,8 @@ class TextureArtifactRenderer(BaseRenderer):
                 "texture_id": texture_id,
                 "model_matrix": final_model_matrix,
                 "color_lut": color_lut,
+                "rotary_enabled": rotary_enabled,
+                "rotary_diameter": rotary_diameter,
             }
         )
 
@@ -348,7 +352,7 @@ class TextureArtifactRenderer(BaseRenderer):
 
     def render(self, view_proj_scene_matrix: np.ndarray, shader: Shader):
         """
-        Renders all texture instances.
+        Renders all flat (non-rotary) texture instances.
 
         Args:
             view_proj_scene_matrix: The combined Projection * View * SceneModel
@@ -367,6 +371,9 @@ class TextureArtifactRenderer(BaseRenderer):
         GL.glBindVertexArray(self.vao)
 
         for instance in self.instances:
+            if instance["rotary_enabled"]:
+                continue
+
             final_mvp = view_proj_scene_matrix @ instance["model_matrix"]
             shader.set_mat4("uMVP", final_mvp.T)
 
@@ -405,7 +412,6 @@ class TextureArtifactRenderer(BaseRenderer):
         self,
         view_proj_scene_matrix: np.ndarray,
         shader: Shader,
-        rotary_diameter: float,
     ):
         """
         Renders all texture instances mapped onto a cylinder.
@@ -414,7 +420,6 @@ class TextureArtifactRenderer(BaseRenderer):
             view_proj_scene_matrix: The combined Projection * View * SceneModel
               matrix (P*V*M_scene), not transposed.
             shader: The shader to use for rendering.
-            rotary_diameter: The diameter of the cylinder in mm.
         """
         if not self.is_initialized or not self.instances:
             return
@@ -427,11 +432,13 @@ class TextureArtifactRenderer(BaseRenderer):
         shader.set_int("uColorLUT", 1)
 
         for instance in self.instances:
-            grid_matrix = instance["model_matrix"]
+            if not instance["rotary_enabled"]:
+                continue
 
-            cache_key = tuple(np.round(grid_matrix.flatten(), 4)) + (
-                rotary_diameter,
-            )
+            grid_matrix = instance["model_matrix"]
+            diameter = instance["rotary_diameter"]
+
+            cache_key = tuple(np.round(grid_matrix.flatten(), 4)) + (diameter,)
 
             if (
                 self._cylinder_cache is None
@@ -439,7 +446,7 @@ class TextureArtifactRenderer(BaseRenderer):
             ):
                 vertices = self._generate_cylinder_vertices_from_matrix(
                     grid_matrix=grid_matrix,
-                    diameter=rotary_diameter,
+                    diameter=diameter,
                     grid_s=8,
                     grid_t=64,
                 )

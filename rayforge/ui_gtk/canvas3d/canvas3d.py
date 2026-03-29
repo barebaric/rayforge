@@ -46,24 +46,37 @@ def prepare_scene_vertices_async(
     scene_description: SceneDescription,
     color_set: ColorSet,
     laser_color_sets: Dict[str, ColorSet],
-    content_model_matrix: np.ndarray,
-    rotary_enabled: bool = False,
-    rotary_diameter: float = 25.0,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    world_to_visual: np.ndarray,
+    world_to_cyl_local: np.ndarray,
+) -> Tuple[
+    Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+    Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+]:
     """
     A background task that prepares all vertex data for an entire scene.
 
     It iterates through a lightweight SceneDescription of StepArtifacts,
-    loads the pre-computed vertex data (flat coordinates), applies the
-    global scene transform (mapping World Space to Local Grid Space or
-    Local Cylinder Space). Finally, it wraps them onto a cylinder surface
-    if rotary mode is enabled, and aggregates the results.
+    loads the pre-computed vertex data (flat coordinates), and applies
+    per-item transforms based on each item's rotary setting:
+
+    - Rotary items: world_to_cyl_local, then cylinder wrapping
+    - Flat items: world_to_visual, with Z-offset for non-powered moves
+
+    All results are concatenated into a single set of vertex arrays.
     """
-    all_powered_verts: List[np.ndarray] = []
-    all_powered_colors: List[np.ndarray] = []
-    all_travel_verts: List[np.ndarray] = []
-    all_zero_power_verts: List[np.ndarray] = []
-    all_zero_power_colors: List[np.ndarray] = []
+    # Flat accumulators
+    flat_powered_verts: List[np.ndarray] = []
+    flat_powered_colors: List[np.ndarray] = []
+    flat_travel_verts: List[np.ndarray] = []
+    flat_zero_power_verts: List[np.ndarray] = []
+    flat_zero_power_colors: List[np.ndarray] = []
+
+    # Rotary accumulators
+    rot_powered_verts: List[np.ndarray] = []
+    rot_powered_colors: List[np.ndarray] = []
+    rot_travel_verts: List[np.ndarray] = []
+    rot_zero_power_verts: List[np.ndarray] = []
+    rot_zero_power_colors: List[np.ndarray] = []
 
     zero_power_rgba = np.array(
         color_set.get_rgba("zero_power"), dtype=np.float32
@@ -91,6 +104,12 @@ def prepare_scene_vertices_async(
 
         item_color_set = laser_color_sets.get(item.laser_uid, color_set)
         power_lut = item_color_set.get_lut("cut")
+        item_rotary = item.rotary_enabled
+        item_diameter = item.rotary_diameter
+
+        content_model_matrix = (
+            world_to_cyl_local if item_rotary else world_to_visual
+        )
 
         # 1. Get pre-computed, world-space vertices from the artifact.
         vertex_data = artifact.vertex_data
@@ -124,84 +143,116 @@ def prepare_scene_vertices_async(
             transformed_points = (transform @ homogenous_points.T).T
             return transformed_points[:, :3].astype(np.float32)
 
-        if p_verts.size > 0:
-            transformed = _transform_vertices(p_verts, content_model_matrix)
-            if rotary_enabled and rotary_diameter > 0:
-                transformed = transform_to_cylinder(
-                    transformed, rotary_diameter
+        if item_rotary:
+            if p_verts.size > 0:
+                transformed = _transform_vertices(
+                    p_verts, content_model_matrix
                 )
-            all_powered_verts.append(transformed)
-            all_powered_colors.append(p_colors)
+                if item_diameter > 0:
+                    transformed = transform_to_cylinder(
+                        transformed, item_diameter
+                    )
+                rot_powered_verts.append(transformed)
+                rot_powered_colors.append(p_colors)
 
-        if t_verts.size > 0:
-            transformed = _transform_vertices(t_verts, content_model_matrix)
-            if rotary_enabled and rotary_diameter > 0:
-                transformed = transform_to_cylinder(
-                    transformed, rotary_diameter
+            if t_verts.size > 0:
+                transformed = _transform_vertices(
+                    t_verts, content_model_matrix
                 )
-            all_travel_verts.append(transformed)
+                if item_diameter > 0:
+                    transformed = transform_to_cylinder(
+                        transformed, item_diameter
+                    )
+                rot_travel_verts.append(transformed)
 
-        if zp_verts.size > 0:
-            transformed = _transform_vertices(zp_verts, content_model_matrix)
-            if rotary_enabled and rotary_diameter > 0:
-                transformed = transform_to_cylinder(
-                    transformed, rotary_diameter
+            if zp_verts.size > 0:
+                transformed = _transform_vertices(
+                    zp_verts, content_model_matrix
                 )
-            all_zero_power_verts.append(transformed)
-            all_zero_power_colors.append(zp_colors)
+                if item_diameter > 0:
+                    transformed = transform_to_cylinder(
+                        transformed, item_diameter
+                    )
+                rot_zero_power_verts.append(transformed)
+                rot_zero_power_colors.append(zp_colors)
+        else:
+            if p_verts.size > 0:
+                transformed = _transform_vertices(
+                    p_verts, content_model_matrix
+                )
+                flat_powered_verts.append(transformed)
+                flat_powered_colors.append(p_colors)
 
-    # 4. Concatenate all results into single arrays
-    final_powered_verts = (
-        np.concatenate(all_powered_verts).flatten()
-        if all_powered_verts
+            if t_verts.size > 0:
+                transformed = _transform_vertices(
+                    t_verts, content_model_matrix
+                )
+                flat_travel_verts.append(transformed)
+
+            if zp_verts.size > 0:
+                transformed = _transform_vertices(
+                    zp_verts, content_model_matrix
+                )
+                flat_zero_power_verts.append(transformed)
+                flat_zero_power_colors.append(zp_colors)
+
+    # Add a small Z-offset to non-powered flat moves to prevent Z-fighting
+    # with the texture quad, which is drawn at Z=0. Rotary items are on a
+    # cylinder surface and do not need this.
+    Z_OFFSET_NON_POWERED = 0.01
+    if flat_travel_verts:
+        flat_tv_2d = np.concatenate(flat_travel_verts)
+        if flat_tv_2d.ndim > 1:
+            flat_tv_2d[:, 2] += Z_OFFSET_NON_POWERED
+        flat_travel_verts = [flat_tv_2d]
+    if flat_zero_power_verts:
+        flat_zpv_2d = np.concatenate(flat_zero_power_verts)
+        if flat_zpv_2d.ndim > 1:
+            flat_zpv_2d[:, 2] += Z_OFFSET_NON_POWERED
+        flat_zero_power_verts = [flat_zpv_2d]
+
+    # 4. Concatenate each group into single arrays
+    def _finalize(verts_list, colors_list):
+        powered = (
+            np.concatenate(verts_list).flatten()
+            if verts_list
+            else np.array([], dtype=np.float32)
+        )
+        colors = (
+            np.concatenate(colors_list).flatten()
+            if colors_list
+            else np.array([], dtype=np.float32)
+        )
+        return powered, colors
+
+    flat_pv, flat_pc = _finalize(flat_powered_verts, flat_powered_colors)
+    flat_tv = (
+        np.concatenate(flat_travel_verts).flatten()
+        if flat_travel_verts
         else np.array([], dtype=np.float32)
     )
-    final_powered_colors = (
-        np.concatenate(all_powered_colors).flatten()
-        if all_powered_colors
-        else np.array([], dtype=np.float32)
-    )
-    travel_verts_3d = (
-        np.concatenate(all_travel_verts)
-        if all_travel_verts
-        else np.array([], dtype=np.float32)
-    )
-    zero_power_verts_3d = (
-        np.concatenate(all_zero_power_verts)
-        if all_zero_power_verts
-        else np.array([], dtype=np.float32)
-    )
-    final_zero_power_colors = (
-        np.concatenate(all_zero_power_colors).flatten()
-        if all_zero_power_colors
-        else np.array([], dtype=np.float32)
+    flat_zpv, flat_zpc = _finalize(
+        flat_zero_power_verts, flat_zero_power_colors
     )
 
-    # Add a small Z-offset to non-powered moves to prevent Z-fighting with
-    # the texture quad, which is drawn at Z=0.
-    if not rotary_enabled:
-        Z_OFFSET_NON_POWERED = 0.01
-        if travel_verts_3d.size > 0:
-            travel_verts_3d[:, 2] += Z_OFFSET_NON_POWERED
-        if zero_power_verts_3d.size > 0:
-            zero_power_verts_3d[:, 2] += Z_OFFSET_NON_POWERED
-
-    final_travel_verts = travel_verts_3d.flatten()
-    final_zero_power_verts = zero_power_verts_3d.flatten()
+    rot_pv, rot_pc = _finalize(rot_powered_verts, rot_powered_colors)
+    rot_tv = (
+        np.concatenate(rot_travel_verts).flatten()
+        if rot_travel_verts
+        else np.array([], dtype=np.float32)
+    )
+    rot_zpv, rot_zpc = _finalize(rot_zero_power_verts, rot_zero_power_colors)
 
     logger.debug(
-        f"Total scene vertices prepared. Powered: "
-        f"{final_powered_verts.size // 3}, "
-        f"Travel: {final_travel_verts.size // 3}"
+        f"Total scene vertices prepared. "
+        f"Flat powered: {flat_pv.size // 3}, "
+        f"Rotary powered: {rot_pv.size // 3}"
     )
 
-    return (
-        final_powered_verts,
-        final_powered_colors,
-        final_travel_verts,
-        final_zero_power_verts,
-        final_zero_power_colors,
-    )
+    flat_group = (flat_pv, flat_pc, flat_tv, flat_zpv, flat_zpc)
+    rotary_group = (rot_pv, rot_pc, rot_tv, rot_zpv, rot_zpc)
+
+    return flat_group, rotary_group
 
 
 class Canvas3D(Gtk.GLArea):
@@ -235,22 +286,29 @@ class Canvas3D(Gtk.GLArea):
         self.main_shader: Optional[Shader] = None
         self.text_shader: Optional[Shader] = None
         self.axis_renderer: Optional[AxisRenderer3D] = None
-        self.ops_renderer: Optional[OpsRenderer] = None
+        self.ops_renderer_flat: Optional[OpsRenderer] = None
+        self.ops_renderer_rotary: Optional[OpsRenderer] = None
         self.sphere_renderer: Optional[SphereRenderer] = None
         self.texture_renderer: Optional[TextureArtifactRenderer] = None
         self.texture_shader: Optional[Shader] = None
-        self.cylinder_renderer: Optional[CylinderRenderer] = None
+        self._cylinder_renderers: Dict[float, CylinderRenderer] = {}
+        self._had_rotary_layers = False
         self._scene_preparation_task: Optional[Task] = None
         self._scene_vtx_cache: Optional[
-            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+            Tuple[
+                Tuple[
+                    np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray
+                ],
+                Tuple[
+                    np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray
+                ],
+            ]
         ] = None
         self._show_travel_moves = False
         self._is_orbiting = False
         self._is_z_rotating = False
         self._gl_initialized = False
         self._wcs_offset_mm: Point3D = (0.0, 0.0, 0.0)
-        self._rotary_enabled = False
-        self._rotary_diameter = 25.0
 
         # This matrix transforms the grid and axes from a standard Y-up,
         # X-right system to match the machine's coordinate system.
@@ -316,13 +374,10 @@ class Canvas3D(Gtk.GLArea):
 
     @property
     def rotary_enabled(self) -> bool:
-        """Returns True if rotary mode is currently active."""
-        return self._rotary_enabled
-
-    @property
-    def rotary_diameter(self) -> float:
-        """Returns the current rotary diameter in mm."""
-        return self._rotary_diameter
+        """Returns True if the active layer has rotary mode enabled."""
+        if self.doc and self.doc.active_layer:
+            return self.doc.active_layer.rotary_enabled
+        return False
 
     def _on_wcs_updated(self, machine: "Machine", **kwargs):
         """Handler for when the machine's WCS state changes."""
@@ -503,14 +558,16 @@ class Canvas3D(Gtk.GLArea):
                 self._scene_preparation_task.cancel()
             if self.axis_renderer:
                 self.axis_renderer.cleanup()
-            if self.ops_renderer:
-                self.ops_renderer.cleanup()
+            if self.ops_renderer_flat:
+                self.ops_renderer_flat.cleanup()
+            if self.ops_renderer_rotary:
+                self.ops_renderer_rotary.cleanup()
             if self.sphere_renderer:
                 self.sphere_renderer.cleanup()
             if self.texture_renderer:
                 self.texture_renderer.cleanup()
-            if self.cylinder_renderer:
-                self.cylinder_renderer.cleanup()
+            for renderer in self._cylinder_renderers.values():
+                renderer.cleanup()
             if self.main_shader:
                 self.main_shader.cleanup()
             if self.text_shader:
@@ -567,8 +624,10 @@ class Canvas3D(Gtk.GLArea):
                     fy = -mt
                 self.axis_renderer.set_extent_frame(fx, fy, fw, fh, show=True)
             self.axis_renderer.init_gl()
-            self.ops_renderer = OpsRenderer()
-            self.ops_renderer.init_gl()
+            self.ops_renderer_flat = OpsRenderer()
+            self.ops_renderer_flat.init_gl()
+            self.ops_renderer_rotary = OpsRenderer()
+            self.ops_renderer_rotary.init_gl()
             self.texture_renderer = TextureArtifactRenderer()
             self.texture_renderer.init_gl()
             if self.sphere_renderer:
@@ -710,44 +769,38 @@ class Canvas3D(Gtk.GLArea):
                     y_negative=self.y_negative,
                 )
 
-            if self.ops_renderer and self.main_shader:
-                # Vertices are correctly passed to us in Visual Space or
-                # Local Cylinder Space (which is then drawn via Grid Space).
-                if self._rotary_enabled:
-                    ops_mvp = mvp_matrix_scene_gl
-                else:
-                    ops_mvp = mvp_matrix_ui_gl
-
-                self.ops_renderer.render(
+            if self.ops_renderer_flat and self.main_shader:
+                self.ops_renderer_flat.render(
                     self.main_shader,
-                    ops_mvp,
+                    mvp_matrix_ui_gl,
                     colors=self._color_set,
                     show_travel_moves=self._show_travel_moves,
                 )
 
-            if (
-                self._rotary_enabled
-                and self.cylinder_renderer
-                and self.main_shader
-            ):
-                # The cylinder natively lives in Grid Space, shifted by WCS.
-                self.cylinder_renderer.render(
-                    self.main_shader, mvp_matrix_scene_gl
+            if self.ops_renderer_rotary and self.main_shader:
+                # Rotary vertices are in Local Cylinder Space,
+                # drawn via Grid Space.
+                self.ops_renderer_rotary.render(
+                    self.main_shader,
+                    mvp_matrix_scene_gl,
+                    colors=self._color_set,
+                    show_travel_moves=self._show_travel_moves,
                 )
 
+            for renderer in self._cylinder_renderers.values():
+                if self.main_shader:
+                    renderer.render(self.main_shader, mvp_matrix_scene_gl)
+
             if self.texture_renderer and self.texture_shader:
-                if self._rotary_enabled:
-                    # Cylinder Textures natively output to Grid Space,
-                    # shifted by WCS.
-                    self.texture_renderer.render_cylinder(
-                        mvp_matrix_scene,
-                        self.texture_shader,
-                        self._rotary_diameter,
-                    )
-                else:
-                    self.texture_renderer.render(
-                        mvp_matrix_ui, self.texture_shader
-                    )
+                # Always call both; each method filters internally
+                # based on instance rotary metadata.
+                self.texture_renderer.render(
+                    mvp_matrix_ui, self.texture_shader
+                )
+                self.texture_renderer.render_cylinder(
+                    mvp_matrix_scene,
+                    self.texture_shader,
+                )
 
         except Exception as e:
             logger.error(f"OpenGL Render Error: {e}", exc_info=True)
@@ -956,8 +1009,10 @@ class Canvas3D(Gtk.GLArea):
         """
         if task.get_status() != "completed":
             self._scene_vtx_cache = None
-            if self.ops_renderer:
-                self.ops_renderer.clear()
+            if self.ops_renderer_flat:
+                self.ops_renderer_flat.clear()
+            if self.ops_renderer_rotary:
+                self.ops_renderer_rotary.clear()
             logger.error(
                 "[CANVAS3D] Scene preparation task failed or was cancelled."
             )
@@ -973,99 +1028,94 @@ class Canvas3D(Gtk.GLArea):
 
     def _update_renderer_from_cache(self):
         """
-        Helper to update the renderer based on current visibility flags.
+        Helper to update the renderers based on current visibility flags.
+        Feeds flat and rotary vertex groups to their respective OpsRenderers.
         """
-        if not self.ops_renderer or not self._scene_vtx_cache:
-            if self.ops_renderer:
-                self.ops_renderer.clear()
+        if not self._scene_vtx_cache:
+            if self.ops_renderer_flat:
+                self.ops_renderer_flat.clear()
+            if self.ops_renderer_rotary:
+                self.ops_renderer_rotary.clear()
             logger.debug("[CANVAS3D] No vertex cache to update renderer from.")
             self.queue_render()
             return
 
-        logger.debug("[CANVAS3D] Updating renderer from vertex cache.")
+        if not self.ops_renderer_flat or not self.ops_renderer_rotary:
+            return
 
-        (
-            powered_verts,
-            powered_colors,
-            travel_verts,
-            zero_power_verts,
-            zero_power_colors,
-        ) = self._scene_vtx_cache
+        logger.debug("[CANVAS3D] Updating renderers from vertex cache.")
 
-        if self._show_travel_moves:
-            # When travel is shown, zero-power cuts are also shown. They are
-            # conceptually similar (non-cutting moves). We append them to the
-            # powered buffer as they use vertex colors.
-            powered_verts_final = np.concatenate(
-                (powered_verts, zero_power_verts)
-            )
-            powered_colors_final = np.concatenate(
-                (powered_colors, zero_power_colors)
-            )
-            travel_verts_final = travel_verts
-        else:
-            # When travel is hidden, hide zero-power cuts as well.
-            powered_verts_final = powered_verts
-            powered_colors_final = powered_colors
-            travel_verts_final = np.array([], dtype=np.float32)
+        flat_group, rotary_group = self._scene_vtx_cache
 
-        # This part runs on the main thread and is fast (just GPU uploads)
-        self.ops_renderer.update_from_vertex_data(
-            powered_verts_final,
-            powered_colors_final,
-            travel_verts_final,
-        )
+        def _apply_group(renderer, pv, pc, tv, zpv, zpc):
+            if self._show_travel_moves:
+                # When travel is shown, zero-power cuts are also shown.
+                # They are conceptually similar (non-cutting moves). We
+                # append them to the powered buffer as they use vertex
+                # colors.
+                pv_final = np.concatenate((pv, zpv))
+                pc_final = np.concatenate((pc, zpc))
+                tv_final = tv
+            else:
+                # When travel is hidden, hide zero-power cuts as well.
+                pv_final = pv
+                pc_final = pc
+                tv_final = np.array([], dtype=np.float32)
+
+            # This part runs on the main thread and is fast (just GPU uploads)
+            renderer.update_from_vertex_data(pv_final, pc_final, tv_final)
+
+        _apply_group(self.ops_renderer_flat, *flat_group)
+        _apply_group(self.ops_renderer_rotary, *rotary_group)
         self.queue_render()
 
-    def _update_rotary_mode(self):
+    def _update_cylinder_renderers(self):
         """
-        Checks the active layer for rotary mode settings and updates the
-        cylinder renderer accordingly.
+        Scans all layers for rotary-enabled ones and creates one
+        CylinderRenderer per unique diameter. Removes renderers for
+        diameters no longer in use.
         """
-        active_layer = self.doc.active_layer
-        rotary_enabled = active_layer.rotary_enabled
-        rotary_diameter = active_layer.rotary_diameter
-
-        diameter_changed = rotary_diameter != self._rotary_diameter
-        mode_changed = rotary_enabled != self._rotary_enabled
-
-        self._rotary_enabled = rotary_enabled
-        self._rotary_diameter = rotary_diameter
-
-        if rotary_enabled and self._gl_initialized:
-            if mode_changed or diameter_changed or not self.cylinder_renderer:
-                self._init_cylinder_renderer()
-
-        if mode_changed and self.camera:
-            if not rotary_enabled:
-                self.reset_view_front()
-
-    def _init_cylinder_renderer(self):
-        """Initialize or update the cylinder renderer for rotary mode."""
         self.make_current()
 
-        if self.cylinder_renderer:
-            self.cylinder_renderer.cleanup()
+        desired_diameters: Dict[float, bool] = {}
+        for layer in self.doc.layers:
+            if layer.rotary_enabled:
+                desired_diameters[layer.rotary_diameter] = True
 
-        self.cylinder_renderer = CylinderRenderer(
-            diameter=self._rotary_diameter,
-            length=self.width_mm,
-            rings=24,
-            length_segments=12,
-        )
-        self.cylinder_renderer.set_color((0.4, 0.6, 0.8, 0.25))
-        self.cylinder_renderer.init_gl()
-        logger.debug(
-            f"Initialized cylinder renderer: "
-            f"diameter={self._rotary_diameter}mm, length={self.width_mm}mm"
-        )
+        # Remove renderers for diameters no longer needed
+        for diameter in list(self._cylinder_renderers.keys()):
+            if diameter not in desired_diameters:
+                self._cylinder_renderers[diameter].cleanup()
+                del self._cylinder_renderers[diameter]
+                logger.debug(
+                    f"Removed cylinder renderer for diameter={diameter}mm"
+                )
+
+        # Create renderers for new diameters
+        for diameter in desired_diameters:
+            if diameter not in self._cylinder_renderers:
+                renderer = CylinderRenderer(
+                    diameter=diameter,
+                    length=self.width_mm,
+                    rings=24,
+                    length_segments=12,
+                )
+                renderer.set_color((0.4, 0.6, 0.8, 0.25))
+                renderer.init_gl()
+                self._cylinder_renderers[diameter] = renderer
+                logger.debug(
+                    f"Initialized cylinder renderer: "
+                    f"diameter={diameter}mm, length={self.width_mm}mm"
+                )
 
     def update_scene_from_doc(self):
         """
         Updates the entire scene content from the document. This is the main
         entry point for refreshing the 3D view.
         """
-        if not self.ops_renderer or not self.texture_renderer:
+        if not self.ops_renderer_flat or not self.ops_renderer_rotary:
+            return
+        if not self.texture_renderer:
             return
 
         logger.debug("Canvas3D: Updating scene from document.")
@@ -1077,8 +1127,13 @@ class Canvas3D(Gtk.GLArea):
             logger.warning("Cannot update scene, color set not resolved.")
             return
 
-        # Check for rotary mode from the document's workflow
-        self._update_rotary_mode()
+        # Update cylinder renderers and camera based on layer rotary state
+        any_rotary = any(layer.rotary_enabled for layer in self.doc.layers)
+        if self._gl_initialized:
+            self._update_cylinder_renderers()
+        if self._had_rotary_layers and not any_rotary and self.camera:
+            self.reset_view_front()
+        self._had_rotary_layers = any_rotary
 
         # 1. Quickly generate the lightweight scene description
         scene_description = generate_scene_description(self.doc, self.pipeline)
@@ -1129,7 +1184,7 @@ class Canvas3D(Gtk.GLArea):
                     else None
                 )
                 for tex_instance in artifact.texture_instances:
-                    if self._rotary_enabled:
+                    if item.rotary_enabled:
                         adjusted_transform = (
                             world_to_cyl_local @ tex_instance.world_transform
                         )
@@ -1142,26 +1197,22 @@ class Canvas3D(Gtk.GLArea):
                         tex_instance.texture_data,
                         adjusted_transform,
                         color_lut=engrave_lut,
+                        rotary_enabled=item.rotary_enabled,
+                        rotary_diameter=item.rotary_diameter,
                     )
 
         # 3. Schedule the expensive vector preparation for a background thread
-        content_model_matrix = (
-            world_to_cyl_local if self._rotary_enabled else world_to_visual
-        )
-
         self._schedule_scene_preparation(
             scene_description,
-            content_model_matrix,
-            self._rotary_enabled,
-            self._rotary_diameter,
+            world_to_visual,
+            world_to_cyl_local,
         )
 
     def _schedule_scene_preparation(
         self,
         scene_description: SceneDescription,
-        content_model_matrix: np.ndarray,
-        rotary_enabled: bool = False,
-        rotary_diameter: float = 25.0,
+        world_to_visual: np.ndarray,
+        world_to_cyl_local: np.ndarray,
     ):
         """
         Schedules the given SceneDescription to be prepared for rendering in
@@ -1169,7 +1220,7 @@ class Canvas3D(Gtk.GLArea):
         """
         task_key = (id(self), "prepare-3d-scene-vertices")
 
-        if self.ops_renderer and self._color_set is not None:
+        if self.ops_renderer_flat and self._color_set is not None:
             if self._scene_preparation_task:
                 self._scene_preparation_task.cancel()
 
@@ -1180,9 +1231,8 @@ class Canvas3D(Gtk.GLArea):
                 scene_description,
                 self._color_set,
                 self._laser_color_sets,
-                content_model_matrix,
-                rotary_enabled,
-                rotary_diameter,
+                world_to_visual,
+                world_to_cyl_local,
                 key=task_key,
                 when_done=self._on_scene_prepared,
             )
