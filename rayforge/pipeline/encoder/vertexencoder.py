@@ -1,6 +1,6 @@
 from __future__ import annotations
 import math
-from typing import List
+from typing import List, Optional
 import numpy as np
 from ...core.geo import Point3D
 from ...core.ops import Ops
@@ -16,7 +16,11 @@ from .base import OpsEncoder
 from ..artifact.base import VertexData
 
 
-def transform_to_cylinder(verts: np.ndarray, diameter: float) -> np.ndarray:
+def transform_to_cylinder(
+    verts: np.ndarray,
+    diameter: float,
+    colors: Optional[np.ndarray] = None,
+) -> tuple:
     """
     Transform flat XY vertices to cylindrical coordinates.
 
@@ -31,13 +35,15 @@ def transform_to_cylinder(verts: np.ndarray, diameter: float) -> np.ndarray:
         verts: Array of shape (N, 3) with X, Y, Z coordinates.
                Vertices are in pairs (line segments for GL_LINES).
         diameter: Cylinder diameter in mm.
+        colors: Optional array of shape (N, 4) with per-vertex RGBA colors.
 
     Returns:
-        Transformed vertices array. May contain more vertices than input
-        if segments were split.
+        Tuple of (transformed_vertices, expanded_colors). The expanded
+        colors match the (possibly larger) vertex count after subdivision.
+        If colors is None, the second element is also None.
     """
     if verts.size == 0 or diameter <= 0:
-        return verts
+        return verts, colors
 
     radius = diameter / 2.0
     circumference = diameter * math.pi
@@ -55,6 +61,7 @@ def transform_to_cylinder(verts: np.ndarray, diameter: float) -> np.ndarray:
         return delta
 
     result_verts = []
+    result_colors = [] if colors is not None else None
 
     for i in range(0, verts.shape[0], 2):
         if i + 1 >= verts.shape[0]:
@@ -72,6 +79,9 @@ def transform_to_cylinder(verts: np.ndarray, diameter: float) -> np.ndarray:
             1, int(math.ceil(delta_theta / max_angle_per_segment))
         )
 
+        c0 = colors[i] if colors is not None else None
+        c1 = colors[i + 1] if colors is not None else None
+
         prev_x, prev_y = x1, y1
         for j in range(1, num_subdivisions + 1):
             t = j / num_subdivisions
@@ -81,9 +91,19 @@ def transform_to_cylinder(verts: np.ndarray, diameter: float) -> np.ndarray:
             result_verts.append(cyl_point(prev_x, prev_y))
             result_verts.append(cyl_point(curr_x, curr_y))
 
+            if result_colors is not None:
+                result_colors.append(c0)
+                result_colors.append(c1)
+
             prev_x, prev_y = curr_x, curr_y
 
-    return np.array(result_verts, dtype=np.float32)
+    new_verts = np.array(result_verts, dtype=np.float32)
+    new_colors = (
+        np.array(result_colors, dtype=np.float32)
+        if result_colors is not None
+        else None
+    )
+    return new_verts, new_colors
 
 
 class VertexEncoder(OpsEncoder):
