@@ -222,8 +222,9 @@ class GcodeEncoder(OpsEncoder):
         self.emitted_power = None
 
         if doc:
-            self.rotary_enabled = doc.rotary_enabled
-            self.rotary_diameter = doc.rotary_diameter
+            active_layer = doc.active_layer
+            self.rotary_enabled = active_layer.rotary_enabled
+            self.rotary_diameter = active_layer.rotary_diameter
         else:
             self.rotary_enabled = False
             self.rotary_diameter = 25.0
@@ -365,6 +366,8 @@ class GcodeEncoder(OpsEncoder):
                 descendant = context.doc.find_descendant_by_uid(uid)
                 if isinstance(descendant, Layer):
                     context.layer = descendant
+                    self.rotary_enabled = descendant.rotary_enabled
+                    self.rotary_diameter = descendant.rotary_diameter
                 elif descendant is not None:
                     logger.warning(
                         f"Expected Layer for UID {uid}, but "

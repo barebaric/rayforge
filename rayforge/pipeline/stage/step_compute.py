@@ -228,22 +228,18 @@ def _apply_transformers_to_ops(
 
 def _encode_vertex_data(
     ops: Ops,
-    rotary_enabled: bool = False,
-    rotary_diameter: float = 25.0,
 ) -> VertexData:
     """
     Encodes ops to vertex data.
 
     Args:
         ops: The ops to encode.
-        rotary_enabled: Whether to apply cylindrical transformation.
-        rotary_diameter: The diameter of the cylinder in mm.
 
     Returns:
         The encoded vertex data.
     """
     encoder = VertexEncoder()
-    return encoder.encode(ops, rotary_enabled, rotary_diameter)
+    return encoder.encode(ops)
 
 
 def compute_step_artifacts(
@@ -252,8 +248,6 @@ def compute_step_artifacts(
     generation_id: int,
     context: Optional[ProgressContext] = None,
     stock_geometries: Optional[List["Geometry"]] = None,
-    rotary_enabled: bool = False,
-    rotary_diameter: float = 25.0,
 ) -> Tuple[StepRenderArtifact, StepOpsArtifact]:
     """
     Computes step artifacts from workpiece artifacts and transforms.
@@ -265,10 +259,6 @@ def compute_step_artifacts(
         generation_id: The generation ID for staleness checking.
         context: Optional ProgressContext for progress reporting.
         stock_geometries: List of stock boundary geometries in world space.
-        rotary_enabled: Whether rotary mode is enabled for cylindrical
-                        transformation of vertices.
-        rotary_diameter: The diameter of the cylinder in mm when rotary mode
-                         is enabled.
 
     Returns:
         Tuple of (StepRenderArtifact, StepOpsArtifact).
@@ -298,9 +288,7 @@ def compute_step_artifacts(
 
     set_progress(context, 0.9)
 
-    vertex_data = _encode_vertex_data(
-        combined_ops, rotary_enabled, rotary_diameter
-    )
+    vertex_data = _encode_vertex_data(combined_ops)
 
     set_progress(context, 0.95)
 

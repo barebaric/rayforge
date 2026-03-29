@@ -1,5 +1,4 @@
 import logging
-import math
 from typing import (
     List,
     Optional,
@@ -41,9 +40,6 @@ class Doc(DocItem):
         self.history_manager = HistoryManager()
         self.active_layer_changed = Signal()
         self.job_assembly_invalidated = Signal()
-
-        self.rotary_enabled: bool = False
-        self.rotary_diameter: float = 25.0
 
         # Asset Management
         self.assets: Dict[str, IAsset] = {}
@@ -148,8 +144,6 @@ class Doc(DocItem):
 
         doc.set_children(children)
         doc._active_layer_index = data.get("active_layer_index", 0)
-        doc.rotary_enabled = data.get("rotary_enabled", False)
-        doc.rotary_diameter = data.get("rotary_diameter", 25.0)
 
         return doc
 
@@ -174,8 +168,6 @@ class Doc(DocItem):
             "uid": self.uid,
             "type": "doc",
             "active_layer_index": self._active_layer_index,
-            "rotary_enabled": self.rotary_enabled,
-            "rotary_diameter": self.rotary_diameter,
             "children": [child.to_dict() for child in self.children],
             "assets": [asset.to_dict() for asset in self.get_all_assets()],
         }
@@ -443,35 +435,6 @@ class Doc(DocItem):
         # if the active layer instance has actually changed.
         if old_active_layer is not self.active_layer:
             self.active_layer_changed.send(self)
-
-    def set_rotary_enabled(self, enabled: bool):
-        """Enable or disable rotary attachment mode."""
-        if self.rotary_enabled == enabled:
-            return
-        self.rotary_enabled = enabled
-        self.updated.send(self)
-
-    def set_rotary_diameter(self, diameter: float):
-        """Set the diameter of the object on the rotary attachment."""
-        if self.rotary_diameter == diameter:
-            return
-        self.rotary_diameter = diameter
-        self.updated.send(self)
-
-    def mu_to_degrees(self, mu: float) -> float:
-        """
-        Convert machine units to degrees for rotary axis.
-
-        Args:
-            mu: Distance in machine units along the cylinder surface.
-
-        Returns:
-            Angle in degrees for the rotary axis.
-        """
-        if self.rotary_diameter <= 0:
-            return 0.0
-        circumference = self.rotary_diameter * math.pi
-        return (mu / circumference) * 360.0
 
     def has_workpiece(self):
         return bool(self.all_workpieces)
