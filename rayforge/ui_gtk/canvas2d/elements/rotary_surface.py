@@ -26,7 +26,7 @@ class RotarySurfaceElement(CanvasElement):
             clip=False,
             **kwargs,
         )
-        self._color = (0.2, 0.2, 0.9, 1.0)
+        self._color = (0.7, 0.7, 0.1, 1.0)
         self._origin_x = 0.0
         self._origin_y = 0.0
         self._x_axis_right = False
@@ -85,8 +85,11 @@ class RotarySurfaceElement(CanvasElement):
 
         ctx.save()
         ctx.set_source_rgba(*self._color)
-        ctx.set_hairline(True)
-        ctx.set_dash([5.0, 5.0])
+        dx, dy = ctx.device_to_user_distance(1.5, 0)
+        ctx.set_line_width(abs(dx))
+        dash_on, _ = ctx.device_to_user_distance(4.0, 0)
+        dash_off, _ = ctx.device_to_user_distance(2.0, 0)
+        ctx.set_dash([abs(dash_on), abs(dash_off)])
         ctx.rectangle(0, 0, self.width, self.height)
         ctx.stroke()
         ctx.restore()
