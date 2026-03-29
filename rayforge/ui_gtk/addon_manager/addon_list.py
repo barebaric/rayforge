@@ -295,9 +295,20 @@ class AddonListWidget(PreferencesGroupWithButton):
         )
 
         def _worker():
-            return context.addon_mgr.install_addon(git_url, addon_id)
+            try:
+                logger.info(
+                    f"Starting addon installation: git_url={git_url}, "
+                    f"addon_id={addon_id}"
+                )
+                result = context.addon_mgr.install_addon(git_url, addon_id)
+                logger.info(f"Addon installation finished: result={result}")
+                return result
+            except Exception:
+                logger.exception("Unhandled exception in install worker")
+                return None
 
         def _done(result_path):
+            logger.info(f"Install _done callback: result={result_path}")
             self.list_box.set_sensitive(True)
             self.add_button.set_sensitive(True)
             self.install_finished.send(self)
@@ -307,9 +318,11 @@ class AddonListWidget(PreferencesGroupWithButton):
             else:
                 self._show_error(_("Failed to install addon."))
 
-        thread = threading.Thread(
-            target=lambda: GLib.idle_add(_done, _worker()), daemon=True
-        )
+        def _thread_target():
+            result = _worker()
+            GLib.idle_add(_done, result)
+
+        thread = threading.Thread(target=_thread_target, daemon=True)
         thread.start()
 
     def _on_toggle_addon(self, addon_name: str, enable: bool):

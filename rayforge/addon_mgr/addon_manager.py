@@ -928,17 +928,29 @@ class AddonManager:
         try:
             self._import_git()
         except ImportError:
+            logger.info("GitPython not available for version resolution")
             if git_url:
                 remote = self._get_remote_tag_version(git_url)
                 if remote:
+                    logger.info(f"Using remote tag version: {remote}")
                     return remote
-            return self._version_from_manifest(staging_path) or UnknownVersion
+            version = self._version_from_manifest(staging_path)
+            if version:
+                logger.info(f"Using manifest version: {version}")
+            else:
+                logger.info("Version unknown, no source available")
+            return version or UnknownVersion
 
         try:
-            return get_git_tag_version(staging_path)
+            version = get_git_tag_version(staging_path)
+            logger.info(f"Using git tag version: {version}")
+            return version
         except RuntimeError:
+            logger.debug("No git tag version found")
             pass
-        return self._version_from_manifest(staging_path) or UnknownVersion
+        version = self._version_from_manifest(staging_path) or UnknownVersion
+        logger.info(f"Using manifest version: {version}")
+        return version
 
     def _finalize_addon_install(
         self,
@@ -956,6 +968,9 @@ class AddonManager:
         version = addon.metadata.version
         install_dir_name = addon_id or self._extract_repo_name(git_url)
         final_path = self.install_dir / install_dir_name
+        logger.info(
+            f"Finalizing install of '{addon_name}' v{version} to {final_path}"
+        )
 
         if final_path.exists():
             logger.info(f"Upgrading existing addon at {final_path}")
@@ -972,6 +987,7 @@ class AddonManager:
         self._call_registration_hooks()
         self._build_and_update_manifest()
         self._restart_workers()
+        logger.info(f"Addon '{addon_name}' fully loaded and registered")
         return final_path
 
     def install_addon(
@@ -989,26 +1005,37 @@ class AddonManager:
                 provided by the registry. If None, it's derived from
                 the URL (for manual installs).
         """
-        with tempfile.TemporaryDirectory() as temp_dir:
+        logger.info(
+            f"install_addon called: git_url={git_url}, addon_id={addon_id}"
+        )
+        result: Optional[Path] = None
+        with tempfile.TemporaryDirectory(
+            ignore_cleanup_errors=True
+        ) as temp_dir:
             temp_path = Path(temp_dir)
 
             if not self._fetch_addon_source(git_url, temp_path):
+                logger.error("Failed to fetch addon source, aborting install")
                 return None
 
             version = self._resolve_addon_version(temp_path, git_url)
+            logger.info(f"Resolved addon version: {version}")
 
             try:
                 logger.info("Validating addon structure and code safety...")
                 addon = Addon.load_from_directory(temp_path, version=version)
                 addon.validate()
                 logger.info("Validation passed.")
-                return self._finalize_addon_install(addon, git_url, addon_id)
+                result = self._finalize_addon_install(addon, git_url, addon_id)
             except AddonValidationError as e:
                 logger.error(f"Addon validation failed: {e}")
                 return None
             except Exception as e:
                 logger.error(f"Installation failed: {e}", exc_info=True)
                 return None
+
+        logger.info(f"install_addon returning: {result}")
+        return result
 
     def uninstall_addon(self, addon_name: str) -> bool:
         """
