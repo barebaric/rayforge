@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-18 23:38+0100\n"
+"POT-Creation-Date: 2026-03-25 22:24+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -153,6 +153,30 @@ msgstr ""
 msgid "Change corner angle"
 msgstr ""
 
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Enable Merge Lines"
+msgstr ""
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Merges overlapping line segments to avoid double passing"
+msgstr ""
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Tolerance"
+msgstr ""
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Maximum distance for lines to be considered overlapping"
+msgstr ""
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Toggle Merge Lines"
+msgstr ""
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Change merge tolerance"
+msgstr ""
+
 #: post_processors/widgets/multipass_widget.py
 msgid "Number of Passes"
 msgstr ""
@@ -236,6 +260,14 @@ msgstr ""
 
 #: post_processors/transformers/smooth_transformer.py
 msgid "Smooths the path by applying a Gaussian filter."
+msgstr ""
+
+#: post_processors/transformers/merge_lines_transformer.py
+msgid "Merge Lines"
+msgstr ""
+
+#: post_processors/transformers/merge_lines_transformer.py
+msgid "Merges overlapping lines to avoid double passing."
 msgstr ""
 
 #: post_processors/transformers/overscan_transformer.py

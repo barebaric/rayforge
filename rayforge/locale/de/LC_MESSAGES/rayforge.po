@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-23 12:54+0100\n"
+"POT-Creation-Date: 2026-03-29 15:48+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -880,6 +880,12 @@ msgstr ""
 "Verbindung zum Host „{host}“ konnte nicht hergestellt werden. Überprüfe die "
 "IP-Adresse und die Netzwerkverbindung."
 
+#: rayforge/machine/models/dialect_manager.py
+#: rayforge/machine/models/machine.py rayforge/machine/models/profile.py
+#, python-brace-format
+msgid "{label} (for {machine_name})"
+msgstr "{label} (für {machine_name})"
+
 #: rayforge/machine/models/laser.py
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Laser Head"
@@ -889,10 +895,12 @@ msgstr "Laserkopf"
 msgid "Default Machine"
 msgstr "Standardmaschine"
 
-#: rayforge/machine/models/machine.py rayforge/machine/models/profile.py
-#, python-brace-format
-msgid "{label} (for {machine_name})"
-msgstr "{label} (für {machine_name})"
+#: rayforge/machine/models/rotary_module.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Rotary Module"
+msgstr "Rotationsmodul"
 
 #: rayforge/machine/models/profile.py
 msgid "Custom dialect for the Carvera Air machine."
@@ -991,6 +999,10 @@ msgid "Laser Off"
 msgstr "Laser Aus"
 
 #: rayforge/machine/models/dialect/base.py
+msgid "Focus Laser On"
+msgstr "Laser fokussieren"
+
+#: rayforge/machine/models/dialect/base.py
 msgid "Travel Move"
 msgstr "Verfahrbewegung"
 
@@ -1046,6 +1058,10 @@ msgstr "WCS-Versatz setzen"
 #: rayforge/machine/models/dialect/base.py
 msgid "Probe Cycle"
 msgstr "Tastzyklus"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Dwell"
+msgstr "Verweilen"
 
 #: rayforge/machine/models/dialect/base.py
 msgid "Scripts"
@@ -1238,6 +1254,7 @@ msgstr ""
 #: rayforge/ui_gtk/settings/license_settings_page.py
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/camera/selection_dialog.py
+#: rayforge/ui_gtk/camera/calibration_wizard.py
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/control_panel.py
@@ -1245,6 +1262,7 @@ msgstr ""
 #: rayforge/ui_gtk/machine/maintenance_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/profile_selector.py
+#: rayforge/ui_gtk/machine/template_selector.py
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
@@ -1383,6 +1401,7 @@ msgid "Enable or disable this provider"
 msgstr "Anbieter aktivieren oder deaktivieren"
 
 #: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
 msgid "Set as default"
 msgstr "Als Standard festlegen"
 
@@ -1418,6 +1437,7 @@ msgstr ""
 #: rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/maintenance_page.py
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
@@ -1586,6 +1606,7 @@ msgstr ""
 "fest."
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
 msgid "Length"
 msgstr "Länge"
 
@@ -1810,6 +1831,208 @@ msgstr "Bildausrichtung"
 msgid "Calibrate camera position and perspective"
 msgstr "Kameraposition und Perspektive kalibrieren"
 
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Waiting for camera..."
+msgstr "Warte auf Kamera..."
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Lens Calibration Wizard"
+msgstr "Objektiv-Kalibrierungsassistent"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Back"
+msgstr "Zurück"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Next"
+msgstr "Weiter"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Capture Frame"
+msgstr "Bild aufnehmen"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Clear"
+msgstr "Löschen"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Calibrate"
+msgstr "Kalibrieren"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Instructions"
+msgstr "Anleitung"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid ""
+"Print a calibration card to correct lens distortion. The card size should "
+"fit within your camera view."
+msgstr ""
+"Drucken Sie eine Kalibrierungskarte zur Korrektur der Objektivverzeichnung. "
+"Die Kartengröße sollte in Ihr Kamerabild passen."
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Card Size"
+msgstr "Kartengröße"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Adjust to fit your work surface."
+msgstr "Passen Sie die Größe an Ihre Arbeitsfläche an."
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Width"
+msgstr "Breite"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Card width"
+msgstr "Kartenbreite"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Height"
+msgstr "Höhe"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Card height"
+msgstr "Kartenhöhe"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Generated Pattern"
+msgstr "Erzeugtes Muster"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Details about the calibration pattern."
+msgstr "Details zum Kalibrierungsmuster."
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Grid Size"
+msgstr "Rastergröße"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Square Size"
+msgstr "Quadratgröße"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Physical Size"
+msgstr "Physische Größe"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Save to PDF"
+msgstr "Als PDF speichern"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Export the calibration card for printing"
+msgstr "Kalibrierungskarte zum Drucken exportieren"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/machine/dialect_editor.py
+#: rayforge/ui_gtk/machine/control_panel.py
+#: rayforge/ui_gtk/machine/gcode_editor.py
+#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/toolbar.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Save"
+msgstr "Speichern"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid ""
+"Capture the card at different positions. Important: include the image "
+"corners and edges for accurate distortion correction."
+msgstr ""
+"Nehmen Sie die Karte an verschiedenen Positionen auf. Wichtig: Bildecken und "
+"-ränder für eine genaue Verzeichnungskorrektur einbeziehen."
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Status"
+msgstr "Status"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Progress of the calibration capture process."
+msgstr "Fortschritt des Kalibrierungsaufnahmeprozesses."
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Captured Frames"
+msgstr "Aufgenommene Bilder"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Corners Detected"
+msgstr "Erkannte Ecken"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Coverage"
+msgstr "Abdeckung"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Not started"
+msgstr "Nicht gestartet"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Move card to capture more positions"
+msgstr "Karte verschieben, um weitere Positionen aufzunehmen"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Capture Progress"
+msgstr "Aufnahmefortschritt"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Good"
+msgstr "Gut"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Limited — reach edges"
+msgstr "Begrenzt — Ränder erreichen"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Poor — reach all corners"
+msgstr "Schlecht — alle Ecken erreichen"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Calibration Failed"
+msgstr "Kalibrierung fehlgeschlagen"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/machine/dialect_list.py
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/material_list.py
+msgid "OK"
+msgstr "OK"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Calibration Complete"
+msgstr "Kalibrierung abgeschlossen"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+#, python-brace-format
+msgid ""
+"RMS Error: {rms:.4f} pixels\n"
+"Quality: {quality}\n"
+"Frames used: {frames}"
+msgstr ""
+"RMS-Fehler: {rms:.4f} Pixel\n"
+"Qualität: {quality}\n"
+"Verwendete Bilder: {frames}"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Discard"
+msgstr "Verwerfen"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Save Calibration"
+msgstr "Kalibrierung speichern"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Save Calibration Card"
+msgstr "Kalibrierungskarte speichern"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Calibration card saved"
+msgstr "Kalibrierungskarte gespeichert"
+
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 #, python-brace-format
 msgid "{camera_name} – Image Alignment"
@@ -1913,16 +2136,20 @@ msgid "Transparency on the worksurface"
 msgstr "Transparenz auf der Arbeitsfläche"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Lens Distortion Correction"
-msgstr "Objektivverzerrungskorrektur"
+msgid "Lens Calibration"
+msgstr "Objektivkalibrierung"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid ""
-"Straighten bowed lines using Radial (k1, k2) and Tangential (p1, p2) "
-"parameters."
+"Correct lens distortion for straighter lines. Use the wizard for automatic "
+"calibration or adjust manually."
 msgstr ""
-"Gekrümmte Linien mit Radial- (k1, k2) und Tangentialparametern (p1, p2) "
-"begradigen."
+"Korrigiert die Objektivverzeichnung für gerade Linien. Verwenden Sie den "
+"Assistenten zur automatischen Kalibrierung oder passen Sie sie manuell an."
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Wizard"
+msgstr "Assistent"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
@@ -1943,6 +2170,14 @@ msgid "Second order radial distortion"
 msgstr "Radialverzerrung zweiter Ordnung"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Radial 3 (k3)"
+msgstr "Radial 3 (k3)"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Third order radial distortion"
+msgstr "Radialverzeichnung dritter Ordnung"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Tangential 1 (p1)"
 msgstr "Tangential 1 (p1)"
@@ -1959,10 +2194,6 @@ msgstr "Tangential 2 (p2)"
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Second order tangential distortion"
 msgstr "Tangentialverzerrung zweiter Ordnung"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Close"
-msgstr "Schließen"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 #, python-brace-format
@@ -2063,24 +2294,24 @@ msgid "Edit Dialect: {label}"
 msgstr "Dialekt bearbeiten: {label}"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
-#: rayforge/ui_gtk/machine/dialect_list.py
 msgid "New Dialect"
 msgstr "Neuer Dialekt"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
-#: rayforge/ui_gtk/machine/control_panel.py
-#: rayforge/ui_gtk/machine/gcode_editor.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
-#: rayforge/ui_gtk/toolbar.py
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Save"
-msgstr "Speichern"
+msgid "Update from Template"
+msgstr "Aus Vorlage aktualisieren"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 msgid "Label cannot be empty."
 msgstr "Die Bezeichnung darf nicht leer sein."
+
+#: rayforge/ui_gtk/machine/dialect_editor.py
+msgid ""
+"Select a template to copy its settings. Your label and description will be "
+"preserved."
+msgstr ""
+"Wählen Sie eine Vorlage, um deren Einstellungen zu kopieren. Ihre "
+"Bezeichnung und Beschreibung bleiben erhalten."
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Active System"
@@ -2544,21 +2775,8 @@ msgstr ""
 "Automatisch einen Entsperrbefehl senden, wenn im ALARM-Zustand verbunden"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
-msgid "Built-in dialect"
-msgstr "Integrierter Dialekt"
-
-#: rayforge/ui_gtk/machine/dialect_list.py
-msgid "Copy & Edit"
-msgstr "Kopieren & Bearbeiten"
-
-#: rayforge/ui_gtk/machine/dialect_list.py
 msgid "Select this dialect"
 msgstr "Diesen Dialekt auswählen"
-
-#: rayforge/ui_gtk/machine/dialect_list.py
-#, python-brace-format
-msgid "{label} (Copy)"
-msgstr "{label} (Kopie)"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 #, python-brace-format
@@ -2585,24 +2803,17 @@ msgstr ""
 "{machines}"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-#: rayforge/ui_gtk/addon_manager/addon_list.py
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/material_list.py
-msgid "OK"
-msgstr "OK"
-
-#: rayforge/ui_gtk/machine/dialect_list.py
-msgid "Add New Dialect"
-msgstr "Neuen Dialekt hinzufügen"
+msgid "Create from Template"
+msgstr "Aus Vorlage erstellen"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "No custom dialects configured"
 msgstr "Keine benutzerdefinierten Dialekte konfiguriert"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
-msgid "A new custom dialect"
-msgstr "Ein neuer benutzerdefinierter Dialekt"
+#, python-brace-format
+msgid "{label} (Copy)"
+msgstr "{label} (Kopie)"
 
 #: rayforge/ui_gtk/machine/gcode_settings_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
@@ -2709,6 +2920,14 @@ msgstr "Maschine auswählen"
 #: rayforge/ui_gtk/machine/machine_selector.py
 msgid "Select active machine"
 msgstr "Aktive Maschine auswählen"
+
+#: rayforge/ui_gtk/machine/template_selector.py
+msgid "Select a Template"
+msgstr "Vorlage auswählen"
+
+#: rayforge/ui_gtk/machine/template_selector.py
+msgid "Choose a built-in dialect as a starting point."
+msgstr "Wählen Sie einen integrierten Dialekt als Ausgangspunkt."
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
@@ -2948,14 +3167,6 @@ msgid "Maximum power value in GCode"
 msgstr "Maximaler Leistungswert im G-Code"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Frame Power"
-msgstr "Rahmenleistung"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Power value in percent to use when framing. 0 to disable"
-msgstr "Leistung in Prozent für die Umrandung. 0 zum Deaktivieren."
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Focus Power"
 msgstr "Fokusleistung"
 
@@ -2994,6 +3205,175 @@ msgstr "Rasterfarbe"
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Color for engraving/raster operations"
 msgstr "Farbe für Gravur-/Rasteroperationen"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Framing"
+msgstr "Rahmen"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Settings for the frame outline operation that traces the job boundary."
+msgstr ""
+"Einstellungen für die Rahmenoperation, die die Arbeitsbereichsgrenze "
+"nachfährt."
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Frame Power"
+msgstr "Rahmenleistung"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Power value in percent to use when framing. 0 to disable"
+msgstr "Leistung in Prozent für die Umrandung. 0 zum Deaktivieren."
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Frame Speed"
+msgstr "Rahmengeschwindigkeit"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid ""
+"Speed for frame outline. Leave at 0 to use the machine's max travel speed"
+msgstr ""
+"Geschwindigkeit für den Rahmen. Bei 0 wird die maximale "
+"Verfahrgeschwindigkeit der Maschine verwendet"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Repeat Count"
+msgstr "Wiederholungsanzahl"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Number of times to trace the frame outline"
+msgstr "Anzahl der Wiederholungen der Rahmenkontur"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Pause at Corners"
+msgstr "Pause an Ecken"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid ""
+"Pause duration in seconds at each corner of the frame outline. 0 to disable"
+msgstr "Pausendauer in Sekunden an jeder Ecke des Rahmens. 0 zum Deaktivieren"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+#, python-brace-format
+msgid "Axis {axis}, {length}mm, chuck Ø{chuck:.0f}mm"
+msgstr "Achse {axis}, {length}mm, Spannfutter Ø{chuck:.0f}mm"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Add Rotary Module"
+msgstr "Rotationsmodul hinzufügen"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "No rotary modules configured"
+msgstr "Keine Rotationsmodule konfiguriert"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "New Rotary Module"
+msgstr "Neues Rotationsmodul"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Rotary Defaults"
+msgstr "Rotationsstandardeinstellungen"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Default settings applied to new layers."
+msgstr "Standardeinstellungen für neue Ebenen."
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Enable Rotary by Default"
+msgstr "Rotation standardmäßig aktivieren"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "New layers will default to rotary mode"
+msgstr "Neue Ebenen verwenden standardmäßig den Rotationsmodus"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Modules"
+msgstr "Module"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid ""
+"Define the physical rotary modules attached to your machine. Select one as "
+"the default."
+msgstr ""
+"Definieren Sie die physischen Rotationsmodule Ihrer Maschine. Wählen Sie "
+"eines als Standard."
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Module Properties"
+msgstr "Moduleigenschaften"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Configure the selected module."
+msgstr "Ausgewähltes Modul konfigurieren."
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Axis"
+msgstr "Achse"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Axis letter for this module"
+msgstr "Achsenbuchstabe für dieses Modul"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Default Workpiece Diameter"
+msgstr "Standard-Werkstückdurchmesser"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Default diameter for new layers using this module"
+msgstr "Standarddurchmesser für neue Ebenen mit diesem Modul"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "X Position"
+msgstr "X-Position"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "X coordinate in machine space"
+msgstr "X-Koordinate im Maschinenraum"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Y Position"
+msgstr "Y-Position"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Y coordinate in machine space"
+msgstr "Y-Koordinate im Maschinenraum"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Z Position"
+msgstr "Z-Position"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Z coordinate in machine space"
+msgstr "Z-Koordinate im Maschinenraum"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Length of the rotary module along the axis"
+msgstr "Länge des Rotationsmoduls entlang der Achse"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Chuck Diameter"
+msgstr "Spannfutterdurchmesser"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Diameter of the chuck end"
+msgstr "Durchmesser des Spannfutterendes"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Tailstock Diameter"
+msgstr "Reitstockdurchmesser"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Diameter of the tailstock end"
+msgstr "Durchmesser des Reitstockendes"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Max Height"
+msgstr "Maximale Höhe"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Maximum height above the mounting surface"
+msgstr "Maximale Höhe über der Montagefläche"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #, python-brace-format
@@ -3928,6 +4308,11 @@ msgid "Untitled"
 msgstr "Unbenannt"
 
 #: rayforge/ui_gtk/doceditor/layer_view.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Layer Settings"
+msgstr "Ebeneneinstellungen"
+
+#: rayforge/ui_gtk/doceditor/layer_view.py
 msgid "Delete this layer"
 msgstr "Diese Ebene löschen"
 
@@ -4469,10 +4854,6 @@ msgid "Relative to {wcs} origin"
 msgstr "Relativ zum {wcs} Ursprung"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "X Position"
-msgstr "X-Position"
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Zero is on the left side"
 msgstr "Nullpunkt ist auf der linken Seite"
 
@@ -4481,24 +4862,12 @@ msgid "Reset X position to 0"
 msgstr "X-Position auf 0 zurücksetzen"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Y Position"
-msgstr "Y-Position"
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset Y position to 0"
 msgstr "Y-Position auf 0 zurücksetzen"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Fixed Ratio"
 msgstr "Festes Verhältnis"
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Width"
-msgstr "Breite"
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Height"
-msgstr "Höhe"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset to natural width"
@@ -4708,6 +5077,43 @@ msgstr "Werkstückeigenschaften"
 #: rayforge/ui_gtk/doceditor/item_properties.py
 msgid "Group Properties"
 msgstr "Gruppeneigenschaften"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Close"
+msgstr "Schließen"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Rotary Attachment"
+msgstr "Rotationsvorsatz"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid ""
+"Configure rotary attachment for cylindrical objects. When enabled, Y-axis "
+"movements are converted to rotational movements in degrees."
+msgstr ""
+"Konfigurieren Sie den Rotationsvorsatz für zylindrische Objekte. Wenn "
+"aktiviert, werden Y-Achsen-Bewegungen in Rotationsbewegungen in Grad "
+"umgewandelt."
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Enable Rotary Mode"
+msgstr "Rotationsmodus aktivieren"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Convert Y-axis to rotary axis"
+msgstr "Y-Achse in Rotationsachse umwandeln"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Select the rotary module for this layer"
+msgstr "Rotationsmodul für diese Ebene auswählen"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Object Diameter"
+msgstr "Objektdurchmesser"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Diameter of the cylindrical object in machine units"
+msgstr "Durchmesser des zylindrischen Objekts in Maschineneinheiten"
 
 #: rayforge/ui_gtk/doceditor/layer_list.py
 msgid "Workpiece Layers"
@@ -5633,21 +6039,25 @@ msgstr "Rasterisierung des SVG für das Nachzeichnen fehlgeschlagen."
 msgid "Failed to normalize image data."
 msgstr "Normalisierung der Bilddaten fehlgeschlagen."
 
-#: rayforge/image/pdf/importer.py
+#: rayforge/image/pdf/pdf_trace.py rayforge/image/pdf/pdf_vector.py
 msgid "PDF file contains no pages."
 msgstr "PDF-Datei enthält keine Seiten."
 
-#: rayforge/image/pdf/importer.py
+#: rayforge/image/pdf/pdf_trace.py
 msgid "Failed to process PDF image data."
 msgstr "Verarbeitung der PDF-Bilddaten fehlgeschlagen."
 
-#: rayforge/image/pdf/importer.py
+#: rayforge/image/pdf/pdf_trace.py rayforge/image/pdf/pdf_vector.py
 msgid "PDF page has zero dimensions"
 msgstr "PDF-Seite hat keine Abmessungen"
 
-#: rayforge/image/pdf/importer.py
+#: rayforge/image/pdf/pdf_trace.py
 msgid "Failed to rasterize PDF"
 msgstr "Rasterisierung des PDF fehlgeschlagen"
+
+#: rayforge/image/pdf/pdf_vector.py
+msgid "PDF contains no vector geometry."
+msgstr "PDF enthält keine Vektorgeometrie."
 
 #: rayforge/image/bmp/importer.py
 msgid "Invalid or unsupported BMP data."
