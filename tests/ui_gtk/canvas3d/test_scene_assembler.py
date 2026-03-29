@@ -37,6 +37,8 @@ def mock_layer() -> Layer:
     layer = MagicMock(spec=Layer)
     layer.name = "test_layer"
     layer.visible = True
+    layer.rotary_enabled = False
+    layer.rotary_diameter = 25.0
     layer.workflow = MagicMock()
     layer.workflow.steps = []
     return layer
@@ -199,18 +201,24 @@ class TestGenerateSceneDescription:
         step1b = MagicMock(spec=Step, uid="s1b")
         step1b.selected_laser_uid = "laser1"
         layer1 = MagicMock(spec=Layer, visible=True)
+        layer1.rotary_enabled = False
+        layer1.rotary_diameter = 25.0
         layer1.workflow = MagicMock(steps=[step1a, step1b])
 
         # Layer 2: Invisible, should be ignored
         step2 = MagicMock(spec=Step, uid="s2")
         step2.selected_laser_uid = "laser2"
         layer2 = MagicMock(spec=Layer, visible=False)
+        layer2.rotary_enabled = False
+        layer2.rotary_diameter = 25.0
         layer2.workflow = MagicMock(steps=[step2])
 
         # Layer 3: Visible, 1 step with artifact
         step3 = MagicMock(spec=Step, uid="s3")
         step3.selected_laser_uid = "laser3"
         layer3 = MagicMock(spec=Layer, visible=True)
+        layer3.rotary_enabled = False
+        layer3.rotary_diameter = 25.0
         layer3.workflow = MagicMock(steps=[step3])
 
         mock_doc.layers = [layer1, layer2, layer3]
