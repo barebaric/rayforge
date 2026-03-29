@@ -1,10 +1,11 @@
 from typing import cast
 from gettext import gettext as _
+
 from gi.repository import Adw, Gtk
 
-from ..shared.adwfix import get_spinrow_float
 from ...machine.driver.driver import Axis
 from ...machine.models.machine import Machine, Origin
+from ..shared.adwfix import get_spinrow_float
 from ..shared.preferences_page import TrackedPreferencesPage
 
 
@@ -123,65 +124,6 @@ class HardwarePage(TrackedPreferencesPage):
             "notify::active", self.on_reverse_z_changed
         )
         axes_group.add(self.reverse_z_axis_row)
-
-        rotary_group = Adw.PreferencesGroup(title=_("Rotary"))
-        rotary_group.set_description(
-            _("Default rotary settings for new layers.")
-        )
-        self.add(rotary_group)
-
-        excluded = (Axis.X, Axis.Y)
-        valid_axes = sorted(
-            [a for a in Axis if a not in excluded],
-            key=lambda a: str(a.name or ""),
-        )
-        rotary_axis_store = Gtk.StringList()
-        for a in valid_axes:
-            rotary_axis_store.append(a.name or "")
-        self.rotary_axis_row = Adw.ComboRow(
-            title=_("Rotary Axis"),
-            subtitle=_("The axis letter used for rotary attachment movements"),
-            model=rotary_axis_store,
-        )
-        try:
-            selected = valid_axes.index(machine.rotary_axis)
-        except ValueError:
-            selected = 0
-        self.rotary_axis_row.set_selected(selected)
-        self.rotary_axis_row.connect(
-            "notify::selected", self.on_rotary_axis_changed
-        )
-        rotary_group.add(self.rotary_axis_row)
-
-        self.rotary_enabled_default_row = Adw.SwitchRow(
-            title=_("Enable Rotary by Default"),
-            subtitle=_("New layers will default to rotary mode"),
-        )
-        self.rotary_enabled_default_row.set_active(
-            machine.rotary_enabled_default
-        )
-        self.rotary_enabled_default_row.connect(
-            "notify::active", self.on_rotary_enabled_default_changed
-        )
-        rotary_group.add(self.rotary_enabled_default_row)
-
-        rotary_diameter_adjustment = Gtk.Adjustment(
-            lower=1, upper=10000, step_increment=1, page_increment=10
-        )
-        self.rotary_diameter_default_row = Adw.SpinRow(
-            title=_("Default Rotary Diameter"),
-            subtitle=_("Workpiece diameter in machine units for new layers"),
-            adjustment=rotary_diameter_adjustment,
-            digits=1,
-        )
-        rotary_diameter_adjustment.set_value(machine.rotary_diameter_default)
-        self.rotary_diameter_default_row.connect(
-            "notify::value", self.on_rotary_diameter_default_changed
-        )
-        self.rotary_diameter_default_row.set_sensitive(
-            machine.rotary_enabled_default
-        )
-        rotary_group.add(self.rotary_diameter_default_row)
 
         work_area_group = Adw.PreferencesGroup(title=_("Work Area"))
         work_area_group.set_description(
@@ -412,21 +354,6 @@ class HardwarePage(TrackedPreferencesPage):
 
     def on_reverse_z_changed(self, row, _):
         self.machine.set_reverse_z_axis(row.get_active())
-
-    def on_rotary_axis_changed(self, row, _):
-        excluded = (Axis.X, Axis.Y, Axis.Z)
-        valid_axes = [a for a in Axis if a not in excluded]
-        selected = row.get_selected()
-        if selected < len(valid_axes):
-            self.machine.set_rotary_axis(valid_axes[selected])
-
-    def on_rotary_enabled_default_changed(self, row, _):
-        enabled = row.get_active()
-        self.machine.set_rotary_enabled_default(enabled)
-        self.rotary_diameter_default_row.set_sensitive(enabled)
-
-    def on_rotary_diameter_default_changed(self, spinrow, _param):
-        self.machine.set_rotary_diameter_default(get_spinrow_float(spinrow))
 
     def on_x_extent_changed(self, spinrow, _param):
         x = get_spinrow_float(spinrow)

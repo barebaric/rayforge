@@ -17,6 +17,7 @@ from .hardware_page import HardwarePage
 from .hooks_macros_page import HooksMacrosPage
 from .laser_preferences_page import LaserPreferencesPage
 from .maintenance_page import MaintenancePage
+from .rotary_module_page import RotaryModulePage
 
 
 class MachineSettingsDialog(PatchedDialogWindow):
@@ -104,7 +105,13 @@ class MachineSettingsDialog(PatchedDialogWindow):
         laser_page = LaserPreferencesPage(machine=self.machine)
         self.content_stack.add_titled(laser_page, "laser", _("Laser"))
 
-        # --- Page 8: Camera ---
+        # --- Page 8: Rotary Module ---
+        rotary_module_page = RotaryModulePage(machine=self.machine)
+        self.content_stack.add_titled(
+            rotary_module_page, "rotary-module", _("Rotary Module")
+        )
+
+        # --- Page 9: Camera ---
         self.camera_page = CameraPreferencesPage()
         self.camera_page.camera_add_requested.connect(
             self._on_camera_add_requested
@@ -143,6 +150,9 @@ class MachineSettingsDialog(PatchedDialogWindow):
         )
         self._add_sidebar_row(_("Device"), "settings-symbolic", "device")
         self._add_sidebar_row(_("Laser"), "laser-on-symbolic", "laser")
+        self._add_sidebar_row(
+            _("Rotary Module"), "rotary-symbolic", "rotary-module"
+        )
         self._add_sidebar_row(_("Camera"), "camera-on-symbolic", "camera")
         self._add_sidebar_row(
             _("Maintenance"), "timer-symbolic", "maintenance"

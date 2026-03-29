@@ -31,6 +31,7 @@ TARGETS = {
     "machine-settings:hooks-macros": "machine_settings_hooks-macros",
     "machine-settings:device": "machine_settings_device",
     "machine-settings:laser": "machine_settings_laser",
+    "machine-settings:rotary-module": "machine_settings_rotary_module",
     "machine-settings:camera": "machine_settings_camera",
     "machine-settings:maintenance": "machine_settings_maintenance",
     "material-test": "material_test",

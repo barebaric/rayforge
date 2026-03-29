@@ -70,9 +70,12 @@ class DocEditor:
             self.doc.active_layer.set_rotary_enabled(
                 context.machine.rotary_enabled_default
             )
-            self.doc.active_layer.set_rotary_diameter(
-                context.machine.rotary_diameter_default
-            )
+            default_rm = context.machine.get_default_rotary_module()
+            if default_rm:
+                self.doc.active_layer.set_rotary_diameter(
+                    default_rm.default_diameter
+                )
+                self.doc.active_layer.set_rotary_module_uid(default_rm.uid)
         self.pipeline = Pipeline(
             self.doc,
             self.task_manager,
@@ -115,6 +118,9 @@ class DocEditor:
             self._on_addon_state_changed
         )
 
+        if context.machine:
+            context.machine.changed.connect(self._on_machine_changed)
+
         # Instantiate and link command handlers, passing dependencies.
         self.asset = AssetCmd(self)
         self.edit = EditCmd(self)
@@ -137,8 +143,9 @@ class DocEditor:
         Shuts down owned long-running services, like the Pipeline, to
         ensure cleanup of resources (e.g., shared memory).
         """
-        # This is the safety net for any transient job artifacts that were
-        # in-flight when the application was closed.
+        if self.context.machine:
+            self.context.machine.changed.disconnect(self._on_machine_changed)
+
         logger.info(
             f"Releasing {len(self._transient_artifact_handles)} "
             "transient job artifacts..."
@@ -153,6 +160,22 @@ class DocEditor:
 
         self.view_manager.shutdown()
         self.pipeline.shutdown()
+
+    def _on_machine_changed(self, sender, **kwargs):
+        machine = self.context.machine
+        if not machine:
+            return
+        for layer in self.doc.layers:
+            if layer.rotary_module_uid is None:
+                continue
+            if machine.get_rotary_module_by_uid(layer.rotary_module_uid):
+                continue
+            default_rm = machine.get_default_rotary_module()
+            if default_rm:
+                layer.set_rotary_module_uid(default_rm.uid)
+                layer.set_rotary_diameter(default_rm.default_diameter)
+            else:
+                layer.set_rotary_module_uid(None)
 
     def add_tab_from_context(self, context: Dict[str, Any]):
         """
@@ -353,6 +376,7 @@ class DocEditor:
         logger.debug("DocEditor is setting a new document.")
         self.doc = new_doc
         self._reconcile_step_lasers()
+        self._reconcile_rotary_modules()
         self.history_manager = self.doc.history_manager
         # The Pipeline's setter handles cleanup and reconnection
         self.pipeline.doc = new_doc
@@ -400,6 +424,36 @@ class DocEditor:
                         f"resetting to default '{default_laser_uid}'"
                     )
                     step.selected_laser_uid = default_laser_uid
+
+    def _reconcile_rotary_modules(self):
+        """
+        Reconcile layer rotary_module_uid with the current machine.
+
+        For each layer, checks if its rotary_module_uid references a
+        module that exists on the machine. If not, updates it to the
+        default module. This handles the case where a project file
+        references a module that doesn't exist in the current machine.
+        """
+        machine = self.context.machine
+        if not machine:
+            return
+
+        default_rm = machine.get_default_rotary_module()
+        for layer in self.doc.layers:
+            if layer.rotary_module_uid is None:
+                continue
+            if machine.get_rotary_module_by_uid(layer.rotary_module_uid):
+                continue
+            logger.info(
+                f"Layer '{layer.name}' references non-existent rotary "
+                f"module '{layer.rotary_module_uid}', resetting to "
+                f"default"
+            )
+            if default_rm:
+                layer.rotary_module_uid = default_rm.uid
+                layer.set_rotary_diameter(default_rm.default_diameter)
+            else:
+                layer.rotary_module_uid = None
 
     @property
     def is_processing(self) -> bool:

@@ -24,6 +24,7 @@ from ..transport import TransportStatus
 from .dialect import GcodeDialect, get_dialect
 from .laser import Laser
 from .machine_hours import MachineHours
+from .rotary_module import RotaryModule
 from .macro import Macro, MacroTrigger
 
 
@@ -125,9 +126,8 @@ class Machine:
         self.reverse_x_axis: bool = False
         self.reverse_y_axis: bool = False
         self.reverse_z_axis: bool = False
-        self.rotary_axis: Axis = Axis.A
         self.rotary_enabled_default: bool = False
-        self.rotary_diameter_default: float = 25.0
+        self.default_rotary_module_uid: Optional[str] = None
         self.soft_limits_enabled: bool = True
         self.wcs_origin_is_workarea_origin: bool = False
         self._settings_lock = asyncio.Lock()
@@ -156,6 +156,8 @@ class Machine:
         )
 
         self.add_head(Laser())
+
+        self.rotary_modules: Dict[str, RotaryModule] = {}
 
     @property
     def controller(self) -> "MachineController":
@@ -481,24 +483,16 @@ class Machine:
         self.reverse_z_axis = is_reversed
         self.changed.send(self)
 
-    def set_rotary_axis(self, axis: Axis):
-        """Sets the rotary axis (e.g. Axis.A, Axis.B, Axis.U)."""
-        axis.assert_single_axis()
-        if self.rotary_axis == axis:
-            return
-        self.rotary_axis = axis
-        self.changed.send(self)
-
     def set_rotary_enabled_default(self, enabled: bool):
         if self.rotary_enabled_default == enabled:
             return
         self.rotary_enabled_default = enabled
         self.changed.send(self)
 
-    def set_rotary_diameter_default(self, diameter: float):
-        if self.rotary_diameter_default == diameter:
+    def set_default_rotary_module_uid(self, uid: Optional[str]):
+        if self.default_rotary_module_uid == uid:
             return
-        self.rotary_diameter_default = diameter
+        self.default_rotary_module_uid = uid
         self.changed.send(self)
 
     def set_wcs_origin_is_workarea_origin(self, value: bool):
@@ -730,6 +724,34 @@ class Machine:
         self.changed.send(self)
 
     def _on_camera_changed(self, camera, *args):
+        self.changed.send(self)
+
+    def add_rotary_module(self, module: RotaryModule):
+        self.rotary_modules[module.uid] = module
+        module.changed.connect(self._on_rotary_module_changed)
+        self.changed.send(self)
+
+    def get_rotary_module_by_uid(self, uid: str) -> Optional[RotaryModule]:
+        return self.rotary_modules.get(uid)
+
+    def get_default_rotary_module(self) -> Optional[RotaryModule]:
+        if self.default_rotary_module_uid:
+            return self.get_rotary_module_by_uid(
+                self.default_rotary_module_uid
+            )
+        return None
+
+    def remove_rotary_module(self, module: RotaryModule):
+        module.changed.disconnect(self._on_rotary_module_changed)
+        del self.rotary_modules[module.uid]
+        if self.default_rotary_module_uid == module.uid:
+            remaining = list(self.rotary_modules.keys())
+            self.default_rotary_module_uid = (
+                remaining[0] if remaining else None
+            )
+        self.changed.send(self)
+
+    def _on_rotary_module_changed(self, module, *args):
         self.changed.send(self)
 
     def _on_machine_hours_changed(self, machine_hours, *args):
@@ -1089,14 +1111,16 @@ class Machine:
                 "reverse_x_axis": self.reverse_x_axis,
                 "reverse_y_axis": self.reverse_y_axis,
                 "reverse_z_axis": self.reverse_z_axis,
-                "rotary_axis": self.rotary_axis.name,
                 "rotary_enabled_default": self.rotary_enabled_default,
-                "rotary_diameter_default": self.rotary_diameter_default,
+                "default_rotary_module_uid": (self.default_rotary_module_uid),
                 "wcs_origin_is_workarea_origin": (
                     self.wcs_origin_is_workarea_origin
                 ),
                 "heads": [head.to_dict() for head in self.heads],
                 "cameras": [camera.to_dict() for camera in self.cameras],
+                "rotary_modules": [
+                    rm.to_dict() for rm in self.rotary_modules.values()
+                ],
                 "hookmacros": {
                     trigger.name: macro.to_dict()
                     for trigger, macro in self.hookmacros.items()
@@ -1251,13 +1275,10 @@ class Machine:
         ma.reverse_x_axis = ma_data.get("reverse_x_axis", False)
         ma.reverse_y_axis = ma_data.get("reverse_y_axis", False)
         ma.reverse_z_axis = ma_data.get("reverse_z_axis", False)
-        ma.rotary_axis = Axis[ma_data.get("rotary_axis", "A")]
         ma.rotary_enabled_default = ma_data.get(
             "rotary_enabled_default", False
         )
-        ma.rotary_diameter_default = ma_data.get(
-            "rotary_diameter_default", 25.0
-        )
+        ma.default_rotary_module_uid = ma_data.get("default_rotary_module_uid")
 
         # Migrate from old "negative" settings if present
         if "x_axis_negative" in ma_data:
@@ -1296,6 +1317,8 @@ class Machine:
         ma.cameras = []
         for obj in ma_data.get("cameras", {}):
             ma.add_camera(Camera.from_dict(obj))
+        for obj in ma_data.get("rotary_modules", []):
+            ma.add_rotary_module(RotaryModule.from_dict(obj))
         speeds = ma_data.get("speeds", {})
         ma.max_cut_speed = speeds.get("max_cut_speed", ma.max_cut_speed)
         ma.max_travel_speed = speeds.get(

@@ -4,7 +4,6 @@ from typing import List, Dict, Any, Tuple, Optional, TYPE_CHECKING
 from gettext import gettext as _
 from ...core.geo import Rect
 from ..driver import get_driver_cls
-from ..driver.driver import Axis
 from .dialect import get_dialect, replace
 from .machine import Machine, Laser, Origin
 from .macro import Macro, MacroTrigger
@@ -71,9 +70,7 @@ class MachineProfile:
     heads: Optional[List[Dict[str, Any]]] = None
     hookmacros: Optional[List[Dict[str, Any]]] = None
     dialect_definition: Optional[DialectDefinition] = None
-    rotary_axis: Optional[Axis] = None
     rotary_enabled_default: Optional[bool] = None
-    rotary_diameter_default: Optional[float] = None
 
     def create_machine(self, context: "RayforgeContext") -> Machine:
         """
@@ -160,12 +157,8 @@ class MachineProfile:
             m.max_cut_speed = self.max_cut_speed
         if self.home_on_start is not None:
             m.home_on_start = self.home_on_start
-        if self.rotary_axis is not None:
-            m.rotary_axis = self.rotary_axis
         if self.rotary_enabled_default is not None:
             m.rotary_enabled_default = self.rotary_enabled_default
-        if self.rotary_diameter_default is not None:
-            m.rotary_diameter_default = self.rotary_diameter_default
         if self.hookmacros is not None:
             for s_data in self.hookmacros:
                 try:

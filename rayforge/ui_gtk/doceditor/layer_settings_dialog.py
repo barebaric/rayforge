@@ -2,6 +2,7 @@ from gettext import gettext as _
 
 from gi.repository import Adw, Gtk
 
+from ...context import get_context
 from ...core.layer import Layer
 from ..shared.adwfix import get_spinrow_float
 from ..shared.patched_dialog_window import PatchedDialogWindow
@@ -54,6 +55,17 @@ class LayerSettingsDialog(PatchedDialogWindow):
         )
         rotary_group.add(self.rotary_enabled_row)
 
+        self._populate_module_store()
+        self.module_row = Adw.ComboRow(
+            title=_("Rotary Module"),
+            subtitle=_("Select the rotary module for this layer"),
+            model=self._module_store,
+        )
+        self._select_current_module()
+        self.module_row.connect("notify::selected", self._on_module_changed)
+        self.module_row.set_sensitive(layer.rotary_enabled)
+        rotary_group.add(self.module_row)
+
         rotary_diameter_adjustment = Gtk.Adjustment(
             lower=1, upper=1000, step_increment=1, page_increment=10
         )
@@ -72,12 +84,45 @@ class LayerSettingsDialog(PatchedDialogWindow):
 
         self._is_initializing = False
 
+    def _populate_module_store(self):
+        self._module_store = Gtk.StringList()
+        self._module_uids: list[str] = []
+        machine = get_context().machine
+        if machine:
+            for module in sorted(
+                machine.rotary_modules.values(), key=lambda m: m.name
+            ):
+                self._module_store.append(module.name)
+                self._module_uids.append(module.uid)
+
+    def _select_current_module(self):
+        uid = self.layer.rotary_module_uid
+        if uid and uid in self._module_uids:
+            self.module_row.set_selected(self._module_uids.index(uid))
+        elif self._module_uids:
+            self.module_row.set_selected(0)
+
     def _on_rotary_enabled_changed(self, row, _):
         if self._is_initializing:
             return
         enabled = row.get_active()
+        self.module_row.set_sensitive(enabled)
         self.rotary_diameter_row.set_sensitive(enabled)
         self.layer.set_rotary_enabled(enabled)
+
+    def _on_module_changed(self, row, _param):
+        if self._is_initializing:
+            return
+        idx = row.get_selected()
+        if idx < len(self._module_uids):
+            uid = self._module_uids[idx]
+            self.layer.set_rotary_module_uid(uid)
+            machine = get_context().machine
+            if machine:
+                rm = machine.get_rotary_module_by_uid(uid)
+                if rm:
+                    self.layer.set_rotary_diameter(rm.default_diameter)
+                    self.rotary_diameter_row.set_value(rm.default_diameter)
 
     def _on_rotary_diameter_changed(self, spinrow, _param):
         if self._is_initializing:

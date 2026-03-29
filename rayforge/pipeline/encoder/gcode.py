@@ -209,6 +209,13 @@ class GcodeEncoder(OpsEncoder):
             "y_axis_letter": y_axis_letter,
         }
 
+    def _get_rotary_axis_for_layer(self, machine: "Machine", layer) -> str:
+        if layer.rotary_module_uid:
+            rm = machine.get_rotary_module_by_uid(layer.rotary_module_uid)
+            if rm:
+                return rm.axis.name or "A"
+        return "A"
+
     def encode(
         self, ops: Ops, machine: "Machine", doc: "Doc"
     ) -> Tuple[str, MachineCodeOpMap]:
@@ -225,10 +232,13 @@ class GcodeEncoder(OpsEncoder):
             active_layer = doc.active_layer
             self.rotary_enabled = active_layer.rotary_enabled
             self.rotary_diameter = active_layer.rotary_diameter
+            self.rotary_axis = self._get_rotary_axis_for_layer(
+                machine, active_layer
+            )
         else:
             self.rotary_enabled = False
             self.rotary_diameter = 25.0
-        self.rotary_axis = machine.rotary_axis.name or "A"
+            self.rotary_axis = "A"
 
         context = GcodeContext(
             machine=machine, doc=doc, job=JobInfo(extents=ops.rect())
@@ -364,6 +374,9 @@ class GcodeEncoder(OpsEncoder):
                     context.layer = descendant
                     self.rotary_enabled = descendant.rotary_enabled
                     self.rotary_diameter = descendant.rotary_diameter
+                    self.rotary_axis = self._get_rotary_axis_for_layer(
+                        context.machine, descendant
+                    )
                 elif descendant is not None:
                     logger.warning(
                         f"Expected Layer for UID {uid}, but "
