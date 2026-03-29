@@ -151,6 +151,14 @@ depends-on = ["compile-translations"]
 cmd = "bash scripts/build-deb.sh --source"
 depends-on = ["compile-translations"]
 
+[dependencies]
+libadwaita = ">=1.8.4,<2"
+gtk4 = ">=4.20.3,<5"
+pygobject = ">=3.50.0,<4"
+
+[pypi-dependencies]
+dacite = ">=1.9.2, <2"
+
 # Tasks for developing and generating the website
 [feature.website.tasks]
 site-install = { cmd = "npm install", cwd = "website" }
