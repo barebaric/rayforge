@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-29 15:48+0200\n"
+"POT-Creation-Date: 2026-03-30 17:47+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -2189,6 +2189,10 @@ msgid ""
 msgstr "选择一个模板以复制其设置。您的标签和描述将被保留。"
 
 #: rayforge/ui_gtk/machine/control_panel.py
+msgid "Console"
+msgstr "控制台"
+
+#: rayforge/ui_gtk/machine/control_panel.py
 msgid "Active System"
 msgstr "活动系统"
 
@@ -3737,12 +3741,8 @@ msgid "Show Travel Moves"
 msgstr "显示移动路径"
 
 #: rayforge/ui_gtk/main_menu.py
-msgid "Show G-code Preview"
-msgstr "显示G代码预览"
-
-#: rayforge/ui_gtk/main_menu.py
-msgid "Show Control Panel"
-msgstr "显示控制面板"
+msgid "Show Bottom Panel"
+msgstr "显示底部面板"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Simulate Execution"
@@ -3913,6 +3913,10 @@ msgid "(No Recent Items)"
 msgstr "(无最近项目)"
 
 #: rayforge/ui_gtk/mainwindow.py
+msgid "G-code Viewer"
+msgstr "G代码查看器"
+
+#: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
 msgid "Maintenance Alert: {name} has reached its limit ({curr} / {limit})"
 msgstr "维护警报：{name}已达到其限制 ({curr} / {limit})"
@@ -4013,12 +4017,8 @@ msgid "Toggle execution simulation"
 msgstr "切换执行模拟"
 
 #: rayforge/ui_gtk/toolbar.py
-msgid "Toggle G-code Preview"
-msgstr "切换G代码预览"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Toggle control panel"
-msgstr "切换控制面板"
+msgid "Toggle bottom panel"
+msgstr "切换底部面板"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Toggle tab visibility"
@@ -4171,6 +4171,14 @@ msgstr "使用原始矢量"
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import vector data directly"
 msgstr "直接导入矢量数据"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "DPI"
+msgstr "DPI"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Pixels per inch for unitless SVG dimensions"
+msgstr "无单位SVG尺寸的每英寸像素数"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Layers"
@@ -4449,12 +4457,12 @@ msgid "Reorder Assets"
 msgstr "重新排序资产"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
-msgid "Assets"
-msgstr "资产"
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
 msgid "Add Asset"
 msgstr "添加资产"
+
+#: rayforge/ui_gtk/doceditor/asset_list_view.py
+msgid "Assets"
+msgstr "资产"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
 #, python-brace-format
@@ -4903,12 +4911,12 @@ msgid "Diameter of the cylindrical object in machine units"
 msgstr "圆柱形物体的直径（机器单位）"
 
 #: rayforge/ui_gtk/doceditor/layer_list.py
-msgid "Workpiece Layers"
-msgstr "工件图层"
-
-#: rayforge/ui_gtk/doceditor/layer_list.py
 msgid "Add New Layer"
 msgstr "添加新图层"
+
+#: rayforge/ui_gtk/doceditor/layer_list.py
+msgid "Workpiece Layers"
+msgstr "工件图层"
 
 #: rayforge/ui_gtk/doceditor/layer_list.py
 #, python-brace-format

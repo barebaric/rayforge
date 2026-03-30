@@ -1,26 +1,30 @@
-# Control Panel
+# Bottom Panel
 
-The Control Panel at the bottom of the Rayforge window provides manual control
-over your laser cutter's position, real-time machine status, and a log view
-for monitoring operations.
+The Bottom Panel at the bottom of the Rayforge window provides manual control
+over your laser cutter's position, real-time machine status, a log view
+for monitoring operations, and a G-code viewer.
 
 ## Overview
 
-The Control Panel combines several functions into one convenient interface:
+The Bottom Panel combines several functions into one convenient interface:
 
-1. **Jog Controls**: Manual movement and positioning
-2. **Machine Status**: Real-time position and connection state
-3. **Console**: Interactive G-code terminal with syntax highlighting
-4. **Work Coordinate System (WCS)**: Quick WCS selection
+1. **Tabbed View**: Switch between Console and G-code Viewer using the icon
+   strip on the left
+2. **Jog Controls**: Manual movement and positioning (always visible)
+3. **Machine Status**: Real-time position and connection state
+4. **Work Coordinate System (WCS)**: Quick WCS selection (always visible)
 
-![Control Panel](/screenshots/control-panel.png)
+The left side of the panel contains an icon tab strip that lets you switch
+between the **Console** and the **G-code Viewer**. The jog controls and WCS
+controls on the right side remain visible regardless of which tab is active.
 
-## Accessing the Control Panel
+![Bottom Panel](/screenshots/bottom-panel.png)
 
-The Control Panel is always visible at the bottom of the main window. It can
-be toggled via:
+## Accessing the Bottom Panel
 
-- **Menu**: View → Control Panel
+The Bottom Panel can be toggled via:
+
+- **Menu**: View → Bottom Panel
 - **Keyboard Shortcut**: Ctrl+L
 
 :::note Connection Required
@@ -184,10 +188,11 @@ as machine coordinates are fixed by hardware.
 :::
 
 
-## Console
+## Console Tab
 
-The Console provides an interactive terminal-style interface for sending G-code
-commands and monitoring machine communication:
+The Console tab provides an interactive terminal-style interface for sending
+G-code commands and monitoring machine communication. Click the console icon
+in the tab strip to switch to this view.
 
 ### Command Input
 
@@ -236,9 +241,22 @@ The console is invaluable for diagnosing issues:
 - Review job execution progress in real-time
 - Send diagnostic commands (e.g., `$$` to view GRBL settings)
 
+## G-code Viewer Tab
+
+The G-code Viewer tab displays the generated G-code for the current
+operations. Click the G-code icon in the tab strip to switch to this view.
+
+### Features
+
+- **Syntax Highlighting**: G-code commands are color-coded for readability
+- **Line Highlighting**: The currently executing line is highlighted during
+  job execution
+- **Auto-Refresh**: The G-code content updates automatically when operations
+  or document settings change
+
 ## Machine Compatibility
 
-The Control Panel adapts to your machine's capabilities:
+The Bottom Panel adapts to your machine's capabilities:
 
 ### Axis Support
 

@@ -1,23 +1,24 @@
-# Bedienfeld
+# Unteres Panel
 
-Das Bedienfeld am unteren Rand des Rayforge-Fensters bietet manuelle Kontrolle über die Position deines Laserschneiders, Echtzeit-Maschinenstatus und eine Protokollansicht zur Überwachung von Operationen.
+Das untere Panel am unteren Rand des Rayforge-Fensters bietet manuelle Kontrolle über die Position deines Laserschneiders, Echtzeit-Maschinenstatus und eine Protokollansicht zur Überwachung von Operationen.
 
 ## Übersicht
 
-Das Bedienfeld kombiniert mehrere Funktionen in einer praktischen Schnittstelle:
+Das untere Panel kombiniert mehrere Funktionen in einer praktischen Schnittstelle:
 
 1. **Jog-Steuerung**: Manuelle Bewegung und Positionierung
 2. **Maschinenstatus**: Echtzeit-Position und Verbindungszustand
-3. **Konsole**: Interaktives G-Code-Terminal mit Syntaxhervorhebung
-4. **Werkstückkoordinatensystem (WCS)**: Schnelle WCS-Auswahl
+3. **G-Code-Viewer-Tab**: G-Code mit Syntaxhervorhebung anzeigen
+4. **Konsole-Tab**: Interaktives G-Code-Terminal mit Syntaxhervorhebung
+5. **Werkstückkoordinatensystem (WCS)**: Schnelle WCS-Auswahl
 
-![Bedienfeld](/screenshots/control-panel.png)
+![Unteres Panel](/screenshots/bottom-panel.png)
 
-## Zugriff auf das Bedienfeld
+## Zugriff auf das untere Panel
 
-Das Bedienfeld ist immer am unteren Rand des Hauptfensters sichtbar. Es kann umgeschaltet werden über:
+Das untere Panel ist immer am unteren Rand des Hauptfensters sichtbar. Es kann umgeschaltet werden über:
 
-- **Menü**: Ansicht → Bedienfeld
+- **Menü**: Ansicht → Unteres Panel
 - **Tastaturkürzel**: Strg+L
 
 :::note Verbindung erforderlich
@@ -111,7 +112,7 @@ Konfiguriere das Verhalten von Jog-Operationen:
 
 ## Maschinenstatus-Anzeige
 
-Das Bedienfeld zeigt Echtzeitinformationen über deine Maschine:
+Das untere Panel zeigt Echtzeitinformationen über deine Maschine:
 
 ### Aktuelle Position
 
@@ -137,7 +138,7 @@ Zeigt die Position des Laserkopfes im aktiven Koordinatensystem:
 
 ## Werkstückkoordinatensystem (WCS)
 
-Das Bedienfeld bietet schnellen Zugriff auf die Werkstückkoordinatensystem-Verwaltung.
+Das untere Panel bietet schnellen Zugriff auf die Werkstückkoordinatensystem-Verwaltung.
 
 ### Aktives System auswählen
 
@@ -185,7 +186,28 @@ Null-Schaltflächen sind deaktiviert wenn G53 (Maschinenkoordinaten) ausgewählt
 :::
 
 
-## Konsole
+## G-Code-Viewer-Tab
+
+Der G-Code-Viewer zeigt den generierten G-Code mit erweiterten Anzeigefunktionen:
+
+### Syntaxhervorhebung
+
+- **Bewegungsbefehle** (G0, G1, G2, G3): Verschiebe- und Schnittbefehle
+- **Parameter** (X, Y, Z, F, S): Koordinaten und Geschwindigkeits-/Leistungswerte
+- **Maschinenbefehle** (M-Befehle): Maschinensteuerungsbefehle
+- **Kommentare**: Inline-Kommentare im G-Code
+
+### Zeilenmarkierung
+
+- Aktuell ausgeführte Zeile wird hervorgehoben während der Auftragsausführung
+- Ermöglicht einfaches Verfolgen des Fortschritts
+
+### Automatische Aktualisierung
+
+- G-Code wird automatisch aktualisiert wenn sich das Projekt ändert
+- Kein manueller Aktualisierungsvorgang erforderlich
+
+## Konsole-Tab
 
 Die Konsole bietet eine interaktive Terminal-ähnliche Schnittstelle zum Senden von G-Code-Befehlen und Überwachen der Maschinenkommunikation:
 
@@ -235,7 +257,7 @@ Die Konsole ist unschätzbar wertvoll für die Diagnose von Problemen:
 
 ## Maschinenkompatibilität
 
-Das Bedienfeld passt sich an die Fähigkeiten deiner Maschine an:
+Das untere Panel passt sich an die Fähigkeiten deiner Maschine an:
 
 ### Achsen-Unterstützung
 

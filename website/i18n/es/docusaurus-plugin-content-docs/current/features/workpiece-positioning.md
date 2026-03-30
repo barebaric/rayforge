@@ -299,7 +299,7 @@ Para ejecutar el mismo trabajo en diferentes ubicaciones:
   Referencia SCF
 - [Integración de Cámara](../machine/camera) - Configuración y alineación de
   cámara
-- [Panel de Control](../ui/control-panel) - Controles de movimiento y gestión
+- [Panel de Control](../ui/bottom-panel) - Controles de movimiento y gestión
   SCF
 - [Guía de Inicio Rápido](../getting-started/quick-start) - Flujo de trabajo
   básico

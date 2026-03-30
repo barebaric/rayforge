@@ -67,16 +67,16 @@ Configurez les paramètres pour les objets ou opérations sélectionnés :
 - Nombre de passes
 - Options avancées (overscan, kerf, onglets)
 
-### 6. Panneau de contrôle
+### 6. Panneau inférieur
 
-Le panneau de contrôle en bas de la fenêtre fournit :
+Le panneau inférieur en bas de la fenêtre fournit :
 
 - **Contrôles de déplacement** : Mouvement et positionnement manuels de la machine
 - **État de la machine** : Position et état de connexion en temps réel
 - **Vue du journal** : Communication G-code et historique des opérations
 - **Gestion du WCS** : Sélection et mise à zéro du système de coordonnées de travail
 
-Voir [Panneau de contrôle](control-panel) pour des informations détaillées.
+Voir [Panneau inférieur](bottom-panel) pour des informations détaillées.
 
 ## Gestion des fenêtres
 
@@ -110,5 +110,5 @@ Personnalisez l'interface dans **Édition → Préférences** :
 
 - [Systèmes de coordonnées de travail](../general-info/coordinate-systems) - WCS
 - [Outils du canevas](canvas-tools) - Outils pour manipuler les conceptions
-- [Panneau de contrôle](control-panel) - Contrôle manuel de la machine, état et journaux
+- [Panneau inférieur](bottom-panel) - Contrôle manuel de la machine, état et journaux
 - [Prévisualisation 3D](3d-preview) - Visualiser les trajets d'outil en 3D

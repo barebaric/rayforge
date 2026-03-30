@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-29 15:48+0200\n"
+"POT-Creation-Date: 2026-03-30 17:47+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -2290,6 +2290,10 @@ msgstr ""
 "збережені."
 
 #: rayforge/ui_gtk/machine/control_panel.py
+msgid "Console"
+msgstr "Консоль"
+
+#: rayforge/ui_gtk/machine/control_panel.py
 msgid "Active System"
 msgstr "Активна система"
 
@@ -3882,12 +3886,8 @@ msgid "Show Travel Moves"
 msgstr "Показати холості переміщення"
 
 #: rayforge/ui_gtk/main_menu.py
-msgid "Show G-code Preview"
-msgstr "Показати попередній перегляд G-коду"
-
-#: rayforge/ui_gtk/main_menu.py
-msgid "Show Control Panel"
-msgstr "Показати панель керування"
+msgid "Show Bottom Panel"
+msgstr "Показати нижню панель"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Simulate Execution"
@@ -4058,6 +4058,10 @@ msgid "(No Recent Items)"
 msgstr "(Немає останніх елементів)"
 
 #: rayforge/ui_gtk/mainwindow.py
+msgid "G-code Viewer"
+msgstr "Переглядач G-code"
+
+#: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
 msgid "Maintenance Alert: {name} has reached its limit ({curr} / {limit})"
 msgstr ""
@@ -4160,12 +4164,8 @@ msgid "Toggle execution simulation"
 msgstr "Перемкнути симуляцію виконання"
 
 #: rayforge/ui_gtk/toolbar.py
-msgid "Toggle G-code Preview"
-msgstr "Перемкнути попередній перегляд G-коду"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Toggle control panel"
-msgstr "Перемкнути панель керування"
+msgid "Toggle bottom panel"
+msgstr "Перемкнути нижню панель"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Toggle tab visibility"
@@ -4320,6 +4320,14 @@ msgstr "Використати оригінальні вектори"
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import vector data directly"
 msgstr "Імпортувати векторні дані безпосередньо"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "DPI"
+msgstr "DPI"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Pixels per inch for unitless SVG dimensions"
+msgstr "Пікселі на дюйм для SVG-розмірів без одиниць виміру"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Layers"
@@ -4604,12 +4612,12 @@ msgid "Reorder Assets"
 msgstr "Змінити порядок ресурсів"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
-msgid "Assets"
-msgstr "Ресурси"
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
 msgid "Add Asset"
 msgstr "Додати ресурс"
+
+#: rayforge/ui_gtk/doceditor/asset_list_view.py
+msgid "Assets"
+msgstr "Ресурси"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
 #, python-brace-format
@@ -5061,12 +5069,12 @@ msgid "Diameter of the cylindrical object in machine units"
 msgstr "Діаметр циліндричного об'єкта в одиницях машини"
 
 #: rayforge/ui_gtk/doceditor/layer_list.py
-msgid "Workpiece Layers"
-msgstr "Шари робочої деталі"
-
-#: rayforge/ui_gtk/doceditor/layer_list.py
 msgid "Add New Layer"
 msgstr "Додати новий шар"
+
+#: rayforge/ui_gtk/doceditor/layer_list.py
+msgid "Workpiece Layers"
+msgstr "Шари робочої деталі"
 
 #: rayforge/ui_gtk/doceditor/layer_list.py
 #, python-brace-format

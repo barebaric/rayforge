@@ -23,7 +23,7 @@ TARGETS = {
     "app-settings:addons": "app_settings_addons",
     "app-settings:ai": "app_settings_ai",
     "ai-workpiece-generator": "ai_workpiece_generator",
-    "control-panel": "control_panel",
+    "bottom-panel": "bottom_panel",
     "import-dialog": "import_dialog",
     "machine-settings:general": "machine_settings_general",
     "machine-settings:hardware": "machine_settings_hardware",

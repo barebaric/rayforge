@@ -45,7 +45,7 @@ module.exports = {
         'ui/main-window',
         'ui/canvas-tools',
         'ui/3d-preview',
-        'ui/control-panel',
+        'ui/bottom-panel',
       ],
     },
         {

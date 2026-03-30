@@ -3,11 +3,11 @@
 Complete reference of keyboard shortcuts in Rayforge.
 
 :::note Platform Conventions
-- **Linux/Windows:** `Ctrl` key
-- **macOS:** ` (Command)` key
-- Documentation uses `Ctrl` - macOS users substitute with ``
-:::
 
+- **Linux/Windows:** `Ctrl` key
+- **macOS:** `Command` key
+- Documentation uses `Ctrl` - macOS users substitute with `Command`
+  :::
 
 ---
 
@@ -52,7 +52,6 @@ Complete reference of keyboard shortcuts in Rayforge.
 | `Ctrl+Alt+C`   | Toggle Camera     | Show/hide camera overlay       |
 | `F12`          | 3D View           | Toggle 3D preview window       |
 | `F11`          | Simulation Mode   | Toggle simulation mode         |
-| `Ctrl+Shift+G` | G-code Preview    | Toggle G-code preview          |
 | `Ctrl+Shift+T` | Travel View       | Toggle travel view             |
 | `Ctrl+Alt+W`   | Split Workpiece   | Split workpiece into parts     |
 
@@ -81,10 +80,10 @@ Complete reference of keyboard shortcuts in Rayforge.
 
 ## Tabs (Holding Tabs)
 
-| Shortcut | Action                 | Description            |
-| -------- | ---------------------- | ---------------------- |
+| Shortcut     | Action                 | Description            |
+| ------------ | ---------------------- | ---------------------- |
 | `Ctrl+Alt+T` | Add Tabs (Equidistant) | Add evenly-spaced tabs |
-| `T`      | Toggle Tab Visibility  | Show/hide tabs overlay |
+| `T`          | Toggle Tab Visibility  | Show/hide tabs overlay |
 
 ---
 
@@ -110,8 +109,8 @@ Complete reference of keyboard shortcuts in Rayforge.
 
 ### Layout
 
-| Shortcut | Action        | Description        |
-| -------- | ------------- | ------------------ |
+| Shortcut     | Action        | Description        |
+| ------------ | ------------- | ------------------ |
 | `Ctrl+Alt+A` | Pixel Perfect | Snap to pixel grid |
 
 ---
@@ -127,16 +126,15 @@ Complete reference of keyboard shortcuts in Rayforge.
 
 ## Machine Control
 
-| Shortcut | Action           | Description                     |
-| -------- | ---------------- | ------------------------------- |
-| `Ctrl+L` | Control Panel    | Toggle control panel visibility |
-| `Ctrl+&lt;` | Machine Settings | Open machine settings dialog    |
-| `F1`     | About            | Show about dialog               |
+| Shortcut    | Action           | Description                    |
+| ----------- | ---------------- | ------------------------------ |
+| `Ctrl+L`    | Bottom Panel     | Toggle bottom panel visibility |
+| `Ctrl+&lt;` | Machine Settings | Open machine settings dialog   |
+| `F1`        | About            | Show about dialog              |
 
 :::note Machine Operations
 Machine control operations (Home, Frame, Send, etc.) currently don't have default shortcuts but can be accessed via toolbar buttons or menus.
 :::
-
 
 ---
 
@@ -200,7 +198,6 @@ When editing G-code or text fields:
 - `Ctrl+Alt+C` - Toggle camera
 - `F12` - 3D view
 - `F11` - Simulation mode
-- `Ctrl+Shift+G` - G-code preview
 - `Ctrl+Shift+T` - Travel view
 - `1`, `2`, `7` - 3D view presets
 - `P` - Perspective toggle
@@ -228,7 +225,6 @@ When editing G-code or text fields:
 :::note Custom Shortcuts
 Keyboard shortcuts are currently hardcoded. Custom shortcut configuration may be added in future versions.
 :::
-
 
 **Current limitations:**
 
@@ -376,8 +372,8 @@ Some lesser-known shortcuts:
 |               | Shift+V      | Flip V           |
 |               | Ctrl+G       | Group            |
 |               | Ctrl+U       | Ungroup          |
-| **Machine**   | Ctrl+L       | Control Panel    |
-|               | Ctrl+&lt;       | Machine Settings |
+| **Machine**   | Ctrl+L       | Bottom Panel     |
+|               | Ctrl+&lt;    | Machine Settings |
 |               | F1           | About            |
 
 ---

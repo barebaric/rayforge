@@ -223,6 +223,6 @@ You need to cut the same part 10 times in different locations:
 
 - [Workpiece Positioning](../features/workpiece-positioning) - Comprehensive
   positioning guide
-- [Control Panel](../ui/control-panel) - Manual control and WCS management
+- [Control Panel](../ui/bottom-panel) - Manual control and WCS management
 - [Machine Setup](../machine/general) - Configure your machine
 - [3D Preview](../ui/3d-preview) - Visualizing your jobs

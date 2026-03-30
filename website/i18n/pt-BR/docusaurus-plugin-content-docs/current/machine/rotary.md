@@ -1,0 +1,78 @@
+# Configuração do Eixo Rotativo
+
+O Rayforge suporta acessórios rotativos para gravar e cortar objetos cilíndricos
+como canecas, copos, canetas e material redondo. Quando um módulo rotativo é
+conectado, o Rayforge envolve o trabalho ao redor do cilindro e mostra uma pré-
+visualização 3D do resultado.
+
+![Configurações do Módulo Rotativo](/screenshots/machine-rotary-module.png)
+
+## Quando você precisa do modo rotativo
+
+Use o modo rotativo sempre que sua peça de trabalho for cilíndrica. Exemplos
+comuns incluem:
+
+- Gravar logotipos ou texto em artigos de bebida
+- Cortar padrões em tubos ou canos
+- Marcar objetos cilíndricos como canetas ou cabos de ferramentas
+
+Sem o modo rotativo, o eixo Y move a cabeça do laser para frente e para trás em
+uma cama plana. Com o modo rotativo ativado, o eixo Y controla a rotação do
+cilindro, fazendo com que o desenho envolva a superfície.
+
+## Configurando um módulo rotativo
+
+Antes de começar, conecte fisicamente seu módulo rotativo à máquina de acordo com
+as instruções do fabricante. Normalmente, isso significa conectá-lo à porta do
+driver de passo do eixo Y no lugar do motor normal do eixo Y.
+
+No Rayforge, abra **Configurações → Máquina** e navegue até a página **Rotativo**
+para configurar seu módulo:
+
+- **Circunferência**: Meça a distância ao redor do objeto que você deseja gravar.
+  Você pode envolver um pedaço de papel ou barbante ao redor do cilindro e medir
+  seu comprimento. Isso informa ao Rayforge o tamanho da superfície cilíndrica
+  para que o desenho seja dimensionado corretamente.
+- **Micropassos por rotação**: Este é o número de passos que o motor rotativo
+  precisa para uma rotação completa. Consulte a documentação do seu módulo rotativo
+  para encontrar este valor.
+
+## Modo rotativo por camada
+
+Se o seu documento tiver várias camadas, você pode ativar ou desativar o modo
+rotativo independentemente para cada camada. Isso é útil quando você deseja
+combinar trabalho plano e cilíndrico em um único projeto, ou quando tem
+configurações rotativas diferentes para partes diferentes do trabalho.
+
+Quando o modo rotativo está ativo em uma camada, um pequeno ícone rotativo aparece
+ao lado dessa camada na lista de camadas, para que você possa ver rapidamente quais
+camadas serão executadas no modo rotativo.
+
+## Pré-visualização 3D no modo rotativo
+
+Quando o modo rotativo está ativo, a [visualização 3D](../ui/3d-preview) mostra
+seu caminho de ferramenta envolvido ao redor de um cilindro em vez de uma superfície
+plana.
+
+![Pré-visualização 3D no modo rotativo](/screenshots/main-3d-rotary.png)
+
+Isso lhe dá uma pré-visualização realista de como o desenho ficará no objeto real,
+facilitando a identificação de problemas de tamanho ou posicionamento antes de
+começar a cortar.
+
+## Dicas para bons resultados
+
+- **Meça a circunferência com cuidado** — mesmo um pequeno erro aqui vai esticar
+  ou comprimir seu desenho ao redor do cilindro.
+- **Fixe a peça de trabalho** — certifique-se de que o objeto esteja firmemente
+  posicionado nos rolos e não balance ou escorregue durante o trabalho.
+- **Teste primeiro com baixa potência** — faça uma passagem de gravação leve para
+  verificar o alinhamento antes de se comprometer com um corte de potência total.
+- **Mantenha a superfície limpa** — poeira ou resíduos no cilindro podem afetar a
+  qualidade da gravação.
+
+## Páginas relacionadas
+
+- [Fluxo de trabalho multicamadas](../features/multi-layer) - Configurações por camada incluindo rotativo
+- [Visualização 3D](../ui/3d-preview) - Pré-visualizar caminhos de ferramenta em 3D
+- [Configurações da máquina](general) - Configuração geral da máquina

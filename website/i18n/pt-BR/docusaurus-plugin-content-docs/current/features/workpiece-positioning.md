@@ -292,7 +292,7 @@ Para executar o mesmo trabalho em diferentes locais:
   Referência SCT
 - [Integração de Câmera](../machine/camera) - Configuração e alinhamento de
   câmera
-- [Painel de Controle](../ui/control-panel) - Controles de movimento e gestão
+- [Painel de Controle](../ui/bottom-panel) - Controles de movimento e gestão
   SCT
 - [Guia de Início Rápido](../getting-started/quick-start) - Fluxo de trabalho
   básico

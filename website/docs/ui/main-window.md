@@ -23,7 +23,6 @@ Access all Rayforge functions through organized menus:
 Quick access to frequently used controls:
 
 - **WCS dropdown**: Select the active Work Coordinate System (G53-G59)
-- **G-code preview toggle**: Show/hide the G-code preview overlay
 - **Simulation toggle**: Enable/disable job simulation mode
 - **Travel moves**: Toggle visibility of rapid travel moves
 - **Workpiece**: Toggle workpiece visibility
@@ -70,16 +69,16 @@ Configure settings for selected objects or operations:
 - Number of passes
 - Advanced options (overscan, kerf, tabs)
 
-### 6. Control Panel
+### 6. Bottom Panel
 
-The Control Panel at the bottom of the window provides:
+The Bottom Panel at the bottom of the window provides:
 
-- **Jog Controls**: Manual machine movement and positioning
+- **Tabbed View**: Switch between Console and G-code Viewer via the icon strip
+- **Jog Controls**: Manual machine movement and positioning (always visible)
 - **Machine Status**: Real-time position and connection state
-- **Log View**: G-code communication and operation history
 - **WCS Management**: Work coordinate system selection and zeroing
 
-See [Control Panel](control-panel) for detailed information.
+See [Bottom Panel](bottom-panel) for detailed information.
 
 ## Window Management
 
@@ -87,7 +86,7 @@ See [Control Panel](control-panel) for detailed information.
 
 Show/hide panels as needed:
 
-- **Control Panel**: View → Control Panel (<kbd>ctrl+l</kbd>)
+- **Bottom Panel**: View → Bottom Panel (<kbd>ctrl+l</kbd>)
 
 ### Full Screen Mode
 
@@ -112,5 +111,5 @@ Customize the interface in **Edit → Preferences**:
 
 - [Work Coordinate Systems](../general-info/coordinate-systems) - WCS
 - [Canvas Tools](canvas-tools) - Tools for manipulating designs
-- [Control Panel](control-panel) - Manual machine control, status, and logs
+- [Bottom Panel](bottom-panel) - Manual machine control, status, and logs
 - [3D View](3d-preview) - Visualize toolpaths in 3D

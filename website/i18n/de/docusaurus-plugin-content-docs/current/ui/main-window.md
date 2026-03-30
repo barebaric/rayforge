@@ -66,16 +66,16 @@ Einstellungen für ausgewählte Objekte oder Operationen konfigurieren:
 - Anzahl der Durchgänge
 - Erweiterte Optionen (Overscan, Schnittfuge, Halterungen)
 
-### 6. Bedienfeld
+### 6. Unteres Panel
 
-Das Bedienfeld am unteren Rand des Fensters bietet:
+Das untere Panel am unteren Rand des Fensters bietet:
 
 - **Jog-Steuerung**: Manuelle Maschinenbewegung und Positionierung
 - **Maschinenstatus**: Echtzeit-Position und Verbindungszustand
 - **Protokollansicht**: G-Code-Kommunikation und Operationsverlauf
 - **WCS-Verwaltung**: Werkstückkoordinatensystem-Auswahl und Nullsetzung
 
-Siehe [Bedienfeld](control-panel) für detaillierte Informationen.
+Siehe [Unteres Panel](bottom-panel) für detaillierte Informationen.
 
 ## Fensterverwaltung
 
@@ -109,5 +109,5 @@ Passe die Oberfläche an in **Bearbeiten → Einstellungen**:
 
 - [Werkstückkoordinatensysteme](../general-info/coordinate-systems) - WCS
 - [Canvas-Werkzeuge](canvas-tools) - Werkzeuge zum Bearbeiten von Designs
-- [Bedienfeld](control-panel) - Manuelle Maschinensteuerung, Status und Protokolle
+- [Unteres Panel](bottom-panel) - Manuelle Maschinensteuerung, Status und Protokolle
 - [3D-Vorschau](3d-preview) - Werkzeugwege in 3D visualisieren
