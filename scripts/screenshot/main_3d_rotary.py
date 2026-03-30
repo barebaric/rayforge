@@ -13,6 +13,7 @@ from utils import (
     wait_for_settled,
     show_panel,
     hide_panel,
+    show_bottom_tab,
     save_panel_states,
     restore_panel_states,
     take_screenshot,
@@ -23,7 +24,7 @@ from utils import (
 
 logger = logging.getLogger(__name__)
 
-PANELS = ["show_3d_view", "toggle_control_panel", "toggle_gcode_preview"]
+PANELS = ["show_3d_view", "toggle_bottom_panel"]
 
 
 def wait_for_3d_view(timeout: float = 10.0) -> bool:
@@ -58,8 +59,8 @@ def main():
 
     saved_states = save_panel_states(win, PANELS)
     show_panel(win, "show_3d_view", True)
-    hide_panel(win, "toggle_control_panel")
-    show_panel(win, "toggle_gcode_preview", True)
+    hide_panel(win, "toggle_bottom_panel")
+    show_bottom_tab(win, "gcode")
 
     logger.info("Waiting for 3D view to render...")
     if not wait_for_3d_view(timeout=10):

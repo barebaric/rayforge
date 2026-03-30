@@ -14,6 +14,7 @@ from utils import (
     wait_for_settled,
     show_panel,
     hide_panel,
+    show_bottom_tab,
     save_panel_states,
     restore_panel_states,
     take_screenshot,
@@ -24,7 +25,7 @@ from utils import (
 
 logger = logging.getLogger(__name__)
 
-PANELS = ["toggle_control_panel", "toggle_gcode_preview"]
+PANELS = ["toggle_bottom_panel"]
 
 
 def _wait_for_simulation_components(timeout: int = 10) -> bool:
@@ -139,8 +140,8 @@ def main():
     advance_simulation(fraction=0.8)
 
     saved_states = save_panel_states(win, PANELS)
-    hide_panel(win, "toggle_control_panel")
-    show_panel(win, "toggle_gcode_preview", True)
+    hide_panel(win, "toggle_bottom_panel")
+    show_bottom_tab(win, "gcode")
 
     time.sleep(0.25)
 

@@ -210,14 +210,9 @@ class ActionManager:
         )
         config = get_context().config
         self._add_stateful_action(
-            "toggle_gcode_preview",
-            self.win.on_toggle_gcode_preview_state_change,
-            GLib.Variant.new_boolean(config.gcode_preview_visible),
-        )
-        self._add_stateful_action(
-            "toggle_control_panel",
-            self.win.on_toggle_control_panel_state_change,
-            GLib.Variant.new_boolean(config.control_panel_visible),
+            "toggle_bottom_panel",
+            self.win.on_toggle_bottom_panel_state_change,
+            GLib.Variant.new_boolean(config.bottom_panel_visible),
         )
 
         self._add_stateful_action(
@@ -530,8 +525,7 @@ class ActionManager:
             "win.show_workpieces": "h",
             "win.show_tabs": "t",
             "win.toggle_camera_view": "<Ctrl><Alt>c",
-            "win.toggle_control_panel": f"{PRIMARY_ACCEL}l",
-            "win.toggle_gcode_preview": f"{PRIMARY_ACCEL}<Shift>g",
+            "win.toggle_bottom_panel": f"{PRIMARY_ACCEL}l",
             "win.toggle_travel_view": f"{PRIMARY_ACCEL}<Shift>t",
             "win.show_3d_view": "F12",
             "win.simulate_mode": "F11",

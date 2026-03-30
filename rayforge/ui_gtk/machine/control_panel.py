@@ -10,6 +10,7 @@ from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.cmd import MachineCmd
 from ...shared.tasker import task_mgr
 from ..icons import get_icon
+from ..shared.icon_tab_widget import IconTabWidget
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from .console import Console
 from .jog_widget import JogWidget
@@ -41,13 +42,21 @@ class MachineControlPanel(Gtk.Box):
         self.hbox.set_spacing(12)
         self.append(self.hbox)
 
+        self.tab_widget = IconTabWidget()
+        self.tab_widget.set_hexpand(True)
+        self.tab_widget.set_vexpand(True)
+
         self.console = Console()
         self.console.set_hexpand(True)
         self.console.set_vexpand(True)
         if machine:
             self.console.set_machine(machine)
         self.console.command_submitted.connect(self._on_command_submitted)
-        self.hbox.append(self.console)
+
+        self.tab_widget.add_tab(
+            "console", "terminal-symbolic", self.console, _("Console")
+        )
+        self.hbox.append(self.tab_widget)
 
         right_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         right_hbox.set_spacing(12)

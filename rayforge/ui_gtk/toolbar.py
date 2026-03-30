@@ -129,21 +129,13 @@ class MainToolbar(Gtk.Box):
         self.simulate_button.set_action_name("win.simulate_mode")
         self.append(self.simulate_button)
 
-        # Add a button for the G-code Preview
-        self.gcode_preview_button = Gtk.ToggleButton()
-        self.gcode_preview_button.set_child(get_icon("gcode-symbolic"))
-        self.gcode_preview_button.set_active(False)
-        self.gcode_preview_button.set_tooltip_text(_("Toggle G-code Preview"))
-        self.gcode_preview_button.set_action_name("win.toggle_gcode_preview")
-        self.append(self.gcode_preview_button)
-
         # Add a button to toggle the control panel.
-        self.control_panel_button = Gtk.ToggleButton()
-        self.control_panel_button.set_child(get_icon("jog-symbolic"))
-        self.control_panel_button.set_active(False)
-        self.control_panel_button.set_tooltip_text(_("Toggle control panel"))
-        self.control_panel_button.set_action_name("win.toggle_control_panel")
-        self.append(self.control_panel_button)
+        self.bottom_panel_button = Gtk.ToggleButton()
+        self.bottom_panel_button.set_child(get_icon("jog-symbolic"))
+        self.bottom_panel_button.set_active(False)
+        self.bottom_panel_button.set_tooltip_text(_("Toggle bottom panel"))
+        self.bottom_panel_button.set_action_name("win.toggle_bottom_panel")
+        self.append(self.bottom_panel_button)
 
         # Add a button to toggle tab visibility.
         self.show_tabs_button = Gtk.ToggleButton()

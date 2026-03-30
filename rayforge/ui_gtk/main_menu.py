@@ -84,10 +84,7 @@ class MainMenu(Gio.Menu):
             _("Show Travel Moves"), "win.toggle_travel_view"
         )
         visibility_group.append(
-            _("Show G-code Preview"), "win.toggle_gcode_preview"
-        )
-        visibility_group.append(
-            _("Show Control Panel"), "win.toggle_control_panel"
+            _("Show Bottom Panel"), "win.toggle_bottom_panel"
         )
         view_menu.append_section(None, visibility_group)
 
