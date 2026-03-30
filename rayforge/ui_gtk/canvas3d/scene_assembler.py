@@ -60,6 +60,8 @@ def generate_scene_description(
             for step in layer.workflow.steps:
                 if step.uid in seen_steps:
                     continue
+                if not step.visible:
+                    continue
                 seen_steps.add(step.uid)
                 handle = pipeline.get_step_render_artifact_handle(step.uid)
                 if handle:

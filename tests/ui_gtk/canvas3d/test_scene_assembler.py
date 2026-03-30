@@ -49,6 +49,7 @@ def mock_step() -> Step:
     """Create a mock step."""
     step = MagicMock(spec=Step)
     step.uid = "test_step_uid"
+    step.visible = True
     step.selected_laser_uid = ""
     return step
 
@@ -196,9 +197,9 @@ class TestGenerateSceneDescription:
     ):
         """Test with a complex document structure."""
         # Layer 1: Visible, 2 steps, one with artifact, one without
-        step1a = MagicMock(spec=Step, uid="s1a")
+        step1a = MagicMock(spec=Step, uid="s1a", visible=True)
         step1a.selected_laser_uid = "laser1"
-        step1b = MagicMock(spec=Step, uid="s1b")
+        step1b = MagicMock(spec=Step, uid="s1b", visible=True)
         step1b.selected_laser_uid = "laser1"
         layer1 = MagicMock(spec=Layer, visible=True)
         layer1.rotary_enabled = False
@@ -206,7 +207,7 @@ class TestGenerateSceneDescription:
         layer1.workflow = MagicMock(steps=[step1a, step1b])
 
         # Layer 2: Invisible, should be ignored
-        step2 = MagicMock(spec=Step, uid="s2")
+        step2 = MagicMock(spec=Step, uid="s2", visible=True)
         step2.selected_laser_uid = "laser2"
         layer2 = MagicMock(spec=Layer, visible=False)
         layer2.rotary_enabled = False
@@ -214,7 +215,7 @@ class TestGenerateSceneDescription:
         layer2.workflow = MagicMock(steps=[step2])
 
         # Layer 3: Visible, 1 step with artifact
-        step3 = MagicMock(spec=Step, uid="s3")
+        step3 = MagicMock(spec=Step, uid="s3", visible=True)
         step3.selected_laser_uid = "laser3"
         layer3 = MagicMock(spec=Layer, visible=True)
         layer3.rotary_enabled = False
