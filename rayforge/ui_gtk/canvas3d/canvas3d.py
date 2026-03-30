@@ -1,4 +1,6 @@
 import logging
+import threading
+import time
 from dataclasses import dataclass
 from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
 import numpy as np
@@ -67,6 +69,7 @@ def prepare_scene_vertices_async(
     laser_color_sets: Dict[str, ColorSet],
     world_to_visual: np.ndarray,
     world_to_cyl_local: np.ndarray,
+    cancel_event: Optional[threading.Event] = None,
 ) -> Tuple[VertexGroup, VertexGroup]:
     """
     A background task that prepares all vertex data for an entire scene.
@@ -98,9 +101,14 @@ def prepare_scene_vertices_async(
         color_set.get_rgba("zero_power"), dtype=np.float32
     )
 
+    t_prep_start = time.perf_counter()
     logger.debug("Starting scene vertex preparation from StepArtifacts")
 
     for i, item in enumerate(scene_description.render_items):
+        if cancel_event is not None and cancel_event.is_set():
+            logger.debug("Scene preparation cancelled at item %d.", i)
+            raise RuntimeError("Scene preparation cancelled")
+
         if not item.artifact_handle:
             logger.debug(f"Item {i}: no artifact_handle")
             continue
@@ -250,6 +258,12 @@ def prepare_scene_vertices_async(
         f"Rotary powered: {rotary_group.powered_verts.size // 3}"
     )
 
+    t_prep_elapsed = (time.perf_counter() - t_prep_start) * 1000
+    logger.info(
+        f"[CANVAS3D] Scene vertex preparation took "
+        f"{t_prep_elapsed:.1f}ms (items={len(scene_description.render_items)})"
+    )
+
     return flat_group, rotary_group
 
 
@@ -292,6 +306,7 @@ class Canvas3D(Gtk.GLArea):
         self._cylinder_renderers: Dict[float, CylinderRenderer] = {}
         self._had_rotary_layers = False
         self._scene_preparation_task: Optional[Task] = None
+        self._scene_prep_cancel = threading.Event()
         self._scene_vtx_cache: Optional[Tuple[VertexGroup, VertexGroup]] = None
         self._show_travel_moves = False
         self._is_orbiting = False
@@ -703,6 +718,7 @@ class Canvas3D(Gtk.GLArea):
         if not self._color_set:
             return False  # Cannot render without resolved colors
 
+        t_render_start = time.perf_counter()
         try:
             GL.glViewport(0, 0, self.camera.width, self.camera.height)
             GL.glClear(
@@ -794,6 +810,9 @@ class Canvas3D(Gtk.GLArea):
         except Exception as e:
             logger.error(f"OpenGL Render Error: {e}", exc_info=True)
             return False
+        t_render_elapsed = (time.perf_counter() - t_render_start) * 1000
+        if t_render_elapsed > 16:
+            logger.info(f"[CANVAS3D] on_render took {t_render_elapsed:.1f}ms")
         return True
 
     def on_resize(self, area, width: int, height: int):
@@ -1111,6 +1130,7 @@ class Canvas3D(Gtk.GLArea):
         if not self.texture_renderer:
             return
 
+        t_update_start = time.perf_counter()
         logger.debug("Canvas3D: Updating scene from document.")
 
         # Theme/color updates only need to happen once per theme change
@@ -1201,6 +1221,14 @@ class Canvas3D(Gtk.GLArea):
             world_to_cyl_local,
         )
 
+        t_update_elapsed = (time.perf_counter() - t_update_start) * 1000
+        if t_update_elapsed > 5:
+            logger.info(
+                f"[CANVAS3D] update_scene_from_doc took "
+                f"{t_update_elapsed:.1f}ms "
+                f"(items={len(scene_description.render_items)})"
+            )
+
     def _schedule_scene_preparation(
         self,
         scene_description: SceneDescription,
@@ -1215,8 +1243,10 @@ class Canvas3D(Gtk.GLArea):
 
         if self.ops_renderer_flat and self._color_set is not None:
             if self._scene_preparation_task:
+                self._scene_prep_cancel.set()
                 self._scene_preparation_task.cancel()
 
+            self._scene_prep_cancel.clear()
             logger.debug("[CANVAS3D] Scheduling scene preparation task.")
             self._scene_preparation_task = task_mgr.run_thread(
                 prepare_scene_vertices_async,
@@ -1226,6 +1256,7 @@ class Canvas3D(Gtk.GLArea):
                 self._laser_color_sets,
                 world_to_visual,
                 world_to_cyl_local,
+                self._scene_prep_cancel,
                 key=task_key,
                 when_done=self._on_scene_prepared,
             )

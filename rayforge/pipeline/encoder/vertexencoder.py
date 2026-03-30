@@ -49,61 +49,82 @@ def transform_to_cylinder(
     circumference = diameter * math.pi
     max_angle_per_segment = math.radians(15)
 
-    def cyl_point(x, y):
-        theta = (y / circumference) * 2.0 * math.pi
-        return [x, radius * math.sin(theta), radius * math.cos(theta)]
-
-    def normalize_angle_diff(delta):
-        while delta > math.pi:
-            delta -= 2 * math.pi
-        while delta < -math.pi:
-            delta += 2 * math.pi
-        return delta
-
-    result_verts = []
-    result_colors = [] if colors is not None else None
-
-    for i in range(0, verts.shape[0], 2):
-        if i + 1 >= verts.shape[0]:
-            break
-
-        x1, y1, _ = verts[i]
-        x2, y2, _ = verts[i + 1]
-
-        theta1 = (y1 / circumference) * 2.0 * math.pi
-        theta2 = (y2 / circumference) * 2.0 * math.pi
-
-        delta_theta = abs(normalize_angle_diff(theta2 - theta1))
-
-        num_subdivisions = max(
-            1, int(math.ceil(delta_theta / max_angle_per_segment))
+    num_pairs = verts.shape[0] // 2
+    if num_pairs == 0:
+        return (
+            np.empty((0, 3), dtype=np.float32),
+            (
+                np.empty((0, colors.shape[1]), dtype=np.float32)
+                if colors is not None
+                else None
+            ),
         )
 
-        c0 = colors[i] if colors is not None else None
-        c1 = colors[i + 1] if colors is not None else None
+    p1 = verts[0::2][:num_pairs]
+    p2 = verts[1::2][:num_pairs]
 
-        prev_x, prev_y = x1, y1
-        for j in range(1, num_subdivisions + 1):
-            t = j / num_subdivisions
-            curr_x = x1 + t * (x2 - x1)
-            curr_y = y1 + t * (y2 - y1)
+    x1 = p1[:, 0].astype(np.float64)
+    y1 = p1[:, 1].astype(np.float64)
+    x2 = p2[:, 0].astype(np.float64)
+    y2 = p2[:, 1].astype(np.float64)
 
-            result_verts.append(cyl_point(prev_x, prev_y))
-            result_verts.append(cyl_point(curr_x, curr_y))
+    theta1 = (y1 / circumference) * 2.0 * np.pi
+    theta2 = (y2 / circumference) * 2.0 * np.pi
 
-            if result_colors is not None:
-                result_colors.append(c0)
-                result_colors.append(c1)
+    delta_theta = (theta2 - theta1 + np.pi) % (2.0 * np.pi) - np.pi
+    abs_delta = np.abs(delta_theta)
 
-            prev_x, prev_y = curr_x, curr_y
-
-    new_verts = np.array(result_verts, dtype=np.float32)
-    new_colors = (
-        np.array(result_colors, dtype=np.float32)
-        if result_colors is not None
-        else None
+    num_subs = np.maximum(
+        1, np.ceil(abs_delta / max_angle_per_segment).astype(np.int32)
     )
-    return new_verts, new_colors
+
+    total_segments = int(num_subs.sum())
+
+    pair_indices = np.repeat(np.arange(num_pairs), num_subs)
+    cum_subs = np.empty(num_pairs + 1, dtype=np.int32)
+    cum_subs[0] = 0
+    np.cumsum(num_subs, out=cum_subs[1:])
+    local_idx = (
+        np.arange(total_segments, dtype=np.int32) - cum_subs[pair_indices]
+    )
+
+    subs_f64 = num_subs[pair_indices].astype(np.float64)
+    prev_t = local_idx.astype(np.float64) / subs_f64
+    curr_t = (local_idx + 1).astype(np.float64) / subs_f64
+
+    dx = x2[pair_indices] - x1[pair_indices]
+    dy = y2[pair_indices] - y1[pair_indices]
+    px = x1[pair_indices]
+    py = y1[pair_indices]
+
+    prev_x = px + prev_t * dx
+    prev_y = py + prev_t * dy
+    curr_x = px + curr_t * dx
+    curr_y = py + curr_t * dy
+
+    theta_prev = (prev_y / circumference) * 2.0 * np.pi
+    theta_curr = (curr_y / circumference) * 2.0 * np.pi
+
+    result_verts = np.empty((total_segments * 2, 3), dtype=np.float32)
+    result_verts[0::2, 0] = prev_x.astype(np.float32)
+    result_verts[0::2, 1] = (radius * np.sin(theta_prev)).astype(np.float32)
+    result_verts[0::2, 2] = (radius * np.cos(theta_prev)).astype(np.float32)
+    result_verts[1::2, 0] = curr_x.astype(np.float32)
+    result_verts[1::2, 1] = (radius * np.sin(theta_curr)).astype(np.float32)
+    result_verts[1::2, 2] = (radius * np.cos(theta_curr)).astype(np.float32)
+
+    if colors is not None:
+        c0 = colors[0::2][:num_pairs]
+        c1 = colors[1::2][:num_pairs]
+        result_colors = np.empty(
+            (total_segments * 2, colors.shape[1]), dtype=np.float32
+        )
+        result_colors[0::2] = c0[pair_indices]
+        result_colors[1::2] = c1[pair_indices]
+    else:
+        result_colors = None
+
+    return result_verts, result_colors
 
 
 class VertexEncoder(OpsEncoder):

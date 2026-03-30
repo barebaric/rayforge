@@ -15,7 +15,6 @@ from ..core.geo import Rect
 from ..core.group import Group
 from ..core.asset_registry import asset_type_registry
 from ..core.item import DocItem
-from ..core.step import Step
 from ..core.step_registry import step_registry
 from ..core.undo import Command, HistoryManager
 from ..core.workpiece import WorkPiece
@@ -111,7 +110,6 @@ class MainWindow(Adw.ApplicationWindow):
         self._last_gcode_previewer_width = 350
         self._last_control_panel_height = 200
         self._saved_control_panel_visible = False
-        self._live_3d_view_connected = False
         self._old_doc = None  # Track previous document for signal reconnection
         self.canvas3d: Optional[Canvas3D] = None
 
@@ -823,46 +821,8 @@ class MainWindow(Adw.ApplicationWindow):
         """Handles logic when switching between 2D and 3D views."""
         child_name = stack.get_visible_child_name()
         if child_name == "3d":
-            self._connect_live_3d_view_signals()
-        else:
-            self._disconnect_live_3d_view_signals()
-        self._update_actions_and_ui()
-
-    def _connect_live_3d_view_signals(self):
-        """Connects to Pipeline signals to update the 3D view live."""
-        if self._live_3d_view_connected:
-            return
-        logger.debug("Connecting live 3D view signals.")
-        gen = self.doc_editor.pipeline
-        gen.workpiece_artifact_ready.connect(self._on_live_3d_view_update)
-        self._live_3d_view_connected = True
-        # Trigger a full update to draw the current state immediately
-        self._update_3d_view_content()
-
-    def _disconnect_live_3d_view_signals(self):
-        """Disconnects from Pipeline signals."""
-        if not self._live_3d_view_connected:
-            return
-        logger.debug("Disconnecting live 3D view signals.")
-        gen = self.doc_editor.pipeline
-        gen.workpiece_artifact_ready.disconnect(self._on_live_3d_view_update)
-        self._live_3d_view_connected = False
-
-    def _on_live_3d_view_update(
-        self,
-        sender,
-        *,
-        step: Optional[Step],
-        workpiece: Optional[WorkPiece],
-        handle,
-        generation_id: int,
-    ):
-        """
-        When an artifact's generation is finished, trigger a full scene update
-        for the 3D view. The arguments are optional to allow manual calls.
-        """
-        if self.view_stack.get_visible_child_name() == "3d":
             self._update_3d_view_content()
+        self._update_actions_and_ui()
 
     def _update_3d_view_content(self):
         """

@@ -4,6 +4,7 @@ A renderer for visualizing texture-based artifacts using GPU texture rendering.
 
 import logging
 import math
+import time
 from typing import List, Dict, Any, Optional
 import numpy as np
 from OpenGL import GL
@@ -176,70 +177,96 @@ class TextureArtifactRenderer(BaseRenderer):
         """
         radius = diameter / 2.0
         circumference = diameter * math.pi
-        vertices = []
 
-        def get_pt(lx, ly):
-            p_cyl = grid_matrix @ np.array(
-                [lx, ly, 0.0, 1.0], dtype=np.float32
+        i_vals = np.arange(grid_s, dtype=np.float32)
+        j_vals = np.arange(grid_t, dtype=np.float32)
+        lx0 = i_vals / grid_s
+        lx1 = (i_vals + 1) / grid_s
+        ly0 = j_vals / grid_t
+        ly1 = (j_vals + 1) / grid_t
+
+        lx_grid, ly_grid = np.meshgrid(lx0, ly1, indexing="ij")
+        lx1_grid, _ = np.meshgrid(lx1, ly1, indexing="ij")
+        _, ly0_grid = np.meshgrid(lx0, ly0, indexing="ij")
+
+        def _transform_points(lx, ly):
+            shape = lx.shape
+            ones = np.ones(shape, dtype=np.float32)
+            pts = np.stack(
+                [
+                    lx.ravel(),
+                    ly.ravel(),
+                    np.zeros(lx.size, dtype=np.float32),
+                    ones.ravel(),
+                ],
+                axis=-1,
             )
-            cyl_x = p_cyl[0]
-            cyl_y = p_cyl[1]
-            theta = (cyl_y / circumference) * 2.0 * math.pi
-            return cyl_x, radius * math.sin(theta), radius * math.cos(theta)
+            p_cyl = pts @ grid_matrix.T
+            theta = (p_cyl[:, 1] / circumference) * 2.0 * np.pi
+            x = p_cyl[:, 0].reshape(shape)
+            y = (radius * np.sin(theta)).reshape(shape)
+            z = (radius * np.cos(theta)).reshape(shape)
+            return x, y, z
 
-        for i in range(grid_s):
-            for j in range(grid_t):
-                lx0, lx1 = i / grid_s, (i + 1) / grid_s
-                ly0, ly1 = j / grid_t, (j + 1) / grid_t
+        x00, y00, z00 = _transform_points(lx_grid, ly0_grid)
+        x10, y10, z10 = _transform_points(lx1_grid, ly0_grid)
+        x01, y01, z01 = _transform_points(lx_grid, ly_grid)
+        x11, y11, z11 = _transform_points(lx1_grid, ly_grid)
 
-                x00, y00, z00 = get_pt(lx0, ly0)
-                x10, y10, z10 = get_pt(lx1, ly0)
-                x01, y01, z01 = get_pt(lx0, ly1)
-                x11, y11, z11 = get_pt(lx1, ly1)
+        s0 = lx_grid
+        s1 = lx1_grid
+        t0 = 1.0 - ly0_grid
+        t1 = 1.0 - ly_grid
 
-                # OpenGL textures are bottom-up.
-                # Since lx=0, ly=0 is the bottom-left of the texture quad,
-                # s=0, t=1.
-                s0, s1 = lx0, lx1
-                t0, t1 = 1.0 - ly0, 1.0 - ly1
+        s0_f = s0.flatten()
+        s1_f = s1.flatten()
+        t0_f = t0.flatten()
+        t1_f = t1.flatten()
+        x00_f, y00_f, z00_f = x00.flatten(), y00.flatten(), z00.flatten()
+        x10_f, y10_f, z10_f = x10.flatten(), y10.flatten(), z10.flatten()
+        x01_f, y01_f, z01_f = x01.flatten(), y01.flatten(), z01.flatten()
+        x11_f, y11_f, z11_f = x11.flatten(), y11.flatten(), z11.flatten()
 
-                # Two triangles per cell
-                vertices.extend(
-                    [
-                        x00,
-                        y00,
-                        z00,
-                        s0,
-                        t0,
-                        x10,
-                        y10,
-                        z10,
-                        s1,
-                        t0,
-                        x01,
-                        y01,
-                        z01,
-                        s0,
-                        t1,
-                        x10,
-                        y10,
-                        z10,
-                        s1,
-                        t0,
-                        x11,
-                        y11,
-                        z11,
-                        s1,
-                        t1,
-                        x01,
-                        y01,
-                        z01,
-                        s0,
-                        t1,
-                    ]
-                )
+        n = s0_f.size
+        vertices = np.empty(n * 30, dtype=np.float32)
 
-        return np.array(vertices, dtype=np.float32)
+        # Triangle 1: (x00,y00,z00,s0,t0), (x10,y10,z10,s1,t0),
+        #              (x01,y01,z01,s0,t1)
+        vertices[0::30] = x00_f
+        vertices[1::30] = y00_f
+        vertices[2::30] = z00_f
+        vertices[3::30] = s0_f
+        vertices[4::30] = t0_f
+        vertices[5::30] = x10_f
+        vertices[6::30] = y10_f
+        vertices[7::30] = z10_f
+        vertices[8::30] = s1_f
+        vertices[9::30] = t0_f
+        vertices[10::30] = x01_f
+        vertices[11::30] = y01_f
+        vertices[12::30] = z01_f
+        vertices[13::30] = s0_f
+        vertices[14::30] = t1_f
+
+        # Triangle 2: (x10,y10,z10,s1,t0), (x11,y11,z11,s1,t1),
+        #              (x01,y01,z01,s0,t1)
+        vertices[15::30] = x10_f
+        vertices[16::30] = y10_f
+        vertices[17::30] = z10_f
+        vertices[18::30] = s1_f
+        vertices[19::30] = t0_f
+        vertices[20::30] = x11_f
+        vertices[21::30] = y11_f
+        vertices[22::30] = z11_f
+        vertices[23::30] = s1_f
+        vertices[24::30] = t1_f
+        vertices[25::30] = x01_f
+        vertices[26::30] = y01_f
+        vertices[27::30] = z01_f
+        vertices[28::30] = s0_f
+        vertices[29::30] = t1_f
+
+        return vertices
 
     def clear(self):
         """Clears all instances and their associated textures."""
@@ -317,15 +344,25 @@ class TextureArtifactRenderer(BaseRenderer):
         GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 4)
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
-        self.instances.append(
-            {
-                "texture_id": texture_id,
-                "model_matrix": final_model_matrix,
-                "color_lut": color_lut,
-                "rotary_enabled": rotary_enabled,
-                "rotary_diameter": rotary_diameter,
-            }
-        )
+        instance_data = {
+            "texture_id": texture_id,
+            "model_matrix": final_model_matrix,
+            "color_lut": color_lut,
+            "rotary_enabled": rotary_enabled,
+            "rotary_diameter": rotary_diameter,
+        }
+
+        if rotary_enabled and rotary_diameter > 0:
+            instance_data["cylinder_vertices"] = (
+                self._generate_cylinder_vertices_from_matrix(
+                    grid_matrix=final_model_matrix,
+                    diameter=rotary_diameter,
+                    grid_s=8,
+                    grid_t=64,
+                )
+            )
+
+        self.instances.append(instance_data)
 
     def update_color_lut(self, lut_data: np.ndarray):
         """
@@ -424,6 +461,8 @@ class TextureArtifactRenderer(BaseRenderer):
         if not self.is_initialized or not self.instances:
             return
 
+        t_cyl_start = time.perf_counter()
+
         shader.use()
 
         GL.glActiveTexture(GL.GL_TEXTURE0)
@@ -431,49 +470,37 @@ class TextureArtifactRenderer(BaseRenderer):
         GL.glActiveTexture(GL.GL_TEXTURE1)
         shader.set_int("uColorLUT", 1)
 
+        num_rotary = 0
+
         for instance in self.instances:
             if not instance["rotary_enabled"]:
                 continue
+            num_rotary += 1
 
-            grid_matrix = instance["model_matrix"]
-            diameter = instance["rotary_diameter"]
+            vertices = instance.get("cylinder_vertices")
+            if vertices is None:
+                continue
 
-            cache_key = tuple(np.round(grid_matrix.flatten(), 4)) + (diameter,)
+            vertex_count = len(vertices) // 5
 
-            if (
-                self._cylinder_cache is None
-                or self._cylinder_cache["key"] != cache_key
-            ):
-                vertices = self._generate_cylinder_vertices_from_matrix(
-                    grid_matrix=grid_matrix,
-                    diameter=diameter,
-                    grid_s=8,
-                    grid_t=64,
-                )
+            GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.cylinder_vbo)
+            GL.glBufferData(
+                GL.GL_ARRAY_BUFFER,
+                vertices.nbytes,
+                vertices,
+                GL.GL_DYNAMIC_DRAW,
+            )
 
-                GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.cylinder_vbo)
-                GL.glBufferData(
-                    GL.GL_ARRAY_BUFFER,
-                    vertices.nbytes,
-                    vertices,
-                    GL.GL_DYNAMIC_DRAW,
-                )
-
-                GL.glBindVertexArray(self.cylinder_vao)
-                GL.glVertexAttribPointer(
-                    0, 3, GL.GL_FLOAT, GL.GL_FALSE, 5 * 4, GL.GLvoidp(0)
-                )
-                GL.glEnableVertexAttribArray(0)
-                GL.glVertexAttribPointer(
-                    1, 2, GL.GL_FLOAT, GL.GL_FALSE, 5 * 4, GL.GLvoidp(3 * 4)
-                )
-                GL.glEnableVertexAttribArray(1)
-                GL.glBindVertexArray(0)
-
-                self._cylinder_cache = {
-                    "key": cache_key,
-                    "vertex_count": len(vertices) // 5,
-                }
+            GL.glBindVertexArray(self.cylinder_vao)
+            GL.glVertexAttribPointer(
+                0, 3, GL.GL_FLOAT, GL.GL_FALSE, 5 * 4, GL.GLvoidp(0)
+            )
+            GL.glEnableVertexAttribArray(0)
+            GL.glVertexAttribPointer(
+                1, 2, GL.GL_FLOAT, GL.GL_FALSE, 5 * 4, GL.GLvoidp(3 * 4)
+            )
+            GL.glEnableVertexAttribArray(1)
+            GL.glBindVertexArray(0)
 
             if instance["color_lut"] is not None:
                 lut_data = np.ascontiguousarray(
@@ -503,12 +530,17 @@ class TextureArtifactRenderer(BaseRenderer):
             GL.glBindTexture(GL.GL_TEXTURE_2D, instance["texture_id"])
 
             GL.glBindVertexArray(self.cylinder_vao)
-            GL.glDrawArrays(
-                GL.GL_TRIANGLES, 0, self._cylinder_cache["vertex_count"]
-            )
+            GL.glDrawArrays(GL.GL_TRIANGLES, 0, vertex_count)
             GL.glBindVertexArray(0)
 
         GL.glActiveTexture(GL.GL_TEXTURE1)
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
         GL.glActiveTexture(GL.GL_TEXTURE0)
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+
+        t_cyl_elapsed = (time.perf_counter() - t_cyl_start) * 1000
+        if t_cyl_elapsed > 5:
+            logger.info(
+                f"[TEX3D] render_cylinder took {t_cyl_elapsed:.1f}ms "
+                f"(rotary={num_rotary})"
+            )
