@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-30 17:47+0200\n"
+"POT-Creation-Date: 2026-03-30 19:31+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -30,6 +30,48 @@ msgstr ""
 #: rayforge/core/stock.py
 #, python-brace-format
 msgid "{name} (copy)"
+msgstr ""
+
+#: rayforge/core/ai/provider.py
+msgid "Bad request"
+msgstr ""
+
+#: rayforge/core/ai/provider.py
+msgid "Authentication failed - please check your API key"
+msgstr ""
+
+#: rayforge/core/ai/provider.py
+msgid "Access forbidden - please check your API key permissions"
+msgstr ""
+
+#: rayforge/core/ai/provider.py
+msgid "API endpoint not found - please check the base URL"
+msgstr ""
+
+#: rayforge/core/ai/provider.py
+msgid "Rate limited - please wait and try again"
+msgstr ""
+
+#: rayforge/core/ai/provider.py
+msgid "Server error - please try again later"
+msgstr ""
+
+#: rayforge/core/ai/provider.py
+msgid "Service unavailable - please try again later"
+msgstr ""
+
+#: rayforge/core/ai/provider.py
+#, python-brace-format
+msgid "Server returned error {code}"
+msgstr ""
+
+#: rayforge/core/ai/openai_provider.py
+msgid "Connection failed - please check your network"
+msgstr ""
+
+#: rayforge/core/ai/openai_provider.py
+#, python-brace-format
+msgid "Model '{model}' not found. Available: {available}"
 msgstr ""
 
 #: rayforge/core/step.py

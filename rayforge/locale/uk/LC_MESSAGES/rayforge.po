@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-30 17:47+0200\n"
+"POT-Creation-Date: 2026-03-30 19:31+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -31,6 +31,48 @@ msgstr "Шар 1"
 #, python-brace-format
 msgid "{name} (copy)"
 msgstr "{name} (копія)"
+
+#: rayforge/core/ai/provider.py
+msgid "Bad request"
+msgstr "Невірний запит"
+
+#: rayforge/core/ai/provider.py
+msgid "Authentication failed - please check your API key"
+msgstr "Помилка автентифікації - перевірте ваш API-ключ"
+
+#: rayforge/core/ai/provider.py
+msgid "Access forbidden - please check your API key permissions"
+msgstr "Доступ заборонено - перевірте дозволи вашого API-ключа"
+
+#: rayforge/core/ai/provider.py
+msgid "API endpoint not found - please check the base URL"
+msgstr "API-ендпоінт не знайдено - перевірте базову URL-адресу"
+
+#: rayforge/core/ai/provider.py
+msgid "Rate limited - please wait and try again"
+msgstr "Перевищено ліміт запитів - зачекайте і спробуйте знову"
+
+#: rayforge/core/ai/provider.py
+msgid "Server error - please try again later"
+msgstr "Помилка сервера - спробуйте пізніше"
+
+#: rayforge/core/ai/provider.py
+msgid "Service unavailable - please try again later"
+msgstr "Сервіс недоступний - спробуйте пізніше"
+
+#: rayforge/core/ai/provider.py
+#, python-brace-format
+msgid "Server returned error {code}"
+msgstr "Сервер повернув помилку {code}"
+
+#: rayforge/core/ai/openai_provider.py
+msgid "Connection failed - please check your network"
+msgstr "Помилка з'єднання - перевірте вашу мережу"
+
+#: rayforge/core/ai/openai_provider.py
+#, python-brace-format
+msgid "Model '{model}' not found. Available: {available}"
+msgstr "Модель '{model}' не знайдено. Доступні: {available}"
 
 #: rayforge/core/step.py
 #, python-brace-format

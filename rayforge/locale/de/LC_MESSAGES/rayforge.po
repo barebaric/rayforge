@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-30 17:47+0200\n"
+"POT-Creation-Date: 2026-03-30 19:31+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -30,6 +30,50 @@ msgstr "Ebene 1"
 #, python-brace-format
 msgid "{name} (copy)"
 msgstr "{name} (Kopie)"
+
+#: rayforge/core/ai/provider.py
+msgid "Bad request"
+msgstr "Ungültige Anfrage"
+
+#: rayforge/core/ai/provider.py
+msgid "Authentication failed - please check your API key"
+msgstr ""
+"Authentifizierung fehlgeschlagen - bitte überprüfe deinen API-Schlüssel"
+
+#: rayforge/core/ai/provider.py
+msgid "Access forbidden - please check your API key permissions"
+msgstr ""
+"Zugriff verweigert - bitte überprüfe die Berechtigungen deines API-Schlüssels"
+
+#: rayforge/core/ai/provider.py
+msgid "API endpoint not found - please check the base URL"
+msgstr "API-Endpunkt nicht gefunden - bitte überprüfe die Basis-URL"
+
+#: rayforge/core/ai/provider.py
+msgid "Rate limited - please wait and try again"
+msgstr "Anfragenlimit erreicht - bitte warte und versuche es erneut"
+
+#: rayforge/core/ai/provider.py
+msgid "Server error - please try again later"
+msgstr "Serverfehler - bitte versuche es später erneut"
+
+#: rayforge/core/ai/provider.py
+msgid "Service unavailable - please try again later"
+msgstr "Dienst nicht verfügbar - bitte versuche es später erneut"
+
+#: rayforge/core/ai/provider.py
+#, python-brace-format
+msgid "Server returned error {code}"
+msgstr "Server hat Fehler {code} zurückgegeben"
+
+#: rayforge/core/ai/openai_provider.py
+msgid "Connection failed - please check your network"
+msgstr "Verbindung fehlgeschlagen - bitte überprüfe dein Netzwerk"
+
+#: rayforge/core/ai/openai_provider.py
+#, python-brace-format
+msgid "Model '{model}' not found. Available: {available}"
+msgstr "Modell '{model}' nicht gefunden. Verfügbar: {available}"
 
 #: rayforge/core/step.py
 #, python-brace-format

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-22 19:54+0100\n"
+"POT-Creation-Date: 2026-03-30 19:31+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -52,34 +52,6 @@ msgid "Generate Workpiece with AI..."
 msgstr ""
 
 #: ai_workpiece_generator/generator.py
-msgid "Bad request - please check your settings"
-msgstr ""
-
-#: ai_workpiece_generator/generator.py
-msgid "Authentication failed - please check your API key"
-msgstr ""
-
-#: ai_workpiece_generator/generator.py
-msgid "Access forbidden - please check your API key permissions"
-msgstr ""
-
-#: ai_workpiece_generator/generator.py
-msgid "API endpoint not found - please check the base URL"
-msgstr ""
-
-#: ai_workpiece_generator/generator.py
-msgid "Rate limited - please wait and try again"
-msgstr ""
-
-#: ai_workpiece_generator/generator.py
-msgid "Server error - please try again later"
-msgstr ""
-
-#: ai_workpiece_generator/generator.py
-msgid "Service unavailable - please try again later"
-msgstr ""
-
-#: ai_workpiece_generator/generator.py
 msgid "No AI provider configured. Please configure an AI provider in Settings."
 msgstr ""
 
@@ -89,13 +61,4 @@ msgstr ""
 
 #: ai_workpiece_generator/generator.py
 msgid "AI did not generate valid SVG code. Please try a different prompt."
-msgstr ""
-
-#: ai_workpiece_generator/generator.py
-#, python-brace-format
-msgid "Server returned error {code}"
-msgstr ""
-
-#: ai_workpiece_generator/generator.py
-msgid "Connection failed - please check your network"
 msgstr ""

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-22 19:54+0100\n"
+"POT-Creation-Date: 2026-03-30 19:31+0200\n"
 "PO-Revision-Date: 2026-03-07 20:16+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -51,34 +51,6 @@ msgid "Generate Workpiece with AI..."
 msgstr "使用AI生成工件..."
 
 #: ai_workpiece_generator/generator.py
-msgid "Bad request - please check your settings"
-msgstr "错误的请求 - 请检查您的设置"
-
-#: ai_workpiece_generator/generator.py
-msgid "Authentication failed - please check your API key"
-msgstr "身份验证失败 - 请检查您的API密钥"
-
-#: ai_workpiece_generator/generator.py
-msgid "Access forbidden - please check your API key permissions"
-msgstr "访问被拒绝 - 请检查您的API密钥权限"
-
-#: ai_workpiece_generator/generator.py
-msgid "API endpoint not found - please check the base URL"
-msgstr "未找到API端点 - 请检查基础URL"
-
-#: ai_workpiece_generator/generator.py
-msgid "Rate limited - please wait and try again"
-msgstr "请求频率受限 - 请等待后重试"
-
-#: ai_workpiece_generator/generator.py
-msgid "Server error - please try again later"
-msgstr "服务器错误 - 请稍后重试"
-
-#: ai_workpiece_generator/generator.py
-msgid "Service unavailable - please try again later"
-msgstr "服务不可用 - 请稍后重试"
-
-#: ai_workpiece_generator/generator.py
 msgid "No AI provider configured. Please configure an AI provider in Settings."
 msgstr "未配置AI提供商。请在设置中配置AI提供商。"
 
@@ -89,12 +61,3 @@ msgstr "AI提供商无响应。"
 #: ai_workpiece_generator/generator.py
 msgid "AI did not generate valid SVG code. Please try a different prompt."
 msgstr "AI未生成有效的SVG代码。请尝试不同的提示。"
-
-#: ai_workpiece_generator/generator.py
-#, python-brace-format
-msgid "Server returned error {code}"
-msgstr "服务器返回错误 {code}"
-
-#: ai_workpiece_generator/generator.py
-msgid "Connection failed - please check your network"
-msgstr "连接失败 - 请检查您的网络"
