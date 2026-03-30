@@ -13,7 +13,7 @@ O Painel Inferior combina várias funções em uma interface conveniente:
 
 O lado esquerdo do painel contém uma faixa de ícones que permite alternar entre o **Console** e o **Visualizador G-code**. Os controles de jog e WCS no lado direito permanecem visíveis independentemente de qual aba está ativa.
 
-![Painel Inferior](/screenshots/control-panel.png)
+![Painel Inferior](/screenshots/bottom-panel.png)
 
 ## Acessando o Painel Inferior
 
