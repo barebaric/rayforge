@@ -331,7 +331,7 @@ class ProviderEditorWidget(Adw.PreferencesGroup):
             title=_("Connection Test"),
             subtitle=_("Verify the provider configuration is working"),
         )
-        self.test_success_icon = get_icon("emblem-ok-symbolic")
+        self.test_success_icon = get_icon("check-circle-symbolic")
         self.test_success_icon.add_css_class("success")
         self.test_success_icon.set_valign(Gtk.Align.CENTER)
         self.test_success_icon.set_visible(False)
@@ -343,7 +343,7 @@ class ProviderEditorWidget(Adw.PreferencesGroup):
         self.test_btn.connect("clicked", self._on_test_clicked)
         self.test_row.add_suffix(self.test_btn)
 
-        self.test_error_icon = get_icon("dialog-warning-symbolic")
+        self.test_error_icon = get_icon("warning-symbolic")
         self.test_error_icon.add_css_class("error")
         self.test_error_icon.set_valign(Gtk.Align.CENTER)
         self.test_error_icon.set_visible(False)

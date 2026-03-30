@@ -232,7 +232,7 @@ class VarSetWidget(Adw.PreferencesGroup):
         if not self.explicit_apply:
             return
         apply_button = Gtk.Button(
-            child=get_icon("object-select-symbolic"),
+            child=get_icon("check-symbolic"),
             tooltip_text=_("Apply Change"),
         )
         apply_button.add_css_class("flat")

@@ -41,7 +41,7 @@ class MacroRow(Gtk.Box):
         switch.connect("notify::active", self._on_enable_toggled)
         suffix_box.append(switch)
 
-        edit_button = Gtk.Button(child=get_icon("document-edit-symbolic"))
+        edit_button = Gtk.Button(child=get_icon("edit-symbolic"))
         edit_button.add_css_class("flat")
         edit_button.connect("clicked", self._on_edit_clicked)
         suffix_box.append(edit_button)

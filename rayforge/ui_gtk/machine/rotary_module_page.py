@@ -59,7 +59,7 @@ class RotaryModuleRow(Gtk.Box):
 
         self.select_button = Gtk.ToggleButton()
         self.select_button.add_css_class("flat")
-        self.select_button.set_child(get_icon("object-select-symbolic"))
+        self.select_button.set_child(get_icon("check-symbolic"))
         self.select_button.set_tooltip_text(_("Set as default"))
         self._toggle_handler_id = self.select_button.connect(
             "toggled", self._on_select_toggled
@@ -214,7 +214,7 @@ class RotaryModulePage(TrackedPreferencesPage):
     def __init__(self, machine: Machine, **kwargs):
         super().__init__(
             title=_("Rotary Module"),
-            icon_name="object-rotate-left-symbolic",
+            icon_name="rotary-symbolic",
             **kwargs,
         )
         self.machine = machine

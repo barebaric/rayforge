@@ -26,7 +26,7 @@ class DeviceSettingsPage(TrackedPreferencesPage):
     def __init__(self, machine, **kwargs):
         super().__init__(
             title=_("Device"),
-            icon_name="drive-harddisk-symbolic",
+            icon_name="hardware-symbolic",
             **kwargs,
         )
         logger.debug("__init__")

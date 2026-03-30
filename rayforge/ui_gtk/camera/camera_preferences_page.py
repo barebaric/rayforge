@@ -299,7 +299,7 @@ class CameraPreferencesPage(TrackedPreferencesPage):
 
     def __init__(self, **kwargs):
         super().__init__(
-            title=_("Camera"), icon_name="camera-photo-symbolic", **kwargs
+            title=_("Camera"), icon_name="camera-on-symbolic", **kwargs
         )
         self._controllers: List[CameraController] = []
         self._cameras: List[Camera] = []

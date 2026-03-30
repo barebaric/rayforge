@@ -229,7 +229,7 @@ class StockItem(DocItem):
     def display_icon_name(self) -> str:
         """Delegates display_icon_name access to the StockAsset."""
         asset = self.stock_asset
-        return asset.display_icon_name if asset else "dialog-error-symbolic"
+        return asset.display_icon_name if asset else "error-symbolic"
 
     def get_default_size(self, *args, **kwargs) -> tuple[float, float]:
         """Delegates size calculation to the StockAsset."""

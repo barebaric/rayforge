@@ -41,7 +41,7 @@ class MachineSettingsPage(TrackedPreferencesPage):
         """Initializes the Machine Settings page."""
         super().__init__(**kwargs)
         self.set_title(_("Machines"))
-        self.set_icon_name("drive-harddisk-symbolic")
+        self.set_icon_name("hardware-symbolic")
         apply_css(css)
 
         self.machines_group = Adw.PreferencesGroup()

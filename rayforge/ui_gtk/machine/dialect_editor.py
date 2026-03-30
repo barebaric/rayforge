@@ -171,7 +171,7 @@ class DialectEditorDialog(PatchedDialogWindow):
 
         if error_msg:
             if not error_widget:
-                error_widget = get_icon("dialog-error-symbolic")
+                error_widget = get_icon("error-symbolic")
                 if isinstance(
                     row, (Adw.ActionRow, Adw.ExpanderRow, Adw.EntryRow)
                 ):

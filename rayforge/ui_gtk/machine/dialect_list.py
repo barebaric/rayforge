@@ -51,7 +51,7 @@ class DialectRow(Gtk.Box):
         suffix_box = Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)
         self.append(suffix_box)
 
-        edit_button = Gtk.Button(child=get_icon("document-edit-symbolic"))
+        edit_button = Gtk.Button(child=get_icon("edit-symbolic"))
         edit_button.add_css_class("flat")
         edit_button.connect("clicked", self._on_edit_clicked)
         suffix_box.append(edit_button)
@@ -63,7 +63,7 @@ class DialectRow(Gtk.Box):
 
         self.select_button = Gtk.ToggleButton()
         self.select_button.add_css_class("flat")
-        self.select_button.set_child(get_icon("object-select-symbolic"))
+        self.select_button.set_child(get_icon("check-symbolic"))
         self.select_button.set_tooltip_text(_("Select this dialect"))
         self.select_button.connect("toggled", self._on_select_toggled)
         self.select_button.set_valign(Gtk.Align.CENTER)
