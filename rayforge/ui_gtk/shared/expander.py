@@ -11,9 +11,21 @@ css = """
     margin-bottom: 6px;
 }
 
+.expander-header {
+    border-radius: 12px;
+}
+
 .expander-header:hover {
-    border-radius: 12px 12px 0 0;
     background-color: shade(@headerbar_bg_color, 0.95);
+}
+
+.expander-card.expanded .expander-header {
+    border-radius: 12px 12px 0 0;
+    border-bottom: 1px solid @borders;
+}
+
+.expander-card.expanded .expander-header:hover {
+    border-radius: 12px 12px 0 0;
 }
 
 .expander-title, .expander-subtitle {
@@ -32,21 +44,8 @@ css = """
     transform: rotate(90deg);
 }
 
-.expander-card.expanded .expander-header {
-    border-bottom: 1px solid @borders;
-}
-
 .expander-card>:nth-child(2) {
     border-radius: 0;
-}
-
-.expander-card .darkbutton {
-    background-color: shade(@card_bg_color, 0.98);
-    border-radius: 0 0 12px 12px;
-}
-
-.expander-card .darkbutton:hover {
-    background-color: shade(@card_bg_color, 0.95);
 }
 """
 
@@ -150,8 +149,8 @@ class Expander(Gtk.Box):
 
 class ExpanderWithButton(Expander):
     """
-    An Expander that includes an "Add" button at the bottom of the
-    collapsible content area.
+    An Expander that includes a "+" icon button in the header suffix area
+    and a content box for child widgets.
     """
 
     def __init__(self, button_label: str, **kwargs):
@@ -159,32 +158,10 @@ class ExpanderWithButton(Expander):
         self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.set_child(self.content_box)
 
-        self.add_button = self._create_add_button(button_label)
-        self.content_box.append(self.add_button)
-
-    def _create_add_button(self, label: str) -> Gtk.Button:
-        button = Gtk.Button()
-        button.add_css_class("darkbutton")
-
-        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        button_box.set_margin_top(10)
-        button_box.set_margin_end(12)
-        button_box.set_margin_bottom(10)
-        button_box.set_margin_start(12)
-
-        add_icon = get_icon("add-symbolic")
-        button_box.append(add_icon)
-
-        add_label = Gtk.Label()
-        add_label.set_markup(f"<span weight='normal'>{label}</span>")
-        add_label.set_xalign(0)
-        button_box.append(add_label)
-
-        button.set_child(button_box)
-        return button
+        self.add_button = Gtk.Button()
+        self.add_button.set_tooltip_text(button_label)
+        self.add_button.set_child(get_icon("add-symbolic"))
+        self.add_suffix(self.add_button)
 
     def append_content(self, widget: Gtk.Widget):
-        """Insert a widget before the add button."""
-        self.content_box.remove(self.add_button)
         self.content_box.append(widget)
-        self.content_box.append(self.add_button)
