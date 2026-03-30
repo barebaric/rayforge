@@ -3,23 +3,12 @@ import re
 from gettext import gettext as _
 from typing import Optional, Tuple
 
-import aiohttp
-
 from rayforge.context import get_context
+from rayforge.core.ai import AIServiceError
 from rayforge.core.ai.provider import ChatMessage
 
 logger = logging.getLogger(__name__)
 
-HTTP_STATUS_MESSAGES = {
-    400: _("Bad request - please check your settings"),
-    401: _("Authentication failed - please check your API key"),
-    403: _("Access forbidden - please check your API key permissions"),
-    404: _("API endpoint not found - please check the base URL"),
-    429: _("Rate limited - please wait and try again"),
-    500: _("Server error - please try again later"),
-    502: _("Server error - please try again later"),
-    503: _("Service unavailable - please try again later"),
-}
 
 SYSTEM_PROMPT = """You are an expert SVG generator for laser cutting.
 When asked to generate a design, output ONLY valid SVG code with no
@@ -107,16 +96,9 @@ async def generate_svg(prompt: str) -> Tuple[Optional[str], Optional[str]]:
 
         return svg_content, None
 
-    except aiohttp.ClientResponseError as e:
-        logger.error("API error generating SVG: %d - %s", e.status, e.message)
-        user_msg = HTTP_STATUS_MESSAGES.get(
-            e.status,
-            _("Server returned error {code}").format(code=e.status),
-        )
-        return None, user_msg
-    except aiohttp.ClientError as e:
-        logger.error("Connection error generating SVG: %s", e)
-        return None, _("Connection failed - please check your network")
+    except AIServiceError as e:
+        logger.error("AI service error generating SVG: %s", e)
+        return None, str(e)
     except Exception as e:
         logger.error("Error generating SVG: %s", e, exc_info=True)
         return None, str(e)

@@ -196,10 +196,7 @@ class AIWorkpieceGeneratorDialog(PatchedDialogWindow):
         def on_error(message: str) -> None:
             self._stop_pulse()
             self.set_generating(False)
-            user_message = message
-            if len(message) > 100:
-                user_message = message[:100] + "..."
-            self.set_error(user_message)
+            self.set_error(message)
 
         self._start_pulse()
         self._controller.generate(prompt, on_success, on_error)

@@ -14,12 +14,6 @@ from .provider import (
 logger = logging.getLogger(__name__)
 
 
-class AIServiceError(Exception):
-    """Raised when AI service encounters an error."""
-
-    pass
-
-
 class AIService:
     """
     Central service for AI operations.
