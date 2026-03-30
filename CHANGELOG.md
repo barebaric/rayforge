@@ -5,6 +5,48 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.4
+
+### Added
+
+- Full rotary axis support with 3D visualization
+- Support for multiple rotary modules
+- Configurable rotary mode per layer
+- Rotary icon displayed on rotary layers
+- PDF direct vector import with layer support
+- Improved five factor camera de-distortion algorithm
+- Charuco card based calibration wizard with guided setup process
+- Sketcher: ellipse tool replaces circle tool for more flexibility
+- Sketcher: many tools automatically constrain geometry during creation
+- Sketcher: magnetic snap now works while creating geometry
+- Sketcher: replaced snap to grid with smarter magnetic snap
+- Sketcher: equality constraint now works on ellipses
+- Configure frame speed in laser head settings
+- Corner dwell time setting for framing
+- Repeat count setting for framing
+- New merge lines post-processor to avoid double cutting
+- Machine profile for Acmer S1 added
+- Dialects support separate laser on command for focusing
+- Add a DPI setting to the SVG import dialog if the SVG is unitless
+
+### Changed
+
+- More compact left panel layout with add buttons moved into group headers
+- G-code viewer moved into the bottom panel
+- 3D canvas performance improvements
+- Dialects are now isolated copies (templates)
+- GRBL buffer size tracking improved
+- Texture dimension limit prevents memory exhaustion
+- Addon manager: safer threading approach
+
+### Fixed
+
+- Material test producer bugs (issues #181 and #182)
+- GRBL position reporting for machines with only X and Y axes (#179)
+- Sketcher: distance constraint shadowing the line
+- Texture renderer memory exhaustion on large images
+- Race condition in worker initialization
+
 ## 1.3.2
 
 ### Added

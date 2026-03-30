@@ -303,7 +303,7 @@ Pour exécuter le même travail à différents emplacements :
   Référence SCF
 - [Intégration Caméra](../machine/camera) - Configuration et alignement de la
   caméra
-- [Panneau de Contrôle](../ui/control-panel) - Contrôles de déplacement et
+- [Panneau de Contrôle](../ui/bottom-panel) - Contrôles de déplacement et
   gestion SCF
 - [Guide de Démarrage Rapide](../getting-started/quick-start) - Flux de
   travail de base

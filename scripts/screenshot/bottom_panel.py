@@ -38,7 +38,7 @@ def main():
         app.quit_idle()
         return
 
-    logger.info("Document settled, showing control panel")
+    logger.info("Document settled, showing bottom panel")
 
     saved_states = save_panel_states(win, PANELS)
     show_panel(win, "toggle_bottom_panel", True)
@@ -54,7 +54,7 @@ def main():
         f"crop_top={crop_from_top})"
     )
     take_cropped_screenshot(
-        "control-panel.png",
+        "bottom-panel.png",
         from_top=crop_from_top,
     )
 

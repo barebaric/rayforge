@@ -205,6 +205,6 @@ Você precisa cortar a mesma peça 10 vezes em diferentes locais:
 
 - [Posicionamento de Peça de Trabalho](../features/workpiece-positioning) -
   Guia completo de posicionamento
-- [Painel de Controle](../ui/control-panel) - Controle manual e gerenciamento do WCS
+- [Painel de Controle](../ui/bottom-panel) - Controle manual e gerenciamento do WCS
 - [Configuração de Máquina](../machine/general) - Configure sua máquina
 - [Visualização 3D](../ui/3d-preview) - Visualizando seus trabalhos

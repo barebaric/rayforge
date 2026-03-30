@@ -67,16 +67,19 @@ Configura ajustes para objetos u operaciones seleccionados:
 - Número de pasadas
 - Opciones avanzadas (overscan, kerf, pestañas)
 
-### 6. Panel de Control
+### 6. Panel Inferior
 
-El Panel de Control en la parte inferior de la ventana proporciona:
+El Panel Inferior en la parte inferior de la ventana proporciona:
 
-- **Controles de Desplazamiento**: Movimiento y posicionamiento manual de la máquina
+- **Vista con Pestañas**: Alterna entre Consola y Visor de Código G vía la tira
+  de iconos
+- **Controles de Desplazamiento**: Movimiento y posicionamiento manual de la
+  máquina (siempre visibles)
 - **Estado de la Máquina**: Posición en tiempo real y estado de conexión
-- **Vista de Registro**: Comunicación de código G e historial de operaciones
-- **Gestión de WCS**: Selección y puesta a cero del sistema de coordenadas de trabajo
+- **Gestión de WCS**: Selección y puesta a cero del sistema de coordenadas de
+  trabajo
 
-Ver [Panel de Control](control-panel) para información detallada.
+Ver [Panel Inferior](bottom-panel) para información detallada.
 
 ## Gestión de Ventanas
 
@@ -110,5 +113,5 @@ Personaliza la interfaz en **Editar → Preferencias**:
 
 - [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems) - WCS
 - [Herramientas del Lienzo](canvas-tools) - Herramientas para manipular diseños
-- [Panel de Control](control-panel) - Control manual de máquina, estado y registros
+- [Panel Inferior](bottom-panel) - Control manual de máquina, estado y registros
 - [Vista Previa 3D](3d-preview) - Visualizar trayectorias en 3D

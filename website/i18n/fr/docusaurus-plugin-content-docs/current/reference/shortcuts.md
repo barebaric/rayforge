@@ -3,84 +3,84 @@
 Référence complète des raccourcis clavier dans Rayforge.
 
 :::note Conventions de plateforme
+
 - **Linux/Windows :** touche `Ctrl`
 - **macOS :** touche `⌘ (Command)`
 - La documentation utilise `Ctrl` - les utilisateurs macOS remplacent par `⌘`
-:::
-
+  :::
 
 ---
 
 ## Opérations sur les fichiers
 
-| Raccourci     | Action           | Description                      |
-| ------------- | ---------------- | -------------------------------- |
-| `Ctrl+N`      | Nouveau croquis  | Créer un nouveau croquis         |
-| `Ctrl+O`      | Ouvrir           | Ouvrir un projet existant        |
-| `Ctrl+S`      | Enregistrer      | Enregistrer le projet actuel     |
-| `Ctrl+Shift+S`| Enregistrer sous | Enregistrer le projet sous un nouveau fichier |
-| `Ctrl+I`      | Importer         | Ouvrir la boîte de dialogue d'importation |
-| `Ctrl+E`      | Exporter         | Exporter le G-code               |
-| `Ctrl+Q`      | Quitter          | Quitter Rayforge                 |
-| `Ctrl+,`      | Préférences      | Ouvrir la boîte de dialogue des préférences |
+| Raccourci      | Action           | Description                                   |
+| -------------- | ---------------- | --------------------------------------------- |
+| `Ctrl+N`       | Nouveau croquis  | Créer un nouveau croquis                      |
+| `Ctrl+O`       | Ouvrir           | Ouvrir un projet existant                     |
+| `Ctrl+S`       | Enregistrer      | Enregistrer le projet actuel                  |
+| `Ctrl+Shift+S` | Enregistrer sous | Enregistrer le projet sous un nouveau fichier |
+| `Ctrl+I`       | Importer         | Ouvrir la boîte de dialogue d'importation     |
+| `Ctrl+E`       | Exporter         | Exporter le G-code                            |
+| `Ctrl+Q`       | Quitter          | Quitter Rayforge                              |
+| `Ctrl+,`       | Préférences      | Ouvrir la boîte de dialogue des préférences   |
 
 ---
 
 ## Édition et presse-papiers
 
-| Raccourci          | Action                 | Description                            |
-| ------------------ | ---------------------- | -------------------------------------- |
-| `Ctrl+Z`           | Annuler                | Annuler la dernière action             |
-| `Ctrl+Y`           | Rétablir               | Rétablir la dernière action annulée    |
-| `Ctrl+Shift+Z`     | Rétablir (alternatif)  | Raccourci de rétablissement alternatif |
-| `Ctrl+X`           | Couper                 | Couper la sélection vers le presse-papiers |
-| `Ctrl+C`           | Copier                 | Copier la sélection vers le presse-papiers |
-| `Ctrl+V`           | Coller                 | Coller depuis le presse-papiers        |
-| `Ctrl+A`           | Tout sélectionner      | Sélectionner tous les éléments du calque actif |
-| `Ctrl+D`           | Dupliquer              | Dupliquer les éléments sélectionnés    |
-| `Suppr`            | Supprimer              | Supprimer les éléments sélectionnés    |
-| `Ctrl+Shift+Suppr` | Effacer                | Effacer tous les éléments du document  |
+| Raccourci          | Action                | Description                                    |
+| ------------------ | --------------------- | ---------------------------------------------- |
+| `Ctrl+Z`           | Annuler               | Annuler la dernière action                     |
+| `Ctrl+Y`           | Rétablir              | Rétablir la dernière action annulée            |
+| `Ctrl+Shift+Z`     | Rétablir (alternatif) | Raccourci de rétablissement alternatif         |
+| `Ctrl+X`           | Couper                | Couper la sélection vers le presse-papiers     |
+| `Ctrl+C`           | Copier                | Copier la sélection vers le presse-papiers     |
+| `Ctrl+V`           | Coller                | Coller depuis le presse-papiers                |
+| `Ctrl+A`           | Tout sélectionner     | Sélectionner tous les éléments du calque actif |
+| `Ctrl+D`           | Dupliquer             | Dupliquer les éléments sélectionnés            |
+| `Suppr`            | Supprimer             | Supprimer les éléments sélectionnés            |
+| `Ctrl+Shift+Suppr` | Effacer               | Effacer tous les éléments du document          |
 
 ---
 
 ## Affichage
 
-| Raccourci     | Action                  | Description                          |
-| ------------- | ----------------------- | ------------------------------------ |
-| `H`           | Basculer les pièces     | Afficher/masquer la visibilité des pièces |
-| `T`           | Basculer les onglets    | Afficher/masquer les onglets de maintien |
-| `Alt+C`       | Basculer la caméra      | Afficher/masquer la superposition caméra |
-| `F12`         | Vue 3D                  | Basculer la fenêtre de prévisualisation 3D |
-| `Ctrl+Shift+R`| Mode simulation         | Basculer le mode simulation          |
+| Raccourci      | Action               | Description                                |
+| -------------- | -------------------- | ------------------------------------------ |
+| `H`            | Basculer les pièces  | Afficher/masquer la visibilité des pièces  |
+| `T`            | Basculer les onglets | Afficher/masquer les onglets de maintien   |
+| `Alt+C`        | Basculer la caméra   | Afficher/masquer la superposition caméra   |
+| `F12`          | Vue 3D               | Basculer la fenêtre de prévisualisation 3D |
+| `Ctrl+Shift+R` | Mode simulation      | Basculer le mode simulation                |
 
 ### Contrôles de la vue 3D
 
-| Raccourci | Action               | Description                                     |
-| --------- | -------------------- | ----------------------------------------------- |
-| `1`       | Vue de dessus        | Passer à la vue de dessus                       |
-| `2`       | Vue de face          | Passer à la vue de face                         |
-| `7`       | Vue isométrique      | Passer à la vue isométrique                     |
-| `P`       | Basculer perspective | Basculer entre perspective et orthographique    |
+| Raccourci | Action               | Description                                  |
+| --------- | -------------------- | -------------------------------------------- |
+| `1`       | Vue de dessus        | Passer à la vue de dessus                    |
+| `2`       | Vue de face          | Passer à la vue de face                      |
+| `7`       | Vue isométrique      | Passer à la vue isométrique                  |
+| `P`       | Basculer perspective | Basculer entre perspective et orthographique |
 
 ---
 
 ## Calques et organisation
 
-| Raccourci       | Action              | Description                        |
-| --------------- | ------------------- | ---------------------------------- |
-| `Ctrl+G`        | Grouper             | Grouper les éléments sélectionnés  |
-| `Ctrl+U`        | Dissocier           | Dissocier le groupe sélectionné    |
-| `Ctrl+Page Up`  | Déplacer vers le haut | Déplacer le calque vers le haut dans la pile |
-| `Ctrl+Page Down`| Déplacer vers le bas | Déplacer le calque vers le bas dans la pile |
-| `Alt+S`         | Ajouter du matériel | Ajouter un élément de stock/matériau |
+| Raccourci        | Action                | Description                                  |
+| ---------------- | --------------------- | -------------------------------------------- |
+| `Ctrl+G`         | Grouper               | Grouper les éléments sélectionnés            |
+| `Ctrl+U`         | Dissocier             | Dissocier le groupe sélectionné              |
+| `Ctrl+Page Up`   | Déplacer vers le haut | Déplacer le calque vers le haut dans la pile |
+| `Ctrl+Page Down` | Déplacer vers le bas  | Déplacer le calque vers le bas dans la pile  |
+| `Alt+S`          | Ajouter du matériel   | Ajouter un élément de stock/matériau         |
 
 ---
 
 ## Onglets (onglets de maintien)
 
-| Raccourci | Action                    | Description                          |
-| --------- | ------------------------- | ------------------------------------ |
-| `Alt+T`   | Ajouter des onglets (équidistants) | Ajouter des onglets régulièrement espacés |
+| Raccourci | Action                             | Description                                   |
+| --------- | ---------------------------------- | --------------------------------------------- |
+| `Alt+T`   | Ajouter des onglets (équidistants) | Ajouter des onglets régulièrement espacés     |
 | `T`       | Basculer la visibilité des onglets | Afficher/masquer la superposition des onglets |
 
 ---
@@ -89,51 +89,50 @@ Référence complète des raccourcis clavier dans Rayforge.
 
 ### Alignement
 
-| Raccourci     | Action            | Description                                    |
-| ------------- | ----------------- | ---------------------------------------------- |
-| `Shift+Gauche`| Aligner à gauche  | Aligner les éléments sélectionnés à gauche     |
-| `Shift+Droite`| Aligner à droite  | Aligner les éléments sélectionnés à droite     |
-| `Shift+Haut`  | Aligner en haut   | Aligner les éléments sélectionnés en haut      |
-| `Shift+Bas`   | Aligner en bas    | Aligner les éléments sélectionnés en bas       |
-| `Shift+Orig`  | Aligner H-Centre  | Aligner les éléments sélectionnés au centre horizontalement |
-| `Shift+Fin`   | Aligner V-Centre  | Aligner les éléments sélectionnés au centre verticalement |
+| Raccourci      | Action           | Description                                                 |
+| -------------- | ---------------- | ----------------------------------------------------------- |
+| `Shift+Gauche` | Aligner à gauche | Aligner les éléments sélectionnés à gauche                  |
+| `Shift+Droite` | Aligner à droite | Aligner les éléments sélectionnés à droite                  |
+| `Shift+Haut`   | Aligner en haut  | Aligner les éléments sélectionnés en haut                   |
+| `Shift+Bas`    | Aligner en bas   | Aligner les éléments sélectionnés en bas                    |
+| `Shift+Orig`   | Aligner H-Centre | Aligner les éléments sélectionnés au centre horizontalement |
+| `Shift+Fin`    | Aligner V-Centre | Aligner les éléments sélectionnés au centre verticalement   |
 
 ### Distribution
 
-| Raccourci      | Action                | Description                                |
-| -------------- | --------------------- | ------------------------------------------ |
+| Raccourci      | Action                  | Description                                          |
+| -------------- | ----------------------- | ---------------------------------------------------- |
 | `Ctrl+Shift+H` | Espacer horizontalement | Distribuer les éléments uniformément horizontalement |
-| `Ctrl+Shift+V` | Espacer verticalement   | Distribuer les éléments uniformément verticalement |
+| `Ctrl+Shift+V` | Espacer verticalement   | Distribuer les éléments uniformément verticalement   |
 
 ### Disposition
 
-| Raccourci | Action       | Description              |
-| --------- | ------------ | ------------------------ |
+| Raccourci | Action        | Description                     |
+| --------- | ------------- | ------------------------------- |
 | `Alt+A`   | Pixel parfait | Aligner sur la grille de pixels |
 
 ---
 
 ## Transformation
 
-| Raccourci | Action              | Description                              |
-| --------- | ------------------- | ---------------------------------------- |
-| `Shift+H` | Miroir horizontal   | Inverser les éléments sélectionnés horizontalement |
-| `Shift+V` | Miroir vertical     | Inverser les éléments sélectionnés verticalement |
+| Raccourci | Action            | Description                                        |
+| --------- | ----------------- | -------------------------------------------------- |
+| `Shift+H` | Miroir horizontal | Inverser les éléments sélectionnés horizontalement |
+| `Shift+V` | Miroir vertical   | Inverser les éléments sélectionnés verticalement   |
 
 ---
 
 ## Contrôle de la machine
 
-| Raccourci  | Action               | Description                           |
-| ---------- | -------------------- | ------------------------------------- |
-| `Ctrl+L`   | Panneau de contrôle  | Basculer la visibilité du panneau de contrôle |
-| `Ctrl+<`   | Paramètres machine   | Ouvrir la boîte de dialogue des paramètres machine |
-| `F1`       | À propos             | Afficher la boîte de dialogue À propos |
+| Raccourci | Action             | Description                                        |
+| --------- | ------------------ | -------------------------------------------------- |
+| `Ctrl+L`  | Panneau inférieur  | Basculer la visibilité du panneau inférieur        |
+| `Ctrl+<`  | Paramètres machine | Ouvrir la boîte de dialogue des paramètres machine |
+| `F1`      | À propos           | Afficher la boîte de dialogue À propos             |
 
 :::note Opérations machine
 Les opérations de contrôle de la machine (Origine, Cadrer, Envoyer, etc.) n'ont actuellement pas de raccourcis par défaut mais sont accessibles via les boutons de la barre d'outils ou les menus.
 :::
-
 
 ---
 
@@ -141,21 +140,21 @@ Les opérations de contrôle de la machine (Origine, Cadrer, Envoyer, etc.) n'on
 
 ### Contrôles de la souris
 
-| Entrée                   | Action         | Description                   |
-| ------------------------ | -------------- | ----------------------------- |
-| **Clic gauche**          | Sélectionner   | Sélectionner un élément       |
-| **Glisser clic gauche**  | Déplacer       | Déplacer les éléments sélectionnés |
-| **Ctrl+Glisser clic gauche** | Sélection par cadre | Sélectionner plusieurs éléments |
-| **Glisser clic milieu**  | Panoramique    | Déplacer le canevas           |
-| **Molette de défilement**| Zoom           | Zoomer avant/arrière          |
-| **Ctrl+Molette**         | Zoom de précision | Contrôle de zoom plus fin   |
+| Entrée                       | Action              | Description                        |
+| ---------------------------- | ------------------- | ---------------------------------- |
+| **Clic gauche**              | Sélectionner        | Sélectionner un élément            |
+| **Glisser clic gauche**      | Déplacer            | Déplacer les éléments sélectionnés |
+| **Ctrl+Glisser clic gauche** | Sélection par cadre | Sélectionner plusieurs éléments    |
+| **Glisser clic milieu**      | Panoramique         | Déplacer le canevas                |
+| **Molette de défilement**    | Zoom                | Zoomer avant/arrière               |
+| **Ctrl+Molette**             | Zoom de précision   | Contrôle de zoom plus fin          |
 
 ### Touches fléchées
 
-| Raccourci        | Action      | Description                       |
-| ---------------- | ----------- | --------------------------------- |
-| `Flèches`        | Nudge       | Déplacer les éléments sélectionnés de 1 unité |
-| `Shift+Flèche`   | Grand nudge | Déplacer les éléments sélectionnés de 10 unités |
+| Raccourci      | Action      | Description                                     |
+| -------------- | ----------- | ----------------------------------------------- |
+| `Flèches`      | Nudge       | Déplacer les éléments sélectionnés de 1 unité   |
+| `Shift+Flèche` | Grand nudge | Déplacer les éléments sélectionnés de 10 unités |
 
 ---
 
@@ -163,14 +162,14 @@ Les opérations de contrôle de la machine (Origine, Cadrer, Envoyer, etc.) n'on
 
 Lors de l'édition de G-code ou de champs de texte :
 
-| Raccourci | Action            | Description                    |
-| --------- | ----------------- | ------------------------------ |
-| `Ctrl+Z`  | Annuler           | Annuler l'édition de texte     |
-| `Ctrl+Y`  | Rétablir          | Rétablir l'édition de texte    |
-| `Ctrl+A`  | Tout sélectionner | Sélectionner tout le texte     |
-| `Ctrl+X`  | Couper            | Couper le texte sélectionné    |
-| `Ctrl+C`  | Copier            | Copier le texte sélectionné    |
-| `Ctrl+V`  | Coller            | Coller le texte                |
+| Raccourci | Action            | Description                             |
+| --------- | ----------------- | --------------------------------------- |
+| `Ctrl+Z`  | Annuler           | Annuler l'édition de texte              |
+| `Ctrl+Y`  | Rétablir          | Rétablir l'édition de texte             |
+| `Ctrl+A`  | Tout sélectionner | Sélectionner tout le texte              |
+| `Ctrl+X`  | Couper            | Couper le texte sélectionné             |
+| `Ctrl+C`  | Copier            | Copier le texte sélectionné             |
+| `Ctrl+V`  | Coller            | Coller le texte                         |
 | `Ctrl+F`  | Rechercher        | Rechercher du texte (si pris en charge) |
 
 ---
@@ -223,7 +222,6 @@ Lors de l'édition de G-code ou de champs de texte :
 :::note Raccourcis personnalisés
 Les raccourcis clavier sont actuellement codés en dur. La configuration de raccourcis personnalisés pourrait être ajoutée dans les futures versions.
 :::
-
 
 **Limitations actuelles :**
 
@@ -338,42 +336,42 @@ Certains raccourcis moins connus :
 
 **Imprimez cette référence rapide :**
 
-| Catégorie     | Raccourci      | Action              |
-| ------------- | -------------- | ------------------- |
-| **Fichier**   | Ctrl+N         | Nouveau croquis     |
-|               | Ctrl+O         | Ouvrir              |
-|               | Ctrl+S         | Enregistrer         |
-|               | Ctrl+Shift+S   | Enregistrer sous    |
-|               | Ctrl+I         | Importer            |
-|               | Ctrl+E         | Exporter            |
-|               | Ctrl+Q         | Quitter             |
-|               | Ctrl+,         | Préférences         |
-| **Édition**   | Ctrl+Z         | Annuler             |
-|               | Ctrl+Y         | Rétablir            |
-|               | Ctrl+C         | Copier              |
-|               | Ctrl+V         | Coller              |
-|               | Ctrl+D         | Dupliquer           |
-|               | Suppr          | Supprimer           |
-| **Affichage** | H              | Pièces              |
-|               | T              | Onglets             |
-|               | Alt+C          | Caméra              |
-|               | F12            | Vue 3D              |
-|               | 1/2/7          | Présélections de vue|
-|               | P              | Perspective         |
-| **Aligner**   | Shift+Gauche   | Aligner à gauche    |
-|               | Shift+Droite   | Aligner à droite    |
-|               | Shift+Haut     | Aligner en haut     |
-|               | Shift+Bas      | Aligner en bas      |
-|               | Shift+Orig     | H-Centre            |
-|               | Shift+Fin      | V-Centre            |
-| **Simuler**   | F11            | Mode                |
-| **Transformer**| Shift+H       | Miroir H            |
-|               | Shift+V        | Miroir V            |
-|               | Ctrl+G         | Grouper             |
-|               | Ctrl+U         | Dissocier           |
-| **Machine**   | Ctrl+L         | Panneau de contrôle |
-|               | Ctrl+<         | Paramètres machine  |
-|               | F1             | À propos            |
+| Catégorie       | Raccourci    | Action               |
+| --------------- | ------------ | -------------------- |
+| **Fichier**     | Ctrl+N       | Nouveau croquis      |
+|                 | Ctrl+O       | Ouvrir               |
+|                 | Ctrl+S       | Enregistrer          |
+|                 | Ctrl+Shift+S | Enregistrer sous     |
+|                 | Ctrl+I       | Importer             |
+|                 | Ctrl+E       | Exporter             |
+|                 | Ctrl+Q       | Quitter              |
+|                 | Ctrl+,       | Préférences          |
+| **Édition**     | Ctrl+Z       | Annuler              |
+|                 | Ctrl+Y       | Rétablir             |
+|                 | Ctrl+C       | Copier               |
+|                 | Ctrl+V       | Coller               |
+|                 | Ctrl+D       | Dupliquer            |
+|                 | Suppr        | Supprimer            |
+| **Affichage**   | H            | Pièces               |
+|                 | T            | Onglets              |
+|                 | Alt+C        | Caméra               |
+|                 | F12          | Vue 3D               |
+|                 | 1/2/7        | Présélections de vue |
+|                 | P            | Perspective          |
+| **Aligner**     | Shift+Gauche | Aligner à gauche     |
+|                 | Shift+Droite | Aligner à droite     |
+|                 | Shift+Haut   | Aligner en haut      |
+|                 | Shift+Bas    | Aligner en bas       |
+|                 | Shift+Orig   | H-Centre             |
+|                 | Shift+Fin    | V-Centre             |
+| **Simuler**     | F11          | Mode                 |
+| **Transformer** | Shift+H      | Miroir H             |
+|                 | Shift+V      | Miroir V             |
+|                 | Ctrl+G       | Grouper              |
+|                 | Ctrl+U       | Dissocier            |
+| **Machine**     | Ctrl+L       | Panneau inférieur    |
+|                 | Ctrl+<       | Paramètres machine   |
+|                 | F1           | À propos             |
 
 ---
 

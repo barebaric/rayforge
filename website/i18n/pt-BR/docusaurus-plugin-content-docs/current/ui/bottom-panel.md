@@ -1,23 +1,25 @@
-# Painel de Controle
+# Painel Inferior
 
-O Painel de Controle na parte inferior da janela do Rayforge fornece controle manual sobre a posição da sua cortadora a laser, status da máquina em tempo real e uma visão de log para monitorar operações.
+O Painel Inferior na parte inferior da janela do Rayforge fornece controle manual sobre a posição da sua cortadora a laser, status da máquina em tempo real, uma visão de log para monitorar operações e um visualizador de G-code.
 
 ## Visão Geral
 
-O Painel de Controle combina várias funções em uma interface conveniente:
+O Painel Inferior combina várias funções em uma interface conveniente:
 
-1. **Controles de Jog**: Movimento e posicionamento manual
-2. **Status da Máquina**: Posição e estado de conexão em tempo real
-3. **Console**: Terminal G-code interativo com destaque de sintaxe
-4. **Sistema de Coordenadas de Trabalho (WCS)**: Seleção rápida de WCS
+1. **Visão em Abas**: Alterne entre Console e Visualizador G-code usando a faixa de ícones à esquerda
+2. **Controles de Jog**: Movimento e posicionamento manual (sempre visível)
+3. **Status da Máquina**: Posição e estado de conexão em tempo real
+4. **Sistema de Coordenadas de Trabalho (WCS)**: Seleção rápida de WCS (sempre visível)
 
-![Painel de Controle](/screenshots/control-panel.png)
+O lado esquerdo do painel contém uma faixa de ícones que permite alternar entre o **Console** e o **Visualizador G-code**. Os controles de jog e WCS no lado direito permanecem visíveis independentemente de qual aba está ativa.
 
-## Acessando o Painel de Controle
+![Painel Inferior](/screenshots/control-panel.png)
 
-O Painel de Controle está sempre visível na parte inferior da janela principal. Ele pode ser alternado via:
+## Acessando o Painel Inferior
 
-- **Menu**: Visualizar → Painel de Controle
+O Painel Inferior pode ser alternado via:
+
+- **Menu**: Visualizar → Painel Inferior
 - **Atalho de Teclado**: Ctrl+L
 
 :::note Conexão Necessária
@@ -111,7 +113,7 @@ Configure o comportamento das operações de jog:
 
 ## Display de Status da Máquina
 
-O Painel de Controle exibe informação em tempo real sobre sua máquina:
+O Painel Inferior exibe informação em tempo real sobre sua máquina:
 
 ### Posição Atual
 
@@ -137,7 +139,7 @@ Mostra a posição da cabeça do laser no sistema de coordenadas ativo:
 
 ## Sistema de Coordenadas de Trabalho (WCS)
 
-O Painel de Controle fornece acesso rápido ao gerenciamento do Sistema de Coordenadas de Trabalho.
+O Painel Inferior fornece acesso rápido ao gerenciamento do Sistema de Coordenadas de Trabalho.
 
 ### Seleção de Sistema Ativo
 
@@ -185,9 +187,9 @@ Botões de zero são desabilitados quando G53 (Coordenadas da Máquina) está se
 :::
 
 
-## Console
+## Aba do Console
 
-O Console fornece uma interface estilo terminal interativa para enviar comandos G-code e monitorar comunicação da máquina:
+A aba do Console fornece uma interface estilo terminal interativa para enviar comandos G-code e monitorar comunicação da máquina. Clique no ícone do console na faixa de abas para alternar para esta visão.
 
 ### Entrada de Comando
 
@@ -234,9 +236,19 @@ O console é inestimável para diagnosticar problemas:
 - Revise progresso de execução de trabalho em tempo real
 - Envie comandos de diagnóstico (ex: `$$` para ver configurações GRBL)
 
+## Aba do Visualizador G-code
+
+A aba do Visualizador G-code exibe o G-code gerado para as operações atuais. Clique no ícone de G-code na faixa de abas para alternar para esta visão.
+
+### Recursos
+
+- **Destaque de Sintaxe**: Comandos G-code são coloridos para legibilidade
+- **Destaque de Linha**: A linha em execução é destacada durante a execução do trabalho
+- **Atualização Automática**: O conteúdo do G-code é atualizado automaticamente quando operações ou configurações do documento mudam
+
 ## Compatibilidade de Máquina
 
-O Painel de Controle adapta-se às capacidades da sua máquina:
+O Painel Inferior adapta-se às capacidades da sua máquina:
 
 ### Suporte de Eixos
 

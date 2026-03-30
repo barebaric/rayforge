@@ -3,85 +3,85 @@
 Vollständige Referenz der Tastaturkürzel in Rayforge.
 
 :::note Plattformkonventionen
+
 - **Linux/Windows:** `Strg`-Taste
 - **macOS:** `⌘ (Befehl)`-Taste
 - Dokumentation verwendet `Strg` – macOS-Benutzer ersetzen durch `⌘`
-:::
-
+  :::
 
 ---
 
 ## Dateioperationen
 
-| Kürzel          | Aktion          | Beschreibung                      |
-| --------------- | --------------- | --------------------------------- |
-| `Strg+N`        | Neue Skizze     | Neue Skizze erstellen             |
-| `Strg+O`        | Öffnen          | Bestehendes Projekt öffnen        |
-| `Strg+S`        | Speichern       | Aktuelles Projekt speichern       |
-| `Strg+Umschalt+S`| Speichern unter | Projekt als neue Datei speichern  |
-| `Strg+I`        | Importieren     | Dateiimport-Dialog öffnen         |
-| `Strg+E`        | Exportieren     | G-Code exportieren                |
-| `Strg+Q`        | Beenden         | Rayforge beenden                  |
-| `Strg+,`        | Einstellungen   | Einstellungsdialog öffnen         |
+| Kürzel            | Aktion          | Beschreibung                     |
+| ----------------- | --------------- | -------------------------------- |
+| `Strg+N`          | Neue Skizze     | Neue Skizze erstellen            |
+| `Strg+O`          | Öffnen          | Bestehendes Projekt öffnen       |
+| `Strg+S`          | Speichern       | Aktuelles Projekt speichern      |
+| `Strg+Umschalt+S` | Speichern unter | Projekt als neue Datei speichern |
+| `Strg+I`          | Importieren     | Dateiimport-Dialog öffnen        |
+| `Strg+E`          | Exportieren     | G-Code exportieren               |
+| `Strg+Q`          | Beenden         | Rayforge beenden                 |
+| `Strg+,`          | Einstellungen   | Einstellungsdialog öffnen        |
 
 ---
 
 ## Bearbeiten & Zwischenablage
 
-| Kürzel               | Aktion               | Beschreibung                            |
-| -------------------- | -------------------- | --------------------------------------- |
-| `Strg+Z`             | Rückgängig           | Letzte Aktion rückgängig machen         |
-| `Strg+Y`             | Wiederholen          | Letzte rückgängige Aktion wiederholen   |
-| `Strg+Umschalt+Z`    | Wiederholen (alt.)   | Alternative Wiederholen-Verknüpfung     |
-| `Strg+X`             | Ausschneiden         | Auswahl in Zwischenablage ausschneiden  |
-| `Strg+C`             | Kopieren             | Auswahl in Zwischenablage kopieren      |
-| `Strg+V`             | Einfügen             | Aus Zwischenablage einfügen             |
-| `Strg+A`             | Alles auswählen      | Alle Elemente in aktiver Ebene auswählen|
-| `Strg+D`             | Duplizieren          | Ausgewählte Elemente duplizieren        |
-| `Entf`               | Entfernen            | Ausgewählte Elemente löschen            |
-| `Strg+Umschalt+Entf` | Löschen              | Alle Elemente aus Dokument entfernen    |
+| Kürzel               | Aktion             | Beschreibung                             |
+| -------------------- | ------------------ | ---------------------------------------- |
+| `Strg+Z`             | Rückgängig         | Letzte Aktion rückgängig machen          |
+| `Strg+Y`             | Wiederholen        | Letzte rückgängige Aktion wiederholen    |
+| `Strg+Umschalt+Z`    | Wiederholen (alt.) | Alternative Wiederholen-Verknüpfung      |
+| `Strg+X`             | Ausschneiden       | Auswahl in Zwischenablage ausschneiden   |
+| `Strg+C`             | Kopieren           | Auswahl in Zwischenablage kopieren       |
+| `Strg+V`             | Einfügen           | Aus Zwischenablage einfügen              |
+| `Strg+A`             | Alles auswählen    | Alle Elemente in aktiver Ebene auswählen |
+| `Strg+D`             | Duplizieren        | Ausgewählte Elemente duplizieren         |
+| `Entf`               | Entfernen          | Ausgewählte Elemente löschen             |
+| `Strg+Umschalt+Entf` | Löschen            | Alle Elemente aus Dokument entfernen     |
 
 ---
 
 ## Ansicht & Anzeige
 
-| Kürzel         | Aktion               | Beschreibung                       |
-| -------------- | -------------------- | ---------------------------------- |
-| `H`            | Werkstücke umschalten| Werkstücksichtbarkeit ein/aus     |
-| `T`            | Halterungen umschalten| Halterungen ein/ausblenden       |
-| `Alt+C`        | Kamera umschalten    | Kamera-Overlay ein/ausblenden     |
-| `F12`          | 3D-Ansicht           | 3D-Vorschau-Fenster umschalten    |
-| `Strg+Umschalt+R`| Simulationsmodus    | Simulationsmodus umschalten       |
+| Kürzel            | Aktion                 | Beschreibung                   |
+| ----------------- | ---------------------- | ------------------------------ |
+| `H`               | Werkstücke umschalten  | Werkstücksichtbarkeit ein/aus  |
+| `T`               | Halterungen umschalten | Halterungen ein/ausblenden     |
+| `Alt+C`           | Kamera umschalten      | Kamera-Overlay ein/ausblenden  |
+| `F12`             | 3D-Ansicht             | 3D-Vorschau-Fenster umschalten |
+| `Strg+Umschalt+R` | Simulationsmodus       | Simulationsmodus umschalten    |
 
 ### 3D-Ansicht-Steuerung
 
-| Kürzel | Aktion               | Beschreibung                            |
-| ------ | -------------------- | --------------------------------------- |
-| `1`    | Draufsicht           | Zur Draufsicht wechseln                 |
-| `2`    | Vorderansicht        | Zur Vorderansicht wechseln              |
-| `7`    | Isometrische Ansicht | Zur isometrischen Ansicht wechseln      |
-| `P`    | Perspektive umschalten| Zwischen Perspektive und Orthografie wechseln |
+| Kürzel | Aktion                 | Beschreibung                                  |
+| ------ | ---------------------- | --------------------------------------------- |
+| `1`    | Draufsicht             | Zur Draufsicht wechseln                       |
+| `2`    | Vorderansicht          | Zur Vorderansicht wechseln                    |
+| `7`    | Isometrische Ansicht   | Zur isometrischen Ansicht wechseln            |
+| `P`    | Perspektive umschalten | Zwischen Perspektive und Orthografie wechseln |
 
 ---
 
 ## Ebene & Organisation
 
-| Kürzel           | Aktion            | Beschreibung                    |
-| ---------------- | ----------------- | ------------------------------- |
-| `Strg+G`         | Gruppieren        | Ausgewählte Elemente gruppieren |
-| `Strg+U`         | Gruppierung aufheben| Ausgewählte Gruppe auflösen   |
-| `Strg+Bild ↑`    | Ebene nach oben   | Ebene im Stapel nach oben       |
-| `Strg+Bild ↓`    | Ebene nach unten  | Ebene im Stapel nach unten      |
-| `Alt+S`          | Rohmaterial hinzufügen| Rohmaterial/Material hinzufügen |
+| Kürzel        | Aktion                 | Beschreibung                    |
+| ------------- | ---------------------- | ------------------------------- |
+| `Strg+G`      | Gruppieren             | Ausgewählte Elemente gruppieren |
+| `Strg+U`      | Gruppierung aufheben   | Ausgewählte Gruppe auflösen     |
+| `Strg+Bild ↑` | Ebene nach oben        | Ebene im Stapel nach oben       |
+| `Strg+Bild ↓` | Ebene nach unten       | Ebene im Stapel nach unten      |
+| `Alt+S`       | Rohmaterial hinzufügen | Rohmaterial/Material hinzufügen |
 
 ---
 
 ## Halterungen (Tabs)
 
-| Kürzel | Aktion                    | Beschreibung                      |
-| ------ | ------------------------- | --------------------------------- |
-| `Alt+T`| Halterungen hinzufügen (äquidistant)| Gleichmäßig verteilte Halterungen hinzufügen |
-| `T`    | Halterungssichtbarkeit umschalten| Halterungen-Overlay ein/ausblenden |
+| Kürzel  | Aktion                               | Beschreibung                                 |
+| ------- | ------------------------------------ | -------------------------------------------- |
+| `Alt+T` | Halterungen hinzufügen (äquidistant) | Gleichmäßig verteilte Halterungen hinzufügen |
+| `T`     | Halterungssichtbarkeit umschalten    | Halterungen-Overlay ein/ausblenden           |
 
 ---
 
@@ -89,51 +89,50 @@ Vollständige Referenz der Tastaturkürzel in Rayforge.
 
 ### Ausrichtung
 
-| Kürzel         | Aktion           | Beschreibung                                 |
-| -------------- | ---------------- | -------------------------------------------- |
-| `Umschalt+←`   | Links ausrichten | Ausgewählte Elemente links ausrichten        |
-| `Umschalt+→`   | Rechts ausrichten| Ausgewählte Elemente rechts ausrichten       |
-| `Umschalt+↑`   | Oben ausrichten  | Ausgewählte Elemente oben ausrichten         |
-| `Umschalt+↓`   | Unten ausrichten | Ausgewählte Elemente unten ausrichten        |
-| `Umschalt+Pos1`| Horizontal zentrieren| Ausgewählte Elemente horizontal zentrieren |
-| `Umschalt+Ende`| Vertikal zentrieren| Ausgewählte Elemente vertikal zentrieren   |
+| Kürzel          | Aktion                | Beschreibung                               |
+| --------------- | --------------------- | ------------------------------------------ |
+| `Umschalt+←`    | Links ausrichten      | Ausgewählte Elemente links ausrichten      |
+| `Umschalt+→`    | Rechts ausrichten     | Ausgewählte Elemente rechts ausrichten     |
+| `Umschalt+↑`    | Oben ausrichten       | Ausgewählte Elemente oben ausrichten       |
+| `Umschalt+↓`    | Unten ausrichten      | Ausgewählte Elemente unten ausrichten      |
+| `Umschalt+Pos1` | Horizontal zentrieren | Ausgewählte Elemente horizontal zentrieren |
+| `Umschalt+Ende` | Vertikal zentrieren   | Ausgewählte Elemente vertikal zentrieren   |
 
 ### Verteilung
 
-| Kürzel            | Aktion                 | Beschreibung                          |
-| ----------------- | ---------------------- | ------------------------------------- |
-| `Strg+Umschalt+H` | Horizontal verteilen   | Elemente gleichmäßig horizontal verteilen |
-| `Strg+Umschalt+V` | Vertikal verteilen     | Elemente gleichmäßig vertikal verteilen |
+| Kürzel            | Aktion               | Beschreibung                              |
+| ----------------- | -------------------- | ----------------------------------------- |
+| `Strg+Umschalt+H` | Horizontal verteilen | Elemente gleichmäßig horizontal verteilen |
+| `Strg+Umschalt+V` | Vertikal verteilen   | Elemente gleichmäßig vertikal verteilen   |
 
 ### Layout
 
-| Kürzel | Aktion        | Beschreibung             |
-| ------ | ------------- | ------------------------ |
-| `Alt+A`| Pixelgenau    | Am Pixelraster einrasten |
+| Kürzel  | Aktion     | Beschreibung             |
+| ------- | ---------- | ------------------------ |
+| `Alt+A` | Pixelgenau | Am Pixelraster einrasten |
 
 ---
 
 ## Transformieren
 
-| Kürzel      | Aktion              | Beschreibung                          |
-| ----------- | ------------------- | ------------------------------------- |
-| `Umschalt+H`| Horizontal spiegeln | Ausgewählte Elemente horizontal spiegeln |
-| `Umschalt+V`| Vertikal spiegeln   | Ausgewählte Elemente vertikal spiegeln |
+| Kürzel       | Aktion              | Beschreibung                             |
+| ------------ | ------------------- | ---------------------------------------- |
+| `Umschalt+H` | Horizontal spiegeln | Ausgewählte Elemente horizontal spiegeln |
+| `Umschalt+V` | Vertikal spiegeln   | Ausgewählte Elemente vertikal spiegeln   |
 
 ---
 
 ## Maschinensteuerung
 
-| Kürzel    | Aktion            | Beschreibung                        |
-| --------- | ----------------- | ----------------------------------- |
-| `Strg+L`  | Bedienfeld        | Bedienfeld-Sichtbarkeit umschalten  |
-| `Strg+<`  | Maschineneinstellungen| Maschineneinstellungsdialog öffnen |
-| `F1`      | Über              | Über-Dialog anzeigen                |
+| Kürzel   | Aktion                 | Beschreibung                          |
+| -------- | ---------------------- | ------------------------------------- |
+| `Strg+L` | Unteres Panel          | Unteres Panel-Sichtbarkeit umschalten |
+| `Strg+<` | Maschineneinstellungen | Maschineneinstellungsdialog öffnen    |
+| `F1`     | Über                   | Über-Dialog anzeigen                  |
 
 :::note Maschinenoperationen
 Maschinensteuerungsoperationen (Home, Rahmen, Senden usw.) haben derzeit keine Standardkürzel, können aber über Symbolleisten-Buttons oder Menüs aufgerufen werden.
 :::
-
 
 ---
 
@@ -141,21 +140,21 @@ Maschinensteuerungsoperationen (Home, Rahmen, Senden usw.) haben derzeit keine S
 
 ### Maussteuerung
 
-| Eingabe                   | Aktion       | Beschreibung              |
-| ------------------------- | ------------ | ------------------------- |
-| **Linksklick**            | Auswählen    | Element auswählen         |
-| **Links ziehen**          | Bewegen      | Ausgewählte Elemente bewegen |
-| `Strg`+**Links ziehen**   | Auswahlrechteck| Mehrere Elemente auswählen |
-| **Mitteltick ziehen**     | Verschieben  | Canvas verschieben        |
-| **Mausrad**               | Zoom         | Vergrößern/Verkleinern    |
-| `Strg`+**Mausrad**        | Präzisionszoom| Feinere Zoomsteuerung   |
+| Eingabe                 | Aktion          | Beschreibung                 |
+| ----------------------- | --------------- | ---------------------------- |
+| **Linksklick**          | Auswählen       | Element auswählen            |
+| **Links ziehen**        | Bewegen         | Ausgewählte Elemente bewegen |
+| `Strg`+**Links ziehen** | Auswahlrechteck | Mehrere Elemente auswählen   |
+| **Mitteltick ziehen**   | Verschieben     | Canvas verschieben           |
+| **Mausrad**             | Zoom            | Vergrößern/Verkleinern       |
+| `Strg`+**Mausrad**      | Präzisionszoom  | Feinere Zoomsteuerung        |
 
 ### Pfeiltasten
 
-| Kürzel         | Aktion      | Beschreibung                        |
-| -------------- | ----------- | ----------------------------------- |
-| `Pfeiltasten`  | Verschieben | Ausgewählte Elemente um 1 Einheit bewegen |
-| `Umschalt+Pfeil`| Grob verschieben| Ausgewählte Elemente um 10 Einheiten bewegen |
+| Kürzel           | Aktion           | Beschreibung                                 |
+| ---------------- | ---------------- | -------------------------------------------- |
+| `Pfeiltasten`    | Verschieben      | Ausgewählte Elemente um 1 Einheit bewegen    |
+| `Umschalt+Pfeil` | Grob verschieben | Ausgewählte Elemente um 10 Einheiten bewegen |
 
 ---
 
@@ -163,15 +162,15 @@ Maschinensteuerungsoperationen (Home, Rahmen, Senden usw.) haben derzeit keine S
 
 Beim Bearbeiten von G-Code oder Textfeldern:
 
-| Kürzel   | Aktion         | Beschreibung                 |
-| -------- | -------------- | ---------------------------- |
-| `Strg+Z` | Rückgängig     | Textbearbeitung rückgängig   |
-| `Strg+Y` | Wiederholen    | Textbearbeitung wiederholen  |
-| `Strg+A` | Alles auswählen| Gesamten Text auswählen      |
-| `Strg+X` | Ausschneiden   | Ausgewählten Text ausschneiden |
-| `Strg+C` | Kopieren       | Ausgewählten Text kopieren   |
-| `Strg+V` | Einfügen       | Text einfügen                |
-| `Strg+F` | Suchen         | Text suchen (falls unterstützt) |
+| Kürzel   | Aktion          | Beschreibung                    |
+| -------- | --------------- | ------------------------------- |
+| `Strg+Z` | Rückgängig      | Textbearbeitung rückgängig      |
+| `Strg+Y` | Wiederholen     | Textbearbeitung wiederholen     |
+| `Strg+A` | Alles auswählen | Gesamten Text auswählen         |
+| `Strg+X` | Ausschneiden    | Ausgewählten Text ausschneiden  |
+| `Strg+C` | Kopieren        | Ausgewählten Text kopieren      |
+| `Strg+V` | Einfügen        | Text einfügen                   |
+| `Strg+F` | Suchen          | Text suchen (falls unterstützt) |
 
 ---
 
@@ -223,7 +222,6 @@ Beim Bearbeiten von G-Code oder Textfeldern:
 :::note Benutzerdefinierte Kürzel
 Tastaturkürzel sind derzeit fest codiert. Eine Konfiguration benutzerdefinierter Kürzel könnte in zukünftigen Versionen hinzugefügt werden.
 :::
-
 
 **Aktuelle Einschränkungen:**
 
@@ -338,42 +336,42 @@ Einige weniger bekannte Kürzel:
 
 **Drucken Sie diese Schnellreferenz:**
 
-| Kategorie     | Kürzel        | Aktion            |
-| ------------- | ------------- | ----------------- |
-| **Datei**     | Strg+N        | Neue Skizze       |
-|               | Strg+O        | Öffnen            |
-|               | Strg+S        | Speichern         |
-|               | Strg+Umschalt+S| Speichern unter  |
-|               | Strg+I        | Importieren       |
-|               | Strg+E        | Exportieren       |
-|               | Strg+Q        | Beenden           |
-|               | Strg+,        | Einstellungen     |
-| **Bearbeiten**| Strg+Z        | Rückgängig        |
-|               | Strg+Y        | Wiederholen       |
-|               | Strg+C        | Kopieren          |
-|               | Strg+V        | Einfügen          |
-|               | Strg+D        | Duplizieren       |
-|               | Entf          | Entfernen         |
-| **Ansicht**   | H             | Werkstücke        |
-|               | T             | Halterungen       |
-|               | Alt+C         | Kamera            |
-|               | F12           | 3D-Ansicht        |
-|               | 1/2/7         | Ansicht-Presets   |
-|               | P             | Perspektive       |
-| **Ausrichten**| Umschalt+←    | Links ausrichten  |
-|               | Umschalt+→    | Rechts ausrichten |
-|               | Umschalt+↑    | Oben ausrichten   |
-|               | Umschalt+↓    | Unten ausrichten  |
-|               | Umschalt+Pos1 | Horizontal zentriert |
-|               | Umschalt+Ende | Vertikal zentriert|
-| **Simulieren**| F11           | Modus             |
-| **Transformieren**| Umschalt+H| Horizontal spiegeln |
-|               | Umschalt+V    | Vertikal spiegeln |
-|               | Strg+G        | Gruppieren        |
-|               | Strg+U        | Gruppierung aufheben |
-| **Maschine**  | Strg+L        | Bedienfeld        |
-|               | Strg+<        | Maschineneinstellungen |
-|               | F1            | Über              |
+| Kategorie          | Kürzel          | Aktion                 |
+| ------------------ | --------------- | ---------------------- |
+| **Datei**          | Strg+N          | Neue Skizze            |
+|                    | Strg+O          | Öffnen                 |
+|                    | Strg+S          | Speichern              |
+|                    | Strg+Umschalt+S | Speichern unter        |
+|                    | Strg+I          | Importieren            |
+|                    | Strg+E          | Exportieren            |
+|                    | Strg+Q          | Beenden                |
+|                    | Strg+,          | Einstellungen          |
+| **Bearbeiten**     | Strg+Z          | Rückgängig             |
+|                    | Strg+Y          | Wiederholen            |
+|                    | Strg+C          | Kopieren               |
+|                    | Strg+V          | Einfügen               |
+|                    | Strg+D          | Duplizieren            |
+|                    | Entf            | Entfernen              |
+| **Ansicht**        | H               | Werkstücke             |
+|                    | T               | Halterungen            |
+|                    | Alt+C           | Kamera                 |
+|                    | F12             | 3D-Ansicht             |
+|                    | 1/2/7           | Ansicht-Presets        |
+|                    | P               | Perspektive            |
+| **Ausrichten**     | Umschalt+←      | Links ausrichten       |
+|                    | Umschalt+→      | Rechts ausrichten      |
+|                    | Umschalt+↑      | Oben ausrichten        |
+|                    | Umschalt+↓      | Unten ausrichten       |
+|                    | Umschalt+Pos1   | Horizontal zentriert   |
+|                    | Umschalt+Ende   | Vertikal zentriert     |
+| **Simulieren**     | F11             | Modus                  |
+| **Transformieren** | Umschalt+H      | Horizontal spiegeln    |
+|                    | Umschalt+V      | Vertikal spiegeln      |
+|                    | Strg+G          | Gruppieren             |
+|                    | Strg+U          | Gruppierung aufheben   |
+| **Maschine**       | Strg+L          | Unteres Panel          |
+|                    | Strg+<          | Maschineneinstellungen |
+|                    | F1              | Über                   |
 
 ---
 

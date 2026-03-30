@@ -276,6 +276,6 @@ For running the same job at different locations:
 - [Work Coordinate Systems](../general-info/coordinate-systems) - WCS
   reference
 - [Camera Integration](../machine/camera) - Camera setup and alignment
-- [Control Panel](../ui/control-panel) - Jog controls and WCS
+- [Control Panel](../ui/bottom-panel) - Jog controls and WCS
   management
 - [Quick Start Guide](../getting-started/quick-start) - Basic workflow

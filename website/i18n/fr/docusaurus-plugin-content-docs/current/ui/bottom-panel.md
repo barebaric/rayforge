@@ -1,26 +1,27 @@
-# Panneau de contrôle
+# Panneau inférieur
 
-Le panneau de contrôle en bas de la fenêtre Rayforge fournit un contrôle manuel
+Le panneau inférieur en bas de la fenêtre Rayforge fournit un contrôle manuel
 sur la position de votre découpeur laser, l'état de la machine en temps réel, et une vue du journal
 pour surveiller les opérations.
 
 ## Aperçu
 
-Le panneau de contrôle combine plusieurs fonctions dans une interface pratique :
+Le panneau inférieur combine plusieurs fonctions dans une interface pratique :
 
 1. **Contrôles de déplacement** : Mouvement et positionnement manuels
 2. **État de la machine** : Position et état de connexion en temps réel
-3. **Console** : Terminal G-code interactif avec coloration syntaxique
-4. **Système de coordonnées de travail (WCS)** : Sélection rapide du WCS
+3. **Onglet Console** : Terminal G-code interactif avec coloration syntaxique
+4. **Onglet Visualiseur G-code** : Visualisation et inspection du G-code généré
+5. **Système de coordonnées de travail (WCS)** : Sélection rapide du WCS
 
-![Panneau de contrôle](/screenshots/control-panel.png)
+![Panneau inférieur](/screenshots/bottom-panel.png)
 
-## Accéder au panneau de contrôle
+## Accéder au panneau inférieur
 
-Le panneau de contrôle est toujours visible en bas de la fenêtre principale. Il peut
+Le panneau inférieur est toujours visible en bas de la fenêtre principale. Il peut
 être basculé via :
 
-- **Menu** : Affichage → Panneau de contrôle
+- **Menu** : Affichage → Panneau inférieur
 - **Raccourci clavier** : Ctrl+L
 
 :::note Connexion requise
@@ -118,7 +119,7 @@ Configurez le comportement des opérations de déplacement :
 
 ## Affichage de l'état de la machine
 
-Le panneau de contrôle affiche des informations en temps réel sur votre machine :
+Le panneau inférieur affiche des informations en temps réel sur votre machine :
 
 ### Position actuelle
 
@@ -144,7 +145,7 @@ Affiche la position de la tête laser dans le système de coordonnées actif :
 
 ## Système de coordonnées de travail (WCS)
 
-Le panneau de contrôle fournit un accès rapide à la gestion du système de coordonnées de travail.
+Le panneau inférieur fournit un accès rapide à la gestion du système de coordonnées de travail.
 
 ### Sélection du système actif
 
@@ -193,7 +194,30 @@ car les coordonnées machine sont fixes par le matériel.
 :::
 
 
-## Console
+## Onglet Visualiseur G-code
+
+Le visualiseur G-code affiche le code G généré pour votre projet dans un onglet du
+panneau inférieur, vous permettant d'inspecter et de vérifier le code avant l'envoi
+à la machine.
+
+### Caractéristiques
+
+- **Coloration syntaxique** : Les commandes G-code sont colorées pour une lecture
+  facile, avec différentes couleurs pour les mouvements, les paramètres et les
+  commentaires
+- **Surlignage de ligne** : La ligne actuellement exécutée est mise en surbrillance
+  pendant l'exécution du travail
+- **Actualisation automatique** : Le visualiseur se met à jour automatiquement lorsque
+  le G-code est régénéré
+
+### Navigation
+
+- Utilisez la barre de défilement ou la molette de la souris pour naviguer dans le code
+- Les numéros de ligne sont affichés pour faciliter le repérage
+- Basculez entre les onglets Visualiseur G-code et Console en cliquant sur les onglets
+  en haut du panneau inférieur
+
+## Onglet Console
 
 La console fournit une interface de type terminal interactif pour envoyer des commandes G-code
 et surveiller la communication machine :
@@ -247,7 +271,7 @@ La console est inestimable pour diagnostiquer les problèmes :
 
 ## Compatibilité machine
 
-Le panneau de contrôle s'adapte aux capacités de votre machine :
+Le panneau inférieur s'adapte aux capacités de votre machine :
 
 ### Support des axes
 

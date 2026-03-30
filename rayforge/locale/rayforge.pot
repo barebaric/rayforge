@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-29 15:48+0200\n"
+"POT-Creation-Date: 2026-03-30 17:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2168,6 +2168,10 @@ msgid ""
 msgstr ""
 
 #: rayforge/ui_gtk/machine/control_panel.py
+msgid "Console"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
 msgid "Active System"
 msgstr ""
 
@@ -3702,11 +3706,7 @@ msgid "Show Travel Moves"
 msgstr ""
 
 #: rayforge/ui_gtk/main_menu.py
-msgid "Show G-code Preview"
-msgstr ""
-
-#: rayforge/ui_gtk/main_menu.py
-msgid "Show Control Panel"
+msgid "Show Bottom Panel"
 msgstr ""
 
 #: rayforge/ui_gtk/main_menu.py
@@ -3878,6 +3878,10 @@ msgid "(No Recent Items)"
 msgstr ""
 
 #: rayforge/ui_gtk/mainwindow.py
+msgid "G-code Viewer"
+msgstr ""
+
+#: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
 msgid "Maintenance Alert: {name} has reached its limit ({curr} / {limit})"
 msgstr ""
@@ -3978,11 +3982,7 @@ msgid "Toggle execution simulation"
 msgstr ""
 
 #: rayforge/ui_gtk/toolbar.py
-msgid "Toggle G-code Preview"
-msgstr ""
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Toggle control panel"
+msgid "Toggle bottom panel"
 msgstr ""
 
 #: rayforge/ui_gtk/toolbar.py
@@ -4133,6 +4133,14 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import vector data directly"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "DPI"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Pixels per inch for unitless SVG dimensions"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
@@ -4412,11 +4420,11 @@ msgid "Reorder Assets"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
-msgid "Assets"
+msgid "Add Asset"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
-msgid "Add Asset"
+msgid "Assets"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
@@ -4865,11 +4873,11 @@ msgid "Diameter of the cylindrical object in machine units"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/layer_list.py
-msgid "Workpiece Layers"
+msgid "Add New Layer"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/layer_list.py
-msgid "Add New Layer"
+msgid "Workpiece Layers"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/layer_list.py

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-29 15:48+0200\n"
+"POT-Creation-Date: 2026-03-30 17:47+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -2314,6 +2314,10 @@ msgstr ""
 "Bezeichnung und Beschreibung bleiben erhalten."
 
 #: rayforge/ui_gtk/machine/control_panel.py
+msgid "Console"
+msgstr "Konsole"
+
+#: rayforge/ui_gtk/machine/control_panel.py
 msgid "Active System"
 msgstr "Aktives System"
 
@@ -3926,12 +3930,8 @@ msgid "Show Travel Moves"
 msgstr "Verfahrwege anzeigen"
 
 #: rayforge/ui_gtk/main_menu.py
-msgid "Show G-code Preview"
-msgstr "G-Code-Vorschau anzeigen"
-
-#: rayforge/ui_gtk/main_menu.py
-msgid "Show Control Panel"
-msgstr "Steuerungspanel anzeigen"
+msgid "Show Bottom Panel"
+msgstr "Unteres Bedienfeld anzeigen"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Simulate Execution"
@@ -4102,6 +4102,10 @@ msgid "(No Recent Items)"
 msgstr "(Keine kürzlichen Elemente)"
 
 #: rayforge/ui_gtk/mainwindow.py
+msgid "G-code Viewer"
+msgstr "G-Code-Ansicht"
+
+#: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
 msgid "Maintenance Alert: {name} has reached its limit ({curr} / {limit})"
 msgstr "Wartungswarnung: {name} hat das Limit erreicht ({curr} / {limit})"
@@ -4204,12 +4208,8 @@ msgid "Toggle execution simulation"
 msgstr "Ausführungssimulation umschalten"
 
 #: rayforge/ui_gtk/toolbar.py
-msgid "Toggle G-code Preview"
-msgstr "G-Code-Vorschau umschalten"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Toggle control panel"
-msgstr "Steuerfeld umschalten"
+msgid "Toggle bottom panel"
+msgstr "Unteres Bedienfeld umschalten"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Toggle tab visibility"
@@ -4367,6 +4367,14 @@ msgstr "Originalvektoren verwenden"
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import vector data directly"
 msgstr "Vektordaten direkt importieren"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "DPI"
+msgstr "DPI"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Pixels per inch for unitless SVG dimensions"
+msgstr "Pixel pro Zoll für SVG-Abmessungen ohne Einheit"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Layers"
@@ -4654,12 +4662,12 @@ msgid "Reorder Assets"
 msgstr "Elemente neu anordnen"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
-msgid "Assets"
-msgstr "Elemente"
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
 msgid "Add Asset"
 msgstr "Element hinzufügen"
+
+#: rayforge/ui_gtk/doceditor/asset_list_view.py
+msgid "Assets"
+msgstr "Elemente"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
 #, python-brace-format
@@ -5116,12 +5124,12 @@ msgid "Diameter of the cylindrical object in machine units"
 msgstr "Durchmesser des zylindrischen Objekts in Maschineneinheiten"
 
 #: rayforge/ui_gtk/doceditor/layer_list.py
-msgid "Workpiece Layers"
-msgstr "Werkstück-Ebenen"
-
-#: rayforge/ui_gtk/doceditor/layer_list.py
 msgid "Add New Layer"
 msgstr "Neue Ebene hinzufügen"
+
+#: rayforge/ui_gtk/doceditor/layer_list.py
+msgid "Workpiece Layers"
+msgstr "Werkstück-Ebenen"
 
 #: rayforge/ui_gtk/doceditor/layer_list.py
 #, python-brace-format

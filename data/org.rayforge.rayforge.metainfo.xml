@@ -66,6 +66,77 @@
   </screenshots>
 
   <releases>
+    <release version="1.4" date="2026-03-29">
+      <description>
+        <p>Rotary Axis Support, PDF Layer Import, and Camera Calibration</p>
+        <p>Major Changes:</p>
+        <ul>
+          <li>Full rotary axis support with 3D visualization</li>
+          <li>PDF direct vector import with layer support</li>
+          <li>Camera de-distortion with Charuco calibration wizard</li>
+          <li>Sketcher: ellipse tool replacing circle tool</li>
+        </ul>
+        <p>Rotary Axis:</p>
+        <ul>
+          <li>Full 3D visualization for rotary mode</li>
+          <li>Support for multiple rotary modules</li>
+          <li>Configurable rotary mode per layer</li>
+          <li>Rotary icon displayed on rotary layers</li>
+        </ul>
+        <p>PDF Improvements:</p>
+        <ul>
+          <li>Direct vector import for PDF files</li>
+          <li>PDF importer now supports layers</li>
+          <li>Split PDF based workpieces into layers</li>
+        </ul>
+        <p>Camera Calibration:</p>
+        <ul>
+          <li>Improved five factor de-distortion algorithm</li>
+          <li>Charuco card based calibration wizard</li>
+          <li>Guided calibration setup process</li>
+        </ul>
+        <p>Sketcher Improvements:</p>
+        <ul>
+          <li>Ellipse tool replaces circle tool for more flexibility</li>
+          <li>Many tools automatically constrain geometry during creation</li>
+          <li>Magnetic snap now works while creating geometry</li>
+          <li>Replaced snap to grid with smarter magnetic snap</li>
+          <li>Equality constraint now works on ellipses</li>
+        </ul>
+        <p>Frame Feature:</p>
+        <ul>
+          <li>Configure frame speed in laser head settings</li>
+          <li>Corner dwell time setting for framing</li>
+          <li>Repeat count setting for framing</li>
+        </ul>
+        <p>Post-Processors:</p>
+        <ul>
+          <li>New merge lines post-processor to avoid double cutting</li>
+        </ul>
+        <p>UI Improvements:</p>
+        <ul>
+          <li>More compact left panel layout with add buttons in group headers</li>
+          <li>G-code viewer moved into the bottom panel</li>
+          <li>3D canvas performance improvements</li>
+        </ul>
+        <p>Other Improvements:</p>
+        <ul>
+          <li>Machine profile for Acmer S1 added</li>
+          <li>GRBL buffer size tracking improved</li>
+          <li>Dialects are now isolated copies (templates)</li>
+          <li>Dialects support separate laser on command for focusing</li>
+          <li>Texture dimension limit prevents memory exhaustion</li>
+        </ul>
+        <p>Fixed:</p>
+        <ul>
+          <li>Material test producer bugs (issues #181 and #182)</li>
+          <li>GRBL position reporting for machines with only X and Y axes (#179)</li>
+          <li>Sketcher: Distance constraint shadowing the line</li>
+          <li>Texture renderer memory exhaustion on large images</li>
+          <li>Race condition in worker initialization</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.3.2" date="2026-03-24">
       <description>
         <p>Bug fix release</p>

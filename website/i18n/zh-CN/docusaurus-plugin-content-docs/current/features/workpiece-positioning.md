@@ -265,5 +265,5 @@ Rayforge 使用多个坐标系：
 - [作业边框预览](framing-your-job) - 详细的边框文档
 - [工件坐标系](../general-info/coordinate-systems) - WCS 参考
 - [相机集成](../machine/camera) - 相机设置和对齐
-- [控制面板](../ui/control-panel) - 移动控制和 WCS 管理
+- [控制面板](../ui/bottom-panel) - 移动控制和 WCS 管理
 - [快速入门指南](../getting-started/quick-start) - 基本工作流程

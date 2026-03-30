@@ -110,7 +110,7 @@ format = "ruff format rayforge tests scripts"
 update-translations = "bash scripts/update_translations.sh"
 compile-translations = "bash scripts/update_translations.sh --compile-only"
 print-untranslated = "bash scripts/print_untranslated.sh"
-list-supporters = "python3 scripts/media/fetch_patreon_supporters.py"
+update-supporters = "python3 scripts/media/update_supporters.py"
 fetch-stats = "python3 scripts/fetch_download_stats.py"
 normalize-icons = "python3 scripts/normalize_icons.py"
 

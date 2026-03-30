@@ -287,5 +287,5 @@ Für denselben Job an verschiedenen Positionen:
 - [Deinen Job einrahmen](framing-your-job) - Detaillierte Rahmen-Dokumentation
 - [Arbeitskoordinatensysteme](../general-info/coordinate-systems) - WKS-Referenz
 - [Kamera-Integration](../machine/camera) - Kamera-Setup und Ausrichtung
-- [Kontrollpanel](../ui/control-panel) - Bewegungssteuerung und WKS-Verwaltung
+- [Kontrollpanel](../ui/bottom-panel) - Bewegungssteuerung und WKS-Verwaltung
 - [Schnellstart-Anleitung](../getting-started/quick-start) - Grundlegender Workflow

@@ -3,85 +3,85 @@
 Referência completa de atalhos de teclado no Rayforge.
 
 :::note Convenções de Plataforma
+
 - **Linux/Windows:** Tecla `Ctrl`
 - **macOS:** Tecla `⌘ (Command)`
 - Documentação usa `Ctrl` - usuários macOS substituam por `⌘`
-:::
-
+  :::
 
 ---
 
 ## Operações de Arquivo
 
-| Atalho       | Ação      | Descrição              |
-| -------------- | ----------- | ------------------------ |
-| `Ctrl+N`       | Novo Esboço  | Criar novo esboço        |
-| `Ctrl+O`       | Abrir        | Abrir projeto existente    |
-| `Ctrl+S`       | Salvar        | Salvar projeto atual     |
-| `Ctrl+Shift+S` | Salvar Como     | Salvar projeto como novo arquivo |
-| `Ctrl+I`       | Importar      | Abrir diálogo de importação de arquivo  |
-| `Ctrl+E`       | Exportar      | Exportar G-code            |
-| `Ctrl+Q`       | Sair        | Sair do Rayforge            |
-| `Ctrl+,`       | Preferências | Abrir diálogo de preferências  |
+| Atalho         | Ação         | Descrição                              |
+| -------------- | ------------ | -------------------------------------- |
+| `Ctrl+N`       | Novo Esboço  | Criar novo esboço                      |
+| `Ctrl+O`       | Abrir        | Abrir projeto existente                |
+| `Ctrl+S`       | Salvar       | Salvar projeto atual                   |
+| `Ctrl+Shift+S` | Salvar Como  | Salvar projeto como novo arquivo       |
+| `Ctrl+I`       | Importar     | Abrir diálogo de importação de arquivo |
+| `Ctrl+E`       | Exportar     | Exportar G-code                        |
+| `Ctrl+Q`       | Sair         | Sair do Rayforge                       |
+| `Ctrl+,`       | Preferências | Abrir diálogo de preferências          |
 
 ---
 
 ## Editar e Área de Transferência
 
-| Atalho            | Ação           | Descrição                      |
-| ------------------- | ---------------- | -------------------------------- |
-| `Ctrl+Z`            | Desfazer             | Desfazer última ação                 |
-| `Ctrl+Y`            | Refazer             | Refazer última ação desfeita          |
-| `Ctrl+Shift+Z`      | Refazer (alternativo) | Atalho alternativo de refazer        |
-| `Ctrl+X`            | Recortar              | Recortar seleção para área de transferência       |
-| `Ctrl+C`            | Copiar             | Copiar seleção para área de transferência      |
-| `Ctrl+V`            | Colar            | Colar da área de transferência             |
-| `Ctrl+A`            | Selecionar Tudo       | Selecionar todos os itens na camada ativa |
-| `Ctrl+D`            | Duplicar        | Duplicar itens selecionados         |
-| `Delete`            | Remover           | Excluir itens selecionados            |
-| `Ctrl+Shift+Delete` | Limpar            | Limpar todos os itens do documento    |
+| Atalho              | Ação                  | Descrição                                   |
+| ------------------- | --------------------- | ------------------------------------------- |
+| `Ctrl+Z`            | Desfazer              | Desfazer última ação                        |
+| `Ctrl+Y`            | Refazer               | Refazer última ação desfeita                |
+| `Ctrl+Shift+Z`      | Refazer (alternativo) | Atalho alternativo de refazer               |
+| `Ctrl+X`            | Recortar              | Recortar seleção para área de transferência |
+| `Ctrl+C`            | Copiar                | Copiar seleção para área de transferência   |
+| `Ctrl+V`            | Colar                 | Colar da área de transferência              |
+| `Ctrl+A`            | Selecionar Tudo       | Selecionar todos os itens na camada ativa   |
+| `Ctrl+D`            | Duplicar              | Duplicar itens selecionados                 |
+| `Delete`            | Remover               | Excluir itens selecionados                  |
+| `Ctrl+Shift+Delete` | Limpar                | Limpar todos os itens do documento          |
 
 ---
 
 ## Visualizar e Exibir
 
-| Atalho       | Ação            | Descrição                    |
-| -------------- | ----------------- | ------------------------------ |
-| `H`            | Alternar Peças | Mostrar/ocultar visibilidade de peças |
-| `T`            | Alternar Abas       | Mostrar/ocultar abas de fixação         |
-| `Alt+C`        | Alternar Câmera     | Mostrar/ocultar sobreposição de câmera     |
-| `F12`          | Visão 3D           | Alternar janela de pré-visualização 3D    |
-| `Ctrl+Shift+R` | Modo Simulação   | Alternar modo simulação   |
+| Atalho         | Ação            | Descrição                              |
+| -------------- | --------------- | -------------------------------------- |
+| `H`            | Alternar Peças  | Mostrar/ocultar visibilidade de peças  |
+| `T`            | Alternar Abas   | Mostrar/ocultar abas de fixação        |
+| `Alt+C`        | Alternar Câmera | Mostrar/ocultar sobreposição de câmera |
+| `F12`          | Visão 3D        | Alternar janela de pré-visualização 3D |
+| `Ctrl+Shift+R` | Modo Simulação  | Alternar modo simulação                |
 
 ### Controles de Visão 3D
 
-| Atalho | Ação             | Descrição                                 |
-| -------- | ------------------ | ------------------------------------------- |
-| `1`      | Visão Superior           | Alternar para visão de cima para baixo                     |
-| `2`      | Visão Frontal         | Alternar para visão frontal                        |
-| `7`      | Visão Isométrica     | Alternar para visão isométrica                    |
-| `P`      | Alternar Perspectiva | Alternar entre perspectiva e ortográfica |
+| Atalho | Ação                 | Descrição                                |
+| ------ | -------------------- | ---------------------------------------- |
+| `1`    | Visão Superior       | Alternar para visão de cima para baixo   |
+| `2`    | Visão Frontal        | Alternar para visão frontal              |
+| `7`    | Visão Isométrica     | Alternar para visão isométrica           |
+| `P`    | Alternar Perspectiva | Alternar entre perspectiva e ortográfica |
 
 ---
 
 ## Camada e Organização
 
-| Atalho         | Ação          | Descrição              |
-| ---------------- | --------------- | ------------------------ |
-| `Ctrl+G`         | Agrupar           | Agrupar itens selecionados     |
-| `Ctrl+U`         | Desagrupar         | Desagrupar grupo selecionado   |
-| `Ctrl+Page Up`   | Mover Camada para Cima   | Mover camada para cima na pilha   |
-| `Ctrl+Page Down` | Mover Camada para Baixo | Mover camada para baixo na pilha |
-| `Alt+S`          | Adicionar Estoque       | Adicionar item de estoque/material  |
+| Atalho           | Ação                    | Descrição                          |
+| ---------------- | ----------------------- | ---------------------------------- |
+| `Ctrl+G`         | Agrupar                 | Agrupar itens selecionados         |
+| `Ctrl+U`         | Desagrupar              | Desagrupar grupo selecionado       |
+| `Ctrl+Page Up`   | Mover Camada para Cima  | Mover camada para cima na pilha    |
+| `Ctrl+Page Down` | Mover Camada para Baixo | Mover camada para baixo na pilha   |
+| `Alt+S`          | Adicionar Estoque       | Adicionar item de estoque/material |
 
 ---
 
 ## Abas (Abas de Fixação)
 
-| Atalho | Ação                 | Descrição            |
-| -------- | ---------------------- | ---------------------- |
-| `Alt+T`  | Adicionar Abas (Equidistantes) | Adicionar abas espaçadas uniformemente |
-| `T`      | Alternar Visibilidade de Abas  | Mostrar/ocultar sobreposição de abas |
+| Atalho  | Ação                           | Descrição                              |
+| ------- | ------------------------------ | -------------------------------------- |
+| `Alt+T` | Adicionar Abas (Equidistantes) | Adicionar abas espaçadas uniformemente |
+| `T`     | Alternar Visibilidade de Abas  | Mostrar/ocultar sobreposição de abas   |
 
 ---
 
@@ -89,34 +89,34 @@ Referência completa de atalhos de teclado no Rayforge.
 
 ### Alinhamento
 
-| Atalho      | Ação         | Descrição                                 |
-| ------------- | -------------- | ------------------------------------------- |
-| `Shift+Left`  | Alinhar Esquerda     | Alinhar itens selecionados à esquerda                |
-| `Shift+Right` | Alinhar Direita    | Alinhar itens selecionados à direita               |
-| `Shift+Up`    | Alinhar Superior      | Alinhar itens selecionados ao topo                 |
-| `Shift+Down`  | Alinhar Inferior   | Alinhar itens selecionados à base              |
+| Atalho        | Ação             | Descrição                                            |
+| ------------- | ---------------- | ---------------------------------------------------- |
+| `Shift+Left`  | Alinhar Esquerda | Alinhar itens selecionados à esquerda                |
+| `Shift+Right` | Alinhar Direita  | Alinhar itens selecionados à direita                 |
+| `Shift+Up`    | Alinhar Superior | Alinhar itens selecionados ao topo                   |
+| `Shift+Down`  | Alinhar Inferior | Alinhar itens selecionados à base                    |
 | `Shift+Home`  | Alinhar H-Centro | Alinhar itens selecionados horizontalmente ao centro |
-| `Shift+End`   | Alinhar V-Centro   | Alinhar itens selecionados verticalmente ao centro   |
+| `Shift+End`   | Alinhar V-Centro | Alinhar itens selecionados verticalmente ao centro   |
 
 ### Distribuição
 
-| Atalho       | Ação              | Descrição                          |
-| -------------- | ------------------- | ------------------------------------ |
+| Atalho         | Ação                     | Descrição                                      |
+| -------------- | ------------------------ | ---------------------------------------------- |
 | `Ctrl+Shift+H` | Espalhar Horizontalmente | Distribuir itens uniformemente horizontalmente |
 | `Ctrl+Shift+V` | Espalhar Verticalmente   | Distribuir itens uniformemente verticalmente   |
 
 ### Layout
 
-| Atalho | Ação        | Descrição        |
-| -------- | ------------- | ------------------ |
-| `Alt+A`  | Pixel Perfeito | Encaixar na grade de pixels |
+| Atalho  | Ação           | Descrição                   |
+| ------- | -------------- | --------------------------- |
+| `Alt+A` | Pixel Perfeito | Encaixar na grade de pixels |
 
 ---
 
 ## Transformar
 
-| Atalho  | Ação          | Descrição                        |
-| --------- | --------------- | ---------------------------------- |
+| Atalho    | Ação                | Descrição                                   |
+| --------- | ------------------- | ------------------------------------------- |
 | `Shift+H` | Espelhar Horizontal | Espelhar itens selecionados horizontalmente |
 | `Shift+V` | Espelhar Vertical   | Espelhar itens selecionados verticalmente   |
 
@@ -124,16 +124,15 @@ Referência completa de atalhos de teclado no Rayforge.
 
 ## Controle da Máquina
 
-| Atalho | Ação           | Descrição                     |
-| -------- | ---------------- | ------------------------------- |
-| `Ctrl+L` | Painel de Controle    | Alternar visibilidade do painel de controle |
-| `Ctrl+<` | Configurações da Máquina | Abrir diálogo de configurações da máquina    |
-| `F1`     | Sobre            | Mostrar diálogo sobre            |
+| Atalho   | Ação                     | Descrição                                 |
+| -------- | ------------------------ | ----------------------------------------- |
+| `Ctrl+L` | Painel Inferior          | Alternar visibilidade do painel inferior  |
+| `Ctrl+<` | Configurações da Máquina | Abrir diálogo de configurações da máquina |
+| `F1`     | Sobre                    | Mostrar diálogo sobre                     |
 
 :::note Operações da Máquina
 Operações de controle da máquina (Origem, Enquadrar, Enviar, etc.) atualmente não têm atalhos padrão mas podem ser acessadas via botões da barra de ferramentas ou menus.
 :::
-
 
 ---
 
@@ -141,20 +140,20 @@ Operações de controle da máquina (Origem, Enquadrar, Enviar, etc.) atualmente
 
 ### Controles do Mouse
 
-| Entrada                 | Ação         | Descrição           |
-| --------------------- | -------------- | --------------------- |
-| **Clique Esquerdo**        | Selecionar         | Selecionar item           |
-| **Arrastar Esquerdo**         | Mover           | Mover itens selecionados   |
-| `Ctrl+Arrastar Esquerdo`    | Seleção em Caixa     | Selecionar múltiplos itens |
-| `Arrastar Clique do Meio` | Pan            | Mover a tela        |
-| **Roda de Rolagem**      | Zoom           | Zoom para dentro/fora           |
-| `Ctrl+Rolagem`       | Zoom de Precisão | Controle de zoom mais fino    |
+| Entrada                   | Ação             | Descrição                  |
+| ------------------------- | ---------------- | -------------------------- |
+| **Clique Esquerdo**       | Selecionar       | Selecionar item            |
+| **Arrastar Esquerdo**     | Mover            | Mover itens selecionados   |
+| `Ctrl+Arrastar Esquerdo`  | Seleção em Caixa | Selecionar múltiplos itens |
+| `Arrastar Clique do Meio` | Pan              | Mover a tela               |
+| **Roda de Rolagem**       | Zoom             | Zoom para dentro/fora      |
+| `Ctrl+Rolagem`            | Zoom de Precisão | Controle de zoom mais fino |
 
 ### Teclas de Seta
 
-| Atalho      | Ação      | Descrição                     |
-| ------------- | ----------- | ------------------------------- |
-| `Setas`       | Empurrar       | Mover itens selecionados por 1 unidade   |
+| Atalho       | Ação            | Descrição                                |
+| ------------ | --------------- | ---------------------------------------- |
+| `Setas`      | Empurrar        | Mover itens selecionados por 1 unidade   |
 | `Shift+Seta` | Empurrão Grande | Mover itens selecionados por 10 unidades |
 
 ---
@@ -163,14 +162,14 @@ Operações de controle da máquina (Origem, Enquadrar, Enviar, etc.) atualmente
 
 Ao editar G-code ou campos de texto:
 
-| Atalho | Ação     | Descrição              |
-| -------- | ---------- | ------------------------ |
-| `Ctrl+Z` | Desfazer       | Desfazer edição de texto           |
-| `Ctrl+Y` | Refazer       | Refazer edição de texto           |
+| Atalho   | Ação            | Descrição                      |
+| -------- | --------------- | ------------------------------ |
+| `Ctrl+Z` | Desfazer        | Desfazer edição de texto       |
+| `Ctrl+Y` | Refazer         | Refazer edição de texto        |
 | `Ctrl+A` | Selecionar Tudo | Selecionar todo texto          |
-| `Ctrl+X` | Recortar        | Recortar texto selecionado        |
-| `Ctrl+C` | Copiar       | Copiar texto selecionado       |
-| `Ctrl+V` | Colar      | Colar texto               |
+| `Ctrl+X` | Recortar        | Recortar texto selecionado     |
+| `Ctrl+C` | Copiar          | Copiar texto selecionado       |
+| `Ctrl+V` | Colar           | Colar texto                    |
 | `Ctrl+F` | Localizar       | Localizar texto (se suportado) |
 
 ---
@@ -223,7 +222,6 @@ Ao editar G-code ou campos de texto:
 :::note Atalhos Personalizados
 Atalhos de teclado atualmente são fixos no código. Configuração de atalhos personalizados pode ser adicionada em versões futuras.
 :::
-
 
 **Limitações atuais:**
 
@@ -338,42 +336,42 @@ Alguns atalhos menos conhecidos:
 
 **Imprima esta referência rápida:**
 
-| Categoria      | Atalho     | Ação           |
-| ------------- | ------------ | ---------------- |
-| **Arquivo**      | Ctrl+N       | Novo Esboço       |
-|               | Ctrl+O       | Abrir             |
-|               | Ctrl+S       | Salvar             |
-|               | Ctrl+Shift+S | Salvar Como          |
-|               | Ctrl+I       | Importar           |
-|               | Ctrl+E       | Exportar           |
-|               | Ctrl+Q       | Sair             |
-|               | Ctrl+,       | Preferências      |
-| **Editar**      | Ctrl+Z       | Desfazer             |
-|               | Ctrl+Y       | Refazer             |
-|               | Ctrl+C       | Copiar             |
-|               | Ctrl+V       | Colar             |
-|               | Ctrl+D       | Duplicar        |
-|               | Delete       | Remover           |
-| **Visualizar**      | H            | Peças       |
-|               | T            | Abas             |
-|               | Alt+C        | Câmera           |
-|               | F12          | Visão 3D          |
-|               | 1/2/7        | Predefinições de Visão     |
-|               | P            | Perspectiva      |
-| **Alinhar**     | Shift+Left   | Alinhar Esquerda       |
-|               | Shift+Right  | Alinhar Direita      |
-|               | Shift+Up     | Alinhar Superior        |
-|               | Shift+Down   | Alinhar Inferior     |
-|               | Shift+Home   | H-Centro         |
-|               | Shift+End    | V-Centro         |
-| **Simular**  | F11          | Modo             |
-| **Transformar** | Shift+H      | Espelhar H           |
-|               | Shift+V      | Espelhar V           |
-|               | Ctrl+G       | Agrupar            |
-|               | Ctrl+U       | Desagrupar          |
-| **Máquina**   | Ctrl+L       | Painel de Controle    |
-|               | Ctrl+<       | Configurações da Máquina |
-|               | F1           | Sobre            |
+| Categoria       | Atalho       | Ação                     |
+| --------------- | ------------ | ------------------------ |
+| **Arquivo**     | Ctrl+N       | Novo Esboço              |
+|                 | Ctrl+O       | Abrir                    |
+|                 | Ctrl+S       | Salvar                   |
+|                 | Ctrl+Shift+S | Salvar Como              |
+|                 | Ctrl+I       | Importar                 |
+|                 | Ctrl+E       | Exportar                 |
+|                 | Ctrl+Q       | Sair                     |
+|                 | Ctrl+,       | Preferências             |
+| **Editar**      | Ctrl+Z       | Desfazer                 |
+|                 | Ctrl+Y       | Refazer                  |
+|                 | Ctrl+C       | Copiar                   |
+|                 | Ctrl+V       | Colar                    |
+|                 | Ctrl+D       | Duplicar                 |
+|                 | Delete       | Remover                  |
+| **Visualizar**  | H            | Peças                    |
+|                 | T            | Abas                     |
+|                 | Alt+C        | Câmera                   |
+|                 | F12          | Visão 3D                 |
+|                 | 1/2/7        | Predefinições de Visão   |
+|                 | P            | Perspectiva              |
+| **Alinhar**     | Shift+Left   | Alinhar Esquerda         |
+|                 | Shift+Right  | Alinhar Direita          |
+|                 | Shift+Up     | Alinhar Superior         |
+|                 | Shift+Down   | Alinhar Inferior         |
+|                 | Shift+Home   | H-Centro                 |
+|                 | Shift+End    | V-Centro                 |
+| **Simular**     | F11          | Modo                     |
+| **Transformar** | Shift+H      | Espelhar H               |
+|                 | Shift+V      | Espelhar V               |
+|                 | Ctrl+G       | Agrupar                  |
+|                 | Ctrl+U       | Desagrupar               |
+| **Máquina**     | Ctrl+L       | Painel Inferior          |
+|                 | Ctrl+<       | Configurações da Máquina |
+|                 | F1           | Sobre                    |
 
 ---
 
