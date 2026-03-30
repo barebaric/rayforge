@@ -1,7 +1,53 @@
+import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
+from gettext import gettext as _
 from typing import AsyncGenerator, Dict, List, Optional, Tuple
+
+
+class AIServiceError(Exception):
+    """Raised when AI service encounters an error."""
+
+    pass
+
+
+HTTP_STATUS_MESSAGES = {
+    400: _("Bad request"),
+    401: _("Authentication failed - please check your API key"),
+    403: _("Access forbidden - please check your API key permissions"),
+    404: _("API endpoint not found - please check the base URL"),
+    429: _("Rate limited - please wait and try again"),
+    500: _("Server error - please try again later"),
+    502: _("Server error - please try again later"),
+    503: _("Service unavailable - please try again later"),
+}
+
+
+def extract_api_error(body: str) -> Optional[str]:
+    """Extract a human-readable error from a JSON API response body."""
+    try:
+        data = json.loads(body)
+        if isinstance(data, list):
+            data = data[0] if data else {}
+        error = data.get("error", data)
+        if isinstance(error, dict):
+            return error.get("message") or error.get("status")
+        return str(error) if error else None
+    except (json.JSONDecodeError, AttributeError):
+        return None
+
+
+def make_api_error_message(status: int, body: str) -> str:
+    """Build a user-friendly error message from an HTTP status and body."""
+    generic = HTTP_STATUS_MESSAGES.get(
+        status,
+        _("Server returned error {code}").format(code=status),
+    )
+    detail = extract_api_error(body) if body else None
+    if detail:
+        return f"{generic}: {detail}"
+    return generic
 
 
 class AIProviderType(Enum):

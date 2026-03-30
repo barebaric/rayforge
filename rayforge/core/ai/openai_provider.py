@@ -1,10 +1,18 @@
 import json
 import logging
+from gettext import gettext as _
 from typing import AsyncGenerator, List, Optional, Tuple
 
 import aiohttp
 
-from .provider import AIProvider, AIProviderConfig, ChatMessage, ChatResponse
+from .provider import (
+    AIProvider,
+    AIProviderConfig,
+    AIServiceError,
+    ChatMessage,
+    ChatResponse,
+    make_api_error_message,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -44,16 +52,18 @@ class OpenAICompatibleProvider(AIProvider):
             **kwargs,
         }
 
-        async with session.post("chat/completions", json=payload) as resp:
-            if resp.status != 200:
-                text = await resp.text()
-                raise aiohttp.ClientResponseError(
-                    request_info=resp.request_info,
-                    history=resp.history,
-                    status=resp.status,
-                    message=text,
-                )
-            data = await resp.json()
+        try:
+            async with session.post("chat/completions", json=payload) as resp:
+                if resp.status != 200:
+                    text = await resp.text()
+                    raise AIServiceError(
+                        make_api_error_message(resp.status, text)
+                    )
+                data = await resp.json()
+        except aiohttp.ClientError as e:
+            raise AIServiceError(
+                _("Connection failed - please check your network")
+            ) from e
 
         choice = data["choices"][0]
         return ChatResponse(
@@ -76,55 +86,72 @@ class OpenAICompatibleProvider(AIProvider):
             **kwargs,
         }
 
-        async with session.post("chat/completions", json=payload) as resp:
-            if resp.status != 200:
-                text = await resp.text()
-                raise aiohttp.ClientResponseError(
-                    request_info=resp.request_info,
-                    history=resp.history,
-                    status=resp.status,
-                    message=text,
-                )
+        try:
+            async with session.post("chat/completions", json=payload) as resp:
+                if resp.status != 200:
+                    text = await resp.text()
+                    raise AIServiceError(
+                        make_api_error_message(resp.status, text)
+                    )
 
-            buffer = ""
-            async for line in resp.content:
-                line = line.decode("utf-8").strip()
-                if not line or line == "data: [DONE]":
-                    continue
-                if line.startswith("data: "):
-                    buffer = line[6:]
-                    try:
-                        data = json.loads(buffer)
-                        delta = data["choices"][0].get("delta", {})
-                        content = delta.get("content", "")
-                        if content:
-                            yield content
-                    except (json.JSONDecodeError, KeyError, IndexError):
+                buffer = ""
+                async for line in resp.content:
+                    line = line.decode("utf-8").strip()
+                    if not line or line == "data: [DONE]":
                         continue
+                    if line.startswith("data: "):
+                        buffer = line[6:]
+                        try:
+                            data = json.loads(buffer)
+                            delta = data["choices"][0].get("delta", {})
+                            content = delta.get("content", "")
+                            if content:
+                                yield content
+                        except (
+                            json.JSONDecodeError,
+                            KeyError,
+                            IndexError,
+                        ):
+                            continue
+        except aiohttp.ClientError as e:
+            raise AIServiceError(
+                _("Connection failed - please check your network")
+            ) from e
 
     async def list_models(self) -> List[str]:
         session = await self._get_session()
         try:
             async with session.get("models") as resp:
                 if resp.status != 200:
-                    logger.warning(f"Failed to list models: {resp.status}")
-                    return []
+                    text = await resp.text()
+                    raise AIServiceError(
+                        make_api_error_message(resp.status, text)
+                    )
                 data = await resp.json()
                 return [m["id"] for m in data.get("data", [])]
-        except Exception as e:
-            logger.warning(f"Error listing models: {e}")
-            return []
+        except aiohttp.ClientError as e:
+            raise AIServiceError(
+                _("Connection failed - please check your network")
+            ) from e
 
     async def test_connection(self) -> Tuple[bool, str]:
         try:
             models = await self.list_models()
-            if models:
-                return True, f"Connected. {len(models)} models available."
-            return True, "Connected (no models listed)."
-        except aiohttp.ClientError as e:
-            return False, f"Connection failed: {str(e)}"
-        except Exception as e:
-            return False, f"Error: {str(e)}"
+        except AIServiceError as e:
+            return False, str(e)
+
+        model_name = self.config.default_model
+        if model_name and models and model_name not in models:
+            return False, _(
+                "Model '{model}' not found. Available: {available}"
+            ).format(
+                model=model_name,
+                available=", ".join(sorted(models)[:10]),
+            )
+
+        if models:
+            return True, f"Connected. {len(models)} models available."
+        return True, "Connected (no models listed)."
 
     async def close(self):
         if self._session and not self._session.closed:

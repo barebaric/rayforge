@@ -1,9 +1,10 @@
-from .ai_service import AIService, AIServiceError
+from .ai_service import AIService
 from .config import AIConfigManager
 from .provider import (
     AIProvider,
     AIProviderConfig,
     AIProviderType,
+    AIServiceError,
     ChatMessage,
     ChatResponse,
 )
