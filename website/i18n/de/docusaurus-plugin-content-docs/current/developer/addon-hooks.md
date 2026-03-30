@@ -27,7 +27,7 @@ Diese Hooks behandeln den gesamten Lebenszyklus deines Addons.
 
 Dies ist dein Haupteinstiegspunkt. Rayforge ruft diesen Hook auf, nachdem der Anwendungskontext vollständig initialisiert wurde, was bedeutet, dass alle Manager, Konfigurationen und Hardware bereit sind. Verwende diesen für allgemeines Setup, Logging oder das Einfügen von UI-Elementen.
 
-Der Parameter `context` ist eine `RayforgeContext`-Instanz, die dir Zugriff auf alles in Rayforge gibt. Siehe [Auf Rayforge-Daten zugreifen](./addon-overview.md#accessing-rayforges-data) für Details.
+Der Parameter `context` ist eine `RayforgeContext`-Instanz, die dir Zugriff auf alles in Rayforge gibt. Siehe [Auf Rayforge-Daten zugreifen](./addon-overview.md#auf-rayforges-daten-zugreifen) für Details.
 
 ```python
 @hookimpl

@@ -4,7 +4,7 @@ Rayforge verwendet ein auf [pluggy](https://pluggy.readthedocs.io/) basierendes 
 
 ## Schnellstart
 
-Der schnellste Weg zum Einstieg ist das offizielle [rayforge-addon-template](https://github.com/barebaric/rayforge-addon-template. Forke oder klone es, benenne das Verzeichnis um und aktualisiere die Metadaten entsprechend deinem Addon.
+Der schnellste Weg zum Einstieg ist das offizielle [rayforge-addon-template](https://github.com/barebaric/rayforge-addon-template). Forke oder klone es, benenne das Verzeichnis um und aktualisiere die Metadaten entsprechend deinem Addon.
 
 ## Wie Addons funktionieren
 
