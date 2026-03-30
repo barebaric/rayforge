@@ -12,6 +12,7 @@ from utils import (
     load_project,
     wait_for_settled,
     show_panel,
+    show_bottom_tab,
     save_panel_states,
     restore_panel_states,
     take_screenshot,
@@ -21,7 +22,7 @@ from utils import (
 
 logger = logging.getLogger(__name__)
 
-PANELS = ["toggle_control_panel", "toggle_gcode_preview"]
+PANELS = ["toggle_bottom_panel"]
 
 
 def main():
@@ -37,8 +38,8 @@ def main():
     logger.info("Document settled, setting up standard mode")
 
     saved_states = save_panel_states(win, PANELS)
-    show_panel(win, "toggle_control_panel", True)
-    show_panel(win, "toggle_gcode_preview", True)
+    show_panel(win, "toggle_bottom_panel", True)
+    show_bottom_tab(win, "gcode")
 
     time.sleep(0.25)
 

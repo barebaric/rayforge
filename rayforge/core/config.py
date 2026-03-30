@@ -38,8 +38,7 @@ class Config:
         # Track the last opened project path
         self.last_opened_project: Optional[Path] = None
         # UI visibility states
-        self.gcode_preview_visible: bool = False
-        self.control_panel_visible: bool = False
+        self.bottom_panel_visible: bool = False
         # Usage tracking consent date: None = not asked, "" = declined,
         # ISO date string = consent given on that date
         self.usage_consent_date: Optional[str] = None
@@ -91,18 +90,11 @@ class Config:
         self.last_opened_project = path
         self.changed.send(self)
 
-    def set_gcode_preview_visible(self, visible: bool):
-        """Sets the G-code preview visibility state."""
-        if self.gcode_preview_visible == visible:
+    def set_bottom_panel_visible(self, visible: bool):
+        """Sets the bottom panel visibility state."""
+        if self.bottom_panel_visible == visible:
             return
-        self.gcode_preview_visible = visible
-        self.changed.send(self)
-
-    def set_control_panel_visible(self, visible: bool):
-        """Sets the control panel visibility state."""
-        if self.control_panel_visible == visible:
-            return
-        self.control_panel_visible = visible
+        self.bottom_panel_visible = visible
         self.changed.send(self)
 
     def set_usage_consent(self, consent: bool):
@@ -149,8 +141,7 @@ class Config:
                 if self.last_opened_project
                 else None
             ),
-            "gcode_preview_visible": self.gcode_preview_visible,
-            "control_panel_visible": self.control_panel_visible,
+            "bottom_panel_visible": self.bottom_panel_visible,
             "usage_consent_date": self.usage_consent_date,
         }
 
@@ -194,8 +185,7 @@ class Config:
             config.last_opened_project = Path(last_opened_project_str)
 
         # Load UI visibility states
-        config.gcode_preview_visible = data.get("gcode_preview_visible", False)
-        config.control_panel_visible = data.get("control_panel_visible", False)
+        config.bottom_panel_visible = data.get("bottom_panel_visible", False)
 
         # Load usage tracking consent date
         config.usage_consent_date = data.get("usage_consent_date", None)

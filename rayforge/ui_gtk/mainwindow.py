@@ -107,9 +107,8 @@ class MainWindow(Adw.ApplicationWindow):
         super().__init__(**kwargs)
         self.set_title(const.APP_NAME)
         self._current_machine: Optional[Machine] = None  # For signal handling
-        self._last_gcode_previewer_width = 350
-        self._last_control_panel_height = 200
-        self._saved_control_panel_visible = False
+        self._last_bottom_panel_height = 200
+        self._saved_bottom_panel_visible = False
         self._old_doc = None  # Track previous document for signal reconnection
         self.canvas3d: Optional[Canvas3D] = None
 
@@ -313,31 +312,14 @@ class MainWindow(Adw.ApplicationWindow):
             "notify::visible-child-name", self._on_view_stack_changed
         )
 
-        # Create the G-code previewer
+        # Create the G-code previewer (added to bottom panel tab later)
         self.gcode_previewer = GcodeViewer()
         self.gcode_previewer.line_activated.connect(
             self._on_gcode_line_activated
         )
 
-        # Create a new paned for the left side of the window
-        self.left_content_pane = Gtk.Paned(
-            orientation=Gtk.Orientation.HORIZONTAL
-        )
-        # Put the previewer directly into the paned, NO REVEALER
-        self.left_content_pane.set_start_child(self.gcode_previewer)
-        self.left_content_pane.set_end_child(self.view_stack)
-        self.left_content_pane.set_resize_end_child(True)
-        self.left_content_pane.set_shrink_end_child(False)
-
-        # Connect to the position signal to remember the user's chosen width
-        self.left_content_pane.connect(
-            "notify::position", self._on_left_pane_position_changed
-        )
-        # Set the initial position to 0 to start "hidden"
-        self.left_content_pane.set_position(0)
-
-        # The new left-side paned is the start child of the main paned
-        self.paned.set_start_child(self.left_content_pane)
+        # The view stack is the start child of the main paned
+        self.paned.set_start_child(self.view_stack)
 
         # Wrap surface in an overlay to allow preview controls
         self.surface_overlay = Gtk.Overlay()
@@ -466,22 +448,28 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Create the control panel
         config = get_context().config
-        self.control_panel = MachineControlPanel(
+        self.bottom_panel = MachineControlPanel(
             config.machine, self.machine_cmd
         )
-        self.control_panel.set_size_request(
-            -1, self._last_control_panel_height
+        self.bottom_panel.set_size_request(-1, self._last_bottom_panel_height)
+        self.bottom_panel.set_visible(False)
+        self.vertical_paned.set_end_child(self.bottom_panel)
+
+        # Add the G-code viewer as a second tab in the bottom panel
+        self.bottom_panel.tab_widget.add_tab(
+            "gcode", "gcode-symbolic", self.gcode_previewer, _("G-code Viewer")
         )
-        self.control_panel.set_visible(False)
-        self.vertical_paned.set_end_child(self.control_panel)
+        self.bottom_panel.tab_widget.tab_changed.connect(
+            self._on_bottom_tab_changed
+        )
 
         # Connect to click-to-zero mode signal
-        self.control_panel.click_to_zero_mode_changed.connect(
+        self.bottom_panel.click_to_zero_mode_changed.connect(
             self._on_click_to_zero_mode_changed
         )
 
         # Set up bounds callback for position menu
-        self.control_panel.set_get_bounds_callback(self._get_selection_bounds)
+        self.bottom_panel.set_get_bounds_callback(self._get_selection_bounds)
 
         # Connect to position signal to remember user's chosen height
         self.vertical_paned.connect(
@@ -552,11 +540,11 @@ class MainWindow(Adw.ApplicationWindow):
                 await config.machine.set_work_origin(x, y, 0.0)
 
         task_mgr.add_coroutine(set_zero_func)
-        self.control_panel.set_click_to_zero_mode(False)
+        self.bottom_panel.set_click_to_zero_mode(False)
 
     def _on_click_to_zero_cancelled(self, sender):
         """Handle click-to-zero mode cancellation."""
-        self.control_panel.set_click_to_zero_mode(False)
+        self.bottom_panel.set_click_to_zero_mode(False)
 
     def _get_selection_bounds(
         self,
@@ -607,20 +595,16 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _apply_saved_visibility_state(self):
         """
-        Applies the saved visibility state for G-code preview and control
-        panel. This should be called after actions are registered.
+        Applies the saved visibility state for control panel.
+        This should be called after actions are registered.
         """
         config = get_context().config
 
-        gcode_action = self.action_manager.get_action("toggle_gcode_preview")
-        if gcode_action and config.gcode_preview_visible:
-            gcode_action.change_state(GLib.Variant.new_boolean(True))
-
-        control_panel_action = self.action_manager.get_action(
-            "toggle_control_panel"
+        bottom_panel_action = self.action_manager.get_action(
+            "toggle_bottom_panel"
         )
-        if control_panel_action and config.control_panel_visible:
-            control_panel_action.change_state(GLib.Variant.new_boolean(True))
+        if bottom_panel_action and config.bottom_panel_visible:
+            bottom_panel_action.change_state(GLib.Variant.new_boolean(True))
 
     def add_stack_page(self, name: str, widget: Gtk.Widget):
         """Add a page to the main stack.
@@ -672,9 +656,9 @@ class MainWindow(Adw.ApplicationWindow):
         Args:
             name: The name of the modal page to show
         """
-        self._saved_control_panel_visible = self.control_panel.get_visible()
-        if self._saved_control_panel_visible:
-            self.control_panel.set_visible(False)
+        self._saved_bottom_panel_visible = self.bottom_panel.get_visible()
+        if self._saved_bottom_panel_visible:
+            self.bottom_panel.set_visible(False)
         self.main_stack.set_visible_child_name(name)
 
     def close_modal_page(self):
@@ -682,8 +666,8 @@ class MainWindow(Adw.ApplicationWindow):
 
         Restores the visibility of auxiliary panels that were hidden.
         """
-        if self._saved_control_panel_visible:
-            self.control_panel.set_visible(True)
+        if self._saved_bottom_panel_visible:
+            self.bottom_panel.set_visible(True)
         self.main_stack.set_visible_child_name("main")
 
     def on_add_child(self, sender):
@@ -779,6 +763,11 @@ class MainWindow(Adw.ApplicationWindow):
         # Ensure UI is updated (e.g. Cancel button disabled, others enabled)
         self._update_actions_and_ui()
 
+    def _on_bottom_tab_changed(self, sender, *, name: str):
+        """Refresh previews when the G-code tab becomes visible."""
+        if name == "gcode":
+            self.refresh_previews()
+
     def _on_gcode_line_activated(self, sender, *, line_number: int):
         """
         Handles the user activating a line in the G-code previewer.
@@ -791,21 +780,12 @@ class MainWindow(Adw.ApplicationWindow):
         if self.simulator_cmd.preview_controls:
             self.simulator_cmd.sync_from_gcode(line_number)
 
-    def _on_left_pane_position_changed(self, paned, param):
-        """
-        Stores the user-defined width of the G-code previewer pane so it can
-        be restored later.
-        """
-        position = paned.get_position()
-        if position > 1:
-            self._last_gcode_previewer_width = position
-
     def _on_vertical_pane_position_changed(self, paned, param):
         position = paned.get_position()
         full_height = paned.get_height()
-        control_panel_height = full_height - position
-        if control_panel_height > 1:
-            self._last_control_panel_height = control_panel_height
+        panel_height = full_height - position
+        if panel_height > 1:
+            self._last_bottom_panel_height = panel_height
 
     def _on_surface_transform_initiated(self, sender):
         """
@@ -878,25 +858,6 @@ class MainWindow(Adw.ApplicationWindow):
         if self.canvas3d is not None:
             self.canvas3d.set_show_travel_moves(is_visible)
         action.set_state(value)
-
-    def on_toggle_gcode_preview_state_change(
-        self, action: Gio.SimpleAction, value: GLib.Variant
-    ):
-        """Handles the state change for the G-code preview visibility."""
-        is_visible = value.get_boolean()
-        action.set_state(value)
-
-        if is_visible:
-            self.left_content_pane.set_position(
-                self._last_gcode_previewer_width
-            )
-            # The content will be loaded by the 'document-settled' handler.
-            # We just need to trigger it in case the doc is already settled.
-            self.refresh_previews()
-        else:
-            self.left_content_pane.set_position(0)
-
-        get_context().config.set_gcode_preview_visible(is_visible)
 
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
@@ -1285,11 +1246,8 @@ class MainWindow(Adw.ApplicationWindow):
             self.simulator_cmd.reload_simulation(final_artifact)
 
             # 2. Update G-code Preview
-            gcode_action = self.action_manager.get_action(
-                "toggle_gcode_preview"
-            )
-            state = gcode_action.get_state()
-            is_gcode_visible = state and state.get_boolean()
+            current_tab = self.bottom_panel.tab_widget.get_current_tab()
+            is_gcode_visible = current_tab == "gcode"
 
             if is_gcode_visible and final_artifact:
                 self._update_gcode_preview(
@@ -1309,9 +1267,8 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         is_sim_active = self.simulator_cmd.simulation_overlay is not None
-        gcode_action = self.action_manager.get_action("toggle_gcode_preview")
-        gcode_state = gcode_action.get_state() if gcode_action else None
-        is_gcode_visible = gcode_state and gcode_state.get_boolean()
+        current_tab = self.bottom_panel.tab_widget.get_current_tab()
+        is_gcode_visible = current_tab == "gcode"
 
         if not is_sim_active and not is_gcode_visible:
             return
@@ -1335,11 +1292,8 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _refresh_gcode_preview(self, sender=None, **kwargs):
         """Refresh G-code preview when machine settings change."""
-        gcode_action = self.action_manager.get_action("toggle_gcode_preview")
-        gcode_state = gcode_action.get_state() if gcode_action else None
-        is_gcode_visible = gcode_state and gcode_state.get_boolean()
-
-        if is_gcode_visible:
+        current_tab = self.bottom_panel.tab_widget.get_current_tab()
+        if current_tab == "gcode":
             self.refresh_previews()
 
     def _create_canvas3d(
@@ -1408,7 +1362,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.item_props_widget.set_items(selected_items)
         self.item_revealer.set_reveal_child(bool(selected_items))
-        self.control_panel.update_position_menu_sensitivity()
+        self.bottom_panel.update_position_menu_sensitivity()
         self._update_actions_and_ui()
 
     def on_config_changed(self, sender, **kwargs):
@@ -1501,7 +1455,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.status_monitor.set_machine(config.machine)
 
         # Update the control panel to use the new machine
-        self.control_panel.set_machine(config.machine, self.machine_cmd)
+        self.bottom_panel.set_machine(config.machine, self.machine_cmd)
 
         # Update the main WorkSurface to use the new size
         self.surface.set_machine(config.machine)
@@ -1781,7 +1735,7 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.present()
 
     def on_status_bar_clicked(self, sender):
-        action = self.action_manager.get_action("toggle_control_panel")
+        action = self.action_manager.get_action("toggle_bottom_panel")
         state = action.get_state()
         if state:
             new_state = not state.get_boolean()
@@ -1789,25 +1743,25 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             action.change_state(GLib.Variant.new_boolean(True))
 
-    def on_toggle_control_panel_state_change(
+    def on_toggle_bottom_panel_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
     ):
         is_visible = value.get_boolean()
         action.set_state(value)
 
         if is_visible:
-            self.control_panel.set_visible(True)
+            self.bottom_panel.set_visible(True)
             full_height = self.vertical_paned.get_height()
             self.vertical_paned.set_position(
-                full_height - self._last_control_panel_height
+                full_height - self._last_bottom_panel_height
             )
             get_usage_tracker().track_page_view(
-                "/console/open", "Console Opened"
+                "/bottom-panel/open", "Bottom Panel Opened"
             )
         else:
-            self.control_panel.set_visible(False)
+            self.bottom_panel.set_visible(False)
 
-        get_context().config.set_control_panel_visible(is_visible)
+        get_context().config.set_bottom_panel_visible(is_visible)
 
     def _on_dialog_notification(self, sender, message: str = ""):
         """Shows a toast when requested by a child dialog."""

@@ -301,7 +301,7 @@ def show_panel(
     Show or hide a UI panel.
 
     Args:
-        panel_name: Action name (e.g., "toggle_control_panel").
+        panel_name: Action name (e.g., "toggle_bottom_panel").
         visible: True to show, False to hide.
     """
 
@@ -310,6 +310,15 @@ def show_panel(
         action.change_state(GLib.Variant.new_boolean(visible))
 
     run_on_main_thread(_show)
+
+
+def show_bottom_tab(win: "MainWindow", tab_name: str) -> None:
+    """Switch the bottom panel to a given tab (e.g. 'console' or 'gcode')."""
+
+    def _switch() -> None:
+        win.bottom_panel.tab_widget.set_current_tab(tab_name)
+
+    run_on_main_thread(_switch)
 
 
 def hide_panel(win: "MainWindow", panel_name: str) -> None:
