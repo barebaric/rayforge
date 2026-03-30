@@ -201,7 +201,7 @@ class LaserPreferencesPage(TrackedPreferencesPage):
     def __init__(self, machine, **kwargs):
         super().__init__(
             title=_("Laser Heads"),
-            icon_name="preferences-other-symbolic",
+            icon_name="settings-symbolic",
             **kwargs,
         )
         self.machine = machine

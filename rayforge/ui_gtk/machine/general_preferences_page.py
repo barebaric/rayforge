@@ -15,7 +15,7 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
     def __init__(self, machine: Machine, **kwargs):
         super().__init__(
             title=_("General"),
-            icon_name="preferences-system-symbolic",
+            icon_name="machine-settings-general-symbolic",
             **kwargs,
         )
         self.machine = machine

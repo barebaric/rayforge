@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class CoincidentConstraintTool(SketchTool):
-    ICON = "sketch-constrain-point-on-x-symbolic"
+    ICON = "sketch-constrain-point-symbolic"
     LABEL = _("Coincident")
     SHORTCUTS = ["o", "c"]
 

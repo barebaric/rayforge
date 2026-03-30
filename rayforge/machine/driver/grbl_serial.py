@@ -177,7 +177,18 @@ class GrblSerialDriver(Driver):
     ):
         """
         Handle status changes from the serial transport.
+
+        Suppresses the transport-level CONNECTED signal to prevent
+        premature actions (like $G/$# sync) before the driver has
+        verified the device responds. The driver emits its own
+        CONNECTED in _connection_loop after handshake verification.
         """
+        if status == TransportStatus.CONNECTED:
+            logger.debug(
+                "Suppressing transport-level CONNECTED. Driver will "
+                "emit CONNECTED after handshake verification."
+            )
+            return
         logger.debug(
             f"Serial transport status changed: {status}, message: {message}"
         )
@@ -287,6 +298,7 @@ class GrblSerialDriver(Driver):
         self._on_command_done = None
         self._rx_buffer_count = 0
         self._job_exception = None
+        self._status_buffer = bytearray()
         self._sent_gcode_queue = asyncio.Queue()
         self._buffer_has_space = asyncio.Event()
         self._buffer_has_space.set()
@@ -406,56 +418,64 @@ class GrblSerialDriver(Driver):
         while self.keep_running:
             try:
                 request = await self._command_queue.get()
-                async with self._cmd_lock:
-                    if (
-                        not self.serial_transport
-                        or not self.serial_transport.is_connected
-                        or self._is_cancelled
-                    ):
-                        logger.warning(
-                            "Cannot process command: Serial transport not "
-                            "connected or job is cancelled. Dropping command."
+                if (
+                    not self.serial_transport
+                    or not self.serial_transport.is_connected
+                    or self._is_cancelled
+                ):
+                    logger.warning(
+                        "Cannot process command: Serial transport not "
+                        "connected or job is cancelled. Dropping command."
+                    )
+                    if not request.finished.is_set():
+                        task_mgr.loop.call_soon_threadsafe(
+                            request.finished.set
                         )
-                        # Mark as done so get() doesn't block forever
-                        if not request.finished.is_set():
-                            task_mgr.loop.call_soon_threadsafe(
-                                request.finished.set
-                            )
-                        self._command_queue.task_done()
-                        continue
+                    self._command_queue.task_done()
+                    continue
 
-                    self._current_request = request
-                    try:
-                        cmd_text = request.command.strip()
-                        if cmd_text:
-                            logger.info(
-                                cmd_text, extra=self._log_extra("USER_COMMAND")
-                            )
-                        logger.debug(
-                            f"TX: {request.payload!r}",
-                            extra={
-                                "log_category": "RAW_IO",
-                                "direction": "TX",
-                                "data": request.payload,
-                            },
+                self._current_request = request
+                try:
+                    cmd_text = request.command.strip()
+                    if cmd_text:
+                        logger.info(
+                            cmd_text, extra=self._log_extra("USER_COMMAND")
                         )
+                    logger.debug(
+                        f"TX: {request.payload!r}",
+                        extra={
+                            "log_category": "RAW_IO",
+                            "direction": "TX",
+                            "data": request.payload,
+                        },
+                    )
+
+                    async with self._cmd_lock:
+                        if (
+                            not self.serial_transport
+                            or not self.serial_transport.is_connected
+                        ):
+                            raise ConnectionError(
+                                "Serial transport disconnected during command."
+                            )
                         if self.serial_transport:
                             await self.serial_transport.send(request.payload)
 
-                        # Wait for the response to arrive. The timeout is
-                        # handled by the caller (_execute_command). This
-                        # processor just waits for completion.
-                        await request.finished.wait()
+                    # Wait for the response to arrive outside the lock
+                    # so that status polling and gcode streaming are not
+                    # blocked. The timeout is handled by the caller
+                    # (_execute_command).
+                    await request.finished.wait()
 
-                    except ConnectionError as e:
-                        logger.error(f"Connection error during command: {e}")
-                        self._update_connection_status(
-                            TransportStatus.ERROR,
-                            str(e),
-                        )
-                    finally:
-                        self._current_request = None
-                        self._command_queue.task_done()
+                except ConnectionError as e:
+                    logger.error(f"Connection error during command: {e}")
+                    self._update_connection_status(
+                        TransportStatus.ERROR,
+                        str(e),
+                    )
+                finally:
+                    self._current_request = None
+                    self._command_queue.task_done()
 
                 # Release lock briefly to allow status polling
                 await asyncio.sleep(0.1)
@@ -1029,7 +1049,6 @@ class GrblSerialDriver(Driver):
             f"RX: {data!r} ({buf_info})",
             extra={"log_category": "RAW_IO", "direction": "RX", "data": data},
         )
-        self._handshake_received.set()
         # Buffer bytes directly to avoid decoding errors on split characters
         self._status_buffer.extend(data)
 
@@ -1058,6 +1077,7 @@ class GrblSerialDriver(Driver):
 
         # Status reports are frequent and start with '<'
         if stripped_message.startswith("<") and stripped_message.endswith(">"):
+            self._handshake_received.set()
             self._handle_status_report(stripped_message)
         else:
             # Handle other responses line by line (e.g., 'ok', 'error:')

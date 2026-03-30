@@ -49,7 +49,7 @@ class RecipeRow(Gtk.Box):
         suffix_box = Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)
         self.append(suffix_box)
 
-        edit_button = Gtk.Button(child=get_icon("document-edit-symbolic"))
+        edit_button = Gtk.Button(child=get_icon("edit-symbolic"))
         edit_button.add_css_class("flat")
         edit_button.connect("clicked", lambda w: on_edit(recipe))
         suffix_box.append(edit_button)

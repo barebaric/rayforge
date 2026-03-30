@@ -57,7 +57,7 @@ class UnknownAsset(IAsset):
 
     is_addable: ClassVar[bool] = False
     asset_type_name: ClassVar[str] = "unknown"
-    display_icon_name: ClassVar[str] = "dialog-question-symbolic"
+    display_icon_name: ClassVar[str] = "question-mark-symbolic"
     is_reorderable: ClassVar[bool] = False
     is_draggable_to_canvas: ClassVar[bool] = False
     type_display_name: ClassVar[str] = "Unknown Asset"

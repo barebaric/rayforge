@@ -77,7 +77,7 @@ class AddEditRecipeDialog(PatchedDialogWindow):
         # General Tab
         self.btn_general = Gtk.ToggleButton()
         self.btn_general.set_child(
-            self._create_tab_child(_("General"), "preferences-other-symbolic")
+            self._create_tab_child(_("General"), "settings-symbolic")
         )
         self.btn_general.connect("toggled", self._on_tab_toggled, "general")
         switcher_box.append(self.btn_general)

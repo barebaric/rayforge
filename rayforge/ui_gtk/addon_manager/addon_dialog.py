@@ -99,7 +99,7 @@ class AddonRegistryDialog(PatchedDialogWindow):
 
         # 3. Error Page
         self.error_box = Adw.StatusPage()
-        self.error_box.set_icon_name("network-error-symbolic")
+        self.error_box.set_icon_name("error-symbolic")
         self.error_box.set_title(_("Connection Failed"))
         self.error_box.set_description(_("Could not reach the registry."))
         self.stack.add_named(self.error_box, "error")
