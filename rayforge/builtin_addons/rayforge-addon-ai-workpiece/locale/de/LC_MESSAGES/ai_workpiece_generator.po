@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-22 19:54+0100\n"
+"POT-Creation-Date: 2026-03-30 19:31+0200\n"
 "PO-Revision-Date: 2026-03-07 20:16+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -54,36 +54,6 @@ msgid "Generate Workpiece with AI..."
 msgstr "Werkstück mit KI erstellen..."
 
 #: ai_workpiece_generator/generator.py
-msgid "Bad request - please check your settings"
-msgstr "Ungültige Anfrage - bitte überprüfe deine Einstellungen"
-
-#: ai_workpiece_generator/generator.py
-msgid "Authentication failed - please check your API key"
-msgstr ""
-"Authentifizierung fehlgeschlagen - bitte überprüfe deinen API-Schlüssel"
-
-#: ai_workpiece_generator/generator.py
-msgid "Access forbidden - please check your API key permissions"
-msgstr ""
-"Zugriff verweigert - bitte überprüfe die Berechtigungen deines API-Schlüssels"
-
-#: ai_workpiece_generator/generator.py
-msgid "API endpoint not found - please check the base URL"
-msgstr "API-Endpunkt nicht gefunden - bitte überprüfe die Basis-URL"
-
-#: ai_workpiece_generator/generator.py
-msgid "Rate limited - please wait and try again"
-msgstr "Anfragenlimit erreicht - bitte warte und versuche es erneut"
-
-#: ai_workpiece_generator/generator.py
-msgid "Server error - please try again later"
-msgstr "Serverfehler - bitte versuche es später erneut"
-
-#: ai_workpiece_generator/generator.py
-msgid "Service unavailable - please try again later"
-msgstr "Dienst nicht verfügbar - bitte versuche es später erneut"
-
-#: ai_workpiece_generator/generator.py
 msgid "No AI provider configured. Please configure an AI provider in Settings."
 msgstr ""
 "Kein KI-Anbieter konfiguriert. Bitte konfiguriere einen KI-Anbieter in den "
@@ -98,12 +68,3 @@ msgid "AI did not generate valid SVG code. Please try a different prompt."
 msgstr ""
 "Die KI hat keinen gültigen SVG-Code generiert. Bitte versuche einen anderen "
 "Prompt."
-
-#: ai_workpiece_generator/generator.py
-#, python-brace-format
-msgid "Server returned error {code}"
-msgstr "Server hat Fehler {code} zurückgegeben"
-
-#: ai_workpiece_generator/generator.py
-msgid "Connection failed - please check your network"
-msgstr "Verbindung fehlgeschlagen - bitte überprüfe dein Netzwerk"

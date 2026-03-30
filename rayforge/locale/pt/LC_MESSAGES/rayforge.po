@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-30 17:47+0200\n"
+"POT-Creation-Date: 2026-03-30 19:31+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -30,6 +30,48 @@ msgstr "Camada 1"
 #, python-brace-format
 msgid "{name} (copy)"
 msgstr "{name} (cópia)"
+
+#: rayforge/core/ai/provider.py
+msgid "Bad request"
+msgstr "Requisição inválida"
+
+#: rayforge/core/ai/provider.py
+msgid "Authentication failed - please check your API key"
+msgstr "Falha na autenticação - por favor verifique sua chave API"
+
+#: rayforge/core/ai/provider.py
+msgid "Access forbidden - please check your API key permissions"
+msgstr "Acesso negado - por favor verifique as permissões da sua chave API"
+
+#: rayforge/core/ai/provider.py
+msgid "API endpoint not found - please check the base URL"
+msgstr "Endpoint da API não encontrado - por favor verifique a URL base"
+
+#: rayforge/core/ai/provider.py
+msgid "Rate limited - please wait and try again"
+msgstr "Limite de requisições atingido - por favor aguarde e tente novamente"
+
+#: rayforge/core/ai/provider.py
+msgid "Server error - please try again later"
+msgstr "Erro do servidor - por favor tente novamente mais tarde"
+
+#: rayforge/core/ai/provider.py
+msgid "Service unavailable - please try again later"
+msgstr "Serviço indisponível - por favor tente novamente mais tarde"
+
+#: rayforge/core/ai/provider.py
+#, python-brace-format
+msgid "Server returned error {code}"
+msgstr "O servidor retornou o erro {code}"
+
+#: rayforge/core/ai/openai_provider.py
+msgid "Connection failed - please check your network"
+msgstr "Falha na conexão - por favor verifique sua rede"
+
+#: rayforge/core/ai/openai_provider.py
+#, python-brace-format
+msgid "Model '{model}' not found. Available: {available}"
+msgstr "Modelo '{model}' não encontrado. Disponíveis: {available}"
 
 #: rayforge/core/step.py
 #, python-brace-format

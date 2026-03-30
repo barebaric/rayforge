@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-30 17:47+0200\n"
+"POT-Creation-Date: 2026-03-30 19:31+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -30,6 +30,48 @@ msgstr "图层 1"
 #, python-brace-format
 msgid "{name} (copy)"
 msgstr "{name} (副本)"
+
+#: rayforge/core/ai/provider.py
+msgid "Bad request"
+msgstr "错误的请求"
+
+#: rayforge/core/ai/provider.py
+msgid "Authentication failed - please check your API key"
+msgstr "身份验证失败 - 请检查您的API密钥"
+
+#: rayforge/core/ai/provider.py
+msgid "Access forbidden - please check your API key permissions"
+msgstr "访问被拒绝 - 请检查您的API密钥权限"
+
+#: rayforge/core/ai/provider.py
+msgid "API endpoint not found - please check the base URL"
+msgstr "未找到API端点 - 请检查基础URL"
+
+#: rayforge/core/ai/provider.py
+msgid "Rate limited - please wait and try again"
+msgstr "请求频率受限 - 请等待后重试"
+
+#: rayforge/core/ai/provider.py
+msgid "Server error - please try again later"
+msgstr "服务器错误 - 请稍后重试"
+
+#: rayforge/core/ai/provider.py
+msgid "Service unavailable - please try again later"
+msgstr "服务不可用 - 请稍后重试"
+
+#: rayforge/core/ai/provider.py
+#, python-brace-format
+msgid "Server returned error {code}"
+msgstr "服务器返回错误 {code}"
+
+#: rayforge/core/ai/openai_provider.py
+msgid "Connection failed - please check your network"
+msgstr "连接失败 - 请检查您的网络"
+
+#: rayforge/core/ai/openai_provider.py
+#, python-brace-format
+msgid "Model '{model}' not found. Available: {available}"
+msgstr "未找到模型'{model}'。可用模型：{available}"
 
 #: rayforge/core/step.py
 #, python-brace-format
