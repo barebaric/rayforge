@@ -9,10 +9,9 @@ from ...core.asset_registry import asset_type_registry
 from ...core.stock import StockItem
 from ...core.undo import Command
 from ..shared.draglist import DragListBox
-from ..shared.expander import Expander
+from ..shared.expander import ExpanderWithButton
 from ..shared.gtk import apply_css
 from ..shared.popover_menu import PopoverMenu
-from ..icons import get_icon
 from .asset_row_factory import create_asset_row_widget
 from .asset_row_widget import IAssetRowWidget
 
@@ -73,7 +72,7 @@ class _ReorderAssetsCommand(Command):
         self.doc.set_asset_order(self.old_order)
 
 
-class AssetListView(Expander):
+class AssetListView(ExpanderWithButton):
     """
     A widget that displays a collapsible, reorderable list of all
     document assets (Stock, Sketches, etc.).
@@ -83,7 +82,7 @@ class AssetListView(Expander):
     asset_activated = Signal()
 
     def __init__(self, editor: "DocEditor", **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(button_label=_("Add Asset"), **kwargs)
         apply_css(css)
         self.editor = editor
         self.doc = editor.doc
@@ -91,37 +90,13 @@ class AssetListView(Expander):
         self.set_title(_("Assets"))
         self.set_expanded(True)
 
-        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.set_child(content_box)
-
         self.draglist = DragListBox()
         self.draglist.add_css_class("asset-list-box")
         self.draglist.connect("row-activated", self.on_row_activated)
         self.draglist.reordered.connect(self.on_assets_reordered)
-        content_box.append(self.draglist)
+        self.append_content(self.draglist)
 
-        # A Gtk.Button, styled as a card, serves as our "Add" button
-        add_button = Gtk.Button()
-        add_button.add_css_class("darkbutton")
-        add_button.connect("clicked", self.on_add_button_clicked)
-        content_box.append(add_button)
-
-        # The button's content is a box with an icon and a label.
-        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        button_box.set_margin_top(10)
-        button_box.set_margin_end(12)
-        button_box.set_margin_bottom(10)
-        button_box.set_margin_start(12)
-
-        add_icon = get_icon("add-symbolic")
-        button_box.append(add_icon)
-
-        lbl = _("Add Asset")
-        add_label = Gtk.Label()
-        add_label.set_markup(f"<span weight='normal'>{lbl}</span>")
-        add_label.set_xalign(0)
-        button_box.append(add_label)
-        add_button.set_child(button_box)
+        self.add_button.connect("clicked", self.on_add_button_clicked)
 
         self._connect_signals()
         self.on_doc_changed(self.doc)

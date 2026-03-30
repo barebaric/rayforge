@@ -146,3 +146,45 @@ class Expander(Gtk.Box):
             self.remove_css_class("expanded")
             self.arrow.remove_css_class("accent")
             self.arrow.remove_css_class("rotated")
+
+
+class ExpanderWithButton(Expander):
+    """
+    An Expander that includes an "Add" button at the bottom of the
+    collapsible content area.
+    """
+
+    def __init__(self, button_label: str, **kwargs):
+        super().__init__(**kwargs)
+        self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_child(self.content_box)
+
+        self.add_button = self._create_add_button(button_label)
+        self.content_box.append(self.add_button)
+
+    def _create_add_button(self, label: str) -> Gtk.Button:
+        button = Gtk.Button()
+        button.add_css_class("darkbutton")
+
+        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        button_box.set_margin_top(10)
+        button_box.set_margin_end(12)
+        button_box.set_margin_bottom(10)
+        button_box.set_margin_start(12)
+
+        add_icon = get_icon("add-symbolic")
+        button_box.append(add_icon)
+
+        add_label = Gtk.Label()
+        add_label.set_markup(f"<span weight='normal'>{label}</span>")
+        add_label.set_xalign(0)
+        button_box.append(add_label)
+
+        button.set_child(button_box)
+        return button
+
+    def append_content(self, widget: Gtk.Widget):
+        """Insert a widget before the add button."""
+        self.content_box.remove(self.add_button)
+        self.content_box.append(widget)
+        self.content_box.append(self.add_button)
