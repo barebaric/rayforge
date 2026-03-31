@@ -42,6 +42,8 @@ class Config:
         # Usage tracking consent date: None = not asked, "" = declined,
         # ISO date string = consent given on that date
         self.usage_consent_date: Optional[str] = None
+        # Default DPI for unitless SVG imports
+        self.import_dpi: float = 96.0
         self.changed = Signal()
 
     def set_machine(self, machine: Optional[Machine]):
@@ -97,6 +99,13 @@ class Config:
         self.bottom_panel_visible = visible
         self.changed.send(self)
 
+    def set_import_dpi(self, dpi: float):
+        """Sets the default DPI for unitless SVG imports."""
+        if self.import_dpi == dpi:
+            return
+        self.import_dpi = dpi
+        self.changed.send(self)
+
     def set_usage_consent(self, consent: bool):
         """Sets the usage tracking consent preference."""
         new_value = ""
@@ -143,6 +152,7 @@ class Config:
             ),
             "bottom_panel_visible": self.bottom_panel_visible,
             "usage_consent_date": self.usage_consent_date,
+            "import_dpi": self.import_dpi,
         }
 
     @classmethod
@@ -189,6 +199,9 @@ class Config:
 
         # Load usage tracking consent date
         config.usage_consent_date = data.get("usage_consent_date", None)
+
+        # Load import DPI
+        config.import_dpi = data.get("import_dpi", 96.0)
 
         # Get the machine by ID. add fallbacks in case the machines
         # no longer exist.

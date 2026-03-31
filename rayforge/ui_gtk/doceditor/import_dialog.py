@@ -9,6 +9,7 @@ from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 
 from ...core.item import DocItem
 from ...core.layer import Layer
+from ...context import get_context
 from ...core.vectorization_spec import (
     PassthroughSpec,
     TraceSpec,
@@ -143,16 +144,21 @@ class ImportDialog(PatchedDialogWindow):
         )
         mode_group.add(self.use_vectors_switch)
 
+        config = get_context().config
         self.dpi_adjustment = Gtk.Adjustment.new(
-            96.0, 1.0, 10000.0, 1.0, 10.0, 0
+            config.import_dpi, 1.0, 10000.0, 1.0, 10.0, 0
         )
         self.dpi_row = Adw.SpinRow(
             title=_("DPI"),
-            subtitle=_("Pixels per inch for unitless SVG dimensions"),
+            subtitle=_(
+                "Pixels per inch for unitless SVG dimensions. "
+                "Inkscape ≥0.92 uses 96, older Inkscape uses 90, "
+                "Illustrator uses 70"
+            ),
             adjustment=self.dpi_adjustment,
             numeric=True,
         )
-        self.dpi_row.connect("changed", self._schedule_preview_update)
+        self.dpi_row.connect("changed", self._on_dpi_changed)
         self.dpi_row.set_visible(False)
         mode_group.add(self.dpi_row)
 
@@ -275,6 +281,10 @@ class ImportDialog(PatchedDialogWindow):
             not is_whole_image and not self.auto_threshold_switch.get_active()
         )
         self.invert_switch.set_sensitive(not is_whole_image)
+        self._schedule_preview_update()
+
+    def _on_dpi_changed(self, spin_row):
+        get_context().config.set_import_dpi(spin_row.get_value())
         self._schedule_preview_update()
 
     def _load_initial_data(self):
