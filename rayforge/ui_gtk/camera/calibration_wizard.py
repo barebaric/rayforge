@@ -5,7 +5,11 @@ from typing import Optional, Tuple, List
 
 import cv2
 import numpy as np
-import pymupdf
+
+try:
+    import pymupdf
+except ImportError:
+    import fitz as pymupdf
 from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk, Graphene
 
 from ...camera.calibration.calibrator import CameraCalibrator
