@@ -1125,8 +1125,13 @@ class WorkSurface(WorldSurface):
             self.machine.x_axis_right
         )
         self._rotary_surface_element.set_origin(canvas_x, canvas_y)
+        bed_width = self.machine.axis_extents[0]
+        max_length = bed_width
+        default_rm = self.machine.get_default_rotary_module()
+        if default_rm:
+            max_length = min(max_length, default_rm.max_workpiece_length)
         self._rotary_surface_element.update_for_diameter(
-            rotary_diameter, self.machine.axis_extents[0]
+            rotary_diameter, bed_width, max_length
         )
         self._rotary_surface_element.set_visible(True)
 

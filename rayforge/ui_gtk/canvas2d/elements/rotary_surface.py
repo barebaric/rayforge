@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from typing import Optional
 import cairo
 from ...canvas import CanvasElement
 
@@ -32,6 +33,7 @@ class RotarySurfaceElement(CanvasElement):
         self._x_axis_right = False
         self._diameter = 25.0
         self._bed_width = 200.0
+        self._max_length = 200.0
 
     def set_origin(self, x: float, y: float):
         """Sets the WCS origin position in world (canvas) coordinates."""
@@ -57,11 +59,11 @@ class RotarySurfaceElement(CanvasElement):
         height = circumference
 
         if self._x_axis_right:
-            x = 0.0
-            width = self._origin_x
+            width = min(self._origin_x, self._max_length)
+            x = self._origin_x - width
         else:
             x = self._origin_x
-            width = self._bed_width - self._origin_x
+            width = min(self._bed_width - self._origin_x, self._max_length)
 
         if width < 0:
             width = 0.0
@@ -69,13 +71,22 @@ class RotarySurfaceElement(CanvasElement):
         self.set_size(width, height)
         self.set_pos(x, y)
 
-    def update_for_diameter(self, diameter: float, bed_width: float):
+    def update_for_diameter(
+        self,
+        diameter: float,
+        bed_width: float,
+        max_length: Optional[float] = None,
+    ):
         """
         Updates the element geometry for the given cylinder diameter
         and machine bed width.
         """
         self._diameter = diameter
         self._bed_width = bed_width
+        if max_length is not None:
+            self._max_length = max_length
+        else:
+            self._max_length = bed_width
         self._update_geometry()
         if self.canvas:
             self.canvas.queue_draw()

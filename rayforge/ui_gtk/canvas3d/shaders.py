@@ -5,24 +5,40 @@ Shader sources for the 3D workbench.
 SIMPLE_VERTEX_SHADER = """
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec4 aColor;
+layout (location = 2) in vec3 aNormal;
 uniform mat4 uMVP;
 out vec4 vColor;
+out vec3 vNormal;
 void main() {
     gl_Position = uMVP * vec4(aPos, 1.0);
     vColor = aColor;
+    vNormal = aNormal;
 }
 """
 
 SIMPLE_FRAGMENT_SHADER = """
 out vec4 FragColor;
 in vec4 vColor;
+in vec3 vNormal;
 uniform vec4 uColor;
 uniform float uUseVertexColor;
+uniform float uHasNormals;
+uniform vec3 uLightDir;
 void main() {
+    vec4 baseColor;
     if (uUseVertexColor > 0.5) {
-        FragColor = vColor;
+        baseColor = vColor;
     } else {
-        FragColor = uColor;
+        baseColor = uColor;
+    }
+    if (uHasNormals > 0.5) {
+        vec3 n = normalize(vNormal);
+        float diff = max(dot(n, normalize(uLightDir)), 0.0);
+        float ambient = 0.3;
+        float light = ambient + (1.0 - ambient) * diff;
+        FragColor = vec4(baseColor.rgb * light, baseColor.a);
+    } else {
+        FragColor = baseColor;
     }
 }
 """

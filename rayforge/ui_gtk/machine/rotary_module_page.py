@@ -1,13 +1,17 @@
+from pathlib import Path
 from typing import cast, Optional
 from gettext import gettext as _
 
 from gi.repository import Adw, Gtk
 
+from ...context import get_context
+from ...core.model import Model
 from ...machine.driver.driver import Axis
 from ...machine.models.machine import Machine
 from ...machine.models.rotary_module import RotaryModule
 from ..icons import get_icon
 from ..shared.adwfix import get_spinrow_float
+from ..shared.model_selection_dialog import ModelSelectionDialog
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
 
@@ -70,10 +74,10 @@ class RotaryModuleRow(Gtk.Box):
         self._update_selection_state()
 
     def _get_subtitle_text(self) -> str:
-        return _("Axis {axis}, {length}mm, chuck Ø{chuck:.0f}mm").format(
+        model_label = self.module.model_id or _("No model")
+        return _("Axis {axis}, {model}").format(
             axis=self.module.axis.name,
-            length=self.module.length,
-            chuck=self.module.chuck_diameter,
+            model=model_label,
         )
 
     def _update_selection_state(self):
@@ -300,6 +304,28 @@ class RotaryModulePage(TrackedPreferencesPage):
         )
         self.config_group.add(self.default_diameter_row)
 
+        max_len_adj = Gtk.Adjustment(
+            lower=1, upper=10000, step_increment=10, page_increment=50
+        )
+        self.max_workpiece_length_row = Adw.SpinRow(
+            title=_("Max Workpiece Length"),
+            subtitle=_("Maximum workpiece length this module can accommodate"),
+            adjustment=max_len_adj,
+            digits=1,
+        )
+        self.max_workpiece_length_row.connect(
+            "notify::value", self._on_max_workpiece_length_changed
+        )
+        self.config_group.add(self.max_workpiece_length_row)
+
+        self.model_row = Adw.ActionRow(
+            title=_("Model"),
+            activatable=True,
+        )
+        self.model_row.connect("activated", self._on_model_activated)
+        self.model_row.add_suffix(get_icon("go-next-symbolic"))
+        self.config_group.add(self.model_row)
+
         x_adj = Gtk.Adjustment(
             lower=-10000, upper=10000, step_increment=1, page_increment=10
         )
@@ -336,59 +362,49 @@ class RotaryModulePage(TrackedPreferencesPage):
         self.z_row.connect("notify::value", self._on_position_changed)
         self.config_group.add(self.z_row)
 
-        length_adj = Gtk.Adjustment(
-            lower=1, upper=10000, step_increment=1, page_increment=10
-        )
-        self.length_row = Adw.SpinRow(
-            title=_("Length"),
-            subtitle=_("Length of the rotary module along the axis"),
-            adjustment=length_adj,
+        self.rx_row = Adw.SpinRow(
+            title=_("X Rotation"),
+            subtitle=_("Degrees around the X axis"),
+            adjustment=Gtk.Adjustment(
+                lower=-360, upper=360, step_increment=1, page_increment=15
+            ),
             digits=1,
         )
-        self.length_row.connect("notify::value", self._on_length_changed)
-        self.config_group.add(self.length_row)
+        self.rx_row.connect("notify::value", self._on_rotation_changed)
+        self.config_group.add(self.rx_row)
 
-        chuck_adj = Gtk.Adjustment(
-            lower=1, upper=10000, step_increment=1, page_increment=10
-        )
-        self.chuck_diameter_row = Adw.SpinRow(
-            title=_("Chuck Diameter"),
-            subtitle=_("Diameter of the chuck end"),
-            adjustment=chuck_adj,
+        self.ry_row = Adw.SpinRow(
+            title=_("Y Rotation"),
+            subtitle=_("Degrees around the Y axis"),
+            adjustment=Gtk.Adjustment(
+                lower=-360, upper=360, step_increment=1, page_increment=15
+            ),
             digits=1,
         )
-        self.chuck_diameter_row.connect(
-            "notify::value", self._on_chuck_diameter_changed
-        )
-        self.config_group.add(self.chuck_diameter_row)
+        self.ry_row.connect("notify::value", self._on_rotation_changed)
+        self.config_group.add(self.ry_row)
 
-        tailstock_adj = Gtk.Adjustment(
-            lower=1, upper=10000, step_increment=1, page_increment=10
-        )
-        self.tailstock_diameter_row = Adw.SpinRow(
-            title=_("Tailstock Diameter"),
-            subtitle=_("Diameter of the tailstock end"),
-            adjustment=tailstock_adj,
+        self.rz_row = Adw.SpinRow(
+            title=_("Z Rotation"),
+            subtitle=_("Degrees around the Z axis"),
+            adjustment=Gtk.Adjustment(
+                lower=-360, upper=360, step_increment=1, page_increment=15
+            ),
             digits=1,
         )
-        self.tailstock_diameter_row.connect(
-            "notify::value", self._on_tailstock_diameter_changed
-        )
-        self.config_group.add(self.tailstock_diameter_row)
+        self.rz_row.connect("notify::value", self._on_rotation_changed)
+        self.config_group.add(self.rz_row)
 
-        height_adj = Gtk.Adjustment(
-            lower=1, upper=10000, step_increment=1, page_increment=10
+        self.scale_row = Adw.SpinRow(
+            title=_("Scale"),
+            subtitle=_("Uniform scale factor for the model"),
+            adjustment=Gtk.Adjustment(
+                lower=0.01, upper=1000, step_increment=1, page_increment=10
+            ),
+            digits=2,
         )
-        self.max_height_row = Adw.SpinRow(
-            title=_("Max Height"),
-            subtitle=_("Maximum height above the mounting surface"),
-            adjustment=height_adj,
-            digits=1,
-        )
-        self.max_height_row.connect(
-            "notify::value", self._on_max_height_changed
-        )
-        self.config_group.add(self.max_height_row)
+        self.scale_row.connect("notify::value", self._on_scale_changed)
+        self.config_group.add(self.scale_row)
 
         self.module_list_editor.list_box.connect(
             "row-selected", self._on_module_selected
@@ -428,15 +444,29 @@ class RotaryModulePage(TrackedPreferencesPage):
             selected = 0
         self.module_axis_row.set_selected(selected)
         self.default_diameter_row.set_value(module.default_diameter)
-        self.x_row.set_value(module.x)
-        self.y_row.set_value(module.y)
-        self.z_row.set_value(module.z)
-        self.length_row.set_value(module.length)
-        self.chuck_diameter_row.set_value(module.chuck_diameter)
-        self.tailstock_diameter_row.set_value(module.tailstock_diameter)
-        self.max_height_row.set_value(module.max_height)
+        self.max_workpiece_length_row.set_value(module.max_workpiece_length)
+        self._update_model_subtitle(module)
+        t = module.transform
+        self.x_row.set_value(float(t[0, 3]))
+        self.y_row.set_value(float(t[1, 3]))
+        self.z_row.set_value(float(t[2, 3]))
+        rx, ry, rz = module.get_rotation()
+        self.rx_row.set_value(rx)
+        self.ry_row.set_value(ry)
+        self.rz_row.set_value(rz)
+        self.scale_row.set_value(module.get_scale())
 
         self._is_updating = False
+
+    def _update_model_subtitle(self, module: RotaryModule):
+        if module.model_id:
+            model_mgr = get_context().model_mgr
+            model = Model(name="", path=Path(module.model_id))
+            resolved = model_mgr.resolve(model)
+            if resolved:
+                self.model_row.set_subtitle(resolved.stem)
+                return
+        self.model_row.set_subtitle(_("None"))
 
     def _on_rotary_enabled_default_changed(self, row, _param):
         if self._is_updating:
@@ -474,6 +504,46 @@ class RotaryModulePage(TrackedPreferencesPage):
         if module:
             module.set_default_diameter(get_spinrow_float(spinrow))
 
+    def _on_max_workpiece_length_changed(self, spinrow, _param):
+        if self._is_updating:
+            return
+        module = self._get_selected_module()
+        if module:
+            module.set_max_workpiece_length(get_spinrow_float(spinrow))
+
+    def _on_model_activated(self, row):
+        module = self._get_selected_module()
+        if not module:
+            return
+
+        model_mgr = get_context().model_mgr
+        categories = model_mgr.get_categories()
+        category = None
+        for cat in categories:
+            if cat.id == "chucks":
+                category = cat
+                break
+        if category is None and categories:
+            category = categories[0]
+
+        root = self.get_root()
+        dialog = ModelSelectionDialog(
+            category=category,
+            current_model_id=module.model_id,
+            transient_for=cast(Gtk.Window, root) if root else None,
+        )
+
+        def on_response(d, response_id):
+            if response_id == "select":
+                selected_id = d.get_selected_model_id()
+                module.set_model_id(selected_id)
+                self._update_model_subtitle(module)
+                self.module_list_editor._rebuild()
+            d.destroy()
+
+        dialog.connect("response", on_response)
+        dialog.present()
+
     def _on_position_changed(self, _spinrow, _param):
         if self._is_updating:
             return
@@ -485,33 +555,23 @@ class RotaryModulePage(TrackedPreferencesPage):
         z = get_spinrow_float(self.z_row)
         module.set_position(x, y, z)
 
-    def _on_length_changed(self, spinrow, _param):
+    def _on_rotation_changed(self, _spinrow, _param):
         if self._is_updating:
             return
         module = self._get_selected_module()
-        if module:
-            module.set_length(get_spinrow_float(spinrow))
+        if not module:
+            return
+        rx = get_spinrow_float(self.rx_row)
+        ry = get_spinrow_float(self.ry_row)
+        rz = get_spinrow_float(self.rz_row)
+        module.set_rotation(rx, ry, rz)
 
-    def _on_chuck_diameter_changed(self, spinrow, _param):
+    def _on_scale_changed(self, _spinrow, _param):
         if self._is_updating:
             return
         module = self._get_selected_module()
         if module:
-            module.set_chuck_diameter(get_spinrow_float(spinrow))
-
-    def _on_tailstock_diameter_changed(self, spinrow, _param):
-        if self._is_updating:
-            return
-        module = self._get_selected_module()
-        if module:
-            module.set_tailstock_diameter(get_spinrow_float(spinrow))
-
-    def _on_max_height_changed(self, spinrow, _param):
-        if self._is_updating:
-            return
-        module = self._get_selected_module()
-        if module:
-            module.set_max_height(get_spinrow_float(spinrow))
+            module.set_scale(get_spinrow_float(self.scale_row))
 
     def _on_machine_changed(self, sender, **kwargs):
         if self._is_updating:

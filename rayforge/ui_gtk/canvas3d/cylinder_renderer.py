@@ -112,6 +112,7 @@ class CylinderRenderer(BaseRenderer):
         shader.set_mat4("uMVP", mvp_matrix)
         shader.set_vec4("uColor", self._color)
         shader.set_float("uUseVertexColor", 0.0)
+        shader.set_float("uHasNormals", 0.0)
 
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)

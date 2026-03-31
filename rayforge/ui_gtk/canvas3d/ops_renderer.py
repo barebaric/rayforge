@@ -246,6 +246,7 @@ class OpsRenderer(BaseRenderer):
         """
         shader.use()
         shader.set_mat4("uMVP", mvp_matrix)
+        shader.set_float("uHasNormals", 0.0)
 
         # Draw powered moves (which use vertex colors)
         if self.powered_vertex_count > 0:
