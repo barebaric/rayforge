@@ -2,12 +2,14 @@ import logging
 import threading
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
 import numpy as np
 from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
 from ...context import RayforgeContext
 from ...core.geo import Point, Point3D, Rect
+from ...core.model import Model
 from ...machine.models.colors import OpsColorSet
 from ...pipeline.artifact import ArtifactStore, StepRenderArtifact
 from ...pipeline.encoder.vertexencoder import transform_to_cylinder
@@ -18,7 +20,8 @@ from ..shared.gtk_color import GtkColorResolver, ColorSpecDict
 from .axis_renderer_3d import AxisRenderer3D
 from .camera import Camera, rotation_matrix_from_axis_angle
 from .cylinder_renderer import CylinderRenderer
-from .gl_utils import Shader
+from .gl_utils import SceneRenderer, Shader
+from .model_renderer import ModelRenderer
 from .ops_renderer import OpsRenderer
 from .scene_assembler import (
     SceneDescription,
@@ -34,6 +37,7 @@ from .shaders import (
 )
 from .sphere_renderer import SphereRenderer
 from .texture_renderer import TextureArtifactRenderer
+
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -304,6 +308,7 @@ class Canvas3D(Gtk.GLArea):
         self.texture_renderer: Optional[TextureArtifactRenderer] = None
         self.texture_shader: Optional[Shader] = None
         self._cylinder_renderers: Dict[float, CylinderRenderer] = {}
+        self._model_renderers: List[Tuple[SceneRenderer, np.ndarray]] = []
         self._had_rotary_layers = False
         self._scene_preparation_task: Optional[Task] = None
         self._scene_prep_cancel = threading.Event()
@@ -572,6 +577,8 @@ class Canvas3D(Gtk.GLArea):
                 self.texture_renderer.cleanup()
             for renderer in self._cylinder_renderers.values():
                 renderer.cleanup()
+            for renderer, _ in self._model_renderers:
+                renderer.cleanup()
             if self.main_shader:
                 self.main_shader.cleanup()
             if self.text_shader:
@@ -795,6 +802,11 @@ class Canvas3D(Gtk.GLArea):
             for renderer in self._cylinder_renderers.values():
                 if self.main_shader:
                     renderer.render(self.main_shader, mvp_matrix_scene_gl)
+
+            for renderer, module_transform in self._model_renderers:
+                if self.main_shader:
+                    combined = mvp_matrix_ui @ module_transform
+                    renderer.render(self.main_shader, combined.T)
 
             if self.texture_renderer and self.texture_shader:
                 # Always call both; each method filters internally
@@ -1089,10 +1101,18 @@ class Canvas3D(Gtk.GLArea):
         """
         self.make_current()
 
+        machine = self.context.machine
+
         desired_diameters: Dict[float, bool] = {}
         for layer in self.doc.layers:
             if layer.rotary_enabled:
                 desired_diameters[layer.rotary_diameter] = True
+
+        max_length = self.width_mm
+        if machine:
+            default_rm = machine.get_default_rotary_module()
+            if default_rm:
+                max_length = min(max_length, default_rm.max_workpiece_length)
 
         # Remove renderers for diameters no longer needed
         for diameter in list(self._cylinder_renderers.keys()):
@@ -1108,7 +1128,7 @@ class Canvas3D(Gtk.GLArea):
             if diameter not in self._cylinder_renderers:
                 renderer = CylinderRenderer(
                     diameter=diameter,
-                    length=self.width_mm,
+                    length=max_length,
                     rings=24,
                     length_segments=12,
                 )
@@ -1117,8 +1137,70 @@ class Canvas3D(Gtk.GLArea):
                 self._cylinder_renderers[diameter] = renderer
                 logger.debug(
                     f"Initialized cylinder renderer: "
-                    f"diameter={diameter}mm, length={self.width_mm}mm"
+                    f"diameter={diameter}mm, length={max_length}mm"
                 )
+
+    def _clear_model_renderers(self):
+        """Remove all model renderers without rebuilding."""
+        for r, _ in self._model_renderers:
+            r.cleanup()
+        self._model_renderers.clear()
+
+    def _update_model_renderers(self):
+        """Rebuild renderers for modules referenced by rotary layers."""
+        self.make_current()
+        self._clear_model_renderers()
+
+        machine = self.context.machine
+        if not machine:
+            return
+
+        used_uids = {
+            layer.rotary_module_uid
+            for layer in self.doc.layers
+            if layer.rotary_enabled and layer.rotary_module_uid
+        }
+
+        logger.debug("Model renderers: used_uids=%s", used_uids or "none")
+
+        for uid in used_uids:
+            module = machine.get_rotary_module_by_uid(uid)
+            if module is None:
+                logger.debug("Model renderers: uid %s not found", uid)
+                continue
+
+            if module.model_id is None:
+                logger.debug("Model renderers: module %s has no model_id", uid)
+                continue
+
+            logger.debug(
+                "Model renderers: resolving model_id=%s", module.model_id
+            )
+            resolved = self.context.model_mgr.resolve(
+                Model(name="", path=Path(module.model_id))
+            )
+            if resolved is None:
+                logger.warning(
+                    "Model file not found: %s, skipping.",
+                    module.model_id,
+                )
+                continue
+
+            logger.debug("Model renderers: resolved to %s", resolved)
+            renderer = ModelRenderer(resolved)
+            renderer.init_gl()
+            logger.debug(
+                "Model renderer created: vao=%d, vertex_count=%d, bounds=%s",
+                renderer._vao,
+                renderer._vertex_count,
+                renderer.bounds,
+            )
+            self._model_renderers.append(
+                (renderer, module.transform.astype(np.float32))
+            )
+            self._model_renderers.append(
+                (renderer, module.transform.astype(np.float32))
+            )
 
     def update_scene_from_doc(self):
         """
@@ -1144,6 +1226,10 @@ class Canvas3D(Gtk.GLArea):
         any_rotary = any(layer.rotary_enabled for layer in self.doc.layers)
         if self._gl_initialized:
             self._update_cylinder_renderers()
+            if any_rotary:
+                self._update_model_renderers()
+            else:
+                self._clear_model_renderers()
         if self._had_rotary_layers and not any_rotary and self.camera:
             self.reset_view_front()
         self._had_rotary_layers = any_rotary

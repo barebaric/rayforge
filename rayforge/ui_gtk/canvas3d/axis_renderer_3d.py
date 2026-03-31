@@ -319,6 +319,7 @@ class AxisRenderer3D(BaseRenderer):
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         line_shader.use()
+        line_shader.set_float("uHasNormals", 0.0)
 
         # Draw background plane
         GL.glDepthMask(GL.GL_FALSE)

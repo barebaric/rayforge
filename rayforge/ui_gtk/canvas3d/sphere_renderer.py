@@ -111,6 +111,7 @@ class SphereRenderer(BaseRenderer):
 
         shader.set_mat4("uMVP", mvp_matrix)
         shader.set_vec4("uColor", color)
+        shader.set_float("uHasNormals", 0.0)
 
         GL.glBindVertexArray(self.vao)
         GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, self.vertex_count)

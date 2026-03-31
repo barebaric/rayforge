@@ -1,9 +1,27 @@
-from typing import Dict, Any
-from blinker import Signal
 import uuid
 from gettext import gettext as _
+from typing import Any, Dict, Optional
 
+import numpy as np
+from blinker import Signal
+
+from ...core.geo import Rect3D
 from ..driver.driver import Axis
+
+
+def _rotation_matrix(rx: float, ry: float, rz: float) -> np.ndarray:
+    ax, ay, az = np.radians(rx), np.radians(ry), np.radians(rz)
+    cx, sx = np.cos(ax), np.sin(ax)
+    cy, sy = np.cos(ay), np.sin(ay)
+    cz, sz = np.cos(az), np.sin(az)
+    return np.array(
+        [
+            [cy * cz, sx * sy * cz - cx * sz, cx * sy * cz + sx * sz],
+            [cy * sz, sx * sy * sz + cx * cz, cx * sy * sz - sx * cz],
+            [-sy, sx * cy, cx * cy],
+        ],
+        dtype=np.float64,
+    )
 
 
 class RotaryModule:
@@ -11,14 +29,10 @@ class RotaryModule:
         self.uid: str = str(uuid.uuid4())
         self.name: str = _("Rotary Module")
         self.axis: Axis = Axis.A
-        self.x: float = 0.0
-        self.y: float = 0.0
-        self.z: float = 0.0
-        self.length: float = 200.0
-        self.chuck_diameter: float = 40.0
-        self.tailstock_diameter: float = 20.0
-        self.max_height: float = 60.0
         self.default_diameter: float = 25.0
+        self.max_workpiece_length: float = 300.0
+        self.model_id: Optional[str] = None
+        self.transform: np.ndarray = np.eye(4, dtype=np.float64)
         self.changed = Signal()
         self.extra: Dict[str, Any] = {}
 
@@ -36,35 +50,49 @@ class RotaryModule:
         self.changed.send(self)
 
     def set_position(self, x: float, y: float, z: float):
-        if self.x == x and self.y == y and self.z == z:
+        if (
+            self.transform[0, 3] == x
+            and self.transform[1, 3] == y
+            and self.transform[2, 3] == z
+        ):
             return
-        self.x = x
-        self.y = y
-        self.z = z
+        self.transform[0, 3] = x
+        self.transform[1, 3] = y
+        self.transform[2, 3] = z
         self.changed.send(self)
 
-    def set_length(self, length: float):
-        if self.length == length:
+    def get_rotation(self):
+        t = self.transform
+        sx = float(np.linalg.norm(t[0, :3]))
+        sy = float(np.linalg.norm(t[1, :3]))
+        sz = float(np.linalg.norm(t[2, :3]))
+        rx = np.degrees(np.arctan2(t[2, 1] / sy, t[2, 2] / sz))
+        ry = np.degrees(
+            np.arctan2(-t[2, 0] / sx, np.sqrt(t[2, 1] ** 2 + t[2, 2] ** 2))
+        )
+        rz = np.degrees(np.arctan2(t[1, 0] / sx, t[0, 0] / sx))
+        return rx, ry, rz
+
+    def set_rotation(self, rx: float, ry: float, rz: float):
+        cur = self.get_rotation()
+        if cur[0] == rx and cur[1] == ry and cur[2] == rz:
             return
-        self.length = length
+        pos = self.transform[:3, 3].copy()
+        scale = self.get_scale()
+        self.transform[:3, :3] = _rotation_matrix(rx, ry, rz) * scale
+        self.transform[:3, 3] = pos
         self.changed.send(self)
 
-    def set_chuck_diameter(self, diameter: float):
-        if self.chuck_diameter == diameter:
-            return
-        self.chuck_diameter = diameter
-        self.changed.send(self)
+    def get_scale(self) -> float:
+        return float(np.linalg.norm(self.transform[0, :3]))
 
-    def set_tailstock_diameter(self, diameter: float):
-        if self.tailstock_diameter == diameter:
+    def set_scale(self, scale: float):
+        if self.get_scale() == scale:
             return
-        self.tailstock_diameter = diameter
-        self.changed.send(self)
-
-    def set_max_height(self, height: float):
-        if self.max_height == height:
-            return
-        self.max_height = height
+        pos = self.transform[:3, 3].copy()
+        rx, ry, rz = self.get_rotation()
+        self.transform[:3, :3] = _rotation_matrix(rx, ry, rz) * scale
+        self.transform[:3, 3] = pos
         self.changed.send(self)
 
     def set_default_diameter(self, diameter: float):
@@ -73,19 +101,30 @@ class RotaryModule:
         self.default_diameter = diameter
         self.changed.send(self)
 
+    def set_max_workpiece_length(self, length: float):
+        if self.max_workpiece_length == length:
+            return
+        self.max_workpiece_length = length
+        self.changed.send(self)
+
+    def set_model_id(self, model_id: Optional[str]):
+        if self.model_id == model_id:
+            return
+        self.model_id = model_id
+        self.changed.send(self)
+
+    def get_collision_bbox(self) -> Optional[Rect3D]:
+        return None
+
     def to_dict(self) -> Dict[str, Any]:
         result = {
             "uid": self.uid,
             "name": self.name,
             "axis": self.axis.name,
-            "x": self.x,
-            "y": self.y,
-            "z": self.z,
-            "length": self.length,
-            "chuck_diameter": self.chuck_diameter,
-            "tailstock_diameter": self.tailstock_diameter,
-            "max_height": self.max_height,
             "default_diameter": self.default_diameter,
+            "max_workpiece_length": self.max_workpiece_length,
+            "model_id": self.model_id,
+            "transform": self.transform.flatten().tolist(),
         }
         result.update(self.extra)
         return result
@@ -96,6 +135,10 @@ class RotaryModule:
             "uid",
             "name",
             "axis",
+            "default_diameter",
+            "max_workpiece_length",
+            "model_id",
+            "transform",
             "x",
             "y",
             "z",
@@ -103,7 +146,12 @@ class RotaryModule:
             "chuck_diameter",
             "tailstock_diameter",
             "max_height",
-            "default_diameter",
+            "model_path",
+            "viz_mode",
+            "viz_scale",
+            "viz_rotation",
+            "chuck_height",
+            "tailstock_height",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -111,14 +159,25 @@ class RotaryModule:
         rm.uid = data.get("uid", str(uuid.uuid4()))
         rm.name = data.get("name", _("Rotary Module"))
         rm.axis = Axis[data.get("axis", "A")]
-        rm.x = data.get("x", 0.0)
-        rm.y = data.get("y", 0.0)
-        rm.z = data.get("z", 0.0)
-        rm.length = data.get("length", 200.0)
-        rm.chuck_diameter = data.get("chuck_diameter", 40.0)
-        rm.tailstock_diameter = data.get("tailstock_diameter", 20.0)
-        rm.max_height = data.get("max_height", 60.0)
         rm.default_diameter = data.get("default_diameter", 25.0)
+        rm.max_workpiece_length = data.get("max_workpiece_length", 300.0)
+
+        rm.model_id = data.get("model_id")
+        if rm.model_id is None and "model_path" in data:
+            raw_model_path = data["model_path"]
+            if raw_model_path:
+                rm.model_id = raw_model_path
+
+        raw_transform = data.get("transform")
+        if raw_transform is not None:
+            rm.transform = np.array(raw_transform, dtype=np.float64).reshape(
+                4, 4
+            )
+        elif any(k in data for k in ("x", "y", "z")):
+            rm.transform[0, 3] = data.get("x", 0.0)
+            rm.transform[1, 3] = data.get("y", 0.0)
+            rm.transform[2, 3] = data.get("z", 0.0)
+
         rm.extra = extra
         return rm
 

@@ -4,7 +4,7 @@ PyOpenGL tasks, such as shader compilation and buffer management.
 """
 
 import logging
-from typing import Optional, Union, final
+from typing import Optional, Protocol, Union, final
 
 import numpy as np
 from OpenGL import GL
@@ -148,6 +148,14 @@ class Shader:
     def set_int(self, name: str, value: int) -> None:
         """Sets an integer uniform."""
         GL.glUniform1i(self.get_uniform_location(name), value)
+
+
+class SceneRenderer(Protocol):
+    """Protocol for renderers that can participate in the 3D scene."""
+
+    def init_gl(self) -> None: ...
+    def render(self, shader: Shader, mvp_matrix: np.ndarray) -> None: ...
+    def cleanup(self) -> None: ...
 
 
 class BaseRenderer:

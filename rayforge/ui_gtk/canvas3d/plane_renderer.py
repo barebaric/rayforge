@@ -78,6 +78,7 @@ class PlaneRenderer(BaseRenderer):
 
         shader.set_mat4("uMVP", mvp)
         shader.set_vec4("uColor", self.color)
+        shader.set_float("uHasNormals", 0.0)
 
         GL.glBindVertexArray(self.vao)
         GL.glDrawArrays(GL.GL_TRIANGLES, 0, self.vertex_count)

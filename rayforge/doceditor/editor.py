@@ -165,12 +165,15 @@ class DocEditor:
         machine = self.context.machine
         if not machine:
             return
+        default_rm = machine.get_default_rotary_module()
         for layer in self.doc.layers:
-            if layer.rotary_module_uid is None:
+            if not layer.rotary_enabled:
                 continue
-            if machine.get_rotary_module_by_uid(layer.rotary_module_uid):
+            if (
+                layer.rotary_module_uid is not None
+                and machine.get_rotary_module_by_uid(layer.rotary_module_uid)
+            ):
                 continue
-            default_rm = machine.get_default_rotary_module()
             if default_rm:
                 layer.set_rotary_module_uid(default_rm.uid)
                 layer.set_rotary_diameter(default_rm.default_diameter)
@@ -440,20 +443,22 @@ class DocEditor:
 
         default_rm = machine.get_default_rotary_module()
         for layer in self.doc.layers:
-            if layer.rotary_module_uid is None:
+            if not layer.rotary_enabled:
                 continue
-            if machine.get_rotary_module_by_uid(layer.rotary_module_uid):
+            if (
+                layer.rotary_module_uid is not None
+                and machine.get_rotary_module_by_uid(layer.rotary_module_uid)
+            ):
                 continue
-            logger.info(
-                f"Layer '{layer.name}' references non-existent rotary "
-                f"module '{layer.rotary_module_uid}', resetting to "
-                f"default"
-            )
             if default_rm:
-                layer.rotary_module_uid = default_rm.uid
+                logger.info(
+                    "Layer '%s' has no valid rotary module, assigning default",
+                    layer.name,
+                )
+                layer.set_rotary_module_uid(default_rm.uid)
                 layer.set_rotary_diameter(default_rm.default_diameter)
             else:
-                layer.rotary_module_uid = None
+                layer.set_rotary_module_uid(None)
 
     @property
     def is_processing(self) -> bool:

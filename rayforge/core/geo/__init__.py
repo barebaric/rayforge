@@ -26,6 +26,7 @@ from .types import (
     Point3D,
     Polygon,
     Rect,
+    Rect3D,
 )
 from .constants import (
     CMD_TYPE_MOVE,
@@ -71,6 +72,7 @@ __all__ = [
     "FontConfig",
     "Geometry",
     "Rect",
+    "Rect3D",
     "CMD_TYPE_MOVE",
     "CMD_TYPE_LINE",
     "CMD_TYPE_ARC",

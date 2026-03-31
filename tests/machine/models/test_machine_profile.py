@@ -1,5 +1,6 @@
 import pytest
 import pytest_asyncio
+
 from typing import TYPE_CHECKING
 from rayforge.core.doc import Doc
 from rayforge.core.ops import (
@@ -10,12 +11,12 @@ from rayforge.core.ops import (
     SetCutSpeedCommand,
     SetPowerCommand,
 )
-from rayforge.machine.models.profile import PROFILES
+from rayforge.machine.models.machine import Machine
+from rayforge.machine.models.profile import MachineProfile, PROFILES
 from rayforge.shared import tasker
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
-    from rayforge.machine.models.machine import Machine
 
 
 @pytest_asyncio.fixture
@@ -158,3 +159,89 @@ async def test_inject_wcs_after_preamble_flag(carvera_air_machine: "Machine"):
 
     # --- Assert: WCS should NOT be present ---
     assert "G54" not in gcode_lines
+
+
+@pytest.mark.asyncio
+async def test_profile_without_rotary_modules(
+    context_initializer: "RayforgeContext",
+):
+    """Profiles without rotary_modules create machines with none."""
+    profile = MachineProfile(name="No Rotary Test")
+    machine = profile.create_machine(context_initializer)
+    assert machine.rotary_modules == {}
+
+
+@pytest.mark.asyncio
+async def test_profile_with_rotary_modules(
+    context_initializer: "RayforgeContext",
+):
+    """Profile with rotary_modules creates machine with those modules."""
+    profile = MachineProfile(
+        name="Rotary Test",
+        rotary_modules=[
+            {
+                "name": "Chuck A",
+                "model_id": "chucks/standard.glb",
+            },
+            {
+                "name": "Chuck B",
+            },
+        ],
+    )
+    machine = profile.create_machine(context_initializer)
+    assert len(machine.rotary_modules) == 2
+
+    modules = list(machine.rotary_modules.values())
+    names = {m.name for m in modules}
+    assert names == {"Chuck A", "Chuck B"}
+
+    chuck_a = next(m for m in modules if m.name == "Chuck A")
+    assert chuck_a.model_id == "chucks/standard.glb"
+
+    chuck_b = next(m for m in modules if m.name == "Chuck B")
+    assert chuck_b.model_id is None
+
+
+@pytest.mark.asyncio
+async def test_profile_rotary_modules_have_unique_uids(
+    context_initializer: "RayforgeContext",
+):
+    """Each rotary module from a profile gets a unique UID."""
+    profile = MachineProfile(
+        name="UID Test",
+        rotary_modules=[
+            {"name": "Module 1"},
+            {"name": "Module 2"},
+        ],
+    )
+    machine = profile.create_machine(context_initializer)
+    uids = list(machine.rotary_modules.keys())
+    assert len(uids) == 2
+    assert uids[0] != uids[1]
+
+
+@pytest.mark.asyncio
+async def test_builtin_profiles_have_no_rotary_modules():
+    """Built-in profiles do not define rotary_modules yet."""
+    for profile in PROFILES:
+        assert profile.rotary_modules is None
+
+
+@pytest.mark.asyncio
+async def test_profile_with_rotary_and_model_id(
+    context_initializer: "RayforgeContext",
+):
+    """Verify model_id flows through profile → machine → serialization."""
+    profile = MachineProfile(
+        name="Model ID Test",
+        rotary_modules=[
+            {
+                "name": "Rotary Axis",
+                "model_id": "chucks/carvera_standard.glb",
+            },
+        ],
+    )
+    machine = profile.create_machine(context_initializer)
+    assert len(machine.rotary_modules) == 1
+    rm = list(machine.rotary_modules.values())[0]
+    assert rm.model_id == "chucks/carvera_standard.glb"

@@ -1,4 +1,14 @@
-from typing import List, Tuple, Union
+from typing import List, NamedTuple, Tuple, Union
+
+
+class Rect3D(NamedTuple):
+    x_min: float
+    x_max: float
+    y_min: float
+    y_max: float
+    z_min: float
+    z_max: float
+
 
 Point = Tuple[float, float]
 Point3D = Tuple[float, float, float]
