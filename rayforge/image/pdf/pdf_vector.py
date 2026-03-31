@@ -6,7 +6,10 @@ from typing import Optional, Dict, Any, List, Tuple, cast
 from pathlib import Path
 from gettext import gettext as _
 
-import pymupdf
+try:
+    import pymupdf
+except ImportError:
+    import fitz as pymupdf
 
 from ...core.geo import Geometry
 from ...core.matrix import Matrix
