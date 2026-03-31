@@ -1411,6 +1411,7 @@ class AddonManager:
         action_registry = self.registries.get("action_registry")
         layout_registry = self.registries.get("layout_registry")
         library_manager = self.registries.get("library_manager")
+        model_manager = self.registries.get("model_manager")
         asset_type_registry = self.registries.get("asset_type_registry")
         command_registry = self.registries.get("command_registry")
         renderer_registry = self.registries.get("renderer_registry")
@@ -1439,6 +1440,11 @@ class AddonManager:
             logger.debug("Calling register_material_libraries hook")
             self.plugin_mgr.hook.register_material_libraries(
                 library_manager=library_manager
+            )
+        if model_manager is not None:
+            logger.debug("Calling register_model_libraries hook")
+            self.plugin_mgr.hook.register_model_libraries(
+                model_manager=model_manager
             )
         if asset_type_registry is not None:
             self.plugin_mgr.hook.register_asset_types(

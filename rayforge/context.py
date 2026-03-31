@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from .core.ai.config import AIConfigManager
     from .core.config import Config, ConfigManager
     from .core.library_manager import LibraryManager
+    from .core.model_manager import ModelManager
     from .core.recipe_manager import RecipeManager
     from .debug import DebugDumpManager
     from .license import LicenseValidator
@@ -60,6 +61,7 @@ class RayforgeContext:
         self._config: Optional["Config"] = None
         self._camera_mgr: Optional["CameraManager"] = None
         self._material_mgr: Optional["LibraryManager"] = None
+        self._model_mgr: Optional["ModelManager"] = None
         self._recipe_mgr: Optional["RecipeManager"] = None
 
     @property
@@ -322,6 +324,24 @@ class RayforgeContext:
                     library_manager=self._material_mgr
                 )
         return self._material_mgr
+
+    @property
+    def model_mgr(self) -> "ModelManager":
+        """Returns the model manager."""
+        if self._model_mgr is None:
+            from .config import USER_MODELS_DIR
+            from .core.model_manager import ModelManager
+
+            logger.info("Lazy loading model manager")
+            self._model_mgr = ModelManager(USER_MODELS_DIR)
+            self._model_mgr.register_bundled_library()
+
+            if not self._headless:
+                self.addon_mgr.registries["model_manager"] = self._model_mgr
+                self.plugin_mgr.hook.register_model_libraries(
+                    model_manager=self._model_mgr
+                )
+        return self._model_mgr
 
     @property
     def recipe_mgr(self) -> "RecipeManager":

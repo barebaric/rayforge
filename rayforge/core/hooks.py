@@ -4,12 +4,19 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 1
-PLUGIN_API_VERSION = 9
+PLUGIN_API_VERSION = 10
 
 
 """
 API Changelog
 ============
+
+Version 10
+----------
+Added ``register_model_libraries`` hook to allow addons to register
+3D model libraries.  Addons call ``model_manager.add_library`` or
+``model_manager.add_library_from_path`` to contribute directories
+containing ``.glb`` / ``.gltf`` model files.
 
 Version 9
 ---------
@@ -252,6 +259,22 @@ class RayforgeSpecs:
 
         Args:
             library_manager: The global LibraryManager instance.
+        """
+
+    @hookspec
+    def register_model_libraries(self, model_manager):
+        """
+        Called to allow addons to register 3D model libraries.
+
+        Addons should call ``model_manager.add_library_from_path(path)`` or
+        ``model_manager.add_library(library)`` to register directories
+        containing ``.glb`` / ``.gltf`` model files.  By default,
+        registered libraries are read-only.
+
+        .. versionadded:: 10
+
+        Args:
+            model_manager: The global ModelManager instance.
         """
 
     @hookspec

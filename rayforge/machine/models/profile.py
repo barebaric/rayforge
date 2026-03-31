@@ -7,6 +7,7 @@ from ..driver import get_driver_cls
 from .dialect import get_dialect, replace
 from .machine import Machine, Laser, Origin
 from .macro import Macro, MacroTrigger
+from .rotary_module import RotaryModule
 
 if TYPE_CHECKING:
     from ...context import RayforgeContext
@@ -71,6 +72,7 @@ class MachineProfile:
     hookmacros: Optional[List[Dict[str, Any]]] = None
     dialect_definition: Optional[DialectDefinition] = None
     rotary_enabled_default: Optional[bool] = None
+    rotary_modules: Optional[List[Dict[str, Any]]] = None
 
     def create_machine(self, context: "RayforgeContext") -> Machine:
         """
@@ -183,6 +185,10 @@ class MachineProfile:
                 # Laser.from_dict can parse, such as "max_power",
                 # "frame_power_percent", and "spot_size_mm".
                 m.add_head(Laser.from_dict(head_profile))
+
+        if self.rotary_modules:
+            for rm_data in self.rotary_modules:
+                m.add_rotary_module(RotaryModule.from_dict(rm_data))
 
         return m
 
