@@ -87,6 +87,7 @@ jobs:
             exit 1
           fi
           "$APP_BIN" --version
+          "$APP_BIN" --exit
 
       - name: Package Intel app
         run: |
@@ -140,6 +141,7 @@ jobs:
             exit 1
           fi
           "$APP_BIN" --version
+          "$APP_BIN" --exit
 
       - name: Package ARM app
         run: |
@@ -256,6 +258,7 @@ jobs:
           fi
           spctl --assess --type execute --verbose=2 "$APP_PATH" || true
           "$APP_PATH/Contents/MacOS/Rayforge" --version
+          "$APP_PATH/Contents/MacOS/Rayforge" --exit
 
       - name: Package universal app
         shell: bash
@@ -266,6 +269,7 @@ jobs:
           TMP_DIR=$(mktemp -d)
           ditto -x -k "$APP_ZIP" "$TMP_DIR"
           "$TMP_DIR/Rayforge.app/Contents/MacOS/Rayforge" --version
+          "$TMP_DIR/Rayforge.app/Contents/MacOS/Rayforge" --exit
           rm -rf "$TMP_DIR"
 
       - name: Build universal DMG with retry
