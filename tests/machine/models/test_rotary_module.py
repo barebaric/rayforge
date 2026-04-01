@@ -42,8 +42,8 @@ class TestRotaryModule:
         assert rm.transform[2, 3] == 30.0
         assert len(signals) == 3
 
-        rm.set_model_id("chucks/test.glb")
-        assert rm.model_id == "chucks/test.glb"
+        rm.set_model_id("rotary/test.glb")
+        assert rm.model_id == "rotary/test.glb"
         assert len(signals) == 4
 
         rm.set_default_diameter(50.0)
@@ -74,14 +74,14 @@ class TestRotaryModule:
 
     def test_set_model_id_no_signal_if_same(self):
         rm = RotaryModule()
-        rm.model_id = "chucks/test.glb"
+        rm.model_id = "rotary/test.glb"
         signals = []
 
         def on_changed(sender, **kwargs):
             signals.append(sender)
 
         rm.changed.connect(on_changed)
-        rm.set_model_id("chucks/test.glb")
+        rm.set_model_id("rotary/test.glb")
         assert len(signals) == 0
 
     def test_set_model_id_to_none_no_signal_if_already_none(self):
@@ -100,7 +100,7 @@ class TestRotaryModule:
         rm.name = "Test Rotary"
         rm.axis = Axis.B
         rm.set_position(10.0, 20.0, 5.0)
-        rm.set_model_id("chucks/standard.glb")
+        rm.set_model_id("rotary/standard.glb")
 
         data = rm.to_dict()
         rm2 = RotaryModule.from_dict(data)
@@ -109,7 +109,7 @@ class TestRotaryModule:
         assert rm2.name == "Test Rotary"
         assert rm2.axis == Axis.B
         assert_array_equal(rm2.transform, rm.transform)
-        assert rm2.model_id == "chucks/standard.glb"
+        assert rm2.model_id == "rotary/standard.glb"
 
     def test_deserialization_defaults(self):
         data = {"uid": "test-uid"}
@@ -133,9 +133,9 @@ class TestRotaryModule:
         assert rm.transform[2, 3] == 5.0
 
     def test_deserialization_legacy_model_path(self):
-        data = {"uid": "test", "model_path": "chucks/old.glb"}
+        data = {"uid": "test", "model_path": "rotary/old.glb"}
         rm = RotaryModule.from_dict(data)
-        assert rm.model_id == "chucks/old.glb"
+        assert rm.model_id == "rotary/old.glb"
 
     def test_deserialization_legacy_keys_not_in_extra(self):
         data = {
@@ -187,7 +187,7 @@ class TestRotaryModule:
 
     def test_collision_bbox_returns_none_with_model(self):
         rm = RotaryModule()
-        rm.set_model_id("chucks/test.glb")
+        rm.set_model_id("rotary/test.glb")
         assert rm.get_collision_bbox() is None
 
 
@@ -369,7 +369,7 @@ class TestMachineRotaryModules:
         lite_context.machine_mgr.add_machine(machine)
         rm = RotaryModule()
         rm.name = "Chuck Module"
-        rm.set_model_id("chucks/custom.glb")
+        rm.set_model_id("rotary/custom.glb")
         machine.add_rotary_module(rm)
 
         data = machine.to_dict()
@@ -378,7 +378,7 @@ class TestMachineRotaryModules:
         assert len(machine2.rotary_modules) == 1
         rm2 = machine2.rotary_modules[rm.uid]
         assert rm2.name == "Chuck Module"
-        assert rm2.model_id == "chucks/custom.glb"
+        assert rm2.model_id == "rotary/custom.glb"
 
     def test_serialization_model_id_none(self, lite_context):
         machine = Machine(lite_context)

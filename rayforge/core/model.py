@@ -34,7 +34,7 @@ class ModelLibrary:
 @dataclass(frozen=True)
 class ModelCategory:
     """
-    A fixed model category (e.g. machines, chucks).
+    A fixed model category (e.g. machines, rotary).
 
     Categories are defined once by the application and are the same
     across all libraries.  Each category maps to a subdirectory name
@@ -60,7 +60,7 @@ class Model:
     A data class representing a 3D model asset in Rayforge.
 
     Models are referenced by a relative path (e.g.
-    ``Path("chucks/abc.glb")``) and resolved by the
+    ``Path("rotary/abc.glb")``) and resolved by the
     ``ModelManager`` by searching registered libraries in order.
     """
 

@@ -10,10 +10,10 @@ MACHINES = ModelCategory(
     display_name="Machines",
     description="Complete machine models.",
 )
-CHUCKS = ModelCategory(
-    id="chucks",
-    display_name="Chucks",
-    description="Chuck and workholding models.",
+ROTARY = ModelCategory(
+    id="rotary",
+    display_name="Rotary",
+    description="Rotary and workholding models.",
 )
 
 
@@ -25,9 +25,9 @@ def model_mgr(tmp_path):
 
 class TestModel:
     def test_basic_creation(self):
-        m = Model(name="Test Chuck", path=Path("chucks/test.glb"))
+        m = Model(name="Test Chuck", path=Path("rotary/test.glb"))
         assert m.name == "Test Chuck"
-        assert m.path == Path("chucks/test.glb")
+        assert m.path == Path("rotary/test.glb")
         assert m.description == ""
         assert m.file_path is None
         assert m.extra == {}
@@ -35,7 +35,7 @@ class TestModel:
     def test_creation_with_all_fields(self):
         m = Model(
             name="Chuck",
-            path=Path("chucks/a.glb"),
+            path=Path("rotary/a.glb"),
             description="A 4-jaw chuck",
             file_path=Path("/absolute/path.glb"),
             extra={"scale": 1.0},
@@ -48,18 +48,18 @@ class TestModel:
     def test_from_dict(self):
         data = {
             "name": "Standard Chuck",
-            "path": "chucks/standard.glb",
+            "path": "rotary/standard.glb",
             "description": "A standard 3-jaw chuck",
         }
         m = Model.from_dict(data)
         assert m.name == "Standard Chuck"
-        assert m.path == Path("chucks/standard.glb")
+        assert m.path == Path("rotary/standard.glb")
         assert m.description == "A standard 3-jaw chuck"
 
     def test_from_dict_with_extra(self):
         data = {
             "name": "Chuck",
-            "path": "chucks/test.glb",
+            "path": "rotary/test.glb",
             "scale": 0.5,
             "author": "test",
         }
@@ -75,20 +75,20 @@ class TestModel:
     def test_to_dict(self):
         m = Model(
             name="Chuck",
-            path=Path("chucks/a.glb"),
+            path=Path("rotary/a.glb"),
             description="desc",
             extra={"scale": 1.0},
         )
         d = m.to_dict()
         assert d["name"] == "Chuck"
-        assert d["path"] == "chucks/a.glb"
+        assert d["path"] == "rotary/a.glb"
         assert d["description"] == "desc"
         assert d["scale"] == 1.0
 
     def test_roundtrip(self):
         original = Model(
             name="Chuck",
-            path=Path("chucks/a.glb"),
+            path=Path("rotary/a.glb"),
             description="desc",
             extra={"key": "value"},
         )
@@ -99,9 +99,9 @@ class TestModel:
         assert restored.extra == original.extra
 
     def test_str(self):
-        m = Model(name="Chuck", path=Path("chucks/a.glb"))
+        m = Model(name="Chuck", path=Path("rotary/a.glb"))
         assert "Chuck" in str(m)
-        assert "chucks/a.glb" in str(m)
+        assert "rotary/a.glb" in str(m)
 
 
 class TestModelCategory:
@@ -156,7 +156,7 @@ class TestModelManagerGetCategories:
         assert len(categories) == 2
         ids = [c.id for c in categories]
         assert "machines" in ids
-        assert "chucks" in ids
+        assert "rotary" in ids
 
     def test_categories_are_modelcategory_instances(self, model_mgr):
         for cat in model_mgr.get_categories():
@@ -185,27 +185,27 @@ class TestModelManagerResolveAbsolute:
 
 class TestModelManagerResolveUserDir:
     def test_finds_file_in_user_dir(self, model_mgr):
-        chucks_dir = model_mgr.user_dir / "chucks"
-        chucks_dir.mkdir(parents=True)
-        model_file = chucks_dir / "custom_chuck.glb"
+        rotary_dir = model_mgr.user_dir / "rotary"
+        rotary_dir.mkdir(parents=True)
+        model_file = rotary_dir / "custom_chuck.glb"
         model_file.write_text("fake glb data")
 
-        m = Model(name="custom", path=Path("chucks/custom_chuck.glb"))
+        m = Model(name="custom", path=Path("rotary/custom_chuck.glb"))
         result = model_mgr.resolve(m)
         assert result == model_file
 
     def test_returns_none_when_not_found(self, model_mgr):
-        m = Model(name="test", path=Path("chucks/nonexistent.glb"))
+        m = Model(name="test", path=Path("rotary/nonexistent.glb"))
         result = model_mgr.resolve(m)
         assert result is None
 
     def test_finds_file_with_models_prefix(self, model_mgr):
-        chucks_dir = model_mgr.user_dir / "models" / "chucks"
-        chucks_dir.mkdir(parents=True)
-        model_file = chucks_dir / "test.glb"
+        rotary_dir = model_mgr.user_dir / "models" / "rotary"
+        rotary_dir.mkdir(parents=True)
+        model_file = rotary_dir / "test.glb"
         model_file.write_text("data")
 
-        m = Model(name="test", path=Path("models/chucks/test.glb"))
+        m = Model(name="test", path=Path("models/rotary/test.glb"))
         result = model_mgr.resolve(m)
         assert result == model_file
 
@@ -213,9 +213,9 @@ class TestModelManagerResolveUserDir:
 class TestModelManagerResolveBundled:
     def test_finds_in_registered_library(self, model_mgr, tmp_path):
         bundled_root = tmp_path / "bundled"
-        chucks_dir = bundled_root / "chucks"
-        chucks_dir.mkdir(parents=True)
-        model_file = chucks_dir / "standard.glb"
+        rotary_dir = bundled_root / "rotary"
+        rotary_dir.mkdir(parents=True)
+        model_file = rotary_dir / "standard.glb"
         model_file.write_text("bundled model")
 
         model_mgr.add_library(
@@ -227,7 +227,7 @@ class TestModelManagerResolveBundled:
             )
         )
 
-        m = Model(name="standard", path=Path("chucks/standard.glb"))
+        m = Model(name="standard", path=Path("rotary/standard.glb"))
         result = model_mgr.resolve(m)
         assert result is not None
         assert result.name == "standard.glb"
@@ -235,15 +235,15 @@ class TestModelManagerResolveBundled:
 
 class TestModelManagerResolvePrecedence:
     def test_user_dir_takes_precedence(self, model_mgr, tmp_path):
-        user_chucks = model_mgr.user_dir / "chucks"
-        user_chucks.mkdir(parents=True)
-        user_file = user_chucks / "chuck.glb"
+        user_rotary = model_mgr.user_dir / "rotary"
+        user_rotary.mkdir(parents=True)
+        user_file = user_rotary / "chuck.glb"
         user_file.write_text("user version")
 
         addon_root = tmp_path / "addon"
-        addon_chucks = addon_root / "chucks"
-        addon_chucks.mkdir(parents=True)
-        (addon_chucks / "chuck.glb").write_text("addon version")
+        addon_rotary = addon_root / "rotary"
+        addon_rotary.mkdir(parents=True)
+        (addon_rotary / "chuck.glb").write_text("addon version")
 
         model_mgr.add_library(
             ModelLibrary(
@@ -254,46 +254,46 @@ class TestModelManagerResolvePrecedence:
             )
         )
 
-        m = Model(name="chuck", path=Path("chucks/chuck.glb"))
+        m = Model(name="chuck", path=Path("rotary/chuck.glb"))
         result = model_mgr.resolve(m)
         assert result == user_file
 
 
 class TestModelManagerGetModels:
     def test_lists_models_in_category(self, model_mgr):
-        chucks_dir = model_mgr.user_dir / "chucks"
-        chucks_dir.mkdir(parents=True)
-        (chucks_dir / "a.glb").write_text("a")
-        (chucks_dir / "b.glb").write_text("b")
+        rotary_dir = model_mgr.user_dir / "rotary"
+        rotary_dir.mkdir(parents=True)
+        (rotary_dir / "a.glb").write_text("a")
+        (rotary_dir / "b.glb").write_text("b")
 
         user_lib = model_mgr.get_libraries()[0]
-        models = model_mgr.get_models(user_lib, CHUCKS)
+        models = model_mgr.get_models(user_lib, ROTARY)
         assert len(models) == 2
         names = {m.name for m in models}
         assert names == {"a", "b"}
 
     def test_returns_empty_for_empty_dir(self, model_mgr):
         user_lib = model_mgr.get_libraries()[0]
-        models = model_mgr.get_models(user_lib, CHUCKS)
+        models = model_mgr.get_models(user_lib, ROTARY)
         assert models == []
 
     def test_ignores_hidden_files(self, model_mgr):
-        chucks_dir = model_mgr.user_dir / "chucks"
-        chucks_dir.mkdir(parents=True)
-        (chucks_dir / "visible.glb").write_text("v")
-        (chucks_dir / ".hidden.glb").write_text("h")
+        rotary_dir = model_mgr.user_dir / "rotary"
+        rotary_dir.mkdir(parents=True)
+        (rotary_dir / "visible.glb").write_text("v")
+        (rotary_dir / ".hidden.glb").write_text("h")
 
         user_lib = model_mgr.get_libraries()[0]
-        models = model_mgr.get_models(user_lib, CHUCKS)
+        models = model_mgr.get_models(user_lib, ROTARY)
         assert len(models) == 1
         assert models[0].name == "visible"
 
     def test_get_models_from_registered_library(self, model_mgr, tmp_path):
         addon_dir = tmp_path / "addon"
-        chucks = addon_dir / "chucks"
-        chucks.mkdir(parents=True)
-        (chucks / "x.glb").write_text("x")
-        (chucks / "y.glb").write_text("y")
+        rotary = addon_dir / "rotary"
+        rotary.mkdir(parents=True)
+        (rotary / "x.glb").write_text("x")
+        (rotary / "y.glb").write_text("y")
         lib = ModelLibrary(
             library_id="addon",
             display_name="Test",
@@ -302,7 +302,7 @@ class TestModelManagerGetModels:
         )
         model_mgr.add_library(lib)
 
-        models = model_mgr.get_models(lib, CHUCKS)
+        models = model_mgr.get_models(lib, ROTARY)
         names = [m.name for m in models]
         assert "x" in names
         assert "y" in names
@@ -310,12 +310,12 @@ class TestModelManagerGetModels:
 
 class TestModelManagerGetAllModels:
     def test_returns_user_models(self, model_mgr):
-        chucks_dir = model_mgr.user_dir / "chucks"
-        chucks_dir.mkdir()
-        (chucks_dir / "a.glb").write_text("a")
-        (chucks_dir / "b.glb").write_text("b")
+        rotary_dir = model_mgr.user_dir / "rotary"
+        rotary_dir.mkdir()
+        (rotary_dir / "a.glb").write_text("a")
+        (rotary_dir / "b.glb").write_text("b")
 
-        models = model_mgr.get_all_models(CHUCKS)
+        models = model_mgr.get_all_models(ROTARY)
         assert len(models) == 2
         names = [m.name for m in models]
         assert "a" in names
@@ -326,15 +326,15 @@ class TestModelManagerGetAllModels:
         assert models == []
 
     def test_deduplicates_across_libraries(self, model_mgr, tmp_path):
-        chucks_dir = model_mgr.user_dir / "chucks"
-        chucks_dir.mkdir()
-        (chucks_dir / "standard.glb").write_text("user")
+        rotary_dir = model_mgr.user_dir / "rotary"
+        rotary_dir.mkdir()
+        (rotary_dir / "standard.glb").write_text("user")
 
         addon_root = tmp_path / "addon"
-        addon_chucks = addon_root / "chucks"
-        addon_chucks.mkdir(parents=True)
-        (addon_chucks / "standard.glb").write_text("addon")
-        (addon_chucks / "extra.glb").write_text("addon extra")
+        addon_rotary = addon_root / "rotary"
+        addon_rotary.mkdir(parents=True)
+        (addon_rotary / "standard.glb").write_text("addon")
+        (addon_rotary / "extra.glb").write_text("addon extra")
 
         model_mgr.add_library(
             ModelLibrary(
@@ -345,7 +345,7 @@ class TestModelManagerGetAllModels:
             )
         )
 
-        models = model_mgr.get_all_models(CHUCKS)
+        models = model_mgr.get_all_models(ROTARY)
         filenames = [m.path.name for m in models]
         assert "standard.glb" in filenames
         assert filenames.count("standard.glb") == 1
@@ -354,12 +354,12 @@ class TestModelManagerGetAllModels:
 
 class TestModelManagerGetUserModels:
     def test_lists_models_in_subdir(self, model_mgr):
-        chucks_dir = model_mgr.user_dir / "chucks"
-        chucks_dir.mkdir(parents=True)
-        (chucks_dir / "a.glb").write_text("a")
-        (chucks_dir / "b.glb").write_text("b")
+        rotary_dir = model_mgr.user_dir / "rotary"
+        rotary_dir.mkdir(parents=True)
+        (rotary_dir / "a.glb").write_text("a")
+        (rotary_dir / "b.glb").write_text("b")
 
-        models = model_mgr.get_user_models(Path("chucks"))
+        models = model_mgr.get_user_models(Path("rotary"))
         assert len(models) == 2
         names = {m.name for m in models}
         assert names == {"a", "b"}
@@ -371,12 +371,12 @@ class TestModelManagerGetUserModels:
         assert models == []
 
     def test_ignores_subdirectories(self, model_mgr):
-        chucks_dir = model_mgr.user_dir / "chucks"
-        chucks_dir.mkdir(parents=True)
-        (chucks_dir / "model.glb").write_text("m")
-        (chucks_dir / "subdir").mkdir()
+        rotary_dir = model_mgr.user_dir / "rotary"
+        rotary_dir.mkdir(parents=True)
+        (rotary_dir / "model.glb").write_text("m")
+        (rotary_dir / "subdir").mkdir()
 
-        models = model_mgr.get_user_models(Path("chucks"))
+        models = model_mgr.get_user_models(Path("rotary"))
         assert len(models) == 1
         assert models[0].name == "model"
 
@@ -388,13 +388,13 @@ class TestModelManagerAddModel:
 
         m = Model(
             name="my_chuck",
-            path=Path("chucks/my_chuck.glb"),
+            path=Path("rotary/my_chuck.glb"),
         )
         result = model_mgr.add_model(src, m)
         assert result.file_path.is_file()
         assert result.file_path.read_text() == "model data"
         assert result.name == "my_chuck"
-        assert result.path == Path("chucks/my_chuck.glb")
+        assert result.path == Path("rotary/my_chuck.glb")
 
     def test_add_model_emits_changed(self, model_mgr, tmp_path):
         src = tmp_path / "source.glb"
@@ -573,8 +573,8 @@ class TestModelManagerLibraryRegistration:
 
     def test_resolve_searches_libraries_in_order(self, model_mgr, tmp_path):
         addon_dir = tmp_path / "addon"
-        (addon_dir / "chucks").mkdir(parents=True)
-        (addon_dir / "chucks" / "test.glb").write_text("addon")
+        (addon_dir / "rotary").mkdir(parents=True)
+        (addon_dir / "rotary" / "test.glb").write_text("addon")
         model_mgr.add_library(
             ModelLibrary(
                 library_id="addon",
@@ -583,7 +583,7 @@ class TestModelManagerLibraryRegistration:
                 read_only=True,
             )
         )
-        m = Model(name="test", path=Path("chucks/test.glb"))
+        m = Model(name="test", path=Path("rotary/test.glb"))
         result = model_mgr.resolve(m)
         assert result is not None
         assert result.read_text() == "addon"
