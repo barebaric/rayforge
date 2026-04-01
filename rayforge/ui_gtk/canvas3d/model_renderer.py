@@ -128,29 +128,42 @@ class ModelRenderer(BaseRenderer):
             self._normals,
             GL.GL_STATIC_DRAW,
         )
-        GL.glVertexAttribPointer(1, 3, GL.GL_FLOAT, GL.GL_TRUE, 0, None)
-        GL.glEnableVertexAttribArray(1)
+        GL.glVertexAttribPointer(2, 3, GL.GL_FLOAT, GL.GL_TRUE, 0, None)
+        GL.glEnableVertexAttribArray(2)
 
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-    def render(self, shader: Shader, mvp_matrix: np.ndarray) -> None:
+    def render(
+        self,
+        shader: Shader,
+        mvp_matrix: np.ndarray,
+        model_matrix: Optional[np.ndarray] = None,
+        camera_position: Optional[np.ndarray] = None,
+    ) -> None:
         if not self._vao:
             return
+
+        light_dir = np.array([0.5, 0.8, 1.0], dtype=np.float32)
+
+        if model_matrix is not None and camera_position is not None:
+            model_inv = np.linalg.inv(model_matrix)
+            cam_pos = model_inv[:3, :3] @ camera_position + model_inv[:3, 3]
+            cam_pos = cam_pos.astype(np.float32)
+        else:
+            cam_pos = np.zeros(3, dtype=np.float32)
 
         shader.use()
         shader.set_mat4("uMVP", mvp_matrix)
         shader.set_float("uUseVertexColor", 0.0)
-        shader.set_vec4("uColor", (0.5, 0.6, 0.7, 0.6))
+        shader.set_vec4("uColor", (0.5, 0.6, 0.7, 1.0))
         shader.set_float("uHasNormals", 1.0)
-        shader.set_vec3("uLightDir", (0.5, 0.8, 1.0))
+        shader.set_vec3("uLightDir", light_dir)
+        shader.set_vec3("uCameraPos", cam_pos)
 
-        GL.glEnable(GL.GL_BLEND)
-        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         GL.glBindVertexArray(self._vao)
         GL.glDrawArrays(GL.GL_TRIANGLES, 0, self._vertex_count)
         GL.glBindVertexArray(0)
-        GL.glDisable(GL.GL_BLEND)
 
     @property
     def bounds(self):

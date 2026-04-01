@@ -154,7 +154,9 @@ class SceneRenderer(Protocol):
     """Protocol for renderers that can participate in the 3D scene."""
 
     def init_gl(self) -> None: ...
+
     def render(self, shader: Shader, mvp_matrix: np.ndarray) -> None: ...
+
     def cleanup(self) -> None: ...
 
 
