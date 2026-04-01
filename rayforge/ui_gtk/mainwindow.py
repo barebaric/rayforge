@@ -867,6 +867,7 @@ class MainWindow(Adw.ApplicationWindow):
         if self.canvas3d is not None:
             self.canvas3d.set_show_nogo_zones(is_visible)
         action.set_state(value)
+        get_context().config.set_show_nogo_zones(is_visible)
 
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
