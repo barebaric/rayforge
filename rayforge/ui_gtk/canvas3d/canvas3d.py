@@ -317,6 +317,7 @@ class Canvas3D(Gtk.GLArea):
         self._scene_vtx_cache: Optional[Tuple[VertexGroup, VertexGroup]] = None
         self._show_travel_moves = False
         self._show_nogo_zones = True
+        self._show_models = True
         self._is_orbiting = False
         self._is_z_rotating = False
         self._gl_initialized = False
@@ -872,15 +873,18 @@ class Canvas3D(Gtk.GLArea):
                 if self._main_shader:
                     renderer.render(self._main_shader, mvp_matrix_scene_gl)
 
-            for renderer, module_transform in self._model_renderers:
-                if self._main_shader:
-                    combined = mvp_matrix_ui @ margin_shift @ module_transform
-                    renderer.render(
-                        self._main_shader,
-                        combined.T,
-                        model_matrix=margin_shift @ module_transform,
-                        camera_position=self.camera.position,
-                    )
+            if self._show_models:
+                for renderer, module_transform in self._model_renderers:
+                    if self._main_shader:
+                        combined = (
+                            mvp_matrix_ui @ margin_shift @ module_transform
+                        )
+                        renderer.render(
+                            self._main_shader,
+                            combined.T,
+                            model_matrix=margin_shift @ module_transform,
+                            camera_position=self.camera.position,
+                        )
 
             if self._texture_renderer and self._texture_shader:
                 # Always call both; each method filters internally
@@ -1101,6 +1105,12 @@ class Canvas3D(Gtk.GLArea):
         if self._show_nogo_zones == visible:
             return
         self._show_nogo_zones = visible
+        self.queue_render()
+
+    def set_show_models(self, visible: bool):
+        if self._show_models == visible:
+            return
+        self._show_models = visible
         self.queue_render()
 
     def _on_scene_prepared(self, task: Task):

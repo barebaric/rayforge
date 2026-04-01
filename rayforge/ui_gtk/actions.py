@@ -215,6 +215,11 @@ class ActionManager:
             GLib.Variant.new_boolean(config.show_nogo_zones),
         )
         self._add_stateful_action(
+            "show_models",
+            self.win.on_show_models_state_change,
+            GLib.Variant.new_boolean(True),
+        )
+        self._add_stateful_action(
             "toggle_bottom_panel",
             self.win.on_toggle_bottom_panel_state_change,
             GLib.Variant.new_boolean(config.bottom_panel_visible),
