@@ -66,6 +66,15 @@
   </screenshots>
 
   <releases>
+    <release version="1.4.1" date="2026-04-01">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>PDF import now falls back to fitz when pymupdf is not installed</li>
+          <li>DPI setting in the SVG import dialog is now persistent between sessions</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.4" date="2026-03-29">
       <description>
         <p>Rotary Axis Support, PDF Layer Import, and Camera Calibration</p>
