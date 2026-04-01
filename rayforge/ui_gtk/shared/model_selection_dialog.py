@@ -43,6 +43,7 @@ class ModelSelectionDialog(Adw.MessageDialog):
         self._preview_box = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL, spacing=6
         )
+        self._preview_box.set_size_request(512, 288)
 
         model_mgr = get_context().model_mgr
         category = self._category
@@ -126,7 +127,8 @@ class ModelSelectionDialog(Adw.MessageDialog):
 
         preview = ModelPreviewWidget()
         preview.load_model(resolved)
-        preview.set_size_request(320, 200)
+        preview.set_vexpand(True)
+        preview.set_hexpand(True)
         self._preview_box.append(preview)
 
     def get_selected_model_id(self) -> Optional[str]:

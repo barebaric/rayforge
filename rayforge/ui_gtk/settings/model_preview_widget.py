@@ -25,7 +25,7 @@ class ModelPreviewWidget(Gtk.GLArea):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.set_has_depth_buffer(True)
-        self.set_size_request(320, 240)
+        self.set_size_request(512, 288)
         self._camera: Optional[Camera] = None
         self._shader: Optional[Shader] = None
         self._renderer: Optional[_SimpleModelRenderer] = None
@@ -80,7 +80,7 @@ class ModelPreviewWidget(Gtk.GLArea):
         direction = np.array([-0.6, -0.7, 0.4])
         direction = direction / np.linalg.norm(direction)
         self._camera = Camera(
-            position=center + direction * size * 1.5,
+            position=center + direction * size,
             target=center,
             up=np.array([0.0, 0.0, 1.0]),
             width=self.get_width(),
