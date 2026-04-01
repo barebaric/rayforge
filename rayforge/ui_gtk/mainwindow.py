@@ -23,6 +23,7 @@ from ..machine.cmd import MachineCmd
 from ..machine.driver.driver import DeviceState, DeviceStatus, Axis
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.models.machine import Machine
+from ..machine.models.zone import check_ops_collides_with_zones
 from ..machine.transport import TransportStatus
 from ..addon_mgr.update_cmd import UpdateCommand
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
@@ -1831,13 +1832,92 @@ class MainWindow(Adw.ApplicationWindow):
     def on_clear_clicked(self, action, param):
         self.doc_editor.edit.clear_all_items()
 
-    def on_export_clicked(self, action, param=None):
-        initial_name = None
-        if self.doc_editor.file_path:
-            initial_name = f"{self.doc_editor.file_path.stem}.gcode"
-        file_dialogs.show_export_gcode_dialog(
-            self, self._on_save_dialog_response, initial_name
+    def _check_nogo_zones_and_proceed(self, proceed_callback):
+        config = get_context().config
+        machine = config.machine
+        if not machine:
+            proceed_callback()
+            return
+
+        enabled_zones = {
+            k: v for k, v in machine.nogo_zones.items() if v.enabled
+        }
+        if not enabled_zones:
+            proceed_callback()
+            return
+
+        existing = self.doc_editor.pipeline.get_existing_job_handle()
+        if existing is not None:
+            artifact_manager = self.doc_editor.pipeline.artifact_manager
+            try:
+                with artifact_manager.checkout_handle(existing) as artifact:
+                    if isinstance(artifact, JobArtifact):
+                        if check_ops_collides_with_zones(
+                            artifact.ops, enabled_zones
+                        ):
+                            self._show_nogo_zone_warning(proceed_callback)
+                            return
+            except Exception:
+                logger.warning("Failed to check no-go zones", exc_info=True)
+            proceed_callback()
+            return
+
+        def _on_artifact_ready(handle, error):
+            if error or not handle:
+                proceed_callback()
+                return
+            try:
+                artifact_manager = self.doc_editor.pipeline.artifact_manager
+                with artifact_manager.checkout_handle(handle) as artifact:
+                    if isinstance(artifact, JobArtifact):
+                        if check_ops_collides_with_zones(
+                            artifact.ops, enabled_zones
+                        ):
+                            self._show_nogo_zone_warning(proceed_callback)
+                            return
+            except Exception:
+                logger.warning("Failed to check no-go zones", exc_info=True)
+            proceed_callback()
+
+        self.doc_editor.file.assemble_job_in_background(
+            when_done=_on_artifact_ready
         )
+
+    def _show_nogo_zone_warning(self, proceed_callback):
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading=_("No-Go Zone Collision"),
+            body=_(
+                "The toolpath enters one or more enabled no-go zones. "
+                "Proceeding may cause damage to your machine or "
+                "workpiece."
+            ),
+        )
+        dialog.add_response("cancel", _("_Cancel"))
+        dialog.add_response("proceed", _("_Proceed"))
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.set_response_appearance(
+            "proceed", Adw.ResponseAppearance.DESTRUCTIVE
+        )
+
+        def on_response(dialog, response_id):
+            if response_id == "proceed":
+                proceed_callback()
+
+        dialog.connect("response", on_response)
+        dialog.present()
+
+    def on_export_clicked(self, action, param=None):
+        def _proceed():
+            initial_name = None
+            if self.doc_editor.file_path:
+                initial_name = f"{self.doc_editor.file_path.stem}.gcode"
+            file_dialogs.show_export_gcode_dialog(
+                self, self._on_save_dialog_response, initial_name
+            )
+
+        self._check_nogo_zones_and_proceed(_proceed)
 
     def on_export_document_clicked(self, action, param=None):
         initial_name = "document.svg"
@@ -1941,21 +2021,23 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_send_clicked(self, action, param):
         config = get_context().config
-        if not config.machine:
+        machine = config.machine
+        if not machine:
             return
 
-        # Disable focus mode when sending
-        focus_action = self.action_manager.get_action("toggle-focus")
-        focus_state = focus_action.get_state()
-        if focus_state and focus_state.get_boolean():
-            focus_action.change_state(GLib.Variant.new_boolean(False))
+        def _proceed():
+            focus_action = self.action_manager.get_action("toggle-focus")
+            focus_state = focus_action.get_state()
+            if focus_state and focus_state.get_boolean():
+                focus_action.change_state(GLib.Variant.new_boolean(False))
 
-        # Get the coroutine object for the send job
-        job_coro = self.machine_cmd.send_job(
-            config.machine, on_progress=self._on_job_progress_updated
-        )
-        # Run the job using the helper
-        self._run_machine_job(job_coro)
+            job_coro = self.machine_cmd.send_job(
+                machine,
+                on_progress=self._on_job_progress_updated,
+            )
+            self._run_machine_job(job_coro)
+
+        self._check_nogo_zones_and_proceed(_proceed)
 
     def on_hold_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant

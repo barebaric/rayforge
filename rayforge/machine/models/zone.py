@@ -5,6 +5,14 @@ from typing import Any, Dict
 
 from blinker import Signal
 
+from ...core.geo.primitives import (
+    arc_intersects_circle,
+    arc_intersects_rect,
+    line_segment_intersects_circle,
+    line_segment_intersects_rect,
+)
+from ...core.geo.types import Point
+
 
 class ZoneShape(Enum):
     RECT = "rect"
@@ -60,6 +68,55 @@ class Zone:
         self.enabled = enabled
         self.changed.send(self)
 
+    def _get_rect(self):
+        x = self.params.get("x", 0.0)
+        y = self.params.get("y", 0.0)
+        w = self.params.get("w", 0.0)
+        h = self.params.get("h", 0.0)
+        return (x, y, x + w, y + h)
+
+    def _get_circle(self):
+        cx = self.params.get("x", 0.0)
+        cy = self.params.get("y", 0.0)
+        r = self.params.get("radius", 5.0)
+        return (cx, cy), r
+
+    def collides_with_line(self, start: Point, end: Point) -> bool:
+        colliders = {
+            ZoneShape.RECT: self._collide_line_rect,
+            ZoneShape.BOX: self._collide_line_rect,
+            ZoneShape.CYLINDER: self._collide_line_circle,
+        }
+        collider = colliders.get(self.shape)
+        return collider(start, end) if collider else False
+
+    def collides_with_arc(self, start, end, center, clockwise):
+        colliders = {
+            ZoneShape.RECT: self._collide_arc_rect,
+            ZoneShape.BOX: self._collide_arc_rect,
+            ZoneShape.CYLINDER: self._collide_arc_circle,
+        }
+        collider = colliders.get(self.shape)
+        if collider is None:
+            return False
+        return collider(start, end, center, clockwise)
+
+    def _collide_line_rect(self, start, end):
+        return line_segment_intersects_rect(start, end, self._get_rect())
+
+    def _collide_line_circle(self, start, end):
+        center, radius = self._get_circle()
+        return line_segment_intersects_circle(start, end, center, radius)
+
+    def _collide_arc_rect(self, start, end, center, clockwise):
+        return arc_intersects_rect(
+            start, end, center, clockwise, self._get_rect()
+        )
+
+    def _collide_arc_circle(self, start, end, center, clockwise):
+        cc, cr = self._get_circle()
+        return arc_intersects_circle(start, end, center, clockwise, cc, cr)
+
     def to_dict(self) -> Dict[str, Any]:
         result = {
             "uid": self.uid,
@@ -99,3 +156,30 @@ class Zone:
     def __setstate__(self, state):
         self.__dict__.update(state)
         self.changed = Signal()
+
+
+def check_ops_collides_with_zones(ops, zones):
+    pos = None
+    for cmd in ops.commands:
+        if getattr(cmd, "end", None) is not None and pos is not None:
+            start_2d = (pos[0], pos[1])
+            end_2d = (cmd.end[0], cmd.end[1])
+            for zone in zones.values():
+                if hasattr(cmd, "center_offset"):
+                    arc_center = (
+                        start_2d[0] + cmd.center_offset[0],
+                        start_2d[1] + cmd.center_offset[1],
+                    )
+                    if zone.collides_with_arc(
+                        start_2d,
+                        end_2d,
+                        arc_center,
+                        cmd.clockwise,
+                    ):
+                        return True
+                else:
+                    if zone.collides_with_line(start_2d, end_2d):
+                        return True
+        if getattr(cmd, "end", None) is not None:
+            pos = cmd.end
+    return False

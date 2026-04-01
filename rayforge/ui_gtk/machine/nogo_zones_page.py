@@ -191,9 +191,9 @@ class NogoZonesPage(TrackedPreferencesPage):
         zones_group = Adw.PreferencesGroup(
             title=_("No-Go Zones"),
             description=_(
-                "Define areas highlighted as restricted for visual "
-                "reference only. These zones do not affect machine "
-                "movement or G-code generation."
+                "Define restricted areas on the work surface. A warning "
+                "will be shown before running or exporting a job whose "
+                "toolpath enters any enabled no-go zone."
             ),
         )
         self.add(zones_group)
