@@ -419,6 +419,51 @@ class Canvas3D(Gtk.GLArea):
             self._wcs_offset_mm = (local_x, local_y, wcs_z)
         self.queue_render()
 
+    def set_machine(
+        self,
+        width_mm: float,
+        depth_mm: float,
+        x_right: bool = False,
+        y_down: bool = False,
+        x_negative: bool = False,
+        y_negative: bool = False,
+        extent_frame: Optional[Rect] = None,
+    ):
+        old_machine = self._context.machine
+        if old_machine:
+            old_machine.wcs_updated.disconnect(self._on_wcs_updated)
+            old_machine.changed.disconnect(self._on_wcs_updated)
+
+        self._width_mm = width_mm
+        self._depth_mm = depth_mm
+        self._x_right = x_right
+        self._y_down = y_down
+        self._x_negative = x_negative
+        self._y_negative = y_negative
+        self._extent_frame = extent_frame
+
+        translate_mat = np.identity(4, dtype=np.float32)
+        scale_mat = np.identity(4, dtype=np.float32)
+
+        if self._y_down:
+            translate_mat[1, 3] = self._depth_mm
+            scale_mat[1, 1] = -1.0
+
+        if self._x_right:
+            translate_mat[0, 3] = self._width_mm
+            scale_mat[0, 0] = -1.0
+
+        self._model_matrix = translate_mat @ scale_mat
+
+        new_machine = self._context.machine
+        if new_machine:
+            new_machine.wcs_updated.connect(self._on_wcs_updated)
+            new_machine.changed.connect(self._on_wcs_updated)
+            self._on_wcs_updated(new_machine)
+
+        if self._gl_initialized:
+            self.update_scene_from_doc()
+
     def _on_pipeline_state_changed(self, sender, *, is_processing: bool):
         """
         Handler for when the pipeline's busy state changes. When it becomes

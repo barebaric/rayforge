@@ -1375,6 +1375,42 @@ class MainWindow(Adw.ApplicationWindow):
         self._update_actions_and_ui()
 
     def on_config_changed(self, sender, **kwargs):
+        config = get_context().config
+        machine_changed = config.machine is not self._current_machine
+
+        if machine_changed:
+            self._on_machine_signals_changed(config)
+
+        self._update_canvas3d(config.machine)
+
+        # Update the status monitor to observe the new machine
+        self.status_monitor.set_machine(config.machine)
+
+        # Update the control panel to use the new machine
+        self.bottom_panel.set_machine(config.machine, self.machine_cmd)
+
+        # Update the main WorkSurface to use the new size
+        self.surface.set_machine(config.machine)
+
+        self.surface.update_from_doc()
+        self._update_macros_menu()
+
+        # Configure WCS list in toolbar
+        if config.machine:
+            self.toolbar.configure_wcs_list(config.machine.supported_wcs)
+        else:
+            self.toolbar.configure_wcs_list([])
+
+        self._update_wcs_dropdown(config.machine)
+
+        # Check for any pending notifications from the new machine immediately
+        if self._current_machine:
+            self._on_machine_hours_changed(self._current_machine.machine_hours)
+
+        self._update_actions_and_ui()
+        self.apply_theme()
+
+    def _on_machine_signals_changed(self, config):
         # Disconnect from the previously active machine, if any
         if self._current_machine:
             self._current_machine.state_changed.disconnect(
@@ -1396,7 +1432,6 @@ class MainWindow(Adw.ApplicationWindow):
             # Disconnect WCS change signal
             self._current_machine.changed.disconnect(self._update_wcs_dropdown)
 
-        config = get_context().config
         self._current_machine = config.machine
 
         # Connect to the new active machine's signals
@@ -1416,8 +1451,9 @@ class MainWindow(Adw.ApplicationWindow):
             # Update WCS dropdown when machine active_wcs changes
             self._current_machine.changed.connect(self._update_wcs_dropdown)
 
-        # Define new machine dimensions
-        new_machine = config.machine
+    def _update_canvas3d(self, new_machine):
+        if self.canvas3d is None:
+            return
         if new_machine:
             area = new_machine.work_area
             canvas3d_w, canvas3d_h = float(area[2]), float(area[3])
@@ -1433,52 +1469,18 @@ class MainWindow(Adw.ApplicationWindow):
                 False,
                 False,
             )
-
-        # Update the 3D canvas to match the new machine.
-        if self.canvas3d is not None:
-            # Replace the 3D canvas with one configured for the new machine.
-            self.view_stack.remove(self.canvas3d)
-            extent_frame = None
-            if new_machine and new_machine.has_custom_work_area():
-                extent_frame = new_machine.get_visual_extent_frame()
-            self._create_canvas3d(
-                get_context(),
-                width_mm=canvas3d_w,
-                depth_mm=canvas3d_h,
-                y_down=y_down,
-                x_right=x_right,
-                x_negative=reverse_x,
-                y_negative=reverse_y,
-                extent_frame=extent_frame,
-            )
-
-        # Update the status monitor to observe the new machine
-        self.status_monitor.set_machine(config.machine)
-
-        # Update the control panel to use the new machine
-        self.bottom_panel.set_machine(config.machine, self.machine_cmd)
-
-        # Update the main WorkSurface to use the new size
-        self.surface.set_machine(config.machine)
-
-        self.surface.update_from_doc()
-        self._update_macros_menu()
-        self._update_actions_and_ui()
-
-        # Configure WCS list in toolbar
-        if config.machine:
-            self.toolbar.configure_wcs_list(config.machine.supported_wcs)
-        else:
-            self.toolbar.configure_wcs_list([])
-
-        self._update_wcs_dropdown(config.machine)
-
-        # Update theme
-        self.apply_theme()
-
-        # Check for any pending notifications from the new machine immediately
-        if self._current_machine:
-            self._on_machine_hours_changed(self._current_machine.machine_hours)
+        extent_frame = None
+        if new_machine and new_machine.has_custom_work_area():
+            extent_frame = new_machine.get_visual_extent_frame()
+        self.canvas3d.set_machine(
+            width_mm=canvas3d_w,
+            depth_mm=canvas3d_h,
+            y_down=y_down,
+            x_right=x_right,
+            x_negative=reverse_x,
+            y_negative=reverse_y,
+            extent_frame=extent_frame,
+        )
 
     def apply_theme(self):
         """Reads the theme from config and applies it to the UI."""
