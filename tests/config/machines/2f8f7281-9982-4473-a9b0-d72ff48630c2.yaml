@@ -68,7 +68,7 @@ machine:
   - axis: A
     default_diameter: 25.0
     max_workpiece_length: 60.0
-    model_id: chucks/creality-roller.glb
+    model_id: rotary/creality-roller.glb
     name: Creality Roller
     transform:
     - 410.0

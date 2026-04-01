@@ -14,6 +14,8 @@ from .model import Model, ModelCategory, ModelLibrary
 
 logger = logging.getLogger(__name__)
 
+VALID_MODEL_EXTENSIONS = {".glb", ".gltf"}
+
 CATEGORIES: List[ModelCategory] = [
     ModelCategory(
         id="machines",
@@ -21,9 +23,9 @@ CATEGORIES: List[ModelCategory] = [
         description=_("Complete machine models."),
     ),
     ModelCategory(
-        id="chucks",
-        display_name=_("Chucks"),
-        description=_("Chuck and workholding models."),
+        id="rotary",
+        display_name=_("Rotary"),
+        description=_("Rotary and workholding models."),
     ),
 ]
 
@@ -197,7 +199,9 @@ class ModelManager(AddonRegistry):
         files = sorted(
             p
             for p in target.iterdir()
-            if p.is_file() and not p.name.startswith(".")
+            if p.is_file()
+            and not p.name.startswith(".")
+            and p.suffix.lower() in VALID_MODEL_EXTENSIONS
         )
         return [
             Model(
@@ -228,7 +232,9 @@ class ModelManager(AddonRegistry):
         files = sorted(
             p
             for p in target.iterdir()
-            if p.is_file() and not p.name.startswith(".")
+            if p.is_file()
+            and not p.name.startswith(".")
+            and p.suffix.lower() in VALID_MODEL_EXTENSIONS
         )
         return [
             Model(
@@ -330,9 +336,9 @@ class ModelManager(AddonRegistry):
         try:
             from rayforge.resources import models as resource_models
 
-            resource_file = (
-                importlib.resources.files(resource_models) / resource_subpath
-            )
+            resource_file = importlib.resources.files(
+                resource_models
+            ).joinpath(*resource_subpath.parts)
             if resource_file.is_file():
                 return Path(str(resource_file))
         except (FileNotFoundError, TypeError, ModuleNotFoundError):

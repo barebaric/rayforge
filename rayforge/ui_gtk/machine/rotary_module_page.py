@@ -521,7 +521,7 @@ class RotaryModulePage(TrackedPreferencesPage):
         categories = model_mgr.get_categories()
         category = None
         for cat in categories:
-            if cat.id == "chucks":
+            if cat.id == "rotary":
                 category = cat
                 break
         if category is None and categories:

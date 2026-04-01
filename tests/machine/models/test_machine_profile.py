@@ -181,7 +181,7 @@ async def test_profile_with_rotary_modules(
         rotary_modules=[
             {
                 "name": "Chuck A",
-                "model_id": "chucks/standard.glb",
+                "model_id": "rotary/standard.glb",
             },
             {
                 "name": "Chuck B",
@@ -196,7 +196,7 @@ async def test_profile_with_rotary_modules(
     assert names == {"Chuck A", "Chuck B"}
 
     chuck_a = next(m for m in modules if m.name == "Chuck A")
-    assert chuck_a.model_id == "chucks/standard.glb"
+    assert chuck_a.model_id == "rotary/standard.glb"
 
     chuck_b = next(m for m in modules if m.name == "Chuck B")
     assert chuck_b.model_id is None
@@ -237,11 +237,11 @@ async def test_profile_with_rotary_and_model_id(
         rotary_modules=[
             {
                 "name": "Rotary Axis",
-                "model_id": "chucks/carvera_standard.glb",
+                "model_id": "rotary/carvera_standard.glb",
             },
         ],
     )
     machine = profile.create_machine(context_initializer)
     assert len(machine.rotary_modules) == 1
     rm = list(machine.rotary_modules.values())[0]
-    assert rm.model_id == "chucks/carvera_standard.glb"
+    assert rm.model_id == "rotary/carvera_standard.glb"
