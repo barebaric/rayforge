@@ -20,7 +20,7 @@ from ..shared.gtk_color import GtkColorResolver, ColorSpecDict
 from .axis_renderer_3d import AxisRenderer3D
 from .camera import Camera, rotation_matrix_from_axis_angle
 from .cylinder_renderer import CylinderRenderer
-from .gl_utils import SceneRenderer, Shader
+from .gl_utils import Shader
 from .model_renderer import ModelRenderer
 from .ops_renderer import OpsRenderer
 from .scene_assembler import (
@@ -308,7 +308,7 @@ class Canvas3D(Gtk.GLArea):
         self.texture_renderer: Optional[TextureArtifactRenderer] = None
         self.texture_shader: Optional[Shader] = None
         self._cylinder_renderers: Dict[float, CylinderRenderer] = {}
-        self._model_renderers: List[Tuple[SceneRenderer, np.ndarray]] = []
+        self._model_renderers: List[Tuple[ModelRenderer, np.ndarray]] = []
         self._had_rotary_layers = False
         self._scene_preparation_task: Optional[Task] = None
         self._scene_prep_cancel = threading.Event()
@@ -806,7 +806,12 @@ class Canvas3D(Gtk.GLArea):
             for renderer, module_transform in self._model_renderers:
                 if self.main_shader:
                     combined = mvp_matrix_ui @ module_transform
-                    renderer.render(self.main_shader, combined.T)
+                    renderer.render(
+                        self.main_shader,
+                        combined.T,
+                        model_matrix=module_transform,
+                        camera_position=self.camera.position,
+                    )
 
             if self.texture_renderer and self.texture_shader:
                 # Always call both; each method filters internally

@@ -9,10 +9,12 @@ layout (location = 2) in vec3 aNormal;
 uniform mat4 uMVP;
 out vec4 vColor;
 out vec3 vNormal;
+out vec3 vPos;
 void main() {
     gl_Position = uMVP * vec4(aPos, 1.0);
     vColor = aColor;
     vNormal = aNormal;
+    vPos = aPos;
 }
 """
 
@@ -20,10 +22,12 @@ SIMPLE_FRAGMENT_SHADER = """
 out vec4 FragColor;
 in vec4 vColor;
 in vec3 vNormal;
+in vec3 vPos;
 uniform vec4 uColor;
 uniform float uUseVertexColor;
 uniform float uHasNormals;
 uniform vec3 uLightDir;
+uniform vec3 uCameraPos;
 void main() {
     vec4 baseColor;
     if (uUseVertexColor > 0.5) {
@@ -33,9 +37,17 @@ void main() {
     }
     if (uHasNormals > 0.5) {
         vec3 n = normalize(vNormal);
-        float diff = max(dot(n, normalize(uLightDir)), 0.0);
-        float ambient = 0.3;
-        float light = ambient + (1.0 - ambient) * diff;
+        vec3 lightDir = normalize(uLightDir);
+        float diff = max(dot(n, lightDir), 0.0);
+        float ambient = 0.25;
+        float diffuse = (1.0 - ambient) * diff;
+
+        vec3 viewDir = normalize(uCameraPos - vPos);
+        vec3 halfDir = normalize(lightDir + viewDir);
+        float spec = pow(max(dot(n, halfDir), 0.0), 48.0);
+        float specular = 0.35 * spec;
+
+        float light = ambient + diffuse + specular;
         FragColor = vec4(baseColor.rgb * light, baseColor.a);
     } else {
         FragColor = baseColor;

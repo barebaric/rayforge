@@ -96,7 +96,9 @@ class ModelPreviewWidget(Gtk.GLArea):
         proj = self._camera.get_projection_matrix()
         view = self._camera.get_view_matrix()
         mvp = (proj @ view).T
-        self._renderer.render(self._shader, mvp)
+        self._renderer.render(
+            self._shader, mvp, camera_position=self._camera.position
+        )
         return True
 
     def _on_resize(self, area, w, h):
@@ -178,25 +180,33 @@ class _SimpleModelRenderer(BaseRenderer):
             self._normals,
             GL.GL_STATIC_DRAW,
         )
-        GL.glVertexAttribPointer(1, 3, GL.GL_FLOAT, GL.GL_TRUE, 0, None)
-        GL.glEnableVertexAttribArray(1)
+        GL.glVertexAttribPointer(2, 3, GL.GL_FLOAT, GL.GL_TRUE, 0, None)
+        GL.glEnableVertexAttribArray(2)
 
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-    def render(self, shader: Shader, mvp_matrix: np.ndarray):
+    def render(
+        self,
+        shader: Shader,
+        mvp_matrix: np.ndarray,
+        camera_position: Optional[np.ndarray] = None,
+    ):
         if not self._vao:
             return
         shader.use()
         shader.set_mat4("uMVP", mvp_matrix)
         shader.set_float("uUseVertexColor", 0.0)
-        shader.set_vec4("uColor", (0.55, 0.65, 0.75, 0.8))
+        shader.set_vec4("uColor", (0.55, 0.65, 0.75, 1.0))
         shader.set_float("uHasNormals", 1.0)
         shader.set_vec3("uLightDir", (0.5, 0.8, 1.0))
+        cam_pos = (
+            camera_position.astype(np.float32)
+            if camera_position is not None
+            else np.zeros(3, dtype=np.float32)
+        )
+        shader.set_vec3("uCameraPos", cam_pos)
 
-        GL.glEnable(GL.GL_BLEND)
-        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         GL.glBindVertexArray(self._vao)
         GL.glDrawArrays(GL.GL_TRIANGLES, 0, self._vertex_count)
         GL.glBindVertexArray(0)
-        GL.glDisable(GL.GL_BLEND)
