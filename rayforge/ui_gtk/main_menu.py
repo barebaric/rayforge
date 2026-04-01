@@ -83,6 +83,7 @@ class MainMenu(Gio.Menu):
         visibility_group.append(
             _("Show Travel Moves"), "win.toggle_travel_view"
         )
+        visibility_group.append(_("Show No-Go Zones"), "win.show_nogo_zones")
         visibility_group.append(
             _("Show Bottom Panel"), "win.toggle_bottom_panel"
         )

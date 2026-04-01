@@ -18,6 +18,7 @@ from .hooks_macros_page import HooksMacrosPage
 from .laser_preferences_page import LaserPreferencesPage
 from .maintenance_page import MaintenancePage
 from .rotary_module_page import RotaryModulePage
+from .nogo_zones_page import NogoZonesPage
 
 
 class MachineSettingsDialog(PatchedDialogWindow):
@@ -111,7 +112,13 @@ class MachineSettingsDialog(PatchedDialogWindow):
             rotary_module_page, "rotary-module", _("Rotary Module")
         )
 
-        # --- Page 9: Camera ---
+        # --- Page 9: No-Go Zones ---
+        nogo_zones_page = NogoZonesPage(machine=self.machine)
+        self.content_stack.add_titled(
+            nogo_zones_page, "nogo-zones", _("No-Go Zones")
+        )
+
+        # --- Page 10: Camera ---
         self.camera_page = CameraPreferencesPage()
         self.camera_page.camera_add_requested.connect(
             self._on_camera_add_requested
@@ -152,6 +159,9 @@ class MachineSettingsDialog(PatchedDialogWindow):
         self._add_sidebar_row(_("Laser"), "laser-on-symbolic", "laser")
         self._add_sidebar_row(
             _("Rotary Module"), "rotary-symbolic", "rotary-module"
+        )
+        self._add_sidebar_row(
+            _("No-Go Zones"), "action-unavailable-symbolic", "nogo-zones"
         )
         self._add_sidebar_row(_("Camera"), "camera-on-symbolic", "camera")
         self._add_sidebar_row(

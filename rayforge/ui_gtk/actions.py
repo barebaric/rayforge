@@ -208,6 +208,11 @@ class ActionManager:
             self.win.on_toggle_travel_view_state_change,
             GLib.Variant.new_boolean(False),
         )
+        self._add_stateful_action(
+            "show_nogo_zones",
+            self.win.on_show_nogo_zones_state_change,
+            GLib.Variant.new_boolean(True),
+        )
         config = get_context().config
         self._add_stateful_action(
             "toggle_bottom_panel",

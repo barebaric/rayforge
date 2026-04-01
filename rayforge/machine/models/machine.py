@@ -24,8 +24,9 @@ from ..transport import TransportStatus
 from .dialect import GcodeDialect, get_dialect
 from .laser import Laser
 from .machine_hours import MachineHours
-from .rotary_module import RotaryModule
 from .macro import Macro, MacroTrigger
+from .rotary_module import RotaryModule
+from .zone import Zone
 
 
 if TYPE_CHECKING:
@@ -158,6 +159,7 @@ class Machine:
         self.add_head(Laser())
 
         self.rotary_modules: Dict[str, RotaryModule] = {}
+        self.nogo_zones: Dict[str, Zone] = {}
 
     @property
     def controller(self) -> "MachineController":
@@ -754,6 +756,22 @@ class Machine:
     def _on_rotary_module_changed(self, module, *args):
         self.changed.send(self)
 
+    def add_nogo_zone(self, zone: Zone):
+        self.nogo_zones[zone.uid] = zone
+        zone.changed.connect(self._on_nogo_zone_changed)
+        self.changed.send(self)
+
+    def get_nogo_zone_by_uid(self, uid: str) -> Optional[Zone]:
+        return self.nogo_zones.get(uid)
+
+    def remove_nogo_zone(self, zone: Zone):
+        zone.changed.disconnect(self._on_nogo_zone_changed)
+        del self.nogo_zones[zone.uid]
+        self.changed.send(self)
+
+    def _on_nogo_zone_changed(self, zone, *args):
+        self.changed.send(self)
+
     def _on_machine_hours_changed(self, machine_hours, *args):
         """
         Handle machine hours changes and propagate to machine changed
@@ -1121,6 +1139,7 @@ class Machine:
                 "rotary_modules": [
                     rm.to_dict() for rm in self.rotary_modules.values()
                 ],
+                "nogo_zones": [z.to_dict() for z in self.nogo_zones.values()],
                 "hookmacros": {
                     trigger.name: macro.to_dict()
                     for trigger, macro in self.hookmacros.items()
@@ -1319,6 +1338,8 @@ class Machine:
             ma.add_camera(Camera.from_dict(obj))
         for obj in ma_data.get("rotary_modules", []):
             ma.add_rotary_module(RotaryModule.from_dict(obj))
+        for obj in ma_data.get("nogo_zones", []):
+            ma.add_nogo_zone(Zone.from_dict(obj))
         speeds = ma_data.get("speeds", {})
         ma.max_cut_speed = speeds.get("max_cut_speed", ma.max_cut_speed)
         ma.max_travel_speed = speeds.get(

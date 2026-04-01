@@ -109,6 +109,15 @@ class MainToolbar(Gtk.Box):
         self.show_travel_button.set_action_name("win.toggle_travel_view")
         self.append(self.show_travel_button)
 
+        self.show_nogo_zones_button = Gtk.ToggleButton()
+        self.show_nogo_zones_button.set_child(get_icon("block-symbolic"))
+        self.show_nogo_zones_button.set_active(True)
+        self.show_nogo_zones_button.set_tooltip_text(
+            _("Toggle no-go zone visibility")
+        )
+        self.show_nogo_zones_button.set_action_name("win.show_nogo_zones")
+        self.append(self.show_nogo_zones_button)
+
         # Add a button to open the 3D preview window.
         view_3d_button = Gtk.ToggleButton(child=get_icon("3d-symbolic"))
         view_3d_button.set_action_name("win.show_3d_view")

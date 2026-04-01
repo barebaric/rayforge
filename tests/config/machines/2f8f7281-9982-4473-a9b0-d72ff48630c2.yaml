@@ -40,6 +40,25 @@ machine:
     total_hours: 1234.5
   macros: {}
   name: My Laser Cutter
+  nogo_zones:
+  - enabled: true
+    name: Left Edge
+    params:
+      h: 60.0
+      w: 15.0
+      x: 0.0
+      y: 20.0
+    shape: rect
+    uid: a1b2c3d4-0001-4000-8000-000000000001
+  - enabled: false
+    name: Cable Guard
+    params:
+      h: 25.0
+      w: 30.0
+      x: 100.0
+      y: 0.0
+    shape: rect
+    uid: a1b2c3d4-0002-4000-8000-000000000002
   origin: bottom_left
   reverse_x_axis: false
   reverse_y_axis: false

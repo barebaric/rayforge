@@ -30,6 +30,7 @@ from .elements.axis_extent_frame import (
     AxisExtentFrameElement,
     WorkareaBackgroundElement,
 )
+from .elements.nogo_zone import NogoZoneElement
 from .elements.camera_image import CameraImageElement
 from .elements.dot import DotElement
 from .elements.group import GroupElement
@@ -92,6 +93,9 @@ class WorkSurface(WorldSurface):
 
         # Click-to-zero mode state
         self._click_to_zero_mode = False
+
+        self._nogo_zone_elements: Dict[str, NogoZoneElement] = {}
+        self._nogo_zones_visible = True
 
         # Initialize the base WorldSurface with machine dimensions
         super().__init__(
@@ -862,6 +866,8 @@ class WorkSurface(WorldSurface):
             if isinstance(element, AxisExtentFrameElement):
                 # Extent frame is above camera but below everything else
                 return -1.5
+            if isinstance(element, NogoZoneElement):
+                return -1.4
             if isinstance(element, RotarySurfaceElement):
                 # Rotary surface is above extent frame but below stock
                 return -1.25
@@ -883,6 +889,7 @@ class WorkSurface(WorldSurface):
                 (
                     CameraImageElement,
                     DotElement,
+                    NogoZoneElement,
                     WorkOriginElement,
                     AxisExtentFrameElement,
                 ),
@@ -911,6 +918,12 @@ class WorkSurface(WorldSurface):
         # Find the WorkPieceElements and toggle their base image
         for wp_elem in self.find_by_type(WorkPieceElement):
             cast(WorkPieceElement, wp_elem).set_base_image_visible(visible)
+        self.queue_draw()
+
+    def set_show_nogo_zones(self, visible: bool):
+        self._nogo_zones_visible = visible
+        for elem in self._nogo_zone_elements.values():
+            elem.set_visible(visible and elem.data.enabled)
         self.queue_draw()
 
     def set_camera_controllers(self, controllers: List[CameraController]):
@@ -1000,6 +1013,7 @@ class WorkSurface(WorldSurface):
         else:
             self._update_extent_frame()
             self._sync_camera_elements()
+            self._sync_nogo_zone_elements()
             self._on_wcs_updated(machine)
 
     def reset_view(self):
@@ -1055,6 +1069,7 @@ class WorkSurface(WorldSurface):
         new_ratio = width_mm / height_mm if height_mm > 0 else 1.0
         self.aspect_ratio_changed.send(self, ratio=new_ratio)
         self._sync_camera_elements()
+        self._sync_nogo_zone_elements()
         self._on_wcs_updated(self.machine)
         self._update_pipeline_view_context()
 
@@ -1097,6 +1112,31 @@ class WorkSurface(WorldSurface):
         )
         self._workarea_bg_element.set_pos(float(ml), float(mb))
         self._workarea_bg_element.set_visible(True)
+
+        self.queue_draw()
+
+    def _sync_nogo_zone_elements(self):
+        if not self.machine:
+            for elem in self._nogo_zone_elements.values():
+                elem.remove()
+            self._nogo_zone_elements.clear()
+            return
+
+        current_uids = set(self.machine.nogo_zones.keys())
+        existing_uids = set(self._nogo_zone_elements.keys())
+
+        for uid in existing_uids - current_uids:
+            self._nogo_zone_elements.pop(uid).remove()
+
+        for uid, zone in self.machine.nogo_zones.items():
+            if uid in self._nogo_zone_elements:
+                elem = self._nogo_zone_elements[uid]
+                elem._update_from_zone()
+                elem.set_visible(self._nogo_zones_visible and zone.enabled)
+            else:
+                elem = NogoZoneElement(zone)
+                self._nogo_zone_elements[uid] = elem
+                self.root.add(elem)
 
         self.queue_draw()
 

@@ -41,6 +41,7 @@ machine:
       name: New Macro
       uid: 5344776a-cdf7-4637-ac3d-af19f00932de
   name: Sculpfun iCube
+  nogo_zones: []
   origin: bottom_left
   reverse_x_axis: false
   reverse_y_axis: false

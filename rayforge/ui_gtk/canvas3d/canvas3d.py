@@ -37,6 +37,7 @@ from .shaders import (
 )
 from .sphere_renderer import SphereRenderer
 from .texture_renderer import TextureArtifactRenderer
+from .zone_renderer import ZoneRenderer
 
 
 if TYPE_CHECKING:
@@ -288,32 +289,34 @@ class Canvas3D(Gtk.GLArea):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.context = context
+        self._context = context
         self._doc_editor = doc_editor
-        self.width_mm = width_mm
-        self.depth_mm = depth_mm
-        self.x_right = x_right
-        self.y_down = y_down
-        self.x_negative = x_negative
-        self.y_negative = y_negative
+        self._width_mm = width_mm
+        self._depth_mm = depth_mm
+        self._x_right = x_right
+        self._y_down = y_down
+        self._x_negative = x_negative
+        self._y_negative = y_negative
         self._extent_frame = extent_frame
 
         self.camera: Optional[Camera] = None
-        self.main_shader: Optional[Shader] = None
-        self.text_shader: Optional[Shader] = None
-        self.axis_renderer: Optional[AxisRenderer3D] = None
-        self.ops_renderer_flat: Optional[OpsRenderer] = None
-        self.ops_renderer_rotary: Optional[OpsRenderer] = None
-        self.sphere_renderer: Optional[SphereRenderer] = None
-        self.texture_renderer: Optional[TextureArtifactRenderer] = None
-        self.texture_shader: Optional[Shader] = None
+        self._main_shader: Optional[Shader] = None
+        self._text_shader: Optional[Shader] = None
+        self._axis_renderer: Optional[AxisRenderer3D] = None
+        self._ops_renderer_flat: Optional[OpsRenderer] = None
+        self._ops_renderer_rotary: Optional[OpsRenderer] = None
+        self._sphere_renderer: Optional[SphereRenderer] = None
+        self._texture_renderer: Optional[TextureArtifactRenderer] = None
+        self._texture_shader: Optional[Shader] = None
         self._cylinder_renderers: Dict[float, CylinderRenderer] = {}
         self._model_renderers: List[Tuple[ModelRenderer, np.ndarray]] = []
+        self._zone_renderer: Optional[ZoneRenderer] = None
         self._had_rotary_layers = False
         self._scene_preparation_task: Optional[Task] = None
         self._scene_prep_cancel = threading.Event()
         self._scene_vtx_cache: Optional[Tuple[VertexGroup, VertexGroup]] = None
         self._show_travel_moves = False
+        self._show_nogo_zones = True
         self._is_orbiting = False
         self._is_z_rotating = False
         self._gl_initialized = False
@@ -324,12 +327,12 @@ class Canvas3D(Gtk.GLArea):
         translate_mat = np.identity(4, dtype=np.float32)
         scale_mat = np.identity(4, dtype=np.float32)
 
-        if self.y_down:
-            translate_mat[1, 3] = self.depth_mm
+        if self._y_down:
+            translate_mat[1, 3] = self._depth_mm
             scale_mat[1, 1] = -1.0
 
-        if self.x_right:
-            translate_mat[0, 3] = self.width_mm
+        if self._x_right:
+            translate_mat[0, 3] = self._width_mm
             scale_mat[0, 0] = -1.0
 
         self._model_matrix = translate_mat @ scale_mat
@@ -365,7 +368,7 @@ class Canvas3D(Gtk.GLArea):
                 self._on_pipeline_state_changed
             )
         # Connect to machine for WCS updates
-        machine = self.context.machine
+        machine = self._context.machine
         if machine:
             machine.wcs_updated.connect(self._on_wcs_updated)
             machine.changed.connect(self._on_wcs_updated)
@@ -502,7 +505,7 @@ class Canvas3D(Gtk.GLArea):
             return
         logger.info("Resetting to top view.")
         # The camera class now handles all orientation logic internally.
-        self.camera.set_top_view(self.width_mm, self.depth_mm)
+        self.camera.set_top_view(self._width_mm, self._depth_mm)
 
         # A view reset can interrupt a drag operation, leaving stale state.
         self._clear_drag_state()
@@ -513,7 +516,7 @@ class Canvas3D(Gtk.GLArea):
         if not self.camera:
             return
         logger.info("Resetting to front view.")
-        self.camera.set_front_view(self.width_mm, self.depth_mm)
+        self.camera.set_front_view(self._width_mm, self._depth_mm)
         # A view reset can interrupt a drag operation, leaving stale state.
         self._clear_drag_state()
         self.queue_render()
@@ -523,7 +526,7 @@ class Canvas3D(Gtk.GLArea):
         if not self.camera:
             return
         logger.info("Resetting to isometric view.")
-        self.camera.set_iso_view(self.width_mm, self.depth_mm)
+        self.camera.set_iso_view(self._width_mm, self._depth_mm)
 
         # A view reset can interrupt a drag operation, leaving stale state.
         self._clear_drag_state()
@@ -545,7 +548,7 @@ class Canvas3D(Gtk.GLArea):
             self.get_height(),
         )
 
-        self.sphere_renderer = SphereRenderer(1.0, 16, 32)
+        self._sphere_renderer = SphereRenderer(1.0, 16, 32)
         self.reset_view_front()
         self._update_theme_and_colors()
         self.update_scene_from_doc()
@@ -557,7 +560,7 @@ class Canvas3D(Gtk.GLArea):
             self.pipeline.processing_state_changed.disconnect(
                 self._on_pipeline_state_changed
             )
-        machine = self.context.machine
+        machine = self._context.machine
         if machine:
             machine.wcs_updated.disconnect(self._on_wcs_updated)
             machine.changed.disconnect(self._on_wcs_updated)
@@ -565,26 +568,28 @@ class Canvas3D(Gtk.GLArea):
         try:
             if self._scene_preparation_task:
                 self._scene_preparation_task.cancel()
-            if self.axis_renderer:
-                self.axis_renderer.cleanup()
-            if self.ops_renderer_flat:
-                self.ops_renderer_flat.cleanup()
-            if self.ops_renderer_rotary:
-                self.ops_renderer_rotary.cleanup()
-            if self.sphere_renderer:
-                self.sphere_renderer.cleanup()
-            if self.texture_renderer:
-                self.texture_renderer.cleanup()
+            if self._axis_renderer:
+                self._axis_renderer.cleanup()
+            if self._ops_renderer_flat:
+                self._ops_renderer_flat.cleanup()
+            if self._ops_renderer_rotary:
+                self._ops_renderer_rotary.cleanup()
+            if self._sphere_renderer:
+                self._sphere_renderer.cleanup()
+            if self._texture_renderer:
+                self._texture_renderer.cleanup()
+            if self._zone_renderer:
+                self._zone_renderer.cleanup()
             for renderer in self._cylinder_renderers.values():
                 renderer.cleanup()
             for renderer, _ in self._model_renderers:
                 renderer.cleanup()
-            if self.main_shader:
-                self.main_shader.cleanup()
-            if self.text_shader:
-                self.text_shader.cleanup()
-            if self.texture_shader:
-                self.texture_shader.cleanup()
+            if self._main_shader:
+                self._main_shader.cleanup()
+            if self._text_shader:
+                self._text_shader.cleanup()
+            if self._texture_shader:
+                self._texture_shader.cleanup()
         finally:
             self._gl_initialized = False
 
@@ -597,11 +602,13 @@ class Canvas3D(Gtk.GLArea):
             GL.glEnable(GL.GL_BLEND)
             GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 
-            self.main_shader = Shader(
+            self._main_shader = Shader(
                 SIMPLE_VERTEX_SHADER, SIMPLE_FRAGMENT_SHADER
             )
-            self.text_shader = Shader(TEXT_VERTEX_SHADER, TEXT_FRAGMENT_SHADER)
-            self.texture_shader = Shader(
+            self._text_shader = Shader(
+                TEXT_VERTEX_SHADER, TEXT_FRAGMENT_SHADER
+            )
+            self._texture_shader = Shader(
                 TEXTURE_VERTEX_SHADER, TEXTURE_FRAGMENT_SHADER
             )
 
@@ -620,29 +627,31 @@ class Canvas3D(Gtk.GLArea):
                     font_family = font_desc.get_family()
                     logger.debug(f"Pango normalized font to {font_family}")
 
-            self.axis_renderer = AxisRenderer3D(
-                self.width_mm, self.depth_mm, font_family=font_family
+            self._axis_renderer = AxisRenderer3D(
+                self._width_mm, self._depth_mm, font_family=font_family
             )
             if self._extent_frame is not None:
                 fx, fy, fw, fh = self._extent_frame
                 ml = -fx
                 mb = -fy
-                mt = fh - self.depth_mm - mb
-                mr = fw - self.width_mm - ml
-                if self.x_right:
+                mt = fh - self._depth_mm - mb
+                mr = fw - self._width_mm - ml
+                if self._x_right:
                     fx = -mr
-                if self.y_down:
+                if self._y_down:
                     fy = -mt
-                self.axis_renderer.set_extent_frame(fx, fy, fw, fh, show=True)
-            self.axis_renderer.init_gl()
-            self.ops_renderer_flat = OpsRenderer()
-            self.ops_renderer_flat.init_gl()
-            self.ops_renderer_rotary = OpsRenderer()
-            self.ops_renderer_rotary.init_gl()
-            self.texture_renderer = TextureArtifactRenderer()
-            self.texture_renderer.init_gl()
-            if self.sphere_renderer:
-                self.sphere_renderer.init_gl()
+                self._axis_renderer.set_extent_frame(fx, fy, fw, fh, show=True)
+            self._axis_renderer.init_gl()
+            self._ops_renderer_flat = OpsRenderer()
+            self._ops_renderer_flat.init_gl()
+            self._ops_renderer_rotary = OpsRenderer()
+            self._ops_renderer_rotary.init_gl()
+            self._texture_renderer = TextureArtifactRenderer()
+            self._texture_renderer.init_gl()
+            if self._sphere_renderer:
+                self._sphere_renderer.init_gl()
+            self._zone_renderer = ZoneRenderer()
+            self._zone_renderer.init_gl()
 
             self._gl_initialized = True
         except Exception as e:
@@ -653,14 +662,14 @@ class Canvas3D(Gtk.GLArea):
         """
         Resolves the ColorSet and updates other theme-dependent elements.
         """
-        if not self.axis_renderer or not self.texture_renderer:
+        if not self._axis_renderer or not self._texture_renderer:
             return
 
         resolver = GtkColorResolver(self)
         self._color_set = resolver.resolve(self._color_spec)
 
         if self._color_set:
-            self.texture_renderer.update_color_lut(
+            self._texture_renderer.update_color_lut(
                 self._color_set.get_lut("engrave")
             )
 
@@ -689,10 +698,10 @@ class Canvas3D(Gtk.GLArea):
             grid_color = fg_rgba.red, fg_rgba.green, fg_rgba.blue, 0.5
             bg_plane_color = fg_rgba.red, fg_rgba.green, fg_rgba.blue, 0.25
 
-            self.axis_renderer.set_background_color(bg_plane_color)
-            self.axis_renderer.set_axis_color(axis_color)
-            self.axis_renderer.set_label_color(axis_color)
-            self.axis_renderer.set_grid_color(grid_color)
+            self._axis_renderer.set_background_color(bg_plane_color)
+            self._axis_renderer.set_axis_color(axis_color)
+            self._axis_renderer.set_label_color(axis_color)
+            self._axis_renderer.set_grid_color(grid_color)
 
         self._update_laser_colors()
         self._theme_is_dirty = False
@@ -704,7 +713,7 @@ class Canvas3D(Gtk.GLArea):
         This builds per-laser color sets using the machine's laser list
         and the current theme colors for travel/zero_power.
         """
-        machine = self.context.machine
+        machine = self._context.machine
         if not machine or not self._color_set:
             self._laser_color_sets = {}
             return
@@ -766,62 +775,77 @@ class Canvas3D(Gtk.GLArea):
             mvp_matrix_ui_gl = mvp_matrix_ui.T
             mvp_matrix_scene_gl = mvp_matrix_scene.T
 
-            if self.axis_renderer and self.main_shader and self.text_shader:
-                self.axis_renderer.render(
-                    self.main_shader,
-                    self.text_shader,
+            if self._axis_renderer and self._main_shader and self._text_shader:
+                self._axis_renderer.render(
+                    self._main_shader,
+                    self._text_shader,
                     mvp_matrix_scene_gl,  # Pass the final grid MVP
                     mvp_matrix_ui_gl,  # For text (no model/WCS transform)
                     view_matrix,
                     self._model_matrix,
                     origin_offset_mm=self._wcs_offset_mm,
-                    x_right=self.x_right,
-                    y_down=self.y_down,
-                    x_negative=self.x_negative,
-                    y_negative=self.y_negative,
+                    x_right=self._x_right,
+                    y_down=self._y_down,
+                    x_negative=self._x_negative,
+                    y_negative=self._y_negative,
                 )
 
-            if self.ops_renderer_flat and self.main_shader:
-                self.ops_renderer_flat.render(
-                    self.main_shader,
+            machine = self._context.machine
+            margin_shift = np.identity(4, dtype=np.float32)
+            if machine:
+                ml, _, _, mb = machine.work_margins
+                margin_shift[0, 3] = -ml
+                margin_shift[1, 3] = -mb
+
+            if (
+                self._zone_renderer
+                and self._main_shader
+                and self._show_nogo_zones
+            ):
+                zone_mvp_gl = (mvp_matrix_ui @ margin_shift).T
+                self._zone_renderer.render(self._main_shader, zone_mvp_gl)
+
+            if self._ops_renderer_flat and self._main_shader:
+                self._ops_renderer_flat.render(
+                    self._main_shader,
                     mvp_matrix_ui_gl,
                     colors=self._color_set,
                     show_travel_moves=self._show_travel_moves,
                 )
 
-            if self.ops_renderer_rotary and self.main_shader:
+            if self._ops_renderer_rotary and self._main_shader:
                 # Rotary vertices are in Local Cylinder Space,
                 # drawn via Grid Space.
-                self.ops_renderer_rotary.render(
-                    self.main_shader,
+                self._ops_renderer_rotary.render(
+                    self._main_shader,
                     mvp_matrix_scene_gl,
                     colors=self._color_set,
                     show_travel_moves=self._show_travel_moves,
                 )
 
             for renderer in self._cylinder_renderers.values():
-                if self.main_shader:
-                    renderer.render(self.main_shader, mvp_matrix_scene_gl)
+                if self._main_shader:
+                    renderer.render(self._main_shader, mvp_matrix_scene_gl)
 
             for renderer, module_transform in self._model_renderers:
-                if self.main_shader:
-                    combined = mvp_matrix_ui @ module_transform
+                if self._main_shader:
+                    combined = mvp_matrix_ui @ margin_shift @ module_transform
                     renderer.render(
-                        self.main_shader,
+                        self._main_shader,
                         combined.T,
-                        model_matrix=module_transform,
+                        model_matrix=margin_shift @ module_transform,
                         camera_position=self.camera.position,
                     )
 
-            if self.texture_renderer and self.texture_shader:
+            if self._texture_renderer and self._texture_shader:
                 # Always call both; each method filters internally
                 # based on instance rotary metadata.
-                self.texture_renderer.render(
-                    mvp_matrix_ui, self.texture_shader
+                self._texture_renderer.render(
+                    mvp_matrix_ui, self._texture_shader
                 )
-                self.texture_renderer.render_cylinder(
+                self._texture_renderer.render_cylinder(
                     mvp_matrix_scene,
-                    self.texture_shader,
+                    self._texture_shader,
                 )
 
         except Exception as e:
@@ -1028,16 +1052,22 @@ class Canvas3D(Gtk.GLArea):
         self._show_travel_moves = visible
         self._update_renderer_from_cache()
 
+    def set_show_nogo_zones(self, visible: bool):
+        if self._show_nogo_zones == visible:
+            return
+        self._show_nogo_zones = visible
+        self.queue_render()
+
     def _on_scene_prepared(self, task: Task):
         """
         Callback for when the background scene preparation task is finished.
         """
         if task.get_status() != "completed":
             self._scene_vtx_cache = None
-            if self.ops_renderer_flat:
-                self.ops_renderer_flat.clear()
-            if self.ops_renderer_rotary:
-                self.ops_renderer_rotary.clear()
+            if self._ops_renderer_flat:
+                self._ops_renderer_flat.clear()
+            if self._ops_renderer_rotary:
+                self._ops_renderer_rotary.clear()
             logger.error(
                 "[CANVAS3D] Scene preparation task failed or was cancelled."
             )
@@ -1057,15 +1087,15 @@ class Canvas3D(Gtk.GLArea):
         Feeds flat and rotary vertex groups to their respective OpsRenderers.
         """
         if not self._scene_vtx_cache:
-            if self.ops_renderer_flat:
-                self.ops_renderer_flat.clear()
-            if self.ops_renderer_rotary:
-                self.ops_renderer_rotary.clear()
+            if self._ops_renderer_flat:
+                self._ops_renderer_flat.clear()
+            if self._ops_renderer_rotary:
+                self._ops_renderer_rotary.clear()
             logger.debug("[CANVAS3D] No vertex cache to update renderer from.")
             self.queue_render()
             return
 
-        if not self.ops_renderer_flat or not self.ops_renderer_rotary:
+        if not self._ops_renderer_flat or not self._ops_renderer_rotary:
             return
 
         logger.debug("[CANVAS3D] Updating renderers from vertex cache.")
@@ -1094,8 +1124,8 @@ class Canvas3D(Gtk.GLArea):
             # This part runs on the main thread and is fast (just GPU uploads)
             renderer.update_from_vertex_data(pv_final, pc_final, tv_final)
 
-        _apply_group(self.ops_renderer_flat, flat_group)
-        _apply_group(self.ops_renderer_rotary, rotary_group)
+        _apply_group(self._ops_renderer_flat, flat_group)
+        _apply_group(self._ops_renderer_rotary, rotary_group)
         self.queue_render()
 
     def _update_cylinder_renderers(self):
@@ -1106,14 +1136,14 @@ class Canvas3D(Gtk.GLArea):
         """
         self.make_current()
 
-        machine = self.context.machine
+        machine = self._context.machine
 
         desired_diameters: Dict[float, bool] = {}
         for layer in self.doc.layers:
             if layer.rotary_enabled:
                 desired_diameters[layer.rotary_diameter] = True
 
-        max_length = self.width_mm
+        max_length = self._width_mm
         if machine:
             default_rm = machine.get_default_rotary_module()
             if default_rm:
@@ -1151,12 +1181,22 @@ class Canvas3D(Gtk.GLArea):
             r.cleanup()
         self._model_renderers.clear()
 
+    def _update_zone_renderer(self):
+        if not self._zone_renderer:
+            return
+        machine = self._context.machine
+        if not machine:
+            return
+        self.make_current()
+        zones = list(machine.nogo_zones.values())
+        self._zone_renderer.update_zones(zones)
+
     def _update_model_renderers(self):
         """Rebuild renderers for modules referenced by rotary layers."""
         self.make_current()
         self._clear_model_renderers()
 
-        machine = self.context.machine
+        machine = self._context.machine
         if not machine:
             return
 
@@ -1181,7 +1221,7 @@ class Canvas3D(Gtk.GLArea):
             logger.debug(
                 "Model renderers: resolving model_id=%s", module.model_id
             )
-            resolved = self.context.model_mgr.resolve(
+            resolved = self._context.model_mgr.resolve(
                 Model(name="", path=Path(module.model_id))
             )
             if resolved is None:
@@ -1212,9 +1252,9 @@ class Canvas3D(Gtk.GLArea):
         Updates the entire scene content from the document. This is the main
         entry point for refreshing the 3D view.
         """
-        if not self.ops_renderer_flat or not self.ops_renderer_rotary:
+        if not self._ops_renderer_flat or not self._ops_renderer_rotary:
             return
-        if not self.texture_renderer:
+        if not self._texture_renderer:
             return
 
         t_update_start = time.perf_counter()
@@ -1235,6 +1275,7 @@ class Canvas3D(Gtk.GLArea):
                 self._update_model_renderers()
             else:
                 self._clear_model_renderers()
+            self._update_zone_renderer()
         if self._had_rotary_layers and not any_rotary and self.camera:
             self.reset_view_front()
         self._had_rotary_layers = any_rotary
@@ -1246,7 +1287,7 @@ class Canvas3D(Gtk.GLArea):
         world_to_grid = np.identity(4, dtype=np.float32)
         world_to_cyl_local = np.identity(4, dtype=np.float32)
 
-        machine = self.context.machine
+        machine = self._context.machine
         if machine:
             ml, mt, mr, mb = machine.work_margins
             world_to_visual[0, 3] = -ml
@@ -1272,12 +1313,12 @@ class Canvas3D(Gtk.GLArea):
             world_to_cyl_local = grid_to_cyl @ world_to_grid
 
         # 2. Handle texture instances immediately on the main thread (fast)
-        self.texture_renderer.clear()
+        self._texture_renderer.clear()
         for item in scene_description.render_items:
             if not item.artifact_handle:
                 continue
 
-            artifact = self.context.artifact_store.get(item.artifact_handle)
+            artifact = self._context.artifact_store.get(item.artifact_handle)
             if isinstance(artifact, StepRenderArtifact):
                 item_color_set = self._laser_color_sets.get(
                     item.laser_uid, self._color_set
@@ -1297,7 +1338,7 @@ class Canvas3D(Gtk.GLArea):
                             world_to_visual @ tex_instance.world_transform
                         )
 
-                    self.texture_renderer.add_instance(
+                    self._texture_renderer.add_instance(
                         tex_instance.texture_data,
                         adjusted_transform,
                         color_lut=engrave_lut,
@@ -1332,7 +1373,7 @@ class Canvas3D(Gtk.GLArea):
         """
         task_key = (id(self), "prepare-3d-scene-vertices")
 
-        if self.ops_renderer_flat and self._color_set is not None:
+        if self._ops_renderer_flat and self._color_set is not None:
             if self._scene_preparation_task:
                 self._scene_prep_cancel.set()
                 self._scene_preparation_task.cancel()
@@ -1341,7 +1382,7 @@ class Canvas3D(Gtk.GLArea):
             logger.debug("[CANVAS3D] Scheduling scene preparation task.")
             self._scene_preparation_task = task_mgr.run_thread(
                 prepare_scene_vertices_async,
-                self.context.artifact_store,
+                self._context.artifact_store,
                 scene_description,
                 self._color_set,
                 self._laser_color_sets,

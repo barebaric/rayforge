@@ -37,6 +37,7 @@ TARGETS = {
     "machine-settings:rotary-module": "machine_settings_rotary_module",
     "machine-settings:camera": "machine_settings_camera",
     "machine-settings:maintenance": "machine_settings_maintenance",
+    "machine-settings:nogo-zones": "machine_settings_nogo_zones",
     "material-test": "material_test",
     "step-settings:contour:general": "step_settings",
     "step-settings:contour:post": "step_settings",
