@@ -208,12 +208,12 @@ class ActionManager:
             self.win.on_toggle_travel_view_state_change,
             GLib.Variant.new_boolean(False),
         )
+        config = get_context().config
         self._add_stateful_action(
             "show_nogo_zones",
             self.win.on_show_nogo_zones_state_change,
-            GLib.Variant.new_boolean(True),
+            GLib.Variant.new_boolean(config.show_nogo_zones),
         )
-        config = get_context().config
         self._add_stateful_action(
             "toggle_bottom_panel",
             self.win.on_toggle_bottom_panel_state_change,
@@ -233,7 +233,7 @@ class ActionManager:
         self._add_stateful_action(
             "view_toggle_perspective",
             self.win.on_view_perspective_state_change,
-            GLib.Variant.new_boolean(True),
+            GLib.Variant.new_boolean(config.perspective_mode),
         )
 
         # Edit & Clipboard Actions

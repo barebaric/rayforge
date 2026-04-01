@@ -39,6 +39,8 @@ class Config:
         self.last_opened_project: Optional[Path] = None
         # UI visibility states
         self.bottom_panel_visible: bool = False
+        self.perspective_mode: bool = False
+        self.show_nogo_zones: bool = True
         # Usage tracking consent date: None = not asked, "" = declined,
         # ISO date string = consent given on that date
         self.usage_consent_date: Optional[str] = None
@@ -99,6 +101,20 @@ class Config:
         self.bottom_panel_visible = visible
         self.changed.send(self)
 
+    def set_perspective_mode(self, enabled: bool):
+        """Sets the 3D view perspective mode."""
+        if self.perspective_mode == enabled:
+            return
+        self.perspective_mode = enabled
+        self.changed.send(self)
+
+    def set_show_nogo_zones(self, visible: bool):
+        """Sets the no-go zone visibility state."""
+        if self.show_nogo_zones == visible:
+            return
+        self.show_nogo_zones = visible
+        self.changed.send(self)
+
     def set_import_dpi(self, dpi: float):
         """Sets the default DPI for unitless SVG imports."""
         if self.import_dpi == dpi:
@@ -151,6 +167,8 @@ class Config:
                 else None
             ),
             "bottom_panel_visible": self.bottom_panel_visible,
+            "perspective_mode": self.perspective_mode,
+            "show_nogo_zones": self.show_nogo_zones,
             "usage_consent_date": self.usage_consent_date,
             "import_dpi": self.import_dpi,
         }
@@ -196,6 +214,8 @@ class Config:
 
         # Load UI visibility states
         config.bottom_panel_visible = data.get("bottom_panel_visible", False)
+        config.perspective_mode = data.get("perspective_mode", False)
+        config.show_nogo_zones = data.get("show_nogo_zones", True)
 
         # Load usage tracking consent date
         config.usage_consent_date = data.get("usage_consent_date", None)

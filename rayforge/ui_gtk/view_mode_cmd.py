@@ -7,9 +7,9 @@ from ..usage import get_usage_tracker
 
 if TYPE_CHECKING:
     from gi.repository import Gio
-    from .canvas3d import Canvas3D
-    from ..ui_gtk.mainwindow import MainWindow
     from ..doceditor.editor import DocEditor
+    from ..ui_gtk.mainwindow import MainWindow
+    from .canvas3d import Canvas3D
 
 logger = logging.getLogger(__name__)
 
@@ -102,3 +102,4 @@ class ViewModeCmd:
             canvas3d.camera.is_perspective = is_perspective
             canvas3d.queue_render()
             action.set_state(value)
+            get_context().config.set_perspective_mode(is_perspective)

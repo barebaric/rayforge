@@ -57,7 +57,7 @@ class Camera:
         self.up = np.array(up, dtype=np.float64)
         self.width = int(width)
         self.height = int(height)
-        self.is_perspective = True
+        self.is_perspective = False
 
     def get_view_matrix(self) -> np.ndarray:
         """
