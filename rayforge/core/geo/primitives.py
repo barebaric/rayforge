@@ -743,3 +743,78 @@ def circle_intersects_rect(
     # If it overlaps but is not fully contained by either shape, it must
     # intersect the boundary.
     return True
+
+
+def line_segment_intersects_circle(
+    p1: Point, p2: Point, center: Point, radius: float
+) -> bool:
+    """
+    Checks if a line segment enters a circle (intersects boundary or is
+    entirely inside).
+    """
+    _, _, dist_sq = find_closest_point_on_line_segment(
+        p1, p2, center[0], center[1]
+    )
+    return dist_sq <= radius * radius
+
+
+def arc_intersects_circle(
+    start_pos: Point,
+    end_pos: Point,
+    center: Point,
+    clockwise: bool,
+    circle_center: Point,
+    circle_radius: float,
+) -> bool:
+    """
+    Checks if an arc enters a circle (intersects boundary or is
+    entirely inside).  Uses purely analytical geometry -- no linearization.
+    """
+    radius = math.hypot(start_pos[0] - center[0], start_pos[1] - center[1])
+    if radius < 1e-9:
+        return (
+            math.hypot(
+                start_pos[0] - circle_center[0],
+                start_pos[1] - circle_center[1],
+            )
+            <= circle_radius
+        )
+
+    if (
+        math.hypot(
+            start_pos[0] - circle_center[0],
+            start_pos[1] - circle_center[1],
+        )
+        <= circle_radius
+    ):
+        return True
+    if (
+        math.hypot(
+            end_pos[0] - circle_center[0],
+            end_pos[1] - circle_center[1],
+        )
+        <= circle_radius
+    ):
+        return True
+
+    intersections = circle_circle_intersection(
+        center, radius, circle_center, circle_radius
+    )
+    if intersections:
+        start_angle = math.atan2(
+            start_pos[1] - center[1], start_pos[0] - center[0]
+        )
+        end_angle = math.atan2(end_pos[1] - center[1], end_pos[0] - center[0])
+        for pt in intersections:
+            angle = math.atan2(pt[1] - center[1], pt[0] - center[0])
+            if is_angle_between(angle, start_angle, end_angle, clockwise):
+                return True
+
+    mid = get_arc_midpoint(start_pos, end_pos, center, clockwise)
+    if (
+        math.hypot(mid[0] - circle_center[0], mid[1] - circle_center[1])
+        <= circle_radius
+    ):
+        return True
+
+    return False

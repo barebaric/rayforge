@@ -3,6 +3,7 @@ import math
 from collections import namedtuple
 
 from rayforge.core.geo.primitives import (
+    arc_intersects_circle,
     arc_intersects_rect,
     circle_circle_intersection,
     circle_intersects_rect,
@@ -21,6 +22,7 @@ from rayforge.core.geo.primitives import (
     is_point_on_segment,
     line_intersection,
     line_segment_intersection,
+    line_segment_intersects_circle,
     line_segment_intersects_rect,
     normalize_angle,
     project_point_onto_circle,
@@ -900,3 +902,80 @@ def test_determine_arc_direction_colinear():
     result = determine_arc_direction(center, start, mouse)
     # Cross product is 0, so result should be False
     assert result is False
+
+
+class TestLineSegmentIntersectsCircle:
+    def test_segment_crosses_circle(self):
+        assert line_segment_intersects_circle((0, 0), (10, 0), (5, 0), 2)
+
+    def test_segment_tangent_to_circle(self):
+        assert line_segment_intersects_circle((0, 0), (10, 0), (5, 2), 2)
+
+    def test_segment_outside_circle(self):
+        assert not line_segment_intersects_circle((0, 5), (10, 5), (5, 0), 2)
+
+    def test_segment_entirely_inside_circle(self):
+        assert line_segment_intersects_circle((4, 0), (6, 0), (5, 0), 10)
+
+    def test_one_endpoint_inside(self):
+        assert line_segment_intersects_circle((4, 0), (20, 0), (5, 0), 3)
+
+    def test_zero_length_inside(self):
+        assert line_segment_intersects_circle((5, 0), (5, 0), (5, 0), 1)
+
+    def test_zero_length_outside(self):
+        assert not line_segment_intersects_circle((10, 0), (10, 0), (5, 0), 1)
+
+
+class TestArcIntersectsCircle:
+    def test_arc_start_inside_circle(self):
+        start = (5, 5)
+        end = (5, -5)
+        center = (5, 0)
+        assert arc_intersects_circle(start, end, center, True, (5, 5), 3)
+
+    def test_arc_end_inside_circle(self):
+        start = (10, 0)
+        end = (0, 10)
+        center = (5, 5)
+        assert arc_intersects_circle(start, end, center, False, (0, 10), 3)
+
+    def test_arc_entirely_inside_circle(self):
+        start = (1, 0)
+        end = (0, 1)
+        center = (0, 0)
+        assert arc_intersects_circle(start, end, center, False, (0, 0), 5)
+
+    def test_arc_crosses_circle(self):
+        start = (10, 0)
+        end = (0, 10)
+        center = (0, 0)
+        assert arc_intersects_circle(start, end, center, False, (7, 7), 3)
+
+    def test_arc_outside_circle(self):
+        start = (10, 0)
+        end = (0, 10)
+        center = (0, 0)
+        assert not arc_intersects_circle(
+            start, end, center, False, (-10, -10), 1
+        )
+
+    def test_degenerate_arc_inside(self):
+        start = (3, 0)
+        end = (3, 0)
+        center = (3, 0)
+        assert arc_intersects_circle(start, end, center, True, (3, 0), 5)
+
+    def test_degenerate_arc_outside(self):
+        start = (10, 0)
+        end = (10, 0)
+        center = (10, 0)
+        assert not arc_intersects_circle(start, end, center, True, (0, 0), 1)
+
+    def test_arc_midpoint_inside_circle(self):
+        start = (6, 0)
+        end = (0, 6)
+        center = (0, 0)
+        mid = get_arc_midpoint(start, end, center, False)
+        cc = (mid[0], mid[1])
+        assert arc_intersects_circle(start, end, center, False, cc, 1)
