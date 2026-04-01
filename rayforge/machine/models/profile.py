@@ -8,6 +8,7 @@ from .dialect import get_dialect, replace
 from .machine import Machine, Laser, Origin
 from .macro import Macro, MacroTrigger
 from .rotary_module import RotaryModule
+from .zone import Zone
 
 if TYPE_CHECKING:
     from ...context import RayforgeContext
@@ -73,6 +74,7 @@ class MachineProfile:
     dialect_definition: Optional[DialectDefinition] = None
     rotary_enabled_default: Optional[bool] = None
     rotary_modules: Optional[List[Dict[str, Any]]] = None
+    nogo_zones: Optional[List[Dict[str, Any]]] = None
 
     def create_machine(self, context: "RayforgeContext") -> Machine:
         """
@@ -189,6 +191,10 @@ class MachineProfile:
         if self.rotary_modules:
             for rm_data in self.rotary_modules:
                 m.add_rotary_module(RotaryModule.from_dict(rm_data))
+
+        if self.nogo_zones:
+            for z_data in self.nogo_zones:
+                m.add_nogo_zone(Zone.from_dict(z_data))
 
         return m
 

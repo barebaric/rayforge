@@ -859,6 +859,15 @@ class MainWindow(Adw.ApplicationWindow):
             self.canvas3d.set_show_travel_moves(is_visible)
         action.set_state(value)
 
+    def on_show_nogo_zones_state_change(
+        self, action: Gio.SimpleAction, value: GLib.Variant
+    ):
+        is_visible = value.get_boolean()
+        self.surface.set_show_nogo_zones(is_visible)
+        if self.canvas3d is not None:
+            self.canvas3d.set_show_nogo_zones(is_visible)
+        action.set_state(value)
+
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
         self.view_cmd.set_view_top(self.canvas3d)
