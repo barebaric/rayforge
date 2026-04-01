@@ -77,14 +77,8 @@ class ViewModeCmd:
             win.surface.grab_focus()
 
     def set_view_top(self, canvas3d: Optional["Canvas3D"]):
-        """
-        Sets the 3D view to a top-down orientation (or iso if rotary enabled).
-        """
         if canvas3d:
-            if canvas3d.rotary_enabled:
-                canvas3d.reset_view_iso()
-            else:
-                canvas3d.reset_view_top()
+            canvas3d.reset_view_top()
 
     def set_view_front(self, canvas3d: Optional["Canvas3D"]):
         """Sets the 3D view to a front-facing orientation."""

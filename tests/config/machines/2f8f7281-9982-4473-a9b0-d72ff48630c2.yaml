@@ -7,7 +7,7 @@ machine:
   - 140.0
   cameras: []
   clear_alarm_on_connect: false
-  default_rotary_module_uid: null
+  default_rotary_module_uid: bc50197d-9f95-44c2-be99-18f66026e5b1
   dialect_uid: 9d88d7d1-6853-4e81-a139-cfb4b6abb3cc
   driver: NoDeviceDriver
   driver_args: {}
@@ -64,7 +64,30 @@ machine:
   reverse_y_axis: false
   reverse_z_axis: false
   rotary_enabled_default: false
-  rotary_modules: []
+  rotary_modules:
+  - axis: A
+    default_diameter: 25.0
+    max_workpiece_length: 60.0
+    model_id: chucks/creality-roller.glb
+    name: Creality Roller
+    transform:
+    - 410.0
+    - 0.0
+    - 0.0
+    - 72.0
+    - 0.0
+    - 2.510525938252074e-14
+    - -410.0
+    - 71.0
+    - -0.0
+    - 410.0
+    - 2.510525938252074e-14
+    - 10.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    uid: bc50197d-9f95-44c2-be99-18f66026e5b1
   single_axis_homing_enabled: true
   soft_limits: null
   speeds:
@@ -78,9 +101,9 @@ machine:
     - 0.0
     - 0.0
     G55:
-    - 30.0
-    - 30.0
-    - 0.0
+    - 34.99999999999996
+    - 66.50000000000003
+    - 34.00000000000006
     G56: *id001
     G57: *id001
     G58: *id001

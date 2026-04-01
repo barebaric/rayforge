@@ -9,6 +9,7 @@ from ...core.model import Model
 from ...machine.driver.driver import Axis
 from ...machine.models.machine import Machine
 from ...machine.models.rotary_module import RotaryModule
+from ..canvas3d.model_renderer import get_model_extent
 from ..icons import get_icon
 from ..shared.adwfix import get_spinrow_float
 from ..shared.model_selection_dialog import ModelSelectionDialog
@@ -536,6 +537,15 @@ class RotaryModulePage(TrackedPreferencesPage):
         def on_response(d, response_id):
             if response_id == "select":
                 selected_id = d.get_selected_model_id()
+                if selected_id is not None:
+                    resolved = get_context().model_mgr.resolve(
+                        Model(name="", path=Path(selected_id))
+                    )
+                    if resolved is not None:
+                        extent = get_model_extent(resolved)
+                        if extent and extent > 1e-6:
+                            target = module.default_diameter
+                            module.set_scale(target / extent)
                 module.set_model_id(selected_id)
                 self._update_model_subtitle(module)
                 self.module_list_editor._rebuild()

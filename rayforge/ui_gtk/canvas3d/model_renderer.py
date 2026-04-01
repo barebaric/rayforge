@@ -37,7 +37,13 @@ def _load_mesh_data(path: Path) -> Optional[_CachedModelData]:
 
         loaded = trimesh.load(str(path), file_type="glb")
         if isinstance(loaded, trimesh.Scene):
-            mesh = trimesh.util.concatenate(loaded.geometry.values())
+            meshes = []
+            for node in loaded.graph.nodes_geometry:
+                transform, geom_name = loaded.graph.get(node)
+                geom = loaded.geometry[geom_name]
+                geom = geom.apply_transform(transform)
+                meshes.append(geom)
+            mesh = trimesh.util.concatenate(meshes)
         elif isinstance(loaded, trimesh.Trimesh):
             mesh = loaded
         else:
@@ -71,6 +77,14 @@ def _load_mesh_data(path: Path) -> Optional[_CachedModelData]:
     except Exception as e:
         logger.error("Failed to load model %s: %s", path, e)
         return None
+
+
+def get_model_extent(path: Path) -> Optional[float]:
+    data = _load_mesh_data(path)
+    if data is None:
+        return None
+    bmin, bmax = data.bounds
+    return float(np.max(bmax - bmin))
 
 
 class ModelRenderer(BaseRenderer):

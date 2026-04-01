@@ -26,8 +26,8 @@
       ],
       "visible": true,
       "rotary_enabled": true,
-      "rotary_diameter": 25.0,
-      "rotary_module_uid": null,
+      "rotary_diameter": 35.0,
+      "rotary_module_uid": "bc50197d-9f95-44c2-be99-18f66026e5b1",
       "children": [
         {
           "uid": "813234c6-5c21-4673-9ad7-89fa2c7c6435",
@@ -75,7 +75,7 @@
               ],
               "typelabel": "Contour",
               "visible": true,
-              "selected_laser_uid": "7ebc0ee2-1cdf-4193-81b2-e39de49daeed",
+              "selected_laser_uid": "d9277039-5ccc-456a-b3a6-5054b3c363b0",
               "generated_workpiece_uid": null,
               "applied_recipe_uid": "24101b29-88c8-4796-a573-76a59bffc8ff",
               "capabilities": [
@@ -178,7 +178,7 @@
               ],
               "typelabel": "Engrave",
               "visible": true,
-              "selected_laser_uid": "7ebc0ee2-1cdf-4193-81b2-e39de49daeed",
+              "selected_laser_uid": "d9277039-5ccc-456a-b3a6-5054b3c363b0",
               "generated_workpiece_uid": null,
               "applied_recipe_uid": null,
               "capabilities": [
@@ -260,14 +260,14 @@
           "name": "gradient",
           "matrix": [
             [
-              85.599998,
+              63.92735981539195,
               0.0,
-              28.357316087308007
+              33.232909327443544
             ],
             [
               0.0,
-              53.97999836939253,
-              -10.831251400920436
+              207.8338430020092,
+              -46.833843002009196
             ],
             [
               0.0,
