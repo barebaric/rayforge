@@ -1144,6 +1144,8 @@ class Pipeline:
         for layer in doc.layers:
             if not layer.workflow:
                 continue
+            if not layer.all_workpieces:
+                continue
             for step in layer.workflow.steps:
                 if not step.visible:
                     continue
