@@ -58,6 +58,7 @@ from .project_cmd import ProjectCmd
 from .shared.gtk import get_monitor_geometry
 from .shared.usage_consent_dialog import UsageConsentDialog
 from .task_bar import TaskBar
+from .shared.visibility_overlay import VisibilityOverlay
 from .toolbar import MainToolbar
 from .view_mode_cmd import ViewModeCmd
 
@@ -324,6 +325,11 @@ class MainWindow(Adw.ApplicationWindow):
         # Wrap surface in an overlay to allow preview controls
         self.surface_overlay = Gtk.Overlay()
         self.surface_overlay.set_child(self.surface)
+        self._surface_vis_overlay = VisibilityOverlay(
+            show_workpiece=True,
+            show_camera=bool(config.machine and config.machine.cameras),
+        )
+        self.surface_overlay.add_overlay(self._surface_vis_overlay)
         self.view_stack.add_named(self.surface_overlay, "2d")
 
         # Add a click handler to unfocus when clicking the "dead space" of the
@@ -843,11 +849,6 @@ class MainWindow(Adw.ApplicationWindow):
     ):
         is_visible = value.get_boolean()
         self.surface.set_camera_image_visibility(is_visible)
-        button = self.toolbar.camera_visibility_button
-        if is_visible:
-            button.set_child(self.toolbar.camera_visibility_on_icon)
-        else:
-            button.set_child(self.toolbar.camera_visibility_off_icon)
         action.set_state(value)
 
     def on_toggle_travel_view_state_change(
@@ -868,6 +869,14 @@ class MainWindow(Adw.ApplicationWindow):
             self.canvas3d.set_show_nogo_zones(is_visible)
         action.set_state(value)
         get_context().config.set_show_nogo_zones(is_visible)
+
+    def on_show_models_state_change(
+        self, action: Gio.SimpleAction, value: GLib.Variant
+    ):
+        is_visible = value.get_boolean()
+        if self.canvas3d is not None:
+            self.canvas3d.set_show_models(is_visible)
+        action.set_state(value)
 
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
@@ -1332,7 +1341,13 @@ class MainWindow(Adw.ApplicationWindow):
             y_negative=y_negative,
             extent_frame=extent_frame,
         )
-        self.view_stack.add_named(self.canvas3d, "3d")
+        self._canvas3d_overlay = Gtk.Overlay()
+        self._canvas3d_overlay.set_child(self.canvas3d)
+        self._canvas3d_vis_overlay = VisibilityOverlay(
+            show_workpiece=False, show_models=True
+        )
+        self._canvas3d_overlay.add_overlay(self._canvas3d_vis_overlay)
+        self.view_stack.add_named(self._canvas3d_overlay, "3d")
 
         travel_action = self.action_manager.get_action("toggle_travel_view")
         travel_state = travel_action.get_state()
@@ -1392,6 +1407,10 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update the main WorkSurface to use the new size
         self.surface.set_machine(config.machine)
+
+        # Show/hide camera toggle based on whether machine has cameras
+        has_cameras = bool(config.machine and config.machine.cameras)
+        self._surface_vis_overlay.set_camera_visible(has_cameras)
 
         self.surface.update_from_doc()
         self._update_macros_menu()

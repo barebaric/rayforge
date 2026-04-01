@@ -71,53 +71,6 @@ class MainToolbar(Gtk.Box):
         self.redo_button.set_action_name("win.redo")
         self.append(self.redo_button)
 
-        # Visibility controls
-        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
-        self.append(sep)
-
-        # The visibility button is a ToggleButton linked to a stateful action.
-        # It manages its own icon state by listening to its "toggled" signal.
-        self.visibility_on_icon = get_icon("visibility-on-symbolic")
-        self.visibility_off_icon = get_icon("visibility-off-symbolic")
-        self.visibility_button = Gtk.ToggleButton()
-        self.visibility_button.set_active(True)
-        self.visibility_button.set_child(self.visibility_on_icon)
-        self.visibility_button.set_tooltip_text(
-            _("Toggle workpiece visibility")
-        )
-        self.visibility_button.set_action_name("win.show_workpieces")
-        self.visibility_button.connect("toggled", self._on_visibility_toggled)
-        self.append(self.visibility_button)
-
-        self.camera_visibility_on_icon = get_icon("camera-on-symbolic")
-        self.camera_visibility_off_icon = get_icon("camera-off-symbolic")
-        self.camera_visibility_button = Gtk.ToggleButton()
-        self.camera_visibility_button.set_active(True)
-        self.camera_visibility_button.set_child(self.camera_visibility_on_icon)
-        self.camera_visibility_button.set_tooltip_text(
-            _("Toggle camera image visibility")
-        )
-        self.camera_visibility_button.set_action_name("win.toggle_camera_view")
-        self.append(self.camera_visibility_button)
-
-        self.show_travel_button = Gtk.ToggleButton()
-        self.show_travel_button.set_child(get_icon("travel-path-symbolic"))
-        self.show_travel_button.set_active(False)
-        self.show_travel_button.set_tooltip_text(
-            _("Toggle travel move visibility")
-        )
-        self.show_travel_button.set_action_name("win.toggle_travel_view")
-        self.append(self.show_travel_button)
-
-        self.show_nogo_zones_button = Gtk.ToggleButton()
-        self.show_nogo_zones_button.set_child(get_icon("block-symbolic"))
-        self.show_nogo_zones_button.set_active(True)
-        self.show_nogo_zones_button.set_tooltip_text(
-            _("Toggle no-go zone visibility")
-        )
-        self.show_nogo_zones_button.set_action_name("win.show_nogo_zones")
-        self.append(self.show_nogo_zones_button)
-
         # Add a button to open the 3D preview window.
         view_3d_button = Gtk.ToggleButton(child=get_icon("3d-symbolic"))
         view_3d_button.set_action_name("win.show_3d_view")
@@ -327,14 +280,6 @@ class MainToolbar(Gtk.Box):
         """Handle action registry changes by refreshing arrange menu."""
         self.arrange_actions = self._build_arrange_actions()
         self.arrange_menu_button.update_actions(self.arrange_actions)
-
-    def _on_visibility_toggled(self, button: Gtk.ToggleButton):
-        """Callback to update the visibility icon when the button's
-        state changes for any reason (user click or action state change)."""
-        if button.get_active():
-            button.set_child(self.visibility_on_icon)
-        else:
-            button.set_child(self.visibility_off_icon)
 
     def _on_focus_toggled(self, button: Gtk.ToggleButton):
         """Callback to update the focus icon when the button's
