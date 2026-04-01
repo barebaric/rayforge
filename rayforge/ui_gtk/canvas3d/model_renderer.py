@@ -19,12 +19,40 @@ logger = logging.getLogger(__name__)
 class _CachedModelData:
     positions: np.ndarray
     normals: np.ndarray
+    colors: Optional[np.ndarray]
     faces: np.ndarray
     bounds: Tuple[np.ndarray, np.ndarray]
     triangle_count: int
 
 
 _model_cache: Dict[Path, _CachedModelData] = {}
+
+
+def _extract_color(mesh) -> Optional[np.ndarray]:
+    visual = getattr(mesh, "visual", None)
+    if visual is None:
+        return None
+    try:
+        vc = visual.vertex_colors
+        if vc is not None and len(vc) == len(mesh.vertices):
+            return np.array(vc, dtype=np.float32) / 255.0
+    except Exception:
+        pass
+    try:
+        mat = visual.material
+        base = getattr(mat, "baseColorFactor", None)
+        if base is None:
+            base = getattr(mat, "diffuse", None)
+        if base is not None:
+            c = np.array(base, dtype=np.float32)
+            if c.max() > 1.0:
+                c = c / 255.0
+            if c.shape[0] == 3:
+                c = np.append(c, 1.0)
+            return np.tile(c, (len(mesh.vertices), 1))
+    except Exception:
+        pass
+    return None
 
 
 def _load_mesh_data(path: Path) -> Optional[_CachedModelData]:
@@ -38,14 +66,25 @@ def _load_mesh_data(path: Path) -> Optional[_CachedModelData]:
         loaded = trimesh.load(str(path), file_type="glb")
         if isinstance(loaded, trimesh.Scene):
             meshes = []
+            colors = []
             for node in loaded.graph.nodes_geometry:
                 transform, geom_name = loaded.graph.get(node)
                 geom = loaded.geometry[geom_name]
+                color = _extract_color(geom)
                 geom = geom.apply_transform(transform)
                 meshes.append(geom)
+                if color is not None:
+                    colors.append(color)
             mesh = trimesh.util.concatenate(meshes)
+            has_colors = len(colors) == len(meshes) and sum(
+                c.shape[0] for c in colors
+            ) == len(mesh.vertices)
+            vertex_colors = (
+                np.vstack(colors).astype(np.float32) if has_colors else None
+            )
         elif isinstance(loaded, trimesh.Trimesh):
             mesh = loaded
+            vertex_colors = _extract_color(mesh)
         else:
             logger.error(
                 "Unexpected type from trimesh.load: %s",
@@ -68,6 +107,7 @@ def _load_mesh_data(path: Path) -> Optional[_CachedModelData]:
         data = _CachedModelData(
             positions=positions,
             normals=normals,
+            colors=vertex_colors,
             faces=faces,
             bounds=bounds,
             triangle_count=triangle_count,
@@ -96,7 +136,9 @@ class ModelRenderer(BaseRenderer):
         self._vao: int = 0
         self._vbo_pos: int = 0
         self._vbo_norm: int = 0
+        self._vbo_color: int = 0
         self._vertex_count: int = 0
+        self._has_colors: bool = False
         self._bounds: Optional[Tuple[np.ndarray, np.ndarray]] = None
         self._loaded: bool = False
         self._mesh_data: Optional[_CachedModelData] = None
@@ -111,6 +153,9 @@ class ModelRenderer(BaseRenderer):
         self._normals = self._mesh_data.normals[flat_indices]
         self._vertex_count = len(flat_indices)
         self._bounds = self._mesh_data.bounds
+        if self._mesh_data.colors is not None:
+            self._colors = self._mesh_data.colors[flat_indices]
+            self._has_colors = True
         self._loaded = True
         return True
 
@@ -122,6 +167,8 @@ class ModelRenderer(BaseRenderer):
         self._vao = self._create_vao()
         self._vbo_pos = self._create_vbo()
         self._vbo_norm = self._create_vbo()
+        if self._has_colors:
+            self._vbo_color = self._create_vbo()
 
         GL.glBindVertexArray(self._vao)
 
@@ -134,6 +181,17 @@ class ModelRenderer(BaseRenderer):
         )
         GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
         GL.glEnableVertexAttribArray(0)
+
+        if self._has_colors:
+            GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._vbo_color)
+            GL.glBufferData(
+                GL.GL_ARRAY_BUFFER,
+                self._colors.nbytes,
+                self._colors,
+                GL.GL_STATIC_DRAW,
+            )
+            GL.glVertexAttribPointer(1, 4, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
+            GL.glEnableVertexAttribArray(1)
 
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._vbo_norm)
         GL.glBufferData(
@@ -169,7 +227,7 @@ class ModelRenderer(BaseRenderer):
 
         shader.use()
         shader.set_mat4("uMVP", mvp_matrix)
-        shader.set_float("uUseVertexColor", 0.0)
+        shader.set_float("uUseVertexColor", 1.0 if self._has_colors else 0.0)
         shader.set_vec4("uColor", (0.5, 0.6, 0.7, 1.0))
         shader.set_float("uHasNormals", 1.0)
         shader.set_vec3("uLightDir", light_dir)
