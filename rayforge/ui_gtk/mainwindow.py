@@ -1427,14 +1427,6 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update the 3D canvas to match the new machine.
         if self.canvas3d is not None:
-            # Always switch back to 2D view on machine change for simplicity.
-            if self.view_stack.get_visible_child_name() == "3d":
-                self.view_stack.set_visible_child_name("2d")
-                action = self.action_manager.get_action("show_3d_view")
-                state = action.get_state()
-                if state and state.get_boolean():
-                    action.set_state(GLib.Variant.new_boolean(False))
-
             # Replace the 3D canvas with one configured for the new machine.
             self.view_stack.remove(self.canvas3d)
             extent_frame = None
