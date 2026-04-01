@@ -257,11 +257,15 @@ class RotaryModulePage(TrackedPreferencesPage):
         )
         modules_group.add(self.module_list_editor)
 
-        self.config_group = Adw.PreferencesGroup(
-            title=_("Module Properties"),
-            description=_("Configure the selected module."),
+        self.general_group = Adw.PreferencesGroup(
+            title=_("General"),
         )
-        self.add(self.config_group)
+        self.add(self.general_group)
+
+        self.model_group = Adw.PreferencesGroup(
+            title=_("Model"),
+        )
+        self.add(self.model_group)
 
         self.name_row = Adw.EntryRow(title=_("Name"))
         self.name_row.connect("changed", self._on_name_changed)
@@ -269,7 +273,7 @@ class RotaryModulePage(TrackedPreferencesPage):
         name_focus_ctrl = Gtk.EventControllerFocus()
         name_focus_ctrl.connect("leave", self._on_name_focus_left)
         self.name_row.add_controller(name_focus_ctrl)
-        self.config_group.add(self.name_row)
+        self.general_group.add(self.name_row)
 
         excluded = (Axis.X, Axis.Y)
         valid_axes = sorted(
@@ -289,7 +293,7 @@ class RotaryModulePage(TrackedPreferencesPage):
         self.module_axis_row.connect(
             "notify::selected", self._on_module_axis_changed
         )
-        self.config_group.add(self.module_axis_row)
+        self.general_group.add(self.module_axis_row)
 
         default_diam_adj = Gtk.Adjustment(
             lower=1, upper=10000, step_increment=1, page_increment=10
@@ -303,7 +307,7 @@ class RotaryModulePage(TrackedPreferencesPage):
         self.default_diameter_row.connect(
             "notify::value", self._on_default_diameter_changed
         )
-        self.config_group.add(self.default_diameter_row)
+        self.general_group.add(self.default_diameter_row)
 
         max_len_adj = Gtk.Adjustment(
             lower=1, upper=10000, step_increment=10, page_increment=50
@@ -317,7 +321,7 @@ class RotaryModulePage(TrackedPreferencesPage):
         self.max_workpiece_length_row.connect(
             "notify::value", self._on_max_workpiece_length_changed
         )
-        self.config_group.add(self.max_workpiece_length_row)
+        self.general_group.add(self.max_workpiece_length_row)
 
         self.model_row = Adw.ActionRow(
             title=_("Model"),
@@ -325,7 +329,18 @@ class RotaryModulePage(TrackedPreferencesPage):
         )
         self.model_row.connect("activated", self._on_model_activated)
         self.model_row.add_suffix(get_icon("go-next-symbolic"))
-        self.config_group.add(self.model_row)
+        self.model_group.add(self.model_row)
+
+        self.scale_row = Adw.SpinRow(
+            title=_("Scale"),
+            subtitle=_("Uniform scale factor for the model"),
+            adjustment=Gtk.Adjustment(
+                lower=0.01, upper=1000, step_increment=1, page_increment=10
+            ),
+            digits=2,
+        )
+        self.scale_row.connect("notify::value", self._on_scale_changed)
+        self.model_group.add(self.scale_row)
 
         x_adj = Gtk.Adjustment(
             lower=-10000, upper=10000, step_increment=1, page_increment=10
@@ -337,7 +352,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             digits=2,
         )
         self.x_row.connect("notify::value", self._on_position_changed)
-        self.config_group.add(self.x_row)
+        self.model_group.add(self.x_row)
 
         y_adj = Gtk.Adjustment(
             lower=-10000, upper=10000, step_increment=1, page_increment=10
@@ -349,7 +364,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             digits=2,
         )
         self.y_row.connect("notify::value", self._on_position_changed)
-        self.config_group.add(self.y_row)
+        self.model_group.add(self.y_row)
 
         z_adj = Gtk.Adjustment(
             lower=-10000, upper=10000, step_increment=1, page_increment=10
@@ -361,7 +376,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             digits=2,
         )
         self.z_row.connect("notify::value", self._on_position_changed)
-        self.config_group.add(self.z_row)
+        self.model_group.add(self.z_row)
 
         self.rx_row = Adw.SpinRow(
             title=_("X Rotation"),
@@ -372,7 +387,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             digits=1,
         )
         self.rx_row.connect("notify::value", self._on_rotation_changed)
-        self.config_group.add(self.rx_row)
+        self.model_group.add(self.rx_row)
 
         self.ry_row = Adw.SpinRow(
             title=_("Y Rotation"),
@@ -383,7 +398,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             digits=1,
         )
         self.ry_row.connect("notify::value", self._on_rotation_changed)
-        self.config_group.add(self.ry_row)
+        self.model_group.add(self.ry_row)
 
         self.rz_row = Adw.SpinRow(
             title=_("Z Rotation"),
@@ -394,18 +409,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             digits=1,
         )
         self.rz_row.connect("notify::value", self._on_rotation_changed)
-        self.config_group.add(self.rz_row)
-
-        self.scale_row = Adw.SpinRow(
-            title=_("Scale"),
-            subtitle=_("Uniform scale factor for the model"),
-            adjustment=Gtk.Adjustment(
-                lower=0.01, upper=1000, step_increment=1, page_increment=10
-            ),
-            digits=2,
-        )
-        self.scale_row.connect("notify::value", self._on_scale_changed)
-        self.config_group.add(self.scale_row)
+        self.model_group.add(self.rz_row)
 
         self.module_list_editor.list_box.connect(
             "row-selected", self._on_module_selected
@@ -428,7 +432,8 @@ class RotaryModulePage(TrackedPreferencesPage):
 
     def _on_module_selected(self, listbox, row):
         has_selection = row is not None
-        self.config_group.set_visible(has_selection)
+        for g in (self.general_group, self.model_group):
+            g.set_visible(has_selection)
         if not has_selection:
             return
 
@@ -535,24 +540,30 @@ class RotaryModulePage(TrackedPreferencesPage):
         )
 
         def on_response(d, response_id):
-            if response_id == "select":
-                selected_id = d.get_selected_model_id()
-                if selected_id is not None:
-                    resolved = get_context().model_mgr.resolve(
-                        Model(name="", path=Path(selected_id))
-                    )
-                    if resolved is not None:
-                        extent = get_model_extent(resolved)
-                        if extent and extent > 1e-6:
-                            target = module.default_diameter
-                            module.set_scale(target / extent)
+            if response_id != "select":
+                d.destroy()
+                return
+            selected_id = d.get_selected_model_id()
+            if selected_id != module.model_id:
                 module.set_model_id(selected_id)
-                self._update_model_subtitle(module)
-                self.module_list_editor._rebuild()
+                if selected_id is not None:
+                    self._apply_model_scale(module, selected_id)
+            self._update_model_subtitle(module)
+            self.module_list_editor._rebuild()
             d.destroy()
 
         dialog.connect("response", on_response)
         dialog.present()
+
+    def _apply_model_scale(self, module, model_id):
+        resolved = get_context().model_mgr.resolve(
+            Model(name="", path=Path(model_id))
+        )
+        if resolved is None:
+            return
+        extent = get_model_extent(resolved)
+        if extent and extent > 1e-6:
+            module.set_scale(module.default_diameter / extent)
 
     def _on_position_changed(self, _spinrow, _param):
         if self._is_updating:
