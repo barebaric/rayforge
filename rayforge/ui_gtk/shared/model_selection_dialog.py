@@ -3,7 +3,7 @@
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from gi.repository import Gtk, Adw
 
@@ -32,13 +32,17 @@ class ModelSelectionDialog(Adw.MessageDialog):
         self._category = category
         self._current_model_id = current_model_id
         self._selected_model_id: Optional[str] = None
-        self._row_model_paths: dict[int, str] = {}
+        self._row_paths: Dict[Adw.ActionRow, str] = {}
         self._setup_ui()
 
     def _setup_ui(self):
         self.set_heading(_("Select Model"))
 
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+
+        self._preview_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, spacing=6
+        )
 
         model_mgr = get_context().model_mgr
         category = self._category
@@ -67,32 +71,22 @@ class ModelSelectionDialog(Adw.MessageDialog):
 
         for model in models:
             row = Adw.ActionRow(title=model.name, activatable=True)
-            self._row_model_paths[id(row)] = str(model.path)
+            self._row_paths[row] = str(model.path)
             suffix = model.path.suffix.upper().lstrip(".")
             row.set_subtitle(suffix)
             row.add_prefix(get_icon("image-x-generic-symbolic"))
             self._list_box.append(row)
 
         if self._current_model_id:
-            i = 0
-            while lb_row := self._list_box.get_row_at_index(i):
-                if (
-                    id(lb_row) in self._row_model_paths
-                    and self._row_model_paths[id(lb_row)]
-                    == self._current_model_id
-                ):
-                    self._list_box.select_row(lb_row)
+            for row, path in self._row_paths.items():
+                if path == self._current_model_id:
+                    self._list_box.select_row(row)
                     break
-                i += 1
         else:
             self._list_box.select_row(none_row)
 
         scrolled.set_child(self._list_box)
         content_box.append(scrolled)
-
-        self._preview_box = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL, spacing=6
-        )
         content_box.append(self._preview_box)
 
         self.set_extra_child(content_box)
@@ -112,17 +106,18 @@ class ModelSelectionDialog(Adw.MessageDialog):
             self._selected_model_id = None
             return
 
-        if row is None or id(row) not in self._row_model_paths:
+        model_path = self._row_paths.get(row)
+        if model_path is None:
             self._selected_model_id = None
             return
 
-        self._selected_model_id = self._row_model_paths[id(row)]
+        self._selected_model_id = model_path
 
         if not canvas3d_initialized:
             return
 
         model_mgr = get_context().model_mgr
-        model = Model(name="", path=Path(self._selected_model_id))
+        model = Model(name="", path=Path(model_path))
         resolved = model_mgr.resolve(model)
         if resolved is None:
             return

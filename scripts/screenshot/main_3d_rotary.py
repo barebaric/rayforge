@@ -70,6 +70,9 @@ def main():
 
     time.sleep(0.5)
 
+    run_on_main_thread(lambda: win.view_cmd.set_view_iso(win.canvas3d))
+    time.sleep(0.5)
+
     clear_window_subtitle(win)
     logger.info("Taking screenshot: main-3d-rotary.png")
     take_screenshot("main-3d-rotary.png")
