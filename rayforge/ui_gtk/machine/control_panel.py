@@ -68,12 +68,12 @@ class MachineControlPanel(Gtk.Box):
             self._connect_machine_signals()
 
         self.jog_widget = JogWidget()
-        self.jog_widget.set_size_request(250, -1)
+        self.jog_widget.set_vexpand(True)
+        self.jog_widget.set_valign(Gtk.Align.FILL)
         self.jog_widget.set_hexpand(False)
         self.jog_widget.set_margin_end(12)
         self.jog_widget.set_margin_top(12)
         self.jog_widget.set_margin_bottom(12)
-        self.jog_widget.set_valign(Gtk.Align.CENTER)
         right_hbox.append(self.jog_widget)
 
         if machine and machine_cmd:
