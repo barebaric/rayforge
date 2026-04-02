@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 import uuid
 from typing import Dict, Any, Optional, TYPE_CHECKING, ClassVar
 from gettext import gettext as _
@@ -6,6 +7,8 @@ from blinker import Signal
 from ..context import get_context
 from .geo import Geometry
 from .asset import IAsset
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from .material import Material
@@ -170,3 +173,11 @@ class StockAsset(IAsset):
     def set_hidden(self, value: bool):
         """Setter method for use with undo commands."""
         self.hidden = value
+
+    def get_thumbnail(self, size: int) -> Optional[bytes]:
+        """Returns a PNG thumbnail of the stock geometry."""
+        try:
+            return self.geometry.to_png(size)
+        except Exception:
+            logger.exception("Failed to generate stock thumbnail")
+            return None

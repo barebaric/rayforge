@@ -50,6 +50,13 @@ class IAsset(Protocol):
         """Indicates if this asset should be hidden from UI."""
         return False
 
+    def get_thumbnail(self, size: int) -> Optional[bytes]:
+        """
+        Returns PNG thumbnail bytes at the given max pixel size,
+        or None if no thumbnail is available.
+        """
+        return None
+
 
 @dataclass
 class UnknownAsset(IAsset):
@@ -101,3 +108,7 @@ class UnknownAsset(IAsset):
     def to_dict(self) -> Dict[str, Any]:
         """Serializes UnknownAsset to the original dictionary."""
         return self._data
+
+    def get_thumbnail(self, size: int) -> Optional[bytes]:
+        """No thumbnail available for unknown assets."""
+        return None
