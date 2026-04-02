@@ -51,7 +51,7 @@ from .doceditor.missing_features_dialog import MissingFeaturesDialog
 from .doceditor.property_providers import register_builtin_providers
 from .doceditor.workflow_view import WorkflowView
 from .machine.control_panel import MachineControlPanel
-from .machine.machine_selector import MachineSelector
+from .machine.machine_dropdown import MachineDropdown
 from .machine.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
 from .settings.settings_dialog import SettingsWindow
@@ -182,7 +182,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.header_bar.set_title_widget(window_title)
 
         # Add machine selector to the header bar (right side)
-        self.machine_selector = MachineSelector()
+        self.machine_selector = MachineDropdown()
         self.header_bar.pack_end(self.machine_selector)
 
         # Create a vertical paned for main content and bottom control panel

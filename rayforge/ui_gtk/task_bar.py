@@ -3,8 +3,6 @@ from gi.repository import Gtk, Pango
 from typing import Optional, Dict, Any
 from gettext import gettext as _
 from blinker import Signal
-from .machine.connection_status_widget import ConnectionStatusWidget
-from .machine.status_widget import MachineStatusWidget
 from ..machine.models.machine import Machine
 from .shared.progress_bar import ProgressBar
 
@@ -44,23 +42,6 @@ class TaskBar(Gtk.Box):
         status_row.set_margin_start(12)
         status_row.set_margin_end(12)
         self.append(status_row)
-
-        # --- Left Column (Start Widget) ---
-        left_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=3)
-        status_row.set_start_widget(left_box)
-
-        label = Gtk.Label()
-        label.set_markup(_("<b>Machine:</b>"))
-        left_box.append(label)
-        self.machine_status_widget = MachineStatusWidget()
-        left_box.append(self.machine_status_widget)
-
-        label = Gtk.Label()
-        label.set_markup(_("<b>Connection:</b>"))
-        label.set_margin_start(12)
-        left_box.append(label)
-        self.connection_status_widget = ConnectionStatusWidget()
-        left_box.append(self.connection_status_widget)
 
         # --- Middle Column (Center Widget) ---
         self.task_message_label = Gtk.Label(
@@ -128,8 +109,7 @@ class TaskBar(Gtk.Box):
         self.task_mgr.tasks_updated.connect(self._on_tasks_updated)
 
     def set_machine(self, machine: Optional[Machine]):
-        self.machine_status_widget.set_machine(machine)
-        self.connection_status_widget.set_machine(machine)
+        pass
 
     def start_live_view(self, is_granular: bool):
         """
