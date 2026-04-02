@@ -60,7 +60,7 @@ class LayerView(Gtk.Box):
 
         # Apply CSS globally, but only once.
         apply_css(css)
-        self.set_margin_start(6)
+        self.set_margin_start(4)
         self.add_css_class("layerview")
 
         self.doc = doc
