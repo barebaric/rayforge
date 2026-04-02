@@ -1,11 +1,12 @@
 import logging
 from gi.repository import Gtk
 from blinker import Signal
-from typing import cast, TYPE_CHECKING
+from typing import cast, Optional, TYPE_CHECKING
 from gettext import gettext as _
 
 from ...core.doc import Doc
 from ...core.layer import Layer
+from ...shared.util.time_format import format_seconds
 from ..shared.draglist import DragListBox
 from .layer_view import LayerView
 from ..shared.expander import ExpanderWithButton
@@ -31,6 +32,11 @@ class LayerListView(ExpanderWithButton):
         self.set_title(_("Workpiece Layers"))
         self.set_expanded(True)
 
+        self.time_estimate_label = Gtk.Label()
+        self.time_estimate_label.add_css_class("expander-subtitle")
+        self.time_estimate_label.set_visible(False)
+        self.suffix_box.prepend(self.time_estimate_label)
+
         self.draglist = DragListBox()
         self.draglist.add_css_class("layer-list-box")
         self.draglist.reordered.connect(self.on_layers_reordered)
@@ -51,6 +57,15 @@ class LayerListView(ExpanderWithButton):
         self.doc = doc
         self._connect_signals()
         self.on_doc_changed(self.doc)
+
+    def set_estimated_time(self, time_seconds: Optional[float]):
+        if time_seconds is None or time_seconds <= 0:
+            self.time_estimate_label.set_visible(False)
+        else:
+            self.time_estimate_label.set_text(
+                "~" + format_seconds(time_seconds, compact=True)
+            )
+            self.time_estimate_label.set_visible(True)
 
     def _connect_signals(self):
         self.doc.updated.connect(self.on_doc_changed)

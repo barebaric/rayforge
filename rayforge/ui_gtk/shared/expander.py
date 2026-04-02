@@ -96,7 +96,9 @@ class Expander(Gtk.Box):
         self.subtitle_label.add_css_class("expander-subtitle")
         label_box.append(self.subtitle_label)
 
-        self.suffix_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.suffix_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, spacing=6
+        )
         header_content_box.append(self.suffix_box)
 
         self.arrow = get_icon("chevron-right-symbolic")

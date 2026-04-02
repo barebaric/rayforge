@@ -57,8 +57,8 @@ from .main_menu import MainMenu
 from .settings.settings_dialog import SettingsWindow
 from .project_cmd import ProjectCmd
 from .shared.gtk import get_monitor_geometry
+from .shared.progress_bar import ProgressBar
 from .shared.usage_consent_dialog import UsageConsentDialog
-from .task_bar import TaskBar
 from .shared.visibility_overlay import VisibilityOverlay
 from .toolbar import MainToolbar
 from .view_mode_cmd import ViewModeCmd
@@ -73,13 +73,11 @@ css = """
     box-shadow: none;
 }
 
-.statusbar {
-    border-radius: 5px;
-    padding-top: 6px;
-}
-
-.statusbar:hover {
-    background-color: alpha(@theme_fg_color, 0.1);
+.status-message-overlay {
+    background-color: @theme_bg_color;
+    border-radius: 6px;
+    padding: 4px 10px;
+    box-shadow: 0 2px 6px alpha(black, 0.15);
 }
 
 .in-header-menubar {
@@ -191,7 +189,21 @@ class MainWindow(Adw.ApplicationWindow):
         self.vertical_paned.set_resize_end_child(False)
         self.vertical_paned.set_shrink_start_child(False)
         self.vertical_paned.set_shrink_end_child(False)
-        vbox.append(self.vertical_paned)
+
+        self._status_overlay = Gtk.Overlay()
+        self._status_overlay.set_child(self.vertical_paned)
+
+        self._status_message_label = Gtk.Label(
+            halign=Gtk.Align.END,
+            valign=Gtk.Align.END,
+            margin_end=12,
+            margin_bottom=6,
+        )
+        self._status_message_label.add_css_class("status-message-overlay")
+        self._status_message_label.set_visible(False)
+        self._status_overlay.add_overlay(self._status_message_label)
+
+        vbox.append(self._status_overlay)
 
         # Create a stack for switching between main view and addon pages
         self.main_stack = Gtk.Stack()
@@ -483,10 +495,14 @@ class MainWindow(Adw.ApplicationWindow):
             "notify::position", self._on_vertical_pane_position_changed
         )
 
-        # Create and add the status monitor widget at the bottom of vbox
-        self.status_monitor = TaskBar(task_mgr)
-        self.status_monitor.log_requested.connect(self.on_status_bar_clicked)
-        vbox.append(self.status_monitor)
+        # Create and add the progress bar at the bottom of vbox
+        self.progress_bar = ProgressBar(task_mgr)
+        gesture = Gtk.GestureClick()
+        gesture.connect(
+            "pressed", lambda *args: self.on_status_bar_clicked(None)
+        )
+        self.progress_bar.add_controller(gesture)
+        vbox.append(self.progress_bar)
 
         self.doc_editor.pipeline.job_time_updated.connect(
             self._on_job_time_updated
@@ -730,15 +746,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.machine_cmd.execute_macro_by_uid(config.machine, macro_uid)
 
     def _on_job_started(self, sender):
-        """Handles the start of a machine job."""
         logger.debug("Job started")
-
-        # Determine which view to show based on the machine's capability
-        is_granular = False
-        config = get_context().config
-        if config.machine:
-            is_granular = config.machine.reports_granular_progress
-        self.status_monitor.start_live_view(is_granular)
+        self.machine_selector.update_eta(None)
         self._update_actions_and_ui()
 
     def _on_addon_state_changed(self, sender, addon_name):
@@ -748,12 +757,13 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_job_progress_updated(self, metrics: dict):
         """Callback for when job progress is updated."""
-        self.status_monitor.update_live_progress(metrics)
+        eta_seconds = metrics.get("eta_seconds")
+        self.machine_selector.update_eta(eta_seconds)
 
     def _on_job_finished(self, sender):
         """Handles the completion of a machine job."""
         logger.debug("Job finished")
-        self.status_monitor.stop_live_view()
+        self.machine_selector.update_eta(None)
 
     def _on_job_future_done(self, future: Future):
         """Callback for when the job submission task completes or fails."""
@@ -765,7 +775,7 @@ class MainWindow(Adw.ApplicationWindow):
             # If the submission failed, the driver's 'job_finished' signal
             # will never fire, so we must stop the live view here to prevent
             # the UI from getting stuck.
-            self.status_monitor.stop_live_view()
+            self.machine_selector.update_eta(None)
 
         # Ensure UI is updated (e.g. Cancel button disabled, others enabled)
         self._update_actions_and_ui()
@@ -1400,9 +1410,6 @@ class MainWindow(Adw.ApplicationWindow):
 
         self._update_canvas3d(config.machine)
 
-        # Update the status monitor to observe the new machine
-        self.status_monitor.set_machine(config.machine)
-
         # Update the control panel to use the new machine
         self.bottom_panel.set_machine(config.machine, self.machine_cmd)
 
@@ -1516,6 +1523,25 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_running_tasks_changed(self, sender, tasks, progress):
         self._update_actions_and_ui()
+        self._update_status_message(tasks)
+
+    def _update_status_message(self, tasks):
+        has_tasks = bool(tasks)
+        self._status_message_label.set_visible(has_tasks)
+
+        if not has_tasks:
+            return
+
+        oldest_task = tasks[0]
+        message = oldest_task.get_message()
+        status_text = message if message is not None else ""
+
+        if status_text and len(tasks) > 1:
+            status_text += _(" (+{tasks} more)").format(tasks=len(tasks) - 1)
+        elif len(tasks) > 1:
+            status_text = _("{tasks} tasks").format(tasks=len(tasks))
+
+        self._status_message_label.set_text(status_text)
 
     def _update_actions_and_ui(self):
         config = get_context().config
@@ -2245,9 +2271,9 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_job_time_updated(self, sender, *, total_seconds):
         """
         Handles the preview_time_updated signal from the pipeline.
-        Updates the status bar with the total estimated time.
+        Updates the layer list header with the total estimated time.
         """
-        self.status_monitor.set_estimated_time(total_seconds)
+        self.layer_list_view.set_estimated_time(total_seconds)
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
         """Handle key press events, ESC to exit simulation mode."""
