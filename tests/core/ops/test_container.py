@@ -8,6 +8,7 @@ from typing import cast
 from rayforge.core.geo.geometry import Geometry
 from rayforge.core.ops import (
     Ops,
+    OpsSection,
     MoveToCommand,
     LineToCommand,
     ArcToCommand,
@@ -19,6 +20,8 @@ from rayforge.core.ops import (
     State,
     MovingCommand,
     SectionType,
+    OpsSectionStartCommand,
+    OpsSectionEndCommand,
     ScanLinePowerCommand,
     SetLaserCommand,
 )
@@ -1456,3 +1459,182 @@ def test_numpy_serialization_round_trip_empty():
     arrays = ops.to_numpy_arrays()
     reconstructed_ops = Ops.from_numpy_arrays(arrays)
     assert reconstructed_ops.is_empty()
+
+
+class TestIterSections:
+    """Tests for Ops.iter_sections()."""
+
+    def test_empty_ops(self):
+        ops = Ops()
+        assert list(ops.iter_sections()) == []
+
+    def test_no_sections(self):
+        ops = Ops()
+        ops.move_to(0, 0)
+        ops.line_to(10, 10)
+        ops.set_power(0.5)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 1
+        assert sections[0].section_type is None
+        assert sections[0].markers == []
+        assert len(sections[0].commands) == 3
+
+    def test_single_section(self):
+        ops = Ops()
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.move_to(0, 0)
+        ops.line_to(10, 10)
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 1
+        assert sections[0].section_type == SectionType.VECTOR_OUTLINE
+        assert len(sections[0].markers) == 2
+        assert isinstance(sections[0].markers[0], OpsSectionStartCommand)
+        assert isinstance(sections[0].markers[1], OpsSectionEndCommand)
+        assert len(sections[0].commands) == 2
+
+    def test_multiple_sections(self):
+        ops = Ops()
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.move_to(0, 0)
+        ops.line_to(10, 0)
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+
+        ops.ops_section_start(SectionType.RASTER_FILL, "wp-1")
+        ops.move_to(0, 5)
+        ops.line_to(10, 5)
+        ops.ops_section_end(SectionType.RASTER_FILL)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 2
+        assert sections[0].section_type == SectionType.VECTOR_OUTLINE
+        assert sections[1].section_type == SectionType.RASTER_FILL
+        assert len(sections[0].commands) == 2
+        assert len(sections[1].commands) == 2
+
+    def test_commands_before_section(self):
+        ops = Ops()
+        ops.set_power(0.8)
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.move_to(0, 0)
+        ops.line_to(10, 10)
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 2
+        assert sections[0].section_type is None
+        assert sections[0].markers == []
+        assert len(sections[0].commands) == 1
+        assert isinstance(sections[0].commands[0], SetPowerCommand)
+        assert sections[1].section_type == SectionType.VECTOR_OUTLINE
+
+    def test_commands_after_section(self):
+        ops = Ops()
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.move_to(0, 0)
+        ops.line_to(10, 10)
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+        ops.set_power(0.5)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 2
+        assert sections[0].section_type == SectionType.VECTOR_OUTLINE
+        assert sections[1].section_type is None
+        assert sections[1].markers == []
+        assert len(sections[1].commands) == 1
+        assert isinstance(sections[1].commands[0], SetPowerCommand)
+
+    def test_commands_between_sections(self):
+        ops = Ops()
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.move_to(0, 0)
+        ops.line_to(5, 0)
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+
+        ops.set_power(0.5)
+
+        ops.ops_section_start(SectionType.RASTER_FILL, "wp-1")
+        ops.move_to(0, 5)
+        ops.line_to(5, 5)
+        ops.ops_section_end(SectionType.RASTER_FILL)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 3
+        assert sections[0].section_type == SectionType.VECTOR_OUTLINE
+        assert sections[1].section_type is None
+        assert sections[1].markers == []
+        assert isinstance(sections[1].commands[0], SetPowerCommand)
+        assert sections[2].section_type == SectionType.RASTER_FILL
+
+    def test_section_markers_preserved(self):
+        ops = Ops()
+        start_cmd = OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, "wp-1")
+        end_cmd = OpsSectionEndCommand(SectionType.VECTOR_OUTLINE)
+        ops.commands.append(start_cmd)
+        ops.move_to(0, 0)
+        ops.line_to(10, 10)
+        ops.commands.append(end_cmd)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 1
+        assert sections[0].markers[0] is start_cmd
+        assert sections[0].markers[1] is end_cmd
+
+    def test_empty_section(self):
+        ops = Ops()
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 1
+        assert sections[0].section_type == SectionType.VECTOR_OUTLINE
+        assert sections[0].commands == []
+        assert len(sections[0].markers) == 2
+
+    def test_consecutive_empty_sections(self):
+        ops = Ops()
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+        ops.ops_section_start(SectionType.RASTER_FILL, "wp-1")
+        ops.ops_section_end(SectionType.RASTER_FILL)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 2
+        assert sections[0].section_type == SectionType.VECTOR_OUTLINE
+        assert sections[0].commands == []
+        assert sections[1].section_type == SectionType.RASTER_FILL
+        assert sections[1].commands == []
+
+    def test_commands_reconstructed_correctly(self):
+        ops = Ops()
+        ops.set_power(1.0)
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.move_to(0, 0)
+        ops.line_to(10, 10)
+        ops.line_to(20, 0)
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+        ops.set_power(0.5)
+
+        sections = list(ops.iter_sections())
+        reconstructed = []
+        for section in sections:
+            if section.section_type is not None:
+                reconstructed.append(section.markers[0])
+                reconstructed.extend(section.commands)
+                if len(section.markers) > 1:
+                    reconstructed.append(section.markers[1])
+            else:
+                reconstructed.extend(section.commands)
+
+        assert reconstructed == ops.commands
+
+    def test_returns_ops_section_namedtuple(self):
+        ops = Ops()
+        ops.move_to(0, 0)
+        section = list(ops.iter_sections())[0]
+        assert isinstance(section, OpsSection)
+        assert hasattr(section, "section_type")
+        assert hasattr(section, "markers")
+        assert hasattr(section, "commands")

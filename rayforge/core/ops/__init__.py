@@ -3,7 +3,7 @@ The ops module contains the core Ops class for representing machine operations
 and the Command classes that define those operations.
 """
 
-from .container import Ops
+from .container import Ops, OpsSection
 from . import flip
 from . import group
 from .commands import (
@@ -34,6 +34,7 @@ from .commands import (
 
 __all__ = [
     "Ops",
+    "OpsSection",
     "flip",
     "group",
     "State",

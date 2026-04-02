@@ -5,6 +5,7 @@ from copy import copy, deepcopy
 from typing import (
     Iterator,
     List,
+    NamedTuple,
     Optional,
     Tuple,
     Generator,
@@ -51,6 +52,14 @@ if TYPE_CHECKING:
     from ..geo.geometry import Geometry
 
 logger = logging.getLogger(__name__)
+
+
+class OpsSection(NamedTuple):
+    """A parsed section of Ops commands, bounded by section markers."""
+
+    section_type: Optional[SectionType]
+    markers: List[Command]
+    commands: List[Command]
 
 
 def _get_total_distance_legacy(commands: List[Command]) -> float:
@@ -396,6 +405,39 @@ class Ops:
 
     def __iter__(self) -> Iterator[Command]:
         return iter(self.commands)
+
+    def iter_sections(self) -> Iterator[OpsSection]:
+        """
+        Iterate over parsed sections of this Ops object.
+
+        Yields OpsSection tuples, each representing either a marked
+        section (bounded by OpsSectionStartCommand/OpsSectionEndCommand)
+        or a run of commands outside any section. Unmarked runs have
+        section_type=None and an empty markers list.
+        """
+        active_type: Optional[SectionType] = None
+        markers: List[Command] = []
+        content: List[Command] = []
+
+        for cmd in self.commands:
+            if isinstance(cmd, OpsSectionStartCommand):
+                if content or markers:
+                    yield OpsSection(active_type, markers, content)
+                    markers = []
+                    content = []
+                active_type = cmd.section_type
+                markers = [cmd]
+            elif isinstance(cmd, OpsSectionEndCommand):
+                markers.append(cmd)
+                yield OpsSection(active_type, markers, content)
+                active_type = None
+                markers = []
+                content = []
+            else:
+                content.append(cmd)
+
+        if content or markers:
+            yield OpsSection(active_type, markers, content)
 
     def __add__(self, ops: Ops) -> Ops:
         result = Ops()

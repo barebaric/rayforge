@@ -1,34 +1,35 @@
 from __future__ import annotations
-import math
+
 import logging
+import math
 from copy import deepcopy
 from enum import auto, Enum
 from typing import (
-    Optional,
-    List,
     Dict,
-    Any,
-    Tuple,
+    List,
+    NamedTuple,
+    Optional,
     Sequence,
+    Tuple,
     TYPE_CHECKING,
 )
+
 from gettext import gettext as _
 
 from rayforge.core.geo.constants import (
-    CMD_TYPE_LINE,
     CMD_TYPE_ARC,
     CMD_TYPE_BEZIER,
+    CMD_TYPE_LINE,
 )
 from rayforge.core.geo.types import Point3D
 from rayforge.core.ops import (
-    Ops,
     Command,
-    SectionType,
-    OpsSectionStartCommand,
-    OpsSectionEndCommand,
-    SetPowerCommand,
-    MoveToCommand,
     LineToCommand,
+    MoveToCommand,
+    Ops,
+    OpsSection,
+    SectionType,
+    SetPowerCommand,
 )
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
@@ -43,6 +44,25 @@ logger = logging.getLogger(__name__)
 class _EventType(Enum):
     ENTER_TAB = auto()
     EXIT_TAB = auto()
+
+
+# Type aliases for clarity instead of raw tuples.
+
+
+class _ClipPoint(NamedTuple):
+    x: float
+    y: float
+    width: float
+
+
+class _SubpathKey(NamedTuple):
+    section_idx: int
+    subpath_idx: int
+
+
+class _TabRegion(NamedTuple):
+    start: float
+    end: float
 
 
 class TabOpsTransformer(OpsTransformer):
@@ -71,7 +91,9 @@ class TabOpsTransformer(OpsTransformer):
             "on cut paths"
         )
 
-    def _generate_tab_clip_data(self, workpiece: WorkPiece) -> List[Point3D]:
+    def _generate_tab_clip_data(
+        self, workpiece: WorkPiece
+    ) -> List[_ClipPoint]:
         """
         Generates clip data (center point and width) for each tab in the
         workpiece's local coordinate space. This matches the coordinate space
@@ -83,10 +105,8 @@ class TabOpsTransformer(OpsTransformer):
             )
             return []
 
-        clip_data = []
+        clip_data: List[_ClipPoint] = []
 
-        # The Ops object at this stage is in local coordinates, so we
-        # generate clip points in the same space. No world transform needed.
         logger.debug(
             "TabOps: Generating clip data in LOCAL space for workpiece "
             f"'{workpiece.name}'"
@@ -120,7 +140,8 @@ class TabOpsTransformer(OpsTransformer):
                     p_start_3d = (prev_x, prev_y, prev_z)
 
             logger.debug(
-                f"Processing Tab UID {tab.uid} on segment {tab.segment_index} "
+                f"Processing Tab UID {tab.uid} on segment "
+                f"{tab.segment_index} "
                 f"(type: {cmd_type}) starting from {p_start_3d}"
             )
 
@@ -144,10 +165,12 @@ class TabOpsTransformer(OpsTransformer):
                     continue
 
                 start_angle = math.atan2(
-                    p_start_3d[1] - center[1], p_start_3d[0] - center[0]
+                    p_start_3d[1] - center[1],
+                    p_start_3d[0] - center[0],
                 )
                 end_angle = math.atan2(
-                    end_point[1] - center[1], end_point[0] - center[0]
+                    end_point[1] - center[1],
+                    end_point[0] - center[0],
                 )
                 angle_range = end_angle - start_angle
                 if clockwise:
@@ -187,7 +210,7 @@ class TabOpsTransformer(OpsTransformer):
                 f"({center_x:.4f}, {center_y:.4f}), "
                 f"width: {tab.width:.2f}mm"
             )
-            clip_data.append((center_x, center_y, tab.width))
+            clip_data.append(_ClipPoint(center_x, center_y, tab.width))
 
         logger.debug(f"TabOps: Finished generating clip data: {clip_data}")
         return clip_data
@@ -198,7 +221,7 @@ class TabOpsTransformer(OpsTransformer):
         workpiece: Optional[WorkPiece] = None,
         context: Optional[ProgressContext] = None,
         stock_geometries: Optional[List["Geometry"]] = None,
-        settings: Optional[Dict[str, Any]] = None,
+        settings: Optional[Dict] = None,
     ) -> None:
         if not self.enabled:
             return
@@ -253,13 +276,17 @@ class TabOpsTransformer(OpsTransformer):
                     # float errors
                     if abs(scale_x - 1.0) > 1e-3 or abs(scale_y - 1.0) > 1e-3:
                         logger.debug(
-                            "TabOps: Scaling tab clip points from vector space"
-                            " to final ops space. "
+                            "TabOps: Scaling tab clip points from vector "
+                            "space to final ops space. "
                             f"Scale=({scale_x:.3f}, {scale_y:.3f})"
                         )
                         processed_clip_data = [
-                            (x * scale_x, y * scale_y, width)
-                            for x, y, width in tab_clip_data
+                            _ClipPoint(
+                                cp.x * scale_x,
+                                cp.y * scale_y,
+                                cp.width,
+                            )
+                            for cp in tab_clip_data
                         ]
 
         logger.debug(
@@ -273,119 +300,153 @@ class TabOpsTransformer(OpsTransformer):
         else:
             self._apply_tab_gaps(ops, processed_clip_data)
 
+    @staticmethod
+    def _split_into_subpaths(
+        cmds: List[Command],
+    ) -> List[List[Command]]:
+        """Split commands into subpaths at MoveToCommand boundaries."""
+        subpaths: List[List[Command]] = []
+        current: List[Command] = []
+        for cmd in cmds:
+            if isinstance(cmd, MoveToCommand) and any(
+                isinstance(c, MoveToCommand) for c in current
+            ):
+                subpaths.append(current)
+                current = []
+            current.append(cmd)
+        if current:
+            subpaths.append(current)
+        return subpaths
+
+    def _assign_clips_globally(
+        self,
+        sections: List[OpsSection],
+        clip_data: List[_ClipPoint],
+    ) -> Dict[_SubpathKey, List[_ClipPoint]]:
+        """
+        Assign each clip to exactly ONE subpath across ALL sections,
+        choosing the globally closest subpath. This prevents a single
+        tab from clipping multiple contours (e.g. inner and outer
+        contours produced by ContourProducer).
+        """
+        # Collect all subpaths from VECTOR_OUTLINE sections.
+        all_subpaths: List[Tuple[_SubpathKey, List[Command]]] = []
+        for sec_idx, section in enumerate(sections):
+            if section.section_type != SectionType.VECTOR_OUTLINE:
+                continue
+            for sp_idx, sp_cmds in enumerate(
+                self._split_into_subpaths(section.commands)
+            ):
+                all_subpaths.append((_SubpathKey(sec_idx, sp_idx), sp_cmds))
+
+        assignments: Dict[_SubpathKey, List[_ClipPoint]] = {}
+
+        # For each clip, find the single closest subpath globally.
+        for clip in clip_data:
+            best_key: Optional[_SubpathKey] = None
+            best_dist = float("inf")
+
+            for key, sp_cmds in all_subpaths:
+                sp_ops = Ops()
+                # Create a distinct copy for each evaluation to avoid
+                # shared references.
+                sp_ops.commands = deepcopy(sp_cmds)
+                sp_ops.preload_state()
+                geo = sp_ops.to_geometry()
+                closest = geo.find_closest_point(clip.x, clip.y)
+                if closest:
+                    _, _, pt = closest
+                    d = (clip.x - pt[0]) ** 2 + (clip.y - pt[1]) ** 2
+                    if d < best_dist:
+                        best_dist = d
+                        best_key = key
+
+            # Only assign if the closest subpath is within a reasonable
+            # distance of the clip point.
+            if best_key is not None and best_dist <= (clip.width * 2) ** 2:
+                assignments.setdefault(best_key, []).append(clip)
+
+        return assignments
+
     def _apply_tab_gaps(
         self,
         ops: Ops,
-        clip_data: List[Tuple[float, float, float]],
+        clip_data: List[_ClipPoint],
     ) -> None:
+        sections = list(ops.iter_sections())
+        assignments = self._assign_clips_globally(sections, clip_data)
+
         new_commands: List[Command] = []
-        active_section_type: Optional[SectionType] = None
-        section_buffer: List[Command] = []
+        for sec_idx, section in enumerate(sections):
+            # Preserve the section markers (start/end commands).
+            new_commands.extend(section.markers)
 
-        def _process_buffer():
-            if not section_buffer:
-                return
+            if section.section_type != SectionType.VECTOR_OUTLINE:
+                # For any other section type, or commands outside a
+                # section, pass them through unmodified.
+                new_commands.extend(section.commands)
+                continue
 
-            if active_section_type == SectionType.VECTOR_OUTLINE:
-                logger.debug(
-                    "Processing buffered VECTOR_OUTLINE section for tab gaps."
-                )
-                temp_ops = Ops()
-                temp_ops.commands = section_buffer
-                num_before = len(temp_ops)
+            subpaths = self._split_into_subpaths(section.commands)
+            for sp_idx, sp_cmds in enumerate(subpaths):
+                key = _SubpathKey(sec_idx, sp_idx)
+                clips = assignments.get(key, [])
+                if clips:
+                    sp_ops = Ops()
+                    # Create a distinct copy to avoid modifying the
+                    # original subpath commands.
+                    sp_ops.commands = deepcopy(sp_cmds)
+                    sp_ops.preload_state()
+                    for clip in clips:
+                        sp_ops.clip_at(clip.x, clip.y, clip.width)
+                    new_commands.extend(sp_ops.commands)
+                else:
+                    new_commands.extend(sp_cmds)
 
-                for x, y, width in clip_data:
-                    logger.debug(
-                        f"TabOps: Clipping at ({x:.4f}, {y:.4f}) "
-                        f"with width {width:.2f}"
-                    )
-                    temp_ops.clip_at(x, y, width)
-
-                num_after = len(temp_ops)
-                logger.debug(
-                    "Tab clipping changed command count from "
-                    f"{num_before} to {num_after}."
-                )
-                new_commands.extend(temp_ops)
-            else:
-                # For any other section type, or commands outside a section,
-                # pass them through unmodified.
-                logger.debug(
-                    "Passing through buffered section of type "
-                    f"{active_section_type}."
-                )
-                new_commands.extend(section_buffer)
-
-        for cmd in ops:
-            if isinstance(cmd, OpsSectionStartCommand):
-                _process_buffer()  # Process the previous section
-                section_buffer = []
-                active_section_type = cmd.section_type
-                new_commands.append(cmd)  # Preserve the marker
-            elif isinstance(cmd, OpsSectionEndCommand):
-                _process_buffer()  # Process the current section
-                section_buffer = []
-                active_section_type = None
-                new_commands.append(cmd)  # Preserve the marker
-            else:
-                section_buffer.append(cmd)
-
-        _process_buffer()  # Process any commands in the final buffer
         ops.commands = new_commands
 
     def _apply_tab_power(
         self,
         ops: Ops,
-        clip_data: List[Tuple[float, float, float]],
+        clip_data: List[_ClipPoint],
         tab_power: float,
-        settings: Optional[Dict[str, Any]],
+        settings: Optional[Dict],
     ) -> None:
         original_power = settings.get("power", 1.0) if settings else 1.0
         actual_tab_power = tab_power * original_power
+
+        sections = list(ops.iter_sections())
+        assignments = self._assign_clips_globally(sections, clip_data)
+
         new_commands: List[Command] = []
-        active_section_type: Optional[SectionType] = None
-        section_buffer: List[Command] = []
+        for sec_idx, section in enumerate(sections):
+            # Preserve the section markers (start/end commands).
+            new_commands.extend(section.markers)
 
-        def _process_buffer():
-            if not section_buffer:
-                return
+            if section.section_type != SectionType.VECTOR_OUTLINE:
+                # For any other section type, or commands outside a
+                # section, pass them through unmodified.
+                new_commands.extend(section.commands)
+                continue
 
-            if active_section_type == SectionType.VECTOR_OUTLINE:
-                logger.debug(
-                    "Processing buffered VECTOR_OUTLINE section for tab power."
-                )
-                processed = self._insert_power_commands(
-                    section_buffer, clip_data, actual_tab_power, original_power
-                )
-                new_commands.extend(processed)
-            else:
-                logger.debug(
-                    "Passing through buffered section of type "
-                    f"{active_section_type}."
-                )
-                new_commands.extend(section_buffer)
+            subpaths = self._split_into_subpaths(section.commands)
+            for sp_idx, sp_cmds in enumerate(subpaths):
+                key = _SubpathKey(sec_idx, sp_idx)
+                clips = assignments.get(key, [])
+                if clips:
+                    processed = self._insert_power_commands(
+                        sp_cmds, clips, actual_tab_power, original_power
+                    )
+                    new_commands.extend(processed)
+                else:
+                    new_commands.extend(sp_cmds)
 
-        for cmd in ops:
-            if isinstance(cmd, OpsSectionStartCommand):
-                _process_buffer()
-                section_buffer = []
-                active_section_type = cmd.section_type
-                new_commands.append(cmd)
-            elif isinstance(cmd, OpsSectionEndCommand):
-                _process_buffer()
-                section_buffer = []
-                active_section_type = None
-                new_commands.append(cmd)
-            else:
-                section_buffer.append(cmd)
-
-        _process_buffer()
         ops.commands = new_commands
 
     def _insert_power_commands(
         self,
         commands: List[Command],
-        clip_data: List[Tuple[float, float, float]],
+        clip_data: List[_ClipPoint],
         tab_power: float,
         original_power: float,
     ) -> List[Command]:
@@ -412,7 +473,7 @@ class TabOpsTransformer(OpsTransformer):
         if not tab_regions:
             return commands
 
-        tab_regions.sort(key=lambda r: r[0])
+        tab_regions.sort(key=lambda r: r.start)
 
         return self._build_commands_with_power(
             linear_cmds, geo_cmds, tab_regions, tab_power, original_power
@@ -422,27 +483,32 @@ class TabOpsTransformer(OpsTransformer):
         self,
         temp_ops: Ops,
         geo_cmds: Sequence[Command],
-        clip_data: List[Tuple[float, float, float]],
-    ) -> List[Tuple[float, float]]:
-        tab_regions: List[Tuple[float, float]] = []
+        clip_data: List[_ClipPoint],
+    ) -> List[_TabRegion]:
+        tab_regions: List[_TabRegion] = []
 
-        for x, y, width in clip_data:
+        for clip in clip_data:
             temp_geo = temp_ops.to_geometry()
-            closest = temp_geo.find_closest_point(x, y)
+            closest = temp_geo.find_closest_point(clip.x, clip.y)
             if not closest:
                 continue
 
-            dist_sq = (x - closest[2][0]) ** 2 + (y - closest[2][1]) ** 2
-            if dist_sq > (width * 2) ** 2:
+            dist_sq = (clip.x - closest[2][0]) ** 2 + (
+                clip.y - closest[2][1]
+            ) ** 2
+            if dist_sq > (clip.width * 2) ** 2:
                 continue
 
             hit_dist = self._compute_hit_distance(geo_cmds, closest)
             if hit_dist is None:
                 continue
 
-            gap_start = max(0.0, hit_dist - width / 2.0)
-            gap_end = hit_dist + width / 2.0
-            tab_regions.append((gap_start, gap_end))
+            tab_regions.append(
+                _TabRegion(
+                    max(0.0, hit_dist - clip.width / 2.0),
+                    hit_dist + clip.width / 2.0,
+                )
+            )
 
         return tab_regions
 
@@ -482,7 +548,7 @@ class TabOpsTransformer(OpsTransformer):
         self,
         linear_cmds: List[Command],
         geo_cmds: Sequence[Command],
-        tab_regions: List[Tuple[float, float]],
+        tab_regions: List[_TabRegion],
         tab_power: float,
         original_power: float,
     ) -> List[Command]:
@@ -543,15 +609,15 @@ class TabOpsTransformer(OpsTransformer):
         self,
         seg_start: float,
         seg_end: float,
-        tab_regions: List[Tuple[float, float]],
+        tab_regions: List[_TabRegion],
     ) -> List[Tuple[float, _EventType]]:
         events: List[Tuple[float, _EventType]] = []
 
-        for tab_start, tab_end in tab_regions:
-            if tab_end <= seg_start or tab_start >= seg_end:
+        for region in tab_regions:
+            if region.end <= seg_start or region.start >= seg_end:
                 continue
-            enter = max(tab_start, seg_start)
-            exit = min(tab_end, seg_end)
+            enter = max(region.start, seg_start)
+            exit = min(region.end, seg_end)
             events.append((enter, _EventType.ENTER_TAB))
             events.append((exit, _EventType.EXIT_TAB))
 
@@ -623,7 +689,7 @@ class TabOpsTransformer(OpsTransformer):
         return tab_power
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "TabOpsTransformer":
+    def from_dict(cls, data: Dict) -> "TabOpsTransformer":
         if data.get("name") != cls.__name__:
             raise ValueError(
                 f"Mismatched transformer name: expected {cls.__name__},"
