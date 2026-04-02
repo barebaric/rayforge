@@ -6,6 +6,7 @@ from gettext import gettext as _
 from rayforge.core.capability import CUT, SCORE, Capability
 from rayforge.core.step import Step
 from rayforge.pipeline.transformer.registry import transformer_registry
+from rayforge.pipeline.producer.base import CutSide
 from ..producers import ContourProducer
 
 
@@ -23,6 +24,18 @@ class ContourStep(Step):
     ):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)
         self.capabilities = self.DEFAULT_CAPABILITIES.copy()
+
+    def get_operation_mode_short(self):
+        if not self.opsproducer_dict:
+            return None
+        params = self.opsproducer_dict.get("params", {})
+        cut_side_str = params.get("cut_side")
+        if not cut_side_str:
+            return None
+        try:
+            return CutSide[cut_side_str].label()
+        except KeyError:
+            return None
 
     @classmethod
     def get_default_transformers_dicts(cls) -> tuple[list, list]:
