@@ -1100,10 +1100,12 @@ class AddonManager:
                 if module:
                     try:
                         self.plugin_mgr.unregister(module)
-                    except ValueError:
-                        pass
+                    except (ValueError, AssertionError):
+                        pass  # plugin was not registered
                     del sys.modules[module_name]
                     logger.info(f"Unloaded module: {module_name}")
+
+            self._unregister_addon_items(addon_name)
 
             if addon_name in self.loaded_addons:
                 del self.loaded_addons[addon_name]
@@ -1383,7 +1385,7 @@ class AddonManager:
                     registered = self.plugin_mgr.get_plugin(module_name)
                     if registered is not None:
                         self.plugin_mgr.unregister(registered)
-                except (TypeError, AttributeError, ValueError):
+                except (TypeError, AttributeError, ValueError, AssertionError):
                     pass
                 del sys.modules[module_name]
                 logger.debug(f"Unloaded module: {module_name}")
