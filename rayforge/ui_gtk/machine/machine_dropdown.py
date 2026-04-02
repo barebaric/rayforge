@@ -6,10 +6,12 @@ from blinker import Signal
 from ...context import get_context
 from ...machine.driver.driver import (
     DEVICE_STATUS_LABELS,
+    DeviceStatus,
 )
 from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.models.machine import Machine
 from ...machine.transport.transport import TransportStatus
+from ...shared.util.time_format import format_seconds
 from ..icons import get_icon
 
 logger = logging.getLogger(__name__)
@@ -44,12 +46,21 @@ def _get_connection_icon_name(status: TransportStatus) -> str:
         return "status-offline-symbolic"
 
 
-def _get_status_text(machine: Machine) -> str:
+def _get_status_text(
+    machine: Machine, eta_seconds: Optional[float] = None
+) -> str:
     is_nodriver = isinstance(machine.driver, NoDeviceDriver)
     if is_nodriver:
         return _("No driver")
     status = machine.device_state.status
-    return DEVICE_STATUS_LABELS.get(status, _("Unknown"))
+    text = DEVICE_STATUS_LABELS.get(status, _("Unknown"))
+    if (
+        status == DeviceStatus.RUN
+        and eta_seconds is not None
+        and eta_seconds > 0
+    ):
+        text = f"{text} · {format_seconds(eta_seconds)}"
+    return text
 
 
 def _get_connection_status(machine: Machine) -> TransportStatus:
@@ -69,6 +80,8 @@ class MachineDropdown(Gtk.DropDown):
     def __init__(self, **kwargs):
         self.machine_selected = Signal()
         self._model = Gio.ListStore.new(MachineListItem)
+        self._eta_seconds: Optional[float] = None
+        self._status_label_refs: dict = {}
 
         expression = Gtk.ClosureExpression.new(
             str,
@@ -164,7 +177,7 @@ class MachineDropdown(Gtk.DropDown):
         refs = []
 
         def on_state_changed(m, state, lbl=status_label):
-            lbl.set_text(_get_status_text(m))
+            lbl.set_text(_get_status_text(m, self._get_eta_for_machine(m)))
 
         def on_conn_changed(m, status, message=None, ibox=icon_box):
             conn = _get_connection_status(m)
@@ -180,15 +193,37 @@ class MachineDropdown(Gtk.DropDown):
         machine.connection_status_changed.connect(on_conn_changed)
         refs.append((machine, on_conn_changed))
 
+        self._status_label_refs[id(machine)] = status_label
+
         list_item._signal_refs = refs
 
     def _on_factory_unbind(self, factory, list_item):
+        list_item_obj: Optional[MachineListItem] = list_item.get_item()
+        if list_item_obj:
+            self._status_label_refs.pop(id(list_item_obj.machine), None)
         for ref in list_item._signal_refs:
             try:
                 ref[0].disconnect(ref[1])
             except (TypeError, Exception):
                 pass
         list_item._signal_refs = []
+
+    def _get_eta_for_machine(self, machine: Machine) -> Optional[float]:
+        context = get_context()
+        if context.config.machine and context.config.machine.id == machine.id:
+            return self._eta_seconds
+        return None
+
+    def update_eta(self, eta_seconds: Optional[float]):
+        """Update the ETA for the active machine's status label."""
+        self._eta_seconds = eta_seconds
+        context = get_context()
+        machine = context.config.machine
+        if not machine:
+            return
+        label = self._status_label_refs.get(id(machine))
+        if label:
+            label.set_text(_get_status_text(machine, eta_seconds))
 
     def update_model_and_selection(self, *args, **kwargs):
         logger.debug("Syncing machine dropdown model and selection.")
