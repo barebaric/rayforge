@@ -506,6 +506,11 @@ class GcodeEncoder(OpsEncoder):
                 f_command = f" F{self._format_feed(self.travel_speed)}"
             template_vars["f_command"] = f_command
 
+        s_command = ""
+        if self.laser_active and self.dialect.continuous_laser_mode:
+            s_command = " S0"
+        template_vars["s_command"] = s_command
+
         gcode.append(self.dialect.travel_move.format(**template_vars))
 
     def _build_cut_move_vars(
@@ -602,10 +607,11 @@ class GcodeEncoder(OpsEncoder):
     def _laser_off(self, context: GcodeContext, gcode: List[str]) -> None:
         """Deactivate laser if active"""
         if self.laser_active:
-            cmd_str = self.dialect.laser_off
-            if cmd_str:
-                gcode.append(cmd_str)
-            self.laser_active = False
+            if not self.dialect.continuous_laser_mode:
+                cmd_str = self.dialect.laser_off
+                if cmd_str:
+                    gcode.append(cmd_str)
+                self.laser_active = False
 
     def _finalize(self, gcode: List[str]) -> None:
         """Ensures the G-code file ends with a newline."""
