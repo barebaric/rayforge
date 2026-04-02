@@ -72,7 +72,7 @@ class BaseAssetRowWidget(Gtk.Box):
 
         Returns the suffix_box for adding additional buttons.
         """
-        self.set_margin_start(6)
+        self.set_margin_start(4)
 
         # Icon
         icon = get_icon(self.asset.display_icon_name)

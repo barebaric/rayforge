@@ -22,10 +22,10 @@ class StepBox(Gtk.Box):
         step_number: int = 0,
     ):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        self.set_margin_start(6)
-        self.set_margin_end(6)
-        self.set_margin_top(6)
-        self.set_margin_bottom(6)
+        self.set_margin_start(4)
+        self.set_margin_end(4)
+        self.set_margin_top(4)
+        self.set_margin_bottom(4)
         self.editor = editor
         self.doc = editor.doc
         self.step = step
