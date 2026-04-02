@@ -24,7 +24,7 @@ def mock_context():
 class TestFrameStep:
     def test_instantiation(self):
         step = FrameStep(name="Test")
-        assert step.typelabel == "Frame Outline"
+        assert step.typelabel == "Frame"
         assert step.capabilities == {CUT, SCORE}
 
     def test_create(self, mock_context):

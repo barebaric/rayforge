@@ -50,6 +50,16 @@ class DepthMode(Enum):
         }
         return names[self]
 
+    @property
+    def short_name(self) -> str:
+        names = {
+            DepthMode.POWER_MODULATION: _("Variable"),
+            DepthMode.CONSTANT_POWER: _("Constant"),
+            DepthMode.DITHER: _("Dither"),
+            DepthMode.MULTI_PASS: _("Multi-Pass"),
+        }
+        return names[self]
+
 
 class Rasterizer(OpsProducer):
     """

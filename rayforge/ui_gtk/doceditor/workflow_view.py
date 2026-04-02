@@ -105,11 +105,9 @@ class WorkflowView(ExpanderWithButton):
             # update its summary.
             for i, row in enumerate(self.draglist):
                 row = cast(Gtk.ListBoxRow, row)
-                hbox = row.get_child()
-                assert hbox, "Failed to get hbox from draglist row"
-                stepbox = hbox.get_last_child()
+                stepbox = row.get_child()
                 if isinstance(stepbox, StepBox):
-                    stepbox.set_prefix(_("Step {seq}: ").format(seq=i + 1))
+                    stepbox.set_step_number(i + 1)
                     stepbox.on_step_changed(stepbox.step)
             return
 
@@ -121,7 +119,7 @@ class WorkflowView(ExpanderWithButton):
             stepbox = StepBox(
                 self.editor,
                 step,
-                prefix=_("Step {seq}: ").format(seq=seq),
+                step_number=seq,
             )
             stepbox.delete_clicked.connect(self.on_button_delete_clicked)
             row.set_child(stepbox)

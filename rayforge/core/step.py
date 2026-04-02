@@ -374,6 +374,9 @@ class Step(DocItem, ABC):
             self.tab_power = power
             self.updated.send(self)
 
+    def get_operation_mode_short(self) -> Optional[str]:
+        return None
+
     def get_summary(self) -> str:
         power_percent = int(self.power * 100)
         speed_str = format_value(self.cut_speed, "speed")
