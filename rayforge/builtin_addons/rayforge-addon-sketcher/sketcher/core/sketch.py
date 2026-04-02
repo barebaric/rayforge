@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import ClassVar, Union, List, Optional, Set, Dict, Any, Tuple
 from blinker import Signal
 from collections import defaultdict
+import logging
 import math
 from gettext import gettext as _
 from rayforge.core.asset import IAsset
@@ -63,6 +64,8 @@ _DEFAULT_VARSET_TITLE = _("Sketch Parameters")
 _DEFAULT_VARSET_DESCRIPTION = _(
     "Parameters that control this sketch's geometry"
 )
+
+logger = logging.getLogger(__name__)
 
 
 _CONSTRAINT_CLASSES = {
@@ -271,6 +274,14 @@ class Sketch(IAsset, IGeometryProvider):
     def set_hidden(self, value: bool):
         """Setter method for use with undo commands."""
         self.hidden = value
+
+    def get_thumbnail(self, size: int) -> Optional[bytes]:
+        """Returns a PNG thumbnail of the sketch geometry."""
+        try:
+            return self.to_geometry().to_png(size)
+        except Exception:
+            logger.exception("Failed to generate sketch thumbnail")
+            return None
 
     @property
     def is_empty(self) -> bool:

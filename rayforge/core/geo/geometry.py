@@ -1496,3 +1496,47 @@ class Geometry:
             float(row[6]),
             float(row[7]),
         )
+
+    def to_png(self, size: int) -> Optional[bytes]:
+        """
+        Renders this geometry to PNG bytes fitting within a square of
+        ``size`` pixels.
+
+        Returns None if the geometry is empty.
+        """
+        if self.is_empty():
+            return None
+
+        x1, y1, x2, y2 = self.rect()
+        gw = x2 - x1
+        gh = y2 - y1
+        if gw < 1e-9 or gh < 1e-9:
+            return None
+
+        padding = 4
+        available = size - 2 * padding
+        scale = min(available / gw, available / gh)
+
+        surface = cairo.ImageSurface(cairo.Format.ARGB32, size, size)
+        ctx = cairo.Context(surface)
+
+        ctx.set_source_rgba(0, 0, 0, 0)
+        ctx.set_operator(cairo.Operator.SOURCE)
+        ctx.paint()
+        ctx.set_operator(cairo.Operator.OVER)
+
+        ctx.translate(size / 2, size / 2)
+        ctx.scale(scale, -scale)
+        ctx.translate(-(x1 + gw / 2), -(y1 + gh / 2))
+
+        ctx.set_source_rgba(0.55, 0.55, 0.55, 1.0)
+        ctx.set_line_width(max(1.0 / scale, 0.5))
+        self.to_cairo(ctx)
+        ctx.stroke()
+
+        surface.flush()
+        import io
+
+        buf = io.BytesIO()
+        surface.write_to_png(buf)
+        return buf.getvalue()

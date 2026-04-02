@@ -108,13 +108,33 @@ class DragDropCmd:
     def _on_asset_drop(self, drop_target, value, x, y):
         logger.debug(f"Asset drop event: value={value}")
         if isinstance(value, str):
-            # Convert widget coordinates to world coordinates (mm)
             world_x_mm, world_y_mm = self.surface._get_world_coords(x, y)
-            # Emit the signal for asset handlers to process
-            self.surface.item_dropped.send(
-                self.surface, uid=value, position_mm=(world_x_mm, world_y_mm)
+            return self._handle_asset_drop(value, (world_x_mm, world_y_mm))
+        return False
+
+    def _handle_asset_drop(
+        self, asset_uid: str, position_mm: Tuple[float, float]
+    ) -> bool:
+        doc = self.main_window.doc_editor.doc
+        asset = doc.get_asset_by_uid(asset_uid)
+        if asset is None:
+            logger.warning(f"Dropped asset UID {asset_uid} not found")
+            return False
+        if not asset.is_draggable_to_canvas:
+            return False
+        try:
+            edit = self.main_window.doc_editor.edit
+            new_workpiece = edit.add_geometry_provider_instance(
+                asset_uid, position_mm
             )
-            return True
+            if new_workpiece:
+                logger.info(
+                    f"Created instance {new_workpiece.uid[:8]} "
+                    f"from asset {asset_uid[:8]} at {position_mm}"
+                )
+                return True
+        except Exception:
+            logger.exception(f"Error handling asset drop: {asset_uid}")
         return False
 
     # --- File Handlers ---

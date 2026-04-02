@@ -1,3 +1,5 @@
+import io
+
 import pytest
 import math
 import numpy as np
@@ -1209,3 +1211,39 @@ class TestToPolygons:
 
         polygons = geo.to_polygons()
         assert len(polygons) == 2
+
+
+class TestToPng:
+    PNG_HEADER = b"\x89PNG\r\n\x1a\n"
+
+    def test_empty_geometry_returns_none(self):
+        geo = Geometry()
+        assert geo.to_png(64) is None
+
+    def test_single_point_returns_none(self):
+        geo = Geometry.from_points([(5, 5)])
+        assert geo.to_png(64) is None
+
+    def test_returns_valid_png_bytes(self):
+        geo = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+        result = geo.to_png(64)
+        assert result is not None
+        assert isinstance(result, bytes)
+        assert result[:8] == self.PNG_HEADER
+
+    def test_size_matches_request(self):
+        geo = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+        for size in [32, 128]:
+            result = geo.to_png(size)
+            assert result is not None
+            surface = cairo.ImageSurface.create_from_png(io.BytesIO(result))
+            assert surface.get_width() == size
+            assert surface.get_height() == size
+
+    def test_larger_output_for_larger_size(self):
+        geo = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+        small = geo.to_png(32)
+        large = geo.to_png(128)
+        assert small is not None
+        assert large is not None
+        assert len(large) > len(small)

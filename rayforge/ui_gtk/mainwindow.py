@@ -46,7 +46,7 @@ from .canvas2d.simulator_cmd import SimulatorCmd
 from .canvas2d.surface import WorkSurface
 from .canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .doceditor import file_dialogs
-from .doceditor.asset_list_view import AssetListView
+from .doceditor.asset_browser import AssetBrowser
 from .doceditor.asset_row_factory import register_builtin_widgets
 from .doceditor.import_handler import start_interactive_import
 from .doceditor.item_properties import DocItemPropertiesWidget
@@ -408,15 +408,6 @@ class MainWindow(Adw.ApplicationWindow):
         # Register built-in asset row widgets before creating the view
         register_builtin_widgets()
 
-        # Add the unified Asset list view
-        self.asset_list_view = AssetListView(self.doc_editor)
-        self.asset_list_view.set_margin_end(12)
-        right_pane_box.append(self.asset_list_view)
-        self.asset_list_view.add_asset_requested.connect(
-            self.on_add_asset_requested
-        )
-        self.asset_list_view.asset_activated.connect(self.on_asset_activated)
-
         # Add the Layer list view
         self.layer_list_view = LayerListView(self.doc_editor)
         self.layer_list_view.set_margin_top(20)
@@ -487,6 +478,19 @@ class MainWindow(Adw.ApplicationWindow):
         self.bottom_panel.tab_widget.add_tab(
             "gcode", "gcode-symbolic", self.gcode_previewer, _("G-code Viewer")
         )
+
+        # Add the asset browser as a tab in the bottom panel
+        self.asset_browser = AssetBrowser(self.doc_editor)
+        self.bottom_panel.tab_widget.add_tab(
+            "assets",
+            "image-x-generic-symbolic",
+            self.asset_browser,
+            _("Assets"),
+        )
+        self.asset_browser.add_asset_requested.connect(
+            self.on_add_asset_requested
+        )
+        self.asset_browser.asset_activated.connect(self.on_asset_activated)
         self.bottom_panel.tab_widget.tab_changed.connect(
             self._on_bottom_tab_changed
         )
@@ -1173,7 +1177,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.toolbar.redo_button.set_history_manager(new_doc.history_manager)
 
         # Update child views to point to the new document
-        self.asset_list_view.set_doc(new_doc)
+        self.asset_browser.set_doc(new_doc)
         self.layer_list_view.set_doc(new_doc)
 
         # Initialize new document
