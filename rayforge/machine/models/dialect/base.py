@@ -76,6 +76,8 @@ class GcodeDialect:
     inject_wcs_after_preamble: bool = True
     can_g0_with_speed: bool = False
     omit_unchanged_coords: bool = True
+    continuous_laser_mode: bool = False
+    modal_feedrate: bool = False
 
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
     is_custom: bool = False
@@ -104,6 +106,42 @@ class GcodeDialect:
                 str,
                 _("Short description"),
                 value=self.description,
+            )
+        )
+
+        settings_vs = VarSet(title=_("Settings"))
+        settings_vs.add(
+            BoolVar(
+                "omit_unchanged_coords",
+                default=self.omit_unchanged_coords,
+                label=_("Omit unchanged coordinates"),
+                description=_(
+                    "When enabled, axis letters that haven't changed "
+                    "are omitted from G0/G1 commands"
+                ),
+            )
+        )
+        settings_vs.add(
+            BoolVar(
+                "continuous_laser_mode",
+                default=self.continuous_laser_mode,
+                label=_("Continuous laser mode"),
+                description=_(
+                    "Keeps M4 dynamic power mode continuously active "
+                    "during raster engraving instead of toggling "
+                    "M4/M5 between each segment"
+                ),
+            )
+        )
+        settings_vs.add(
+            BoolVar(
+                "modal_feedrate",
+                default=self.modal_feedrate,
+                label=_("Modal feedrate"),
+                description=_(
+                    "Only include the F feedrate parameter in motion "
+                    "commands when it changes from the previous value"
+                ),
             )
         )
 
@@ -164,6 +202,7 @@ class GcodeDialect:
 
         return {
             "info": info_vs,
+            "settings": settings_vs,
             "templates": templates_vs,
             "scripts": scripts_vs,
         }

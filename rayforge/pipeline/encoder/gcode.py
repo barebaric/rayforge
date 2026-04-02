@@ -60,6 +60,7 @@ class GcodeEncoder(OpsEncoder):
         self.emitted_power: Optional[float] = (
             None  # Last power sent to the controller
         )
+        self._emitted_cut_feed: Optional[float] = None
         self.air_assist: bool = False  # Air assist state
         self.laser_active: bool = False  # Laser on/off state
         self.active_laser_uid: Optional[str] = None
@@ -227,6 +228,7 @@ class GcodeEncoder(OpsEncoder):
         self.current_pos = (0.0, 0.0, 0.0)
         self.active_laser_uid = None
         self.emitted_power = None
+        self._emitted_cut_feed = None
 
         if doc:
             active_layer = doc.active_layer
@@ -450,7 +452,7 @@ class GcodeEncoder(OpsEncoder):
             return
         self.power = power
 
-        if self.laser_active:
+        if self.laser_active and not self.dialect.continuous_laser_mode:
             if self.power > 0:
                 # Find the currently active laser head to get its max power
                 current_laser = self._get_current_laser_head(context)
@@ -506,32 +508,44 @@ class GcodeEncoder(OpsEncoder):
 
         gcode.append(self.dialect.travel_move.format(**template_vars))
 
-    def _handle_line_to(
+    def _build_cut_move_vars(
         self,
         context: GcodeContext,
         gcode: List[str],
         x: float,
         y: float,
         z: float,
-    ) -> None:
-        """Cutting movement with laser activation"""
+    ) -> dict:
+        """Build template variables common to all cutting moves."""
         self._laser_on(context, gcode)
         self._emit_modal_speed(gcode, self.cut_speed or 0)
-        f_command = (
-            f" F{self._format_feed(self.cut_speed)}"
-            if self.cut_speed is not None
-            else ""
-        )
+
+        if self.dialect.modal_feedrate:
+            f_command = ""
+            if self.cut_speed is not None and (
+                self._emitted_cut_feed is None
+                or not math.isclose(self.cut_speed, self._emitted_cut_feed)
+            ):
+                f_command = f" F{self._format_feed(self.cut_speed)}"
+                self._emitted_cut_feed = self.cut_speed
+        else:
+            f_command = (
+                f" F{self._format_feed(self.cut_speed)}"
+                if self.cut_speed is not None
+                else ""
+            )
 
         s_command = ""
         power_abs = 0.0
-        if self.power is not None and self.power > 0:
+        if self.power is not None and (
+            self.power > 0 or self.dialect.continuous_laser_mode
+        ):
             current_laser = self._get_current_laser_head(context)
             power_abs = self.power * current_laser.max_power
             s_command = f" S{self._format_power(power_abs)}"
 
         coord_vars = self._build_coord_commands(x, y, z)
-        template_vars = {
+        return {
             "x": coord_vars["x"],
             "y": coord_vars["y"],
             "z": coord_vars["z"],
@@ -543,6 +557,16 @@ class GcodeEncoder(OpsEncoder):
             "power": power_abs,
         }
 
+    def _handle_line_to(
+        self,
+        context: GcodeContext,
+        gcode: List[str],
+        x: float,
+        y: float,
+        z: float,
+    ) -> None:
+        """Cutting movement with laser activation"""
+        template_vars = self._build_cut_move_vars(context, gcode, x, y, z)
         gcode.append(self.dialect.linear_move.format(**template_vars))
 
     def _handle_arc_to(
@@ -554,50 +578,26 @@ class GcodeEncoder(OpsEncoder):
         cw: bool,
     ) -> None:
         """Cutting arc with laser activation"""
-        self._laser_on(context, gcode)
-        self._emit_modal_speed(gcode, self.cut_speed or 0)
         x, y, z = end
         i, j = center
         template = self.dialect.arc_cw if cw else self.dialect.arc_ccw
-        f_command = (
-            f" F{self._format_feed(self.cut_speed)}"
-            if self.cut_speed is not None
-            else ""
-        )
-
-        s_command = ""
-        power_abs = 0.0
-        if self.power is not None and self.power > 0:
-            current_laser = self._get_current_laser_head(context)
-            power_abs = self.power * current_laser.max_power
-            s_command = f" S{self._format_power(power_abs)}"
-
-        coord_vars = self._build_coord_commands(x, y, z)
-        gcode.append(
-            template.format(
-                x=coord_vars["x"],
-                y=coord_vars["y"],
-                z=coord_vars["z"],
-                x_cmd=coord_vars["x_cmd"],
-                y_cmd=coord_vars["y_cmd"],
-                z_cmd=coord_vars["z_cmd"],
-                i=self._format_coord(i),
-                j=self._format_coord(j),
-                f_command=f_command,
-                s_command=s_command,
-                power=power_abs,
-            )
-        )
+        template_vars = self._build_cut_move_vars(context, gcode, x, y, z)
+        template_vars["i"] = self._format_coord(i)
+        template_vars["j"] = self._format_coord(j)
+        gcode.append(template.format(**template_vars))
 
     def _laser_on(self, context: GcodeContext, gcode: List[str]) -> None:
         """Activate laser if not already on"""
-        if not self.laser_active and self.power:
-            current_laser = self._get_current_laser_head(context)
-            power_abs = self.power * current_laser.max_power
-            cmd_str = self.dialect.laser_on.format(power=power_abs)
-            if cmd_str:
-                gcode.append(cmd_str)
-            self.laser_active = True
+        if not self.laser_active:
+            if self.power or self.dialect.continuous_laser_mode:
+                current_laser = self._get_current_laser_head(context)
+                power_abs = (
+                    self.power * current_laser.max_power if self.power else 0.0
+                )
+                cmd_str = self.dialect.laser_on.format(power=power_abs)
+                if cmd_str:
+                    gcode.append(cmd_str)
+                self.laser_active = True
 
     def _laser_off(self, context: GcodeContext, gcode: List[str]) -> None:
         """Deactivate laser if active"""
