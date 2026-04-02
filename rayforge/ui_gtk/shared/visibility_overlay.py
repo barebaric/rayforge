@@ -1,5 +1,6 @@
 from gettext import gettext as _
-from gi.repository import Gtk
+
+from gi.repository import Gdk, Gtk
 
 from ..icons import get_icon
 from .gtk import apply_css
@@ -30,6 +31,8 @@ class VisibilityOverlay(Gtk.Box):
         show_workpiece=True,
         show_camera=False,
         show_models=False,
+        show_tabs=False,
+        shortcuts=None,
         **kwargs,
     ):
         super().__init__(
@@ -43,6 +46,7 @@ class VisibilityOverlay(Gtk.Box):
         self.set_valign(Gtk.Align.START)
         self.set_margin_top(6)
         self.set_margin_end(6)
+        self._shortcuts = shortcuts or {}
 
         if show_workpiece:
             self._vis_on_icon = get_icon("visibility-on-symbolic")
@@ -51,7 +55,10 @@ class VisibilityOverlay(Gtk.Box):
             self.workpiece_button.set_active(True)
             self.workpiece_button.set_child(self._vis_on_icon)
             self.workpiece_button.set_tooltip_text(
-                _("Toggle workpiece visibility")
+                self._format_tooltip(
+                    _("Toggle workpiece visibility"),
+                    "win.show_workpieces",
+                )
             )
             self.workpiece_button.set_action_name("win.show_workpieces")
             self.workpiece_button.connect(
@@ -59,13 +66,28 @@ class VisibilityOverlay(Gtk.Box):
             )
             self.append(self.workpiece_button)
 
+        if show_tabs:
+            self.tabs_button = Gtk.ToggleButton()
+            self.tabs_button.set_child(get_icon("tabs-visible-symbolic"))
+            self.tabs_button.set_active(True)
+            self.tabs_button.set_tooltip_text(
+                self._format_tooltip(
+                    _("Toggle tab visibility"), "win.show_tabs"
+                )
+            )
+            self.tabs_button.set_action_name("win.show_tabs")
+            self.append(self.tabs_button)
+
         self._cam_on_icon = get_icon("camera-on-symbolic")
         self._cam_off_icon = get_icon("camera-off-symbolic")
         self.camera_button = Gtk.ToggleButton()
         self.camera_button.set_active(True)
         self.camera_button.set_child(self._cam_on_icon)
         self.camera_button.set_tooltip_text(
-            _("Toggle camera image visibility")
+            self._format_tooltip(
+                _("Toggle camera image visibility"),
+                "win.toggle_camera_view",
+            )
         )
         self.camera_button.set_action_name("win.toggle_camera_view")
         self.camera_button.connect("toggled", self._on_camera_toggled)
@@ -77,7 +99,9 @@ class VisibilityOverlay(Gtk.Box):
             self.models_button.set_child(get_icon("model-symbolic"))
             self.models_button.set_active(True)
             self.models_button.set_tooltip_text(
-                _("Toggle 3D model visibility")
+                self._format_tooltip(
+                    _("Toggle 3D model visibility"), "win.show_models"
+                )
             )
             self.models_button.set_action_name("win.show_models")
             self.append(self.models_button)
@@ -85,19 +109,41 @@ class VisibilityOverlay(Gtk.Box):
         self.travel_button = Gtk.ToggleButton()
         self.travel_button.set_child(get_icon("travel-path-symbolic"))
         self.travel_button.set_active(False)
-        self.travel_button.set_tooltip_text(_("Toggle travel move visibility"))
+        self.travel_button.set_tooltip_text(
+            self._format_tooltip(
+                _("Toggle travel move visibility"),
+                "win.toggle_travel_view",
+            )
+        )
         self.travel_button.set_action_name("win.toggle_travel_view")
         self.append(self.travel_button)
 
         self.nogo_button = Gtk.ToggleButton()
         self.nogo_button.set_child(get_icon("block-symbolic"))
         self.nogo_button.set_active(True)
-        self.nogo_button.set_tooltip_text(_("Toggle no-go zone visibility"))
+        self.nogo_button.set_tooltip_text(
+            self._format_tooltip(
+                _("Toggle no-go zone visibility"), "win.show_nogo_zones"
+            )
+        )
         self.nogo_button.set_action_name("win.show_nogo_zones")
         self.append(self.nogo_button)
 
     def set_camera_visible(self, visible: bool):
         self.camera_button.set_visible(visible)
+
+    def _format_tooltip(self, text, action_name):
+        if action_name in self._shortcuts:
+            shortcut_str = self._shortcuts[action_name]
+            trigger = Gtk.ShortcutTrigger.parse_string(shortcut_str)
+            if trigger is None:
+                return text
+            display = Gdk.Display.get_default()
+            if display is not None:
+                label = trigger.to_label(display)
+                if label is not None:
+                    return f"{text} ({label})"
+        return text
 
     def _on_workpiece_toggled(self, button):
         if button.get_active():

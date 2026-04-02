@@ -75,28 +75,18 @@ class MainMenu(Gio.Menu):
         # View Menu
         view_menu = Gio.Menu()
         visibility_group = Gio.Menu()
-        visibility_group.append(_("Show Workpieces"), "win.show_workpieces")
-        visibility_group.append(_("Show Tabs"), "win.show_tabs")
         visibility_group.append(
-            _("Show Camera Image"), "win.toggle_camera_view"
+            _("Show Right Panel"), "win.toggle_right_panel"
         )
-        visibility_group.append(
-            _("Show Travel Moves"), "win.toggle_travel_view"
-        )
-        visibility_group.append(_("Show No-Go Zones"), "win.show_nogo_zones")
         visibility_group.append(
             _("Show Bottom Panel"), "win.toggle_bottom_panel"
         )
         view_menu.append_section(None, visibility_group)
 
-        # Simulation toggle
-        simulation_group = Gio.Menu()
-        simulation_group.append(_("Simulate Execution"), "win.simulate_mode")
-        view_menu.append_section(None, simulation_group)
-
-        view_3d_group = Gio.Menu()
-        view_3d_group.append(_("3D View"), "win.show_3d_view")
-        view_menu.append_section(None, view_3d_group)
+        view_group = Gio.Menu()
+        view_group.append(_("Simulator"), "win.simulate_mode")
+        view_group.append(_("3D View"), "win.show_3d_view")
+        view_menu.append_section(None, view_group)
 
         view_3d_commands = Gio.Menu()
         view_3d_commands.append(_("Top View"), "win.view_top")
