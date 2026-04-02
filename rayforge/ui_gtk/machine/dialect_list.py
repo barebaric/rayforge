@@ -65,7 +65,9 @@ class DialectRow(Gtk.Box):
         self.select_button.add_css_class("flat")
         self.select_button.set_child(get_icon("check-symbolic"))
         self.select_button.set_tooltip_text(_("Select this dialect"))
-        self.select_button.connect("toggled", self._on_select_toggled)
+        self._toggle_handler_id = self.select_button.connect(
+            "toggled", self._on_select_toggled
+        )
         self.select_button.set_valign(Gtk.Align.CENTER)
         suffix_box.append(self.select_button)
 
@@ -74,7 +76,11 @@ class DialectRow(Gtk.Box):
     def _update_selection_state(self):
         if self.machine:
             is_selected = self.machine.dialect_uid == self.dialect.uid
+            if self._toggle_handler_id is not None:
+                self.select_button.handler_block(self._toggle_handler_id)
             self.select_button.set_active(is_selected)
+            if self._toggle_handler_id is not None:
+                self.select_button.handler_unblock(self._toggle_handler_id)
 
     def _on_select_toggled(self, button: Gtk.ToggleButton):
         if button.get_active():
