@@ -888,8 +888,9 @@ class AddonManager:
     def _import_git():
         if os.environ.get("RAYFORGE_NOGIT"):
             raise ImportError("RAYFORGE_NOGIT is set")
-        if importlib.util.find_spec("git") is None:
-            raise ImportError("git module not found")
+        import git
+
+        assert git is not None
 
     def _fetch_addon_source(self, git_url: str, dest: Path) -> bool:
         """
