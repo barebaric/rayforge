@@ -204,6 +204,10 @@ def main():
             window.on_quit_action(None, None)
 
         def do_activate(self):
+            if self.win is not None:
+                self.win.present()
+                return
+
             # Import the window here to avoid module-level side-effects
             from rayforge.ui_gtk.mainwindow import MainWindow
 
@@ -501,7 +505,11 @@ def main():
     # Run application
     app = App(args)
     exit_code = app.run(None)
-    assert app.win is not None
+    if app.win is None:
+        logger.info(
+            "No window created (another instance is likely running). Exiting."
+        )
+        return exit_code
 
     # ===================================================================
     # SECTION 4: SHUTDOWN SEQUENCE
