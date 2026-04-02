@@ -117,10 +117,12 @@ class DialectEditorDialog(PatchedDialogWindow):
         varsets = self.dialect.get_editor_varsets()
 
         self.info_widget = VarSetWidget()
+        self.settings_widget = VarSetWidget()
         self.templates_widget = VarSetWidget()
         self.scripts_widget = VarSetWidget()
 
         self.info_widget.populate(varsets["info"])
+        self.settings_widget.populate(varsets["settings"])
         self.templates_widget.populate(varsets["templates"])
         self.scripts_widget.populate(varsets["scripts"])
 
@@ -130,6 +132,7 @@ class DialectEditorDialog(PatchedDialogWindow):
         form_box.set_margin_end(50)
         form_box.set_margin_bottom(50)
         form_box.append(self.info_widget)
+        form_box.append(self.settings_widget)
         form_box.append(self.templates_widget)
         form_box.append(self.scripts_widget)
 
@@ -240,6 +243,7 @@ class DialectEditorDialog(PatchedDialogWindow):
         """Updates the dialect object from the values in the VarSetWidgets."""
         all_values = {}
         all_values.update(self.info_widget.get_values())
+        all_values.update(self.settings_widget.get_values())
         all_values.update(self.templates_widget.get_values())
         all_values.update(self.scripts_widget.get_values())
 
@@ -290,11 +294,13 @@ class DialectEditorDialog(PatchedDialogWindow):
     def _refresh_ui_from_dialect(self):
         """Refreshes the UI widgets from the dialect object."""
         self.info_widget.clear_dynamic_rows()
+        self.settings_widget.clear_dynamic_rows()
         self.templates_widget.clear_dynamic_rows()
         self.scripts_widget.clear_dynamic_rows()
 
         varsets = self.dialect.get_editor_varsets()
         self.info_widget.populate(varsets["info"])
+        self.settings_widget.populate(varsets["settings"])
         self.templates_widget.populate(varsets["templates"])
         self.scripts_widget.populate(varsets["scripts"])
         self._connect_validation_signals()

@@ -152,7 +152,7 @@ class TestDialectProperties:
 
     def test_builtin_dialects_count(self):
         """Verify we have the expected number of built-in dialects."""
-        assert len(BUILTIN_DIALECTS) == 5
+        assert len(BUILTIN_DIALECTS) == 6
 
     @pytest.mark.parametrize("dialect", BUILTIN_DIALECTS, ids=lambda d: d.uid)
     def test_dialect_has_required_templates(self, dialect):
