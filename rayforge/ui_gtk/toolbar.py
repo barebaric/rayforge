@@ -99,14 +99,6 @@ class MainToolbar(Gtk.Box):
         self.bottom_panel_button.set_action_name("win.toggle_bottom_panel")
         self.append(self.bottom_panel_button)
 
-        # Add a button to toggle tab visibility.
-        self.show_tabs_button = Gtk.ToggleButton()
-        self.show_tabs_button.set_child(get_icon("tabs-visible-symbolic"))
-        self.show_tabs_button.set_active(True)
-        self.show_tabs_button.set_tooltip_text(_("Toggle tab visibility"))
-        self.show_tabs_button.set_action_name("win.show_tabs")
-        self.append(self.show_tabs_button)
-
         # Arrangement buttons (Consolidated Dropdown)
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)

@@ -34,7 +34,11 @@ from ..shared.util.time_format import format_hours_to_hm
 from ..usage import get_usage_tracker
 from .about import AboutDialog
 from .action_registry import action_registry
-from .actions import ActionManager, action_extension_registry
+from .actions import (
+    ActionManager,
+    SHORTCUTS,
+    action_extension_registry,
+)
 from .canvas import CanvasElement
 from .canvas2d.drag_drop_cmd import DragDropCmd
 from .canvas2d.elements.stock import StockElement
@@ -340,7 +344,12 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface_overlay.set_child(self.surface)
         self._surface_vis_overlay = VisibilityOverlay(
             show_workpiece=True,
-            show_camera=bool(config.machine and config.machine.cameras),
+            show_camera=bool(
+                config.machine
+                and any(c.enabled for c in config.machine.cameras)
+            ),
+            show_tabs=True,
+            shortcuts=SHORTCUTS,
         )
         self.surface_overlay.add_overlay(self._surface_vis_overlay)
         self.view_stack.add_named(self.surface_overlay, "2d")
@@ -378,15 +387,15 @@ class MainWindow(Adw.ApplicationWindow):
         )
 
         # Create a vertical paned for the right pane content
-        right_pane_scrolled_window = Gtk.ScrolledWindow()
-        right_pane_scrolled_window.set_policy(
+        self._right_pane = Gtk.ScrolledWindow()
+        self._right_pane.set_policy(
             Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC
         )
-        right_pane_scrolled_window.set_vexpand(True)
-        right_pane_scrolled_window.set_margin_start(10)
-        right_pane_scrolled_window.set_margin_top(6)
-        right_pane_scrolled_window.set_margin_bottom(12)
-        self.paned.set_end_child(right_pane_scrolled_window)
+        self._right_pane.set_vexpand(True)
+        self._right_pane.set_margin_start(10)
+        self._right_pane.set_margin_top(6)
+        self._right_pane.set_margin_bottom(12)
+        self.paned.set_end_child(self._right_pane)
         self.paned.set_resize_end_child(False)
         self.paned.set_shrink_end_child(False)
 
@@ -394,7 +403,7 @@ class MainWindow(Adw.ApplicationWindow):
         # ScrolledWindow.
         right_pane_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         right_pane_box.set_size_request(400, -1)
-        right_pane_scrolled_window.set_child(right_pane_box)
+        self._right_pane.set_child(right_pane_box)
 
         # Register built-in asset row widgets before creating the view
         register_builtin_widgets()
@@ -1355,7 +1364,9 @@ class MainWindow(Adw.ApplicationWindow):
         self._canvas3d_overlay = Gtk.Overlay()
         self._canvas3d_overlay.set_child(self.canvas3d)
         self._canvas3d_vis_overlay = VisibilityOverlay(
-            show_workpiece=False, show_models=True
+            show_workpiece=False,
+            show_models=True,
+            shortcuts=SHORTCUTS,
         )
         self._canvas3d_overlay.add_overlay(self._canvas3d_vis_overlay)
         self.view_stack.add_named(self._canvas3d_overlay, "3d")
@@ -1417,7 +1428,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.set_machine(config.machine)
 
         # Show/hide camera toggle based on whether machine has cameras
-        has_cameras = bool(config.machine and config.machine.cameras)
+        has_cameras = bool(
+            config.machine and any(c.enabled for c in config.machine.cameras)
+        )
         self._surface_vis_overlay.set_camera_visible(has_cameras)
 
         self.surface.update_from_doc()
@@ -1812,6 +1825,14 @@ class MainWindow(Adw.ApplicationWindow):
             self.bottom_panel.set_visible(False)
 
         get_context().config.set_bottom_panel_visible(is_visible)
+
+    def on_toggle_right_panel_state_change(
+        self, action: Gio.SimpleAction, value: GLib.Variant
+    ):
+        is_visible = value.get_boolean()
+        action.set_state(value)
+        self._right_pane.set_visible(is_visible)
+        get_context().config.set_right_panel_visible(is_visible)
 
     def _on_dialog_notification(self, sender, message: str = ""):
         """Shows a toast when requested by a child dialog."""

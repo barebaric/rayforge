@@ -20,6 +20,63 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+SHORTCUTS = {
+    # File
+    "win.new": f"{PRIMARY_ACCEL}n",
+    "win.open": f"{PRIMARY_ACCEL}o",
+    "win.save": f"{PRIMARY_ACCEL}s",
+    "win.save-as": f"{PRIMARY_ACCEL}<Shift>s",
+    "win.import": f"{PRIMARY_ACCEL}i",
+    "win.export": f"{PRIMARY_ACCEL}e",
+    "win.quit": f"{PRIMARY_ACCEL}q",
+    # Edit
+    "win.undo": f"{PRIMARY_ACCEL}z",
+    "win.redo": f"{PRIMARY_ACCEL}y",
+    "win.redo_alt": f"{PRIMARY_ACCEL}<Shift>z",
+    "win.cut": f"{PRIMARY_ACCEL}x",
+    "win.copy": f"{PRIMARY_ACCEL}c",
+    "win.paste": f"{PRIMARY_ACCEL}v",
+    "win.select_all": f"{PRIMARY_ACCEL}a",
+    "win.duplicate": f"{PRIMARY_ACCEL}d",
+    "win.remove": "Delete",
+    "win.clear": f"{PRIMARY_ACCEL}<Shift>Delete",
+    "win.settings": f"{PRIMARY_ACCEL}comma",
+    # View
+    "win.show_workpieces": "h",
+    "win.show_tabs": "t",
+    "win.toggle_camera_view": "<Ctrl><Alt>c",
+    "win.toggle_bottom_panel": f"{PRIMARY_ACCEL}l",
+    "win.toggle_travel_view": f"{PRIMARY_ACCEL}<Shift>t",
+    "win.show_3d_view": "F12",
+    "win.simulate_mode": "F11",
+    "win.view_top": "1",
+    "win.view_front": "2",
+    "win.view_iso": "7",
+    "win.view_toggle_perspective": "p",
+    # Object
+    "win.add_stock": "<Ctrl><Alt>s",
+    "win.add-tabs-equidistant": "<Ctrl><Alt>t",
+    # Arrange
+    "win.group": f"{PRIMARY_ACCEL}g",
+    "win.ungroup": f"{PRIMARY_ACCEL}u",
+    "win.split": "<Ctrl><Alt>w",
+    "win.layer-move-up": f"{PRIMARY_ACCEL}Page_Up",
+    "win.layer-move-down": f"{PRIMARY_ACCEL}Page_Down",
+    "win.align-left": f"{PRIMARY_ACCEL}<Shift>Left",
+    "win.align-right": f"{PRIMARY_ACCEL}<Shift>Right",
+    "win.align-top": f"{PRIMARY_ACCEL}<Shift>Up",
+    "win.align-bottom": f"{PRIMARY_ACCEL}<Shift>Down",
+    "win.align-h-center": f"{PRIMARY_ACCEL}<Shift>Home",
+    "win.align-v-center": f"{PRIMARY_ACCEL}<Shift>End",
+    "win.spread-h": f"{PRIMARY_ACCEL}<Shift>h",
+    "win.spread-v": f"{PRIMARY_ACCEL}<Shift>v",
+    "win.flip-horizontal": "<Shift>h",
+    "win.flip-vertical": "<Shift>v",
+    # Machine & Help
+    "win.machine-settings": f"{PRIMARY_ACCEL}less",
+    "win.about": "F1",
+}
+
 
 ActionSetupHandler = Callable[["ActionManager"], None]
 ActionStateUpdateHandler = Callable[["ActionManager"], None]
@@ -223,6 +280,11 @@ class ActionManager:
             "toggle_bottom_panel",
             self.win.on_toggle_bottom_panel_state_change,
             GLib.Variant.new_boolean(config.bottom_panel_visible),
+        )
+        self._add_stateful_action(
+            "toggle_right_panel",
+            self.win.on_toggle_right_panel_state_change,
+            GLib.Variant.new_boolean(config.right_panel_visible),
         )
 
         self._add_stateful_action(
@@ -510,64 +572,7 @@ class ActionManager:
         """
         Populates the given ShortcutController with all application shortcuts.
         """
-        shortcuts = {
-            # File
-            "win.new": f"{PRIMARY_ACCEL}n",
-            "win.open": f"{PRIMARY_ACCEL}o",
-            "win.save": f"{PRIMARY_ACCEL}s",
-            "win.save-as": f"{PRIMARY_ACCEL}<Shift>s",
-            "win.import": f"{PRIMARY_ACCEL}i",
-            "win.export": f"{PRIMARY_ACCEL}e",
-            "win.quit": f"{PRIMARY_ACCEL}q",
-            # Edit
-            "win.undo": f"{PRIMARY_ACCEL}z",
-            "win.redo": f"{PRIMARY_ACCEL}y",
-            "win.redo_alt": f"{PRIMARY_ACCEL}<Shift>z",
-            "win.cut": f"{PRIMARY_ACCEL}x",
-            "win.copy": f"{PRIMARY_ACCEL}c",
-            "win.paste": f"{PRIMARY_ACCEL}v",
-            "win.select_all": f"{PRIMARY_ACCEL}a",
-            "win.duplicate": f"{PRIMARY_ACCEL}d",
-            "win.remove": "Delete",
-            "win.clear": f"{PRIMARY_ACCEL}<Shift>Delete",
-            "win.settings": f"{PRIMARY_ACCEL}comma",
-            # View
-            "win.show_workpieces": "h",
-            "win.show_tabs": "t",
-            "win.toggle_camera_view": "<Ctrl><Alt>c",
-            "win.toggle_bottom_panel": f"{PRIMARY_ACCEL}l",
-            "win.toggle_travel_view": f"{PRIMARY_ACCEL}<Shift>t",
-            "win.show_3d_view": "F12",
-            "win.simulate_mode": "F11",
-            "win.view_top": "1",
-            "win.view_front": "2",
-            "win.view_iso": "7",
-            "win.view_toggle_perspective": "p",
-            # Object
-            "win.add_stock": "<Ctrl><Alt>s",
-            "win.add-tabs-equidistant": "<Ctrl><Alt>t",
-            # Arrange
-            "win.group": f"{PRIMARY_ACCEL}g",
-            "win.ungroup": f"{PRIMARY_ACCEL}u",
-            "win.split": "<Ctrl><Alt>w",
-            "win.layer-move-up": f"{PRIMARY_ACCEL}Page_Up",
-            "win.layer-move-down": f"{PRIMARY_ACCEL}Page_Down",
-            "win.align-left": f"{PRIMARY_ACCEL}<Shift>Left",
-            "win.align-right": f"{PRIMARY_ACCEL}<Shift>Right",
-            "win.align-top": f"{PRIMARY_ACCEL}<Shift>Up",
-            "win.align-bottom": f"{PRIMARY_ACCEL}<Shift>Down",
-            "win.align-h-center": f"{PRIMARY_ACCEL}<Shift>Home",
-            "win.align-v-center": f"{PRIMARY_ACCEL}<Shift>End",
-            "win.spread-h": f"{PRIMARY_ACCEL}<Shift>h",
-            "win.spread-v": f"{PRIMARY_ACCEL}<Shift>v",
-            "win.flip-horizontal": "<Shift>h",
-            "win.flip-vertical": "<Shift>v",
-            # Machine & Help
-            "win.machine-settings": f"{PRIMARY_ACCEL}less",
-            "win.about": "F1",
-        }
-
-        for action_name, shortcut_str in shortcuts.items():
+        for action_name, shortcut_str in SHORTCUTS.items():
             shortcut = Gtk.Shortcut.new(
                 Gtk.ShortcutTrigger.parse_string(shortcut_str),
                 Gtk.NamedAction.new(action_name),

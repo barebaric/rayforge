@@ -39,6 +39,7 @@ class Config:
         self.last_opened_project: Optional[Path] = None
         # UI visibility states
         self.bottom_panel_visible: bool = False
+        self.right_panel_visible: bool = True
         self.perspective_mode: bool = False
         self.show_nogo_zones: bool = True
         # Usage tracking consent date: None = not asked, "" = declined,
@@ -99,6 +100,13 @@ class Config:
         if self.bottom_panel_visible == visible:
             return
         self.bottom_panel_visible = visible
+        self.changed.send(self)
+
+    def set_right_panel_visible(self, visible: bool):
+        """Sets the right panel visibility state."""
+        if self.right_panel_visible == visible:
+            return
+        self.right_panel_visible = visible
         self.changed.send(self)
 
     def set_perspective_mode(self, enabled: bool):
@@ -167,6 +175,7 @@ class Config:
                 else None
             ),
             "bottom_panel_visible": self.bottom_panel_visible,
+            "right_panel_visible": self.right_panel_visible,
             "perspective_mode": self.perspective_mode,
             "show_nogo_zones": self.show_nogo_zones,
             "usage_consent_date": self.usage_consent_date,
@@ -214,6 +223,7 @@ class Config:
 
         # Load UI visibility states
         config.bottom_panel_visible = data.get("bottom_panel_visible", False)
+        config.right_panel_visible = data.get("right_panel_visible", True)
         config.perspective_mode = data.get("perspective_mode", False)
         config.show_nogo_zones = data.get("show_nogo_zones", True)
 
