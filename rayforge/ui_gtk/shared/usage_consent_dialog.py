@@ -24,6 +24,8 @@ class UsageConsentDialog(Adw.MessageDialog):
                 "and privacy."
             ),
             use_markup=True,
+            wrap=True,
+            max_width_chars=50,
             halign=Gtk.Align.START,
             margin_top=12,
         )
