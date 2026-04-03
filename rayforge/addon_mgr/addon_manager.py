@@ -31,6 +31,7 @@ from blinker import Signal
 from .. import __version__
 from ..config import ADDON_REGISTRY_URL
 from ..core.addon_config import AddonConfig, AddonState as ConfigAddonState
+from ..core.hooks import PLUGIN_API_VERSION
 from ..license import LicenseValidator
 from ..shared.util.po_compiler import compile_po_to_mo, needs_compilation
 from ..shared.util.versioning import (
@@ -56,15 +57,22 @@ logger = logging.getLogger(__name__)
 GITHUB_ZIP_URL = (
     "https://github.com/{owner}/{repo}/archive/refs/heads/main.zip"
 )
+GITHUB_TAG_ZIP_URL = (
+    "https://github.com/{owner}/{repo}/archive/refs/tags/{tag}.zip"
+)
 GITHUB_TAGS_URL = "https://api.github.com/repos/{owner}/{repo}/tags?per_page=1"
 GITLAB_ZIP_URL = (
     "https://gitlab.com/{owner}/{repo}/-/archive/main/{repo}-main.zip"
+)
+GITLAB_TAG_ZIP_URL = (
+    "https://gitlab.com/{owner}/{repo}/-/archive/{tag}/{repo}-{tag}.zip"
 )
 GITLAB_TAGS_URL = (
     "https://gitlab.com/api/v4/projects/{encoded}"
     "/repository/tags?per_page=1&order_by=version"
 )
 GITEA_ZIP_URL = "https://{host}/{owner}/{repo}/archive/main.zip"
+GITEA_TAG_ZIP_URL = "https://{host}/{owner}/{repo}/archive/{tag}.zip"
 GITEA_TAGS_URL = "https://{host}/api/v1/repos/{owner}/{repo}/tags?limit=1"
 
 
@@ -328,12 +336,34 @@ class AddonManager:
                 continue
             try:
                 meta = AddonMetadata.from_registry_entry(addon_id, addon_data)
+                self._pick_compatible_version(meta)
                 result.append(meta)
             except Exception as e:
                 logger.warning(
                     f"Failed to parse registry entry '{addon_id}': {e}"
                 )
         return result
+
+    @staticmethod
+    def _pick_compatible_version(meta: AddonMetadata):
+        """
+        Update metadata to use the latest version whose api_version is
+        compatible with this Rayforge build.
+
+        If no compatible version is found, the metadata is left unchanged
+        (pointing to the absolute latest, which will be marked
+        incompatible downstream).
+        """
+        if not meta.version_entries:
+            return
+
+        for entry in meta.version_entries:
+            api_ver = entry.get("api_version", 0)
+            if not isinstance(api_ver, int) or api_ver > PLUGIN_API_VERSION:
+                continue
+            meta.version = str(entry.get("version", meta.version))
+            meta.api_version = api_ver
+            return
 
     def fetch_registry(self) -> List[AddonMetadata]:
         """
@@ -374,6 +404,7 @@ class AddonManager:
                     meta = AddonMetadata.from_registry_entry(
                         addon_id, addon_data
                     )
+                    self._pick_compatible_version(meta)
                     result.append(meta)
                 except Exception as e:
                     logger.warning(

@@ -96,6 +96,51 @@ class TestAddonMetadata:
         d = meta.to_dict()
         assert d["version"] is None
 
+    def test_from_registry_entry_structured_versions(self):
+        """Test parsing structured version entries from registry."""
+        data = {
+            "display_name": "My Addon",
+            "description": "A test addon",
+            "depends": [],
+            "author": {"name": "Test", "email": "t@t.com"},
+            "repository": "https://github.com/example/repo",
+            "latest_stable": "v1.0.0",
+            "api_version": 2,
+            "versions": [
+                {"version": "v1.0.0", "api_version": 2},
+                {"version": "v0.9.0", "api_version": 1},
+            ],
+        }
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert len(meta.version_entries) == 2
+        assert meta.version_entries[0]["version"] == "v1.0.0"
+        assert meta.version_entries[0]["api_version"] == 2
+        assert meta.version_entries[1]["version"] == "v0.9.0"
+        assert meta.version_entries[1]["api_version"] == 1
+
+    def test_from_registry_entry_legacy_string_versions(self):
+        """Test parsing legacy string-based version entries."""
+        data = {
+            "display_name": "My Addon",
+            "depends": [],
+            "author": {"name": "Test", "email": "t@t.com"},
+            "versions": ["v1.0.0", "v0.9.0"],
+        }
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert len(meta.version_entries) == 2
+        assert meta.version_entries[0] == {"version": "v1.0.0"}
+        assert meta.version_entries[1] == {"version": "v0.9.0"}
+
+    def test_from_registry_entry_no_versions_key(self):
+        """Test that missing versions key yields empty list."""
+        data = {
+            "display_name": "My Addon",
+            "depends": [],
+            "author": {"name": "Test", "email": "t@t.com"},
+        }
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.version_entries == []
+
 
 class TestAddon:
     def test_load_from_directory_success(self):

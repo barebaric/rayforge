@@ -138,6 +138,7 @@ class AddonMetadata:
     display_name: str = ""
     requires: List[str] = field(default_factory=list)
     license: Optional[AddonLicense] = None
+    version_entries: List[Dict[str, Any]] = field(default_factory=list)
 
     @property
     def license_name(self) -> str:
@@ -188,6 +189,8 @@ class AddonMetadata:
         if isinstance(requires, str):
             requires = [requires]
 
+        version_entries = _parse_version_entries(data.get("versions", []))
+
         return cls(
             name=addon_name,
             display_name=data.get("display_name", addon_name),
@@ -202,7 +205,32 @@ class AddonMetadata:
             api_version=data.get("api_version", PLUGIN_API_VERSION),
             requires=requires,
             license=AddonLicense.from_dict(data.get("license")),
+            version_entries=version_entries,
         )
+
+
+def _parse_version_entries(
+    raw: list,
+) -> List[Dict[str, Any]]:
+    """Parse the 'versions' list from registry data into structured dicts.
+
+    Each entry may be either a string (legacy format, e.g. ``"v1.0.0"``)
+    or a dict with keys ``version``, ``api_version``.
+    """
+    entries: List[Dict[str, Any]] = []
+    if not isinstance(raw, list):
+        return entries
+    for item in raw:
+        if isinstance(item, str):
+            entries.append({"version": item})
+        elif isinstance(item, dict):
+            entries.append(
+                {
+                    "version": str(item.get("version", "")),
+                    "api_version": item.get("api_version", 0),
+                }
+            )
+    return entries
 
 
 class Addon:
