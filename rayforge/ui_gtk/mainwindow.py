@@ -967,9 +967,11 @@ class MainWindow(Adw.ApplicationWindow):
         if not config.machine:
             return
         logger.debug(f"Toolbar WCS selected: {wcs}")
-        # Only set if different to avoid redundant updates
-        if config.machine.active_wcs != wcs:
-            config.machine.set_active_wcs(wcs)
+        machine = config.machine
+        if machine.active_wcs != wcs:
+            task_mgr.add_coroutine(
+                lambda ctx, w=wcs: machine.switch_active_wcs(w)
+            )
 
     def _update_wcs_dropdown(self, machine: Optional[Machine], **kwargs):
         """

@@ -960,10 +960,26 @@ class Machine:
         return ml != 0 or mt != 0 or mr != 0 or mb != 0
 
     def set_active_wcs(self, wcs: str):
-        """Sets the active WCS and notifies listeners."""
+        """
+        Sets the active WCS on the model and notifies listeners.
+
+        This updates the model state immediately. When called from the UI
+        (e.g. WCS dropdown), use switch_active_wcs() on the controller
+        instead, which also sends the G-code command to the device and
+        confirms the switch.
+        """
         if wcs != self.active_wcs:
             self.active_wcs = wcs
             self.changed.send(self)
+
+    async def switch_active_wcs(self, wcs: str):
+        """
+        Switches the active WCS on both model and device.
+
+        Sends the G-code WCS command, confirms via $G, and re-reads
+        WCS offsets. Use this for UI-initiated WCS switches.
+        """
+        await self.controller.switch_active_wcs(wcs)
 
     async def set_work_origin(
         self, x: float, y: float, z: float, wcs_slot: Optional[str] = None
