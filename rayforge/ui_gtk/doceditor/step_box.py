@@ -103,6 +103,7 @@ class StepBox(Gtk.Box):
 
         is_visible = self.step.visible
         self.visibility_switch.set_active(is_visible)
+        self.badge.set_dimmed(not is_visible)
 
     def on_switch_state_set(self, switch, state):
         command = ChangePropertyCommand(
