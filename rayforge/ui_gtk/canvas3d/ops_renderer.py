@@ -234,6 +234,9 @@ class OpsRenderer(BaseRenderer):
         mvp_matrix: np.ndarray,
         colors: ColorSet,
         show_travel_moves: bool,
+        executed_vertex_count: int = -1,
+        alpha_pending: float = 0.2,
+        executed_travel_vertex_count: int = -1,
     ) -> None:
         """
         Renders the toolpaths. The vertices are assumed to be in world space.
@@ -243,10 +246,24 @@ class OpsRenderer(BaseRenderer):
             mvp_matrix: The combined Model-View-Projection matrix.
             colors: The resolved ColorSet containing color data.
             show_travel_moves: Whether to render the travel move paths.
+            executed_vertex_count: Powered vertices drawn at full alpha.
+                -1 means all vertices at full alpha (IDLE mode).
+            alpha_pending: Alpha multiplier for pending vertices (0..1).
+            executed_travel_vertex_count: Travel vertices to draw
+                progressively during simulation. -1 means use
+                show_travel_moves instead.
         """
+        if executed_vertex_count > self.powered_vertex_count:
+            raise ValueError(
+                f"executed_vertex_count ({executed_vertex_count}) "
+                f"> powered_vertex_count ({self.powered_vertex_count})"
+            )
+
         shader.use()
         shader.set_mat4("uMVP", mvp_matrix)
         shader.set_float("uHasNormals", 0.0)
+        shader.set_int("uExecutedVertexCount", executed_vertex_count)
+        shader.set_float("uAlphaPending", alpha_pending)
 
         # Draw powered moves (which use vertex colors)
         if self.powered_vertex_count > 0:
@@ -254,14 +271,24 @@ class OpsRenderer(BaseRenderer):
             GL.glBindVertexArray(self.powered_vao)
             GL.glDrawArrays(GL.GL_LINES, 0, self.powered_vertex_count)
 
-        # Draw travel moves (uses a uniform color), if enabled
-        if show_travel_moves and self.travel_vertex_count > 0:
+        # Draw travel moves
+        travel_draw = 0
+        if executed_travel_vertex_count >= 0:
+            travel_draw = min(
+                executed_travel_vertex_count, self.travel_vertex_count
+            )
+        elif show_travel_moves:
+            travel_draw = self.travel_vertex_count
+
+        if travel_draw > 0:
             shader.set_float("uUseVertexColor", 0.0)
+            shader.set_int("uExecutedVertexCount", -1)
             shader.set_vec4("uColor", colors.get_rgba("travel"))
             GL.glBindVertexArray(self.travel_vao)
-            GL.glDrawArrays(GL.GL_LINES, 0, self.travel_vertex_count)
+            GL.glDrawArrays(GL.GL_LINES, 0, travel_draw)
 
         shader.set_float("uUseVertexColor", 0.0)
+        shader.set_int("uExecutedVertexCount", -1)
         GL.glBindVertexArray(0)
 
     def _tessellate_arc(

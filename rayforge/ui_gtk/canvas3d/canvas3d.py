@@ -1,4 +1,5 @@
 import logging
+import math
 import threading
 import time
 from dataclasses import dataclass
@@ -10,10 +11,24 @@ from OpenGL import GL
 from ...context import RayforgeContext
 from ...core.geo import Point, Point3D, Rect
 from ...core.model import Model
+from ...core.ops import Ops
+from ...core.ops.commands import MovingCommand
+from ...machine.driver.driver import Axis
+from ...machine.kinematics import RotaryKinematics
 from ...machine.models.colors import OpsColorSet
 from ...pipeline.artifact import ArtifactStore, StepRenderArtifact
+from ...pipeline.artifact.job import JobArtifact
+from ...pipeline.artifact.key import ArtifactKey
+from ...pipeline.artifact.step_ops import StepOpsArtifact
 from ...pipeline.encoder.vertexencoder import transform_to_cylinder
 from ...pipeline.pipeline import Pipeline
+from ...simulator.op_player import OpPlayer
+from ...simulator.vertex_map import (
+    SceneVertexMap,
+    ScanlineOverlay,
+    build_vertex_map,
+    build_scanline_overlay,
+)
 from ...shared.util.colors import ColorSet
 from ...shared.tasker import task_mgr, Task
 from ..shared.gtk_color import GtkColorResolver, ColorSpecDict
@@ -23,6 +38,7 @@ from .cylinder_renderer import CylinderRenderer
 from .gl_utils import Shader
 from .model_renderer import ModelRenderer
 from .ops_renderer import OpsRenderer
+from .ring_buffer_renderer import RingBufferRenderer
 from .scene_assembler import (
     SceneDescription,
     generate_scene_description,
@@ -315,6 +331,15 @@ class Canvas3D(Gtk.GLArea):
         self._scene_preparation_task: Optional[Task] = None
         self._scene_prep_cancel = threading.Event()
         self._scene_vtx_cache: Optional[Tuple[VertexGroup, VertexGroup]] = None
+        self._op_player: Optional[OpPlayer] = None
+        self._vertex_map: Optional[SceneVertexMap] = None
+        self._scanline_overlay: Optional[ScanlineOverlay] = None
+        self._current_scene_description: Optional[SceneDescription] = None
+        self._playback_overlay = None
+        self._step_cmd_boundaries: List[Tuple[int, int, int, str]] = []
+        self._world_to_cyl_local = np.identity(4, dtype=np.float32)
+        self._ring_flat_offsets: List[int] = []
+        self._ring_rotary_offsets: List[int] = []
         self._show_travel_moves = False
         self._show_nogo_zones = True
         self._show_models = True
@@ -368,6 +393,9 @@ class Canvas3D(Gtk.GLArea):
             self.pipeline.processing_state_changed.connect(
                 self._on_pipeline_state_changed
             )
+            self.pipeline._job_stage.job_generation_finished.connect(
+                self._on_job_generation_finished
+            )
         # Connect to machine for WCS updates
         machine = self._context.machine
         if machine:
@@ -391,6 +419,11 @@ class Canvas3D(Gtk.GLArea):
         if self.doc and self.doc.active_layer:
             return self.doc.active_layer.rotary_enabled
         return False
+
+    def set_playback_overlay(self, overlay):
+        """Set the playback overlay widget for slider sync."""
+        self._playback_overlay = overlay
+        overlay.set_canvas(self)
 
     def _on_wcs_updated(self, machine: "Machine", **kwargs):
         """Handler for when the machine's WCS state changes."""
@@ -473,6 +506,14 @@ class Canvas3D(Gtk.GLArea):
         if not is_processing:
             logger.debug("Pipeline has settled. Updating 3D scene.")
             self.update_scene_from_doc()
+
+    def _on_job_generation_finished(self, sender, **kwargs):
+        if (
+            kwargs.get("task_status") == "completed"
+            and kwargs.get("handle") is not None
+        ):
+            self._update_op_player()
+            self.queue_render()
 
     def _on_style_changed(self, widget, gparam):
         """Marks theme resources as dirty when the GTK theme changes."""
@@ -606,6 +647,9 @@ class Canvas3D(Gtk.GLArea):
             self.pipeline.processing_state_changed.disconnect(
                 self._on_pipeline_state_changed
             )
+            self.pipeline._job_stage.job_generation_finished.disconnect(
+                self._on_job_generation_finished
+            )
         machine = self._context.machine
         if machine:
             machine.wcs_updated.disconnect(self._on_wcs_updated)
@@ -620,6 +664,10 @@ class Canvas3D(Gtk.GLArea):
                 self._ops_renderer_flat.cleanup()
             if self._ops_renderer_rotary:
                 self._ops_renderer_rotary.cleanup()
+            if self._ring_buffer_flat:
+                self._ring_buffer_flat.cleanup()
+            if self._ring_buffer_rotary:
+                self._ring_buffer_rotary.cleanup()
             if self._sphere_renderer:
                 self._sphere_renderer.cleanup()
             if self._texture_renderer:
@@ -692,6 +740,10 @@ class Canvas3D(Gtk.GLArea):
             self._ops_renderer_flat.init_gl()
             self._ops_renderer_rotary = OpsRenderer()
             self._ops_renderer_rotary.init_gl()
+            self._ring_buffer_flat = RingBufferRenderer()
+            self._ring_buffer_flat.init_gl()
+            self._ring_buffer_rotary = RingBufferRenderer()
+            self._ring_buffer_rotary.init_gl()
             self._texture_renderer = TextureArtifactRenderer()
             self._texture_renderer.init_gl()
             if self._sphere_renderer:
@@ -851,27 +903,106 @@ class Canvas3D(Gtk.GLArea):
                 zone_mvp_gl = (mvp_matrix_ui @ margin_shift).T
                 self._zone_renderer.render(self._main_shader, zone_mvp_gl)
 
+            exec_vtx_count = -1
+            travel_exec_vtx = -1
+            if self._op_player and self._vertex_map:
+                idx = self._op_player.current_index
+                if self._vertex_map.total_powered_vertices > 0:
+                    if idx < len(self._vertex_map.command_vertex_offset):
+                        exec_vtx_count = (
+                            self._vertex_map.command_vertex_offset[idx + 1]
+                        )
+                if idx < len(self._vertex_map.command_travel_vertex_offset):
+                    travel_exec_vtx = (
+                        self._vertex_map.command_travel_vertex_offset[idx + 1]
+                    )
+
+            flat_exec = -1
+            if exec_vtx_count >= 0 and self._ops_renderer_flat:
+                flat_exec = min(
+                    exec_vtx_count,
+                    self._ops_renderer_flat.powered_vertex_count,
+                )
+
             if self._ops_renderer_flat and self._main_shader:
                 self._ops_renderer_flat.render(
                     self._main_shader,
                     mvp_matrix_ui_gl,
                     colors=self._color_set,
                     show_travel_moves=self._show_travel_moves,
+                    executed_vertex_count=flat_exec,
+                    executed_travel_vertex_count=travel_exec_vtx,
                 )
+
+            # Laser head marker: draw at head_position from kinematics
+            if (
+                self._op_player
+                and self._sphere_renderer
+                and self._main_shader
+                and machine
+            ):
+                kin = machine.kinematics
+                hx, hy, hz = kin.head_position(self._op_player.state)
+                head_pos = margin_shift @ np.array(
+                    [hx, hy, hz, 1.0], dtype=np.float32
+                )
+                self._sphere_renderer.render(
+                    self._main_shader,
+                    proj_matrix,
+                    view_matrix,
+                    head_pos[:3],
+                    color=(1.0, 0.2, 0.0, 1.0),
+                    scale=2.0,
+                )
+
+            # Compute cylinder rotation from cylinder-local Y.
+            # The rotary vertices are placed on the cylinder surface via
+            # world_to_cyl_local → transform_to_cylinder, which maps
+            # cyl_local_Y → theta.  Rotating the scene by theta keeps
+            # the active point facing up.
+            cyl_angle = 0.0
+            if self._op_player and self._had_rotary_layers and machine:
+                kin = machine.kinematics
+                if isinstance(kin, RotaryKinematics):
+                    world_y = self._op_player.state.axes[Axis.Y]
+                    cyl_pos = self._world_to_cyl_local @ np.array(
+                        [0, world_y, 0, 1.0], dtype=np.float32
+                    )
+                    cyl_local_y = cyl_pos[1]
+                    circumference = kin.rotary_diameter * math.pi
+                    cyl_angle = (cyl_local_y / circumference) * 2 * math.pi
+
+            rot_cyl_gl = mvp_matrix_scene_gl
+            if abs(cyl_angle) > 1e-9:
+                rot_3x3 = rotation_matrix_from_axis_angle(
+                    np.array([1.0, 0.0, 0.0]), cyl_angle
+                )
+                rot_4x4 = np.eye(4, dtype=np.float64)
+                rot_4x4[:3, :3] = rot_3x3
+                rot_cyl = mvp_matrix_scene @ rot_4x4
+                rot_cyl_gl = rot_cyl.T.astype(np.float32)
 
             if self._ops_renderer_rotary and self._main_shader:
                 # Rotary vertices are in Local Cylinder Space,
                 # drawn via Grid Space.
+                rot_exec_vtx = -1
+                if exec_vtx_count >= 0:
+                    rot_exec_vtx = min(
+                        exec_vtx_count,
+                        self._ops_renderer_rotary.powered_vertex_count,
+                    )
                 self._ops_renderer_rotary.render(
                     self._main_shader,
-                    mvp_matrix_scene_gl,
+                    rot_cyl_gl,
                     colors=self._color_set,
                     show_travel_moves=self._show_travel_moves,
+                    executed_vertex_count=rot_exec_vtx,
+                    executed_travel_vertex_count=travel_exec_vtx,
                 )
 
             for renderer in self._cylinder_renderers.values():
                 if self._main_shader:
-                    renderer.render(self._main_shader, mvp_matrix_scene_gl)
+                    renderer.render(self._main_shader, rot_cyl_gl)
 
             if self._show_models:
                 for renderer, module_transform in self._model_renderers:
@@ -886,15 +1017,74 @@ class Canvas3D(Gtk.GLArea):
                             camera_position=self.camera.position,
                         )
 
+            tex_reached = None
+            if self._op_player and self._step_cmd_boundaries:
+                tex_reached = 0
+                playhead = self._op_player.current_index
+                for (
+                    cmd_start,
+                    cmd_end,
+                    tex_count,
+                    _,
+                ) in self._step_cmd_boundaries:
+                    if playhead >= cmd_end - 1:
+                        tex_reached += tex_count
             if self._texture_renderer and self._texture_shader:
-                # Always call both; each method filters internally
-                # based on instance rotary metadata.
                 self._texture_renderer.render(
-                    mvp_matrix_ui, self._texture_shader
-                )
-                self._texture_renderer.render_cylinder(
-                    mvp_matrix_scene,
+                    mvp_matrix_ui,
                     self._texture_shader,
+                    reached_count=tex_reached,
+                )
+                rot_cyl_mvp = mvp_matrix_scene
+                if abs(cyl_angle) > 1e-9:
+                    rot_3x3 = rotation_matrix_from_axis_angle(
+                        np.array([1.0, 0.0, 0.0]), cyl_angle
+                    )
+                    rot_4x4 = np.eye(4, dtype=np.float64)
+                    rot_4x4[:3, :3] = rot_3x3
+                    rot_cyl_mvp = mvp_matrix_scene @ rot_4x4
+                self._texture_renderer.render_cylinder(
+                    rot_cyl_mvp,
+                    self._texture_shader,
+                    reached_count=tex_reached,
+                )
+
+            # Ring buffer: scanline vector overlay on top of dimmed
+            # textures.  Draws only the powered pixel-segments that
+            # the playhead has reached, using the same alpha-split
+            # shader as the regular OpsRenderer.
+            flat_ring_exec = -1
+            rot_ring_exec = -1
+            if self._op_player and self._ring_flat_offsets:
+                idx = self._op_player.current_index
+                if idx + 1 < len(self._ring_flat_offsets):
+                    flat_ring_exec = self._ring_flat_offsets[idx + 1]
+            if self._op_player and self._ring_rotary_offsets:
+                idx = self._op_player.current_index
+                if idx + 1 < len(self._ring_rotary_offsets):
+                    rot_ring_exec = self._ring_rotary_offsets[idx + 1]
+
+            ring_mvp_gl = (mvp_matrix_ui @ margin_shift).T
+
+            if (
+                self._ring_buffer_flat
+                and self._ring_buffer_flat.vertex_count > 0
+                and self._main_shader
+            ):
+                self._ring_buffer_flat.render(
+                    self._main_shader,
+                    ring_mvp_gl,
+                    executed_vertex_count=flat_ring_exec,
+                )
+            if (
+                self._ring_buffer_rotary
+                and self._ring_buffer_rotary.vertex_count > 0
+                and self._main_shader
+            ):
+                self._ring_buffer_rotary.render(
+                    self._main_shader,
+                    rot_cyl_gl,
+                    executed_vertex_count=rot_ring_exec,
                 )
 
         except Exception as e:
@@ -1119,6 +1309,12 @@ class Canvas3D(Gtk.GLArea):
         """
         if task.get_status() != "completed":
             self._scene_vtx_cache = None
+            self._op_player = None
+            self._vertex_map = None
+            self._scanline_overlay = None
+            self._step_cmd_boundaries = []
+            self._ring_flat_offsets = []
+            self._ring_rotary_offsets = []
             if self._ops_renderer_flat:
                 self._ops_renderer_flat.clear()
             if self._ops_renderer_rotary:
@@ -1134,7 +1330,317 @@ class Canvas3D(Gtk.GLArea):
             "[CANVAS3D] Scene preparation finished. Caching vertex data."
         )
         self._scene_vtx_cache = task.result()
+        self._update_op_player()
         self._update_renderer_from_cache()
+
+    def _update_op_player(self):
+        ops = self._get_ops_for_playback()
+        if ops is None or ops.is_empty():
+            logger.debug("[CANVAS3D] _update_op_player: no ops available.")
+            self._op_player = None
+            self._vertex_map = None
+            self._scanline_overlay = None
+            self._notify_playback_overlay(0)
+            return
+        logger.debug(
+            "[CANVAS3D] _update_op_player: got ops with "
+            "%d commands." % len(ops)
+        )
+        self._op_player = OpPlayer(ops)
+        self._vertex_map = build_vertex_map(ops)
+        self._scanline_overlay = build_scanline_overlay(ops)
+        last_idx = self._op_player.seek_last_movement()
+        if last_idx is not None:
+            last_cmd = self._op_player.ops.commands[last_idx]
+            assert isinstance(last_cmd, MovingCommand)
+            assert last_cmd.end is not None
+            assert (
+                abs(self._op_player.state.axes[Axis.X] - last_cmd.end[0])
+                < 1e-6
+            )
+            assert (
+                abs(self._op_player.state.axes[Axis.Y] - last_cmd.end[1])
+                < 1e-6
+            )
+            assert (
+                abs(self._op_player.state.axes[Axis.Z] - last_cmd.end[2])
+                < 1e-6
+            )
+        self._notify_playback_overlay(len(self._op_player.ops))
+        self._upload_scanline_overlay()
+
+    def _get_ops_for_playback(self) -> Optional[Ops]:
+        handle = self.pipeline.get_existing_job_handle()
+        if handle is not None:
+            artifact = self._context.artifact_store.get(handle)
+            if isinstance(artifact, JobArtifact) and artifact.ops is not None:
+                self._assemble_step_boundaries()
+                return artifact.ops
+        return self._assemble_ops_from_steps()
+
+    def _assemble_step_boundaries(self):
+        store = self._context.artifact_store
+        boundaries: List[Tuple[int, int, int, str]] = []
+        seen_steps: set = set()
+        cmd_pos = 0
+        for layer in self.doc.layers:
+            if not layer.workflow:
+                continue
+            cmd_pos += 1
+            for step in layer.workflow.steps:
+                if step.uid in seen_steps:
+                    continue
+                seen_steps.add(step.uid)
+                render_handle = self.pipeline.get_step_render_artifact_handle(
+                    step.uid
+                )
+                tex_count = 0
+                if render_handle is not None:
+                    render_art = store.get(render_handle)
+                    if isinstance(render_art, StepRenderArtifact):
+                        tex_count = len(render_art.texture_instances)
+                key = ArtifactKey.for_step(step.uid)
+                ops_handle = (
+                    self.pipeline._artifact_manager.get_step_ops_handle(
+                        key, self.pipeline._data_generation_id
+                    )
+                )
+                if (
+                    ops_handle is None
+                    and self.pipeline._data_generation_id > 1
+                ):
+                    ops_handle = (
+                        self.pipeline._artifact_manager.get_step_ops_handle(
+                            key,
+                            self.pipeline._data_generation_id - 1,
+                        )
+                    )
+                step_cmd_count = 0
+                if ops_handle is not None:
+                    art = store.get(ops_handle)
+                    if (
+                        isinstance(art, StepOpsArtifact)
+                        and not art.ops.is_empty()
+                    ):
+                        step_cmd_count = len(art.ops.commands)
+                step_start = cmd_pos
+                step_end = cmd_pos + step_cmd_count
+                cmd_pos = step_end
+                if tex_count > 0:
+                    boundaries.append(
+                        (step_start, step_end, tex_count, step.uid)
+                    )
+            cmd_pos += 1
+        self._step_cmd_boundaries = boundaries
+
+    def _assemble_ops_from_steps(self) -> Optional[Ops]:
+        final_ops = Ops()
+        final_ops.job_start()
+        store = self._context.artifact_store
+        boundaries: List[Tuple[int, int, int, str]] = []
+        seen_steps: set = set()
+        for layer in self.doc.layers:
+            if not layer.workflow:
+                continue
+            final_ops.layer_start(layer_uid=layer.uid)
+            for step in layer.workflow.steps:
+                if step.uid in seen_steps:
+                    continue
+                seen_steps.add(step.uid)
+                cmd_start = len(final_ops.commands)
+                key = ArtifactKey.for_step(step.uid)
+                handle = self.pipeline._artifact_manager.get_step_ops_handle(
+                    key, self.pipeline._data_generation_id
+                )
+                if handle is None and self.pipeline._data_generation_id > 1:
+                    handle = (
+                        self.pipeline._artifact_manager.get_step_ops_handle(
+                            key,
+                            self.pipeline._data_generation_id - 1,
+                        )
+                    )
+                tex_count = 0
+                if handle is not None:
+                    render_handle = (
+                        self.pipeline.get_step_render_artifact_handle(step.uid)
+                    )
+                    if render_handle is not None:
+                        render_art = store.get(render_handle)
+                        if isinstance(render_art, StepRenderArtifact):
+                            tex_count = len(render_art.texture_instances)
+                    artifact = store.get(handle)
+                    if (
+                        isinstance(artifact, StepOpsArtifact)
+                        and not artifact.ops.is_empty()
+                    ):
+                        final_ops.extend(artifact.ops)
+                cmd_end = len(final_ops.commands)
+                if tex_count > 0:
+                    boundaries.append(
+                        (cmd_start, cmd_end, tex_count, step.uid)
+                    )
+            final_ops.layer_end(layer_uid=layer.uid)
+        final_ops.job_end()
+        self._step_cmd_boundaries = boundaries
+        return final_ops if not final_ops.is_empty() else None
+
+    def _notify_playback_overlay(self, command_count: int):
+        if self._playback_overlay is not None:
+            self._playback_overlay.update_ops_range(command_count)
+
+    def _upload_scanline_overlay(self):
+        """
+        Encode powered scanline segments per command, apply cylinder
+        wrapping for rotary steps, and upload to flat/rotary ring
+        buffers with per-buffer command-to-vertex offset arrays.
+        """
+        if not self._ring_buffer_flat or not self._ring_buffer_rotary:
+            return
+
+        overlay = self._scanline_overlay
+        if overlay is None or overlay.total_overlay_vertices == 0:
+            self._ring_buffer_flat.clear()
+            self._ring_buffer_rotary.clear()
+            self._ring_flat_offsets = []
+            self._ring_rotary_offsets = []
+            return
+
+        if not self._current_scene_description:
+            self._ring_buffer_flat.clear()
+            self._ring_buffer_rotary.clear()
+            self._ring_flat_offsets = []
+            self._ring_rotary_offsets = []
+            return
+
+        self.make_current()
+
+        step_info: Dict[str, Tuple[str, bool, float]] = {}
+        for item in self._current_scene_description.render_items:
+            step_info[item.step_uid] = (
+                item.laser_uid,
+                item.rotary_enabled,
+                item.rotary_diameter,
+            )
+
+        lut_cache: Dict[str, Optional[np.ndarray]] = {}
+
+        def _get_lut(laser_uid: str):
+            if laser_uid in lut_cache:
+                return lut_cache[laser_uid]
+            lut = None
+            laser_cs = self._laser_color_sets.get(laser_uid)
+            if laser_cs is not None:
+                lut = laser_cs.get_lut("engrave")
+            elif self._color_set is not None:
+                lut = self._color_set.get_lut("engrave")
+            lut_cache[laser_uid] = lut
+            return lut
+
+        cmd_step_map: Dict[int, str] = {}
+        for (
+            cmd_start,
+            cmd_end,
+            tex_count,
+            step_uid,
+        ) in self._step_cmd_boundaries:
+            for ci in range(cmd_start, cmd_end):
+                cmd_step_map[ci] = step_uid
+
+        overlay_pos = overlay.positions.reshape(-1, 3)
+        overlay_col = overlay.colors.reshape(-1, 4)
+        overlay_off = overlay.cmd_vertex_offset
+        n_cmds = len(overlay_off) - 1
+
+        flat_off: List[int] = [0] * (n_cmds + 1)
+        rot_off: List[int] = [0] * (n_cmds + 1)
+        flat_cum = 0
+        rot_cum = 0
+        flat_pos: List[np.ndarray] = []
+        flat_col: List[np.ndarray] = []
+        rot_pos: List[np.ndarray] = []
+        rot_col: List[np.ndarray] = []
+
+        for cmd_idx in range(n_cmds):
+            step_uid = cmd_step_map.get(cmd_idx)
+            if step_uid is not None:
+                info = step_info.get(step_uid)
+                is_rotary = info[1] if info else False
+                diameter = info[2] if info else 0.0
+                laser_uid = info[0] if info else ""
+
+                v_start = overlay_off[cmd_idx]
+                v_end = overlay_off[cmd_idx + 1]
+
+                if v_end > v_start:
+                    pos_slice = overlay_pos[v_start:v_end].copy()
+                    col_slice = overlay_col[v_start:v_end].copy()
+
+                    lut = _get_lut(laser_uid)
+                    if lut is not None:
+                        power_idx = np.clip(
+                            (col_slice[:, 0] * 255).astype(int),
+                            0,
+                            255,
+                        )
+                        col_slice = lut[power_idx].astype(np.float32)
+
+                    if is_rotary:
+                        hom = np.hstack(
+                            [
+                                pos_slice,
+                                np.ones(
+                                    (pos_slice.shape[0], 1),
+                                    dtype=np.float32,
+                                ),
+                            ]
+                        )
+                        transformed = (
+                            (self._world_to_cyl_local @ hom.T)
+                            .T[:, :3]
+                            .astype(np.float32)
+                        )
+                        if diameter > 0:
+                            transformed, col_slice = transform_to_cylinder(
+                                transformed, diameter, col_slice
+                            )
+                        n_verts = transformed.shape[0]
+                        rot_cum += n_verts
+                        rot_pos.append(transformed.ravel())
+                        rot_col.append(col_slice.ravel())
+                    else:
+                        n_verts = pos_slice.shape[0]
+                        flat_cum += n_verts
+                        flat_pos.append(pos_slice.ravel())
+                        flat_col.append(col_slice.ravel())
+
+            flat_off[cmd_idx + 1] = flat_cum
+            rot_off[cmd_idx + 1] = rot_cum
+
+        if flat_pos:
+            fp = np.concatenate(flat_pos)
+            fc = np.concatenate(flat_col).ravel()
+            self._ring_buffer_flat.upload(fp, fc)
+        else:
+            self._ring_buffer_flat.clear()
+
+        if rot_pos:
+            rp = np.concatenate(rot_pos)
+            rc = np.concatenate(rot_col).ravel()
+            self._ring_buffer_rotary.upload(rp, rc)
+        else:
+            self._ring_buffer_rotary.clear()
+
+        self._ring_flat_offsets = flat_off
+        self._ring_rotary_offsets = rot_off
+
+        logger.debug(
+            "[CANVAS3D] Scanline overlay uploaded. "
+            "Flat: %d verts, Rotary: %d verts."
+            % (
+                self._ring_buffer_flat.vertex_count,
+                self._ring_buffer_rotary.vertex_count,
+            )
+        )
 
     def _update_renderer_from_cache(self):
         """
@@ -1152,6 +1658,8 @@ class Canvas3D(Gtk.GLArea):
 
         if not self._ops_renderer_flat or not self._ops_renderer_rotary:
             return
+
+        self.make_current()
 
         logger.debug("[CANVAS3D] Updating renderers from vertex cache.")
 
@@ -1298,9 +1806,6 @@ class Canvas3D(Gtk.GLArea):
             self._model_renderers.append(
                 (renderer, module.transform.astype(np.float32))
             )
-            self._model_renderers.append(
-                (renderer, module.transform.astype(np.float32))
-            )
 
     def update_scene_from_doc(self):
         """
@@ -1337,6 +1842,7 @@ class Canvas3D(Gtk.GLArea):
 
         # 1. Quickly generate the lightweight scene description
         scene_description = generate_scene_description(self.doc, self.pipeline)
+        self._current_scene_description = scene_description
 
         world_to_visual = np.identity(4, dtype=np.float32)
         world_to_grid = np.identity(4, dtype=np.float32)
@@ -1402,6 +1908,7 @@ class Canvas3D(Gtk.GLArea):
                     )
 
         # 3. Schedule the expensive vector preparation for a background thread
+        self._world_to_cyl_local = world_to_cyl_local
         self._schedule_scene_preparation(
             scene_description,
             world_to_visual,

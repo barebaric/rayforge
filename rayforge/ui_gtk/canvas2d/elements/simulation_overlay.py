@@ -4,10 +4,11 @@ import cairo
 import numpy as np
 from typing import Dict, Optional, Tuple
 from gi.repository import Gdk
+from ....core.geo.linearize import linearize_arc
 from ....core.ops import Ops, State
 from ....core.ops.commands import ArcToCommand, ScanLinePowerCommand
+from ....simulator.machine_state import MachineState
 from ...canvas.element import CanvasElement
-from ....core.geo.linearize import linearize_arc
 
 
 def speed_to_heatmap_color(
@@ -69,31 +70,26 @@ class OpsTimeline:
             self.speed_range = (0.0, 1000.0)
             return
 
-        current_state = State(power=0.0)
+        machine_state = MachineState()
         current_pos = (0.0, 0.0, 0.0)
         speeds = []
         timeline_idx = 0
 
         for op_idx, cmd in enumerate(self.ops):
-            # Update state if this is a state command
-            if cmd.is_state_command():
-                cmd.apply_to_state(current_state)
-            # Only add movement commands to the timeline steps
-            elif not cmd.is_marker():
-                # Store command with state and starting position
-                self.steps.append(
-                    (cmd, State(**current_state.__dict__), current_pos)
-                )
-                self.op_to_timeline_index[op_idx] = timeline_idx
-                timeline_idx += 1
+            machine_state.apply_command(cmd, op_idx)
 
-                # Update current_pos
-                if cmd.end is not None:
-                    current_pos = cmd.end
+            if cmd.is_state_command() or cmd.is_marker():
+                continue
 
-                # Track speeds for range calculation
-                if current_state.cut_speed is not None:
-                    speeds.append(current_state.cut_speed)
+            self.steps.append((cmd, machine_state.copy(), current_pos))
+            self.op_to_timeline_index[op_idx] = timeline_idx
+            timeline_idx += 1
+
+            if cmd.end is not None:
+                current_pos = cmd.end
+
+            if machine_state.cut_speed is not None:
+                speeds.append(machine_state.cut_speed)
 
         # Calculate speed range from all operations ONCE
         if speeds:
