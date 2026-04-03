@@ -8,6 +8,10 @@ css = """
     background-color: @accent_bg_color;
     color: @accent_fg_color;
 }
+.number-badge.dimmed {
+    background-color: alpha(@window_fg_color, 0.15);
+    color: @window_fg_color;
+}
 """
 
 
@@ -56,3 +60,9 @@ class NumberBadge(Gtk.Widget):
 
     def get_number(self):
         return self._number
+
+    def set_dimmed(self, dimmed):
+        if dimmed:
+            self.add_css_class("dimmed")
+        else:
+            self.remove_css_class("dimmed")
