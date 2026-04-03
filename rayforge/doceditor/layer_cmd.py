@@ -121,6 +121,26 @@ class LayerCmd:
     def __init__(self, editor: "DocEditor"):
         self._editor = editor
 
+    def move_workpieces_to_layer(
+        self, workpieces: List[WorkPiece], target_layer: Layer
+    ):
+        """
+        Creates an undoable command to move workpieces to a specific layer.
+
+        Args:
+            workpieces: The workpieces to move.
+            target_layer: The layer to move them to.
+        """
+        if not workpieces:
+            return
+        source_layer = workpieces[0].layer
+        if not source_layer or source_layer is target_layer:
+            return
+        cmd = MoveWorkpiecesLayerCommand(
+            workpieces, target_layer, source_layer
+        )
+        self._editor.history_manager.execute(cmd)
+
     def move_selected_to_adjacent_layer(
         self, surface: "WorkSurface", direction: int
     ):
