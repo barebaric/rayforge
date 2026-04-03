@@ -491,8 +491,28 @@ class MainWindow(Adw.ApplicationWindow):
             self.on_add_asset_requested
         )
         self.asset_browser.asset_activated.connect(self.on_asset_activated)
+
+        # Add the console as the fourth tab in the bottom panel
+        self.bottom_panel.tab_widget.add_tab(
+            "console",
+            "terminal-symbolic",
+            self.bottom_panel.console,
+            _("Console"),
+        )
+
+        config = get_context().config
+        saved_order = config.bottom_panel_tab_order
+        if saved_order:
+            self.bottom_panel.tab_widget.set_tab_order(saved_order)
+
+        saved_tab = config.bottom_panel_active_tab
+        if saved_tab:
+            self.bottom_panel.tab_widget.set_current_tab(saved_tab)
         self.bottom_panel.tab_widget.tab_changed.connect(
             self._on_bottom_tab_changed
+        )
+        self.bottom_panel.tab_widget.tab_order_changed.connect(
+            self._on_bottom_tab_order_changed
         )
 
         # Connect to click-to-zero mode signal
@@ -795,8 +815,13 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_bottom_tab_changed(self, sender, *, name: str):
         """Refresh previews when the G-code tab becomes visible."""
+        get_context().config.set_bottom_panel_active_tab(name)
         if name == "gcode":
             self.refresh_previews()
+
+    def _on_bottom_tab_order_changed(self, sender):
+        order = self.bottom_panel.tab_widget.get_tab_order()
+        get_context().config.set_bottom_panel_tab_order(order)
 
     def _on_gcode_line_activated(self, sender, *, line_number: int):
         """

@@ -39,6 +39,8 @@ class Config:
         self.last_opened_project: Optional[Path] = None
         # UI visibility states
         self.bottom_panel_visible: bool = False
+        self.bottom_panel_tab_order = []
+        self.bottom_panel_active_tab: Optional[str] = None
         self.right_panel_visible: bool = True
         self.perspective_mode: bool = False
         self.show_nogo_zones: bool = True
@@ -100,6 +102,20 @@ class Config:
         if self.bottom_panel_visible == visible:
             return
         self.bottom_panel_visible = visible
+        self.changed.send(self)
+
+    def set_bottom_panel_tab_order(self, order: list):
+        """Sets the bottom panel tab order."""
+        if self.bottom_panel_tab_order == order:
+            return
+        self.bottom_panel_tab_order = list(order)
+        self.changed.send(self)
+
+    def set_bottom_panel_active_tab(self, name: Optional[str]):
+        """Sets the bottom panel active tab name."""
+        if self.bottom_panel_active_tab == name:
+            return
+        self.bottom_panel_active_tab = name
         self.changed.send(self)
 
     def set_right_panel_visible(self, visible: bool):
@@ -175,6 +191,8 @@ class Config:
                 else None
             ),
             "bottom_panel_visible": self.bottom_panel_visible,
+            "bottom_panel_tab_order": self.bottom_panel_tab_order,
+            "bottom_panel_active_tab": self.bottom_panel_active_tab,
             "right_panel_visible": self.right_panel_visible,
             "perspective_mode": self.perspective_mode,
             "show_nogo_zones": self.show_nogo_zones,
@@ -223,6 +241,10 @@ class Config:
 
         # Load UI visibility states
         config.bottom_panel_visible = data.get("bottom_panel_visible", False)
+        config.bottom_panel_tab_order = data.get("bottom_panel_tab_order", [])
+        config.bottom_panel_active_tab = data.get(
+            "bottom_panel_active_tab", None
+        )
         config.right_panel_visible = data.get("right_panel_visible", True)
         config.perspective_mode = data.get("perspective_mode", False)
         config.show_nogo_zones = data.get("show_nogo_zones", True)
