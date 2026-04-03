@@ -59,6 +59,7 @@ from .main_menu import MainMenu
 from .settings.settings_dialog import SettingsWindow
 from .project_cmd import ProjectCmd
 from .shared.gtk import get_monitor_geometry
+from .shared.playback_overlay import PlaybackOverlay
 from .shared.progress_bar import ProgressBar
 from .shared.usage_consent_dialog import UsageConsentDialog
 from .shared.visibility_overlay import VisibilityOverlay
@@ -1371,6 +1372,9 @@ class MainWindow(Adw.ApplicationWindow):
             shortcuts=SHORTCUTS,
         )
         self._canvas3d_overlay.add_overlay(self._canvas3d_vis_overlay)
+        self._canvas3d_playback = PlaybackOverlay()
+        self.canvas3d.set_playback_overlay(self._canvas3d_playback)
+        self._canvas3d_overlay.add_overlay(self._canvas3d_playback)
         self.view_stack.add_named(self._canvas3d_overlay, "3d")
 
         travel_action = self.action_manager.get_action("toggle_travel_view")

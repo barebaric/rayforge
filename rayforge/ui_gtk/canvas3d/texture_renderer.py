@@ -387,7 +387,13 @@ class TextureArtifactRenderer(BaseRenderer):
         )
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
-    def render(self, view_proj_scene_matrix: np.ndarray, shader: Shader):
+    def render(
+        self,
+        view_proj_scene_matrix: np.ndarray,
+        shader: Shader,
+        reached_count: Optional[int] = None,
+        pending_alpha: float = 0.3,
+    ):
         """
         Renders all flat (non-rotary) texture instances.
 
@@ -395,6 +401,10 @@ class TextureArtifactRenderer(BaseRenderer):
             view_proj_scene_matrix: The combined Projection * View * SceneModel
               matrix (P*V*M_scene), not transposed.
             shader: The shader to use for rendering.
+            reached_count: If set, the first N texture instances are drawn
+              at full alpha; the rest are drawn dimmed. None means all at
+              full alpha.
+            pending_alpha: Alpha multiplier for unreached texture instances.
         """
         if not self.is_initialized or not self.instances:
             return
@@ -407,9 +417,14 @@ class TextureArtifactRenderer(BaseRenderer):
         shader.set_int("uColorLUT", 1)
         GL.glBindVertexArray(self.vao)
 
-        for instance in self.instances:
+        for i, instance in enumerate(self.instances):
             if instance["rotary_enabled"]:
                 continue
+
+            if reached_count is not None and i >= reached_count:
+                shader.set_float("uAlpha", pending_alpha)
+            else:
+                shader.set_float("uAlpha", 1.0)
 
             final_mvp = view_proj_scene_matrix @ instance["model_matrix"]
             shader.set_mat4("uMVP", final_mvp.T)
@@ -449,6 +464,8 @@ class TextureArtifactRenderer(BaseRenderer):
         self,
         view_proj_scene_matrix: np.ndarray,
         shader: Shader,
+        reached_count: Optional[int] = None,
+        pending_alpha: float = 0.3,
     ):
         """
         Renders all texture instances mapped onto a cylinder.
@@ -457,6 +474,10 @@ class TextureArtifactRenderer(BaseRenderer):
             view_proj_scene_matrix: The combined Projection * View * SceneModel
               matrix (P*V*M_scene), not transposed.
             shader: The shader to use for rendering.
+            reached_count: If set, the first N texture instances are drawn
+              at full alpha; the rest are drawn dimmed. None means all at
+              full alpha.
+            pending_alpha: Alpha multiplier for unreached texture instances.
         """
         if not self.is_initialized or not self.instances:
             return
@@ -472,10 +493,15 @@ class TextureArtifactRenderer(BaseRenderer):
 
         num_rotary = 0
 
-        for instance in self.instances:
+        for i, instance in enumerate(self.instances):
             if not instance["rotary_enabled"]:
                 continue
             num_rotary += 1
+
+            if reached_count is not None and i >= reached_count:
+                shader.set_float("uAlpha", pending_alpha)
+            else:
+                shader.set_float("uAlpha", 1.0)
 
             vertices = instance.get("cylinder_vertices")
             if vertices is None:

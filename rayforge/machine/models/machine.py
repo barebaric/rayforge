@@ -20,6 +20,11 @@ from ..driver.driver import (
     Axis,
     DeviceState,
 )
+from ..kinematics import (
+    CartesianKinematics,
+    Kinematics,
+    RotaryKinematics,
+)
 from ..transport import TransportStatus
 from .dialect import GcodeDialect, get_dialect
 from .laser import Laser
@@ -196,6 +201,14 @@ class Machine:
         Returns a sorted list of supported mutable Work Coordinate Systems.
         """
         return sorted(list(self.wcs_offsets.keys()))
+
+    @property
+    def kinematics(self) -> Kinematics:
+        """Returns the appropriate Kinematics for this machine."""
+        if self.rotary_modules:
+            module = next(iter(self.rotary_modules.values()))
+            return RotaryKinematics(module.default_diameter)
+        return CartesianKinematics()
 
     @property
     def machine_space_wcs(self) -> str:

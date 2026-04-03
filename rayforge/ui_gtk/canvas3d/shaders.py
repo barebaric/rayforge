@@ -10,11 +10,13 @@ uniform mat4 uMVP;
 out vec4 vColor;
 out vec3 vNormal;
 out vec3 vPos;
+flat out int vVertexID;
 void main() {
     gl_Position = uMVP * vec4(aPos, 1.0);
     vColor = aColor;
     vNormal = aNormal;
     vPos = aPos;
+    vVertexID = gl_VertexID;
 }
 """
 
@@ -23,11 +25,14 @@ out vec4 FragColor;
 in vec4 vColor;
 in vec3 vNormal;
 in vec3 vPos;
+flat in int vVertexID;
 uniform vec4 uColor;
 uniform float uUseVertexColor;
 uniform float uHasNormals;
 uniform vec3 uLightDir;
 uniform vec3 uCameraPos;
+uniform int uExecutedVertexCount;
+uniform float uAlphaPending;
 void main() {
     vec4 baseColor;
     if (uUseVertexColor > 0.5) {
@@ -51,6 +56,11 @@ void main() {
         FragColor = vec4(baseColor.rgb * light, baseColor.a);
     } else {
         FragColor = baseColor;
+    }
+    if (uExecutedVertexCount >= 0) {
+        if (vVertexID >= uExecutedVertexCount) {
+            FragColor.a *= uAlphaPending;
+        }
     }
 }
 """
@@ -130,6 +140,7 @@ out vec4 FragColor;
 
 uniform sampler2D uTexture;
 uniform sampler2D uColorLUT;
+uniform float uAlpha;
 
 void main() {
     // Sample the power value from the texture
@@ -145,6 +156,6 @@ void main() {
     // texture.
     vec4 color = texture(uColorLUT, vec2(power, 0.5));
 
-    FragColor = color;
+    FragColor = vec4(color.rgb, color.a * uAlpha);
 }
 """
