@@ -28,7 +28,6 @@ from ..machine.transport import TransportStatus
 from ..addon_mgr.update_cmd import UpdateCommand
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from ..pipeline.encoder.gcode import MachineCodeOpMap
-from ..shared.gcodeedit.viewer import GcodeViewer
 from ..shared.tasker import task_mgr
 from ..shared.util.time_format import format_hours_to_hm
 from ..usage import get_usage_tracker
@@ -46,15 +45,14 @@ from .canvas2d.simulator_cmd import SimulatorCmd
 from .canvas2d.surface import WorkSurface
 from .canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .doceditor import file_dialogs
-from .doceditor.asset_browser import AssetBrowser
 from .doceditor.asset_row_factory import register_builtin_widgets
+from .doceditor.bottom_panel import BottomPanel
 from .doceditor.import_handler import start_interactive_import
 from .doceditor.item_properties import DocItemPropertiesWidget
 from .doceditor.layer_list import LayerListView
 from .doceditor.missing_features_dialog import MissingFeaturesDialog
 from .doceditor.property_providers import register_builtin_providers
 from .doceditor.workflow_view import WorkflowView
-from .machine.control_panel import MachineControlPanel
 from .machine.machine_dropdown import MachineDropdown
 from .machine.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
@@ -335,12 +333,6 @@ class MainWindow(Adw.ApplicationWindow):
             "notify::visible-child-name", self._on_view_stack_changed
         )
 
-        # Create the G-code previewer (added to bottom panel tab later)
-        self.gcode_previewer = GcodeViewer()
-        self.gcode_previewer.line_activated.connect(
-            self._on_gcode_line_activated
-        )
-
         # The view stack is the start child of the main paned
         self.paned.set_start_child(self.view_stack)
 
@@ -472,60 +464,32 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Create the control panel
         config = get_context().config
-        self.bottom_panel = MachineControlPanel(
-            config.machine, self.machine_cmd
+        self.bottom_panel = BottomPanel(
+            config.machine, self.doc_editor, self.machine_cmd
         )
         self.bottom_panel.set_size_request(-1, self._last_bottom_panel_height)
         self.bottom_panel.set_visible(False)
         self.vertical_paned.set_end_child(self.bottom_panel)
 
-        # Add the G-code viewer as a second tab in the bottom panel
-        self.bottom_panel.tab_widget.add_tab(
-            "gcode", "gcode-symbolic", self.gcode_previewer, _("G-code Viewer")
-        )
-
-        # Add the asset browser as a tab in the bottom panel
-        self.asset_browser = AssetBrowser(self.doc_editor)
-        self.bottom_panel.tab_widget.add_tab(
-            "assets",
-            "image-x-generic-symbolic",
-            self.asset_browser,
-            _("Assets"),
-        )
-        self.asset_browser.add_asset_requested.connect(
-            self.on_add_asset_requested
-        )
-        self.asset_browser.asset_activated.connect(self.on_asset_activated)
-
-        # Add the console as the fourth tab in the bottom panel
-        self.bottom_panel.tab_widget.add_tab(
-            "console",
-            "terminal-symbolic",
-            self.bottom_panel.console,
-            _("Console"),
+        self.bottom_panel.gcode_viewer.line_activated.connect(
+            self._on_gcode_line_activated
         )
 
         config = get_context().config
-        saved_order = config.bottom_panel_tab_order
-        if saved_order:
-            self.bottom_panel.tab_widget.set_tab_order(saved_order)
-
-        saved_tab = config.bottom_panel_active_tab
-        if saved_tab:
-            self.bottom_panel.tab_widget.set_current_tab(saved_tab)
-        self.bottom_panel.tab_widget.tab_changed.connect(
-            self._on_bottom_tab_changed
+        self.bottom_panel.apply_saved_state(
+            config.bottom_panel_tab_order,
+            config.bottom_panel_active_tab,
         )
-        self.bottom_panel.tab_widget.tab_order_changed.connect(
+
+        self.bottom_panel.tab_changed.connect(self._on_bottom_tab_changed)
+        self.bottom_panel.tab_order_changed.connect(
             self._on_bottom_tab_order_changed
         )
 
-        # Connect to click-to-zero mode signal
         self.bottom_panel.click_to_zero_mode_changed.connect(
             self._on_click_to_zero_mode_changed
         )
 
-        # Set up bounds callback for position menu
         self.bottom_panel.set_get_bounds_callback(self._get_selection_bounds)
 
         # Connect to position signal to remember user's chosen height
@@ -834,7 +798,9 @@ class MainWindow(Adw.ApplicationWindow):
         Syncs the highlight and the simulation slider.
         """
         # 1. Update the visual highlight to match the cursor, no scroll.
-        self.gcode_previewer.highlight_line(line_number, use_align=False)
+        self.bottom_panel.gcode_viewer.highlight_line(
+            line_number, use_align=False
+        )
 
         # 2. If simulation is active, update its position.
         if self.simulator_cmd.preview_controls:
@@ -878,12 +844,12 @@ class MainWindow(Adw.ApplicationWindow):
     ):
         """Updates the G-code preview panel from a pre-generated string."""
         if gcode_string is None:
-            self.gcode_previewer.clear()
+            self.bottom_panel.gcode_viewer.clear()
             return
 
-        self.gcode_previewer.set_gcode(gcode_string)
+        self.bottom_panel.gcode_viewer.set_gcode(gcode_string)
         if op_map:
-            self.gcode_previewer.set_op_map(op_map)
+            self.bottom_panel.gcode_viewer.set_op_map(op_map)
 
     def on_show_3d_view(
         self, action: Gio.SimpleAction, value: Optional[GLib.Variant]
@@ -1207,8 +1173,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.toolbar.redo_button.set_history_manager(new_doc.history_manager)
 
         # Update child views to point to the new document
-        self.asset_browser.set_doc(new_doc)
-        self.layer_list_view.set_doc(new_doc)
+        self.bottom_panel.set_doc(new_doc)
 
         # Initialize new document
         self._initialize_document()
