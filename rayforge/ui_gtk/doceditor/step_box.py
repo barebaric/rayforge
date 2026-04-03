@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 from gettext import gettext as _
 from gi.repository import Gtk
 from blinker import Signal
+from ...core.capability import ENGRAVE
 from ...core.step import Step
 from ...core.undo.property_cmd import ChangePropertyCommand
 from ...context import get_context
@@ -104,6 +105,29 @@ class StepBox(Gtk.Box):
         is_visible = self.step.visible
         self.visibility_switch.set_active(is_visible)
         self.badge.set_dimmed(not is_visible)
+        self._update_badge_color()
+
+    def _update_badge_color(self):
+        if not self.step.visible:
+            self.badge.set_color(None)
+            return
+
+        machine = get_context().machine
+        if not machine or not machine.heads:
+            self.badge.set_color(None)
+            return
+        try:
+            laser = self.step.get_selected_laser(machine)
+        except ValueError:
+            self.badge.set_color(None)
+            return
+
+        if ENGRAVE in self.step.capabilities:
+            color = laser.raster_color
+        else:
+            color = laser.cut_color
+
+        self.badge.set_color(color)
 
     def on_switch_state_set(self, switch, state):
         command = ChangePropertyCommand(
