@@ -53,16 +53,6 @@ class BottomPanel(Gtk.Box):
         self.tab_widget.set_hexpand(True)
         self.tab_widget.set_vexpand(True)
 
-        self.console = Console()
-        self.console.set_hexpand(True)
-        self.console.set_vexpand(True)
-        if machine:
-            self.console.set_machine(machine)
-        self.console.command_submitted.connect(self._on_command_submitted)
-
-        self.tab_widget.add_tab(
-            "console", "terminal-symbolic", self.console, _("Console")
-        )
         self.hbox.append(self.tab_widget)
 
         right_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -86,42 +76,49 @@ class BottomPanel(Gtk.Box):
         if machine and machine_cmd:
             self.jog_widget.set_machine(machine, machine_cmd)
 
-        ui_log_event_received.connect(self.console.on_log_received)
+        self.console = Console()
+        self.console.set_hexpand(True)
+        self.console.set_vexpand(True)
+        if machine:
+            self.console.set_machine(machine)
+        self.console.command_submitted.connect(self._on_command_submitted)
 
         self.asset_browser = AssetBrowser(doc_editor)
+
+        self.gcode_viewer = GcodeViewer()
+
         self.tab_widget.add_tab(
             "assets",
             "image-x-generic-symbolic",
             self.asset_browser,
             _("Assets"),
         )
-
-        self.gcode_viewer = GcodeViewer()
         self.tab_widget.add_tab(
             "gcode",
             "gcode-symbolic",
             self.gcode_viewer,
             _("G-code Viewer"),
         )
-
         self.tab_widget.add_tab(
-            "console",
-            "terminal-symbolic",
-            self.console,
-            _("Console"),
+            "console", "terminal-symbolic", self.console, _("Console")
         )
+
+        ui_log_event_received.connect(self.console.on_log_received)
 
         self.tab_widget.tab_changed.connect(self._on_tab_changed)
         self.tab_widget.tab_order_changed.connect(self._on_tab_order_changed)
 
     def apply_saved_state(self, tab_order, active_tab):
+        known = self.tab_widget.get_tab_order()
+        known_set = set(known)
         if tab_order:
-            self.tab_widget.set_tab_order(tab_order)
+            filtered = [n for n in tab_order if n in known_set]
+            self.tab_widget.set_tab_order(filtered)
 
-        if active_tab:
+        if active_tab and active_tab in known_set:
             self.tab_widget.set_current_tab(active_tab)
-        else:
-            self.tab_widget.set_current_tab("layers")
+        elif known:
+            self.tab_widget.set_current_tab(known[0])
 
     def _on_tab_changed(self, sender, *, name: str):
         self.tab_changed.send(self, name=name)
