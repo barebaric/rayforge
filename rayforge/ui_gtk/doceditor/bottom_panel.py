@@ -10,6 +10,7 @@ from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.cmd import MachineCmd
 from ...shared.gcodeedit.viewer import GcodeViewer
 from ...shared.tasker import task_mgr
+from ..doceditor.layers_tab import LayersTab
 from ..icons import get_icon
 from ..machine.console import Console
 from ..machine.jog_widget import JogWidget
@@ -66,6 +67,8 @@ class BottomPanel(Gtk.Box):
 
         ui_log_event_received.connect(self.console.on_log_received)
 
+        self.layers_tab = LayersTab(doc_editor)
+
         self.asset_browser = AssetBrowser(doc_editor)
 
         self.gcode_viewer = GcodeViewer()
@@ -104,6 +107,14 @@ class BottomPanel(Gtk.Box):
     def _register_items(self):
         self.dock_layout.register_item(
             DockItem(
+                name="layers",
+                icon_name="layer-symbolic",
+                widget=self.layers_tab,
+                label=_("Layers"),
+            )
+        )
+        self.dock_layout.register_item(
+            DockItem(
                 name="assets",
                 icon_name="image-x-generic-symbolic",
                 widget=self.asset_browser,
@@ -138,6 +149,7 @@ class BottomPanel(Gtk.Box):
 
     def _build_default_layout(self):
         tabs_area = self.dock_layout.add_area()
+        tabs_area.add_item(self.dock_layout.get_item("layers"))
         tabs_area.add_item(self.dock_layout.get_item("assets"))
         tabs_area.add_item(self.dock_layout.get_item("gcode"))
         tabs_area.add_item(self.dock_layout.get_item("console"))
@@ -175,6 +187,7 @@ class BottomPanel(Gtk.Box):
 
     def set_doc(self, doc):
         self.asset_browser.set_doc(doc)
+        self.layers_tab.set_doc(doc)
 
     def _on_command_submitted(self, sender, command: str, machine: Machine):
         async def send_command(ctx):
