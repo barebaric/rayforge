@@ -1,4 +1,4 @@
-from typing import Optional, Callable, Tuple
+from typing import Optional, Callable, Tuple, TYPE_CHECKING
 import logging
 from gettext import gettext as _
 from gi.repository import Gtk, Adw
@@ -8,21 +8,26 @@ from ...machine.models.machine import Machine
 from ...machine.driver.driver import Axis
 from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.cmd import MachineCmd
+from ...shared.gcodeedit.viewer import GcodeViewer
 from ...shared.tasker import task_mgr
 from ..icons import get_icon
+from ..machine.console import Console
+from ..machine.jog_widget import JogWidget
 from ..shared.icon_tab_widget import IconTabWidget
 from ..shared.unit_spin_row import UnitSpinRowHelper
-from .console import Console
-from .jog_widget import JogWidget
+from .asset_browser import AssetBrowser
 
+if TYPE_CHECKING:
+    from ...doceditor.editor import DocEditor
 
 logger = logging.getLogger(__name__)
 
 
-class MachineControlPanel(Gtk.Box):
+class BottomPanel(Gtk.Box):
     def __init__(
         self,
         machine: Optional[Machine],
+        doc_editor: "DocEditor",
         machine_cmd: Optional[MachineCmd] = None,
         **kwargs,
     ):
@@ -30,6 +35,8 @@ class MachineControlPanel(Gtk.Box):
 
         self.notification_requested = Signal()
         self.click_to_zero_mode_changed = Signal()
+        self.tab_changed = Signal()
+        self.tab_order_changed = Signal()
         self.machine = machine
         self.machine_cmd = machine_cmd
         self._edit_dialog = None
@@ -81,6 +88,50 @@ class MachineControlPanel(Gtk.Box):
 
         ui_log_event_received.connect(self.console.on_log_received)
 
+        self.asset_browser = AssetBrowser(doc_editor)
+        self.tab_widget.add_tab(
+            "assets",
+            "image-x-generic-symbolic",
+            self.asset_browser,
+            _("Assets"),
+        )
+
+        self.gcode_viewer = GcodeViewer()
+        self.tab_widget.add_tab(
+            "gcode",
+            "gcode-symbolic",
+            self.gcode_viewer,
+            _("G-code Viewer"),
+        )
+
+        self.tab_widget.add_tab(
+            "console",
+            "terminal-symbolic",
+            self.console,
+            _("Console"),
+        )
+
+        self.tab_widget.tab_changed.connect(self._on_tab_changed)
+        self.tab_widget.tab_order_changed.connect(self._on_tab_order_changed)
+
+    def apply_saved_state(self, tab_order, active_tab):
+        if tab_order:
+            self.tab_widget.set_tab_order(tab_order)
+
+        if active_tab:
+            self.tab_widget.set_current_tab(active_tab)
+        else:
+            self.tab_widget.set_current_tab("layers")
+
+    def _on_tab_changed(self, sender, *, name: str):
+        self.tab_changed.send(self, name=name)
+
+    def _on_tab_order_changed(self, sender):
+        self.tab_order_changed.send(self)
+
+    def set_doc(self, doc):
+        self.asset_browser.set_doc(doc)
+
     def _on_command_submitted(self, sender, command: str, machine: Machine):
         async def send_command(ctx):
             try:
@@ -91,14 +142,12 @@ class MachineControlPanel(Gtk.Box):
         task_mgr.add_coroutine(send_command)
 
     def _setup_wcs_controls(self, parent):
-        """Set up the Work Coordinate System controls."""
         self.wcs_group = Adw.PreferencesGroup()
         self.wcs_group.set_margin_top(9)
         self.wcs_group.set_margin_bottom(9)
         self.wcs_group.set_valign(Gtk.Align.CENTER)
         parent.append(self.wcs_group)
 
-        # Create string list from machine supported WCS
         if self.machine:
             self.wcs_list = self.machine.supported_wcs
         else:
@@ -113,7 +162,6 @@ class MachineControlPanel(Gtk.Box):
 
         self.offsets_row = Adw.ActionRow(title=_("Current Offsets"))
 
-        # Add Edit button to row
         self.edit_offsets_btn = Gtk.Button(child=get_icon("edit-symbolic"))
         self.edit_offsets_btn.set_tooltip_text(_("Edit Offsets Manually"))
         self.edit_offsets_btn.add_css_class("flat")
@@ -158,7 +206,6 @@ class MachineControlPanel(Gtk.Box):
         )
         position_button_box.append(self.move_ur_btn)
 
-        # Zeroing Buttons in one ActionRow
         self.zero_row = Adw.ActionRow(title=_("Zero Axes"))
         self.wcs_group.add(self.zero_row)
 
@@ -193,7 +240,6 @@ class MachineControlPanel(Gtk.Box):
         )
         zero_button_box.append(self.zero_z_btn)
 
-        # Add Zero Here button to the same row
         self.zero_here_btn = Gtk.Button(child=get_icon("zero-here-symbolic"))
         self.zero_here_btn.set_tooltip_text(
             _("Set Work Zero at Current Position")
@@ -205,7 +251,6 @@ class MachineControlPanel(Gtk.Box):
         )
         zero_button_box.append(self.zero_here_btn)
 
-        # Click to Zero button
         self._click_to_zero_icon = get_icon("crosshairs-symbolic")
         self.click_to_zero_btn = Gtk.Button(child=self._click_to_zero_icon)
         self.click_to_zero_btn.set_tooltip_text(
@@ -221,7 +266,6 @@ class MachineControlPanel(Gtk.Box):
             _("Click on canvas to set work zero")
         )
 
-        # Jog Speed row
         speed_adjustment = Gtk.Adjustment(
             value=1000, lower=1, upper=60000, step_increment=10
         )
@@ -237,7 +281,6 @@ class MachineControlPanel(Gtk.Box):
         self.speed_helper.changed.connect(self._on_speed_changed)
         self.wcs_group.add(self.speed_row)
 
-        # Jog Distance row
         distance_adjustment = Gtk.Adjustment(
             value=10.0, lower=0.1, upper=1000, step_increment=1
         )
@@ -250,26 +293,21 @@ class MachineControlPanel(Gtk.Box):
         self.distance_row.connect("changed", self._on_distance_changed)
         self.wcs_group.add(self.distance_row)
 
-        # Initial update
         self._update_wcs_ui()
 
     def _on_speed_changed(self, helper):
-        """Handle jog speed change."""
         speed_mm_min = int(helper.get_value_in_base_units())
         self.jog_widget.jog_speed = speed_mm_min
 
     def _on_distance_changed(self, spin_row):
-        """Handle jog distance change."""
         self.jog_widget.jog_distance = float(spin_row.get_value())
 
     def _connect_machine_signals(self):
-        """Connect to machine signals for WCS updates."""
         if self.machine:
             self.machine.wcs_updated.connect(self._on_wcs_updated)
             self.machine.state_changed.connect(self._on_machine_state_changed)
 
     def _disconnect_machine_signals(self):
-        """Disconnect from machine signals."""
         if self.machine:
             self.machine.wcs_updated.disconnect(self._on_wcs_updated)
             self.machine.state_changed.disconnect(
@@ -281,7 +319,6 @@ class MachineControlPanel(Gtk.Box):
         machine: Optional[Machine],
         machine_cmd: Optional[MachineCmd] = None,
     ):
-        """Update the machine this panel controls."""
         self._disconnect_machine_signals()
 
         self.machine = machine
@@ -297,7 +334,6 @@ class MachineControlPanel(Gtk.Box):
             self.jog_widget.set_machine(self.machine, self.machine_cmd)
 
     def _on_wcs_selection_changed(self, combo_row, _pspec):
-        """Handle WCS ComboRow selection change."""
         if not self.machine:
             return
         idx = combo_row.get_selected()
@@ -308,14 +344,12 @@ class MachineControlPanel(Gtk.Box):
         self._update_wcs_ui()
 
     def _on_zero_axis_clicked(self, button, axis):
-        """Handle Zero [Axis] button click."""
         if not self.machine:
             return
         machine = self.machine
         task_mgr.add_coroutine(lambda ctx: machine.set_work_origin_here(axis))
 
     def set_click_to_zero_mode(self, active: bool):
-        """Set the click-to-zero mode programmatically."""
         if self._click_to_zero_mode != active:
             self._click_to_zero_mode = active
             self._update_wcs_ui()
@@ -327,11 +361,9 @@ class MachineControlPanel(Gtk.Box):
             Callable[[], Optional[Tuple[float, float, float, float]]]
         ],
     ):
-        """Set the callback to get selection/workpiece bounds."""
         self._get_bounds_callback = callback
 
     def update_position_menu_sensitivity(self):
-        """Update the position menu sensitivity based on current bounds."""
         if not self.machine:
             return
         is_dummy = isinstance(self.machine.driver, NoDeviceDriver)
@@ -347,7 +379,6 @@ class MachineControlPanel(Gtk.Box):
         self.move_ur_btn.set_sensitive(has_bounds and is_active)
 
     def _on_move_to_position(self, button, position: str):
-        """Handle move to position menu action."""
         if not self.machine or not self.machine_cmd:
             return
         if not self._get_bounds_callback:
@@ -373,11 +404,9 @@ class MachineControlPanel(Gtk.Box):
         self.machine_cmd.move_to(self.machine, machine_x, machine_y)
 
     def _on_click_to_zero_toggled(self, button):
-        """Handle Click to Zero button click."""
         self.set_click_to_zero_mode(not self._click_to_zero_mode)
 
     def _on_edit_offsets_clicked(self, button):
-        """Open a dialog to edit WCS offsets manually."""
         if not self.machine:
             return
 
@@ -401,7 +430,6 @@ class MachineControlPanel(Gtk.Box):
         self._edit_dialog.set_default_response("save")
         self._edit_dialog.set_close_response("cancel")
 
-        # Create inputs
         group = Adw.PreferencesGroup()
 
         row_x = Adw.SpinRow.new_with_range(-10000, 10000, 0.1)
@@ -435,39 +463,32 @@ class MachineControlPanel(Gtk.Box):
         self._edit_dialog.present()
 
     def _on_wcs_updated(self, machine):
-        """Handle signals when WCS offsets or active system change."""
         self._update_wcs_ui()
 
     def _on_machine_state_changed(self, machine, state):
-        """Handle machine state changes."""
         self._update_wcs_ui()
         self.console.on_machine_state_changed(machine, state)
 
     def _update_wcs_ui(self):
-        """Update the WCS group widgets based on machine state."""
         if not self.machine:
             return
 
-        # Hide WCS-specific controls when workarea origin is coordinate zero
         hide_wcs_controls = self.machine.wcs_origin_is_workarea_origin
         self.wcs_row.set_visible(not hide_wcs_controls)
         self.offsets_row.set_visible(not hide_wcs_controls)
         self.zero_row.set_visible(not hide_wcs_controls)
 
-        # Update active selection in dropdown
         current_wcs = self.machine.active_wcs
         if current_wcs in self.wcs_list:
             idx = self.wcs_list.index(current_wcs)
             if self.wcs_row.get_selected() != idx:
                 self.wcs_row.set_selected(idx)
 
-        # Update Offset Display
         off_x, off_y, off_z = self.machine.get_active_wcs_offset()
         self.offsets_row.set_subtitle(
             f"X: {off_x:.2f}   Y: {off_y:.2f}   Z: {off_z:.2f}"
         )
 
-        # Update Position Display
         is_dummy = isinstance(self.machine.driver, NoDeviceDriver)
         is_connected = self.machine.is_connected()
         is_active = is_connected or is_dummy
@@ -510,7 +531,6 @@ class MachineControlPanel(Gtk.Box):
         else:
             self.position_row.set_subtitle(pos_str if pos_str else "---")
 
-        # Update Button Sensitivity
         is_mcs = current_wcs == self.machine.machine_space_wcs
         can_zero = is_active and not is_mcs
         can_manual = not is_mcs

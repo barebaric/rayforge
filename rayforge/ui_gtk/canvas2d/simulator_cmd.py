@@ -143,14 +143,16 @@ class SimulatorCmd:
             self.preview_controls = None
 
         self.simulation_overlay = None
-        win.gcode_previewer.clear_highlight()
+        win.bottom_panel.gcode_viewer.clear_highlight()
 
     def _on_simulation_step_changed(self, sender, line_number):
         # If the update was triggered by a G-code click, do nothing to
         # prevent a feedback loop.
         if self._is_syncing:
             return
-        self._win.gcode_previewer.highlight_line(line_number, use_align=True)
+        self._win.bottom_panel.gcode_viewer.highlight_line(
+            line_number, use_align=True
+        )
 
     def _on_close_requested(self, sender):
         """Handles close button signal from preview controls."""
