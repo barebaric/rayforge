@@ -1174,6 +1174,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update child views to point to the new document
         self.bottom_panel.set_doc(new_doc)
+        self.layer_list_view.set_doc(new_doc)
 
         # Initialize new document
         self._initialize_document()
