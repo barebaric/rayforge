@@ -336,8 +336,11 @@ class BottomPanel(Gtk.Box):
         idx = combo_row.get_selected()
         if 0 <= idx < len(self.wcs_list):
             wcs = self.wcs_list[idx]
-            if self.machine.active_wcs != wcs:
-                self.machine.set_active_wcs(wcs)
+            machine = self.machine
+            if machine.active_wcs != wcs:
+                task_mgr.add_coroutine(
+                    lambda ctx, w=wcs: machine.switch_active_wcs(w)
+                )
         self._update_wcs_ui()
 
     def _on_zero_axis_clicked(self, button, axis):

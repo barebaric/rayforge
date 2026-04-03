@@ -17,7 +17,7 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
 from rayforge.image import SVG_RENDERER
 from rayforge.machine.cmd import MachineCmd
-from rayforge.machine.driver.driver import Axis
+from rayforge.machine.driver.driver import Axis, DeviceState
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.driver.grbl import GrblNetworkDriver
 from rayforge.machine.driver.grbl_serial import GrblSerialDriver
@@ -451,6 +451,94 @@ class TestMachine:
         # Assert
         set_wcs_spy.assert_called_once_with("G55", 50.0, 60.0, 70.0)
         read_wcs_spy.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_wcs_offsets_synced_from_wco(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """
+        wcs_offsets must be updated from device_state.wco when status
+        reports arrive.
+
+        When the controller reports WCO in a status report, the
+        active WCS offset in wcs_offsets should be updated so
+        consumers see the correct offset without waiting for the
+        $# query.
+
+        Scenario: G55 active with WCO (30,30,0), machine at work zero.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.active_wcs = "G55"
+        machine.controller._confirmed_active_wcs = "G55"
+        assert machine.wcs_offsets.get("G55", (0.0, 0.0, 0.0)) == (
+            0.0,
+            0.0,
+            0.0,
+        )
+
+        state = DeviceState(
+            machine_pos=(30.0, 30.0, 0.0),
+            work_pos=(0.0, 0.0, 0.0),
+            wco=(30.0, 30.0, 0.0),
+        )
+        machine.controller._sync_wcs_offset_from_wco(state)
+
+        assert machine.wcs_offsets["G55"] == (30.0, 30.0, 0.0)
+
+    @pytest.mark.asyncio
+    async def test_wcs_switch_does_not_corrupt_offsets(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """
+        Regression test for a WCS switching bug: after switching
+        active_wcs, stale WCO from status reports must NOT overwrite
+        the newly-selected WCS offset.
+
+        When the user switches from G56 (WCO 60,60,0) to G54
+        (WCO 0,0,0), the device has not yet switched. Subsequent
+        status reports still carry WCO (60,60,0). The controller
+        must not write this stale WCO into wcs_offsets["G54"].
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Start on G56 with WCO (60,60,0)
+        machine.active_wcs = "G56"
+        machine.wcs_offsets["G56"] = (60.0, 60.0, 0.0)
+        machine.controller._confirmed_active_wcs = "G56"
+
+        # Simulate a status report confirming G56's WCO
+        state_g56 = DeviceState(
+            machine_pos=(60.0, 60.0, 0.0),
+            work_pos=(0.0, 0.0, 0.0),
+            wco=(60.0, 60.0, 0.0),
+        )
+        machine.controller._sync_wcs_offset_from_wco(state_g56)
+        assert machine.wcs_offsets["G56"] == (60.0, 60.0, 0.0)
+
+        # G54's offset should be at default (0,0,0)
+        assert machine.wcs_offsets.get("G54", (0.0, 0.0, 0.0)) == (
+            0.0,
+            0.0,
+            0.0,
+        )
+
+        # User switches to G54 - controller resets confirmed state
+        machine.active_wcs = "G54"
+        machine.controller._confirmed_active_wcs = None
+
+        # Device hasn't switched yet - stale status report with G56's WCO
+        state_stale = DeviceState(
+            machine_pos=(60.0, 60.0, 0.0),
+            work_pos=(0.0, 0.0, 0.0),
+            wco=(60.0, 60.0, 0.0),
+        )
+        machine.controller._sync_wcs_offset_from_wco(state_stale)
+
+        # G54's offset must NOT be corrupted with G56's WCO
+        assert machine.wcs_offsets["G54"] == (0.0, 0.0, 0.0), (
+            f"G54 offset was corrupted to {machine.wcs_offsets['G54']} "
+            f"after receiving stale WCO from still-active G56"
+        )
 
     @pytest.mark.asyncio
     async def test_reverse_axis_setters(

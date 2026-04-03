@@ -657,3 +657,116 @@ class TestUIAndGcodeAlignment:
         # Result: -15 - (-10) = -5
         assert ui_pos_ref[0] == pytest.approx(-5.0)
         assert ui_pos_ref[1] == pytest.approx(5.0)
+
+
+class TestPositionDisplayInWCSMode:
+    """
+    Regression tests for issue #190: Position display in WCS mode
+    (wcs_origin_is_workarea_origin=False) must correctly apply the WCS
+    offset to convert from MACHINE coordinates to REFERENCE coordinates.
+
+    The existing TestPositionDisplayInWorkareaMode only tests workarea mode.
+    These tests verify the WCS mode path which was broken: the UI was
+    showing MPos instead of WPos = MPos - WCO.
+    """
+
+    def test_wcs_offset_subtracted_from_machine_pos(self, machine):
+        """
+        With G55 active and WCO(30,30,0), a machine at MPos(30,30,0)
+        should display reference position (0,0,0).
+        """
+        machine.set_axis_extents(100.0, 100.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.wcs_origin_is_workarea_origin = False
+        machine.active_wcs = "G55"
+        machine.wcs_offsets["G55"] = (30.0, 30.0, 0.0)
+
+        ref_offset = machine.get_reference_offset()
+        assert ref_offset == pytest.approx((30.0, 30.0, 0.0))
+
+        machine_pos = (30.0, 30.0)
+        space = machine.get_coordinate_space()
+        offset_machine = space.world_point_to_machine(
+            ref_offset[0], ref_offset[1]
+        )
+        ref_pos = (
+            machine_pos[0] - offset_machine[0],
+            machine_pos[1] - offset_machine[1],
+        )
+        assert ref_pos == pytest.approx((0.0, 0.0))
+
+    def test_wcs_offset_with_nonzero_work_pos(self, machine):
+        """
+        G55 with WCO(50,30,0), machine at MPos(60,40,0).
+        WPos = MPos - WCO = (10,10,0).
+        """
+        machine.set_axis_extents(100.0, 100.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.wcs_origin_is_workarea_origin = False
+        machine.active_wcs = "G55"
+        machine.wcs_offsets["G55"] = (50.0, 30.0, 0.0)
+
+        ref_offset = machine.get_reference_offset()
+        assert ref_offset == pytest.approx((50.0, 30.0, 0.0))
+
+        machine_pos = (60.0, 40.0)
+        space = machine.get_coordinate_space()
+        offset_machine = space.world_point_to_machine(
+            ref_offset[0], ref_offset[1]
+        )
+        ref_pos = (
+            machine_pos[0] - offset_machine[0],
+            machine_pos[1] - offset_machine[1],
+        )
+        assert ref_pos == pytest.approx((10.0, 10.0))
+
+    def test_wcs_offset_zero_gives_machine_pos(self, machine):
+        """
+        With zero WCS offset, reference position equals machine position.
+        """
+        machine.set_axis_extents(100.0, 100.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.wcs_origin_is_workarea_origin = False
+        machine.active_wcs = "G54"
+        machine.wcs_offsets["G54"] = (0.0, 0.0, 0.0)
+
+        ref_offset = machine.get_reference_offset()
+        assert ref_offset == pytest.approx((0.0, 0.0, 0.0))
+
+        machine_pos = (25.0, 45.0)
+        space = machine.get_coordinate_space()
+        offset_machine = space.world_point_to_machine(
+            ref_offset[0], ref_offset[1]
+        )
+        ref_pos = (
+            machine_pos[0] - offset_machine[0],
+            machine_pos[1] - offset_machine[1],
+        )
+        assert ref_pos == pytest.approx((25.0, 45.0))
+
+    def test_wcs_offset_with_top_left_origin(self, machine):
+        """
+        WCS mode with TOP_LEFT origin and G55 WCO(20,10,0).
+        Machine at MPos(30,50,0).
+        TOP_LEFT flips Y: offset_machine Y = 100 - 10 = 90.
+        ref_pos = (30-20, 50-90) = (10, -40).
+        """
+        machine.set_axis_extents(100.0, 100.0)
+        machine.set_origin(Origin.TOP_LEFT)
+        machine.wcs_origin_is_workarea_origin = False
+        machine.active_wcs = "G55"
+        machine.wcs_offsets["G55"] = (20.0, 10.0, 0.0)
+
+        ref_offset = machine.get_reference_offset()
+        assert ref_offset == pytest.approx((20.0, 10.0, 0.0))
+
+        machine_pos = (30.0, 50.0)
+        space = machine.get_coordinate_space()
+        offset_machine = space.world_point_to_machine(
+            ref_offset[0], ref_offset[1]
+        )
+        ref_pos = (
+            machine_pos[0] - offset_machine[0],
+            machine_pos[1] - offset_machine[1],
+        )
+        assert ref_pos == pytest.approx((10.0, -40.0))

@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 from gettext import gettext as _
 
 from blinker import Signal
@@ -56,6 +56,11 @@ class MachineController:
         # Track the last driver configuration to detect changes
         self._last_driver_name = self.machine.driver_name
         self._last_driver_args = self.machine.driver_args.copy()
+
+        # The WCS that the device has actually confirmed via $G query.
+        # Used to guard _sync_wcs_offset_from_wco against stale WCO
+        # from status reports after a UI-initiated WCS switch.
+        self._confirmed_active_wcs: Optional[str] = None
 
         # Listen to machine's changed signal to rebuild driver when
         # driver configuration changes
@@ -267,9 +272,36 @@ class MachineController:
         """Proxies the state changed signal from the active driver."""
         if self.machine.device_state != state:
             self.machine.device_state = state
+            self._sync_wcs_offset_from_wco(state)
             self.machine._scheduler(
                 self.state_changed.send, self.machine, state=state
             )
+
+    def _sync_wcs_offset_from_wco(self, state: DeviceState):
+        """
+        Updates wcs_offsets for the active WCS from the WCO reported
+        in the device status report. This ensures wcs_offsets is current
+        even when the separate $# query hasn't completed yet.
+
+        Regression fix for issue #190: only sync when the device has
+        confirmed the active WCS via $G. After a UI-initiated WCS switch,
+        status reports still carry the old WCS's WCO until the device
+        actually switches. Without this guard, stale WCO would corrupt
+        the newly-selected WCS offset.
+        """
+        active_wcs = self.machine.active_wcs
+        if not active_wcs:
+            return
+        if active_wcs != self._confirmed_active_wcs:
+            return
+        if not all(v is not None for v in state.wco):
+            return
+        wco = cast(Tuple[float, float, float], state.wco)
+        new_offset = (wco[0], wco[1], wco[2])
+        current = self.machine.wcs_offsets.get(active_wcs)
+        if current != new_offset:
+            self.machine.wcs_offsets[active_wcs] = new_offset
+            self.machine._scheduler(self.wcs_updated.send, self.machine)
 
     def _on_driver_job_finished(self, driver: Driver):
         """Proxies the job finished signal from the active driver."""
@@ -490,6 +522,7 @@ class MachineController:
                         f"Synced active WCS from device: '{active_wcs}'"
                     )
                     self.machine.set_active_wcs(active_wcs)
+                    self._confirmed_active_wcs = active_wcs
             except asyncio.TimeoutError:
                 logger.error(
                     "Failed to sync active WCS: device timed out "
@@ -502,6 +535,36 @@ class MachineController:
                 logger.error(
                     f"Failed to sync active WCS: connection error: {e}"
                 )
+
+    async def switch_active_wcs(self, wcs: str):
+        """
+        Switches the active WCS on both the model and the device.
+
+        Sends the G-code WCS command (e.g. G54), then queries $G
+        to confirm the switch before updating _confirmed_active_wcs.
+        This prevents stale WCO from status reports corrupting the
+        newly-selected WCS offset.
+        """
+        self.machine.active_wcs = wcs
+        self.machine.changed.send(self.machine)
+        self._confirmed_active_wcs = None
+
+        if self.machine.is_connected():
+            try:
+                await self.driver.run_raw(wcs)
+                confirmed = await self.driver.read_parser_state()
+                if confirmed == wcs:
+                    self._confirmed_active_wcs = wcs
+                    await self.driver.read_wcs_offsets()
+                else:
+                    logger.warning(
+                        f"Device did not confirm WCS switch to {wcs}, "
+                        f"got {confirmed}"
+                    )
+            except (DeviceConnectionError, asyncio.TimeoutError) as e:
+                logger.warning(f"Failed to confirm WCS switch to {wcs}: {e}")
+        else:
+            self._confirmed_active_wcs = wcs
 
     @property
     def reports_granular_progress(self) -> bool:
