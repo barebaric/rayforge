@@ -4,10 +4,22 @@ from gettext import gettext as _
 from gi.repository import Gtk, Pango
 from blinker import Signal
 from ...shared.util.size import format_byte_size
+from ...ui_gtk.shared.gtk import apply_css
 from .editor import GcodeEditor
 
 if TYPE_CHECKING:
     from ...pipeline.encoder.gcode import MachineCodeOpMap
+
+css = """
+.gcode-viewer {
+    border-radius: 3px;
+}
+.gcode-status-label {
+    background-color: alpha(@window_bg_color, 0.8);
+    border-radius: 3px;
+    padding: 2px 6px;
+}
+"""
 
 
 class GcodeViewer(Gtk.Box):
@@ -21,6 +33,10 @@ class GcodeViewer(Gtk.Box):
 
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
+        apply_css(css)
+        self.add_css_class("gcode-viewer")
+
+        self.set_margin_top(9)
 
         self.op_activated = Signal()
         self.line_activated = Signal()
@@ -29,31 +45,27 @@ class GcodeViewer(Gtk.Box):
         self._line_count: int = 0
         self._size_bytes: int = 0
 
-        # Configure the internal editor for previewing
         self.editor.text_view.set_editable(False)
-        # A visible cursor is necessary to show focus, even in read-only mode
         self.editor.text_view.set_cursor_visible(True)
         self.editor.text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         self.editor.line_activated.connect(self._on_line_activated)
 
-        self.append(self.editor)
-        self._create_status_bar()
+        self._create_overlay()
 
-    def _create_status_bar(self):
-        self.status_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.status_bar.add_css_class("status-bar")
+    def _create_overlay(self):
+        self._overlay = Gtk.Overlay()
+        self._overlay.set_child(self.editor)
 
         self.status_label = Gtk.Label()
-        self.status_label.set_halign(Gtk.Align.START)
-        self.status_label.set_hexpand(True)
-        self.status_label.set_margin_start(6)
-        self.status_label.set_margin_end(6)
+        self.status_label.add_css_class("gcode-status-label")
+        self.status_label.set_halign(Gtk.Align.END)
+        self.status_label.set_valign(Gtk.Align.START)
         self.status_label.set_margin_top(3)
-        self.status_label.set_margin_bottom(3)
+        self.status_label.set_margin_end(3)
         self.status_label.set_ellipsize(Pango.EllipsizeMode.END)
-        self.status_bar.append(self.status_label)
+        self._overlay.add_overlay(self.status_label)
 
-        self.append(self.status_bar)
+        self.append(self._overlay)
         self._update_status_bar()
 
     def _update_status_bar(self):

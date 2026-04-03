@@ -16,7 +16,7 @@ class LayerSettingsDialog(PatchedDialogWindow):
         self.layer = layer
         self._is_initializing = True
 
-        self.set_title(_("Layer Settings"))
+        self.set_title(_("{name} - Settings").format(name=layer.name))
         self.set_default_size(600, -1)
         self.set_modal(True)
 

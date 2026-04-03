@@ -23,7 +23,7 @@ CARD_SIZE = THUMBNAIL_SIZE + 36
 
 css = """
 .asset-browser {
-    padding: 6px;
+    padding: 9px;
 }
 .asset-flowbox > flowboxchild {
     padding: 0;
@@ -159,10 +159,10 @@ class AssetBrowser(Gtk.Box):
 
         toolbar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         toolbar.set_spacing(4)
-        toolbar.set_margin_start(4)
-        toolbar.set_margin_top(4)
+        toolbar.set_margin_start(9)
+        toolbar.set_margin_top(9)
 
-        self._add_btn = Gtk.Button(icon_name="list-add-symbolic")
+        self._add_btn = Gtk.Button(child=get_icon("add-symbolic"))
         self._add_btn.add_css_class("flat")
         self._add_btn.set_tooltip_text(_("Add Asset"))
         self._add_btn.connect("clicked", self._on_add_clicked)

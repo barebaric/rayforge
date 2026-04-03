@@ -103,6 +103,11 @@ css = """
     color: @warning_color;
     font-weight: bold;
 }
+
+dropdown.machine-dropdown button {
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
 """
 
 

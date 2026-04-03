@@ -97,6 +97,7 @@ class MachineDropdown(Gtk.DropDown):
         factory.connect("unbind", self._on_factory_unbind)
         self.set_factory(factory)
 
+        self.add_css_class("machine-dropdown")
         self.set_tooltip_text(_("Select active machine"))
         self._selection_changed_handler_id = self.connect(
             "notify::selected-item", self._on_user_selection_changed

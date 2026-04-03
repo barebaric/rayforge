@@ -71,9 +71,9 @@ class MachineControlPanel(Gtk.Box):
         self.jog_widget.set_vexpand(True)
         self.jog_widget.set_valign(Gtk.Align.FILL)
         self.jog_widget.set_hexpand(False)
-        self.jog_widget.set_margin_end(12)
-        self.jog_widget.set_margin_top(12)
-        self.jog_widget.set_margin_bottom(12)
+        self.jog_widget.set_margin_end(15)
+        self.jog_widget.set_margin_top(9)
+        self.jog_widget.set_margin_bottom(9)
         right_hbox.append(self.jog_widget)
 
         if machine and machine_cmd:
@@ -93,8 +93,8 @@ class MachineControlPanel(Gtk.Box):
     def _setup_wcs_controls(self, parent):
         """Set up the Work Coordinate System controls."""
         self.wcs_group = Adw.PreferencesGroup()
-        self.wcs_group.set_margin_top(12)
-        self.wcs_group.set_margin_bottom(12)
+        self.wcs_group.set_margin_top(9)
+        self.wcs_group.set_margin_bottom(9)
         self.wcs_group.set_valign(Gtk.Align.CENTER)
         parent.append(self.wcs_group)
 
