@@ -2,7 +2,6 @@ import logging
 import math
 import threading
 import time
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
 import numpy as np
@@ -16,11 +15,12 @@ from ...core.ops.commands import MovingCommand
 from ...machine.driver.driver import Axis
 from ...machine.kinematics import RotaryKinematics
 from ...machine.models.colors import OpsColorSet
-from ...pipeline.artifact import ArtifactStore, StepRenderArtifact
+from ...pipeline.artifact import ArtifactStore
+from ...pipeline.artifact.step_ops import StepOpsArtifact
+from ...pipeline.artifact.handle import create_handle_from_dict
+from ...pipeline.artifact.step_render import StepRenderArtifact
 from ...pipeline.artifact.job import JobArtifact
 from ...pipeline.artifact.key import ArtifactKey
-from ...pipeline.artifact.step_ops import StepOpsArtifact
-from ...pipeline.encoder.vertexencoder import transform_to_cylinder
 from ...pipeline.pipeline import Pipeline
 from ...simulator.op_player import OpPlayer
 from ...simulator.vertex_map import (
@@ -54,7 +54,12 @@ from .shaders import (
 from .sphere_renderer import SphereRenderer
 from .texture_renderer import TextureArtifactRenderer
 from .zone_renderer import ZoneRenderer
-
+from .compiled_scene import (
+    CompiledSceneArtifact,
+    ScanlineOverlayLayer,
+)
+from .render_config import RenderConfig3D, StepRenderConfig
+from .scene_compiler import compile_scene
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -65,227 +70,58 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class VertexGroup:
-    powered_verts: np.ndarray
-    powered_colors: np.ndarray
-    travel_verts: np.ndarray
-    zero_power_verts: np.ndarray
-    zero_power_colors: np.ndarray
-
-    @classmethod
-    def from_lists(cls, pv, pc, tv, zpv, zpc):
-        def _cat(lst):
-            if not lst:
-                return np.array([], dtype=np.float32)
-            return np.concatenate(lst).flatten()
-
-        return cls(_cat(pv), _cat(pc), _cat(tv), _cat(zpv), _cat(zpc))
-
-
 def prepare_scene_vertices_async(
     artifact_store: ArtifactStore,
-    scene_description: SceneDescription,
-    color_set: ColorSet,
-    laser_color_sets: Dict[str, ColorSet],
-    world_to_visual: np.ndarray,
-    world_to_cyl_local: np.ndarray,
+    step_ops_handle_dicts: list,
+    render_config_dict: dict,
     cancel_event: Optional[threading.Event] = None,
-) -> Tuple[VertexGroup, VertexGroup]:
+) -> CompiledSceneArtifact:
     """
-    A background task that prepares all vertex data for an entire scene.
+    A background task that compiles all step Ops into GPU-ready vertex data.
 
-    It iterates through a lightweight SceneDescription of StepArtifacts,
-    loads the pre-computed vertex data (flat coordinates), and applies
-    per-item transforms based on each item's rotary setting:
-
-    - Rotary items: world_to_cyl_local, then cylinder wrapping
-    - Flat items: world_to_visual, with Z-offset for non-powered moves
-
-    All results are concatenated into a single set of vertex arrays.
+    Loads each StepOpsArtifact from shared memory, pairs it with the
+    corresponding StepRenderConfig, and delegates to compile_scene().
     """
-    # Flat accumulators
-    flat_powered_verts: List[np.ndarray] = []
-    flat_powered_colors: List[np.ndarray] = []
-    flat_travel_verts: List[np.ndarray] = []
-    flat_zero_power_verts: List[np.ndarray] = []
-    flat_zero_power_colors: List[np.ndarray] = []
+    config = RenderConfig3D.from_dict(render_config_dict)
 
-    # Rotary accumulators
-    rot_powered_verts: List[np.ndarray] = []
-    rot_powered_colors: List[np.ndarray] = []
-    rot_travel_verts: List[np.ndarray] = []
-    rot_zero_power_verts: List[np.ndarray] = []
-    rot_zero_power_colors: List[np.ndarray] = []
-
-    zero_power_rgba = np.array(
-        color_set.get_rgba("zero_power"), dtype=np.float32
-    )
-
-    t_prep_start = time.perf_counter()
-    logger.debug("Starting scene vertex preparation from StepArtifacts")
-
-    for i, item in enumerate(scene_description.render_items):
+    ops_list: list = []
+    for step_uid, handle_dict in step_ops_handle_dicts:
         if cancel_event is not None and cancel_event.is_set():
-            logger.debug("Scene preparation cancelled at item %d.", i)
             raise RuntimeError("Scene preparation cancelled")
 
-        if not item.artifact_handle:
-            logger.debug(f"Item {i}: no artifact_handle")
+        step_cfg = config.step_configs.get(step_uid)
+        if step_cfg is None:
+            logger.debug(f"No config for step {step_uid}, skipping.")
             continue
 
         try:
-            artifact = artifact_store.get(item.artifact_handle)
+            handle = create_handle_from_dict(handle_dict)
+            artifact = artifact_store.get(handle)
         except Exception as e:
-            logger.error(f"Item {i}: failed to get artifact: {e}")
+            logger.error(f"Failed to load ops for step {step_uid}: {e}")
             continue
 
-        if not isinstance(artifact, StepRenderArtifact):
-            logger.error("Artifact is not a renderable step artifact.")
-            continue
-        if not artifact.vertex_data:
-            logger.warning("Artifact has no vertex data to render.")
+        if not isinstance(artifact, StepOpsArtifact):
+            logger.error(f"Artifact for {step_uid} is not StepOpsArtifact.")
             continue
 
-        item_color_set = laser_color_sets.get(item.laser_uid, color_set)
-        power_lut = item_color_set.get_lut("cut")
-        item_rotary = item.rotary_enabled
-        item_diameter = item.rotary_diameter
+        if artifact.ops.is_empty():
+            continue
 
-        content_model_matrix = (
-            world_to_cyl_local if item_rotary else world_to_visual
-        )
+        ops_list.append((artifact.ops, step_cfg))
 
-        # 1. Get pre-computed, world-space vertices from the artifact.
-        vertex_data = artifact.vertex_data
-        p_verts = vertex_data.powered_vertices
-        p_colors_std = vertex_data.powered_colors
-        t_verts = vertex_data.travel_vertices
-        zp_verts = vertex_data.zero_power_vertices
+    cancel_check = None
+    if cancel_event is not None:
+        cancel_check = cancel_event.is_set
 
-        # 2. Recolor the vertices using the current theme's ColorSet.
-        if p_verts.size > 0:
-            power_levels = p_colors_std[:, 0]
-            power_indices = np.clip((power_levels * 255), 0, 255).astype(int)
-            p_colors = power_lut[power_indices]
-        else:
-            p_colors = np.array([], dtype=np.float32)
-
-        if zp_verts.size > 0:
-            num_zp_verts = zp_verts.shape[0]
-            zp_colors = np.tile(zero_power_rgba, (num_zp_verts, 1))
-        else:
-            zp_colors = np.array([], dtype=np.float32)
-
-        # 3. Apply final scene transformation
-        def _transform_vertices(verts: np.ndarray, transform: np.ndarray):
-            if verts.size == 0:
-                return verts
-            points = verts
-            homogenous_points = np.hstack(
-                [points, np.ones((points.shape[0], 1), dtype=points.dtype)]
-            )
-            transformed_points = (transform @ homogenous_points.T).T
-            return transformed_points[:, :3].astype(np.float32)
-
-        if item_rotary:
-            if p_verts.size > 0:
-                transformed = _transform_vertices(
-                    p_verts, content_model_matrix
-                )
-                expanded_colors = p_colors
-                if item_diameter > 0:
-                    transformed, expanded_colors = transform_to_cylinder(
-                        transformed, item_diameter, p_colors
-                    )
-                rot_powered_verts.append(transformed)
-                rot_powered_colors.append(expanded_colors)
-
-            if t_verts.size > 0:
-                transformed = _transform_vertices(
-                    t_verts, content_model_matrix
-                )
-                if item_diameter > 0:
-                    transformed, _ = transform_to_cylinder(
-                        transformed, item_diameter
-                    )
-                rot_travel_verts.append(transformed)
-
-            if zp_verts.size > 0:
-                transformed = _transform_vertices(
-                    zp_verts, content_model_matrix
-                )
-                expanded_zp_colors = zp_colors
-                if item_diameter > 0:
-                    transformed, expanded_zp_colors = transform_to_cylinder(
-                        transformed, item_diameter, zp_colors
-                    )
-                rot_zero_power_verts.append(transformed)
-                rot_zero_power_colors.append(expanded_zp_colors)
-        else:
-            if p_verts.size > 0:
-                transformed = _transform_vertices(
-                    p_verts, content_model_matrix
-                )
-                flat_powered_verts.append(transformed)
-                flat_powered_colors.append(p_colors)
-
-            if t_verts.size > 0:
-                transformed = _transform_vertices(
-                    t_verts, content_model_matrix
-                )
-                flat_travel_verts.append(transformed)
-
-            if zp_verts.size > 0:
-                transformed = _transform_vertices(
-                    zp_verts, content_model_matrix
-                )
-                flat_zero_power_verts.append(transformed)
-                flat_zero_power_colors.append(zp_colors)
-
-    # Add a small Z-offset to non-powered flat moves to prevent Z-fighting
-    # with the texture quad, which is drawn at Z=0. Rotary items are on a
-    # cylinder surface and do not need this.
-    Z_OFFSET_NON_POWERED = 0.01
-    if flat_travel_verts:
-        flat_tv_2d = np.concatenate(flat_travel_verts)
-        if flat_tv_2d.ndim > 1:
-            flat_tv_2d[:, 2] += Z_OFFSET_NON_POWERED
-        flat_travel_verts = [flat_tv_2d]
-    if flat_zero_power_verts:
-        flat_zpv_2d = np.concatenate(flat_zero_power_verts)
-        if flat_zpv_2d.ndim > 1:
-            flat_zpv_2d[:, 2] += Z_OFFSET_NON_POWERED
-        flat_zero_power_verts = [flat_zpv_2d]
-
-    flat_group = VertexGroup.from_lists(
-        flat_powered_verts,
-        flat_powered_colors,
-        flat_travel_verts,
-        flat_zero_power_verts,
-        flat_zero_power_colors,
-    )
-    rotary_group = VertexGroup.from_lists(
-        rot_powered_verts,
-        rot_powered_colors,
-        rot_travel_verts,
-        rot_zero_power_verts,
-        rot_zero_power_colors,
-    )
-
-    logger.debug(
-        f"Total scene vertices prepared. "
-        f"Flat powered: {flat_group.powered_verts.size // 3}, "
-        f"Rotary powered: {rotary_group.powered_verts.size // 3}"
-    )
-
-    t_prep_elapsed = (time.perf_counter() - t_prep_start) * 1000
+    t_start = time.perf_counter()
+    result = compile_scene(ops_list, config, cancel_check=cancel_check)
+    elapsed = (time.perf_counter() - t_start) * 1000
     logger.info(
-        f"[CANVAS3D] Scene vertex preparation took "
-        f"{t_prep_elapsed:.1f}ms (items={len(scene_description.render_items)})"
+        f"[CANVAS3D] Scene compilation took {elapsed:.1f}ms "
+        f"(steps={len(ops_list)})"
     )
-
-    return flat_group, rotary_group
+    return result
 
 
 class Canvas3D(Gtk.GLArea):
@@ -330,7 +166,7 @@ class Canvas3D(Gtk.GLArea):
         self._had_rotary_layers = False
         self._scene_preparation_task: Optional[Task] = None
         self._scene_prep_cancel = threading.Event()
-        self._scene_vtx_cache: Optional[Tuple[VertexGroup, VertexGroup]] = None
+        self._compiled_artifact: Optional[CompiledSceneArtifact] = None
         self._op_player: Optional[OpPlayer] = None
         self._vertex_map: Optional[SceneVertexMap] = None
         self._scanline_overlay: Optional[ScanlineOverlay] = None
@@ -340,6 +176,8 @@ class Canvas3D(Gtk.GLArea):
         self._world_to_cyl_local = np.identity(4, dtype=np.float32)
         self._ring_flat_offsets: List[int] = []
         self._ring_rotary_offsets: List[int] = []
+        self._ring_buffer_flat: Optional[RingBufferRenderer] = None
+        self._ring_buffer_rotary: Optional[RingBufferRenderer] = None
         self._show_travel_moves = False
         self._show_nogo_zones = True
         self._show_models = True
@@ -1064,8 +902,6 @@ class Canvas3D(Gtk.GLArea):
                 if idx + 1 < len(self._ring_rotary_offsets):
                     rot_ring_exec = self._ring_rotary_offsets[idx + 1]
 
-            ring_mvp_gl = (mvp_matrix_ui @ margin_shift).T
-
             if (
                 self._ring_buffer_flat
                 and self._ring_buffer_flat.vertex_count > 0
@@ -1073,7 +909,7 @@ class Canvas3D(Gtk.GLArea):
             ):
                 self._ring_buffer_flat.render(
                     self._main_shader,
-                    ring_mvp_gl,
+                    mvp_matrix_ui_gl,
                     executed_vertex_count=flat_ring_exec,
                 )
             if (
@@ -1305,10 +1141,10 @@ class Canvas3D(Gtk.GLArea):
 
     def _on_scene_prepared(self, task: Task):
         """
-        Callback for when the background scene preparation task is finished.
+        Callback for when the background scene compilation task is finished.
         """
         if task.get_status() != "completed":
-            self._scene_vtx_cache = None
+            self._compiled_artifact = None
             self._op_player = None
             self._vertex_map = None
             self._scanline_overlay = None
@@ -1325,13 +1161,54 @@ class Canvas3D(Gtk.GLArea):
             self.queue_render()
             return
 
-        # Cache the full vertex data from the background task
         logger.debug(
-            "[CANVAS3D] Scene preparation finished. Caching vertex data."
+            "[CANVAS3D] Scene compilation finished. Caching artifact."
         )
-        self._scene_vtx_cache = task.result()
+        artifact = task.result()
+        assert isinstance(artifact, CompiledSceneArtifact)
+        self._compiled_artifact = artifact
         self._update_op_player()
-        self._update_renderer_from_cache()
+        self._update_renderers_from_artifact()
+
+    def _update_renderers_from_artifact(self):
+        if not self._compiled_artifact:
+            if self._ops_renderer_flat:
+                self._ops_renderer_flat.clear()
+            if self._ops_renderer_rotary:
+                self._ops_renderer_rotary.clear()
+            self.queue_render()
+            return
+
+        if not self._ops_renderer_flat or not self._ops_renderer_rotary:
+            return
+
+        self.make_current()
+
+        artifact = self._compiled_artifact
+        for i, vl in enumerate(artifact.vertex_layers):
+            if i == 0:
+                renderer = self._ops_renderer_flat
+            elif i == 1:
+                renderer = self._ops_renderer_rotary
+            else:
+                break
+
+            if self._show_travel_moves:
+                pv_final = np.concatenate(
+                    (vl.powered_verts, vl.zero_power_verts)
+                )
+                pc_final = np.concatenate(
+                    (vl.powered_colors, vl.zero_power_colors)
+                )
+                tv_final = vl.travel_verts
+            else:
+                pv_final = vl.powered_verts
+                pc_final = vl.powered_colors
+                tv_final = np.array([], dtype=np.float32)
+
+            renderer.update_from_vertex_data(pv_final, pc_final, tv_final)
+
+        self.queue_render()
 
     def _update_op_player(self):
         ops = self._get_ops_for_playback()
@@ -1490,22 +1367,22 @@ class Canvas3D(Gtk.GLArea):
 
     def _upload_scanline_overlay(self):
         """
-        Encode powered scanline segments per command, apply cylinder
-        wrapping for rotary steps, and upload to flat/rotary ring
-        buffers with per-buffer command-to-vertex offset arrays.
+        Upload pre-compiled scanline overlay data from the artifact's
+        overlay layers to flat/rotary ring buffer renderers.
+        Build global command-to-vertex offset arrays for playback.
         """
         if not self._ring_buffer_flat or not self._ring_buffer_rotary:
             return
 
-        overlay = self._scanline_overlay
-        if overlay is None or overlay.total_overlay_vertices == 0:
+        if not self._compiled_artifact:
             self._ring_buffer_flat.clear()
             self._ring_buffer_rotary.clear()
             self._ring_flat_offsets = []
             self._ring_rotary_offsets = []
             return
 
-        if not self._current_scene_description:
+        overlay_layers = self._compiled_artifact.overlay_layers
+        if not overlay_layers:
             self._ring_buffer_flat.clear()
             self._ring_buffer_rotary.clear()
             self._ring_flat_offsets = []
@@ -1514,124 +1391,26 @@ class Canvas3D(Gtk.GLArea):
 
         self.make_current()
 
-        step_info: Dict[str, Tuple[str, bool, float]] = {}
-        for item in self._current_scene_description.render_items:
-            step_info[item.step_uid] = (
-                item.laser_uid,
-                item.rotary_enabled,
-                item.rotary_diameter,
+        flat_layer = overlay_layers[0] if len(overlay_layers) > 0 else None
+        rotary_layer = overlay_layers[1] if len(overlay_layers) > 1 else None
+
+        if flat_layer is not None:
+            self._ring_buffer_flat.upload(
+                flat_layer.positions.ravel(),
+                flat_layer.colors.ravel(),
             )
-
-        lut_cache: Dict[str, Optional[np.ndarray]] = {}
-
-        def _get_lut(laser_uid: str):
-            if laser_uid in lut_cache:
-                return lut_cache[laser_uid]
-            lut = None
-            laser_cs = self._laser_color_sets.get(laser_uid)
-            if laser_cs is not None:
-                lut = laser_cs.get_lut("engrave")
-            elif self._color_set is not None:
-                lut = self._color_set.get_lut("engrave")
-            lut_cache[laser_uid] = lut
-            return lut
-
-        cmd_step_map: Dict[int, str] = {}
-        for (
-            cmd_start,
-            cmd_end,
-            tex_count,
-            step_uid,
-        ) in self._step_cmd_boundaries:
-            for ci in range(cmd_start, cmd_end):
-                cmd_step_map[ci] = step_uid
-
-        overlay_pos = overlay.positions.reshape(-1, 3)
-        overlay_col = overlay.colors.reshape(-1, 4)
-        overlay_off = overlay.cmd_vertex_offset
-        n_cmds = len(overlay_off) - 1
-
-        flat_off: List[int] = [0] * (n_cmds + 1)
-        rot_off: List[int] = [0] * (n_cmds + 1)
-        flat_cum = 0
-        rot_cum = 0
-        flat_pos: List[np.ndarray] = []
-        flat_col: List[np.ndarray] = []
-        rot_pos: List[np.ndarray] = []
-        rot_col: List[np.ndarray] = []
-
-        for cmd_idx in range(n_cmds):
-            step_uid = cmd_step_map.get(cmd_idx)
-            if step_uid is not None:
-                info = step_info.get(step_uid)
-                is_rotary = info[1] if info else False
-                diameter = info[2] if info else 0.0
-                laser_uid = info[0] if info else ""
-
-                v_start = overlay_off[cmd_idx]
-                v_end = overlay_off[cmd_idx + 1]
-
-                if v_end > v_start:
-                    pos_slice = overlay_pos[v_start:v_end].copy()
-                    col_slice = overlay_col[v_start:v_end].copy()
-
-                    lut = _get_lut(laser_uid)
-                    if lut is not None:
-                        power_idx = np.clip(
-                            (col_slice[:, 0] * 255).astype(int),
-                            0,
-                            255,
-                        )
-                        col_slice = lut[power_idx].astype(np.float32)
-
-                    if is_rotary:
-                        hom = np.hstack(
-                            [
-                                pos_slice,
-                                np.ones(
-                                    (pos_slice.shape[0], 1),
-                                    dtype=np.float32,
-                                ),
-                            ]
-                        )
-                        transformed = (
-                            (self._world_to_cyl_local @ hom.T)
-                            .T[:, :3]
-                            .astype(np.float32)
-                        )
-                        if diameter > 0:
-                            transformed, col_slice = transform_to_cylinder(
-                                transformed, diameter, col_slice
-                            )
-                        n_verts = transformed.shape[0]
-                        rot_cum += n_verts
-                        rot_pos.append(transformed.ravel())
-                        rot_col.append(col_slice.ravel())
-                    else:
-                        n_verts = pos_slice.shape[0]
-                        flat_cum += n_verts
-                        flat_pos.append(pos_slice.ravel())
-                        flat_col.append(col_slice.ravel())
-
-            flat_off[cmd_idx + 1] = flat_cum
-            rot_off[cmd_idx + 1] = rot_cum
-
-        if flat_pos:
-            fp = np.concatenate(flat_pos)
-            fc = np.concatenate(flat_col).ravel()
-            self._ring_buffer_flat.upload(fp, fc)
         else:
             self._ring_buffer_flat.clear()
 
-        if rot_pos:
-            rp = np.concatenate(rot_pos)
-            rc = np.concatenate(rot_col).ravel()
-            self._ring_buffer_rotary.upload(rp, rc)
+        if rotary_layer is not None:
+            self._ring_buffer_rotary.upload(
+                rotary_layer.positions.ravel(),
+                rotary_layer.colors.ravel(),
+            )
         else:
             self._ring_buffer_rotary.clear()
 
-        self._ring_flat_offsets = flat_off
-        self._ring_rotary_offsets = rot_off
+        self._build_overlay_global_offsets(flat_layer, rotary_layer)
 
         logger.debug(
             "[CANVAS3D] Scanline overlay uploaded. "
@@ -1642,54 +1421,74 @@ class Canvas3D(Gtk.GLArea):
             )
         )
 
+    def _build_overlay_global_offsets(
+        self,
+        flat_layer: Optional[ScanlineOverlayLayer],
+        rotary_layer: Optional[ScanlineOverlayLayer],
+    ):
+        """
+        Map per-layer overlay cmd_offsets (which are sequential within
+        the flat or rotary group) to global command indices so the
+        playback playhead can index into the ring buffers correctly.
+        """
+        total_cmds = 0
+        if self._op_player:
+            total_cmds = len(self._op_player.ops.commands)
+
+        ring_flat = [0] * (total_cmds + 1)
+        ring_rotary = [0] * (total_cmds + 1)
+
+        step_rotary_map: Dict[str, bool] = {}
+        if self._current_scene_description is not None:
+            for item in self._current_scene_description.render_items:
+                step_rotary_map[item.step_uid] = item.rotary_enabled
+
+        flat_cmd_cursor = 0
+        rot_cmd_cursor = 0
+
+        for (
+            cmd_start,
+            cmd_end,
+            _tex_count,
+            step_uid,
+        ) in self._step_cmd_boundaries:
+            n_step_cmds = cmd_end - cmd_start
+            is_rotary = step_rotary_map.get(step_uid, False)
+
+            if is_rotary and rotary_layer is not None:
+                offsets = rotary_layer.cmd_offsets
+                for i in range(n_step_cmds):
+                    local_idx = rot_cmd_cursor + i
+                    if local_idx + 1 < len(offsets):
+                        ring_rotary[cmd_start + i + 1] = offsets[local_idx + 1]
+                    else:
+                        ring_rotary[cmd_start + i + 1] = ring_rotary[
+                            cmd_start + i
+                        ]
+                rot_cmd_cursor += n_step_cmds
+            elif not is_rotary and flat_layer is not None:
+                offsets = flat_layer.cmd_offsets
+                for i in range(n_step_cmds):
+                    local_idx = flat_cmd_cursor + i
+                    if local_idx + 1 < len(offsets):
+                        ring_flat[cmd_start + i + 1] = offsets[local_idx + 1]
+                    else:
+                        ring_flat[cmd_start + i + 1] = ring_flat[cmd_start + i]
+                flat_cmd_cursor += n_step_cmds
+
+        for i in range(1, total_cmds + 1):
+            ring_flat[i] = max(ring_flat[i], ring_flat[i - 1])
+            ring_rotary[i] = max(ring_rotary[i], ring_rotary[i - 1])
+
+        self._ring_flat_offsets = ring_flat
+        self._ring_rotary_offsets = ring_rotary
+
     def _update_renderer_from_cache(self):
         """
         Helper to update the renderers based on current visibility flags.
-        Feeds flat and rotary vertex groups to their respective OpsRenderers.
+        Delegates to _update_renderers_from_artifact.
         """
-        if not self._scene_vtx_cache:
-            if self._ops_renderer_flat:
-                self._ops_renderer_flat.clear()
-            if self._ops_renderer_rotary:
-                self._ops_renderer_rotary.clear()
-            logger.debug("[CANVAS3D] No vertex cache to update renderer from.")
-            self.queue_render()
-            return
-
-        if not self._ops_renderer_flat or not self._ops_renderer_rotary:
-            return
-
-        self.make_current()
-
-        logger.debug("[CANVAS3D] Updating renderers from vertex cache.")
-
-        flat_group, rotary_group = self._scene_vtx_cache
-
-        def _apply_group(renderer, group: VertexGroup):
-            if self._show_travel_moves:
-                # When travel is shown, zero-power cuts are also shown.
-                # They are conceptually similar (non-cutting moves). We
-                # append them to the powered buffer as they use vertex
-                # colors.
-                pv_final = np.concatenate(
-                    (group.powered_verts, group.zero_power_verts)
-                )
-                pc_final = np.concatenate(
-                    (group.powered_colors, group.zero_power_colors)
-                )
-                tv_final = group.travel_verts
-            else:
-                # When travel is hidden, hide zero-power cuts as well.
-                pv_final = group.powered_verts
-                pc_final = group.powered_colors
-                tv_final = np.array([], dtype=np.float32)
-
-            # This part runs on the main thread and is fast (just GPU uploads)
-            renderer.update_from_vertex_data(pv_final, pc_final, tv_final)
-
-        _apply_group(self._ops_renderer_flat, flat_group)
-        _apply_group(self._ops_renderer_rotary, rotary_group)
-        self.queue_render()
+        self._update_renderers_from_artifact()
 
     def _update_cylinder_renderers(self):
         """
@@ -1907,12 +1706,55 @@ class Canvas3D(Gtk.GLArea):
                         rotary_diameter=item.rotary_diameter,
                     )
 
-        # 3. Schedule the expensive vector preparation for a background thread
+        # 3. Build RenderConfig3D snapshot for the compiler
+        step_configs: Dict[str, StepRenderConfig] = {}
+        for item in scene_description.render_items:
+            step_configs[item.step_uid] = StepRenderConfig(
+                rotary_enabled=item.rotary_enabled,
+                rotary_diameter=item.rotary_diameter,
+                laser_uid=item.laser_uid,
+            )
+
+        laser_color_luts: Dict[str, dict] = {}
+        for uid, cs in self._laser_color_sets.items():
+            laser_color_luts[uid] = {
+                "cut": cs.get_lut("cut").astype(np.float32).tobytes(),
+                "engrave": cs.get_lut("engrave").astype(np.float32).tobytes(),
+            }
+
+        render_config = RenderConfig3D(
+            world_to_visual=world_to_visual,
+            world_to_cyl_local=world_to_cyl_local,
+            step_configs=step_configs,
+            default_color_lut_cut=self._color_set.get_lut("cut")
+            .astype(np.float32)
+            .tobytes(),
+            default_color_lut_engrave=self._color_set.get_lut("engrave")
+            .astype(np.float32)
+            .tobytes(),
+            laser_color_luts=laser_color_luts,
+            zero_power_rgba=self._color_set.get_rgba("zero_power"),
+        )
+
+        config_roundtrip = RenderConfig3D.from_dict(render_config.to_dict())
+        np.testing.assert_array_equal(
+            render_config.world_to_visual, config_roundtrip.world_to_visual
+        )
+        np.testing.assert_array_equal(
+            render_config.world_to_cyl_local,
+            config_roundtrip.world_to_cyl_local,
+        )
+        assert (
+            render_config.zero_power_rgba == config_roundtrip.zero_power_rgba
+        )
+
+        # 4. Schedule the expensive vector preparation for a background thread
         self._world_to_cyl_local = world_to_cyl_local
         self._schedule_scene_preparation(
             scene_description,
             world_to_visual,
             world_to_cyl_local,
+            render_config_dict=render_config.to_dict(),
         )
 
         t_update_elapsed = (time.perf_counter() - t_update_start) * 1000
@@ -1928,10 +1770,11 @@ class Canvas3D(Gtk.GLArea):
         scene_description: SceneDescription,
         world_to_visual: np.ndarray,
         world_to_cyl_local: np.ndarray,
+        render_config_dict: Optional[dict] = None,
     ):
         """
-        Schedules the given SceneDescription to be prepared for rendering in
-        a background thread.
+        Schedules the given SceneDescription to be compiled for rendering
+        in a background thread.
         """
         task_key = (id(self), "prepare-3d-scene-vertices")
 
@@ -1941,15 +1784,28 @@ class Canvas3D(Gtk.GLArea):
                 self._scene_preparation_task.cancel()
 
             self._scene_prep_cancel.clear()
-            logger.debug("[CANVAS3D] Scheduling scene preparation task.")
+
+            step_ops_handle_dicts: list = []
+            for item in scene_description.render_items:
+                ops_handle = self.pipeline.get_step_ops_artifact_handle(
+                    item.step_uid
+                )
+                if ops_handle is not None:
+                    step_ops_handle_dicts.append(
+                        (item.step_uid, ops_handle.to_dict())
+                    )
+
+            if not step_ops_handle_dicts:
+                logger.debug("[CANVAS3D] No step ops handles, skipping.")
+                return
+
+            logger.debug("[CANVAS3D] Scheduling scene compilation task.")
+            assert render_config_dict is not None
             self._scene_preparation_task = task_mgr.run_thread(
                 prepare_scene_vertices_async,
                 self._context.artifact_store,
-                scene_description,
-                self._color_set,
-                self._laser_color_sets,
-                world_to_visual,
-                world_to_cyl_local,
+                step_ops_handle_dicts,
+                render_config_dict,
                 self._scene_prep_cancel,
                 key=task_key,
                 when_done=self._on_scene_prepared,
