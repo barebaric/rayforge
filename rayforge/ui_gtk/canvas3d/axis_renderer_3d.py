@@ -320,6 +320,8 @@ class AxisRenderer3D(BaseRenderer):
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         line_shader.use()
         line_shader.set_float("uHasNormals", 0.0)
+        line_shader.set_int("uExecutedVertexCount", -1)
+        line_shader.set_float("uAlphaPending", 0.2)
 
         # Draw background plane
         GL.glDepthMask(GL.GL_FALSE)

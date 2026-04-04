@@ -18,6 +18,7 @@ class VertexLayer:
     zero_power_colors: np.ndarray
     powered_cmd_offsets: list = field(default_factory=list)
     travel_cmd_offsets: list = field(default_factory=list)
+    is_rotary: bool = False
 
 
 @dataclass
@@ -38,6 +39,7 @@ class ScanlineOverlayLayer:
     positions: np.ndarray
     colors: np.ndarray
     cmd_offsets: list
+    is_rotary: bool = False
 
 
 class CompiledSceneArtifactHandle(BaseArtifactHandle):
@@ -107,6 +109,8 @@ class CompiledSceneArtifact(BaseArtifact):
                 arrays[f"vl{i}_tco"] = np.array(
                     vl.travel_cmd_offsets, dtype=np.int32
                 )
+            if vl.is_rotary:
+                arrays[f"vl{i}_ir"] = np.array([1], dtype=np.int32)
 
         for i, tl in enumerate(self.texture_layers):
             arrays[f"tl{i}_tex"] = tl.power_texture
@@ -133,6 +137,8 @@ class CompiledSceneArtifact(BaseArtifact):
             arrays[f"ol{i}_pos"] = ol.positions
             arrays[f"ol{i}_col"] = ol.colors
             arrays[f"ol{i}_co"] = np.array(ol.cmd_offsets, dtype=np.int32)
+            if ol.is_rotary:
+                arrays[f"ol{i}_ir"] = np.array([1], dtype=np.int32)
 
         return arrays
 
@@ -152,6 +158,9 @@ class CompiledSceneArtifact(BaseArtifact):
             prefix = f"vl{i}_"
             pco_arr = arrays.get(f"{prefix}pco")
             tco_arr = arrays.get(f"{prefix}tco")
+            is_rotary = False
+            if f"{prefix}ir" in arrays:
+                is_rotary = bool(arrays[f"{prefix}ir"][0])
             vl = VertexLayer(
                 powered_verts=arrays[f"{prefix}pv"].copy(),
                 powered_colors=arrays[f"{prefix}pc"].copy(),
@@ -164,6 +173,7 @@ class CompiledSceneArtifact(BaseArtifact):
                 travel_cmd_offsets=(
                     tco_arr.tolist() if tco_arr is not None else []
                 ),
+                is_rotary=is_rotary,
             )
             vertex_layers.append(vl)
 
@@ -204,10 +214,14 @@ class CompiledSceneArtifact(BaseArtifact):
         overlay_layers: List[ScanlineOverlayLayer] = []
         for i in range(num_ol):
             prefix = f"ol{i}_"
+            is_rotary = False
+            if f"{prefix}ir" in arrays:
+                is_rotary = bool(arrays[f"{prefix}ir"][0])
             ol = ScanlineOverlayLayer(
                 positions=arrays[f"{prefix}pos"].copy(),
                 colors=arrays[f"{prefix}col"].copy(),
                 cmd_offsets=arrays[f"{prefix}co"].copy().tolist(),
+                is_rotary=is_rotary,
             )
             overlay_layers.append(ol)
 
