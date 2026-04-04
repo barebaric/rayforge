@@ -33,6 +33,10 @@ from .compiled_scene import (
     TextureLayer,
     VertexLayer,
 )
+from ...pipeline.encoder.scanline_rasterizer import (
+    MAX_TEXTURE_DIMENSION,
+    rasterize_scanlines as _rasterize_scanlines_shared,
+)
 from .render_config import RenderConfig3D
 
 logger = logging.getLogger(__name__)
@@ -196,7 +200,6 @@ def _encode_overlay_segments(
     return vertex_count
 
 
-MAX_TEXTURE_DIMENSION = 8192
 PX_PER_MM = 50.0
 
 
@@ -229,35 +232,6 @@ def _scanline_bbox(ops: Ops) -> Optional[Tuple[float, float, float, float]]:
     return (min_x, min_y, max_x - min_x, max_y - min_y)
 
 
-def _bresenham_line(
-    buffer: np.ndarray,
-    x0: int,
-    y0: int,
-    x1: int,
-    y1: int,
-    power: int,
-):
-    h, w = buffer.shape
-    dx = abs(x1 - x0)
-    dy = abs(y1 - y0)
-    sx = 1 if x0 < x1 else -1
-    sy = 1 if y0 < y1 else -1
-    err = dx - dy
-    x, y = x0, y0
-    while True:
-        if 0 <= x < w and 0 <= y < h:
-            buffer[y, x] = max(buffer[y, x], power)
-        if x == x1 and y == y1:
-            break
-        e2 = 2 * err
-        if e2 > -dy:
-            err -= dy
-            x += sx
-        if e2 < dx:
-            err += dx
-            y += sy
-
-
 def _rasterize_scanlines(
     ops: Ops,
     bbox: Tuple[float, float, float, float],
@@ -283,44 +257,15 @@ def _rasterize_scanlines(
         return None
 
     buffer = np.zeros((height_px, width_px), dtype=np.uint8)
-    current_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-
-    for cmd in ops.commands:
-        if isinstance(cmd, MoveToCommand):
-            if cmd.end is not None:
-                current_pos = cmd.end
-        elif isinstance(cmd, ScanLinePowerCommand):
-            if cmd.end is None:
-                continue
-            end_mm = cmd.end
-            num_steps = len(cmd.power_values)
-            if num_steps == 0:
-                current_pos = end_mm
-                continue
-
-            sx = (current_pos[0] - x0) * px_per_mm
-            sy = height_px - (current_pos[1] - y0) * px_per_mm
-            ex = (end_mm[0] - x0) * px_per_mm
-            ey = height_px - (end_mm[1] - y0) * px_per_mm
-
-            power_array = np.frombuffer(cmd.power_values, dtype=np.uint8)
-
-            for i in range(num_steps):
-                t_start = i / num_steps
-                t_end = (i + 1) / num_steps
-                psx = int(round(sx + t_start * (ex - sx)))
-                psy = int(round(sy + t_start * (ey - sy)))
-                pex = int(round(sx + t_end * (ex - sx)))
-                pey = int(round(sy + t_end * (ey - sy)))
-
-                power = power_array[i]
-                if power == 0:
-                    continue
-                _bresenham_line(buffer, psx, psy, pex, pey, int(power))
-
-            current_pos = end_mm
-
-    if buffer.max() == 0:
+    has_content = _rasterize_scanlines_shared(
+        ops,
+        buffer,
+        width_px,
+        height_px,
+        origin_mm=(x0, y0),
+        px_per_mm=px_per_mm,
+    )
+    if not has_content:
         return None
 
     return buffer, width_px, height_px, px_per_mm
