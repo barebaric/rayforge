@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Type
 
 import numpy as np
@@ -16,6 +16,8 @@ class VertexLayer:
     travel_verts: np.ndarray
     zero_power_verts: np.ndarray
     zero_power_colors: np.ndarray
+    powered_cmd_offsets: list = field(default_factory=list)
+    travel_cmd_offsets: list = field(default_factory=list)
 
 
 @dataclass
@@ -27,6 +29,8 @@ class TextureLayer:
     color_lut: Optional[np.ndarray] = None
     cylinder_vertices: Optional[np.ndarray] = None
     rotary_diameter: float = 0.0
+    rotary_enabled: bool = False
+    activation_cmd_idx: int = -1
 
 
 @dataclass
@@ -95,6 +99,14 @@ class CompiledSceneArtifact(BaseArtifact):
             arrays[f"vl{i}_tv"] = vl.travel_verts
             arrays[f"vl{i}_zpv"] = vl.zero_power_verts
             arrays[f"vl{i}_zpc"] = vl.zero_power_colors
+            if vl.powered_cmd_offsets:
+                arrays[f"vl{i}_pco"] = np.array(
+                    vl.powered_cmd_offsets, dtype=np.int32
+                )
+            if vl.travel_cmd_offsets:
+                arrays[f"vl{i}_tco"] = np.array(
+                    vl.travel_cmd_offsets, dtype=np.int32
+                )
 
         for i, tl in enumerate(self.texture_layers):
             arrays[f"tl{i}_tex"] = tl.power_texture
@@ -105,6 +117,12 @@ class CompiledSceneArtifact(BaseArtifact):
             if tl.rotary_diameter > 0:
                 arrays[f"tl{i}_rd"] = np.array(
                     [tl.rotary_diameter], dtype=np.float32
+                )
+            if tl.rotary_enabled:
+                arrays[f"tl{i}_re"] = np.array([1], dtype=np.int32)
+            if tl.activation_cmd_idx >= 0:
+                arrays[f"tl{i}_aci"] = np.array(
+                    [tl.activation_cmd_idx], dtype=np.int32
                 )
             if tl.color_lut is not None:
                 arrays[f"tl{i}_clut"] = tl.color_lut
@@ -132,12 +150,20 @@ class CompiledSceneArtifact(BaseArtifact):
         vertex_layers: List[VertexLayer] = []
         for i in range(num_vl):
             prefix = f"vl{i}_"
+            pco_arr = arrays.get(f"{prefix}pco")
+            tco_arr = arrays.get(f"{prefix}tco")
             vl = VertexLayer(
                 powered_verts=arrays[f"{prefix}pv"].copy(),
                 powered_colors=arrays[f"{prefix}pc"].copy(),
                 travel_verts=arrays[f"{prefix}tv"].copy(),
                 zero_power_verts=arrays[f"{prefix}zpv"].copy(),
                 zero_power_colors=arrays[f"{prefix}zpc"].copy(),
+                powered_cmd_offsets=(
+                    pco_arr.tolist() if pco_arr is not None else []
+                ),
+                travel_cmd_offsets=(
+                    tco_arr.tolist() if tco_arr is not None else []
+                ),
             )
             vertex_layers.append(vl)
 
@@ -156,6 +182,12 @@ class CompiledSceneArtifact(BaseArtifact):
             rotary_diameter = 0.0
             if f"{prefix}rd" in arrays:
                 rotary_diameter = float(arrays[f"{prefix}rd"][0])
+            rotary_enabled = False
+            if f"{prefix}re" in arrays:
+                rotary_enabled = bool(arrays[f"{prefix}re"][0])
+            activation_cmd_idx = -1
+            if f"{prefix}aci" in arrays:
+                activation_cmd_idx = int(arrays[f"{prefix}aci"][0])
             tl = TextureLayer(
                 power_texture=arrays[f"{prefix}tex"].copy(),
                 width_px=width_px,
@@ -164,6 +196,8 @@ class CompiledSceneArtifact(BaseArtifact):
                 color_lut=color_lut,
                 cylinder_vertices=cylinder_vertices,
                 rotary_diameter=rotary_diameter,
+                rotary_enabled=rotary_enabled,
+                activation_cmd_idx=activation_cmd_idx,
             )
             texture_layers.append(tl)
 

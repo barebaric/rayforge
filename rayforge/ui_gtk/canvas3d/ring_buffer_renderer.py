@@ -111,6 +111,11 @@ class RingBufferRenderer(BaseRenderer):
         if executed_vertex_count >= 0:
             draw_count = min(executed_vertex_count, self.vertex_count)
 
+        logger.debug(
+            f"[RING-RENDER] total={self.vertex_count} "
+            f"exec={executed_vertex_count} draw={draw_count}"
+        )
+
         if draw_count == 0:
             return
 
@@ -118,7 +123,7 @@ class RingBufferRenderer(BaseRenderer):
         shader.set_mat4("uMVP", mvp_matrix)
         shader.set_float("uHasNormals", 0.0)
         shader.set_float("uUseVertexColor", 1.0)
-        shader.set_int("uExecutedVertexCount", executed_vertex_count)
+        shader.set_int("uExecutedVertexCount", -1)
         shader.set_float("uAlphaPending", alpha_pending)
 
         GL.glDisable(GL.GL_DEPTH_TEST)

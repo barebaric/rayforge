@@ -3,21 +3,27 @@ import numpy as np
 
 from rayforge.core.ops import Ops
 from rayforge.core.ops.commands import ScanLinePowerCommand
-from compile_scene_helper import make_test_config
-from rayforge.ui_gtk.canvas3d.render_config import StepRenderConfig
+from compile_scene_helper import (
+    make_test_config,
+    make_assembled_ops,
+    make_flat_layer_config,
+    make_rotary_layer_config,
+)
 from rayforge.ui_gtk.canvas3d.scene_compiler import compile_scene
 
 
-def _identity_config(**step_overrides):
-    cfg = make_test_config()
-    if step_overrides:
-        sc = StepRenderConfig(
-            rotary_enabled=step_overrides.get("rotary_enabled", False),
-            rotary_diameter=step_overrides.get("rotary_diameter", 25.0),
-            laser_uid=step_overrides.get("laser_uid", ""),
-        )
-        cfg.step_configs["step1"] = sc
-    return cfg
+def _flat_config():
+    return make_test_config(layer_configs={"layer1": make_flat_layer_config()})
+
+
+def _rotary_config(diameter=50.0):
+    return make_test_config(
+        layer_configs={"layer1": make_rotary_layer_config(diameter=diameter)}
+    )
+
+
+def _single_layer_ops(step_ops, layer_uid="layer1"):
+    return make_assembled_ops([(layer_uid, step_ops)])
 
 
 class TestCompileLineTo:
@@ -27,10 +33,10 @@ class TestCompileLineTo:
         ops.set_power(0.5)
         ops.line_to(4.0, 6.0, 0.0)
 
-        config = _identity_config()
-        step_cfg = config.step_configs["step1"]
+        assembled = _single_layer_ops(ops)
+        config = _flat_config()
 
-        artifact = compile_scene([(ops, step_cfg)], config)
+        artifact = compile_scene(assembled, config)
 
         assert len(artifact.vertex_layers) == 2
         vl = artifact.vertex_layers[0]
@@ -50,10 +56,10 @@ class TestCompileLineTo:
         ops.move_to(1.0, 0.0, 0.0)
         ops.move_to(5.0, 0.0, 0.0)
 
-        config = _identity_config()
-        step_cfg = config.step_configs["step1"]
+        assembled = _single_layer_ops(ops)
+        config = _flat_config()
 
-        artifact = compile_scene([(ops, step_cfg)], config)
+        artifact = compile_scene(assembled, config)
 
         assert len(artifact.vertex_layers) == 2
         vl = artifact.vertex_layers[0]
@@ -70,10 +76,10 @@ class TestCompileScanline:
         powers = bytearray([0, 0, 255, 255, 0, 0])
         ops.add(ScanLinePowerCommand((6.0, 0.0, 0.0), powers))
 
-        config = _identity_config()
-        step_cfg = config.step_configs["step1"]
+        assembled = _single_layer_ops(ops)
+        config = _flat_config()
 
-        artifact = compile_scene([(ops, step_cfg)], config)
+        artifact = compile_scene(assembled, config)
 
         vl = artifact.vertex_layers[0]
         zpv = vl.zero_power_verts.reshape(-1, 3)
@@ -91,10 +97,10 @@ class TestCompileScanline:
         powers = bytearray([128, 128])
         ops.add(ScanLinePowerCommand((2.0, 0.0, 0.0), powers))
 
-        config = _identity_config()
-        step_cfg = config.step_configs["step1"]
+        assembled = _single_layer_ops(ops)
+        config = _flat_config()
 
-        artifact = compile_scene([(ops, step_cfg)], config)
+        artifact = compile_scene(assembled, config)
 
         assert len(artifact.overlay_layers) == 2
         ol = artifact.overlay_layers[0]
@@ -111,12 +117,10 @@ class TestCompileRotary:
         ops.line_to(10.0, 0.0, 0.0)
 
         diameter = 50.0
-        config = _identity_config(
-            rotary_enabled=True, rotary_diameter=diameter
-        )
-        step_cfg = config.step_configs["step1"]
+        assembled = _single_layer_ops(ops)
+        config = _rotary_config(diameter=diameter)
 
-        artifact = compile_scene([(ops, step_cfg)], config)
+        artifact = compile_scene(assembled, config)
 
         assert len(artifact.vertex_layers) == 2
         assert artifact.vertex_layers[0].powered_verts.size == 0
@@ -130,20 +134,17 @@ class TestCompileRotary:
 
 class TestCompileCancel:
     def test_cancel_raises(self):
-        ops1 = Ops()
-        ops1.move_to(0.0, 0.0, 0.0)
-        ops1.line_to(1.0, 1.0, 0.0)
+        ops = Ops()
+        ops.move_to(0.0, 0.0, 0.0)
+        ops.line_to(1.0, 1.0, 0.0)
+        ops.line_to(2.0, 2.0, 0.0)
 
-        ops2 = Ops()
-        ops2.move_to(0.0, 0.0, 0.0)
-        ops2.line_to(2.0, 2.0, 0.0)
-
-        config = _identity_config()
-        step_cfg = config.step_configs["step1"]
+        assembled = _single_layer_ops(ops)
+        config = _flat_config()
 
         with pytest.raises(RuntimeError, match="Cancelled"):
             compile_scene(
-                [(ops1, step_cfg), (ops2, step_cfg)],
+                assembled,
                 config,
                 cancel_check=lambda: True,
             )
@@ -152,10 +153,10 @@ class TestCompileCancel:
 class TestCompileEmpty:
     def test_empty_ops(self):
         ops = Ops()
-        config = _identity_config()
-        step_cfg = config.step_configs["step1"]
+        assembled = _single_layer_ops(ops)
+        config = _flat_config()
 
-        artifact = compile_scene([(ops, step_cfg)], config)
+        artifact = compile_scene(assembled, config)
 
         assert len(artifact.vertex_layers) == 2
         assert artifact.vertex_layers[0].powered_verts.size == 0
@@ -164,14 +165,18 @@ class TestCompileEmpty:
         assert artifact.overlay_layers[0].positions.size == 0
         assert artifact.overlay_layers[1].positions.size == 0
 
-    def test_empty_ops_list(self):
-        config = _identity_config()
-        artifact = compile_scene([], config)
+    def test_empty_job_markers_only(self):
+        assembled = Ops()
+        assembled.job_start()
+        assembled.job_end()
+
+        config = _flat_config()
+        artifact = compile_scene(assembled, config)
         assert len(artifact.vertex_layers) == 2
         assert len(artifact.overlay_layers) == 2
 
 
-class TestCompileMultiStep:
+class TestCompileMultiLayer:
     def test_flat_and_rotary_separated(self):
         ops_flat = Ops()
         ops_flat.move_to(0.0, 0.0, 0.0)
@@ -183,18 +188,20 @@ class TestCompileMultiStep:
         ops_rot.set_power(1.0)
         ops_rot.line_to(5.0, 0.0, 0.0)
 
-        config = _identity_config()
+        assembled = make_assembled_ops(
+            [
+                ("flat_layer", ops_flat),
+                ("rot_layer", ops_rot),
+            ]
+        )
+        config = make_test_config(
+            layer_configs={
+                "flat_layer": make_flat_layer_config(),
+                "rot_layer": make_rotary_layer_config(diameter=50.0),
+            }
+        )
 
-        flat_cfg = StepRenderConfig(
-            rotary_enabled=False, rotary_diameter=0.0, laser_uid=""
-        )
-        rot_cfg = StepRenderConfig(
-            rotary_enabled=True, rotary_diameter=50.0, laser_uid=""
-        )
-
-        artifact = compile_scene(
-            [(ops_flat, flat_cfg), (ops_rot, rot_cfg)], config
-        )
+        artifact = compile_scene(assembled, config)
 
         assert len(artifact.vertex_layers) == 2
 
@@ -205,6 +212,105 @@ class TestCompileMultiStep:
         rot_vl = artifact.vertex_layers[1]
         pv_rot = rot_vl.powered_verts.reshape(-1, 3)
         assert abs(pv_rot[0, 2] - 25.0) < 1e-3
+
+
+class TestPoweredOffsets:
+    def test_single_powered_line_offsets(self):
+        ops = Ops()
+        ops.move_to(1.0, 2.0, 0.0)
+        ops.set_power(0.5)
+        ops.line_to(4.0, 6.0, 0.0)
+
+        assembled = _single_layer_ops(ops)
+        config = _flat_config()
+
+        artifact = compile_scene(assembled, config)
+
+        vl = artifact.vertex_layers[0]
+        off = vl.powered_cmd_offsets
+        assert len(off) == len(assembled.commands) + 1
+        assert off[0] == 0
+        assert off[-1] == 2
+
+    def test_multi_layer_cumulative_powered_offsets(self):
+        ops1 = Ops()
+        ops1.move_to(0.0, 0.0, 0.0)
+        ops1.set_power(1.0)
+        ops1.line_to(5.0, 0.0, 0.0)
+
+        ops2 = Ops()
+        ops2.move_to(0.0, 0.0, 0.0)
+        ops2.set_power(1.0)
+        ops2.line_to(10.0, 0.0, 0.0)
+        ops2.line_to(15.0, 0.0, 0.0)
+
+        assembled = make_assembled_ops(
+            [
+                ("layer1", ops1),
+                ("layer2", ops2),
+            ]
+        )
+        config = make_test_config(
+            layer_configs={
+                "layer1": make_flat_layer_config(),
+                "layer2": make_flat_layer_config(),
+            }
+        )
+
+        artifact = compile_scene(assembled, config)
+
+        vl = artifact.vertex_layers[0]
+        off = vl.powered_cmd_offsets
+        assert off[0] == 0
+        assert off[-1] == 6
+
+    def test_travel_offsets(self):
+        ops = Ops()
+        ops.move_to(1.0, 0.0, 0.0)
+        ops.move_to(5.0, 0.0, 0.0)
+        ops.move_to(10.0, 0.0, 0.0)
+
+        assembled = _single_layer_ops(ops)
+        config = _flat_config()
+
+        artifact = compile_scene(assembled, config)
+
+        vl = artifact.vertex_layers[0]
+        off = vl.travel_cmd_offsets
+        assert len(off) == len(assembled.commands) + 1
+        assert off[0] == 0
+        assert off[-1] == 4
+
+    def test_offsets_match_vertex_counts(self):
+        ops = Ops()
+        ops.move_to(0.0, 0.0, 0.0)
+        ops.set_power(1.0)
+        ops.line_to(5.0, 0.0, 0.0)
+        ops.line_to(10.0, 0.0, 0.0)
+        ops.move_to(20.0, 0.0, 0.0)
+        ops.line_to(25.0, 0.0, 0.0)
+
+        assembled = _single_layer_ops(ops)
+        config = _flat_config()
+
+        artifact = compile_scene(assembled, config)
+
+        vl = artifact.vertex_layers[0]
+        n_powered = vl.powered_verts.size // 3
+        n_travel = vl.travel_verts.size // 3
+        assert vl.powered_cmd_offsets[-1] == n_powered
+        assert vl.travel_cmd_offsets[-1] == n_travel
+
+    def test_empty_ops_offsets(self):
+        ops = Ops()
+        assembled = _single_layer_ops(ops)
+        config = _flat_config()
+
+        artifact = compile_scene(assembled, config)
+
+        vl = artifact.vertex_layers[0]
+        assert vl.powered_cmd_offsets == [0] * (len(assembled.commands) + 1)
+        assert vl.travel_cmd_offsets == [0] * (len(assembled.commands) + 1)
 
 
 class TestOverlayOffsets:
@@ -219,10 +325,10 @@ class TestOverlayOffsets:
         powers2 = bytearray([64])
         ops.add(ScanLinePowerCommand((5.0, 0.0, 0.0), powers2))
 
-        config = _identity_config()
-        step_cfg = config.step_configs["step1"]
+        assembled = _single_layer_ops(ops)
+        config = _flat_config()
 
-        artifact = compile_scene([(ops, step_cfg)], config)
+        artifact = compile_scene(assembled, config)
 
         assert len(artifact.overlay_layers) == 2
         ol = artifact.overlay_layers[0]
@@ -233,9 +339,9 @@ class TestOverlayOffsets:
         off = ol.cmd_offsets
         assert off[0] == 0
         assert off[-1] == 4
-        assert len(off) == len(ops.commands) + 1
+        assert len(off) == len(assembled.commands) + 1
 
-    def test_multi_step_cumulative_offsets(self):
+    def test_multi_layer_cumulative_offsets(self):
         ops1 = Ops()
         ops1.move_to(0.0, 0.0, 0.0)
         powers1 = bytearray([128, 128])
@@ -246,12 +352,20 @@ class TestOverlayOffsets:
         powers2 = bytearray([64])
         ops2.add(ScanLinePowerCommand((1.0, 0.0, 0.0), powers2))
 
-        config = _identity_config()
-        flat_cfg = StepRenderConfig(
-            rotary_enabled=False, rotary_diameter=0.0, laser_uid=""
+        assembled = make_assembled_ops(
+            [
+                ("layer1", ops1),
+                ("layer2", ops2),
+            ]
+        )
+        config = make_test_config(
+            layer_configs={
+                "layer1": make_flat_layer_config(),
+                "layer2": make_flat_layer_config(),
+            }
         )
 
-        artifact = compile_scene([(ops1, flat_cfg), (ops2, flat_cfg)], config)
+        artifact = compile_scene(assembled, config)
 
         assert len(artifact.overlay_layers) == 2
         ol = artifact.overlay_layers[0]

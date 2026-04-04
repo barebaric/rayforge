@@ -33,6 +33,7 @@ class OpsRenderer(BaseRenderer):
 
         self.powered_vbo: int = 0
         self.powered_colors_vbo: int = 0
+        self.powered_index_vbo: int = 0
         self.travel_vbo: int = 0
 
         self.powered_vertex_count: int = 0
@@ -45,6 +46,7 @@ class OpsRenderer(BaseRenderer):
         # Create Buffers
         self.powered_vbo = self._create_vbo()
         self.powered_colors_vbo = self._create_vbo()
+        self.powered_index_vbo = self._create_vbo()
         self.travel_vbo = self._create_vbo()
 
         # Configure VAO for Powered Moves (Cuts, Engraves, Zero-Power)
@@ -58,6 +60,10 @@ class OpsRenderer(BaseRenderer):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.powered_colors_vbo)
         GL.glVertexAttribPointer(1, 4, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
         GL.glEnableVertexAttribArray(1)
+        # Vertex index attribute (location 3)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.powered_index_vbo)
+        GL.glVertexAttribPointer(3, 1, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
+        GL.glEnableVertexAttribArray(3)
 
         # Configure VAO for Travel Moves
         self.travel_vao = self._create_vao()
@@ -225,6 +231,8 @@ class OpsRenderer(BaseRenderer):
         self.powered_vertex_count = powered_vertices.size // 3
         self._load_buffer_data(self.powered_vbo, powered_vertices)
         self._load_buffer_data(self.powered_colors_vbo, powered_colors)
+        indices = np.arange(self.powered_vertex_count, dtype=np.float32)
+        self._load_buffer_data(self.powered_index_vbo, indices)
         self.travel_vertex_count = travel_vertices.size // 3
         self._load_buffer_data(self.travel_vbo, travel_vertices)
 
@@ -259,9 +267,24 @@ class OpsRenderer(BaseRenderer):
                 f"> powered_vertex_count ({self.powered_vertex_count})"
             )
 
+        logger.debug(
+            f"[RENDER] powered={self.powered_vertex_count} "
+            f"travel={self.travel_vertex_count} "
+            f"exec={executed_vertex_count} "
+            f"travel_exec={executed_travel_vertex_count}"
+        )
+
         shader.use()
         shader.set_mat4("uMVP", mvp_matrix)
         shader.set_float("uHasNormals", 0.0)
+
+        logger.debug(
+            f"[RENDER] powered={self.powered_vertex_count} "
+            f"travel={self.travel_vertex_count} "
+            f"exec={executed_vertex_count} "
+            f"travel_exec={executed_travel_vertex_count}"
+        )
+
         shader.set_int("uExecutedVertexCount", executed_vertex_count)
         shader.set_float("uAlphaPending", alpha_pending)
 
