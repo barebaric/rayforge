@@ -1,6 +1,5 @@
 import logging
 import math
-import threading
 import time
 from pathlib import Path
 from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
@@ -15,7 +14,6 @@ from ...core.ops.commands import MovingCommand
 from ...machine.driver.driver import Axis
 from ...machine.kinematics import RotaryKinematics
 from ...machine.models.colors import OpsColorSet
-from ...pipeline.artifact import ArtifactStore
 from ...pipeline.artifact.step_ops import StepOpsArtifact
 from ...pipeline.artifact.handle import create_handle_from_dict
 from ...pipeline.artifact.step_render import StepRenderArtifact
@@ -59,7 +57,7 @@ from .compiled_scene import (
     ScanlineOverlayLayer,
 )
 from .render_config import RenderConfig3D, StepRenderConfig
-from .scene_compiler import compile_scene
+from .scene_compiler_runner import compile_scene_in_subprocess
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -68,60 +66,6 @@ if TYPE_CHECKING:
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-def prepare_scene_vertices_async(
-    artifact_store: ArtifactStore,
-    step_ops_handle_dicts: list,
-    render_config_dict: dict,
-    cancel_event: Optional[threading.Event] = None,
-) -> CompiledSceneArtifact:
-    """
-    A background task that compiles all step Ops into GPU-ready vertex data.
-
-    Loads each StepOpsArtifact from shared memory, pairs it with the
-    corresponding StepRenderConfig, and delegates to compile_scene().
-    """
-    config = RenderConfig3D.from_dict(render_config_dict)
-
-    ops_list: list = []
-    for step_uid, handle_dict in step_ops_handle_dicts:
-        if cancel_event is not None and cancel_event.is_set():
-            raise RuntimeError("Scene preparation cancelled")
-
-        step_cfg = config.step_configs.get(step_uid)
-        if step_cfg is None:
-            logger.debug(f"No config for step {step_uid}, skipping.")
-            continue
-
-        try:
-            handle = create_handle_from_dict(handle_dict)
-            artifact = artifact_store.get(handle)
-        except Exception as e:
-            logger.error(f"Failed to load ops for step {step_uid}: {e}")
-            continue
-
-        if not isinstance(artifact, StepOpsArtifact):
-            logger.error(f"Artifact for {step_uid} is not StepOpsArtifact.")
-            continue
-
-        if artifact.ops.is_empty():
-            continue
-
-        ops_list.append((artifact.ops, step_cfg))
-
-    cancel_check = None
-    if cancel_event is not None:
-        cancel_check = cancel_event.is_set
-
-    t_start = time.perf_counter()
-    result = compile_scene(ops_list, config, cancel_check=cancel_check)
-    elapsed = (time.perf_counter() - t_start) * 1000
-    logger.info(
-        f"[CANVAS3D] Scene compilation took {elapsed:.1f}ms "
-        f"(steps={len(ops_list)})"
-    )
-    return result
 
 
 class Canvas3D(Gtk.GLArea):
@@ -165,8 +109,8 @@ class Canvas3D(Gtk.GLArea):
         self._zone_renderer: Optional[ZoneRenderer] = None
         self._had_rotary_layers = False
         self._scene_preparation_task: Optional[Task] = None
-        self._scene_prep_cancel = threading.Event()
         self._compiled_artifact: Optional[CompiledSceneArtifact] = None
+        self._pending_scene_handle_dict: Optional[dict] = None
         self._op_player: Optional[OpPlayer] = None
         self._vertex_map: Optional[SceneVertexMap] = None
         self._scanline_overlay: Optional[ScanlineOverlay] = None
@@ -1139,6 +1083,29 @@ class Canvas3D(Gtk.GLArea):
         self._show_models = visible
         self.queue_render()
 
+    def _on_scene_compiled_event(
+        self, task: Task, event_name: str, data: dict
+    ):
+        """
+        Handles the scene_compiled event from the subprocess.
+        Adopts the shared memory handle so it survives worker cleanup.
+        """
+        if event_name == "scene_compiled":
+            handle_dict = data.get("handle_dict")
+            if handle_dict is not None:
+                try:
+                    self._context.artifact_store.adopt_from_dict(handle_dict)
+                    self._pending_scene_handle_dict = handle_dict
+                    logger.debug(
+                        f"[CANVAS3D] Adopted scene artifact: "
+                        f"{handle_dict.get('shm_name', '?')}"
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"[CANVAS3D] Failed to adopt scene artifact: {e}"
+                    )
+                    self._pending_scene_handle_dict = None
+
     def _on_scene_prepared(self, task: Task):
         """
         Callback for when the background scene compilation task is finished.
@@ -1151,6 +1118,7 @@ class Canvas3D(Gtk.GLArea):
             self._step_cmd_boundaries = []
             self._ring_flat_offsets = []
             self._ring_rotary_offsets = []
+            self._pending_scene_handle_dict = None
             if self._ops_renderer_flat:
                 self._ops_renderer_flat.clear()
             if self._ops_renderer_rotary:
@@ -1161,11 +1129,42 @@ class Canvas3D(Gtk.GLArea):
             self.queue_render()
             return
 
+        handle_dict = self._pending_scene_handle_dict
+        self._pending_scene_handle_dict = None
+
+        if handle_dict is None:
+            logger.warning(
+                "[CANVAS3D] Scene task completed but no artifact handle "
+                "was received (possibly empty scene)."
+            )
+            self._compiled_artifact = None
+            self._update_op_player()
+            self._update_renderers_from_artifact()
+            return
+
         logger.debug(
-            "[CANVAS3D] Scene compilation finished. Caching artifact."
+            "[CANVAS3D] Scene compilation finished. Loading artifact."
         )
-        artifact = task.result()
-        assert isinstance(artifact, CompiledSceneArtifact)
+        try:
+            handle = create_handle_from_dict(handle_dict)
+            artifact = self._context.artifact_store.get(handle)
+        except Exception as e:
+            logger.error(f"[CANVAS3D] Failed to load compiled scene: {e}")
+            self._compiled_artifact = None
+            self._update_op_player()
+            self._update_renderers_from_artifact()
+            return
+
+        if not isinstance(artifact, CompiledSceneArtifact):
+            logger.error(
+                f"[CANVAS3D] Expected CompiledSceneArtifact, got "
+                f"{type(artifact).__name__}"
+            )
+            self._compiled_artifact = None
+            self._update_op_player()
+            self._update_renderers_from_artifact()
+            return
+
         self._compiled_artifact = artifact
         self._update_op_player()
         self._update_renderers_from_artifact()
@@ -1774,16 +1773,13 @@ class Canvas3D(Gtk.GLArea):
     ):
         """
         Schedules the given SceneDescription to be compiled for rendering
-        in a background thread.
+        in a background subprocess.
         """
         task_key = (id(self), "prepare-3d-scene-vertices")
 
         if self._ops_renderer_flat and self._color_set is not None:
             if self._scene_preparation_task:
-                self._scene_prep_cancel.set()
                 self._scene_preparation_task.cancel()
-
-            self._scene_prep_cancel.clear()
 
             step_ops_handle_dicts: list = []
             for item in scene_description.render_items:
@@ -1801,12 +1797,13 @@ class Canvas3D(Gtk.GLArea):
 
             logger.debug("[CANVAS3D] Scheduling scene compilation task.")
             assert render_config_dict is not None
-            self._scene_preparation_task = task_mgr.run_thread(
-                prepare_scene_vertices_async,
+            self._pending_scene_handle_dict = None
+            self._scene_preparation_task = task_mgr.run_process(
+                compile_scene_in_subprocess,
                 self._context.artifact_store,
                 step_ops_handle_dicts,
                 render_config_dict,
-                self._scene_prep_cancel,
                 key=task_key,
                 when_done=self._on_scene_prepared,
+                when_event=self._on_scene_compiled_event,
             )
