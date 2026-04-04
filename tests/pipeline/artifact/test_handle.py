@@ -46,13 +46,13 @@ def test_workpiece_handle_serialization_round_trip():
 
 def test_step_ops_handle_serialization_round_trip():
     """
-    Tests that a StepOpsArtifactHandle can be converted to a dict and back.
+    Tests that a StepOpsArtifactHandle can be converted to a dict and
+    back.
     """
     handle = StepOpsArtifactHandle(
         shm_name="test_shm_ops_456",
         handle_class_name="StepOpsArtifactHandle",
         artifact_type_name="StepOpsArtifact",
-        time_estimate=99.9,
         array_metadata={
             "ops_types": {"dtype": "int32", "shape": (50,), "offset": 0},
         },
@@ -65,4 +65,3 @@ def test_step_ops_handle_serialization_round_trip():
 
     assert handle == reconstructed_handle
     assert isinstance(reconstructed_handle, StepOpsArtifactHandle)
-    assert reconstructed_handle.time_estimate == 99.9
