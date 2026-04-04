@@ -2,16 +2,18 @@ import math
 
 import pytest
 
-from rayforge.machine.assembly import Assembly, JointType, Link
+from rayforge.machine.assembly import Assembly, JointType, Link, LinkRole
 from rayforge.machine.driver.driver import Axis
 from rayforge.simulator.machine_state import MachineState
 
 
-def _make_state(x=0.0, y=0.0, z=0.0):
+def _make_state(x=0.0, y=0.0, z=0.0, a=0.0, b=0.0):
     state = MachineState()
     state.axes[Axis.X] = x
     state.axes[Axis.Y] = y
     state.axes[Axis.Z] = z
+    state.axes[Axis.A] = a
+    state.axes[Axis.B] = b
     return state
 
 
@@ -39,6 +41,7 @@ def _three_axis_assembly():
                 joint_type=JointType.PRISMATIC,
                 joint_axis=(0.0, 0.0, 1.0),
                 driver_axis=Axis.Z,
+                role=LinkRole.HEAD,
             ),
         ]
     )
@@ -68,6 +71,7 @@ def _rotary_assembly(diameter=50.0):
                 joint_type=JointType.PRISMATIC,
                 joint_axis=(0.0, 0.0, 1.0),
                 driver_axis=Axis.Z,
+                role=LinkRole.HEAD,
             ),
             Link("rotary_base", parent="base", joint_type=JointType.FIXED),
             Link(
@@ -76,6 +80,7 @@ def _rotary_assembly(diameter=50.0):
                 joint_type=JointType.REVOLUTE,
                 joint_axis=(1.0, 0.0, 0.0),
                 driver_axis=Axis.Y,
+                role=LinkRole.CHUCK,
             ),
         ]
     )
@@ -84,25 +89,27 @@ def _rotary_assembly(diameter=50.0):
 
 
 class TestThreeAxis:
-    def test_head_position_origin(self):
+    def test_head_positions_origin(self):
         asm = _three_axis_assembly()
         state = _make_state()
-        assert asm.head_position(state) == (0.0, 0.0, 0.0)
+        heads = asm.head_positions(state)
+        assert heads == {"laser_head": (0.0, 0.0, 0.0)}
 
-    def test_head_position_translated(self):
+    def test_head_positions_translated(self):
         asm = _three_axis_assembly()
         state = _make_state(x=10.0, y=20.0, z=5.0)
-        assert asm.head_position(state) == (10.0, 20.0, 5.0)
+        heads = asm.head_positions(state)
+        assert heads == {"laser_head": (10.0, 20.0, 5.0)}
 
     def test_no_rotary(self):
         asm = _three_axis_assembly()
         assert not asm.has_rotary
         assert asm.rotary_diameter is None
 
-    def test_cylinder_angle_zero(self):
+    def test_chuck_angles_empty(self):
         asm = _three_axis_assembly()
-        state = _make_state(y=100.0)
-        assert asm.cylinder_angle(state) == 0.0
+        angles = asm.chuck_angles(_make_state(y=100.0))
+        assert angles == {}
 
     def test_forward_kinematics_returns_all_links(self):
         asm = _three_axis_assembly()
@@ -125,23 +132,147 @@ class TestRotary:
         assert asm.has_rotary
         assert asm.rotary_diameter == 50.0
 
-    def test_cylinder_angle_quarter_turn(self):
+    def test_chuck_angles_quarter_turn(self):
         diameter = 50.0
         circumference = diameter * math.pi
         asm = _rotary_assembly(diameter)
         state = _make_state(y=circumference / 4)
-        angle = asm.cylinder_angle(state)
-        assert abs(angle - math.pi / 2) < 1e-9
+        angles = asm.chuck_angles(state)
+        assert abs(angles["rotary_chuck"] - math.pi / 2) < 1e-9
 
-    def test_head_position_same_as_cartesian(self):
+    def test_head_positions_same_as_cartesian(self):
         asm = _rotary_assembly()
         state = _make_state(x=5.0, y=10.0, z=3.0)
-        assert asm.head_position(state) == (5.0, 10.0, 3.0)
+        heads = asm.head_positions(state)
+        assert heads == {"laser_head": (5.0, 10.0, 3.0)}
 
-    def test_cylinder_angle_zero_at_origin(self):
+    def test_chuck_angles_zero_at_origin(self):
         asm = _rotary_assembly()
         state = _make_state()
-        assert asm.cylinder_angle(state) == 0.0
+        angles = asm.chuck_angles(state)
+        assert angles["rotary_chuck"] == 0.0
+
+
+class TestMultipleHeads:
+    def test_two_heads(self):
+        asm = Assembly(
+            [
+                Link("base", parent=None, joint_type=JointType.FIXED),
+                Link(
+                    "gantry_x",
+                    parent="base",
+                    joint_type=JointType.PRISMATIC,
+                    joint_axis=(1.0, 0.0, 0.0),
+                    driver_axis=Axis.X,
+                ),
+                Link(
+                    "head_a",
+                    parent="gantry_x",
+                    joint_type=JointType.PRISMATIC,
+                    joint_axis=(0.0, 1.0, 0.0),
+                    driver_axis=Axis.Y,
+                    role=LinkRole.HEAD,
+                ),
+                Link(
+                    "head_b",
+                    parent="gantry_x",
+                    joint_type=JointType.PRISMATIC,
+                    joint_axis=(0.0, 0.0, 1.0),
+                    driver_axis=Axis.Z,
+                    role=LinkRole.HEAD,
+                ),
+            ]
+        )
+        state = _make_state(x=5.0, y=10.0, z=3.0)
+        heads = asm.head_positions(state)
+        assert "head_a" in heads
+        assert "head_b" in heads
+        assert heads["head_a"] == (5.0, 10.0, 0.0)
+        assert heads["head_b"] == (5.0, 0.0, 3.0)
+
+    def test_get_links_by_role(self):
+        asm = Assembly(
+            [
+                Link("base", parent=None, joint_type=JointType.FIXED),
+                Link(
+                    "head_a",
+                    parent="base",
+                    joint_type=JointType.PRISMATIC,
+                    joint_axis=(1.0, 0.0, 0.0),
+                    driver_axis=Axis.X,
+                    role=LinkRole.HEAD,
+                ),
+                Link(
+                    "head_b",
+                    parent="base",
+                    joint_type=JointType.PRISMATIC,
+                    joint_axis=(0.0, 1.0, 0.0),
+                    driver_axis=Axis.Y,
+                    role=LinkRole.HEAD,
+                ),
+            ]
+        )
+        head_links = asm.get_links_by_role(LinkRole.HEAD)
+        assert len(head_links) == 2
+        names = {link.name for link in head_links}
+        assert names == {"head_a", "head_b"}
+        chuck_links = asm.get_links_by_role(LinkRole.CHUCK)
+        assert chuck_links == []
+
+
+class TestMultipleChucks:
+    def test_two_chucks(self):
+        asm = Assembly(
+            [
+                Link("base", parent=None, joint_type=JointType.FIXED),
+                Link(
+                    "head",
+                    parent="base",
+                    joint_type=JointType.PRISMATIC,
+                    joint_axis=(1.0, 0.0, 0.0),
+                    driver_axis=Axis.X,
+                    role=LinkRole.HEAD,
+                ),
+                Link(
+                    "chuck_a",
+                    parent="base",
+                    joint_type=JointType.REVOLUTE,
+                    joint_axis=(1.0, 0.0, 0.0),
+                    driver_axis=Axis.Y,
+                    role=LinkRole.CHUCK,
+                ),
+                Link(
+                    "chuck_b",
+                    parent="base",
+                    joint_type=JointType.REVOLUTE,
+                    joint_axis=(0.0, 1.0, 0.0),
+                    driver_axis=Axis.A,
+                    role=LinkRole.CHUCK,
+                ),
+            ]
+        )
+        asm.set_rotary_diameter(25.0)
+        state = _make_state(y=25.0 * math.pi, a=25.0 * math.pi / 2)
+        angles = asm.chuck_angles(state)
+        assert abs(angles["chuck_a"] - 2 * math.pi) < 1e-9
+        assert abs(angles["chuck_b"] - math.pi) < 1e-9
+
+    def test_get_links_by_role_chuck(self):
+        asm = _rotary_assembly()
+        chucks = asm.get_links_by_role(LinkRole.CHUCK)
+        assert len(chucks) == 1
+        assert chucks[0].name == "rotary_chuck"
+
+
+class TestNoRole:
+    def test_head_positions_raises_when_no_head_role(self):
+        asm = Assembly(
+            [
+                Link("base", parent=None, joint_type=JointType.FIXED),
+            ]
+        )
+        with pytest.raises(ValueError, match="no links with role HEAD"):
+            asm.head_positions(MachineState())
 
 
 class TestValidation:
@@ -199,7 +330,7 @@ class TestValidation:
             )
 
     def test_multiple_roots_raises(self):
-        with pytest.raises(ValueError, match="exactly one root link"):
+        with pytest.raises(ValueError, match="exactly one root"):
             Assembly(
                 [
                     Link("root1", parent=None, joint_type=JointType.FIXED),
@@ -224,15 +355,6 @@ class TestValidation:
                 joint_type=JointType.FIXED,
                 driver_axis=Axis.X,
             )
-
-    def test_head_position_no_laser_head_raises(self):
-        asm = Assembly(
-            [
-                Link("base", parent=None, joint_type=JointType.FIXED),
-            ]
-        )
-        with pytest.raises(ValueError, match="no 'laser_head' link"):
-            asm.head_position(MachineState())
 
 
 class TestFiveAxis:
@@ -262,7 +384,7 @@ class TestFiveAxis:
                     driver_axis=Axis.Z,
                 ),
                 Link(
-                    "tilt_head",
+                    "tilt",
                     parent="gantry_z",
                     joint_type=JointType.REVOLUTE,
                     joint_axis=(0, 0, 1),
@@ -270,13 +392,16 @@ class TestFiveAxis:
                 ),
                 Link(
                     "laser_head",
-                    parent="tilt_head",
+                    parent="tilt",
                     joint_type=JointType.FIXED,
+                    role=LinkRole.HEAD,
                 ),
             ]
         )
         state = MachineState()
         state.axes[Axis.B] = 45.0
         poses = asm.forward_kinematics(state)
-        assert "tilt_head" in poses
+        assert "tilt" in poses
         assert "laser_head" in poses
+        heads = asm.head_positions(state)
+        assert "laser_head" in heads

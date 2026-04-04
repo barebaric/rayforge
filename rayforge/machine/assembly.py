@@ -26,6 +26,11 @@ class JointType(Enum):
     REVOLUTE = "revolute"
 
 
+class LinkRole(Enum):
+    HEAD = "head"
+    CHUCK = "chuck"
+
+
 @dataclass
 class Link:
     name: str
@@ -37,6 +42,7 @@ class Link:
         default_factory=lambda: np.eye(4, dtype=np.float64)
     )
     model_id: Optional[str] = None
+    role: Optional[LinkRole] = None
 
     def __post_init__(self):
         if self.joint_type != JointType.FIXED and self.driver_axis is None:
@@ -85,10 +91,9 @@ class Assembly:
 
         self._validate_no_cycles()
 
-        self._head_link: Optional[str] = None
-        self._chuck_link: Optional[str] = None
+        self._roles: Dict[LinkRole, List[str]] = {}
         self._rotary_diameter: Optional[float] = None
-        self._detect_convenience_links()
+        self._index_roles()
 
     def _validate_no_cycles(self) -> None:
         visited: Set[str] = set()
@@ -113,12 +118,12 @@ class Assembly:
         if unreachable:
             raise ValueError(f"Unreachable links: {sorted(unreachable)}")
 
-    def _detect_convenience_links(self) -> None:
+    def _index_roles(self) -> None:
         for link in self._links:
-            if link.name == "laser_head":
-                self._head_link = link.name
-            elif link.name == "rotary_chuck":
-                self._chuck_link = link.name
+            if link.role is None:
+                continue
+            self._roles.setdefault(link.role, []).append(link.name)
+            if link.role == LinkRole.CHUCK:
                 self._rotary_diameter = self._find_rotary_diameter(link.name)
 
     def _find_rotary_diameter(self, chuck_name: str) -> Optional[float]:
@@ -132,11 +137,15 @@ class Assembly:
 
     @property
     def has_rotary(self) -> bool:
-        return self._chuck_link is not None
+        return bool(self._roles.get(LinkRole.CHUCK))
 
     @property
     def rotary_diameter(self) -> Optional[float]:
         return self._rotary_diameter
+
+    def get_links_by_role(self, role: LinkRole) -> List[Link]:
+        names = self._roles.get(role, [])
+        return [self._link_map[n] for n in names]
 
     def forward_kinematics(
         self, state: "MachineState"
@@ -160,6 +169,7 @@ class Assembly:
         state: "MachineState",
         result: Dict[str, Tuple[Point3D, np.ndarray]],
     ) -> None:
+        chuck_names = set(self._roles.get(LinkRole.CHUCK, []))
         for child_name in self._children.get(parent_name, []):
             link = self._link_map[child_name]
             transform = parent_transform @ link.local_transform.copy()
@@ -172,7 +182,7 @@ class Assembly:
             elif link.joint_type == JointType.REVOLUTE:
                 assert link.driver_axis is not None
                 angle = state.axes.get(link.driver_axis, 0.0)
-                if self._chuck_link == child_name and self._rotary_diameter:
+                if child_name in chuck_names and self._rotary_diameter:
                     circumference = self._rotary_diameter * math.pi
                     angle_rad = (angle / circumference) * 2 * math.pi
                 else:
@@ -188,22 +198,25 @@ class Assembly:
             )
             self._fk_recursive(child_name, transform, state, result)
 
-    def head_position(self, state: "MachineState") -> Point3D:
-        if self._head_link is None:
-            raise ValueError("Assembly has no 'laser_head' link")
+    def head_positions(self, state: "MachineState") -> Dict[str, Point3D]:
+        head_names = self._roles.get(LinkRole.HEAD, [])
+        if not head_names:
+            raise ValueError("Assembly has no links with role HEAD")
         poses = self.forward_kinematics(state)
-        return poses[self._head_link][0]
+        return {name: poses[name][0] for name in head_names}
 
-    def cylinder_angle(self, state: "MachineState") -> float:
-        if self._chuck_link is None:
-            return 0.0
-        if not self._rotary_diameter:
-            return 0.0
+    def chuck_angles(self, state: "MachineState") -> Dict[str, float]:
+        chuck_names = self._roles.get(LinkRole.CHUCK, [])
+        if not chuck_names or not self._rotary_diameter:
+            return {name: 0.0 for name in chuck_names}
         circumference = self._rotary_diameter * math.pi
-        chuck = self._link_map[self._chuck_link]
-        assert chuck.driver_axis is not None
-        y = state.axes.get(chuck.driver_axis, 0.0)
-        return (y / circumference) * 2 * math.pi
+        result: Dict[str, float] = {}
+        for name in chuck_names:
+            chuck = self._link_map[name]
+            assert chuck.driver_axis is not None
+            y = state.axes.get(chuck.driver_axis, 0.0)
+            result[name] = (y / circumference) * 2 * math.pi
+        return result
 
 
 def _rotation_matrix_4x4(axis: np.ndarray, angle: float) -> np.ndarray:
