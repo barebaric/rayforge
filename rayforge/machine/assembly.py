@@ -92,7 +92,7 @@ class Assembly:
         self._validate_no_cycles()
 
         self._roles: Dict[LinkRole, List[str]] = {}
-        self._rotary_diameter: Optional[float] = None
+        self._chuck_diameters: Dict[str, float] = {}
         self._index_roles()
 
     def _validate_no_cycles(self) -> None:
@@ -123,17 +123,13 @@ class Assembly:
             if link.role is None:
                 continue
             self._roles.setdefault(link.role, []).append(link.name)
-            if link.role == LinkRole.CHUCK:
-                self._rotary_diameter = self._find_rotary_diameter(link.name)
 
-    def _find_rotary_diameter(self, chuck_name: str) -> Optional[float]:
-        chuck = self._link_map[chuck_name]
-        if chuck.joint_type != JointType.REVOLUTE:
-            return None
-        return None
+    def set_chuck_diameter(self, chuck_name: str, diameter: float) -> None:
+        self._chuck_diameters[chuck_name] = diameter
 
     def set_rotary_diameter(self, diameter: float) -> None:
-        self._rotary_diameter = diameter
+        for name in self._roles.get(LinkRole.CHUCK, []):
+            self._chuck_diameters[name] = diameter
 
     @property
     def has_rotary(self) -> bool:
@@ -141,7 +137,10 @@ class Assembly:
 
     @property
     def rotary_diameter(self) -> Optional[float]:
-        return self._rotary_diameter
+        chuck_names = self._roles.get(LinkRole.CHUCK, [])
+        if not chuck_names:
+            return None
+        return self._chuck_diameters.get(chuck_names[0])
 
     def get_links_by_role(self, role: LinkRole) -> List[Link]:
         names = self._roles.get(role, [])
@@ -182,9 +181,13 @@ class Assembly:
             elif link.joint_type == JointType.REVOLUTE:
                 assert link.driver_axis is not None
                 angle = state.axes.get(link.driver_axis, 0.0)
-                if child_name in chuck_names and self._rotary_diameter:
-                    circumference = self._rotary_diameter * math.pi
-                    angle_rad = (angle / circumference) * 2 * math.pi
+                if child_name in chuck_names:
+                    diameter = self._chuck_diameters.get(child_name)
+                    if diameter:
+                        circumference = diameter * math.pi
+                        angle_rad = (angle / circumference) * 2 * math.pi
+                    else:
+                        angle_rad = math.radians(angle)
                 else:
                     angle_rad = math.radians(angle)
                 axis = np.array(link.joint_axis, dtype=np.float64)
@@ -207,11 +210,15 @@ class Assembly:
 
     def chuck_angles(self, state: "MachineState") -> Dict[str, float]:
         chuck_names = self._roles.get(LinkRole.CHUCK, [])
-        if not chuck_names or not self._rotary_diameter:
-            return {name: 0.0 for name in chuck_names}
-        circumference = self._rotary_diameter * math.pi
+        if not chuck_names:
+            return {}
         result: Dict[str, float] = {}
         for name in chuck_names:
+            diameter = self._chuck_diameters.get(name)
+            if not diameter:
+                result[name] = 0.0
+                continue
+            circumference = diameter * math.pi
             chuck = self._link_map[name]
             assert chuck.driver_axis is not None
             y = state.axes.get(chuck.driver_axis, 0.0)
