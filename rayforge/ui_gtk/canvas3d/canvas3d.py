@@ -409,7 +409,7 @@ class Canvas3D(Gtk.GLArea):
             self.pipeline.processing_state_changed.connect(
                 self._on_pipeline_state_changed
             )
-            self.pipeline._job_stage.job_generation_finished.connect(
+            self.pipeline.job_generation_finished.connect(
                 self._on_job_generation_finished
             )
 
@@ -418,7 +418,7 @@ class Canvas3D(Gtk.GLArea):
             self.pipeline.processing_state_changed.disconnect(
                 self._on_pipeline_state_changed
             )
-            self.pipeline._job_stage.job_generation_finished.disconnect(
+            self.pipeline.job_generation_finished.disconnect(
                 self._on_job_generation_finished
             )
 
@@ -442,9 +442,7 @@ class Canvas3D(Gtk.GLArea):
         self._connect_pipeline_signals()
 
         if self._current_job_handle is None and self.pipeline:
-            self._current_job_handle = (
-                self.pipeline._job_stage.last_completed_handle
-            )
+            self._current_job_handle = self.pipeline.last_completed_handle
 
         self.update_scene_from_doc()
 
