@@ -18,15 +18,17 @@ def _make_state(x=0.0, y=0.0, z=0.0):
     return state
 
 
-def test_cartesian_head_position():
+def test_cartesian_head_positions():
     kinematics = create_kinematics()
     state = _make_state(x=10.0, y=20.0, z=0.0)
-    assert kinematics.head_position(state) == (10.0, 20.0, 0.0)
+    heads = kinematics.head_positions(state)
+    assert heads == {"laser_head": (10.0, 20.0, 0.0)}
 
 
-def test_cartesian_cylinder_angle_returns_zero():
+def test_cartesian_chuck_angles_empty():
     kinematics = create_kinematics()
-    assert kinematics.cylinder_angle(_make_state(y=100.0)) == 0.0
+    angles = kinematics.chuck_angles(_make_state(y=100.0))
+    assert angles == {}
 
 
 def test_cartesian_no_rotary():
@@ -34,19 +36,20 @@ def test_cartesian_no_rotary():
     assert not kinematics.has_rotary
 
 
-def test_rotary_cylinder_angle_quarter_turn():
+def test_rotary_chuck_angles_quarter_turn():
     diameter = 50.0
     circumference = diameter * math.pi
     kinematics = create_kinematics(rotary_diameter=diameter)
     state = _make_state(y=circumference / 4)
-    angle = kinematics.cylinder_angle(state)
-    assert abs(angle - math.pi / 2) < 1e-9
+    angles = kinematics.chuck_angles(state)
+    assert abs(angles["rotary_chuck"] - math.pi / 2) < 1e-9
 
 
-def test_rotary_head_position():
+def test_rotary_head_positions():
     kinematics = create_kinematics(rotary_diameter=40.0)
     state = _make_state(x=5.0, y=10.0, z=3.0)
-    assert kinematics.head_position(state) == (5.0, 10.0, 3.0)
+    heads = kinematics.head_positions(state)
+    assert heads == {"laser_head": (5.0, 10.0, 3.0)}
 
 
 def test_rotary_has_rotary():

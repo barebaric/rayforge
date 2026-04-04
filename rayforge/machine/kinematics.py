@@ -1,7 +1,7 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 from ..core.geo import Point3D
-from .assembly import Assembly, JointType, Link
+from .assembly import Assembly, JointType, Link, LinkRole
 from .driver.driver import Axis
 
 if TYPE_CHECKING:
@@ -32,6 +32,7 @@ def _build_cartesian_assembly() -> Assembly:
                 joint_type=JointType.PRISMATIC,
                 joint_axis=(0.0, 0.0, 1.0),
                 driver_axis=Axis.Z,
+                role=LinkRole.HEAD,
             ),
         ]
     )
@@ -61,6 +62,7 @@ def _build_rotary_assembly(rotary_diameter: float) -> Assembly:
                 joint_type=JointType.PRISMATIC,
                 joint_axis=(0.0, 0.0, 1.0),
                 driver_axis=Axis.Z,
+                role=LinkRole.HEAD,
             ),
             Link("rotary_base", parent="base", joint_type=JointType.FIXED),
             Link(
@@ -69,6 +71,7 @@ def _build_rotary_assembly(rotary_diameter: float) -> Assembly:
                 joint_type=JointType.REVOLUTE,
                 joint_axis=(1.0, 0.0, 0.0),
                 driver_axis=Axis.Y,
+                role=LinkRole.CHUCK,
             ),
         ]
     )
@@ -90,11 +93,11 @@ class Kinematics:
     def rotary_diameter(self) -> Optional[float]:
         return self._assembly.rotary_diameter
 
-    def head_position(self, state: "MachineState") -> Point3D:
-        return self._assembly.head_position(state)
+    def head_positions(self, state: "MachineState") -> Dict[str, Point3D]:
+        return self._assembly.head_positions(state)
 
-    def cylinder_angle(self, state: "MachineState") -> float:
-        return self._assembly.cylinder_angle(state)
+    def chuck_angles(self, state: "MachineState") -> Dict[str, float]:
+        return self._assembly.chuck_angles(state)
 
 
 def create_kinematics(

@@ -782,20 +782,23 @@ class Canvas3D(Gtk.GLArea):
                 and self._main_shader
                 and machine
             ):
-                hx, hy, hz = machine.kinematics.head_position(
+                heads = machine.kinematics.head_positions(
                     self._op_player.state
                 )
-                head_pos = margin_shift @ np.array(
-                    [hx, hy, hz, 1.0], dtype=np.float32
-                )
-                self._sphere_renderer.render(
-                    self._main_shader,
-                    proj_matrix,
-                    view_matrix,
-                    head_pos[:3],
-                    color=(1.0, 0.2, 0.0, 1.0),
-                    scale=2.0,
-                )
+                head_name = next(iter(heads), None)
+                if head_name is not None:
+                    hx, hy, hz = heads[head_name]
+                    head_pos = margin_shift @ np.array(
+                        [hx, hy, hz, 1.0], dtype=np.float32
+                    )
+                    self._sphere_renderer.render(
+                        self._main_shader,
+                        proj_matrix,
+                        view_matrix,
+                        head_pos[:3],
+                        color=(1.0, 0.2, 0.0, 1.0),
+                        scale=2.0,
+                    )
 
             for renderer in self._cylinder_renderers.values():
                 if self._main_shader:
