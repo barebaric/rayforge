@@ -8,13 +8,9 @@ from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import ProgressContext, set_progress
 from ..artifact import (
-    StepRenderArtifact,
     StepOpsArtifact,
     WorkPieceArtifact,
 )
-from ..artifact.base import TextureData, TextureInstance, VertexData
-from ..encoder.textureencoder import TextureEncoder
-from ..encoder.vertexencoder import VertexEncoder
 
 if TYPE_CHECKING:
     from ...core.geo import Geometry
@@ -60,113 +56,13 @@ def _create_workpiece_placement_matrix(
     return Matrix.compose(tx, ty, angle, 1.0, math.copysign(1.0, sy), skew)
 
 
-MAX_TEXTURE_DIMENSION = 8192
-
-
-def _calculate_texture_dimensions(
-    artifact: WorkPieceArtifact,
-) -> Tuple[int, int, float, float]:
-    """
-    Calculates texture dimensions and pixels per mm.
-
-    Uses a fixed resolution for 3D visualization that is independent
-    of the chunked source dimensions.
-
-    Args:
-        artifact: The workpiece artifact.
-
-    Returns:
-        Tuple of (width_px, height_px, px_per_mm_x, px_per_mm_y).
-    """
-    px_per_mm_x = px_per_mm_y = 50.0
-    width_mm, height_mm = artifact.generation_size
-
-    if width_mm > 0 and height_mm > 0:
-        max_dim = max(width_mm * px_per_mm_x, height_mm * px_per_mm_y)
-        if max_dim > MAX_TEXTURE_DIMENSION:
-            scale = MAX_TEXTURE_DIMENSION / max_dim
-            px_per_mm_x *= scale
-            px_per_mm_y *= scale
-
-    width_px = int(round(width_mm * px_per_mm_x))
-    height_px = int(round(height_mm * px_per_mm_y))
-    return width_px, height_px, px_per_mm_x, px_per_mm_y
-
-
-def _create_texture_data(
-    artifact: WorkPieceArtifact,
-) -> Optional[TextureData]:
-    """
-    Creates texture data for non-scalable artifacts.
-
-    Args:
-        artifact: The workpiece artifact.
-
-    Returns:
-        TextureData if created, None otherwise.
-    """
-    if artifact.is_scalable:
-        return None
-
-    width_px, height_px, px_per_mm_x, px_per_mm_y = (
-        _calculate_texture_dimensions(artifact)
-    )
-
-    if width_px > 0 and height_px > 0:
-        encoder_texture = TextureEncoder()
-        texture_buffer = encoder_texture.encode(
-            artifact.ops,
-            width_px,
-            height_px,
-            (px_per_mm_x, px_per_mm_y),
-        )
-        return TextureData(
-            power_texture_data=texture_buffer,
-            dimensions_mm=artifact.generation_size,
-            position_mm=(0.0, 0.0),
-        )
-    return None
-
-
-def _create_texture_instance(
-    chunk_texture_data: TextureData,
-    workpiece_placement_matrix: Matrix,
-) -> TextureInstance:
-    """
-    Creates a texture instance from texture data.
-
-    Args:
-        chunk_texture_data: The texture data.
-        workpiece_placement_matrix: The workpiece placement matrix.
-
-    Returns:
-        The texture instance.
-    """
-    chunk_w_mm, chunk_h_mm = chunk_texture_data.dimensions_mm
-    chunk_x_off, chunk_y_off = chunk_texture_data.position_mm
-
-    chunk_scale_matrix = Matrix.scale(chunk_w_mm, chunk_h_mm)
-    local_translation_matrix = Matrix.translation(chunk_x_off, chunk_y_off)
-
-    final_transform = (
-        workpiece_placement_matrix
-        @ local_translation_matrix
-        @ chunk_scale_matrix
-    )
-
-    return TextureInstance(
-        texture_data=chunk_texture_data,
-        world_transform=final_transform.to_4x4_numpy(),
-    )
-
-
 def _process_artifact(
     artifact: WorkPieceArtifact,
     world_matrix: Matrix,
     workpiece: WorkPiece,
-) -> Tuple[Ops, Optional[TextureInstance]]:
+) -> Ops:
     """
-    Processes a single artifact and returns ops and optional texture instance.
+    Processes a single artifact and returns its transformed ops.
 
     Args:
         artifact: The workpiece artifact.
@@ -174,7 +70,7 @@ def _process_artifact(
         workpiece: The workpiece.
 
     Returns:
-        Tuple of (ops, texture_instance).
+        The transformed ops.
     """
     ops = artifact.ops.copy()
     _apply_artifact_scaling(ops, artifact, workpiece)
@@ -185,15 +81,7 @@ def _process_artifact(
     )
     ops.transform(workpiece_placement_matrix.to_4x4_numpy())
 
-    texture_instance = None
-    if not artifact.is_scalable:
-        chunk_texture_data = _create_texture_data(artifact)
-        if chunk_texture_data is not None:
-            texture_instance = _create_texture_instance(
-                chunk_texture_data, workpiece_placement_matrix
-            )
-
-    return ops, texture_instance
+    return ops
 
 
 def _apply_transformers_to_ops(
@@ -226,31 +114,15 @@ def _apply_transformers_to_ops(
         )
 
 
-def _encode_vertex_data(
-    ops: Ops,
-) -> VertexData:
-    """
-    Encodes ops to vertex data.
-
-    Args:
-        ops: The ops to encode.
-
-    Returns:
-        The encoded vertex data.
-    """
-    encoder = VertexEncoder()
-    return encoder.encode(ops)
-
-
 def compute_step_artifacts(
     artifacts: List[Tuple[WorkPieceArtifact, Matrix, WorkPiece]],
     transformers: List["OpsTransformer"],
     generation_id: int,
     context: Optional[ProgressContext] = None,
     stock_geometries: Optional[List["Geometry"]] = None,
-) -> Tuple[StepRenderArtifact, StepOpsArtifact]:
+) -> StepOpsArtifact:
     """
-    Computes step artifacts from workpiece artifacts and transforms.
+    Computes step ops artifact from workpiece artifacts and transforms.
 
     Args:
         artifacts: List of tuples containing (WorkPieceArtifact, world_matrix,
@@ -261,23 +133,18 @@ def compute_step_artifacts(
         stock_geometries: List of stock boundary geometries in world space.
 
     Returns:
-        Tuple of (StepRenderArtifact, StepOpsArtifact).
+        A StepOpsArtifact containing the combined and transformed operations.
     """
     combined_ops = Ops()
-    texture_instances = []
     num_items = len(artifacts)
 
     for i, (artifact, world_matrix, workpiece) in enumerate(artifacts):
         set_progress(context, i / num_items * 0.5)
 
-        ops, texture_instance = _process_artifact(
-            artifact, world_matrix, workpiece
-        )
+        ops = _process_artifact(artifact, world_matrix, workpiece)
         combined_ops.workpiece_start(workpiece.uid)
         combined_ops.extend(ops)
         combined_ops.workpiece_end(workpiece.uid)
-        if texture_instance is not None:
-            texture_instances.append(texture_instance)
 
     _apply_transformers_to_ops(
         combined_ops,
@@ -286,17 +153,8 @@ def compute_step_artifacts(
         stock_geometries,
     )
 
-    set_progress(context, 0.9)
-
-    vertex_data = _encode_vertex_data(combined_ops)
-
     set_progress(context, 0.95)
 
-    render_artifact = StepRenderArtifact(
-        generation_id=generation_id,
-        vertex_data=vertex_data,
-        texture_instances=texture_instances,
-    )
     ops_artifact = StepOpsArtifact(
         ops=combined_ops,
         generation_id=generation_id,
@@ -304,4 +162,4 @@ def compute_step_artifacts(
 
     set_progress(context, 1.0)
 
-    return render_artifact, ops_artifact
+    return ops_artifact

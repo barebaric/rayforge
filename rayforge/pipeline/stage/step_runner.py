@@ -112,7 +112,7 @@ def make_step_artifact_in_subprocess(
         message_callback=proxy.set_message,
     )
 
-    render_artifact, ops_artifact = compute_step_artifacts(
+    ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=transformers,
         generation_id=generation_id,
@@ -122,30 +122,7 @@ def make_step_artifact_in_subprocess(
 
     proxy.set_message(_("Storing step data..."))
 
-    # 1. Store Render Artifact
-    render_handle = artifact_store.put(
-        render_artifact, creator_tag=f"{creator_tag}_r"
-    )
-
-    # Inter-process handoff: Send handle to main process and wait for adoption.
-    acked = proxy.send_event_and_wait(
-        "render_artifact_ready",
-        {
-            "handle_dict": render_handle.to_dict(),
-            "generation_id": generation_id,
-        },
-        logger=logger,
-    )
-    if acked:
-        artifact_store.forget(render_handle)
-    else:
-        logger.warning(
-            "Render artifact not acknowledged (NACK/Timeout). "
-            "Releasing handle."
-        )
-        artifact_store.release(render_handle)
-
-    # 2. Store Ops Artifact
+    # Store Ops Artifact
     ops_handle = artifact_store.put(
         ops_artifact, creator_tag=f"{creator_tag}_o"
     )
@@ -167,7 +144,7 @@ def make_step_artifact_in_subprocess(
         )
         artifact_store.release(ops_handle)
 
-    # 3. Calculate time estimate
+    # Calculate time estimate
     proxy.set_message(_("Calculating time estimate..."))
     final_time = ops_artifact.ops.estimate_time(
         default_cut_speed=cut_speed,

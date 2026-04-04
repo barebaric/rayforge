@@ -32,6 +32,7 @@ from ...pipeline.encoder.vertexencoder import transform_to_cylinder
 from .compiled_scene import (
     CompiledSceneArtifact,
     ScanlineOverlayLayer,
+    TextureLayer,
     VertexLayer,
 )
 from .render_config import RenderConfig3D, StepRenderConfig
@@ -304,6 +305,136 @@ def _encode_overlay_segments(
     return vertex_count
 
 
+MAX_TEXTURE_DIMENSION = 8192
+PX_PER_MM = 50.0
+
+
+def _scanline_bbox(ops: Ops) -> Optional[Tuple[float, float, float, float]]:
+    current_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    has_scanlines = False
+    min_x = float("inf")
+    min_y = float("inf")
+    max_x = float("-inf")
+    max_y = float("-inf")
+
+    for cmd in ops.commands:
+        if isinstance(cmd, MoveToCommand):
+            if cmd.end is not None:
+                current_pos = cmd.end
+        elif isinstance(cmd, ScanLinePowerCommand):
+            if cmd.end is None:
+                continue
+            has_scanlines = True
+            sx, sy = current_pos[0], current_pos[1]
+            ex, ey = cmd.end[0], cmd.end[1]
+            min_x = min(min_x, sx, ex)
+            min_y = min(min_y, sy, ey)
+            max_x = max(max_x, sx, ex)
+            max_y = max(max_y, sy, ey)
+            current_pos = cmd.end
+
+    if not has_scanlines:
+        return None
+    return (min_x, min_y, max_x - min_x, max_y - min_y)
+
+
+def _bresenham_line(
+    buffer: np.ndarray,
+    x0: int,
+    y0: int,
+    x1: int,
+    y1: int,
+    power: int,
+):
+    h, w = buffer.shape
+    dx = abs(x1 - x0)
+    dy = abs(y1 - y0)
+    sx = 1 if x0 < x1 else -1
+    sy = 1 if y0 < y1 else -1
+    err = dx - dy
+    x, y = x0, y0
+    while True:
+        if 0 <= x < w and 0 <= y < h:
+            buffer[y, x] = max(buffer[y, x], power)
+        if x == x1 and y == y1:
+            break
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            x += sx
+        if e2 < dx:
+            err += dx
+            y += sy
+
+
+def _rasterize_scanlines(
+    ops: Ops,
+    bbox: Tuple[float, float, float, float],
+) -> Optional[Tuple[np.ndarray, int, int, float]]:
+    x0, y0, w_mm, h_mm = bbox
+    if w_mm <= 0 or h_mm <= 0:
+        return None
+
+    px_per_mm = PX_PER_MM
+    width_px = int(round(w_mm * px_per_mm))
+    height_px = int(round(h_mm * px_per_mm))
+
+    if width_px > MAX_TEXTURE_DIMENSION or height_px > MAX_TEXTURE_DIMENSION:
+        scale = min(
+            MAX_TEXTURE_DIMENSION / width_px,
+            MAX_TEXTURE_DIMENSION / height_px,
+        )
+        px_per_mm *= scale
+        width_px = int(round(w_mm * px_per_mm))
+        height_px = int(round(h_mm * px_per_mm))
+
+    if width_px <= 0 or height_px <= 0:
+        return None
+
+    buffer = np.zeros((height_px, width_px), dtype=np.uint8)
+    current_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+
+    for cmd in ops.commands:
+        if isinstance(cmd, MoveToCommand):
+            if cmd.end is not None:
+                current_pos = cmd.end
+        elif isinstance(cmd, ScanLinePowerCommand):
+            if cmd.end is None:
+                continue
+            end_mm = cmd.end
+            num_steps = len(cmd.power_values)
+            if num_steps == 0:
+                current_pos = end_mm
+                continue
+
+            sx = (current_pos[0] - x0) * px_per_mm
+            sy = height_px - (current_pos[1] - y0) * px_per_mm
+            ex = (end_mm[0] - x0) * px_per_mm
+            ey = height_px - (end_mm[1] - y0) * px_per_mm
+
+            power_array = np.frombuffer(cmd.power_values, dtype=np.uint8)
+
+            for i in range(num_steps):
+                t_start = i / num_steps
+                t_end = (i + 1) / num_steps
+                psx = int(round(sx + t_start * (ex - sx)))
+                psy = int(round(sy + t_start * (ey - sy)))
+                pex = int(round(sx + t_end * (ex - sx)))
+                pey = int(round(sy + t_end * (ey - sy)))
+
+                power = power_array[i]
+                if power == 0:
+                    continue
+                _bresenham_line(buffer, psx, psy, pex, pey, int(power))
+
+            current_pos = end_mm
+
+    if buffer.max() == 0:
+        return None
+
+    return buffer, width_px, height_px, px_per_mm
+
+
 def compile_scene(
     ops_list: List[Tuple[Ops, StepRenderConfig]],
     config: RenderConfig3D,
@@ -329,6 +460,7 @@ def compile_scene(
     ov_off_r: List[int] = [0]
     ov_cum_r = 0
 
+    texture_layers: List[TextureLayer] = []
     zero_rgba = np.array(config.zero_power_rgba, dtype=np.float32)
 
     for ops, step_cfg in ops_list:
@@ -343,6 +475,31 @@ def compile_scene(
         cut_lut = _get_lut(config, step_cfg.laser_uid, "cut")
         assert cut_lut is not None
         engrave_lut = _get_lut(config, step_cfg.laser_uid, "engrave")
+
+        bbox = _scanline_bbox(ops)
+        if bbox is not None:
+            raster_result = _rasterize_scanlines(ops, bbox)
+            if raster_result is not None:
+                tex_buf, w_px, h_px, actual_ppm = raster_result
+                x0, y0, bw, bh = bbox
+                model = np.eye(4, dtype=np.float32)
+                model[0, 0] = bw
+                model[1, 1] = bh
+                model[0, 3] = x0
+                model[1, 3] = y0
+                final_model = (transform @ model).astype(np.float32)
+                texture_layers.append(
+                    TextureLayer(
+                        power_texture=tex_buf,
+                        width_px=w_px,
+                        height_px=h_px,
+                        model_matrix=final_model,
+                        color_lut=engrave_lut.copy()
+                        if engrave_lut is not None
+                        else None,
+                        rotary_diameter=diameter,
+                    )
+                )
 
         result = _walk_step_ops(ops, cut_lut, engrave_lut, zero_rgba)
 
@@ -444,6 +601,6 @@ def compile_scene(
     return CompiledSceneArtifact(
         generation_id=0,
         vertex_layers=vertex_layers,
-        texture_layers=[],
+        texture_layers=texture_layers,
         overlay_layers=overlay_layers,
     )

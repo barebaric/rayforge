@@ -90,9 +90,7 @@ class TestStepPipelineStage:
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
 
-        render_signal_handler = MagicMock()
         time_signal_handler = MagicMock()
-        stage.render_artifact_ready.connect(render_signal_handler)
         stage.time_estimate_ready.connect(time_signal_handler)
 
         stage.handle_time_estimate_ready(step.uid, step, 42.5)
@@ -117,9 +115,6 @@ class TestStepPipelineStage:
 
         stage.invalidate(step.uid)
 
-        mock_artifact_manager.pop_step_render_handle.assert_called_with(
-            step.uid
-        )
         mock_artifact_manager.invalidate_for_step.assert_called_with(
             ArtifactKey.for_step(step.uid)
         )

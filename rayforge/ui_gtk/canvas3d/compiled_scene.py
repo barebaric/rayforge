@@ -26,6 +26,7 @@ class TextureLayer:
     model_matrix: np.ndarray
     color_lut: Optional[np.ndarray] = None
     cylinder_vertices: Optional[np.ndarray] = None
+    rotary_diameter: float = 0.0
 
 
 @dataclass
@@ -101,6 +102,10 @@ class CompiledSceneArtifact(BaseArtifact):
             arrays[f"tl{i}_meta"] = np.array(
                 [tl.width_px, tl.height_px], dtype=np.int32
             )
+            if tl.rotary_diameter > 0:
+                arrays[f"tl{i}_rd"] = np.array(
+                    [tl.rotary_diameter], dtype=np.float32
+                )
             if tl.color_lut is not None:
                 arrays[f"tl{i}_clut"] = tl.color_lut
             if tl.cylinder_vertices is not None:
@@ -148,6 +153,9 @@ class CompiledSceneArtifact(BaseArtifact):
             cylinder_vertices = None
             if f"{prefix}cv" in arrays:
                 cylinder_vertices = arrays[f"{prefix}cv"].copy()
+            rotary_diameter = 0.0
+            if f"{prefix}rd" in arrays:
+                rotary_diameter = float(arrays[f"{prefix}rd"][0])
             tl = TextureLayer(
                 power_texture=arrays[f"{prefix}tex"].copy(),
                 width_px=width_px,
@@ -155,6 +163,7 @@ class CompiledSceneArtifact(BaseArtifact):
                 model_matrix=arrays[f"{prefix}mm"].copy(),
                 color_lut=color_lut,
                 cylinder_vertices=cylinder_vertices,
+                rotary_diameter=rotary_diameter,
             )
             texture_layers.append(tl)
 

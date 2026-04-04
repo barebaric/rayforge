@@ -17,7 +17,6 @@ from rayforge.pipeline.artifact import (
     ArtifactKey,
     JobArtifact,
     StepOpsArtifact,
-    StepRenderArtifact,
     WorkPieceArtifactHandle,
 )
 from rayforge.pipeline.stage.workpiece_runner import (
@@ -135,25 +134,11 @@ class TestPipeline:
                         # Create real artifacts and handles so the SHM blocks
                         # exist and can be adopted by the main process store.
                         store = get_context().artifact_store
-                        render_artifact = StepRenderArtifact(generation_id=0)
-                        render_handle = store.put(render_artifact)
                         ops_artifact = StepOpsArtifact(
                             ops=Ops(), generation_id=0
                         )
                         ops_handle = store.put(ops_artifact)
 
-                        # 1. Simulate render artifact event
-                        render_event = {
-                            "handle_dict": render_handle.to_dict(),
-                            "generation_id": gen_id,
-                        }
-                        task_info.when_event(
-                            task_obj,
-                            "render_artifact_ready",
-                            render_event,
-                        )
-
-                        # 2. Simulate ops artifact event
                         ops_event = {
                             "handle_dict": ops_handle.to_dict(),
                             "generation_id": gen_id,
@@ -162,7 +147,7 @@ class TestPipeline:
                             task_obj, "ops_artifact_ready", ops_event
                         )
 
-                        # 3. Simulate time estimate event
+                        # Simulate time estimate event
                         time_event = {
                             "time_estimate": step_time,
                             "generation_id": gen_id,
