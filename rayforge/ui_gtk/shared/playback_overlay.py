@@ -1,10 +1,13 @@
 from gettext import gettext as _
+import logging
 from typing import Optional
 
 from gi.repository import GLib, Gtk
 
 from ..icons import get_icon
 from .gtk import apply_css
+
+logger = logging.getLogger(__name__)
 
 css = """
 .playback-overlay {
@@ -82,6 +85,10 @@ class PlaybackOverlay(Gtk.Box):
     def _on_slider_changed(self, slider):
         if self._canvas and self._canvas._op_player:
             index = int(slider.get_value())
+            logger.debug(
+                f"[PLAYBACK] slider_changed: value={index}, "
+                f"current_idx={self._canvas._op_player.current_index}"
+            )
             if self._canvas._op_player.current_index != index:
                 self._canvas._op_player.seek(index)
                 self._canvas.queue_render()

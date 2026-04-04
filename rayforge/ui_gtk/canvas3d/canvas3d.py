@@ -10,34 +10,30 @@ from ...context import RayforgeContext
 from ...core.geo import Point, Point3D, Rect
 from ...core.model import Model
 from ...core.ops import Ops
-from ...core.ops.commands import MovingCommand, ScanLinePowerCommand
+from ...core.ops.commands import MovingCommand
 from ...machine.driver.driver import Axis
 from ...machine.kinematics import RotaryKinematics
 from ...machine.models.colors import OpsColorSet
 from ...pipeline.artifact.base import TextureData
 from ...pipeline.artifact.handle import create_handle_from_dict
-from ...pipeline.artifact.job import JobArtifact
-from ...pipeline.artifact.key import ArtifactKey
-from ...pipeline.artifact.step_ops import StepOpsArtifact
+from ...pipeline.artifact.job import JobArtifact, JobArtifactHandle
 from ...pipeline.pipeline import Pipeline
 from ...shared.util.colors import ColorSet
 from ...shared.tasker import task_mgr, Task
 from ...simulator.op_player import OpPlayer
-from ...simulator.vertex_map import (
-    SceneVertexMap,
-    ScanlineOverlay,
-    build_vertex_map,
-    build_scanline_overlay,
-)
 from ..shared.gtk_color import GtkColorResolver, ColorSpecDict
 from .axis_renderer_3d import AxisRenderer3D
 from .camera import Camera, rotation_matrix_from_axis_angle
-from .compiled_scene import CompiledSceneArtifact, ScanlineOverlayLayer
+from .compiled_scene import CompiledSceneArtifact
 from .cylinder_renderer import CylinderRenderer
 from .gl_utils import Shader
 from .model_renderer import ModelRenderer
 from .ops_renderer import OpsRenderer
-from .render_config import RenderConfig3D, StepRenderConfig
+from .render_config import (
+    LayerRenderConfig,
+    RenderConfig3D,
+    StepRenderConfig,
+)
 from .ring_buffer_renderer import RingBufferRenderer
 from .scene_compiler_runner import compile_scene_in_subprocess
 from .scene_assembler import (
@@ -108,13 +104,15 @@ class Canvas3D(Gtk.GLArea):
         self._scene_preparation_task: Optional[Task] = None
         self._compiled_artifact: Optional[CompiledSceneArtifact] = None
         self._pending_scene_handle_dict: Optional[dict] = None
+        self._current_job_handle: Optional[JobArtifactHandle] = None
         self._op_player: Optional[OpPlayer] = None
-        self._vertex_map: Optional[SceneVertexMap] = None
-        self._scanline_overlay: Optional[ScanlineOverlay] = None
         self._current_scene_description: Optional[SceneDescription] = None
         self._playback_overlay = None
-        self._step_cmd_boundaries: List[Tuple[int, int, bool, str]] = []
         self._world_to_cyl_local = np.identity(4, dtype=np.float32)
+        self._powered_flat_offsets: List[int] = []
+        self._powered_rotary_offsets: List[int] = []
+        self._travel_flat_offsets: List[int] = []
+        self._travel_rotary_offsets: List[int] = []
         self._ring_flat_offsets: List[int] = []
         self._ring_rotary_offsets: List[int] = []
         self._ring_buffer_flat: Optional[RingBufferRenderer] = None
@@ -167,14 +165,6 @@ class Canvas3D(Gtk.GLArea):
         self.connect("notify::style", self._on_style_changed)
         self._setup_interactions()
 
-        # Connect to the pipeline to receive notifications when to update
-        if self.pipeline:
-            self.pipeline.processing_state_changed.connect(
-                self._on_pipeline_state_changed
-            )
-            self.pipeline._job_stage.job_generation_finished.connect(
-                self._on_job_generation_finished
-            )
         # Connect to machine for WCS updates
         machine = self._context.machine
         if machine:
@@ -287,11 +277,16 @@ class Canvas3D(Gtk.GLArea):
             self.update_scene_from_doc()
 
     def _on_job_generation_finished(self, sender, **kwargs):
-        if (
-            kwargs.get("task_status") == "completed"
-            and kwargs.get("handle") is not None
-        ):
+        task_status = kwargs.get("task_status")
+        handle = kwargs.get("handle")
+        logger.debug(
+            f"[CANVAS3D] _on_job_generation_finished: "
+            f"status={task_status}, handle={'yes' if handle else 'none'}"
+        )
+        if task_status == "completed" and handle is not None:
+            self._current_job_handle = handle
             self._update_op_player()
+            self.update_scene_from_doc()
             self.queue_render()
 
     def _on_style_changed(self, widget, gparam):
@@ -398,30 +393,16 @@ class Canvas3D(Gtk.GLArea):
         self._clear_drag_state()
         self.queue_render()
 
-    def on_realize(self, area) -> None:
-        """Called when the GLArea is ready to have its context made current."""
-        logger.info("GLArea realized.")
-        self._init_gl_resources()
-        self._theme_is_dirty = True
+    def _connect_pipeline_signals(self):
+        if self.pipeline:
+            self.pipeline.processing_state_changed.connect(
+                self._on_pipeline_state_changed
+            )
+            self.pipeline._job_stage.job_generation_finished.connect(
+                self._on_job_generation_finished
+            )
 
-        # Create the camera with placeholder values. The correct initial view
-        # will be set by reset_view_iso() below.
-        self.camera = Camera(
-            np.array([0.0, 0.0, 1.0]),  # position
-            np.array([0.0, 0.0, 0.0]),  # target
-            np.array([0.0, 1.0, 0.0]),  # up
-            self.get_width(),
-            self.get_height(),
-        )
-
-        self._sphere_renderer = SphereRenderer(1.0, 16, 32)
-        self.reset_view_front()
-        self._update_theme_and_colors()
-        self.update_scene_from_doc()
-
-    def on_unrealize(self, area) -> None:
-        """Called before the GLArea is unrealized."""
-        logger.info("GLArea unrealized. Cleaning up GL resources.")
+    def _disconnect_pipeline_signals(self):
         if self.pipeline:
             self.pipeline.processing_state_changed.disconnect(
                 self._on_pipeline_state_changed
@@ -429,6 +410,37 @@ class Canvas3D(Gtk.GLArea):
             self.pipeline._job_stage.job_generation_finished.disconnect(
                 self._on_job_generation_finished
             )
+
+    def on_realize(self, area) -> None:
+        """Called when the GLArea is ready to have its context made current."""
+        logger.info("GLArea realized.")
+        self._init_gl_resources()
+        self._theme_is_dirty = True
+
+        self.camera = Camera(
+            np.array([0.0, 0.0, 1.0]),
+            np.array([0.0, 0.0, 0.0]),
+            np.array([0.0, 1.0, 0.0]),
+            self.get_width(),
+            self.get_height(),
+        )
+
+        self._sphere_renderer = SphereRenderer(1.0, 16, 32)
+        self.reset_view_front()
+        self._update_theme_and_colors()
+        self._connect_pipeline_signals()
+
+        if self._current_job_handle is None and self.pipeline:
+            self._current_job_handle = (
+                self.pipeline._job_stage.last_completed_handle
+            )
+
+        self.update_scene_from_doc()
+
+    def on_unrealize(self, area) -> None:
+        """Called before the GLArea is unrealized."""
+        logger.info("GLArea unrealized. Cleaning up GL resources.")
+        self._disconnect_pipeline_signals()
         machine = self._context.machine
         if machine:
             machine.wcs_updated.disconnect(self._on_wcs_updated)
@@ -682,26 +694,41 @@ class Canvas3D(Gtk.GLArea):
                 zone_mvp_gl = (mvp_matrix_ui @ margin_shift).T
                 self._zone_renderer.render(self._main_shader, zone_mvp_gl)
 
-            exec_vtx_count = -1
-            travel_exec_vtx = -1
-            if self._op_player and self._vertex_map:
-                idx = self._op_player.current_index
-                if self._vertex_map.total_powered_vertices > 0:
-                    if idx < len(self._vertex_map.command_vertex_offset):
-                        exec_vtx_count = (
-                            self._vertex_map.command_vertex_offset[idx + 1]
-                        )
-                if idx < len(self._vertex_map.command_travel_vertex_offset):
-                    travel_exec_vtx = (
-                        self._vertex_map.command_travel_vertex_offset[idx + 1]
-                    )
-
             flat_exec = -1
-            if exec_vtx_count >= 0 and self._ops_renderer_flat:
-                flat_exec = min(
-                    exec_vtx_count,
-                    self._ops_renderer_flat.powered_vertex_count,
+            rot_exec_vtx = -1
+            flat_travel_exec = -1
+            rot_travel_exec = -1
+            if self._op_player:
+                idx = self._op_player.current_index
+                if self._powered_flat_offsets and idx + 1 < len(
+                    self._powered_flat_offsets
+                ):
+                    flat_exec = self._powered_flat_offsets[idx + 1]
+                if self._powered_rotary_offsets and idx + 1 < len(
+                    self._powered_rotary_offsets
+                ):
+                    rot_exec_vtx = self._powered_rotary_offsets[idx + 1]
+                if self._travel_flat_offsets and idx + 1 < len(
+                    self._travel_flat_offsets
+                ):
+                    flat_travel_exec = self._travel_flat_offsets[idx + 1]
+                if self._travel_rotary_offsets and idx + 1 < len(
+                    self._travel_rotary_offsets
+                ):
+                    rot_travel_exec = self._travel_rotary_offsets[idx + 1]
+
+                pv_total = (
+                    self._ops_renderer_flat.powered_vertex_count
+                    if self._ops_renderer_flat
+                    else 0
                 )
+                off_len = len(self._powered_flat_offsets)
+                if flat_exec >= 0 and idx % 50 == 0:
+                    logger.info(
+                        f"[PLAYBACK-DIAG] idx={idx}/{off_len - 1} "
+                        f"flat_exec={flat_exec}/{pv_total} "
+                        f"off[-3:]={self._powered_flat_offsets[-3:]}"
+                    )
 
             if self._ops_renderer_flat and self._main_shader:
                 self._ops_renderer_flat.render(
@@ -710,7 +737,7 @@ class Canvas3D(Gtk.GLArea):
                     colors=self._color_set,
                     show_travel_moves=self._show_travel_moves,
                     executed_vertex_count=flat_exec,
-                    executed_travel_vertex_count=travel_exec_vtx,
+                    executed_travel_vertex_count=flat_travel_exec,
                 )
 
             # Laser head marker: draw at head_position from kinematics
@@ -762,21 +789,13 @@ class Canvas3D(Gtk.GLArea):
                 rot_cyl_gl = rot_cyl.T.astype(np.float32)
 
             if self._ops_renderer_rotary and self._main_shader:
-                # Rotary vertices are in Local Cylinder Space,
-                # drawn via Grid Space.
-                rot_exec_vtx = -1
-                if exec_vtx_count >= 0:
-                    rot_exec_vtx = min(
-                        exec_vtx_count,
-                        self._ops_renderer_rotary.powered_vertex_count,
-                    )
                 self._ops_renderer_rotary.render(
                     self._main_shader,
                     rot_cyl_gl,
                     colors=self._color_set,
                     show_travel_moves=self._show_travel_moves,
                     executed_vertex_count=rot_exec_vtx,
-                    executed_travel_vertex_count=travel_exec_vtx,
+                    executed_travel_vertex_count=rot_travel_exec,
                 )
 
             for renderer in self._cylinder_renderers.values():
@@ -797,17 +816,12 @@ class Canvas3D(Gtk.GLArea):
                         )
 
             tex_reached = None
-            if self._op_player and self._step_cmd_boundaries:
+            if self._op_player and self._compiled_artifact:
                 tex_reached = 0
                 playhead = self._op_player.current_index
-                for (
-                    cmd_start,
-                    cmd_end,
-                    has_texture,
-                    _,
-                ) in self._step_cmd_boundaries:
-                    if playhead >= cmd_end - 1:
-                        tex_reached += 1 if has_texture else 0
+                for tl in self._compiled_artifact.texture_layers:
+                    if playhead >= tl.activation_cmd_idx:
+                        tex_reached += 1
             if self._texture_renderer and self._texture_shader:
                 self._texture_renderer.render(
                     mvp_matrix_ui,
@@ -848,6 +862,10 @@ class Canvas3D(Gtk.GLArea):
                 and self._ring_buffer_flat.vertex_count > 0
                 and self._main_shader
             ):
+                logger.debug(
+                    f"[RING-PLAYBACK] flat_ring_exec={flat_ring_exec} "
+                    f"flat_ring_total={self._ring_buffer_flat.vertex_count}"
+                )
                 self._ring_buffer_flat.render(
                     self._main_shader,
                     mvp_matrix_ui_gl,
@@ -858,6 +876,10 @@ class Canvas3D(Gtk.GLArea):
                 and self._ring_buffer_rotary.vertex_count > 0
                 and self._main_shader
             ):
+                logger.debug(
+                    f"[RING-PLAYBACK] rot_ring_exec={rot_ring_exec} "
+                    f"rot_ring_total={self._ring_buffer_rotary.vertex_count}"
+                )
                 self._ring_buffer_rotary.render(
                     self._main_shader,
                     rot_cyl_gl,
@@ -1110,9 +1132,10 @@ class Canvas3D(Gtk.GLArea):
         if task.get_status() != "completed":
             self._compiled_artifact = None
             self._op_player = None
-            self._vertex_map = None
-            self._scanline_overlay = None
-            self._step_cmd_boundaries = []
+            self._powered_flat_offsets = []
+            self._powered_rotary_offsets = []
+            self._travel_flat_offsets = []
+            self._travel_rotary_offsets = []
             self._ring_flat_offsets = []
             self._ring_rotary_offsets = []
             self._pending_scene_handle_dict = None
@@ -1204,6 +1227,16 @@ class Canvas3D(Gtk.GLArea):
                 pc_final = vl.powered_colors
                 tv_final = np.array([], dtype=np.float32)
 
+            powered_count = vl.powered_verts.size // 3
+            zero_count = vl.zero_power_verts.size // 3
+            logger.debug(
+                f"[UPLOAD] layer={i} powered={powered_count} "
+                f"zero_power={zero_count} "
+                f"total={pv_final.size // 3} "
+                f"travel={tv_final.size // 3} "
+                f"show_travel={self._show_travel_moves}"
+            )
+
             renderer.update_from_vertex_data(pv_final, pc_final, tv_final)
 
         if self._texture_renderer:
@@ -1214,7 +1247,7 @@ class Canvas3D(Gtk.GLArea):
                     dimensions_mm=(0.0, 0.0),
                     position_mm=(0.0, 0.0),
                 )
-                rotary_enabled = tl.rotary_diameter > 0
+                rotary_enabled = tl.rotary_enabled
                 self._texture_renderer.add_instance(
                     tex_data,
                     tl.model_matrix,
@@ -1230,8 +1263,12 @@ class Canvas3D(Gtk.GLArea):
         if ops is None or ops.is_empty():
             logger.debug("[CANVAS3D] _update_op_player: no ops available.")
             self._op_player = None
-            self._vertex_map = None
-            self._scanline_overlay = None
+            self._powered_flat_offsets = []
+            self._powered_rotary_offsets = []
+            self._travel_flat_offsets = []
+            self._travel_rotary_offsets = []
+            self._ring_flat_offsets = []
+            self._ring_rotary_offsets = []
             self._notify_playback_overlay(0)
             return
         logger.debug(
@@ -1239,8 +1276,7 @@ class Canvas3D(Gtk.GLArea):
             "%d commands." % len(ops)
         )
         self._op_player = OpPlayer(ops)
-        self._vertex_map = build_vertex_map(ops)
-        self._scanline_overlay = build_scanline_overlay(ops)
+        self._extract_playback_offsets_from_artifact()
         last_idx = self._op_player.seek_last_movement()
         if last_idx is not None:
             last_cmd = self._op_player.ops.commands[last_idx]
@@ -1262,109 +1298,12 @@ class Canvas3D(Gtk.GLArea):
         self._upload_scanline_overlay()
 
     def _get_ops_for_playback(self) -> Optional[Ops]:
-        handle = self.pipeline.get_existing_job_handle()
+        handle = self._current_job_handle
         if handle is not None:
             artifact = self._context.artifact_store.get(handle)
             if isinstance(artifact, JobArtifact) and artifact.ops is not None:
-                self._assemble_step_boundaries()
                 return artifact.ops
-        return self._assemble_ops_from_steps()
-
-    def _assemble_step_boundaries(self):
-        store = self._context.artifact_store
-        boundaries: List[Tuple[int, int, bool, str]] = []
-        seen_steps: set = set()
-        cmd_pos = 0
-        for layer in self.doc.layers:
-            if not layer.workflow:
-                continue
-            cmd_pos += 1
-            for step in layer.workflow.steps:
-                if step.uid in seen_steps:
-                    continue
-                seen_steps.add(step.uid)
-                key = ArtifactKey.for_step(step.uid)
-                ops_handle = (
-                    self.pipeline._artifact_manager.get_step_ops_handle(
-                        key, self.pipeline._data_generation_id
-                    )
-                )
-                if (
-                    ops_handle is None
-                    and self.pipeline._data_generation_id > 1
-                ):
-                    ops_handle = (
-                        self.pipeline._artifact_manager.get_step_ops_handle(
-                            key,
-                            self.pipeline._data_generation_id - 1,
-                        )
-                    )
-                step_cmd_count = 0
-                has_texture = False
-                if ops_handle is not None:
-                    art = store.get(ops_handle)
-                    if (
-                        isinstance(art, StepOpsArtifact)
-                        and not art.ops.is_empty()
-                    ):
-                        step_cmd_count = len(art.ops.commands)
-                        has_texture = any(
-                            isinstance(c, ScanLinePowerCommand)
-                            for c in art.ops.commands
-                        )
-                step_start = cmd_pos
-                step_end = cmd_pos + step_cmd_count
-                cmd_pos = step_end
-                if has_texture:
-                    boundaries.append((step_start, step_end, True, step.uid))
-            cmd_pos += 1
-        self._step_cmd_boundaries = boundaries
-
-    def _assemble_ops_from_steps(self) -> Optional[Ops]:
-        final_ops = Ops()
-        final_ops.job_start()
-        store = self._context.artifact_store
-        boundaries: List[Tuple[int, int, bool, str]] = []
-        seen_steps: set = set()
-        for layer in self.doc.layers:
-            if not layer.workflow:
-                continue
-            final_ops.layer_start(layer_uid=layer.uid)
-            for step in layer.workflow.steps:
-                if step.uid in seen_steps:
-                    continue
-                seen_steps.add(step.uid)
-                cmd_start = len(final_ops.commands)
-                key = ArtifactKey.for_step(step.uid)
-                handle = self.pipeline._artifact_manager.get_step_ops_handle(
-                    key, self.pipeline._data_generation_id
-                )
-                if handle is None and self.pipeline._data_generation_id > 1:
-                    handle = (
-                        self.pipeline._artifact_manager.get_step_ops_handle(
-                            key,
-                            self.pipeline._data_generation_id - 1,
-                        )
-                    )
-                has_texture = False
-                if handle is not None:
-                    artifact = store.get(handle)
-                    if (
-                        isinstance(artifact, StepOpsArtifact)
-                        and not artifact.ops.is_empty()
-                    ):
-                        final_ops.extend(artifact.ops)
-                        has_texture = any(
-                            isinstance(c, ScanLinePowerCommand)
-                            for c in artifact.ops.commands
-                        )
-                cmd_end = len(final_ops.commands)
-                if has_texture:
-                    boundaries.append((cmd_start, cmd_end, True, step.uid))
-            final_ops.layer_end(layer_uid=layer.uid)
-        final_ops.job_end()
-        self._step_cmd_boundaries = boundaries
-        return final_ops if not final_ops.is_empty() else None
+        return None
 
     def _notify_playback_overlay(self, command_count: int):
         if self._playback_overlay is not None:
@@ -1415,8 +1354,6 @@ class Canvas3D(Gtk.GLArea):
         else:
             self._ring_buffer_rotary.clear()
 
-        self._build_overlay_global_offsets(flat_layer, rotary_layer)
-
         logger.debug(
             "[CANVAS3D] Scanline overlay uploaded. "
             "Flat: %d verts, Rotary: %d verts."
@@ -1426,67 +1363,38 @@ class Canvas3D(Gtk.GLArea):
             )
         )
 
-    def _build_overlay_global_offsets(
-        self,
-        flat_layer: Optional[ScanlineOverlayLayer],
-        rotary_layer: Optional[ScanlineOverlayLayer],
-    ):
-        """
-        Map per-layer overlay cmd_offsets (which are sequential within
-        the flat or rotary group) to global command indices so the
-        playback playhead can index into the ring buffers correctly.
-        """
-        total_cmds = 0
-        if self._op_player:
-            total_cmds = len(self._op_player.ops.commands)
+    def _extract_playback_offsets_from_artifact(self):
+        if not self._compiled_artifact or not self._op_player:
+            return
 
-        ring_flat = [0] * (total_cmds + 1)
-        ring_rotary = [0] * (total_cmds + 1)
+        vl = self._compiled_artifact.vertex_layers
+        flat_vl = vl[0] if len(vl) > 0 else None
+        rot_vl = vl[1] if len(vl) > 1 else None
 
-        step_rotary_map: Dict[str, bool] = {}
-        if self._current_scene_description is not None:
-            for item in self._current_scene_description.render_items:
-                step_rotary_map[item.step_uid] = item.rotary_enabled
+        ol = self._compiled_artifact.overlay_layers
+        flat_ol = ol[0] if len(ol) > 0 else None
+        rot_ol = ol[1] if len(ol) > 1 else None
 
-        flat_cmd_cursor = 0
-        rot_cmd_cursor = 0
-
-        for (
-            cmd_start,
-            cmd_end,
-            has_texture,
-            step_uid,
-        ) in self._step_cmd_boundaries:
-            n_step_cmds = cmd_end - cmd_start
-            is_rotary = step_rotary_map.get(step_uid, False)
-
-            if is_rotary and rotary_layer is not None:
-                offsets = rotary_layer.cmd_offsets
-                for i in range(n_step_cmds):
-                    local_idx = rot_cmd_cursor + i
-                    if local_idx + 1 < len(offsets):
-                        ring_rotary[cmd_start + i + 1] = offsets[local_idx + 1]
-                    else:
-                        ring_rotary[cmd_start + i + 1] = ring_rotary[
-                            cmd_start + i
-                        ]
-                rot_cmd_cursor += n_step_cmds
-            elif not is_rotary and flat_layer is not None:
-                offsets = flat_layer.cmd_offsets
-                for i in range(n_step_cmds):
-                    local_idx = flat_cmd_cursor + i
-                    if local_idx + 1 < len(offsets):
-                        ring_flat[cmd_start + i + 1] = offsets[local_idx + 1]
-                    else:
-                        ring_flat[cmd_start + i + 1] = ring_flat[cmd_start + i]
-                flat_cmd_cursor += n_step_cmds
-
-        for i in range(1, total_cmds + 1):
-            ring_flat[i] = max(ring_flat[i], ring_flat[i - 1])
-            ring_rotary[i] = max(ring_rotary[i], ring_rotary[i - 1])
-
-        self._ring_flat_offsets = ring_flat
-        self._ring_rotary_offsets = ring_rotary
+        if flat_vl is not None:
+            self._powered_flat_offsets = flat_vl.powered_cmd_offsets
+            self._travel_flat_offsets = flat_vl.travel_cmd_offsets
+        else:
+            self._powered_flat_offsets = []
+            self._travel_flat_offsets = []
+        if rot_vl is not None:
+            self._powered_rotary_offsets = rot_vl.powered_cmd_offsets
+            self._travel_rotary_offsets = rot_vl.travel_cmd_offsets
+        else:
+            self._powered_rotary_offsets = []
+            self._travel_rotary_offsets = []
+        if flat_ol is not None:
+            self._ring_flat_offsets = flat_ol.cmd_offsets
+        else:
+            self._ring_flat_offsets = []
+        if rot_ol is not None:
+            self._ring_rotary_offsets = rot_ol.cmd_offsets
+        else:
+            self._ring_rotary_offsets = []
 
     def _update_cylinder_renderers(self):
         """
@@ -1686,6 +1594,13 @@ class Canvas3D(Gtk.GLArea):
                 "engrave": cs.get_lut("engrave").astype(np.float32).tobytes(),
             }
 
+        layer_configs: Dict[str, LayerRenderConfig] = {}
+        for layer in self.doc.layers:
+            layer_configs[layer.uid] = LayerRenderConfig(
+                rotary_enabled=layer.rotary_enabled,
+                rotary_diameter=layer.rotary_diameter,
+            )
+
         render_config = RenderConfig3D(
             world_to_visual=world_to_visual,
             world_to_cyl_local=world_to_cyl_local,
@@ -1698,21 +1613,10 @@ class Canvas3D(Gtk.GLArea):
             .tobytes(),
             laser_color_luts=laser_color_luts,
             zero_power_rgba=self._color_set.get_rgba("zero_power"),
+            layer_configs=layer_configs,
         )
 
-        config_roundtrip = RenderConfig3D.from_dict(render_config.to_dict())
-        np.testing.assert_array_equal(
-            render_config.world_to_visual, config_roundtrip.world_to_visual
-        )
-        np.testing.assert_array_equal(
-            render_config.world_to_cyl_local,
-            config_roundtrip.world_to_cyl_local,
-        )
-        assert (
-            render_config.zero_power_rgba == config_roundtrip.zero_power_rgba
-        )
-
-        # 4. Schedule the expensive vector preparation for a background thread
+        # Schedule the expensive vector preparation for a background thread
         self._world_to_cyl_local = world_to_cyl_local
         self._schedule_scene_preparation(
             scene_description,
@@ -1736,28 +1640,17 @@ class Canvas3D(Gtk.GLArea):
         world_to_cyl_local: np.ndarray,
         render_config_dict: Optional[dict] = None,
     ):
-        """
-        Schedules the given SceneDescription to be compiled for rendering
-        in a background subprocess.
-        """
         task_key = (id(self), "prepare-3d-scene-vertices")
 
         if self._ops_renderer_flat and self._color_set is not None:
             if self._scene_preparation_task:
                 self._scene_preparation_task.cancel()
 
-            step_ops_handle_dicts: list = []
-            for item in scene_description.render_items:
-                ops_handle = self.pipeline.get_step_ops_artifact_handle(
-                    item.step_uid
+            job_handle = self._current_job_handle
+            if job_handle is None:
+                logger.debug(
+                    "[CANVAS3D] No job artifact, skipping compilation."
                 )
-                if ops_handle is not None:
-                    step_ops_handle_dicts.append(
-                        (item.step_uid, ops_handle.to_dict())
-                    )
-
-            if not step_ops_handle_dicts:
-                logger.debug("[CANVAS3D] No step ops handles, skipping.")
                 return
 
             logger.debug("[CANVAS3D] Scheduling scene compilation task.")
@@ -1766,7 +1659,7 @@ class Canvas3D(Gtk.GLArea):
             self._scene_preparation_task = task_mgr.run_process(
                 compile_scene_in_subprocess,
                 self._context.artifact_store,
-                step_ops_handle_dicts,
+                job_handle.to_dict(),
                 render_config_dict,
                 key=task_key,
                 when_done=self._on_scene_prepared,

@@ -1,20 +1,15 @@
 """
-Scene compiler: pure function that compiles Ops into GPU-ready vertex data.
+Scene compiler: pure function that compiles assembled job Ops into
+GPU-ready vertex data.
 
-Replaces:
-- VertexEncoder (pipeline-side vertex encoding)
-- prepare_scene_vertices_async (inline color-mapping, transforms,
-  cylinder-wrapping)
-- build_scanline_overlay + _upload_scanline_overlay (scanline overlay
-  encoding and upload)
-
-All three encoding passes are unified into a single pass per step.
+Walks the full assembled job ops (with JobStart/End, LayerStart/End
+markers) to produce vertex buffers and per-command offset arrays that
+are indexed 1:1 with the player's command index.
 """
 
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple
 
 import numpy as np
@@ -23,9 +18,12 @@ from ...core.geo.linearize import linearize_arc
 from ...core.ops import Ops
 from ...core.ops.commands import (
     ArcToCommand,
+    LayerEndCommand,
+    LayerStartCommand,
     LineToCommand,
     MoveToCommand,
     ScanLinePowerCommand,
+    SetLaserCommand,
     SetPowerCommand,
 )
 from ...pipeline.encoder.vertexencoder import transform_to_cylinder
@@ -35,7 +33,7 @@ from .compiled_scene import (
     TextureLayer,
     VertexLayer,
 )
-from .render_config import RenderConfig3D, StepRenderConfig
+from .render_config import RenderConfig3D
 
 logger = logging.getLogger(__name__)
 
@@ -78,123 +76,16 @@ def _apply_cylinder(
     return transform_to_cylinder(verts.reshape(-1, 3), diameter, colors)
 
 
-@dataclass
-class _StepResult:
-    pv: np.ndarray
-    pc: np.ndarray
-    tv: np.ndarray
-    zpv: np.ndarray
-    zpc: np.ndarray
-    ov_pos: np.ndarray
-    ov_col: np.ndarray
-    ov_off: List[int]
+def _to_arr(raw: List[float], cols: int) -> np.ndarray:
+    if not raw:
+        return np.empty((0, cols), dtype=np.float32)
+    return np.array(raw, dtype=np.float32).reshape(-1, cols)
 
 
-def _walk_step_ops(
-    ops: Ops,
-    cut_lut: np.ndarray,
-    engrave_lut: Optional[np.ndarray],
-    zero_rgba: np.ndarray,
-) -> _StepResult:
-    powered_v: List[float] = []
-    powered_c: List[float] = []
-    travel_v: List[float] = []
-    zero_power_v: List[float] = []
-    ov_pos: List[float] = []
-    ov_col: List[float] = []
-    ov_off: List[int] = [0]
-    ov_cumulative = 0
-
-    current_power = 0.0
-    current_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    is_initial = True
-
-    for cmd in ops.commands:
-        if isinstance(cmd, SetPowerCommand):
-            current_power = cmd.power
-            ov_off.append(ov_cumulative)
-            continue
-
-        if isinstance(cmd, MoveToCommand):
-            if not is_initial:
-                travel_v.extend(current_pos)
-                travel_v.extend(cmd.end)
-            current_pos = cmd.end
-            is_initial = False
-            ov_off.append(ov_cumulative)
-            continue
-
-        if isinstance(cmd, LineToCommand):
-            if current_power > 0.0:
-                power_byte = min(255, int(current_power * 255.0))
-                color = cut_lut[power_byte]
-                powered_v.extend(current_pos)
-                powered_v.extend(cmd.end)
-                powered_c.extend(color)
-                powered_c.extend(color)
-            else:
-                zero_power_v.extend(current_pos)
-                zero_power_v.extend(cmd.end)
-            current_pos = cmd.end
-            is_initial = False
-            ov_off.append(ov_cumulative)
-            continue
-
-        if isinstance(cmd, ArcToCommand):
-            segments = linearize_arc(cmd, current_pos)
-            if current_power > 0.0:
-                power_byte = min(255, int(current_power * 255.0))
-                color = cut_lut[power_byte]
-                for seg_start, seg_end in segments:
-                    powered_v.extend(seg_start)
-                    powered_v.extend(seg_end)
-                    powered_c.extend(color)
-                    powered_c.extend(color)
-            else:
-                for seg_start, seg_end in segments:
-                    zero_power_v.extend(seg_start)
-                    zero_power_v.extend(seg_end)
-            current_pos = cmd.end
-            is_initial = False
-            ov_off.append(ov_cumulative)
-            continue
-
-        if isinstance(cmd, ScanLinePowerCommand):
-            if cmd.end is not None:
-                _extract_zero_power_segments(cmd, current_pos, zero_power_v)
-                if not is_initial:
-                    n = _encode_overlay_segments(
-                        cmd,
-                        current_pos,
-                        engrave_lut,
-                        ov_pos,
-                        ov_col,
-                    )
-                    ov_cumulative += n
-                current_pos = cmd.end
-                is_initial = False
-            ov_off.append(ov_cumulative)
-            continue
-
-        ov_off.append(ov_cumulative)
-
-    num_zp = len(zero_power_v) // 3
-    zpc = (
-        np.tile(zero_rgba, (num_zp, 1))
-        if num_zp > 0
-        else np.empty((0, 4), dtype=np.float32)
-    )
-
-    return _StepResult(
-        pv=np.array(powered_v, dtype=np.float32).reshape(-1, 3),
-        pc=np.array(powered_c, dtype=np.float32).reshape(-1, 4),
-        tv=np.array(travel_v, dtype=np.float32).reshape(-1, 3),
-        zpv=np.array(zero_power_v, dtype=np.float32).reshape(-1, 3),
-        zpc=zpc,
-        ov_pos=np.array(ov_pos, dtype=np.float32).reshape(-1, 3),
-        ov_col=np.array(ov_col, dtype=np.float32).reshape(-1, 4),
-        ov_off=ov_off,
-    )
+def _to_flat(raw: np.ndarray) -> np.ndarray:
+    if raw.size == 0:
+        return np.empty((0,), dtype=np.float32)
+    return raw.ravel().astype(np.float32)
 
 
 def _extract_zero_power_segments(
@@ -436,165 +327,430 @@ def _rasterize_scanlines(
 
 
 def compile_scene(
-    ops_list: List[Tuple[Ops, StepRenderConfig]],
+    ops: Ops,
     config: RenderConfig3D,
     cancel_check: Optional[Callable[[], bool]] = None,
 ) -> CompiledSceneArtifact:
-    pv_f: List[np.ndarray] = []
-    pc_f: List[np.ndarray] = []
-    tv_f: List[np.ndarray] = []
-    zpv_f: List[np.ndarray] = []
-    zpc_f: List[np.ndarray] = []
-    ov_pos_f: List[np.ndarray] = []
-    ov_col_f: List[np.ndarray] = []
-    ov_off_f: List[int] = [0]
-    ov_cum_f = 0
+    pv_f: List[float] = []
+    pc_f: List[float] = []
+    tv_f: List[float] = []
+    zpv_f: List[float] = []
+    ov_pos_f: List[float] = []
+    ov_col_f: List[float] = []
 
-    pv_r: List[np.ndarray] = []
-    pc_r: List[np.ndarray] = []
-    tv_r: List[np.ndarray] = []
-    zpv_r: List[np.ndarray] = []
-    zpc_r: List[np.ndarray] = []
-    ov_pos_r: List[np.ndarray] = []
-    ov_col_r: List[np.ndarray] = []
-    ov_off_r: List[int] = [0]
-    ov_cum_r = 0
+    pv_r: List[float] = []
+    pc_r: List[float] = []
+    tv_r: List[float] = []
+    zpv_r: List[float] = []
+    ov_pos_r: List[float] = []
+    ov_col_r: List[float] = []
 
     texture_layers: List[TextureLayer] = []
     zero_rgba = np.array(config.zero_power_rgba, dtype=np.float32)
 
-    for ops, step_cfg in ops_list:
+    total_cmds = len(ops.commands)
+    flat_pv_off = [0] * (total_cmds + 1)
+    flat_tv_off = [0] * (total_cmds + 1)
+    flat_ov_off = [0] * (total_cmds + 1)
+    rot_pv_off = [0] * (total_cmds + 1)
+    rot_tv_off = [0] * (total_cmds + 1)
+    rot_ov_off = [0] * (total_cmds + 1)
+
+    flat_pv_cum = 0
+    flat_tv_cum = 0
+    flat_ov_cum = 0
+    rot_pv_cum = 0
+    rot_tv_cum = 0
+    rot_ov_cum = 0
+
+    current_power = 0.0
+    current_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    is_initial = True
+    current_laser_uid = ""
+    is_rotary = False
+    rotary_diameter = 0.0
+
+    rotary_segments: List[dict] = []
+    layer_infos: List[dict] = []
+    current_layer_start = None
+    current_layer_has_scanlines = False
+    current_layer_scanline_laser = ""
+    _default_cut = _get_lut(config, "", "cut")
+    if _default_cut is None:
+        _default_cut = np.zeros((256, 4), dtype=np.float32)
+    current_cut_lut: np.ndarray = _default_cut
+
+    _default_engrave = _get_lut(config, "", "engrave")
+    if _default_engrave is None:
+        _default_engrave = np.zeros((256, 4), dtype=np.float32)
+    current_engrave_lut: np.ndarray = _default_engrave
+    current_rotary_seg: Optional[dict] = None
+
+    for i, cmd in enumerate(ops.commands):
         if cancel_check is not None and cancel_check():
             raise RuntimeError("Cancelled")
 
-        is_rot = step_cfg.rotary_enabled
+        if isinstance(cmd, LayerStartCommand):
+            layer_uid = cmd.layer_uid
+            layer_cfg = None
+            if config.layer_configs and layer_uid in config.layer_configs:
+                layer_cfg = config.layer_configs[layer_uid]
+            is_rotary = layer_cfg.rotary_enabled if layer_cfg else False
+            rotary_diameter = layer_cfg.rotary_diameter if layer_cfg else 0.0
+
+            if is_rotary and rotary_diameter > 0:
+                current_rotary_seg = {
+                    "pv_start": len(pv_r) // 3,
+                    "tv_start": len(tv_r) // 3,
+                    "zpv_vtx_start": len(zpv_r) // 3,
+                    "ov_start": len(ov_pos_r) // 3,
+                    "diameter": rotary_diameter,
+                    "cmd_start": i + 1,
+                }
+
+            current_layer_start = i + 1
+            current_layer_has_scanlines = False
+            current_layer_scanline_laser = ""
+
+        elif isinstance(cmd, LayerEndCommand):
+            if current_layer_start is not None:
+                layer_infos.append(
+                    {
+                        "cmd_start": current_layer_start,
+                        "cmd_end": i,
+                        "is_rotary": is_rotary,
+                        "diameter": rotary_diameter,
+                        "has_scanlines": current_layer_has_scanlines,
+                        "scanline_laser": current_layer_scanline_laser,
+                        "activation_cmd_idx": (current_layer_start - 1),
+                    }
+                )
+            if current_rotary_seg is not None:
+                current_rotary_seg["pv_end"] = len(pv_r) // 3
+                current_rotary_seg["tv_end"] = len(tv_r) // 3
+                current_rotary_seg["zpv_vtx_end"] = len(zpv_r) // 3
+                current_rotary_seg["ov_end"] = len(ov_pos_r) // 3
+                current_rotary_seg["cmd_end"] = i
+                rotary_segments.append(current_rotary_seg)
+                current_rotary_seg = None
+            current_layer_start = None
+
+        elif isinstance(cmd, SetLaserCommand):
+            current_laser_uid = cmd.laser_uid
+            _cut = _get_lut(config, current_laser_uid, "cut")
+            current_cut_lut = (
+                _cut
+                if _cut is not None
+                else np.zeros((256, 4), dtype=np.float32)
+            )
+            _engrave = _get_lut(config, current_laser_uid, "engrave")
+            current_engrave_lut = (
+                _engrave
+                if _engrave is not None
+                else np.zeros((256, 4), dtype=np.float32)
+            )
+
+        elif isinstance(cmd, SetPowerCommand):
+            current_power = cmd.power
+
+        elif isinstance(cmd, MoveToCommand):
+            if not is_initial:
+                if is_rotary:
+                    tv_r.extend(current_pos)
+                    tv_r.extend(cmd.end)
+                    rot_tv_cum += 2
+                else:
+                    tv_f.extend(current_pos)
+                    tv_f.extend(cmd.end)
+                    flat_tv_cum += 2
+            current_pos = cmd.end
+            is_initial = False
+
+        elif isinstance(cmd, LineToCommand):
+            if current_power > 0.0:
+                power_byte = min(255, int(current_power * 255.0))
+                color = current_cut_lut[power_byte]
+                if is_rotary:
+                    pv_r.extend(current_pos)
+                    pv_r.extend(cmd.end)
+                    pc_r.extend(color)
+                    pc_r.extend(color)
+                    rot_pv_cum += 2
+                else:
+                    pv_f.extend(current_pos)
+                    pv_f.extend(cmd.end)
+                    pc_f.extend(color)
+                    pc_f.extend(color)
+                    flat_pv_cum += 2
+            else:
+                if is_rotary:
+                    zpv_r.extend(current_pos)
+                    zpv_r.extend(cmd.end)
+                else:
+                    zpv_f.extend(current_pos)
+                    zpv_f.extend(cmd.end)
+            current_pos = cmd.end
+            is_initial = False
+
+        elif isinstance(cmd, ArcToCommand):
+            segments = linearize_arc(cmd, current_pos)
+            if current_power > 0.0:
+                power_byte = min(255, int(current_power * 255.0))
+                color = current_cut_lut[power_byte]
+                n_segs = len(segments)
+                for seg_start, seg_end in segments:
+                    if is_rotary:
+                        pv_r.extend(seg_start)
+                        pv_r.extend(seg_end)
+                        pc_r.extend(color)
+                        pc_r.extend(color)
+                    else:
+                        pv_f.extend(seg_start)
+                        pv_f.extend(seg_end)
+                        pc_f.extend(color)
+                        pc_f.extend(color)
+                if is_rotary:
+                    rot_pv_cum += n_segs * 2
+                else:
+                    flat_pv_cum += n_segs * 2
+            else:
+                for seg_start, seg_end in segments:
+                    if is_rotary:
+                        zpv_r.extend(seg_start)
+                        zpv_r.extend(seg_end)
+                    else:
+                        zpv_f.extend(seg_start)
+                        zpv_f.extend(seg_end)
+            current_pos = cmd.end
+            is_initial = False
+
+        elif isinstance(cmd, ScanLinePowerCommand):
+            if cmd.end is not None:
+                _zpv = zpv_r if is_rotary else zpv_f
+                _extract_zero_power_segments(cmd, current_pos, _zpv)
+                if not is_initial:
+                    _ov_pos = ov_pos_r if is_rotary else ov_pos_f
+                    _ov_col = ov_col_r if is_rotary else ov_col_f
+                    n = _encode_overlay_segments(
+                        cmd,
+                        current_pos,
+                        current_engrave_lut,
+                        _ov_pos,
+                        _ov_col,
+                    )
+                    if is_rotary:
+                        rot_ov_cum += n
+                    else:
+                        flat_ov_cum += n
+                current_pos = cmd.end
+                is_initial = False
+            current_layer_has_scanlines = True
+            if not current_layer_scanline_laser:
+                current_layer_scanline_laser = current_laser_uid
+
+        flat_pv_off[i + 1] = flat_pv_cum
+        flat_tv_off[i + 1] = flat_tv_cum
+        flat_ov_off[i + 1] = flat_ov_cum
+        rot_pv_off[i + 1] = rot_pv_cum
+        rot_tv_off[i + 1] = rot_tv_cum
+        rot_ov_off[i + 1] = rot_ov_cum
+
+    # Convert raw lists to numpy arrays
+    pv_f_arr = _to_arr(pv_f, 3)
+    pc_f_arr = _to_arr(pc_f, 4)
+    tv_f_arr = _to_arr(tv_f, 3)
+    zpv_f_arr = _to_arr(zpv_f, 3)
+    zpc_f_count = len(zpv_f) // 3
+    zpc_f_arr = (
+        np.tile(zero_rgba, (zpc_f_count, 1))
+        if zpc_f_count > 0
+        else np.empty((0, 4), dtype=np.float32)
+    )
+    ov_pos_f_arr = _to_arr(ov_pos_f, 3)
+    ov_col_f_arr = _to_arr(ov_col_f, 4)
+
+    pv_r_arr = _to_arr(pv_r, 3)
+    pc_r_arr = _to_arr(pc_r, 4)
+    tv_r_arr = _to_arr(tv_r, 3)
+    zpv_r_arr = _to_arr(zpv_r, 3)
+    zpc_r_count = len(zpv_r) // 3
+    zpc_r_arr = (
+        np.tile(zero_rgba, (zpc_r_count, 1))
+        if zpc_r_count > 0
+        else np.empty((0, 4), dtype=np.float32)
+    )
+    ov_pos_r_arr = _to_arr(ov_pos_r, 3)
+    ov_col_r_arr = _to_arr(ov_col_r, 4)
+
+    # Apply transforms
+    flat_transform = config.world_to_visual
+    rot_transform = config.world_to_cyl_local
+
+    pv_f_arr = _transform_verts(pv_f_arr, flat_transform)
+    tv_f_arr = _transform_verts(tv_f_arr, flat_transform)
+    zpv_f_arr = _transform_verts(zpv_f_arr, flat_transform)
+    ov_pos_f_arr = _transform_verts(ov_pos_f_arr, flat_transform)
+
+    pv_r_arr = _transform_verts(pv_r_arr, rot_transform)
+    tv_r_arr = _transform_verts(tv_r_arr, rot_transform)
+    zpv_r_arr = _transform_verts(zpv_r_arr, rot_transform)
+    ov_pos_r_arr = _transform_verts(ov_pos_r_arr, rot_transform)
+
+    # Apply cylinder wrapping per rotary layer segment.
+    # transform_to_cylinder subdivides line pairs that span a large arc,
+    # producing MORE vertices than the input.  We rebuild the rotary
+    # arrays by concatenating expanded segments.
+    _exp_pv_r: List[np.ndarray] = []
+    _exp_pc_r: List[np.ndarray] = []
+    _exp_tv_r: List[np.ndarray] = []
+    _exp_zpv_r: List[np.ndarray] = []
+    _exp_zpc_r: List[np.ndarray] = []
+    _exp_ov_pos_r: List[np.ndarray] = []
+    _exp_ov_col_r: List[np.ndarray] = []
+
+    for seg in rotary_segments:
+        d = seg["diameter"]
+        if d <= 0:
+            continue
+
+        pv_s = seg["pv_start"]
+        pv_e = seg.get("pv_end", rot_pv_cum)
+        if pv_e > pv_s:
+            pv_w, pc_w = _apply_cylinder(
+                pv_r_arr[pv_s:pv_e], d, pc_r_arr[pv_s:pv_e]
+            )
+            assert pc_w is not None
+            _exp_pv_r.append(pv_w)
+            _exp_pc_r.append(pc_w)
+
+        tv_s = seg["tv_start"]
+        tv_e = seg.get("tv_end", rot_tv_cum)
+        if tv_e > tv_s:
+            tv_w, _ = _apply_cylinder(tv_r_arr[tv_s:tv_e], d)
+            _exp_tv_r.append(tv_w)
+
+        zpv_s = seg["zpv_vtx_start"]
+        zpv_e = seg.get("zpv_vtx_end", len(zpv_r_arr))
+        if zpv_e > zpv_s:
+            zpv_w, zpc_w = _apply_cylinder(
+                zpv_r_arr[zpv_s:zpv_e], d, zpc_r_arr[zpv_s:zpv_e]
+            )
+            assert zpc_w is not None
+            _exp_zpv_r.append(zpv_w)
+            _exp_zpc_r.append(zpc_w)
+
+        ov_s = seg["ov_start"]
+        ov_e = seg.get("ov_end", rot_ov_cum)
+        if ov_e > ov_s:
+            ov_pos_w, ov_col_w = _apply_cylinder(
+                ov_pos_r_arr[ov_s:ov_e], d, ov_col_r_arr[ov_s:ov_e]
+            )
+            assert ov_col_w is not None
+            _exp_ov_pos_r.append(ov_pos_w)
+            _exp_ov_col_r.append(ov_col_w)
+
+    if _exp_pv_r:
+        pv_r_arr = np.concatenate(_exp_pv_r, axis=0)
+        pc_r_arr = np.concatenate(_exp_pc_r, axis=0)
+    if _exp_tv_r:
+        tv_r_arr = np.concatenate(_exp_tv_r, axis=0)
+    if _exp_zpv_r:
+        zpv_r_arr = np.concatenate(_exp_zpv_r, axis=0)
+        zpc_r_arr = np.concatenate(_exp_zpc_r, axis=0)
+    if _exp_ov_pos_r:
+        ov_pos_r_arr = np.concatenate(_exp_ov_pos_r, axis=0)
+        ov_col_r_arr = np.concatenate(_exp_ov_col_r, axis=0)
+
+    # Z-offset for travel and zero-power vertices
+    if tv_f_arr.size > 0:
+        tv_f_arr[:, 2] += Z_OFFSET_NON_POWERED
+    if zpv_f_arr.size > 0:
+        zpv_f_arr[:, 2] += Z_OFFSET_NON_POWERED
+    if tv_r_arr.size > 0:
+        tv_r_arr[:, 2] += Z_OFFSET_NON_POWERED
+    if zpv_r_arr.size > 0:
+        zpv_r_arr[:, 2] += Z_OFFSET_NON_POWERED
+
+    # Texture generation: rasterize scanlines per layer
+    for li in layer_infos:
+        if not li["has_scanlines"]:
+            continue
+
+        layer_ops = Ops()
+        layer_ops.commands = list(
+            ops.commands[li["cmd_start"] : li["cmd_end"]]
+        )
+
+        bbox = _scanline_bbox(layer_ops)
+        if bbox is None:
+            continue
+
+        raster_result = _rasterize_scanlines(layer_ops, bbox)
+        if raster_result is None:
+            continue
+
+        tex_buf, w_px, h_px, actual_ppm = raster_result
+        x0, y0, bw, bh = bbox
+
+        is_rot = li["is_rotary"]
+        diameter = li["diameter"]
         transform = (
             config.world_to_cyl_local if is_rot else config.world_to_visual
         )
-        diameter = step_cfg.rotary_diameter if is_rot else 0.0
-        cut_lut = _get_lut(config, step_cfg.laser_uid, "cut")
-        assert cut_lut is not None
-        engrave_lut = _get_lut(config, step_cfg.laser_uid, "engrave")
 
-        bbox = _scanline_bbox(ops)
-        if bbox is not None:
-            raster_result = _rasterize_scanlines(ops, bbox)
-            if raster_result is not None:
-                tex_buf, w_px, h_px, actual_ppm = raster_result
-                x0, y0, bw, bh = bbox
-                model = np.eye(4, dtype=np.float32)
-                model[0, 0] = bw
-                model[1, 1] = bh
-                model[0, 3] = x0
-                model[1, 3] = y0
-                final_model = (transform @ model).astype(np.float32)
-                texture_layers.append(
-                    TextureLayer(
-                        power_texture=tex_buf,
-                        width_px=w_px,
-                        height_px=h_px,
-                        model_matrix=final_model,
-                        color_lut=engrave_lut.copy()
-                        if engrave_lut is not None
-                        else None,
-                        rotary_diameter=diameter,
-                    )
-                )
+        model = np.eye(4, dtype=np.float32)
+        model[0, 0] = bw
+        model[1, 1] = bh
+        model[0, 3] = x0
+        model[1, 3] = y0
+        final_model = (transform @ model).astype(np.float32)
 
-        result = _walk_step_ops(ops, cut_lut, engrave_lut, zero_rgba)
+        scan_lut = _get_lut(config, li["scanline_laser"], "engrave")
 
-        pv = _transform_verts(result.pv, transform)
-        tv = _transform_verts(result.tv, transform)
-        zpv = _transform_verts(result.zpv, transform)
-        pc = result.pc
-        zpc = result.zpc
-        ov_p = _transform_verts(result.ov_pos, transform)
-        ov_c = result.ov_col
-
-        if is_rot and diameter > 0:
-            if pv.size > 0:
-                pv, pc = _apply_cylinder(pv, diameter, pc)
-                assert pc is not None
-            if tv.size > 0:
-                tv, _ = _apply_cylinder(tv, diameter)
-            if zpv.size > 0:
-                zpv, zpc = _apply_cylinder(zpv, diameter, zpc)
-                assert zpc is not None
-            if ov_p.size > 0:
-                ov_p, ov_c = _apply_cylinder(ov_p, diameter, ov_c)
-                assert ov_c is not None
-
-        if is_rot:
-            pv_r.append(pv)
-            pc_r.append(pc)
-            tv_r.append(tv)
-            zpv_r.append(zpv)
-            zpc_r.append(zpc)
-            if ov_p.size > 0:
-                ov_pos_r.append(ov_p)
-                ov_col_r.append(ov_c)
-            adjusted = [ov_cum_r + x for x in result.ov_off[1:]]
-            ov_off_r.extend(adjusted)
-            ov_cum_r += result.ov_off[-1]
-        else:
-            pv_f.append(pv)
-            pc_f.append(pc)
-            tv_f.append(tv)
-            zpv_f.append(zpv)
-            zpc_f.append(zpc)
-            if ov_p.size > 0:
-                ov_pos_f.append(ov_p)
-                ov_col_f.append(ov_c)
-            adjusted = [ov_cum_f + x for x in result.ov_off[1:]]
-            ov_off_f.extend(adjusted)
-            ov_cum_f += result.ov_off[-1]
-
-    if tv_f:
-        tv_all = np.concatenate(tv_f)
-        if tv_all.ndim > 1 and tv_all.size > 0:
-            tv_all[:, 2] += Z_OFFSET_NON_POWERED
-        tv_f = [tv_all]
-    if zpv_f:
-        zpv_all = np.concatenate(zpv_f)
-        if zpv_all.ndim > 1 and zpv_all.size > 0:
-            zpv_all[:, 2] += Z_OFFSET_NON_POWERED
-        zpv_f = [zpv_all]
-
-    def _cat(lists):
-        if not lists:
-            return np.empty((0,), dtype=np.float32)
-        parts = [a.ravel() for a in lists if a.size > 0]
-        if not parts:
-            return np.empty((0,), dtype=np.float32)
-        return np.concatenate(parts)
+        texture_layers.append(
+            TextureLayer(
+                power_texture=tex_buf,
+                width_px=w_px,
+                height_px=h_px,
+                model_matrix=final_model,
+                color_lut=scan_lut.copy() if scan_lut is not None else None,
+                rotary_diameter=diameter,
+                rotary_enabled=is_rot,
+                activation_cmd_idx=li["activation_cmd_idx"],
+            )
+        )
 
     vertex_layers: List[VertexLayer] = [
         VertexLayer(
-            powered_verts=_cat(pv_f),
-            powered_colors=_cat(pc_f),
-            travel_verts=_cat(tv_f),
-            zero_power_verts=_cat(zpv_f),
-            zero_power_colors=_cat(zpc_f),
+            powered_verts=_to_flat(pv_f_arr),
+            powered_colors=_to_flat(pc_f_arr),
+            travel_verts=_to_flat(tv_f_arr),
+            zero_power_verts=_to_flat(zpv_f_arr),
+            zero_power_colors=_to_flat(zpc_f_arr),
+            powered_cmd_offsets=flat_pv_off,
+            travel_cmd_offsets=flat_tv_off,
         ),
         VertexLayer(
-            powered_verts=_cat(pv_r),
-            powered_colors=_cat(pc_r),
-            travel_verts=_cat(tv_r),
-            zero_power_verts=_cat(zpv_r),
-            zero_power_colors=_cat(zpc_r),
+            powered_verts=_to_flat(pv_r_arr),
+            powered_colors=_to_flat(pc_r_arr),
+            travel_verts=_to_flat(tv_r_arr),
+            zero_power_verts=_to_flat(zpv_r_arr),
+            zero_power_colors=_to_flat(zpc_r_arr),
+            powered_cmd_offsets=rot_pv_off,
+            travel_cmd_offsets=rot_tv_off,
         ),
     ]
 
     overlay_layers: List[ScanlineOverlayLayer] = [
         ScanlineOverlayLayer(
-            positions=_cat(ov_pos_f),
-            colors=_cat(ov_col_f),
-            cmd_offsets=ov_off_f,
+            positions=_to_flat(ov_pos_f_arr),
+            colors=_to_flat(ov_col_f_arr),
+            cmd_offsets=flat_ov_off,
         ),
         ScanlineOverlayLayer(
-            positions=_cat(ov_pos_r),
-            colors=_cat(ov_col_r),
-            cmd_offsets=ov_off_r,
+            positions=_to_flat(ov_pos_r_arr),
+            colors=_to_flat(ov_col_r_arr),
+            cmd_offsets=rot_ov_off,
         ),
     ]
 

@@ -16,6 +16,8 @@ def _make_vertex_layer(n_powered=10, n_travel=5, n_zero=3):
         travel_verts=np.random.rand(n_travel, 3).astype(np.float32),
         zero_power_verts=np.random.rand(n_zero, 3).astype(np.float32),
         zero_power_colors=np.random.rand(n_zero, 4).astype(np.float32),
+        powered_cmd_offsets=[0, 2, n_powered],
+        travel_cmd_offsets=[0, n_travel],
     )
 
 
@@ -83,6 +85,8 @@ class TestCompiledSceneArtifactRoundTrip:
             np.testing.assert_array_equal(
                 orig.zero_power_colors, restored.zero_power_colors
             )
+            assert orig.powered_cmd_offsets == restored.powered_cmd_offsets
+            assert orig.travel_cmd_offsets == restored.travel_cmd_offsets
 
         store.release(handle)
 
@@ -159,6 +163,8 @@ class TestCompiledSceneArtifactRoundTrip:
             travel_verts=np.empty((0, 3), dtype=np.float32),
             zero_power_verts=np.empty((0, 3), dtype=np.float32),
             zero_power_colors=np.empty((0, 4), dtype=np.float32),
+            powered_cmd_offsets=[],
+            travel_cmd_offsets=[],
         )
         artifact = CompiledSceneArtifact(
             generation_id=0,
@@ -170,6 +176,8 @@ class TestCompiledSceneArtifactRoundTrip:
         handle, loaded = _roundtrip(artifact, store, "test_ev")
 
         assert loaded.vertex_layers[0].powered_verts.shape == (0, 3)
+        assert loaded.vertex_layers[0].powered_cmd_offsets == []
+        assert loaded.vertex_layers[0].travel_cmd_offsets == []
 
         store.release(handle)
 
