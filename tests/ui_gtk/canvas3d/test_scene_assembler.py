@@ -10,9 +10,7 @@ from rayforge.ui_gtk.canvas3d.scene_assembler import (
     SceneDescription,
     generate_scene_description,
 )
-from rayforge.pipeline.artifact import (
-    StepRenderArtifactHandle,
-)
+from rayforge.pipeline.artifact import StepOpsArtifactHandle
 
 
 @pytest.fixture
@@ -27,7 +25,7 @@ def mock_doc() -> Doc:
 def mock_pipeline():
     """Create a mock pipeline."""
     pipeline = MagicMock()
-    pipeline.get_step_render_artifact_handle = MagicMock()
+    pipeline.get_step_ops_artifact_handle = MagicMock()
     return pipeline
 
 
@@ -55,12 +53,13 @@ def mock_step() -> Step:
 
 
 @pytest.fixture
-def mock_step_artifact_handle() -> StepRenderArtifactHandle:
-    """Create a mock StepRenderArtifact handle."""
-    return StepRenderArtifactHandle(
+def mock_step_artifact_handle() -> StepOpsArtifactHandle:
+    """Create a mock StepOpsArtifact handle."""
+    return StepOpsArtifactHandle(
+        time_estimate=None,
         shm_name="test_step_shm",
-        handle_class_name="StepRenderArtifactHandle",
-        artifact_type_name="StepRenderArtifact",
+        handle_class_name="StepOpsArtifactHandle",
+        artifact_type_name="StepOpsArtifact",
         generation_id=0,
     )
 
@@ -75,11 +74,11 @@ class TestRenderItem:
         world_transform = np.eye(4)
         item = RenderItem(
             artifact_handle=mock_step_artifact_handle,
-            texture_data=None,  # Texture is loaded later
+            texture_data=None,
             world_transform=world_transform,
-            workpiece_size=(0.0, 0.0),  # Not applicable
+            workpiece_size=(0.0, 0.0),
             step_uid="step_1",
-            workpiece_uid="",  # Not applicable
+            workpiece_uid="",
             laser_uid="",
         )
 
@@ -143,7 +142,7 @@ class TestGenerateSceneDescription:
 
         scene = generate_scene_description(mock_doc, mock_pipeline)
         assert len(scene.render_items) == 0
-        mock_pipeline.get_step_render_artifact_handle.assert_not_called()
+        mock_pipeline.get_step_ops_artifact_handle.assert_not_called()
 
     def test_step_with_cached_artifact(
         self,
@@ -156,7 +155,7 @@ class TestGenerateSceneDescription:
         """Test that a visible step with an artifact creates a RenderItem."""
         mock_layer.workflow.steps = [mock_step]
         mock_doc.layers = [mock_layer]
-        mock_pipeline.get_step_render_artifact_handle.return_value = (
+        mock_pipeline.get_step_ops_artifact_handle.return_value = (
             mock_step_artifact_handle
         )
 
@@ -173,7 +172,7 @@ class TestGenerateSceneDescription:
         assert item.workpiece_size == (0.0, 0.0)
         assert np.array_equal(item.world_transform, np.eye(4))
 
-        mock_pipeline.get_step_render_artifact_handle.assert_called_once_with(
+        mock_pipeline.get_step_ops_artifact_handle.assert_called_once_with(
             mock_step.uid
         )
 
@@ -183,12 +182,12 @@ class TestGenerateSceneDescription:
         """Test that a step without a cached artifact is ignored."""
         mock_layer.workflow.steps = [mock_step]
         mock_doc.layers = [mock_layer]
-        mock_pipeline.get_step_render_artifact_handle.return_value = None
+        mock_pipeline.get_step_ops_artifact_handle.return_value = None
 
         scene = generate_scene_description(mock_doc, mock_pipeline)
 
         assert len(scene.render_items) == 0
-        mock_pipeline.get_step_render_artifact_handle.assert_called_once_with(
+        mock_pipeline.get_step_ops_artifact_handle.assert_called_once_with(
             mock_step.uid
         )
 
@@ -230,7 +229,7 @@ class TestGenerateSceneDescription:
                 return mock_step_artifact_handle
             return None
 
-        mock_pipeline.get_step_render_artifact_handle.side_effect = (
+        mock_pipeline.get_step_ops_artifact_handle.side_effect = (
             mock_get_handle
         )
 
@@ -242,4 +241,4 @@ class TestGenerateSceneDescription:
         uids = {item.step_uid for item in scene.render_items}
         assert uids == {"s1a", "s3"}
 
-        assert mock_pipeline.get_step_render_artifact_handle.call_count == 3
+        assert mock_pipeline.get_step_ops_artifact_handle.call_count == 3

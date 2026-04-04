@@ -12,7 +12,6 @@ from rayforge.pipeline.artifact import (
     ArtifactManager,
     ArtifactKey,
     WorkPieceArtifactHandle,
-    StepRenderArtifactHandle,
     StepOpsArtifactHandle,
     JobArtifactHandle,
 )
@@ -52,20 +51,14 @@ def mock_store(manager):
 
 def test_put_and_get_step_handles(manager):
     """Tests storage and retrieval of step handle types."""
-    render_handle = create_mock_handle(
-        StepRenderArtifactHandle, "step1_render"
-    )
     ops_handle = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
 
-    manager.put_step_render_handle(STEP1_UID, render_handle)
     manager.put_step_ops_handle(ArtifactKey.for_step(STEP1_UID), ops_handle, 0)
 
-    retrieved_render = manager.get_step_render_handle(STEP1_UID)
     retrieved_ops = manager.get_step_ops_handle(
         ArtifactKey.for_step(STEP1_UID), 0
     )
 
-    assert retrieved_render is render_handle
     assert retrieved_ops is ops_handle
     manager._store.release.assert_not_called()
 
@@ -85,13 +78,11 @@ def test_put_and_get_job(manager):
 def test_invalidate_workpiece_cascades_correctly(manager):
     """Tests that invalidating a workpiece removes only that workpiece."""
     wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-    render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
     ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
 
     wp_key = ArtifactKey.for_workpiece(WP1_UID)
     manager.declare_generation({wp_key}, 0)
     manager.cache_handle(wp_key, wp_h, 0)
-    manager.put_step_render_handle(WP1_UID, render_h)
     manager.put_step_ops_handle(ArtifactKey.for_step(WP1_UID), ops_h, 0)
 
     manager.invalidate_for_workpiece(ArtifactKey.for_workpiece(WP1_UID))
@@ -103,7 +94,6 @@ def test_invalidate_workpiece_cascades_correctly(manager):
     assert (
         manager.get_step_ops_handle(ArtifactKey.for_step(WP1_UID), 0) is ops_h
     )
-    assert manager.get_step_render_handle(WP1_UID) is render_h
     manager._store.release.assert_any_call(wp_h)
 
 
@@ -111,7 +101,6 @@ def test_invalidate_step_clears_step_artifacts(manager):
     """Tests that invalidating a step clears step artifacts only."""
     wp1_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
     wp2_h = create_mock_handle(WorkPieceArtifactHandle, "wp2")
-    render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
     ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
 
     wp_key = ArtifactKey.for_workpiece(WP1_UID, STEP1_UID)
@@ -119,7 +108,6 @@ def test_invalidate_step_clears_step_artifacts(manager):
     manager.cache_handle(wp_key, wp1_h, 0)
     manager.declare_generation({wp_key}, 1)
     manager.cache_handle(wp_key, wp2_h, 1)
-    manager.put_step_render_handle(STEP1_UID, render_h)
     manager.put_step_ops_handle(ArtifactKey.for_step(STEP1_UID), ops_h, 0)
 
     manager.invalidate_for_step(ArtifactKey.for_step(STEP1_UID))
@@ -128,8 +116,6 @@ def test_invalidate_step_clears_step_artifacts(manager):
     assert (
         manager.get_step_ops_handle(ArtifactKey.for_step(STEP1_UID), 0) is None
     )
-    assert manager.get_step_render_handle(STEP1_UID) is None
-    manager._store.release.assert_any_call(render_h)
     manager._store.release.assert_any_call(ops_h)
 
 
@@ -150,7 +136,6 @@ def test_put_job_replaces_old_handle(manager):
 def test_shutdown_releases_all_artifacts(manager):
     """Tests that shutdown releases all cached artifacts."""
     wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-    render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
     ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
     job_h = create_mock_handle(JobArtifactHandle, "job")
     wp_key = ArtifactKey.for_workpiece(WP1_UID)
@@ -158,18 +143,15 @@ def test_shutdown_releases_all_artifacts(manager):
 
     manager.declare_generation({wp_key, job_key}, 0)
     manager.cache_handle(wp_key, wp_h, 0)
-    manager.put_step_render_handle(STEP1_UID, render_h)
     manager.put_step_ops_handle(ArtifactKey.for_step(STEP1_UID), ops_h, 0)
     manager.cache_handle(job_key, job_h, 0)
 
     manager.shutdown()
 
     manager._store.release.assert_any_call(wp_h)
-    manager._store.release.assert_any_call(render_h)
     manager._store.release.assert_any_call(ops_h)
     manager._store.release.assert_any_call(job_h)
     assert len(manager._ledger) == 0
-    assert len(manager._step_render_handles) == 0
 
 
 def test_get_all_workpiece_keys(manager):
@@ -199,34 +181,6 @@ def test_get_all_workpiece_keys(manager):
     assert ArtifactKey.for_workpiece(WP1_UID) in keys
     assert ArtifactKey.for_workpiece(WP2_UID) in keys
     assert ArtifactKey.for_workpiece(WP3_UID) in keys
-
-
-def test_get_all_step_render_uids(manager):
-    """Tests getting all step render UIDs."""
-    manager._step_render_handles[STEP1_UID] = Mock()
-    manager._step_render_handles[STEP2_UID] = Mock()
-
-    uids = manager.get_all_step_render_uids()
-    assert len(uids) == 2
-    assert STEP1_UID in uids
-    assert STEP2_UID in uids
-
-
-def test_has_step_render_handle(manager):
-    """Tests checking if a step render handle exists."""
-    manager._step_render_handles[STEP1_UID] = Mock()
-    assert manager.has_step_render_handle(STEP1_UID)
-    assert not manager.has_step_render_handle(STEP2_UID)
-
-
-def test_pop_step_render_handle(manager):
-    """Tests popping a step render handle."""
-    render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
-    manager._step_render_handles[STEP1_UID] = render_h
-
-    popped = manager.pop_step_render_handle(STEP1_UID)
-    assert popped is render_h
-    assert manager.get_step_render_handle(STEP1_UID) is None
 
 
 def test_checkout_step_render_handle(manager):
@@ -369,30 +323,6 @@ def test_get_artifact_retrieves_from_store(manager):
 
     assert result is artifact
     manager._store.get.assert_called_once_with(handle)
-
-
-def test_put_step_render_handle_replaces_old(manager):
-    """
-    Test put_step_render_handle replaces old handle and releases it.
-    """
-    old_h = create_mock_handle(StepRenderArtifactHandle, "old")
-    new_h = create_mock_handle(StepRenderArtifactHandle, "new")
-    manager._step_render_handles[STEP1_UID] = old_h
-
-    manager.put_step_render_handle(STEP1_UID, new_h)
-
-    assert manager._step_render_handles[STEP1_UID] is new_h
-    manager._store.release.assert_called_once_with(old_h)
-
-
-def test_put_step_render_handle_without_old(manager):
-    """Test put_step_render_handle stores without old handle."""
-    new_h = create_mock_handle(StepRenderArtifactHandle, "new")
-
-    manager.put_step_render_handle(STEP1_UID, new_h)
-
-    assert manager._step_render_handles[STEP1_UID] is new_h
-    manager._store.release.assert_not_called()
 
 
 def test_put_step_ops_handle_creates_entry(manager):

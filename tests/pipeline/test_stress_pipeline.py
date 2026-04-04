@@ -349,12 +349,6 @@ class StressTestController:
             if entry.handle is not None:
                 tracked_shms.add(entry.handle.shm_name)
 
-        # Tracked by step renders
-        for (
-            handle
-        ) in self.pipeline._artifact_manager._step_render_handles.values():
-            tracked_shms.add(handle.shm_name)
-
         # Tracked by step stage retained handles
         # Handles are now tracked by task ID in _retained_handles_by_task
         for (

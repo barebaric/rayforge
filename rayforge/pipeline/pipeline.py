@@ -29,7 +29,6 @@ from .artifact import (
     ArtifactManager,
     BaseArtifactHandle,
     JobArtifactHandle,
-    StepRenderArtifactHandle,
     StepOpsArtifactHandle,
     WorkPieceArtifact,
 )
@@ -1060,15 +1059,6 @@ class Pipeline:
         return self._artifact_manager.get_workpiece_handle(
             key, self._data_generation_id
         )
-
-    def get_step_render_artifact_handle(
-        self, step_uid: str
-    ) -> Optional[StepRenderArtifactHandle]:
-        """
-        Retrieves the handle for a generated step render artifact. This is
-        the lightweight artifact intended for UI consumption.
-        """
-        return self._artifact_manager.get_step_render_handle(step_uid)
 
     def get_step_ops_artifact_handle(
         self, step_uid: str

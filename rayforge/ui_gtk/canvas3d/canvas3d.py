@@ -10,16 +10,18 @@ from ...context import RayforgeContext
 from ...core.geo import Point, Point3D, Rect
 from ...core.model import Model
 from ...core.ops import Ops
-from ...core.ops.commands import MovingCommand
+from ...core.ops.commands import MovingCommand, ScanLinePowerCommand
 from ...machine.driver.driver import Axis
 from ...machine.kinematics import RotaryKinematics
 from ...machine.models.colors import OpsColorSet
-from ...pipeline.artifact.step_ops import StepOpsArtifact
+from ...pipeline.artifact.base import TextureData
 from ...pipeline.artifact.handle import create_handle_from_dict
-from ...pipeline.artifact.step_render import StepRenderArtifact
 from ...pipeline.artifact.job import JobArtifact
 from ...pipeline.artifact.key import ArtifactKey
+from ...pipeline.artifact.step_ops import StepOpsArtifact
 from ...pipeline.pipeline import Pipeline
+from ...shared.util.colors import ColorSet
+from ...shared.tasker import task_mgr, Task
 from ...simulator.op_player import OpPlayer
 from ...simulator.vertex_map import (
     SceneVertexMap,
@@ -27,16 +29,17 @@ from ...simulator.vertex_map import (
     build_vertex_map,
     build_scanline_overlay,
 )
-from ...shared.util.colors import ColorSet
-from ...shared.tasker import task_mgr, Task
 from ..shared.gtk_color import GtkColorResolver, ColorSpecDict
 from .axis_renderer_3d import AxisRenderer3D
 from .camera import Camera, rotation_matrix_from_axis_angle
+from .compiled_scene import CompiledSceneArtifact, ScanlineOverlayLayer
 from .cylinder_renderer import CylinderRenderer
 from .gl_utils import Shader
 from .model_renderer import ModelRenderer
 from .ops_renderer import OpsRenderer
+from .render_config import RenderConfig3D, StepRenderConfig
 from .ring_buffer_renderer import RingBufferRenderer
+from .scene_compiler_runner import compile_scene_in_subprocess
 from .scene_assembler import (
     SceneDescription,
     generate_scene_description,
@@ -52,12 +55,6 @@ from .shaders import (
 from .sphere_renderer import SphereRenderer
 from .texture_renderer import TextureArtifactRenderer
 from .zone_renderer import ZoneRenderer
-from .compiled_scene import (
-    CompiledSceneArtifact,
-    ScanlineOverlayLayer,
-)
-from .render_config import RenderConfig3D, StepRenderConfig
-from .scene_compiler_runner import compile_scene_in_subprocess
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -116,7 +113,7 @@ class Canvas3D(Gtk.GLArea):
         self._scanline_overlay: Optional[ScanlineOverlay] = None
         self._current_scene_description: Optional[SceneDescription] = None
         self._playback_overlay = None
-        self._step_cmd_boundaries: List[Tuple[int, int, int, str]] = []
+        self._step_cmd_boundaries: List[Tuple[int, int, bool, str]] = []
         self._world_to_cyl_local = np.identity(4, dtype=np.float32)
         self._ring_flat_offsets: List[int] = []
         self._ring_rotary_offsets: List[int] = []
@@ -806,11 +803,11 @@ class Canvas3D(Gtk.GLArea):
                 for (
                     cmd_start,
                     cmd_end,
-                    tex_count,
+                    has_texture,
                     _,
                 ) in self._step_cmd_boundaries:
                     if playhead >= cmd_end - 1:
-                        tex_reached += tex_count
+                        tex_reached += 1 if has_texture else 0
             if self._texture_renderer and self._texture_shader:
                 self._texture_renderer.render(
                     mvp_matrix_ui,
@@ -1069,7 +1066,7 @@ class Canvas3D(Gtk.GLArea):
         if self._show_travel_moves == visible:
             return
         self._show_travel_moves = visible
-        self._update_renderer_from_cache()
+        self._update_renderers_from_artifact()
 
     def set_show_nogo_zones(self, visible: bool):
         if self._show_nogo_zones == visible:
@@ -1175,6 +1172,8 @@ class Canvas3D(Gtk.GLArea):
                 self._ops_renderer_flat.clear()
             if self._ops_renderer_rotary:
                 self._ops_renderer_rotary.clear()
+            if self._texture_renderer:
+                self._texture_renderer.clear()
             self.queue_render()
             return
 
@@ -1206,6 +1205,23 @@ class Canvas3D(Gtk.GLArea):
                 tv_final = np.array([], dtype=np.float32)
 
             renderer.update_from_vertex_data(pv_final, pc_final, tv_final)
+
+        if self._texture_renderer:
+            self._texture_renderer.clear()
+            for tl in artifact.texture_layers:
+                tex_data = TextureData(
+                    power_texture_data=tl.power_texture,
+                    dimensions_mm=(0.0, 0.0),
+                    position_mm=(0.0, 0.0),
+                )
+                rotary_enabled = tl.rotary_diameter > 0
+                self._texture_renderer.add_instance(
+                    tex_data,
+                    tl.model_matrix,
+                    color_lut=tl.color_lut,
+                    rotary_enabled=rotary_enabled,
+                    rotary_diameter=tl.rotary_diameter,
+                )
 
         self.queue_render()
 
@@ -1256,7 +1272,7 @@ class Canvas3D(Gtk.GLArea):
 
     def _assemble_step_boundaries(self):
         store = self._context.artifact_store
-        boundaries: List[Tuple[int, int, int, str]] = []
+        boundaries: List[Tuple[int, int, bool, str]] = []
         seen_steps: set = set()
         cmd_pos = 0
         for layer in self.doc.layers:
@@ -1267,14 +1283,6 @@ class Canvas3D(Gtk.GLArea):
                 if step.uid in seen_steps:
                     continue
                 seen_steps.add(step.uid)
-                render_handle = self.pipeline.get_step_render_artifact_handle(
-                    step.uid
-                )
-                tex_count = 0
-                if render_handle is not None:
-                    render_art = store.get(render_handle)
-                    if isinstance(render_art, StepRenderArtifact):
-                        tex_count = len(render_art.texture_instances)
                 key = ArtifactKey.for_step(step.uid)
                 ops_handle = (
                     self.pipeline._artifact_manager.get_step_ops_handle(
@@ -1292,6 +1300,7 @@ class Canvas3D(Gtk.GLArea):
                         )
                     )
                 step_cmd_count = 0
+                has_texture = False
                 if ops_handle is not None:
                     art = store.get(ops_handle)
                     if (
@@ -1299,13 +1308,15 @@ class Canvas3D(Gtk.GLArea):
                         and not art.ops.is_empty()
                     ):
                         step_cmd_count = len(art.ops.commands)
+                        has_texture = any(
+                            isinstance(c, ScanLinePowerCommand)
+                            for c in art.ops.commands
+                        )
                 step_start = cmd_pos
                 step_end = cmd_pos + step_cmd_count
                 cmd_pos = step_end
-                if tex_count > 0:
-                    boundaries.append(
-                        (step_start, step_end, tex_count, step.uid)
-                    )
+                if has_texture:
+                    boundaries.append((step_start, step_end, True, step.uid))
             cmd_pos += 1
         self._step_cmd_boundaries = boundaries
 
@@ -1313,7 +1324,7 @@ class Canvas3D(Gtk.GLArea):
         final_ops = Ops()
         final_ops.job_start()
         store = self._context.artifact_store
-        boundaries: List[Tuple[int, int, int, str]] = []
+        boundaries: List[Tuple[int, int, bool, str]] = []
         seen_steps: set = set()
         for layer in self.doc.layers:
             if not layer.workflow:
@@ -1335,26 +1346,21 @@ class Canvas3D(Gtk.GLArea):
                             self.pipeline._data_generation_id - 1,
                         )
                     )
-                tex_count = 0
+                has_texture = False
                 if handle is not None:
-                    render_handle = (
-                        self.pipeline.get_step_render_artifact_handle(step.uid)
-                    )
-                    if render_handle is not None:
-                        render_art = store.get(render_handle)
-                        if isinstance(render_art, StepRenderArtifact):
-                            tex_count = len(render_art.texture_instances)
                     artifact = store.get(handle)
                     if (
                         isinstance(artifact, StepOpsArtifact)
                         and not artifact.ops.is_empty()
                     ):
                         final_ops.extend(artifact.ops)
+                        has_texture = any(
+                            isinstance(c, ScanLinePowerCommand)
+                            for c in artifact.ops.commands
+                        )
                 cmd_end = len(final_ops.commands)
-                if tex_count > 0:
-                    boundaries.append(
-                        (cmd_start, cmd_end, tex_count, step.uid)
-                    )
+                if has_texture:
+                    boundaries.append((cmd_start, cmd_end, True, step.uid))
             final_ops.layer_end(layer_uid=layer.uid)
         final_ops.job_end()
         self._step_cmd_boundaries = boundaries
@@ -1448,7 +1454,7 @@ class Canvas3D(Gtk.GLArea):
         for (
             cmd_start,
             cmd_end,
-            _tex_count,
+            has_texture,
             step_uid,
         ) in self._step_cmd_boundaries:
             n_step_cmds = cmd_end - cmd_start
@@ -1481,13 +1487,6 @@ class Canvas3D(Gtk.GLArea):
 
         self._ring_flat_offsets = ring_flat
         self._ring_rotary_offsets = ring_rotary
-
-    def _update_renderer_from_cache(self):
-        """
-        Helper to update the renderers based on current visibility flags.
-        Delegates to _update_renderers_from_artifact.
-        """
-        self._update_renderers_from_artifact()
 
     def _update_cylinder_renderers(self):
         """
@@ -1671,41 +1670,7 @@ class Canvas3D(Gtk.GLArea):
 
             world_to_cyl_local = grid_to_cyl @ world_to_grid
 
-        # 2. Handle texture instances immediately on the main thread (fast)
-        self._texture_renderer.clear()
-        for item in scene_description.render_items:
-            if not item.artifact_handle:
-                continue
-
-            artifact = self._context.artifact_store.get(item.artifact_handle)
-            if isinstance(artifact, StepRenderArtifact):
-                item_color_set = self._laser_color_sets.get(
-                    item.laser_uid, self._color_set
-                )
-                engrave_lut = (
-                    item_color_set.get_lut("engrave")
-                    if item_color_set
-                    else None
-                )
-                for tex_instance in artifact.texture_instances:
-                    if item.rotary_enabled:
-                        adjusted_transform = (
-                            world_to_cyl_local @ tex_instance.world_transform
-                        )
-                    else:
-                        adjusted_transform = (
-                            world_to_visual @ tex_instance.world_transform
-                        )
-
-                    self._texture_renderer.add_instance(
-                        tex_instance.texture_data,
-                        adjusted_transform,
-                        color_lut=engrave_lut,
-                        rotary_enabled=item.rotary_enabled,
-                        rotary_diameter=item.rotary_diameter,
-                    )
-
-        # 3. Build RenderConfig3D snapshot for the compiler
+        # 2. Build RenderConfig3D snapshot for the compiler
         step_configs: Dict[str, StepRenderConfig] = {}
         for item in scene_description.render_items:
             step_configs[item.step_uid] = StepRenderConfig(

@@ -13,8 +13,8 @@ from ...pipeline.artifact.base import TextureData
 from ...pipeline.artifact.handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
-    from ...pipeline.pipeline import Pipeline
     from ...core.doc import Doc
+    from ...pipeline.pipeline import Pipeline
 
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ def generate_scene_description(
                 if not step.visible:
                     continue
                 seen_steps.add(step.uid)
-                handle = pipeline.get_step_render_artifact_handle(step.uid)
+                handle = pipeline.get_step_ops_artifact_handle(step.uid)
                 if handle:
                     item = RenderItem(
                         artifact_handle=handle,
