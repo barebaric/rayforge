@@ -56,6 +56,33 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+class _LayerRendererGroup:
+    """Owns the GPU renderers and playback offsets for one compiled layer."""
+
+    def __init__(self, is_rotary: bool):
+        self.is_rotary = is_rotary
+        self.ops_renderer = OpsRenderer()
+        self.ring_renderer = RingBufferRenderer()
+        self.powered_offsets: List[int] = []
+        self.travel_offsets: List[int] = []
+        self.ring_offsets: List[int] = []
+
+    def init_gl(self):
+        self.ops_renderer.init_gl()
+        self.ring_renderer.init_gl()
+
+    def cleanup(self):
+        self.ops_renderer.cleanup()
+        self.ring_renderer.cleanup()
+
+    def clear(self):
+        self.ops_renderer.clear()
+        self.ring_renderer.clear()
+        self.powered_offsets = []
+        self.travel_offsets = []
+        self.ring_offsets = []
+
+
 class Canvas3D(Gtk.GLArea):
     """A GTK Widget for rendering a 3D scene with OpenGL."""
 
@@ -87,8 +114,7 @@ class Canvas3D(Gtk.GLArea):
         self._main_shader: Optional[Shader] = None
         self._text_shader: Optional[Shader] = None
         self._axis_renderer: Optional[AxisRenderer3D] = None
-        self._ops_renderer_flat: Optional[OpsRenderer] = None
-        self._ops_renderer_rotary: Optional[OpsRenderer] = None
+        self._layer_groups: List[_LayerRendererGroup] = []
         self._sphere_renderer: Optional[SphereRenderer] = None
         self._texture_renderer: Optional[TextureArtifactRenderer] = None
         self._texture_shader: Optional[Shader] = None
@@ -103,14 +129,6 @@ class Canvas3D(Gtk.GLArea):
         self._op_player: Optional[OpPlayer] = None
         self._playback_overlay = None
         self._world_to_cyl_local = np.identity(4, dtype=np.float32)
-        self._powered_flat_offsets: List[int] = []
-        self._powered_rotary_offsets: List[int] = []
-        self._travel_flat_offsets: List[int] = []
-        self._travel_rotary_offsets: List[int] = []
-        self._ring_flat_offsets: List[int] = []
-        self._ring_rotary_offsets: List[int] = []
-        self._ring_buffer_flat: Optional[RingBufferRenderer] = None
-        self._ring_buffer_rotary: Optional[RingBufferRenderer] = None
         self._show_travel_moves = False
         self._show_nogo_zones = True
         self._show_models = True
@@ -445,14 +463,8 @@ class Canvas3D(Gtk.GLArea):
                 self._scene_preparation_task.cancel()
             if self._axis_renderer:
                 self._axis_renderer.cleanup()
-            if self._ops_renderer_flat:
-                self._ops_renderer_flat.cleanup()
-            if self._ops_renderer_rotary:
-                self._ops_renderer_rotary.cleanup()
-            if self._ring_buffer_flat:
-                self._ring_buffer_flat.cleanup()
-            if self._ring_buffer_rotary:
-                self._ring_buffer_rotary.cleanup()
+            for group in self._layer_groups:
+                group.cleanup()
             if self._sphere_renderer:
                 self._sphere_renderer.cleanup()
             if self._texture_renderer:
@@ -521,14 +533,6 @@ class Canvas3D(Gtk.GLArea):
                     fy = -mt
                 self._axis_renderer.set_extent_frame(fx, fy, fw, fh, show=True)
             self._axis_renderer.init_gl()
-            self._ops_renderer_flat = OpsRenderer()
-            self._ops_renderer_flat.init_gl()
-            self._ops_renderer_rotary = OpsRenderer()
-            self._ops_renderer_rotary.init_gl()
-            self._ring_buffer_flat = RingBufferRenderer()
-            self._ring_buffer_flat.init_gl()
-            self._ring_buffer_rotary = RingBufferRenderer()
-            self._ring_buffer_rotary.init_gl()
             self._texture_renderer = TextureArtifactRenderer()
             self._texture_renderer.init_gl()
             if self._sphere_renderer:
@@ -615,7 +619,7 @@ class Canvas3D(Gtk.GLArea):
             self._update_theme_and_colors()
 
         if not self._color_set:
-            return False  # Cannot render without resolved colors
+            return False
 
         t_render_start = time.perf_counter()
         try:
@@ -658,7 +662,11 @@ class Canvas3D(Gtk.GLArea):
             mvp_matrix_ui_gl = mvp_matrix_ui.T
             mvp_matrix_scene_gl = mvp_matrix_scene.T
 
-            if self._axis_renderer and self._main_shader and self._text_shader:
+            if (
+                self._axis_renderer is not None
+                and self._main_shader is not None
+                and self._text_shader is not None
+            ):
                 self._axis_renderer.render(
                     self._main_shader,
                     self._text_shader,
@@ -688,78 +696,7 @@ class Canvas3D(Gtk.GLArea):
                 zone_mvp_gl = (mvp_matrix_ui @ margin_shift).T
                 self._zone_renderer.render(self._main_shader, zone_mvp_gl)
 
-            flat_exec = -1
-            rot_exec_vtx = -1
-            flat_travel_exec = -1
-            rot_travel_exec = -1
-            if self._op_player:
-                idx = self._op_player.current_index
-                if self._powered_flat_offsets and idx + 1 < len(
-                    self._powered_flat_offsets
-                ):
-                    flat_exec = self._powered_flat_offsets[idx + 1]
-                if self._powered_rotary_offsets and idx + 1 < len(
-                    self._powered_rotary_offsets
-                ):
-                    rot_exec_vtx = self._powered_rotary_offsets[idx + 1]
-                if self._travel_flat_offsets and idx + 1 < len(
-                    self._travel_flat_offsets
-                ):
-                    flat_travel_exec = self._travel_flat_offsets[idx + 1]
-                if self._travel_rotary_offsets and idx + 1 < len(
-                    self._travel_rotary_offsets
-                ):
-                    rot_travel_exec = self._travel_rotary_offsets[idx + 1]
-
-                pv_total = (
-                    self._ops_renderer_flat.powered_vertex_count
-                    if self._ops_renderer_flat
-                    else 0
-                )
-                off_len = len(self._powered_flat_offsets)
-                if flat_exec >= 0 and idx % 50 == 0:
-                    logger.info(
-                        f"[PLAYBACK-DIAG] idx={idx}/{off_len - 1} "
-                        f"flat_exec={flat_exec}/{pv_total} "
-                        f"off[-3:]={self._powered_flat_offsets[-3:]}"
-                    )
-
-            if self._ops_renderer_flat and self._main_shader:
-                self._ops_renderer_flat.render(
-                    self._main_shader,
-                    mvp_matrix_ui_gl,
-                    colors=self._color_set,
-                    show_travel_moves=self._show_travel_moves,
-                    executed_vertex_count=flat_exec,
-                    executed_travel_vertex_count=flat_travel_exec,
-                )
-
-            # Laser head marker: draw at head_position from kinematics
-            if (
-                self._op_player
-                and self._sphere_renderer
-                and self._main_shader
-                and machine
-            ):
-                kin = machine.kinematics
-                hx, hy, hz = kin.head_position(self._op_player.state)
-                head_pos = margin_shift @ np.array(
-                    [hx, hy, hz, 1.0], dtype=np.float32
-                )
-                self._sphere_renderer.render(
-                    self._main_shader,
-                    proj_matrix,
-                    view_matrix,
-                    head_pos[:3],
-                    color=(1.0, 0.2, 0.0, 1.0),
-                    scale=2.0,
-                )
-
             # Compute cylinder rotation from cylinder-local Y.
-            # The rotary vertices are placed on the cylinder surface via
-            # world_to_cyl_local → transform_to_cylinder, which maps
-            # cyl_local_Y → theta.  Rotating the scene by theta keeps
-            # the active point facing up.
             cyl_angle = 0.0
             if self._op_player and self._had_rotary_layers and machine:
                 kin = machine.kinematics
@@ -782,14 +719,82 @@ class Canvas3D(Gtk.GLArea):
                 rot_cyl = mvp_matrix_scene @ rot_4x4
                 rot_cyl_gl = rot_cyl.T.astype(np.float32)
 
-            if self._ops_renderer_rotary and self._main_shader:
-                self._ops_renderer_rotary.render(
+            # Render each layer group (ops + ring buffer)
+            for group in self._layer_groups:
+                mvp = rot_cyl_gl if group.is_rotary else mvp_matrix_ui_gl
+
+                exec_powered = -1
+                exec_travel = -1
+                exec_ring = -1
+                if self._op_player:
+                    idx = self._op_player.current_index
+                    if group.powered_offsets and idx + 1 < len(
+                        group.powered_offsets
+                    ):
+                        exec_powered = group.powered_offsets[idx + 1]
+                    if group.travel_offsets and idx + 1 < len(
+                        group.travel_offsets
+                    ):
+                        exec_travel = group.travel_offsets[idx + 1]
+                    if group.ring_offsets and idx + 1 < len(
+                        group.ring_offsets
+                    ):
+                        exec_ring = group.ring_offsets[idx + 1]
+
+                    pv_total = group.ops_renderer.powered_vertex_count
+                    off_len = len(group.powered_offsets)
+                    if exec_powered >= 0 and idx % 50 == 0:
+                        tag = "rot" if group.is_rotary else "flat"
+                        logger.info(
+                            f"[PLAYBACK-DIAG] {tag} "
+                            f"idx={idx}/{off_len - 1} "
+                            f"exec={exec_powered}/{pv_total} "
+                            f"off[-3:]="
+                            f"{group.powered_offsets[-3:]}"
+                        )
+
+                if self._main_shader:
+                    group.ops_renderer.render(
+                        self._main_shader,
+                        mvp,
+                        colors=self._color_set,
+                        show_travel_moves=self._show_travel_moves,
+                        executed_vertex_count=exec_powered,
+                        executed_travel_vertex_count=exec_travel,
+                    )
+
+                if group.ring_renderer.vertex_count > 0 and self._main_shader:
+                    tag = "rot" if group.is_rotary else "flat"
+                    logger.debug(
+                        f"[RING-PLAYBACK] {tag} "
+                        f"exec={exec_ring} "
+                        f"total={group.ring_renderer.vertex_count}"
+                    )
+                    group.ring_renderer.render(
+                        self._main_shader,
+                        mvp,
+                        executed_vertex_count=exec_ring,
+                    )
+
+            # Laser head marker
+            if (
+                self._op_player
+                and self._sphere_renderer
+                and self._main_shader
+                and machine
+            ):
+                kin = machine.kinematics
+                hx, hy, hz = kin.head_position(self._op_player.state)
+                head_pos = margin_shift @ np.array(
+                    [hx, hy, hz, 1.0], dtype=np.float32
+                )
+                self._sphere_renderer.render(
                     self._main_shader,
-                    rot_cyl_gl,
-                    colors=self._color_set,
-                    show_travel_moves=self._show_travel_moves,
-                    executed_vertex_count=rot_exec_vtx,
-                    executed_travel_vertex_count=rot_travel_exec,
+                    proj_matrix,
+                    view_matrix,
+                    head_pos[:3],
+                    color=(1.0, 0.2, 0.0, 1.0),
+                    scale=2.0,
                 )
 
             for renderer in self._cylinder_renderers.values():
@@ -836,53 +841,10 @@ class Canvas3D(Gtk.GLArea):
                     reached_count=tex_reached,
                 )
 
-            # Ring buffer: scanline vector overlay on top of dimmed
-            # textures.  Draws only the powered pixel-segments that
-            # the playhead has reached, using the same alpha-split
-            # shader as the regular OpsRenderer.
-            flat_ring_exec = -1
-            rot_ring_exec = -1
-            if self._op_player and self._ring_flat_offsets:
-                idx = self._op_player.current_index
-                if idx + 1 < len(self._ring_flat_offsets):
-                    flat_ring_exec = self._ring_flat_offsets[idx + 1]
-            if self._op_player and self._ring_rotary_offsets:
-                idx = self._op_player.current_index
-                if idx + 1 < len(self._ring_rotary_offsets):
-                    rot_ring_exec = self._ring_rotary_offsets[idx + 1]
-
-            if (
-                self._ring_buffer_flat
-                and self._ring_buffer_flat.vertex_count > 0
-                and self._main_shader
-            ):
-                logger.debug(
-                    f"[RING-PLAYBACK] flat_ring_exec={flat_ring_exec} "
-                    f"flat_ring_total={self._ring_buffer_flat.vertex_count}"
-                )
-                self._ring_buffer_flat.render(
-                    self._main_shader,
-                    mvp_matrix_ui_gl,
-                    executed_vertex_count=flat_ring_exec,
-                )
-            if (
-                self._ring_buffer_rotary
-                and self._ring_buffer_rotary.vertex_count > 0
-                and self._main_shader
-            ):
-                logger.debug(
-                    f"[RING-PLAYBACK] rot_ring_exec={rot_ring_exec} "
-                    f"rot_ring_total={self._ring_buffer_rotary.vertex_count}"
-                )
-                self._ring_buffer_rotary.render(
-                    self._main_shader,
-                    rot_cyl_gl,
-                    executed_vertex_count=rot_ring_exec,
-                )
-
         except Exception as e:
             logger.error(f"OpenGL Render Error: {e}", exc_info=True)
             return False
+
         t_render_elapsed = (time.perf_counter() - t_render_start) * 1000
         if t_render_elapsed > 16:
             logger.info(f"[CANVAS3D] on_render took {t_render_elapsed:.1f}ms")
@@ -1126,17 +1088,9 @@ class Canvas3D(Gtk.GLArea):
         if task.get_status() != "completed":
             self._compiled_artifact = None
             self._op_player = None
-            self._powered_flat_offsets = []
-            self._powered_rotary_offsets = []
-            self._travel_flat_offsets = []
-            self._travel_rotary_offsets = []
-            self._ring_flat_offsets = []
-            self._ring_rotary_offsets = []
+            for group in self._layer_groups:
+                group.clear()
             self._pending_scene_handle_dict = None
-            if self._ops_renderer_flat:
-                self._ops_renderer_flat.clear()
-            if self._ops_renderer_rotary:
-                self._ops_renderer_rotary.clear()
             logger.error(
                 "[CANVAS3D] Scene preparation task failed or was cancelled."
             )
@@ -1152,8 +1106,8 @@ class Canvas3D(Gtk.GLArea):
                 "was received (possibly empty scene)."
             )
             self._compiled_artifact = None
-            self._update_op_player()
             self._update_renderers_from_artifact()
+            self._update_op_player()
             return
 
         logger.debug(
@@ -1165,8 +1119,8 @@ class Canvas3D(Gtk.GLArea):
         except Exception as e:
             logger.error(f"[CANVAS3D] Failed to load compiled scene: {e}")
             self._compiled_artifact = None
-            self._update_op_player()
             self._update_renderers_from_artifact()
+            self._update_op_player()
             return
 
         if not isinstance(artifact, CompiledSceneArtifact):
@@ -1175,38 +1129,37 @@ class Canvas3D(Gtk.GLArea):
                 f"{type(artifact).__name__}"
             )
             self._compiled_artifact = None
-            self._update_op_player()
             self._update_renderers_from_artifact()
+            self._update_op_player()
             return
 
         self._compiled_artifact = artifact
-        self._update_op_player()
         self._update_renderers_from_artifact()
+        self._update_op_player()
 
     def _update_renderers_from_artifact(self):
         if not self._compiled_artifact:
-            if self._ops_renderer_flat:
-                self._ops_renderer_flat.clear()
-            if self._ops_renderer_rotary:
-                self._ops_renderer_rotary.clear()
+            for group in self._layer_groups:
+                group.ops_renderer.clear()
             if self._texture_renderer:
                 self._texture_renderer.clear()
             self.queue_render()
             return
 
-        if not self._ops_renderer_flat or not self._ops_renderer_rotary:
+        if not self._gl_initialized:
             return
 
         self.make_current()
 
+        for group in self._layer_groups:
+            group.cleanup()
+        self._layer_groups.clear()
+
         artifact = self._compiled_artifact
-        for i, vl in enumerate(artifact.vertex_layers):
-            if i == 0:
-                renderer = self._ops_renderer_flat
-            elif i == 1:
-                renderer = self._ops_renderer_rotary
-            else:
-                break
+        for vl in artifact.vertex_layers:
+            group = _LayerRendererGroup(is_rotary=vl.is_rotary)
+            group.init_gl()
+            self._layer_groups.append(group)
 
             if self._show_travel_moves:
                 pv_final = np.concatenate(
@@ -1224,14 +1177,17 @@ class Canvas3D(Gtk.GLArea):
             powered_count = vl.powered_verts.size // 3
             zero_count = vl.zero_power_verts.size // 3
             logger.debug(
-                f"[UPLOAD] layer={i} powered={powered_count} "
+                f"[UPLOAD] is_rotary={vl.is_rotary} "
+                f"powered={powered_count} "
                 f"zero_power={zero_count} "
                 f"total={pv_final.size // 3} "
                 f"travel={tv_final.size // 3} "
                 f"show_travel={self._show_travel_moves}"
             )
 
-            renderer.update_from_vertex_data(pv_final, pc_final, tv_final)
+            group.ops_renderer.update_from_vertex_data(
+                pv_final, pc_final, tv_final
+            )
 
         if self._texture_renderer:
             self._texture_renderer.clear()
@@ -1257,12 +1213,10 @@ class Canvas3D(Gtk.GLArea):
         if ops is None or ops.is_empty():
             logger.debug("[CANVAS3D] _update_op_player: no ops available.")
             self._op_player = None
-            self._powered_flat_offsets = []
-            self._powered_rotary_offsets = []
-            self._travel_flat_offsets = []
-            self._travel_rotary_offsets = []
-            self._ring_flat_offsets = []
-            self._ring_rotary_offsets = []
+            for group in self._layer_groups:
+                group.powered_offsets = []
+                group.travel_offsets = []
+                group.ring_offsets = []
             self._notify_playback_overlay(0)
             return
         logger.debug(
@@ -1306,54 +1260,50 @@ class Canvas3D(Gtk.GLArea):
     def _upload_scanline_overlay(self):
         """
         Upload pre-compiled scanline overlay data from the artifact's
-        overlay layers to flat/rotary ring buffer renderers.
-        Build global command-to-vertex offset arrays for playback.
+        overlay layers to per-group ring buffer renderers.
         """
-        if not self._ring_buffer_flat or not self._ring_buffer_rotary:
+        if not self._layer_groups:
             return
 
         if not self._compiled_artifact:
-            self._ring_buffer_flat.clear()
-            self._ring_buffer_rotary.clear()
-            self._ring_flat_offsets = []
-            self._ring_rotary_offsets = []
+            for group in self._layer_groups:
+                group.ring_renderer.clear()
+                group.ring_offsets = []
             return
 
         overlay_layers = self._compiled_artifact.overlay_layers
         if not overlay_layers:
-            self._ring_buffer_flat.clear()
-            self._ring_buffer_rotary.clear()
-            self._ring_flat_offsets = []
-            self._ring_rotary_offsets = []
+            for group in self._layer_groups:
+                group.ring_renderer.clear()
+                group.ring_offsets = []
             return
 
         self.make_current()
 
-        flat_layer = overlay_layers[0] if len(overlay_layers) > 0 else None
-        rotary_layer = overlay_layers[1] if len(overlay_layers) > 1 else None
+        for group in self._layer_groups:
+            ol = None
+            for overlay in overlay_layers:
+                if overlay.is_rotary == group.is_rotary:
+                    ol = overlay
+                    break
 
-        if flat_layer is not None:
-            self._ring_buffer_flat.upload(
-                flat_layer.positions.ravel(),
-                flat_layer.colors.ravel(),
-            )
-        else:
-            self._ring_buffer_flat.clear()
-
-        if rotary_layer is not None:
-            self._ring_buffer_rotary.upload(
-                rotary_layer.positions.ravel(),
-                rotary_layer.colors.ravel(),
-            )
-        else:
-            self._ring_buffer_rotary.clear()
+            if ol is not None:
+                group.ring_renderer.upload(
+                    ol.positions.ravel(),
+                    ol.colors.ravel(),
+                )
+            else:
+                group.ring_renderer.clear()
 
         logger.debug(
-            "[CANVAS3D] Scanline overlay uploaded. "
-            "Flat: %d verts, Rotary: %d verts."
-            % (
-                self._ring_buffer_flat.vertex_count,
-                self._ring_buffer_rotary.vertex_count,
+            "[CANVAS3D] Scanline overlay uploaded. Groups: %s"
+            % ", ".join(
+                "%s:%d"
+                % (
+                    "rot" if g.is_rotary else "flat",
+                    g.ring_renderer.vertex_count,
+                )
+                for g in self._layer_groups
             )
         )
 
@@ -1361,34 +1311,30 @@ class Canvas3D(Gtk.GLArea):
         if not self._compiled_artifact or not self._op_player:
             return
 
-        vl = self._compiled_artifact.vertex_layers
-        flat_vl = vl[0] if len(vl) > 0 else None
-        rot_vl = vl[1] if len(vl) > 1 else None
+        for group in self._layer_groups:
+            vl = None
+            for vertex_layer in self._compiled_artifact.vertex_layers:
+                if vertex_layer.is_rotary == group.is_rotary:
+                    vl = vertex_layer
+                    break
 
-        ol = self._compiled_artifact.overlay_layers
-        flat_ol = ol[0] if len(ol) > 0 else None
-        rot_ol = ol[1] if len(ol) > 1 else None
+            if vl is not None:
+                group.powered_offsets = vl.powered_cmd_offsets
+                group.travel_offsets = vl.travel_cmd_offsets
+            else:
+                group.powered_offsets = []
+                group.travel_offsets = []
 
-        if flat_vl is not None:
-            self._powered_flat_offsets = flat_vl.powered_cmd_offsets
-            self._travel_flat_offsets = flat_vl.travel_cmd_offsets
-        else:
-            self._powered_flat_offsets = []
-            self._travel_flat_offsets = []
-        if rot_vl is not None:
-            self._powered_rotary_offsets = rot_vl.powered_cmd_offsets
-            self._travel_rotary_offsets = rot_vl.travel_cmd_offsets
-        else:
-            self._powered_rotary_offsets = []
-            self._travel_rotary_offsets = []
-        if flat_ol is not None:
-            self._ring_flat_offsets = flat_ol.cmd_offsets
-        else:
-            self._ring_flat_offsets = []
-        if rot_ol is not None:
-            self._ring_rotary_offsets = rot_ol.cmd_offsets
-        else:
-            self._ring_rotary_offsets = []
+            ol = None
+            for overlay in self._compiled_artifact.overlay_layers:
+                if overlay.is_rotary == group.is_rotary:
+                    ol = overlay
+                    break
+
+            if ol is not None:
+                group.ring_offsets = ol.cmd_offsets
+            else:
+                group.ring_offsets = []
 
     def _update_cylinder_renderers(self):
         """
@@ -1511,7 +1457,7 @@ class Canvas3D(Gtk.GLArea):
         Updates the entire scene content from the document. This is the main
         entry point for refreshing the 3D view.
         """
-        if not self._ops_renderer_flat or not self._ops_renderer_rotary:
+        if not self._gl_initialized:
             return
         if not self._texture_renderer:
             return
@@ -1612,7 +1558,7 @@ class Canvas3D(Gtk.GLArea):
     ):
         task_key = (id(self), "prepare-3d-scene-vertices")
 
-        if self._ops_renderer_flat and self._color_set is not None:
+        if self._gl_initialized and self._color_set is not None:
             if self._scene_preparation_task:
                 self._scene_preparation_task.cancel()
 

@@ -38,8 +38,9 @@ class TestCompileLineTo:
 
         artifact = compile_scene(assembled, config)
 
-        assert len(artifact.vertex_layers) == 2
+        assert len(artifact.vertex_layers) == 1
         vl = artifact.vertex_layers[0]
+        assert not vl.is_rotary
         pv = vl.powered_verts.reshape(-1, 3)
         assert pv.shape[0] == 2
         np.testing.assert_allclose(pv[0], [1.0, 2.0, 0.0])
@@ -48,8 +49,6 @@ class TestCompileLineTo:
         pc = vl.powered_colors.reshape(-1, 4)
         assert pc.shape[0] == 2
         assert pc.shape[1] == 4
-
-        assert artifact.vertex_layers[1].powered_verts.size == 0
 
     def test_travel_move(self):
         ops = Ops()
@@ -61,8 +60,9 @@ class TestCompileLineTo:
 
         artifact = compile_scene(assembled, config)
 
-        assert len(artifact.vertex_layers) == 2
+        assert len(artifact.vertex_layers) == 1
         vl = artifact.vertex_layers[0]
+        assert not vl.is_rotary
         tv = vl.travel_verts.reshape(-1, 3)
         assert tv.shape[0] == 2
         np.testing.assert_allclose(tv[0], [1.0, 0.0, 0.01])
@@ -85,11 +85,11 @@ class TestCompileScanline:
         zpv = vl.zero_power_verts.reshape(-1, 3)
         assert zpv.shape[0] == 4
 
-        assert len(artifact.overlay_layers) == 2
+        assert len(artifact.overlay_layers) == 1
         ol = artifact.overlay_layers[0]
+        assert not ol.is_rotary
         ov_pos = ol.positions.reshape(-1, 3)
         assert ov_pos.shape[0] == 2
-        assert artifact.overlay_layers[1].positions.size == 0
 
     def test_scanline_overlay_colors_with_lut(self):
         ops = Ops()
@@ -102,7 +102,7 @@ class TestCompileScanline:
 
         artifact = compile_scene(assembled, config)
 
-        assert len(artifact.overlay_layers) == 2
+        assert len(artifact.overlay_layers) == 1
         ol = artifact.overlay_layers[0]
         ov_col = ol.colors.reshape(-1, 4)
         assert ov_col.shape[0] == 2
@@ -122,9 +122,9 @@ class TestCompileRotary:
 
         artifact = compile_scene(assembled, config)
 
-        assert len(artifact.vertex_layers) == 2
-        assert artifact.vertex_layers[0].powered_verts.size == 0
-        vl = artifact.vertex_layers[1]
+        assert len(artifact.vertex_layers) == 1
+        vl = artifact.vertex_layers[0]
+        assert vl.is_rotary
         pv = vl.powered_verts.reshape(-1, 3)
         assert pv.shape[0] == 2
 
@@ -158,12 +158,8 @@ class TestCompileEmpty:
 
         artifact = compile_scene(assembled, config)
 
-        assert len(artifact.vertex_layers) == 2
-        assert artifact.vertex_layers[0].powered_verts.size == 0
-        assert artifact.vertex_layers[1].powered_verts.size == 0
-        assert len(artifact.overlay_layers) == 2
-        assert artifact.overlay_layers[0].positions.size == 0
-        assert artifact.overlay_layers[1].positions.size == 0
+        assert len(artifact.vertex_layers) == 0
+        assert len(artifact.overlay_layers) == 0
 
     def test_empty_job_markers_only(self):
         assembled = Ops()
@@ -172,8 +168,8 @@ class TestCompileEmpty:
 
         config = _flat_config()
         artifact = compile_scene(assembled, config)
-        assert len(artifact.vertex_layers) == 2
-        assert len(artifact.overlay_layers) == 2
+        assert len(artifact.vertex_layers) == 0
+        assert len(artifact.overlay_layers) == 0
 
 
 class TestCompileMultiLayer:
@@ -205,11 +201,11 @@ class TestCompileMultiLayer:
 
         assert len(artifact.vertex_layers) == 2
 
-        flat_vl = artifact.vertex_layers[0]
+        flat_vl = [vl for vl in artifact.vertex_layers if not vl.is_rotary][0]
         pv_flat = flat_vl.powered_verts.reshape(-1, 3)
         assert pv_flat[0, 2] == 0.0
 
-        rot_vl = artifact.vertex_layers[1]
+        rot_vl = [vl for vl in artifact.vertex_layers if vl.is_rotary][0]
         pv_rot = rot_vl.powered_verts.reshape(-1, 3)
         assert abs(pv_rot[0, 2] - 25.0) < 1e-3
 
@@ -308,9 +304,7 @@ class TestPoweredOffsets:
 
         artifact = compile_scene(assembled, config)
 
-        vl = artifact.vertex_layers[0]
-        assert vl.powered_cmd_offsets == [0] * (len(assembled.commands) + 1)
-        assert vl.travel_cmd_offsets == [0] * (len(assembled.commands) + 1)
+        assert len(artifact.vertex_layers) == 0
 
 
 class TestOverlayOffsets:
@@ -330,7 +324,7 @@ class TestOverlayOffsets:
 
         artifact = compile_scene(assembled, config)
 
-        assert len(artifact.overlay_layers) == 2
+        assert len(artifact.overlay_layers) == 1
         ol = artifact.overlay_layers[0]
 
         ov_pos = ol.positions.reshape(-1, 3)
@@ -367,7 +361,7 @@ class TestOverlayOffsets:
 
         artifact = compile_scene(assembled, config)
 
-        assert len(artifact.overlay_layers) == 2
+        assert len(artifact.overlay_layers) == 1
         ol = artifact.overlay_layers[0]
         off = ol.cmd_offsets
         assert off[0] == 0
