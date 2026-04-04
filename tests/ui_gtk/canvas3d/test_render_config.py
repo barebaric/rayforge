@@ -2,26 +2,24 @@ import pytest
 import numpy as np
 
 from rayforge.ui_gtk.canvas3d.render_config import (
+    LayerRenderConfig,
     RenderConfig3D,
-    StepRenderConfig,
 )
 
 
-class TestStepRenderConfig:
+class TestLayerRenderConfig:
     def test_round_trip(self):
-        cfg = StepRenderConfig(
+        cfg = LayerRenderConfig(
             rotary_enabled=True,
             rotary_diameter=50.0,
-            laser_uid="laser_42",
         )
-        restored = StepRenderConfig.from_dict(cfg.to_dict())
+        restored = LayerRenderConfig.from_dict(cfg.to_dict())
         assert restored.rotary_enabled is True
         assert restored.rotary_diameter == 50.0
-        assert restored.laser_uid == "laser_42"
 
     def test_missing_field_raises(self):
         with pytest.raises(KeyError):
-            StepRenderConfig.from_dict({"rotary_enabled": True})
+            LayerRenderConfig.from_dict({"rotary_enabled": True})
 
 
 class TestRenderConfig3D:
@@ -52,16 +50,14 @@ class TestRenderConfig3D:
         return RenderConfig3D(
             world_to_visual=w2v,
             world_to_cyl_local=w2c,
-            step_configs={
-                "step_1": StepRenderConfig(
+            layer_configs={
+                "layer_0": LayerRenderConfig(
                     rotary_enabled=False,
                     rotary_diameter=25.0,
-                    laser_uid="laser_a",
                 ),
-                "step_2": StepRenderConfig(
+                "layer_1": LayerRenderConfig(
                     rotary_enabled=True,
                     rotary_diameter=50.0,
-                    laser_uid="",
                 ),
             },
             default_color_lut_cut=cut_lut.tobytes(),
@@ -81,9 +77,10 @@ class TestRenderConfig3D:
             sample_config.world_to_cyl_local, restored.world_to_cyl_local
         )
         assert sample_config.zero_power_rgba == restored.zero_power_rgba
-        assert len(restored.step_configs) == 2
-        assert restored.step_configs["step_1"].rotary_enabled is False
-        assert restored.step_configs["step_2"].rotary_diameter == 50.0
+        assert restored.layer_configs is not None
+        assert len(restored.layer_configs) == 2
+        assert restored.layer_configs["layer_0"].rotary_enabled is False
+        assert restored.layer_configs["layer_1"].rotary_diameter == 50.0
         assert (
             restored.default_color_lut_cut
             == sample_config.default_color_lut_cut
@@ -118,7 +115,6 @@ class TestRenderConfig3D:
         config = RenderConfig3D(
             world_to_visual=np.eye(4, dtype=np.float32),
             world_to_cyl_local=np.eye(4, dtype=np.float32),
-            step_configs={},
             default_color_lut_cut=np.zeros(
                 (256, 4), dtype=np.float32
             ).tobytes(),
@@ -131,11 +127,10 @@ class TestRenderConfig3D:
         restored = RenderConfig3D.from_dict(config.to_dict())
         assert set(restored.laser_color_luts.keys()) == {"laser_1", "laser_2"}
 
-    def test_empty_step_configs(self):
+    def test_none_layer_configs(self):
         config = RenderConfig3D(
             world_to_visual=np.eye(4, dtype=np.float32),
             world_to_cyl_local=np.eye(4, dtype=np.float32),
-            step_configs={},
             default_color_lut_cut=np.zeros(
                 (256, 4), dtype=np.float32
             ).tobytes(),
@@ -146,7 +141,7 @@ class TestRenderConfig3D:
             zero_power_rgba=(0.0, 0.0, 0.0, 0.0),
         )
         restored = RenderConfig3D.from_dict(config.to_dict())
-        assert len(restored.step_configs) == 0
+        assert restored.layer_configs is None
         assert len(restored.laser_color_luts) == 0
 
     def test_missing_field_raises(self):

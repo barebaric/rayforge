@@ -32,14 +32,9 @@ from .ops_renderer import OpsRenderer
 from .render_config import (
     LayerRenderConfig,
     RenderConfig3D,
-    StepRenderConfig,
 )
 from .ring_buffer_renderer import RingBufferRenderer
 from .scene_compiler_runner import compile_scene_in_subprocess
-from .scene_assembler import (
-    SceneDescription,
-    generate_scene_description,
-)
 from .shaders import (
     SIMPLE_FRAGMENT_SHADER,
     SIMPLE_VERTEX_SHADER,
@@ -106,7 +101,6 @@ class Canvas3D(Gtk.GLArea):
         self._pending_scene_handle_dict: Optional[dict] = None
         self._current_job_handle: Optional[JobArtifactHandle] = None
         self._op_player: Optional[OpPlayer] = None
-        self._current_scene_description: Optional[SceneDescription] = None
         self._playback_overlay = None
         self._world_to_cyl_local = np.identity(4, dtype=np.float32)
         self._powered_flat_offsets: List[int] = []
@@ -1545,10 +1539,6 @@ class Canvas3D(Gtk.GLArea):
             self.reset_view_front()
         self._had_rotary_layers = any_rotary
 
-        # 1. Quickly generate the lightweight scene description
-        scene_description = generate_scene_description(self.doc, self.pipeline)
-        self._current_scene_description = scene_description
-
         world_to_visual = np.identity(4, dtype=np.float32)
         world_to_grid = np.identity(4, dtype=np.float32)
         world_to_cyl_local = np.identity(4, dtype=np.float32)
@@ -1578,15 +1568,6 @@ class Canvas3D(Gtk.GLArea):
 
             world_to_cyl_local = grid_to_cyl @ world_to_grid
 
-        # 2. Build RenderConfig3D snapshot for the compiler
-        step_configs: Dict[str, StepRenderConfig] = {}
-        for item in scene_description.render_items:
-            step_configs[item.step_uid] = StepRenderConfig(
-                rotary_enabled=item.rotary_enabled,
-                rotary_diameter=item.rotary_diameter,
-                laser_uid=item.laser_uid,
-            )
-
         laser_color_luts: Dict[str, dict] = {}
         for uid, cs in self._laser_color_sets.items():
             laser_color_luts[uid] = {
@@ -1604,7 +1585,6 @@ class Canvas3D(Gtk.GLArea):
         render_config = RenderConfig3D(
             world_to_visual=world_to_visual,
             world_to_cyl_local=world_to_cyl_local,
-            step_configs=step_configs,
             default_color_lut_cut=self._color_set.get_lut("cut")
             .astype(np.float32)
             .tobytes(),
@@ -1616,29 +1596,19 @@ class Canvas3D(Gtk.GLArea):
             layer_configs=layer_configs,
         )
 
-        # Schedule the expensive vector preparation for a background thread
         self._world_to_cyl_local = world_to_cyl_local
-        self._schedule_scene_preparation(
-            scene_description,
-            world_to_visual,
-            world_to_cyl_local,
-            render_config_dict=render_config.to_dict(),
-        )
+        self._schedule_scene_preparation(render_config.to_dict())
 
         t_update_elapsed = (time.perf_counter() - t_update_start) * 1000
         if t_update_elapsed > 5:
             logger.info(
                 f"[CANVAS3D] update_scene_from_doc took "
-                f"{t_update_elapsed:.1f}ms "
-                f"(items={len(scene_description.render_items)})"
+                f"{t_update_elapsed:.1f}ms"
             )
 
     def _schedule_scene_preparation(
         self,
-        scene_description: SceneDescription,
-        world_to_visual: np.ndarray,
-        world_to_cyl_local: np.ndarray,
-        render_config_dict: Optional[dict] = None,
+        render_config_dict: dict,
     ):
         task_key = (id(self), "prepare-3d-scene-vertices")
 
