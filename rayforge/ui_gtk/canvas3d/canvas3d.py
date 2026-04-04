@@ -1204,6 +1204,7 @@ class Canvas3D(Gtk.GLArea):
                     color_lut=tl.color_lut,
                     rotary_enabled=rotary_enabled,
                     rotary_diameter=tl.rotary_diameter,
+                    cylinder_vertices=tl.cylinder_vertices,
                 )
 
         self.queue_render()

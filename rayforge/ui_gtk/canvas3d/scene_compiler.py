@@ -37,6 +37,7 @@ from ...pipeline.encoder.scanline_rasterizer import (
     MAX_TEXTURE_DIMENSION,
     rasterize_scanlines as _rasterize_scanlines_shared,
 )
+from .cylinder_compiler import generate_cylinder_vertices
 from .render_config import RenderConfig3D
 
 logger = logging.getLogger(__name__)
@@ -721,6 +722,13 @@ def compile_scene(
 
         scan_lut = _get_lut(config, li["scanline_laser"], "engrave")
 
+        cyl_verts = None
+        if is_rot and diameter > 0:
+            cyl_verts = generate_cylinder_vertices(
+                grid_matrix=final_model,
+                diameter=diameter,
+            )
+
         texture_layers.append(
             TextureLayer(
                 power_texture=tex_buf,
@@ -728,6 +736,7 @@ def compile_scene(
                 height_px=h_px,
                 model_matrix=final_model,
                 color_lut=(scan_lut.copy() if scan_lut is not None else None),
+                cylinder_vertices=cyl_verts,
                 rotary_diameter=diameter,
                 rotary_enabled=is_rot,
                 activation_cmd_idx=li["activation_cmd_idx"],

@@ -3,7 +3,6 @@ A renderer for visualizing texture-based artifacts using GPU texture rendering.
 """
 
 import logging
-import math
 import time
 from typing import List, Dict, Any, Optional
 import numpy as np
@@ -37,7 +36,6 @@ class TextureArtifactRenderer(BaseRenderer):
         self.instances: List[Dict[str, Any]] = []
         self.cylinder_vao: int = 0
         self.cylinder_vbo: int = 0
-        self._cylinder_cache: Optional[Dict[str, Any]] = None
 
     def init_gl(self):
         """
@@ -160,114 +158,6 @@ class TextureArtifactRenderer(BaseRenderer):
         x_coords = (np.arange(new_width) * x_step).astype(int)
         return data[y_coords][:, x_coords].astype(np.uint8)
 
-    def _generate_cylinder_vertices_from_matrix(
-        self,
-        grid_matrix: np.ndarray,
-        diameter: float,
-        grid_s: int = 8,
-        grid_t: int = 64,
-    ) -> np.ndarray:
-        """
-        Generate vertices for a cylinder segment directly from
-        a transform matrix.
-
-        The grid_matrix transforms [0,1] texture coords to
-        Local Cylinder Space. The resulting Y coordinate is
-        then natively wrapped into the cylinder Z/Y planes.
-        """
-        radius = diameter / 2.0
-        circumference = diameter * math.pi
-
-        i_vals = np.arange(grid_s, dtype=np.float32)
-        j_vals = np.arange(grid_t, dtype=np.float32)
-        lx0 = i_vals / grid_s
-        lx1 = (i_vals + 1) / grid_s
-        ly0 = j_vals / grid_t
-        ly1 = (j_vals + 1) / grid_t
-
-        lx_grid, ly_grid = np.meshgrid(lx0, ly1, indexing="ij")
-        lx1_grid, _ = np.meshgrid(lx1, ly1, indexing="ij")
-        _, ly0_grid = np.meshgrid(lx0, ly0, indexing="ij")
-
-        def _transform_points(lx, ly):
-            shape = lx.shape
-            ones = np.ones(shape, dtype=np.float32)
-            pts = np.stack(
-                [
-                    lx.ravel(),
-                    ly.ravel(),
-                    np.zeros(lx.size, dtype=np.float32),
-                    ones.ravel(),
-                ],
-                axis=-1,
-            )
-            p_cyl = pts @ grid_matrix.T
-            theta = (p_cyl[:, 1] / circumference) * 2.0 * np.pi
-            x = p_cyl[:, 0].reshape(shape)
-            y = (radius * np.sin(theta)).reshape(shape)
-            z = (radius * np.cos(theta)).reshape(shape)
-            return x, y, z
-
-        x00, y00, z00 = _transform_points(lx_grid, ly0_grid)
-        x10, y10, z10 = _transform_points(lx1_grid, ly0_grid)
-        x01, y01, z01 = _transform_points(lx_grid, ly_grid)
-        x11, y11, z11 = _transform_points(lx1_grid, ly_grid)
-
-        s0 = lx_grid
-        s1 = lx1_grid
-        t0 = 1.0 - ly0_grid
-        t1 = 1.0 - ly_grid
-
-        s0_f = s0.flatten()
-        s1_f = s1.flatten()
-        t0_f = t0.flatten()
-        t1_f = t1.flatten()
-        x00_f, y00_f, z00_f = x00.flatten(), y00.flatten(), z00.flatten()
-        x10_f, y10_f, z10_f = x10.flatten(), y10.flatten(), z10.flatten()
-        x01_f, y01_f, z01_f = x01.flatten(), y01.flatten(), z01.flatten()
-        x11_f, y11_f, z11_f = x11.flatten(), y11.flatten(), z11.flatten()
-
-        n = s0_f.size
-        vertices = np.empty(n * 30, dtype=np.float32)
-
-        # Triangle 1: (x00,y00,z00,s0,t0), (x10,y10,z10,s1,t0),
-        #              (x01,y01,z01,s0,t1)
-        vertices[0::30] = x00_f
-        vertices[1::30] = y00_f
-        vertices[2::30] = z00_f
-        vertices[3::30] = s0_f
-        vertices[4::30] = t0_f
-        vertices[5::30] = x10_f
-        vertices[6::30] = y10_f
-        vertices[7::30] = z10_f
-        vertices[8::30] = s1_f
-        vertices[9::30] = t0_f
-        vertices[10::30] = x01_f
-        vertices[11::30] = y01_f
-        vertices[12::30] = z01_f
-        vertices[13::30] = s0_f
-        vertices[14::30] = t1_f
-
-        # Triangle 2: (x10,y10,z10,s1,t0), (x11,y11,z11,s1,t1),
-        #              (x01,y01,z01,s0,t1)
-        vertices[15::30] = x10_f
-        vertices[16::30] = y10_f
-        vertices[17::30] = z10_f
-        vertices[18::30] = s1_f
-        vertices[19::30] = t0_f
-        vertices[20::30] = x11_f
-        vertices[21::30] = y11_f
-        vertices[22::30] = z11_f
-        vertices[23::30] = s1_f
-        vertices[24::30] = t1_f
-        vertices[25::30] = x01_f
-        vertices[26::30] = y01_f
-        vertices[27::30] = z01_f
-        vertices[28::30] = s0_f
-        vertices[29::30] = t1_f
-
-        return vertices
-
     def clear(self):
         """Clears all instances and their associated textures."""
         if not self.is_initialized:
@@ -287,6 +177,7 @@ class TextureArtifactRenderer(BaseRenderer):
         color_lut: Optional[np.ndarray] = None,
         rotary_enabled: bool = False,
         rotary_diameter: float = 25.0,
+        cylinder_vertices: Optional[np.ndarray] = None,
     ):
         """Adds a texture artifact to be rendered in the next frame."""
         if not self.is_initialized:
@@ -340,7 +231,6 @@ class TextureArtifactRenderer(BaseRenderer):
             GL.GL_UNSIGNED_BYTE,
             power_data,
         )
-        # Restore the default alignment.
         GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 4)
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
@@ -352,15 +242,8 @@ class TextureArtifactRenderer(BaseRenderer):
             "rotary_diameter": rotary_diameter,
         }
 
-        if rotary_enabled and rotary_diameter > 0:
-            instance_data["cylinder_vertices"] = (
-                self._generate_cylinder_vertices_from_matrix(
-                    grid_matrix=final_model_matrix,
-                    diameter=rotary_diameter,
-                    grid_s=8,
-                    grid_t=64,
-                )
-            )
+        if rotary_enabled and cylinder_vertices is not None:
+            instance_data["cylinder_vertices"] = cylinder_vertices
 
         self.instances.append(instance_data)
 
