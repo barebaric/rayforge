@@ -78,9 +78,10 @@ class TestCompileSceneInSubprocess:
         handle = store.adopt_from_dict(compiled_handle_dict)
         artifact = store.get(handle)
         assert isinstance(artifact, CompiledSceneArtifact)
-        assert len(artifact.vertex_layers) == 2
+        assert len(artifact.vertex_layers) == 1
 
         flat_vl = artifact.vertex_layers[0]
+        assert not flat_vl.is_rotary
         pv = flat_vl.powered_verts.reshape(-1, 3)
         assert pv.shape[0] == 2
 
@@ -103,8 +104,7 @@ class TestCompileSceneInSubprocess:
         handle = store.adopt_from_dict(compiled_handle_dict)
         artifact = store.get(handle)
         assert isinstance(artifact, CompiledSceneArtifact)
-        assert artifact.vertex_layers[0].powered_verts.size == 0
-        assert artifact.vertex_layers[1].powered_verts.size == 0
+        assert len(artifact.vertex_layers) == 0
 
         store.release(handle)
 
@@ -174,8 +174,10 @@ class TestCompileSceneInSubprocess:
         handle = store.adopt_from_dict(handle_dict)
         artifact = store.get(handle)
         assert isinstance(artifact, CompiledSceneArtifact)
+        assert len(artifact.vertex_layers) == 1
 
-        rot_vl = artifact.vertex_layers[1]
+        rot_vl = artifact.vertex_layers[0]
+        assert rot_vl.is_rotary
         pv = rot_vl.powered_verts.reshape(-1, 3)
         assert pv.shape[0] == 2
         assert abs(pv[0, 2] - 25.0) < 1e-3
