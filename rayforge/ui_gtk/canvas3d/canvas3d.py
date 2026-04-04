@@ -12,7 +12,6 @@ from ...core.model import Model
 from ...core.ops import Ops
 from ...core.ops.commands import MovingCommand
 from ...machine.driver.driver import Axis
-from ...machine.kinematics import RotaryKinematics
 from ...machine.models.colors import OpsColorSet
 from ...pipeline.artifact.base import TextureData
 from ...pipeline.artifact.handle import create_handle_from_dict
@@ -696,17 +695,19 @@ class Canvas3D(Gtk.GLArea):
                 zone_mvp_gl = (mvp_matrix_ui @ margin_shift).T
                 self._zone_renderer.render(self._main_shader, zone_mvp_gl)
 
-            # Compute cylinder rotation from cylinder-local Y.
+            # Compute cylinder rotation from kinematics.
             cyl_angle = 0.0
             if self._op_player and self._had_rotary_layers and machine:
                 kin = machine.kinematics
-                if isinstance(kin, RotaryKinematics):
+                if kin.has_rotary:
                     world_y = self._op_player.state.axes[Axis.Y]
                     cyl_pos = self._world_to_cyl_local @ np.array(
                         [0, world_y, 0, 1.0], dtype=np.float32
                     )
                     cyl_local_y = cyl_pos[1]
-                    circumference = kin.rotary_diameter * math.pi
+                    diameter = kin.rotary_diameter
+                    assert diameter is not None
+                    circumference = diameter * math.pi
                     cyl_angle = (cyl_local_y / circumference) * 2 * math.pi
 
             rot_cyl_gl = mvp_matrix_scene_gl
@@ -783,8 +784,9 @@ class Canvas3D(Gtk.GLArea):
                 and self._main_shader
                 and machine
             ):
-                kin = machine.kinematics
-                hx, hy, hz = kin.head_position(self._op_player.state)
+                hx, hy, hz = machine.kinematics.head_position(
+                    self._op_player.state
+                )
                 head_pos = margin_shift @ np.array(
                     [hx, hy, hz, 1.0], dtype=np.float32
                 )

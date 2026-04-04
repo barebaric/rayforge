@@ -20,11 +20,7 @@ from ..driver.driver import (
     Axis,
     DeviceState,
 )
-from ..kinematics import (
-    CartesianKinematics,
-    Kinematics,
-    RotaryKinematics,
-)
+from ..kinematics import Kinematics, create_kinematics
 from ..transport import TransportStatus
 from .dialect import GcodeDialect, get_dialect
 from .laser import Laser
@@ -207,8 +203,8 @@ class Machine:
         """Returns the appropriate Kinematics for this machine."""
         if self.rotary_modules:
             module = next(iter(self.rotary_modules.values()))
-            return RotaryKinematics(module.default_diameter)
-        return CartesianKinematics()
+            return create_kinematics(rotary_diameter=module.default_diameter)
+        return create_kinematics()
 
     @property
     def machine_space_wcs(self) -> str:
