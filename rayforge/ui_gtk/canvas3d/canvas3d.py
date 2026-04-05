@@ -134,6 +134,8 @@ class Canvas3D(Gtk.GLArea):
         self._is_orbiting = False
         self._is_z_rotating = False
         self._gl_initialized = False
+        self._scene_gl_dirty = False
+        self._artifact_gl_dirty = False
         self._wcs_offset_mm: Point3D = (0.0, 0.0, 0.0)
 
         # This matrix transforms the grid and axes from a standard Y-up,
@@ -296,7 +298,6 @@ class Canvas3D(Gtk.GLArea):
         )
         if task_status == "completed" and handle is not None:
             self._current_job_handle = handle
-            self._update_op_player()
             self.update_scene_from_doc()
             self.queue_render()
 
@@ -454,8 +455,8 @@ class Canvas3D(Gtk.GLArea):
         if machine:
             machine.wcs_updated.disconnect(self._on_wcs_updated)
             machine.changed.disconnect(self._on_wcs_updated)
-        self.make_current()
         try:
+            self.make_current()
             if self._scene_preparation_task:
                 self._scene_preparation_task.cancel()
             if self._axis_renderer:
@@ -478,6 +479,8 @@ class Canvas3D(Gtk.GLArea):
                 self._text_shader.cleanup()
             if self._texture_shader:
                 self._texture_shader.cleanup()
+        except Exception as e:
+            logger.debug("Error during GL cleanup on unrealize: %s", e)
         finally:
             self._gl_initialized = False
 
@@ -607,10 +610,26 @@ class Canvas3D(Gtk.GLArea):
             laser_color_set = OpsColorSet.from_laser(laser, self._color_set)
             self._laser_color_sets[laser.uid] = laser_color_set.to_color_set()
 
+    def _process_pending_gl_updates(self):
+        if self._scene_gl_dirty:
+            self._scene_gl_dirty = False
+            self._update_cylinder_renderers()
+            if self._had_rotary_layers:
+                self._update_model_renderers()
+            else:
+                self._clear_model_renderers()
+            self._update_zone_renderer()
+        if self._artifact_gl_dirty:
+            self._artifact_gl_dirty = False
+            self._update_renderers_from_artifact()
+            self._update_op_player()
+
     def on_render(self, area, ctx) -> bool:
         """The main rendering loop."""
         if not self.camera or not self._gl_initialized:
             return False
+
+        self._process_pending_gl_updates()
 
         if self._theme_is_dirty:
             self._update_theme_and_colors()
@@ -845,7 +864,7 @@ class Canvas3D(Gtk.GLArea):
                 )
 
         except Exception as e:
-            logger.error(f"OpenGL Render Error: {e}", exc_info=True)
+            logger.error("OpenGL Render Error: %s", e, exc_info=True)
             return False
 
         t_render_elapsed = (time.perf_counter() - t_render_start) * 1000
@@ -1091,12 +1110,11 @@ class Canvas3D(Gtk.GLArea):
         if task.get_status() != "completed":
             self._compiled_artifact = None
             self._op_player = None
-            for group in self._layer_groups:
-                group.clear()
             self._pending_scene_handle_dict = None
             logger.error(
                 "[CANVAS3D] Scene preparation task failed or was cancelled."
             )
+            self._artifact_gl_dirty = True
             self.queue_render()
             return
 
@@ -1109,8 +1127,8 @@ class Canvas3D(Gtk.GLArea):
                 "was received (possibly empty scene)."
             )
             self._compiled_artifact = None
-            self._update_renderers_from_artifact()
-            self._update_op_player()
+            self._artifact_gl_dirty = True
+            self.queue_render()
             return
 
         logger.debug(
@@ -1122,8 +1140,8 @@ class Canvas3D(Gtk.GLArea):
         except Exception as e:
             logger.error(f"[CANVAS3D] Failed to load compiled scene: {e}")
             self._compiled_artifact = None
-            self._update_renderers_from_artifact()
-            self._update_op_player()
+            self._artifact_gl_dirty = True
+            self.queue_render()
             return
 
         if not isinstance(artifact, CompiledSceneArtifact):
@@ -1132,13 +1150,13 @@ class Canvas3D(Gtk.GLArea):
                 f"{type(artifact).__name__}"
             )
             self._compiled_artifact = None
-            self._update_renderers_from_artifact()
-            self._update_op_player()
+            self._artifact_gl_dirty = True
+            self.queue_render()
             return
 
         self._compiled_artifact = artifact
-        self._update_renderers_from_artifact()
-        self._update_op_player()
+        self._artifact_gl_dirty = True
+        self.queue_render()
 
     def _update_renderers_from_artifact(self):
         if not self._compiled_artifact:
@@ -1478,13 +1496,7 @@ class Canvas3D(Gtk.GLArea):
 
         # Update cylinder renderers and camera based on layer rotary state
         any_rotary = any(layer.rotary_enabled for layer in self.doc.layers)
-        if self._gl_initialized:
-            self._update_cylinder_renderers()
-            if any_rotary:
-                self._update_model_renderers()
-            else:
-                self._clear_model_renderers()
-            self._update_zone_renderer()
+        self._scene_gl_dirty = True
         if self._had_rotary_layers and not any_rotary and self.camera:
             self.reset_view_front()
         self._had_rotary_layers = any_rotary
