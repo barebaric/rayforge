@@ -546,7 +546,7 @@ class MachineController:
         newly-selected WCS offset.
         """
         self.machine.active_wcs = wcs
-        self.machine.changed.send(self.machine)
+        self.machine._scheduler(self.machine.changed.send, self.machine)
         self._confirmed_active_wcs = None
 
         if self.machine.is_connected():
