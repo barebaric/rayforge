@@ -811,7 +811,11 @@ class Canvas3D(Gtk.GLArea):
                             beam_color = hex_to_rgba(laser.cut_color)
                         except (ValueError, IndexError):
                             pass
-                    if self._laser_beam_renderer and self._main_shader:
+                    if (
+                        self._laser_beam_renderer
+                        and self._main_shader
+                        and self._op_player.state.laser_on
+                    ):
                         beam_pos = head_pos.copy()
                         if self._had_rotary_layers and asm.has_rotary:
                             diameter = asm.rotary_diameter
