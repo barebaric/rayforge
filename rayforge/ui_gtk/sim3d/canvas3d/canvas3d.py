@@ -22,7 +22,7 @@ from ....simulator.op_player import OpPlayer
 from ...shared.gtk_color import GtkColorResolver, ColorSpecDict
 from .axis_renderer_3d import AxisRenderer3D
 from .background_renderer import BackgroundRenderer
-from .camera import Camera, rotation_matrix_from_axis_angle
+from .camera import Camera, ViewDirection, rotation_matrix_from_axis_angle
 from ..scene3d import (
     CompiledSceneArtifact,
     LayerRenderConfig,
@@ -316,42 +316,16 @@ class Canvas3D(Gtk.GLArea):
         self._last_orbit_pos = None
         self._last_z_rotate_screen_pos = None
 
-    def reset_view_top(self):
-        """Resets the camera to a top-down orthographic view (Z-up)."""
+    def reset_view(self, direction: ViewDirection):
+        """Resets the camera to the specified preset view."""
         if not self.camera:
             return
-        logger.info("Resetting to top view.")
-        # The camera class now handles all orientation logic internally.
-        self.camera.set_top_view(
-            self._viewport.width_mm, self._viewport.depth_mm
+        logger.info("Resetting to %s view.", direction.value)
+        self.camera.set_view(
+            direction,
+            self._viewport.width_mm,
+            self._viewport.depth_mm,
         )
-
-        # A view reset can interrupt a drag operation, leaving stale state.
-        self._clear_drag_state()
-        self.queue_render()
-
-    def reset_view_front(self):
-        """Resets the camera to a front-facing perspective view."""
-        if not self.camera:
-            return
-        logger.info("Resetting to front view.")
-        self.camera.set_front_view(
-            self._viewport.width_mm, self._viewport.depth_mm
-        )
-        # A view reset can interrupt a drag operation, leaving stale state.
-        self._clear_drag_state()
-        self.queue_render()
-
-    def reset_view_iso(self):
-        """Resets to a standard isometric perspective view (Z-up)."""
-        if not self.camera:
-            return
-        logger.info("Resetting to isometric view.")
-        self.camera.set_iso_view(
-            self._viewport.width_mm, self._viewport.depth_mm
-        )
-
-        # A view reset can interrupt a drag operation, leaving stale state.
         self._clear_drag_state()
         self.queue_render()
 
@@ -392,7 +366,7 @@ class Canvas3D(Gtk.GLArea):
         self._init_gl_resources()
         self._theme_is_dirty = True
 
-        self.reset_view_front()
+        self.reset_view(ViewDirection.ISO)
         self._update_theme_and_colors()
         self._connect_pipeline_signals()
 
@@ -1534,7 +1508,7 @@ class Canvas3D(Gtk.GLArea):
         any_rotary = any(layer.rotary_enabled for layer in self.doc.layers)
         self._scene_gl_dirty = True
         if self._had_rotary_layers and not any_rotary and self.camera:
-            self.reset_view_front()
+            self.reset_view(ViewDirection.ISO)
         self._had_rotary_layers = any_rotary
 
         world_to_visual = np.identity(4, dtype=np.float32)

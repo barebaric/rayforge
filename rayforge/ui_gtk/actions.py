@@ -51,6 +51,9 @@ SHORTCUTS = {
     "win.simulate_mode": "F11",
     "win.view_top": "1",
     "win.view_front": "2",
+    "win.view_right": "3",
+    "win.view_left": "4",
+    "win.view_back": "5",
     "win.view_iso": "7",
     "win.view_toggle_perspective": "p",
     # Object
@@ -296,6 +299,9 @@ class ActionManager:
         # 3D View Control Actions
         self._add_action("view_top", self.win.on_view_top)
         self._add_action("view_front", self.win.on_view_front)
+        self._add_action("view_right", self.win.on_view_right)
+        self._add_action("view_left", self.win.on_view_left)
+        self._add_action("view_back", self.win.on_view_back)
         self._add_action("view_iso", self.win.on_view_iso)
         self._add_stateful_action(
             "view_toggle_perspective",

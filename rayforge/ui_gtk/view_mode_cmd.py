@@ -77,19 +77,10 @@ class ViewModeCmd:
             win.view_stack.set_visible_child_name("2d")
             win.surface.grab_focus()
 
-    def set_view_top(self, canvas3d: Optional["Canvas3D"]):
+    def set_view(self, direction, canvas3d: Optional["Canvas3D"]):
+        """Sets the 3D view to the specified preset orientation."""
         if canvas3d:
-            canvas3d.reset_view_top()
-
-    def set_view_front(self, canvas3d: Optional["Canvas3D"]):
-        """Sets the 3D view to a front-facing orientation."""
-        if canvas3d:
-            canvas3d.reset_view_front()
-
-    def set_view_iso(self, canvas3d: Optional["Canvas3D"]):
-        """Sets the 3D view to an isometric orientation."""
-        if canvas3d:
-            canvas3d.reset_view_iso()
+            canvas3d.reset_view(direction)
 
     def toggle_perspective(
         self,
