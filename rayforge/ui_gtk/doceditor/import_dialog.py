@@ -165,7 +165,7 @@ class ImportDialog(PatchedDialogWindow):
             subtitle=_(
                 "Pixels per inch for unitless SVG dimensions. "
                 "Inkscape ≥0.92 uses 96, older Inkscape uses 90, "
-                "Illustrator uses 70"
+                "Illustrator uses 72"
             ),
             adjustment=self.dpi_adjustment,
             numeric=True,
