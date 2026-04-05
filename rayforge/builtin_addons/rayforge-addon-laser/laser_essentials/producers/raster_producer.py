@@ -124,6 +124,9 @@ class Rasterizer(OpsProducer):
         """
         self._computed_auto_levels = None
 
+        if self._has_no_fills(workpiece):
+            return
+
         if not self.auto_levels:
             return
 
@@ -173,6 +176,19 @@ class Rasterizer(OpsProducer):
 
         final_ops = Ops()
         final_ops.ops_section_start(SectionType.RASTER_FILL, workpiece.uid)
+
+        if self._has_no_fills(workpiece):
+            width_px = surface.get_width()
+            height_px = surface.get_height()
+            final_ops.ops_section_end(SectionType.RASTER_FILL)
+            return WorkPieceArtifact(
+                ops=final_ops,
+                is_scalable=False,
+                source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
+                source_dimensions=(width_px, height_px),
+                generation_size=workpiece.size,
+                generation_id=generation_id,
+            )
 
         width_px = surface.get_width()
         height_px = surface.get_height()
@@ -599,6 +615,18 @@ class Rasterizer(OpsProducer):
                 ops.line_to(end_mm[0], final_end_y, z)
 
         return ops
+
+    @staticmethod
+    def _has_no_fills(workpiece: "WorkPiece") -> bool:
+        """Check if a workpiece has vector geometry but no fills.
+
+        Returns True for geometry-provider-based workpieces (e.g. sketches)
+        that contain only stroked lines with no filled regions. Such
+        workpieces should be handled by the vector pipeline, not rasterized.
+        Returns False for image workpieces and workpieces with fills.
+        """
+        fills = workpiece.fills
+        return fills is not None and len(fills) == 0
 
     def is_vector_producer(self) -> bool:
         return False

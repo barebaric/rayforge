@@ -970,6 +970,7 @@ def test_prepare_computes_global_auto_levels():
 
     mock_wp = MagicMock()
     mock_wp.size = (10.0, 10.0)
+    mock_wp.fills = None
     mock_wp.render_to_pixels.return_value = surface
 
     settings = {"pixels_per_mm": (10.0, 10.0)}
