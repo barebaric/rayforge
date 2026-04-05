@@ -7,7 +7,7 @@ import numpy as np
 from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
 from ...context import RayforgeContext
-from ...core.geo import Point, Point3D, Rect
+from ...core.geo import Point
 from ...core.model import Model
 from ...core.ops import Ops
 from ...core.ops.commands import MovingCommand
@@ -44,6 +44,7 @@ from .shaders import (
 )
 from .sphere_renderer import SphereRenderer
 from .texture_renderer import TextureArtifactRenderer
+from .viewport import ViewportConfig
 from .zone_renderer import ZoneRenderer
 
 if TYPE_CHECKING:
@@ -89,25 +90,22 @@ class Canvas3D(Gtk.GLArea):
         self,
         context: RayforgeContext,
         doc_editor: "DocEditor",
-        width_mm: float,
-        depth_mm: float,
-        x_right: bool = False,
-        y_down: bool = False,
-        x_negative: bool = False,
-        y_negative: bool = False,
-        extent_frame: Optional[Rect] = None,
+        viewport: ViewportConfig,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self._context = context
         self._doc_editor = doc_editor
-        self._width_mm = width_mm
-        self._depth_mm = depth_mm
-        self._x_right = x_right
-        self._y_down = y_down
-        self._x_negative = x_negative
-        self._y_negative = y_negative
-        self._extent_frame = extent_frame
+        self._viewport = viewport
+        self._width_mm = viewport.width_mm
+        self._depth_mm = viewport.depth_mm
+        self._x_right = viewport.x_right
+        self._y_down = viewport.y_down
+        self._x_negative = viewport.x_negative
+        self._y_negative = viewport.y_negative
+        self._extent_frame = viewport.extent_frame
+        self._model_matrix = viewport.model_matrix
+        self._wcs_offset_mm = viewport.wcs_offset_mm
 
         self.camera: Optional[Camera] = None
         self._main_shader: Optional[Shader] = None
@@ -136,22 +134,6 @@ class Canvas3D(Gtk.GLArea):
         self._gl_initialized = False
         self._scene_gl_dirty = False
         self._artifact_gl_dirty = False
-        self._wcs_offset_mm: Point3D = (0.0, 0.0, 0.0)
-
-        # This matrix transforms the grid and axes from a standard Y-up,
-        # X-right system to match the machine's coordinate system.
-        translate_mat = np.identity(4, dtype=np.float32)
-        scale_mat = np.identity(4, dtype=np.float32)
-
-        if self._y_down:
-            translate_mat[1, 3] = self._depth_mm
-            scale_mat[1, 1] = -1.0
-
-        if self._x_right:
-            translate_mat[0, 3] = self._width_mm
-            scale_mat[0, 0] = -1.0
-
-        self._model_matrix = translate_mat @ scale_mat
 
         self._color_spec: ColorSpecDict = {
             "cut": ("#ff00ff22", "#ff00ff"),
@@ -209,67 +191,30 @@ class Canvas3D(Gtk.GLArea):
 
     def _on_wcs_updated(self, machine: "Machine", **kwargs):
         """Handler for when the machine's WCS state changes."""
-        if machine.wcs_origin_is_workarea_origin:
-            self._wcs_offset_mm = (0.0, 0.0, 0.0)
-        else:
-            wcs_x, wcs_y, wcs_z = machine.get_active_wcs_offset()
-            ml, mt, mr, mb = machine.work_margins
-
-            if machine.x_axis_right:
-                machine_x = -mr
-            else:
-                machine_x = -ml
-            if machine.y_axis_down:
-                machine_y = -mt
-            else:
-                machine_y = -mb
-
-            if machine.reverse_x_axis:
-                local_x = machine_x - wcs_x
-            else:
-                local_x = machine_x + wcs_x
-            if machine.reverse_y_axis:
-                local_y = machine_y - wcs_y
-            else:
-                local_y = machine_y + wcs_y
-            self._wcs_offset_mm = (local_x, local_y, wcs_z)
+        if machine:
+            self._viewport = ViewportConfig.from_machine(machine)
+            self._wcs_offset_mm = self._viewport.wcs_offset_mm
         self.queue_render()
 
-    def set_machine(
-        self,
-        width_mm: float,
-        depth_mm: float,
-        x_right: bool = False,
-        y_down: bool = False,
-        x_negative: bool = False,
-        y_negative: bool = False,
-        extent_frame: Optional[Rect] = None,
-    ):
+    def set_machine(self, viewport: Optional[ViewportConfig] = None):
         old_machine = self._context.machine
         if old_machine:
             old_machine.wcs_updated.disconnect(self._on_wcs_updated)
             old_machine.changed.disconnect(self._on_wcs_updated)
 
-        self._width_mm = width_mm
-        self._depth_mm = depth_mm
-        self._x_right = x_right
-        self._y_down = y_down
-        self._x_negative = x_negative
-        self._y_negative = y_negative
-        self._extent_frame = extent_frame
+        if viewport is None:
+            viewport = ViewportConfig.default()
 
-        translate_mat = np.identity(4, dtype=np.float32)
-        scale_mat = np.identity(4, dtype=np.float32)
-
-        if self._y_down:
-            translate_mat[1, 3] = self._depth_mm
-            scale_mat[1, 1] = -1.0
-
-        if self._x_right:
-            translate_mat[0, 3] = self._width_mm
-            scale_mat[0, 0] = -1.0
-
-        self._model_matrix = translate_mat @ scale_mat
+        self._viewport = viewport
+        self._width_mm = viewport.width_mm
+        self._depth_mm = viewport.depth_mm
+        self._x_right = viewport.x_right
+        self._y_down = viewport.y_down
+        self._x_negative = viewport.x_negative
+        self._y_negative = viewport.y_negative
+        self._extent_frame = viewport.extent_frame
+        self._model_matrix = viewport.model_matrix
+        self._wcs_offset_mm = viewport.wcs_offset_mm
 
         new_machine = self._context.machine
         if new_machine:
@@ -669,7 +614,9 @@ class Canvas3D(Gtk.GLArea):
             # Note: matrix order A @ B applies B then A.
             # This order applies WCS translation locally, THEN applies the
             # machine flip/origin shift.
-            grid_model_matrix = self._model_matrix @ wcs_translation_matrix
+            grid_model_matrix = (
+                self._viewport.model_matrix @ wcs_translation_matrix
+            )
 
             # Final MVP for scene geometry (grid, axes)
             mvp_matrix_scene = mvp_matrix_ui @ grid_model_matrix
@@ -686,23 +633,19 @@ class Canvas3D(Gtk.GLArea):
                 self._axis_renderer.render(
                     self._main_shader,
                     self._text_shader,
-                    mvp_matrix_scene_gl,  # Pass the final grid MVP
-                    mvp_matrix_ui_gl,  # For text (no model/WCS transform)
+                    mvp_matrix_scene_gl,
+                    mvp_matrix_ui_gl,
                     view_matrix,
-                    self._model_matrix,
-                    origin_offset_mm=self._wcs_offset_mm,
-                    x_right=self._x_right,
-                    y_down=self._y_down,
-                    x_negative=self._x_negative,
-                    y_negative=self._y_negative,
+                    self._viewport.model_matrix,
+                    origin_offset_mm=self._viewport.wcs_offset_mm,
+                    x_right=self._viewport.x_right,
+                    y_down=self._viewport.y_down,
+                    x_negative=self._viewport.x_negative,
+                    y_negative=self._viewport.y_negative,
                 )
 
+            margin_shift = self._viewport.margin_shift
             machine = self._context.machine
-            margin_shift = np.identity(4, dtype=np.float32)
-            if machine:
-                ml, _, _, mb = machine.work_margins
-                margin_shift[0, 3] = -ml
-                margin_shift[1, 3] = -mb
 
             if (
                 self._zone_renderer
@@ -1507,21 +1450,22 @@ class Canvas3D(Gtk.GLArea):
 
         machine = self._context.machine
         if machine:
-            ml, mt, mr, mb = machine.work_margins
-            world_to_visual[0, 3] = -ml
-            world_to_visual[1, 3] = -mb
+            ms = self._viewport.margin_shift
+            world_to_visual[0, 3] = ms[0, 3]
+            world_to_visual[1, 3] = ms[1, 3]
 
             try:
-                visual_to_grid = np.linalg.inv(self._model_matrix)
+                visual_to_grid = np.linalg.inv(self._viewport.model_matrix)
             except np.linalg.LinAlgError:
                 visual_to_grid = np.identity(4, dtype=np.float32)
 
             world_to_grid = visual_to_grid @ world_to_visual
 
+            wcs = self._viewport.wcs_offset_mm
             cyl_to_grid = np.identity(4, dtype=np.float32)
-            cyl_to_grid[0, 3] = self._wcs_offset_mm[0]
-            cyl_to_grid[1, 3] = self._wcs_offset_mm[1]
-            cyl_to_grid[2, 3] = self._wcs_offset_mm[2]
+            cyl_to_grid[0, 3] = wcs[0]
+            cyl_to_grid[1, 3] = wcs[1]
+            cyl_to_grid[2, 3] = wcs[2]
 
             try:
                 grid_to_cyl = np.linalg.inv(cyl_to_grid)
