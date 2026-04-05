@@ -75,7 +75,7 @@ class ViewModeCmd:
         else:
             action.set_state(GLib.Variant.new_boolean(False))
             win.view_stack.set_visible_child_name("2d")
-            win.surface.grab_focus()
+            GLib.idle_add(lambda: win.surface and win.surface.grab_focus())
 
     def set_view(self, direction, canvas3d: Optional["Canvas3D"]):
         """Sets the 3D view to the specified preset orientation."""
