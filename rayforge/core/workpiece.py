@@ -442,6 +442,21 @@ class WorkPiece(DocItem):
         return None
 
     @property
+    def fills(self) -> Optional[List["FillRenderData"]]:
+        """
+        The fill geometry data for this workpiece, if any.
+
+        Returns a list of FillRenderData objects for geometry-provider-based
+        workpieces (e.g., sketches), or None for workpieces where fills are
+        not tracked (images, imported SVGs).
+
+        Accessing this property triggers boundary computation, which also
+        populates the fills cache.
+        """
+        self.boundaries
+        return self._fills_cache
+
+    @property
     def world_space_boundaries(self) -> Optional[Geometry]:
         """
         The geometry scaled to world-space dimensions (millimeters).
