@@ -78,6 +78,12 @@ class PlaybackOverlay(Gtk.Box):
         self._timer_id: Optional[int] = None
         self._canvas = None
 
+        self.connect("destroy", self._on_destroy)
+
+    def _on_destroy(self, widget):
+        self._stop_playback()
+        self._canvas = None
+
     def set_canvas(self, canvas):
         """Connect this overlay to a Canvas3D instance."""
         self._canvas = canvas
@@ -142,6 +148,9 @@ class PlaybackOverlay(Gtk.Box):
         if not self._playing:
             return False
         if not self._canvas or not self._canvas._op_player:
+            self._stop_playback()
+            return False
+        if not self._canvas.get_realized():
             self._stop_playback()
             return False
 
