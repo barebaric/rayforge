@@ -69,13 +69,27 @@ class ViewModeCmd:
 
             action.set_state(GLib.Variant.new_boolean(True))
             win.view_stack.set_visible_child_name("3d")
-            GLib.idle_add(lambda: win.canvas3d and win.canvas3d.grab_focus())
+            if win.main_stack.get_visible_child_name() == "main":
+
+                def _grab_3d():
+                    if win.canvas3d:
+                        win.canvas3d.grab_focus()
+                    return False
+
+                GLib.idle_add(_grab_3d)
             get_usage_tracker().track_page_view("/view/3d", "3D View")
 
         else:
             action.set_state(GLib.Variant.new_boolean(False))
             win.view_stack.set_visible_child_name("2d")
-            GLib.idle_add(lambda: win.surface and win.surface.grab_focus())
+            if win.main_stack.get_visible_child_name() == "main":
+
+                def _grab_2d():
+                    if win.surface:
+                        win.surface.grab_focus()
+                    return False
+
+                GLib.idle_add(_grab_2d)
 
     def set_view(self, direction, canvas3d: Optional["Canvas3D"]):
         """Sets the 3D view to the specified preset orientation."""
