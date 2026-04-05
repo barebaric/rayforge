@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from typing import cast
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.image.base_importer import ImporterFeature
 from rayforge.core.geo import Geometry
 from sketcher.core import Sketch
@@ -130,7 +130,7 @@ class TestSketchImporterContract:
         parse_result = importer.parse()
         assert parse_result is not None
 
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         vec_result = importer.vectorize(parse_result, spec)
 
         assert vec_result is not None
@@ -179,7 +179,7 @@ def test_sketch_importer_round_trip(complex_sketch: Sketch):
 
     # 3. Call get_doc_items() to get the payload
     # Force a merge strategy
-    spec = PassthroughSpec(create_new_layers=False)
+    spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
     import_result = importer.get_doc_items(spec)
     assert import_result is not None, "Importer failed to return result"
     payload = import_result.payload
@@ -230,7 +230,7 @@ def test_sketch_importer_naming_logic_serialized_priority(
 
     # Pass a conflicting filename
     importer = SketchImporter(data=data, source_file=Path("Filename.rfs"))
-    spec = PassthroughSpec(create_new_layers=False)
+    spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
     import_result = importer.get_doc_items(spec)
     assert import_result is not None
     payload = import_result.payload
@@ -254,7 +254,7 @@ def test_sketch_importer_naming_logic_filename_fallback(
     data = json.dumps(d).encode("utf-8")
 
     importer = SketchImporter(data=data, source_file=Path("MyDesign.rfs"))
-    spec = PassthroughSpec(create_new_layers=False)
+    spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
     import_result = importer.get_doc_items(spec)
     assert import_result is not None
     payload = import_result.payload
@@ -276,7 +276,7 @@ def test_sketch_importer_naming_logic_default_fallback(complex_sketch: Sketch):
     data = json.dumps(d).encode("utf-8")
 
     importer = SketchImporter(data=data, source_file=None)
-    spec = PassthroughSpec(create_new_layers=False)
+    spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
     import_result = importer.get_doc_items(spec)
     assert import_result is not None
     payload = import_result.payload
@@ -328,7 +328,7 @@ def test_sketch_importer_round_trip_mouse():
     importer = SketchImporter(data=original_data, source_file=mouse_file)
 
     # 4. Call get_doc_items() to get the payload
-    spec = PassthroughSpec(create_new_layers=False)
+    spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
     import_result = importer.get_doc_items(spec)
     assert import_result is not None, "Importer failed to return result"
     payload = import_result.payload

@@ -1,6 +1,7 @@
 from typing import Optional
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
+    LayerImportMode,
     VectorizationSpec,
     TraceSpec,
     PassthroughSpec,
@@ -82,7 +83,7 @@ class SvgImporter(Importer):
                     # This ensures the "merge" strategy is used in the engine.
                     spec_to_use = PassthroughSpec(
                         active_layer_ids=all_layer_ids,
-                        create_new_layers=False,
+                        layer_import_mode=LayerImportMode.FLATTEN,
                     )
 
             logger.debug("SvgImporter: Delegating to SvgVectorImporter.")

@@ -16,7 +16,11 @@ from ezdxf.path import Command
 
 from ...core.geo import Geometry, Rect
 from ...core.source_asset import SourceAsset
-from ...core.vectorization_spec import VectorizationSpec, PassthroughSpec
+from ...core.vectorization_spec import (
+    VectorizationSpec,
+    PassthroughSpec,
+    LayerImportMode,
+)
 from ..base_importer import (
     Importer,
     ImporterFeature,
@@ -129,7 +133,7 @@ class DxfImporter(Importer):
         split_layers = False
         active_layers_set = None
         if isinstance(spec, PassthroughSpec):
-            split_layers = spec.create_new_layers
+            split_layers = spec.layer_import_mode != LayerImportMode.FLATTEN
             if spec.active_layer_ids:
                 active_layers_set = set(spec.active_layer_ids)
 

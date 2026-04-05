@@ -14,7 +14,11 @@ except ImportError:
 from ...core.geo import Geometry
 from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset
-from ...core.vectorization_spec import PassthroughSpec, VectorizationSpec
+from ...core.vectorization_spec import (
+    LayerImportMode,
+    PassthroughSpec,
+    VectorizationSpec,
+)
 from ..base_importer import Importer, ImporterFeature
 from ..structures import (
     ParsingResult,
@@ -207,7 +211,7 @@ class PdfVectorImporter(Importer):
         split_layers = False
         active_layers_set = None
         if isinstance(spec, PassthroughSpec):
-            split_layers = spec.create_new_layers
+            split_layers = spec.layer_import_mode != LayerImportMode.FLATTEN
             if spec.active_layer_ids:
                 active_layers_set = set(spec.active_layer_ids)
 

@@ -1,7 +1,16 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Dict, List, Optional
+
+
+class LayerImportMode(Enum):
+    """Determines how imported layers are mapped into the document."""
+
+    MAP_TO_EXISTING = "map_to_existing"
+    NEW_LAYERS = "new_layers"
+    FLATTEN = "flatten"
 
 
 @dataclass
@@ -66,23 +75,34 @@ class PassthroughSpec(VectorizationSpec):
     """
 
     active_layer_ids: Optional[List[str]] = None
-    create_new_layers: bool = True
+    layer_import_mode: LayerImportMode = LayerImportMode.MAP_TO_EXISTING
     trim_padding: float = 0.01
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "PassthroughSpec",
             "active_layer_ids": self.active_layer_ids,
-            "create_new_layers": self.create_new_layers,
+            "layer_import_mode": self.layer_import_mode.value,
             "trim_padding": self.trim_padding,
             "ppi": self.ppi,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "PassthroughSpec":
+        mode_str = data.get("layer_import_mode")
+        if mode_str:
+            mode = LayerImportMode(mode_str)
+        elif "create_new_layers" in data:
+            mode = (
+                LayerImportMode.NEW_LAYERS
+                if data["create_new_layers"]
+                else LayerImportMode.FLATTEN
+            )
+        else:
+            mode = LayerImportMode.MAP_TO_EXISTING
         return cls(
             active_layer_ids=data.get("active_layer_ids"),
-            create_new_layers=data.get("create_new_layers", True),
+            layer_import_mode=mode,
             trim_padding=data.get("trim_padding", 0.01),
             ppi=data.get("ppi", 96.0),
         )

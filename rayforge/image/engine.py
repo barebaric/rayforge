@@ -3,6 +3,7 @@ from typing import List, Optional
 from ..core.geo import Rect
 from ..core.matrix import Matrix
 from ..core.vectorization_spec import (
+    LayerImportMode,
     VectorizationSpec,
     PassthroughSpec,
     TraceSpec,
@@ -242,8 +243,7 @@ class NormalizationEngine:
         split_layers = False
         active_layers = None
         if isinstance(spec, PassthroughSpec):
-            # The decision to split is now based on the spec flag.
-            split_layers = spec.create_new_layers
+            split_layers = spec.layer_import_mode != LayerImportMode.FLATTEN
             if spec.active_layer_ids:
                 active_layers = set(spec.active_layer_ids)
 

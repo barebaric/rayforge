@@ -7,7 +7,7 @@ from unittest.mock import Mock
 from rayforge.core.geo import CMD_TYPE_BEZIER, Geometry
 from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
-from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.dxf.importer import DxfImporter
 from rayforge.image.structures import ImportPayload
@@ -90,7 +90,7 @@ def _setup_workpiece_with_context(
     and mock the document context for rendering tests.
     """
     # Force a merge for simplicity in single-entity tests
-    spec = PassthroughSpec(create_new_layers=False)
+    spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
     import_result = importer.get_doc_items(vectorization_spec=spec)
     if (
         not import_result
@@ -225,7 +225,7 @@ class TestDXFImporterContract:
         parse_result = line_dxf_importer.parse()
         assert parse_result is not None
 
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         vec_result = line_dxf_importer.vectorize(parse_result, spec)
 
         assert vec_result is not None
@@ -242,7 +242,7 @@ class TestDXFImporterContract:
 
         spec = PassthroughSpec(
             active_layer_ids=["Layer1", "Layer3"],
-            create_new_layers=True,
+            layer_import_mode=LayerImportMode.NEW_LAYERS,
         )
         vec_result = multi_layer_dxf_importer.vectorize(parse_result, spec)
 
@@ -355,7 +355,7 @@ class TestDXFImporter:
         self, circle_dxf_importer_from_file: DxfImporter
     ):
         # Force merge
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = circle_dxf_importer_from_file.get_doc_items(
             vectorization_spec=spec
         )
@@ -382,7 +382,7 @@ class TestDXFImporter:
         self, acdbcircle_dxf_importer_from_file: DxfImporter
     ):
         # Force merge
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = acdbcircle_dxf_importer_from_file.get_doc_items(
             vectorization_spec=spec
         )
@@ -408,7 +408,7 @@ class TestDXFImporter:
     def test_multi_layer_dxf(self, multi_layer_dxf_importer: DxfImporter):
         """Test that multi-layer DXF files are imported correctly."""
         # Force a merge strategy to test the original intent of the test
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = multi_layer_dxf_importer.get_doc_items(
             vectorization_spec=spec
         )
@@ -431,7 +431,8 @@ class TestDXFImporter:
 
         # Import only Layer1 and Layer3, creating separate layers
         spec = PassthroughSpec(
-            active_layer_ids=["Layer1", "Layer3"], create_new_layers=True
+            active_layer_ids=["Layer1", "Layer3"],
+            layer_import_mode=LayerImportMode.NEW_LAYERS,
         )
         import_result = multi_layer_dxf_importer.get_doc_items(
             vectorization_spec=spec
