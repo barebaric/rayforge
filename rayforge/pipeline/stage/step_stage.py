@@ -2,12 +2,14 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from blinker import Signal
+from ...core.geo import Geometry
 from ...shared.util.size import sizes_are_close
 from ...shared.tasker.task import Task
 from ..artifact import StepOpsArtifactHandle
 from ..artifact.key import ArtifactKey
 from ..artifact.manager import StaleGenerationError
 from ..artifact.store import SharedMemoryNotFoundError
+from ..coordspace import MachineSpace
 from ..dag.node import NodeState
 from .base import PipelineStage
 
@@ -289,6 +291,17 @@ class StepPipelineStage(PipelineStage):
                 geo = stock_item.get_world_geometry()
                 if geo:
                     stock_geom_dicts.append(geo.to_dict())
+
+        if not stock_geom_dicts and self._machine:
+            space = MachineSpace.from_machine(self._machine)
+            wx, wy, w, h = space.get_workarea_world_rect()
+            geo = Geometry()
+            geo.move_to(wx, wy)
+            geo.line_to(wx + w, wy)
+            geo.line_to(wx + w, wy + h)
+            geo.line_to(wx, wy + h)
+            geo.close_path()
+            stock_geom_dicts.append(geo.to_dict())
 
         try:
             for wp in step.layer.all_workpieces:

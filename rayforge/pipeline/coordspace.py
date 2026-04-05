@@ -314,6 +314,15 @@ class MachineSpace(CoordinateSpace):
         width, height = self.extents
         return width - ml - mr, height - mt - mb
 
+    def get_workarea_world_rect(self) -> Rect:
+        """
+        Returns the work area boundary as a Rect in world space.
+        """
+        pos = self.get_workarea_origin_in_machine()
+        w, h = self.workarea_size
+        wx, wy = self.machine_item_to_world(pos, (w, h))
+        return (wx, wy, w, h)
+
     def world_position_from_origin(
         self, ref_x: float, ref_y: float, size: Tuple[float, float]
     ) -> Point:
