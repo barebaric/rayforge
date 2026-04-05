@@ -1,5 +1,4 @@
 import logging
-import math
 import time
 from pathlib import Path
 from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
@@ -11,6 +10,7 @@ from ...core.geo import Point
 from ...core.model import Model
 from ...core.ops import Ops
 from ...core.ops.commands import MovingCommand
+from ...machine.assembly import LinkRole
 from ...machine.driver.driver import Axis
 from ...machine.models.colors import OpsColorSet
 from ...pipeline.artifact.base import TextureData
@@ -655,20 +655,26 @@ class Canvas3D(Gtk.GLArea):
                 zone_mvp_gl = (mvp_matrix_ui @ margin_shift).T
                 self._zone_renderer.render(self._main_shader, zone_mvp_gl)
 
-            # Compute cylinder rotation from kinematics.
+            # Compute cylinder rotation from assembly.
             cyl_angle = 0.0
             if self._op_player and self._had_rotary_layers and machine:
-                kin = machine.kinematics
-                if kin.has_rotary:
-                    world_y = self._op_player.state.axes[Axis.Y]
-                    cyl_pos = self._world_to_cyl_local @ np.array(
-                        [0, world_y, 0, 1.0], dtype=np.float32
-                    )
-                    cyl_local_y = cyl_pos[1]
-                    diameter = kin.rotary_diameter
-                    assert diameter is not None
-                    circumference = diameter * math.pi
-                    cyl_angle = (cyl_local_y / circumference) * 2 * math.pi
+                asm = machine.assembly
+                if asm.has_rotary:
+                    chuck_links = asm.get_links_by_role(LinkRole.CHUCK)
+                    if chuck_links:
+                        driver_axis = chuck_links[0].driver_axis
+                        assert driver_axis is not None
+                        raw_y = self._op_player.state.axes.get(
+                            driver_axis, 0.0
+                        )
+                        cyl_pos = self._world_to_cyl_local @ np.array(
+                            [0, raw_y, 0, 1.0], dtype=np.float32
+                        )
+                        cyl_local_y = cyl_pos[1]
+                        diameter = asm.rotary_diameter
+                        assert diameter is not None
+                        circumference = diameter * np.pi
+                        cyl_angle = (cyl_local_y / circumference) * 2 * np.pi
 
             rot_cyl_gl = mvp_matrix_scene_gl
             if abs(cyl_angle) > 1e-9:
@@ -737,19 +743,16 @@ class Canvas3D(Gtk.GLArea):
                         executed_vertex_count=exec_ring,
                     )
 
-            # Laser head marker
+            # Laser head markers
             if (
                 self._op_player
                 and self._sphere_renderer
                 and self._main_shader
                 and machine
             ):
-                heads = machine.kinematics.head_positions(
-                    self._op_player.state
-                )
-                head_name = next(iter(heads), None)
-                if head_name is not None:
-                    hx, hy, hz = heads[head_name]
+                asm = machine.assembly
+                heads = asm.head_positions(self._op_player.state)
+                for name, (hx, hy, hz) in heads.items():
                     head_pos = margin_shift @ np.array(
                         [hx, hy, hz, 1.0], dtype=np.float32
                     )
@@ -1303,7 +1306,7 @@ class Canvas3D(Gtk.GLArea):
 
     def _update_cylinder_renderers(self):
         """
-        Scans all layers for rotary-enabled ones and creates one
+        Reads chuck diameters from the assembly and creates one
         CylinderRenderer per unique diameter. Removes renderers for
         diameters no longer in use.
         """
@@ -1312,11 +1315,11 @@ class Canvas3D(Gtk.GLArea):
         machine = self._context.machine
 
         desired_diameters: Dict[float, bool] = {}
-        for layer in self.doc.layers:
-            if layer.rotary_enabled:
-                desired_diameters[layer.rotary_diameter] = True
+        if machine and self._had_rotary_layers:
+            for diameter in machine.assembly.chuck_diameters.values():
+                desired_diameters[diameter] = True
 
-        max_length = self._width_mm
+        max_length = self._viewport.width_mm
         if machine:
             default_rm = machine.get_default_rotary_module()
             if default_rm:

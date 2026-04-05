@@ -173,6 +173,7 @@ class Machine:
         self._assembly_dirty: bool = True
         self._mounted_rotaries: List[RotaryModule] = []
         self._layer_configured: bool = False
+        self._pending_diameter: Optional[float] = None
 
     @property
     def controller(self) -> "MachineController":
@@ -226,23 +227,36 @@ class Machine:
 
     def configure_for_layer(self, layer: Optional["Layer"]) -> None:
         required_rotaries: List[RotaryModule] = []
+        diameter: Optional[float] = None
         if layer and layer.rotary_enabled and layer.rotary_module_uid:
             module = self.rotary_modules.get(layer.rotary_module_uid)
             if module:
                 required_rotaries.append(module)
-        if self._assembly_needs_rebuild(required_rotaries):
+                diameter = layer.rotary_diameter
+        if self._assembly_needs_rebuild(required_rotaries, diameter):
             self._mounted_rotaries = required_rotaries
+            self._pending_diameter = diameter
             self._layer_configured = True
             self._assembly_dirty = True
 
-    def _assembly_needs_rebuild(self, rotaries: List[RotaryModule]) -> bool:
+    def _assembly_needs_rebuild(
+        self,
+        rotaries: List[RotaryModule],
+        diameter: Optional[float],
+    ) -> bool:
         if self._assembly_dirty:
             return True
         if len(rotaries) != len(self._mounted_rotaries):
             return True
         current_uids = {r.uid for r in self._mounted_rotaries}
         new_uids = {r.uid for r in rotaries}
-        return current_uids != new_uids
+        if current_uids != new_uids:
+            return True
+        if self._assembly is not None and self._assembly.has_rotary:
+            current = self._assembly.rotary_diameter
+            if current != diameter:
+                return True
+        return False
 
     def _build_assembly(self) -> Assembly:
         rotaries = self._mounted_rotaries
@@ -251,7 +265,14 @@ class Machine:
         if not rotaries:
             return build_cartesian_assembly(len(self.heads))
         specs: List[RotarySpec] = [
-            (r.axis, r.default_diameter, r.transform, r.model_id)
+            (
+                Axis.Y,
+                self._pending_diameter
+                if self._pending_diameter is not None
+                else r.default_diameter,
+                r.transform,
+                r.model_id,
+            )
             for r in rotaries
         ]
         return build_rotary_assembly(
