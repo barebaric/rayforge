@@ -11,7 +11,7 @@ from typing import (
     cast,
 )
 from gettext import gettext as _
-from gi.repository import Gtk, Adw, Gdk
+from gi.repository import GLib, Gtk, Adw, Gdk
 from blinker import Signal
 from ...core.undo.property_cmd import ChangePropertyCommand
 from ...core.varset import (
@@ -769,6 +769,24 @@ class VarSetEditorWidget(PreferencesGroupWithButton):
 
         self._var_set.add(new_var)
         self.populate(self._var_set)
+
+        i = 0
+        while row := self.list_box.get_row_at_index(i):
+            widget = row.get_child()
+            if (
+                isinstance(widget, VarDefinitionRowWidget)
+                and widget.var.key == base_key
+            ):
+                widget.set_expanded(True)
+                label_row = widget.label_row
+
+                def _grab_focus():
+                    label_row.grab_focus()
+                    return GLib.SOURCE_REMOVE
+
+                GLib.timeout_add(100, _grab_focus)
+                break
+            i += 1
 
         popover.popdown()
 
