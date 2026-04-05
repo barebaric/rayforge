@@ -263,6 +263,16 @@ class TestMultipleChucks:
         assert len(chucks) == 1
         assert chucks[0].name == "rotary_chuck"
 
+    def test_get_link_existing(self):
+        asm = _three_axis_assembly()
+        link = asm.get_link("gantry_y")
+        assert link is not None
+        assert link.name == "gantry_y"
+
+    def test_get_link_missing_returns_none(self):
+        asm = _three_axis_assembly()
+        assert asm.get_link("nonexistent") is None
+
 
 class TestNoRole:
     def test_head_positions_raises_when_no_head_role(self):

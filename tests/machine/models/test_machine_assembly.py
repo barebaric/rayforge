@@ -180,7 +180,7 @@ class TestAssemblyInvalidation:
         assert asm_after.rotary_diameter == 50.0
         assert asm_after is not asm_before
 
-    def test_rotary_module_change_no_invalidate_if_not_mounted(self):
+    def test_rotary_module_change_invalidates(self):
         machine = _make_machine()
         module = RotaryModule()
         machine.add_rotary_module(module)
@@ -188,7 +188,7 @@ class TestAssemblyInvalidation:
         asm_before = machine.assembly
         module.set_default_diameter(50.0)
         asm_after = machine.assembly
-        assert asm_after is asm_before
+        assert asm_after is not asm_before
 
     def test_add_head_invalidates(self):
         machine = _make_machine()

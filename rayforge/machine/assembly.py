@@ -146,6 +146,9 @@ class Assembly:
             return None
         return self._chuck_diameters.get(chuck_names[0])
 
+    def get_link(self, name: str) -> Optional[Link]:
+        return self._link_map.get(name)
+
     def get_links_by_role(self, role: LinkRole) -> List[Link]:
         names = self._roles.get(role, [])
         return [self._link_map[n] for n in names]
