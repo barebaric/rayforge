@@ -23,9 +23,7 @@ from rayforge.machine.driver.grbl import GrblNetworkDriver
 from rayforge.machine.driver.grbl_serial import GrblSerialDriver
 from rayforge.machine.driver.smoothie import SmoothieDriver
 from rayforge.machine.models.dialect import (
-    _DIALECT_REGISTRY,
     GcodeDialect,
-    get_dialect,
     GRBL_DIALECT,
     SMOOTHIEWARE_DIALECT,
 )
@@ -1056,8 +1054,8 @@ class TestMachine:
         # Verify it's the correct type
         assert isinstance(dialect, GcodeDialect)
 
-        # Verify it matches what get_dialect would return
-        expected_dialect = get_dialect(machine.dialect_uid)
+        # Verify it matches what dialect_mgr would return
+        expected_dialect = machine.context.dialect_mgr.get(machine.dialect_uid)
         assert dialect == expected_dialect
 
     @pytest.mark.asyncio
@@ -1389,7 +1387,7 @@ class TestMachine:
         Tests that legacy JOB_START and JOB_END hooks are migrated to a new
         custom dialect upon loading a machine.
         """
-        initial_dialect_count = len(_DIALECT_REGISTRY)
+        initial_dialect_count = len(lite_context.dialect_mgr._registry)
         start_code = ["G28 ; Home at start"]
         end_code = ["M2 ; Program End"]
 
@@ -1410,14 +1408,19 @@ class TestMachine:
         await wait_for_tasks_to_finish(task_mgr)
 
         # Assert Migration
-        assert len(_DIALECT_REGISTRY) == initial_dialect_count + 1
+        assert (
+            len(lite_context.dialect_mgr._registry)
+            == initial_dialect_count + 1
+        )
         assert new_machine.dialect_uid != "grbl"
         assert "JOB_START" not in new_machine.hookmacros
         assert "JOB_END" not in new_machine.hookmacros
         assert MacroTrigger.LAYER_START in new_machine.hookmacros
 
         # Assert New Dialect Content
-        migrated_dialect = get_dialect(new_machine.dialect_uid)
+        migrated_dialect = lite_context.dialect_mgr.get(
+            new_machine.dialect_uid
+        )
         assert migrated_dialect.is_custom is True
         assert migrated_dialect.preamble == start_code
         assert migrated_dialect.postscript == end_code
@@ -1431,8 +1434,8 @@ class TestMachine:
         Tests that migration works correctly if only one legacy hook is
         present.
         """
-        base_dialect = get_dialect("grbl")
-        initial_dialect_count = len(_DIALECT_REGISTRY)
+        base_dialect = lite_context.dialect_mgr.get("grbl")
+        initial_dialect_count = len(lite_context.dialect_mgr._registry)
         start_code = ["G21 G90"]
 
         legacy_data = {
@@ -1448,12 +1451,17 @@ class TestMachine:
         await wait_for_tasks_to_finish(task_mgr)
 
         # Assert Migration
-        assert len(_DIALECT_REGISTRY) == initial_dialect_count + 1
+        assert (
+            len(lite_context.dialect_mgr._registry)
+            == initial_dialect_count + 1
+        )
         assert new_machine.dialect_uid != "grbl"
         assert not new_machine.hookmacros
 
         # Assert New Dialect Content
-        migrated_dialect = get_dialect(new_machine.dialect_uid)
+        migrated_dialect = lite_context.dialect_mgr.get(
+            new_machine.dialect_uid
+        )
         assert migrated_dialect.is_custom is True
         assert migrated_dialect.preamble == start_code
         # Postscript should be inherited from the original dialect
@@ -1467,7 +1475,7 @@ class TestMachine:
         Tests that no hook migration occurs for a modern machine configuration.
         (Built-in dialect migration still happens - that's separate.)
         """
-        initial_dialect_count = len(_DIALECT_REGISTRY)
+        initial_dialect_count = len(lite_context.dialect_mgr._registry)
 
         modern_data = {
             "machine": {
@@ -1480,7 +1488,10 @@ class TestMachine:
         new_machine = Machine.from_dict(modern_data)
         await wait_for_tasks_to_finish(task_mgr)
 
-        assert len(_DIALECT_REGISTRY) == initial_dialect_count + 1
+        assert (
+            len(lite_context.dialect_mgr._registry)
+            == initial_dialect_count + 1
+        )
         assert new_machine.dialect_uid != "smoothieware"
         assert MacroTrigger.LAYER_START in new_machine.hookmacros
 

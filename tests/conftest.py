@@ -376,8 +376,19 @@ class MockDialectManager:
 
     def __init__(self):
         from blinker import Signal
+        from rayforge.machine.models.dialect import GRBL_DIALECT
 
         self.dialects_changed = Signal()
+        self._registry = {GRBL_DIALECT.uid.lower(): GRBL_DIALECT}
+
+    def get(self, uid):
+        return self._registry.get(uid.lower())
+
+    def get_all(self):
+        return list(self._registry.values())
+
+    def register(self, dialect):
+        self._registry[dialect.uid.lower()] = dialect
 
 
 @pytest.fixture

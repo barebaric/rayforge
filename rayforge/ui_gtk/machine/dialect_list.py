@@ -1,8 +1,8 @@
 from typing import cast
 from gettext import gettext as _
 from gi.repository import Gtk, Adw
-from ...machine.models.dialect import GcodeDialect, get_available_dialects
 from ...context import get_context
+from ...machine.models.dialect import GcodeDialect
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
 from .dialect_editor import DialectEditorDialog
@@ -181,7 +181,7 @@ class DialectListEditor(PreferencesGroupWithButton):
     def _on_dialects_changed(self, sender=None, **kwargs):
         """Callback to rebuild the list when the dialect manager signals."""
         self._row_widgets.clear()
-        all_dialects = get_available_dialects()
+        all_dialects = get_context().dialect_mgr.get_all()
         custom_dialects = [d for d in all_dialects if d.is_custom]
         sorted_dialects = sorted(custom_dialects, key=lambda d: d.label)
         self.set_items(sorted_dialects)

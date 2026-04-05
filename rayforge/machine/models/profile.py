@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Tuple, Optional, TYPE_CHECKING
 from gettext import gettext as _
 from ...core.geo import Rect
 from ..driver import get_driver_cls
-from .dialect import get_dialect, replace
+from .dialect import replace
 from .machine import Machine, Laser, Origin
 from .macro import Macro, MacroTrigger
 from .rotary_module import RotaryModule
@@ -105,13 +105,13 @@ class MachineProfile:
         if self.dialect_definition:
             base_dialect_uid = self.dialect_uid or "grbl"
             try:
-                base_dialect = get_dialect(base_dialect_uid)
+                base_dialect = context.dialect_mgr.get(base_dialect_uid)
             except ValueError:
                 logger.warning(
                     f"Base dialect '{base_dialect_uid}' not found for "
                     f"profile '{self.name}'. Falling back to 'grbl'."
                 )
-                base_dialect = get_dialect("grbl")
+                base_dialect = context.dialect_mgr.get("grbl")
 
             new_label = self.dialect_definition.label or _(
                 "{label} (for {machine_name})"

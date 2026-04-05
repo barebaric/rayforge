@@ -29,7 +29,7 @@ from ..kinematics import (
     build_rotary_assembly,
 )
 from ..transport import TransportStatus
-from .dialect import GcodeDialect, get_dialect
+from .dialect import GcodeDialect
 from .laser import Laser
 from .machine_hours import MachineHours
 from .macro import Macro, MacroTrigger
@@ -391,14 +391,14 @@ class Machine:
         if self._hydrated_dialect:
             return self._hydrated_dialect
         try:
-            return get_dialect(self.dialect_uid)
+            return self.context.dialect_mgr.get(self.dialect_uid)
         except ValueError:
             logger.warning(
                 f"Dialect '{self.dialect_uid}' not found for machine "
                 f"'{self.name}'. Falling back to 'grbl'."
             )
             self.dialect_uid = "grbl"
-            return get_dialect("grbl")
+            return self.context.dialect_mgr.get("grbl")
 
     def hydrate(self):
         """
@@ -407,14 +407,16 @@ class Machine:
         dialect definition.
         """
         try:
-            self._hydrated_dialect = get_dialect(self.dialect_uid)
+            self._hydrated_dialect = self.context.dialect_mgr.get(
+                self.dialect_uid
+            )
         except ValueError:
             logger.warning(
                 f"Dialect '{self.dialect_uid}' not found for machine "
                 f"'{self.name}'. Falling back to 'grbl'."
             )
             self.dialect_uid = "grbl"
-            self._hydrated_dialect = get_dialect("grbl")
+            self._hydrated_dialect = self.context.dialect_mgr.get("grbl")
 
     def set_dialect_uid(self, dialect_uid: str):
         if self.dialect_uid == dialect_uid:
@@ -1316,13 +1318,13 @@ class Machine:
         )
 
         try:
-            base_dialect = get_dialect(current_dialect_uid)
+            base_dialect = context.dialect_mgr.get(current_dialect_uid)
         except ValueError:
             logger.warning(
                 f"Could not find base dialect '{current_dialect_uid}' for "
                 f"migration. Using 'grbl' as a fallback."
             )
-            base_dialect = get_dialect("grbl")
+            base_dialect = context.dialect_mgr.get("grbl")
 
         new_label = _("{label} (for {machine_name})").format(
             label=base_dialect.label,
