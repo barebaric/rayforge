@@ -457,17 +457,7 @@ class Canvas3D(Gtk.GLArea):
                 self._viewport.depth_mm,
                 font_family=font_family,
             )
-            if self._viewport.extent_frame is not None:
-                fx, fy, fw, fh = self._viewport.extent_frame
-                ml = -fx
-                mb = -fy
-                mt = fh - self._viewport.depth_mm - mb
-                mr = fw - self._viewport.width_mm - ml
-                if self._viewport.x_right:
-                    fx = -mr
-                if self._viewport.y_down:
-                    fy = -mt
-                self._axis_renderer.set_extent_frame(fx, fy, fw, fh, show=True)
+            self._apply_extent_frame(self._viewport)
             self._axis_renderer.init_gl()
             self._texture_renderer = TextureArtifactRenderer()
             self._texture_renderer.init_gl()
@@ -581,6 +571,7 @@ class Canvas3D(Gtk.GLArea):
     def _process_pending_gl_updates(self):
         if self._scene_gl_dirty:
             self._scene_gl_dirty = False
+            self._update_axis_renderer()
             self._update_cylinder_renderers()
             self._update_model_renderers()
             self._update_zone_renderer()
@@ -1458,6 +1449,39 @@ class Canvas3D(Gtk.GLArea):
         for r, _ in self._model_renderers:
             r.cleanup()
         self._model_renderers.clear()
+
+    def _apply_extent_frame(self, vp):
+        if not self._axis_renderer or vp.extent_frame is None:
+            return
+        fx, fy, fw, fh = vp.extent_frame
+        ml = -fx
+        mb = -fy
+        mt = fh - vp.depth_mm - mb
+        mr = fw - vp.width_mm - ml
+        if vp.x_right:
+            fx = -mr
+        if vp.y_down:
+            fy = -mt
+        self._axis_renderer.set_extent_frame(fx, fy, fw, fh, show=True)
+
+    def _update_axis_renderer(self):
+        if not self._axis_renderer:
+            return
+        vp = self._viewport
+        if (
+            self._axis_renderer.width_mm == vp.width_mm
+            and self._axis_renderer.height_mm == vp.depth_mm
+        ):
+            return
+        self.make_current()
+        font_family = self._axis_renderer.font_family
+        self._axis_renderer.cleanup()
+        self._axis_renderer = AxisRenderer3D(
+            vp.width_mm, vp.depth_mm, font_family=font_family
+        )
+        self._apply_extent_frame(vp)
+        self._axis_renderer.init_gl()
+        self._theme_is_dirty = True
 
     def _update_zone_renderer(self):
         if not self._zone_renderer:
