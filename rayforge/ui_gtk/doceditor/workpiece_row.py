@@ -6,12 +6,13 @@ from ..icons import get_icon
 logger = logging.getLogger(__name__)
 
 _ICON_MAP = {
-    ".svg": "image-x-generic-symbolic",
-    ".png": "image-x-generic-symbolic",
-    ".jpg": "image-x-generic-symbolic",
-    ".jpeg": "image-x-generic-symbolic",
-    ".dxf": "image-x-generic-symbolic",
-    ".pdf": "image-x-generic-symbolic",
+    ".svg": "file-svg-generic-symbolic",
+    ".png": "file-png-generic-symbolic",
+    ".jpg": "file-jpg-generic-symbolic",
+    ".jpeg": "file-jpg-generic-symbolic",
+    ".dxf": "file-dxf-generic-symbolic",
+    ".pdf": "file-pdf-generic-symbolic",
+    ".rd": "file-rd-generic-symbolic",
 }
 
 
