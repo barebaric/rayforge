@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 from rayforge.image.svg.svg_vector import SvgVectorImporter
-from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.layer import Layer
 
@@ -55,7 +55,7 @@ def test_parse_valid_vector_data(vector_importer):
 def test_get_doc_items_alignment(vector_importer):
     """Verifies World Space alignment."""
     # Use a spec that forces merge, which is the default for layerless SVGs
-    spec = PassthroughSpec(create_new_layers=False)
+    spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
     import_result = vector_importer.get_doc_items(spec)
     assert import_result is not None
     payload = import_result.payload
@@ -81,7 +81,10 @@ def test_layer_separation_and_positioning():
     importer = SvgVectorImporter(SVG_GROUPS, Path("groups.svg"))
     manifest = importer.scan()
     layer_ids = [layer.id for layer in manifest.layers]
-    spec = PassthroughSpec(active_layer_ids=layer_ids, create_new_layers=True)
+    spec = PassthroughSpec(
+        active_layer_ids=layer_ids,
+        layer_import_mode=LayerImportMode.NEW_LAYERS,
+    )
     import_result = importer.get_doc_items(vectorization_spec=spec)
     assert import_result is not None
     payload = import_result.payload
@@ -112,7 +115,7 @@ def test_nested_transforms_applied():
     """Test that group transforms are applied to the geometry."""
     importer = SvgVectorImporter(SVG_TRANSFORM, Path("trans.svg"))
     # Force merge
-    spec = PassthroughSpec(create_new_layers=False)
+    spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
     import_result = importer.get_doc_items(spec)
     assert import_result is not None
     payload = import_result.payload

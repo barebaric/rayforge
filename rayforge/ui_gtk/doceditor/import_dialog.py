@@ -11,6 +11,7 @@ from ...core.item import DocItem
 from ...core.layer import Layer
 from ...context import get_context
 from ...core.vectorization_spec import (
+    LayerImportMode,
     PassthroughSpec,
     TraceSpec,
     VectorizationSpec,
@@ -60,10 +61,21 @@ class ImportDialog(PatchedDialogWindow):
         self._in_update = False  # Prevent signal recursion
         self._layer_widgets: List[Gtk.Switch] = []
 
-        self.create_new_layers_switch = Adw.SwitchRow(
-            title=_("Create New Layers"),
-            subtitle=_("Create a new layer for each imported layer"),
-            active=False,
+        self._layer_import_model = Gtk.StringList.new(
+            [
+                _("Map to Existing"),
+                _("New Layers"),
+                _("Flatten"),
+            ]
+        )
+        self.layer_import_mode_row = Adw.ComboRow(
+            title=_("Layer Import Mode"),
+            subtitle=_("How imported layers are mapped to document layers"),
+            model=self._layer_import_model,
+            selected=0,
+        )
+        self.layer_import_mode_row.connect(
+            "notify::selected", self._schedule_preview_update
         )
 
         self.set_title(_("Import Image"))
@@ -357,7 +369,7 @@ class ImportDialog(PatchedDialogWindow):
 
             self._layer_widgets.append(switch)
 
-        expander.add_row(self.create_new_layers_switch)
+        expander.add_row(self.layer_import_mode_row)
 
     def _get_active_layer_ids(self) -> Optional[List[str]]:
         if not self._layer_widgets:
@@ -367,6 +379,17 @@ class ImportDialog(PatchedDialogWindow):
             for w in self._layer_widgets
             if w.get_active()
         ]
+
+    def _get_layer_import_mode(self) -> LayerImportMode:
+        idx = self.layer_import_mode_row.get_selected()
+        modes = [
+            LayerImportMode.MAP_TO_EXISTING,
+            LayerImportMode.NEW_LAYERS,
+            LayerImportMode.FLATTEN,
+        ]
+        return (
+            modes[idx] if idx < len(modes) else LayerImportMode.MAP_TO_EXISTING
+        )
 
     def _get_current_spec(self) -> VectorizationSpec:
         """
@@ -379,7 +402,7 @@ class ImportDialog(PatchedDialogWindow):
         ):
             return PassthroughSpec(
                 active_layer_ids=self._get_active_layer_ids(),
-                create_new_layers=self.create_new_layers_switch.get_active(),
+                layer_import_mode=self._get_layer_import_mode(),
                 ppi=ppi,
             )
         else:

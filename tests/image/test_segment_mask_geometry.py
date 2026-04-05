@@ -1,7 +1,11 @@
 from pathlib import Path
 import pytest
 from rayforge.image import import_file
-from rayforge.core.vectorization_spec import TraceSpec, PassthroughSpec
+from rayforge.core.vectorization_spec import (
+    LayerImportMode,
+    TraceSpec,
+    PassthroughSpec,
+)
 from rayforge.core.workpiece import WorkPiece
 
 
@@ -47,7 +51,9 @@ class TestSegmentMaskGeometry:
         # Force merge strategy
         payload = import_file(
             svg_path,
-            vectorization_spec=PassthroughSpec(create_new_layers=False),
+            vectorization_spec=PassthroughSpec(
+                layer_import_mode=LayerImportMode.FLATTEN
+            ),
         )
 
         assert payload is not None
@@ -77,7 +83,9 @@ class TestSegmentMaskGeometry:
         # Force merge strategy
         payload = import_file(
             dxf_path,
-            vectorization_spec=PassthroughSpec(create_new_layers=False),
+            vectorization_spec=PassthroughSpec(
+                layer_import_mode=LayerImportMode.FLATTEN
+            ),
         )
 
         assert payload is not None
@@ -124,7 +132,9 @@ class TestSegmentMaskGeometry:
         svg_path = tests_root / "image/svg/nested-rect.svg"
         vector_payload = import_file(
             svg_path,
-            vectorization_spec=PassthroughSpec(create_new_layers=False),
+            vectorization_spec=PassthroughSpec(
+                layer_import_mode=LayerImportMode.FLATTEN
+            ),
         )
 
         assert vector_payload is not None

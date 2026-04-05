@@ -6,7 +6,11 @@ from ..core.layer import Layer
 from ..core.source_asset import SourceAsset
 from ..core.source_asset_segment import SourceAssetSegment
 from ..core.workpiece import WorkPiece
-from ..core.vectorization_spec import VectorizationSpec, PassthroughSpec
+from ..core.vectorization_spec import (
+    VectorizationSpec,
+    PassthroughSpec,
+    LayerImportMode,
+)
 from .structures import LayoutItem
 
 logger = logging.getLogger(__name__)
@@ -174,7 +178,7 @@ class ItemAssembler:
                 item.layer_id
                 and item.layer_id != "__default__"
                 and isinstance(spec, PassthroughSpec)
-                and spec.create_new_layers
+                and spec.layer_import_mode != LayerImportMode.FLATTEN
             ):
                 layer = Layer(name=name)
                 layer.add_child(wp)

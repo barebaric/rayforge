@@ -8,7 +8,7 @@ from rayforge.image.dxf.exporter import (
     MultiGeometryDxfExporter,
 )
 from rayforge.image.dxf.importer import DxfImporter
-from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 
 
@@ -167,7 +167,7 @@ class TestGeometryDxfExporterRoundTrip:
         dxf_bytes = exporter.export()
 
         importer = DxfImporter(dxf_bytes, Path("test.dxf"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -200,7 +200,7 @@ class TestGeometryDxfExporterRoundTrip:
         dxf_bytes = exporter.export()
 
         importer = DxfImporter(dxf_bytes, Path("test.dxf"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -232,7 +232,7 @@ class TestGeometryDxfExporterRoundTrip:
         dxf_bytes = exporter.export()
 
         importer = DxfImporter(dxf_bytes, Path("test.dxf"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -267,7 +267,7 @@ class TestGeometryDxfExporterRoundTrip:
         dxf_bytes = exporter.export()
 
         importer = DxfImporter(dxf_bytes, Path("test.dxf"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -302,7 +302,7 @@ class TestGeometryDxfExporterRoundTrip:
         dxf_bytes = exporter.export()
 
         importer = DxfImporter(dxf_bytes, Path("test.dxf"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -342,7 +342,7 @@ class TestGeometryDxfExporterRoundTrip:
         dxf_bytes = exporter.export()
 
         importer = DxfImporter(dxf_bytes, Path("test.dxf"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None

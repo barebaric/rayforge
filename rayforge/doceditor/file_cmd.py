@@ -30,6 +30,7 @@ from ..core.matrix import Matrix
 from ..core.source_asset import SourceAsset
 from ..core.undo import ListItemCommand
 from ..core.vectorization_spec import (
+    LayerImportMode,
     PassthroughSpec,
     TraceSpec,
     VectorizationSpec,
@@ -419,6 +420,50 @@ class FileCmd:
         else:
             self._fit_and_position_at_reference_origin(items)
 
+    @staticmethod
+    def _unwrap_item(item: DocItem) -> List[DocItem]:
+        """Extract content items from a Layer, or return the item itself."""
+        if isinstance(item, Layer):
+            return item.get_content_items()
+        return [item]
+
+    def _resolve_destinations(
+        self,
+        items: List[DocItem],
+        mode: LayerImportMode,
+    ) -> List[Tuple[DocItem, DocItem]]:
+        """
+        Resolve each item to a (owner, item) pair based on the import mode.
+        Returns a flat list of (destination_owner, item_to_add) tuples.
+        """
+        target_layer = cast(Layer, self._editor.default_workpiece_layer)
+        doc = self._editor.doc
+        pairs: List[Tuple[DocItem, DocItem]] = []
+
+        if mode == LayerImportMode.MAP_TO_EXISTING:
+            existing = doc.layers
+            for idx, item in enumerate(items):
+                if idx < len(existing):
+                    dest = existing[idx]
+                    for child in self._unwrap_item(item):
+                        pairs.append((dest, child))
+                elif isinstance(item, Layer):
+                    pairs.append((doc, item))
+                else:
+                    pairs.append((target_layer, item))
+        elif mode == LayerImportMode.NEW_LAYERS:
+            for item in items:
+                if isinstance(item, Layer):
+                    pairs.append((doc, item))
+                else:
+                    pairs.append((target_layer, item))
+        else:
+            for item in items:
+                for child in self._unwrap_item(item):
+                    pairs.append((target_layer, child))
+
+        return pairs
+
     def _commit_items_to_document(
         self,
         items: List[DocItem],
@@ -438,41 +483,24 @@ class FileCmd:
             for asset in assets:
                 self._editor.doc.add_asset(asset)
 
-        target_layer = cast(Layer, self._editor.default_workpiece_layer)
         cmd_name = _("Import {filename}").format(filename=filename.name)
 
-        create_new_layers = True
+        mode = LayerImportMode.NEW_LAYERS
         if isinstance(vectorization_spec, PassthroughSpec):
-            create_new_layers = vectorization_spec.create_new_layers
+            mode = vectorization_spec.layer_import_mode
+
+        pairs = self._resolve_destinations(items, mode)
 
         with self._editor.history_manager.transaction(cmd_name) as t:
-            for item in items:
-                if isinstance(item, Layer) and create_new_layers:
-                    owner = self._editor.doc
-                    command = ListItemCommand(
+            for owner, item in pairs:
+                t.execute(
+                    ListItemCommand(
                         owner_obj=owner,
                         item=item,
                         undo_command="remove_child",
                         redo_command="add_child",
                     )
-                    t.execute(command)
-                elif isinstance(item, Layer):
-                    for child in item.get_content_items():
-                        command = ListItemCommand(
-                            owner_obj=target_layer,
-                            item=child,
-                            undo_command="remove_child",
-                            redo_command="add_child",
-                        )
-                        t.execute(command)
-                else:
-                    command = ListItemCommand(
-                        owner_obj=target_layer,
-                        item=item,
-                        undo_command="remove_child",
-                        redo_command="add_child",
-                    )
-                    t.execute(command)
+                )
 
     def _finalize_import_on_main_thread(
         self,

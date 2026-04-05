@@ -9,7 +9,7 @@ from rayforge.image.svg.exporter import (
     MultiGeometrySvgExporter,
 )
 from rayforge.image.svg.importer import SvgImporter
-from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 
 
 @pytest.fixture
@@ -206,7 +206,7 @@ class TestGeometrySvgExporterRoundTrip:
         svg_bytes = exporter.export()
 
         importer = SvgImporter(svg_bytes, Path("test.svg"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -239,7 +239,7 @@ class TestGeometrySvgExporterRoundTrip:
         svg_bytes = exporter.export()
 
         importer = SvgImporter(svg_bytes, Path("test.svg"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -271,7 +271,7 @@ class TestGeometrySvgExporterRoundTrip:
         svg_bytes = exporter.export()
 
         importer = SvgImporter(svg_bytes, Path("test.svg"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -302,7 +302,7 @@ class TestGeometrySvgExporterRoundTrip:
         svg_bytes = exporter.export()
 
         importer = SvgImporter(svg_bytes, Path("test.svg"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -334,7 +334,7 @@ class TestGeometrySvgExporterRoundTrip:
         svg_bytes = exporter.export()
 
         importer = SvgImporter(svg_bytes, Path("test.svg"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -369,7 +369,7 @@ class TestGeometrySvgExporterRoundTrip:
         svg_bytes = exporter.export()
 
         importer = SvgImporter(svg_bytes, Path("test.svg"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -409,7 +409,7 @@ class TestGeometrySvgExporterRoundTrip:
         svg_bytes = exporter.export()
 
         importer = SvgImporter(svg_bytes, Path("test.svg"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None

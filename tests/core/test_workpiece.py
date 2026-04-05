@@ -12,7 +12,7 @@ from rayforge.core.tab import Tab
 from rayforge.core.geo import Geometry
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.source_asset_segment import SourceAssetSegment
-from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.image.svg.renderer import SvgRenderer
 from rayforge.image import import_file
 
@@ -41,7 +41,10 @@ def doc_with_workpiece(
     svg_file = tmp_path / "test_rect.svg"
     svg_file.write_bytes(sample_svg_data)
     payload = import_file(
-        svg_file, vectorization_spec=PassthroughSpec(create_new_layers=False)
+        svg_file,
+        vectorization_spec=PassthroughSpec(
+            layer_import_mode=LayerImportMode.FLATTEN
+        ),
     )
 
     assert payload is not None
