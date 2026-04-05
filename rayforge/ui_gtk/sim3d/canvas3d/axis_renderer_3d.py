@@ -12,7 +12,7 @@ import logging
 from typing import Optional, Tuple
 import numpy as np
 from OpenGL import GL
-from ...core.geo import Point3D
+from ....core.geo import Point3D
 from .gl_utils import BaseRenderer, Shader
 from .text_renderer_3d import TextRenderer3D
 from .plane_renderer import PlaneRenderer

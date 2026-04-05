@@ -4,10 +4,10 @@ from gettext import gettext as _
 from gi.repository import GLib, Gtk
 from blinker import Signal
 from .action_registry import action_registry
-from .canvas3d import initialized as canvas3d_initialized
 from .icons import get_icon
 from .shared.splitbutton import SplitMenuButton
 from .shared.undo_button import UndoButton, RedoButton
+from .sim3d.canvas3d import initialized as canvas3d_initialized
 
 logger = logging.getLogger(__name__)
 

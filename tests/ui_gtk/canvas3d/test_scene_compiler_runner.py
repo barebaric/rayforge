@@ -5,8 +5,8 @@ from rayforge.core.ops import Ops
 from rayforge.pipeline.artifact.store import ArtifactStore
 from rayforge.pipeline.artifact.job import JobArtifact
 from rayforge.shared.tasker.proxy import ExecutionContextProxy
-from rayforge.ui_gtk.canvas3d.compiled_scene import CompiledSceneArtifact
-from rayforge.ui_gtk.canvas3d.scene_compiler_runner import (
+from rayforge.ui_gtk.sim3d.scene3d.compiled_scene import CompiledSceneArtifact
+from rayforge.ui_gtk.sim3d.scene3d.scene_compiler_runner import (
     compile_scene_in_subprocess,
 )
 

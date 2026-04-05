@@ -7,8 +7,8 @@ from gettext import gettext as _
 from gi.repository import Gio, Gtk, Adw
 
 from ...core.model import Model
-from ..canvas3d import initialized as canvas3d_initialized
 from ..icons import get_icon
+from ..sim3d.canvas3d import initialized as canvas3d_initialized
 
 logger = logging.getLogger(__name__)
 

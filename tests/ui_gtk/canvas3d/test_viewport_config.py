@@ -3,7 +3,7 @@ import pytest
 
 from rayforge.context import RayforgeContext
 from rayforge.machine.models.machine import Machine, Origin
-from rayforge.ui_gtk.canvas3d.viewport import ViewportConfig
+from rayforge.ui_gtk.sim3d.canvas3d.viewport import ViewportConfig
 
 
 def _make_machine() -> Machine:

@@ -5,7 +5,7 @@ A renderer for visualizing toolpath operations (Ops) in 3D.
 import logging
 import numpy as np
 from OpenGL import GL
-from ...shared.util.colors import ColorSet
+from ....shared.util.colors import ColorSet
 from .gl_utils import BaseRenderer, Shader
 
 logger = logging.getLogger(__name__)

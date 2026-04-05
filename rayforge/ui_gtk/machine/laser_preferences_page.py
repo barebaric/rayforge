@@ -6,13 +6,13 @@ from ...context import get_context
 from ...core.model import Model
 from ...machine.models.laser import Laser
 from ...machine.models.machine import Machine
-from ..canvas3d.model_renderer import get_model_extent
+from ..icons import get_icon
 from ..shared.adwfix import get_spinrow_int, get_spinrow_float
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from ..shared.model_selection_dialog import ModelSelectionDialog
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
-from ..icons import get_icon
+from ..sim3d.canvas3d.model_renderer import get_model_extent
 
 
 class LaserRow(Gtk.Box):

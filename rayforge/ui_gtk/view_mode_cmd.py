@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from gi.repository import Gio
     from ..doceditor.editor import DocEditor
     from ..ui_gtk.mainwindow import MainWindow
-    from .canvas3d import Canvas3D
+    from .sim3d.canvas3d import Canvas3D
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class ViewModeCmd:
         """
         Handles the logic for switching between the 2D and 3D views.
         """
-        from .canvas3d import initialized as canvas3d_initialized
+        from .sim3d.canvas3d import initialized as canvas3d_initialized
 
         win = self._win
         current_state = action.get_state()

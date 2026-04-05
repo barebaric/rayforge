@@ -8,10 +8,10 @@ import numpy as np
 from gi.repository import Gtk
 from OpenGL import GL
 
-from ..canvas3d.camera import Camera
-from ..canvas3d.gl_utils import BaseRenderer, Shader
-from ..canvas3d.model_renderer import _load_mesh_data
-from ..canvas3d.shaders import (
+from ..sim3d.canvas3d.camera import Camera
+from ..sim3d.canvas3d.gl_utils import BaseRenderer, Shader
+from ..sim3d.canvas3d.model_renderer import _load_mesh_data
+from ..sim3d.canvas3d.shaders import (
     SIMPLE_FRAGMENT_SHADER,
     SIMPLE_VERTEX_SHADER,
 )
