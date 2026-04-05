@@ -132,6 +132,10 @@ class Assembly:
             self._chuck_diameters[name] = diameter
 
     @property
+    def chuck_diameters(self) -> Dict[str, float]:
+        return dict(self._chuck_diameters)
+
+    @property
     def has_rotary(self) -> bool:
         return bool(self._roles.get(LinkRole.CHUCK))
 
