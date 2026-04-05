@@ -18,20 +18,27 @@ from compile_scene_helper import (
 )
 
 
-def _make_proxy(track_events=None, ack=True):
+def _make_proxy(track_events=None, ack=True, store=None):
     events = track_events if track_events is not None else []
+    adopted_handles = []
 
     def send_event(name, data, logger=None, timeout=5.0):
         events.append((name, data))
+        if ack and store is not None and "handle_dict" in data:
+            adopted_handles.append(store.adopt_from_dict(data["handle_dict"]))
         return ack
 
-    return cast(
-        ExecutionContextProxy,
-        types.SimpleNamespace(
-            is_cancelled=lambda: False,
-            send_event_and_wait=send_event,
+    return (
+        cast(
+            ExecutionContextProxy,
+            types.SimpleNamespace(
+                is_cancelled=lambda: False,
+                send_event_and_wait=send_event,
+            ),
         ),
-    ), events
+        events,
+        adopted_handles,
+    )
 
 
 def _make_flat_config_dict():
@@ -64,7 +71,7 @@ class TestCompileSceneInSubprocess:
         handle_dict = _store_job(store, [("layer1", ops)])
         config_dict = _make_flat_config_dict()
 
-        proxy, events = _make_proxy()
+        proxy, events, adopted = _make_proxy(store=store)
         result = compile_scene_in_subprocess(
             proxy, store, handle_dict, config_dict
         )
@@ -74,8 +81,7 @@ class TestCompileSceneInSubprocess:
         event_name, event_data = events[0]
         assert event_name == "scene_compiled"
 
-        compiled_handle_dict = event_data["handle_dict"]
-        handle = store.adopt_from_dict(compiled_handle_dict)
+        handle = adopted[0]
         artifact = store.get(handle)
         assert isinstance(artifact, CompiledSceneArtifact)
         assert len(artifact.vertex_layers) == 1
@@ -92,7 +98,7 @@ class TestCompileSceneInSubprocess:
         handle_dict = _store_job(store, [("layer1", Ops())])
         config_dict = _make_flat_config_dict()
 
-        proxy, events = _make_proxy()
+        proxy, events, adopted = _make_proxy(store=store)
         result = compile_scene_in_subprocess(
             proxy, store, handle_dict, config_dict
         )
@@ -100,8 +106,7 @@ class TestCompileSceneInSubprocess:
         assert result is None
         assert len(events) == 1
 
-        compiled_handle_dict = events[0][1]["handle_dict"]
-        handle = store.adopt_from_dict(compiled_handle_dict)
+        handle = adopted[0]
         artifact = store.get(handle)
         assert isinstance(artifact, CompiledSceneArtifact)
         assert len(artifact.vertex_layers) == 0
@@ -128,7 +133,7 @@ class TestCompileSceneInSubprocess:
 
         config_dict = _make_flat_config_dict()
 
-        proxy, events = _make_proxy()
+        proxy, events, _ = _make_proxy()
         result = compile_scene_in_subprocess(
             proxy, store, handle_dict, config_dict
         )
@@ -145,7 +150,7 @@ class TestCompileSceneInSubprocess:
         handle_dict = _store_job(store, [("layer1", ops)])
         config_dict = _make_flat_config_dict()
 
-        proxy, events = _make_proxy(ack=False)
+        proxy, events, _ = _make_proxy(ack=False)
         result = compile_scene_in_subprocess(
             proxy, store, handle_dict, config_dict
         )
@@ -162,7 +167,7 @@ class TestCompileSceneInSubprocess:
         handle_dict = _store_job(store, [("layer1", ops)])
         config_dict = _make_rotary_config_dict(diameter=50.0)
 
-        proxy, events = _make_proxy()
+        proxy, events, adopted = _make_proxy(store=store)
         result = compile_scene_in_subprocess(
             proxy, store, handle_dict, config_dict
         )
@@ -170,8 +175,7 @@ class TestCompileSceneInSubprocess:
         assert result is None
         assert len(events) == 1
 
-        handle_dict = events[0][1]["handle_dict"]
-        handle = store.adopt_from_dict(handle_dict)
+        handle = adopted[0]
         artifact = store.get(handle)
         assert isinstance(artifact, CompiledSceneArtifact)
         assert len(artifact.vertex_layers) == 1
