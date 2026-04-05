@@ -1002,6 +1002,8 @@ class Canvas3D(Gtk.GLArea):
             return
         self._show_travel_moves = visible
         self._update_renderers_from_artifact()
+        self._extract_playback_offsets_from_artifact()
+        self._upload_scanline_overlay()
 
     def set_show_nogo_zones(self, visible: bool):
         if self._show_nogo_zones == visible:
