@@ -72,6 +72,11 @@ class BackgroundRenderer(BaseRenderer):
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
+    def _cleanup_self(self):
+        if self._shader:
+            self._shader.cleanup()
+            self._shader = None
+
     def render(self):
         if not self._shader or not self.vao:
             return
