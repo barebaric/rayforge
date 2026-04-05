@@ -3,7 +3,7 @@ import time
 from pathlib import Path
 from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
 import numpy as np
-from gi.repository import Gdk, Gtk, Pango
+from gi.repository import GLib, Gdk, Gtk, Pango
 from OpenGL import GL
 from ...context import RayforgeContext
 from ...core.geo import Point
@@ -1176,7 +1176,7 @@ class Canvas3D(Gtk.GLArea):
                 group.powered_offsets = []
                 group.travel_offsets = []
                 group.ring_offsets = []
-            self._notify_playback_overlay(0)
+            GLib.idle_add(self._notify_playback_overlay, 0)
             return
         logger.debug(
             "[CANVAS3D] _update_op_player: got ops with "
@@ -1192,7 +1192,7 @@ class Canvas3D(Gtk.GLArea):
             axes = self._op_player.state.axes
             for i, ax in enumerate(sorted(axes)):
                 assert abs(axes[ax] - last_cmd.end[i]) < 1e-6
-        self._notify_playback_overlay(len(self._op_player.ops))
+        GLib.idle_add(self._notify_playback_overlay, len(self._op_player.ops))
         self._upload_scanline_overlay()
 
     def _get_ops_for_playback(self) -> Optional[Ops]:
