@@ -813,6 +813,8 @@ class MainWindow(Adw.ApplicationWindow):
         """
         if not self.canvas3d:
             return
+        if self.canvas3d._current_job_handle is None:
+            self.refresh_previews()
         self.canvas3d.update_scene_from_doc()
 
     def _update_gcode_preview(
@@ -1286,8 +1288,9 @@ class MainWindow(Adw.ApplicationWindow):
         is_sim_active = self.simulator_cmd.simulation_overlay is not None
         current_tab = self.bottom_panel.tab_widget.get_current_tab()
         is_gcode_visible = current_tab == "gcode"
+        is_3d_visible = self.view_stack.get_visible_child_name() == "3d"
 
-        if not is_sim_active and not is_gcode_visible:
+        if not is_sim_active and not is_gcode_visible and not is_3d_visible:
             return
 
         config = get_context().config
