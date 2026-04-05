@@ -43,6 +43,7 @@ from .canvas2d.elements.stock import StockElement
 from .canvas2d.simulator_cmd import SimulatorCmd
 from .canvas2d.surface import WorkSurface
 from .sim3d.canvas3d import Canvas3D, initialized as canvas3d_initialized
+from .sim3d.canvas3d.camera import ViewDirection
 from .sim3d.canvas3d.viewport import ViewportConfig
 from .doceditor import file_dialogs
 from .doceditor.asset_row_factory import register_builtin_widgets
@@ -878,15 +879,27 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
-        self.view_cmd.set_view_top(self.canvas3d)
+        self.view_cmd.set_view(ViewDirection.TOP, self.canvas3d)
 
     def on_view_front(self, action, param):
         """Action handler to set the 3D view to front."""
-        self.view_cmd.set_view_front(self.canvas3d)
+        self.view_cmd.set_view(ViewDirection.FRONT, self.canvas3d)
+
+    def on_view_right(self, action, param):
+        """Action handler to set the 3D view to right."""
+        self.view_cmd.set_view(ViewDirection.RIGHT, self.canvas3d)
+
+    def on_view_left(self, action, param):
+        """Action handler to set the 3D view to left."""
+        self.view_cmd.set_view(ViewDirection.LEFT, self.canvas3d)
+
+    def on_view_back(self, action, param):
+        """Action handler to set the 3D view to back."""
+        self.view_cmd.set_view(ViewDirection.BACK, self.canvas3d)
 
     def on_view_iso(self, action, param):
         """Action handler to set the 3D view to isometric."""
-        self.view_cmd.set_view_iso(self.canvas3d)
+        self.view_cmd.set_view(ViewDirection.ISO, self.canvas3d)
 
     def on_view_perspective_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
