@@ -9,6 +9,8 @@ from .gtk import apply_css
 
 logger = logging.getLogger(__name__)
 
+SPEED_OPTIONS = [1, 2, 4, 8, 16]
+
 css = """
 .playback-overlay {
     background-color: alpha(@theme_bg_color, 0.75);
@@ -16,16 +18,21 @@ css = """
     padding: 3px 6px;
 }
 .playback-overlay scale {
-    min-width: 200px;
+    min-width: 250px;
+}
+.speed-button {
+    min-width: 36px;
+    padding: 2px 6px;
+    font-size: small;
 }
 """
 
 
 class PlaybackOverlay(Gtk.Box):
     """
-    Playback controls (play/pause button + slider) overlaid on the
-    3D canvas. Slider drives OpPlayer.seek(); play button starts a
-    24 fps timer that advances the playhead.
+    Playback controls (play/pause button + slider + speed button)
+    overlaid on the 3D canvas. Slider drives OpPlayer.seek(); play
+    button starts a 24 fps timer that advances the playhead.
     """
 
     def __init__(self, **kwargs):
@@ -54,9 +61,18 @@ class PlaybackOverlay(Gtk.Box):
             Gtk.Orientation.HORIZONTAL, 0, 1, 1
         )
         self._slider.set_draw_value(False)
+        self._slider.set_hexpand(True)
+        self._slider.set_size_request(300, -1)
         self._slider.set_sensitive(False)
         self._slider.connect("value-changed", self._on_slider_changed)
         self.append(self._slider)
+
+        self._speed_index = 0
+        self._speed_button = Gtk.Button(label=f"{SPEED_OPTIONS[0]}x")
+        self._speed_button.add_css_class("speed-button")
+        self._speed_button.set_tooltip_text(_("Playback speed"))
+        self._speed_button.connect("clicked", self._on_speed_clicked)
+        self.append(self._speed_button)
 
         self._playing = False
         self._timer_id: Optional[int] = None
@@ -102,6 +118,11 @@ class PlaybackOverlay(Gtk.Box):
     def _start_playback(self):
         if not self._canvas or not self._canvas._op_player:
             return
+        ops = self._canvas._op_player.ops
+        current = int(self._slider.get_value())
+        max_idx = len(ops) - 1
+        if max_idx >= 0 and current >= max_idx:
+            self._slider.set_value(0)
         self._playing = True
         self._play_button.set_child(self._pause_icon)
         self._play_button.set_tooltip_text(_("Pause simulation"))
@@ -127,11 +148,17 @@ class PlaybackOverlay(Gtk.Box):
         ops = self._canvas._op_player.ops
         current = int(self._slider.get_value())
         max_idx = len(ops) - 1
+        speed = SPEED_OPTIONS[self._speed_index]
+        next_val = current + speed
 
-        if current >= max_idx:
+        if next_val >= max_idx:
             self._slider.set_value(max_idx)
             self._stop_playback()
             return False
 
-        self._slider.set_value(current + 1)
+        self._slider.set_value(next_val)
         return True
+
+    def _on_speed_clicked(self, button):
+        self._speed_index = (self._speed_index + 1) % len(SPEED_OPTIONS)
+        button.set_label(f"{SPEED_OPTIONS[self._speed_index]}x")
