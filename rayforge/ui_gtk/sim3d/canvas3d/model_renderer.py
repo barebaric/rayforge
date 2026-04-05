@@ -212,6 +212,7 @@ class ModelRenderer(BaseRenderer):
         mvp_matrix: np.ndarray,
         model_matrix: Optional[np.ndarray] = None,
         camera_position: Optional[np.ndarray] = None,
+        point_light_pos: Optional[np.ndarray] = None,
     ) -> None:
         if not self._vao:
             return
@@ -222,6 +223,11 @@ class ModelRenderer(BaseRenderer):
             model_inv = np.linalg.inv(model_matrix)
             cam_pos = model_inv[:3, :3] @ camera_position + model_inv[:3, 3]
             cam_pos = cam_pos.astype(np.float32)
+            if point_light_pos is not None:
+                point_light_pos = (
+                    model_inv[:3, :3] @ point_light_pos + model_inv[:3, 3]
+                )
+                point_light_pos = point_light_pos.astype(np.float32)
         else:
             cam_pos = np.zeros(3, dtype=np.float32)
 
@@ -232,6 +238,10 @@ class ModelRenderer(BaseRenderer):
         shader.set_float("uHasNormals", 1.0)
         shader.set_vec3("uLightDir", light_dir)
         shader.set_vec3("uCameraPos", cam_pos)
+        if point_light_pos is not None:
+            shader.set_vec3("uPointLightPos", point_light_pos)
+        else:
+            shader.set_vec3("uPointLightPos", np.zeros(3, dtype=np.float32))
 
         GL.glBindVertexArray(self._vao)
         GL.glDrawArrays(GL.GL_TRIANGLES, 0, self._vertex_count)

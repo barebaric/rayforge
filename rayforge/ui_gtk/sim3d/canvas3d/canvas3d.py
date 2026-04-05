@@ -784,6 +784,8 @@ class Canvas3D(Gtk.GLArea):
                         executed_vertex_count=exec_ring,
                     )
 
+            laser_light_pos = None
+
             # Laser head markers
             if (
                 self._op_player
@@ -831,6 +833,7 @@ class Canvas3D(Gtk.GLArea):
                             viewport_height=self.camera.height,
                             color=beam_color,
                         )
+                        laser_light_pos = beam_pos[:3].astype(np.float32)
 
             for renderer in self._cylinder_renderers.values():
                 if self._main_shader:
@@ -871,6 +874,7 @@ class Canvas3D(Gtk.GLArea):
                             combined.T,
                             model_matrix=margin_shift @ module_transform,
                             camera_position=self.camera.position,
+                            point_light_pos=laser_light_pos,
                         )
 
             tex_reached = None
