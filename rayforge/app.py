@@ -197,11 +197,18 @@ def main():
             window.show_settings(None, None)
 
         def _on_app_quit(self, action, param):
+            logger.debug("_on_app_quit called.")
             window = self._get_main_window()
             if window is None:
                 self.quit()
                 return
             window.on_quit_action(None, None)
+
+        def do_shutdown(self):
+            logger.info("App.do_shutdown called.")
+            Adw.Application.do_shutdown(self)
+            logger.info("App.do_shutdown completed. Calling self.quit().")
+            self.quit()
 
         def do_activate(self):
             if self.win is not None:
@@ -506,6 +513,7 @@ def main():
     # Run application
     app = App(args)
     exit_code = app.run(None)
+    logger.info("app.run() returned with exit_code=%s", exit_code)
     if app.win is None:
         logger.info(
             "No window created (another instance is likely running). Exiting."
