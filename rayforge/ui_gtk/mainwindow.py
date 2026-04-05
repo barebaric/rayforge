@@ -120,6 +120,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._saved_bottom_panel_visible = False
         self._old_doc = None  # Track previous document for signal reconnection
         self.canvas3d: Optional[Canvas3D] = None
+        self._is_syncing_3d = False
 
         # The ToastOverlay will wrap the main content box
         self.toast_overlay = Adw.ToastOverlay()
@@ -783,6 +784,25 @@ class MainWindow(Adw.ApplicationWindow):
         if self.simulator_cmd.preview_controls:
             self.simulator_cmd.sync_from_gcode(line_number)
 
+        # 3. If 3D playback is active, sync the slider.
+        op_map = self.bottom_panel.gcode_viewer.op_map
+        if op_map and line_number in op_map.machine_code_to_op:
+            op_index = op_map.machine_code_to_op[line_number]
+            self._is_syncing_3d = True
+            self._canvas3d_playback.set_playback_position(op_index)
+            if self.canvas3d:
+                self.canvas3d.queue_render()
+            self._is_syncing_3d = False
+
+    def _on_3d_playback_step_changed(self, sender, *, ops_index: int):
+        """
+        Handles the 3D playback slider changing. Syncs the G-code viewer
+        highlight to the corresponding line.
+        """
+        if self._is_syncing_3d:
+            return
+        self.bottom_panel.gcode_viewer.highlight_op(ops_index)
+
     def _on_vertical_pane_position_changed(self, paned, param):
         position = paned.get_position()
         full_height = paned.get_height()
@@ -1280,8 +1300,9 @@ class MainWindow(Adw.ApplicationWindow):
             # 2. Update G-code Preview
             current_tab = self.bottom_panel.tab_widget.get_current_tab()
             is_gcode_visible = current_tab == "gcode"
+            is_3d_visible = self.view_stack.get_visible_child_name() == "3d"
 
-            if is_gcode_visible and final_artifact:
+            if final_artifact and (is_gcode_visible or is_3d_visible):
                 self._update_gcode_preview(
                     final_artifact.machine_code, final_artifact.op_map
                 )
@@ -1350,6 +1371,9 @@ class MainWindow(Adw.ApplicationWindow):
         self._canvas3d_playback = PlaybackOverlay()
         self.canvas3d.set_playback_overlay(self._canvas3d_playback)
         self._canvas3d_overlay.add_overlay(self._canvas3d_playback)
+        self._canvas3d_playback.step_changed.connect(
+            self._on_3d_playback_step_changed
+        )
         self.view_stack.add_named(self._canvas3d_overlay, "3d")
 
         travel_action = self.action_manager.get_action("toggle_travel_view")
