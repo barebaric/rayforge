@@ -18,6 +18,7 @@ from ...pipeline.artifact.job import JobArtifact, JobArtifactHandle
 from ...pipeline.pipeline import Pipeline
 from ...shared.util.colors import ColorSet, hex_to_rgba
 from ...shared.tasker import task_mgr, Task
+from ...simulator.machine_state import MachineState
 from ...simulator.op_player import OpPlayer
 from ..shared.gtk_color import GtkColorResolver, ColorSpecDict
 from .axis_renderer_3d import AxisRenderer3D
@@ -110,7 +111,7 @@ class Canvas3D(Gtk.GLArea):
         self._texture_renderer: Optional[TextureArtifactRenderer] = None
         self._texture_shader: Optional[Shader] = None
         self._cylinder_renderers: Dict[float, CylinderRenderer] = {}
-        self._model_renderers: List[Tuple[ModelRenderer, np.ndarray]] = []
+        self._model_renderers: List[Tuple[ModelRenderer, str]] = []
         self._zone_renderer: Optional[ZoneRenderer] = None
         self._had_rotary_layers = False
         self._scene_preparation_task: Optional[Task] = None
@@ -128,6 +129,7 @@ class Canvas3D(Gtk.GLArea):
         self._gl_initialized = False
         self._scene_gl_dirty = False
         self._artifact_gl_dirty = False
+        self._current_layer_uid = None
 
         self._color_spec: ColorSpecDict = {
             "cut": ("#ff00ff22", "#ff00ff"),
@@ -605,10 +607,7 @@ class Canvas3D(Gtk.GLArea):
         if self._scene_gl_dirty:
             self._scene_gl_dirty = False
             self._update_cylinder_renderers()
-            if self._had_rotary_layers:
-                self._update_model_renderers()
-            else:
-                self._clear_model_renderers()
+            self._update_model_renderers()
             self._update_zone_renderer()
         if self._artifact_gl_dirty:
             self._artifact_gl_dirty = False
@@ -621,6 +620,25 @@ class Canvas3D(Gtk.GLArea):
             return False
 
         self._process_pending_gl_updates()
+
+        machine = self._context.machine
+        if (
+            machine
+            and self._op_player
+            and self._op_player.state.current_layer_uid
+            != self._current_layer_uid
+        ):
+            uid = self._op_player.state.current_layer_uid
+            self._current_layer_uid = uid
+            layer = None
+            if uid:
+                for lay in self.doc.layers:
+                    if lay.uid == uid:
+                        layer = lay
+                        break
+            machine.configure_for_layer(layer)
+            self._scene_gl_dirty = True
+            self._process_pending_gl_updates()
 
         if self._theme_is_dirty:
             self._update_theme_and_colors()
@@ -800,7 +818,10 @@ class Canvas3D(Gtk.GLArea):
                 and machine
             ):
                 asm = machine.assembly
-                heads = asm.head_positions(self._op_player.state)
+                wcs = self._viewport.wcs_offset_mm
+                heads = asm.head_positions(
+                    self._op_player.state, wcs_offset=wcs
+                )
                 for name, (hx, hy, hz) in heads.items():
                     head_pos = margin_shift @ np.array(
                         [hx, hy, hz, 1.0], dtype=np.float32
@@ -822,7 +843,6 @@ class Canvas3D(Gtk.GLArea):
                             diameter = asm.rotary_diameter
                             if diameter and diameter > 0:
                                 beam_pos[2] += diameter / 2.0
-                            beam_pos[2] += offset_z
                             beam_pos[1] = offset_y
                         self._laser_beam_renderer.render(
                             self._main_shader,
@@ -838,9 +858,33 @@ class Canvas3D(Gtk.GLArea):
                 if self._main_shader:
                     renderer.render(self._main_shader, rot_cyl_gl)
 
-            if self._show_models:
-                for renderer, module_transform in self._model_renderers:
+            if self._show_models and self._model_renderers and machine:
+                asm = machine.assembly
+                wcs = self._viewport.wcs_offset_mm
+                if self._op_player:
+                    model_transforms = asm.model_world_transforms(
+                        self._op_player.state, wcs_offset=wcs
+                    )
+                else:
+                    model_transforms = asm.model_world_transforms(
+                        MachineState(), wcs_offset=wcs
+                    )
+                is_rotary = self._had_rotary_layers and asm.has_rotary
+                for renderer, link_name in self._model_renderers:
                     if self._main_shader:
+                        t = model_transforms.get(link_name)
+                        if t is None:
+                            continue
+                        module_transform = t.astype(np.float32)
+                        if is_rotary:
+                            link = asm.get_link(link_name)
+                            if link and link.role != LinkRole.CHUCK:
+                                module_transform[1, 3] = (
+                                    offset_y - margin_shift[1, 3]
+                                )
+                                diameter = asm.rotary_diameter
+                                if diameter and diameter > 0:
+                                    module_transform[2, 3] += diameter / 2.0
                         combined = (
                             mvp_matrix_ui @ margin_shift @ module_transform
                         )
@@ -1252,6 +1296,7 @@ class Canvas3D(Gtk.GLArea):
         if ops is None or ops.is_empty():
             logger.debug("[CANVAS3D] _update_op_player: no ops available.")
             self._op_player = None
+            self._current_layer_uid = None
             for group in self._layer_groups:
                 group.powered_offsets = []
                 group.travel_offsets = []
@@ -1263,6 +1308,7 @@ class Canvas3D(Gtk.GLArea):
             "%d commands." % len(ops)
         )
         self._op_player = OpPlayer(ops)
+        self._current_layer_uid = None
         self._extract_playback_offsets_from_artifact()
         last_idx = self._op_player.seek_last_movement()
         if last_idx is not None:
@@ -1430,7 +1476,7 @@ class Canvas3D(Gtk.GLArea):
         self._zone_renderer.update_zones(zones)
 
     def _update_model_renderers(self):
-        """Rebuild renderers for chuck links with 3D models."""
+        """Rebuild renderers for all assembly links with 3D models."""
         self.make_current()
         self._clear_model_renderers()
 
@@ -1442,43 +1488,26 @@ class Canvas3D(Gtk.GLArea):
         if assembly is None:
             return
 
-        chuck_links = assembly.get_links_by_role(LinkRole.CHUCK)
-        logger.debug(
-            "Model renderers: %d chuck links in assembly", len(chuck_links)
-        )
+        model_links = assembly.get_model_links()
+        logger.debug("Model renderers: %d links with models", len(model_links))
 
-        for chuck in chuck_links:
-            if chuck.model_id is None:
-                logger.debug(
-                    "Model renderers: chuck %s has no model_id", chuck.name
-                )
-                continue
-
+        for link in model_links:
+            assert link.model_id is not None
             logger.debug(
-                "Model renderers: resolving model_id=%s for chuck %s",
-                chuck.model_id,
-                chuck.name,
+                "Model renderers: resolving model_id=%s for link %s",
+                link.model_id,
+                link.name,
             )
             resolved = self._context.model_mgr.resolve(
-                Model(name="", path=Path(chuck.model_id))
+                Model(name="", path=Path(link.model_id))
             )
             if resolved is None:
                 logger.warning(
                     "Model file not found: %s, skipping.",
-                    chuck.model_id,
+                    link.model_id,
                 )
                 continue
 
-            parent_link = (
-                assembly.get_link(chuck.parent) if chuck.parent else None
-            )
-            transform = (
-                parent_link.local_transform.astype(np.float32)
-                if parent_link is not None
-                else np.eye(4, dtype=np.float32)
-            )
-
-            logger.debug("Model renderers: resolved to %s", resolved)
             renderer = ModelRenderer(resolved)
             renderer.init_gl()
             logger.debug(
@@ -1487,7 +1516,7 @@ class Canvas3D(Gtk.GLArea):
                 renderer._vertex_count,
                 renderer.bounds,
             )
-            self._model_renderers.append((renderer, transform))
+            self._model_renderers.append((renderer, link.name))
 
     def update_scene_from_doc(self):
         """
@@ -1523,8 +1552,10 @@ class Canvas3D(Gtk.GLArea):
         machine = self._context.machine
         if machine:
             ms = self._viewport.margin_shift
+            wcs = self._viewport.wcs_offset_mm
             world_to_visual[0, 3] = ms[0, 3]
             world_to_visual[1, 3] = ms[1, 3]
+            world_to_visual[2, 3] = wcs[2]
 
             try:
                 visual_to_grid = np.linalg.inv(self._viewport.model_matrix)
@@ -1533,7 +1564,6 @@ class Canvas3D(Gtk.GLArea):
 
             world_to_grid = visual_to_grid @ world_to_visual
 
-            wcs = self._viewport.wcs_offset_mm
             cyl_to_grid = np.identity(4, dtype=np.float32)
             cyl_to_grid[0, 3] = wcs[0]
             cyl_to_grid[1, 3] = wcs[1]

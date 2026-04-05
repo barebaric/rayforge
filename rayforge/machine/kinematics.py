@@ -10,9 +10,14 @@ if TYPE_CHECKING:
     from ..simulator.machine_state import MachineState
 
 RotarySpec = Tuple[Axis, float, np.ndarray, Optional[str]]
+HeadSpec = Tuple[Optional[str], np.ndarray]
 
 
-def build_cartesian_assembly(num_heads: int = 1) -> Assembly:
+def build_cartesian_assembly(
+    head_specs: Optional[List[HeadSpec]] = None,
+) -> Assembly:
+    if head_specs is None:
+        head_specs = [(None, np.eye(4, dtype=np.float64))]
     links = [
         Link("base", parent=None, joint_type=JointType.FIXED),
         Link(
@@ -30,7 +35,7 @@ def build_cartesian_assembly(num_heads: int = 1) -> Assembly:
             driver_axis=Axis.Y,
         ),
     ]
-    for i in range(num_heads):
+    for i, (model_id, transform) in enumerate(head_specs):
         links.append(
             Link(
                 f"head_{i}",
@@ -39,6 +44,8 @@ def build_cartesian_assembly(num_heads: int = 1) -> Assembly:
                 joint_axis=(0.0, 0.0, 1.0),
                 driver_axis=Axis.Z,
                 role=LinkRole.HEAD,
+                model_id=model_id,
+                model_transform=transform.copy(),
             )
         )
     return Assembly(links)
@@ -46,13 +53,15 @@ def build_cartesian_assembly(num_heads: int = 1) -> Assembly:
 
 def build_rotary_assembly(
     rotary_diameter: float,
-    num_heads: int = 1,
+    head_specs: Optional[List[HeadSpec]] = None,
     rotary_specs: Optional[List[RotarySpec]] = None,
 ) -> Assembly:
     if rotary_specs is None:
         rotary_specs = [
             (Axis.Y, rotary_diameter, np.eye(4, dtype=np.float64), None)
         ]
+    if head_specs is None:
+        head_specs = [(None, np.eye(4, dtype=np.float64))]
     links = [
         Link("base", parent=None, joint_type=JointType.FIXED),
         Link(
@@ -70,7 +79,7 @@ def build_rotary_assembly(
             driver_axis=Axis.Y,
         ),
     ]
-    for i in range(num_heads):
+    for i, (model_id, transform) in enumerate(head_specs):
         links.append(
             Link(
                 f"head_{i}",
@@ -79,6 +88,8 @@ def build_rotary_assembly(
                 joint_axis=(0.0, 0.0, 1.0),
                 driver_axis=Axis.Z,
                 role=LinkRole.HEAD,
+                model_id=model_id,
+                model_transform=transform.copy(),
             )
         )
     for j, (driver_axis, _, transform, model_id) in enumerate(rotary_specs):

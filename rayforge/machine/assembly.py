@@ -42,6 +42,9 @@ class Link:
         default_factory=lambda: np.eye(4, dtype=np.float64)
     )
     model_id: Optional[str] = None
+    model_transform: np.ndarray = field(
+        default_factory=lambda: np.eye(4, dtype=np.float64)
+    )
     role: Optional[LinkRole] = None
 
     def __post_init__(self):
@@ -153,6 +156,60 @@ class Assembly:
         names = self._roles.get(role, [])
         return [self._link_map[n] for n in names]
 
+    def get_model_links(self) -> List[Link]:
+        """Return all links that have a 3D model assigned."""
+        return [link for link in self._links if link.model_id is not None]
+
+    def model_world_transforms(
+        self,
+        state: "MachineState",
+        wcs_offset: Point3D = (0.0, 0.0, 0.0),
+    ) -> Dict[str, np.ndarray]:
+        """Return a 4x4 world transform for each link with a 3D model.
+
+        For prismatic joints, the transform includes the animated axis
+        offset so models move with the gantry.  For revolute joints the
+        transform is the static base pose (the joint rotation is
+        typically visualized separately by a cylinder renderer).
+
+        The link's ``model_transform`` is applied on top of the base
+        pose and carries scale, rotation and offsets that are purely
+        visual (e.g. focal-distance offset for laser heads).
+
+        *wcs_offset* is applied in Z to non-rotary links (heads) so
+        models sit at the correct work-coordinate height.
+        """
+        fk = self.forward_kinematics(state)
+        chuck_names = set(self._roles.get(LinkRole.CHUCK, []))
+        transforms: Dict[str, np.ndarray] = {}
+        for link in self._links:
+            if link.model_id is None:
+                continue
+            if link.joint_type == JointType.REVOLUTE:
+                parent = self._link_map[link.parent] if link.parent else None
+                if parent is not None and parent.name in fk:
+                    pos_p, rot_p = fk[parent.name]
+                    parent_t = np.eye(4, dtype=np.float64)
+                    parent_t[:3, :3] = rot_p
+                    parent_t[:3, 3] = [
+                        pos_p[0],
+                        pos_p[1],
+                        pos_p[2],
+                    ]
+                    base = parent_t @ link.local_transform
+                else:
+                    base = link.local_transform.copy()
+            else:
+                pos, rot = fk[link.name]
+                base = np.eye(4, dtype=np.float64)
+                base[:3, :3] = rot
+                base[:3, 3] = [pos[0], pos[1], pos[2]]
+            t = base @ link.model_transform
+            if link.name not in chuck_names:
+                t[2, 3] += wcs_offset[2]
+            transforms[link.name] = t
+        return transforms
+
     def forward_kinematics(
         self, state: "MachineState"
     ) -> Dict[str, Tuple[Point3D, np.ndarray]]:
@@ -208,12 +265,23 @@ class Assembly:
             )
             self._fk_recursive(child_name, transform, state, result)
 
-    def head_positions(self, state: "MachineState") -> Dict[str, Point3D]:
+    def head_positions(
+        self,
+        state: "MachineState",
+        wcs_offset: Point3D = (0.0, 0.0, 0.0),
+    ) -> Dict[str, Point3D]:
         head_names = self._roles.get(LinkRole.HEAD, [])
         if not head_names:
             raise ValueError("Assembly has no links with role HEAD")
         poses = self.forward_kinematics(state)
-        return {name: poses[name][0] for name in head_names}
+        return {
+            name: (
+                poses[name][0][0],
+                poses[name][0][1],
+                poses[name][0][2] + wcs_offset[2],
+            )
+            for name in head_names
+        }
 
     def chuck_angles(self, state: "MachineState") -> Dict[str, float]:
         chuck_names = self._roles.get(LinkRole.CHUCK, [])

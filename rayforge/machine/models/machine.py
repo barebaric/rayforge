@@ -22,6 +22,7 @@ from ..driver.driver import (
 )
 from ..assembly import Assembly
 from ..kinematics import (
+    HeadSpec,
     Kinematics,
     RotarySpec,
     build_cartesian_assembly,
@@ -262,8 +263,15 @@ class Machine:
         rotaries = self._mounted_rotaries
         if not rotaries and not self._layer_configured and self.rotary_modules:
             rotaries = list(self.rotary_modules.values())[:1]
+        head_specs: List[HeadSpec] = []
+        for h in self.heads:
+            t = h.transform.copy()
+            if h.focal_distance > 0:
+                t[2, 3] += h.focal_distance
+            head_specs.append((h.model_id, t))
         if not rotaries:
-            return build_cartesian_assembly(len(self.heads))
+            return build_cartesian_assembly(head_specs)
+        mounted_uids = {r.uid for r in self._mounted_rotaries}
         specs: List[RotarySpec] = [
             (
                 Axis.Y,
@@ -271,12 +279,12 @@ class Machine:
                 if self._pending_diameter is not None
                 else r.default_diameter,
                 r.transform,
-                r.model_id,
+                r.model_id if r.uid in mounted_uids else None,
             )
             for r in rotaries
         ]
         return build_rotary_assembly(
-            num_heads=len(self.heads),
+            head_specs=head_specs,
             rotary_specs=specs,
             rotary_diameter=specs[0][1],
         )
@@ -796,6 +804,7 @@ class Machine:
         self.changed.send(self)
 
     def _on_head_changed(self, head, *args):
+        self.invalidate_assembly()
         self.changed.send(self)
 
     def add_camera(self, camera: Camera):
