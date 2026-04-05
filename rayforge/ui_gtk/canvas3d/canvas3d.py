@@ -11,7 +11,6 @@ from ...core.model import Model
 from ...core.ops import Ops
 from ...core.ops.commands import MovingCommand
 from ...machine.assembly import LinkRole
-from ...machine.driver.driver import Axis
 from ...machine.models.colors import OpsColorSet
 from ...pipeline.artifact.base import TextureData
 from ...pipeline.artifact.handle import create_handle_from_dict
@@ -97,15 +96,6 @@ class Canvas3D(Gtk.GLArea):
         self._context = context
         self._doc_editor = doc_editor
         self._viewport = viewport
-        self._width_mm = viewport.width_mm
-        self._depth_mm = viewport.depth_mm
-        self._x_right = viewport.x_right
-        self._y_down = viewport.y_down
-        self._x_negative = viewport.x_negative
-        self._y_negative = viewport.y_negative
-        self._extent_frame = viewport.extent_frame
-        self._model_matrix = viewport.model_matrix
-        self._wcs_offset_mm = viewport.wcs_offset_mm
 
         self.camera: Optional[Camera] = None
         self._main_shader: Optional[Shader] = None
@@ -193,7 +183,6 @@ class Canvas3D(Gtk.GLArea):
         """Handler for when the machine's WCS state changes."""
         if machine:
             self._viewport = ViewportConfig.from_machine(machine)
-            self._wcs_offset_mm = self._viewport.wcs_offset_mm
         self._scene_gl_dirty = True
         self.queue_render()
 
@@ -207,15 +196,6 @@ class Canvas3D(Gtk.GLArea):
             viewport = ViewportConfig.default()
 
         self._viewport = viewport
-        self._width_mm = viewport.width_mm
-        self._depth_mm = viewport.depth_mm
-        self._x_right = viewport.x_right
-        self._y_down = viewport.y_down
-        self._x_negative = viewport.x_negative
-        self._y_negative = viewport.y_negative
-        self._extent_frame = viewport.extent_frame
-        self._model_matrix = viewport.model_matrix
-        self._wcs_offset_mm = viewport.wcs_offset_mm
 
         new_machine = self._context.machine
         if new_machine:
@@ -324,7 +304,9 @@ class Canvas3D(Gtk.GLArea):
             return
         logger.info("Resetting to top view.")
         # The camera class now handles all orientation logic internally.
-        self.camera.set_top_view(self._width_mm, self._depth_mm)
+        self.camera.set_top_view(
+            self._viewport.width_mm, self._viewport.depth_mm
+        )
 
         # A view reset can interrupt a drag operation, leaving stale state.
         self._clear_drag_state()
@@ -335,7 +317,9 @@ class Canvas3D(Gtk.GLArea):
         if not self.camera:
             return
         logger.info("Resetting to front view.")
-        self.camera.set_front_view(self._width_mm, self._depth_mm)
+        self.camera.set_front_view(
+            self._viewport.width_mm, self._viewport.depth_mm
+        )
         # A view reset can interrupt a drag operation, leaving stale state.
         self._clear_drag_state()
         self.queue_render()
@@ -345,7 +329,9 @@ class Canvas3D(Gtk.GLArea):
         if not self.camera:
             return
         logger.info("Resetting to isometric view.")
-        self.camera.set_iso_view(self._width_mm, self._depth_mm)
+        self.camera.set_iso_view(
+            self._viewport.width_mm, self._viewport.depth_mm
+        )
 
         # A view reset can interrupt a drag operation, leaving stale state.
         self._clear_drag_state()
@@ -465,17 +451,19 @@ class Canvas3D(Gtk.GLArea):
                     logger.debug(f"Pango normalized font to {font_family}")
 
             self._axis_renderer = AxisRenderer3D(
-                self._width_mm, self._depth_mm, font_family=font_family
+                self._viewport.width_mm,
+                self._viewport.depth_mm,
+                font_family=font_family,
             )
-            if self._extent_frame is not None:
-                fx, fy, fw, fh = self._extent_frame
+            if self._viewport.extent_frame is not None:
+                fx, fy, fw, fh = self._viewport.extent_frame
                 ml = -fx
                 mb = -fy
-                mt = fh - self._depth_mm - mb
-                mr = fw - self._width_mm - ml
-                if self._x_right:
+                mt = fh - self._viewport.depth_mm - mb
+                mr = fw - self._viewport.width_mm - ml
+                if self._viewport.x_right:
                     fx = -mr
-                if self._y_down:
+                if self._viewport.y_down:
                     fy = -mt
                 self._axis_renderer.set_extent_frame(fx, fy, fw, fh, show=True)
             self._axis_renderer.init_gl()
@@ -597,7 +585,7 @@ class Canvas3D(Gtk.GLArea):
             mvp_matrix_ui = proj_matrix @ view_matrix
 
             # Create WCS translation matrix
-            offset_x, offset_y, offset_z = self._wcs_offset_mm
+            offset_x, offset_y, offset_z = self._viewport.wcs_offset_mm
             wcs_translation_matrix = np.array(
                 [
                     [1, 0, 0, offset_x],
@@ -611,7 +599,7 @@ class Canvas3D(Gtk.GLArea):
             # Final model matrix for the grid combines the origin flip and WCS
             # translation. Grid/Axes vertices are in local (0..W, 0..H).
             # 1. Apply wcs_translation (shift by offset).
-            # 2. Apply _model_matrix (orient to machine coords).
+            # 2. Apply model_matrix (orient to machine coords).
             # Note: matrix order A @ B applies B then A.
             # This order applies WCS translation locally, THEN applies the
             # machine flip/origin shift.
@@ -1199,18 +1187,9 @@ class Canvas3D(Gtk.GLArea):
             last_cmd = self._op_player.ops.commands[last_idx]
             assert isinstance(last_cmd, MovingCommand)
             assert last_cmd.end is not None
-            assert (
-                abs(self._op_player.state.axes[Axis.X] - last_cmd.end[0])
-                < 1e-6
-            )
-            assert (
-                abs(self._op_player.state.axes[Axis.Y] - last_cmd.end[1])
-                < 1e-6
-            )
-            assert (
-                abs(self._op_player.state.axes[Axis.Z] - last_cmd.end[2])
-                < 1e-6
-            )
+            axes = self._op_player.state.axes
+            for i, ax in enumerate(sorted(axes)):
+                assert abs(axes[ax] - last_cmd.end[i]) < 1e-6
         self._notify_playback_overlay(len(self._op_player.ops))
         self._upload_scanline_overlay()
 
