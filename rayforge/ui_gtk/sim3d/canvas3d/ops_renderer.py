@@ -155,6 +155,7 @@ class OpsRenderer(BaseRenderer):
 
         shader.set_float("uUseVertexColor", 0.0)
         shader.set_int("uExecutedVertexCount", -1)
+        shader.set_float("uEmissive", 0.0)
         GL.glBindVertexArray(0)
 
     def _load_buffer_data(self, vbo: int, data: np.ndarray):
