@@ -108,13 +108,11 @@ def transform_to_cylinder(
     curr_y = py + curr_t * dy
     curr_z = pz + curr_t * dz
 
-    prev_eff_circ = np.maximum((diameter + 2.0 * prev_z) * math.pi, 1e-6)
-    curr_eff_circ = np.maximum((diameter + 2.0 * curr_z) * math.pi, 1e-6)
     prev_eff_r = radius + prev_z
     curr_eff_r = radius + curr_z
 
-    theta_prev = (prev_y / prev_eff_circ) * 2.0 * np.pi
-    theta_curr = (curr_y / curr_eff_circ) * 2.0 * np.pi
+    theta_prev = (prev_y / circumference) * 2.0 * np.pi
+    theta_curr = (curr_y / circumference) * 2.0 * np.pi
 
     result_verts = np.empty((total_segments * 2, 3), dtype=np.float32)
     result_verts[0::2, 0] = prev_x.astype(np.float32)
