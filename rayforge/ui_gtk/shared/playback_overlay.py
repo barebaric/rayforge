@@ -60,6 +60,20 @@ class PlaybackOverlay(Gtk.Box):
         self._play_button.connect("clicked", self._on_play_clicked)
         self.append(self._play_button)
 
+        self._step_back_button = Gtk.Button()
+        self._step_back_button.set_child(get_icon("skip-previous-symbolic"))
+        self._step_back_button.set_tooltip_text(_("Step backward"))
+        self._step_back_button.set_sensitive(False)
+        self._step_back_button.connect("clicked", self._on_step_back)
+        self.append(self._step_back_button)
+
+        self._step_fwd_button = Gtk.Button()
+        self._step_fwd_button.set_child(get_icon("skip-forward-symbolic"))
+        self._step_fwd_button.set_tooltip_text(_("Step forward"))
+        self._step_fwd_button.set_sensitive(False)
+        self._step_fwd_button.connect("clicked", self._on_step_fwd)
+        self.append(self._step_fwd_button)
+
         self._slider = Gtk.Scale.new_with_range(
             Gtk.Orientation.HORIZONTAL, 0, 1, 1
         )
@@ -99,11 +113,15 @@ class PlaybackOverlay(Gtk.Box):
             self._slider.set_value(0)
             self._slider.set_sensitive(True)
             self._play_button.set_sensitive(True)
+            self._step_back_button.set_sensitive(True)
+            self._step_fwd_button.set_sensitive(True)
         else:
             self._slider.set_range(0, 1)
             self._slider.set_value(0)
             self._slider.set_sensitive(False)
             self._play_button.set_sensitive(False)
+            self._step_back_button.set_sensitive(False)
+            self._step_fwd_button.set_sensitive(False)
 
     def get_slider_index(self) -> int:
         return int(self._slider.get_value())
@@ -186,3 +204,14 @@ class PlaybackOverlay(Gtk.Box):
     def _on_speed_clicked(self, button):
         self._speed_index = (self._speed_index + 1) % len(SPEED_OPTIONS)
         button.set_label(f"{SPEED_OPTIONS[self._speed_index]}x")
+
+    def _on_step_back(self, button):
+        current = int(self._slider.get_value())
+        if current > 0:
+            self._slider.set_value(current - 1)
+
+    def _on_step_fwd(self, button):
+        current = int(self._slider.get_value())
+        max_idx = self._slider.get_adjustment().get_upper()
+        if current < max_idx:
+            self._slider.set_value(current + 1)
