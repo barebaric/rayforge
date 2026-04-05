@@ -99,10 +99,7 @@ async def test_inject_wcs_after_preamble_flag(carvera_air_machine: "Machine"):
     Tests that inject_wcs_after_preamble flag controls whether
     WCS is injected after the preamble.
     """
-    from rayforge.machine.models.dialect import (
-        GcodeDialect,
-        register_dialect,
-    )
+    from rayforge.machine.models.dialect import GcodeDialect
 
     # --- Arrange ---
     machine = carvera_air_machine
@@ -151,7 +148,7 @@ async def test_inject_wcs_after_preamble_flag(carvera_air_machine: "Machine"):
         postscript=["M5"],
         inject_wcs_after_preamble=False,
     )
-    register_dialect(custom_dialect)
+    machine.context.dialect_mgr.register(custom_dialect)
     machine.set_dialect_uid(custom_dialect.uid)
 
     gcode_str, _ = machine.encode_ops(ops, doc)

@@ -6,38 +6,6 @@ from gettext import gettext as _
 from ....core.varset import VarSet, Var, TextAreaVar, BoolVar
 
 
-_DIALECT_REGISTRY: Dict[str, "GcodeDialect"] = {}
-
-
-def register_dialect(dialect: "GcodeDialect"):
-    """
-    Adds a dialect to the central registry, keyed by its case-insensitive
-    unique `uid`.
-    """
-    uid_key = dialect.uid.lower()
-    if uid_key in _DIALECT_REGISTRY:
-        raise ValueError(
-            f"Dialect with UID '{dialect.uid}' is already registered."
-        )
-    _DIALECT_REGISTRY[uid_key] = dialect
-
-
-def get_dialect(uid: str) -> "GcodeDialect":
-    """
-    Retrieves a GcodeDialect instance from the registry by its
-    case-insensitive UID.
-    """
-    dialect = _DIALECT_REGISTRY.get(uid.lower())
-    if not dialect:
-        raise ValueError(f"Unknown or unsupported G-code dialect UID: '{uid}'")
-    return dialect
-
-
-def get_available_dialects() -> List["GcodeDialect"]:
-    """Returns a list of all registered GcodeDialect instances."""
-    return sorted(_DIALECT_REGISTRY.values(), key=lambda d: d.label)
-
-
 @dataclass
 class GcodeDialect:
     """
@@ -227,7 +195,11 @@ class GcodeDialect:
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "GcodeDialect":
+    def from_dict(
+        cls,
+        data: Dict[str, Any],
+        registry: Optional[Dict[str, "GcodeDialect"]] = None,
+    ) -> "GcodeDialect":
         """
         Creates a dialect instance from a dictionary, correctly handling
         missing fields by inheriting from parent dialect.
@@ -235,18 +207,18 @@ class GcodeDialect:
         parent_uid = data.get("parent_uid")
         base_dialect = None
 
-        if parent_uid:
-            base_dialect = _DIALECT_REGISTRY.get(parent_uid.lower())
+        if parent_uid and registry:
+            base_dialect = registry.get(parent_uid.lower())
+
+        if not base_dialect and registry:
+            base_dialect = registry.get("grbl")
 
         if not base_dialect:
-            base_dialect = _DIALECT_REGISTRY.get("grbl")
-
-        if base_dialect:
-            defaults = asdict(base_dialect)
-        else:
             from .grbl import GRBL_DIALECT
 
-            defaults = asdict(GRBL_DIALECT)
+            base_dialect = GRBL_DIALECT
+
+        defaults = asdict(base_dialect)
 
         merged_data = defaults.copy()
         merged_data.update(data)

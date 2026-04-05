@@ -88,7 +88,6 @@ class DebugDumpManager:
         from .config import LOG_DIR
         from .context import get_context
         from .logging_setup import get_memory_handler
-        from .machine.models.dialect import get_available_dialects
         from .ui_gtk.about import get_dependency_info
         from . import __version__
 
@@ -157,7 +156,7 @@ class DebugDumpManager:
                 # 5. Write custom dialects
                 custom_dialects = [
                     d.to_dict()
-                    for d in get_available_dialects()
+                    for d in context.dialect_mgr.get_all()
                     if d.is_custom
                 ]
                 if custom_dialects:
