@@ -490,6 +490,13 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_click_to_zero_mode_changed
         )
 
+        self.bottom_panel.asset_browser.add_asset_requested.connect(
+            self.on_add_asset_requested
+        )
+        self.bottom_panel.asset_browser.asset_activated.connect(
+            self.on_asset_activated
+        )
+
         self.bottom_panel.set_get_bounds_callback(self._get_selection_bounds)
 
         # Connect to position signal to remember user's chosen height
