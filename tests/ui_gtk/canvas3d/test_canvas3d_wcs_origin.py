@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from unittest.mock import MagicMock, patch
 from rayforge.machine.models.machine import Origin
-from rayforge.ui_gtk.canvas3d.axis_renderer_3d import AxisRenderer3D
+from rayforge.ui_gtk.sim3d.canvas3d.axis_renderer_3d import AxisRenderer3D
 
 
 def create_model_matrix(
@@ -90,7 +90,7 @@ def test_wcs_marker_position(
 
     # Patch GL in axis_renderer_3d to prevent "invalid operation"
     # (missing context) on Windows.
-    with patch("rayforge.ui_gtk.canvas3d.axis_renderer_3d.GL"):
+    with patch("rayforge.ui_gtk.sim3d.canvas3d.axis_renderer_3d.GL"):
         renderer = AxisRenderer3D(width, height)
         renderer.grid_vao = 1
         renderer.axes_vao = 2

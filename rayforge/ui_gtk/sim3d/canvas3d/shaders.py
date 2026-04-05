@@ -6,15 +6,18 @@ SIMPLE_VERTEX_SHADER = """
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec4 aColor;
 layout (location = 2) in vec3 aNormal;
+layout (location = 3) in float aVertexIndex;
 uniform mat4 uMVP;
 out vec4 vColor;
 out vec3 vNormal;
 out vec3 vPos;
+flat out int vVertexID;
 void main() {
     gl_Position = uMVP * vec4(aPos, 1.0);
     vColor = aColor;
     vNormal = aNormal;
     vPos = aPos;
+    vVertexID = int(aVertexIndex);
 }
 """
 
@@ -23,11 +26,16 @@ out vec4 FragColor;
 in vec4 vColor;
 in vec3 vNormal;
 in vec3 vPos;
+flat in int vVertexID;
 uniform vec4 uColor;
 uniform float uUseVertexColor;
 uniform float uHasNormals;
 uniform vec3 uLightDir;
 uniform vec3 uCameraPos;
+uniform int uExecutedVertexCount;
+uniform float uAlphaPending;
+uniform float uEmissive;
+uniform vec3 uPointLightPos;
 void main() {
     vec4 baseColor;
     if (uUseVertexColor > 0.5) {
@@ -48,9 +56,26 @@ void main() {
         float specular = 0.35 * spec;
 
         float light = ambient + diffuse + specular;
+
+        // Point light from laser
+        vec3 toPoint = uPointLightPos - vPos;
+        float dist = length(toPoint);
+        float atten = 1.0 / (1.0 + 0.005 * dist * dist);
+        if (dist > 0.001) {
+            vec3 plDir = toPoint / dist;
+            float plDiff = max(dot(n, plDir), 0.0);
+            light += plDiff * atten;
+        }
+
         FragColor = vec4(baseColor.rgb * light, baseColor.a);
     } else {
         FragColor = baseColor;
+    }
+    FragColor.rgb *= (1.0 + uEmissive);
+    if (uExecutedVertexCount >= 0) {
+        if (vVertexID >= uExecutedVertexCount) {
+            FragColor.a *= uAlphaPending;
+        }
     }
 }
 """
@@ -124,12 +149,51 @@ void main() {
 }
 """
 
+BACKGROUND_VERTEX_SHADER = """
+layout (location = 0) in vec3 aPos;
+
+out vec2 vTexCoord;
+
+void main() {
+    gl_Position = vec4(aPos.xy, 0.0, 1.0);
+    vTexCoord = aPos.xy * 0.5 + 0.5;
+}
+"""
+
+BACKGROUND_FRAGMENT_SHADER = """
+in vec2 vTexCoord;
+out vec4 FragColor;
+
+uniform vec3 uBgColor;
+uniform vec3 uBgColorLight;
+
+void main() {
+    vec2 uv = vTexCoord;
+
+    float vertical = mix(0.55, 1.0, uv.y);
+
+    vec2 center = vec2(0.5, 0.45);
+    float dist = length(uv - center);
+    float vignette = 1.0 - smoothstep(0.0, 0.9, dist) * 0.45;
+
+    float brightness = vertical * vignette;
+
+    vec3 color = mix(uBgColor, uBgColorLight, brightness);
+
+    float highlight = exp(-dist * dist * 6.0) * 0.12;
+    color += vec3(highlight * 0.8, highlight * 0.9, highlight);
+
+    FragColor = vec4(color, 1.0);
+}
+"""
+
 TEXTURE_FRAGMENT_SHADER = """
 in vec2 vTexCoord;
 out vec4 FragColor;
 
 uniform sampler2D uTexture;
 uniform sampler2D uColorLUT;
+uniform float uAlpha;
 
 void main() {
     // Sample the power value from the texture
@@ -145,6 +209,6 @@ void main() {
     // texture.
     vec4 color = texture(uColorLUT, vec2(power, 0.5));
 
-    FragColor = color;
+    FragColor = vec4(color.rgb, color.a * uAlpha);
 }
 """

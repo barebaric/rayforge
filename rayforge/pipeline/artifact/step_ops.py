@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Dict, Any, Type, TYPE_CHECKING
+from typing import Dict, Any, Type, Optional, TYPE_CHECKING
 import numpy as np
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
@@ -13,7 +13,6 @@ class StepOpsArtifactHandle(BaseArtifactHandle):
 
     def __init__(
         self,
-        time_estimate: Optional[float],
         shm_name: str,
         handle_class_name: str,
         artifact_type_name: str,
@@ -28,7 +27,6 @@ class StepOpsArtifactHandle(BaseArtifactHandle):
             generation_id=generation_id,
             array_metadata=array_metadata,
         )
-        self.time_estimate = time_estimate
 
 
 class StepOpsArtifact(BaseArtifact):
@@ -41,32 +39,10 @@ class StepOpsArtifact(BaseArtifact):
         self,
         ops: "Ops",
         generation_id: int,
-        time_estimate: Optional[float] = None,
     ):
         super().__init__()
         self.ops = ops
         self.generation_id = generation_id
-        self.time_estimate = time_estimate
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Converts the artifact to a dictionary for serialization."""
-        return {
-            "ops": self.ops.to_dict(),
-            "generation_id": self.generation_id,
-            "time_estimate": self.time_estimate,
-        }
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "StepOpsArtifact":
-        """Creates an artifact from a dictionary."""
-        from ...core.ops import Ops
-
-        ops = Ops.from_dict(data["ops"])
-        return cls(
-            ops=ops,
-            generation_id=data["generation_id"],
-            time_estimate=data.get("time_estimate"),
-        )
 
     def create_handle(
         self,
@@ -79,7 +55,6 @@ class StepOpsArtifact(BaseArtifact):
             handle_class_name=StepOpsArtifactHandle.__name__,
             artifact_type_name=self.__class__.__name__,
             generation_id=self.generation_id,
-            time_estimate=self.time_estimate,
             array_metadata=array_metadata,
         )
 
@@ -110,5 +85,4 @@ class StepOpsArtifact(BaseArtifact):
         return cls(
             ops=ops,
             generation_id=handle.generation_id,
-            time_estimate=handle.time_estimate,
         )

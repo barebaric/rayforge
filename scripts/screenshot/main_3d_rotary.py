@@ -8,6 +8,7 @@ Usage: pixi run screenshot main:3d-rotary
 import time
 import logging
 from rayforge.uiscript import app, win
+from rayforge.ui_gtk.sim3d.canvas3d.camera import ViewDirection
 from utils import (
     load_project,
     wait_for_settled,
@@ -70,7 +71,9 @@ def main():
 
     time.sleep(0.5)
 
-    run_on_main_thread(lambda: win.view_cmd.set_view_iso(win.canvas3d))
+    run_on_main_thread(
+        lambda: win.view_cmd.set_view(ViewDirection.ISO, win.canvas3d)
+    )
     time.sleep(0.5)
 
     clear_window_subtitle(win)

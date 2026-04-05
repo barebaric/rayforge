@@ -770,3 +770,47 @@ class TestPositionDisplayInWCSMode:
             machine_pos[1] - offset_machine[1],
         )
         assert ref_pos == pytest.approx((10.0, -40.0))
+
+
+class TestGetCommandOffsetZ:
+    """
+    Tests that get_command_offset always returns Z=0 regardless of WCS
+    Z offset. The WCS Z offset is handled by the controller (via the
+    G54-G59 preamble command), not by subtracting from G-code coords.
+    """
+
+    def test_wcs_z_offset_not_subtracted(self, machine):
+        """
+        WCS Z offset should not appear in command offset.
+        """
+        machine.set_axis_extents(100.0, 100.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.wcs_origin_is_workarea_origin = False
+        machine.wcs_offsets["G54"] = (10.0, 20.0, 30.0)
+
+        space = machine.get_coordinate_space()
+        offset = space.get_command_offset(
+            wcs_offset=machine.get_active_wcs_offset(),
+            wcs_is_workarea_origin=False,
+        )
+
+        assert offset[0] == pytest.approx(10.0)
+        assert offset[1] == pytest.approx(20.0)
+        assert offset[2] == pytest.approx(0.0)
+
+    def test_wcs_zero_z_offset(self, machine):
+        """
+        With Z=0 WCS offset, command Z should also be 0.
+        """
+        machine.set_axis_extents(100.0, 100.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.wcs_origin_is_workarea_origin = False
+        machine.wcs_offsets["G54"] = (10.0, 20.0, 0.0)
+
+        space = machine.get_coordinate_space()
+        offset = space.get_command_offset(
+            wcs_offset=machine.get_active_wcs_offset(),
+            wcs_is_workarea_origin=False,
+        )
+
+        assert offset[2] == pytest.approx(0.0)

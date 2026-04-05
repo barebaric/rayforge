@@ -1,13 +1,18 @@
+from pathlib import Path
 from typing import cast
 from gettext import gettext as _
 from gi.repository import Adw, Gtk, Gdk
+from ...context import get_context
+from ...core.model import Model
 from ...machine.models.laser import Laser
 from ...machine.models.machine import Machine
+from ..icons import get_icon
 from ..shared.adwfix import get_spinrow_int, get_spinrow_float
 from ..shared.unit_spin_row import UnitSpinRowHelper
+from ..shared.model_selection_dialog import ModelSelectionDialog
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
-from ..icons import get_icon
+from ..sim3d.canvas3d.model_renderer import get_model_extent
 
 
 class LaserRow(Gtk.Box):
@@ -423,6 +428,92 @@ class LaserPreferencesPage(TrackedPreferencesPage):
         )
         self.frame_group.add(self.frame_corner_pause_row)
 
+        # Model preferences group
+        self.model_group = Adw.PreferencesGroup(
+            title=_("3D Model"),
+            description=_(
+                "Select and configure a 3D model for this laser head."
+            ),
+        )
+        self.add(self.model_group)
+
+        self.model_row = Adw.ActionRow(
+            title=_("Model"),
+            activatable=True,
+        )
+        self.model_row.connect("activated", self._on_model_activated)
+        self.model_row.add_suffix(get_icon("go-next-symbolic"))
+        self.model_group.add(self.model_row)
+
+        self.scale_row = Adw.SpinRow(
+            title=_("Scale"),
+            subtitle=_("Uniform scale factor for the model"),
+            adjustment=Gtk.Adjustment(
+                lower=0.01, upper=1000, step_increment=1, page_increment=10
+            ),
+            digits=2,
+        )
+        self.handler_ids["scale"] = self.scale_row.connect(
+            "notify::value", self._on_scale_changed
+        )
+        self.model_group.add(self.scale_row)
+
+        self.rx_row = Adw.SpinRow(
+            title=_("X Rotation"),
+            subtitle=_("Degrees around the X axis"),
+            adjustment=Gtk.Adjustment(
+                lower=-360, upper=360, step_increment=1, page_increment=15
+            ),
+            digits=1,
+        )
+        self.handler_ids["rx"] = self.rx_row.connect(
+            "notify::value", self._on_rotation_changed
+        )
+        self.model_group.add(self.rx_row)
+
+        self.ry_row = Adw.SpinRow(
+            title=_("Y Rotation"),
+            subtitle=_("Degrees around the Y axis"),
+            adjustment=Gtk.Adjustment(
+                lower=-360, upper=360, step_increment=1, page_increment=15
+            ),
+            digits=1,
+        )
+        self.handler_ids["ry"] = self.ry_row.connect(
+            "notify::value", self._on_rotation_changed
+        )
+        self.model_group.add(self.ry_row)
+
+        self.rz_row = Adw.SpinRow(
+            title=_("Z Rotation"),
+            subtitle=_("Degrees around the Z axis"),
+            adjustment=Gtk.Adjustment(
+                lower=-360, upper=360, step_increment=1, page_increment=15
+            ),
+            digits=1,
+        )
+        self.handler_ids["rz"] = self.rz_row.connect(
+            "notify::value", self._on_rotation_changed
+        )
+        self.model_group.add(self.rz_row)
+
+        focal_distance_adj = Gtk.Adjustment(
+            lower=0, upper=10000, step_increment=1, page_increment=10
+        )
+        self.focal_distance_row = Adw.SpinRow(
+            title=_("Focal Distance"),
+            subtitle=_(
+                "Distance from the laser head to the work surface (Z offset)"
+            ),
+            adjustment=focal_distance_adj,
+            digits=2,
+        )
+        focal_distance_adj.set_value(0)
+        self.handler_ids["focal_distance"] = self.focal_distance_row.connect(
+            "notify::value", self._on_focal_distance_changed
+        )
+        self.model_group.add(self.focal_distance_row)
+
         # Connect signals
         self.laser_list_editor.list_box.connect(
             "row-selected", self.on_laserhead_selected
@@ -441,6 +532,7 @@ class LaserPreferencesPage(TrackedPreferencesPage):
         """Update the configuration panel when a Laser is selected."""
         has_selection = row is not None
         self.laserhead_config_group.set_visible(has_selection)
+        self.model_group.set_visible(has_selection)
         self.frame_group.set_visible(has_selection)
         if has_selection:
             # Block handlers to prevent feedback loop
@@ -453,6 +545,13 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             self.cut_color_button.handler_block(self.handler_ids["cut_color"])
             self.raster_color_button.handler_block(
                 self.handler_ids["raster_color"]
+            )
+            self.scale_row.handler_block(self.handler_ids["scale"])
+            self.rx_row.handler_block(self.handler_ids["rx"])
+            self.ry_row.handler_block(self.handler_ids["ry"])
+            self.rz_row.handler_block(self.handler_ids["rz"])
+            self.focal_distance_row.handler_block(
+                self.handler_ids["focal_distance"]
             )
             self.frame_power_row.handler_block(self.handler_ids["frame_power"])
             self.frame_speed_row.handler_block(self.handler_ids["frame_speed"])
@@ -482,6 +581,13 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             self._set_color_button(
                 self.raster_color_button, selected_head.raster_color
             )
+            self._update_model_subtitle(selected_head)
+            self.scale_row.set_value(selected_head.get_scale())
+            rx, ry, rz = selected_head.get_rotation()
+            self.rx_row.set_value(rx)
+            self.ry_row.set_value(ry)
+            self.rz_row.set_value(rz)
+            self.focal_distance_row.set_value(selected_head.focal_distance)
             self.frame_power_row.set_value(
                 selected_head.frame_power_percent * 100
             )
@@ -509,6 +615,13 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             )
             self.raster_color_button.handler_unblock(
                 self.handler_ids["raster_color"]
+            )
+            self.scale_row.handler_unblock(self.handler_ids["scale"])
+            self.rx_row.handler_unblock(self.handler_ids["rx"])
+            self.ry_row.handler_unblock(self.handler_ids["ry"])
+            self.rz_row.handler_unblock(self.handler_ids["rz"])
+            self.focal_distance_row.handler_unblock(
+                self.handler_ids["focal_distance"]
             )
             self.frame_power_row.handler_unblock(
                 self.handler_ids["frame_power"]
@@ -625,3 +738,83 @@ class LaserPreferencesPage(TrackedPreferencesPage):
         if not selected_laser:
             return
         selected_laser.set_frame_corner_pause(get_spinrow_float(spinrow))
+
+    def _update_model_subtitle(self, laser: Laser):
+        if laser.model_id:
+            model_mgr = get_context().model_mgr
+            model = Model(name="", path=Path(laser.model_id))
+            resolved = model_mgr.resolve(model)
+            if resolved:
+                self.model_row.set_subtitle(resolved.stem)
+                return
+        self.model_row.set_subtitle(_("None"))
+
+    def _on_model_activated(self, row):
+        laser = self._get_selected_laser()
+        if not laser:
+            return
+
+        model_mgr = get_context().model_mgr
+        categories = model_mgr.get_categories()
+        category = None
+        for cat in categories:
+            if cat.id == "heads":
+                category = cat
+                break
+        if category is None and categories:
+            category = categories[0]
+
+        root = self.get_root()
+        dialog = ModelSelectionDialog(
+            category=category,
+            current_model_id=laser.model_id,
+            transient_for=cast(Gtk.Window, root) if root else None,
+        )
+
+        def on_response(d, response_id):
+            if response_id != "select":
+                d.destroy()
+                return
+            selected_id = d.get_selected_model_id()
+            if selected_id != laser.model_id:
+                laser.set_model_id(selected_id)
+                if selected_id is not None:
+                    self._apply_model_scale(laser, selected_id)
+            self._update_model_subtitle(laser)
+            self.laser_list_editor._on_machine_changed(self.machine)
+            d.destroy()
+
+        dialog.connect("response", on_response)
+        dialog.present()
+
+    def _apply_model_scale(self, laser: Laser, model_id: str):
+        resolved = get_context().model_mgr.resolve(
+            Model(name="", path=Path(model_id))
+        )
+        if resolved is None:
+            return
+        extent = get_model_extent(resolved)
+        if extent and extent > 1e-6:
+            laser.set_scale(40.0 / extent)
+            self.scale_row.set_value(laser.get_scale())
+
+    def _on_scale_changed(self, _spinrow, _param):
+        selected_laser = self._get_selected_laser()
+        if selected_laser:
+            selected_laser.set_scale(get_spinrow_float(self.scale_row))
+
+    def _on_rotation_changed(self, _spinrow, _param):
+        selected_laser = self._get_selected_laser()
+        if not selected_laser:
+            return
+        rx = get_spinrow_float(self.rx_row)
+        ry = get_spinrow_float(self.ry_row)
+        rz = get_spinrow_float(self.rz_row)
+        selected_laser.set_rotation(rx, ry, rz)
+
+    def _on_focal_distance_changed(self, _spinrow, _param):
+        selected_laser = self._get_selected_laser()
+        if selected_laser:
+            selected_laser.set_focal_distance(
+                get_spinrow_float(self.focal_distance_row)
+            )

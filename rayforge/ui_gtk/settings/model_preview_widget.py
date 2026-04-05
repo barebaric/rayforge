@@ -8,10 +8,10 @@ import numpy as np
 from gi.repository import Gtk
 from OpenGL import GL
 
-from ..canvas3d.camera import Camera
-from ..canvas3d.gl_utils import BaseRenderer, Shader
-from ..canvas3d.model_renderer import _load_mesh_data
-from ..canvas3d.shaders import (
+from ..sim3d.canvas3d.camera import Camera
+from ..sim3d.canvas3d.gl_utils import BaseRenderer, Shader
+from ..sim3d.canvas3d.model_renderer import _load_mesh_data
+from ..sim3d.canvas3d.shaders import (
     SIMPLE_FRAGMENT_SHADER,
     SIMPLE_VERTEX_SHADER,
 )
@@ -39,6 +39,10 @@ class ModelPreviewWidget(Gtk.GLArea):
         motion.connect("drag-begin", self._on_drag_begin)
         motion.connect("drag-update", self._on_drag_update)
         self.add_controller(motion)
+        middle = Gtk.GestureDrag(button=2)
+        middle.connect("drag-begin", self._on_drag_begin)
+        middle.connect("drag-update", self._on_drag_update)
+        self.add_controller(middle)
         scroll = Gtk.EventControllerScroll(
             flags=Gtk.EventControllerScrollFlags.VERTICAL
         )
@@ -72,19 +76,14 @@ class ModelPreviewWidget(Gtk.GLArea):
     def _fit_camera(self):
         if self._mesh_data is None:
             return
-        bmin, bmax = self._mesh_data.bounds
-        center = (bmin + bmax) / 2.0
-        size = float(np.linalg.norm(bmax - bmin))
-        if size < 1e-6:
-            size = 1.0
         direction = np.array([-0.6, -0.7, 0.4])
         direction = direction / np.linalg.norm(direction)
         self._camera = Camera(
-            position=center + direction * size,
-            target=center,
+            position=direction * 2.5,
+            target=np.zeros(3),
             up=np.array([0.0, 0.0, 1.0]),
-            width=self.get_width(),
-            height=self.get_height(),
+            width=max(self.get_width(), 1),
+            height=max(self.get_height(), 1),
         )
 
     def _on_render(self, area, ctx):
@@ -128,7 +127,7 @@ class ModelPreviewWidget(Gtk.GLArea):
         norm = np.linalg.norm(cam_right)
         if norm > 1e-6:
             cam_right /= norm
-            self._camera.orbit(target, cam_up, dx)
+            self._camera.orbit(target, cam_up, -dx)
             self._camera.orbit(target, cam_right, -dy)
         self.queue_render()
 
@@ -153,8 +152,14 @@ class _SimpleModelRenderer(BaseRenderer):
 
     def init_gl(self):
         flat_indices = self._mesh_data.faces.flatten()
-        self._positions = self._mesh_data.positions[flat_indices]
+        self._positions = self._mesh_data.positions[flat_indices].copy()
         self._normals = self._mesh_data.normals[flat_indices]
+        bmin = self._positions.min(axis=0)
+        bmax = self._positions.max(axis=0)
+        center = (bmin + bmax) / 2.0
+        extent = float((bmax - bmin).max())
+        if extent > 1e-6:
+            self._positions = (self._positions - center) / extent
         self._vertex_count = len(flat_indices)
 
         self._vao = self._create_vao()

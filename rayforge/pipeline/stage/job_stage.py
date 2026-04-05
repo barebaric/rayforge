@@ -40,6 +40,7 @@ class JobPipelineStage(PipelineStage):
             int, List["BaseArtifactHandle"]
         ] = {}
         self._job_running: bool = False
+        self._last_completed_handle: Optional["JobArtifactHandle"] = None
         self.job_generation_finished = Signal()
         self.job_generation_failed = Signal()
 
@@ -47,6 +48,12 @@ class JobPipelineStage(PipelineStage):
     def is_running(self) -> bool:
         """Check if a job generation is currently in progress."""
         return self._job_running
+
+    @property
+    def last_completed_handle(
+        self,
+    ) -> Optional["JobArtifactHandle"]:
+        return self._last_completed_handle
 
     def handle_task_event(
         self,
@@ -129,6 +136,13 @@ class JobPipelineStage(PipelineStage):
             ) as handle:
                 if handle:
                     logger.info("Job generation successful.")
+                    if self._last_completed_handle is not None:
+                        self._artifact_manager.release_handle(
+                            self._last_completed_handle
+                        )
+                    self._artifact_manager.retain_handle(handle)
+                    if isinstance(handle, JobArtifactHandle):
+                        self._last_completed_handle = handle
                 else:
                     logger.info(
                         "Job generation finished with no artifact produced."

@@ -20,6 +20,14 @@ from ..driver.driver import (
     Axis,
     DeviceState,
 )
+from ..assembly import Assembly
+from ..kinematics import (
+    HeadSpec,
+    Kinematics,
+    RotarySpec,
+    build_cartesian_assembly,
+    build_rotary_assembly,
+)
 from ..transport import TransportStatus
 from .dialect import GcodeDialect, get_dialect
 from .laser import Laser
@@ -31,6 +39,7 @@ from .zone import Zone
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
+    from ...core.layer import Layer
     from ...core.ops import Ops
     from ...core.varset import VarSet
     from ..driver.driver import Driver
@@ -161,6 +170,12 @@ class Machine:
         self.rotary_modules: Dict[str, RotaryModule] = {}
         self.nogo_zones: Dict[str, Zone] = {}
 
+        self._assembly: Optional["Assembly"] = None
+        self._assembly_dirty: bool = True
+        self._mounted_rotaries: List[RotaryModule] = []
+        self._layer_configured: bool = False
+        self._pending_diameter: Optional[float] = None
+
     @property
     def controller(self) -> "MachineController":
         """
@@ -196,6 +211,83 @@ class Machine:
         Returns a sorted list of supported mutable Work Coordinate Systems.
         """
         return sorted(list(self.wcs_offsets.keys()))
+
+    @property
+    def kinematics(self) -> Kinematics:
+        return Kinematics(self.assembly)
+
+    @property
+    def assembly(self) -> Assembly:
+        if self._assembly_dirty or self._assembly is None:
+            self._assembly = self._build_assembly()
+            self._assembly_dirty = False
+        return self._assembly
+
+    def invalidate_assembly(self):
+        self._assembly_dirty = True
+
+    def configure_for_layer(self, layer: Optional["Layer"]) -> None:
+        required_rotaries: List[RotaryModule] = []
+        diameter: Optional[float] = None
+        if layer and layer.rotary_enabled and layer.rotary_module_uid:
+            module = self.rotary_modules.get(layer.rotary_module_uid)
+            if module:
+                required_rotaries.append(module)
+                diameter = layer.rotary_diameter
+        if self._assembly_needs_rebuild(required_rotaries, diameter):
+            self._mounted_rotaries = required_rotaries
+            self._pending_diameter = diameter
+            self._layer_configured = True
+            self._assembly_dirty = True
+
+    def _assembly_needs_rebuild(
+        self,
+        rotaries: List[RotaryModule],
+        diameter: Optional[float],
+    ) -> bool:
+        if self._assembly_dirty:
+            return True
+        if len(rotaries) != len(self._mounted_rotaries):
+            return True
+        current_uids = {r.uid for r in self._mounted_rotaries}
+        new_uids = {r.uid for r in rotaries}
+        if current_uids != new_uids:
+            return True
+        if self._assembly is not None and self._assembly.has_rotary:
+            current = self._assembly.rotary_diameter
+            if current != diameter:
+                return True
+        return False
+
+    def _build_assembly(self) -> Assembly:
+        rotaries = self._mounted_rotaries
+        if not rotaries and not self._layer_configured and self.rotary_modules:
+            rotaries = list(self.rotary_modules.values())[:1]
+        head_specs: List[HeadSpec] = []
+        for h in self.heads:
+            t = h.transform.copy()
+            if h.focal_distance > 0:
+                t[2, 3] += h.focal_distance
+            head_specs.append((h.model_id, t))
+        if not rotaries:
+            return build_cartesian_assembly(head_specs)
+        mounted_uids = {r.uid for r in self._mounted_rotaries}
+        specs: List[RotarySpec] = [
+            (
+                Axis.Y,
+                self._pending_diameter
+                if self._pending_diameter is not None
+                else r.default_diameter,
+                r.transform,
+                r.model_id if r.uid in mounted_uids else None,
+            )
+            for r in rotaries
+        ]
+        return build_rotary_assembly(
+            head_specs=head_specs,
+            rotary_specs=specs,
+            rotary_diameter=specs[0][1],
+        )
 
     @property
     def machine_space_wcs(self) -> str:
@@ -404,9 +496,6 @@ class Machine:
         self._work_margins = (ml, mt, mr, mb)
         self._clamp_soft_limits()
         self.changed.send(self)
-
-    def set_dimensionssss(self, width: float, height: float):
-        self.set_axis_extents(width, height)
 
     @property
     def work_margins(self) -> Rect:
@@ -693,6 +782,7 @@ class Machine:
     def add_head(self, head: Laser):
         self.heads.append(head)
         head.changed.connect(self._on_head_changed)
+        self.invalidate_assembly()
         self.changed.send(self)
 
     def get_head_by_uid(self, uid: str) -> Optional[Laser]:
@@ -710,9 +800,11 @@ class Machine:
     def remove_head(self, head: Laser):
         head.changed.disconnect(self._on_head_changed)
         self.heads.remove(head)
+        self.invalidate_assembly()
         self.changed.send(self)
 
     def _on_head_changed(self, head, *args):
+        self.invalidate_assembly()
         self.changed.send(self)
 
     def add_camera(self, camera: Camera):
@@ -731,6 +823,7 @@ class Machine:
     def add_rotary_module(self, module: RotaryModule):
         self.rotary_modules[module.uid] = module
         module.changed.connect(self._on_rotary_module_changed)
+        self.invalidate_assembly()
         self.changed.send(self)
 
     def get_rotary_module_by_uid(self, uid: str) -> Optional[RotaryModule]:
@@ -751,9 +844,14 @@ class Machine:
             self.default_rotary_module_uid = (
                 remaining[0] if remaining else None
             )
+        self._mounted_rotaries = [
+            r for r in self._mounted_rotaries if r.uid != module.uid
+        ]
+        self.invalidate_assembly()
         self.changed.send(self)
 
     def _on_rotary_module_changed(self, module, *args):
+        self.invalidate_assembly()
         self.changed.send(self)
 
     def add_nogo_zone(self, zone: Zone):
@@ -1055,6 +1153,16 @@ class Machine:
                         base_end[1] - y_offset,
                         base_end[2] - z_offset,
                     )
+
+        if self.reverse_z_axis:
+            for command in ops_for_encoder.commands:
+                if isinstance(command, MovingCommand):
+                    if command.end is not None:
+                        command.end = (
+                            command.end[0],
+                            command.end[1],
+                            -command.end[2],
+                        )
 
         return ops_for_encoder
 

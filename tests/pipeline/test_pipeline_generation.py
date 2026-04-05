@@ -14,7 +14,6 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
-    StepRenderArtifact,
     StepOpsArtifact,
     JobArtifact,
 )
@@ -129,24 +128,10 @@ class TestPipelineGeneration:
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         store = get_context().artifact_store
-                        render_artifact = StepRenderArtifact(
-                            generation_id=gen_id
-                        )
-                        render_handle = store.put(render_artifact)
                         ops_artifact = StepOpsArtifact(
                             ops=Ops(), generation_id=gen_id
                         )
                         ops_handle = store.put(ops_artifact)
-
-                        render_event = {
-                            "handle_dict": render_handle.to_dict(),
-                            "generation_id": gen_id,
-                        }
-                        task_info.when_event(
-                            task_obj,
-                            "render_artifact_ready",
-                            render_event,
-                        )
 
                         ops_event = {
                             "handle_dict": ops_handle.to_dict(),
