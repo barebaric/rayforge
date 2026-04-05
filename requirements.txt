@@ -1,4 +1,4 @@
-aiohttp==3.13.3
+aiohttp==3.13.5
 asyncudp==0.11.0
 blinker==1.9.0
 ezdxf==1.4.2
@@ -13,7 +13,7 @@ PyGObject==3.50.0
 PyMuPDF==1.27.2.2
 PyOpenGL==3.1.10
 PyOpenGL_accelerate==3.1.10
-pypdf==6.9.1
+pypdf==6.9.2
 pyserial_asyncio==0.6
 pyvips==3.0.0
 PyYAML==6.0.2
