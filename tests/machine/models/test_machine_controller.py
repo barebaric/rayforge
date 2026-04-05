@@ -13,6 +13,7 @@ import pytest
 
 from rayforge.machine.models.controller import MachineController
 from rayforge.machine.models.machine import Machine
+from rayforge.shared.tasker import task_mgr
 
 
 @pytest.mark.usefixtures("lite_context")
@@ -23,7 +24,9 @@ class TestMachineController:
         """Test that MachineController can be initialized."""
         machine = Machine(lite_context)
         lite_context.machine_mgr.add_machine(machine)
-        controller = MachineController(machine, lite_context)
+        controller = MachineController(
+            machine, lite_context, task_mgr.schedule_on_main_thread
+        )
         assert controller is not None
         assert controller.machine == machine
         assert controller.context == lite_context
