@@ -842,8 +842,7 @@ class Machine:
         self.changed.send(self)
 
     def _on_rotary_module_changed(self, module, *args):
-        if module in self._mounted_rotaries:
-            self.invalidate_assembly()
+        self.invalidate_assembly()
         self.changed.send(self)
 
     def add_nogo_zone(self, zone: Zone):

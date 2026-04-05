@@ -194,6 +194,7 @@ class Canvas3D(Gtk.GLArea):
         if machine:
             self._viewport = ViewportConfig.from_machine(machine)
             self._wcs_offset_mm = self._viewport.wcs_offset_mm
+        self._scene_gl_dirty = True
         self.queue_render()
 
     def set_machine(self, viewport: Optional[ViewportConfig] = None):
@@ -1368,7 +1369,7 @@ class Canvas3D(Gtk.GLArea):
         self._zone_renderer.update_zones(zones)
 
     def _update_model_renderers(self):
-        """Rebuild renderers for modules referenced by rotary layers."""
+        """Rebuild renderers for chuck links with 3D models."""
         self.make_current()
         self._clear_model_renderers()
 
@@ -1376,36 +1377,45 @@ class Canvas3D(Gtk.GLArea):
         if not machine:
             return
 
-        used_uids = {
-            layer.rotary_module_uid
-            for layer in self.doc.layers
-            if layer.rotary_enabled and layer.rotary_module_uid
-        }
+        assembly = machine.assembly
+        if assembly is None:
+            return
 
-        logger.debug("Model renderers: used_uids=%s", used_uids or "none")
+        chuck_links = assembly.get_links_by_role(LinkRole.CHUCK)
+        logger.debug(
+            "Model renderers: %d chuck links in assembly", len(chuck_links)
+        )
 
-        for uid in used_uids:
-            module = machine.get_rotary_module_by_uid(uid)
-            if module is None:
-                logger.debug("Model renderers: uid %s not found", uid)
-                continue
-
-            if module.model_id is None:
-                logger.debug("Model renderers: module %s has no model_id", uid)
+        for chuck in chuck_links:
+            if chuck.model_id is None:
+                logger.debug(
+                    "Model renderers: chuck %s has no model_id", chuck.name
+                )
                 continue
 
             logger.debug(
-                "Model renderers: resolving model_id=%s", module.model_id
+                "Model renderers: resolving model_id=%s for chuck %s",
+                chuck.model_id,
+                chuck.name,
             )
             resolved = self._context.model_mgr.resolve(
-                Model(name="", path=Path(module.model_id))
+                Model(name="", path=Path(chuck.model_id))
             )
             if resolved is None:
                 logger.warning(
                     "Model file not found: %s, skipping.",
-                    module.model_id,
+                    chuck.model_id,
                 )
                 continue
+
+            parent_link = (
+                assembly.get_link(chuck.parent) if chuck.parent else None
+            )
+            transform = (
+                parent_link.local_transform.astype(np.float32)
+                if parent_link is not None
+                else np.eye(4, dtype=np.float32)
+            )
 
             logger.debug("Model renderers: resolved to %s", resolved)
             renderer = ModelRenderer(resolved)
@@ -1416,9 +1426,7 @@ class Canvas3D(Gtk.GLArea):
                 renderer._vertex_count,
                 renderer.bounds,
             )
-            self._model_renderers.append(
-                (renderer, module.transform.astype(np.float32))
-            )
+            self._model_renderers.append((renderer, transform))
 
     def update_scene_from_doc(self):
         """
