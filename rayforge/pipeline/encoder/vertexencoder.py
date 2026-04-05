@@ -65,8 +65,10 @@ def transform_to_cylinder(
 
     x1 = p1[:, 0].astype(np.float64)
     y1 = p1[:, 1].astype(np.float64)
+    z1 = p1[:, 2].astype(np.float64)
     x2 = p2[:, 0].astype(np.float64)
     y2 = p2[:, 1].astype(np.float64)
+    z2 = p2[:, 2].astype(np.float64)
 
     theta1 = (y1 / circumference) * 2.0 * np.pi
     theta2 = (y2 / circumference) * 2.0 * np.pi
@@ -94,24 +96,41 @@ def transform_to_cylinder(
 
     dx = x2[pair_indices] - x1[pair_indices]
     dy = y2[pair_indices] - y1[pair_indices]
+    dz = z2[pair_indices] - z1[pair_indices]
     px = x1[pair_indices]
     py = y1[pair_indices]
+    pz = z1[pair_indices]
 
     prev_x = px + prev_t * dx
     prev_y = py + prev_t * dy
+    prev_z = pz + prev_t * dz
     curr_x = px + curr_t * dx
     curr_y = py + curr_t * dy
+    curr_z = pz + curr_t * dz
 
-    theta_prev = (prev_y / circumference) * 2.0 * np.pi
-    theta_curr = (curr_y / circumference) * 2.0 * np.pi
+    prev_eff_circ = np.maximum((diameter + 2.0 * prev_z) * math.pi, 1e-6)
+    curr_eff_circ = np.maximum((diameter + 2.0 * curr_z) * math.pi, 1e-6)
+    prev_eff_r = radius + prev_z
+    curr_eff_r = radius + curr_z
+
+    theta_prev = (prev_y / prev_eff_circ) * 2.0 * np.pi
+    theta_curr = (curr_y / curr_eff_circ) * 2.0 * np.pi
 
     result_verts = np.empty((total_segments * 2, 3), dtype=np.float32)
     result_verts[0::2, 0] = prev_x.astype(np.float32)
-    result_verts[0::2, 1] = (radius * np.sin(theta_prev)).astype(np.float32)
-    result_verts[0::2, 2] = (radius * np.cos(theta_prev)).astype(np.float32)
+    result_verts[0::2, 1] = (prev_eff_r * np.sin(theta_prev)).astype(
+        np.float32
+    )
+    result_verts[0::2, 2] = (prev_eff_r * np.cos(theta_prev)).astype(
+        np.float32
+    )
     result_verts[1::2, 0] = curr_x.astype(np.float32)
-    result_verts[1::2, 1] = (radius * np.sin(theta_curr)).astype(np.float32)
-    result_verts[1::2, 2] = (radius * np.cos(theta_curr)).astype(np.float32)
+    result_verts[1::2, 1] = (curr_eff_r * np.sin(theta_curr)).astype(
+        np.float32
+    )
+    result_verts[1::2, 2] = (curr_eff_r * np.cos(theta_curr)).astype(
+        np.float32
+    )
 
     if colors is not None:
         c0 = colors[0::2][:num_pairs]
