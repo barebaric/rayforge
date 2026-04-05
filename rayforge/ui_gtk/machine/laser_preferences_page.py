@@ -795,8 +795,7 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             return
         extent = get_model_extent(resolved)
         if extent and extent > 1e-6:
-            spot_x, _ = laser.spot_size_mm
-            laser.set_scale(spot_x / extent)
+            laser.set_scale(40.0 / extent)
             self.scale_row.set_value(laser.get_scale())
 
     def _on_scale_changed(self, _spinrow, _param):
