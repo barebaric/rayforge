@@ -9,6 +9,7 @@ from ....context import RayforgeContext
 from ....core.geo import Point
 from ....core.model import Model
 from ....core.ops import Ops
+from ....core.ops.commands import LayerStartCommand
 from ....machine.assembly import LinkRole
 from ....machine.models.colors import OpsColorSet
 from ....pipeline.artifact.base import TextureData
@@ -1292,7 +1293,22 @@ class Canvas3D(Gtk.GLArea):
         self._op_player = OpPlayer(ops)
         self._current_layer_uid = None
         self._extract_playback_offsets_from_artifact()
-        GLib.idle_add(self._notify_playback_overlay, len(self._op_player.ops))
+
+        # Auto-advance to the first LayerStartCommand so the canvas
+        # shows the first layer's surface (e.g. correct workpiece
+        # diameter) immediately instead of an empty default scene.
+        initial_index = 0
+        for i, cmd in enumerate(self._op_player.ops):
+            if isinstance(cmd, LayerStartCommand):
+                self._op_player.seek(i)
+                initial_index = i
+                break
+
+        GLib.idle_add(
+            self._notify_playback_overlay,
+            len(self._op_player.ops),
+            initial_index,
+        )
         self._upload_scanline_overlay()
 
     def _get_ops_for_playback(self) -> Optional[Ops]:
@@ -1303,9 +1319,13 @@ class Canvas3D(Gtk.GLArea):
                 return artifact.ops
         return None
 
-    def _notify_playback_overlay(self, command_count: int):
+    def _notify_playback_overlay(
+        self, command_count: int, initial_index: int = 0
+    ):
         if self._playback_overlay is not None:
-            self._playback_overlay.update_ops_range(command_count)
+            self._playback_overlay.update_ops_range(
+                command_count, initial_index
+            )
 
     def _upload_scanline_overlay(self):
         """
