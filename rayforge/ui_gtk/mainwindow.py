@@ -936,34 +936,10 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _initialize_document(self):
         """
-        Adds required initial state to a new document, such as a default
-        step to the first workpiece layer.
+        Adds required initial state to a new document, such as default
+        steps to workpiece layers.
         """
-        doc = self.doc_editor.doc
-        if not doc.layers:
-            return
-
-        first_workpiece_layer = doc.layers[0]
-        if (
-            first_workpiece_layer
-            and first_workpiece_layer.workflow
-            and not first_workpiece_layer.workflow.has_steps()
-        ):
-            workflow = first_workpiece_layer.workflow
-            factories = step_registry.get_factories()
-            if not factories:
-                logger.warning("No step factories found in registry")
-                return
-            default_step = factories[0](get_context())
-
-            # Apply best recipe using the new helper method
-            self.doc_editor.step.apply_best_recipe_to_step(default_step)
-
-            workflow.add_step(default_step)
-            logger.info(
-                f"Added default '{default_step.typelabel}' step to "
-                "initial document."
-            )
+        self.doc_editor.step.initialize_default_steps()
 
     def _connect_toolbar_signals(self):
         """Connects signals from the MainToolbar to their handlers.

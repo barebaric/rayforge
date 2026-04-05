@@ -135,6 +135,15 @@ class Layer(DocItem):
         """
         return self.get_descendants(of_type=WorkPiece)
 
+    @property
+    def has_fills(self) -> bool:
+        """Check if any workpiece in this layer has fill geometry."""
+        for wp in self.all_workpieces:
+            fills = wp.fills
+            if fills is not None and len(fills) > 0:
+                return True
+        return False
+
     def get_content_items(self) -> List["DocItem"]:
         """
         Returns a list of user-facing items in this layer (e.g.,

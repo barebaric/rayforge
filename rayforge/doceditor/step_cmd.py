@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, Dict
+from ..core.step_registry import step_registry
 from ..core.undo import DictItemCommand
 
 if TYPE_CHECKING:
@@ -92,3 +93,64 @@ class StepCmd:
 
             # Store a reference to the applied recipe
             step.applied_recipe_uid = best_recipe.uid
+
+    def initialize_default_steps(self):
+        """
+        Adds a default Contour step to the first layer if it has no steps.
+
+        Called on application startup or when a new empty document is created.
+        """
+        doc = self._doc
+        if not doc.layers:
+            return
+
+        first_layer = doc.layers[0]
+        workflow = first_layer.workflow
+        if not workflow or workflow.has_steps():
+            return
+
+        contour_cls = step_registry.get("ContourStep")
+        if not contour_cls:
+            return
+
+        step = contour_cls.create(self._context)
+        self.apply_best_recipe_to_step(step)
+        workflow.add_step(step)
+        logger.info(
+            f"Added default '{step.typelabel}' step to "
+            f"layer '{first_layer.name}'."
+        )
+
+    def add_default_steps_for_layers(self, layers):
+        """
+        Adds default steps to newly imported layers.
+
+        For each layer:
+        - If workpieces have fills: add Contour + Engrave steps
+        - If workpieces have only unfilled vectors: add Contour only
+        """
+        contour_cls = step_registry.get("ContourStep")
+        engrave_cls = step_registry.get("EngraveStep")
+
+        for layer in layers:
+            workflow = layer.workflow
+            if not workflow or workflow.has_steps():
+                continue
+
+            if contour_cls:
+                step = contour_cls.create(self._context)
+                self.apply_best_recipe_to_step(step)
+                workflow.add_step(step)
+                logger.info(
+                    f"Added default '{step.typelabel}' step to "
+                    f"layer '{layer.name}'."
+                )
+
+            if layer.has_fills and engrave_cls:
+                step = engrave_cls.create(self._context)
+                self.apply_best_recipe_to_step(step)
+                workflow.add_step(step)
+                logger.info(
+                    f"Added default '{step.typelabel}' step to "
+                    f"layer '{layer.name}' (has fills)."
+                )
