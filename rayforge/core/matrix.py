@@ -3,6 +3,27 @@ from typing import Tuple, Any, Optional, Union, Sequence, List, cast
 import numpy as np
 from .geo import Rect, Point
 
+
+def euler_rotation_matrix(rx: float, ry: float, rz: float) -> np.ndarray:
+    """
+    Build a 3x3 rotation matrix from Euler angles in degrees.
+
+    The rotation order is X -> Y -> Z (extrinsic Tait-Bryan angles).
+    """
+    ax, ay, az = np.radians(rx), np.radians(ry), np.radians(rz)
+    cx, sx = np.cos(ax), np.sin(ax)
+    cy, sy = np.cos(ay), np.sin(ay)
+    cz, sz = np.cos(az), np.sin(az)
+    return np.array(
+        [
+            [cy * cz, sx * sy * cz - cx * sz, cx * sy * cz + sx * sz],
+            [cy * sz, sx * sy * sz + cx * cz, cx * sy * sz - sx * cz],
+            [-sy, sx * cy, cx * cy],
+        ],
+        dtype=np.float64,
+    )
+
+
 # A type alias for data that can be converted into a 3x3 matrix.
 # This includes another Matrix, a numpy array, or a 3x3 nested sequence.
 MatrixLike = Union[
