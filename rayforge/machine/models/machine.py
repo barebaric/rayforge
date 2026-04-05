@@ -468,9 +468,6 @@ class Machine:
         self._clamp_soft_limits()
         self.changed.send(self)
 
-    def set_dimensionssss(self, width: float, height: float):
-        self.set_axis_extents(width, height)
-
     @property
     def work_margins(self) -> Rect:
         """

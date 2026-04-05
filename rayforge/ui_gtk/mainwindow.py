@@ -11,7 +11,6 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from .. import __version__
 from .. import const
 from ..context import get_context
-from ..core.geo import Rect
 from ..core.group import Group
 from ..core.asset_registry import asset_type_registry
 from ..core.item import DocItem
@@ -44,6 +43,7 @@ from .canvas2d.elements.stock import StockElement
 from .canvas2d.simulator_cmd import SimulatorCmd
 from .canvas2d.surface import WorkSurface
 from .canvas3d import Canvas3D, initialized as canvas3d_initialized
+from .canvas3d.viewport import ViewportConfig
 from .doceditor import file_dialogs
 from .doceditor.asset_row_factory import register_builtin_widgets
 from .doceditor.bottom_panel import BottomPanel
@@ -246,25 +246,12 @@ class MainWindow(Adw.ApplicationWindow):
             )
 
         # Determine initial machine dimensions for canvases.
-        # 2D canvas uses axis extents, 3D canvas uses workarea.
         context = get_context()
         config = context.config
         if config.machine:
-            area = config.machine.work_area
-            canvas3d_w, canvas3d_h = float(area[2]), float(area[3])
-            y_down = config.machine.y_axis_down
-            x_right = config.machine.x_axis_right
-            reverse_x = config.machine.reverse_x_axis
-            reverse_y = config.machine.reverse_y_axis
+            viewport = ViewportConfig.from_machine(config.machine)
         else:
-            # Default to a square aspect ratio if no machine is configured
-            canvas3d_w, canvas3d_h = 100.0, 100.0
-            y_down, x_right, reverse_x, reverse_y = (
-                False,
-                False,
-                False,
-                False,
-            )
+            viewport = ViewportConfig.default()
 
         self.surface = WorkSurface(
             editor=self.doc_editor,
@@ -362,19 +349,7 @@ class MainWindow(Adw.ApplicationWindow):
         # self.surface_overlay.add_controller(canvas_click_gesture)
 
         if canvas3d_initialized:
-            extent_frame = None
-            if config.machine and config.machine.has_custom_work_area():
-                extent_frame = config.machine.get_visual_extent_frame()
-            self._create_canvas3d(
-                context,
-                width_mm=canvas3d_w,
-                depth_mm=canvas3d_h,
-                y_down=y_down,
-                x_right=x_right,
-                x_negative=reverse_x,
-                y_negative=reverse_y,
-                extent_frame=extent_frame,
-            )
+            self._create_canvas3d(context, viewport)
 
         # Undo/Redo buttons are now connected to the doc via actions.
         self.toolbar.undo_button.set_history_manager(
@@ -1338,17 +1313,7 @@ class MainWindow(Adw.ApplicationWindow):
         if current_tab == "gcode":
             self.refresh_previews()
 
-    def _create_canvas3d(
-        self,
-        context,
-        width_mm: float,
-        depth_mm: float,
-        y_down: bool,
-        x_right: bool,
-        x_negative: bool,
-        y_negative: bool,
-        extent_frame: Optional[Rect] = None,
-    ):
+    def _create_canvas3d(self, context, viewport: ViewportConfig):
         """
         Creates a Canvas3D instance and adds it to the view stack.
         Also syncs the travel view state from the action.
@@ -1356,13 +1321,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.canvas3d = Canvas3D(
             context,
             self.doc_editor,
-            width_mm=width_mm,
-            depth_mm=depth_mm,
-            y_down=y_down,
-            x_right=x_right,
-            x_negative=x_negative,
-            y_negative=y_negative,
-            extent_frame=extent_frame,
+            viewport=viewport,
         )
         self._canvas3d_overlay = Gtk.Overlay()
         self._canvas3d_overlay.set_child(self.canvas3d)
@@ -1502,32 +1461,10 @@ class MainWindow(Adw.ApplicationWindow):
         if self.canvas3d is None:
             return
         if new_machine:
-            area = new_machine.work_area
-            canvas3d_w, canvas3d_h = float(area[2]), float(area[3])
-            y_down = new_machine.y_axis_down
-            x_right = new_machine.x_axis_right
-            reverse_x = new_machine.reverse_x_axis
-            reverse_y = new_machine.reverse_y_axis
+            viewport = ViewportConfig.from_machine(new_machine)
         else:
-            canvas3d_w, canvas3d_h = 100.0, 100.0
-            y_down, x_right, reverse_x, reverse_y = (
-                False,
-                False,
-                False,
-                False,
-            )
-        extent_frame = None
-        if new_machine and new_machine.has_custom_work_area():
-            extent_frame = new_machine.get_visual_extent_frame()
-        self.canvas3d.set_machine(
-            width_mm=canvas3d_w,
-            depth_mm=canvas3d_h,
-            y_down=y_down,
-            x_right=x_right,
-            x_negative=reverse_x,
-            y_negative=reverse_y,
-            extent_frame=extent_frame,
-        )
+            viewport = ViewportConfig.default()
+        self.canvas3d.set_machine(viewport=viewport)
 
     def apply_theme(self):
         """Reads the theme from config and applies it to the UI."""
