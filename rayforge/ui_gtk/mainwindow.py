@@ -1386,8 +1386,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         if machine_changed:
             self._on_machine_signals_changed(config)
-
-        self._update_canvas3d(config.machine)
+            self._update_canvas3d(config.machine)
 
         # Update the control panel to use the new machine
         self.bottom_panel.set_machine(config.machine, self.machine_cmd)
