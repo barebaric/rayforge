@@ -471,10 +471,12 @@ class FileCmd:
         filename: Path,
         assets: Optional[List["IAsset"]] = None,
         vectorization_spec: Optional[VectorizationSpec] = None,
-    ):
+    ) -> List[Layer]:
         """
         Adds the imported items and their source to the document model using
         the history manager.
+
+        Returns the list of destination layers that received items.
         """
         if source:
             self._editor.doc.add_asset(source)
@@ -502,6 +504,14 @@ class FileCmd:
                     )
                 )
 
+        dest_layers = []
+        seen = set()
+        for owner, _item in pairs:
+            if isinstance(owner, Layer) and owner.uid not in seen:
+                dest_layers.append(owner)
+                seen.add(owner.uid)
+        return dest_layers
+
     def _finalize_import_on_main_thread(
         self,
         payload: ImportPayload,
@@ -527,13 +537,17 @@ class FileCmd:
         # 2. Add the positioned items to the document model. This is also
         #    safe now as all subsequent signal handling will be on the
         #    main thread.
-        self._commit_items_to_document(
+        dest_layers = self._commit_items_to_document(
             payload.items,
             payload.source,
             filename,
             payload.assets,
             vectorization_spec,
         )
+
+        # 3. Add default steps to the destination layers.
+        if dest_layers:
+            self._editor.step.add_default_steps_for_layers(dest_layers)
 
     def load_file_from_path(
         self,
