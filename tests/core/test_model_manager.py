@@ -153,10 +153,11 @@ class TestModelManagerInit:
 class TestModelManagerGetCategories:
     def test_returns_fixed_categories(self, model_mgr):
         categories = model_mgr.get_categories()
-        assert len(categories) == 2
+        assert len(categories) == 3
         ids = [c.id for c in categories]
         assert "machines" in ids
         assert "rotary" in ids
+        assert "heads" in ids
 
     def test_categories_are_modelcategory_instances(self, model_mgr):
         for cat in model_mgr.get_categories():
