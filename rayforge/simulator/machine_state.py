@@ -1,5 +1,12 @@
+from typing import Optional
+
 from ..core.ops import State
-from ..core.ops.commands import Command, MovingCommand, ScanLinePowerCommand
+from ..core.ops.commands import (
+    Command,
+    LayerStartCommand,
+    MovingCommand,
+    ScanLinePowerCommand,
+)
 from ..machine.driver.driver import Axis
 
 
@@ -13,6 +20,7 @@ class MachineState(State):
         }
         self.laser_on = False
         self.reached_textures: set = set()
+        self.current_layer_uid: Optional[str] = None
 
     def apply_command(self, cmd: Command, index: int):
         if cmd.is_state_command():
@@ -25,6 +33,8 @@ class MachineState(State):
             if isinstance(cmd, ScanLinePowerCommand):
                 self.reached_textures.add(index)
             self.laser_on = cmd.is_cutting_command()
+        elif isinstance(cmd, LayerStartCommand):
+            self.current_layer_uid = cmd.layer_uid
         elif cmd.is_marker():
             return
         else:
@@ -40,4 +50,5 @@ class MachineState(State):
         new.axes = dict(self.axes)
         new.laser_on = self.laser_on
         new.reached_textures = set(self.reached_textures)
+        new.current_layer_uid = self.current_layer_uid
         return new
