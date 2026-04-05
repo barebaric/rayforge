@@ -45,7 +45,6 @@ class Command:
         self.state: Optional["State"] = (
             state  # Intended state during execution
         )
-        self._state_ref_for_pyreverse: "State"
 
     def __repr__(self) -> str:
         return f"<{super().__repr__()} {self.__dict__}"

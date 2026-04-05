@@ -118,9 +118,7 @@ class Machine:
         self.hookmacros: Dict[MacroTrigger, Macro] = {}
         self.macros: Dict[str, Macro] = {}
         self.heads: List[Laser] = []
-        self._heads_ref_for_pyreverse: Laser
         self.cameras: List[Camera] = []
-        self._cameras_ref_for_pyreverse: Camera
         self.max_travel_speed: int = 3000  # in mm/min
         self.max_cut_speed: int = 1000  # in mm/min
         self.acceleration: int = 1000  # in mm/s²

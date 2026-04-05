@@ -22,7 +22,6 @@ class MachineManager:
         self.base_dir = base_dir
         self.controllers: Dict[str, MachineController] = dict()
         self.machines: Dict[str, Machine] = dict()
-        self._machine_ref_for_pyreverse: Machine
         self.machine_added = Signal()
         self.machine_removed = Signal()
         self.machine_updated = Signal()

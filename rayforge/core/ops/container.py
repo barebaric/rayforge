@@ -86,7 +86,6 @@ class Ops:
 
     def __init__(self) -> None:
         self.commands: List[Command] = []
-        self._commands_ref_for_pyreverse: Command
         self.last_move_to: Point3D = (0.0, 0.0, 0.0)
 
     def to_dict(self) -> Dict[str, Any]:
