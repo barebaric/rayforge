@@ -146,19 +146,25 @@ class GcodeEncoder(OpsEncoder):
             formatted = formatted.rstrip("0").rstrip(".")
         return formatted
 
-    def _mu_to_degrees(self, mu: float) -> float:
+    def _mu_to_degrees(self, mu: float, z: float = 0.0) -> float:
         """
         Convert machine units to degrees for rotary axis.
 
+        Accounts for the effective diameter at the given Z depth:
+        cutting deeper (Z < 0) reduces the effective diameter, so the
+        same linear distance maps to a larger angle.
+
         Args:
             mu: Distance in machine units along the cylinder surface.
+            z: Current Z depth (0 = surface, negative = deeper).
 
         Returns:
             Angle in degrees for the rotary axis.
         """
-        if self.rotary_diameter <= 0:
+        effective_diameter = self.rotary_diameter + 2.0 * z
+        if effective_diameter <= 0:
             return 0.0
-        circumference = self.rotary_diameter * math.pi
+        circumference = effective_diameter * math.pi
         return (mu / circumference) * 360.0
 
     def _build_coord_commands(self, x: float, y: float, z: float) -> dict:
@@ -179,8 +185,8 @@ class GcodeEncoder(OpsEncoder):
 
         if self.rotary_enabled:
             y_axis_letter = self.rotary_axis
-            y_for_output = self._mu_to_degrees(y)
-            prev_y_for_output = self._mu_to_degrees(prev_y)
+            y_for_output = self._mu_to_degrees(y, z)
+            prev_y_for_output = self._mu_to_degrees(prev_y, prev_z)
         else:
             y_axis_letter = "Y"
             y_for_output = y

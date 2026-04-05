@@ -279,3 +279,66 @@ class TestVertexEncoder:
         assert last_powered[0] == pytest.approx(2 * 100.0 + 4 * 10.0)
         assert last_powered[1] == pytest.approx(0.0)
         assert last_powered[2] == pytest.approx(0.0)
+
+
+class TestTransformToCylinder:
+    """Tests for transform_to_cylinder with Z-depth awareness."""
+
+    def test_surface_z_zero(self):
+        """At Z=0 (surface) vertices sit on the cylinder surface."""
+        from rayforge.pipeline.encoder.vertexencoder import (
+            transform_to_cylinder,
+        )
+
+        diameter = 10.0
+        radius = diameter / 2.0
+        verts = np.array(
+            [[0, 0, 0], [10, 0, 0], [20, 0, 0], [30, 0, 0]],
+            dtype=np.float32,
+        )
+        result, _ = transform_to_cylinder(verts, diameter)
+        assert result.shape == (4, 3)
+        np.testing.assert_almost_equal(
+            result[:, 1], radius * np.sin(0.0), decimal=3
+        )
+        np.testing.assert_almost_equal(
+            result[:, 2], radius * np.cos(0.0), decimal=3
+        )
+
+    def test_negative_z_smaller_radius(self):
+        """Negative Z (step-down) produces smaller effective radius."""
+        from rayforge.pipeline.encoder.vertexencoder import (
+            transform_to_cylinder,
+        )
+
+        diameter = 10.0
+        z = -1.0
+        verts = np.array(
+            [[0, 0, z], [10, 0, z]],
+            dtype=np.float32,
+        )
+        result, _ = transform_to_cylinder(verts, diameter)
+        expected_radius = diameter / 2.0 + z
+        assert result.shape == (2, 3)
+        r_actual = float(np.sqrt(result[0, 1] ** 2 + result[0, 2] ** 2))
+        assert r_actual == pytest.approx(expected_radius, abs=0.01)
+        r_actual_end = float(np.sqrt(result[1, 1] ** 2 + result[1, 2] ** 2))
+        assert r_actual_end == pytest.approx(expected_radius, abs=0.01)
+
+    def test_mixed_z_different_radii(self):
+        """Vertices with different Z depths produce different radii."""
+        from rayforge.pipeline.encoder.vertexencoder import (
+            transform_to_cylinder,
+        )
+
+        diameter = 20.0
+        z1, z2 = 0.0, -1.0
+        verts = np.array(
+            [[5, 0, z1], [15, 0, z2]],
+            dtype=np.float32,
+        )
+        result, _ = transform_to_cylinder(verts, diameter)
+        r1 = float(np.sqrt(result[0, 1] ** 2 + result[0, 2] ** 2))
+        r2 = float(np.sqrt(result[1, 1] ** 2 + result[1, 2] ** 2))
+        assert r1 == pytest.approx(diameter / 2.0 + z1, abs=0.01)
+        assert r2 == pytest.approx(diameter / 2.0 + z2, abs=0.01)

@@ -1154,6 +1154,16 @@ class Machine:
                         base_end[2] - z_offset,
                     )
 
+        if self.reverse_z_axis:
+            for command in ops_for_encoder.commands:
+                if isinstance(command, MovingCommand):
+                    if command.end is not None:
+                        command.end = (
+                            command.end[0],
+                            command.end[1],
+                            -command.end[2],
+                        )
+
         return ops_for_encoder
 
     def encode_ops(

@@ -2078,6 +2078,66 @@ class TestPrepareOpsForEncoding:
 
         assert cmd.end == pytest.approx(expected_cmd, abs=0.001)
 
+    def test_wcs_z_offset_not_subtracted(self, isolated_machine: Machine):
+        """
+        WCS Z offset should NOT be subtracted from command Z coordinates.
+        The controller handles WCS→machine translation via the G54 command
+        emitted in the preamble. Ops Z=0 means "work surface" and should
+        remain 0 in the G-code regardless of WCS Z offset.
+        """
+        machine = isolated_machine
+        machine.set_axis_extents(100.0, 100.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.wcs_origin_is_workarea_origin = False
+        machine.set_active_wcs("G54")
+        machine.wcs_offsets["G54"] = (10, 20, 30)
+
+        ops = Ops()
+        ops.move_to(50, 60, 0)
+        ops.line_to(50, 60, -5)
+
+        result = machine._prepare_ops_for_encoding(ops)
+        commands = list(result.commands)
+
+        assert commands[0].end == pytest.approx((40, 40, 0), abs=0.001)
+        assert commands[1].end == pytest.approx((40, 40, -5), abs=0.001)
+
+    @pytest.mark.parametrize(
+        "reverse_z,input_z,expected_z",
+        [
+            (False, 0.0, 0.0),
+            (False, -5.0, -5.0),
+            (True, 0.0, 0.0),
+            (True, -5.0, 5.0),
+            (True, 5.0, -5.0),
+        ],
+    )
+    def test_reverse_z_axis_in_encoding(
+        self, isolated_machine: Machine, reverse_z, input_z, expected_z
+    ):
+        """
+        When reverse_z_axis is enabled, Z coordinates should be negated
+        in the G-code output so that a reversed machine interprets them
+        correctly.
+        """
+        machine = isolated_machine
+        machine.set_axis_extents(100.0, 100.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.set_reverse_z_axis(reverse_z)
+
+        ops = Ops()
+        ops.move_to(10, 20, input_z)
+
+        result = machine._prepare_ops_for_encoding(ops)
+        cmds = list(result.commands)
+        assert len(cmds) > 0
+        cmd = cmds[0]
+        assert cmd.end is not None
+
+        assert cmd.end[0] == pytest.approx(10.0, abs=0.001)
+        assert cmd.end[1] == pytest.approx(20.0, abs=0.001)
+        assert cmd.end[2] == pytest.approx(expected_z, abs=0.001)
+
     def test_multiple_commands_transformed(self, isolated_machine: Machine):
         """
         Tests that multiple commands in an ops object are all transformed.
