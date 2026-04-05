@@ -293,6 +293,19 @@ class Canvas3D(Gtk.GLArea):
         scroll.connect("scroll", self.on_scroll)
         self.add_controller(scroll)
 
+        key_controller = Gtk.EventControllerKey.new()
+        key_controller.connect("key-pressed", self._on_key_pressed)
+        self.add_controller(key_controller)
+
+    def _on_key_pressed(self, controller, keyval, keycode, state):
+        if keyval == Gdk.KEY_space and self._playback_overlay:
+            if self._playback_overlay._play_button.get_sensitive():
+                self._playback_overlay._on_play_clicked(
+                    self._playback_overlay._play_button
+                )
+            return True
+        return False
+
     def _clear_drag_state(self):
         """Resets all state variables related to any drag operation."""
         self._is_orbiting = False
