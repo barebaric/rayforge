@@ -69,6 +69,7 @@ class ViewModeCmd:
 
             action.set_state(GLib.Variant.new_boolean(True))
             win.view_stack.set_visible_child_name("3d")
+            GLib.idle_add(lambda: win.canvas3d and win.canvas3d.grab_focus())
             get_usage_tracker().track_page_view("/view/3d", "3D View")
 
         else:
