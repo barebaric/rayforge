@@ -47,7 +47,7 @@ class SketchCmd:
                 # setter on the WorkPiece, causing it to regenerate.
                 cmd = ChangePropertyCommand(
                     target=wp,
-                    property_name="sketch_params",
+                    property_name="geometry_provider_params",
                     new_value=updated_params,
                     old_value=old_params,
                 )
