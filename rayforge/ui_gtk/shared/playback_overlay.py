@@ -106,11 +106,15 @@ class PlaybackOverlay(Gtk.Box):
         """Connect this overlay to a Canvas3D instance."""
         self._canvas = canvas
 
-    def update_ops_range(self, command_count: int):
-        """Update slider range for the given number of commands."""
+    def update_ops_range(self, command_count: int, initial_index: int = 0):
+        """Update slider range for the given number of commands.
+
+        initial_index sets the slider to the first layer's position
+        so the canvas displays the correct surface from the start.
+        """
         if command_count > 0:
             self._slider.set_range(0, command_count - 1)
-            self._slider.set_value(0)
+            self._slider.set_value(initial_index)
             self._slider.set_sensitive(True)
             self._play_button.set_sensitive(True)
             self._step_back_button.set_sensitive(True)
