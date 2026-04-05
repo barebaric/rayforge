@@ -63,7 +63,10 @@ def test_update_from_vertex_data_sets_counts(renderer):
     powered_colors = np.array([1, 0, 0, 1, 0, 1, 0, 1], dtype=np.float32)
     travel_verts = np.array([2, 2, 2, 3, 3, 3], dtype=np.float32)
 
-    with patch("OpenGL.GL.glBufferData"):
+    with (
+        patch("OpenGL.GL.glBindBuffer"),
+        patch("OpenGL.GL.glBufferData"),
+    ):
         renderer.update_from_vertex_data(
             powered_verts, powered_colors, travel_verts
         )
@@ -80,13 +83,19 @@ def test_clear_resets_counts(renderer):
     powered_colors = np.array([1, 0, 0, 1, 0, 1, 0, 1], dtype=np.float32)
     travel_verts = np.array([2, 2, 2, 3, 3, 3], dtype=np.float32)
 
-    with patch("OpenGL.GL.glBufferData"):
+    with (
+        patch("OpenGL.GL.glBindBuffer"),
+        patch("OpenGL.GL.glBufferData"),
+    ):
         renderer.update_from_vertex_data(
             powered_verts, powered_colors, travel_verts
         )
     assert renderer.powered_vertex_count == 2
 
-    with patch("OpenGL.GL.glBufferData"):
+    with (
+        patch("OpenGL.GL.glBindBuffer"),
+        patch("OpenGL.GL.glBufferData"),
+    ):
         renderer.clear()
     assert renderer.powered_vertex_count == 0
     assert renderer.travel_vertex_count == 0
@@ -100,7 +109,10 @@ def test_render_raises_on_invalid_executed_count(renderer, colors):
     powered_colors = np.array([1, 0, 0, 1, 0, 1, 0, 1], dtype=np.float32)
     travel_verts = np.array([], dtype=np.float32)
 
-    with patch("OpenGL.GL.glBufferData"):
+    with (
+        patch("OpenGL.GL.glBindBuffer"),
+        patch("OpenGL.GL.glBufferData"),
+    ):
         renderer.update_from_vertex_data(
             powered_verts, powered_colors, travel_verts
         )
@@ -108,14 +120,20 @@ def test_render_raises_on_invalid_executed_count(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
 
-    with pytest.raises(ValueError, match="executed_vertex_count"):
-        renderer.render(
-            shader,
-            mvp,
-            colors,
-            show_travel_moves=True,
-            executed_vertex_count=999,
-        )
+    with (
+        patch("OpenGL.GL.glBindVertexArray"),
+        patch("OpenGL.GL.glEnable"),
+        patch("OpenGL.GL.glBlendFunc"),
+        patch("OpenGL.GL.glDrawArrays"),
+    ):
+        with pytest.raises(ValueError, match="executed_vertex_count"):
+            renderer.render(
+                shader,
+                mvp,
+                colors,
+                show_travel_moves=True,
+                executed_vertex_count=999,
+            )
 
 
 @pytest.mark.ui
@@ -126,7 +144,10 @@ def test_render_draws_powered_and_travel(renderer, colors):
     powered_colors = np.array([1, 0, 0, 1, 0, 1, 0, 1], dtype=np.float32)
     travel_verts = np.array([2, 2, 2, 3, 3, 3], dtype=np.float32)
 
-    with patch("OpenGL.GL.glBufferData"):
+    with (
+        patch("OpenGL.GL.glBindBuffer"),
+        patch("OpenGL.GL.glBufferData"),
+    ):
         renderer.update_from_vertex_data(
             powered_verts, powered_colors, travel_verts
         )
@@ -134,7 +155,12 @@ def test_render_draws_powered_and_travel(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
 
-    with patch("OpenGL.GL.glDrawArrays") as mock_draw:
+    with (
+        patch("OpenGL.GL.glBindVertexArray"),
+        patch("OpenGL.GL.glEnable"),
+        patch("OpenGL.GL.glBlendFunc"),
+        patch("OpenGL.GL.glDrawArrays") as mock_draw,
+    ):
         renderer.render(shader, mvp, colors, show_travel_moves=True)
 
     assert mock_draw.call_count == 2
@@ -150,7 +176,10 @@ def test_render_hides_travel_when_disabled(renderer, colors):
     powered_colors = np.array([1, 0, 0, 1, 0, 1, 0, 1], dtype=np.float32)
     travel_verts = np.array([2, 2, 2, 3, 3, 3], dtype=np.float32)
 
-    with patch("OpenGL.GL.glBufferData"):
+    with (
+        patch("OpenGL.GL.glBindBuffer"),
+        patch("OpenGL.GL.glBufferData"),
+    ):
         renderer.update_from_vertex_data(
             powered_verts, powered_colors, travel_verts
         )
@@ -158,7 +187,12 @@ def test_render_hides_travel_when_disabled(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
 
-    with patch("OpenGL.GL.glDrawArrays") as mock_draw:
+    with (
+        patch("OpenGL.GL.glBindVertexArray"),
+        patch("OpenGL.GL.glEnable"),
+        patch("OpenGL.GL.glBlendFunc"),
+        patch("OpenGL.GL.glDrawArrays") as mock_draw,
+    ):
         renderer.render(shader, mvp, colors, show_travel_moves=False)
 
     assert mock_draw.call_count == 1
@@ -171,7 +205,12 @@ def test_render_noop_when_empty(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
 
-    with patch("OpenGL.GL.glDrawArrays") as mock_draw:
+    with (
+        patch("OpenGL.GL.glBindVertexArray"),
+        patch("OpenGL.GL.glEnable"),
+        patch("OpenGL.GL.glBlendFunc"),
+        patch("OpenGL.GL.glDrawArrays") as mock_draw,
+    ):
         renderer.render(shader, mvp, colors, show_travel_moves=True)
 
     mock_draw.assert_not_called()
