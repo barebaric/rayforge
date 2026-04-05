@@ -5,37 +5,37 @@ from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
 import numpy as np
 from gi.repository import GLib, Gdk, Gtk, Pango
 from OpenGL import GL
-from ...context import RayforgeContext
-from ...core.geo import Point
-from ...core.model import Model
-from ...core.ops import Ops
-from ...core.ops.commands import MovingCommand
-from ...machine.assembly import LinkRole
-from ...machine.models.colors import OpsColorSet
-from ...pipeline.artifact.base import TextureData
-from ...pipeline.artifact.handle import create_handle_from_dict
-from ...pipeline.artifact.job import JobArtifact, JobArtifactHandle
-from ...pipeline.pipeline import Pipeline
-from ...shared.util.colors import ColorSet, hex_to_rgba
-from ...shared.tasker import task_mgr, Task
-from ...simulator.machine_state import MachineState
-from ...simulator.op_player import OpPlayer
-from ..shared.gtk_color import GtkColorResolver, ColorSpecDict
+from ....context import RayforgeContext
+from ....core.geo import Point
+from ....core.model import Model
+from ....core.ops import Ops
+from ....core.ops.commands import MovingCommand
+from ....machine.assembly import LinkRole
+from ....machine.models.colors import OpsColorSet
+from ....pipeline.artifact.base import TextureData
+from ....pipeline.artifact.handle import create_handle_from_dict
+from ....pipeline.artifact.job import JobArtifact, JobArtifactHandle
+from ....pipeline.pipeline import Pipeline
+from ....shared.util.colors import ColorSet, hex_to_rgba
+from ....shared.tasker import task_mgr, Task
+from ....simulator.machine_state import MachineState
+from ....simulator.op_player import OpPlayer
+from ...shared.gtk_color import GtkColorResolver, ColorSpecDict
 from .axis_renderer_3d import AxisRenderer3D
 from .background_renderer import BackgroundRenderer
 from .camera import Camera, rotation_matrix_from_axis_angle
-from .compiled_scene import CompiledSceneArtifact
+from ..scene3d import (
+    CompiledSceneArtifact,
+    LayerRenderConfig,
+    RenderConfig3D,
+    compile_scene_in_subprocess,
+)
 from .cylinder_renderer import CylinderRenderer
 from .gl_utils import Shader
 from .laser_beam_renderer import LaserBeamRenderer
 from .model_renderer import ModelRenderer
 from .ops_renderer import OpsRenderer
-from .render_config import (
-    LayerRenderConfig,
-    RenderConfig3D,
-)
 from .ring_buffer_renderer import RingBufferRenderer
-from .scene_compiler_runner import compile_scene_in_subprocess
 from .shaders import (
     SIMPLE_FRAGMENT_SHADER,
     SIMPLE_VERTEX_SHADER,
@@ -50,9 +50,9 @@ from .viewport import ViewportConfig
 from .zone_renderer import ZoneRenderer
 
 if TYPE_CHECKING:
-    from ...core.doc import Doc
-    from ...doceditor.editor import DocEditor
-    from ...machine.models.machine import Machine
+    from ....core.doc import Doc
+    from ....doceditor.editor import DocEditor
+    from ....machine.models.machine import Machine
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -442,6 +442,7 @@ class Canvas3D(Gtk.GLArea):
             logger.debug("Error during GL cleanup on unrealize: %s", e)
         finally:
             self._gl_initialized = False
+        logger.debug("on_unrealize: finished.")
 
     def _init_gl_resources(self) -> None:
         """Initializes OpenGL state, shaders, and renderer objects."""

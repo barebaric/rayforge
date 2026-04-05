@@ -5,7 +5,7 @@ Tests for the OpsRenderer class.
 import pytest
 import numpy as np
 from unittest.mock import MagicMock, patch
-from rayforge.ui_gtk.canvas3d.ops_renderer import OpsRenderer
+from rayforge.ui_gtk.sim3d.canvas3d.ops_renderer import OpsRenderer
 from rayforge.shared.util.colors import ColorSet
 
 

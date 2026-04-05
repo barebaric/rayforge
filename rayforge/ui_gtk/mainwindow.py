@@ -42,8 +42,8 @@ from .canvas2d.drag_drop_cmd import DragDropCmd
 from .canvas2d.elements.stock import StockElement
 from .canvas2d.simulator_cmd import SimulatorCmd
 from .canvas2d.surface import WorkSurface
-from .canvas3d import Canvas3D, initialized as canvas3d_initialized
-from .canvas3d.viewport import ViewportConfig
+from .sim3d.canvas3d import Canvas3D, initialized as canvas3d_initialized
+from .sim3d.canvas3d.viewport import ViewportConfig
 from .doceditor import file_dialogs
 from .doceditor.asset_row_factory import register_builtin_widgets
 from .doceditor.bottom_panel import BottomPanel

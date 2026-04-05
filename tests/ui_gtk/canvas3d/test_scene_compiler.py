@@ -9,7 +9,7 @@ from compile_scene_helper import (
     make_flat_layer_config,
     make_rotary_layer_config,
 )
-from rayforge.ui_gtk.canvas3d.scene_compiler import compile_scene
+from rayforge.ui_gtk.sim3d.scene3d.scene_compiler import compile_scene
 
 
 def _flat_config():

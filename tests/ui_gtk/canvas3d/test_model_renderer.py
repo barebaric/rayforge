@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import trimesh
 
-from rayforge.ui_gtk.canvas3d.model_renderer import (
+from rayforge.ui_gtk.sim3d.canvas3d.model_renderer import (
     ModelRenderer,
     _load_mesh_data,
     _model_cache,

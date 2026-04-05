@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional
 import numpy as np
 from OpenGL import GL
 from .gl_utils import BaseRenderer, Shader
-from ...pipeline.artifact.base import TextureData
+from ....pipeline.artifact.base import TextureData
 
 
 logger = logging.getLogger(__name__)
