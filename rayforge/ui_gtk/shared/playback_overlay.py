@@ -2,6 +2,7 @@ from gettext import gettext as _
 import logging
 from typing import Optional
 
+from blinker import Signal
 from gi.repository import GLib, Gtk
 
 from ..icons import get_icon
@@ -34,6 +35,8 @@ class PlaybackOverlay(Gtk.Box):
     overlaid on the 3D canvas. Slider drives OpPlayer.seek(); play
     button starts a 24 fps timer that advances the playhead.
     """
+
+    step_changed = Signal()
 
     def __init__(self, **kwargs):
         super().__init__(
@@ -77,6 +80,7 @@ class PlaybackOverlay(Gtk.Box):
         self._playing = False
         self._timer_id: Optional[int] = None
         self._canvas = None
+        self._is_syncing = False
 
         self.connect("destroy", self._on_destroy)
 
@@ -114,6 +118,17 @@ class PlaybackOverlay(Gtk.Box):
             if self._canvas._op_player.current_index != index:
                 self._canvas._op_player.seek(index)
                 self._canvas.queue_render()
+        if not self._is_syncing:
+            self.step_changed.send(self, ops_index=int(slider.get_value()))
+
+    def set_playback_position(self, ops_index: int):
+        """
+        Set the slider position from an external source (e.g. a G-code
+        viewer click) without triggering a feedback loop.
+        """
+        self._is_syncing = True
+        self._slider.set_value(ops_index)
+        self._is_syncing = False
 
     def _on_play_clicked(self, button):
         if self._playing:
