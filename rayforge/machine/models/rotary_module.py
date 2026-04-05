@@ -5,23 +5,9 @@ from typing import Any, Dict, Optional
 import numpy as np
 from blinker import Signal
 
+from ...core.matrix import euler_rotation_matrix
 from ...core.geo import Rect3D
 from ..driver.driver import Axis
-
-
-def _rotation_matrix(rx: float, ry: float, rz: float) -> np.ndarray:
-    ax, ay, az = np.radians(rx), np.radians(ry), np.radians(rz)
-    cx, sx = np.cos(ax), np.sin(ax)
-    cy, sy = np.cos(ay), np.sin(ay)
-    cz, sz = np.cos(az), np.sin(az)
-    return np.array(
-        [
-            [cy * cz, sx * sy * cz - cx * sz, cx * sy * cz + sx * sz],
-            [cy * sz, sx * sy * sz + cx * cz, cx * sy * sz - sx * cz],
-            [-sy, sx * cy, cx * cy],
-        ],
-        dtype=np.float64,
-    )
 
 
 class RotaryModule:
@@ -79,7 +65,7 @@ class RotaryModule:
             return
         pos = self.transform[:3, 3].copy()
         scale = self.get_scale()
-        self.transform[:3, :3] = _rotation_matrix(rx, ry, rz) * scale
+        self.transform[:3, :3] = euler_rotation_matrix(rx, ry, rz) * scale
         self.transform[:3, 3] = pos
         self.changed.send(self)
 
@@ -91,7 +77,7 @@ class RotaryModule:
             return
         pos = self.transform[:3, 3].copy()
         rx, ry, rz = self.get_rotation()
-        self.transform[:3, :3] = _rotation_matrix(rx, ry, rz) * scale
+        self.transform[:3, :3] = euler_rotation_matrix(rx, ry, rz) * scale
         self.transform[:3, 3] = pos
         self.changed.send(self)
 

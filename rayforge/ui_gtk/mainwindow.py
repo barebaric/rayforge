@@ -11,7 +11,6 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from .. import __version__
 from .. import const
 from ..context import get_context
-from ..core.geo import Rect
 from ..core.group import Group
 from ..core.asset_registry import asset_type_registry
 from ..core.item import DocItem
@@ -43,7 +42,9 @@ from .canvas2d.drag_drop_cmd import DragDropCmd
 from .canvas2d.elements.stock import StockElement
 from .canvas2d.simulator_cmd import SimulatorCmd
 from .canvas2d.surface import WorkSurface
-from .canvas3d import Canvas3D, initialized as canvas3d_initialized
+from .sim3d.canvas3d import Canvas3D, initialized as canvas3d_initialized
+from .sim3d.canvas3d.camera import ViewDirection
+from .sim3d.canvas3d.viewport import ViewportConfig
 from .doceditor import file_dialogs
 from .doceditor.asset_row_factory import register_builtin_widgets
 from .doceditor.bottom_panel import BottomPanel
@@ -59,6 +60,7 @@ from .main_menu import MainMenu
 from .settings.settings_dialog import SettingsWindow
 from .project_cmd import ProjectCmd
 from .shared.gtk import get_monitor_geometry
+from .shared.playback_overlay import PlaybackOverlay
 from .shared.progress_bar import ProgressBar
 from .shared.usage_consent_dialog import UsageConsentDialog
 from .shared.visibility_overlay import VisibilityOverlay
@@ -118,6 +120,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._saved_bottom_panel_visible = False
         self._old_doc = None  # Track previous document for signal reconnection
         self.canvas3d: Optional[Canvas3D] = None
+        self._is_syncing_3d = False
 
         # The ToastOverlay will wrap the main content box
         self.toast_overlay = Adw.ToastOverlay()
@@ -245,25 +248,12 @@ class MainWindow(Adw.ApplicationWindow):
             )
 
         # Determine initial machine dimensions for canvases.
-        # 2D canvas uses axis extents, 3D canvas uses workarea.
         context = get_context()
         config = context.config
         if config.machine:
-            area = config.machine.work_area
-            canvas3d_w, canvas3d_h = float(area[2]), float(area[3])
-            y_down = config.machine.y_axis_down
-            x_right = config.machine.x_axis_right
-            reverse_x = config.machine.reverse_x_axis
-            reverse_y = config.machine.reverse_y_axis
+            viewport = ViewportConfig.from_machine(config.machine)
         else:
-            # Default to a square aspect ratio if no machine is configured
-            canvas3d_w, canvas3d_h = 100.0, 100.0
-            y_down, x_right, reverse_x, reverse_y = (
-                False,
-                False,
-                False,
-                False,
-            )
+            viewport = ViewportConfig.default()
 
         self.surface = WorkSurface(
             editor=self.doc_editor,
@@ -361,19 +351,7 @@ class MainWindow(Adw.ApplicationWindow):
         # self.surface_overlay.add_controller(canvas_click_gesture)
 
         if canvas3d_initialized:
-            extent_frame = None
-            if config.machine and config.machine.has_custom_work_area():
-                extent_frame = config.machine.get_visual_extent_frame()
-            self._create_canvas3d(
-                context,
-                width_mm=canvas3d_w,
-                depth_mm=canvas3d_h,
-                y_down=y_down,
-                x_right=x_right,
-                x_negative=reverse_x,
-                y_negative=reverse_y,
-                extent_frame=extent_frame,
-            )
+            self._create_canvas3d(context, viewport)
 
         # Undo/Redo buttons are now connected to the doc via actions.
         self.toolbar.undo_button.set_history_manager(
@@ -813,6 +791,25 @@ class MainWindow(Adw.ApplicationWindow):
         if self.simulator_cmd.preview_controls:
             self.simulator_cmd.sync_from_gcode(line_number)
 
+        # 3. If 3D playback is active, sync the slider.
+        op_map = self.bottom_panel.gcode_viewer.op_map
+        if op_map and line_number in op_map.machine_code_to_op:
+            op_index = op_map.machine_code_to_op[line_number]
+            self._is_syncing_3d = True
+            self._canvas3d_playback.set_playback_position(op_index)
+            if self.canvas3d:
+                self.canvas3d.queue_render()
+            self._is_syncing_3d = False
+
+    def _on_3d_playback_step_changed(self, sender, *, ops_index: int):
+        """
+        Handles the 3D playback slider changing. Syncs the G-code viewer
+        highlight to the corresponding line.
+        """
+        if self._is_syncing_3d:
+            return
+        self.bottom_panel.gcode_viewer.highlight_op(ops_index)
+
     def _on_vertical_pane_position_changed(self, paned, param):
         position = paned.get_position()
         full_height = paned.get_height()
@@ -844,6 +841,8 @@ class MainWindow(Adw.ApplicationWindow):
         """
         if not self.canvas3d:
             return
+        if self.canvas3d._current_job_handle is None:
+            self.refresh_previews()
         self.canvas3d.update_scene_from_doc()
 
     def _update_gcode_preview(
@@ -907,15 +906,27 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
-        self.view_cmd.set_view_top(self.canvas3d)
+        self.view_cmd.set_view(ViewDirection.TOP, self.canvas3d)
 
     def on_view_front(self, action, param):
         """Action handler to set the 3D view to front."""
-        self.view_cmd.set_view_front(self.canvas3d)
+        self.view_cmd.set_view(ViewDirection.FRONT, self.canvas3d)
+
+    def on_view_right(self, action, param):
+        """Action handler to set the 3D view to right."""
+        self.view_cmd.set_view(ViewDirection.RIGHT, self.canvas3d)
+
+    def on_view_left(self, action, param):
+        """Action handler to set the 3D view to left."""
+        self.view_cmd.set_view(ViewDirection.LEFT, self.canvas3d)
+
+    def on_view_back(self, action, param):
+        """Action handler to set the 3D view to back."""
+        self.view_cmd.set_view(ViewDirection.BACK, self.canvas3d)
 
     def on_view_iso(self, action, param):
         """Action handler to set the 3D view to isometric."""
-        self.view_cmd.set_view_iso(self.canvas3d)
+        self.view_cmd.set_view(ViewDirection.ISO, self.canvas3d)
 
     def on_view_perspective_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -1296,8 +1307,9 @@ class MainWindow(Adw.ApplicationWindow):
             # 2. Update G-code Preview
             current_tab = self.bottom_panel.tab_widget.get_current_tab()
             is_gcode_visible = current_tab == "gcode"
+            is_3d_visible = self.view_stack.get_visible_child_name() == "3d"
 
-            if is_gcode_visible and final_artifact:
+            if final_artifact and (is_gcode_visible or is_3d_visible):
                 self._update_gcode_preview(
                     final_artifact.machine_code, final_artifact.op_map
                 )
@@ -1317,8 +1329,9 @@ class MainWindow(Adw.ApplicationWindow):
         is_sim_active = self.simulator_cmd.simulation_overlay is not None
         current_tab = self.bottom_panel.tab_widget.get_current_tab()
         is_gcode_visible = current_tab == "gcode"
+        is_3d_visible = self.view_stack.get_visible_child_name() == "3d"
 
-        if not is_sim_active and not is_gcode_visible:
+        if not is_sim_active and not is_gcode_visible and not is_3d_visible:
             return
 
         config = get_context().config
@@ -1344,17 +1357,7 @@ class MainWindow(Adw.ApplicationWindow):
         if current_tab == "gcode":
             self.refresh_previews()
 
-    def _create_canvas3d(
-        self,
-        context,
-        width_mm: float,
-        depth_mm: float,
-        y_down: bool,
-        x_right: bool,
-        x_negative: bool,
-        y_negative: bool,
-        extent_frame: Optional[Rect] = None,
-    ):
+    def _create_canvas3d(self, context, viewport: ViewportConfig):
         """
         Creates a Canvas3D instance and adds it to the view stack.
         Also syncs the travel view state from the action.
@@ -1362,13 +1365,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.canvas3d = Canvas3D(
             context,
             self.doc_editor,
-            width_mm=width_mm,
-            depth_mm=depth_mm,
-            y_down=y_down,
-            x_right=x_right,
-            x_negative=x_negative,
-            y_negative=y_negative,
-            extent_frame=extent_frame,
+            viewport=viewport,
         )
         self._canvas3d_overlay = Gtk.Overlay()
         self._canvas3d_overlay.set_child(self.canvas3d)
@@ -1378,6 +1375,12 @@ class MainWindow(Adw.ApplicationWindow):
             shortcuts=SHORTCUTS,
         )
         self._canvas3d_overlay.add_overlay(self._canvas3d_vis_overlay)
+        self._canvas3d_playback = PlaybackOverlay()
+        self.canvas3d.set_playback_overlay(self._canvas3d_playback)
+        self._canvas3d_overlay.add_overlay(self._canvas3d_playback)
+        self._canvas3d_playback.step_changed.connect(
+            self._on_3d_playback_step_changed
+        )
         self.view_stack.add_named(self._canvas3d_overlay, "3d")
 
         travel_action = self.action_manager.get_action("toggle_travel_view")
@@ -1427,8 +1430,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         if machine_changed:
             self._on_machine_signals_changed(config)
-
-        self._update_canvas3d(config.machine)
+            self._update_canvas3d(config.machine)
 
         # Update the control panel to use the new machine
         self.bottom_panel.set_machine(config.machine, self.machine_cmd)
@@ -1505,32 +1507,10 @@ class MainWindow(Adw.ApplicationWindow):
         if self.canvas3d is None:
             return
         if new_machine:
-            area = new_machine.work_area
-            canvas3d_w, canvas3d_h = float(area[2]), float(area[3])
-            y_down = new_machine.y_axis_down
-            x_right = new_machine.x_axis_right
-            reverse_x = new_machine.reverse_x_axis
-            reverse_y = new_machine.reverse_y_axis
+            viewport = ViewportConfig.from_machine(new_machine)
         else:
-            canvas3d_w, canvas3d_h = 100.0, 100.0
-            y_down, x_right, reverse_x, reverse_y = (
-                False,
-                False,
-                False,
-                False,
-            )
-        extent_frame = None
-        if new_machine and new_machine.has_custom_work_area():
-            extent_frame = new_machine.get_visual_extent_frame()
-        self.canvas3d.set_machine(
-            width_mm=canvas3d_w,
-            depth_mm=canvas3d_h,
-            y_down=y_down,
-            x_right=x_right,
-            x_negative=reverse_x,
-            y_negative=reverse_y,
-            extent_frame=extent_frame,
-        )
+            viewport = ViewportConfig.default()
+        self.canvas3d.set_machine(viewport=viewport)
 
     def apply_theme(self):
         """Reads the theme from config and applies it to the UI."""

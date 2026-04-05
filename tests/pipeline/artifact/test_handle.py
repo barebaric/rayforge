@@ -2,7 +2,6 @@ from typing import cast
 from rayforge.pipeline.artifact import (
     WorkPieceArtifactHandle,
     StepOpsArtifactHandle,
-    StepRenderArtifactHandle,
     create_handle_from_dict,
 )
 
@@ -47,13 +46,13 @@ def test_workpiece_handle_serialization_round_trip():
 
 def test_step_ops_handle_serialization_round_trip():
     """
-    Tests that a StepOpsArtifactHandle can be converted to a dict and back.
+    Tests that a StepOpsArtifactHandle can be converted to a dict and
+    back.
     """
     handle = StepOpsArtifactHandle(
         shm_name="test_shm_ops_456",
         handle_class_name="StepOpsArtifactHandle",
         artifact_type_name="StepOpsArtifact",
-        time_estimate=99.9,
         array_metadata={
             "ops_types": {"dtype": "int32", "shape": (50,), "offset": 0},
         },
@@ -66,35 +65,3 @@ def test_step_ops_handle_serialization_round_trip():
 
     assert handle == reconstructed_handle
     assert isinstance(reconstructed_handle, StepOpsArtifactHandle)
-    assert reconstructed_handle.time_estimate == 99.9
-
-
-def test_step_render_handle_serialization_round_trip():
-    """
-    Tests that a StepRenderArtifactHandle can be converted to a dict and
-    back.
-    """
-    handle = StepRenderArtifactHandle(
-        shm_name="test_shm_render_789",
-        handle_class_name="StepRenderArtifactHandle",
-        artifact_type_name="StepRenderArtifact",
-        array_metadata={
-            "powered_vertices": {
-                "dtype": "float32",
-                "shape": (100, 3),
-                "offset": 0,
-            },
-            "texture_data_0": {
-                "dtype": "uint8",
-                "shape": (50, 50),
-                "offset": 1200,
-            },
-        },
-        generation_id=1,
-    )
-    handle_dict = handle.to_dict()
-    reconstructed_handle = create_handle_from_dict(handle_dict)
-
-    assert handle == reconstructed_handle
-    assert isinstance(reconstructed_handle, StepRenderArtifactHandle)
-    assert not hasattr(reconstructed_handle, "time_estimate")

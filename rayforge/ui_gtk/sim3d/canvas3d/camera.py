@@ -2,8 +2,18 @@
 Defines the Camera class for managing 3D perspective and navigation.
 """
 
+import enum
 import math
 import numpy as np
+
+
+class ViewDirection(enum.Enum):
+    TOP = "top"
+    FRONT = "front"
+    RIGHT = "right"
+    LEFT = "left"
+    BACK = "back"
+    ISO = "iso"
 
 
 def rotation_matrix_from_axis_angle(
@@ -196,55 +206,32 @@ class Camera:
         self.target = pivot + rot_matrix @ (self.target - pivot)
         self.up = rot_matrix @ self.up
 
-    def set_top_view(self, world_width: float, world_depth: float):
-        """Configures the camera for a top-down, orthographic view (Z-up)."""
+    _VIEW_CONFIGS = {
+        ViewDirection.TOP: ([0.0, 0.0, 1.0], [0.0, 1.0, 0.0], 1.5),
+        ViewDirection.FRONT: ([0.0, -1.0, 0.0], [0.0, 0.0, 1.0], 1.7),
+        ViewDirection.RIGHT: ([-1.0, 0.0, 0.0], [0.0, 0.0, 1.0], 1.7),
+        ViewDirection.LEFT: ([1.0, 0.0, 0.0], [0.0, 0.0, 1.0], 1.7),
+        ViewDirection.BACK: ([0.0, 1.0, 0.0], [0.0, 0.0, 1.0], 1.7),
+        ViewDirection.ISO: ([-1.0, -1.0, 1.0], [0.0, 0.0, 1.0], 1.7),
+    }
+
+    def set_view(
+        self,
+        direction: ViewDirection,
+        world_width: float,
+        world_depth: float,
+    ):
+        """Configures the camera for a preset view direction (Z-up)."""
+        dir_raw, up_raw, dist_factor = self._VIEW_CONFIGS[direction]
         center_x, center_y = world_width / 2.0, world_depth / 2.0
         max_dim = max(world_width, world_depth)
 
-        # Look from above (positive Z) down to the XY plane.
-        self.position = np.array(
-            [center_x, center_y, max_dim * 1.5], dtype=np.float64
-        )
         self.target = np.array([center_x, center_y, 0.0], dtype=np.float64)
 
-        # Standard orientation: Up vector points along positive Y.
-        self.up = np.array([0.0, 1.0, 0.0], dtype=np.float64)
-        # A top-down view should be orthographic, not perspective.
+        direction_vec = np.array(dir_raw, dtype=np.float64)
+        direction_vec = direction_vec / np.linalg.norm(direction_vec)
 
-    def set_front_view(self, world_width: float, world_depth: float):
-        """Configures the camera for a 45-degree front view."""
-        center_x, center_y = world_width / 2.0, world_depth / 2.0
-        max_dim = max(world_width, world_depth)
+        distance = max_dim * dist_factor
+        self.position = self.target + direction_vec * distance
 
-        # Target the center of the XY "floor" plane.
-        self.target = np.array([center_x, center_y, 0.0], dtype=np.float64)
-
-        # Position the camera in front of the bed (negative Y) and above it
-        # (positive Z) to get a 45-degree downward angle.
-        direction = np.array([0.0, -1.0, 1.0])
-        direction = direction / np.linalg.norm(direction)
-
-        distance = max_dim * 1.7
-        self.position = self.target + direction * distance
-
-        # World Z-axis is the conventional "up" for this view.
-        self.up = np.array([0.0, 0.0, 1.0], dtype=np.float64)
-
-    def set_iso_view(self, world_width: float, world_depth: float):
-        """Configures the camera for a standard isometric view (Z-up)."""
-        center_x, center_y = world_width / 2.0, world_depth / 2.0
-        max_dim = max(world_width, world_depth)
-
-        # Target the center of the XY "floor" plane.
-        self.target = np.array([center_x, center_y, 0.0], dtype=np.float64)
-
-        # Position the camera for a view from the top-front-left.
-        direction = np.array([-1.0, -1.0, 1.0])
-        direction = direction / np.linalg.norm(direction)
-
-        distance = max_dim * 1.7  # A bit more distance for perspective
-        self.position = self.target + direction * distance
-
-        # In a Z-up system, the world Z-axis is the conventional "up"
-        # vector for an isometric view, producing the correct orientation.
-        self.up = np.array([0.0, 0.0, 1.0], dtype=np.float64)
+        self.up = np.array(up_raw, dtype=np.float64)

@@ -32,7 +32,11 @@ class Shader:
         is_es = version_str is not None and b"OpenGL ES" in version_str
         if is_es:
             vert_header = "#version 300 es\n"
-            frag_header = "#version 300 es\nprecision mediump float;\n"
+            frag_header = (
+                "#version 300 es\n"
+                "precision highp float;\n"
+                "precision highp int;\n"
+            )
             logger.debug("Using OpenGL ES shader headers.")
         else:
             vert_header = "#version 330 core\n"

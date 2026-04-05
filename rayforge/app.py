@@ -197,11 +197,18 @@ def main():
             window.show_settings(None, None)
 
         def _on_app_quit(self, action, param):
+            logger.debug("_on_app_quit called.")
             window = self._get_main_window()
             if window is None:
                 self.quit()
                 return
             window.on_quit_action(None, None)
+
+        def do_shutdown(self):
+            logger.info("App.do_shutdown called.")
+            Adw.Application.do_shutdown(self)
+            logger.info("App.do_shutdown completed. Calling self.quit().")
+            self.quit()
 
         def do_activate(self):
             if self.win is not None:
@@ -472,9 +479,10 @@ def main():
     # Initialize the 3D canvas module to check for OpenGL availability.
     # This must be done after setting the platform env var and after
     # making Gtk available in gi, as the canvas uses Gtk.
-    # The rest of the app can now check `rayforge.canvas3d.initialized`.
+    # The rest of the app can now check
+    # `rayforge.ui_gtk.sim3d.canvas3d.initialized`.
     # It is safe to import other modules that depend on canvas3d after this.
-    from rayforge.ui_gtk import canvas3d
+    from rayforge.ui_gtk.sim3d import canvas3d
 
     canvas3d.initialize()
 
@@ -505,6 +513,7 @@ def main():
     # Run application
     app = App(args)
     exit_code = app.run(None)
+    logger.info("app.run() returned with exit_code=%s", exit_code)
     if app.win is None:
         logger.info(
             "No window created (another instance is likely running). Exiting."

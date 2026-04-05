@@ -19,7 +19,6 @@ from .job import JobArtifactHandle
 from .key import ArtifactKey
 from .lifecycle import LedgerEntry
 from .step_ops import StepOpsArtifactHandle
-from .step_render import StepRenderArtifactHandle
 from .store import ArtifactStore
 from .workpiece import WorkPieceArtifactHandle
 
@@ -73,7 +72,6 @@ class ArtifactManager:
         store: ArtifactStore,
     ):
         self._store = store
-        self._step_render_handles: Dict[str, StepRenderArtifactHandle] = {}
         self._ref_counts: Dict[ArtifactKey, int] = {}
         self._ledger: Dict[Tuple[ArtifactKey, GenerationID], LedgerEntry] = {}
         self._dependencies: Dict[ArtifactKey, List[ArtifactKey]] = {}
@@ -98,11 +96,6 @@ class ArtifactManager:
         if isinstance(handle, WorkPieceArtifactHandle):
             return handle
         return None
-
-    def get_step_render_handle(
-        self, step_uid: str
-    ) -> Optional[StepRenderArtifactHandle]:
-        return self._step_render_handles.get(step_uid)
 
     def is_generation_current(
         self, key: ArtifactKey, generation_id: GenerationID
@@ -214,20 +207,6 @@ class ArtifactManager:
             The reconstructed artifact.
         """
         return self._store.get(handle)
-
-    def put_step_render_handle(
-        self, step_uid: str, handle: StepRenderArtifactHandle
-    ):
-        """
-        Stores a handle for a StepRenderArtifact.
-
-        Releases any existing handle for this step before storing the new
-        one to prevent memory leaks during rapid re-renders.
-        """
-        old_handle = self._step_render_handles.get(step_uid)
-        if old_handle is not None:
-            self.release_handle(old_handle)
-        self._step_render_handles[step_uid] = handle
 
     def put_step_ops_handle(
         self,
@@ -382,12 +361,6 @@ class ArtifactManager:
         if handle:
             self._store.release(handle)
 
-    def has_step_render_handle(self, step_uid: str) -> bool:
-        return step_uid in self._step_render_handles
-
-    def get_all_step_render_uids(self) -> Set[str]:
-        return set(self._step_render_handles.keys())
-
     def get_all_workpiece_keys(self) -> Set[ArtifactKey]:
         return {
             extract_base_key(key)
@@ -404,11 +377,6 @@ class ArtifactManager:
             if extract_base_key(key).group == "workpiece"
             and extract_generation_id(key) == generation_id
         }
-
-    def pop_step_render_handle(
-        self, step_uid: str
-    ) -> Optional[StepRenderArtifactHandle]:
-        return self._step_render_handles.pop(step_uid, None)
 
     def invalidate_for_workpiece(self, key: ArtifactKey):
         wp_uid = key.id
@@ -489,9 +457,6 @@ class ArtifactManager:
                     self.release_handle(entry.handle)
             del self._ledger[ledger_key]
 
-        step_render_handle = self._step_render_handles.pop(step_uid, None)
-        self.release_handle(step_render_handle)
-
     def invalidate_for_step(self, key: ArtifactKey):
         step_keys_to_invalidate = [
             ledger_key
@@ -505,9 +470,6 @@ class ArtifactManager:
                     self.release_handle(step_entry.handle)
                     step_entry.handle = None
                 step_entry.state = NodeState.DIRTY
-
-        step_render_handle = self._step_render_handles.pop(key.id, None)
-        self.release_handle(step_render_handle)
 
     def invalidate_for_job(self, key: ArtifactKey):
         keys_to_invalidate = [
@@ -548,10 +510,6 @@ class ArtifactManager:
             if entry.handle is not None:
                 self.release_handle(entry.handle)
         self._ledger.clear()
-
-        for handle in self._step_render_handles.values():
-            self.release_handle(handle)
-        self._step_render_handles.clear()
 
         self._ref_counts.clear()
         logger.info("All cached artifacts released.")

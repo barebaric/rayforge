@@ -5,7 +5,7 @@ Tests for the TextureArtifactRenderer class.
 import pytest
 import numpy as np
 from unittest.mock import patch
-from rayforge.ui_gtk.canvas3d.texture_renderer import (
+from rayforge.ui_gtk.sim3d.canvas3d.texture_renderer import (
     TextureArtifactRenderer,
 )
 from rayforge.pipeline.artifact.base import TextureData

@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from gi.repository import Gio
     from ..doceditor.editor import DocEditor
     from ..ui_gtk.mainwindow import MainWindow
-    from .canvas3d import Canvas3D
+    from .sim3d.canvas3d import Canvas3D
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class ViewModeCmd:
         """
         Handles the logic for switching between the 2D and 3D views.
         """
-        from .canvas3d import initialized as canvas3d_initialized
+        from .sim3d.canvas3d import initialized as canvas3d_initialized
 
         win = self._win
         current_state = action.get_state()
@@ -69,26 +69,18 @@ class ViewModeCmd:
 
             action.set_state(GLib.Variant.new_boolean(True))
             win.view_stack.set_visible_child_name("3d")
+            GLib.idle_add(lambda: win.canvas3d and win.canvas3d.grab_focus())
             get_usage_tracker().track_page_view("/view/3d", "3D View")
 
         else:
             action.set_state(GLib.Variant.new_boolean(False))
             win.view_stack.set_visible_child_name("2d")
-            win.surface.grab_focus()
+            GLib.idle_add(lambda: win.surface and win.surface.grab_focus())
 
-    def set_view_top(self, canvas3d: Optional["Canvas3D"]):
+    def set_view(self, direction, canvas3d: Optional["Canvas3D"]):
+        """Sets the 3D view to the specified preset orientation."""
         if canvas3d:
-            canvas3d.reset_view_top()
-
-    def set_view_front(self, canvas3d: Optional["Canvas3D"]):
-        """Sets the 3D view to a front-facing orientation."""
-        if canvas3d:
-            canvas3d.reset_view_front()
-
-    def set_view_iso(self, canvas3d: Optional["Canvas3D"]):
-        """Sets the 3D view to an isometric orientation."""
-        if canvas3d:
-            canvas3d.reset_view_iso()
+            canvas3d.reset_view(direction)
 
     def toggle_perspective(
         self,

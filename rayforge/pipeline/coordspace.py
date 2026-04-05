@@ -305,7 +305,7 @@ class MachineSpace(CoordinateSpace):
 
             return (float(x_offset), float(y_offset), 0.0)
         else:
-            return wcs_offset
+            return (wcs_offset[0], wcs_offset[1], 0.0)
 
     @property
     def workarea_size(self) -> Tuple[float, float]:

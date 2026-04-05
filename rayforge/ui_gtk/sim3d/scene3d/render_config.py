@@ -1,0 +1,83 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Dict, Optional, Tuple
+
+import numpy as np
+
+
+@dataclass
+class LayerRenderConfig:
+    rotary_enabled: bool
+    rotary_diameter: float
+
+    def to_dict(self) -> dict:
+        return {
+            "rotary_enabled": self.rotary_enabled,
+            "rotary_diameter": self.rotary_diameter,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "LayerRenderConfig":
+        return cls(
+            rotary_enabled=data["rotary_enabled"],
+            rotary_diameter=data["rotary_diameter"],
+        )
+
+
+@dataclass
+class RenderConfig3D:
+    world_to_visual: np.ndarray
+    world_to_cyl_local: np.ndarray
+    default_color_lut_cut: bytes
+    default_color_lut_engrave: bytes
+    laser_color_luts: Dict[str, dict]
+    zero_power_rgba: Tuple[float, ...]
+    layer_configs: Optional[Dict[str, LayerRenderConfig]] = None
+
+    def to_dict(self) -> dict:
+        d = {
+            "world_to_visual": self.world_to_visual.astype(
+                np.float32
+            ).tobytes(),
+            "world_to_cyl_local": self.world_to_cyl_local.astype(
+                np.float32
+            ).tobytes(),
+            "default_color_lut_cut": self.default_color_lut_cut,
+            "default_color_lut_engrave": self.default_color_lut_engrave,
+            "laser_color_luts": self.laser_color_luts,
+            "zero_power_rgba": list(self.zero_power_rgba),
+        }
+        if self.layer_configs:
+            d["layer_configs"] = {
+                k: v.to_dict() for k, v in self.layer_configs.items()
+            }
+        return d
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "RenderConfig3D":
+        w2v = (
+            np.frombuffer(data["world_to_visual"], dtype=np.float32)
+            .reshape(4, 4)
+            .copy()
+        )
+        w2c = (
+            np.frombuffer(data["world_to_cyl_local"], dtype=np.float32)
+            .reshape(4, 4)
+            .copy()
+        )
+        layer_configs = None
+        if "layer_configs" in data:
+            layer_configs = {
+                k: LayerRenderConfig.from_dict(v)
+                for k, v in data["layer_configs"].items()
+            }
+        return cls(
+            world_to_visual=w2v,
+            world_to_cyl_local=w2c,
+            default_color_lut_cut=data["default_color_lut_cut"],
+            default_color_lut_engrave=data["default_color_lut_engrave"],
+            laser_color_luts=data["laser_color_luts"],
+            zero_power_rgba=tuple(data["zero_power_rgba"]),
+            layer_configs=layer_configs,
+        )

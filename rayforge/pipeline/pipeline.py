@@ -29,7 +29,6 @@ from .artifact import (
     ArtifactManager,
     BaseArtifactHandle,
     JobArtifactHandle,
-    StepRenderArtifactHandle,
     StepOpsArtifactHandle,
     WorkPieceArtifact,
 )
@@ -73,6 +72,8 @@ class Pipeline:
             has been adopted.
         job_time_updated (Signal): Fired when the job time estimate is
             updated.
+        job_generation_finished (Signal): Fired when job generation completes
+            successfully.
     """
 
     RECONCILIATION_DELAY_MS = 200
@@ -119,6 +120,7 @@ class Pipeline:
         self.workpiece_artifact_ready = Signal()
         self.workpiece_artifact_adopted = Signal()
         self.step_assembly_starting = Signal()
+        self.job_generation_finished = Signal()
         self.job_time_updated = Signal()
         self.visual_chunk_available = Signal()
 
@@ -229,6 +231,13 @@ class Pipeline:
     def task_manager(self) -> "TaskManager":
         """Returns the task manager used by this pipeline."""
         return self._task_manager
+
+    @property
+    def last_completed_handle(
+        self,
+    ) -> Optional[JobArtifactHandle]:
+        """Returns the last completed job artifact handle, if any."""
+        return self._job_stage.last_completed_handle
 
     @property
     def doc(self) -> Optional[Doc]:
@@ -938,6 +947,9 @@ class Pipeline:
         task_status: str,
     ) -> None:
         """Relays signal from the scheduler for successful job completion."""
+        self.job_generation_finished.send(
+            self, handle=handle, task_status=task_status
+        )
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )
@@ -1060,15 +1072,6 @@ class Pipeline:
         return self._artifact_manager.get_workpiece_handle(
             key, self._data_generation_id
         )
-
-    def get_step_render_artifact_handle(
-        self, step_uid: str
-    ) -> Optional[StepRenderArtifactHandle]:
-        """
-        Retrieves the handle for a generated step render artifact. This is
-        the lightweight artifact intended for UI consumption.
-        """
-        return self._artifact_manager.get_step_render_handle(step_uid)
 
     def get_step_ops_artifact_handle(
         self, step_uid: str

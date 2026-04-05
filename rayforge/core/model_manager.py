@@ -27,6 +27,11 @@ CATEGORIES: List[ModelCategory] = [
         display_name=_("Rotary"),
         description=_("Rotary and workholding models."),
     ),
+    ModelCategory(
+        id="heads",
+        display_name=_("Laser Heads"),
+        description=_("Laser head models."),
+    ),
 ]
 
 
