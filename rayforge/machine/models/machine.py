@@ -203,6 +203,21 @@ class Machine:
         )
         controller.wcs_updated.connect(self.wcs_updated.send)
 
+    def set_device_state(self, state: DeviceState):
+        self.device_state = state
+
+    def set_connection_status(self, status: TransportStatus):
+        self.connection_status = status
+
+    def set_precheck_error(self, error: Optional[str]):
+        self.precheck_error = error
+
+    def update_wcs_offset(self, slot: str, offset: Point3D):
+        self.wcs_offsets[slot] = offset
+
+    def update_wcs_offsets_batch(self, offsets: Dict[str, Point3D]):
+        self.wcs_offsets.update(offsets)
+
     @property
     def supported_wcs(self) -> List[str]:
         """
@@ -368,7 +383,7 @@ class Machine:
         self.driver_name = new_driver_name
         self.driver_args = new_args
         task_mgr.add_coroutine(
-            self.controller._rebuild_driver_instance,
+            self.controller.rebuild_driver,
             key=(self.id, "rebuild-driver"),
         )
 
@@ -379,7 +394,7 @@ class Machine:
 
         self.driver_args = new_args
         task_mgr.add_coroutine(
-            self.controller._rebuild_driver_instance,
+            self.controller.rebuild_driver,
             key=(self.id, "rebuild-driver"),
         )
 
@@ -1207,14 +1222,14 @@ class Machine:
     def refresh_settings(self):
         """Public API for the UI to request a settings refresh."""
         task_mgr.add_coroutine(
-            lambda ctx: self.controller._read_from_device(),
+            lambda ctx: self.controller.read_settings(),
             key=(self.id, "device-settings-read"),
         )
 
     def apply_setting(self, key: str, value: Any):
         """Public API for the UI to apply a single setting."""
         task_mgr.add_coroutine(
-            lambda ctx: self.controller._write_setting_to_device(key, value),
+            lambda ctx: self.controller.write_setting(key, value),
             key=(
                 self.id,
                 "device-settings-write",

@@ -70,7 +70,9 @@ class MachineManager:
         logger.debug(
             f"Creating controller for machine '{machine.name}' on first use."
         )
-        controller = MachineController(machine, get_context())
+        controller = MachineController(
+            machine, get_context(), task_mgr.schedule_on_main_thread
+        )
 
         # Wire up the machine's signal proxies to the new controller
         machine._connect_controller_signals(controller)
@@ -86,7 +88,7 @@ class MachineManager:
         controller = self.get_controller(machine.id)
         # Only rebuild if not already connected to avoid disconnecting
         if not machine.is_connected():
-            await controller._rebuild_driver_instance()
+            await controller.rebuild_driver()
         if machine.auto_connect and not machine.is_connected():
             await self._safe_connect(machine)
 
