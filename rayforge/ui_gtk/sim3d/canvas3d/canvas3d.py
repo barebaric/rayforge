@@ -9,7 +9,6 @@ from ....context import RayforgeContext
 from ....core.geo import Point
 from ....core.model import Model
 from ....core.ops import Ops
-from ....core.ops.commands import MovingCommand
 from ....machine.assembly import LinkRole
 from ....machine.models.colors import OpsColorSet
 from ....pipeline.artifact.base import TextureData
@@ -1311,14 +1310,6 @@ class Canvas3D(Gtk.GLArea):
         self._op_player = OpPlayer(ops)
         self._current_layer_uid = None
         self._extract_playback_offsets_from_artifact()
-        last_idx = self._op_player.seek_last_movement()
-        if last_idx is not None:
-            last_cmd = self._op_player.ops.commands[last_idx]
-            assert isinstance(last_cmd, MovingCommand)
-            assert last_cmd.end is not None
-            axes = self._op_player.state.axes
-            for i, ax in enumerate(sorted(axes)):
-                assert abs(axes[ax] - last_cmd.end[i]) < 1e-6
         GLib.idle_add(self._notify_playback_overlay, len(self._op_player.ops))
         self._upload_scanline_overlay()
 

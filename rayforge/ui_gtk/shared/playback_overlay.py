@@ -92,7 +92,7 @@ class PlaybackOverlay(Gtk.Box):
         """Update slider range for the given number of commands."""
         if command_count > 0:
             self._slider.set_range(0, command_count - 1)
-            self._slider.set_value(command_count - 1)
+            self._slider.set_value(0)
             self._slider.set_sensitive(True)
             self._play_button.set_sensitive(True)
         else:
