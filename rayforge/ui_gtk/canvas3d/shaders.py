@@ -34,6 +34,7 @@ uniform vec3 uLightDir;
 uniform vec3 uCameraPos;
 uniform int uExecutedVertexCount;
 uniform float uAlphaPending;
+uniform float uEmissive;
 void main() {
     vec4 baseColor;
     if (uUseVertexColor > 0.5) {
@@ -58,6 +59,7 @@ void main() {
     } else {
         FragColor = baseColor;
     }
+    FragColor.rgb *= (1.0 + uEmissive);
     if (uExecutedVertexCount >= 0) {
         if (vVertexID >= uExecutedVertexCount) {
             FragColor.a *= uAlphaPending;
@@ -132,6 +134,44 @@ out vec2 vTexCoord;
 void main() {
     gl_Position = uMVP * vec4(aPos, 1.0);
     vTexCoord = aTexCoord;
+}
+"""
+
+BACKGROUND_VERTEX_SHADER = """
+layout (location = 0) in vec3 aPos;
+
+out vec2 vTexCoord;
+
+void main() {
+    gl_Position = vec4(aPos.xy, 0.0, 1.0);
+    vTexCoord = aPos.xy * 0.5 + 0.5;
+}
+"""
+
+BACKGROUND_FRAGMENT_SHADER = """
+in vec2 vTexCoord;
+out vec4 FragColor;
+
+uniform vec3 uBgColor;
+uniform vec3 uBgColorLight;
+
+void main() {
+    vec2 uv = vTexCoord;
+
+    float vertical = mix(0.55, 1.0, uv.y);
+
+    vec2 center = vec2(0.5, 0.45);
+    float dist = length(uv - center);
+    float vignette = 1.0 - smoothstep(0.0, 0.9, dist) * 0.45;
+
+    float brightness = vertical * vignette;
+
+    vec3 color = mix(uBgColor, uBgColorLight, brightness);
+
+    float highlight = exp(-dist * dist * 6.0) * 0.12;
+    color += vec3(highlight * 0.8, highlight * 0.9, highlight);
+
+    FragColor = vec4(color, 1.0);
 }
 """
 

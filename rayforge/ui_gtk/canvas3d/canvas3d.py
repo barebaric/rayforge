@@ -16,15 +16,17 @@ from ...pipeline.artifact.base import TextureData
 from ...pipeline.artifact.handle import create_handle_from_dict
 from ...pipeline.artifact.job import JobArtifact, JobArtifactHandle
 from ...pipeline.pipeline import Pipeline
-from ...shared.util.colors import ColorSet
+from ...shared.util.colors import ColorSet, hex_to_rgba
 from ...shared.tasker import task_mgr, Task
 from ...simulator.op_player import OpPlayer
 from ..shared.gtk_color import GtkColorResolver, ColorSpecDict
 from .axis_renderer_3d import AxisRenderer3D
+from .background_renderer import BackgroundRenderer
 from .camera import Camera, rotation_matrix_from_axis_angle
 from .compiled_scene import CompiledSceneArtifact
 from .cylinder_renderer import CylinderRenderer
 from .gl_utils import Shader
+from .laser_beam_renderer import LaserBeamRenderer
 from .model_renderer import ModelRenderer
 from .ops_renderer import OpsRenderer
 from .render_config import (
@@ -103,6 +105,8 @@ class Canvas3D(Gtk.GLArea):
         self._axis_renderer: Optional[AxisRenderer3D] = None
         self._layer_groups: List[_LayerRendererGroup] = []
         self._sphere_renderer: Optional[SphereRenderer] = None
+        self._laser_beam_renderer: Optional[LaserBeamRenderer] = None
+        self._background_renderer: Optional[BackgroundRenderer] = None
         self._texture_renderer: Optional[TextureArtifactRenderer] = None
         self._texture_shader: Optional[Shader] = None
         self._cylinder_renderers: Dict[float, CylinderRenderer] = {}
@@ -358,8 +362,6 @@ class Canvas3D(Gtk.GLArea):
     def on_realize(self, area) -> None:
         """Called when the GLArea is ready to have its context made current."""
         logger.info("GLArea realized.")
-        self._init_gl_resources()
-        self._theme_is_dirty = True
 
         self.camera = Camera(
             np.array([0.0, 0.0, 1.0]),
@@ -370,6 +372,12 @@ class Canvas3D(Gtk.GLArea):
         )
 
         self._sphere_renderer = SphereRenderer(1.0, 16, 32)
+        self._laser_beam_renderer = LaserBeamRenderer()
+        self._background_renderer = BackgroundRenderer()
+
+        self._init_gl_resources()
+        self._theme_is_dirty = True
+
         self.reset_view_front()
         self._update_theme_and_colors()
         self._connect_pipeline_signals()
@@ -397,6 +405,10 @@ class Canvas3D(Gtk.GLArea):
                 group.cleanup()
             if self._sphere_renderer:
                 self._sphere_renderer.cleanup()
+            if self._laser_beam_renderer:
+                self._laser_beam_renderer.cleanup()
+            if self._background_renderer:
+                self._background_renderer.cleanup()
             if self._texture_renderer:
                 self._texture_renderer.cleanup()
             if self._zone_renderer:
@@ -471,6 +483,18 @@ class Canvas3D(Gtk.GLArea):
             self._texture_renderer.init_gl()
             if self._sphere_renderer:
                 self._sphere_renderer.init_gl()
+            if self._laser_beam_renderer:
+                self._laser_beam_renderer.init_gl()
+            try:
+                if self._background_renderer:
+                    self._background_renderer.init_gl()
+            except Exception as e:
+                logger.warning(
+                    "Background renderer init failed, "
+                    "falling back to clear color: %s",
+                    e,
+                )
+                self._background_renderer = None
             self._zone_renderer = ZoneRenderer()
             self._zone_renderer.init_gl()
 
@@ -500,11 +524,31 @@ class Canvas3D(Gtk.GLArea):
             found, bg_rgba = style_context.lookup_color("theme_bg_color")
 
         if found:
-            GL.glClearColor(
-                bg_rgba.red, bg_rgba.green, bg_rgba.blue, bg_rgba.alpha
+            bg_color = (
+                bg_rgba.red * 0.35,
+                bg_rgba.green * 0.35,
+                bg_rgba.blue * 0.35,
+            )
+            bg_light = (
+                min(1.0, bg_rgba.red * 0.9),
+                min(1.0, bg_rgba.green * 0.9),
+                min(1.0, bg_rgba.blue * 0.9),
+            )
+            clear_color = (
+                bg_rgba.red,
+                bg_rgba.green,
+                bg_rgba.blue,
+                bg_rgba.alpha,
             )
         else:
-            GL.glClearColor(0.2, 0.2, 0.25, 1.0)  # Final fallback
+            bg_color = (0.11, 0.11, 0.14)
+            bg_light = (0.2, 0.2, 0.25)
+            clear_color = (0.2, 0.2, 0.25, 1.0)
+
+        if self._background_renderer:
+            self._background_renderer.set_colors(bg_color, bg_light)
+
+        GL.glClearColor(*clear_color)
 
         # Get the foreground color for axes and labels
         found, fg_rgba = style_context.lookup_color("view_fg_color")
@@ -517,7 +561,7 @@ class Canvas3D(Gtk.GLArea):
             )
             # Grid color is derived from fg color to be less prominent
             grid_color = fg_rgba.red, fg_rgba.green, fg_rgba.blue, 0.5
-            bg_plane_color = fg_rgba.red, fg_rgba.green, fg_rgba.blue, 0.25
+            bg_plane_color = fg_rgba.red, fg_rgba.green, fg_rgba.blue, 0.08
 
             self._axis_renderer.set_background_color(bg_plane_color)
             self._axis_renderer.set_axis_color(axis_color)
@@ -577,6 +621,9 @@ class Canvas3D(Gtk.GLArea):
             GL.glClear(
                 GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT  # type: ignore
             )
+
+            if self._background_renderer:
+                self._background_renderer.render()
 
             proj_matrix = self.camera.get_projection_matrix()
             view_matrix = self.camera.get_view_matrix()
@@ -745,14 +792,34 @@ class Canvas3D(Gtk.GLArea):
                     head_pos = margin_shift @ np.array(
                         [hx, hy, hz, 1.0], dtype=np.float32
                     )
-                    self._sphere_renderer.render(
-                        self._main_shader,
-                        proj_matrix,
-                        view_matrix,
-                        head_pos[:3],
-                        color=(1.0, 0.2, 0.0, 1.0),
-                        scale=2.0,
-                    )
+                    beam_height = 50.0
+                    beam_color = (1.0, 0.3, 0.1, 1.0)
+                    if name.startswith("head_"):
+                        try:
+                            idx = int(name.split("_")[1])
+                            laser = machine.heads[idx]
+                            if laser.focal_distance > 0:
+                                beam_height = laser.focal_distance
+                            beam_color = hex_to_rgba(laser.cut_color)
+                        except (ValueError, IndexError):
+                            pass
+                    if self._laser_beam_renderer and self._main_shader:
+                        beam_pos = head_pos.copy()
+                        if self._had_rotary_layers and asm.has_rotary:
+                            diameter = asm.rotary_diameter
+                            if diameter and diameter > 0:
+                                beam_pos[2] += diameter / 2.0
+                            beam_pos[2] += offset_z
+                            beam_pos[1] = offset_y
+                        self._laser_beam_renderer.render(
+                            self._main_shader,
+                            proj_matrix,
+                            view_matrix,
+                            beam_pos[:3],
+                            beam_height=beam_height,
+                            viewport_height=self.camera.height,
+                            color=beam_color,
+                        )
 
             for renderer in self._cylinder_renderers.values():
                 if self._main_shader:

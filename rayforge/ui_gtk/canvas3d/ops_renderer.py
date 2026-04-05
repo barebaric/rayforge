@@ -129,6 +129,7 @@ class OpsRenderer(BaseRenderer):
 
         shader.set_int("uExecutedVertexCount", executed_vertex_count)
         shader.set_float("uAlphaPending", alpha_pending)
+        shader.set_float("uEmissive", 1.0)
 
         # Draw powered moves (which use vertex colors)
         if self.powered_vertex_count > 0:
