@@ -4,8 +4,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 from gettext import gettext as _
 from gi.repository import Gio, Adw
+from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import VectorizationSpec, TraceSpec
 from ...doceditor.file_cmd import ImportAction
+from ...image.registry import importer_registry
 from . import file_dialogs
 from .import_dialog import ImportDialog
 
@@ -259,3 +261,60 @@ def import_multiple_files_at_position(
 
     # Hide properties widget
     win.item_revealer.set_reveal_child(False)
+
+
+def start_reimport(
+    win: "MainWindow",
+    editor: "DocEditor",
+    source_asset: SourceAsset,
+    position_mm: Optional[tuple[float, float]] = None,
+):
+    """
+    Re-open the import dialog for an existing SourceAsset so the user
+    can edit settings and produce a fresh set of workpieces.
+    """
+    meta = source_asset.metadata
+    importer_cls_name = meta.get("_importer_class")
+    if not importer_cls_name:
+        logger.warning("Cannot reimport: missing _importer_class metadata")
+        return
+    importer_cls = importer_registry.get_by_name(importer_cls_name)
+    if not importer_cls:
+        logger.warning(
+            f"Cannot reimport: importer '{importer_cls_name}' not registered"
+        )
+        return
+
+    mime_type = meta.get("_importer_mime", "")
+    file_path = source_asset.source_file or Path(
+        source_asset.name or "Untitled"
+    )
+    features = importer_cls.features
+
+    initial_spec = None
+    for wp in editor.doc.all_workpieces:
+        if (
+            wp.source_segment
+            and wp.source_segment.source_asset_uid == source_asset.uid
+        ):
+            initial_spec = wp.source_segment.vectorization_spec
+            break
+
+    dialog = ImportDialog(
+        parent=win,
+        editor=editor,
+        file_path=file_path,
+        mime_type=mime_type,
+        features=features,
+        source_asset=source_asset,
+        initial_spec=initial_spec,
+    )
+
+    def on_response(sender, *, response_id: str, spec: VectorizationSpec):
+        if response_id == "import":
+            editor.file.reimport_from_source_asset(
+                source_asset, spec, position_mm
+            )
+
+    dialog.response.connect(on_response, weak=False)
+    dialog.present()

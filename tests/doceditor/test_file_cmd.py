@@ -312,7 +312,7 @@ class TestPositionNewlyImportedItems:
     ):
         """Test that None position triggers fit and position at origin."""
         with patch.object(
-            file_cmd, "_fit_and_position_at_reference_origin"
+            file_cmd, "_position_at_reference_origin"
         ) as mock_fit_position:
             file_cmd._position_newly_imported_items([sample_workpiece], None)
 
@@ -320,28 +320,28 @@ class TestPositionNewlyImportedItems:
 
 
 class TestFitAndPositionAtReferenceOrigin:
-    """Tests for _fit_and_position_at_reference_origin method."""
+    """Tests for _position_at_reference_origin method."""
 
     def test_fit_and_position_no_config(self, file_cmd, sample_workpiece):
         """Test that method returns early when no config is available."""
         with patch("rayforge.doceditor.file_cmd.get_context") as mock_ctx:
             mock_ctx.return_value.config = None
 
-            file_cmd._fit_and_position_at_reference_origin([sample_workpiece])
+            file_cmd._position_at_reference_origin([sample_workpiece])
 
     def test_fit_and_position_no_machine(self, file_cmd, sample_workpiece):
         """Test that method returns early when no machine is configured."""
         with patch("rayforge.doceditor.file_cmd.get_context") as mock_ctx:
             mock_ctx.return_value.config.machine = None
 
-            file_cmd._fit_and_position_at_reference_origin([sample_workpiece])
+            file_cmd._position_at_reference_origin([sample_workpiece])
 
     def test_fit_and_position_no_bbox(self, file_cmd, sample_workpiece):
         """Test that method returns early when bbox cannot be calculated."""
         with patch.object(
             file_cmd, "_calculate_items_bbox", return_value=None
         ):
-            file_cmd._fit_and_position_at_reference_origin([sample_workpiece])
+            file_cmd._position_at_reference_origin([sample_workpiece])
 
     def test_fit_and_position_scale_down(self, file_cmd):
         """Test scaling down items that are too large."""
@@ -362,7 +362,7 @@ class TestFitAndPositionAtReferenceOrigin:
             )
             mock_ctx.return_value.config.machine = mock_machine
 
-            file_cmd._fit_and_position_at_reference_origin([wp])
+            file_cmd._position_newly_imported_items([wp], None)
 
             bbox = wp.bbox
             assert bbox[2] <= 200
@@ -387,7 +387,7 @@ class TestFitAndPositionAtReferenceOrigin:
             )
             mock_ctx.return_value.config.machine = mock_machine
 
-            file_cmd._fit_and_position_at_reference_origin([wp])
+            file_cmd._position_newly_imported_items([wp], None)
 
             bbox = wp.bbox
             # Item should be positioned at reference origin (10, 20)

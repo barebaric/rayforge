@@ -13,10 +13,18 @@ from typing import TYPE_CHECKING, Optional, Tuple, List
 from gettext import gettext as _
 from gi.repository import GObject, Gdk, Gtk, Gio, GLib, Adw
 from ...context import get_context
+from ...core.layer import Layer
+from ...core.matrix import Matrix
+from ...core.source_asset import SourceAsset
+from ...core.stock import StockItem
 from ...core.stock_asset import StockAsset
+from ...core.undo import ListItemCommand
+from ...core.vectorization_spec import PassthroughSpec
+from ...core.workpiece import WorkPiece
 from ...doceditor.file_cmd import ImportAction
 from ...image import ImporterFeature
 from ...image.registry import importer_registry
+from ..doceditor import import_handler
 
 if TYPE_CHECKING:
     from ...ui_gtk.mainwindow import MainWindow
@@ -148,20 +156,128 @@ class DragDropCmd:
             pos = (position_mm[0] + offset_x, position_mm[1] + offset_y)
 
             try:
-                edit = self.main_window.doc_editor.edit
-                new_workpiece = edit.add_geometry_provider_instance(
-                    asset_uid, pos
-                )
-                if new_workpiece:
+                if isinstance(asset, StockAsset):
+                    new_item = self._create_stock_item_instance(asset_uid, pos)
+                elif isinstance(asset, SourceAsset):
+                    new_item = self._create_source_workpiece_instance(
+                        asset_uid, pos
+                    )
+                else:
+                    edit = self.main_window.doc_editor.edit
+                    new_item = edit.add_geometry_provider_instance(
+                        asset_uid, pos
+                    )
+                if new_item:
                     logger.info(
-                        f"Created instance {new_workpiece.uid[:8]} "
+                        f"Created instance {new_item.uid[:8]} "
                         f"from asset {asset_uid[:8]} at {pos}"
                     )
-                    success = True
+                success = True
             except Exception:
                 logger.exception(f"Error handling asset drop: {asset_uid}")
 
         return success
+
+    def _create_stock_item_instance(
+        self, asset_uid: str, position_mm: Tuple[float, float]
+    ):
+        """
+        Creates a new StockItem instance from a StockAsset.
+
+        Args:
+            asset_uid: The UID of the StockAsset to instantiate
+            position_mm: The (x, y) position in mm where to place the instance
+
+        Returns:
+            The newly created StockItem instance
+        """
+        doc = self.main_window.doc_editor.doc
+        history = doc.history_manager
+
+        asset = doc.get_asset_by_uid(asset_uid)
+        if not asset or not isinstance(asset, StockAsset):
+            raise ValueError(f"StockAsset with UID {asset_uid} not found.")
+
+        stock_item = StockItem(stock_asset_uid=asset_uid, name=asset.name)
+        w, h = asset.get_natural_size()
+        stock_item.matrix = Matrix.scale(w, h)
+        stock_item.pos = (
+            position_mm[0] - w / 2,
+            position_mm[1] - h / 2,
+        )
+
+        with history.transaction(_(f"Add {asset.name} Instance")) as t:
+            command = ListItemCommand(
+                owner_obj=doc,
+                item=stock_item,
+                undo_command="remove_child",
+                redo_command="add_child",
+                name=_(f"Add {asset.name} Instance"),
+            )
+            t.execute(command)
+
+        return stock_item
+
+    def _create_source_workpiece_instance(
+        self, asset_uid: str, position_mm: Tuple[float, float]
+    ):
+        """
+        Creates a new WorkPiece instance from a SourceAsset by re-running
+        the import pipeline with the existing asset.
+
+        If the asset supports interactive configuration, opens the import
+        dialog so the user can adjust settings.  Otherwise reimports
+        directly with the last-used spec (or a sensible default).
+        """
+        doc = self.main_window.doc_editor.doc
+        asset = doc.get_asset_by_uid(asset_uid)
+        if not asset or not isinstance(asset, SourceAsset):
+            return None
+
+        meta = asset.metadata
+        importer_cls_name = meta.get("_importer_class")
+        if not importer_cls_name:
+            logger.warning(
+                "Cannot reimport: SourceAsset has no _importer_class metadata"
+            )
+            return None
+        importer_cls = importer_registry.get_by_name(importer_cls_name)
+        if not importer_cls:
+            return None
+
+        features = importer_cls.features
+        needs_dialog = (
+            ImporterFeature.BITMAP_TRACING in features
+            or ImporterFeature.LAYER_SELECTION in features
+        )
+
+        if needs_dialog:
+            import_handler.start_reimport(
+                self.main_window,
+                self.main_window.doc_editor,
+                asset,
+                position_mm,
+            )
+            return None
+        else:
+            editor = self.main_window.doc_editor
+            result = editor.file.reimport_from_source_asset(
+                asset, PassthroughSpec(), position_mm
+            )
+            if result and result.payload and result.payload.items:
+                return self._extract_first_workpiece(result.payload.items)
+            return None
+
+    @staticmethod
+    def _extract_first_workpiece(items):
+        for item in items:
+            if isinstance(item, WorkPiece):
+                return item
+            if isinstance(item, Layer):
+                result = DragDropCmd._extract_first_workpiece(item.children)
+                if result:
+                    return result
+        return None
 
     # --- File Handlers ---
 
@@ -320,8 +436,6 @@ class DragDropCmd:
             file_infos: List of (file_path, mime_type) tuples
             position_mm: (x, y) tuple in world coordinates
         """
-        from ..doceditor import import_handler
-
         editor = self.main_window.doc_editor
         files_for_batch_import: List[Tuple[Path, str]] = []
 
@@ -496,8 +610,6 @@ class DragDropCmd:
                 center_x, center_y = 50.0, 50.0  # Fallback
 
             # Import the temporary file
-            from ..doceditor import import_handler
-
             import_handler.import_file_at_position(
                 self.main_window,
                 self.main_window.doc_editor,

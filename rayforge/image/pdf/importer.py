@@ -61,6 +61,13 @@ class PdfImporter(Importer):
 
         import_result = delegate.get_doc_items(spec_to_use)
 
+        if (
+            import_result
+            and import_result.payload
+            and import_result.payload.source
+        ):
+            self._stamp_importer_identity(import_result.payload.source)
+
         if import_result:
             import_result.warnings.extend(self._warnings)
             import_result.errors.extend(self._errors)
@@ -83,3 +90,20 @@ class PdfImporter(Importer):
         raise NotImplementedError(
             "PdfImporter is a facade; create_source_asset is delegated"
         )
+
+    def get_doc_items_for_reimport(
+        self,
+        existing_source_asset: SourceAsset,
+        vectorization_spec: VectorizationSpec,
+    ) -> Optional[ImportResult]:
+        if isinstance(vectorization_spec, TraceSpec):
+            delegate = PdfTraceImporter(self.raw_data, self.source_file)
+        else:
+            delegate = PdfVectorImporter(self.raw_data, self.source_file)
+        result = delegate.get_doc_items_for_reimport(
+            existing_source_asset, vectorization_spec
+        )
+        if result:
+            result.warnings.extend(self._warnings)
+            result.errors.extend(self._errors)
+        return result

@@ -26,7 +26,7 @@ class StockAsset(IAsset):
     asset_type_name: ClassVar[str] = "stock"
     display_icon_name: ClassVar[str] = "stock-symbolic"
     is_reorderable: ClassVar[bool] = True
-    is_draggable_to_canvas: ClassVar[bool] = False
+    is_draggable_to_canvas: ClassVar[bool] = True
     type_display_name: ClassVar[str] = _("Stock Material")
     can_edit: ClassVar[bool] = True
     add_action: ClassVar[Optional[str]] = "add-stock"

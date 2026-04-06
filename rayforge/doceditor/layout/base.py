@@ -6,6 +6,7 @@ from blinker import Signal
 from ...core.geo import Rect
 from ...core.group import Group
 from ...core.item import DocItem
+from ...core.layer import Layer
 from ...core.matrix import Matrix
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
@@ -72,7 +73,8 @@ class LayoutStrategy(ABC):
         if isinstance(item, WorkPiece):
             items_to_measure.append(item)
         elif isinstance(item, Group):
-            # For a group, get all descendant workpieces to measure
+            items_to_measure.extend(item.get_descendants(of_type=WorkPiece))
+        elif isinstance(item, Layer):
             items_to_measure.extend(item.get_descendants(of_type=WorkPiece))
         elif isinstance(item, StockItem):
             items_to_measure.append(item)

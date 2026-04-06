@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Set
+from typing import TYPE_CHECKING, Dict, List, Optional, Set
 from gettext import gettext as _
 
 import cairo
@@ -10,6 +10,7 @@ from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 from ...core.item import DocItem
 from ...core.layer import Layer
 from ...context import get_context
+from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
     LayerImportMode,
     PassthroughSpec,
@@ -45,12 +46,15 @@ class ImportDialog(PatchedDialogWindow):
         file_path: Path,
         mime_type: str,
         features: Set[ImporterFeature],
+        source_asset: Optional[SourceAsset] = None,
+        initial_spec: Optional[VectorizationSpec] = None,
     ):
         super().__init__(transient_for=parent, modal=True)
         self.editor = editor
         self.file_path = file_path
         self.mime_type = mime_type
         self.features = features
+        self.source_asset = source_asset
         self.response = Signal()
 
         # Internal state
@@ -59,7 +63,7 @@ class ImportDialog(PatchedDialogWindow):
         self._preview_result: Optional[PreviewResult] = None
         self._background_pixbuf: Optional[GdkPixbuf.Pixbuf] = None
         self._in_update = False  # Prevent signal recursion
-        self._layer_widgets: List[Gtk.Switch] = []
+        self._layer_widgets: Dict[Gtk.Switch, str] = {}
 
         self._layer_import_model = Gtk.StringList.new(
             [
@@ -114,9 +118,14 @@ class ImportDialog(PatchedDialogWindow):
         main_box.append(content_box)
 
         # Header Bar Buttons
-        self.import_button = Gtk.Button(
-            label=_("Import"), css_classes=["suggested-action"]
-        )
+        if source_asset:
+            self.import_button = Gtk.Button(
+                label=_("Re-Import"), css_classes=["suggested-action"]
+            )
+        else:
+            self.import_button = Gtk.Button(
+                label=_("Import"), css_classes=["suggested-action"]
+            )
         self.import_button.connect("clicked", self._on_import_clicked)
         header_bar.pack_end(self.import_button)
 
@@ -263,10 +272,13 @@ class ImportDialog(PatchedDialogWindow):
 
         # Initial Load & State
         self._load_initial_data()
-        self._on_import_mode_toggled(self.use_vectors_switch)
-        self._on_import_whole_image_toggled(
-            self.import_whole_image_switch, None
-        )
+        if initial_spec:
+            self._apply_spec_to_widgets(initial_spec)
+        else:
+            self._on_import_mode_toggled(self.use_vectors_switch)
+            self._on_import_whole_image_toggled(
+                self.import_whole_image_switch, None
+            )
 
     def _on_import_mode_toggled(self, switch, *args):
         is_direct_import = (
@@ -301,7 +313,10 @@ class ImportDialog(PatchedDialogWindow):
 
     def _load_initial_data(self):
         try:
-            self._file_bytes = self.file_path.read_bytes()
+            if self.source_asset:
+                self._file_bytes = self.source_asset.original_data
+            else:
+                self._file_bytes = self.file_path.read_bytes()
             # Use the new generic scan method
             self._manifest = self.editor.file.scan_import_file(
                 self._file_bytes, self.file_path, self.mime_type
@@ -360,14 +375,13 @@ class ImportDialog(PatchedDialogWindow):
                 valign=Gtk.Align.CENTER,
             )
             switch.set_sensitive(not is_empty)
-            switch._layer_id = layer_info.id  # type: ignore
             switch.connect("notify::active", self._schedule_preview_update)
 
             row.add_suffix(switch)
             row.set_activatable_widget(switch)
             expander.add_row(row)
 
-            self._layer_widgets.append(switch)
+            self._layer_widgets[switch] = layer_info.id
 
         expander.add_row(self.layer_import_mode_row)
 
@@ -375,9 +389,7 @@ class ImportDialog(PatchedDialogWindow):
         if not self._layer_widgets:
             return None
         return [
-            w._layer_id  # type: ignore
-            for w in self._layer_widgets
-            if w.get_active()
+            lid for w, lid in self._layer_widgets.items() if w.get_active()
         ]
 
     def _get_layer_import_mode(self) -> LayerImportMode:
@@ -419,6 +431,45 @@ class ImportDialog(PatchedDialogWindow):
                 invert=self.invert_switch.get_active(),
                 ppi=ppi,
             )
+
+    def _apply_spec_to_widgets(self, spec: VectorizationSpec):
+        self._in_update = True
+        try:
+            can_vector = ImporterFeature.DIRECT_VECTOR in self.features
+
+            if isinstance(spec, PassthroughSpec):
+                if can_vector:
+                    self.use_vectors_switch.set_active(True)
+                if spec.active_layer_ids:
+                    for w, lid in self._layer_widgets.items():
+                        w.set_active(lid in spec.active_layer_ids)
+                mode_map = {
+                    LayerImportMode.MAP_TO_EXISTING: 0,
+                    LayerImportMode.NEW_LAYERS: 1,
+                    LayerImportMode.FLATTEN: 2,
+                }
+                idx = mode_map.get(spec.layer_import_mode, 0)
+                self.layer_import_mode_row.set_selected(idx)
+            elif isinstance(spec, TraceSpec):
+                if can_vector:
+                    self.use_vectors_switch.set_active(False)
+                if spec.threshold >= 1.0 and not spec.auto_threshold:
+                    self.import_whole_image_switch.set_active(True)
+                else:
+                    self.import_whole_image_switch.set_active(False)
+                    self.auto_threshold_switch.set_active(spec.auto_threshold)
+                    self.threshold_adjustment.set_value(spec.threshold)
+                self.invert_switch.set_active(spec.invert)
+
+            self.dpi_adjustment.set_value(spec.ppi)
+        finally:
+            self._in_update = False
+
+        self._on_import_mode_toggled(self.use_vectors_switch)
+        self._on_import_whole_image_toggled(
+            self.import_whole_image_switch, None
+        )
+        self._schedule_preview_update()
 
     def _schedule_preview_update(self, *args):
         if self._in_update:

@@ -284,6 +284,105 @@ class Importer(ABC):
         """
         raise NotImplementedError
 
+    def _stamp_importer_identity(self, source_asset: "SourceAsset") -> None:
+        source_asset.metadata["_importer_class"] = type(self).__name__
+        if self.mime_types:
+            source_asset.metadata["_importer_mime"] = self.mime_types[0]
+
+    def _resolve_default_spec(self) -> "VectorizationSpec":
+        if ImporterFeature.DIRECT_VECTOR in self.features:
+            return PassthroughSpec()
+        elif ImporterFeature.BITMAP_TRACING in self.features:
+            return TraceSpec(threshold=1.0, auto_threshold=False)
+        else:
+            return PassthroughSpec()
+
+    def _run_pipeline(
+        self,
+        vectorization_spec: "VectorizationSpec",
+        source_asset: "SourceAsset",
+        parse_result: Optional["ParsingResult"] = None,
+    ) -> "ImportResult":
+        """
+        Shared phases 2–5 of the import pipeline.
+
+        Args:
+            vectorization_spec: Resolved spec (never None).
+            source_asset: The asset to reference in assembled items.
+            parse_result: Optional pre-computed parse result.  When
+                omitted (or None) parse() is called automatically.
+        """
+        from .structures import (
+            ImportPayload,
+            ImportResult,
+            VectorizationResult,
+        )
+
+        self._vectorization_spec = vectorization_spec
+
+        # Phase 2: Parse (unless caller already did)
+        if parse_result is None:
+            parse_result = self.parse()
+        if not parse_result:
+            return ImportResult(
+                payload=None,
+                parse_result=None,
+                warnings=self._warnings,
+                errors=self._errors,
+            )
+
+        # Phase 3: Vectorize
+        spec = self._vectorization_spec
+
+        if not parse_result.layers and isinstance(spec, TraceSpec):
+            return ImportResult(
+                payload=ImportPayload(source=source_asset, items=[]),
+                parse_result=parse_result,
+                vectorization_result=VectorizationResult(
+                    geometries_by_layer={},
+                    source_parse_result=parse_result,
+                ),
+                warnings=self._warnings,
+                errors=self._errors,
+            )
+
+        vec_result = self.vectorize(parse_result, spec)
+
+        # Phase 4: Layout
+        engine = NormalizationEngine()
+        plan = engine.calculate_layout(vec_result, spec)
+
+        if not plan:
+            return ImportResult(
+                payload=ImportPayload(source=source_asset, items=[]),
+                parse_result=parse_result,
+                vectorization_result=vec_result,
+                warnings=self._warnings,
+                errors=self._errors,
+            )
+
+        # Phase 5: Assemble
+        assembler = ItemAssembler()
+        items = assembler.create_items(
+            source_asset=source_asset,
+            layout_plan=plan,
+            spec=spec,
+            source_name=self.source_file.stem,
+            geometries=vec_result.geometries_by_layer,
+            document_bounds=vec_result.source_parse_result.document_bounds,
+        )
+
+        payload = ImportPayload(source_asset, items)
+        final_payload = self._post_process_payload(payload)
+
+        return ImportResult(
+            payload=final_payload,
+            parse_result=vec_result.source_parse_result,
+            vectorization_result=vec_result,
+            warnings=self._warnings,
+            errors=self._errors,
+        )
+
     def get_doc_items(
         self, vectorization_spec: Optional["VectorizationSpec"] = None
     ) -> Optional["ImportResult"]:
@@ -321,28 +420,14 @@ class Importer(ABC):
         ImportResult. It handles failures gracefully, returning partial
         results where possible.
         """
-        # (Needed for downstream type hints)
-        from .structures import (
-            ImportPayload,
-            ImportResult,
-            VectorizationResult,
-        )
+        spec = vectorization_spec or self._resolve_default_spec()
+        self._vectorization_spec = spec
 
-        # Resolve spec early so parse() can access trim_padding
-        self._vectorization_spec = vectorization_spec
-        if not self._vectorization_spec:
-            if ImporterFeature.DIRECT_VECTOR in self.features:
-                self._vectorization_spec = PassthroughSpec()
-            elif ImporterFeature.BITMAP_TRACING in self.features:
-                self._vectorization_spec = TraceSpec(
-                    threshold=1.0, auto_threshold=False
-                )
-            else:
-                self._vectorization_spec = PassthroughSpec()
-
-        # 1. Parse
+        # Phase 2: Parse (once, reused below)
         parse_result = self.parse()
         if not parse_result:
+            from .structures import ImportResult
+
             return ImportResult(
                 payload=None,
                 parse_result=None,
@@ -350,67 +435,11 @@ class Importer(ABC):
                 errors=self._errors,
             )
 
-        # 2. Create Source
+        # Phase 2b: Create Source Asset
         source_asset = self.create_source_asset(parse_result)
+        self._stamp_importer_identity(source_asset)
 
-        # 3. Vectorize
-        spec = self._vectorization_spec
-
-        # For vector formats, if no layers with geometry were found,
-        # return early with no items. Only applies to TraceSpec since
-        # PassthroughSpec's vectorize() has fallback logic for SVGs without
-        # explicit layers.
-        if not parse_result.layers and isinstance(spec, TraceSpec):
-            return ImportResult(
-                payload=ImportPayload(source=source_asset, items=[]),
-                parse_result=parse_result,
-                vectorization_result=VectorizationResult(
-                    geometries_by_layer={}, source_parse_result=parse_result
-                ),
-                warnings=self._warnings,
-                errors=self._errors,
-            )
-
-        vec_result = self.vectorize(parse_result, spec)
-
-        # 4. Layout
-        engine = NormalizationEngine()
-        plan = engine.calculate_layout(vec_result, spec)
-
-        if not plan:
-            return ImportResult(
-                payload=ImportPayload(source=source_asset, items=[]),
-                parse_result=parse_result,
-                vectorization_result=vec_result,
-                warnings=self._warnings,
-                errors=self._errors,
-            )
-
-        # 5. Assemble
-        assembler = ItemAssembler()
-        items = assembler.create_items(
-            source_asset=source_asset,
-            layout_plan=plan,
-            spec=spec,
-            source_name=self.source_file.stem,
-            geometries=vec_result.geometries_by_layer,
-            document_bounds=vec_result.source_parse_result.document_bounds,
-        )
-
-        payload = ImportPayload(source_asset, items)
-
-        # Call the post-processing hook before returning the final result
-        final_payload = self._post_process_payload(payload)
-
-        # We return the parsing result from the vectorization phase, as it
-        # may have been updated (e.g. bounds calculation for subset of layers)
-        return ImportResult(
-            payload=final_payload,
-            parse_result=vec_result.source_parse_result,
-            vectorization_result=vec_result,
-            warnings=self._warnings,
-            errors=self._errors,
-        )
+        return self._run_pipeline(spec, source_asset, parse_result)
 
     def _post_process_payload(
         self, payload: "ImportPayload"
@@ -421,3 +450,17 @@ class Importer(ABC):
         or links, like the SketchImporter.
         """
         return payload
+
+    def get_doc_items_for_reimport(
+        self,
+        existing_source_asset: "SourceAsset",
+        vectorization_spec: "VectorizationSpec",
+    ) -> Optional["ImportResult"]:
+        """
+        Re-run the import pipeline using an existing SourceAsset.
+
+        Skips source-asset creation (Phase 2b) and reuses the existing
+        SourceAsset so the UID stays stable.  The new segments will
+        reference the same asset UID.
+        """
+        return self._run_pipeline(vectorization_spec, existing_source_asset)
