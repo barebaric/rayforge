@@ -34,7 +34,7 @@ Cas d'utilisation courants des macros :
 ### Créer une Macro
 
 1. **Ouvrir les Paramètres Machine :**
-   - Naviguez vers **Paramètres Machine Macros**
+   - Naviguez vers **Paramètres → Machine → Macros**
 
 2. **Ajouter une nouvelle macro :**
    - Cliquez sur le bouton **"+"**
@@ -105,9 +105,7 @@ M5
 
 ---
 
----
-
-### Exemples de Macros
+## Hooks
 
 Les hooks sont des **injections automatiques de G-code** déclenchées par des événements spécifiques pendant l'exécution du travail.
 
@@ -117,17 +115,19 @@ Rayforge supporte ces déclencheurs de hooks :
 
 | Déclencheur | Quand il S'exécute | Utilisations Courantes |
 | ----------- | ------------------ | ---------------------- |
-| **Début de Travail** | Tout au début du travail | Homing, décalage de travail, assistance air activée, préchauffage |
-| **Fin de Travail** | Tout à la fin du travail | Retour à l'origine, assistance air désactivée, bip, refroidissement |
 | **Début de Calque** | Avant le traitement de chaque calque | Changement d'outil, ajustement de puissance, commentaires |
 | **Fin de Calque** | Après le traitement de chaque calque | Notification de progression, pause |
 | **Début de Pièce** | Avant le traitement de chaque pièce | Numérotation des pièces, marques d'alignement |
 | **Fin de Pièce** | Après le traitement de chaque pièce | Refroidissement, pause d'inspection |
 
+:::note G-code au Niveau du Travail
+Le G-code de début et fin de travail est configuré via les paramètres de préambule et postscript du dialecte, pas via les hooks. Voir [Paramètres G-code](gcode) pour plus de détails.
+:::
+
 ### Créer un Hook
 
 1. **Ouvrir les Paramètres Machine :**
-   - Naviguez vers **Paramètres Machine Hooks**
+   - Naviguez vers **Paramètres → Machine → Hooks**
 
 2. **Sélectionner un déclencheur :**
    - Choisissez l'événement quand ce hook doit s'exécuter
@@ -140,40 +140,6 @@ Rayforge supporte ces déclencheurs de hooks :
    - Activez/désactivez les hooks sans les supprimer
 
 ### Exemples de Hooks
-
-#### Début de Travail : Initialiser la Machine
-
-**Déclencheur :** Début de Travail
-**Code :**
-
-```gcode
-G21         ; Millimètres
-G90         ; Positionnement absolu
-$H          ; Mettre la machine à l'origine
-G0 X0 Y0    ; Déplacer à l'origine
-M3 S0       ; Laser activé mais puissance 0 (certains contrôleurs ont besoin de cela)
-M8          ; Assistance air ACTIVÉE
-```
-
-**Objectif :** S'assure que la machine est dans un état connu avant chaque travail.
-
----
-
-#### Fin de Travail : Retour à l'Origine et Bip
-
-**Déclencheur :** Fin de Travail
-**Code :**
-
-```gcode
-M5          ; Laser ÉTEINT
-M9          ; Assistance air ÉTEINTE
-G0 X0 Y0    ; Retour à l'origine
-M300 S800 P200  ; Bip (si supporté)
-```
-
-**Objectif :** Termine le travail en toute sécurité et signale l'achèvement.
-
----
 
 #### Début de Calque : Ajouter un Commentaire
 
@@ -208,24 +174,22 @@ M300 S800 P200  ; Bip (si supporté)
 Pour un travail avec 2 calques, chacun avec 2 pièces :
 
 ```
-[Hook Début de Travail]
   [Hook Début de Calque] (Calque 1)
     [Hook Début de Pièce] (Pièce 1)
-      ... G-code de la pièce 1 ...
+       ... G-code de la pièce 1 ...
     [Hook Fin de Pièce] (Pièce 1)
     [Hook Début de Pièce] (Pièce 2)
-      ... G-code de la pièce 2 ...
+       ... G-code de la pièce 2 ...
     [Hook Fin de Pièce] (Pièce 2)
   [Hook Fin de Calque] (Calque 1)
   [Hook Début de Calque] (Calque 2)
     [Hook Début de Pièce] (Pièce 3)
-      ... G-code de la pièce 3 ...
+       ... G-code de la pièce 3 ...
     [Hook Fin de Pièce] (Pièce 3)
     [Hook Début de Pièce] (Pièce 4)
-      ... G-code de la pièce 4 ...
+       ... G-code de la pièce 4 ...
     [Hook Fin de Pièce] (Pièce 4)
   [Hook Fin de Calque] (Calque 2)
-[Hook Fin de Travail]
 ```
 
 ---
@@ -354,15 +318,12 @@ Testez toujours les macros et hooks en **mode simulation** ou avec le laser **d�
 - Faire planter la machine contre les limites
 - Déclencher le laser de manière inattendue
 - Endommager les matériaux ou équipements
-:::
+  :::
 
 **Liste de contrôle de sécurité :**
 
 - [ ] Les macros incluent des limites de vitesse d'avance (paramètre `F`)
 - [ ] Les macros vérifient les limites de position
-- [ ] Les hooks de début de travail incluent `M5` ou commande laser éteint
-- [ ] Les hooks de fin de travail éteignent le laser (`M5`) et l'assistance air (`M9`)
-- [ ] Pas de commandes destructives sans confirmation
 - [ ] Testé en simulation ou avec laser désactivé
 
 ---

@@ -1,10 +1,12 @@
 import logging
 import math
 from typing import TYPE_CHECKING, Optional, List, Tuple
+from ...core.geo import Point3D
 from ...core.layer import Layer
 from ...core.ops import (
     Ops,
     Command,
+    DwellCommand,
     SetPowerCommand,
     SetCutSpeedCommand,
     SetTravelSpeedCommand,
@@ -58,13 +60,17 @@ class GcodeEncoder(OpsEncoder):
         self.emitted_power: Optional[float] = (
             None  # Last power sent to the controller
         )
+        self._emitted_cut_feed: Optional[float] = None
         self.air_assist: bool = False  # Air assist state
         self.laser_active: bool = False  # Laser on/off state
         self.active_laser_uid: Optional[str] = None
-        self.current_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        self.current_pos: Point3D = (0.0, 0.0, 0.0)
         self._coord_format: str = "{:.3f}"  # Default format
         self._feed_format: str = "{:.3f}"
         self._power_format: str = "{:.3f}"
+        self.rotary_enabled: bool = False
+        self.rotary_diameter: float = 25.0
+        self.rotary_axis: str = "A"
 
     @classmethod
     def for_machine(cls, machine: "Machine") -> "GcodeEncoder":
@@ -140,6 +146,83 @@ class GcodeEncoder(OpsEncoder):
             formatted = formatted.rstrip("0").rstrip(".")
         return formatted
 
+    def _mu_to_degrees(self, mu: float, z: float = 0.0) -> float:
+        """
+        Convert machine units to degrees for rotary axis.
+
+        Accounts for the effective diameter at the given Z depth:
+        cutting deeper (Z < 0) reduces the effective diameter, so the
+        same linear distance maps to a larger angle.
+
+        Args:
+            mu: Distance in machine units along the cylinder surface.
+            z: Current Z depth (0 = surface, negative = deeper).
+
+        Returns:
+            Angle in degrees for the rotary axis.
+        """
+        effective_diameter = self.rotary_diameter + 2.0 * z
+        if effective_diameter <= 0:
+            return 0.0
+        circumference = effective_diameter * math.pi
+        return (mu / circumference) * 360.0
+
+    def _build_coord_commands(self, x: float, y: float, z: float) -> dict:
+        """
+        Build coordinate template variables, with conditional commands
+        that omit unchanged axes when omit_unchanged_coords is enabled.
+
+        Args:
+            x: Target X coordinate.
+            y: Target Y coordinate (or rotary angle in mm before conversion).
+            z: Target Z coordinate.
+
+        Returns:
+            A dict with 'x', 'y', 'z' (always populated) and
+            'x_cmd', 'y_cmd', 'z_cmd' (conditional, include axis letter).
+        """
+        prev_x, prev_y, prev_z = self.current_pos
+
+        if self.rotary_enabled:
+            y_axis_letter = self.rotary_axis
+            y_for_output = self._mu_to_degrees(y, z)
+            prev_y_for_output = self._mu_to_degrees(prev_y, prev_z)
+        else:
+            y_axis_letter = "Y"
+            y_for_output = y
+            prev_y_for_output = prev_y
+
+        x_cmd = f" X{self._format_coord(x)}"
+        y_cmd = f" {y_axis_letter}{self._format_coord(y_for_output)}"
+        z_cmd = f" Z{self._format_coord(z)}"
+
+        if self.dialect.omit_unchanged_coords:
+            x_changed = not math.isclose(x, prev_x)
+            y_changed = not math.isclose(y_for_output, prev_y_for_output)
+            z_changed = not math.isclose(z, prev_z)
+            none_changed = not (x_changed or y_changed or z_changed)
+
+            x_cmd = x_cmd if x_changed or none_changed else ""
+            y_cmd = y_cmd if y_changed else ""
+            z_cmd = z_cmd if z_changed else ""
+
+        return {
+            "x": self._format_coord(x),
+            "y": self._format_coord(y_for_output),
+            "z": self._format_coord(z),
+            "x_cmd": x_cmd,
+            "y_cmd": y_cmd,
+            "z_cmd": z_cmd,
+            "y_axis_letter": y_axis_letter,
+        }
+
+    def _get_rotary_axis_for_layer(self, machine: "Machine", layer) -> str:
+        if layer.rotary_module_uid:
+            rm = machine.get_rotary_module_by_uid(layer.rotary_module_uid)
+            if rm:
+                return rm.axis.name or "A"
+        return "A"
+
     def encode(
         self, ops: Ops, machine: "Machine", doc: "Doc"
     ) -> Tuple[str, MachineCodeOpMap]:
@@ -151,6 +234,19 @@ class GcodeEncoder(OpsEncoder):
         self.current_pos = (0.0, 0.0, 0.0)
         self.active_laser_uid = None
         self.emitted_power = None
+        self._emitted_cut_feed = None
+
+        if doc:
+            active_layer = doc.active_layer
+            self.rotary_enabled = active_layer.rotary_enabled
+            self.rotary_diameter = active_layer.rotary_diameter
+            self.rotary_axis = self._get_rotary_axis_for_layer(
+                machine, active_layer
+            )
+        else:
+            self.rotary_enabled = False
+            self.rotary_diameter = 25.0
+            self.rotary_axis = "A"
 
         context = GcodeContext(
             machine=machine, doc=doc, job=JobInfo(extents=ops.rect())
@@ -215,13 +311,9 @@ class GcodeEncoder(OpsEncoder):
             case SetPowerCommand():
                 self._update_power(context, gcode, cmd.power)
             case SetCutSpeedCommand():
-                # We limit to max travel speed, not max cut speed, to
-                # allow framing operations to go faster. Cut limits should
-                # should be kept by ensuring an Ops object is created
-                # with limits in mind.
-                self.cut_speed = min(
-                    cmd.speed, context.machine.max_travel_speed
-                )
+                # Cut speed limits are the responsibility of the Ops
+                # producer. The encoder trusts the value it receives.
+                self.cut_speed = cmd.speed
             case SetTravelSpeedCommand():
                 self.travel_speed = min(
                     cmd.speed, context.machine.max_travel_speed
@@ -251,6 +343,14 @@ class GcodeEncoder(OpsEncoder):
                     context, gcode, cmd.end, cmd.center_offset, cmd.clockwise
                 )
                 self.current_pos = cmd.end
+            case DwellCommand():
+                if self.dialect.dwell:
+                    gcode.append(
+                        self.dialect.dwell.format(
+                            seconds=cmd.duration_ms / 1000.0,
+                            milliseconds=cmd.duration_ms,
+                        )
+                    )
             case JobStartCommand():
                 # 1. Emit Preamble
                 gcode.extend(
@@ -280,6 +380,11 @@ class GcodeEncoder(OpsEncoder):
                 descendant = context.doc.find_descendant_by_uid(uid)
                 if isinstance(descendant, Layer):
                     context.layer = descendant
+                    self.rotary_enabled = descendant.rotary_enabled
+                    self.rotary_diameter = descendant.rotary_diameter
+                    self.rotary_axis = self._get_rotary_axis_for_layer(
+                        context.machine, descendant
+                    )
                 elif descendant is not None:
                     logger.warning(
                         f"Expected Layer for UID {uid}, but "
@@ -353,7 +458,7 @@ class GcodeEncoder(OpsEncoder):
             return
         self.power = power
 
-        if self.laser_active:
+        if self.laser_active and not self.dialect.continuous_laser_mode:
             if self.power > 0:
                 # Find the currently active laser head to get its max power
                 current_laser = self._get_current_laser_head(context)
@@ -390,21 +495,78 @@ class GcodeEncoder(OpsEncoder):
         """Rapid movement with laser safety"""
         self._laser_off(context, gcode)
 
-        f_command = ""
+        coord_vars = self._build_coord_commands(x, y, z)
         template_vars = {
-            "x": self._format_coord(x),
-            "y": self._format_coord(y),
-            "z": self._format_coord(z),
+            "x": coord_vars["x"],
+            "y": coord_vars["y"],
+            "z": coord_vars["z"],
+            "x_cmd": coord_vars["x_cmd"],
+            "y_cmd": coord_vars["y_cmd"],
+            "z_cmd": coord_vars["z_cmd"],
         }
 
-        # Check the dialect capability directly
+        f_command = ""
         if self.dialect.can_g0_with_speed:
             self._emit_modal_speed(gcode, self.travel_speed or 0)
             if self.travel_speed is not None:
                 f_command = f" F{self._format_feed(self.travel_speed)}"
             template_vars["f_command"] = f_command
 
+        s_command = ""
+        if self.laser_active and self.dialect.continuous_laser_mode:
+            s_command = " S0"
+        template_vars["s_command"] = s_command
+
         gcode.append(self.dialect.travel_move.format(**template_vars))
+
+    def _build_cut_move_vars(
+        self,
+        context: GcodeContext,
+        gcode: List[str],
+        x: float,
+        y: float,
+        z: float,
+    ) -> dict:
+        """Build template variables common to all cutting moves."""
+        self._laser_on(context, gcode)
+        self._emit_modal_speed(gcode, self.cut_speed or 0)
+
+        if self.dialect.modal_feedrate:
+            f_command = ""
+            if self.cut_speed is not None and (
+                self._emitted_cut_feed is None
+                or not math.isclose(self.cut_speed, self._emitted_cut_feed)
+            ):
+                f_command = f" F{self._format_feed(self.cut_speed)}"
+                self._emitted_cut_feed = self.cut_speed
+        else:
+            f_command = (
+                f" F{self._format_feed(self.cut_speed)}"
+                if self.cut_speed is not None
+                else ""
+            )
+
+        s_command = ""
+        power_abs = 0.0
+        if self.power is not None and (
+            self.power > 0 or self.dialect.continuous_laser_mode
+        ):
+            current_laser = self._get_current_laser_head(context)
+            power_abs = self.power * current_laser.max_power
+            s_command = f" S{self._format_power(power_abs)}"
+
+        coord_vars = self._build_coord_commands(x, y, z)
+        return {
+            "x": coord_vars["x"],
+            "y": coord_vars["y"],
+            "z": coord_vars["z"],
+            "x_cmd": coord_vars["x_cmd"],
+            "y_cmd": coord_vars["y_cmd"],
+            "z_cmd": coord_vars["z_cmd"],
+            "f_command": f_command,
+            "s_command": s_command,
+            "power": power_abs,
+        }
 
     def _handle_line_to(
         self,
@@ -415,89 +577,47 @@ class GcodeEncoder(OpsEncoder):
         z: float,
     ) -> None:
         """Cutting movement with laser activation"""
-        self._laser_on(context, gcode)
-        self._emit_modal_speed(gcode, self.cut_speed or 0)
-        f_command = (
-            f" F{self._format_feed(self.cut_speed)}"
-            if self.cut_speed is not None
-            else ""
-        )
-
-        s_command = ""
-        power_abs = 0.0
-        if self.power is not None and self.power > 0:
-            current_laser = self._get_current_laser_head(context)
-            power_abs = self.power * current_laser.max_power
-            s_command = f" S{self._format_power(power_abs)}"
-
-        template_vars = {
-            "x": self._format_coord(x),
-            "y": self._format_coord(y),
-            "z": self._format_coord(z),
-            "f_command": f_command,
-            "s_command": s_command,
-            "power": power_abs,
-        }
-
+        template_vars = self._build_cut_move_vars(context, gcode, x, y, z)
         gcode.append(self.dialect.linear_move.format(**template_vars))
 
     def _handle_arc_to(
         self,
         context: GcodeContext,
         gcode: List[str],
-        end: Tuple[float, float, float],
+        end: Point3D,
         center: Tuple[float, float],
         cw: bool,
     ) -> None:
         """Cutting arc with laser activation"""
-        self._laser_on(context, gcode)
-        self._emit_modal_speed(gcode, self.cut_speed or 0)
         x, y, z = end
         i, j = center
         template = self.dialect.arc_cw if cw else self.dialect.arc_ccw
-        f_command = (
-            f" F{self._format_feed(self.cut_speed)}"
-            if self.cut_speed is not None
-            else ""
-        )
-
-        s_command = ""
-        power_abs = 0.0
-        if self.power is not None and self.power > 0:
-            current_laser = self._get_current_laser_head(context)
-            power_abs = self.power * current_laser.max_power
-            s_command = f" S{self._format_power(power_abs)}"
-
-        gcode.append(
-            template.format(
-                x=self._format_coord(x),
-                y=self._format_coord(y),
-                z=self._format_coord(z),
-                i=self._format_coord(i),
-                j=self._format_coord(j),
-                f_command=f_command,
-                s_command=s_command,
-                power=power_abs,
-            )
-        )
+        template_vars = self._build_cut_move_vars(context, gcode, x, y, z)
+        template_vars["i"] = self._format_coord(i)
+        template_vars["j"] = self._format_coord(j)
+        gcode.append(template.format(**template_vars))
 
     def _laser_on(self, context: GcodeContext, gcode: List[str]) -> None:
         """Activate laser if not already on"""
-        if not self.laser_active and self.power:
-            current_laser = self._get_current_laser_head(context)
-            power_abs = self.power * current_laser.max_power
-            cmd_str = self.dialect.laser_on.format(power=power_abs)
-            if cmd_str:
-                gcode.append(cmd_str)
-            self.laser_active = True
+        if not self.laser_active:
+            if self.power or self.dialect.continuous_laser_mode:
+                current_laser = self._get_current_laser_head(context)
+                power_abs = (
+                    self.power * current_laser.max_power if self.power else 0.0
+                )
+                cmd_str = self.dialect.laser_on.format(power=power_abs)
+                if cmd_str:
+                    gcode.append(cmd_str)
+                self.laser_active = True
 
     def _laser_off(self, context: GcodeContext, gcode: List[str]) -> None:
         """Deactivate laser if active"""
         if self.laser_active:
-            cmd_str = self.dialect.laser_off
-            if cmd_str:
-                gcode.append(cmd_str)
-            self.laser_active = False
+            if not self.dialect.continuous_laser_mode:
+                cmd_str = self.dialect.laser_off
+                if cmd_str:
+                    gcode.append(cmd_str)
+                self.laser_active = False
 
     def _finalize(self, gcode: List[str]) -> None:
         """Ensures the G-code file ends with a newline."""

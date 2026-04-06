@@ -17,17 +17,13 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
 from rayforge.image import SVG_RENDERER
 from rayforge.machine.cmd import MachineCmd
-from rayforge.machine.driver.driver import Axis
+from rayforge.machine.driver.driver import Axis, DeviceState
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.driver.grbl import GrblNetworkDriver
 from rayforge.machine.driver.grbl_serial import GrblSerialDriver
 from rayforge.machine.driver.smoothie import SmoothieDriver
 from rayforge.machine.models.dialect import (
-    _DIALECT_REGISTRY,
     GcodeDialect,
-    get_dialect,
-)
-from rayforge.machine.models.dialect_builtins import (
     GRBL_DIALECT,
     SMOOTHIEWARE_DIALECT,
 )
@@ -35,8 +31,14 @@ from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import JogDirection, Machine, Origin
 from rayforge.machine.models.macro import MacroTrigger
 from rayforge.machine.transport import TransportStatus
-from rayforge.pipeline.steps import ContourStep
+from rayforge.core.step_registry import step_registry
 from rayforge.shared.tasker.manager import TaskManager
+
+
+@pytest.fixture
+def contour_step_class():
+    """Get ContourStep class from registry after addons are loaded."""
+    return step_registry.get("ContourStep")
 
 
 # Define the test-specific driver in the test file where it is used.
@@ -449,6 +451,94 @@ class TestMachine:
         read_wcs_spy.assert_called_once()
 
     @pytest.mark.asyncio
+    async def test_wcs_offsets_synced_from_wco(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """
+        wcs_offsets must be updated from device_state.wco when status
+        reports arrive.
+
+        When the controller reports WCO in a status report, the
+        active WCS offset in wcs_offsets should be updated so
+        consumers see the correct offset without waiting for the
+        $# query.
+
+        Scenario: G55 active with WCO (30,30,0), machine at work zero.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.active_wcs = "G55"
+        machine.controller._confirmed_active_wcs = "G55"
+        assert machine.wcs_offsets.get("G55", (0.0, 0.0, 0.0)) == (
+            0.0,
+            0.0,
+            0.0,
+        )
+
+        state = DeviceState(
+            machine_pos=(30.0, 30.0, 0.0),
+            work_pos=(0.0, 0.0, 0.0),
+            wco=(30.0, 30.0, 0.0),
+        )
+        machine.controller._sync_wcs_offset_from_wco(state)
+
+        assert machine.wcs_offsets["G55"] == (30.0, 30.0, 0.0)
+
+    @pytest.mark.asyncio
+    async def test_wcs_switch_does_not_corrupt_offsets(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """
+        Regression test for a WCS switching bug: after switching
+        active_wcs, stale WCO from status reports must NOT overwrite
+        the newly-selected WCS offset.
+
+        When the user switches from G56 (WCO 60,60,0) to G54
+        (WCO 0,0,0), the device has not yet switched. Subsequent
+        status reports still carry WCO (60,60,0). The controller
+        must not write this stale WCO into wcs_offsets["G54"].
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Start on G56 with WCO (60,60,0)
+        machine.active_wcs = "G56"
+        machine.wcs_offsets["G56"] = (60.0, 60.0, 0.0)
+        machine.controller._confirmed_active_wcs = "G56"
+
+        # Simulate a status report confirming G56's WCO
+        state_g56 = DeviceState(
+            machine_pos=(60.0, 60.0, 0.0),
+            work_pos=(0.0, 0.0, 0.0),
+            wco=(60.0, 60.0, 0.0),
+        )
+        machine.controller._sync_wcs_offset_from_wco(state_g56)
+        assert machine.wcs_offsets["G56"] == (60.0, 60.0, 0.0)
+
+        # G54's offset should be at default (0,0,0)
+        assert machine.wcs_offsets.get("G54", (0.0, 0.0, 0.0)) == (
+            0.0,
+            0.0,
+            0.0,
+        )
+
+        # User switches to G54 - controller resets confirmed state
+        machine.active_wcs = "G54"
+        machine.controller._confirmed_active_wcs = None
+
+        # Device hasn't switched yet - stale status report with G56's WCO
+        state_stale = DeviceState(
+            machine_pos=(60.0, 60.0, 0.0),
+            work_pos=(0.0, 0.0, 0.0),
+            wco=(60.0, 60.0, 0.0),
+        )
+        machine.controller._sync_wcs_offset_from_wco(state_stale)
+
+        # G54's offset must NOT be corrupted with G56's WCO
+        assert machine.wcs_offsets["G54"] == (0.0, 0.0, 0.0), (
+            f"G54 offset was corrupted to {machine.wcs_offsets['G54']} "
+            f"after receiving stale WCO from still-active G56"
+        )
+
+    @pytest.mark.asyncio
     async def test_reverse_axis_setters(
         self, machine: Machine, mocker, task_mgr: TaskManager
     ):
@@ -501,7 +591,7 @@ class TestMachine:
 
     @pytest.mark.asyncio
     async def test_serialization_migration_from_negative_to_reverse(
-        self, task_mgr: TaskManager
+        self, lite_context, task_mgr: TaskManager
     ):
         """
         Tests that legacy x_axis_negative configs are migrated to the new
@@ -537,6 +627,7 @@ class TestMachine:
         mocker,
         lite_context,
         task_mgr: TaskManager,
+        contour_step_class,
     ):
         """
         Verify that sending a job correctly calls the driver's run method
@@ -545,7 +636,7 @@ class TestMachine:
         # --- Arrange ---
         await wait_for_tasks_to_finish(task_mgr)
         # Add a step to the workflow, which is required for job assembly.
-        step = ContourStep.create(lite_context)
+        step = contour_step_class.create(lite_context)
         workflow = doc.active_layer.workflow
         assert workflow is not None
         workflow.add_step(step)
@@ -584,6 +675,7 @@ class TestMachine:
         mocker,
         lite_context,
         task_mgr: TaskManager,
+        contour_step_class,
     ):
         """Verify that framing a job calls the driver's run method."""
         # --- Arrange ---
@@ -594,7 +686,7 @@ class TestMachine:
         assert machine.can_frame() is True
 
         # Add a step to the workflow, which is required for job assembly.
-        step = ContourStep.create(lite_context)
+        step = contour_step_class.create(lite_context)
         workflow = doc.active_layer.workflow
         assert workflow is not None
         workflow.add_step(step)
@@ -622,6 +714,70 @@ class TestMachine:
 
         assert isinstance(op_map, MachineCodeOpMap)
         assert received_doc is doc
+
+    @pytest.mark.asyncio
+    async def test_frame_job_repeats_and_laser_off(
+        self,
+        doc: Doc,
+        machine: Machine,
+        doc_editor: DocEditor,
+        mocker,
+        lite_context,
+        task_mgr: TaskManager,
+        contour_step_class,
+    ):
+        """
+        Regression test for framing bugs:
+        a) Framing should repeat the frame path for each configured
+           repeat count (frame_repeat_count).
+        b) The laser must be turned off after the framing job completes.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        head = machine.get_default_head()
+        head.set_frame_power(1)
+        head.set_frame_repeat_count(3)
+
+        step = contour_step_class.create(lite_context)
+        workflow = doc.active_layer.workflow
+        assert workflow is not None
+        workflow.add_step(step)
+
+        workpiece, source = create_test_workpiece_and_source()
+        doc.add_asset(source)
+        doc.active_layer.add_child(workpiece)
+
+        await doc_editor.wait_until_settled()
+        await wait_for_tasks_to_finish(task_mgr)
+
+        run_spy = mocker.spy(machine.driver, "run")
+        machine_cmd = MachineCmd(doc_editor)
+
+        await machine_cmd.frame_job(machine)
+        await wait_for_tasks_to_finish(task_mgr)
+
+        run_spy.assert_called_once()
+        machine_code = run_spy.call_args.args[0]
+
+        # Each frame cycle traces a rectangle (4 sides). With
+        # frame_repeat_count=3, the laser should turn on 4*3=12 times.
+        laser_on_count = machine_code.count("M4")
+        assert laser_on_count == 12, (
+            f"Expected 12 laser-on commands (4 sides × 3 cycles), "
+            f"but got {laser_on_count}"
+        )
+
+        # The laser must be off after framing completes. The last
+        # meaningful G-code line should not be a cutting move.
+        lines = [
+            line.strip()
+            for line in machine_code.strip().splitlines()
+            if line.strip()
+        ]
+        last_line = lines[-1]
+        assert not last_line.startswith(("G1", "G2", "G3")), (
+            f"Laser left on after framing. Last G-code line: '{last_line}'"
+        )
 
     @pytest.mark.asyncio
     async def test_can_focus(self, machine: Machine, task_mgr: TaskManager):
@@ -898,8 +1054,8 @@ class TestMachine:
         # Verify it's the correct type
         assert isinstance(dialect, GcodeDialect)
 
-        # Verify it matches what get_dialect would return
-        expected_dialect = get_dialect(machine.dialect_uid)
+        # Verify it matches what dialect_mgr would return
+        expected_dialect = machine.context.dialect_mgr.get(machine.dialect_uid)
         assert dialect == expected_dialect
 
     @pytest.mark.asyncio
@@ -947,6 +1103,7 @@ class TestMachine:
             uid=current_dialect.uid,
             laser_on="M3 S{power:.0f}",
             laser_off="M5",
+            focus_laser_on="M3 S{power:.0f}",
             travel_move=current_dialect.travel_move,
             linear_move=current_dialect.linear_move,
             is_custom=True,
@@ -972,6 +1129,45 @@ class TestMachine:
 
         # Verify machine's changed signal was triggered
         changed_spy.assert_called_once_with(machine)
+
+    @pytest.mark.asyncio
+    async def test_dialect_fallback_to_grbl_on_invalid_uid(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """
+        Test that when dialect_uid is set to a non-existent dialect,
+        the dialect property falls back to 'grbl' instead of crashing.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Set dialect_uid to a non-existent value
+        machine.dialect_uid = "nonexistent_dialect"
+
+        # Accessing the dialect property should not raise an exception
+        # but should fall back to 'grbl'
+        dialect = machine.dialect
+        assert dialect == GRBL_DIALECT
+        assert machine.dialect_uid == "grbl"
+
+    @pytest.mark.asyncio
+    async def test_hydrate_fallback_to_grbl_on_invalid_uid(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """
+        Test that when hydrate is called with a non-existent dialect_uid,
+        it falls back to 'grbl' instead of crashing.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Set dialect_uid to a non-existent value
+        machine.dialect_uid = "nonexistent_dialect"
+
+        # Hydrating should not raise an exception
+        machine.hydrate()
+
+        # Should fall back to grbl
+        assert machine._hydrated_dialect == GRBL_DIALECT
+        assert machine.dialect_uid == "grbl"
 
     @pytest.mark.asyncio
     async def test_can_g0_with_speed(
@@ -1184,12 +1380,14 @@ class TestMachine:
         assert machine.reports_granular_progress
 
     @pytest.mark.asyncio
-    async def test_hook_migration_full(self, task_mgr: TaskManager):
+    async def test_hook_migration_full(
+        self, lite_context, task_mgr: TaskManager
+    ):
         """
         Tests that legacy JOB_START and JOB_END hooks are migrated to a new
         custom dialect upon loading a machine.
         """
-        initial_dialect_count = len(_DIALECT_REGISTRY)
+        initial_dialect_count = len(lite_context.dialect_mgr._registry)
         start_code = ["G28 ; Home at start"]
         end_code = ["M2 ; Program End"]
 
@@ -1210,27 +1408,34 @@ class TestMachine:
         await wait_for_tasks_to_finish(task_mgr)
 
         # Assert Migration
-        assert len(_DIALECT_REGISTRY) == initial_dialect_count + 1
+        assert (
+            len(lite_context.dialect_mgr._registry)
+            == initial_dialect_count + 1
+        )
         assert new_machine.dialect_uid != "grbl"
         assert "JOB_START" not in new_machine.hookmacros
         assert "JOB_END" not in new_machine.hookmacros
         assert MacroTrigger.LAYER_START in new_machine.hookmacros
 
         # Assert New Dialect Content
-        migrated_dialect = get_dialect(new_machine.dialect_uid)
+        migrated_dialect = lite_context.dialect_mgr.get(
+            new_machine.dialect_uid
+        )
         assert migrated_dialect.is_custom is True
         assert migrated_dialect.preamble == start_code
         assert migrated_dialect.postscript == end_code
         assert "Legacy Machine" in migrated_dialect.label
 
     @pytest.mark.asyncio
-    async def test_hook_migration_partial(self, task_mgr: TaskManager):
+    async def test_hook_migration_partial(
+        self, lite_context, task_mgr: TaskManager
+    ):
         """
         Tests that migration works correctly if only one legacy hook is
         present.
         """
-        base_dialect = get_dialect("grbl")
-        initial_dialect_count = len(_DIALECT_REGISTRY)
+        base_dialect = lite_context.dialect_mgr.get("grbl")
+        initial_dialect_count = len(lite_context.dialect_mgr._registry)
         start_code = ["G21 G90"]
 
         legacy_data = {
@@ -1246,23 +1451,31 @@ class TestMachine:
         await wait_for_tasks_to_finish(task_mgr)
 
         # Assert Migration
-        assert len(_DIALECT_REGISTRY) == initial_dialect_count + 1
+        assert (
+            len(lite_context.dialect_mgr._registry)
+            == initial_dialect_count + 1
+        )
         assert new_machine.dialect_uid != "grbl"
         assert not new_machine.hookmacros
 
         # Assert New Dialect Content
-        migrated_dialect = get_dialect(new_machine.dialect_uid)
+        migrated_dialect = lite_context.dialect_mgr.get(
+            new_machine.dialect_uid
+        )
         assert migrated_dialect.is_custom is True
         assert migrated_dialect.preamble == start_code
         # Postscript should be inherited from the original dialect
         assert migrated_dialect.postscript == base_dialect.postscript
 
     @pytest.mark.asyncio
-    async def test_hook_migration_not_needed(self, task_mgr: TaskManager):
+    async def test_hook_migration_not_needed(
+        self, lite_context, task_mgr: TaskManager
+    ):
         """
-        Tests that no migration occurs for a modern machine configuration.
+        Tests that no hook migration occurs for a modern machine configuration.
+        (Built-in dialect migration still happens - that's separate.)
         """
-        initial_dialect_count = len(_DIALECT_REGISTRY)
+        initial_dialect_count = len(lite_context.dialect_mgr._registry)
 
         modern_data = {
             "machine": {
@@ -1272,13 +1485,14 @@ class TestMachine:
             }
         }
 
-        # Act
         new_machine = Machine.from_dict(modern_data)
         await wait_for_tasks_to_finish(task_mgr)
 
-        # Assert No Migration
-        assert len(_DIALECT_REGISTRY) == initial_dialect_count
-        assert new_machine.dialect_uid == "smoothieware"
+        assert (
+            len(lite_context.dialect_mgr._registry)
+            == initial_dialect_count + 1
+        )
+        assert new_machine.dialect_uid != "smoothieware"
         assert MacroTrigger.LAYER_START in new_machine.hookmacros
 
     @pytest.mark.parametrize(
@@ -1874,6 +2088,66 @@ class TestPrepareOpsForEncoding:
         cmd = list(result.commands)[0]
 
         assert cmd.end == pytest.approx(expected_cmd, abs=0.001)
+
+    def test_wcs_z_offset_not_subtracted(self, isolated_machine: Machine):
+        """
+        WCS Z offset should NOT be subtracted from command Z coordinates.
+        The controller handles WCS→machine translation via the G54 command
+        emitted in the preamble. Ops Z=0 means "work surface" and should
+        remain 0 in the G-code regardless of WCS Z offset.
+        """
+        machine = isolated_machine
+        machine.set_axis_extents(100.0, 100.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.wcs_origin_is_workarea_origin = False
+        machine.set_active_wcs("G54")
+        machine.wcs_offsets["G54"] = (10, 20, 30)
+
+        ops = Ops()
+        ops.move_to(50, 60, 0)
+        ops.line_to(50, 60, -5)
+
+        result = machine._prepare_ops_for_encoding(ops)
+        commands = list(result.commands)
+
+        assert commands[0].end == pytest.approx((40, 40, 0), abs=0.001)
+        assert commands[1].end == pytest.approx((40, 40, -5), abs=0.001)
+
+    @pytest.mark.parametrize(
+        "reverse_z,input_z,expected_z",
+        [
+            (False, 0.0, 0.0),
+            (False, -5.0, -5.0),
+            (True, 0.0, 0.0),
+            (True, -5.0, 5.0),
+            (True, 5.0, -5.0),
+        ],
+    )
+    def test_reverse_z_axis_in_encoding(
+        self, isolated_machine: Machine, reverse_z, input_z, expected_z
+    ):
+        """
+        When reverse_z_axis is enabled, Z coordinates should be negated
+        in the G-code output so that a reversed machine interprets them
+        correctly.
+        """
+        machine = isolated_machine
+        machine.set_axis_extents(100.0, 100.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.set_reverse_z_axis(reverse_z)
+
+        ops = Ops()
+        ops.move_to(10, 20, input_z)
+
+        result = machine._prepare_ops_for_encoding(ops)
+        cmds = list(result.commands)
+        assert len(cmds) > 0
+        cmd = cmds[0]
+        assert cmd.end is not None
+
+        assert cmd.end[0] == pytest.approx(10.0, abs=0.001)
+        assert cmd.end[1] == pytest.approx(20.0, abs=0.001)
+        assert cmd.end[2] == pytest.approx(expected_z, abs=0.001)
 
     def test_multiple_commands_transformed(self, isolated_machine: Machine):
         """

@@ -2,21 +2,23 @@ from typing import TYPE_CHECKING, Tuple
 from gettext import gettext as _
 
 from blinker import Signal
-from gi.repository import Adw, Gdk, GLib, Gtk
+from gi.repository import Adw, GLib, Gtk
 
 from ...context import get_context
 from ...core.step import Step
 from ...core.undo import ChangePropertyCommand, HistoryManager
 from ...pipeline.producer import OpsProducer
+from ...pipeline.producer.placeholder import PlaceholderProducer
 from ...pipeline.transformer import OpsTransformer
+from ...pipeline.transformer.placeholder import PlaceholderTransformer
 from ..icons import get_icon
 from ..shared.adwfix import get_spinrow_float
-from ..shared.keyboard import is_primary_modifier
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.slider import create_slider_row
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from .recipe_control_widget import RecipeControlWidget
-from .step_settings import step_widget_registry
+from .step_settings.placeholder import PlaceholderSettingsWidget
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -63,18 +65,25 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         if producer_dict:
             producer_name = producer_dict.get("type")
             if producer_name:
-                # Instantiate producer to check its properties later
                 producer = OpsProducer.from_dict(producer_dict)
-                WidgetClass = step_widget_registry.get(producer_name)
-                if WidgetClass:
-                    widget = WidgetClass(
-                        self.editor,
-                        self.step.typelabel,
-                        producer_dict,
-                        self,
-                        self.step,
-                    )
-                    self.add(widget)
+
+        context = get_context()
+        if context:
+            context.plugin_mgr.hook.step_settings_loaded(
+                dialog=self, step=self.step, producer=producer
+            )
+
+        # Add placeholder widget if producer is not available
+        if isinstance(producer, PlaceholderProducer) and producer_dict:
+            self.add(
+                PlaceholderSettingsWidget(
+                    self.editor,
+                    producer.label,
+                    producer,
+                    self,
+                    self.step,
+                )
+            )
 
         general_group = Adw.PreferencesGroup(
             title=_("General Settings"),
@@ -100,25 +109,42 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
             general_group.add(self.laser_row)
 
         # Power Slider
-        power_row = Adw.ActionRow(title=_("Power (%)"))
         self.power_adjustment = Gtk.Adjustment(
             upper=100, step_increment=0.1, page_increment=10
         )
-        power_scale = Gtk.Scale(
-            orientation=Gtk.Orientation.HORIZONTAL,
+        power_row, power_scale = create_slider_row(
+            title=_("Power"),
             adjustment=self.power_adjustment,
             digits=1,
-            draw_value=True,
+            format_suffix="%",
+            on_value_changed=lambda s: self._debounce(
+                self.on_power_changed, s
+            ),
         )
-        power_scale.set_size_request(300, -1)
-        power_scale.connect(
-            "value-changed",
-            lambda scale: self._debounce(self.on_power_changed, scale),
-        )
-        power_row.add_suffix(power_scale)
         general_group.add(power_row)
         # Set power row visibility based on producer capability
         power_row.set_visible(producer.supports_power if producer else False)
+
+        # Tab Power Slider
+        self.tab_power_adjustment = Gtk.Adjustment(
+            upper=100, step_increment=0.1, page_increment=10
+        )
+        tab_power_row, tab_power_scale = create_slider_row(
+            title=_("Tab Power"),
+            subtitle=_("Laser power at tab positions (% of cut power)"),
+            adjustment=self.tab_power_adjustment,
+            digits=1,
+            format_suffix="%",
+            on_value_changed=lambda s: self._debounce(
+                self.on_tab_power_changed, s
+            ),
+        )
+        general_group.add(tab_power_row)
+        # Set tab power row visibility based on producer capability
+        tab_power_row.set_visible(
+            producer.supports_power if producer else False
+        )
+        self.tab_power_row = tab_power_row
 
         # Add a spin row for cut speed
         cut_speed_adjustment = Gtk.Adjustment(
@@ -242,6 +268,10 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         # Sync Kerf
         self.kerf_row.get_adjustment().set_value(self.step.kerf_mm)
 
+        # Sync Tab Power
+        tab_power_percent = self.step.tab_power * 100.0
+        self.tab_power_adjustment.set_value(tab_power_percent)
+
     def on_laser_selected(self, combo_row, pspec):
         """Handles changes in the laser head selection."""
         machine = get_context().machine
@@ -334,6 +364,18 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         self.history_manager.execute(command)
         self.changed.send(self)
 
+    def on_tab_power_changed(self, scale):
+        new_value = scale.get_value() / 100.0
+        command = ChangePropertyCommand(
+            target=self.step,
+            property_name="tab_power",
+            new_value=new_value,
+            setter_method_name="set_tab_power",
+            name=_("Change tab power"),
+        )
+        self.history_manager.execute(command)
+        self.changed.send(self)
+
     def _on_cut_speed_changed_wrapper(self, helper: UnitSpinRowHelper):
         """Wrapper method that debounces the cut speed change."""
         self._debounce(self.on_cut_speed_changed, helper)
@@ -401,47 +443,39 @@ class PostProcessingSettingsView(TrackedPreferencesPage):
         self.key = f"{producer_key}/post-processing"
         self.path_prefix = "/step-settings/"
 
-        content_added = False
+        all_transformer_dicts = (
+            step.per_workpiece_transformers_dicts or []
+        ) + (step.per_step_transformers_dicts or [])
 
-        # 3. Path Post-Processing Transformers
-        if step.per_workpiece_transformers_dicts:
-            for t_dict in step.per_workpiece_transformers_dicts:
-                transformer_name = t_dict.get("name")
-                if transformer_name:
-                    WidgetClass = step_widget_registry.get(transformer_name)
-                    if WidgetClass:
-                        transformer = OpsTransformer.from_dict(t_dict)
-                        widget = WidgetClass(
+        # Deduplicate by object identity (same dict can be in both lists)
+        seen_ids = set()
+        unique_transformer_dicts = []
+        for t_dict in all_transformer_dicts:
+            dict_id = id(t_dict)
+            if dict_id not in seen_ids:
+                seen_ids.add(dict_id)
+                unique_transformer_dicts.append(t_dict)
+
+        context = get_context()
+        if context:
+            for t_dict in unique_transformer_dicts:
+                transformer = OpsTransformer.from_dict(t_dict)
+                context.plugin_mgr.hook.transformer_settings_loaded(
+                    dialog=self, step=step, transformer=transformer
+                )
+                # Add placeholder widget if transformer is not available
+                if isinstance(transformer, PlaceholderTransformer):
+                    self.add(
+                        PlaceholderSettingsWidget(
                             editor,
                             transformer.label,
-                            t_dict,
+                            transformer,
                             self,
                             step,
                         )
-                        self.add(widget)
-                        content_added = True
+                    )
 
-        # 4. Post-Step (Assembly) Transformers
-        if step.per_step_transformers_dicts:
-            for t_dict in step.per_step_transformers_dicts:
-                transformer_name = t_dict.get("name")
-                if transformer_name:
-                    WidgetClass = step_widget_registry.get(transformer_name)
-                    if WidgetClass:
-                        transformer = OpsTransformer.from_dict(t_dict)
-                        widget = WidgetClass(
-                            editor,
-                            transformer.label,
-                            t_dict,
-                            self,
-                            step,
-                        )
-                        self.add(widget)
-                        content_added = True
-
-        if not content_added:
-            # Add a placeholder to ensure this page is never empty. An empty
-            # page can cause layout issues.
+        if self.get_first_child() is None:
             placeholder_group = Adw.PreferencesGroup()
             placeholder_label = Gtk.Label(
                 label=_("No post-processing options available for this step."),
@@ -485,11 +519,6 @@ class StepSettingsDialog(PatchedDialogWindow):
         # Destroy window on close to prevent leaks
         self.set_hide_on_close(False)
         self.connect("close-request", self._on_close_request)
-
-        # Add a key controller to close the dialog on Escape press
-        key_controller = Gtk.EventControllerKey()
-        key_controller.connect("key-pressed", self._on_key_pressed)
-        self.add_controller(key_controller)
 
         # --- Page 1: Main Step Settings ---
         self.general_view = GeneralStepSettingsView(self.editor, self.step)
@@ -562,15 +591,6 @@ class StepSettingsDialog(PatchedDialogWindow):
         box.append(icon)
         box.append(label)
         return box
-
-    def _on_key_pressed(self, controller, keyval, keycode, state):
-        """Handle key press events, closing dialog on Escape or Cmd/Ctrl+W."""
-        has_primary = is_primary_modifier(state)
-
-        if keyval == Gdk.KEY_Escape or (has_primary and keyval == Gdk.KEY_w):
-            self.close()
-            return True
-        return False
 
     def _on_close_request(self, window):
         # Clean up the debounce timer in the general view when the window is

@@ -9,7 +9,9 @@ from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 
 from ...core.item import DocItem
 from ...core.layer import Layer
+from ...context import get_context
 from ...core.vectorization_spec import (
+    LayerImportMode,
     PassthroughSpec,
     TraceSpec,
     VectorizationSpec,
@@ -18,8 +20,9 @@ from ...core.workpiece import WorkPiece
 from ...doceditor.file_cmd import PreviewResult
 from ...image.base_importer import ImporterFeature
 from ...image.structures import ImportManifest
-from ..shared.patched_dialog_window import PatchedDialogWindow
 from ...core.matrix import Matrix
+from ..shared.patched_dialog_window import PatchedDialogWindow
+from ..shared.slider import create_slider
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -58,10 +61,21 @@ class ImportDialog(PatchedDialogWindow):
         self._in_update = False  # Prevent signal recursion
         self._layer_widgets: List[Gtk.Switch] = []
 
-        self.create_new_layers_switch = Adw.SwitchRow(
-            title=_("Create New Layers"),
-            subtitle=_("Create a new layer for each imported layer"),
-            active=False,
+        self._layer_import_model = Gtk.StringList.new(
+            [
+                _("Map to Existing"),
+                _("New Layers"),
+                _("Flatten"),
+            ]
+        )
+        self.layer_import_mode_row = Adw.ComboRow(
+            title=_("Layer Import Mode"),
+            subtitle=_("How imported layers are mapped to document layers"),
+            model=self._layer_import_model,
+            selected=0,
+        )
+        self.layer_import_mode_row.connect(
+            "notify::selected", self._schedule_preview_update
         )
 
         self.set_title(_("Import Image"))
@@ -141,10 +155,32 @@ class ImportDialog(PatchedDialogWindow):
             "notify::active", self._on_import_mode_toggled
         )
         mode_group.add(self.use_vectors_switch)
-        # Show this group only if the importer supports both vector and trace
+
+        config = get_context().config
+        self.dpi_adjustment = Gtk.Adjustment.new(
+            config.import_dpi, 1.0, 10000.0, 1.0, 10.0, 0
+        )
+        self.dpi_row = Adw.SpinRow(
+            title=_("DPI"),
+            subtitle=_(
+                "Pixels per inch for unitless SVG dimensions. "
+                "Inkscape ≥0.92 uses 96, older Inkscape uses 90, "
+                "Illustrator uses 72"
+            ),
+            adjustment=self.dpi_adjustment,
+            numeric=True,
+        )
+        self.dpi_row.connect("changed", self._on_dpi_changed)
+        self.dpi_row.set_visible(False)
+        mode_group.add(self.dpi_row)
+
+        # Show this group if the importer supports both vector and trace,
+        # or if DPI is relevant (detected later from manifest)
         can_trace = ImporterFeature.BITMAP_TRACING in self.features
         can_vector = ImporterFeature.DIRECT_VECTOR in self.features
-        mode_group.set_visible(can_trace and can_vector)
+        self._mode_group = mode_group
+        self._mode_visible = can_trace and can_vector
+        mode_group.set_visible(self._mode_visible)
 
         # Layers Group (Dynamic)
         self.layers_group = Adw.PreferencesGroup(title=_("Layers"))
@@ -182,14 +218,10 @@ class ImportDialog(PatchedDialogWindow):
         self.threshold_adjustment = Gtk.Adjustment.new(
             0.5, 0.0, 1.0, 0.01, 0.1, 0
         )
-        self.threshold_scale = Gtk.Scale.new(
-            Gtk.Orientation.HORIZONTAL, self.threshold_adjustment
-        )
-        self.threshold_scale.set_size_request(200, -1)
-        self.threshold_scale.set_digits(2)
-        self.threshold_scale.set_value_pos(Gtk.PositionType.RIGHT)
-        self.threshold_scale.connect(
-            "value-changed", self._schedule_preview_update
+        self.threshold_scale = create_slider(
+            adjustment=self.threshold_adjustment,
+            digits=2,
+            on_value_changed=lambda s: self._schedule_preview_update(),
         )
         self.threshold_row = Adw.ActionRow(
             title=_("Threshold"),
@@ -263,6 +295,10 @@ class ImportDialog(PatchedDialogWindow):
         self.invert_switch.set_sensitive(not is_whole_image)
         self._schedule_preview_update()
 
+    def _on_dpi_changed(self, spin_row):
+        get_context().config.set_import_dpi(spin_row.get_value())
+        self._schedule_preview_update()
+
     def _load_initial_data(self):
         try:
             self._file_bytes = self.file_path.read_bytes()
@@ -286,6 +322,11 @@ class ImportDialog(PatchedDialogWindow):
                         f"Scan error for {self.file_path.name}: {error}"
                     )
             self._populate_layers_ui()
+            if self._manifest and self._manifest.is_unitless:
+                self.dpi_row.set_visible(True)
+                if not self._mode_visible:
+                    self._mode_visible = True
+                    self._mode_group.set_visible(True)
         except Exception:
             logger.error(
                 f"Failed to read import file {self.file_path}", exc_info=True
@@ -328,7 +369,7 @@ class ImportDialog(PatchedDialogWindow):
 
             self._layer_widgets.append(switch)
 
-        expander.add_row(self.create_new_layers_switch)
+        expander.add_row(self.layer_import_mode_row)
 
     def _get_active_layer_ids(self) -> Optional[List[str]]:
         if not self._layer_widgets:
@@ -339,17 +380,30 @@ class ImportDialog(PatchedDialogWindow):
             if w.get_active()
         ]
 
+    def _get_layer_import_mode(self) -> LayerImportMode:
+        idx = self.layer_import_mode_row.get_selected()
+        modes = [
+            LayerImportMode.MAP_TO_EXISTING,
+            LayerImportMode.NEW_LAYERS,
+            LayerImportMode.FLATTEN,
+        ]
+        return (
+            modes[idx] if idx < len(modes) else LayerImportMode.MAP_TO_EXISTING
+        )
+
     def _get_current_spec(self) -> VectorizationSpec:
         """
         Constructs a VectorizationSpec from the current UI control values.
         """
+        ppi = self.dpi_adjustment.get_value()
         if (
             ImporterFeature.DIRECT_VECTOR in self.features
             and self.use_vectors_switch.get_active()
         ):
             return PassthroughSpec(
                 active_layer_ids=self._get_active_layer_ids(),
-                create_new_layers=self.create_new_layers_switch.get_active(),
+                layer_import_mode=self._get_layer_import_mode(),
+                ppi=ppi,
             )
         else:
             if self.import_whole_image_switch.get_active():
@@ -357,11 +411,13 @@ class ImportDialog(PatchedDialogWindow):
                     threshold=1.0,
                     auto_threshold=False,
                     invert=False,
+                    ppi=ppi,
                 )
             return TraceSpec(
                 threshold=self.threshold_adjustment.get_value(),
                 auto_threshold=self.auto_threshold_switch.get_active(),
                 invert=self.invert_switch.get_active(),
+                ppi=ppi,
             )
 
     def _schedule_preview_update(self, *args):

@@ -1,0 +1,28 @@
+uid: ebony
+name:
+  default: Ebony
+  de: Ebenholz
+  es: Ébano
+  fr: Ébène
+  pt: Ébano
+  uk: Ебен
+  zh_CN: 乌木
+description:
+  default: Very dense black hardwood
+  de: Sehr dichtes schwarzes Hartholz
+  es: Madera dura negra muy densa
+  fr: Bois dur noir très dense
+  pt: Madeira dura preta muito densa
+  uk: Дуже щільна чорна тверда деревина
+  zh_CN: 非常致密的黑色硬木
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#2F4F4F"
+  pattern: wood_grain

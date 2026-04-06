@@ -100,25 +100,16 @@ O contorno de moldura suporta compensação de kerf:
 - Garante dimensões finais precisas
 - Usa o valor de kerf das configurações da sua cabeça de laser
 
-## Opções de Pós-Processamento
+## Pós-Processamento
 
 ![Configurações de pós-processamento de Contorno de Moldura](/screenshots/step-settings-frame-outline-post.png)
 
-### Multi-Passagem
+Operações de Contorno de Moldura suportam várias opções de pós-processamento:
 
-Corta a moldura múltiplas vezes:
-
-- **Passagens:** Número de repetições
-- **Degrau Z:** Baixa Z entre passagens (requer eixo Z)
-- Útil para materiais espessos
-
-### Abas de Fixação
-
-Adiciona abas para manter a peça emoldurada anexada:
-
-- Previne peças de caírem durante o corte
-- Configure largura, altura e espaçamento das abas
-- Veja [Abas de Fixação](../holding-tabs) para detalhes
+- **[Abas de Fixação](../holding-tabs)** - Mantém a peça emoldurada anexada ao estoque
+- **[Cortar para Estoque](../crop-to-stock)** - Limita cortes ao limite do material
+- **[Otimização de Caminho](../path-optimization)** - Reduz distância de deslocamento
+- **[Multi-Passagem](../multi-pass)** - Repete cortes para materiais espessos
 
 ## Casos de Uso
 

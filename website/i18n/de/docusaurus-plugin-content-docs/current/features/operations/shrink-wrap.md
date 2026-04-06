@@ -185,6 +185,18 @@ Häufiger Workflow:
 
 Siehe [Mehrschicht-Workflow](../multi-layer) für Details.
 
+## Nachbearbeitung
+
+![Schrumpfumhüllungs-Nachbearbeitungseinstellungen](/screenshots/step-settings-shrink-wrap-post.png)
+
+Schrumpfumhüllungs-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
+
+- **[Pfad-Glättung](../smooth)** - Gezackte Kanten im Grenzpfad reduzieren
+- **[Halte-Laschen](../holding-tabs)** - Geschnittene Teile am Rohmaterial befestigt halten
+- **[Auf Rohmaterial zuschneiden](../crop-to-stock)** - Schnitte auf Materialgrenze beschränken
+- **[Pfad-Optimierung](../path-optimization)** - Verfahrdistanz reduzieren
+- **[Mehrfach-Durchgang](../multi-pass)** - Schnitte für dicke Materialien wiederholen
+
 ### Pfad-Optimierung
 
 Der Grenzpfad wird optimiert für:

@@ -15,9 +15,10 @@ import cairo
 from gi.repository import GLib
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, Future
+from ...core.geo import Point, Rect
+from ...core.matrix import Matrix
 from .region import ElementRegion, get_region_rect, check_region_hit
 from .hittest import check_pixel_hit
-from ...core.matrix import Matrix
 
 # Forward declaration for type hinting
 if TYPE_CHECKING:
@@ -318,7 +319,7 @@ class CanvasElement:
         self._transform_dirty = False
         return self._world_transform
 
-    def get_world_bounding_box(self) -> Tuple[float, float, float, float]:
+    def get_world_bounding_box(self) -> Rect:
         """
         Calculates the element's axis-aligned bounding box in world
         coordinates.
@@ -486,7 +487,7 @@ class CanvasElement:
         region: ElementRegion,
         base_handle_size: float,
         scale_compensation: Union[float, Tuple[float, float]] = 1.0,
-    ) -> Tuple[float, float, float, float]:
+    ) -> Rect:
         """
         Gets the rect (x, y, w, h) for a region in local coordinates.
 
@@ -791,7 +792,7 @@ class CanvasElement:
         new_transform = self.transform.set_translation(x, y)
         self.set_transform(new_transform)
 
-    def pos_abs(self) -> Tuple[float, float]:
+    def pos_abs(self) -> Point:
         """
         Gets the absolute position on the canvas.
 
@@ -822,14 +823,14 @@ class CanvasElement:
             # Use set_transform to apply the change and notify parent
             self.set_transform(self.transform)
 
-    def rect(self) -> Tuple[float, float, float, float]:
+    def rect(self) -> Rect:
         """
         Gets the local rect (x, y, width, height).
         """
         x, y = self.transform.get_translation()
         return x, y, self.width, self.height
 
-    def rect_abs(self) -> Tuple[float, float, float, float]:
+    def rect_abs(self) -> Rect:
         """
         Gets the absolute rect (x, y, width, height).
 
@@ -856,7 +857,7 @@ class CanvasElement:
         world_transform = self.get_world_transform()
         return world_transform.get_rotation()
 
-    def get_world_center(self) -> Tuple[float, float]:
+    def get_world_center(self) -> Point:
         """
         Calculates the element's center point in world coordinates.
         """
@@ -1121,9 +1122,7 @@ class CanvasElement:
         """
         pass
 
-    def handle_drag_move(
-        self, world_dx: float, world_dy: float
-    ) -> Tuple[float, float]:
+    def handle_drag_move(self, world_dx: float, world_dy: float) -> Point:
         """
         Intercepts a drag move to apply constraints. Subclasses can
         override this to customize drag behavior.

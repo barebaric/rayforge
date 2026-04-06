@@ -1,6 +1,28 @@
 import math
 from typing import Tuple, Any, Optional, Union, Sequence, List, cast
 import numpy as np
+from .geo import Rect, Point
+
+
+def euler_rotation_matrix(rx: float, ry: float, rz: float) -> np.ndarray:
+    """
+    Build a 3x3 rotation matrix from Euler angles in degrees.
+
+    The rotation order is X -> Y -> Z (extrinsic Tait-Bryan angles).
+    """
+    ax, ay, az = np.radians(rx), np.radians(ry), np.radians(rz)
+    cx, sx = np.cos(ax), np.sin(ax)
+    cy, sy = np.cos(ay), np.sin(ay)
+    cz, sz = np.cos(az), np.sin(az)
+    return np.array(
+        [
+            [cy * cz, sx * sy * cz - cx * sz, cx * sy * cz + sx * sz],
+            [cy * sz, sx * sy * sz + cx * cz, cx * sy * sz - sx * cz],
+            [-sy, sx * cy, cx * cy],
+        ],
+        dtype=np.float64,
+    )
+
 
 # A type alias for data that can be converted into a 3x3 matrix.
 # This includes another Matrix, a numpy array, or a 3x3 nested sequence.
@@ -194,7 +216,7 @@ class Matrix:
         """
         return self.get_determinant_2x2() < 0
 
-    def get_translation(self) -> Tuple[float, float]:
+    def get_translation(self) -> Point:
         """
         Extracts the translation component (tx, ty) from the matrix.
         """
@@ -297,7 +319,7 @@ class Matrix:
 
     @staticmethod
     def scale(
-        sx: float, sy: float, center: Optional[Tuple[float, float]] = None
+        sx: float, sy: float, center: Optional[Point] = None
     ) -> "Matrix":
         """
         Creates a scaling matrix.
@@ -328,7 +350,7 @@ class Matrix:
         self,
         sx: float,
         sy: float,
-        center: Optional[Tuple[float, float]] = None,
+        center: Optional[Point] = None,
     ) -> "Matrix":
         """
         Applies a scale before this matrix's transformation.
@@ -341,7 +363,7 @@ class Matrix:
         self,
         sx: float,
         sy: float,
-        center: Optional[Tuple[float, float]] = None,
+        center: Optional[Point] = None,
     ) -> "Matrix":
         """
         Applies a scale after this matrix's transformation.
@@ -365,9 +387,7 @@ class Matrix:
         return angle_deg
 
     @staticmethod
-    def rotation(
-        angle_deg: float, center: Optional[Tuple[float, float]] = None
-    ) -> "Matrix":
+    def rotation(angle_deg: float, center: Optional[Point] = None) -> "Matrix":
         """
         Creates a rotation matrix.
 
@@ -396,7 +416,7 @@ class Matrix:
         return m
 
     def pre_rotate(
-        self, angle_deg: float, center: Optional[Tuple[float, float]] = None
+        self, angle_deg: float, center: Optional[Point] = None
     ) -> "Matrix":
         """
         Applies a rotation before this matrix's transformation.
@@ -406,7 +426,7 @@ class Matrix:
         return r @ self
 
     def post_rotate(
-        self, angle_deg: float, center: Optional[Tuple[float, float]] = None
+        self, angle_deg: float, center: Optional[Point] = None
     ) -> "Matrix":
         """
         Applies a rotation after this matrix's transformation.
@@ -417,7 +437,7 @@ class Matrix:
 
     @staticmethod
     def shear(
-        sh_x: float, sh_y: float, center: Optional[Tuple[float, float]] = None
+        sh_x: float, sh_y: float, center: Optional[Point] = None
     ) -> "Matrix":
         """
         Creates a shearing matrix.
@@ -447,7 +467,7 @@ class Matrix:
         self,
         sh_x: float,
         sh_y: float,
-        center: Optional[Tuple[float, float]] = None,
+        center: Optional[Point] = None,
     ) -> "Matrix":
         """
         Applies a shear before this matrix's transformation.
@@ -460,7 +480,7 @@ class Matrix:
         self,
         sh_x: float,
         sh_y: float,
-        center: Optional[Tuple[float, float]] = None,
+        center: Optional[Point] = None,
     ) -> "Matrix":
         """
         Applies a shear after this matrix's transformation.
@@ -471,7 +491,7 @@ class Matrix:
 
     @staticmethod
     def flip_horizontal(
-        center: Optional[Tuple[float, float]] = None,
+        center: Optional[Point] = None,
     ) -> "Matrix":
         """
         Creates a horizontal flip (mirror along the Y-axis) matrix.
@@ -484,7 +504,7 @@ class Matrix:
 
     @staticmethod
     def flip_vertical(
-        center: Optional[Tuple[float, float]] = None,
+        center: Optional[Point] = None,
     ) -> "Matrix":
         """
         Creates a vertical flip (mirror along the X-axis) matrix.
@@ -508,9 +528,7 @@ class Matrix:
         """
         return Matrix(np.linalg.inv(self.m))
 
-    def transform_point(
-        self, point: Tuple[float, float]
-    ) -> Tuple[float, float]:
+    def transform_point(self, point: Point) -> Point:
         """
         Applies the full affine transformation to a 2D point.
 
@@ -522,7 +540,7 @@ class Matrix:
         """
         vec = np.array([point[0], point[1], 1])
         res_vec = np.dot(self.m, vec)
-        return (res_vec[0], res_vec[1])
+        return (float(res_vec[0]), float(res_vec[1]))
 
     def transform_vector(
         self, vector: Tuple[float, float]
@@ -534,11 +552,9 @@ class Matrix:
         # Use 0 for the homogeneous coordinate to ignore translation
         vec = np.array([vector[0], vector[1], 0])
         res_vec = np.dot(self.m, vec)
-        return (res_vec[0], res_vec[1])
+        return (float(res_vec[0]), float(res_vec[1]))
 
-    def transform_rectangle(
-        self, rect: Tuple[float, float, float, float]
-    ) -> Tuple[float, float, float, float]:
+    def transform_rectangle(self, rect: Rect) -> Rect:
         """
         Transforms a rectangle and computes its new axis-aligned bounding box.
 

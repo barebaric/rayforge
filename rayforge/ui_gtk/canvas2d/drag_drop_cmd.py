@@ -12,9 +12,9 @@ from typing import TYPE_CHECKING, Optional, Tuple, List
 from gettext import gettext as _
 from gi.repository import GObject, Gdk, Gtk, Gio, GLib, Adw
 from ...context import get_context
-from ...core.sketcher import Sketch
 from ...doceditor.file_cmd import ImportAction
-from ...image import ImporterFeature, importers
+from ...image import ImporterFeature
+from ...image.registry import importer_registry
 
 if TYPE_CHECKING:
     from ...ui_gtk.mainwindow import MainWindow
@@ -39,7 +39,7 @@ class DragDropCmd:
         self._drop_overlay_label: Optional[Gtk.Label] = None
 
         # Keep references to controllers
-        self._sketch_target: Optional[Gtk.DropTarget] = None
+        self._asset_drop_target: Optional[Gtk.DropTarget] = None
         self._file_target: Optional[Gtk.DropTarget] = None
 
         self._apply_drop_overlay_css()
@@ -71,19 +71,19 @@ class DragDropCmd:
     def setup_drop_targets(self):
         """
         Configure the canvas to accept file drops for importing.
-        Supports local files and file lists, as well as internal Sketch
-        objects.
+        Supports local files and file lists, as well as internal asset
+        UIDs (Strings) for generic asset drops.
         """
-        # We use separate drop targets for Sketches (Strings) and Files.
+        # We use separate drop targets for Asset UIDs (Strings) and Files.
         # This avoids issues with mixed types in a single controller.
 
-        # --- 1. Sketch Target (Strings) ---
-        self._sketch_target = Gtk.DropTarget.new(
+        # --- 1. Asset UID Target (Strings) ---
+        self._asset_drop_target = Gtk.DropTarget.new(
             GObject.TYPE_STRING, Gdk.DragAction.COPY
         )
-        self._sketch_target.connect("drop", self._on_sketch_drop)
-        self._sketch_target.connect("enter", self._on_sketch_drag_enter)
-        self.surface.add_controller(self._sketch_target)
+        self._asset_drop_target.connect("drop", self._on_asset_drop)
+        self._asset_drop_target.connect("enter", self._on_asset_drag_enter)
+        self.surface.add_controller(self._asset_drop_target)
 
         # --- 2. File Target (Files & FileLists) ---
         # Initialize with a valid type (Gio.File) then extend to FileList
@@ -95,22 +95,46 @@ class DragDropCmd:
         self.surface.add_controller(self._file_target)
 
         logger.debug(
-            "Split drop targets (Sketch/File) configured for WorkSurface"
+            "Split drop targets (Asset/File) configured for WorkSurface"
         )
 
-    # --- Sketch Handlers ---
+    # --- Asset Drop Handlers ---
 
-    def _on_sketch_drag_enter(self, drop_target, x, y):
-        # We accept copy for sketches. No overlay needed.
-        logger.debug("Sketch drag entered surface")
+    def _on_asset_drag_enter(self, drop_target, x, y):
+        # We accept copy for asset UIDs. No overlay needed.
+        logger.debug("Asset drag entered surface")
         return Gdk.DragAction.COPY
 
-    def _on_sketch_drop(self, drop_target, value, x, y):
-        logger.debug(f"Sketch drop event: value={value}")
+    def _on_asset_drop(self, drop_target, value, x, y):
+        logger.debug(f"Asset drop event: value={value}")
         if isinstance(value, str):
-            # Convert widget coordinates to world coordinates (mm)
             world_x_mm, world_y_mm = self.surface._get_world_coords(x, y)
-            return self._handle_sketch_drop(value, (world_x_mm, world_y_mm))
+            return self._handle_asset_drop(value, (world_x_mm, world_y_mm))
+        return False
+
+    def _handle_asset_drop(
+        self, asset_uid: str, position_mm: Tuple[float, float]
+    ) -> bool:
+        doc = self.main_window.doc_editor.doc
+        asset = doc.get_asset_by_uid(asset_uid)
+        if asset is None:
+            logger.warning(f"Dropped asset UID {asset_uid} not found")
+            return False
+        if not asset.is_draggable_to_canvas:
+            return False
+        try:
+            edit = self.main_window.doc_editor.edit
+            new_workpiece = edit.add_geometry_provider_instance(
+                asset_uid, position_mm
+            )
+            if new_workpiece:
+                logger.info(
+                    f"Created instance {new_workpiece.uid[:8]} "
+                    f"from asset {asset_uid[:8]} at {position_mm}"
+                )
+                return True
+        except Exception:
+            logger.exception(f"Error handling asset drop: {asset_uid}")
         return False
 
     # --- File Handlers ---
@@ -328,12 +352,9 @@ class DragDropCmd:
         formats = clipboard.get_formats()
 
         # Get all bitmap mime types from the backend
-        supported_bitmap_mimes = {
-            mime
-            for importer in importers
-            if ImporterFeature.BITMAP_TRACING in importer.features
-            for mime in importer.mime_types
-        }
+        supported_bitmap_mimes = importer_registry.mime_types_by_feature(
+            ImporterFeature.BITMAP_TRACING
+        )
 
         # Check for any supported bitmap image formats
         has_image = any(
@@ -434,9 +455,17 @@ class DragDropCmd:
         try:
             machine = get_context().machine
             if machine:
-                wa_x, wa_y, wa_w, wa_h = machine.work_area
-                center_x = wa_x + wa_w / 2
-                center_y = wa_y + wa_h / 2
+                work_area = machine.work_area
+                wa_w, wa_h = work_area[2], work_area[3]
+                origin_x, origin_y = machine.get_reference_position_world()
+                space = machine.get_coordinate_space()
+                bottom_left_x, bottom_left_y = (
+                    space.world_position_from_origin(
+                        origin_x, origin_y, (wa_w, wa_h)
+                    )
+                )
+                center_x = bottom_left_x + wa_w / 2
+                center_y = bottom_left_y + wa_h / 2
             else:
                 center_x, center_y = 50.0, 50.0  # Fallback
 
@@ -483,7 +512,7 @@ class DragDropCmd:
 
         return False  # Don't repeat
 
-    def _show_clipboard_error(self) -> bool:
+    def _show_clipboard_error(self):
         """
         Show error notification for clipboard import failure.
 
@@ -494,67 +523,3 @@ class DragDropCmd:
             Adw.Toast.new(_("Failed to import image from clipboard"))
         )
         return False
-
-    def _handle_sketch_drop(
-        self, sketch_uid: str, position_mm: Tuple[float, float]
-    ) -> bool:
-        """
-        Handle a sketch UID dropped onto the canvas.
-
-        Args:
-            sketch_uid: The UID of the sketch being dropped
-            position_mm: The (x, y) position in mm where to place the instance
-
-        Returns:
-            True if the drop was handled successfully
-        """
-        try:
-            # Retrieve the sketch asset from the document
-            doc = self.main_window.doc_editor.doc
-            sketch = doc.get_asset_by_uid(sketch_uid)
-
-            if not isinstance(sketch, Sketch):
-                logger.warning(
-                    f"Dropped sketch UID {sketch_uid} not found in document"
-                )
-                return False
-
-            # Check if the sketch is empty.
-            # A fresh sketch always has 1 point (the origin), so we check for
-            # entities (lines, arcs, circles) to determine if it has content.
-            if sketch.is_empty:
-                dialog = Adw.MessageDialog(
-                    transient_for=self.main_window,
-                    heading=_("Empty Sketch"),
-                    body=_(
-                        "The selected sketch contains no geometry. Please "
-                        "edit the sketch to add lines or shapes before "
-                        "placing on the canvas."
-                    ),
-                )
-                dialog.add_response("close", _("Close"))
-                dialog.present()
-                return False
-
-            edit_cmd = self.main_window.doc_editor.edit
-
-            # Create the sketch instance at the drop position
-            new_workpiece = edit_cmd.add_sketch_instance(
-                sketch_uid, position_mm
-            )
-
-            if new_workpiece:
-                logger.info(
-                    f"Created sketch instance {new_workpiece.uid[:8]} "
-                    f"from sketch {sketch_uid[:8]} at {position_mm}"
-                )
-                return True
-            else:
-                logger.warning(
-                    f"Failed to create sketch instance from {sketch_uid}"
-                )
-                return False
-
-        except Exception as e:
-            logger.exception(f"Error handling sketch drop: {e}")
-            return False

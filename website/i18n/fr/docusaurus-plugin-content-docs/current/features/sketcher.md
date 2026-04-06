@@ -1,176 +1,345 @@
-# Dessinateur 2D Paramétrique
+# Esquisseur paramétrique 2D
 
-Le Dessinateur 2D Paramétrique est une fonctionnalité puissante de Rayforge qui vous permet de créer et d'éditer des designs 2D précis basés sur des contraintes directement dans l'application. Cette fonctionnalité vous permet de concevoir des pièces personnalisées from scratch sans avoir besoin de logiciel CAO externe.
+L'Esquisseur paramétrique 2D est une fonctionnalité puissante de Rayforge qui
+vous permet de créer et modifier des conceptions 2D précises basées sur des
+contraintes directement dans l'application. Cette fonctionnalité vous permet de
+concevoir des pièces personnalisées à partir de zéro sans avoir besoin d'un
+logiciel de CAO externe.
 
 ## Aperçu
 
-Le dessinateur fournit un ensemble complet d'outils pour créer des formes géométriques et appliquer des contraintes paramétriques pour définir des relations précises entre les éléments. Cette approche assure que vos designs maintiennent leur géométrie prévue même lorsque les dimensions sont modifiées.
+L'esquisseur fournit un ensemble complet d'outils pour créer des formes
+géométriques et appliquer des contraintes paramétriques afin de définir des
+relations précises entre les éléments. Cette approche garantit que vos
+conceptions conservent leur géométrie prévue même lorsque les dimensions sont
+modifiées.
 
-## Créer et Éditer des Esquisses
+## Création et modification d'esquisses
 
-### Créer une Nouvelle Esquisse
+### Créer une nouvelle esquisse
 
-1. Cliquez sur le bouton "Nouvelle Esquisse" dans la barre d'outils ou utilisez le menu principal
-2. Un nouvel espace de travail d'esquisse vide s'ouvrira avec l'interface de l'éditeur d'esquisse
-3. Commencez à créer de la géométrie en utilisant les outils de dessin depuis le menu circulaire ou les raccourcis clavier
+1. Cliquez sur le bouton « Nouvelle esquisse » dans la barre d'outils ou
+   utilisez le menu principal
+2. Un nouvel espace de travail vide s'ouvrira avec l'interface de l'éditeur
+   d'esquisse
+3. Commencez à créer de la géométrie avec les outils de dessin du menu radial
+   ou les raccourcis clavier
 4. Appliquez des contraintes pour définir les relations entre les éléments
-5. Cliquez sur "Terminer l'Esquisse" pour sauvegarder votre travail et retourner à l'espace de travail principal
+5. Cliquez sur « Terminer l'esquisse » pour enregistrer votre travail et
+   revenir à l'espace de travail principal
 
-### Éditer des Esquisses Existantes
+### Modifier une esquisse existante
 
-1. Double-cliquez sur une pièce basée sur esquisse dans l'espace de travail principal
-2. Alternativement, sélectionnez une esquisse et choisissez "Éditer l'Esquisse" depuis le menu contextuel
-3. Effectuez vos modifications en utilisant les mêmes outils et contraintes
-4. Cliquez sur "Terminer l'Esquisse" pour sauvegarder les changements ou "Annuler l'Esquisse" pour les ignorer
+1. Double-cliquez sur une pièce basée sur une esquisse dans l'espace de travail
+   principal
+2. Alternativement, sélectionnez une esquisse et choisissez « Modifier
+   l'esquisse » dans le menu contextuel
+3. Effectuez vos modifications avec les mêmes outils et contraintes
+4. Cliquez sur « Terminer l'esquisse » pour enregistrer les modifications ou
+   sur « Annuler l'esquisse » pour les annuler
 
-## Créer de la Géométrie 2D
+## Création de géométrie 2D
 
-Le dessinateur supporte la création des éléments géométriques de base suivants :
+L'esquisseur prend en charge la création des éléments géométriques de base
+suivants :
 
-- **Lignes** : Dessinez des segments de ligne droite entre des points
-- **Cercles** : Créez des cercles en définissant un point central et un rayon
-- **Arcs** : Dessinez des arcs en spécifiant un point central, un point de départ et un point de fin
+- **Tracés (lignes et courbes de Bézier)** : Dessinez des lignes droites et des
+  courbes de Bézier lisses avec l'outil de tracé unifié. Cliquez pour placer
+  des points, glissez pour créer des poignées de Bézier.
+- **Arcs** : Dessinez des arcs en spécifiant un point central, un point de
+  départ et un point d'arrivée
+- **Ellipses** : Créez des ellipses (et des cercles) en définissant un point
+  central et en glissant pour définir la taille et le rapport d'aspect.
+  Maintenez `Ctrl` en glissant pour contraindre à un cercle parfait.
 - **Rectangles** : Dessinez des rectangles en spécifiant deux coins opposés
-- **Rectangles Arrondis** : Dessinez des rectangles avec des coins arrondis
-- **Zones de Texte** : Ajoutez des éléments de texte à votre esquisse
-- **Remplissages** : Remplissez des régions fermées pour créer des zones solides
+- **Rectangles arrondis** : Dessinez des rectangles avec des coins arrondis
+- **Zones de texte** : Ajoutez des éléments textuels à votre esquisse
+- **Remplissages** : Remplissez des régions fermées pour créer des zones
+  solides
 
-Ces éléments forment la base de vos designs 2D et peuvent être combinés pour créer des formes complexes. Les remplissages sont particulièrement utiles pour créer des régions solides qui seront gravées ou coupées comme une seule pièce.
+Ces éléments constituent la base de vos conceptions 2D et peuvent être combinés
+pour créer des formes complexes. Les remplissages sont particulièrement utiles
+pour créer des régions solides qui seront gravées ou découpées en une seule
+pièce.
 
-## Système de Contraintes Paramétriques
+## Travailler avec les courbes de Bézier
 
-Le système de contraintes est le cœur du dessinateur paramétrique, vous permettant de définir des relations géométriques précises :
+L'outil de tracé prend en charge les courbes de Bézier pour créer des formes
+lisses et organiques :
 
-### Contraintes Géométriques
+### Dessiner des courbes de Bézier
 
-- **Coïncident** : Force deux points à occuper le même emplacement
-- **Vertical** : Contraint une ligne à être parfaitement verticale
-- **Horizontal** : Contraint une ligne à être parfaitement horizontale
-- **Tangent** : Rend une ligne tangente à un cercle ou arc
-- **Perpendiculaire** : Force deux lignes, une ligne et un arc/cercle, ou deux arcs/cercles à se rencontrer à 90 degrés
-- **Point sur Ligne/Forme** : Contraint un point à se trouver sur une ligne, un arc ou un cercle
-- **Symétrie** : Crée des relations symétriques entre éléments. Supporte deux modes :
-  - **Symétrie de Point** : Sélectionnez 3 points (le premier est le centre)
-  - **Symétrie de Ligne** : Sélectionnez 2 points et 1 ligne (la ligne est l'axe)
+1. Sélectionnez l'outil de tracé dans le menu radial ou utilisez le raccourci
+   clavier
+2. Cliquez pour placer des points ; chaque clic crée un nouveau point
+3. Glissez après avoir cliqué pour créer des poignées de Bézier pour des
+   courbes lisses
+4. Continuez à ajouter des points pour construire votre tracé
+5. Appuyez sur Échap ou double-cliquez pour terminer le tracé
 
-### Contraintes Dimensionnelles
+### Modifier les courbes de Bézier
 
-- **Distance** : Définit la distance exacte entre deux points ou le long d'une ligne
+- **Déplacer des points** : Cliquez et glissez n'importe quel point pour le
+  repositionner
+- **Ajuster les poignées** : Glissez les extrémités des poignées pour modifier
+  la forme de la courbe
+- **Se connecter aux points existants** : Lors de la modification d'un tracé,
+  vous pouvez vous accrocher aux points existants de votre esquisse
+- **Rendre lisse/symétrique** : Les points connectés par une contrainte de
+  coïncidence peuvent être rendus lisses (tangente continue) ou symétriques
+  (poignées en miroir)
+
+### Convertir des courbes en lignes
+
+Utilisez l'**outil d'aplatissement** pour convertir les courbes de Bézier en
+lignes droites. Ceci est utile lorsque vous avez besoin d'une géométrie propre
+et simple. Sélectionnez les segments de Bézier que vous souhaitez convertir et
+appliquez l'action d'aplatissement.
+
+## Système de contraintes paramétriques
+
+Le système de contraintes est le cœur de l'esquisseur paramétrique, vous
+permettant de définir des relations géométriques précises :
+
+### Contraintes géométriques
+
+- **Coïncidence** : Force deux points à occuper le même emplacement
+- **Verticale** : Contraint une ligne à être parfaitement verticale
+- **Horizontale** : Contraint une ligne à être parfaitement horizontale
+- **Tangente** : Rend une ligne tangente à un cercle ou un arc
+- **Perpendiculaire** : Force deux lignes, une ligne et un arc/cercle, ou deux
+  arcs/cercles à se rencontrer à 90 degrés
+- **Point sur ligne/forme** : Contraint un point à se trouver sur une ligne, un
+  arc ou un cercle
+- **Colinéaire** : Force deux lignes ou plus à se trouver sur la même ligne
+  infinie
+- **Symétrie** : Crée des relations symétriques entre les éléments. Prend en
+  charge deux modes :
+  - **Symétrie de point** : Sélectionnez 3 points (le premier est le centre)
+  - **Symétrie de ligne** : Sélectionnez 2 points et 1 ligne (la ligne est
+    l'axe)
+
+### Contraintes dimensionnelles
+
+- **Distance** : Définit la distance exacte entre deux points ou le long d'une
+  ligne
 - **Diamètre** : Définit le diamètre d'un cercle
 - **Rayon** : Définit le rayon d'un cercle ou d'un arc
 - **Angle** : Impose un angle spécifique entre deux lignes
-- **Ratio d'Aspect** : Force le ratio entre deux distances à être égal à une valeur spécifiée
-- **Longueur/Rayon Égal** : Force plusieurs éléments (lignes, arcs ou cercles) à avoir la même longueur ou le même rayon
-- **Distance Égale** : Force la distance entre deux paires de points à être égale
+- **Rapport d'aspect** : Force le rapport entre deux distances à être égal à une
+  valeur spécifiée
+- **Longueur/Rayon égal** : Force plusieurs éléments (lignes, arcs, ellipses ou
+  cercles) à avoir la même longueur ou le même rayon
+- **Distance égale** : Rend deux segments de ligne de même longueur (différent
+  de Longueur/Rayon égal, qui peut aussi s'appliquer aux arcs et cercles)
 
-## Interface du Menu Circulaire
+## Interface du menu radial
 
-Le dessinateur propose un menu contextuel adaptatif qui fournit un accès rapide à tous les outils de dessin et de contrainte. Ce menu radial apparaît lorsque vous faites un clic droit dans l'espace de travail d'esquisse et s'adapte selon votre contexte et sélection actuels.
+L'esquisseur dispose d'un menu radial contextuel qui fournit un accès rapide à
+tous les outils de dessin et de contrainte. Ce menu circulaire apparaît lorsque
+vous faites un clic droit dans l'espace de travail de l'esquisse et s'adapte
+selon votre contexte et votre sélection actuels.
 
-Les éléments du menu circulaire affichent dynamiquement les options disponibles selon ce que vous avez sélectionné. Par exemple, en cliquant sur un espace vide, vous verrez les outils de dessin. En cliquant sur de la géométrie sélectionnée, vous verrez les contraintes applicables.
+Les éléments du menu radial affichent dynamiquement les options disponibles en
+fonction de votre sélection. Par exemple, en cliquant sur un espace vide, vous
+verrez les outils de dessin. En cliquant sur de la géométrie sélectionnée, vous
+verrez les contraintes applicables.
 
-![Menu Circulaire du Dessinateur](/screenshots/sketcher-pie-menu.png)
+![Menu radial de l'esquisseur](/screenshots/sketcher-pie-menu.png)
 
-## Raccourcis Clavier
+## Raccourcis clavier
 
-Le dessinateur fournit des raccourcis clavier pour un flux de travail efficace :
+L'esquisseur fournit des raccourcis clavier pour un flux de travail efficace :
 
-### Raccourcis d'Outils
-- `Espace` : Outil de sélection
-- `G+L` : Outil ligne
-- `G+A` : Outil arc
-- `G+C` : Outil cercle
-- `G+R` : Outil rectangle
-- `G+O` : Outil rectangle arrondi
-- `G+F` : Outil zone de remplissage
-- `G+T` : Outil zone de texte
+### Raccourcis d'outils
+
+- `Space` : Outil de sélection
+- `G+P` : Outil de tracé (lignes et courbes de Bézier)
+- `G+A` : Outil d'arc
+- `G+C` : Outil d'ellipse
+- `G+R` : Outil de rectangle
+- `G+O` : Outil de rectangle arrondi
+- `G+F` : Outil de remplissage de zone
+- `G+T` : Outil de zone de texte
+- `G+G` : Outil de grille (basculer la visibilité de la grille)
 - `G+N` : Basculer le mode construction sur la sélection
 
-### Raccourcis d'Action
-- `C+H` : Ajouter un coin de chanfrein
-- `C+F` : Ajouter un coin de congé
+### Raccourcis d'actions
 
-### Raccourcis de Contrainte
+- `C+H` : Ajouter un chanfrein
+- `C+F` : Ajouter un congé
+- `C+S` : Aplatir les courbes de Bézier sélectionnées en lignes
+
+### Raccourcis de contraintes
+
 - `H` : Appliquer la contrainte Horizontale
 - `V` : Appliquer la contrainte Verticale
 - `N` : Appliquer la contrainte Perpendiculaire
 - `T` : Appliquer la contrainte Tangente
 - `E` : Appliquer la contrainte Égal
-- `O` ou `C` : Appliquer la contrainte d'Alignement (Coïncident)
+- `O` ou `C` : Appliquer la contrainte d'Alignement (Coïncidence)
 - `S` : Appliquer la contrainte de Symétrie
 - `K+D` : Appliquer la contrainte de Distance
 - `K+R` : Appliquer la contrainte de Rayon
 - `K+O` : Appliquer la contrainte de Diamètre
 - `K+A` : Appliquer la contrainte d'Angle
-- `K+X` : Appliquer la contrainte de Ratio d'Aspect
+- `K+X` : Appliquer la contrainte de Rapport d'aspect
 
-### Raccourcis Généraux
+### Raccourcis généraux
+
 - `Ctrl+Z` : Annuler
 - `Ctrl+Y` ou `Ctrl+Shift+Z` : Rétablir
-- `Supprimer` : Supprimer les éléments sélectionnés
-- `Échap` : Annuler l'opération actuelle ou désélectionner
+- `Delete` : Supprimer les éléments sélectionnés
+- `Escape` : Annuler l'opération en cours ou désélectionner
 - `F` : Ajuster la vue au contenu
 
-## Mode Construction
+## Mode construction
 
-Le mode construction vous permet de marquer des entités comme "géométrie de construction" - des éléments d'aide utilisés pour guider votre design mais ne faisant pas partie de la sortie finale. Les entités de construction sont affichées différemment (typiquement comme des lignes pointillées) et ne sont pas incluses lorsque l'esquisse est utilisée pour la découpe ou gravure laser.
+Le mode construction vous permet de marquer des entités comme « géométrie de
+construction », des éléments auxiliaires utilisés pour guider votre conception
+mais qui ne font pas partie du résultat final. Les entités de construction sont
+affichées différemment (généralement sous forme de lignes tiretées) et ne sont
+pas incluses lorsque l'esquisse est utilisée pour la découpe ou la gravure
+laser.
 
 Pour basculer le mode construction :
+
 - Sélectionnez une ou plusieurs entités
-- Appuyez sur `N` ou `G+N`, ou utilisez l'option Construction dans le menu circulaire
+- Appuyez sur `N` ou `G+N`, ou utilisez l'option Construction dans le menu
+  radial
 
 Les entités de construction sont utiles pour :
-- Créer des lignes et cercles de référence
+
+- Créer des lignes et des cercles de référence
 - Définir une géométrie temporaire pour l'alignement
 - Construire des formes complexes à partir d'un cadre de guides
 
-## Chanfrein et Congé
+## Grille, accrochage et commandes de visibilité
 
-Le dessinateur fournit des outils pour modifier les coins de votre géométrie :
+### Outil de grille
 
-- **Chanfrein** : Remplace un coin vif par un bord biseauté. Sélectionnez un point de jonction (où deux lignes se rencontrent) et appliquez l'action de chanfrein.
-- **Congé** : Remplace un coin vif par un bord arrondi. Sélectionnez un point de jonction (où deux lignes se rencontrent) et appliquez l'action de congé.
+L'outil de grille fournit un repère visuel pour l'alignement et le
+dimensionnement :
 
-Pour utiliser chanfrein ou congé :
+- Activez/désactivez la grille avec le bouton de l'outil ou `G+G`
+- La grille s'adapte à votre niveau de zoom pour un espacement cohérent
+
+### Accrochage magnétique
+
+Lors de la création ou du déplacement de géométrie, Rayforge attire
+automatiquement votre curseur vers les éléments proches : extrémités, milieux de
+lignes, intersections et autres points de référence. Cela facilite la connexion
+précise des formes sans avoir à placer manuellement chaque point. L'indicateur
+d'accrochage se met en surbrillance lorsque votre curseur est proche d'une
+cible d'accrochage.
+
+### Auto-contrainte pendant la création
+
+De nombreux outils de dessin appliquent automatiquement des contraintes lors de
+la création de géométrie. Par exemple, lors du tracé d'une ligne proche de
+l'horizontale ou de la verticale, l'esquisseur proposera de la verrouiller en
+place. Cela aide à garder votre esquisse ordonnée dès le départ, plutôt que de
+corriger les choses par la suite.
+
+### Commandes afficher/masquer
+
+La barre d'outils de l'esquisseur inclut des boutons de bascule pour contrôler
+la visibilité :
+
+- **Afficher/masquer la géométrie de construction** : Bascule la visibilité des
+  entités de construction
+- **Afficher/masquer les contraintes** : Bascule la visibilité des marqueurs de
+  contraintes
+
+Ces commandes aident à réduire l'encombrement visuel lors du travail sur des
+esquisses complexes.
+
+### Déplacement contraint aux axes
+
+Lors du glissement de points ou de géométrie, maintenez `Shift` pour contraindre
+le déplacement à l'axe le plus proche (horizontal ou vertical). Ceci est utile
+pour maintenir l'alignement lors des ajustements.
+
+## Chanfrein et congé
+
+L'esquisseur fournit des outils pour modifier les coins de votre géométrie :
+
+- **Chanfrein** : Remplace un coin anguleux par un bord biseauté. Sélectionnez
+  un point de jonction (où deux lignes se rencontrent) et appliquez l'action de
+  chanfrein.
+- **Congé** : Remplace un coin anguleux par un bord arrondi. Sélectionnez un
+  point de jonction (où deux lignes se rencontrent) et appliquez l'action de
+  congé.
+
+Pour utiliser le chanfrein ou le congé :
+
 1. Sélectionnez un point de jonction où deux lignes se rencontrent
-2. Appuyez sur `C+H` pour chanfrein ou `C+F` pour congé
-3. Utilisez le menu circulaire ou les raccourcis clavier pour appliquer la modification
+2. Appuyez sur `C+H` pour le chanfrein ou `C+F` pour le congé
+3. Utilisez le menu radial ou les raccourcis clavier pour appliquer la
+   modification
 
-## Import et Export
+## Importation et exportation
 
-### Exporter des Objets
+### Exporter des objets
 
-Vous pouvez exporter toute pièce sélectionnée vers différents formats vectoriels :
+Vous pouvez exporter toute pièce sélectionnée vers divers formats vectoriels :
 
 1. Sélectionnez une pièce sur le canevas
-2. Choisissez **Objet → Exporter l'Objet...** (ou clic droit et sélectionnez depuis le menu contextuel)
+2. Choisissez **Objet → Exporter l'objet...** (ou faites un clic droit et
+   sélectionnez dans le menu contextuel)
 3. Choisissez le format d'exportation :
-   - **RFS (.rfs)** : Format d'esquisse paramétrique natif de Rayforge - préserve toutes les contraintes et peut être ré-importé pour édition
-   - **SVG (.svg)** : Format vectoriel standard - largement compatible avec les logiciels de design
-   - **DXF (.dxf)** : Format d'échange CAO - compatible avec la plupart des applications CAO
+   - **RFS (.rfs)** : Format d'esquisse paramétrique natif de Rayforge ;
+     préserve toutes les contraintes et peut être réimporté pour modification
+   - **SVG (.svg)** : Format vectoriel standard ; largement compatible avec les
+     logiciels de conception
+   - **DXF (.dxf)** : Format d'échange CAO ; compatible avec la plupart des
+     applications de CAO
 
-### Sauvegarder des Esquisses
+### Enregistrer des esquisses
 
-Vous pouvez sauvegarder vos esquisses 2D dans des fichiers pour réutilisation dans d'autres projets. Toutes les contraintes paramétriques sont préservées lors de la sauvegarde, assurant que vos designs maintiennent leurs relations géométriques.
+Vous pouvez enregistrer vos esquisses 2D dans des fichiers pour les réutiliser
+dans d'autres projets. Toutes les contraintes paramétriques sont préservées lors
+de l'enregistrement, garantissant que vos conceptions conservent leurs relations
+géométriques.
 
-### Importer des Esquisses
+### Importer des esquisses
 
-Les esquisses sauvegardées peuvent être importées dans tout espace de travail, vous permettant de créer une bibliothèque d'éléments de design couramment utilisés. Le processus d'importation maintient toutes les contraintes et relations dimensionnelles.
+Les esquisses enregistrées peuvent être importées dans n'importe quel espace de
+travail, vous permettant de créer une bibliothèque d'éléments de conception
+couramment utilisés. Le processus d'importation maintient toutes les contraintes
+et relations dimensionnelles.
 
-## Conseils de Flux de Travail
+## Conseils de flux de travail
 
-1. **Commencez avec une Géométrie Approximative** : Créez d'abord des formes de base, puis affinez avec des contraintes
-2. **Utilisez les Contraintes Tôt** : Appliquez des contraintes pendant que vous construisez pour maintenir l'intention du design
-3. **Vérifiez le Statut des Contraintes** : Le système indique quand les esquisses sont totalement contraintes
-4. **Surveillez les Conflits** : Les contraintes qui entrent en conflit les unes avec les autres sont surlignées en rouge
-5. **Utilisez la Symétrie** : Les contraintes de symétrie peuvent accélérer significativement les designs complexes
-6. **Itérez et Affinez** : N'hésitez pas à modifier les contraintes pour obtenir le résultat souhaité
+1. **Commencez par une géométrie approximative** : Créez d'abord des formes de
+   base, puis affinez avec des contraintes
+2. **Utilisez les contraintes tôt** : Appliquez des contraintes au fur et à
+   mesure pour maintenir l'intention de conception
+3. **Vérifiez l'état des contraintes** : Le système indique quand les esquisses
+   sont entièrement contraintes
+4. **Surveillez les conflits** : Les contraintes en conflit sont mises en
+   évidence en rouge et affichées dans le panneau des contraintes pour une
+   identification facile
+5. **Utilisez la symétrie** : Les contraintes de symétrie peuvent accélérer
+   considérablement les conceptions complexes
+6. **Utilisez la grille** : Activez la grille pour un alignement précis et
+   utilisez Ctrl pour l'accrochage à la grille
+7. **Itérez et affine** : N'hésitez pas à modifier les contraintes pour obtenir
+   le résultat souhaité
 
-## Fonctionnalités d'Édition
+## Fonctionnalités d'édition
 
-- **Support Complet Annuler/Rétablir** : Tout l'état de l'esquisse est sauvegardé avec chaque opération
-- **Curseur Dynamique** : Le curseur change pour refléter l'outil de dessin actif
-- **Visualisation des Contraintes** : Les contraintes appliquées sont clairement indiquées dans l'interface
-- **Mises à Jour en Temps Réel** : Les changements de contraintes mettent à jour immédiatement la géométrie
-- **Édition par Double-Clic** : Double-cliquer sur les contraintes dimensionnelles (Distance, Rayon, Diamètre, Angle, Ratio d'Aspect) ouvre une boîte de dialogue pour éditer leurs valeurs
-- **Expressions Paramétriques** : Les contraintes dimensionnelles supportent les expressions, permettant aux valeurs d'être calculées à partir d'autres paramètres (ex : `largeur/2` pour un rayon qui est la moitié de la largeur)
+- **Prise en charge complète d'annuler/rétablir** : L'état complet de
+  l'esquisse est enregistré à chaque opération
+- **Curseur dynamique** : Le curseur change pour refléter l'outil de dessin
+  actif
+- **Visualisation des contraintes** : Les contraintes appliquées sont clairement
+  indiquées dans l'interface
+- **Mises à jour en temps réel** : Les modifications des contraintes mettent à
+  jour immédiatement la géométrie
+- **Édition par double-clic** : Double-cliquer sur des contraintes
+  dimensionnelles (Distance, Rayon, Diamètre, Angle, Rapport d'aspect) ouvre une
+  boîte de dialogue pour modifier leurs valeurs
+- **Expressions paramétriques** : Les contraintes dimensionnelles prennent en
+  charge les expressions, permettant de calculer des valeurs à partir d'autres
+  paramètres (par ex., `width/2` pour un rayon égal à la moitié de la largeur)

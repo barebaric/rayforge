@@ -1,0 +1,278 @@
+import pytest
+import io
+import cairo
+from pathlib import Path
+from typing import cast
+from unittest.mock import Mock
+
+from rayforge.core.geo import Geometry
+from rayforge.core.matrix import Matrix
+from rayforge.core.source_asset import SourceAsset
+from rayforge.core.source_asset_segment import SourceAssetSegment
+from rayforge.core.vectorization_spec import TraceSpec, PassthroughSpec
+from rayforge.core.workpiece import WorkPiece
+from rayforge.image.pdf.importer import PdfImporter
+from rayforge.image.pdf.renderer import PDF_RENDERER
+
+
+def create_pdf_data(width_pt: float, height_pt: float) -> bytes:
+    """Helper to create sample PDF data of a given size in points."""
+    buf = io.BytesIO()
+    surface = cairo.PDFSurface(buf, width_pt, height_pt)
+    cr = cairo.Context(surface)
+    cr.set_source_rgb(1, 1, 0)  # Yellow
+    cr.rectangle(0, 0, width_pt, height_pt)
+    cr.fill()
+    surface.finish()
+    buf.seek(0)
+    return buf.getvalue()
+
+
+def create_pdf_with_shapes() -> bytes:
+    """Create a PDF with various shapes for testing."""
+    buf = io.BytesIO()
+    surface = cairo.PDFSurface(buf, 200, 200)
+    cr = cairo.Context(surface)
+
+    # Draw a rectangle
+    cr.set_source_rgb(0, 0, 0)
+    cr.rectangle(10, 10, 50, 30)
+    cr.stroke()
+
+    # Draw a circle
+    cr.arc(120, 40, 25, 0, 2 * 3.14159)
+    cr.stroke()
+
+    # Draw a line
+    cr.move_to(10, 100)
+    cr.line_to(190, 100)
+    cr.stroke()
+
+    surface.finish()
+    buf.seek(0)
+    return buf.getvalue()
+
+
+def _setup_workpiece_with_context(
+    importer: PdfImporter, vectorization_spec=None
+) -> WorkPiece:
+    """Helper to run importer and correctly link workpiece to its source."""
+    import_result = importer.get_doc_items(
+        vectorization_spec=vectorization_spec
+    )
+    assert import_result is not None, "Importer returned None"
+    payload = import_result.payload
+    assert payload is not None
+    source = payload.source
+    # Handle cases where importer returns no items (e.g., invalid data)
+    if not payload.items:
+        wp = WorkPiece(name="empty")
+    else:
+        wp = cast(WorkPiece, payload.items[0])
+
+    # Mock the document context so workpiece.source resolves correctly
+    mock_doc = Mock()
+    mock_doc.source_assets = {source.uid: source}
+    mock_doc.get_source_asset_by_uid.side_effect = mock_doc.source_assets.get
+
+    # By setting a mock parent with a `doc` property, we allow the
+    # workpiece's `doc` property to resolve to our mock.
+    mock_parent = Mock()
+    mock_parent.doc = mock_doc
+    # CRITICAL FIX: Configure the mock to return a valid Matrix
+    mock_parent.get_world_transform.return_value = Matrix.identity()
+    wp.parent = mock_parent
+
+    return wp
+
+
+@pytest.fixture
+def basic_pdf_data() -> bytes:
+    """PDF data for a 100pt x 50pt page."""
+    return create_pdf_data(100, 50)
+
+
+@pytest.fixture
+def shapes_pdf_data() -> bytes:
+    return create_pdf_with_shapes()
+
+
+@pytest.fixture
+def large_pdf_data() -> bytes:
+    """PDF data for a 1000pt x 500pt page for chunking tests."""
+    return create_pdf_data(1000, 500)
+
+
+@pytest.fixture
+def basic_workpiece(basic_pdf_data: bytes) -> WorkPiece:
+    """A WorkPiece created from the basic PDF data, sized by the importer."""
+    importer = PdfImporter(basic_pdf_data)
+    return _setup_workpiece_with_context(
+        importer, vectorization_spec=TraceSpec()
+    )
+
+
+@pytest.fixture
+def large_workpiece(large_pdf_data: bytes) -> WorkPiece:
+    """A WorkPiece created from the large PDF data, sized by the importer."""
+    importer = PdfImporter(large_pdf_data)
+    return _setup_workpiece_with_context(
+        importer, vectorization_spec=TraceSpec()
+    )
+
+
+class TestPdfImporter:
+    def test_importer_creates_workpiece_with_natural_size(
+        self, basic_pdf_data: bytes
+    ):
+        """
+        Tests the importer creates a WorkPiece with the correct initial size.
+        """
+        importer = PdfImporter(basic_pdf_data)
+        import_result = importer.get_doc_items(vectorization_spec=TraceSpec())
+        assert import_result is not None
+        payload = import_result.payload
+
+        assert payload
+        assert isinstance(payload.source, SourceAsset)
+        assert payload.source.original_data == basic_pdf_data
+        assert len(payload.items) == 1
+
+        wp = cast(WorkPiece, payload.items[0])
+        assert isinstance(wp, WorkPiece)
+        assert wp.source_segment is not None
+        assert wp.source_segment.source_asset_uid == payload.source.uid
+
+        # The importer traces and auto-crops. For a full-page PDF, the size
+        # should be very close to the PDF's natural dimensions.
+        # 1pt = 25.4/72 mm
+        expected_width = 100 * 25.4 / 72
+        expected_height = 50 * 25.4 / 72
+        # Use a tolerance to account for render/trace variance.
+        assert wp.size[0] == pytest.approx(expected_width, rel=1e-3)
+        assert wp.size[1] == pytest.approx(expected_height, rel=1e-3)
+
+    def test_importer_handles_invalid_data(self):
+        """Tests importer returns ImportResult with None payload on invalid."""
+        importer = PdfImporter(b"this is not a pdf")
+        import_result = importer.get_doc_items(vectorization_spec=TraceSpec())
+        assert import_result is not None
+        assert import_result.payload is None
+        assert import_result.parse_result is None
+        assert len(import_result.errors) > 0
+
+    def test_facade_delegates_to_vector_importer_with_passthrough_spec(
+        self, shapes_pdf_data: bytes
+    ):
+        importer = PdfImporter(shapes_pdf_data)
+        import_result = importer.get_doc_items(
+            vectorization_spec=PassthroughSpec()
+        )
+        assert import_result is not None
+        assert import_result.payload is not None
+        assert len(import_result.payload.items) == 1
+
+        wp = cast(WorkPiece, import_result.payload.items[0])
+        assert wp.boundaries is not None
+        assert not wp.boundaries.is_empty()
+
+    def test_facade_delegates_to_trace_importer_with_trace_spec(
+        self, shapes_pdf_data: bytes
+    ):
+        importer = PdfImporter(shapes_pdf_data)
+        import_result = importer.get_doc_items(vectorization_spec=TraceSpec())
+        assert import_result is not None
+        assert import_result.payload is not None
+        assert len(import_result.payload.items) == 1
+
+        wp = cast(WorkPiece, import_result.payload.items[0])
+        assert wp.boundaries is not None
+        assert not wp.boundaries.is_empty()
+
+
+class TestPdfRenderer:
+    def test_get_natural_size(self, basic_workpiece: WorkPiece):
+        """Test natural size calculation on the workpiece."""
+        size = basic_workpiece.natural_size
+        assert size is not None
+        width_mm, height_mm = size
+
+        expected_width = 100 * 25.4 / 72
+        expected_height = 50 * 25.4 / 72
+        assert width_mm == pytest.approx(expected_width, rel=1e-3)
+        assert height_mm == pytest.approx(expected_height, rel=1e-3)
+
+    def test_get_natural_aspect_ratio(self, basic_workpiece: WorkPiece):
+        """Test aspect ratio on the workpiece, which uses the renderer."""
+        ratio = basic_workpiece.get_natural_aspect_ratio()
+        assert ratio is not None
+        assert ratio == pytest.approx(2.0, rel=1e-3)
+
+    def test_render_to_pixels(self, basic_workpiece: WorkPiece):
+        """Test rendering to a Cairo surface."""
+        surface = basic_workpiece.render_to_pixels(width=200, height=100)
+        assert isinstance(surface, cairo.ImageSurface)
+        assert surface.get_width() == 200
+        assert surface.get_height() == 100
+
+    def test_render_chunk(self, large_workpiece: WorkPiece):
+        """Test chunk rendering without overlap."""
+        # Set pixels_per_mm to achieve a 1-to-1 mapping from points to pixels
+        px_per_mm = 72 / 25.4
+        chunks = list(
+            large_workpiece.render_chunk(
+                pixels_per_mm_x=px_per_mm,
+                pixels_per_mm_y=px_per_mm,
+                max_chunk_width=300,
+                max_chunk_height=200,
+            )
+        )
+        # Expected total pixels: ~1000x500
+        # Chunks: 4 cols (ceil(1000/300)) x 3 rows (ceil(500/200)) = 12
+        assert len(chunks) == 12
+
+        chunk, (x, y) = chunks[-1]  # Last chunk
+        assert x == pytest.approx(900, abs=1)
+        assert y == pytest.approx(400, abs=1)
+        # Use approx to account for potential 1px rounding errors in rendering
+        assert chunk.get_width() == pytest.approx(100, abs=1)  # 1000 - 3*300
+        assert chunk.get_height() == pytest.approx(100, abs=1)  # 500 - 2*200
+
+    def test_renderer_handles_invalid_data_gracefully(self):
+        """
+        Test that the renderer does not raise exceptions for invalid data.
+        """
+        source = SourceAsset(
+            source_file=Path("invalid.pdf"),
+            original_data=b"not a valid pdf",
+            renderer=PDF_RENDERER,
+        )
+        gen_config = SourceAssetSegment(
+            source_asset_uid=source.uid,
+            pristine_geometry=Geometry(),
+            vectorization_spec=TraceSpec(),
+        )
+        invalid_wp = WorkPiece(name="invalid", source_segment=gen_config)
+
+        # Mock document context
+        mock_doc = Mock()
+        mock_doc.source_assets = {source.uid: source}
+        mock_doc.get_source_asset_by_uid.side_effect = (
+            mock_doc.source_assets.get
+        )
+        mock_parent = Mock()
+        mock_parent.doc = mock_doc
+        mock_parent.get_world_transform.return_value = Matrix.identity()
+        invalid_wp.parent = mock_parent
+
+        assert invalid_wp.natural_size == (0.0, 0.0)
+        assert invalid_wp.render_to_pixels(100, 100) is None
+
+        chunks = list(
+            invalid_wp.render_chunk(
+                pixels_per_mm_x=1,
+                pixels_per_mm_y=1,
+                max_chunk_width=100,
+            )
+        )
+        assert len(chunks) == 0

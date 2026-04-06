@@ -2,6 +2,7 @@ import math
 import logging
 from typing import Tuple, TYPE_CHECKING
 import cairo
+from ...core.geo import Point3D
 from ...core.matrix import Matrix
 from ...pipeline.coordspace import OriginCorner
 
@@ -57,6 +58,10 @@ class AxisRenderer:
         self.label_font_size: float = label_font_size
         self.min_grid_spacing_px = 50.0
 
+    def get_effective_height(self) -> float:
+        """Returns the effective height for layout calculations."""
+        return self.height_mm
+
     def get_content_layout(
         self, widget_w: int, widget_h: int
     ) -> Tuple[float, float, float, float]:
@@ -100,10 +105,11 @@ class AxisRenderer:
             return left_padding, top_padding, 0.0, 0.0
 
         # 3. Calculate the target aspect ratio from mm dimensions.
-        if self.width_mm <= 0 or self.height_mm <= 0:
+        effective_height = self.get_effective_height()
+        if self.width_mm <= 0 or effective_height <= 0:
             return left_padding, top_padding, available_width, available_height
 
-        world_aspect_ratio = self.width_mm / self.height_mm
+        world_aspect_ratio = self.width_mm / effective_height
 
         # 4. Calculate content dimensions that fit and match aspect ratio.
         available_aspect_ratio = available_width / available_height
@@ -133,11 +139,12 @@ class AxisRenderer:
         _, _, content_w, content_h = self.get_content_layout(
             widget_w, widget_h
         )
-        if self.width_mm <= 0 or self.height_mm <= 0:
+        effective_height = self.get_effective_height()
+        if self.width_mm <= 0 or effective_height <= 0:
             return 1.0
 
         base_ppm_x = content_w / self.width_mm
-        base_ppm_y = content_h / self.height_mm
+        base_ppm_y = content_h / effective_height
         return min(base_ppm_x, base_ppm_y)
 
     def _get_adaptive_grid_size(self, pixels_per_mm: float) -> float:
@@ -173,7 +180,7 @@ class AxisRenderer:
         view_transform: Matrix,
         widget_w: int,
         widget_h: int,
-        origin_offset_mm: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+        origin_offset_mm: Point3D = (0.0, 0.0, 0.0),
     ):
         """
         Draws the grid, axes, and labels onto the Cairo context using the
@@ -238,7 +245,7 @@ class AxisRenderer:
         max_x: float,
         min_y: float,
         max_y: float,
-        origin_offset_mm: Tuple[float, float, float],
+        origin_offset_mm: Point3D,
     ):
         """Internal helper to draw the infinite grid lines."""
         ctx.set_source_rgba(*self.grid_color)
@@ -293,7 +300,7 @@ class AxisRenderer:
         ctx: cairo.Context,
         view_transform: Matrix,
         grid_size_mm: float,
-        origin_offset_mm: Tuple[float, float, float],
+        origin_offset_mm: Point3D,
     ):
         """Internal helper to draw the main XY axes and text labels."""
         # Calculate precision needed to display fractional grid sizes
@@ -347,6 +354,8 @@ class AxisRenderer:
             x_axis_start_mm = (workarea_right, x_axis_y)
             x_axis_end_mm = (workarea_left, x_axis_y)
         else:
+            y_axis_start_mm = (workarea_left, y_axis_start_mm[1])
+            y_axis_end_mm = (workarea_left, y_axis_end_mm[1])
             x_axis_start_mm = (workarea_left, x_axis_y)
             x_axis_end_mm = (workarea_right, x_axis_y)
 
@@ -425,7 +434,7 @@ class AxisRenderer:
             if self.y_axis_negative:
                 label_val = -label_val
 
-            # Check if this label is at the corner where the X-axis is drawn
+            # Check if this label is at the corner where X-axis is drawn
             is_at_corner = abs(world_y - x_axis_y) < 1e-3
 
             # Skip drawing the Y label if it's at the corner AND its value

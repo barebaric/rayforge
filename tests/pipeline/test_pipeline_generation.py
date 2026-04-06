@@ -14,7 +14,6 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
-    StepRenderArtifact,
     StepOpsArtifact,
     JobArtifact,
 )
@@ -27,7 +26,6 @@ from rayforge.pipeline.stage.step_runner import (
 from rayforge.pipeline.stage.workpiece_runner import (
     make_workpiece_artifact_in_subprocess,
 )
-from rayforge.pipeline.steps import ContourStep, EngraveStep
 
 
 logger = logging.getLogger(__name__)
@@ -130,24 +128,10 @@ class TestPipelineGeneration:
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         store = get_context().artifact_store
-                        render_artifact = StepRenderArtifact(
-                            generation_id=gen_id
-                        )
-                        render_handle = store.put(render_artifact)
                         ops_artifact = StepOpsArtifact(
                             ops=Ops(), generation_id=gen_id
                         )
                         ops_handle = store.put(ops_artifact)
-
-                        render_event = {
-                            "handle_dict": render_handle.to_dict(),
-                            "generation_id": gen_id,
-                        }
-                        task_info.when_event(
-                            task_obj,
-                            "render_artifact_ready",
-                            render_event,
-                        )
 
                         ops_event = {
                             "handle_dict": ops_handle.to_dict(),
@@ -186,12 +170,17 @@ class TestPipelineGeneration:
         mock_task_mgr.created_tasks.clear()
 
     def test_generation_success_emits_signals_and_caches_result(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -246,12 +235,17 @@ class TestPipelineGeneration:
             get_context().artifact_store.release(handle)
 
     def test_generation_cancellation_is_handled(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -281,12 +275,17 @@ class TestPipelineGeneration:
 
     @pytest.mark.asyncio
     async def test_step_change_triggers_full_regeneration(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
         _ = Pipeline(
             doc,
@@ -325,12 +324,17 @@ class TestPipelineGeneration:
 
     @pytest.mark.asyncio
     async def test_workpiece_transform_change_triggers_step_assembly(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
         Pipeline(
             doc,
@@ -372,12 +376,17 @@ class TestPipelineGeneration:
             get_context().artifact_store.release(handle)
 
     def test_generate_job_artifact_callback_success(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange: Setup a complete pipeline state
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -449,12 +458,17 @@ class TestPipelineGeneration:
                 get_context().artifact_store.release(expected_job_handle)
 
     def test_generate_job_artifact_callback_failure(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
         pipeline = Pipeline(
             doc,
@@ -514,12 +528,17 @@ class TestPipelineGeneration:
 
     @pytest.mark.asyncio
     async def test_generate_job_artifact_async_success(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
         pipeline = Pipeline(
             doc,
@@ -593,12 +612,17 @@ class TestPipelineGeneration:
 
     @pytest.mark.asyncio
     async def test_generate_job_artifact_async_failure(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
         pipeline = Pipeline(
             doc,
@@ -650,12 +674,17 @@ class TestPipelineGeneration:
 
     @pytest.mark.asyncio
     async def test_generate_job_artifact_async_already_running(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
         pipeline = Pipeline(
             doc,
@@ -710,7 +739,12 @@ class TestPipelineGeneration:
 
     @pytest.mark.asyncio
     async def test_rapid_step_change_emits_correct_final_signal(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         """
         Simulates a user changing a step setting twice in quick succession.
@@ -721,7 +755,7 @@ class TestPipelineGeneration:
         # Arrange: Setup doc, workpiece, step, and pipeline
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -813,7 +847,12 @@ class TestPipelineGeneration:
             get_context().artifact_store.release(handle)
 
     def test_chunk_flow_from_workpiece_to_view_stage(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        engrave_step_class,
     ):
         """
         Integration test to verify the whole flow:
@@ -823,7 +862,7 @@ class TestPipelineGeneration:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = EngraveStep.create(context_initializer)
+        step = engrave_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(

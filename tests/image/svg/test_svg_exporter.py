@@ -2,14 +2,23 @@ import json
 import pytest
 from pathlib import Path
 from rayforge.core.geo import Geometry
-from rayforge.core.sketcher import Sketch
+from rayforge.core.asset_registry import asset_type_registry
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.svg.exporter import (
     GeometrySvgExporter,
     MultiGeometrySvgExporter,
 )
 from rayforge.image.svg.importer import SvgImporter
-from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
+
+
+@pytest.fixture
+def Sketch():
+    """Get Sketch class from registry or skip if not available."""
+    Sketch = asset_type_registry.get("sketch")
+    if Sketch is None:
+        pytest.skip("Sketcher addon not available")
+    return Sketch
 
 
 @pytest.fixture
@@ -115,8 +124,16 @@ class TestGeometrySvgExporterExport:
 
 
 class TestGeometrySvgExporterRealWorld:
-    def test_export_mouse_sketch(self):
-        mouse_file = Path(__file__).parent.parent / "sketch/mouse.rfs"
+    def test_export_mouse_sketch(self, Sketch):
+        mouse_file = (
+            Path(__file__).parent.parent.parent.parent
+            / "rayforge"
+            / "builtin_addons"
+            / "rayforge-addon-sketcher"
+            / "tests"
+            / "assets"
+            / "mouse.rfs"
+        )
         data = json.loads(mouse_file.read_text())
 
         sketch = Sketch.from_dict(data)
@@ -189,7 +206,7 @@ class TestGeometrySvgExporterRoundTrip:
         svg_bytes = exporter.export()
 
         importer = SvgImporter(svg_bytes, Path("test.svg"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -222,7 +239,7 @@ class TestGeometrySvgExporterRoundTrip:
         svg_bytes = exporter.export()
 
         importer = SvgImporter(svg_bytes, Path("test.svg"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -254,7 +271,7 @@ class TestGeometrySvgExporterRoundTrip:
         svg_bytes = exporter.export()
 
         importer = SvgImporter(svg_bytes, Path("test.svg"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -285,7 +302,7 @@ class TestGeometrySvgExporterRoundTrip:
         svg_bytes = exporter.export()
 
         importer = SvgImporter(svg_bytes, Path("test.svg"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -317,7 +334,7 @@ class TestGeometrySvgExporterRoundTrip:
         svg_bytes = exporter.export()
 
         importer = SvgImporter(svg_bytes, Path("test.svg"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -352,7 +369,7 @@ class TestGeometrySvgExporterRoundTrip:
         svg_bytes = exporter.export()
 
         importer = SvgImporter(svg_bytes, Path("test.svg"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None
@@ -392,7 +409,7 @@ class TestGeometrySvgExporterRoundTrip:
         svg_bytes = exporter.export()
 
         importer = SvgImporter(svg_bytes, Path("test.svg"))
-        spec = PassthroughSpec(create_new_layers=False)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
         import_result = importer.get_doc_items(vectorization_spec=spec)
 
         assert import_result is not None

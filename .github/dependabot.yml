@@ -3,3 +3,5 @@ updates:
   - directory: /website
     package-ecosystem: "npm"
     open-pull-requests-limit: 0
+    ignore:
+      - dependency-name: "*"

@@ -22,17 +22,33 @@ class CameraProperties(Adw.PreferencesGroup):
         self.set_description(_("Configure the selected camera."))
 
         # Device ID
-        self.device_id_row = Adw.ActionRow(title=_("Device ID"))
+        self.device_id_row = Adw.ActionRow(
+            title=_("Device ID"),
+            subtitle=_("System identifier for the camera device"),
+        )
         self.add(self.device_id_row)
 
         # Camera Name
-        self.name_row = Adw.EntryRow(title=_("Name"))
-        self.name_row.connect("changed", self.on_name_changed)
+        self.name_row = Adw.ActionRow(
+            title=_("Name"),
+            subtitle=_("Display name for this camera"),
+        )
+        self.name_entry = Gtk.Entry()
+        self.name_entry.set_valign(Gtk.Align.CENTER)
+        self.name_entry.connect("changed", self.on_name_changed)
+        self.name_row.add_suffix(self.name_entry)
         self.add(self.name_row)
 
         # Enabled Switch
-        self.enabled_row = Adw.SwitchRow(title=_("Enabled"))
-        self.enabled_row.connect("notify::active", self.on_enabled_changed)
+        self.enabled_row = Adw.ActionRow(
+            title=_("Enabled"),
+            subtitle=_("Turn the camera stream on or off"),
+        )
+        self.enabled_switch = Gtk.Switch()
+        self.enabled_switch.set_valign(Gtk.Align.CENTER)
+        self.enabled_switch.connect("notify::active", self.on_enabled_changed)
+        self.enabled_row.add_suffix(self.enabled_switch)
+        self.enabled_row.set_activatable_widget(self.enabled_switch)
         self.add(self.enabled_row)
 
         # Image Settings button
@@ -42,7 +58,12 @@ class CameraProperties(Adw.PreferencesGroup):
         self.image_settings_button.connect(
             "clicked", self.on_image_settings_button_clicked
         )
-        image_settings_row = Adw.ActionRow(title=_("Image Settings"))
+        image_settings_row = Adw.ActionRow(
+            title=_("Image Settings"),
+            subtitle=_(
+                "Adjust brightness, contrast, white balance, and noise"
+            ),
+        )
         image_settings_row.add_suffix(self.image_settings_button)
         self.add(image_settings_row)
 
@@ -53,7 +74,10 @@ class CameraProperties(Adw.PreferencesGroup):
         self.image_alignment_button.connect(
             "clicked", self.on_image_alignment_button_clicked
         )
-        image_alignment_row = Adw.ActionRow(title=_("Image Alignment"))
+        image_alignment_row = Adw.ActionRow(
+            title=_("Image Alignment"),
+            subtitle=_("Calibrate camera position and perspective"),
+        )
         image_alignment_row.add_suffix(self.image_alignment_button)
         self.add(image_alignment_row)
 
@@ -84,8 +108,8 @@ class CameraProperties(Adw.PreferencesGroup):
         self._updating_ui = True
         try:
             self.device_id_row.set_subtitle(self._camera.device_id)
-            self.name_row.set_text(self._camera.name)
-            self.enabled_row.set_active(self._camera.enabled)
+            self.name_entry.set_text(self._camera.name)
+            self.enabled_switch.set_active(self._camera.enabled)
             self.image_settings_button.set_sensitive(self._camera.enabled)
             self.image_alignment_button.set_sensitive(self._camera.enabled)
         finally:
@@ -93,8 +117,8 @@ class CameraProperties(Adw.PreferencesGroup):
 
     def clear_ui(self):
         self.device_id_row.set_subtitle("")
-        self.name_row.set_text("")
-        self.enabled_row.set_active(False)
+        self.name_entry.set_text("")
+        self.enabled_switch.set_active(False)
         # Clear image settings and disable button
         self.image_settings_button.set_sensitive(False)
         self.image_alignment_button.set_sensitive(False)

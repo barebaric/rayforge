@@ -26,10 +26,10 @@ echo "${APP_VERSION}" > rayforge/version.txt
 
 
 # ----------------------------------------------------
-# STEP 1: Generate .ico file from SVG
+# STEP 1: Generate .ico file from PNG
 # ----------------------------------------------------
 echo "Creating application icon..."
-bash scripts/win/win_create_icon.sh
+python3 scripts/win/win_create_icon.py
 
 # ----------------------------------------------------
 # STEP 2: Configure GTK Theme for the bundle
@@ -70,6 +70,7 @@ pyinstaller --onedir --hide-console hide-early \
   --add-data "rayforge/version.txt;rayforge" \
   --add-data "rayforge/resources;rayforge/resources" \
   --add-data "rayforge/locale;rayforge/locale" \
+  --add-data "rayforge/builtin_addons;rayforge/builtin_addons" \
   --add-data "etc;etc" \
   --add-data "${WIN_MSYS2_PATH}\\mingw64\\share\\glib-2.0\\schemas;glib-2.0\\schemas" \
   --add-data "${WIN_MSYS2_PATH}\\mingw64\\share\\icons;share\\icons" \
@@ -78,6 +79,14 @@ pyinstaller --onedir --hide-console hide-early \
   --add-binary "${WIN_MSYS2_PATH}\\mingw64\\bin\\libGLESv2.dll;." \
   --add-binary "${WIN_MSYS2_PATH}\\mingw64\\bin\\libvips-42.dll;." \
   --hidden-import "gi._gi_cairo" \
+  --hidden-import "rayforge.core.expression" \
+  --hidden-import "rayforge.core.expression.evaluator" \
+  --hidden-import "rayforge.core.expression.context" \
+  --hidden-import "rayforge.core.expression.errors" \
+  --hidden-import "rayforge.core.expression.parser" \
+  --hidden-import "rayforge.core.expression.tokenizer" \
+  --hidden-import "rayforge.core.expression.validator" \
+  --additional-hooks-dir "hooks" \
   rayforge/app.py
 
 echo "✅ PyInstaller build complete: dist/${BUNDLE_NAME}/"

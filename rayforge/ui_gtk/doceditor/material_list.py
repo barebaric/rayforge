@@ -79,7 +79,7 @@ class MaterialRow(Gtk.Box):
             suffix_box = Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)
             self.append(suffix_box)
 
-            edit_button = Gtk.Button(child=get_icon("document-edit-symbolic"))
+            edit_button = Gtk.Button(child=get_icon("edit-symbolic"))
             edit_button.add_css_class("flat")
             edit_button.connect("clicked", self._on_edit_clicked)
             suffix_box.append(edit_button)
@@ -105,22 +105,18 @@ class MaterialListWidget(PreferencesGroupWithButton):
 
     def __init__(self, **kwargs):
         # This list correctly uses the default SelectionMode.NONE
-        super().__init__(button_label=_("Add New Material"), **kwargs)
+        super().__init__(
+            button_label=_("Add New Material"),
+            empty_placeholder=_("No materials in selected library."),
+            **kwargs,
+        )
         self.material_added = Signal()
         self.material_deleted = Signal()
         self._setup_ui()
         self._current_library: Optional[MaterialLibrary] = None
 
     def _setup_ui(self):
-        """Configures the widget's list box and placeholder."""
-        placeholder = Gtk.Label(
-            label=_("No materials in selected library."),
-            halign=Gtk.Align.CENTER,
-            margin_top=12,
-            margin_bottom=12,
-        )
-        placeholder.add_css_class("dim-label")
-        self.list_box.set_placeholder(placeholder)
+        """Configures the widget's list box."""
         self.list_box.set_show_separators(True)
 
     def set_library(self, library: Optional[MaterialLibrary]):

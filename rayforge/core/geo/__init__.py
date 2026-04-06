@@ -9,10 +9,25 @@ from . import contours
 from . import fitting
 from . import intersect
 from . import linearize
+from . import minkowski
+from . import polygon
 from . import primitives
 from . import query
+from . import smooth
 from . import text
 from . import transform
+
+from .types import (
+    Edge,
+    IntPoint,
+    IntPolygon,
+    Point,
+    Point2DOr3D,
+    Point3D,
+    Polygon,
+    Rect,
+    Rect3D,
+)
 from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
@@ -35,17 +50,29 @@ from .font_config import FontConfig
 from .geometry import Geometry
 
 __all__ = [
+    "Edge",
+    "IntPoint",
+    "IntPolygon",
+    "Point",
+    "Point2DOr3D",
+    "Point3D",
+    "Polygon",
     "analysis",
     "contours",
     "fitting",
     "intersect",
     "linearize",
+    "minkowski",
+    "polygon",
     "primitives",
     "query",
+    "smooth",
     "text",
     "transform",
     "FontConfig",
     "Geometry",
+    "Rect",
+    "Rect3D",
     "CMD_TYPE_MOVE",
     "CMD_TYPE_LINE",
     "CMD_TYPE_ARC",

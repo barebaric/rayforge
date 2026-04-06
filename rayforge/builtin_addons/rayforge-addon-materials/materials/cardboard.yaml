@@ -1,0 +1,28 @@
+uid: cardboard
+name:
+  default: Cardboard
+  de: Pappe
+  es: Cartón
+  fr: Carton
+  pt: Papelão
+  uk: Картон
+  zh_CN: 纸板
+description:
+  default: Thick paper-based material
+  de: Dickes papierbasiertes Material
+  es: Material grueso basado en papel
+  fr: Matériau épais à base de papier
+  pt: Material espesso à base de papel
+  uk: Щільний паперовий матеріал
+  zh_CN: 厚纸基材料
+category:
+  default: Paper
+  de: Papier
+  es: Papel
+  fr: Papier
+  pt: Papel
+  uk: Папір
+  zh_CN: 纸张
+appearance:
+  color: "#D3D3D3"
+  pattern: solid

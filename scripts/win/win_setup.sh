@@ -82,9 +82,8 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
       libtool
       git
 
-      # Installer & Icon Tools
+      # Installer Tools
       mingw-w64-x86_64-nsis
-      mingw-w64-x86_64-imagemagick
 
       # Base Python Environment and Bindings
       mingw-w64-x86_64-python
@@ -111,6 +110,8 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
       mingw-w64-x86_64-python-maturin
       mingw-w64-x86_64-python-numpy
       mingw-w64-x86_64-python-opencv
+      mingw-w64-x86_64-python-pillow
+      mingw-w64-x86_64-python-pymupdf
       mingw-w64-x86_64-python-pyopengl
       mingw-w64-x86_64-python-pyopengl-accelerate
       mingw-w64-x86_64-python-scipy
@@ -167,7 +168,7 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
     $PYTHON_BIN_PATH -m pip install --no-cache-dir pyclipper==1.3.0.post6 --break-system-packages
     $PYTHON_BIN_PATH -m pip install --no-cache-dir pygobject-stubs --break-system-packages
     $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation --no-deps pyvips==3.0.0 --break-system-packages
-    $PYTHON_BIN_PATH -m pip install --no-cache-dir pyserial_asyncio==0.6 ezdxf==1.3.5 pypdf==5.3.1 --break-system-packages
+    $PYTHON_BIN_PATH -m pip install --no-cache-dir pyserial_asyncio==0.6 ezdxf==1.3.5 pypdf==5.3.1 trimesh==4.6.8 --break-system-packages
 
     echo "✅ Windows MSYS2 dependency setup complete."
 fi

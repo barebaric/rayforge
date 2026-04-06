@@ -13,7 +13,8 @@ Sie können diese Entscheidung jederzeit in den allgemeinen Einstellungen änder
 
 ## Was wir erfassen
 
-Wenn aktiviert, erfassen wir nur anonyme Seitenaufrufdaten – ähnlich wie Website-Analysen. Das können wir sehen:
+Wenn aktiviert, erfassen wir nur anonyme Seitenaufrufdaten – ähnlich wie
+Website-Analysen. Das können wir sehen:
 
 | Daten                    | Beispiel                  |
 | ------------------------ | ------------------------- |
@@ -21,6 +22,12 @@ Wenn aktiviert, erfassen wir nur anonyme Seitenaufrufdaten – ähnlich wie Webs
 | Spracheinstellung        | de-DE                     |
 | Seiten/Dialoge angesehen | /machine-settings/general |
 | Zeit auf Seite           | 6m 3s                     |
+| Sitzungs-ID              | a1b2c3d4-e5f6-...         |
+
+Die Sitzungs-ID ist ein zufälliger Bezeichner, der bei jedem Start von
+Rayforge generiert wird. Sie ermöglicht es uns, zwischen verschiedenen
+Nutzungssitzungen zu unterscheiden und dabei das Tracking vollständig
+anonym zu halten.
 
 ## Was wir sehen
 

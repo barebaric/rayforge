@@ -206,6 +206,9 @@ class CameraController:
     def __init__(self, config: Camera):
         self.config = config
         self._image_data: Optional[np.ndarray] = None
+        self._raw_image_data: Optional[np.ndarray] = None
+        # For Temporal Smoothing
+        self._accumulator: Optional[np.ndarray] = None
         self._active_subscribers: int = 0
         self._capture_thread: Optional[threading.Thread] = None
         self._running: bool = False
@@ -221,6 +224,7 @@ class CameraController:
     def _on_config_changed(self, sender):
         """Reacts to changes in the data model."""
         self._settings_dirty = True
+        self._accumulator = None  # Reset smoothing if settings change
         if self.config.enabled and self._active_subscribers > 0:
             self._start_capture_stream()
         elif not self.config.enabled:
@@ -257,6 +261,10 @@ class CameraController:
     @property
     def image_data(self) -> Optional[np.ndarray]:
         return self._image_data
+
+    @property
+    def raw_image_data(self) -> Optional[np.ndarray]:
+        return self._raw_image_data
 
     @property
     def pixbuf(self) -> Optional["GdkPixbuf.Pixbuf"]:
@@ -356,18 +364,6 @@ class CameraController:
             (p[0], image_height - p[1]) for p in image_points_raw
         ]
 
-        if (
-            self.config._camera_matrix is not None
-            and self.config._dist_coeffs is not None
-        ):
-            # Undistort image points if calibration parameters are available
-            image_points_y_up = cv2.undistortPoints(
-                np.array(image_points_y_up, dtype=np.float32),
-                self.config._camera_matrix,
-                self.config._dist_coeffs,
-            )
-            image_points_y_up = image_points_y_up.reshape(-1, 2)
-
         # Compute homography (world to image_y_up)
         H, _ = cv2.findHomography(
             np.array(world_points, dtype=np.float32),
@@ -376,51 +372,80 @@ class CameraController:
         return H
 
     def get_work_surface_image(
-        self, output_size: Tuple[int, int], physical_area: Tuple[Pos, Pos]
+        self,
+        output_size: Tuple[int, int],
+        physical_area: Tuple[Pos, Pos],
     ) -> Optional[np.ndarray]:
         """
-        Get an aligned image of the specified physical area.
+        Get an image aligned to world coordinates.
+
+        For cameras with perspective calibration (image_to_world), this uses
+        homography transformation. For cameras without calibration, this
+        applies a simple resize to match the output size.
+
+        Both the canvas and stock detection addon should use this method
+        to ensure consistent image transformation.
+
+        The returned image has pixel coordinates that correspond to world
+        coordinates via:
+            world_x = pixel_x * (physical_width / output_width) + x_min
+            world_y = pixel_y * (physical_height / output_height) + y_min
+
+        Note: Y=0 in the output image corresponds to y_min in world coords,
+        and Y increases downward (image space) while world Y increases upward.
 
         Args:
             output_size: Desired output image size (width, height) in pixels
             physical_area: Physical area ((x_min, y_min), (x_max, y_max))
-              to capture in real-world coordinates
+              in real-world coordinates (mm)
 
         Returns:
-            Aligned image as a NumPy array
+            Aligned image as a NumPy array in BGR format, or None on failure
         """
-        if self.config.image_to_world is None:
-            raise ValueError(
-                "Corresponding points must be set before getting the"
-                " work surface image"
-            )
         if self._image_data is None:
             logger.warning("No image data available.")
             return None
 
-        # Capture raw image
-        raw_image = self._image_data
+        if self.config.image_to_world is not None:
+            return self._transform_with_homography(
+                self._image_data, output_size, physical_area
+            )
 
-        # Undistort if calibration parameters are set
-        if (
-            self.config._camera_matrix is not None
-            and self.config._dist_coeffs is not None
-        ):
-            try:
-                undistorted_image = cv2.undistort(
-                    raw_image,
-                    self.config._camera_matrix,
-                    self.config._dist_coeffs,
-                )
-            except cv2.error as e:
-                logger.warning(f"Failed to undistort image: {e}")
-                undistorted_image = raw_image
-        else:
-            undistorted_image = raw_image
-
-        # Compute homography (world to image)
+        out_width, out_height = output_size
         try:
-            H = self._compute_homography(raw_image.shape[0])
+            resized = cv2.resize(
+                self._image_data,
+                (out_width, out_height),
+                interpolation=cv2.INTER_AREA,
+            )
+            return resized
+        except cv2.error as e:
+            logger.error(f"Failed to resize image: {e}")
+            return None
+
+    def _transform_with_homography(
+        self,
+        image: np.ndarray,
+        output_size: Tuple[int, int],
+        physical_area: Tuple[Pos, Pos],
+    ) -> Optional[np.ndarray]:
+        """
+        Transform an image using homography to world coordinates.
+
+        Args:
+            image: Source image to transform
+            output_size: Desired output image size (width, height) in pixels
+            physical_area: Physical area ((x_min, y_min), (x_max, y_max))
+
+        Returns:
+            Transformed image, or None on failure
+        """
+        if self.config.image_to_world is None:
+            logger.error("Cannot transform: no calibration points set")
+            return None
+
+        try:
+            H = self._compute_homography(image.shape[0])
         except ValueError as e:
             logger.error(f"Cannot compute homography: {e}")
             return None
@@ -452,20 +477,9 @@ class CameraController:
         # Overall transformation: output pixels -> world -> image
         M = H @ T
 
-        # Apply perspective warp
-        # Log transformed corner points
-        world_corners = np.array(
-            [[x_min, y_min], [x_max, y_min], [x_max, y_max], [x_min, y_max]],
-            dtype=np.float32,
-        )
-        world_corners_h = np.hstack((world_corners, np.ones((4, 1)))).T
-        transformed_corners = M @ world_corners_h
-        transformed_corners = transformed_corners[:2] / transformed_corners[2]
-        transformed_corners = transformed_corners.T
-
         try:
             aligned_image = cv2.warpPerspective(
-                undistorted_image, np.linalg.inv(M), output_size
+                image, np.linalg.inv(M), output_size
             )
             return aligned_image
         except cv2.error as e:
@@ -489,6 +503,77 @@ class CameraController:
             # We log as a warning because the stream may still work
             logger.warning(f"Could not apply one or more camera settings: {e}")
 
+    def _get_effective_calibration(self, h, w):
+        if self.config.has_calibration:
+            calib_size = self.config.calibration_image_size
+            cam_mat = self.config.get_camera_matrix()
+            dist = self.config.get_distortion_coeffs()
+
+            if calib_size is not None and cam_mat is not None:
+                calib_w, calib_h = calib_size
+                if calib_w != w or calib_h != h:
+                    scale_x = w / calib_w
+                    scale_y = h / calib_h
+                    cam_mat = cam_mat.copy()
+                    cam_mat[0, 0] *= scale_x
+                    cam_mat[1, 1] *= scale_y
+                    cam_mat[0, 2] *= scale_x
+                    cam_mat[1, 2] *= scale_y
+
+            return cam_mat, dist
+
+        k1 = self.config.distortion_k1
+        k2 = self.config.distortion_k2
+        p1 = self.config.distortion_p1
+        p2 = self.config.distortion_p2
+        k3 = self.config.distortion_k3
+
+        if k1 != 0.0 or k2 != 0.0 or p1 != 0.0 or p2 != 0.0 or k3 != 0.0:
+            f = max(h, w)
+            cam_mat = np.array(
+                [[f, 0, w / 2], [0, f, h / 2], [0, 0, 1]], dtype=np.float32
+            )
+            dist_coeffs = np.array([k1, k2, p1, p2, k3], dtype=np.float32)
+            return cam_mat, dist_coeffs
+
+        return None, None
+
+    def _process_frame(self, frame: np.ndarray) -> np.ndarray:
+        """Applies denoise, fisheye correction, and boundary stretching."""
+
+        # 0. Temporal Denoising (Accumulate Weighted)
+        denoise_strength = getattr(self.config, "denoise", 0.0)
+
+        if denoise_strength > 0.0:
+            if (
+                self._accumulator is None
+                or self._accumulator.shape != frame.shape
+            ):
+                self._accumulator = frame.astype(np.float32)
+            else:
+                alpha = 1.0 - denoise_strength
+                cv2.accumulateWeighted(frame, self._accumulator, alpha)
+
+            # Use the denoised result for subsequent processing
+            frame_to_process = self._accumulator.astype(np.uint8)
+        else:
+            self._accumulator = None
+            frame_to_process = frame
+
+        h, w = frame_to_process.shape[:2]
+
+        # 1. Undistort (Fisheye Correction)
+        cam_mat, dist = self._get_effective_calibration(h, w)
+        if cam_mat is not None and dist is not None:
+            try:
+                frame_to_process = cv2.undistort(
+                    frame_to_process, cam_mat, dist
+                )
+            except Exception as e:
+                logger.error(f"Failed to undistort frame: {e}")
+
+        return frame_to_process
+
     def _read_frame(self, cap) -> bool:
         """Read frame from cap. Returns True on success."""
         try:
@@ -496,8 +581,14 @@ class CameraController:
             if not ret or frame is None:
                 logger.warning("Failed to capture frame from camera.")
                 self._image_data = None
+                self._raw_image_data = None
                 return False
-            self._image_data = frame
+
+            self._raw_image_data = frame.copy()
+
+            # Apply all visual corrections
+            self._image_data = self._process_frame(frame)
+
             # Emit the signal in a GLib-safe way
             idle_add(self.image_captured.send, self)
             return True
@@ -519,6 +610,7 @@ class CameraController:
         """Capture frames from an opened device. Returns when should stop."""
         self._settings_dirty = True
         self._consecutive_failures = 0
+        self._accumulator = None
 
         while self._running and cap is not None:
             if self._settings_dirty:

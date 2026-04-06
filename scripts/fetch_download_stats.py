@@ -294,6 +294,57 @@ def get_pypi_monthly(pkg_name):
         return {}
 
 
+def get_pypi_daily(pkg_name):
+    url = (
+        f"https://pypistats.org/api/packages/{pkg_name}/overall?mirrors=false"
+    )
+    try:
+        data = fetch_json(url)
+        daily = {}
+        for entry in data.get("data", []):
+            date_str = entry.get("date", "")
+            if date_str:
+                daily[date_str] = entry.get("downloads", 0)
+        return daily
+    except (HTTPError, URLError):
+        return {}
+
+
+def query_victoriametrics(query):
+    url = f"{METRICS_URL}/api/v1/query?query={query}"
+    credentials = base64.b64encode(
+        f"{METRICS_API_USER}:{METRICS_API_PASSWORD}".encode()
+    ).decode()
+    req = Request(url)
+    req.add_header("Authorization", f"Basic {credentials}")
+    try:
+        with urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode())
+            results = data.get("data", {}).get("result", [])
+            if results:
+                return float(results[0].get("value", [0, 0])[1])
+    except (HTTPError, URLError) as e:
+        print(f"Failed to query VictoriaMetrics: {e}")
+    return None
+
+
+def query_victoriametrics_labels(query, label):
+    url = f"{METRICS_URL}/api/v1/series?match[]={query}&start=0&end=now"
+    credentials = base64.b64encode(
+        f"{METRICS_API_USER}:{METRICS_API_PASSWORD}".encode()
+    ).decode()
+    req = Request(url)
+    req.add_header("Authorization", f"Basic {credentials}")
+    try:
+        with urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode())
+            results = data.get("data", [])
+            return {r.get(label, "") for r in results if label in r}
+    except (HTTPError, URLError) as e:
+        print(f"Failed to query VictoriaMetrics labels: {e}")
+    return set()
+
+
 def send_to_victoriametrics(metrics):
     lines = []
     for metric in metrics:
@@ -407,6 +458,8 @@ def main():
 
     ppa_stats = get_ppa_downloads(args.ppa_owner, args.ppa_name)
     snap_stats = get_snap_downloads_cli(args.snap_name, "2024-01-01")
+    pypi_monthly = get_pypi_monthly(args.pypi_package)
+    pypi_total = sum(pypi_monthly.values())
     stats = {
         "timestamp": datetime.now(UTC).isoformat(),
         "github": get_github_releases(args.github_owner, args.github_repo),
@@ -420,13 +473,12 @@ def main():
         stats["github"]["total"]
         + stats["snap"]["total"]
         + stats["flathub"]["total"]
-        + stats["pypi"]["last_month"]
+        + pypi_total
         + ppa_stats["total"]
     )
 
     if args.output == "file":
         flathub_monthly = get_flathub_monthly(args.flathub_id)
-        pypi_monthly = get_pypi_monthly(args.pypi_package)
         snap_data = get_snap_downloads_cli(args.snap_name, "2024-01-01")
         snap_monthly = snap_data.get("by_month", {})
         ppa_monthly = get_ppa_monthly(args.ppa_owner, args.ppa_name)
@@ -482,6 +534,25 @@ def main():
             )
             return 1
 
+        pypi_daily = get_pypi_daily(args.pypi_package)
+        existing_dates = query_victoriametrics_labels(
+            'downloads_daily{source="pypi"}', "date"
+        )
+        new_dates = set(pypi_daily.keys()) - existing_dates
+        new_downloads = sum(pypi_daily[d] for d in new_dates)
+
+        stored_pypi_total = query_victoriametrics(
+            'sum(downloads_daily{source="pypi"})'
+        )
+        stored_pypi_total = int(stored_pypi_total) if stored_pypi_total else 0
+        pypi_cumulative = stored_pypi_total + new_downloads
+
+        print(
+            f"PyPI: {len(existing_dates)} existing dates, "
+            f"{len(new_dates)} new, +{new_downloads} downloads, "
+            f"total={pypi_cumulative}"
+        )
+
         metrics = [
             {
                 "name": "downloads_total",
@@ -495,7 +566,7 @@ def main():
             },
             {
                 "name": "downloads_total",
-                "value": stats["pypi"]["last_month"],
+                "value": pypi_cumulative,
                 "tags": {"source": "pypi"},
             },
             {
@@ -524,6 +595,24 @@ def main():
                 "tags": {"source": "pypi", "period": "30d"},
             },
         ]
+
+        for month, count in pypi_monthly.items():
+            metrics.append(
+                {
+                    "name": "downloads_by_month",
+                    "value": count,
+                    "tags": {"source": "pypi", "month": month},
+                }
+            )
+
+        for date in new_dates:
+            metrics.append(
+                {
+                    "name": "downloads_daily",
+                    "value": pypi_daily[date],
+                    "tags": {"source": "pypi", "date": date},
+                }
+            )
 
         for version, count in stats["github"].get("by_version", {}).items():
             metrics.append(

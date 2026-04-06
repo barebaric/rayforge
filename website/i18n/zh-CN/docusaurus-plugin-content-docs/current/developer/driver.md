@@ -72,7 +72,7 @@ ops.line_to(50, 50)       # 不用气助切割一条线
 
 ## 驱动程序实现
 
-所有驱动程序必须继承自 `rayforge.machine.drivers.Driver`。
+所有驱动程序必须继承自 `rayforge.machine.driver.driver.Driver`。
 
 ```python
 from rayforge.machine.driver.driver import Driver

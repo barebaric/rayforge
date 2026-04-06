@@ -11,9 +11,21 @@ css = """
     margin-bottom: 6px;
 }
 
+.expander-header {
+    border-radius: 12px;
+}
+
 .expander-header:hover {
-    border-radius: 12px 12px 0 0;
     background-color: shade(@headerbar_bg_color, 0.95);
+}
+
+.expander-card.expanded .expander-header {
+    border-radius: 12px 12px 0 0;
+    border-bottom: 1px solid @borders;
+}
+
+.expander-card.expanded .expander-header:hover {
+    border-radius: 12px 12px 0 0;
 }
 
 .expander-title, .expander-subtitle {
@@ -32,21 +44,8 @@ css = """
     transform: rotate(90deg);
 }
 
-.expander-card.expanded .expander-header {
-    border-bottom: 1px solid @borders;
-}
-
 .expander-card>:nth-child(2) {
     border-radius: 0;
-}
-
-.expander-card .darkbutton {
-    background-color: shade(@card_bg_color, 0.98);
-    border-radius: 0 0 12px 12px;
-}
-
-.expander-card .darkbutton:hover {
-    background-color: shade(@card_bg_color, 0.95);
 }
 """
 
@@ -85,7 +84,6 @@ class Expander(Gtk.Box):
         )
         self.header.append(header_content_box)
 
-        # Header content
         label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         label_box.set_hexpand(True)
         header_content_box.append(label_box)
@@ -97,6 +95,11 @@ class Expander(Gtk.Box):
         self.subtitle_label = Gtk.Label(xalign=0)
         self.subtitle_label.add_css_class("expander-subtitle")
         label_box.append(self.subtitle_label)
+
+        self.suffix_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, spacing=6
+        )
+        header_content_box.append(self.suffix_box)
 
         self.arrow = get_icon("chevron-right-symbolic")
         self.arrow.add_css_class("expander-arrow")
@@ -119,6 +122,10 @@ class Expander(Gtk.Box):
     def set_subtitle(self, subtitle: str):
         self.subtitle_label.set_text(subtitle)
 
+    def add_suffix(self, widget: Gtk.Widget):
+        """Add a widget to the suffix area (between title and arrow)."""
+        self.suffix_box.append(widget)
+
     def set_expanded(self, expanded: bool):
         self.revealer.set_reveal_child(expanded)
 
@@ -140,3 +147,23 @@ class Expander(Gtk.Box):
             self.remove_css_class("expanded")
             self.arrow.remove_css_class("accent")
             self.arrow.remove_css_class("rotated")
+
+
+class ExpanderWithButton(Expander):
+    """
+    An Expander that includes a "+" icon button in the header suffix area
+    and a content box for child widgets.
+    """
+
+    def __init__(self, button_label: str, **kwargs):
+        super().__init__(**kwargs)
+        self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_child(self.content_box)
+
+        self.add_button = Gtk.Button()
+        self.add_button.set_tooltip_text(button_label)
+        self.add_button.set_child(get_icon("add-symbolic"))
+        self.add_suffix(self.add_button)
+
+    def append_content(self, widget: Gtk.Widget):
+        self.content_box.append(widget)

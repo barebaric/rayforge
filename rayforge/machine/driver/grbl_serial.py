@@ -177,7 +177,18 @@ class GrblSerialDriver(Driver):
     ):
         """
         Handle status changes from the serial transport.
+
+        Suppresses the transport-level CONNECTED signal to prevent
+        premature actions (like $G/$# sync) before the driver has
+        verified the device responds. The driver emits its own
+        CONNECTED in _connection_loop after handshake verification.
         """
+        if status == TransportStatus.CONNECTED:
+            logger.debug(
+                "Suppressing transport-level CONNECTED. Driver will "
+                "emit CONNECTED after handshake verification."
+            )
+            return
         logger.debug(
             f"Serial transport status changed: {status}, message: {message}"
         )
@@ -287,6 +298,7 @@ class GrblSerialDriver(Driver):
         self._on_command_done = None
         self._rx_buffer_count = 0
         self._job_exception = None
+        self._status_buffer = bytearray()
         self._sent_gcode_queue = asyncio.Queue()
         self._buffer_has_space = asyncio.Event()
         self._buffer_has_space.set()
@@ -296,7 +308,6 @@ class GrblSerialDriver(Driver):
     async def _connection_loop(self) -> None:
         logger.debug("Entering _connection_loop.")
         while self.keep_running:
-            self._update_connection_status(TransportStatus.CONNECTING)
             logger.debug("Attempting connection…")
 
             try:
@@ -344,10 +355,15 @@ class GrblSerialDriver(Driver):
 
                     async with self._cmd_lock:
                         try:
-                            logger.debug("Sending status poll")
                             payload = b"?"
+                            if self.serial_transport:
+                                self._rx_buffer_count += len(payload)
+                            buf_info = (
+                                f"buf: {self._rx_buffer_count}/"
+                                f"{GRBL_RX_BUFFER_SIZE}"
+                            )
                             logger.debug(
-                                f"TX: {payload!r}",
+                                f"TX: {payload!r} ({buf_info})",
                                 extra={
                                     "log_category": "RAW_IO",
                                     "direction": "TX",
@@ -369,7 +385,9 @@ class GrblSerialDriver(Driver):
 
             except (serial.serialutil.SerialException, OSError) as e:
                 logger.error(f"Connection error: {e}")
-                self._update_connection_status(TransportStatus.ERROR, str(e))
+                # Don't update status here - the transport's status_changed
+                # signal already sent ERROR status via
+                # on_serial_status_changed.
             except asyncio.CancelledError:
                 logger.info("Connection loop cancelled.")
                 break
@@ -400,56 +418,64 @@ class GrblSerialDriver(Driver):
         while self.keep_running:
             try:
                 request = await self._command_queue.get()
-                async with self._cmd_lock:
-                    if (
-                        not self.serial_transport
-                        or not self.serial_transport.is_connected
-                        or self._is_cancelled
-                    ):
-                        logger.warning(
-                            "Cannot process command: Serial transport not "
-                            "connected or job is cancelled. Dropping command."
+                if (
+                    not self.serial_transport
+                    or not self.serial_transport.is_connected
+                    or self._is_cancelled
+                ):
+                    logger.warning(
+                        "Cannot process command: Serial transport not "
+                        "connected or job is cancelled. Dropping command."
+                    )
+                    if not request.finished.is_set():
+                        task_mgr.loop.call_soon_threadsafe(
+                            request.finished.set
                         )
-                        # Mark as done so get() doesn't block forever
-                        if not request.finished.is_set():
-                            task_mgr.loop.call_soon_threadsafe(
-                                request.finished.set
-                            )
-                        self._command_queue.task_done()
-                        continue
+                    self._command_queue.task_done()
+                    continue
 
-                    self._current_request = request
-                    try:
-                        cmd_text = request.command.strip()
-                        if cmd_text:
-                            logger.info(
-                                cmd_text, extra=self._log_extra("USER_COMMAND")
-                            )
-                        logger.debug(
-                            f"TX: {request.payload!r}",
-                            extra={
-                                "log_category": "RAW_IO",
-                                "direction": "TX",
-                                "data": request.payload,
-                            },
+                self._current_request = request
+                try:
+                    cmd_text = request.command.strip()
+                    if cmd_text:
+                        logger.info(
+                            cmd_text, extra=self._log_extra("USER_COMMAND")
                         )
+                    logger.debug(
+                        f"TX: {request.payload!r}",
+                        extra={
+                            "log_category": "RAW_IO",
+                            "direction": "TX",
+                            "data": request.payload,
+                        },
+                    )
+
+                    async with self._cmd_lock:
+                        if (
+                            not self.serial_transport
+                            or not self.serial_transport.is_connected
+                        ):
+                            raise ConnectionError(
+                                "Serial transport disconnected during command."
+                            )
                         if self.serial_transport:
                             await self.serial_transport.send(request.payload)
 
-                        # Wait for the response to arrive. The timeout is
-                        # handled by the caller (_execute_command). This
-                        # processor just waits for completion.
-                        await request.finished.wait()
+                    # Wait for the response to arrive outside the lock
+                    # so that status polling and gcode streaming are not
+                    # blocked. The timeout is handled by the caller
+                    # (_execute_command).
+                    await request.finished.wait()
 
-                    except ConnectionError as e:
-                        logger.error(f"Connection error during command: {e}")
-                        self._update_connection_status(
-                            TransportStatus.ERROR,
-                            str(e),
-                        )
-                    finally:
-                        self._current_request = None
-                        self._command_queue.task_done()
+                except ConnectionError as e:
+                    logger.error(f"Connection error during command: {e}")
+                    self._update_connection_status(
+                        TransportStatus.ERROR,
+                        str(e),
+                    )
+                finally:
+                    self._current_request = None
+                    self._command_queue.task_done()
 
                 # Release lock briefly to allow status polling
                 await asyncio.sleep(0.1)
@@ -561,14 +587,6 @@ class GrblSerialDriver(Driver):
                             "Serial transport disconnected during job."
                         )
 
-                    logger.debug(
-                        f"TX: {command_bytes!r}",
-                        extra={
-                            "log_category": "RAW_IO",
-                            "direction": "TX",
-                            "data": command_bytes,
-                        },
-                    )
                     logger.info(line, extra=self._log_extra("USER_COMMAND"))
 
                     # Add to queue BEFORE sending.
@@ -577,6 +595,17 @@ class GrblSerialDriver(Driver):
                     # an empty queue and drops the 'ok', causing a deadlock.
                     self._rx_buffer_count += command_len
                     self._sent_gcode_queue.put_nowait((command_len, op_index))
+                    buf_info = (
+                        f"buf: {self._rx_buffer_count}/{GRBL_RX_BUFFER_SIZE}"
+                    )
+                    logger.debug(
+                        f"TX: {command_bytes!r} ({buf_info})",
+                        extra={
+                            "log_category": "RAW_IO",
+                            "direction": "TX",
+                            "data": command_bytes,
+                        },
+                    )
                     await self.serial_transport.send(command_bytes)
 
                 # Yield to the event loop to allow status polling (and other
@@ -838,6 +867,24 @@ class GrblSerialDriver(Driver):
 
         await self._execute_command(cmd)
 
+    async def set_focus_power(self, head: "Laser", percent: float) -> None:
+        """
+        Sets the laser power for focus mode using the focus_laser_on command.
+
+        Args:
+            head: The laser head to control.
+            percent: Power percentage (0.0-1.0). 0 disables power.
+        """
+        dialect = self._machine.dialect
+
+        if percent <= 0:
+            cmd = dialect.laser_off
+        else:
+            power_abs = percent * head.max_power
+            cmd = dialect.focus_laser_on.format(power=power_abs)
+
+        await self._execute_command(cmd)
+
     def can_jog(self, axis: Optional[Axis] = None) -> bool:
         """GRBL supports jogging for all axes."""
         return True
@@ -997,11 +1044,11 @@ class GrblSerialDriver(Driver):
         Primary handler for incoming serial data. Decodes, buffers, and
         delegates processing of complete messages.
         """
+        buf_info = f"buf: {self._rx_buffer_count}/{GRBL_RX_BUFFER_SIZE}"
         logger.debug(
-            f"RX: {data!r}",
+            f"RX: {data!r} ({buf_info})",
             extra={"log_category": "RAW_IO", "direction": "RX", "data": data},
         )
-        self._handshake_received.set()
         # Buffer bytes directly to avoid decoding errors on split characters
         self._status_buffer.extend(data)
 
@@ -1030,6 +1077,7 @@ class GrblSerialDriver(Driver):
 
         # Status reports are frequent and start with '<'
         if stripped_message.startswith("<") and stripped_message.endswith(">"):
+            self._handshake_received.set()
             self._handle_status_report(stripped_message)
         else:
             # Handle other responses line by line (e.g., 'ok', 'error:')
@@ -1042,8 +1090,15 @@ class GrblSerialDriver(Driver):
         Parses a GRBL status report (e.g., '<Idle|WPos:0,0,0|...>')
         and updates the device state.
         """
-        logger.debug(f"Processing received status message: {report}")
+        self._rx_buffer_count -= 1
+        if self._rx_buffer_count < 0:
+            self._rx_buffer_count = 0
+        buf_info = f"buf: {self._rx_buffer_count}/{GRBL_RX_BUFFER_SIZE}"
+        logger.debug(f"Processing status report: {report} ({buf_info})")
         logger.info(report, extra=self._log_extra("STATUS_POLL"))
+
+        task_mgr.loop.call_soon_threadsafe(self._buffer_has_space.set)
+
         state = parse_state(
             report, self.state, lambda message: logger.info(message)
         )
@@ -1134,6 +1189,10 @@ class GrblSerialDriver(Driver):
                         op_index,
                     ) = self._sent_gcode_queue.get_nowait()
                     self._rx_buffer_count -= command_len
+                    logger.debug(
+                        f"Processed 'ok', freed {command_len} bytes "
+                        f"(buf: {self._rx_buffer_count}/{GRBL_RX_BUFFER_SIZE})"
+                    )
                     self._sent_gcode_queue.task_done()
                     task_mgr.loop.call_soon_threadsafe(
                         self._buffer_has_space.set

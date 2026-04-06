@@ -1,0 +1,28 @@
+uid: lead
+name:
+  default: Lead
+  de: Blei
+  es: Plomo
+  fr: Plomb
+  pt: Chumbo
+  uk: Свинець
+  zh_CN: 铅
+description:
+  default: Dense, soft, bluish-gray metal
+  de: Dichtes, weiches, bläulich-graues Metall
+  es: Metal denso, blando, de color gris azulado
+  fr: Métal dense, mou, de couleur gris bleuté
+  pt: Metal denso, macio, de cor cinza azulado
+  uk: Густина, м'який, блакитно-сірий метал
+  zh_CN: 致密、柔软的蓝灰色金属
+category:
+  default: Metal
+  de: Metall
+  es: Metal
+  fr: Métal
+  pt: Metal
+  uk: Метал
+  zh_CN: 金属
+appearance:
+  color: "#434B4D"
+  pattern: metallic

@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import math
 from ..geo import linearize as geo_linearize
+from ..geo.types import Point3D
 
 
 @dataclass
@@ -37,15 +38,13 @@ class Command:
 
     def __init__(
         self,
-        end: Optional[Tuple[float, float, float]] = None,
+        end: Optional[Point3D] = None,
         state: Optional["State"] = None,
     ) -> None:
-        # x/y/z of the end position. Is None for state commands
-        self.end: Optional[Tuple[float, float, float]] = end
+        self.end: Optional[Point3D] = end
         self.state: Optional["State"] = (
             state  # Intended state during execution
         )
-        self._state_ref_for_pyreverse: "State"
 
     def __repr__(self) -> str:
         return f"<{super().__repr__()} {self.__dict__}"
@@ -53,9 +52,7 @@ class Command:
     def apply_to_state(self, state: "State") -> None:
         pass
 
-    def distance(
-        self, last_point: Optional[Tuple[float, float, float]]
-    ) -> float:
+    def distance(self, last_point: Optional[Point3D]) -> float:
         """Calculates the 2D distance covered by this command."""
         return 0.0
 
@@ -81,7 +78,7 @@ class Command:
 
 
 class MovingCommand(Command, ABC):
-    end: Tuple[float, float, float]  # type: ignore[reportRedeclaration]
+    end: Point3D  # type: ignore[reportRedeclaration]
 
     def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
@@ -89,9 +86,7 @@ class MovingCommand(Command, ABC):
         return d
 
     @abstractmethod
-    def linearize(
-        self, start_point: Tuple[float, float, float]
-    ) -> List[Command]:
+    def linearize(self, start_point: Point3D) -> List[Command]:
         """
         Returns a list of simpler commands (e.g., LineToCommand) that
         approximate this command. For simple commands, it may return a list
@@ -99,9 +94,7 @@ class MovingCommand(Command, ABC):
         """
         pass
 
-    def distance(
-        self, last_point: Optional[Tuple[float, float, float]]
-    ) -> float:
+    def distance(self, last_point: Optional[Point3D]) -> float:
         """Calculates the 2D distance of the move."""
         # Use the command's own start_point if it has one (duck typing),
         # otherwise use the endpoint of the last command.
@@ -115,9 +108,7 @@ class MoveToCommand(MovingCommand):
     def is_travel_command(self) -> bool:
         return True
 
-    def linearize(
-        self, start_point: Tuple[float, float, float]
-    ) -> List[Command]:
+    def linearize(self, start_point: Point3D) -> List[Command]:
         return [self]
 
 
@@ -125,16 +116,14 @@ class LineToCommand(MovingCommand):
     def is_cutting_command(self) -> bool:
         return True
 
-    def linearize(
-        self, start_point: Tuple[float, float, float]
-    ) -> List[Command]:
+    def linearize(self, start_point: Point3D) -> List[Command]:
         return [self]
 
 
 class ArcToCommand(MovingCommand):
     def __init__(
         self,
-        end: Tuple[float, float, float],
+        end: Point3D,
         center_offset: Tuple[float, float],
         clockwise: bool,
     ) -> None:
@@ -151,9 +140,7 @@ class ArcToCommand(MovingCommand):
         d["clockwise"] = self.clockwise
         return d
 
-    def linearize(
-        self, start_point: Tuple[float, float, float]
-    ) -> List[Command]:
+    def linearize(self, start_point: Point3D) -> List[Command]:
         """Approximates the arc with a series of LineToCommands."""
         segments = geo_linearize.linearize_arc(self, start_point)
         new_cmds = []
@@ -165,8 +152,8 @@ class ArcToCommand(MovingCommand):
 
     def reverse_geometry(
         self,
-        original_start: Tuple[float, float, float],
-        original_end: Tuple[float, float, float],
+        original_start: Point3D,
+        original_end: Point3D,
     ) -> None:
         """
         Recalculates the center offset and direction for when this arc
@@ -388,6 +375,17 @@ class OpsSectionEndCommand(Command):
         return d
 
 
+class DwellCommand(Command):
+    def __init__(self, duration_ms: float) -> None:
+        super().__init__()
+        self.duration_ms: float = duration_ms
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["duration_ms"] = self.duration_ms
+        return d
+
+
 class ScanLinePowerCommand(MovingCommand):
     """
     A specialized command for raster engraving that encodes a line segment
@@ -401,7 +399,7 @@ class ScanLinePowerCommand(MovingCommand):
 
     def __init__(
         self,
-        end: Tuple[float, float, float],
+        end: Point3D,
         power_values: bytearray,
     ) -> None:
         super().__init__(end)
@@ -423,9 +421,7 @@ class ScanLinePowerCommand(MovingCommand):
         d["power_values"] = list(self.power_values)
         return d
 
-    def linearize(
-        self, start_point: Tuple[float, float, float]
-    ) -> List[Command]:
+    def linearize(self, start_point: Point3D) -> List[Command]:
         """
         Deconstructs the scan line into an efficient sequence of SetPower and
         LineTo commands by grouping consecutive pixels of the same power.
@@ -463,7 +459,7 @@ class ScanLinePowerCommand(MovingCommand):
         return commands
 
     def split_by_power(
-        self, start_point: Tuple[float, float, float], min_power: int
+        self, start_point: Point3D, min_power: int
     ) -> List[Command]:
         """
         Splits the scanline into multiple segments
@@ -524,6 +520,7 @@ COMMAND_TYPE_MAP = {
     LineToCommand: 2,
     ArcToCommand: 3,
     ScanLinePowerCommand: 4,
+    DwellCommand: 5,
     SetPowerCommand: 10,
     SetCutSpeedCommand: 11,
     SetTravelSpeedCommand: 12,

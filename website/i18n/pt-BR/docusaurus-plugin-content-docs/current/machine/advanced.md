@@ -22,26 +22,27 @@ Quando habilitado, o Rayforge limpa automaticamente qualquer estado de alarme ao
 - **Habilite se**: Sua máquina frequentemente inicia em estado de alarme
 - **Desabilite se**: Você quer investigar alarmes manualmente antes de limpar
 
-## Inverter Eixos
+### Permitir Homing de Eixo Único
 
-Estas configurações invertem a direção dos movimentos dos eixos.
+Quando habilitado, você pode fazer homing de eixos individuais independentemente (X, Y ou Z) em vez de requerer todos os eixos juntos. Isso é útil para máquinas onde um eixo já pode estar posicionado corretamente.
 
-### Inverter Eixo X
+## Configurações de Arcos
 
-Inverte a direção do eixo X. Quando habilitado, X positivo move para a esquerda em vez de direita.
+Configurações para controlar como caminhos curvos são convertidos em movimentos de G-code.
 
-### Inverter Eixo Y
+### Suportar Arcos
 
-Inverte a direção do eixo Y. Quando habilitado, Y positivo move para baixo em vez de cima.
+Quando habilitado, o Rayforge gera comandos de arco (G2/G3) para caminhos curvos em vez de dividi-los em muitos movimentos lineares pequenos. Isso produz G-code mais compacto e movimento mais suave na maioria dos controladores.
 
-:::info
-Inverter eixos é útil quando:
-- O sistema de coordenadas da sua máquina não corresponde ao comportamento esperado
-- Você conectou seus motores ao contrário
-- Você quer corresponder ao comportamento de outra máquina
-:::
+Quando desabilitado, todas as curvas são convertidas em segmentos lineares (comandos G1), o que fornece compatibilidade máxima com controladores que não suportam arcos.
+
+### Tolerância de Arco
+
+Esta configuração controla o desvio máximo permitido ao ajustar arcos a caminhos curvos, especificado em milímetros. Um valor menor produz arcos mais precisos mas pode requerer mais comandos de arco. Um valor maior permite mais desvio mas gera menos comandos.
+
+Valores típicos variam de 0.01mm para trabalho de precisão a 0.1mm para processamento mais rápido.
 
 ## Veja Também
 
-- [Configurações de Hardware](hardware) - Configuração de origem dos eixos
-- [Configurações do Dispositivo](device) - Configurações de direção de eixos GRBL
+- [Configurações de Hardware](hardware) - Configuração de origem dos eixos e inversão
+- [Configurações do Dispositivo](device) - Configurações específicas de GRBL

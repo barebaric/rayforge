@@ -5,8 +5,6 @@ authors: rayforge_team
 tags: [multi-laser, operations, workflow]
 ---
 
-![相机叠加](/images/camera-overlay.png)
-
 Rayforge 最强大的功能之一是能够在单个作业中为不同操作分配不同的激光器。这为多工具设置和专业化工作流程开启了令人兴奋的可能性。
 
 <!-- truncate -->

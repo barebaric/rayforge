@@ -8,6 +8,7 @@ from typing import cast
 from rayforge.core.geo.geometry import Geometry
 from rayforge.core.ops import (
     Ops,
+    OpsSection,
     MoveToCommand,
     LineToCommand,
     ArcToCommand,
@@ -19,6 +20,8 @@ from rayforge.core.ops import (
     State,
     MovingCommand,
     SectionType,
+    OpsSectionStartCommand,
+    OpsSectionEndCommand,
     ScanLinePowerCommand,
     SetLaserCommand,
 )
@@ -494,7 +497,7 @@ def test_clip_fully_inside(clip_rect):
     ops = Ops()
     ops.move_to(10, 10, -1)
     ops.line_to(90, 90, -1)
-    clipped_ops = ops.clip(clip_rect)
+    clipped_ops = ops.clip_rect(clip_rect)
     assert len(clipped_ops.commands) == 2
     assert isinstance(clipped_ops.commands[0], MoveToCommand)
     assert isinstance(clipped_ops.commands[1], LineToCommand)
@@ -506,7 +509,7 @@ def test_clip_fully_outside(clip_rect):
     ops = Ops()
     ops.move_to(110, 110, 0)
     ops.line_to(120, 120, 0)
-    clipped_ops = ops.clip(clip_rect)
+    clipped_ops = ops.clip_rect(clip_rect)
     assert len(clipped_ops.commands) == 0
 
 
@@ -516,7 +519,7 @@ def test_clip_with_arc():
     ops.move_to(0, 50)
     ops.arc_to(100, 50, i=50, j=0, clockwise=False)  # Semicircle
     clip_rect = (40.0, 0.0, 60.0, 100.0)  # A vertical slice through the middle
-    clipped_ops = ops.clip(clip_rect)
+    clipped_ops = ops.clip_rect(clip_rect)
 
     # Check that there are drawing commands left
     drawing_cmds = [c for c in clipped_ops if c.is_cutting_command()]
@@ -536,7 +539,7 @@ def test_clip_scanlinepowercommand_start_outside():
     ops.move_to(0, 50, 10)
     ops.scan_to(100, 50, 10, bytearray(range(100)))
     clip_rect = (50, 0, 150, 100)
-    clipped_ops = ops.clip(clip_rect)
+    clipped_ops = ops.clip_rect(clip_rect)
 
     assert len(clipped_ops.commands) == 2  # MoveTo, ScanLinePowerCommand
     assert isinstance(clipped_ops.commands[0], MoveToCommand)
@@ -563,7 +566,7 @@ def test_clip_scanlinepowercommand_crossing_with_z_interp():
     ops.move_to(-50, 50, 0)
     ops.scan_to(150, 50, 200, bytearray(range(200)))
     clip_rect = (0, 0, 100, 100)
-    clipped_ops = ops.clip(clip_rect)
+    clipped_ops = ops.clip_rect(clip_rect)
 
     assert len(clipped_ops.commands) == 2
     clipped_cmd = cast(ScanLinePowerCommand, clipped_ops.commands[1])
@@ -593,7 +596,7 @@ def test_clip_scanlinepowercommand_fully_outside():
     ops.move_to(200, 50, 10)
     ops.scan_to(300, 50, 10, bytearray(range(100)))
     clip_rect = (0, 0, 100, 100)
-    clipped_ops = ops.clip(clip_rect)
+    clipped_ops = ops.clip_rect(clip_rect)
     assert len(clipped_ops.commands) == 0
 
 
@@ -633,6 +636,252 @@ def test_subtract_regions_with_scanline():
     assert isinstance(scan2, ScanLinePowerCommand)
     assert scan2.end == pytest.approx((100, 50, 0))
     assert len(scan2.power_values) == 40
+
+
+def test_clip_to_regions_basic():
+    ops = Ops()
+    ops.move_to(0, 50, -5)
+    ops.line_to(100, 50, 5)
+    region = [(40.0, 45.0), (60.0, 45.0), (60.0, 55.0), (40.0, 55.0)]
+
+    ops.clip_to_regions([region])
+
+    assert len(ops.commands) == 2
+    assert ops.commands[0].end == pytest.approx((40.0, 50.0, -1.0))
+    assert ops.commands[1].end == pytest.approx((60.0, 50.0, 1.0))
+
+
+def test_clip_to_regions_fully_outside():
+    ops = Ops()
+    ops.move_to(0, 50, 0)
+    ops.line_to(30, 50, 0)
+    region = [(40.0, 45.0), (60.0, 45.0), (60.0, 55.0), (40.0, 55.0)]
+
+    ops.clip_to_regions([region])
+
+    assert len(ops.commands) == 0
+
+
+def test_clip_to_regions_fully_inside():
+    ops = Ops()
+    ops.move_to(45, 50, 0)
+    ops.line_to(55, 50, 0)
+    region = [(40.0, 45.0), (60.0, 45.0), (60.0, 55.0), (40.0, 55.0)]
+
+    ops.clip_to_regions([region])
+
+    assert len(ops.commands) == 2
+    assert ops.commands[1].end == pytest.approx((55, 50, 0))
+
+
+def test_clip_to_regions_multiple_regions():
+    ops = Ops()
+    ops.move_to(0, 50, 0)
+    ops.line_to(100, 50, 0)
+    region1 = [(20.0, 45.0), (30.0, 45.0), (30.0, 55.0), (20.0, 55.0)]
+    region2 = [(70.0, 45.0), (80.0, 45.0), (80.0, 55.0), (70.0, 55.0)]
+
+    ops.clip_to_regions([region1, region2])
+
+    assert len(ops.commands) == 4
+    assert ops.commands[0].end == pytest.approx((20.0, 50.0, 0.0))
+    assert ops.commands[1].end == pytest.approx((30.0, 50.0, 0.0))
+    assert ops.commands[2].end == pytest.approx((70.0, 50.0, 0.0))
+    assert ops.commands[3].end == pytest.approx((80.0, 50.0, 0.0))
+
+
+def test_clip_to_regions_with_scanline():
+    ops = Ops()
+    ops.move_to(0, 50, 0)
+    ops.scan_to(100, 50, 0, bytearray([100] * 100))
+    region = [(40.0, 40.0), (60.0, 40.0), (60.0, 60.0), (40.0, 60.0)]
+
+    ops.clip_to_regions([region])
+
+    assert len(ops.commands) == 2
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert ops.commands[0].end == pytest.approx((40, 50, 0))
+
+    scan = cast(ScanLinePowerCommand, ops.commands[1])
+    assert isinstance(scan, ScanLinePowerCommand)
+    assert scan.end == pytest.approx((60, 50, 0))
+    assert len(scan.power_values) == 20
+
+
+def test_clip_to_regions_empty_regions():
+    ops = Ops()
+    ops.move_to(0, 50, 0)
+    ops.line_to(100, 50, 0)
+
+    original_len = len(ops.commands)
+    ops.clip_to_regions([])
+
+    assert len(ops.commands) == original_len
+
+
+def test_clip_to_regions_preserves_state_commands():
+    ops = Ops()
+    ops.set_power(0.8)
+    ops.move_to(0, 50, 0)
+    ops.line_to(100, 50, 0)
+    region = [(40.0, 45.0), (60.0, 45.0), (60.0, 55.0), (40.0, 55.0)]
+
+    ops.clip_to_regions([region])
+
+    assert len(ops.commands) == 3
+    assert isinstance(ops.commands[0], SetPowerCommand)
+    assert isinstance(ops.commands[1], MoveToCommand)
+    assert isinstance(ops.commands[2], LineToCommand)
+
+
+def create_circle_polygon(cx, cy, radius, num_segments=32):
+    points = []
+    for i in range(num_segments):
+        angle = 2 * math.pi * i / num_segments
+        x = cx + radius * math.cos(angle)
+        y = cy + radius * math.sin(angle)
+        points.append((x, y))
+    return points
+
+
+class TestClipToCircleRegions:
+    """Tests for clipping Ops to circular regions."""
+
+    def test_clip_to_circle_basic(self):
+        ops = Ops()
+        ops.move_to(0, 50, -5)
+        ops.line_to(100, 50, 5)
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) == 2
+        assert ops.commands[0].end is not None
+        assert ops.commands[0].end[0] == pytest.approx(30.0, abs=0.5)
+        assert ops.commands[0].end[1] == pytest.approx(50.0)
+        assert ops.commands[1].end is not None
+        assert ops.commands[1].end[0] == pytest.approx(70.0, abs=0.5)
+        assert ops.commands[1].end[1] == pytest.approx(50.0)
+
+    def test_clip_to_circle_fully_outside(self):
+        ops = Ops()
+        ops.move_to(0, 50, 0)
+        ops.line_to(25, 50, 0)
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) == 0
+
+    def test_clip_to_circle_fully_inside(self):
+        ops = Ops()
+        ops.move_to(45, 50, 0)
+        ops.line_to(55, 50, 0)
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) == 2
+        assert ops.commands[1].end == pytest.approx((55, 50, 0))
+
+    def test_clip_to_multiple_circles(self):
+        ops = Ops()
+        ops.move_to(0, 50, 0)
+        ops.line_to(100, 50, 0)
+        circle1 = create_circle_polygon(25, 50, 10)
+        circle2 = create_circle_polygon(75, 50, 10)
+
+        ops.clip_to_regions([circle1, circle2])
+
+        assert len(ops.commands) == 4
+        assert ops.commands[0].end is not None
+        assert ops.commands[0].end[0] == pytest.approx(15.0, abs=0.5)
+        assert ops.commands[1].end is not None
+        assert ops.commands[1].end[0] == pytest.approx(35.0, abs=0.5)
+        assert ops.commands[2].end is not None
+        assert ops.commands[2].end[0] == pytest.approx(65.0, abs=0.5)
+        assert ops.commands[3].end is not None
+        assert ops.commands[3].end[0] == pytest.approx(85.0, abs=0.5)
+
+    def test_clip_to_circle_vertical_line(self):
+        ops = Ops()
+        ops.move_to(50, 0, 0)
+        ops.line_to(50, 100, 0)
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) == 2
+        assert ops.commands[0].end is not None
+        assert ops.commands[0].end[1] == pytest.approx(30.0, abs=0.5)
+        assert ops.commands[1].end is not None
+        assert ops.commands[1].end[1] == pytest.approx(70.0, abs=0.5)
+
+    def test_clip_to_circle_diagonal_line(self):
+        ops = Ops()
+        ops.move_to(0, 0, 0)
+        ops.line_to(100, 100, 0)
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) == 2
+        assert ops.commands[0].end is not None
+        start_x = ops.commands[0].end[0]
+        assert ops.commands[1].end is not None
+        end_x = ops.commands[1].end[0]
+        assert start_x == pytest.approx(50 - 20 * math.sqrt(2) / 2, abs=0.5)
+        assert end_x == pytest.approx(50 + 20 * math.sqrt(2) / 2, abs=0.5)
+
+    def test_clip_to_circle_with_scanline(self):
+        ops = Ops()
+        ops.move_to(0, 50, 0)
+        ops.scan_to(100, 50, 0, bytearray([100] * 100))
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) == 2
+        assert isinstance(ops.commands[0], MoveToCommand)
+        assert ops.commands[0].end is not None
+        assert ops.commands[0].end[0] == pytest.approx(30.0, abs=0.5)
+
+        scan = cast(ScanLinePowerCommand, ops.commands[1])
+        assert isinstance(scan, ScanLinePowerCommand)
+        assert scan.end is not None
+        assert scan.end[0] == pytest.approx(70.0, abs=0.5)
+        assert len(scan.power_values) == pytest.approx(40, abs=2)
+
+    def test_clip_to_circle_with_arc(self):
+        ops = Ops()
+        ops.move_to(30, 30)
+        ops.arc_to(70, 30, i=20, j=0, clockwise=True)
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) > 0
+        drawing_cmds = [c for c in ops if c.is_cutting_command()]
+        assert len(drawing_cmds) > 0
+        for cmd in ops.commands:
+            if isinstance(cmd, MovingCommand) and cmd.end is not None:
+                x, y, z = cmd.end
+                dist = math.hypot(x - 50, y - 50)
+                assert dist <= 20.5
+
+    def test_clip_to_circle_preserves_state_commands(self):
+        ops = Ops()
+        ops.set_power(0.8)
+        ops.move_to(0, 50, 0)
+        ops.line_to(100, 50, 0)
+        circle = create_circle_polygon(50, 50, 20)
+
+        ops.clip_to_regions([circle])
+
+        assert len(ops.commands) == 3
+        assert isinstance(ops.commands[0], SetPowerCommand)
+        assert isinstance(ops.commands[1], MoveToCommand)
+        assert isinstance(ops.commands[2], LineToCommand)
 
 
 def test_from_geometry():
@@ -882,6 +1131,68 @@ def test_clip_at_ignores_state_commands():
     assert ops.commands[4].end == pytest.approx((75, 0, 0))
     assert ops.commands[5].end == pytest.approx((85, 0, 0))
     assert ops.commands[6].end == pytest.approx((100, 0, 0))
+
+
+def test_clip_at_with_state_commands_in_subpath():
+    """
+    Tests that clip_at correctly handles state commands within a continuous
+    subpath. The geometry index and commands index must be properly aligned.
+    """
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(50, 0)  # Segment 1
+    ops.set_power(0.5)  # State command in the middle of subpath
+    ops.line_to(100, 0)  # Segment 2
+
+    # Clip on the second segment (after the state command)
+    # The clip point at x=75 is on segment 2, which is at geometry index 2
+    # but would be at commands index 3 if not handled correctly.
+    assert ops.clip_at(75, 0, 10.0) is True
+
+    # Expected: Move(0,0), Line(50,0), SetPower, Line(70,0), Move(80,0),
+    #           Line(100,0)
+    # The gap is centered at x=75 with width 10, so from 70 to 80.
+    # Segment 1 (0-50) is kept whole.
+    # Segment 2 (50-100) is split: 50-70 kept, 70-80 gap, 80-100 kept.
+    assert len(ops.commands) == 6
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert ops.commands[0].end == (0, 0, 0)
+    assert isinstance(ops.commands[1], LineToCommand)
+    assert ops.commands[1].end == pytest.approx((50.0, 0.0, 0.0))
+    assert isinstance(ops.commands[2], SetPowerCommand)
+    assert isinstance(ops.commands[3], LineToCommand)
+    assert ops.commands[3].end == pytest.approx((70.0, 0.0, 0.0))
+    assert isinstance(ops.commands[4], MoveToCommand)
+    assert ops.commands[4].end == pytest.approx((80.0, 0.0, 0.0))
+    assert isinstance(ops.commands[5], LineToCommand)
+    assert ops.commands[5].end == pytest.approx((100.0, 0.0, 0.0))
+
+
+def test_clip_at_end_of_segment_with_state_command():
+    """
+    Tests clipping at the exact endpoint of a segment when there's a state
+    command before the next segment.
+    """
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(100, 0)  # Segment 1
+    ops.set_power(0.8)  # State command
+    ops.line_to(200, 0)  # Segment 2
+
+    # Clip at the exact endpoint of segment 1 (x=100)
+    assert ops.clip_at(100, 0, 10.0) is True
+
+    # The clip should be centered at x=100, so gap from 95 to 105
+    # Segment 1 should end at 95, segment 2 should start at 105
+    # Note: State command at position 100 is inside the gap, so it's removed
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert ops.commands[0].end == (0, 0, 0)
+    assert isinstance(ops.commands[1], LineToCommand)
+    assert ops.commands[1].end == pytest.approx((95.0, 0.0, 0.0))
+    assert isinstance(ops.commands[2], MoveToCommand)
+    assert ops.commands[2].end == pytest.approx((105.0, 0.0, 0.0))
+    assert isinstance(ops.commands[3], LineToCommand)
+    assert ops.commands[3].end == pytest.approx((200.0, 0.0, 0.0))
 
 
 def test_dump(sample_ops):
@@ -1148,3 +1459,182 @@ def test_numpy_serialization_round_trip_empty():
     arrays = ops.to_numpy_arrays()
     reconstructed_ops = Ops.from_numpy_arrays(arrays)
     assert reconstructed_ops.is_empty()
+
+
+class TestIterSections:
+    """Tests for Ops.iter_sections()."""
+
+    def test_empty_ops(self):
+        ops = Ops()
+        assert list(ops.iter_sections()) == []
+
+    def test_no_sections(self):
+        ops = Ops()
+        ops.move_to(0, 0)
+        ops.line_to(10, 10)
+        ops.set_power(0.5)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 1
+        assert sections[0].section_type is None
+        assert sections[0].markers == []
+        assert len(sections[0].commands) == 3
+
+    def test_single_section(self):
+        ops = Ops()
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.move_to(0, 0)
+        ops.line_to(10, 10)
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 1
+        assert sections[0].section_type == SectionType.VECTOR_OUTLINE
+        assert len(sections[0].markers) == 2
+        assert isinstance(sections[0].markers[0], OpsSectionStartCommand)
+        assert isinstance(sections[0].markers[1], OpsSectionEndCommand)
+        assert len(sections[0].commands) == 2
+
+    def test_multiple_sections(self):
+        ops = Ops()
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.move_to(0, 0)
+        ops.line_to(10, 0)
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+
+        ops.ops_section_start(SectionType.RASTER_FILL, "wp-1")
+        ops.move_to(0, 5)
+        ops.line_to(10, 5)
+        ops.ops_section_end(SectionType.RASTER_FILL)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 2
+        assert sections[0].section_type == SectionType.VECTOR_OUTLINE
+        assert sections[1].section_type == SectionType.RASTER_FILL
+        assert len(sections[0].commands) == 2
+        assert len(sections[1].commands) == 2
+
+    def test_commands_before_section(self):
+        ops = Ops()
+        ops.set_power(0.8)
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.move_to(0, 0)
+        ops.line_to(10, 10)
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 2
+        assert sections[0].section_type is None
+        assert sections[0].markers == []
+        assert len(sections[0].commands) == 1
+        assert isinstance(sections[0].commands[0], SetPowerCommand)
+        assert sections[1].section_type == SectionType.VECTOR_OUTLINE
+
+    def test_commands_after_section(self):
+        ops = Ops()
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.move_to(0, 0)
+        ops.line_to(10, 10)
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+        ops.set_power(0.5)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 2
+        assert sections[0].section_type == SectionType.VECTOR_OUTLINE
+        assert sections[1].section_type is None
+        assert sections[1].markers == []
+        assert len(sections[1].commands) == 1
+        assert isinstance(sections[1].commands[0], SetPowerCommand)
+
+    def test_commands_between_sections(self):
+        ops = Ops()
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.move_to(0, 0)
+        ops.line_to(5, 0)
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+
+        ops.set_power(0.5)
+
+        ops.ops_section_start(SectionType.RASTER_FILL, "wp-1")
+        ops.move_to(0, 5)
+        ops.line_to(5, 5)
+        ops.ops_section_end(SectionType.RASTER_FILL)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 3
+        assert sections[0].section_type == SectionType.VECTOR_OUTLINE
+        assert sections[1].section_type is None
+        assert sections[1].markers == []
+        assert isinstance(sections[1].commands[0], SetPowerCommand)
+        assert sections[2].section_type == SectionType.RASTER_FILL
+
+    def test_section_markers_preserved(self):
+        ops = Ops()
+        start_cmd = OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, "wp-1")
+        end_cmd = OpsSectionEndCommand(SectionType.VECTOR_OUTLINE)
+        ops.commands.append(start_cmd)
+        ops.move_to(0, 0)
+        ops.line_to(10, 10)
+        ops.commands.append(end_cmd)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 1
+        assert sections[0].markers[0] is start_cmd
+        assert sections[0].markers[1] is end_cmd
+
+    def test_empty_section(self):
+        ops = Ops()
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 1
+        assert sections[0].section_type == SectionType.VECTOR_OUTLINE
+        assert sections[0].commands == []
+        assert len(sections[0].markers) == 2
+
+    def test_consecutive_empty_sections(self):
+        ops = Ops()
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+        ops.ops_section_start(SectionType.RASTER_FILL, "wp-1")
+        ops.ops_section_end(SectionType.RASTER_FILL)
+
+        sections = list(ops.iter_sections())
+        assert len(sections) == 2
+        assert sections[0].section_type == SectionType.VECTOR_OUTLINE
+        assert sections[0].commands == []
+        assert sections[1].section_type == SectionType.RASTER_FILL
+        assert sections[1].commands == []
+
+    def test_commands_reconstructed_correctly(self):
+        ops = Ops()
+        ops.set_power(1.0)
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
+        ops.move_to(0, 0)
+        ops.line_to(10, 10)
+        ops.line_to(20, 0)
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+        ops.set_power(0.5)
+
+        sections = list(ops.iter_sections())
+        reconstructed = []
+        for section in sections:
+            if section.section_type is not None:
+                reconstructed.append(section.markers[0])
+                reconstructed.extend(section.commands)
+                if len(section.markers) > 1:
+                    reconstructed.append(section.markers[1])
+            else:
+                reconstructed.extend(section.commands)
+
+        assert reconstructed == ops.commands
+
+    def test_returns_ops_section_namedtuple(self):
+        ops = Ops()
+        ops.move_to(0, 0)
+        section = list(ops.iter_sections())[0]
+        assert isinstance(section, OpsSection)
+        assert hasattr(section, "section_type")
+        assert hasattr(section, "markers")
+        assert hasattr(section, "commands")

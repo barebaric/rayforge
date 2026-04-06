@@ -55,7 +55,13 @@ class Workflow(DocItem):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Workflow":
         """Deserializes a dictionary into a Workflow instance."""
-        known_keys = {"uid", "type", "name", "matrix", "children"}
+        known_keys = {
+            "uid",
+            "type",
+            "name",
+            "matrix",
+            "children",
+        }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
         workflow = cls(name=data.get("name", "Workflow"))

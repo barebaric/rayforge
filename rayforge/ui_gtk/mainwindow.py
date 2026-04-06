@@ -12,9 +12,9 @@ from .. import __version__
 from .. import const
 from ..context import get_context
 from ..core.group import Group
+from ..core.asset_registry import asset_type_registry
 from ..core.item import DocItem
-from ..core.step import Step
-from ..core.stock import StockItem
+from ..core.step_registry import step_registry
 from ..core.undo import Command, HistoryManager
 from ..core.workpiece import WorkPiece
 from ..doceditor.editor import DocEditor
@@ -22,42 +22,48 @@ from ..machine.cmd import MachineCmd
 from ..machine.driver.driver import DeviceState, DeviceStatus, Axis
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.models.machine import Machine
+from ..machine.models.zone import check_ops_collides_with_zones
 from ..machine.transport import TransportStatus
-from ..package_mgr.update_cmd import UpdateCommand
+from ..addon_mgr.update_cmd import UpdateCommand
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from ..pipeline.encoder.gcode import MachineCodeOpMap
-from ..pipeline.steps import step_registry
-from ..shared.gcodeedit.viewer import GcodeViewer
 from ..shared.tasker import task_mgr
 from ..shared.util.time_format import format_hours_to_hm
 from ..usage import get_usage_tracker
 from .about import AboutDialog
-from .actions import ActionManager
+from .action_registry import action_registry
+from .actions import (
+    ActionManager,
+    SHORTCUTS,
+    action_extension_registry,
+)
 from .canvas import CanvasElement
 from .canvas2d.drag_drop_cmd import DragDropCmd
 from .canvas2d.elements.stock import StockElement
 from .canvas2d.simulator_cmd import SimulatorCmd
 from .canvas2d.surface import WorkSurface
-from .canvas3d import Canvas3D, initialized as canvas3d_initialized
+from .sim3d.canvas3d import Canvas3D, initialized as canvas3d_initialized
+from .sim3d.canvas3d.camera import ViewDirection
+from .sim3d.canvas3d.viewport import ViewportConfig
 from .doceditor import file_dialogs
-from .doceditor.asset_list_view import AssetListView
+from .doceditor.asset_row_factory import register_builtin_widgets
+from .doceditor.bottom_panel import BottomPanel
 from .doceditor.import_handler import start_interactive_import
 from .doceditor.item_properties import DocItemPropertiesWidget
 from .doceditor.layer_list import LayerListView
-from .doceditor.stock_properties_dialog import StockPropertiesDialog
-from .doceditor.sketch_properties import SketchPropertiesWidget
+from .doceditor.missing_features_dialog import MissingFeaturesDialog
+from .doceditor.property_providers import register_builtin_providers
 from .doceditor.workflow_view import WorkflowView
-from .machine.control_panel import MachineControlPanel
-from .machine.machine_selector import MachineSelector
+from .machine.machine_dropdown import MachineDropdown
 from .machine.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
 from .settings.settings_dialog import SettingsWindow
 from .project_cmd import ProjectCmd
-from .sketch_mode_cmd import SketchModeCmd
-from .sketcher.studio import SketchStudio
 from .shared.gtk import get_monitor_geometry
+from .shared.playback_overlay import PlaybackOverlay
+from .shared.progress_bar import ProgressBar
 from .shared.usage_consent_dialog import UsageConsentDialog
-from .task_bar import TaskBar
+from .shared.visibility_overlay import VisibilityOverlay
 from .toolbar import MainToolbar
 from .view_mode_cmd import ViewModeCmd
 
@@ -71,13 +77,11 @@ css = """
     box-shadow: none;
 }
 
-.statusbar {
-    border-radius: 5px;
-    padding-top: 6px;
-}
-
-.statusbar:hover {
-    background-color: alpha(@theme_fg_color, 0.1);
+.status-message-overlay {
+    background-color: @theme_bg_color;
+    border-radius: 6px;
+    padding: 4px 10px;
+    box-shadow: 0 2px 6px alpha(black, 0.15);
 }
 
 .in-header-menubar {
@@ -99,6 +103,11 @@ css = """
     color: @warning_color;
     font-weight: bold;
 }
+
+dropdown.machine-dropdown button {
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
 """
 
 
@@ -107,11 +116,11 @@ class MainWindow(Adw.ApplicationWindow):
         super().__init__(**kwargs)
         self.set_title(const.APP_NAME)
         self._current_machine: Optional[Machine] = None  # For signal handling
-        self._last_gcode_previewer_width = 350
-        self._last_control_panel_height = 200
-        self._live_3d_view_connected = False
+        self._last_bottom_panel_height = 200
+        self._saved_bottom_panel_visible = False
         self._old_doc = None  # Track previous document for signal reconnection
         self.canvas3d: Optional[Canvas3D] = None
+        self._is_syncing_3d = False
 
         # The ToastOverlay will wrap the main content box
         self.toast_overlay = Adw.ToastOverlay()
@@ -127,6 +136,9 @@ class MainWindow(Adw.ApplicationWindow):
         # Pipeline.
         context = get_context()
         self.doc_editor = DocEditor(task_mgr, context)
+        context.addon_mgr.addon_state_changed.connect(
+            self._on_addon_state_changed
+        )
         self.machine_cmd = MachineCmd(self.doc_editor)
         self.machine_cmd.job_started.connect(self._on_job_started)
 
@@ -139,7 +151,6 @@ class MainWindow(Adw.ApplicationWindow):
         # Instantiate UI-specific command handlers
         self.view_cmd = ViewModeCmd(self.doc_editor, self)
         self.simulator_cmd = SimulatorCmd(self)
-        self.sketch_mode_cmd = SketchModeCmd(self, self.doc_editor)
         self.project_cmd = ProjectCmd(self, self.doc_editor)
 
         # Add a key controller to handle ESC key for exiting simulation mode
@@ -179,7 +190,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.header_bar.set_title_widget(window_title)
 
         # Add machine selector to the header bar (right side)
-        self.machine_selector = MachineSelector()
+        self.machine_selector = MachineDropdown()
         self.header_bar.pack_end(self.machine_selector)
 
         # Create a vertical paned for main content and bottom control panel
@@ -188,9 +199,23 @@ class MainWindow(Adw.ApplicationWindow):
         self.vertical_paned.set_resize_end_child(False)
         self.vertical_paned.set_shrink_start_child(False)
         self.vertical_paned.set_shrink_end_child(False)
-        vbox.append(self.vertical_paned)
 
-        # Create a stack for switching between main view and sketch studio
+        self._status_overlay = Gtk.Overlay()
+        self._status_overlay.set_child(self.vertical_paned)
+
+        self._status_message_label = Gtk.Label(
+            halign=Gtk.Align.END,
+            valign=Gtk.Align.END,
+            margin_end=12,
+            margin_bottom=6,
+        )
+        self._status_message_label.add_css_class("status-message-overlay")
+        self._status_message_label.set_visible(False)
+        self._status_overlay.add_overlay(self._status_message_label)
+
+        vbox.append(self._status_overlay)
+
+        # Create a stack for switching between main view and addon pages
         self.main_stack = Gtk.Stack()
         self.main_stack.set_vexpand(True)
         self.main_stack.set_transition_type(
@@ -223,38 +248,12 @@ class MainWindow(Adw.ApplicationWindow):
             )
 
         # Determine initial machine dimensions for canvases.
-        # 2D canvas uses axis extents, 3D canvas uses workarea.
-        config = get_context().config
+        context = get_context()
+        config = context.config
         if config.machine:
-            width_mm, height_mm = config.machine.axis_extents
-            area = config.machine.work_area
-            canvas3d_w, canvas3d_h = float(area[2]), float(area[3])
-            y_down = config.machine.y_axis_down
-            x_right = config.machine.x_axis_right
-            reverse_x = config.machine.reverse_x_axis
-            reverse_y = config.machine.reverse_y_axis
+            viewport = ViewportConfig.from_machine(config.machine)
         else:
-            # Default to a square aspect ratio if no machine is configured
-            width_mm, height_mm = 100.0, 100.0
-            canvas3d_w, canvas3d_h = 100.0, 100.0
-            y_down, x_right, reverse_x, reverse_y = (
-                False,
-                False,
-                False,
-                False,
-            )
-
-        # Create the Sketch Studio, passing the machine dimensions.
-        self.sketch_studio = SketchStudio(
-            self, width_mm=width_mm, height_mm=height_mm
-        )
-        self.main_stack.add_named(self.sketch_studio, "sketch")
-        self.sketch_studio.finished.connect(
-            self.sketch_mode_cmd.on_sketch_finished
-        )
-        self.sketch_studio.cancelled.connect(
-            self.sketch_mode_cmd.on_sketch_cancelled
-        )
+            viewport = ViewportConfig.default()
 
         self.surface = WorkSurface(
             editor=self.doc_editor,
@@ -269,9 +268,19 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.drag_drop_cmd = self.drag_drop_cmd
         self.drag_drop_cmd.setup_drop_targets()
 
+        # Set up action registry before registering actions
+        action_registry.set_window(self)
+        self.action_registry = action_registry
+
         # Setup keyboard actions using the new ActionManager.
         self.action_manager = ActionManager(self)
         self.action_manager.register_actions()
+
+        # Let addons register their actions (must be after window is set)
+        context.plugin_mgr.hook.register_actions(
+            action_registry=action_registry
+        )
+
         shortcut_controller = Gtk.ShortcutController()
         self.action_manager.register_shortcuts(shortcut_controller)
         self.add_controller(shortcut_controller)
@@ -289,6 +298,7 @@ class MainWindow(Adw.ApplicationWindow):
         doc.updated.connect(self.on_doc_changed)
         doc.descendant_added.connect(self.on_doc_changed)
         doc.descendant_removed.connect(self.on_doc_changed)
+        doc.descendant_updated.connect(self.on_doc_changed)
         doc.active_layer_changed.connect(self._on_active_layer_changed)
         doc.history_manager.changed.connect(self.on_history_changed)
 
@@ -313,35 +323,22 @@ class MainWindow(Adw.ApplicationWindow):
             "notify::visible-child-name", self._on_view_stack_changed
         )
 
-        # Create the G-code previewer
-        self.gcode_previewer = GcodeViewer()
-        self.gcode_previewer.line_activated.connect(
-            self._on_gcode_line_activated
-        )
-
-        # Create a new paned for the left side of the window
-        self.left_content_pane = Gtk.Paned(
-            orientation=Gtk.Orientation.HORIZONTAL
-        )
-        # Put the previewer directly into the paned, NO REVEALER
-        self.left_content_pane.set_start_child(self.gcode_previewer)
-        self.left_content_pane.set_end_child(self.view_stack)
-        self.left_content_pane.set_resize_end_child(True)
-        self.left_content_pane.set_shrink_end_child(False)
-
-        # Connect to the position signal to remember the user's chosen width
-        self.left_content_pane.connect(
-            "notify::position", self._on_left_pane_position_changed
-        )
-        # Set the initial position to 0 to start "hidden"
-        self.left_content_pane.set_position(0)
-
-        # The new left-side paned is the start child of the main paned
-        self.paned.set_start_child(self.left_content_pane)
+        # The view stack is the start child of the main paned
+        self.paned.set_start_child(self.view_stack)
 
         # Wrap surface in an overlay to allow preview controls
         self.surface_overlay = Gtk.Overlay()
         self.surface_overlay.set_child(self.surface)
+        self._surface_vis_overlay = VisibilityOverlay(
+            show_workpiece=True,
+            show_camera=bool(
+                config.machine
+                and any(c.enabled for c in config.machine.cameras)
+            ),
+            show_tabs=True,
+            shortcuts=SHORTCUTS,
+        )
+        self.surface_overlay.add_overlay(self._surface_vis_overlay)
         self.view_stack.add_named(self.surface_overlay, "2d")
 
         # Add a click handler to unfocus when clicking the "dead space" of the
@@ -354,19 +351,7 @@ class MainWindow(Adw.ApplicationWindow):
         # self.surface_overlay.add_controller(canvas_click_gesture)
 
         if canvas3d_initialized:
-            extent_frame = None
-            if config.machine and config.machine.has_custom_work_area():
-                extent_frame = config.machine.get_visual_extent_frame()
-            self._create_canvas3d(
-                context,
-                width_mm=canvas3d_w,
-                depth_mm=canvas3d_h,
-                y_down=y_down,
-                x_right=x_right,
-                x_negative=reverse_x,
-                y_negative=reverse_y,
-                extent_frame=extent_frame,
-            )
+            self._create_canvas3d(context, viewport)
 
         # Undo/Redo buttons are now connected to the doc via actions.
         self.toolbar.undo_button.set_history_manager(
@@ -377,15 +362,15 @@ class MainWindow(Adw.ApplicationWindow):
         )
 
         # Create a vertical paned for the right pane content
-        right_pane_scrolled_window = Gtk.ScrolledWindow()
-        right_pane_scrolled_window.set_policy(
+        self._right_pane = Gtk.ScrolledWindow()
+        self._right_pane.set_policy(
             Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC
         )
-        right_pane_scrolled_window.set_vexpand(True)
-        right_pane_scrolled_window.set_margin_start(10)
-        right_pane_scrolled_window.set_margin_top(6)
-        right_pane_scrolled_window.set_margin_bottom(12)
-        self.paned.set_end_child(right_pane_scrolled_window)
+        self._right_pane.set_vexpand(True)
+        self._right_pane.set_margin_start(10)
+        self._right_pane.set_margin_top(6)
+        self._right_pane.set_margin_bottom(12)
+        self.paned.set_end_child(self._right_pane)
         self.paned.set_resize_end_child(False)
         self.paned.set_shrink_end_child(False)
 
@@ -393,19 +378,10 @@ class MainWindow(Adw.ApplicationWindow):
         # ScrolledWindow.
         right_pane_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         right_pane_box.set_size_request(400, -1)
-        right_pane_scrolled_window.set_child(right_pane_box)
+        self._right_pane.set_child(right_pane_box)
 
-        # Add the unified Asset list view
-        self.asset_list_view = AssetListView(self.doc_editor)
-        self.asset_list_view.set_margin_end(12)
-        right_pane_box.append(self.asset_list_view)
-        self.asset_list_view.add_sketch_clicked.connect(
-            self.sketch_mode_cmd.on_new_sketch
-        )
-        self.asset_list_view.add_stock_clicked.connect(self.on_add_child)
-        self.asset_list_view.sketch_activated.connect(
-            self.sketch_mode_cmd.on_sketch_definition_activated
-        )
+        # Register built-in asset row widgets before creating the view
+        register_builtin_widgets()
 
         # Add the Layer list view
         self.layer_list_view = LayerListView(self.doc_editor)
@@ -425,6 +401,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.workflowview.set_margin_end(12)
         right_pane_box.append(self.workflowview)
 
+        # Register built-in property providers before creating the widget
+        register_builtin_providers()
+
         # Add the WorkpiecePropertiesWidget
         self.item_props_widget = DocItemPropertiesWidget(
             editor=self.doc_editor
@@ -442,14 +421,6 @@ class MainWindow(Adw.ApplicationWindow):
         )
         right_pane_box.append(self.item_revealer)
 
-        # Add the SketchPropertiesWidget
-        self.sketch_props_widget = SketchPropertiesWidget(
-            editor=self.doc_editor
-        )
-        self.sketch_props_widget.set_margin_top(20)
-        self.sketch_props_widget.set_margin_end(12)
-        right_pane_box.append(self.sketch_props_widget)
-
         # Connect signals for item selection and actions
         self.surface.selection_changed.connect(self._on_selection_changed)
         self.surface.elements_deleted.connect(self.on_elements_deleted)
@@ -461,35 +432,64 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_surface_transform_initiated
         )
         self.surface.transform_end.connect(self._on_surface_transform_end)
+        self.surface.work_zero_requested.connect(self._on_work_zero_requested)
+        self.surface.click_to_zero_cancelled.connect(
+            self._on_click_to_zero_cancelled
+        )
 
-        # Connect new signal from WorkSurface for edit sketch requests
-        self.surface.edit_sketch_requested.connect(
-            self.sketch_mode_cmd.on_edit_sketch_requested
-        )
-        self.surface.edit_stock_item_requested.connect(
-            self._on_edit_stock_item_requested
-        )
+        # Connect new signal from WorkSurface for edit item requests
+        self.surface.edit_item_requested.connect(self._on_edit_item_requested)
 
         # Create the control panel
         config = get_context().config
-        self.control_panel = MachineControlPanel(
-            config.machine, self.machine_cmd
+        self.bottom_panel = BottomPanel(
+            config.machine, self.doc_editor, self.machine_cmd
         )
-        self.control_panel.set_size_request(
-            -1, self._last_control_panel_height
+        self.bottom_panel.set_size_request(-1, self._last_bottom_panel_height)
+        self.bottom_panel.set_visible(False)
+        self.vertical_paned.set_end_child(self.bottom_panel)
+
+        self.bottom_panel.gcode_viewer.line_activated.connect(
+            self._on_gcode_line_activated
         )
-        self.control_panel.set_visible(False)
-        self.vertical_paned.set_end_child(self.control_panel)
+
+        config = get_context().config
+        self.bottom_panel.apply_saved_state(
+            config.bottom_panel_tab_order,
+            config.bottom_panel_active_tab,
+        )
+
+        self.bottom_panel.tab_changed.connect(self._on_bottom_tab_changed)
+        self.bottom_panel.tab_order_changed.connect(
+            self._on_bottom_tab_order_changed
+        )
+
+        self.bottom_panel.click_to_zero_mode_changed.connect(
+            self._on_click_to_zero_mode_changed
+        )
+
+        self.bottom_panel.asset_browser.add_asset_requested.connect(
+            self.on_add_asset_requested
+        )
+        self.bottom_panel.asset_browser.asset_activated.connect(
+            self.on_asset_activated
+        )
+
+        self.bottom_panel.set_get_bounds_callback(self._get_selection_bounds)
 
         # Connect to position signal to remember user's chosen height
         self.vertical_paned.connect(
             "notify::position", self._on_vertical_pane_position_changed
         )
 
-        # Create and add the status monitor widget at the bottom of vbox
-        self.status_monitor = TaskBar(task_mgr)
-        self.status_monitor.log_requested.connect(self.on_status_bar_clicked)
-        vbox.append(self.status_monitor)
+        # Create and add the progress bar at the bottom of vbox
+        self.progress_bar = ProgressBar(task_mgr)
+        gesture = Gtk.GestureClick()
+        gesture.connect(
+            "pressed", lambda *args: self.on_status_bar_clicked(None)
+        )
+        self.progress_bar.add_controller(gesture)
+        vbox.append(self.progress_bar)
 
         self.doc_editor.pipeline.job_time_updated.connect(
             self._on_job_time_updated
@@ -507,6 +507,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Apply saved visibility state
         self._apply_saved_visibility_state()
+
+        # Notify addons that main window is ready
+        context.plugin_mgr.hook.main_window_ready(main_window=self)
 
         # Trigger startup tasks when window is shown
         self.connect("map", self._trigger_startup_tasks)
@@ -529,37 +532,179 @@ class MainWindow(Adw.ApplicationWindow):
             dialog = UsageConsentDialog(self)
             dialog.present()
 
-        # Trigger the non-blocking check for package updates
+        # Trigger the non-blocking check for addon updates
         self.update_cmd.check_for_updates_on_startup()
+
+    def _on_click_to_zero_mode_changed(self, sender, *, active: bool):
+        """Handle click-to-zero mode toggle from control panel."""
+        self.surface.set_click_to_zero_mode(active)
+
+    def _on_work_zero_requested(self, sender, *, x: float, y: float):
+        """Handle work zero request from canvas click."""
+        config = get_context().config
+        if not config.machine:
+            return
+
+        async def set_zero_func(ctx):
+            if config.machine:
+                await config.machine.set_work_origin(x, y, 0.0)
+
+        task_mgr.add_coroutine(set_zero_func)
+        self.bottom_panel.set_click_to_zero_mode(False)
+
+    def _on_click_to_zero_cancelled(self, sender):
+        """Handle click-to-zero mode cancellation."""
+        self.bottom_panel.set_click_to_zero_mode(False)
+
+    def _get_selection_bounds(
+        self,
+    ) -> Optional[Tuple[float, float, float, float]]:
+        """
+        Get the bounding box of selected items or workarea bounds.
+
+        Returns:
+            A tuple (min_x, min_y, max_x, max_y) in world coordinates,
+            or None if there is no machine configured.
+        """
+        selected_elements = self.surface.get_selected_elements()
+
+        if selected_elements:
+            workpieces = []
+            for elem in selected_elements:
+                if isinstance(elem.data, WorkPiece):
+                    workpieces.append(elem.data)
+                elif isinstance(elem.data, Group):
+                    workpieces.extend(elem.data.get_descendants(WorkPiece))
+
+            bboxes = []
+            for wp in workpieces:
+                bbox = wp.get_geometry_world_bbox()
+                if bbox is not None:
+                    bboxes.append(bbox)
+
+            if bboxes:
+                min_x = min(b[0] for b in bboxes)
+                min_y = min(b[1] for b in bboxes)
+                max_x = max(b[2] for b in bboxes)
+                max_y = max(b[3] for b in bboxes)
+                return (min_x, min_y, max_x, max_y)
+
+        config = get_context().config
+        machine = config.machine
+        if not machine:
+            return None
+
+        space = machine.get_coordinate_space()
+        workarea_origin_machine = space.get_workarea_origin_in_machine()
+        min_x, min_y = space.machine_point_to_world(*workarea_origin_machine)
+        workarea_w, workarea_h = space.workarea_size
+        max_x = min_x + workarea_w
+        max_y = min_y + workarea_h
+
+        return (min_x, min_y, max_x, max_y)
 
     def _apply_saved_visibility_state(self):
         """
-        Applies the saved visibility state for G-code preview and control
-        panel. This should be called after actions are registered.
+        Applies the saved visibility state for control panel.
+        This should be called after actions are registered.
         """
         config = get_context().config
 
-        gcode_action = self.action_manager.get_action("toggle_gcode_preview")
-        if gcode_action and config.gcode_preview_visible:
-            gcode_action.change_state(GLib.Variant.new_boolean(True))
-
-        control_panel_action = self.action_manager.get_action(
-            "toggle_control_panel"
+        bottom_panel_action = self.action_manager.get_action(
+            "toggle_bottom_panel"
         )
-        if control_panel_action and config.control_panel_visible:
-            control_panel_action.change_state(GLib.Variant.new_boolean(True))
+        if bottom_panel_action and config.bottom_panel_visible:
+            bottom_panel_action.change_state(GLib.Variant.new_boolean(True))
+
+    def add_stack_page(self, name: str, widget: Gtk.Widget):
+        """Add a page to the main stack.
+
+        This is a public API for addons to add their own pages to the
+        main stack (e.g., editor views).
+
+        Args:
+            name: The name/identifier for the page
+            widget: The widget to add as a page
+        """
+        self.main_stack.add_named(widget, name)
+
+    def show_stack_page(self, name: str):
+        """Switch to a named page in the main stack.
+
+        Args:
+            name: The name of the page to show
+        """
+        self.main_stack.set_visible_child_name(name)
+
+    def remove_stack_page(self, name: str):
+        """Remove a page from the main stack.
+
+        Args:
+            name: The name of the page to remove
+        """
+        child = self.main_stack.get_child_by_name(name)
+        if child:
+            self.main_stack.remove(child)
+
+    def get_stack_page(self, name: str) -> Optional[Gtk.Widget]:
+        """Get a page widget from the main stack by name.
+
+        Args:
+            name: The name of the page to get
+
+        Returns:
+            The widget if found, None otherwise
+        """
+        return self.main_stack.get_child_by_name(name)
+
+    def open_modal_page(self, name: str):
+        """Open a modal page, hiding auxiliary panels.
+
+        This is used for full-screen editor modes (like the sketcher) that
+        should hide panels like the control panel.
+
+        Args:
+            name: The name of the modal page to show
+        """
+        self._saved_bottom_panel_visible = self.bottom_panel.get_visible()
+        if self._saved_bottom_panel_visible:
+            self.bottom_panel.set_visible(False)
+        self.main_stack.set_visible_child_name(name)
+
+    def close_modal_page(self):
+        """Close the current modal page and return to main view.
+
+        Restores the visibility of auxiliary panels that were hidden.
+        """
+        if self._saved_bottom_panel_visible:
+            self.bottom_panel.set_visible(True)
+        self.main_stack.set_visible_child_name("main")
 
     def on_add_child(self, sender):
         """Handler for adding a new stock item, called from AssetListView."""
         self.doc_editor.stock.add_stock()
 
-    def _on_edit_stock_item_requested(self, sender, *, stock_item: StockItem):
-        """Signal handler for edit stock item requests from the surface."""
-        logger.debug(
-            f"Stock properties requested for stock item {stock_item.name}"
-        )
-        dialog = StockPropertiesDialog(self, stock_item, self.doc_editor)
-        dialog.present()
+    def on_add_asset_requested(self, sender, *, type_name: str):
+        """Handler for add asset requests, dispatches via action lookup."""
+        asset_cls = asset_type_registry.get(type_name)
+        if asset_cls and asset_cls.add_action:
+            action = self.action_manager.get_action(asset_cls.add_action)
+            if action:
+                action.activate(None)
+
+    def on_asset_activated(self, sender, *, asset):
+        """Handler for asset activation, dispatches via action lookup."""
+        asset_cls = type(asset)
+        if asset_cls.activate_action:
+            action = self.action_manager.get_action(asset_cls.activate_action)
+            if action:
+                action.activate(GLib.Variant.new_string(asset.uid))
+
+    def _on_edit_item_requested(self, sender, *, item, action_name: str):
+        """Signal handler for edit item requests from the surface."""
+        action = self.action_manager.get_action(action_name)
+        if action:
+            action.activate(GLib.Variant.new_string(item.uid))
 
     def load_project(self, file_path: Path):
         """Public method to load a project from a given path."""
@@ -588,25 +733,24 @@ class MainWindow(Adw.ApplicationWindow):
         self.machine_cmd.execute_macro_by_uid(config.machine, macro_uid)
 
     def _on_job_started(self, sender):
-        """Handles the start of a machine job."""
         logger.debug("Job started")
-
-        # Determine which view to show based on the machine's capability
-        is_granular = False
-        config = get_context().config
-        if config.machine:
-            is_granular = config.machine.reports_granular_progress
-        self.status_monitor.start_live_view(is_granular)
+        self.machine_selector.update_eta(None)
         self._update_actions_and_ui()
+
+    def _on_addon_state_changed(self, sender, addon_name):
+        """Handle addon enable/disable to refresh action handlers."""
+        action_extension_registry.invoke_setup_handlers(self.action_manager)
+        self.action_manager.update_action_states()
 
     def _on_job_progress_updated(self, metrics: dict):
         """Callback for when job progress is updated."""
-        self.status_monitor.update_live_progress(metrics)
+        eta_seconds = metrics.get("eta_seconds")
+        self.machine_selector.update_eta(eta_seconds)
 
     def _on_job_finished(self, sender):
         """Handles the completion of a machine job."""
         logger.debug("Job finished")
-        self.status_monitor.stop_live_view()
+        self.machine_selector.update_eta(None)
 
     def _on_job_future_done(self, future: Future):
         """Callback for when the job submission task completes or fails."""
@@ -618,10 +762,20 @@ class MainWindow(Adw.ApplicationWindow):
             # If the submission failed, the driver's 'job_finished' signal
             # will never fire, so we must stop the live view here to prevent
             # the UI from getting stuck.
-            self.status_monitor.stop_live_view()
+            self.machine_selector.update_eta(None)
 
         # Ensure UI is updated (e.g. Cancel button disabled, others enabled)
         self._update_actions_and_ui()
+
+    def _on_bottom_tab_changed(self, sender, *, name: str):
+        """Refresh previews when the G-code tab becomes visible."""
+        get_context().config.set_bottom_panel_active_tab(name)
+        if name == "gcode":
+            self.refresh_previews()
+
+    def _on_bottom_tab_order_changed(self, sender):
+        order = self.bottom_panel.tab_widget.get_tab_order()
+        get_context().config.set_bottom_panel_tab_order(order)
 
     def _on_gcode_line_activated(self, sender, *, line_number: int):
         """
@@ -629,27 +783,39 @@ class MainWindow(Adw.ApplicationWindow):
         Syncs the highlight and the simulation slider.
         """
         # 1. Update the visual highlight to match the cursor, no scroll.
-        self.gcode_previewer.highlight_line(line_number, use_align=False)
+        self.bottom_panel.gcode_viewer.highlight_line(
+            line_number, use_align=False
+        )
 
         # 2. If simulation is active, update its position.
         if self.simulator_cmd.preview_controls:
             self.simulator_cmd.sync_from_gcode(line_number)
 
-    def _on_left_pane_position_changed(self, paned, param):
+        # 3. If 3D playback is active, sync the slider.
+        op_map = self.bottom_panel.gcode_viewer.op_map
+        if op_map and line_number in op_map.machine_code_to_op:
+            op_index = op_map.machine_code_to_op[line_number]
+            self._is_syncing_3d = True
+            self._canvas3d_playback.set_playback_position(op_index)
+            if self.canvas3d:
+                self.canvas3d.queue_render()
+            self._is_syncing_3d = False
+
+    def _on_3d_playback_step_changed(self, sender, *, ops_index: int):
         """
-        Stores the user-defined width of the G-code previewer pane so it can
-        be restored later.
+        Handles the 3D playback slider changing. Syncs the G-code viewer
+        highlight to the corresponding line.
         """
-        position = paned.get_position()
-        if position > 1:
-            self._last_gcode_previewer_width = position
+        if self._is_syncing_3d:
+            return
+        self.bottom_panel.gcode_viewer.highlight_op(ops_index)
 
     def _on_vertical_pane_position_changed(self, paned, param):
         position = paned.get_position()
         full_height = paned.get_height()
-        control_panel_height = full_height - position
-        if control_panel_height > 1:
-            self._last_control_panel_height = control_panel_height
+        panel_height = full_height - position
+        if panel_height > 1:
+            self._last_bottom_panel_height = panel_height
 
     def _on_surface_transform_initiated(self, sender):
         """
@@ -665,46 +831,8 @@ class MainWindow(Adw.ApplicationWindow):
         """Handles logic when switching between 2D and 3D views."""
         child_name = stack.get_visible_child_name()
         if child_name == "3d":
-            self._connect_live_3d_view_signals()
-        else:
-            self._disconnect_live_3d_view_signals()
-        self._update_actions_and_ui()
-
-    def _connect_live_3d_view_signals(self):
-        """Connects to Pipeline signals to update the 3D view live."""
-        if self._live_3d_view_connected:
-            return
-        logger.debug("Connecting live 3D view signals.")
-        gen = self.doc_editor.pipeline
-        gen.workpiece_artifact_ready.connect(self._on_live_3d_view_update)
-        self._live_3d_view_connected = True
-        # Trigger a full update to draw the current state immediately
-        self._update_3d_view_content()
-
-    def _disconnect_live_3d_view_signals(self):
-        """Disconnects from Pipeline signals."""
-        if not self._live_3d_view_connected:
-            return
-        logger.debug("Disconnecting live 3D view signals.")
-        gen = self.doc_editor.pipeline
-        gen.workpiece_artifact_ready.disconnect(self._on_live_3d_view_update)
-        self._live_3d_view_connected = False
-
-    def _on_live_3d_view_update(
-        self,
-        sender,
-        *,
-        step: Optional[Step],
-        workpiece: Optional[WorkPiece],
-        handle,
-        generation_id: int,
-    ):
-        """
-        When an artifact's generation is finished, trigger a full scene update
-        for the 3D view. The arguments are optional to allow manual calls.
-        """
-        if self.view_stack.get_visible_child_name() == "3d":
             self._update_3d_view_content()
+        self._update_actions_and_ui()
 
     def _update_3d_view_content(self):
         """
@@ -713,6 +841,8 @@ class MainWindow(Adw.ApplicationWindow):
         """
         if not self.canvas3d:
             return
+        if self.canvas3d._current_job_handle is None:
+            self.refresh_previews()
         self.canvas3d.update_scene_from_doc()
 
     def _update_gcode_preview(
@@ -720,12 +850,12 @@ class MainWindow(Adw.ApplicationWindow):
     ):
         """Updates the G-code preview panel from a pre-generated string."""
         if gcode_string is None:
-            self.gcode_previewer.clear()
+            self.bottom_panel.gcode_viewer.clear()
             return
 
-        self.gcode_previewer.set_gcode(gcode_string)
+        self.bottom_panel.gcode_viewer.set_gcode(gcode_string)
         if op_map:
-            self.gcode_previewer.set_op_map(op_map)
+            self.bottom_panel.gcode_viewer.set_op_map(op_map)
 
     def on_show_3d_view(
         self, action: Gio.SimpleAction, value: Optional[GLib.Variant]
@@ -745,11 +875,6 @@ class MainWindow(Adw.ApplicationWindow):
     ):
         is_visible = value.get_boolean()
         self.surface.set_camera_image_visibility(is_visible)
-        button = self.toolbar.camera_visibility_button
-        if is_visible:
-            button.set_child(self.toolbar.camera_visibility_on_icon)
-        else:
-            button.set_child(self.toolbar.camera_visibility_off_icon)
         action.set_state(value)
 
     def on_toggle_travel_view_state_change(
@@ -761,36 +886,47 @@ class MainWindow(Adw.ApplicationWindow):
             self.canvas3d.set_show_travel_moves(is_visible)
         action.set_state(value)
 
-    def on_toggle_gcode_preview_state_change(
+    def on_show_nogo_zones_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
     ):
-        """Handles the state change for the G-code preview visibility."""
         is_visible = value.get_boolean()
+        self.surface.set_show_nogo_zones(is_visible)
+        if self.canvas3d is not None:
+            self.canvas3d.set_show_nogo_zones(is_visible)
         action.set_state(value)
+        get_context().config.set_show_nogo_zones(is_visible)
 
-        if is_visible:
-            self.left_content_pane.set_position(
-                self._last_gcode_previewer_width
-            )
-            # The content will be loaded by the 'document-settled' handler.
-            # We just need to trigger it in case the doc is already settled.
-            self.refresh_previews()
-        else:
-            self.left_content_pane.set_position(0)
-
-        get_context().config.set_gcode_preview_visible(is_visible)
+    def on_show_models_state_change(
+        self, action: Gio.SimpleAction, value: GLib.Variant
+    ):
+        is_visible = value.get_boolean()
+        if self.canvas3d is not None:
+            self.canvas3d.set_show_models(is_visible)
+        action.set_state(value)
 
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
-        self.view_cmd.set_view_top(self.canvas3d)
+        self.view_cmd.set_view(ViewDirection.TOP, self.canvas3d)
 
     def on_view_front(self, action, param):
         """Action handler to set the 3D view to front."""
-        self.view_cmd.set_view_front(self.canvas3d)
+        self.view_cmd.set_view(ViewDirection.FRONT, self.canvas3d)
+
+    def on_view_right(self, action, param):
+        """Action handler to set the 3D view to right."""
+        self.view_cmd.set_view(ViewDirection.RIGHT, self.canvas3d)
+
+    def on_view_left(self, action, param):
+        """Action handler to set the 3D view to left."""
+        self.view_cmd.set_view(ViewDirection.LEFT, self.canvas3d)
+
+    def on_view_back(self, action, param):
+        """Action handler to set the 3D view to back."""
+        self.view_cmd.set_view(ViewDirection.BACK, self.canvas3d)
 
     def on_view_iso(self, action, param):
         """Action handler to set the 3D view to isometric."""
-        self.view_cmd.set_view_iso(self.canvas3d)
+        self.view_cmd.set_view(ViewDirection.ISO, self.canvas3d)
 
     def on_view_perspective_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -800,34 +936,10 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _initialize_document(self):
         """
-        Adds required initial state to a new document, such as a default
-        step to the first workpiece layer.
+        Adds required initial state to a new document, such as default
+        steps to workpiece layers.
         """
-        doc = self.doc_editor.doc
-        if not doc.layers:
-            return
-
-        first_workpiece_layer = doc.layers[0]
-        if (
-            first_workpiece_layer
-            and first_workpiece_layer.workflow
-            and not first_workpiece_layer.workflow.has_steps()
-        ):
-            workflow = first_workpiece_layer.workflow
-            factories = step_registry.get_factories()
-            if not factories:
-                logger.warning("No step factories found in registry")
-                return
-            default_step = factories[0](get_context())
-
-            # Apply best recipe using the new helper method
-            self.doc_editor.step.apply_best_recipe_to_step(default_step)
-
-            workflow.add_step(default_step)
-            logger.info(
-                f"Added default '{default_step.typelabel}' step to "
-                "initial document."
-            )
+        self.doc_editor.step.initialize_default_steps()
 
     def _connect_toolbar_signals(self):
         """Connects signals from the MainToolbar to their handlers.
@@ -849,9 +961,11 @@ class MainWindow(Adw.ApplicationWindow):
         if not config.machine:
             return
         logger.debug(f"Toolbar WCS selected: {wcs}")
-        # Only set if different to avoid redundant updates
-        if config.machine.active_wcs != wcs:
-            config.machine.set_active_wcs(wcs)
+        machine = config.machine
+        if machine.active_wcs != wcs:
+            task_mgr.add_coroutine(
+                lambda ctx, w=wcs: machine.switch_active_wcs(w)
+            )
 
     def _update_wcs_dropdown(self, machine: Optional[Machine], **kwargs):
         """
@@ -1031,6 +1145,7 @@ class MainWindow(Adw.ApplicationWindow):
             self._old_doc.updated.disconnect(self.on_doc_changed)
             self._old_doc.descendant_added.disconnect(self.on_doc_changed)
             self._old_doc.descendant_removed.disconnect(self.on_doc_changed)
+            self._old_doc.descendant_updated.disconnect(self.on_doc_changed)
             self._old_doc.active_layer_changed.disconnect(
                 self._on_active_layer_changed
             )
@@ -1042,6 +1157,7 @@ class MainWindow(Adw.ApplicationWindow):
         new_doc.updated.connect(self.on_doc_changed)
         new_doc.descendant_added.connect(self.on_doc_changed)
         new_doc.descendant_removed.connect(self.on_doc_changed)
+        new_doc.descendant_updated.connect(self.on_doc_changed)
         new_doc.active_layer_changed.connect(self._on_active_layer_changed)
         new_doc.history_manager.changed.connect(self.on_history_changed)
 
@@ -1053,11 +1169,17 @@ class MainWindow(Adw.ApplicationWindow):
         self.toolbar.redo_button.set_history_manager(new_doc.history_manager)
 
         # Update child views to point to the new document
-        self.asset_list_view.set_doc(new_doc)
+        self.bottom_panel.set_doc(new_doc)
         self.layer_list_view.set_doc(new_doc)
 
         # Initialize new document
         self._initialize_document()
+
+        # Check for missing producer types and show dialog if needed
+        missing_types = new_doc.missing_producer_types
+        if missing_types:
+            dialog = MissingFeaturesDialog(self, missing_types)
+            dialog.present()
 
         # Trigger update to sync UI with new document
         self.on_doc_changed(new_doc)
@@ -1159,13 +1281,11 @@ class MainWindow(Adw.ApplicationWindow):
             self.simulator_cmd.reload_simulation(final_artifact)
 
             # 2. Update G-code Preview
-            gcode_action = self.action_manager.get_action(
-                "toggle_gcode_preview"
-            )
-            state = gcode_action.get_state()
-            is_gcode_visible = state and state.get_boolean()
+            current_tab = self.bottom_panel.tab_widget.get_current_tab()
+            is_gcode_visible = current_tab == "gcode"
+            is_3d_visible = self.view_stack.get_visible_child_name() == "3d"
 
-            if is_gcode_visible and final_artifact:
+            if final_artifact and (is_gcode_visible or is_3d_visible):
                 self._update_gcode_preview(
                     final_artifact.machine_code, final_artifact.op_map
                 )
@@ -1183,11 +1303,11 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         is_sim_active = self.simulator_cmd.simulation_overlay is not None
-        gcode_action = self.action_manager.get_action("toggle_gcode_preview")
-        gcode_state = gcode_action.get_state() if gcode_action else None
-        is_gcode_visible = gcode_state and gcode_state.get_boolean()
+        current_tab = self.bottom_panel.tab_widget.get_current_tab()
+        is_gcode_visible = current_tab == "gcode"
+        is_3d_visible = self.view_stack.get_visible_child_name() == "3d"
 
-        if not is_sim_active and not is_gcode_visible:
+        if not is_sim_active and not is_gcode_visible and not is_3d_visible:
             return
 
         config = get_context().config
@@ -1209,24 +1329,11 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _refresh_gcode_preview(self, sender=None, **kwargs):
         """Refresh G-code preview when machine settings change."""
-        gcode_action = self.action_manager.get_action("toggle_gcode_preview")
-        gcode_state = gcode_action.get_state() if gcode_action else None
-        is_gcode_visible = gcode_state and gcode_state.get_boolean()
-
-        if is_gcode_visible:
+        current_tab = self.bottom_panel.tab_widget.get_current_tab()
+        if current_tab == "gcode":
             self.refresh_previews()
 
-    def _create_canvas3d(
-        self,
-        context,
-        width_mm: float,
-        depth_mm: float,
-        y_down: bool,
-        x_right: bool,
-        x_negative: bool,
-        y_negative: bool,
-        extent_frame: Optional[Tuple[float, float, float, float]] = None,
-    ):
+    def _create_canvas3d(self, context, viewport: ViewportConfig):
         """
         Creates a Canvas3D instance and adds it to the view stack.
         Also syncs the travel view state from the action.
@@ -1234,15 +1341,23 @@ class MainWindow(Adw.ApplicationWindow):
         self.canvas3d = Canvas3D(
             context,
             self.doc_editor,
-            width_mm=width_mm,
-            depth_mm=depth_mm,
-            y_down=y_down,
-            x_right=x_right,
-            x_negative=x_negative,
-            y_negative=y_negative,
-            extent_frame=extent_frame,
+            viewport=viewport,
         )
-        self.view_stack.add_named(self.canvas3d, "3d")
+        self._canvas3d_overlay = Gtk.Overlay()
+        self._canvas3d_overlay.set_child(self.canvas3d)
+        self._canvas3d_vis_overlay = VisibilityOverlay(
+            show_workpiece=False,
+            show_models=True,
+            shortcuts=SHORTCUTS,
+        )
+        self._canvas3d_overlay.add_overlay(self._canvas3d_vis_overlay)
+        self._canvas3d_playback = PlaybackOverlay()
+        self.canvas3d.set_playback_overlay(self._canvas3d_playback)
+        self._canvas3d_overlay.add_overlay(self._canvas3d_playback)
+        self._canvas3d_playback.step_changed.connect(
+            self._on_3d_playback_step_changed
+        )
+        self.view_stack.add_named(self._canvas3d_overlay, "3d")
 
         travel_action = self.action_manager.get_action("toggle_travel_view")
         travel_state = travel_action.get_state()
@@ -1282,10 +1397,48 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.item_props_widget.set_items(selected_items)
         self.item_revealer.set_reveal_child(bool(selected_items))
-        self.sketch_props_widget.set_items(selected_items)
+        self.bottom_panel.update_position_menu_sensitivity()
         self._update_actions_and_ui()
 
     def on_config_changed(self, sender, **kwargs):
+        config = get_context().config
+        machine_changed = config.machine is not self._current_machine
+
+        if machine_changed:
+            self._on_machine_signals_changed(config)
+            self._update_canvas3d(config.machine)
+
+        # Update the control panel to use the new machine
+        self.bottom_panel.set_machine(config.machine, self.machine_cmd)
+
+        # Update the main WorkSurface to use the new size
+        self.surface.set_machine(config.machine)
+
+        # Show/hide camera toggle based on whether machine has cameras
+        has_cameras = bool(
+            config.machine and any(c.enabled for c in config.machine.cameras)
+        )
+        self._surface_vis_overlay.set_camera_visible(has_cameras)
+
+        self.surface.update_from_doc()
+        self._update_macros_menu()
+
+        # Configure WCS list in toolbar
+        if config.machine:
+            self.toolbar.configure_wcs_list(config.machine.supported_wcs)
+        else:
+            self.toolbar.configure_wcs_list([])
+
+        self._update_wcs_dropdown(config.machine)
+
+        # Check for any pending notifications from the new machine immediately
+        if self._current_machine:
+            self._on_machine_hours_changed(self._current_machine.machine_hours)
+
+        self._update_actions_and_ui()
+        self.apply_theme()
+
+    def _on_machine_signals_changed(self, config):
         # Disconnect from the previously active machine, if any
         if self._current_machine:
             self._current_machine.state_changed.disconnect(
@@ -1307,7 +1460,6 @@ class MainWindow(Adw.ApplicationWindow):
             # Disconnect WCS change signal
             self._current_machine.changed.disconnect(self._update_wcs_dropdown)
 
-        config = get_context().config
         self._current_machine = config.machine
 
         # Connect to the new active machine's signals
@@ -1327,80 +1479,14 @@ class MainWindow(Adw.ApplicationWindow):
             # Update WCS dropdown when machine active_wcs changes
             self._current_machine.changed.connect(self._update_wcs_dropdown)
 
-        # Define new machine dimensions
-        new_machine = config.machine
+    def _update_canvas3d(self, new_machine):
+        if self.canvas3d is None:
+            return
         if new_machine:
-            width_mm, height_mm = new_machine.axis_extents
-            area = new_machine.work_area
-            canvas3d_w, canvas3d_h = float(area[2]), float(area[3])
-            y_down = new_machine.y_axis_down
-            x_right = new_machine.x_axis_right
-            reverse_x = new_machine.reverse_x_axis
-            reverse_y = new_machine.reverse_y_axis
+            viewport = ViewportConfig.from_machine(new_machine)
         else:
-            width_mm, height_mm = 100.0, 100.0
-            canvas3d_w, canvas3d_h = 100.0, 100.0
-            y_down, x_right, reverse_x, reverse_y = (
-                False,
-                False,
-                False,
-                False,
-            )
-
-        # Update the 3D canvas to match the new machine.
-        if self.canvas3d is not None:
-            # Always switch back to 2D view on machine change for simplicity.
-            if self.view_stack.get_visible_child_name() == "3d":
-                self.view_stack.set_visible_child_name("2d")
-                action = self.action_manager.get_action("show_3d_view")
-                state = action.get_state()
-                if state and state.get_boolean():
-                    action.set_state(GLib.Variant.new_boolean(False))
-
-            # Replace the 3D canvas with one configured for the new machine.
-            self.view_stack.remove(self.canvas3d)
-            extent_frame = None
-            if new_machine and new_machine.has_custom_work_area():
-                extent_frame = new_machine.get_visual_extent_frame()
-            self._create_canvas3d(
-                get_context(),
-                width_mm=canvas3d_w,
-                depth_mm=canvas3d_h,
-                y_down=y_down,
-                x_right=x_right,
-                x_negative=reverse_x,
-                y_negative=reverse_y,
-                extent_frame=extent_frame,
-            )
-
-        # Update the status monitor to observe the new machine
-        self.status_monitor.set_machine(config.machine)
-
-        # Update the control panel to use the new machine
-        self.control_panel.set_machine(config.machine, self.machine_cmd)
-
-        # Update the main WorkSurface AND the SketchStudio to use the new size
-        self.surface.set_machine(config.machine)
-        self.sketch_studio.set_world_size(width_mm, height_mm)
-
-        self.surface.update_from_doc()
-        self._update_macros_menu()
-        self._update_actions_and_ui()
-
-        # Configure WCS list in toolbar
-        if config.machine:
-            self.toolbar.configure_wcs_list(config.machine.supported_wcs)
-        else:
-            self.toolbar.configure_wcs_list([])
-
-        self._update_wcs_dropdown(config.machine)
-
-        # Update theme
-        self.apply_theme()
-
-        # Check for any pending notifications from the new machine immediately
-        if self._current_machine:
-            self._on_machine_hours_changed(self._current_machine.machine_hours)
+            viewport = ViewportConfig.default()
+        self.canvas3d.set_machine(viewport=viewport)
 
     def apply_theme(self):
         """Reads the theme from config and applies it to the UI."""
@@ -1415,6 +1501,25 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_running_tasks_changed(self, sender, tasks, progress):
         self._update_actions_and_ui()
+        self._update_status_message(tasks)
+
+    def _update_status_message(self, tasks):
+        has_tasks = bool(tasks)
+        self._status_message_label.set_visible(has_tasks)
+
+        if not has_tasks:
+            return
+
+        oldest_task = tasks[0]
+        message = oldest_task.get_message()
+        status_text = message if message is not None else ""
+
+        if status_text and len(tasks) > 1:
+            status_text += _(" (+{tasks} more)").format(tasks=len(tasks) - 1)
+        elif len(tasks) > 1:
+            status_text = _("{tasks} tasks").format(tasks=len(tasks))
+
+        self._status_message_label.set_text(status_text)
 
     def _update_actions_and_ui(self):
         config = get_context().config
@@ -1646,10 +1751,6 @@ class MainWindow(Adw.ApplicationWindow):
         has_any_tabs = any(wp.tabs for wp in doc.all_workpieces)
         show_tabs_action.set_enabled(has_any_tabs)
 
-        # Layout - Update sensitivity for the pixel-perfect layout action
-        has_workpieces = len(doc.active_layer.get_descendants(WorkPiece)) > 0
-        am.get_action("layout-pixel-perfect").set_enabled(has_workpieces)
-
     def on_machine_warning_clicked(self, sender):
         """Opens the machine settings dialog for the current machine."""
         config = get_context().config
@@ -1662,7 +1763,7 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.present()
 
     def on_status_bar_clicked(self, sender):
-        action = self.action_manager.get_action("toggle_control_panel")
+        action = self.action_manager.get_action("toggle_bottom_panel")
         state = action.get_state()
         if state:
             new_state = not state.get_boolean()
@@ -1670,25 +1771,33 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             action.change_state(GLib.Variant.new_boolean(True))
 
-    def on_toggle_control_panel_state_change(
+    def on_toggle_bottom_panel_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
     ):
         is_visible = value.get_boolean()
         action.set_state(value)
 
         if is_visible:
-            self.control_panel.set_visible(True)
+            self.bottom_panel.set_visible(True)
             full_height = self.vertical_paned.get_height()
             self.vertical_paned.set_position(
-                full_height - self._last_control_panel_height
+                full_height - self._last_bottom_panel_height
             )
             get_usage_tracker().track_page_view(
-                "/console/open", "Console Opened"
+                "/bottom-panel/open", "Bottom Panel Opened"
             )
         else:
-            self.control_panel.set_visible(False)
+            self.bottom_panel.set_visible(False)
 
-        get_context().config.set_control_panel_visible(is_visible)
+        get_context().config.set_bottom_panel_visible(is_visible)
+
+    def on_toggle_right_panel_state_change(
+        self, action: Gio.SimpleAction, value: GLib.Variant
+    ):
+        is_visible = value.get_boolean()
+        action.set_state(value)
+        self._right_pane.set_visible(is_visible)
+        get_context().config.set_right_panel_visible(is_visible)
 
     def _on_dialog_notification(self, sender, message: str = ""):
         """Shows a toast when requested by a child dialog."""
@@ -1735,13 +1844,92 @@ class MainWindow(Adw.ApplicationWindow):
     def on_clear_clicked(self, action, param):
         self.doc_editor.edit.clear_all_items()
 
-    def on_export_clicked(self, action, param=None):
-        initial_name = None
-        if self.doc_editor.file_path:
-            initial_name = f"{self.doc_editor.file_path.stem}.gcode"
-        file_dialogs.show_export_gcode_dialog(
-            self, self._on_save_dialog_response, initial_name
+    def _check_nogo_zones_and_proceed(self, proceed_callback):
+        config = get_context().config
+        machine = config.machine
+        if not machine:
+            proceed_callback()
+            return
+
+        enabled_zones = {
+            k: v for k, v in machine.nogo_zones.items() if v.enabled
+        }
+        if not enabled_zones:
+            proceed_callback()
+            return
+
+        existing = self.doc_editor.pipeline.get_existing_job_handle()
+        if existing is not None:
+            artifact_manager = self.doc_editor.pipeline.artifact_manager
+            try:
+                with artifact_manager.checkout_handle(existing) as artifact:
+                    if isinstance(artifact, JobArtifact):
+                        if check_ops_collides_with_zones(
+                            artifact.ops, enabled_zones
+                        ):
+                            self._show_nogo_zone_warning(proceed_callback)
+                            return
+            except Exception:
+                logger.warning("Failed to check no-go zones", exc_info=True)
+            proceed_callback()
+            return
+
+        def _on_artifact_ready(handle, error):
+            if error or not handle:
+                proceed_callback()
+                return
+            try:
+                artifact_manager = self.doc_editor.pipeline.artifact_manager
+                with artifact_manager.checkout_handle(handle) as artifact:
+                    if isinstance(artifact, JobArtifact):
+                        if check_ops_collides_with_zones(
+                            artifact.ops, enabled_zones
+                        ):
+                            self._show_nogo_zone_warning(proceed_callback)
+                            return
+            except Exception:
+                logger.warning("Failed to check no-go zones", exc_info=True)
+            proceed_callback()
+
+        self.doc_editor.file.assemble_job_in_background(
+            when_done=_on_artifact_ready
         )
+
+    def _show_nogo_zone_warning(self, proceed_callback):
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading=_("No-Go Zone Collision"),
+            body=_(
+                "The toolpath enters one or more enabled no-go zones. "
+                "Proceeding may cause damage to your machine or "
+                "workpiece."
+            ),
+        )
+        dialog.add_response("cancel", _("_Cancel"))
+        dialog.add_response("proceed", _("_Proceed"))
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.set_response_appearance(
+            "proceed", Adw.ResponseAppearance.DESTRUCTIVE
+        )
+
+        def on_response(dialog, response_id):
+            if response_id == "proceed":
+                proceed_callback()
+
+        dialog.connect("response", on_response)
+        dialog.present()
+
+    def on_export_clicked(self, action, param=None):
+        def _proceed():
+            initial_name = None
+            if self.doc_editor.file_path:
+                initial_name = f"{self.doc_editor.file_path.stem}.gcode"
+            file_dialogs.show_export_gcode_dialog(
+                self, self._on_save_dialog_response, initial_name
+            )
+
+        self._check_nogo_zones_and_proceed(_proceed)
 
     def on_export_document_clicked(self, action, param=None):
         initial_name = "document.svg"
@@ -1750,6 +1938,33 @@ class MainWindow(Adw.ApplicationWindow):
         file_dialogs.show_export_document_dialog(
             self, self._on_export_document_response, initial_name
         )
+
+    def on_export_object_clicked(self, action, param=None):
+        selected = self.surface.get_selected_workpieces()
+        if len(selected) == 1:
+            file_dialogs.show_export_object_dialog(
+                self, self._on_export_object_response, selected[0]
+            )
+        else:
+            self._on_editor_notification(
+                self, _("Please select a single object to export.")
+            )
+
+    def _on_export_object_response(self, dialog, result, user_data):
+        try:
+            file = dialog.save_finish(result)
+            if not file:
+                return
+            file_path = Path(file.get_path())
+
+            selected = self.surface.get_selected_workpieces()
+            if len(selected) != 1:
+                return
+
+            self.doc_editor.file.export_object_to_path(file_path, selected[0])
+
+        except GLib.Error as e:
+            logger.error(f"Error exporting object: {e.message}")
 
     def _on_export_document_response(self, dialog, result, user_data):
         try:
@@ -1818,21 +2033,23 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_send_clicked(self, action, param):
         config = get_context().config
-        if not config.machine:
+        machine = config.machine
+        if not machine:
             return
 
-        # Disable focus mode when sending
-        focus_action = self.action_manager.get_action("toggle-focus")
-        focus_state = focus_action.get_state()
-        if focus_state and focus_state.get_boolean():
-            focus_action.change_state(GLib.Variant.new_boolean(False))
+        def _proceed():
+            focus_action = self.action_manager.get_action("toggle-focus")
+            focus_state = focus_action.get_state()
+            if focus_state and focus_state.get_boolean():
+                focus_action.change_state(GLib.Variant.new_boolean(False))
 
-        # Get the coroutine object for the send job
-        job_coro = self.machine_cmd.send_job(
-            config.machine, on_progress=self._on_job_progress_updated
-        )
-        # Run the job using the helper
-        self._run_machine_job(job_coro)
+            job_coro = self.machine_cmd.send_job(
+                machine,
+                on_progress=self._on_job_progress_updated,
+            )
+            self._run_machine_job(job_coro)
+
+        self._check_nogo_zones_and_proceed(_proceed)
 
     def on_hold_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -1875,9 +2092,9 @@ class MainWindow(Adw.ApplicationWindow):
         head = config.machine.get_default_head()
 
         if is_focus_on:
-            self.machine_cmd.set_power(head, head.focus_power_percent)
+            self.machine_cmd.set_focus_power(head, head.focus_power_percent)
         else:
-            self.machine_cmd.set_power(head, 0)
+            self.machine_cmd.set_focus_power(head, 0)
         action.set_state(value)
 
         # Update the toolbar button icon
@@ -2033,10 +2250,6 @@ class MainWindow(Adw.ApplicationWindow):
         )
         dialog.present()
 
-    def on_show_material_test(self, action, param):
-        """Creates a material test grid by delegating to the editor command."""
-        self.doc_editor.material_test.create_test_grid()
-
     def _on_settings_dialog_closed(self, dialog):
         logger.debug("Settings dialog closed")
         self.surface.grab_focus()  # re-enables keyboard shortcuts
@@ -2044,9 +2257,9 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_job_time_updated(self, sender, *, total_seconds):
         """
         Handles the preview_time_updated signal from the pipeline.
-        Updates the status bar with the total estimated time.
+        Updates the layer list header with the total estimated time.
         """
-        self.status_monitor.set_estimated_time(total_seconds)
+        self.layer_list_view.set_estimated_time(total_seconds)
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
         """Handle key press events, ESC to exit simulation mode."""

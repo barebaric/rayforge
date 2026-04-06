@@ -97,6 +97,17 @@ if hasattr(sys, "_MEIPASS"):
         files = [p.name for p in typelib_path.iterdir()]
         logger.info(f"Files in typelib path: {files}")
 
+        # On Windows, subprocesses need explicit DLL search path.
+        # This must be at module level to run during worker import.
+        if sys.platform == "win32":
+            logger.info(
+                f"Windows build detected. Adding '{base_dir}' to DLL search path."
+            )
+            try:
+                os.add_dll_directory(str(base_dir))
+            except OSError:
+                pass
+
 
 def handle_exception(exc_type, exc_value, exc_traceback):
     """
@@ -130,7 +141,7 @@ def main():
     import gi
 
     gi.require_version("Adw", "1")
-    from gi.repository import Adw, GLib, Gtk
+    from gi.repository import Adw, Gio, GLib, Gtk
 
     if os.environ.get("SNAP"):
         settings = Gtk.Settings.get_default()
@@ -144,11 +155,66 @@ def main():
             super().__init__(application_id="org.rayforge.rayforge")
             from rayforge.ui_gtk.shared.keyboard import PRIMARY_ACCEL
 
-            self.set_accels_for_action("win.quit", [f"{PRIMARY_ACCEL}q"])
             self.args = args
             self.win = None
+            self._register_app_actions()
+            self.set_accels_for_action("app.quit", [f"{PRIMARY_ACCEL}q"])
+            self.set_accels_for_action(
+                "app.preferences", [f"{PRIMARY_ACCEL}comma"]
+            )
+
+        def _register_app_actions(self):
+            action_specs = (
+                ("about", self._on_app_about),
+                ("preferences", self._on_app_preferences),
+                ("quit", self._on_app_quit),
+            )
+            for name, callback in action_specs:
+                action = Gio.SimpleAction.new(name, None)
+                action.connect("activate", callback)
+                self.add_action(action)
+
+        def _get_main_window(self):
+            from rayforge.ui_gtk.mainwindow import MainWindow
+
+            window = self.get_active_window()
+            if isinstance(window, MainWindow):
+                return window
+            if isinstance(self.win, MainWindow):
+                return self.win
+            return None
+
+        def _on_app_about(self, action, param):
+            window = self._get_main_window()
+            if window is None:
+                return
+            window.show_about_dialog(None, None)
+
+        def _on_app_preferences(self, action, param):
+            window = self._get_main_window()
+            if window is None:
+                return
+            window.show_settings(None, None)
+
+        def _on_app_quit(self, action, param):
+            logger.debug("_on_app_quit called.")
+            window = self._get_main_window()
+            if window is None:
+                self.quit()
+                return
+            window.on_quit_action(None, None)
+
+        def do_shutdown(self):
+            logger.info("App.do_shutdown called.")
+            Adw.Application.do_shutdown(self)
+            logger.info("App.do_shutdown completed. Calling self.quit().")
+            self.quit()
 
         def do_activate(self):
+            if self.win is not None:
+                self.win.present()
+                return
+
             # Import the window here to avoid module-level side-effects
             from rayforge.ui_gtk.mainwindow import MainWindow
 
@@ -198,7 +264,7 @@ def main():
                     self.win.load_project(file_path)
                     continue
 
-                mime_type, _ = mimetypes.guess_type(file_path)
+                mime_type, __ = mimetypes.guess_type(file_path)
 
                 importer_cls, features = editor.file.get_importer_info(
                     file_path, mime_type
@@ -206,6 +272,13 @@ def main():
                 if not importer_cls:
                     logger.warning(
                         f"No importer found for '{file_path.name}'. Skipping."
+                    )
+
+                    editor.notification_requested.send(
+                        self,
+                        message=_(
+                            "Cannot open '{file}'. The required addon may be disabled."
+                        ).format(file=file_path.name),
                     )
                     continue
 
@@ -381,17 +454,6 @@ def main():
     # SECTION 3: PLATFORM SPECIFIC INITIALIZATION
     # ===================================================================
 
-    # When running on Windows, spawned subprocesses do not
-    # know where to find the necessary DLLs (for cairo, rsvg, etc.).
-    # We must explicitly add the executable's directory to the
-    # DLL search path *before* any subprocesses are created.
-    # This must be done inside the main() guard.
-    if sys.platform == "win32":
-        logger.info(
-            f"Windows build detected. Adding '{base_dir}' to DLL search path."
-        )
-        os.add_dll_directory(str(base_dir))
-
     # Set the PyOpenGL platform before importing anything that uses OpenGL.
     # 'egl' is generally the best choice for GTK4 on modern Linux (Wayland/X11).
     # On Windows and macOS, letting PyOpenGL auto-detect is more reliable.
@@ -417,9 +479,10 @@ def main():
     # Initialize the 3D canvas module to check for OpenGL availability.
     # This must be done after setting the platform env var and after
     # making Gtk available in gi, as the canvas uses Gtk.
-    # The rest of the app can now check `rayforge.canvas3d.initialized`.
+    # The rest of the app can now check
+    # `rayforge.ui_gtk.sim3d.canvas3d.initialized`.
     # It is safe to import other modules that depend on canvas3d after this.
-    from rayforge.ui_gtk import canvas3d
+    from rayforge.ui_gtk.sim3d import canvas3d
 
     canvas3d.initialize()
 
@@ -434,20 +497,28 @@ def main():
     get_context()
 
     # Initialize the TaskManager with the worker initializer.
-    # This MUST happen before initialize_full_context() because the
+    # This MUST happen before accessing addon_mgr because the
     # MachineManager creates machines which import task_mgr, which
     # would trigger the creation of the TaskManager.
     task_mgr_proxy = cast(TaskManagerProxy, rayforge.shared.tasker.task_mgr)
     task_mgr_proxy.initialize(worker_initializer=initialize_worker)
 
-    # Initialize the full application context. This creates all managers
-    # and sets up the backward-compatibility shim for old code.
-    get_context().initialize_full_context()
+    # Wire up addon module paths from WorkerPoolManager to AddonManager.
+    # This allows workers to resolve rayforge_addons.* modules during
+    # unpickling without loading all addons at startup.
+    shared_state = task_mgr_proxy.get_shared_state()
+    get_context().addon_mgr.set_task_manager(task_mgr_proxy)
+    get_context().addon_mgr.set_shared_state(shared_state)
 
     # Run application
     app = App(args)
     exit_code = app.run(None)
-    assert app.win is not None
+    logger.info("app.run() returned with exit_code=%s", exit_code)
+    if app.win is None:
+        logger.info(
+            "No window created (another instance is likely running). Exiting."
+        )
+        return exit_code
 
     # ===================================================================
     # SECTION 4: SHUTDOWN SEQUENCE

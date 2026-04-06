@@ -38,11 +38,17 @@ class Config:
         # Track the last opened project path
         self.last_opened_project: Optional[Path] = None
         # UI visibility states
-        self.gcode_preview_visible: bool = False
-        self.control_panel_visible: bool = False
+        self.bottom_panel_visible: bool = False
+        self.bottom_panel_tab_order = []
+        self.bottom_panel_active_tab: Optional[str] = None
+        self.right_panel_visible: bool = True
+        self.perspective_mode: bool = False
+        self.show_nogo_zones: bool = True
         # Usage tracking consent date: None = not asked, "" = declined,
         # ISO date string = consent given on that date
         self.usage_consent_date: Optional[str] = None
+        # Default DPI for unitless SVG imports
+        self.import_dpi: float = 96.0
         self.changed = Signal()
 
     def set_machine(self, machine: Optional[Machine]):
@@ -91,18 +97,53 @@ class Config:
         self.last_opened_project = path
         self.changed.send(self)
 
-    def set_gcode_preview_visible(self, visible: bool):
-        """Sets the G-code preview visibility state."""
-        if self.gcode_preview_visible == visible:
+    def set_bottom_panel_visible(self, visible: bool):
+        """Sets the bottom panel visibility state."""
+        if self.bottom_panel_visible == visible:
             return
-        self.gcode_preview_visible = visible
+        self.bottom_panel_visible = visible
         self.changed.send(self)
 
-    def set_control_panel_visible(self, visible: bool):
-        """Sets the control panel visibility state."""
-        if self.control_panel_visible == visible:
+    def set_bottom_panel_tab_order(self, order: list):
+        """Sets the bottom panel tab order."""
+        if self.bottom_panel_tab_order == order:
             return
-        self.control_panel_visible = visible
+        self.bottom_panel_tab_order = list(order)
+        self.changed.send(self)
+
+    def set_bottom_panel_active_tab(self, name: Optional[str]):
+        """Sets the bottom panel active tab name."""
+        if self.bottom_panel_active_tab == name:
+            return
+        self.bottom_panel_active_tab = name
+        self.changed.send(self)
+
+    def set_right_panel_visible(self, visible: bool):
+        """Sets the right panel visibility state."""
+        if self.right_panel_visible == visible:
+            return
+        self.right_panel_visible = visible
+        self.changed.send(self)
+
+    def set_perspective_mode(self, enabled: bool):
+        """Sets the 3D view perspective mode."""
+        if self.perspective_mode == enabled:
+            return
+        self.perspective_mode = enabled
+        self.changed.send(self)
+
+    def set_show_nogo_zones(self, visible: bool):
+        """Sets the no-go zone visibility state."""
+        if self.show_nogo_zones == visible:
+            return
+        self.show_nogo_zones = visible
+        self.changed.send(self)
+
+    def set_import_dpi(self, dpi: float):
+        """Sets the default DPI for unitless SVG imports."""
+        if self.import_dpi == dpi:
+            return
+        self.import_dpi = dpi
         self.changed.send(self)
 
     def set_usage_consent(self, consent: bool):
@@ -149,9 +190,14 @@ class Config:
                 if self.last_opened_project
                 else None
             ),
-            "gcode_preview_visible": self.gcode_preview_visible,
-            "control_panel_visible": self.control_panel_visible,
+            "bottom_panel_visible": self.bottom_panel_visible,
+            "bottom_panel_tab_order": self.bottom_panel_tab_order,
+            "bottom_panel_active_tab": self.bottom_panel_active_tab,
+            "right_panel_visible": self.right_panel_visible,
+            "perspective_mode": self.perspective_mode,
+            "show_nogo_zones": self.show_nogo_zones,
             "usage_consent_date": self.usage_consent_date,
+            "import_dpi": self.import_dpi,
         }
 
     @classmethod
@@ -194,11 +240,20 @@ class Config:
             config.last_opened_project = Path(last_opened_project_str)
 
         # Load UI visibility states
-        config.gcode_preview_visible = data.get("gcode_preview_visible", False)
-        config.control_panel_visible = data.get("control_panel_visible", False)
+        config.bottom_panel_visible = data.get("bottom_panel_visible", False)
+        config.bottom_panel_tab_order = data.get("bottom_panel_tab_order", [])
+        config.bottom_panel_active_tab = data.get(
+            "bottom_panel_active_tab", None
+        )
+        config.right_panel_visible = data.get("right_panel_visible", True)
+        config.perspective_mode = data.get("perspective_mode", False)
+        config.show_nogo_zones = data.get("show_nogo_zones", True)
 
         # Load usage tracking consent date
         config.usage_consent_date = data.get("usage_consent_date", None)
+
+        # Load import DPI
+        config.import_dpi = data.get("import_dpi", 96.0)
 
         # Get the machine by ID. add fallbacks in case the machines
         # no longer exist.

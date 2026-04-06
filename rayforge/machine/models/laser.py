@@ -1,7 +1,10 @@
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Optional, Tuple
 from blinker import Signal
 import uuid
 from gettext import gettext as _
+import numpy as np
+
+from ...core.matrix import euler_rotation_matrix
 
 
 class Laser:
@@ -12,7 +15,15 @@ class Laser:
         self.max_power: int = 1000  # Max power (0-1000 for GRBL)
         self.frame_power_percent: float = 0  # in percent (0-1.0)
         self.focus_power_percent: float = 0  # in percent (0-1.0)
+        self.frame_speed: int = 0  # mm/min, 0 = use machine max travel speed
+        self.frame_repeat_count: int = 20
+        self.frame_corner_pause: float = 0  # seconds
         self.spot_size_mm: Tuple[float, float] = 0.1, 0.1  # millimeters
+        self.cut_color: str = "#ff00ff"  # Magenta for cut
+        self.raster_color: str = "#000000"  # Black for raster
+        self.model_id: Optional[str] = None
+        self.transform: np.ndarray = np.eye(4, dtype=np.float64)
+        self.focal_distance: float = 0.0
         self.changed = Signal()
         self.extra: Dict[str, Any] = {}
 
@@ -38,6 +49,18 @@ class Laser:
         self.focus_power_percent = power
         self.changed.send(self)
 
+    def set_frame_speed(self, speed: int):
+        self.frame_speed = speed
+        self.changed.send(self)
+
+    def set_frame_repeat_count(self, count: int):
+        self.frame_repeat_count = count
+        self.changed.send(self)
+
+    def set_frame_corner_pause(self, duration: float):
+        self.frame_corner_pause = duration
+        self.changed.send(self)
+
     def _gcode_to_percent(self, gcode_value) -> float:
         """Convert gcode power value (0-max_power) to percentage (0-100)."""
         if self.max_power <= 0:
@@ -52,6 +75,60 @@ class Laser:
         self.spot_size_mm = spot_size_x_mm, spot_size_y_mm
         self.changed.send(self)
 
+    def set_cut_color(self, color: str):
+        self.cut_color = color
+        self.changed.send(self)
+
+    def set_raster_color(self, color: str):
+        self.raster_color = color
+        self.changed.send(self)
+
+    def set_model_id(self, model_id: Optional[str]):
+        if self.model_id == model_id:
+            return
+        self.model_id = model_id
+        self.changed.send(self)
+
+    def get_rotation(self):
+        t = self.transform
+        sx = float(np.linalg.norm(t[0, :3]))
+        sy = float(np.linalg.norm(t[1, :3]))
+        sz = float(np.linalg.norm(t[2, :3]))
+        rx = np.degrees(np.arctan2(t[2, 1] / sy, t[2, 2] / sz))
+        ry = np.degrees(
+            np.arctan2(-t[2, 0] / sx, np.sqrt(t[2, 1] ** 2 + t[2, 2] ** 2))
+        )
+        rz = np.degrees(np.arctan2(t[1, 0] / sx, t[0, 0] / sx))
+        return rx, ry, rz
+
+    def set_rotation(self, rx: float, ry: float, rz: float):
+        cur = self.get_rotation()
+        if cur[0] == rx and cur[1] == ry and cur[2] == rz:
+            return
+        pos = self.transform[:3, 3].copy()
+        scale = self.get_scale()
+        self.transform[:3, :3] = euler_rotation_matrix(rx, ry, rz) * scale
+        self.transform[:3, 3] = pos
+        self.changed.send(self)
+
+    def get_scale(self) -> float:
+        return float(np.linalg.norm(self.transform[0, :3]))
+
+    def set_scale(self, scale: float):
+        if self.get_scale() == scale:
+            return
+        pos = self.transform[:3, 3].copy()
+        rx, ry, rz = self.get_rotation()
+        self.transform[:3, :3] = euler_rotation_matrix(rx, ry, rz) * scale
+        self.transform[:3, 3] = pos
+        self.changed.send(self)
+
+    def set_focal_distance(self, distance: float):
+        if self.focal_distance == distance:
+            return
+        self.focal_distance = distance
+        self.changed.send(self)
+
     def to_dict(self) -> Dict[str, Any]:
         result = {
             "uid": self.uid,
@@ -60,7 +137,15 @@ class Laser:
             "max_power": self.max_power,
             "frame_power_percent": self.frame_power_percent * 100,
             "focus_power_percent": self.focus_power_percent * 100,
+            "frame_speed": self.frame_speed,
+            "frame_repeat_count": self.frame_repeat_count,
+            "frame_corner_pause": self.frame_corner_pause,
             "spot_size_mm": self.spot_size_mm,
+            "cut_color": self.cut_color,
+            "raster_color": self.raster_color,
+            "model_id": self.model_id,
+            "transform": self.transform.flatten().tolist(),
+            "focal_distance": self.focal_distance,
         }
         result.update(self.extra)
         return result
@@ -74,9 +159,17 @@ class Laser:
             "max_power",
             "frame_power_percent",
             "focus_power_percent",
-            "spot_size_mm",
             "frame_power",
             "focus_power",
+            "frame_speed",
+            "frame_repeat_count",
+            "frame_corner_pause",
+            "spot_size_mm",
+            "cut_color",
+            "raster_color",
+            "model_id",
+            "transform",
+            "focal_distance",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -103,6 +196,22 @@ class Laser:
             lh.focus_power_percent = focus_power / lh.max_power
 
         lh.spot_size_mm = data.get("spot_size_mm", lh.spot_size_mm)
+        lh.cut_color = data.get("cut_color", lh.cut_color)
+        lh.raster_color = data.get("raster_color", lh.raster_color)
+        lh.frame_speed = data.get("frame_speed", lh.frame_speed)
+        lh.frame_repeat_count = data.get(
+            "frame_repeat_count", lh.frame_repeat_count
+        )
+        lh.frame_corner_pause = data.get(
+            "frame_corner_pause", lh.frame_corner_pause
+        )
+        lh.model_id = data.get("model_id")
+        raw_transform = data.get("transform")
+        if raw_transform is not None:
+            lh.transform = np.array(raw_transform, dtype=np.float64).reshape(
+                4, 4
+            )
+        lh.focal_distance = data.get("focal_distance", 0.0)
         lh.extra = extra
         return lh
 

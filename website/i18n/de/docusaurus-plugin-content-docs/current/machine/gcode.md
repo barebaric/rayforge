@@ -10,40 +10,28 @@ Wähle den G-Code-Dialekt, der mit deiner Controller-Firmware übereinstimmt. Ve
 
 ### Verfügbare Dialekte
 
-- **GRBL**: Am häufigsten bei Hobby-Laserschneidern. Verwendet M3/M5 zur Lasersteuerung.
+- **Grbl (Compat)**: Standard-GRBL-Dialekt für Hobby-Laserschneider. Verwendet M3/M5 zur Lasersteuerung.
+- **Grbl (Compat, no Z axis)**: Wie Grbl (Compat), aber ohne Z-Achsen-Befehle. Für reine 2D-Maschinen.
+- **GRBL Dynamic**: Verwendet GRBLs dynamischen Laserleistungsmodus für variablen Leistungsgravur.
+- **GRBL Dynamic (no Z axis)**: Dynamischer Modus ohne Z-Achsen-Befehle.
 - **Smoothieware**: Für Smoothieboard und ähnliche Controller.
 - **Marlin**: Für Marlin-basierte Controller.
-- **GRBL-kompatibel**: Für Controller, die größtenteils der GRBL-Syntax folgen.
 
 :::info
 Der Dialekt beeinflusst, wie Laserleistung, Bewegungen und andere Befehle im Ausgabe-G-Code formatiert werden.
 :::
 
-## Benutzerdefinierter G-Code
+## Dialekt-Präambel und Postscript
 
-Du kannst den G-Code anpassen, den Rayforge an bestimmten Punkten im Job generiert.
+Jeder Dialekt enthält anpassbare Präambel- und Postscript-G-Codes, die am Anfang und Ende von Jobs ausgeführt werden.
 
-### Programmstart
+### Präambel
 
-G-Code-Befehle, die am Anfang jedes Jobs ausgeführt werden, vor allen Schneideoperationen.
+G-Code-Befehle, die am Anfang jedes Jobs ausgeführt werden, vor allen Schneideoperationen. Häufige Verwendungen umfassen das Festlegen von Einheiten (G21 für mm), Positionierungsmodus (G90 für absolut) und Initialisierung des Maschinenzustands.
 
-Häufige Verwendungen:
-- Einheiten festlegen (G21 für mm)
-- Positionierungsmodus festlegen (G90 für absolut)
-- Maschinenzustand initialisieren
+### Postscript
 
-### Programmende
-
-G-Code-Befehle, die am Ende jedes Jobs ausgeführt werden, nach allen Schneideoperationen.
-
-Häufige Verwendungen:
-- Laser ausschalten (M5)
-- Zum Ursprung zurückkehren (G0 X0 Y0)
-- Kopf parken
-
-### Werkzeugwechsel
-
-G-Code-Befehle, die beim Wechsel zwischen Laserköpfen ausgeführt werden (für Multi-Laser-Maschinen).
+G-Code-Befehle, die am Ende jedes Jobs ausgeführt werden, nach allen Schneideoperationen. Häufige Verwendungen umfassen das Ausschalten des Lasers (M5), Rückkehr zum Ursprung (G0 X0 Y0) und Parken des Kopfes.
 
 ## Siehe auch
 

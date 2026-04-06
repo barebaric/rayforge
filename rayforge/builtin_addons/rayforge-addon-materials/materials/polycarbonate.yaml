@@ -1,0 +1,28 @@
+uid: polycarbonate
+name:
+  default: Polycarbonate
+  de: Polycarbonat
+  es: Policarbonato
+  fr: Polycarbonate
+  pt: Policarbonato
+  uk: Полікарбонат
+  zh_CN: 聚碳酸酯
+description:
+  default: Durable transparent thermoplastic
+  de: Langlebiger transparenter Thermoplast
+  es: Termoplástico transparente duradero
+  fr: Thermoplastique transparent durable
+  pt: Termoplástico transparente durável
+  uk: Міцний прозорий термопластик
+  zh_CN: 耐用的透明热塑性塑料
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#E0FFFF"
+  pattern: transparent

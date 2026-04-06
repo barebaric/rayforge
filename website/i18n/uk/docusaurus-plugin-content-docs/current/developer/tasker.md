@@ -117,9 +117,10 @@ task_mgr.cancel_task("calculator")
 ```python
 def on_task_finished(task):
     if task.get_status() == 'completed':
-        print(f"Завдання завершено з результатом: {task.result()}")
-    elif task.get_status() == 'failed':
-        print(f"Завдання не вдалося: {task._task_exception}")
+        try:
+            print(f"Завдання завершено з результатом: {task.result()}")
+        except Exception as e:
+            print(f"Завдання не вдалося: {e}")
 
 task_mgr.run_process(my_cpu_task, 10, when_done=on_task_finished)
 ```

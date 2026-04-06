@@ -1,0 +1,28 @@
+uid: foam
+name:
+  default: Foam
+  de: Schaum
+  es: Espuma
+  fr: Mousse
+  pt: Espuma
+  uk: Піна
+  zh_CN: 泡沫
+description:
+  default: Lightweight cellular material
+  de: Leichtes zellulares Material
+  es: Material celular ligero
+  fr: Matériau cellulaire léger
+  pt: Material celular leve
+  uk: Легкий клітинний матеріал
+  zh_CN: 轻质多孔材料
+category:
+  default: Organic
+  de: Organisch
+  es: Orgánico
+  fr: Organique
+  pt: Orgânico
+  uk: Органічний
+  zh_CN: 有机材料
+appearance:
+  color: "#FFF8DC"
+  pattern: solid

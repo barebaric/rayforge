@@ -51,9 +51,9 @@ For detailed machine configuration, see the [Machine Setup](../machine/general) 
 
 The Materials page manages your material library.
 
-- **Add Material**: Create a new material preset
-- **Import Library**: Import materials from a file
-- **Export Library**: Export your materials for backup or sharing
+- **Add Library**: Create a new material library
+- **Edit**: Rename a selected library
+- **Delete**: Remove a selected library
 
 See [Materials](../application-settings/materials) for more details.
 
@@ -62,17 +62,30 @@ See [Materials](../application-settings/materials) for more details.
 The Recipes page manages your operation recipes.
 
 - **Add Recipe**: Create a new recipe
-- **Import Recipes**: Import recipes from a file
-- **Export Recipes**: Export your recipes for backup or sharing
+- **Edit**: Modify a selected recipe
+- **Delete**: Remove a selected recipe
 
 See [Recipes](../application-settings/recipes) for more details.
 
-## Packages
+## Addons
 
-The Packages page shows installed extension packages.
+The Addons page shows installed extension addons.
 
-- **Package List**: Shows all installed packages
-- **Package Details**: View information about each package
+- **Addon List**: Shows all installed addons
+- **Addon Details**: View information about each addon
+
+## Privacy
+
+The Privacy page controls anonymous usage reporting.
+
+- **Report Anonymous Usage**: When enabled, anonymous usage data is sent to help improve Rayforge. No personal information is collected.
+
+## Licenses
+
+The Licenses page manages your license keys for premium features and addons.
+
+- **Link Patreon Account**: Connect your Patreon account to access supporter benefits
+- **Addon License Keys**: Enter license keys for premium addons
 
 ---
 

@@ -15,7 +15,7 @@ When instructed to "Prepare a release", the agent executes the following pipelin
 1. **Read CHANGELOG.md** to extract version information and release notes
 2. **Read git log** to identify commit history and changes
 3. **Identify media assets** in `media/[release]/` directory to learn about the style and language of the content on each platform (reddit, github, patreon)
-4. **Fetch Patreon supporters** using `pixi run list-supporters` to get the current list of supporters
+4. **Read Patreon supporters** read `media/supporters.md` for the current list of supporters
 5. Research the web using the webReader tool, for any recent mentions of Rayforge, to identify criticism or praise. See if you can incorporate this into the
    content in phase 2 - not by directly adressing it, but to understand what users care about.
 
@@ -35,6 +35,7 @@ Generate the following files in `media/[release]/drafts/`:
   Update the documentation accordingly, but keep it user-centric - this is not intended as developer documentation.
 - Depending on the changes listed in the changelog, re-create relevant screenshots for the docs using the `scripts/media/take_screenshot.py` tool.
 
+Style-wise, avoid using bullet-point style lists - use a friendly and approachable style that users enjoy reading.
 In the text files, use a maximum line length of 100 chars.
 Ensure you use proper links for discord and patreon and the homepage and github, not placeholders.
 

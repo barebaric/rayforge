@@ -1,8 +1,10 @@
 import logging
-from typing import Callable, TYPE_CHECKING, Any, Optional
+from typing import Callable, TYPE_CHECKING, Any, Optional, cast
 from gettext import gettext as _
 from gi.repository import Gtk, Gio
 from ... import const
+from ...image.registry import exporter_registry, importer_registry
+from ..shared.gtk import file_filter_to_gtk
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
@@ -23,7 +25,7 @@ def show_import_dialog(
 
     Args:
         win: The parent Gtk.Window.
-        editor: The DocEditor instance to retrieve supported file types.
+        editor: The DocEditor instance (for future extensibility).
         callback: The function to call with (dialog, result, user_data) upon
                   response.
         user_data: Custom data to pass to the callback.
@@ -35,35 +37,22 @@ def show_import_dialog(
     all_supported = Gtk.FileFilter()
     all_supported.set_name(_("All supported"))
 
-    # Get supported filters from the backend
-    supported_types = editor.file.get_supported_import_filters()
+    supported_types = importer_registry.get_all_filters()
 
     for file_type in supported_types:
-        if file_type["extensions"]:
-            for ext in file_type["extensions"]:
+        if file_type.extensions:
+            for ext in file_type.extensions:
                 pattern = f"*{ext}"
                 all_supported.add_pattern(pattern)
 
-        if file_type["mime_types"]:
-            for mime_type in file_type["mime_types"]:
+        if file_type.mime_types:
+            for mime_type in file_type.mime_types:
                 all_supported.add_mime_type(mime_type)
 
     filter_list.append(all_supported)
 
     for file_type in supported_types:
-        file_filter = Gtk.FileFilter()
-        if file_type["label"]:
-            file_filter.set_name(_(file_type["label"]))
-
-        if file_type["extensions"]:
-            for ext in file_type["extensions"]:
-                pattern = f"*{ext}"
-                file_filter.add_pattern(pattern)
-
-        if file_type["mime_types"]:
-            for mime_type in file_type["mime_types"]:
-                file_filter.add_mime_type(mime_type)
-
+        file_filter = file_filter_to_gtk(file_type)
         filter_list.append(file_filter)
 
     dialog.set_filters(filter_list)
@@ -113,12 +102,9 @@ def show_export_object_dialog(
     workpiece: Optional["WorkPiece"] = None,
 ):
     """
-    Shows the save file dialog for exporting a sketch-based workpiece.
+    Shows the save file dialog for exporting a workpiece.
 
-    Supports multiple formats:
-    - Rayforge Sketch (.rfs) - parametric sketch with constraints
-    - SVG (.svg) - scalable vector graphics
-    - DXF (.dxf) - CAD exchange format
+    Available formats are dynamically populated from the exporter registry.
 
     Args:
         win: The parent Gtk.Window.
@@ -131,6 +117,8 @@ def show_export_object_dialog(
     dialog = Gtk.FileDialog.new()
     dialog.set_title(_("Export Object"))
 
+    export_filters = exporter_registry.get_all_filters()
+
     if workpiece and workpiece.source_file:
         dialog.set_initial_name(workpiece.source_file.name)
         try:
@@ -138,33 +126,23 @@ def show_export_object_dialog(
             dialog.set_initial_folder(folder)
         except Exception:
             logger.debug(
-                "Could not set initial folder for sketch export dialog"
+                "Could not set initial folder for object export dialog"
             )
-    else:
-        dialog.set_initial_name("sketch.rfs")
+    elif export_filters:
+        default_ext = export_filters[0].extensions[0]
+        dialog.set_initial_name(f"object{default_ext}")
 
     filter_list = Gio.ListStore.new(Gtk.FileFilter)
 
-    rfs_filter = Gtk.FileFilter()
-    rfs_filter.set_name(_("{app_name} Sketch").format(app_name=const.APP_NAME))
-    rfs_filter.add_pattern("*.rfs")
-    rfs_filter.add_mime_type(const.MIME_TYPE_SKETCH)
-    filter_list.append(rfs_filter)
+    for export_filter in export_filters:
+        file_filter = file_filter_to_gtk(export_filter)
+        filter_list.append(file_filter)
 
-    svg_filter = Gtk.FileFilter()
-    svg_filter.set_name(_("SVG (Scalable Vector Graphics)"))
-    svg_filter.add_pattern("*.svg")
-    svg_filter.add_mime_type("image/svg+xml")
-    filter_list.append(svg_filter)
-
-    dxf_filter = Gtk.FileFilter()
-    dxf_filter.set_name(_("DXF (CAD Exchange Format)"))
-    dxf_filter.add_pattern("*.dxf")
-    dxf_filter.add_mime_type("image/vnd.dxf")
-    filter_list.append(dxf_filter)
-
-    dialog.set_filters(filter_list)
-    dialog.set_default_filter(rfs_filter)
+    if filter_list.get_n_items() > 0:
+        dialog.set_filters(filter_list)
+        default_filter = filter_list.get_item(0)
+        if default_filter:
+            dialog.set_default_filter(cast(Gtk.FileFilter, default_filter))
 
     dialog.save(win, None, callback, win)
 

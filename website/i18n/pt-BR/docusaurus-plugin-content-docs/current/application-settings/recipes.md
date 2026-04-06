@@ -25,7 +25,7 @@ Você pode criar receitas através da interface principal de configurações:
 
 #### 1. Acesse o Gerenciador de Receitas
 
-Menu: Editar → Preferências → Receitas
+Menu: Editar → Configurações, depois selecione Receitas
 
 #### 2. Crie uma Nova Receita
 

@@ -94,7 +94,7 @@ class RecipeManager:
 
     def find_recipes(
         self,
-        stock_item: Optional["StockItem"],
+        stock_items: List["StockItem"],
         capabilities: Optional[Set[Capability]] = None,
         machine: Optional["Machine"] = None,
     ) -> List[Recipe]:
@@ -102,9 +102,10 @@ class RecipeManager:
         Finds matching recipes, sorted from most specific to least specific.
 
         Args:
-            stock_item: The stock item context to match against. Can be None.
+            stock_items: A list of StockItems. If empty, only generic recipes
+                         (without material/thickness constraints) are returned.
             capabilities: An optional filter to only return recipes for a
-                        specific set of capabilities.
+                         specific set of capabilities.
             machine: An optional machine context to match against. Can be None.
 
         Returns:
@@ -114,7 +115,7 @@ class RecipeManager:
         candidates = [
             r
             for r in self.get_all_recipes()
-            if r.matches(stock_item, capabilities, machine)
+            if r.matches(stock_items, capabilities, machine)
         ]
 
         # 2. Sort candidates based on their specificity score and name

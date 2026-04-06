@@ -1,0 +1,28 @@
+uid: spruce
+name:
+  default: Spruce
+  de: Fichte
+  es: Abeto
+  fr: Épicéa
+  pt: Picea
+  uk: Ялина
+  zh_CN: 云杉
+description:
+  default: Light-colored softwood
+  de: Helles Nadelholz
+  es: Madera blanda de color claro
+  fr: Bois tendre de couleur claire
+  pt: Madeira macia de cor clara
+  uk: Світла м'яка деревина
+  zh_CN: 浅色软木
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#FFF5E1"
+  pattern: wood_grain

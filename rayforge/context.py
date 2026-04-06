@@ -1,21 +1,23 @@
 import logging
 import threading
 from typing import Optional, TYPE_CHECKING
-import pluggy
-from .core.hooks import RayforgeSpecs
-from .package_mgr.package_manager import PackageManager
 
-# Use a TYPE_CHECKING block to import types for static analysis
-# without causing a runtime circular import.
 if TYPE_CHECKING:
+    from .addon_mgr.addon_manager import AddonManager
     from .camera.manager import CameraManager
+    from .core.addon_config import AddonConfig
+    from .core.ai.ai_service import AIService
+    from .core.ai.config import AIConfigManager
     from .core.config import Config, ConfigManager
     from .core.library_manager import LibraryManager
+    from .core.model_manager import ModelManager
     from .core.recipe_manager import RecipeManager
+    from .debug import DebugDumpManager
+    from .license import LicenseValidator
     from .machine.models.machine import Machine
     from .machine.models.manager import MachineManager
     from .machine.models.dialect_manager import DialectManager
-    from .debug import DebugDumpManager
+    import pluggy
 
 
 logger = logging.getLogger(__name__)
@@ -33,44 +35,34 @@ class RayforgeContext:
     def __init__(self):
         """
         Initializes the context. This constructor is lightweight and safe
-        to call from any process. It only sets up services that are safe
-        for subprocess initialization.
+        to call from any process. Only ArtifactStore is created eagerly
+        to ensure it's available before any subtask starts.
         """
         from .pipeline.artifact.store import ArtifactStore
         from .debug import DebugDumpManager
-        from .machine.models.dialect_manager import DialectManager
-        from .config import DIALECT_DIR, PACKAGES_DIR, BUILTIN_PACKAGES_DIR
         from .shared.util.localized import get_system_language
 
         self.artifact_store = ArtifactStore()
-        # The DialectManager is safe and necessary for all processes.
-        self._dialect_mgr = DialectManager(DIALECT_DIR)
+        self._debug_dump_manager = DebugDumpManager()
+        self._language: str = get_system_language()
+        self.exit_after_settle = False
+        self.exit_pending = False
+        self._headless: bool = False
 
-        # Initialize the plugin manager
-        self.plugin_mgr = pluggy.PluginManager("rayforge")
-        self.plugin_mgr.add_hookspecs(RayforgeSpecs)
-
-        # Initialize the package manager
-        self.package_mgr = PackageManager(
-            [BUILTIN_PACKAGES_DIR, PACKAGES_DIR], PACKAGES_DIR, self.plugin_mgr
-        )
-
-        # These managers are initialized to None. The main application thread
-        # MUST call initialize_full_context() to create them.
+        self._dialect_mgr: Optional["DialectManager"] = None
+        self._plugin_mgr: Optional["pluggy.PluginManager"] = None
+        self._addon_config: Optional["AddonConfig"] = None
+        self._license_validator: Optional["LicenseValidator"] = None
+        self._addon_mgr: Optional["AddonManager"] = None
+        self._ai_service: Optional["AIService"] = None
+        self._ai_config_mgr: Optional["AIConfigManager"] = None
         self._machine_mgr: Optional["MachineManager"] = None
         self._config_mgr: Optional["ConfigManager"] = None
         self._config: Optional["Config"] = None
         self._camera_mgr: Optional["CameraManager"] = None
         self._material_mgr: Optional["LibraryManager"] = None
+        self._model_mgr: Optional["ModelManager"] = None
         self._recipe_mgr: Optional["RecipeManager"] = None
-        self._debug_dump_manager = DebugDumpManager()
-
-        # Language setting for localized content
-        self._language: str = get_system_language()
-
-        # Flag to indicate the app should exit after document settles
-        self.exit_after_settle = False
-        self.exit_pending = False
 
     @property
     def machine(self) -> Optional["Machine"]:
@@ -78,55 +70,288 @@ class RayforgeContext:
         Returns the active machine from the config, or None if
         the config or machine is not set.
         """
-        return self._config.machine if self._config else None
+        return self.config.machine
 
     @property
     def dialect_mgr(self) -> "DialectManager":
-        """Returns the dialect manager. Raises an error if not initialized."""
+        """Returns the dialect manager."""
         if self._dialect_mgr is None:
-            raise RuntimeError("Dialect manager is not initialized.")
+            from .config import DIALECT_DIR
+            from .machine.models.dialect_manager import DialectManager
+
+            self._dialect_mgr = DialectManager(DIALECT_DIR)
         return self._dialect_mgr
 
     @property
+    def plugin_mgr(self) -> "pluggy.PluginManager":
+        """Returns the plugin manager."""
+        if self._plugin_mgr is None:
+            import pluggy
+            from .core.hooks import RayforgeSpecs
+
+            self._plugin_mgr = pluggy.PluginManager("rayforge")
+            self._plugin_mgr.add_hookspecs(RayforgeSpecs)
+        return self._plugin_mgr
+
+    @property
+    def license_validator(self) -> "LicenseValidator":
+        """Returns the license validator."""
+        if self._license_validator is None:
+            from .config import LICENSES_DIR, PATREON_CLIENT_ID
+            from .license import LicenseValidator
+
+            self._license_validator = LicenseValidator(
+                LICENSES_DIR, PATREON_CLIENT_ID
+            )
+        return self._license_validator
+
+    @property
+    def addon_config(self) -> "AddonConfig":
+        """Returns the addon configuration."""
+        if self._addon_config is None:
+            from .config import CONFIG_DIR
+            from .core.addon_config import AddonConfig
+
+            self._addon_config = AddonConfig(CONFIG_DIR)
+            self._addon_config.load()
+        return self._addon_config
+
+    @property
+    def addon_mgr(self) -> "AddonManager":
+        """Returns the addon manager."""
+        if self._addon_mgr is None:
+            from .config import (
+                ADDONS_DIR,
+                BUILTIN_ADDONS_DIR,
+                PRIVATE_ADDONS_DIR,
+            )
+            from .addon_mgr.addon_manager import AddonManager
+
+            self._addon_mgr = AddonManager(
+                [BUILTIN_ADDONS_DIR, PRIVATE_ADDONS_DIR, ADDONS_DIR],
+                ADDONS_DIR,
+                self.plugin_mgr,
+                self.addon_config,
+                license_validator=self.license_validator,
+            )
+            self._load_addons_and_call_hooks()
+        return self._addon_mgr
+
+    def _load_addons_and_call_hooks(self):
+        """
+        Loads addons and calls registration hooks.
+
+        This is called automatically when addon_mgr is first accessed.
+        In headless mode, only backend entry points are loaded.
+        """
+        if self._addon_mgr is None:
+            return
+
+        from .core.step_registry import step_registry
+        from .doceditor.layout.registry import (
+            layout_registry,
+            register_builtin_layout_strategies,
+        )
+        from .pipeline.producer.registry import producer_registry
+        from .pipeline.transformer.registry import transformer_registry
+
+        register_builtin_layout_strategies()
+
+        registries = {
+            "layout_registry": layout_registry,
+            "producer_registry": producer_registry,
+            "step_registry": step_registry,
+            "transformer_registry": transformer_registry,
+        }
+
+        if not self._headless:
+            from .core.asset_registry import asset_type_registry
+            from .doceditor.command_registry import command_registry
+            from .image import (
+                exporter_registry,
+                importer_registry,
+                renderer_registry,
+            )
+            from .ui_gtk.action_registry import action_registry
+            from .ui_gtk.actions import action_extension_registry
+            from .ui_gtk.canvas2d.context_menu import (
+                context_menu_extension_registry,
+            )
+            from .ui_gtk.doceditor.asset_row_factory import (
+                asset_row_widget_registry,
+            )
+            from .ui_gtk.doceditor.property_providers import (
+                property_provider_registry,
+            )
+
+            registries["action_registry"] = action_registry
+            registries["action_extension_registry"] = action_extension_registry
+            registries["asset_row_widget_registry"] = asset_row_widget_registry
+            registries["asset_type_registry"] = asset_type_registry
+            registries["command_registry"] = command_registry
+            registries["context_menu_extension_registry"] = (
+                context_menu_extension_registry
+            )
+            registries["exporter_registry"] = exporter_registry
+            registries["importer_registry"] = importer_registry
+            registries["property_provider_registry"] = (
+                property_provider_registry
+            )
+            registries["renderer_registry"] = renderer_registry
+
+        self._addon_mgr.set_registries(registries)
+        self._addon_mgr.load_installed_addons(backend_only=self._headless)
+
+        self.plugin_mgr.hook.register_producers(
+            producer_registry=producer_registry
+        )
+        self.plugin_mgr.hook.register_transformers(
+            transformer_registry=transformer_registry
+        )
+        self.plugin_mgr.hook.register_steps(step_registry=step_registry)
+        self.plugin_mgr.hook.register_layout_strategies(
+            layout_registry=layout_registry
+        )
+
+        if not self._headless:
+            self.plugin_mgr.hook.register_asset_types(
+                asset_type_registry=registries["asset_type_registry"]
+            )
+            self.plugin_mgr.hook.register_commands(
+                command_registry=registries["command_registry"]
+            )
+            self.plugin_mgr.hook.register_renderers(
+                renderer_registry=registries["renderer_registry"]
+            )
+            self.plugin_mgr.hook.register_exporters(
+                exporter_registry=registries["exporter_registry"]
+            )
+            self.plugin_mgr.hook.register_importers(
+                importer_registry=registries["importer_registry"]
+            )
+
+        self.plugin_mgr.hook.rayforge_init(context=self)
+
+        logger.info(f"Addons loaded (headless={self._headless})")
+
+    @property
+    def ai_service(self) -> "AIService":
+        """Returns the AI service."""
+        if self._ai_service is None:
+            from .core.ai.ai_service import AIService
+
+            self._ai_service = AIService()
+            _ = self.ai_config_mgr
+        return self._ai_service
+
+    @property
+    def ai_config_mgr(self) -> "AIConfigManager":
+        """Returns the AI configuration manager."""
+        if self._ai_config_mgr is None:
+            from .config import AI_CONFIG_FILE
+            from .core.ai.config import AIConfigManager
+
+            self._ai_config_mgr = AIConfigManager(
+                AI_CONFIG_FILE, self.ai_service
+            )
+            self._ai_config_mgr.load()
+        return self._ai_config_mgr
+
+    @property
     def machine_mgr(self) -> "MachineManager":
-        """Returns the machine manager. Raises an error if not initialized."""
+        """Returns the machine manager."""
         if self._machine_mgr is None:
-            raise RuntimeError("Machine manager is not initialized.")
+            from .config import MACHINE_DIR
+            from .machine.models.manager import MachineManager
+
+            logger.info("Lazy loading machine manager")
+            self._machine_mgr = MachineManager(MACHINE_DIR)
+            if not self._machine_mgr.machines:
+                self._machine_mgr.create_default_machine()
         return self._machine_mgr
 
     @property
     def config_mgr(self) -> "ConfigManager":
-        """Returns the config manager. Raises an error if not initialized."""
+        """Returns the config manager."""
         if self._config_mgr is None:
-            raise RuntimeError("Config manager is not initialized.")
+            from .config import CONFIG_FILE
+            from .core.config import ConfigManager as CoreConfigManager
+
+            logger.info("Lazy loading config manager")
+            self._config_mgr = CoreConfigManager(CONFIG_FILE, self.machine_mgr)
+            self._config = self._config_mgr.config
+            if not self._config.machine:
+                machine = list(
+                    sorted(
+                        self.machine_mgr.machines.values(), key=lambda m: m.id
+                    )
+                )[0]
+                self._config.set_machine(machine)
         return self._config_mgr
 
     @property
     def config(self) -> "Config":
-        """Returns the config. Raises an error if not initialized."""
-        if self._config is None:
-            raise RuntimeError("Config is not initialized.")
-        return self._config
+        """Returns the config."""
+        return self.config_mgr.config
 
     @property
     def camera_mgr(self) -> "CameraManager":
-        """Returns the camera manager. Raises an error if not initialized."""
+        """Returns the camera manager."""
         if self._camera_mgr is None:
-            raise RuntimeError("Camera manager is not initialized.")
+            from .camera.manager import CameraManager
+
+            logger.info("Lazy loading camera manager")
+            self._camera_mgr = CameraManager(self)
+            self._camera_mgr.initialize()
         return self._camera_mgr
 
     @property
     def material_mgr(self) -> "LibraryManager":
-        """Returns the material manager. Raises an error if not initialized."""
+        """Returns the material manager."""
         if self._material_mgr is None:
-            raise RuntimeError("Material manager is not initialized.")
+            from .config import USER_MATERIALS_DIR
+            from .core.library_manager import LibraryManager
+
+            logger.info("Lazy loading material manager")
+            self._material_mgr = LibraryManager(USER_MATERIALS_DIR)
+            self._material_mgr.load_all_libraries()
+
+            if not self._headless:
+                self.addon_mgr.registries["library_manager"] = (
+                    self._material_mgr
+                )
+                self.plugin_mgr.hook.register_material_libraries(
+                    library_manager=self._material_mgr
+                )
         return self._material_mgr
 
     @property
+    def model_mgr(self) -> "ModelManager":
+        """Returns the model manager."""
+        if self._model_mgr is None:
+            from .config import USER_MODELS_DIR
+            from .core.model_manager import ModelManager
+
+            logger.info("Lazy loading model manager")
+            self._model_mgr = ModelManager(USER_MODELS_DIR)
+            self._model_mgr.register_bundled_library()
+
+            if not self._headless:
+                self.addon_mgr.registries["model_manager"] = self._model_mgr
+                self.plugin_mgr.hook.register_model_libraries(
+                    model_manager=self._model_mgr
+                )
+        return self._model_mgr
+
+    @property
     def recipe_mgr(self) -> "RecipeManager":
-        """Returns the recipe manager. Raises an error if not initialized."""
+        """Returns the recipe manager."""
         if self._recipe_mgr is None:
-            raise RuntimeError("Recipe manager is not initialized.")
+            from .config import USER_RECIPES_DIR
+            from .core.recipe_manager import RecipeManager
+
+            logger.info("Lazy loading recipe manager")
+            self._recipe_mgr = RecipeManager(USER_RECIPES_DIR)
         return self._recipe_mgr
 
     @property
@@ -161,12 +386,13 @@ class RayforgeContext:
     def initialize_lite_context(self, machine_dir):
         """
         Initializes a minimal context for testing. Sets up MachineManager
-        and Config without cameras, materials, recipes, or plugins.
+        and Config without cameras, materials, recipes, or addons.
         """
         from pathlib import Path
         from .core.config import ConfigManager as CoreConfigManager
         from .machine.models.manager import MachineManager
 
+        self._headless = True
         self._machine_mgr = MachineManager(machine_dir)
 
         if not self._machine_mgr.machines:
@@ -181,87 +407,6 @@ class RayforgeContext:
             )[0]
             self._config.set_machine(machine)
 
-    def initialize_full_context(self):
-        """
-        Initializes the full application context with managers that should
-        only be created in the main process. This is NOT safe to call from
-        a subprocess.
-        """
-        # This function should be idempotent.
-        if self._config_mgr is not None:
-            return
-
-        # Import high-level managers here, inside the method, to avoid
-        # circular dependencies at the module level.
-        from .camera.manager import CameraManager
-        from .core.library_manager import LibraryManager
-        from .core.recipe_manager import RecipeManager
-        from .machine.models.manager import MachineManager
-        from .config import (
-            CONFIG_DIR,
-            MACHINE_DIR,
-            CONFIG_FILE,
-            CORE_MATERIALS_DIR,
-            USER_MATERIALS_DIR,
-            USER_RECIPES_DIR,
-        )
-        from .core.config import ConfigManager as CoreConfigManager
-
-        logger.info(f"Initializing full application context from {CONFIG_DIR}")
-
-        # Load all machines. If none exist, create a default machine.
-        self._machine_mgr = MachineManager(MACHINE_DIR)
-        logger.info(f"Loaded {len(self._machine_mgr.machines)} machines")
-        if not self._machine_mgr.machines:
-            machine = self._machine_mgr.create_default_machine()
-            logger.info(f"Created default machine {machine.id}")
-
-        # Load the config file. This must happen before CameraManager init.
-        self._config_mgr = CoreConfigManager(CONFIG_FILE, self._machine_mgr)
-        self._config = self._config_mgr.config
-        if not self._config.machine:
-            # Sort by ID for deterministic selection
-            machine = list(
-                sorted(self._machine_mgr.machines.values(), key=lambda m: m.id)
-            )[0]
-            self._config.set_machine(machine)
-            assert self._config.machine
-        logger.info(f"Config loaded. Using machine {self._config.machine.id}")
-
-        # Initialize the camera manager AFTER config is loaded and active
-        # machine is set
-        self._camera_mgr = CameraManager(self)
-        self._camera_mgr.initialize()
-        logger.info(
-            f"Camera manager initialized with "
-            f"{len(self._camera_mgr.controllers)} controllers."
-        )
-
-        # Initialize the material manager
-        self._material_mgr = LibraryManager(
-            CORE_MATERIALS_DIR, USER_MATERIALS_DIR
-        )
-        self._material_mgr.load_all_libraries()
-        logger.info(
-            f"Material manager initialized with "
-            f"{len(self._material_mgr.get_all_materials())} materials"
-        )
-
-        # Initialize the recipe manager
-        self._recipe_mgr = RecipeManager(USER_RECIPES_DIR)
-        logger.info(
-            f"Recipe manager initialized with "
-            f"{len(self._recipe_mgr.get_all_recipes())} recipes"
-        )
-
-        # Load plugins from disk
-        self.package_mgr.load_installed_packages()
-
-        # Trigger the init hook for all registered plugins
-        self.plugin_mgr.hook.rayforge_init(context=self)
-
-        logger.info("Full application context initialized")
-
     async def shutdown(self):
         """
         Shuts down all managed services in the correct order.
@@ -271,6 +416,8 @@ class RayforgeContext:
             self._camera_mgr.shutdown()
         if self._machine_mgr:
             await self._machine_mgr.shutdown()
+        if self._ai_service:
+            await self._ai_service.close_all()
         self.artifact_store.shutdown()
         logger.info("RayforgeContext shutdown complete.")
 
@@ -283,7 +430,6 @@ def get_context() -> "RayforgeContext":
     global _context_instance
     if _context_instance is None:
         with _context_lock:
-            # Double-check lock to prevent race conditions
             if _context_instance is None:
                 _context_instance = RayforgeContext()
     return _context_instance

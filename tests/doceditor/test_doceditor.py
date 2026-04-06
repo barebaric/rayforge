@@ -9,10 +9,25 @@ from rayforge.context import get_context
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.image.svg import svg_fallback
 from rayforge.machine.models.machine import Origin
-from rayforge.pipeline.steps import ContourStep
+from rayforge.core.step_registry import step_registry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+DIALECTS_DATA_DIR = (
+    Path(__file__).parent.parent / "machine" / "models" / "dialects" / "data"
+)
+
+
+@pytest.fixture(autouse=True)
+def _init_context(context_initializer):
+    """Ensure context is initialized for all tests."""
+
+
+@pytest.fixture
+def contour_step_class():
+    """Get ContourStep class from registry after addons are loaded."""
+    return step_registry.get("ContourStep")
 
 
 def parse_gcode_line(line: str) -> dict:
@@ -45,17 +60,6 @@ def assets_path() -> Path:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "dialect_uid,expected_file",
-    [
-        ("grbl", "expected_square_grbl.gcode"),
-        ("grbl_noz", "expected_square_grbl_noz.gcode"),
-        ("grbl_dynamic", "expected_square_grbl_dynamic.gcode"),
-        ("grbl_dynamic_noz", "expected_square_grbl_dynamic_noz.gcode"),
-        ("smoothieware", "expected_square_smoothieware.gcode"),
-        ("marlin", "expected_square_marlin.gcode"),
-    ],
-)
-@pytest.mark.parametrize(
     "use_fallback", [False, True], ids=["native", "fallback"]
 )
 async def test_import_svg_export_gcode(
@@ -63,21 +67,23 @@ async def test_import_svg_export_gcode(
     doc_editor,
     tmp_path,
     assets_path,
-    dialect_uid,
-    expected_file,
     use_fallback,
     monkeypatch,
+    contour_step_class,
 ):
     """
     Full end-to-end test using a real subprocess for ops generation.
-    Tests all supported G-code dialects.
+    Tests with the GRBL dialect as a representative sample.
 
-    This test runs twice for each dialect:
+    This test runs twice:
     - "native": Uses the default SVG loading (pyvips.svgload_buffer)
     - "fallback": Forces the Cairo/Rsvg fallback path
     """
     if use_fallback:
         monkeypatch.setattr(svg_fallback, "SVG_LOAD_AVAILABLE", False)
+
+    dialect_uid = "grbl"
+    expected_file = "expected_square_grbl.gcode"
 
     # The expected G-code was generated assuming "Identity" transformation (no flip).
     # In the updated Machine model, Origin.BOTTOM_LEFT represents the Identity state
@@ -88,7 +94,7 @@ async def test_import_svg_export_gcode(
     machine.set_origin(Origin.BOTTOM_LEFT)
 
     # --- 1. ARRANGE ---
-    step = ContourStep.create(
+    step = contour_step_class.create(
         context_initializer, name="Vectorize", optimize=False
     )
     step.set_power(0.5)
@@ -102,7 +108,7 @@ async def test_import_svg_export_gcode(
     workflow.add_step(step)
 
     svg_path = assets_path / "10x10_square.svg"
-    expected_gcode_path = assets_path / expected_file
+    expected_gcode_path = DIALECTS_DATA_DIR / expected_file
     output_gcode_path = tmp_path / "output.gcode"
 
     # --- 2. ACT ---

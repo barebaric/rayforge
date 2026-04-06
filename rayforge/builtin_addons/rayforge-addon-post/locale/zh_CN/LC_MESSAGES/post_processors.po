@@ -1,0 +1,302 @@
+# Chinese translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-25 22:24+0100\n"
+"PO-Revision-Date: 2026-03-18 23:38+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Enable Overscan"
+msgstr "启用超扫描"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Automatic Distance"
+msgstr "自动距离"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Calculate distance based on speed and acceleration with safety factor"
+msgstr "基于速度和加速度并考虑安全系数计算距离"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Overscan Distance"
+msgstr "超扫描距离"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Manual distance setting"
+msgstr "手动距离设置"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Toggle Overscan"
+msgstr "切换超扫描"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Toggle Auto Overscan"
+msgstr "切换自动超扫描"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Auto Calculate Overscan Distance"
+msgstr "自动计算超扫描距离"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Disable Auto Overscan"
+msgstr "禁用自动超扫描"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Change Overscan Distance"
+msgstr "更改超扫描距离"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Enable Optimization"
+msgstr "启用优化"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Minimizes travel distance by reordering segments"
+msgstr "通过重新排序段来最小化移动距离"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Allow Flipping"
+msgstr "允许翻转"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Allow reversing path direction for shorter travel"
+msgstr "允许反转路径方向以缩短移动"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Preserve First Workpiece"
+msgstr "保留第一个工件"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Keep the first workpiece at its original position"
+msgstr "将第一个工件保持在原始位置"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Toggle Path Optimization"
+msgstr "切换路径优化"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Toggle Flipping"
+msgstr "切换翻转"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Toggle Preserve First Workpiece"
+msgstr "切换保留第一个工件"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Enable Crop-to-Stock"
+msgstr "启用裁剪到材料"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Removes toolpaths extending beyond stock boundary"
+msgstr "移除超出材料边界的刀具路径"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Offset"
+msgstr "偏移"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Grow/shrink stock boundary before cropping"
+msgstr "在裁剪之前扩展/收缩材料边界"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Toggle Crop-to-Stock"
+msgstr "切换裁剪到材料"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Change Crop Offset"
+msgstr "更改裁剪偏移"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Enable Smoothing"
+msgstr "启用平滑"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Smooths jagged edges using a Gaussian filter"
+msgstr "使用高斯滤波器平滑锯齿边缘"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Smoothness"
+msgstr "平滑度"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Higher values produce smoother curves"
+msgstr "较高的值产生更平滑的曲线"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Corner Angle Threshold"
+msgstr "拐角角度阈值"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Angles sharper than this are kept as corners (degrees)"
+msgstr "比此更尖锐的角度将保持为拐角（度）"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Toggle Smoothing"
+msgstr "切换平滑"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Change smoothness"
+msgstr "更改平滑度"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Change corner angle"
+msgstr "更改拐角角度"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Enable Merge Lines"
+msgstr "启用合并线条"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Merges overlapping line segments to avoid double passing"
+msgstr "合并重叠的线段以避免重复通过"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Tolerance"
+msgstr "容差"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Maximum distance for lines to be considered overlapping"
+msgstr "线条被视为重叠的最大距离"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Toggle Merge Lines"
+msgstr "切换合并线条"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Change merge tolerance"
+msgstr "更改合并容差"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Number of Passes"
+msgstr "通过次数"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "How often to repeat the entire step"
+msgstr "重复整个步骤的频率"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Z Step-Down per Pass"
+msgstr "每次通过的Z轴下刀量"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Distance to lower Z-axis for each subsequent pass in machine units"
+msgstr "每次后续通过的Z轴下降距离（以机器单位）"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Change number of passes"
+msgstr "更改通过次数"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Change Z Step-Down"
+msgstr "更改Z轴下刀量"
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Optimize Path"
+msgstr "优化路径"
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Minimizes travel distance by reordering segments."
+msgstr "通过重新排序段来最小化移动距离。"
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Analyzing workpieces..."
+msgstr "正在分析工件..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Optimizing workpiece order..."
+msgstr "正在优化工件顺序..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Applying 2-opt refinement..."
+msgstr "正在应用2-opt优化..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Reassembling optimized workpieces..."
+msgstr "正在重新组装优化后的工件..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Workpiece optimization complete"
+msgstr "工件优化完成"
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Preprocessing for optimization..."
+msgstr "正在为优化进行预处理..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Analyzing and bucketing path segments..."
+msgstr "正在分析和分桶路径段..."
+
+#: post_processors/transformers/optimize_transformer.py
+#, python-brace-format
+msgid "Optimizing segment {i}/{total}..."
+msgstr "正在优化段 {i}/{total}..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Finding nearest paths..."
+msgstr "正在查找最近的路径..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Reassembling optimized paths..."
+msgstr "正在重新组装优化后的路径..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Optimization complete"
+msgstr "优化完成"
+
+#: post_processors/transformers/smooth_transformer.py
+msgid "Smooth Path"
+msgstr "平滑路径"
+
+#: post_processors/transformers/smooth_transformer.py
+msgid "Smooths the path by applying a Gaussian filter."
+msgstr "通过应用高斯滤波器平滑路径。"
+
+#: post_processors/transformers/merge_lines_transformer.py
+msgid "Merge Lines"
+msgstr "合并线条"
+
+#: post_processors/transformers/merge_lines_transformer.py
+msgid "Merges overlapping lines to avoid double passing."
+msgstr "合并重叠线条以避免重复通过。"
+
+#: post_processors/transformers/overscan_transformer.py
+msgid "Overscan"
+msgstr "超扫描"
+
+#: post_processors/transformers/overscan_transformer.py
+msgid "Extends raster lines to ensure constant engraving speed."
+msgstr "扩展光栅线以确保恒定的雕刻速度。"
+
+#: post_processors/transformers/crop_transformer.py
+msgid "Crop to Stock"
+msgstr "裁剪到材料"
+
+#: post_processors/transformers/crop_transformer.py
+msgid "Crops cutting lines to stock boundary."
+msgstr "将切割线裁剪到材料边界。"
+
+#: post_processors/transformers/multipass_transformer.py
+msgid "Multi-Pass"
+msgstr "多次通过"
+
+#: post_processors/transformers/multipass_transformer.py
+msgid "Repeats the path multiple times, optionally stepping down in Z."
+msgstr "多次重复路径，可选择在Z轴下刀。"
+
+#: post_processors/transformers/tabs_transformer.py
+msgid "Tabs"
+msgstr "标签"
+
+#: post_processors/transformers/tabs_transformer.py
+msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
+msgstr "通过添加间隙或降低切割路径上的功率来创建保持标签"

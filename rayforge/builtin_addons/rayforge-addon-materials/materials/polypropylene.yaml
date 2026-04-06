@@ -1,0 +1,28 @@
+uid: polypropylene
+name:
+  default: Polypropylene
+  de: Polypropylen
+  es: Polipropileno
+  fr: Polypropylène
+  pt: Polipropileno
+  uk: Поліпропілен
+  zh_CN: 聚丙烯
+description:
+  default: Semi-crystalline thermoplastic polymer
+  de: Halbkristalliner thermoplastischer Kunststoff
+  es: Polímero termoplástico semicristalino
+  fr: Polymère thermoplastique semi-cristallin
+  pt: Polímero termoplástico semicristalino
+  uk: Напівкристалічний термопластичний полімер
+  zh_CN: 半结晶热塑性聚合物
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#F0F0F0"
+  pattern: solid

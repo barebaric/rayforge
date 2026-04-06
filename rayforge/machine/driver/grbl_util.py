@@ -34,7 +34,7 @@ status_url = command_url.format(command="?")
 
 
 # GRBL Regex Parsers
-pos_re = re.compile(r":(-?\d+\.?\d*),(-?\d+\.?\d*),(-?\d+\.?\d*)")
+pos_re = re.compile(r":(-?\d+\.?\d*),(-?\d+\.?\d*)(?:,(-?\d+\.?\d*))?")
 fs_re = re.compile(r"FS:(\d+),(\d+)")
 bf_re = re.compile(r"Bf:(\d+),(\d+)")
 grbl_setting_re = re.compile(r"\$(\d+)=([\d\.-]+)")
@@ -401,10 +401,10 @@ def _parse_pos_triplet(pos: str) -> Optional[Pos]:
     match = pos_re.search(pos)
     if not match:
         return None
-    pos_triplet = tuple(float(i) for i in match.groups())
-    if len(pos_triplet) != 3:
-        return None
-    return pos_triplet
+    values = [float(g) if g else 0.0 for g in match.groups()]
+    while len(values) < 3:
+        values.append(0.0)
+    return (values[0], values[1], values[2])
 
 
 def error_code_to_device_error(error_code: str) -> DeviceError:
@@ -845,6 +845,12 @@ _AXIS_CALIBRATION_VARS = [
         var_type=float,
         description="Z-axis travel resolution, step/mm",
     ),
+    Var(
+        key="103",
+        label="$103",
+        var_type=float,
+        description="A-axis travel resolution, step/degree",
+    ),
 ]
 
 _AXIS_KINEMATICS_VARS = [
@@ -867,6 +873,12 @@ _AXIS_KINEMATICS_VARS = [
         description="Z-axis maximum rate, mm/min",
     ),
     Var(
+        key="113",
+        label="$113",
+        var_type=float,
+        description="A-axis maximum rate, degrees/min",
+    ),
+    Var(
         key="120",
         label="$120",
         var_type=float,
@@ -883,6 +895,12 @@ _AXIS_KINEMATICS_VARS = [
         label="$122",
         var_type=float,
         description="Z-axis acceleration, mm/sec^2",
+    ),
+    Var(
+        key="123",
+        label="$123",
+        var_type=float,
+        description="A-axis acceleration, degrees/sec^2",
     ),
 ]
 
@@ -904,6 +922,12 @@ _AXIS_TRAVEL_VARS = [
         label="$132",
         var_type=float,
         description="Z-axis maximum travel, mm",
+    ),
+    Var(
+        key="133",
+        label="$133",
+        var_type=float,
+        description="A-axis maximum travel, degrees",
     ),
 ]
 

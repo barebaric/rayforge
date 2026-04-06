@@ -1,0 +1,14 @@
+name: ai_workpiece_generator
+display_name: "AI Workpiece Generator"
+description: "Generate workpieces using AI directly within Rayforge"
+api_version: 3
+requires:
+  - sketcher
+author:
+  name: "Rayforge Team"
+  email: "noreply@rayforge.org"
+provides:
+  backend: "ai_workpiece_generator.backend"
+  frontend: "ai_workpiece_generator.frontend"
+license:
+  name: "MIT"

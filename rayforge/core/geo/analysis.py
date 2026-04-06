@@ -1,5 +1,5 @@
 import math
-from typing import List, Tuple, Optional, TYPE_CHECKING
+from typing import List, Tuple, Optional, TYPE_CHECKING, Sequence
 from itertools import groupby
 import numpy as np
 from .constants import (
@@ -21,6 +21,7 @@ from .constants import (
 )
 from .linearize import linearize_arc, linearize_bezier_from_array
 from .primitives import is_point_in_polygon
+from .types import Point, Point2DOr3D, Polygon
 
 if TYPE_CHECKING:
     from .geometry import Geometry
@@ -128,12 +129,12 @@ def encloses(container: "Geometry", content: "Geometry") -> bool:
 
 def get_subpath_vertices_from_array(
     data: np.ndarray, start_cmd_index: int
-) -> List[Tuple[float, float]]:
+) -> Polygon:
     """
     Extracts all 2D vertices for a single continuous subpath starting at a
     given MoveToCommand index from a numpy array, linearizing any arcs.
     """
-    vertices: List[Tuple[float, float]] = []
+    vertices: Polygon = []
     if start_cmd_index >= len(data):
         return []
 
@@ -235,7 +236,7 @@ def get_path_winding_order_from_array(
 
 def get_point_and_tangent_at_from_array(
     data: np.ndarray, row_index: int, t: float
-) -> Optional[Tuple[Tuple[float, float], Tuple[float, float]]]:
+) -> Optional[Tuple[Point, Point]]:
     """
     Calculates the 2D point and tangent vector at a parameter 't' along a
     segment represented by a row in the data array.
@@ -336,7 +337,7 @@ def get_point_and_tangent_at_from_array(
 
 def get_outward_normal_at_from_array(
     data: np.ndarray, row_index: int, t: float
-) -> Optional[Tuple[float, float]]:
+) -> Optional[Point]:
     """
     Calculates the outward-pointing normal vector for a point on a closed
     path from a numpy array.
@@ -369,7 +370,7 @@ def get_outward_normal_at_from_array(
 
 
 def get_angle_at_vertex(
-    p0: Tuple[float, ...], p1: Tuple[float, ...], p2: Tuple[float, ...]
+    p0: Point2DOr3D, p1: Point2DOr3D, p2: Point2DOr3D
 ) -> float:
     """
     Calculates the internal angle of the corner at point p1 in the
@@ -395,13 +396,13 @@ def get_angle_at_vertex(
 
 
 def remove_duplicates(
-    points: List[Tuple[float, ...]],
-) -> List[Tuple[float, ...]]:
+    points: Sequence[Point2DOr3D],
+) -> List[Point2DOr3D]:
     """Removes consecutive duplicate points from a list."""
     return [k for k, v in groupby(points)]
 
 
-def is_clockwise(points: List[Tuple[float, ...]]) -> bool:
+def is_clockwise(points: Sequence[Point2DOr3D]) -> bool:
     """
     Determines if the first three points in a list form a clockwise turn
     using the 2D cross product.
@@ -417,7 +418,7 @@ def is_clockwise(points: List[Tuple[float, ...]]) -> bool:
 
 
 def arc_direction_is_clockwise(
-    points: List[Tuple[float, ...]], center: Tuple[float, float]
+    points: Sequence[Point2DOr3D], center: Point
 ) -> bool:
     """
     Determines the winding direction of a sequence of points around a center

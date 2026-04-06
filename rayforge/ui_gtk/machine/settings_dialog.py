@@ -1,14 +1,13 @@
 from typing import Optional
 from gettext import gettext as _
 
-from gi.repository import Adw, Gdk, Gtk
+from gi.repository import Adw, Gtk
 
 from ...camera.models import Camera
 from ...context import get_context
 from ...machine.models.machine import Machine
 from ..camera.camera_preferences_page import CameraPreferencesPage
 from ..icons import get_icon
-from ..shared.keyboard import is_primary_modifier
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from .advanced_preferences_page import AdvancedPreferencesPage
 from .device_settings_page import DeviceSettingsPage
@@ -18,6 +17,8 @@ from .hardware_page import HardwarePage
 from .hooks_macros_page import HooksMacrosPage
 from .laser_preferences_page import LaserPreferencesPage
 from .maintenance_page import MaintenancePage
+from .rotary_module_page import RotaryModulePage
+from .nogo_zones_page import NogoZonesPage
 
 
 class MachineSettingsDialog(PatchedDialogWindow):
@@ -105,7 +106,19 @@ class MachineSettingsDialog(PatchedDialogWindow):
         laser_page = LaserPreferencesPage(machine=self.machine)
         self.content_stack.add_titled(laser_page, "laser", _("Laser"))
 
-        # --- Page 8: Camera ---
+        # --- Page 8: Rotary Module ---
+        rotary_module_page = RotaryModulePage(machine=self.machine)
+        self.content_stack.add_titled(
+            rotary_module_page, "rotary-module", _("Rotary Module")
+        )
+
+        # --- Page 9: No-Go Zones ---
+        nogo_zones_page = NogoZonesPage(machine=self.machine)
+        self.content_stack.add_titled(
+            nogo_zones_page, "nogo-zones", _("No-Go Zones")
+        )
+
+        # --- Page 10: Camera ---
         self.camera_page = CameraPreferencesPage()
         self.camera_page.camera_add_requested.connect(
             self._on_camera_add_requested
@@ -140,10 +153,16 @@ class MachineSettingsDialog(PatchedDialogWindow):
         )
         self._add_sidebar_row(_("G-code"), "gcode-symbolic", "gcode")
         self._add_sidebar_row(
-            _("Hooks & Macros"), "utilities-terminal-symbolic", "hooks-macros"
+            _("Hooks & Macros"), "code-symbolic", "hooks-macros"
         )
         self._add_sidebar_row(_("Device"), "settings-symbolic", "device")
         self._add_sidebar_row(_("Laser"), "laser-on-symbolic", "laser")
+        self._add_sidebar_row(
+            _("Rotary Module"), "rotary-symbolic", "rotary-module"
+        )
+        self._add_sidebar_row(
+            _("No-Go Zones"), "action-unavailable-symbolic", "nogo-zones"
+        )
         self._add_sidebar_row(_("Camera"), "camera-on-symbolic", "camera")
         self._add_sidebar_row(
             _("Maintenance"), "timer-symbolic", "maintenance"
@@ -157,11 +176,6 @@ class MachineSettingsDialog(PatchedDialogWindow):
         camera_mgr.controller_added.connect(self._sync_camera_page)
         camera_mgr.controller_removed.connect(self._sync_camera_page)
         self.connect("destroy", self._on_destroy)
-
-        # Add a key controller to close the dialog on Escape press
-        key_controller = Gtk.EventControllerKey()
-        key_controller.connect("key-pressed", self._on_key_pressed)
-        self.add_controller(key_controller)
 
         # Initial population of all dependent pages
         self._sync_camera_page()
@@ -247,15 +261,6 @@ class MachineSettingsDialog(PatchedDialogWindow):
             if c.config.device_id in machine_camera_device_ids
         ]
         self.camera_page.set_controllers(relevant_controllers)
-
-    def _on_key_pressed(self, controller, keyval, keycode, state):
-        """Handle key press events, closing dialog on Escape or primary+W."""
-        has_primary = is_primary_modifier(state)
-
-        if keyval == Gdk.KEY_Escape or (has_primary and keyval == Gdk.KEY_w):
-            self.close()
-            return True
-        return False
 
     def _on_destroy(self, *args):
         """Disconnects signals to prevent memory leaks."""

@@ -22,7 +22,6 @@ class MachineManager:
         self.base_dir = base_dir
         self.controllers: Dict[str, MachineController] = dict()
         self.machines: Dict[str, Machine] = dict()
-        self._machine_ref_for_pyreverse: Machine
         self.machine_added = Signal()
         self.machine_removed = Signal()
         self.machine_updated = Signal()
@@ -71,7 +70,9 @@ class MachineManager:
         logger.debug(
             f"Creating controller for machine '{machine.name}' on first use."
         )
-        controller = MachineController(machine, get_context())
+        controller = MachineController(
+            machine, get_context(), task_mgr.schedule_on_main_thread
+        )
 
         # Wire up the machine's signal proxies to the new controller
         machine._connect_controller_signals(controller)
@@ -87,7 +88,7 @@ class MachineManager:
         controller = self.get_controller(machine.id)
         # Only rebuild if not already connected to avoid disconnecting
         if not machine.is_connected():
-            await controller._rebuild_driver_instance()
+            await controller.rebuild_driver()
         if machine.auto_connect and not machine.is_connected():
             await self._safe_connect(machine)
 
@@ -198,9 +199,14 @@ class MachineManager:
     def save_machine(self, machine):
         logger.debug(f"Saving machine {machine.id}")
         machine_file = self.filename_from_id(machine.id)
-        with open(machine_file, "w") as f:
+        try:
             data = machine.to_dict(include_frozen_dialect=False)
-            yaml.safe_dump(data, f)
+            content = yaml.safe_dump(data)
+        except Exception as e:
+            logger.error(f"Failed to serialize machine {machine.id}: {e}")
+            raise
+        with open(machine_file, "w") as f:
+            f.write(content)
 
     def load_machine(self, machine_id: str) -> Optional["Machine"]:
         machine_file = self.filename_from_id(machine_id)
@@ -216,6 +222,14 @@ class MachineManager:
         machine.id = machine_id
         self.machines[machine.id] = machine
         machine.changed.connect(self.on_machine_changed)
+
+        if machine.dialect_migrated:
+            logger.info(
+                f"Saving machine '{machine.name}' after dialect migration."
+            )
+            self.save_machine(machine)
+            machine.dialect_migrated = False
+
         return machine
 
     def on_machine_changed(self, machine, **kwargs):

@@ -1,176 +1,325 @@
-# Dibujador 2D Paramétrico
+# Diseñador paramétrico 2D
 
-El Dibujador 2D Paramétrico es una potente función en Rayforge que te permite crear y editar diseños 2D precisos basados en restricciones directamente dentro de la aplicación. Esta función te permite diseñar piezas personalizadas desde cero sin necesidad de software CAD externo.
+El Diseñador paramétrico 2D es una función potente de Rayforge que le permite
+crear y editar diseños 2D precisos basados en restricciones directamente dentro
+de la aplicación. Esta función le permite diseñar piezas personalizadas desde
+cero sin necesidad de software CAD externo.
 
-## Resumen
+## Descripción general
 
-El dibujador proporciona un conjunto completo de herramientas para crear formas geométricas y aplicar restricciones paramétricas para definir relaciones precisas entre elementos. Este enfoque asegura que tus diseños mantengan su geometría intencionada incluso cuando se modifican las dimensiones.
+El diseñador proporciona un conjunto completo de herramientas para crear formas
+geométricas y aplicar restricciones paramétricas para definir relaciones precisas
+entre los elementos. Este enfoque garantiza que sus diseños mantengan la
+geometría prevista incluso cuando se modifican las dimensiones.
 
-## Crear y Editar Bocetos
+## Creación y edición de bocetos
 
-### Crear un Nuevo Boceto
+### Crear un nuevo boceto
 
-1. Haz clic en el botón "Nuevo Boceto" en la barra de herramientas o usa el menú principal
-2. Se abrirá un nuevo espacio de trabajo de boceto vacío con la interfaz del editor de bocetos
-3. Comienza a crear geometría usando las herramientas de dibujo del menú circular o atajos de teclado
-4. Aplica restricciones para definir relaciones entre elementos
-5. Haz clic en "Finalizar Boceto" para guardar tu trabajo y volver al espacio de trabajo principal
+1. Haga clic en el botón "Nuevo boceto" en la barra de herramientas o use el
+   menú principal
+2. Se abrirá un nuevo espacio de trabajo vacío con la interfaz del editor de
+   bocetos
+3. Comience a crear geometría con las herramientas de dibujo del menú circular
+   o los atajos de teclado
+4. Aplique restricciones para definir las relaciones entre los elementos
+5. Haga clic en "Finalizar boceto" para guardar su trabajo y volver al espacio
+   de trabajo principal
 
-### Editar Bocetos Existentes
+### Editar bocetos existentes
 
-1. Haz doble clic en una pieza de trabajo basada en boceto en el espacio de trabajo principal
-2. Alternativamente, selecciona un boceto y elige "Editar Boceto" del menú contextual
-3. Realiza tus modificaciones usando las mismas herramientas y restricciones
-4. Haz clic en "Finalizar Boceto" para guardar cambios o "Cancelar Boceto" para descartarlos
+1. Haga doble clic en una pieza de trabajo basada en boceto en el espacio de
+   trabajo principal
+2. Alternativamente, seleccione un boceto y elija "Editar boceto" en el menú
+   contextual
+3. Realice sus modificaciones con las mismas herramientas y restricciones
+4. Haga clic en "Finalizar boceto" para guardar los cambios o en "Cancelar
+   boceto" para descartarlos
 
-## Crear Geometría 2D
+## Creación de geometría 2D
 
-El dibujador soporta crear los siguientes elementos geométricos básicos:
+El diseñador permite crear los siguientes elementos geométricos básicos:
 
-- **Líneas**: Dibuja segmentos de línea recta entre puntos
-- **Círculos**: Crea círculos definiendo un punto central y radio
-- **Arcos**: Dibuja arcos especificando un punto central, punto inicial y punto final
-- **Rectángulos**: Dibuja rectángulos especificando dos esquinas opuestas
-- **Rectángulos Redondeados**: Dibuja rectángulos con esquinas redondeadas
-- **Cajas de Texto**: Añade elementos de texto a tu boceto
-- **Rellenos**: Rellena regiones cerradas para crear áreas sólidas
+- **Trazados (líneas y curvas Bézier)**: Dibuje líneas rectas y curvas Bézier
+  suaves con la herramienta de trazado unificada. Haga clic para colocar puntos,
+  arrastre para crear tiradores Bézier.
+- **Arcos**: Dibuje arcos especificando un punto central, un punto de inicio y
+  un punto final
+- **Elipses**: Cree elipses (y círculos) definiendo un punto central y
+  arrastrando para ajustar el tamaño y la proporción. Mantenga pulsado `Ctrl`
+  mientras arrastra para restringir a un círculo perfecto.
+- **Rectángulos**: Dibuje rectángulos especificando dos esquinas opuestas
+- **Rectángulos redondeados**: Dibuje rectángulos con esquinas redondeadas
+- **Cuadros de texto**: Añada elementos de texto a su boceto
+- **Rellenos**: Rellene regiones cerradas para crear áreas sólidas
 
-Estos elementos forman la base de tus diseños 2D y pueden combinarse para crear formas complejas. Los rellenos son particularmente útiles para crear regiones sólidas que serán grabadas o cortadas como una sola pieza.
+Estos elementos forman la base de sus diseños 2D y pueden combinarse para crear
+formas complejas. Los rellenos son especialmente útiles para crear regiones
+sólidas que se grabarán o cortarán como una sola pieza.
 
-## Sistema de Restricciones Paramétricas
+## Trabajar con curvas Bézier
 
-El sistema de restricciones es el núcleo del dibujador paramétrico, permitiéndote definir relaciones geométricas precisas:
+La herramienta de trazado admite curvas Bézier para crear formas suaves y
+orgánicas:
 
-### Restricciones Geométricas
+### Dibujar curvas Bézier
 
-- **Coincidente**: Fuerza dos puntos a ocupar la misma ubicación
-- **Vertical**: Restringe una línea a ser perfectamente vertical
-- **Horizontal**: Restringe una línea a ser perfectamente horizontal
-- **Tangente**: Hace una línea tangente a un círculo o arco
-- **Perpendicular**: Fuerza dos líneas, una línea y un arco/círculo, o dos arcos/círculos a encontrarse a 90 grados
-- **Punto en Línea/Forma**: Restringe un punto a estar sobre una línea, arco o círculo
-- **Simetría**: Crea relaciones simétricas entre elementos. Soporta dos modos:
-  - **Simetría de Punto**: Selecciona 3 puntos (el primero es el centro)
-  - **Simetría de Línea**: Selecciona 2 puntos y 1 línea (la línea es el eje)
+1. Seleccione la herramienta de trazado en el menú circular o use el atajo de
+   teclado
+2. Haga clic para colocar puntos; cada clic crea un nuevo punto
+3. Arrastre tras hacer clic para crear tiradores Bézier y obtener curvas suaves
+4. Siga añadiendo puntos para construir su trazado
+5. Pulse Escape o haga doble clic para finalizar el trazado
 
-### Restricciones Dimensionales
+### Editar curvas Bézier
 
-- **Distancia**: Establece la distancia exacta entre dos puntos o a lo largo de una línea
+- **Mover puntos**: Haga clic y arrastre cualquier punto para reposicionarlo
+- **Ajustar tiradores**: Arrastre los extremos de los tiradores para modificar
+  la forma de la curva
+- **Conectar a puntos existentes**: Al editar un trazado, puede ajustarse a los
+  puntos existentes de su boceto
+- **Suavizar/simetrizar**: Los puntos conectados por una restricción de
+  coincidencia pueden suavizarse (tangente continua) o simetrizarse (tiradores
+  reflejados)
+
+### Convertir curvas en líneas
+
+Use la **herramienta de enderezamiento** para convertir curvas Bézier en líneas
+rectas. Esto es útil cuando necesita geometría limpia y sencilla. Seleccione los
+segmentos Bézier que desea convertir y aplique la acción de enderezamiento.
+
+## Sistema de restricciones paramétricas
+
+El sistema de restricciones es el núcleo del diseñador paramétrico, permitiéndole
+definir relaciones geométricas precisas:
+
+### Restricciones geométricas
+
+- **Coincidencia**: Fuerza dos puntos a ocupar la misma posición
+- **Vertical**: Restringe una línea para que sea perfectamente vertical
+- **Horizontal**: Restringe una línea para que sea perfectamente horizontal
+- **Tangente**: Hace que una línea sea tangente a un círculo o arco
+- **Perpendicular**: Fuerza dos líneas, una línea y un arco/círculo, o dos
+  arcos/círculos a encontrarse en un ángulo de 90 grados
+- **Punto sobre línea/forma**: Restringe un punto para que se encuentre sobre
+  una línea, arco o círculo
+- **Colineal**: Fuerza dos o más líneas a encontrarse sobre la misma línea
+  infinita
+- **Simetría**: Crea relaciones simétricas entre elementos. Admite dos modos:
+  - **Simetría de punto**: Seleccione 3 puntos (el primero es el centro)
+  - **Simetría de línea**: Seleccione 2 puntos y 1 línea (la línea es el eje)
+
+### Restricciones dimensionales
+
+- **Distancia**: Establece la distancia exacta entre dos puntos o a lo largo de
+  una línea
 - **Diámetro**: Define el diámetro de un círculo
 - **Radio**: Establece el radio de un círculo o arco
-- **Ángulo**: Aplica un ángulo específico entre dos líneas
-- **Relación de Aspecto**: Fuerza la proporción entre dos distancias a ser igual a un valor especificado
-- **Igual Longitud/Radio**: Fuerza múltiples elementos (líneas, arcos o círculos) a tener la misma longitud o radio
-- **Igual Distancia**: Fuerza la distancia entre dos pares de puntos a ser igual
+- **Ángulo**: Exige un ángulo específico entre dos líneas
+- **Relación de aspecto**: Fuerza la proporción entre dos distancias a ser igual
+  a un valor especificado
+- **Igual longitud/radio**: Fuerza múltiples elementos (líneas, arcos, elipses
+  o círculos) a tener la misma longitud o radio
+- **Igual distancia**: Hace que dos segmentos de línea tengan la misma longitud
+  (diferente de Igual longitud/radio, que también puede aplicarse a arcos y
+  círculos)
 
-## Interfaz de Menú Circular
+## Interfaz del menú circular
 
-El dibujador cuenta con un menú circular sensible al contexto que proporciona acceso rápido a todas las herramientas de dibujo y restricciones. Este menú radial aparece cuando haces clic derecho en el espacio de trabajo del boceto y se adapta basándose en tu contexto y selección actual.
+El diseñador incluye un menú circular contextual que proporciona acceso rápido a
+todas las herramientas de dibujo y restricción. Este menú radial aparece al
+hacer clic derecho en el espacio de trabajo del boceto y se adapta según su
+contexto y selección actuales.
 
-Los elementos del menú circular muestran dinámicamente las opciones disponibles basándose en lo que tienes seleccionado. Por ejemplo, al hacer clic en espacio vacío, verás herramientas de dibujo. Al hacer clic en geometría seleccionada, verás restricciones aplicables.
+Los elementos del menú circular muestran dinámicamente las opciones disponibles
+según lo que tenga seleccionado. Por ejemplo, al hacer clic en un espacio vacío,
+verá herramientas de dibujo. Al hacer clic sobre geometría seleccionada, verá las
+restricciones aplicables.
 
-![Menú Circular del Dibujador](/screenshots/sketcher-pie-menu.png)
+![Menú circular del diseñador](/screenshots/sketcher-pie-menu.png)
 
-## Atajos de Teclado
+## Atajos de teclado
 
-El dibujador proporciona atajos de teclado para un flujo de trabajo eficiente:
+El diseñador proporciona atajos de teclado para un flujo de trabajo eficiente:
 
-### Atajos de Herramientas
-- `Espacio`: Herramienta de selección
-- `G+L`: Herramienta de línea
+### Atajos de herramientas
+- `Space`: Herramienta de selección
+- `G+P`: Herramienta de trazado (líneas y curvas Bézier)
 - `G+A`: Herramienta de arco
-- `G+C`: Herramienta de círculo
+- `G+C`: Herramienta de elipse
 - `G+R`: Herramienta de rectángulo
 - `G+O`: Herramienta de rectángulo redondeado
 - `G+F`: Herramienta de relleno de área
-- `G+T`: Herramienta de caja de texto
+- `G+T`: Herramienta de cuadro de texto
+- `G+G`: Herramienta de cuadrícula (alternar visibilidad de la cuadrícula)
 - `G+N`: Alternar modo construcción en la selección
 
-### Atajos de Acción
-- `C+H`: Añadir chaflán en esquina
-- `C+F`: Añadir redondeo en esquina
+### Atajos de acciones
+- `C+H`: Añadir chaflán en la esquina
+- `C+F`: Añadir redondeo en la esquina
+- `C+S`: Enderezar las curvas Bézier seleccionadas a líneas
 
-### Atajos de Restricciones
+### Atajos de restricciones
 - `H`: Aplicar restricción Horizontal
 - `V`: Aplicar restricción Vertical
 - `N`: Aplicar restricción Perpendicular
 - `T`: Aplicar restricción Tangente
 - `E`: Aplicar restricción Igual
-- `O` o `C`: Aplicar restricción de Alineación (Coincidente)
+- `O` o `C`: Aplicar restricción de Alineación (Coincidencia)
 - `S`: Aplicar restricción de Simetría
 - `K+D`: Aplicar restricción de Distancia
 - `K+R`: Aplicar restricción de Radio
 - `K+O`: Aplicar restricción de Diámetro
 - `K+A`: Aplicar restricción de Ángulo
-- `K+X`: Aplicar restricción de Relación de Aspecto
+- `K+X`: Aplicar restricción de Relación de aspecto
 
-### Atajos Generales
+### Atajos generales
 - `Ctrl+Z`: Deshacer
 - `Ctrl+Y` o `Ctrl+Shift+Z`: Rehacer
-- `Eliminar`: Eliminar elementos seleccionados
-- `Escape`: Cancelar operación actual o deseleccionar
-- `F`: Ajustar vista al contenido
+- `Delete`: Eliminar los elementos seleccionados
+- `Escape`: Cancelar la operación actual o deseleccionar
+- `F`: Ajustar la vista al contenido
 
-## Modo Construcción
+## Modo construcción
 
-El modo construcción te permite marcar entidades como "geometría de construcción" - elementos auxiliares usados para guiar tu diseño pero que no son parte del resultado final. Las entidades de construcción se muestran de manera diferente (típicamente como líneas punteadas) y no se incluyen cuando el boceto se usa para corte láser o grabado.
+El modo construcción le permite marcar entidades como "geometría de construcción",
+elementos auxiliares que guían su diseño pero que no forman parte del resultado
+final. Las entidades de construcción se muestran de forma diferente
+(normalmente como líneas discontinuas) y no se incluyen cuando el boceto se usa
+para corte o grabado láser.
 
-Para alternar modo construcción:
-- Selecciona una o más entidades
-- Presiona `N` o `G+N`, o usa la opción Construcción en el menú circular
+Para alternar el modo construcción:
+- Seleccione una o más entidades
+- Pulse `N` o `G+N`, o use la opción Construcción en el menú circular
 
 Las entidades de construcción son útiles para:
 - Crear líneas y círculos de referencia
 - Definir geometría temporal para alineación
 - Construir formas complejas a partir de un marco de guías
 
-## Chaflán y Redondeo
+## Cuadrícula, ajuste y controles de visibilidad
 
-El dibujador proporciona herramientas para modificar esquinas de tu geometría:
+### Herramienta de cuadrícula
 
-- **Chaflán**: Reemplaza una esquina aguda con un borde biselado. Selecciona un punto de unión (donde dos líneas se encuentran) y aplica la acción de chaflán.
-- **Redondeo**: Reemplaza una esquina aguda con un borde redondeado. Selecciona un punto de unión (donde dos líneas se encuentran) y aplica la acción de redondeo.
+La herramienta de cuadrícula proporciona una referencia visual para la alineación
+y el tamaño:
+
+- Active/desactive la cuadrícula con el botón de la herramienta o `G+G`
+- La cuadrícula se adapta a su nivel de zoom para mantener un espaciado
+  consistente
+
+### Ajuste magnético
+
+Mientras crea o mueve geometría, Rayforge atrae automáticamente el cursor hacia
+los elementos cercanos: extremos, puntos medios de líneas, intersecciones y otros
+puntos de referencia. Esto facilita la conexión precisa de formas sin colocar
+manualmente cada punto. El indicador de ajuste se resalta cuando el cursor está
+cerca de un objetivo de ajuste.
+
+### Auto-restricción durante la creación
+
+Muchas herramientas de dibujo aplican restricciones automáticamente al crear
+geometría. Por ejemplo, al dibujar una línea cerca de la horizontal o vertical,
+el diseñador ofrecerá bloquearla en su posición. Esto ayuda a mantener el boceto
+ordenado desde el principio, en lugar de corregirlo después.
+
+### Controles de mostrar/ocultar
+
+La barra de herramientas del diseñador incluye botones de alternancia para
+controlar la visibilidad:
+
+- **Mostrar/ocultar geometría de construcción**: Alterne la visibilidad de las
+  entidades de construcción
+- **Mostrar/ocultar restricciones**: Alterne la visibilidad de los marcadores de
+  restricciones
+
+Estos controles ayudan a reducir el desorden visual al trabajar con bocetos
+complejos.
+
+### Movimiento restringido al eje
+
+Al arrastrar puntos o geometría, mantenga pulsado `Shift` para restringir el
+movimiento al eje más cercano (horizontal o vertical). Esto es útil para
+mantener la alineación mientras realiza ajustes.
+
+## Chaflán y redondeo
+
+El diseñador proporciona herramientas para modificar las esquinas de su
+geometría:
+
+- **Chaflán**: Reemplaza una esquina aguda con un borde biselado. Seleccione un
+  punto de unión (donde dos líneas se encuentran) y aplique la acción de
+  chaflán.
+- **Redondeo**: Reemplaza una esquina aguda con un borde redondeado. Seleccione
+  un punto de unión (donde dos líneas se encuentran) y aplique la acción de
+  redondeo.
 
 Para usar chaflán o redondeo:
-1. Selecciona un punto de unión donde dos líneas se encuentran
-2. Presiona `C+H` para chaflán o `C+F` para redondeo
-3. Usa el menú circular o atajos de teclado para aplicar la modificación
+1. Seleccione un punto de unión donde dos líneas se encuentran
+2. Pulse `C+H` para chaflán o `C+F` para redondeo
+3. Use el menú circular o los atajos de teclado para aplicar la modificación
 
-## Importar y Exportar
+## Importación y exportación
 
-### Exportar Objetos
+### Exportar objetos
 
-Puedes exportar cualquier pieza de trabajo seleccionada a varios formatos vectoriales:
+Puede exportar cualquier pieza de trabajo seleccionada a varios formatos
+vectoriales:
 
-1. Selecciona una pieza de trabajo en el lienzo
-2. Elige **Objeto → Exportar Objeto...** (o clic derecho y selecciona del menú contextual)
-3. Elige el formato de exportación:
-   - **RFS (.rfs)**: Formato de boceto paramétrico nativo de Rayforge - preserva todas las restricciones y puede reimportarse para edición
-   - **SVG (.svg)**: Formato vectorial estándar - ampliamente compatible con software de diseño
-   - **DXF (.dxf)**: Formato de intercambio CAD - compatible con la mayoría de aplicaciones CAD
+1. Seleccione una pieza de trabajo en el lienzo
+2. Elija **Objeto → Exportar objeto...** (o haga clic derecho y seleccione desde
+   el menú contextual)
+3. Elija el formato de exportación:
+   - **RFS (.rfs)**: Formato nativo de boceto paramétrico de Rayforge; conserva
+     todas las restricciones y puede reimportarse para editar
+   - **SVG (.svg)**: Formato vectorial estándar; ampliamente compatible con
+     software de diseño
+   - **DXF (.dxf)**: Formato de intercambio CAD; compatible con la mayoría de
+     aplicaciones CAD
 
-### Guardar Bocetos
+### Guardar bocetos
 
-Puedes guardar tus bocetos 2D en archivos para reutilizarlos en otros proyectos. Todas las restricciones paramétricas se preservan al guardar, asegurando que tus diseños mantengan sus relaciones geométricas.
+Puede guardar sus bocetos 2D en archivos para reutilizarlos en otros proyectos.
+Todas las restricciones paramétricas se conservan al guardar, garantizando que
+sus diseños mantengan sus relaciones geométricas.
 
-### Importar Bocetos
+### Importar bocetos
 
-Los bocetos guardados pueden importarse a cualquier espacio de trabajo, permitiéndote crear una biblioteca de elementos de diseño comúnmente usados. El proceso de importación mantiene todas las restricciones y relaciones dimensionales.
+Los bocetos guardados pueden importarse en cualquier espacio de trabajo,
+permitiéndole crear una biblioteca de elementos de diseño de uso común. El
+proceso de importación mantiene todas las restricciones y relaciones
+dimensionales.
 
-## Consejos de Flujo de Trabajo
+## Consejos de flujo de trabajo
 
-1. **Comienza con Geometría Básica**: Crea formas básicas primero, luego refina con restricciones
-2. **Usa Restricciones Temprano**: Aplica restricciones mientras construyes para mantener la intención del diseño
-3. **Verifica Estado de Restricciones**: El sistema indica cuándo los bocetos están completamente restringidos
-4. **Observa Conflictos**: Las restricciones que entran en conflicto entre sí se resaltan en rojo
-5. **Utiliza Simetría**: Las restricciones de simetría pueden acelerar significativamente diseños complejos
-6. **Itera y Refina**: No dudes en modificar restricciones para lograr el resultado deseado
+1. **Comience con geometría aproximada**: Cree primero formas básicas y luego
+   refínelas con restricciones
+2. **Use restricciones desde el principio**: Aplique restricciones mientras
+   construye para mantener la intención del diseño
+3. **Verifique el estado de las restricciones**: El sistema indica cuándo los
+   bocetos están completamente restringidos
+4. **Vigile los conflictos**: Las restricciones en conflicto se resaltan en rojo
+   y se muestran en el panel de restricciones para facilitar su identificación
+5. **Aproveche la simetría**: Las restricciones de simetría pueden acelerar
+   significativamente los diseños complejos
+6. **Use la cuadrícula**: Active la cuadrícula para una alineación precisa y use
+   Ctrl para ajustar a la cuadrícula
+7. **Itere y refínelo**: No dude en modificar las restricciones para obtener el
+   resultado deseado
 
-## Funciones de Edición
+## Funciones de edición
 
-- **Soporte Completo de Deshacer/Rehacer**: Todo el estado del boceto se guarda con cada operación
-- **Cursor Dinámico**: El cursor cambia para reflejar la herramienta de dibujo activa
-- **Visualización de Restricciones**: Las restricciones aplicadas se indican claramente en la interfaz
-- **Actualizaciones en Tiempo Real**: Los cambios en restricciones actualizan inmediatamente la geometría
-- **Edición con Doble Clic**: Doble clic en restricciones dimensionales (Distancia, Radio, Diámetro, Ángulo, Relación de Aspecto) abre un diálogo para editar sus valores
-- **Expresiones Paramétricas**: Las restricciones dimensionales soportan expresiones, permitiendo que los valores se calculen desde otros parámetros (ej., `ancho/2` para un radio que es la mitad del ancho)
+- **Soporte completo de deshacer/rehacer**: El estado completo del boceto se
+  guarda con cada operación
+- **Cursor dinámico**: El cursor cambia para reflejar la herramienta de dibujo
+  activa
+- **Visualización de restricciones**: Las restricciones aplicadas se indican
+  claramente en la interfaz
+- **Actualizaciones en tiempo real**: Los cambios en las restricciones actualizan
+  inmediatamente la geometría
+- **Edición con doble clic**: Hacer doble clic en restricciones dimensionales
+  (Distancia, Radio, Diámetro, Ángulo, Relación de aspecto) abre un diálogo
+  para editar sus valores
+- **Expresiones paramétricas**: Las restricciones dimensionales admiten
+  expresiones, lo que permite calcular valores a partir de otros parámetros
+  (p. ej., `width/2` para un radio que sea la mitad de la anchura)

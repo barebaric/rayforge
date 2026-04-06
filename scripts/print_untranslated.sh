@@ -15,9 +15,33 @@ fi
 
 LANG_CODE="$1"
 
+# Function to check untranslated strings in a package
+check_package() {
+  local pkg_name="$1"
+  local locale_dir="$2"
+  local po_file="$locale_dir/$LANG_CODE/LC_MESSAGES/$pkg_name.po"
+
+  if [ ! -f "$po_file" ]; then
+    return
+  fi
+
+  if msgattrib --untranslated --no-obsolete "$po_file" 2>/dev/null | grep -q "^msgid"; then
+    echo ""
+    echo "=== $pkg_name ==="
+    echo "($po_file)"
+    msgattrib --untranslated --no-obsolete "$po_file" | awk '
+        /^msgid/ && entry_count >= 100 { exit }
+        /^msgid/ { entry_count++ }
+        { print }
+    '
+  fi
+}
+
 # List all languages with untranslated strings
 if [ "$LANG_CODE" = "list" ]; then
   found=0
+
+  # Check main app
   for lang_dir in rayforge/locale/*/; do
     lang=$(basename "$lang_dir")
     if [ -d "$lang_dir/LC_MESSAGES" ] && [ -f "$lang_dir/LC_MESSAGES/rayforge.po" ]; then
@@ -30,6 +54,39 @@ if [ "$LANG_CODE" = "list" ]; then
       fi
     fi
   done
+
+  # Check addons
+  for addon_type in builtin_addons private_addons; do
+    for addon_dir in rayforge/$addon_type/*/; do
+      # Extract addon name from rayforge-addon.yaml
+      addon_yaml="$addon_dir/rayforge-addon.yaml"
+      if [ -f "$addon_yaml" ]; then
+        addon_name=$(grep "^name:" "$addon_yaml" | head -n 1 | cut -d':' -f2 | xargs)
+      else
+        addon_name=$(basename "$addon_dir")
+      fi
+      
+      if [ -d "$addon_dir/locale" ]; then
+        locale_dir="$addon_dir/locale"
+      else
+        continue
+      fi
+      
+      for lang_dir in "$locale_dir"/*/; do
+        lang=$(basename "$lang_dir")
+        if [ -d "$lang_dir/LC_MESSAGES" ] && [ -f "$lang_dir/LC_MESSAGES/$addon_name.po" ]; then
+          if [ "$lang" != "en" ]; then
+            PO_FILE="$lang_dir/LC_MESSAGES/$addon_name.po"
+            if msgattrib --untranslated --no-obsolete "$PO_FILE" 2>/dev/null | grep -q "^msgid"; then
+              echo "$lang ($addon_name addon)"
+              found=1
+            fi
+          fi
+        fi
+      done
+    done
+  done
+
   if [ "$found" -eq 0 ]; then
     echo "All languages are fully translated."
   fi
@@ -50,6 +107,7 @@ if [ "$LANG_CODE" = "en" ]; then
   done
   exit 1
 fi
+
 PO_FILE="rayforge/locale/${LANG_CODE}/LC_MESSAGES/rayforge.po"
 
 # Check if the .po file exists
@@ -65,9 +123,39 @@ if [ ! -f "$PO_FILE" ]; then
   exit 1
 fi
 
-# Print untranslated strings (limited to 100 entries by default)
+# Print untranslated strings for main app (limited to 100 entries by default)
+echo "=== rayforge (main app) ==="
+echo "($PO_FILE)"
 msgattrib --untranslated --no-obsolete "$PO_FILE" | awk '
     /^msgid/ && entry_count >= 100 { exit }
     /^msgid/ { entry_count++ }
     { print }
 '
+
+# Check builtin packages
+for pkg_dir in rayforge/builtin_packages/*/; do
+  pkg_name=$(basename "$pkg_dir")
+  locale_dir="$pkg_dir/locale"
+  check_package "$pkg_name" "$locale_dir"
+done
+
+# Check addons
+for addon_type in builtin_addons private_addons; do
+  for addon_dir in rayforge/$addon_type/*/; do
+    # Extract addon name from rayforge-addon.yaml
+    addon_yaml="$addon_dir/rayforge-addon.yaml"
+    if [ -f "$addon_yaml" ]; then
+      addon_name=$(grep "^name:" "$addon_yaml" | head -n 1 | cut -d':' -f2 | xargs)
+    else
+      addon_name=$(basename "$addon_dir")
+    fi
+    
+    if [ -d "$addon_dir/locale" ]; then
+      locale_dir="$addon_dir/locale"
+    else
+      continue
+    fi
+    
+    check_package "$addon_name" "$locale_dir"
+  done
+done

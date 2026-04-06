@@ -27,15 +27,42 @@ Der Sketcher bietet einen vollständigen Satz von Werkzeugen zum Erstellen geome
 
 Der Sketcher unterstützt das Erstellen der folgenden grundlegenden geometrischen Elemente:
 
-- **Linien**: Gerade Liniensegmente zwischen Punkten zeichnen
-- **Kreise**: Kreise durch Definieren eines Mittelpunkts und Radius erstellen
+- **Pfade (Linien und Bezier-Kurven)**: Gerade Linien und glatte Bezier-Kurven mit dem vereinheitlichten Pfad-Werkzeug zeichnen. Klicke um Punkte zu setzen, ziehe um Bezier-Griffpunkte zu erstellen.
 - **Bögen**: Bögen durch Angeben eines Mittelpunkts, Startpunkts und Endpunkts zeichnen
+- **Ellipsen**: Erstelle Ellipsen (und Kreise) durch Definieren eines Mittelpunkts
+  und Ziehen, um Größe und Seitenverhältnis festzulegen. Halte `Strg` während
+  des Ziehens gedrückt, um auf einen perfekten Kreis zu beschränken.
 - **Rechtecke**: Rechtecke durch Angeben von zwei gegenüberliegenden Ecken zeichnen
 - **Abgerundete Rechtecke**: Rechtecke mit abgerundeten Ecken zeichnen
 - **Textfelder**: Textelemente zu deiner Skizze hinzufügen
 - **Füllungen**: Geschlossene Bereiche füllen, um feste Bereiche zu erstellen
 
 Diese Elemente bilden die Grundlage deiner 2D-Designs und können kombiniert werden, um komplexe Formen zu erstellen. Füllungen sind besonders nützlich, um feste Bereiche zu erstellen, die als ein Stück graviert oder geschnitten werden.
+
+## Arbeiten mit Bezier-Kurven
+
+Das Pfad-Werkzeug unterstützt Bezier-Kurven zum Erstellen glatter, organischer Formen:
+
+### Bezier-Kurven zeichnen
+
+1. Wähle das Pfad-Werkzeug aus dem Kreismenü oder verwende den Tastatur-Kurzbefehl
+2. Klicke um Punkte zu setzen - jeder Klick erstellt einen neuen Punkt
+3. Ziehe nach dem Klicken um Bezier-Griffpunkte für glatte Kurven zu erstellen
+4. Füge weitere Punkte hinzu um deinen Pfad zu erweitern
+5. Drücke Escape oder doppelklicke um den Pfad abzuschließen
+
+### Bezier-Kurven bearbeiten
+
+- **Punkte verschieben**: Klicke und ziehe einen beliebigen Punkt um ihn neu zu positionieren
+- **Griffpunkte anpassen**: Ziehe die Griff-Endpunkte um die Kurvenform zu ändern
+- **Mit existierenden Punkten verbinden**: Beim Bearbeiten eines Pfades kannst du an existierende Punkte in deiner Skizze einrasten
+- **Glatt/Symmetrisch machen**: Punkte, die durch eine Koinzident-Einschränkung verbunden sind, können glatt (kontinuierliche Tangente) oder symmetrisch (gespiegelte Griffpunkte) gemacht werden
+
+### Kurven zu Linien konvertieren
+
+Verwende das **Glätten-Werkzeug** um Bezier-Kurven zurück in gerade Linien zu konvertieren.
+Dies ist nützlich wenn du saubere, einfache Geometrie benötigst. Wähle die Bezier-Segmente
+die du konvertieren möchtest und wende die Glätten-Aktion an.
 
 ## Parametrisches Einschränkungssystem
 
@@ -77,18 +104,20 @@ Der Sketcher bietet Tastatur-Kurzbefehle für effizienten Workflow:
 
 ### Werkzeug-Kurzbefehle
 - `Leertaste`: Auswahl-Werkzeug
-- `G+L`: Linien-Werkzeug
+- `G+P`: Pfad-Werkzeug (Linien und Bezier-Kurven)
 - `G+A`: Bogen-Werkzeug
 - `G+C`: Kreis-Werkzeug
 - `G+R`: Rechteck-Werkzeug
 - `G+O`: Abgerundetes Rechteck-Werkzeug
 - `G+F`: Bereich füllen-Werkzeug
 - `G+T`: Textfeld-Werkzeug
+- `G+G`: Raster-Werkzeug (Raster-Sichtbarkeit umschalten)
 - `G+N`: Konstruktionsmodus auf Auswahl umschalten
 
 ### Aktions-Kurzbefehle
 - `C+H`: Fase-Ecke hinzufügen
 - `C+F`: Verrundungs-Ecke hinzufügen
+- `C+S`: Ausgewählte Bezier-Kurven zu Linien glätten
 
 ### Einschränkungs-Kurzbefehle
 - `H`: Horizontale Einschränkung anwenden
@@ -123,6 +152,50 @@ Konstruktions-Entitäten sind nützlich für:
 - Erstellen von Referenzlinien und -kreisen
 - Definieren temporärer Geometrie zur Ausrichtung
 - Aufbauen komplexer Formen aus einem Rahmen von Hilfslinien
+
+## Raster, Einrasten und Sichtbarkeits-Steuerung
+
+### Raster-Werkzeug
+
+Das Raster-Werkzeug bietet eine visuelle Referenz für Ausrichtung und
+Größenbestimmung:
+
+- Raster ein/ausschalten mit dem Raster-Werkzeug-Button oder `G+G`
+- Das Raster passt sich an deinen Zoom-Level an für konsistente Abstände
+
+### Magnetisches Einrasten
+
+Beim Erstellen oder Verschieben von Geometrie zieht Rayforge deinen Cursor
+automatisch zu nahegelegenen Elementen — Endpunkten, Linienmittelpunkten,
+Schnittpunkten und anderen Referenzpunkten. Dies macht es einfach, Formen präzise
+zu verbinden, ohne jeden Punkt manuell zu platzieren. Der Einrast-Indikator wird
+hervorgehoben, wenn dein Cursor nahe an einem Einrast-Ziel ist.
+
+### Automatische Einschränkung bei Erstellung
+
+Viele Zeichenwerkzeuge wenden automatisch Einschränkungen an, während du Geometrie
+erstellst. Wenn du beispielsweise eine Linie nahe der Horizontalen oder Vertikalen
+zeichnest, bietet der Sketcher an, sie an Ort und Stelle zu fixieren. Dies hilft,
+deine Skizze von Anfang an ordentlich zu halten, anstatt nachträglich Korrekturen
+vorzunehmen.
+
+### Anzeigen/Verbergen-Steuerung
+
+Die Sketcher-Symbolleiste enthält Umschalt-Buttons zur Sichtbarkeitssteuerung:
+
+- **Konstruktionsgeometrie anzeigen/verbergen**: Sichtbarkeit von
+  Konstruktions-Entitäten umschalten
+- **Einschränkungen anzeigen/verbergen**: Sichtbarkeit von
+  Einschränkungs-Markierungen umschalten
+
+Diese Steuerungen helfen, visuelle Unordnung bei der Arbeit an komplexen Skizzen
+zu reduzieren.
+
+### Achsenbeschränkte Bewegung
+
+Beim Ziehen von Punkten oder Geometrie, halte `Umschalt` um die Bewegung auf die
+nächstgelegene Achse (horizontal oder vertikal) zu beschränken. Dies ist nützlich,
+um die Ausrichtung bei Anpassungen beizubehalten.
 
 ## Fase und Verrundung
 
@@ -162,9 +235,10 @@ Gespeicherte Skizzen können in jeden Arbeitsbereich importiert werden, was es d
 1. **Mit grober Geometrie beginnen**: Zuerst Basisformen erstellen, dann mit Einschränkungen verfeinern
 2. **Einschränkungen früh verwenden**: Einschränkungen beim Aufbau anwenden, um Design-Absicht beizubehalten
 3. **Einschränkungsstatus überprüfen**: Das System zeigt an, wann Skizzen vollständig eingeschränkt sind
-4. **Auf Konflikte achten**: Einschränkungen, die miteinander in Konflikt stehen, werden rot hervorgehoben
+4. **Auf Konflikte achten**: Einschränkungen, die miteinander in Konflikt stehen, werden rot hervorgehoben und im Einschränkungen-Panel angezeigt
 5. **Symmetrie nutzen**: Symmetrie-Einschränkungen können komplexe Designs erheblich beschleunigen
-6. **Iterieren und verfeinern**: Zögere nicht, Einschränkungen zu ändern, um das gewünschte Ergebnis zu erzielen
+6. **Raster verwenden**: Raster für präzise Ausrichtung aktivieren, und Strg zum Einrasten verwenden
+7. **Iterieren und verfeinern**: Zögere nicht, Einschränkungen zu ändern, um das gewünschte Ergebnis zu erzielen
 
 ## Bearbeitungsfunktionen
 

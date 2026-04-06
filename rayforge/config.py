@@ -27,9 +27,29 @@ logger.debug(f"DIALECT_DIR is {DIALECT_DIR}")
 DIALECT_DIR.mkdir(parents=True, exist_ok=True)
 
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
-PACKAGES_DIR = CONFIG_DIR / "packages"
+ADDONS_DIR = CONFIG_DIR / "addons"
+LICENSES_DIR = CONFIG_DIR / "licenses"
+ADDON_DATA_DIR = CONFIG_DIR / "addon_data"
+AI_CONFIG_FILE = CONFIG_DIR / "ai.yaml"
 
-BUILTIN_PACKAGES_DIR = Path(__file__).parent / "builtin_packages"
+
+def get_addon_data_dir(addon_name: str) -> Path:
+    """
+    Get the data directory for an addon.
+
+    Args:
+        addon_name: The canonical name of the addon.
+
+    Returns:
+        Path to the addon's data directory.
+    """
+    path = ADDON_DATA_DIR / addon_name
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+BUILTIN_ADDONS_DIR = Path(__file__).parent / "builtin_addons"
+PRIVATE_ADDONS_DIR = Path(__file__).parent / "private_addons"
 
 # State files (like logs)
 LOG_DIR = Path(user_log_dir("rayforge"))
@@ -37,16 +57,17 @@ logger.info(f"Log dir is {LOG_DIR}")
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 # Material directories
-CORE_MATERIALS_DIR = Path(__file__).parent / "resources" / "core_materials"
 USER_MATERIALS_DIR = CONFIG_DIR / "materials"
-
-# Material directories
 USER_RECIPES_DIR = CONFIG_DIR / "recipes"
+USER_MODELS_DIR = CONFIG_DIR / "models"
 
-# Package registry
-PACKAGE_REGISTRY_URL = (
+ADDON_REGISTRY_URL = (
     "https://raw.githubusercontent.com/barebaric/rayforge-registry/"
     "main/registry.yaml"
+)
+
+PATREON_CLIENT_ID = (
+    "nx7wTdFBp5Cc3NtMU4xYK7mkzlaqLg5hXgLlY6WAtAMq62je5WDE_x8ewrrCvJ34"
 )
 
 UMAMI_URL = "https://analytics.barebaric.com/api/send"

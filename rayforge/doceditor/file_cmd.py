@@ -9,9 +9,7 @@ from gettext import gettext as _
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
-    Any,
     Callable,
-    Dict,
     List,
     Optional,
     Tuple,
@@ -25,35 +23,35 @@ with warnings.catch_warnings():
     import pyvips
 
 from ..context import get_context
-from ..core.geo import Geometry
+from ..core.geo import Geometry, Point, Rect
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.matrix import Matrix
 from ..core.source_asset import SourceAsset
 from ..core.undo import ListItemCommand
 from ..core.vectorization_spec import (
+    LayerImportMode,
     PassthroughSpec,
     TraceSpec,
     VectorizationSpec,
 )
 from ..core.workpiece import WorkPiece
 from ..image import (
-    importer_by_extension,
-    importer_by_mime_type,
-    importers,
+    exporter_registry,
+    importer_registry,
     ImporterFeature,
     ImportManifest,
     Importer,
 )
+from ..image.base_exporter import Exporter
 from ..image.dxf.exporter import GeometryDxfExporter
-from ..image.sketch.exporter import SketchExporter
 from ..image.svg.exporter import GeometrySvgExporter
 from ..image.structures import ImportPayload, ImportResult, ParsingResult
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from .layout.align import PositionAtStrategy
 
 if TYPE_CHECKING:
-    from ..core.sketcher.sketch import Sketch
+    from ..core.asset import IAsset
     from ..doceditor.editor import DocEditor
     from ..shared.tasker.manager import TaskManager
 
@@ -74,7 +72,7 @@ class PreviewResult:
     parse_result: Optional[ParsingResult]  # Context for rendering
     aspect_ratio: float = 1.0
     warnings: List[str] = field(default_factory=list)
-    content_bounds: Optional[Tuple[float, float, float, float]] = None
+    content_bounds: Optional[Rect] = None
 
 
 class ImportAction(Enum):
@@ -96,23 +94,6 @@ class FileCmd:
         self._editor = editor
         self._task_manager = task_manager
 
-    def get_supported_import_filters(self) -> List[Dict[str, Any]]:
-        """
-        Returns a list of dictionaries describing supported file types
-        for UI dialogs.
-        Each dict has 'label', 'extensions', and 'mime_types'.
-        """
-        filters = []
-        for imp in importers:
-            filters.append(
-                {
-                    "label": imp.label,
-                    "extensions": imp.extensions,
-                    "mime_types": imp.mime_types,
-                }
-            )
-        return filters
-
     def get_importer_info(
         self, file_path: Path, mime_type: Optional[str]
     ) -> Tuple[Optional[Type[Importer]], Set[ImporterFeature]]:
@@ -124,10 +105,12 @@ class FileCmd:
 
         importer_cls = None
         if mime_type:
-            importer_cls = importer_by_mime_type.get(mime_type)
+            importer_cls = importer_registry.get_by_mime_type(mime_type)
 
         if not importer_cls and file_path.suffix:
-            importer_cls = importer_by_extension.get(file_path.suffix.lower())
+            importer_cls = importer_registry.get_by_extension(
+                file_path.suffix.lower()
+            )
 
         if importer_cls:
             return importer_cls, importer_cls.features
@@ -400,7 +383,7 @@ class FileCmd:
     def _position_newly_imported_items(
         self,
         items: List[DocItem],
-        position_mm: Optional[Tuple[float, float]],
+        position_mm: Optional[Point],
     ):
         """
         Applies transformations to newly imported items, either positioning
@@ -437,66 +420,103 @@ class FileCmd:
         else:
             self._fit_and_position_at_reference_origin(items)
 
+    @staticmethod
+    def _unwrap_item(item: DocItem) -> List[DocItem]:
+        """Extract content items from a Layer, or return the item itself."""
+        if isinstance(item, Layer):
+            return item.get_content_items()
+        return [item]
+
+    def _resolve_destinations(
+        self,
+        items: List[DocItem],
+        mode: LayerImportMode,
+    ) -> List[Tuple[DocItem, DocItem]]:
+        """
+        Resolve each item to a (owner, item) pair based on the import mode.
+        Returns a flat list of (destination_owner, item_to_add) tuples.
+        """
+        target_layer = cast(Layer, self._editor.default_workpiece_layer)
+        doc = self._editor.doc
+        pairs: List[Tuple[DocItem, DocItem]] = []
+
+        if mode == LayerImportMode.MAP_TO_EXISTING:
+            existing = doc.layers
+            for idx, item in enumerate(items):
+                if idx < len(existing):
+                    dest = existing[idx]
+                    for child in self._unwrap_item(item):
+                        pairs.append((dest, child))
+                elif isinstance(item, Layer):
+                    pairs.append((doc, item))
+                else:
+                    pairs.append((target_layer, item))
+        elif mode == LayerImportMode.NEW_LAYERS:
+            for item in items:
+                if isinstance(item, Layer):
+                    pairs.append((doc, item))
+                else:
+                    pairs.append((target_layer, item))
+        else:
+            for item in items:
+                for child in self._unwrap_item(item):
+                    pairs.append((target_layer, child))
+
+        return pairs
+
     def _commit_items_to_document(
         self,
         items: List[DocItem],
         source: Optional[SourceAsset],
         filename: Path,
-        sketches: Optional[List["Sketch"]] = None,
+        assets: Optional[List["IAsset"]] = None,
         vectorization_spec: Optional[VectorizationSpec] = None,
-    ):
+    ) -> List[Layer]:
         """
         Adds the imported items and their source to the document model using
         the history manager.
+
+        Returns the list of destination layers that received items.
         """
         if source:
             self._editor.doc.add_asset(source)
 
-        if sketches:
-            for sketch in sketches:
-                self._editor.doc.add_asset(sketch)
+        if assets:
+            for asset in assets:
+                self._editor.doc.add_asset(asset)
 
-        target_layer = cast(Layer, self._editor.default_workpiece_layer)
         cmd_name = _("Import {filename}").format(filename=filename.name)
 
-        create_new_layers = True
+        mode = LayerImportMode.NEW_LAYERS
         if isinstance(vectorization_spec, PassthroughSpec):
-            create_new_layers = vectorization_spec.create_new_layers
+            mode = vectorization_spec.layer_import_mode
+
+        pairs = self._resolve_destinations(items, mode)
 
         with self._editor.history_manager.transaction(cmd_name) as t:
-            for item in items:
-                if isinstance(item, Layer) and create_new_layers:
-                    owner = self._editor.doc
-                    command = ListItemCommand(
+            for owner, item in pairs:
+                t.execute(
+                    ListItemCommand(
                         owner_obj=owner,
                         item=item,
                         undo_command="remove_child",
                         redo_command="add_child",
                     )
-                    t.execute(command)
-                elif isinstance(item, Layer):
-                    for child in item.get_content_items():
-                        command = ListItemCommand(
-                            owner_obj=target_layer,
-                            item=child,
-                            undo_command="remove_child",
-                            redo_command="add_child",
-                        )
-                        t.execute(command)
-                else:
-                    command = ListItemCommand(
-                        owner_obj=target_layer,
-                        item=item,
-                        undo_command="remove_child",
-                        redo_command="add_child",
-                    )
-                    t.execute(command)
+                )
+
+        dest_layers = []
+        seen = set()
+        for owner, _item in pairs:
+            if isinstance(owner, Layer) and owner.uid not in seen:
+                dest_layers.append(owner)
+                seen.add(owner.uid)
+        return dest_layers
 
     def _finalize_import_on_main_thread(
         self,
         payload: ImportPayload,
         filename: Path,
-        position_mm: Optional[Tuple[float, float]],
+        position_mm: Optional[Point],
         vectorization_spec: Optional[VectorizationSpec] = None,
     ):
         """
@@ -517,20 +537,24 @@ class FileCmd:
         # 2. Add the positioned items to the document model. This is also
         #    safe now as all subsequent signal handling will be on the
         #    main thread.
-        self._commit_items_to_document(
+        dest_layers = self._commit_items_to_document(
             payload.items,
             payload.source,
             filename,
-            payload.sketches,
+            payload.assets,
             vectorization_spec,
         )
+
+        # 3. Add default steps to the destination layers.
+        if dest_layers:
+            self._editor.step.add_default_steps_for_layers(dest_layers)
 
     def load_file_from_path(
         self,
         filename: Path,
         mime_type: Optional[str],
         vectorization_spec: Optional[VectorizationSpec],
-        position_mm: Optional[Tuple[float, float]] = None,
+        position_mm: Optional[Point] = None,
     ):
         """
         Public, synchronous method to launch a file import in the background.
@@ -645,7 +669,7 @@ class FileCmd:
         self,
         files: List[Path],
         spec: VectorizationSpec,
-        pos: Optional[Tuple[float, float]],
+        pos: Optional[Point],
     ):
         """
         Imports multiple files using the same vectorization settings.
@@ -660,7 +684,7 @@ class FileCmd:
     def _calculate_items_bbox(
         self,
         items: List[DocItem],
-    ) -> Optional[Tuple[float, float, float, float]]:
+    ) -> Optional[Rect]:
         """
         Calculates the world-space bounding box that encloses a list of
         DocItems by taking the union of their individual bboxes.
@@ -789,23 +813,14 @@ class FileCmd:
 
         # 2. Position at reference origin
         # The reference origin is where the user expects (0,0) to be.
-        # get_reference_offset returns WORLD coords of the reference origin
-        # when wcs_origin_is_workarea_origin is True (the common case).
-        # We need to account for the item size based on the machine's origin
-        # corner to ensure the item stays within the work area.
-        ref_x, ref_y, __ = machine.get_reference_offset()
-
-        # Adjust target position based on origin corner.
-        # For right-origin machines, the item's left edge should be
-        # positioned so the item fits within the work area.
-        # For top-origin machines (y_axis_down), adjust Y similarly.
-        target_x = ref_x
-        target_y = ref_y
-
-        if machine.x_axis_right:
-            target_x = ref_x - bbox_w
-        if machine.y_axis_down:
-            target_y = ref_y - bbox_h
+        # get_reference_position_world returns WORLD coords of the reference
+        # origin. We use world_position_from_origin to handle origin corner
+        # adjustment.
+        ref_x, ref_y = machine.get_reference_position_world()
+        space = machine.get_coordinate_space()
+        target_x, target_y = space.world_position_from_origin(
+            ref_x, ref_y, (bbox_w, bbox_h)
+        )
 
         # Calculate translation to move bbox top-left to the target position
         delta_x = target_x - bbox_x
@@ -945,7 +960,7 @@ class FileCmd:
         if ext == ".rfs":
             return self._export_sketch_to_rfs(file_path, workpiece)
 
-        geo = workpiece.world_space_boundaries
+        geo = workpiece.get_world_geometry()
         if geo is None or geo.is_empty():
             raise ValueError(
                 "Cannot export: The selected item has no geometry."
@@ -964,7 +979,12 @@ class FileCmd:
         self, file_path: Path, workpiece: WorkPiece
     ) -> bool:
         """Export a sketch-based workpiece to RFS format."""
-        exporter = SketchExporter(workpiece)
+        exporter_cls = exporter_registry.get_by_extension(file_path.suffix)
+        if not exporter_cls:
+            raise ValueError(
+                f"No exporter registered for extension {file_path.suffix}"
+            )
+        exporter = cast(Type[Exporter], exporter_cls)(workpiece)
         return self._do_export(file_path, exporter)
 
     def _do_export(self, file_path: Path, exporter) -> bool:
@@ -998,7 +1018,7 @@ class FileCmd:
         """
         geometries = []
         for wp in self._editor.doc.get_descendants(WorkPiece):
-            geo = wp.world_space_boundaries
+            geo = wp.get_world_geometry()
             if geo is not None and not geo.is_empty():
                 geometries.append(geo)
 
@@ -1078,6 +1098,7 @@ class FileCmd:
             doc_dict = json.loads(file_content)
 
             from ..core.doc import Doc
+            from ..core.asset import UnknownAsset
 
             new_doc = Doc.from_dict(doc_dict)
 
@@ -1085,6 +1106,20 @@ class FileCmd:
             self._editor.set_file_path(file_path)
             self._editor.mark_as_saved()
             self._editor.doc.updated.send(self._editor.doc)
+
+            unknown_assets = [
+                asset
+                for asset in new_doc.get_all_assets()
+                if isinstance(asset, UnknownAsset)
+            ]
+            if unknown_assets:
+                self._editor.notification_requested.send(
+                    self,
+                    message=_(
+                        "{count} asset(s) require disabled addon(s)"
+                    ).format(count=len(unknown_assets)),
+                    persistent=True,
+                )
 
             logger.info(f"Successfully loaded project from {file_path}")
             return True

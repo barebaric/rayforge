@@ -7,8 +7,29 @@ from ...machine.models.profile import MachineProfile
 from ..icons import get_icon
 from ..machine.profile_selector import MachineProfileSelectorDialog
 from ..machine.settings_dialog import MachineSettingsDialog
+from ..shared.gtk import apply_css
 from ..shared.preferences_page import TrackedPreferencesPage
-from ..shared.round_button import RoundButton
+
+css = """
+.group-with-button-container > .list-box-in-card {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+.group-with-button-container > .flat-bottom-button,
+.group-with-button-container > .flat-bottom-button > .toggle {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    box-shadow: none;
+}
+
+.list-box-in-card row:first-child:selected {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+"""
 
 
 class MachineSettingsPage(TrackedPreferencesPage):
@@ -20,31 +41,36 @@ class MachineSettingsPage(TrackedPreferencesPage):
         """Initializes the Machine Settings page."""
         super().__init__(**kwargs)
         self.set_title(_("Machines"))
-        self.set_icon_name("drive-harddisk-symbolic")
+        self.set_icon_name("hardware-symbolic")
+        apply_css(css)
 
         self.machines_group = Adw.PreferencesGroup()
         self.machines_group.set_title(_("Configured Machines"))
         self.machines_group.set_description(_("Add or remove machines."))
         self.add(self.machines_group)
 
-        # This listbox will contain the machine rows.
-        self.machine_list_box = Gtk.ListBox()
-        self.machine_list_box.set_selection_mode(Gtk.SelectionMode.NONE)
-        self.machine_list_box.get_style_context().add_class("boxed-list")
-        self.machines_group.add(self.machine_list_box)
+        container_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        container_box.add_css_class("card")
+        container_box.add_css_class("group-with-button-container")
+        self.machines_group.add(container_box)
+
+        self.machine_list_box = Gtk.ListBox(
+            selection_mode=Gtk.SelectionMode.NONE, show_separators=True
+        )
+        self.machine_list_box.add_css_class("list-box-in-card")
+        self.machine_list_box.add_css_class("frame")
+        container_box.append(self.machine_list_box)
+
+        self.add_button = self._create_add_button()
+        self.add_button.add_css_class("darkbutton")
+        self.add_button.add_css_class("flat-bottom-button")
+        container_box.append(self.add_button)
 
         self._populate_machines_list()
 
-        # Add button
-        add_button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        add_button_box.set_halign(Gtk.Align.CENTER)
-        add_button = RoundButton(label=_("+"))
-        add_button_box.append(add_button)
-        self.machines_group.add(add_button_box)
-
         # Signals
         context = get_context()
-        add_button.connect("clicked", self._on_add_machine_clicked)
+        self.add_button.connect("clicked", self._on_add_machine_clicked)
         context.machine_mgr.machine_added.connect(
             self._on_machine_list_changed
         )
@@ -105,6 +131,7 @@ class MachineSettingsPage(TrackedPreferencesPage):
                 child=get_icon("edit-symbolic"),
                 valign=Gtk.Align.CENTER,
             )
+            edit_button.add_css_class("flat")
             edit_button.connect(
                 "clicked", self._on_edit_machine_clicked, machine
             )
@@ -114,7 +141,8 @@ class MachineSettingsPage(TrackedPreferencesPage):
                 child=get_icon("delete-symbolic"),
                 valign=Gtk.Align.CENTER,
             )
-            delete_button.get_style_context().add_class("destructive-action")
+            delete_button.add_css_class("flat")
+            delete_button.add_css_class("destructive-action")
             delete_button.connect(
                 "clicked", self._on_delete_machine_clicked, machine
             )
@@ -186,3 +214,21 @@ class MachineSettingsPage(TrackedPreferencesPage):
             transient_for=self.get_ancestor(Gtk.Window),
         )
         editor_dialog.present()
+
+    def _create_add_button(self) -> Gtk.Button:
+        """Creates the add button with icon and label."""
+        button = Gtk.Button()
+
+        button_content = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=6,
+            halign=Gtk.Align.CENTER,
+            margin_top=10,
+            margin_end=12,
+            margin_bottom=10,
+            margin_start=12,
+        )
+        button.set_child(button_content)
+        button_content.append(get_icon("add-symbolic"))
+        button_content.append(Gtk.Label(label=_("Add Machine")))
+        return button

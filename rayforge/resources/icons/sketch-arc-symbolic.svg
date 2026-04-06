@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
    height="24px"
-   viewBox="0 -960 960 960"
+   viewBox="0 0 24 24"
    width="24px"
    fill="#000000"
    version="1.1"
@@ -33,6 +33,6 @@
      inkscape:window-maximized="1"
      inkscape:current-layer="svg1" />
   <path
-     d="M720-160q0-116-44-218T556-556q-76-76-178-120t-218-44v-80q132 0 248.5 50.5T612-612q87 87 137.5 203.5T800-160h-80Z"
+     d="M 18 19.9999 q 0 -2.9 -1.0999 -5.4501 T 13.9001 10.0999 q -1.9 -1.9 -4.4501 -3 t -5.4501 -1.0999 v -2.0001 q 3.3 0 6.2126 1.2626 T 15.3 8.7 q 2.175 2.175 3.4375 5.0874 T 19.9999 19.9999 h -2.0001 Z"
      id="path1" />
 </svg>

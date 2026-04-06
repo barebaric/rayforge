@@ -121,6 +121,16 @@ class Axis(IntFlag):
     X = 1
     Y = 2
     Z = 4
+    A = 8
+    B = 16
+    C = 32
+    U = 64
+
+    def assert_single_axis(self) -> None:
+        if self.value.bit_count() != 1:
+            raise ValueError(
+                f"{self!r} combines multiple axes, expected a single axis"
+            )
 
 
 @dataclass
@@ -433,6 +443,20 @@ class Driver(ABC):
     async def set_power(self, head: "Laser", percent: float) -> None:
         """
         Sets the laser power to the specified percentage of max power.
+
+        Args:
+            head: The laser head to control.
+            percent: Power percentage (0-1.0). 0 disables power.
+        """
+        pass
+
+    @abstractmethod
+    async def set_focus_power(self, head: "Laser", percent: float) -> None:
+        """
+        Sets the laser power for focus mode.
+
+        Some lasers use different commands for focusing vs cutting
+        (e.g., M3 for constant power vs M4 for dynamic power).
 
         Args:
             head: The laser head to control.

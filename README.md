@@ -14,10 +14,6 @@ Rayforge is a modern, cross-platform 2D CAD, G-code sender and control software 
 Built with Gtk4 and Libadwaita, it provides a clean, native interface for Linux and Windows, offering a full suite of tools
 for both hobbyists and professionals.
 
-<p align="center">
-  <img src="website/static/assets/icon.svg" />
-</p>
-
 ![Screenshot](website/static/screenshots/main-standard.png)
 
 You can also check the [official Rayforge homepage](https://rayforge.org).

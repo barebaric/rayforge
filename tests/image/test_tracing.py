@@ -2,7 +2,11 @@ import numpy as np
 import cairo
 from unittest.mock import MagicMock, ANY
 from rayforge.core.geo.constants import COL_TYPE, CMD_TYPE_MOVE, CMD_TYPE_LINE
-from rayforge.image.tracing import trace_surface, Geometry
+from rayforge.image.tracing import (
+    trace_surface,
+    trace_color_image,
+    Geometry,
+)
 
 
 def _create_test_surface(array: np.ndarray) -> cairo.ImageSurface:
@@ -184,3 +188,65 @@ def test_trace_surface_vtracer_failure_fallback_to_hull(monkeypatch):
         2,
     )
     assert result == ["mocked_geometry"]
+
+
+def test_trace_simple_color_image():
+    bgr_image = np.full((100, 100, 3), 255, dtype=np.uint8)
+    bgr_image[25:75, 25:75] = [0, 0, 255]
+
+    geometries = trace_color_image(bgr_image)
+
+    assert len(geometries) >= 1
+    assert all(isinstance(g, Geometry) for g in geometries)
+
+
+def test_trace_empty_image():
+    bgr_image = np.full((100, 100, 3), 255, dtype=np.uint8)
+
+    geometries = trace_color_image(bgr_image)
+
+    assert geometries == []
+
+
+def test_trace_none_image():
+    geometries = trace_color_image(None)
+
+    assert geometries == []
+
+
+def test_trace_empty_array():
+    bgr_image = np.array([], dtype=np.uint8).reshape(0, 0, 3)
+
+    geometries = trace_color_image(bgr_image)
+
+    assert geometries == []
+
+
+def test_trace_grayscale_input_converted_to_bgr():
+    grayscale = np.full((50, 50), 128, dtype=np.uint8)
+
+    geometries = trace_color_image(grayscale)
+
+    assert isinstance(geometries, list)
+
+
+def test_trace_multiple_colors():
+    bgr_image = np.full((100, 100, 3), 255, dtype=np.uint8)
+    bgr_image[10:30, 10:30] = [255, 0, 0]
+    bgr_image[40:60, 40:60] = [0, 255, 0]
+    bgr_image[70:90, 70:90] = [0, 0, 255]
+
+    geometries = trace_color_image(bgr_image)
+
+    assert len(geometries) >= 3
+
+
+def test_trace_large_image_downscaled(monkeypatch):
+    monkeypatch.setattr("rayforge.image.tracing.VTRACER_PIXEL_LIMIT", 10000)
+
+    bgr_image = np.zeros((200, 200, 3), dtype=np.uint8)
+    bgr_image[50:150, 50:150] = [0, 0, 255]
+
+    geometries = trace_color_image(bgr_image)
+
+    assert len(geometries) >= 1

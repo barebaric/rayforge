@@ -1,0 +1,69 @@
+# Ukrainian translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-30 19:31+0200\n"
+"PO-Revision-Date: 2026-03-07 20:16+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Generate a Workpiece"
+msgstr "Створити деталь"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Cancel"
+msgstr "Скасувати"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Generate"
+msgstr "Створити"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid ""
+"Describe the design you want to create. Example: 'A simple star shape with 5 "
+"points'"
+msgstr ""
+"Опишіть дизайн, який ви хочете створити. Приклад: 'Проста форма зірки з 5 "
+"променями'"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "No content generated."
+msgstr "Вміст не згенеровано."
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Add AI-Generated Workpiece"
+msgstr "Додати деталь, згенеровану ШІ"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Close"
+msgstr "Закрити"
+
+#: ai_workpiece_generator/frontend.py
+msgid "Generate Workpiece with AI..."
+msgstr "Створити деталь за допомогою ШІ..."
+
+#: ai_workpiece_generator/generator.py
+msgid "No AI provider configured. Please configure an AI provider in Settings."
+msgstr ""
+"Не налаштовано провайдер ШІ. Будь ласка, налаштуйте провайдер ШІ у "
+"Налаштуваннях."
+
+#: ai_workpiece_generator/generator.py
+msgid "No response from AI provider."
+msgstr "Немає відповіді від провайдера ШІ."
+
+#: ai_workpiece_generator/generator.py
+msgid "AI did not generate valid SVG code. Please try a different prompt."
+msgstr "ШІ не згенерував дійсний SVG-код. Спробуйте інший запит."

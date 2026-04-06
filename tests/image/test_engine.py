@@ -2,14 +2,14 @@ from typing import List, Tuple, Optional, Dict
 import pytest
 
 from rayforge.core.matrix import Matrix
-from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.image.engine import NormalizationEngine
 from rayforge.image.structures import (
     ParsingResult,
     LayerGeometry,
     VectorizationResult,
 )
-from rayforge.core.geo import Geometry
+from rayforge.core.geo import Geometry, Rect
 
 
 @pytest.fixture
@@ -18,8 +18,8 @@ def engine():
 
 
 def create_vec_result(
-    document_bounds: Tuple[float, float, float, float],
-    layers: List[Tuple[str, Tuple[float, float, float, float]]],
+    document_bounds: Rect,
+    layers: List[Tuple[str, Rect]],
     is_y_down: bool = True,
     unit_scale: float = 1.0,
 ) -> VectorizationResult:
@@ -68,7 +68,7 @@ def test_single_layer_y_down(engine):
 
     # By default, should merge into one item
     plan = engine.calculate_layout(
-        vec_result, PassthroughSpec(create_new_layers=False)
+        vec_result, PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
     )
 
     assert len(plan) == 1
@@ -113,7 +113,7 @@ def test_single_layer_y_up(engine):
         layers=[("layer1", (10, 10, 10, 10))],
         is_y_down=False,  # DXF style
     )
-    spec = PassthroughSpec(create_new_layers=False)
+    spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
     plan = engine.calculate_layout(vec_result, spec)
     item = plan[0]
 
@@ -139,7 +139,7 @@ def test_merge_layers_union(engine):
         ],
     )
 
-    spec = PassthroughSpec(create_new_layers=False)
+    spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
     plan = engine.calculate_layout(vec_result, spec)
 
     assert len(plan) == 1
@@ -172,7 +172,8 @@ def test_split_layers_alignment(engine):
     )
 
     spec = PassthroughSpec(
-        active_layer_ids=["Top", "Bottom"], create_new_layers=True
+        active_layer_ids=["Top", "Bottom"],
+        layer_import_mode=LayerImportMode.NEW_LAYERS,
     )
     plan = engine.calculate_layout(vec_result, spec)
 
@@ -200,7 +201,7 @@ def test_unit_conversion(engine):
         layers=[("L1", (0, 0, 10, 10))],
         unit_scale=2.0,
     )
-    spec = PassthroughSpec(create_new_layers=False)
+    spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
     plan = engine.calculate_layout(vec_result, spec)
     item = plan[0]
 

@@ -114,18 +114,17 @@ Controla dónde corta el láser en relación a la trayectoria vectorial:
 - Reduce tiempo de trabajo
 - Previene cortes perdidos
 
-## Funciones Avanzadas
+## Post-Procesamiento
 
 ![Configuración de post-procesamiento de contorno](/screenshots/step-settings-contour-post.png)
 
-### Pestañas de Sujeción
+Las operaciones de contorno soportan varias opciones de post-procesamiento:
 
-Las pestañas mantienen las piezas cortadas adjuntas al material base durante el corte:
-
-- Añade pestañas para prevenir que las piezas caigan
-- Las pestañas son pequeñas secciones sin cortar
-- Rompe las pestañas después de completar el trabajo
-- Ver [Pestañas de Sujeción](../holding-tabs) para detalles
+- **[Suavizar Trayectoria](../smooth)** - Reduce bordes irregulares en trayectorias de corte
+- **[Pestañas de Sujeción](../holding-tabs)** - Mantienen las piezas cortadas adjuntas al material base
+- **[Recortar al Material](../crop-to-stock)** - Limita los cortes al límite del material
+- **[Optimización de Trayectoria](../path-optimization)** - Reduce la distancia de viaje entre cortes
+- **[Multi-Pasada](../multi-pass)** - Repite cortes para materiales gruesos
 
 ### Compensación de Kerf
 

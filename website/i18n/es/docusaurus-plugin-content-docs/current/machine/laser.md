@@ -1,16 +1,19 @@
 # Ajustes de Láser
 
-La página de Láser en Configuración de Máquina configura tu(s) cabezal(es) láser y sus propiedades.
+La página de Láser en Configuración de Máquina configura tu(s) cabezal(es)
+láser y sus propiedades.
 
 ![Ajustes de Láser](/screenshots/machine-laser.png)
 
 ## Cabezales Láser
 
-Rayforge soporta máquinas con múltiples cabezales láser. Cada cabezal láser tiene su propia configuración.
+Rayforge soporta máquinas con múltiples cabezales láser. Cada cabezal láser
+tiene su propia configuración.
 
 ### Añadir un Cabezal Láser
 
-Haz clic en el botón **Añadir Láser** para crear una nueva configuración de cabezal láser.
+Haz clic en el botón **Añadir Láser** para crear una nueva configuración de
+cabezal láser.
 
 ### Propiedades del Cabezal Láser
 
@@ -27,7 +30,8 @@ Ejemplos:
 
 #### Número de Herramienta
 
-El índice de herramienta para este cabezal láser. Usado en código G con el comando T.
+El índice de herramienta para este cabezal láser. Usado en código G con el
+comando T.
 
 - Máquinas de un solo cabezal: Usar 0
 - Máquinas multi-cabezal: Asignar números únicos (0, 1, 2, etc.)
@@ -44,11 +48,36 @@ Este valor debería coincidir con el ajuste $30 de tu firmware.
 
 #### Potencia de Enmarcado
 
-El nivel de potencia usado para operaciones de enmarcado (delimitando sin cortar).
+El nivel de potencia usado para operaciones de enmarcado (delimitando sin
+cortar).
 
 - Establecer en 0 para deshabilitar el enmarcado
-- Valores típicos: 5-20 (apenas visible, no marcará el material)
 - Ajusta según tu láser y material
+
+#### Velocidad de Enmarcado
+
+La velocidad a la que se mueve el cabezal láser durante el enmarcado. Se
+establece por cabezal láser, por lo que si tu máquina tiene varios láseres con
+diferentes características, puedes elegir una velocidad adecuada para cada uno.
+Velocidades más lentas hacen que la ruta de enmarcado sea más fácil de seguir
+visualmente.
+
+#### Potencia de Enfoque
+
+El nivel de potencia usado cuando el modo enfoque está activado. El modo
+enfoque enciende el láser a baja potencia para actuar como "puntero láser" para
+posicionamiento.
+
+- Establecer en 0 para deshabilitar la función de modo enfoque
+- Usar para alineación visual y posicionamiento
+
+:::tip Usando el Modo Enfoque
+Haz clic en el botón de enfoque (icono de láser) en la barra de herramientas
+para alternar el modo enfoque. El láser se encenderá a este nivel de potencia,
+ayudándote a ver exactamente dónde está posicionado el láser. Consulta
+[Posicionamiento de Piezas de Trabajo](../features/workpiece-positioning)
+para más información.
+:::
 
 #### Tamaño del Punto
 
@@ -65,6 +94,34 @@ Para medir el tamaño de tu punto:
 3. Usa el promedio de múltiples mediciones
 :::
 
+#### Color de Corte
+
+El color usado para mostrar operaciones de corte para este láser en el lienzo y
+la vista previa 3D. Esto te ayuda a distinguir visualmente qué láser realizará
+cada operación de corte cuando trabajas con múltiples cabezales láser.
+
+- Haz clic en la muestra de color para abrir un selector de color
+- Elige un color que contraste bien con la vista previa de tu material
+- Los colores predeterminados se asignan automáticamente
+
+#### Color de Raster
+
+El color usado para mostrar operaciones de raster/grabado para este láser en
+el lienzo y la vista previa 3D.
+
+- Haz clic en la muestra de color para abrir un selector de color
+- Útil para diferenciar operaciones de raster de cortes
+- Cada láser puede tener su propio color de raster distintivo
+
+:::tip Flujos de Trabajo Multi-Láser
+Al usar múltiples cabezales láser, asignar diferentes colores a cada láser
+facilita ver qué operaciones serán realizadas por qué láser. Por ejemplo, usa
+rojo para tu láser de corte principal y azul para un láser de grabado
+secundario.
+:::
+
 ## Ver También
 
 - [Ajustes de Dispositivo](device) - Ajustes de modo láser de GRBL
+- [Posicionamiento de Piezas de Trabajo](../features/workpiece-positioning) -
+  Uso del modo enfoque y otros métodos de posicionamiento

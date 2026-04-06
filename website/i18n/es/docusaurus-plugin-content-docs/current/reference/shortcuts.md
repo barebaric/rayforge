@@ -3,85 +3,85 @@
 Referencia completa de atajos de teclado en Rayforge.
 
 :::note Convenciones de Plataforma
+
 - **Linux/Windows:** Tecla `Ctrl`
 - **macOS:** Tecla `⌘ (Comando)`
 - La documentación usa `Ctrl` - usuarios de macOS sustituyan con `⌘`
-:::
-
+  :::
 
 ---
 
 ## Operaciones de Archivo
 
-| Atajo        | Acción           | Descripción                    |
-| ------------ | ---------------- | ------------------------------ |
-| `Ctrl+N`     | Nuevo Bosquejo   | Crear nuevo bosquejo           |
-| `Ctrl+O`     | Abrir            | Abrir proyecto existente       |
-| `Ctrl+S`     | Guardar          | Guardar proyecto actual        |
-| `Ctrl+Shift+S` | Guardar Como   | Guardar proyecto como nuevo archivo |
-| `Ctrl+I`     | Importar         | Abrir diálogo de importación de archivo |
-| `Ctrl+E`     | Exportar         | Exportar código G              |
-| `Ctrl+Q`     | Salir            | Salir de Rayforge              |
-| `Ctrl+,`     | Preferencias     | Abrir diálogo de preferencias  |
+| Atajo          | Acción         | Descripción                             |
+| -------------- | -------------- | --------------------------------------- |
+| `Ctrl+N`       | Nuevo Bosquejo | Crear nuevo bosquejo                    |
+| `Ctrl+O`       | Abrir          | Abrir proyecto existente                |
+| `Ctrl+S`       | Guardar        | Guardar proyecto actual                 |
+| `Ctrl+Shift+S` | Guardar Como   | Guardar proyecto como nuevo archivo     |
+| `Ctrl+I`       | Importar       | Abrir diálogo de importación de archivo |
+| `Ctrl+E`       | Exportar       | Exportar código G                       |
+| `Ctrl+Q`       | Salir          | Salir de Rayforge                       |
+| `Ctrl+,`       | Preferencias   | Abrir diálogo de preferencias           |
 
 ---
 
 ## Editar y Portapapeles
 
-| Atajo               | Acción            | Descripción                        |
-| ------------------- | ----------------- | ---------------------------------- |
-| `Ctrl+Z`            | Deshacer          | Deshacer última acción             |
-| `Ctrl+Y`            | Rehacer           | Rehacer última acción deshecha     |
-| `Ctrl+Shift+Z`      | Rehacer (alternativo) | Atajo alternativo de rehacer   |
-| `Ctrl+X`            | Cortar            | Cortar selección al portapapeles   |
-| `Ctrl+C`            | Copiar            | Copiar selección al portapapeles   |
-| `Ctrl+V`            | Pegar             | Pegar desde el portapapeles        |
-| `Ctrl+A`            | Seleccionar Todo  | Seleccionar todos los elementos en la capa activa |
-| `Ctrl+D`            | Duplicar          | Duplicar elementos seleccionados   |
-| `Delete`            | Eliminar          | Eliminar elementos seleccionados   |
-| `Ctrl+Shift+Delete` | Limpiar           | Limpiar todos los elementos del documento |
+| Atajo               | Acción                | Descripción                                       |
+| ------------------- | --------------------- | ------------------------------------------------- |
+| `Ctrl+Z`            | Deshacer              | Deshacer última acción                            |
+| `Ctrl+Y`            | Rehacer               | Rehacer última acción deshecha                    |
+| `Ctrl+Shift+Z`      | Rehacer (alternativo) | Atajo alternativo de rehacer                      |
+| `Ctrl+X`            | Cortar                | Cortar selección al portapapeles                  |
+| `Ctrl+C`            | Copiar                | Copiar selección al portapapeles                  |
+| `Ctrl+V`            | Pegar                 | Pegar desde el portapapeles                       |
+| `Ctrl+A`            | Seleccionar Todo      | Seleccionar todos los elementos en la capa activa |
+| `Ctrl+D`            | Duplicar              | Duplicar elementos seleccionados                  |
+| `Delete`            | Eliminar              | Eliminar elementos seleccionados                  |
+| `Ctrl+Shift+Delete` | Limpiar               | Limpiar todos los elementos del documento         |
 
 ---
 
 ## Ver y Pantalla
 
-| Atajo        | Acción             | Descripción                      |
-| ------------ | ------------------ | -------------------------------- |
-| `H`          | Alternar Piezas    | Mostrar/ocultar visibilidad de piezas |
-| `T`          | Alternar Pestañas  | Mostrar/ocultar pestañas de sujeción |
-| `Alt+C`      | Alternar Cámara    | Mostrar/ocultar superposición de cámara |
-| `F12`        | Vista 3D           | Alternar ventana de vista previa 3D |
-| `Ctrl+Shift+R` | Modo Simulación  | Alternar modo simulación         |
+| Atajo          | Acción            | Descripción                             |
+| -------------- | ----------------- | --------------------------------------- |
+| `H`            | Alternar Piezas   | Mostrar/ocultar visibilidad de piezas   |
+| `T`            | Alternar Pestañas | Mostrar/ocultar pestañas de sujeción    |
+| `Alt+C`        | Alternar Cámara   | Mostrar/ocultar superposición de cámara |
+| `F12`          | Vista 3D          | Alternar ventana de vista previa 3D     |
+| `Ctrl+Shift+R` | Modo Simulación   | Alternar modo simulación                |
 
 ### Controles de Vista 3D
 
-| Atajo | Acción              | Descripción                                  |
-| ----- | ------------------- | -------------------------------------------- |
-| `1`   | Vista Superior      | Cambiar a vista desde arriba                 |
-| `2`   | Vista Frontal       | Cambiar a vista frontal                      |
-| `7`   | Vista Isométrica    | Cambiar a vista isométrica                   |
-| `P`   | Alternar Perspectiva| Cambiar entre perspectiva y ortográfica      |
+| Atajo | Acción               | Descripción                             |
+| ----- | -------------------- | --------------------------------------- |
+| `1`   | Vista Superior       | Cambiar a vista desde arriba            |
+| `2`   | Vista Frontal        | Cambiar a vista frontal                 |
+| `7`   | Vista Isométrica     | Cambiar a vista isométrica              |
+| `P`   | Alternar Perspectiva | Cambiar entre perspectiva y ortográfica |
 
 ---
 
 ## Capa y Organización
 
-| Atajo           | Acción           | Descripción                  |
-| --------------- | ---------------- | ---------------------------- |
-| `Ctrl+G`        | Agrupar          | Agrupar elementos seleccionados |
-| `Ctrl+U`        | Desagrupar       | Desagrupar grupo seleccionado |
-| `Ctrl+Re Pag`   | Mover Capa Arriba| Mover capa arriba en la pila |
-| `Ctrl+Av Pag`   | Mover Capa Abajo | Mover capa abajo en la pila  |
-| `Alt+S`         | Añadir Stock     | Añadir elemento de stock/material |
+| Atajo         | Acción            | Descripción                       |
+| ------------- | ----------------- | --------------------------------- |
+| `Ctrl+G`      | Agrupar           | Agrupar elementos seleccionados   |
+| `Ctrl+U`      | Desagrupar        | Desagrupar grupo seleccionado     |
+| `Ctrl+Re Pag` | Mover Capa Arriba | Mover capa arriba en la pila      |
+| `Ctrl+Av Pag` | Mover Capa Abajo  | Mover capa abajo en la pila       |
+| `Alt+S`       | Añadir Stock      | Añadir elemento de stock/material |
 
 ---
 
 ## Pestañas (Pestañas de Sujeción)
 
-| Atajo | Acción                  | Descripción              |
-| ----- | ----------------------- | ------------------------ |
-| `Alt+T` | Añadir Pestañas (Equidistantes) | Añadir pestañas espaciadas uniformemente |
-| `T`   | Alternar Visibilidad de Pestañas | Mostrar/ocultar superposición de pestañas |
+| Atajo   | Acción                           | Descripción                               |
+| ------- | -------------------------------- | ----------------------------------------- |
+| `Alt+T` | Añadir Pestañas (Equidistantes)  | Añadir pestañas espaciadas uniformemente  |
+| `T`     | Alternar Visibilidad de Pestañas | Mostrar/ocultar superposición de pestañas |
 
 ---
 
@@ -89,51 +89,50 @@ Referencia completa de atajos de teclado en Rayforge.
 
 ### Alineación
 
-| Atajo        | Acción          | Descripción                                  |
-| ------------ | --------------- | -------------------------------------------- |
-| `Shift+Izquierda` | Alinear Izquierda | Alinear elementos seleccionados a la izquierda |
-| `Shift+Derecha` | Alinear Derecha | Alinear elementos seleccionados a la derecha |
-| `Shift+Arriba` | Alinear Arriba  | Alinear elementos seleccionados arriba       |
-| `Shift+Abajo` | Alinear Abajo   | Alinear elementos seleccionados abajo        |
-| `Shift+Inicio` | Alinear H-Centro | Alinear elementos seleccionados horizontalmente al centro |
-| `Shift+Fin`   | Alinear V-Centro | Alinear elementos seleccionados verticalmente al centro |
+| Atajo             | Acción            | Descripción                                               |
+| ----------------- | ----------------- | --------------------------------------------------------- |
+| `Shift+Izquierda` | Alinear Izquierda | Alinear elementos seleccionados a la izquierda            |
+| `Shift+Derecha`   | Alinear Derecha   | Alinear elementos seleccionados a la derecha              |
+| `Shift+Arriba`    | Alinear Arriba    | Alinear elementos seleccionados arriba                    |
+| `Shift+Abajo`     | Alinear Abajo     | Alinear elementos seleccionados abajo                     |
+| `Shift+Inicio`    | Alinear H-Centro  | Alinear elementos seleccionados horizontalmente al centro |
+| `Shift+Fin`       | Alinear V-Centro  | Alinear elementos seleccionados verticalmente al centro   |
 
 ### Distribución
 
-| Atajo          | Acción               | Descripción                            |
-| -------------- | -------------------- | -------------------------------------- |
+| Atajo          | Acción                     | Descripción                                   |
+| -------------- | -------------------------- | --------------------------------------------- |
 | `Ctrl+Shift+H` | Distribuir Horizontalmente | Distribuir elementos uniformemente horizontal |
-| `Ctrl+Shift+V` | Distribuir Verticalmente | Distribuir elementos uniformemente vertical |
+| `Ctrl+Shift+V` | Distribuir Verticalmente   | Distribuir elementos uniformemente vertical   |
 
 ### Diseño
 
-| Atajo | Acción        | Descripción        |
-| ----- | ------------- | ------------------ |
+| Atajo   | Acción         | Descripción                     |
+| ------- | -------------- | ------------------------------- |
 | `Alt+A` | Píxel Perfecto | Ajustar a cuadrícula de píxeles |
 
 ---
 
 ## Transformar
 
-| Atajo     | Acción           | Descripción                          |
-| --------- | ---------------- | ------------------------------------ |
+| Atajo     | Acción             | Descripción                                      |
+| --------- | ------------------ | ------------------------------------------------ |
 | `Shift+H` | Voltear Horizontal | Reflejar elementos seleccionados horizontalmente |
-| `Shift+V` | Voltear Vertical   | Reflejar elementos seleccionados verticalmente |
+| `Shift+V` | Voltear Vertical   | Reflejar elementos seleccionados verticalmente   |
 
 ---
 
 ## Control de Máquina
 
-| Atajo | Acción            | Descripción                       |
-| ----- | ----------------- | --------------------------------- |
-| `Ctrl+L` | Panel de Control  | Alternar visibilidad del panel de control |
-| `Ctrl+<` | Ajustes de Máquina | Abrir diálogo de ajustes de máquina |
-| `F1`   | Acerca de         | Mostrar diálogo acerca de         |
+| Atajo    | Acción             | Descripción                             |
+| -------- | ------------------ | --------------------------------------- |
+| `Ctrl+L` | Panel Inferior     | Alternar visibilidad del panel inferior |
+| `Ctrl+<` | Ajustes de Máquina | Abrir diálogo de ajustes de máquina     |
+| `F1`     | Acerca de          | Mostrar diálogo acerca de               |
 
 :::note Operaciones de Máquina
 Las operaciones de control de máquina (Home, Enmarcar, Enviar, etc.) actualmente no tienen atajos predeterminados pero se pueden acceder vía botones de la barra de herramientas o menús.
 :::
-
 
 ---
 
@@ -141,20 +140,20 @@ Las operaciones de control de máquina (Home, Enmarcar, Enviar, etc.) actualment
 
 ### Controles del Ratón
 
-| Entrada                | Acción        | Descripción             |
-| ---------------------- | ------------- | ----------------------- |
-| **Clic Izquierdo**     | Seleccionar   | Seleccionar elemento    |
-| **Arrastrar Izquierdo**| Mover         | Mover elementos seleccionados |
+| Entrada                      | Acción            | Descripción                     |
+| ---------------------------- | ----------------- | ------------------------------- |
+| **Clic Izquierdo**           | Seleccionar       | Seleccionar elemento            |
+| **Arrastrar Izquierdo**      | Mover             | Mover elementos seleccionados   |
 | **Ctrl+Arrastrar Izquierdo** | Selección de Caja | Seleccionar múltiples elementos |
-| **Arrastrar Clic Central** | Desplazar    | Desplazar el lienzo     |
-| **Rueda de Desplazamiento** | Zoom       | Acercar/alejar          |
-| **Ctrl+Desplazamiento** | Zoom de Precisión | Control de zoom más fino |
+| **Arrastrar Clic Central**   | Desplazar         | Desplazar el lienzo             |
+| **Rueda de Desplazamiento**  | Zoom              | Acercar/alejar                  |
+| **Ctrl+Desplazamiento**      | Zoom de Precisión | Control de zoom más fino        |
 
 ### Teclas de Flecha
 
-| Atajo        | Acción      | Descripción                     |
-| ------------ | ----------- | ------------------------------- |
-| ` ` ` `      | Empujar     | Mover elementos seleccionados por 1 unidad |
+| Atajo          | Acción         | Descripción                                   |
+| -------------- | -------------- | --------------------------------------------- |
+| ` ` ` `        | Empujar        | Mover elementos seleccionados por 1 unidad    |
 | `Shift+Flecha` | Empujón Grande | Mover elementos seleccionados por 10 unidades |
 
 ---
@@ -163,15 +162,15 @@ Las operaciones de control de máquina (Home, Enmarcar, Enviar, etc.) actualment
 
 Cuando se edita código G o campos de texto:
 
-| Atajo | Acción     | Descripción              |
-| ----- | ---------- | ------------------------ |
-| `Ctrl+Z` | Deshacer   | Deshacer edición de texto |
-| `Ctrl+Y` | Rehacer    | Rehacer edición de texto  |
-| `Ctrl+A` | Seleccionar Todo | Seleccionar todo el texto |
-| `Ctrl+X` | Cortar     | Cortar texto seleccionado |
-| `Ctrl+C` | Copiar     | Copiar texto seleccionado |
-| `Ctrl+V` | Pegar      | Pegar texto               |
-| `Ctrl+F` | Buscar     | Buscar texto (si es compatible) |
+| Atajo    | Acción           | Descripción                     |
+| -------- | ---------------- | ------------------------------- |
+| `Ctrl+Z` | Deshacer         | Deshacer edición de texto       |
+| `Ctrl+Y` | Rehacer          | Rehacer edición de texto        |
+| `Ctrl+A` | Seleccionar Todo | Seleccionar todo el texto       |
+| `Ctrl+X` | Cortar           | Cortar texto seleccionado       |
+| `Ctrl+C` | Copiar           | Copiar texto seleccionado       |
+| `Ctrl+V` | Pegar            | Pegar texto                     |
+| `Ctrl+F` | Buscar           | Buscar texto (si es compatible) |
 
 ---
 
@@ -223,7 +222,6 @@ Cuando se edita código G o campos de texto:
 :::note Atajos Personalizados
 Los atajos de teclado están actualmente codificados. La configuración de atajos personalizados puede añadirse en futuras versiones.
 :::
-
 
 **Limitaciones actuales:**
 
@@ -338,42 +336,42 @@ Algunos atajos menos conocidos:
 
 **Imprime esta referencia rápida:**
 
-| Categoría     | Atajo        | Acción            |
-| ------------- | ------------ | ----------------- |
-| **Archivo**   | Ctrl+N       | Nuevo Bosquejo    |
-|               | Ctrl+O       | Abrir             |
-|               | Ctrl+S       | Guardar           |
-|               | Ctrl+Shift+S | Guardar Como      |
-|               | Ctrl+I       | Importar          |
-|               | Ctrl+E       | Exportar          |
-|               | Ctrl+Q       | Salir             |
-|               | Ctrl+,       | Preferencias      |
-| **Editar**    | Ctrl+Z       | Deshacer          |
-|               | Ctrl+Y       | Rehacer           |
-|               | Ctrl+C       | Copiar            |
-|               | Ctrl+V       | Pegar             |
-|               | Ctrl+D       | Duplicar          |
-|               | Delete       | Eliminar          |
-| **Ver**       | H            | Piezas            |
-|               | T            | Pestañas          |
-|               | Alt+C        | Cámara            |
-|               | F12          | Vista 3D          |
-|               | 1/2/7        | Preajustes de Vista |
-|               | P            | Perspectiva       |
-| **Alinear**   | Shift+Izquierda | Alinear Izquierda |
-|               | Shift+Derecha | Alinear Derecha   |
-|               | Shift+Arriba | Alinear Arriba    |
-|               | Shift+Abajo | Alinear Abajo     |
-|               | Shift+Inicio | H-Centro          |
-|               | Shift+Fin    | V-Centro          |
-| **Simular**   | F11          | Modo              |
-| **Transformar**| Shift+H     | Voltear H         |
-|               | Shift+V      | Voltear V         |
-|               | Ctrl+G       | Agrupar           |
-|               | Ctrl+U       | Desagrupar        |
-| **Máquina**   | Ctrl+L       | Panel de Control  |
-|               | Ctrl+<       | Ajustes de Máquina|
-|               | F1           | Acerca de         |
+| Categoría       | Atajo           | Acción              |
+| --------------- | --------------- | ------------------- |
+| **Archivo**     | Ctrl+N          | Nuevo Bosquejo      |
+|                 | Ctrl+O          | Abrir               |
+|                 | Ctrl+S          | Guardar             |
+|                 | Ctrl+Shift+S    | Guardar Como        |
+|                 | Ctrl+I          | Importar            |
+|                 | Ctrl+E          | Exportar            |
+|                 | Ctrl+Q          | Salir               |
+|                 | Ctrl+,          | Preferencias        |
+| **Editar**      | Ctrl+Z          | Deshacer            |
+|                 | Ctrl+Y          | Rehacer             |
+|                 | Ctrl+C          | Copiar              |
+|                 | Ctrl+V          | Pegar               |
+|                 | Ctrl+D          | Duplicar            |
+|                 | Delete          | Eliminar            |
+| **Ver**         | H               | Piezas              |
+|                 | T               | Pestañas            |
+|                 | Alt+C           | Cámara              |
+|                 | F12             | Vista 3D            |
+|                 | 1/2/7           | Preajustes de Vista |
+|                 | P               | Perspectiva         |
+| **Alinear**     | Shift+Izquierda | Alinear Izquierda   |
+|                 | Shift+Derecha   | Alinear Derecha     |
+|                 | Shift+Arriba    | Alinear Arriba      |
+|                 | Shift+Abajo     | Alinear Abajo       |
+|                 | Shift+Inicio    | H-Centro            |
+|                 | Shift+Fin       | V-Centro            |
+| **Simular**     | F11             | Modo                |
+| **Transformar** | Shift+H         | Voltear H           |
+|                 | Shift+V         | Voltear V           |
+|                 | Ctrl+G          | Agrupar             |
+|                 | Ctrl+U          | Desagrupar          |
+| **Máquina**     | Ctrl+L          | Panel Inferior      |
+|                 | Ctrl+<          | Ajustes de Máquina  |
+|                 | F1              | Acerca de           |
 
 ---
 

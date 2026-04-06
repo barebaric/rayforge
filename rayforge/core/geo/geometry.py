@@ -56,6 +56,7 @@ from .query import (
     find_closest_point_on_path_from_array,
     get_total_distance_from_array,
 )
+from .types import Point, Point3D, Polygon, Rect
 
 
 logger = logging.getLogger(__name__)
@@ -75,7 +76,7 @@ class Geometry:
 
     def __init__(self) -> None:
         """Initializes a new, empty Geometry object."""
-        self.last_move_to: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        self.last_move_to: Point3D = (0.0, 0.0, 0.0)
         self._uniform_scalable: bool = True
         self._winding_cache: Dict[int, str] = {}
         self._pending_data: List[List[float]] = []
@@ -109,7 +110,7 @@ class Geometry:
 
         self._pending_data = []
 
-    def _get_last_point(self) -> Tuple[float, float, float]:
+    def _get_last_point(self) -> Point3D:
         """
         Retrieves the end point of the last command in the geometry.
         Returns (0,0,0) if empty.
@@ -587,7 +588,7 @@ class Geometry:
 
         return self.close_gaps(tolerance=tolerance)
 
-    def rect(self) -> Tuple[float, float, float, float]:
+    def rect(self) -> Rect:
         """
         Returns a rectangle (x1, y1, x2, y2) that encloses the
         occupied area in the XY plane.
@@ -624,7 +625,7 @@ class Geometry:
             return 0.0
         return get_area_from_array(self.data)
 
-    def segments(self) -> List[List[Tuple[float, float, float]]]:
+    def segments(self) -> List[List[Point3D]]:
         """
         Returns a list of segments, where each segment is a list of points
         defining a continuous subpath.
@@ -639,11 +640,10 @@ class Geometry:
         if self.data is None or len(self.data) == 0:
             return []
 
-        all_segments: List[List[Tuple[float, float, float]]] = []
-        current_segment_points: List[Tuple[float, float, float]] = []
+        all_segments: List[List[Point3D]] = []
+        current_segment_points: List[Point3D] = []
 
-        # Find the first real command to establish a start point if needed
-        implicit_start: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        implicit_start: Point3D = (0.0, 0.0, 0.0)
 
         for i in range(self.data.shape[0]):
             row = self.data[i]
@@ -663,6 +663,43 @@ class Geometry:
             all_segments.append(current_segment_points)
 
         return all_segments
+
+    def to_polygons(self, tolerance: float = 0.3) -> List[Polygon]:
+        """
+        Converts the geometry to a list of 2D polygons.
+
+        The geometry is first linearized to convert arcs and beziers to
+        line segments, then each continuous subpath is extracted as a
+        polygon (list of (x, y) tuples).
+
+        Args:
+            tolerance: Tolerance for linearization and cleaning.
+
+        Returns:
+            A list of polygons, where each polygon is a list of (x, y) tuples.
+            Returns an empty list if the geometry is empty.
+        """
+        from .polygon import clean_polygon
+
+        if self.is_empty():
+            return []
+
+        linearized = self.linearize(tolerance)
+        segments = linearized.segments()
+
+        polygons = []
+        for segment in segments:
+            if len(segment) < 3:
+                continue
+
+            polygon = [(p[0], p[1]) for p in segment]
+            cleaned = clean_polygon(polygon, 0.01 * tolerance)
+            if cleaned:
+                polygons.append(cleaned)
+            elif len(polygon) >= 3:
+                polygons.append(polygon)
+
+        return polygons
 
     def transform(self: T_Geometry, matrix: "np.ndarray") -> T_Geometry:
         """
@@ -765,9 +802,9 @@ class Geometry:
 
     def map_to_frame(
         self: T_Geometry,
-        origin: Tuple[float, float],
-        p_width: Tuple[float, float],
-        p_height: Tuple[float, float],
+        origin: Point,
+        p_width: Point,
+        p_height: Point,
         anchor_y: Optional[float] = None,
         stable_src_height: Optional[float] = None,
     ) -> T_Geometry:
@@ -838,7 +875,7 @@ class Geometry:
 
     def find_closest_point(
         self, x: float, y: float
-    ) -> Optional[Tuple[int, float, Tuple[float, float]]]:
+    ) -> Optional[Tuple[int, float, Point]]:
         """
         Finds the closest point on the geometry's path to a given 2D point.
 
@@ -858,7 +895,7 @@ class Geometry:
 
     def find_closest_point_on_segment(
         self, segment_index: int, x: float, y: float
-    ) -> Optional[Tuple[float, Tuple[float, float]]]:
+    ) -> Optional[Tuple[float, Point]]:
         """
         Finds the closest point on a specific segment to the given coordinates.
 
@@ -941,7 +978,7 @@ class Geometry:
 
     def get_point_and_tangent_at(
         self, segment_index: int, t: float
-    ) -> Optional[Tuple[Tuple[float, float], Tuple[float, float]]]:
+    ) -> Optional[Tuple[Point, Point]]:
         """
         Calculates the 2D point and the normalized 2D tangent vector at a
         parameter `t` (0-1) along a given command segment.
@@ -961,7 +998,7 @@ class Geometry:
 
     def get_outward_normal_at(
         self, segment_index: int, t: float
-    ) -> Optional[Tuple[float, float]]:
+    ) -> Optional[Point]:
         """
         Calculates the outward-pointing, normalized 2D normal vector for a
         point on the geometry path.
@@ -1459,3 +1496,47 @@ class Geometry:
             float(row[6]),
             float(row[7]),
         )
+
+    def to_png(self, size: int) -> Optional[bytes]:
+        """
+        Renders this geometry to PNG bytes fitting within a square of
+        ``size`` pixels.
+
+        Returns None if the geometry is empty.
+        """
+        if self.is_empty():
+            return None
+
+        x1, y1, x2, y2 = self.rect()
+        gw = x2 - x1
+        gh = y2 - y1
+        if gw < 1e-9 or gh < 1e-9:
+            return None
+
+        padding = 4
+        available = size - 2 * padding
+        scale = min(available / gw, available / gh)
+
+        surface = cairo.ImageSurface(cairo.Format.ARGB32, size, size)
+        ctx = cairo.Context(surface)
+
+        ctx.set_source_rgba(0, 0, 0, 0)
+        ctx.set_operator(cairo.Operator.SOURCE)
+        ctx.paint()
+        ctx.set_operator(cairo.Operator.OVER)
+
+        ctx.translate(size / 2, size / 2)
+        ctx.scale(scale, -scale)
+        ctx.translate(-(x1 + gw / 2), -(y1 + gh / 2))
+
+        ctx.set_source_rgba(0.55, 0.55, 0.55, 1.0)
+        ctx.set_line_width(max(1.0 / scale, 0.5))
+        self.to_cairo(ctx)
+        ctx.stroke()
+
+        surface.flush()
+        import io
+
+        buf = io.BytesIO()
+        surface.write_to_png(buf)
+        return buf.getvalue()

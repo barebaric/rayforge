@@ -112,14 +112,16 @@ task_mgr.cancel_task("calculator")
 
 ### Handling Completion
 
-Use the `when_done` callback to get the result or see if an error occurred.
+Use the `when_done` callback to get the result or handle errors with try/except:
 
 ```python
 def on_task_finished(task):
     if task.get_status() == 'completed':
-        print(f"Task finished with result: {task.result()}")
-    elif task.get_status() == 'failed':
-        print(f"Task failed: {task._task_exception}")
+        try:
+            result = task.result()
+            print(f"Task finished with result: {result}")
+        except Exception as e:
+            print(f"Task failed: {e}")
 
 task_mgr.run_process(my_cpu_task, 10, when_done=on_task_finished)
 ```
@@ -129,7 +131,7 @@ task_mgr.run_process(my_cpu_task, 10, when_done=on_task_finished)
 ### `task_mgr` (The Manager Proxy)
 
 - `add_coroutine(coro, *args, key=None, when_done=None)`: Add an asyncio-based task
-- `run_process(func, *args, key=None, when_done=None, when_event=None)`: Run a CPU-bound task in a separate process
+- `run_process(func, *args, key=None, when_done=None, when_event=None, visible=True)`: Run a CPU-bound task in a separate process. The `visible` parameter controls whether the task appears in progress UI. The `when_event` callback receives custom events sent via `context.send_event()`.
 - `run_thread(func, *args, key=None, when_done=None)`: Run a task in a thread (shares memory with main process)
 - `cancel_task(key)`: Cancel a running task by its key
 - `tasks_updated` (signal for UI updates): Emitted when task status changes

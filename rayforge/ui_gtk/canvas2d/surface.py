@@ -1,6 +1,15 @@
 import logging
 from blinker import Signal
-from typing import TYPE_CHECKING, Optional, cast, Dict, List, Sequence, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Optional,
+    cast,
+    Dict,
+    List,
+    Sequence,
+    Tuple,
+)
 from gi.repository import Gdk, Gtk, Graphene
 from ...camera.controller import CameraController
 from ...context import get_context
@@ -8,23 +17,25 @@ from ...core.group import Group
 from ...core.item import DocItem
 from ...core.layer import Layer
 from ...core.stock import StockItem
+from ...core.stock_asset import StockAsset
 from ...core.workpiece import WorkPiece
+from ...machine.models.colors import OpsColorSet
 from ...machine.models.machine import Machine
 from ...pipeline.artifact import RenderContext
 from ...shared.util.colors import ColorSet
 from ..canvas import WorldSurface, Canvas, CanvasElement
 from ..shared.gtk_color import GtkColorResolver
 from ..shared.keyboard import is_primary_modifier
-from ..sketcher.editor import SketchEditor
-from ..sketcher.sketchelement import SketchElement
 from .elements.axis_extent_frame import (
     AxisExtentFrameElement,
     WorkareaBackgroundElement,
 )
+from .elements.nogo_zone import NogoZoneElement
 from .elements.camera_image import CameraImageElement
 from .elements.dot import DotElement
 from .elements.group import GroupElement
 from .elements.layer import LayerElement
+from .elements.rotary_surface import RotarySurfaceElement
 from .elements.simulation_overlay import SimulationOverlay
 from .elements.stock import StockElement
 from .elements.tab_handle import TabHandleElement
@@ -80,6 +91,12 @@ class WorkSurface(WorldSurface):
         self._simulation_mode = False
         self._simulation_overlay: Optional[CanvasElement] = None
 
+        # Click-to-zero mode state
+        self._click_to_zero_mode = False
+
+        self._nogo_zone_elements: Dict[str, NogoZoneElement] = {}
+        self._nogo_zones_visible = True
+
         # Initialize the base WorldSurface with machine dimensions
         super().__init__(
             width_mm=width_mm,
@@ -92,10 +109,6 @@ class WorkSurface(WorldSurface):
         # interfere with popover/menu closing logic.
         # We'll manage focus manually.
         self.set_focus_on_click(False)
-
-        # The SketchEditor manages sketch editing sessions. It is activated
-        # when a SketchElement becomes the edit_context.
-        self.sketch_editor = SketchEditor(parent_window)
 
         # DotElement size is in world units (mm) and is dynamically
         # updated to maintain a constant pixel size on screen.
@@ -122,6 +135,11 @@ class WorkSurface(WorldSurface):
         self._extent_frame_element.set_visible(False)
         self.root.add(self._extent_frame_element)
 
+        # Add the Rotary Diameter element (dashed rectangle for cylinder)
+        self._rotary_surface_element = RotarySurfaceElement()
+        self._rotary_surface_element.set_visible(False)
+        self.root.add(self._rotary_surface_element)
+
         # Signals for clipboard and duplication operations
         self.cut_requested = Signal()
         self.copy_requested = Signal()
@@ -131,9 +149,23 @@ class WorkSurface(WorldSurface):
         self.context_changed = Signal()
         self.transform_initiated = Signal()
 
-        # Signal to request editing a sketch (handled by MainWindow)
-        self.edit_sketch_requested = Signal()
-        self.edit_stock_item_requested = Signal()
+        # Signal to request editing an item (handled by MainWindow)
+        # Sends: (item, action_name)
+        self.edit_item_requested = Signal()
+
+        # Signal to set work zero at clicked position
+        self.work_zero_requested = Signal()
+
+        # Signal to cancel click-to-zero mode
+        self.click_to_zero_cancelled = Signal()
+
+        # Signal for context menu extension - addons can connect to add items
+        # Sends: (item, gesture, menu)
+        self.context_menu_requested = Signal()
+
+        # Signal emitted when an asset is dropped onto the canvas
+        # Sends: (uid, position_mm) where position_mm is (x, y) in world coords
+        self.item_dropped = Signal()
 
         # Connect to generic signals from the base Canvas class
         self.move_begin.connect(self._on_any_transform_begin)
@@ -241,11 +273,10 @@ class WorkSurface(WorldSurface):
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
     ):
         """
-        Handles right-clicks. Dispatches to the SketchEditor if a sketch is
-        being edited, otherwise shows the standard WorkSurface context menu.
+        Handles right-clicks. Shows the standard WorkSurface context menu.
         """
-        if isinstance(self.edit_context, SketchElement):
-            self.sketch_editor.handle_right_click(gesture, n_press, x, y)
+        if self._click_to_zero_mode and n_press == 1:
+            self.click_to_zero_cancelled.send(self)
             return
 
         self.right_click_context = None  # Reset context on each click
@@ -270,9 +301,6 @@ class WorkSurface(WorldSurface):
         elif isinstance(hit_elem, WorkPieceElement):
             wp_view = cast(WorkPieceElement, hit_elem)
 
-            # Check if this is a sketch workpiece using the new method
-            is_sketch = bool(wp_view.data.sketch_uid)
-
             # Check path proximity
             location = wp_view.get_closest_point_on_path(
                 world_x, world_y, threshold_px=5.0
@@ -284,10 +312,7 @@ class WorkSurface(WorldSurface):
                     "location": location,
                 }
             else:
-                if is_sketch:
-                    self.right_click_context = {"type": "sketch-item"}
-                else:
-                    self.right_click_context = {"type": "item"}
+                self.right_click_context = {"type": "item"}
         # Case 3: Clicked on another selectable item (e.g., a Group)
         elif hit_elem.selectable:
             self.right_click_context = {"type": "item"}
@@ -303,13 +328,9 @@ class WorkSurface(WorldSurface):
                     self.unselect_all()
                     hit_elem.selected = True
                     self._finalize_selection_state()
-                context_menu.show_item_context_menu(self, gesture)
-            elif context_type == "sketch-item":
-                if not hit_elem.selected:
-                    self.unselect_all()
-                    hit_elem.selected = True
-                    self._finalize_selection_state()
-                context_menu.show_sketch_item_context_menu(self, gesture)
+                context_menu.show_item_context_menu(
+                    self, gesture, item=hit_elem.data
+                )
             elif context_type == "geometry":
                 context_menu.show_geometry_context_menu(self, gesture)
             elif context_type == "tab":
@@ -446,10 +467,24 @@ class WorkSurface(WorldSurface):
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
         """
-        Overrides base to add application-specific layer selection logic,
-        handle double-click editing, and manage the SketchEditor lifecycle.
+        Overrides base to add application-specific layer selection logic
+        and handle double-click editing.
         """
         logger.debug("WorkSurface.on_button_press fired")
+
+        # Handle click-to-zero mode
+        if self._click_to_zero_mode:
+            if gesture.get_button() == Gdk.BUTTON_PRIMARY and n_press == 1:
+                world_x, world_y = self._get_world_coords(x, y)
+                if self.machine:
+                    space = self.machine.get_coordinate_space()
+                    machine_x, machine_y = space.world_point_to_machine(
+                        world_x, world_y
+                    )
+                else:
+                    machine_x, machine_y = world_x, world_y
+                self.work_zero_requested.send(self, x=machine_x, y=machine_y)
+                return
 
         # A left-click should clear any lingering right-click context.
         if gesture.get_button() == Gdk.BUTTON_PRIMARY:
@@ -461,13 +496,12 @@ class WorkSurface(WorldSurface):
             f"Button press: n_press={n_press}, pos=({x:.2f}, {y:.2f})"
         )
 
-        old_context = self.edit_context
         # The base class method handles hit testing and updates
         # self.edit_context
         super().on_button_press(gesture, n_press, x, y)
         new_context = self.edit_context
 
-        # Check for double-click to edit sketches.
+        # Check for double-click to edit items.
         if n_press == 2:
             world_x, world_y = self._get_world_coords(x, y)
             hit_elem = self.root.get_elem_hit(
@@ -476,23 +510,24 @@ class WorkSurface(WorldSurface):
 
             if isinstance(hit_elem, WorkPieceElement):
                 wp = hit_elem.data
-                # The new, correct logic:
-                if wp.sketch_uid:
-                    self.edit_sketch_requested.send(self, workpiece=wp)
-                    return
+                if wp.geometry_provider_uid:
+                    asset = self.doc.get_asset_by_uid(wp.geometry_provider_uid)
+                    if asset:
+                        asset_cls = type(asset)
+                        action_name = asset_cls.edit_item_action
+                        if action_name:
+                            self.edit_item_requested.send(
+                                self, item=wp, action_name=action_name
+                            )
+                            return
             elif isinstance(hit_elem, StockElement):
                 stock_item = cast(StockItem, hit_elem.data)
-                self.edit_stock_item_requested.send(
-                    self, stock_item=stock_item
-                )
-                return
-
-        # Manage SketchEditor activation based on context changes.
-        if old_context is not new_context:
-            if isinstance(old_context, SketchElement):
-                self.sketch_editor.deactivate()
-            if isinstance(new_context, SketchElement):
-                self.sketch_editor.activate(new_context)
+                action_name = StockAsset.edit_item_action
+                if action_name:
+                    self.edit_item_requested.send(
+                        self, item=stock_item, action_name=action_name
+                    )
+                    return
 
         # After the click, check if the active element dictates a layer change.
         if new_context and isinstance(new_context.data, WorkPiece):
@@ -501,6 +536,17 @@ class WorkSurface(WorldSurface):
             # create an undoable command to change it.
             if active_layer and active_layer != self.doc.active_layer:
                 self.editor.layer.set_active_layer(active_layer)
+
+    def on_motion(self, gesture: Gtk.Gesture, x: float, y: float) -> None:
+        if self._click_to_zero_mode:
+            self.set_cursor(Gdk.Cursor.new_from_name("crosshair"))
+            return
+        super().on_motion(gesture, x, y)
+
+    def on_motion_leave(self, controller: Gtk.EventControllerMotion) -> None:
+        if self._click_to_zero_mode:
+            self.set_cursor(None)
+        super().on_motion_leave(controller)
 
     def set_machine(self, machine: Optional[Machine]):
         """
@@ -546,6 +592,7 @@ class WorkSurface(WorldSurface):
 
         self._work_origin_element.set_pos(canvas_x, canvas_y)
         self._work_origin_element.set_visible(True)
+        self._update_rotary_surface_element()
         self.queue_draw()
 
     def _on_machine_state_changed(self, machine: Machine, state):
@@ -644,6 +691,12 @@ class WorkSurface(WorldSurface):
             # Update pipeline view context
             self._update_pipeline_view_context()
 
+    def set_click_to_zero_mode(self, active: bool):
+        """Sets whether click-to-zero mode is active."""
+        self._click_to_zero_mode = active
+        if not active:
+            self.set_cursor(None)
+
     def _update_pipeline_view_context(self) -> None:
         """
         Updates the view manager context with the current view settings.
@@ -673,15 +726,35 @@ class WorkSurface(WorldSurface):
             return
 
         color_set_dict = self._get_theme_color_dict()
+        laser_color_dicts = self._get_laser_color_dicts()
 
         context = RenderContext(
             pixels_per_mm=(ppm_x, ppm_y),
             show_travel_moves=self._show_travel_moves,
             margin_px=5,
             color_set_dict=color_set_dict.to_dict(),
+            laser_color_sets=laser_color_dicts,
         )
 
         self.editor.view_manager.update_render_context(context)
+
+    def _get_laser_color_dicts(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Resolve colors for each laser in the machine.
+
+        Returns a dictionary mapping laser UID to its color set dictionary.
+        """
+        if not self.machine:
+            return {}
+
+        theme_colors = self._get_theme_color_dict()
+        laser_colors: Dict[str, Dict[str, Any]] = {}
+
+        for laser in self.machine.heads:
+            laser_color_set = OpsColorSet.from_laser(laser, theme_colors)
+            laser_colors[laser.uid] = laser_color_set.to_color_set().to_dict()
+
+        return laser_colors
 
     def _get_theme_color_dict(self) -> ColorSet:
         """
@@ -769,11 +842,14 @@ class WorkSurface(WorldSurface):
         def sort_key(element: CanvasElement):
             """
             Sort key for root's children. Camera at bottom, then stock,
-            then dot, then layers, simulation overlay on top.
+            then layers, laser dot and simulation overlay on top.
             """
             if isinstance(element, SimulationOverlay):
                 # Simulation overlay is always on top of everything
                 return float("inf")
+            if isinstance(element, DotElement):
+                # Laser dot is always on top of workpieces
+                return float("inf") - 1
             if isinstance(element, LayerElement):
                 # LayerElements are ordered according to the doc.layers list.
                 # Add a large offset to ensure all layers are above stock
@@ -790,12 +866,17 @@ class WorkSurface(WorldSurface):
             if isinstance(element, AxisExtentFrameElement):
                 # Extent frame is above camera but below everything else
                 return -1.5
-            # Other elements (like the laser dot) are above the camera but
-            # below stock and layers.
+            if isinstance(element, NogoZoneElement):
+                return -1.4
+            if isinstance(element, RotarySurfaceElement):
+                # Rotary surface is above extent frame but below stock
+                return -1.25
+            # Other elements are above the camera but below stock and layers.
             return -1
 
         self.root.children.sort(key=sort_key)
 
+        self._update_rotary_surface_element()
         self.queue_draw()
 
     def remove_all(self):
@@ -808,6 +889,7 @@ class WorkSurface(WorldSurface):
                 (
                     CameraImageElement,
                     DotElement,
+                    NogoZoneElement,
                     WorkOriginElement,
                     AxisExtentFrameElement,
                 ),
@@ -836,6 +918,12 @@ class WorkSurface(WorldSurface):
         # Find the WorkPieceElements and toggle their base image
         for wp_elem in self.find_by_type(WorkPieceElement):
             cast(WorkPieceElement, wp_elem).set_base_image_visible(visible)
+        self.queue_draw()
+
+    def set_show_nogo_zones(self, visible: bool):
+        self._nogo_zones_visible = visible
+        for elem in self._nogo_zone_elements.values():
+            elem.set_visible(visible and elem.data.enabled)
         self.queue_draw()
 
     def set_camera_controllers(self, controllers: List[CameraController]):
@@ -925,6 +1013,7 @@ class WorkSurface(WorldSurface):
         else:
             self._update_extent_frame()
             self._sync_camera_elements()
+            self._sync_nogo_zone_elements()
             self._on_wcs_updated(machine)
 
     def reset_view(self):
@@ -976,9 +1065,11 @@ class WorkSurface(WorldSurface):
         self._update_extent_frame()
 
         super().reset_view()
+
         new_ratio = width_mm / height_mm if height_mm > 0 else 1.0
         self.aspect_ratio_changed.send(self, ratio=new_ratio)
         self._sync_camera_elements()
+        self._sync_nogo_zone_elements()
         self._on_wcs_updated(self.machine)
         self._update_pipeline_view_context()
 
@@ -1024,6 +1115,66 @@ class WorkSurface(WorldSurface):
 
         self.queue_draw()
 
+    def _sync_nogo_zone_elements(self):
+        if not self.machine:
+            for elem in self._nogo_zone_elements.values():
+                elem.remove()
+            self._nogo_zone_elements.clear()
+            return
+
+        current_uids = set(self.machine.nogo_zones.keys())
+        existing_uids = set(self._nogo_zone_elements.keys())
+
+        for uid in existing_uids - current_uids:
+            self._nogo_zone_elements.pop(uid).remove()
+
+        for uid, zone in self.machine.nogo_zones.items():
+            if uid in self._nogo_zone_elements:
+                elem = self._nogo_zone_elements[uid]
+                elem._update_from_zone()
+                elem.set_visible(self._nogo_zones_visible and zone.enabled)
+            else:
+                elem = NogoZoneElement(zone)
+                self._nogo_zone_elements[uid] = elem
+                self.root.add(elem)
+
+        self.queue_draw()
+
+    def _update_rotary_surface_element(self):
+        """
+        Updates the rotary diameter indicator element based on the active
+        layer's settings and current WCS origin position.
+        """
+        active_layer = self.doc.active_layer
+        rotary_enabled = active_layer.rotary_enabled
+
+        if not rotary_enabled or not self.machine:
+            self._rotary_surface_element.set_visible(False)
+            return
+
+        rotary_diameter = active_layer.rotary_diameter
+        space = self.machine.get_coordinate_space()
+
+        if self.machine.wcs_origin_is_workarea_origin:
+            canvas_x, canvas_y = space.get_workarea_origin_in_machine()
+        else:
+            wcs_x, wcs_y, _ = self.machine.get_active_wcs_offset()
+            canvas_x, canvas_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
+
+        self._rotary_surface_element.set_x_axis_right(
+            self.machine.x_axis_right
+        )
+        self._rotary_surface_element.set_origin(canvas_x, canvas_y)
+        bed_width = self.machine.axis_extents[0]
+        max_length = bed_width
+        default_rm = self.machine.get_default_rotary_module()
+        if default_rm:
+            max_length = min(max_length, default_rm.max_workpiece_length)
+        self._rotary_surface_element.update_for_diameter(
+            rotary_diameter, bed_width, max_length
+        )
+        self._rotary_surface_element.set_visible(True)
+
     def _on_aspect_ratio_changed(self, sender, **kwargs) -> None:
         """
         Handler for aspect ratio changes (zoom level changes).
@@ -1066,11 +1217,6 @@ class WorkSurface(WorldSurface):
         state: Gdk.ModifierType,
     ) -> bool:
         """Handles key press events for the work surface."""
-        # First, dispatch to sketch editor if a sketch is active
-        if isinstance(self.edit_context, SketchElement):
-            if self.sketch_editor.handle_key_press(keyval, keycode, state):
-                return True  # Event handled by sketch editor
-
         # Let the base WorldSurface class handle generic keys (e.g., '1')
         if super().on_key_pressed(controller, keyval, keycode, state):
             return True

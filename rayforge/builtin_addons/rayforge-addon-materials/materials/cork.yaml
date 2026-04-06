@@ -1,0 +1,28 @@
+uid: cork
+name:
+  default: Cork
+  de: Kork
+  es: Corcho
+  fr: Liège
+  pt: Cortiça
+  uk: Корк
+  zh_CN: 软木
+description:
+  default: Lightweight porous material from oak bark
+  de: Leichtes poröses Material aus Eichenrinde
+  es: Material ligero y poroso de la corteza de roble
+  fr: Matériau léger et poreux issu de l'écorce de chêne
+  pt: Material leve poroso da casca de carvalho
+  uk: Легкий пористий матеріал з кори дуба
+  zh_CN: 源自橡树皮的轻质多孔材料
+category:
+  default: Organic
+  de: Organisch
+  es: Orgánico
+  fr: Organique
+  pt: Orgânico
+  uk: Органічний
+  zh_CN: 有机材料
+appearance:
+  color: "#DEB887"
+  pattern: solid

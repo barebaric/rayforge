@@ -51,7 +51,12 @@ quote-style = "double"
 [tool.pyright]
 stubPath = "typings"
 reportMissingModuleSource = false
-include = ["rayforge", "tests/**/test_*.py"]
+include = [
+    "rayforge",
+    "tests/**/test_*.py",
+    "rayforge/builtin_addons/*",
+    "rayforge/private_addons/*",
+]
 
 [tool.mypy]
 mypy_path = "stubs"
@@ -78,7 +83,11 @@ filterwarnings = [
     # Ignore Swig related deprecation warnings from importlib
     "ignore::DeprecationWarning:importlib._bootstrap",
 ]
-testpaths = ["tests"]
+testpaths = [
+    "tests",
+    "rayforge/builtin_addons/*/tests",
+    "rayforge/private_addons/*/tests",
+]
 norecursedirs = [
     "builddir",
     ".git",

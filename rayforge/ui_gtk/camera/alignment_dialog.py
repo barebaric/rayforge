@@ -4,17 +4,204 @@ from typing import List, Optional, Tuple
 from gettext import gettext as _
 
 import numpy as np
-from gi.repository import Adw, Gdk, GLib, Gtk
+from gi.repository import Adw, Gdk, GLib, Gtk, Graphene
 
 from ...camera.controller import CameraController
 from ...camera.models.camera import Pos
 from ..icons import get_icon
 from ..shared.gtk import apply_css
 from ..shared.patched_dialog_window import PatchedDialogWindow
-from .display_widget import CameraDisplay
+from ..canvas.worldsurface import WorldSurface
 from .point_bubble_widget import PointBubbleWidget
 
 logger = logging.getLogger(__name__)
+
+
+class CameraAlignmentSurface(WorldSurface):
+    def __init__(self, dialog, controller: CameraController, **kwargs):
+        w, h = controller.resolution
+        super().__init__(
+            width_mm=w, height_mm=h, show_grid=False, show_axis=False, **kwargs
+        )
+        self.dialog = dialog
+        self.controller = controller
+
+        self.controller.subscribe()
+        self.controller.image_captured.connect(self._on_image_captured)
+
+        self.dragging_point_index = -1
+        self.drag_offset_x = 0.0
+        self.drag_offset_y = 0.0
+
+        click = Gtk.GestureClick.new()
+        click.set_button(Gdk.BUTTON_PRIMARY)
+        click.connect("pressed", self.on_image_click)
+        self.add_controller(click)
+
+        drag = Gtk.GestureDrag.new()
+        drag.set_button(Gdk.BUTTON_PRIMARY)
+        drag.connect("drag-begin", self.on_drag_begin)
+        drag.connect("drag-update", self.on_drag_update)
+        drag.connect("drag-end", self.on_drag_end)
+        self.add_controller(drag)
+
+    def stop(self):
+        self.controller.unsubscribe()
+
+    def _on_image_captured(self, _):
+        w, h = self.controller.resolution
+        if w != self.width_mm or h != self.height_mm:
+            self.set_size(w, h)
+        self.queue_draw()
+
+    def get_image_coords(self, x, y):
+        widget_w, widget_h = self.get_width(), self.get_height()
+        if widget_w <= 0 or widget_h <= 0:
+            return 0.0, 0.0
+        content_x, content_y, content_w, content_h = (
+            self._axis_renderer.get_content_layout(widget_w, widget_h)
+        )
+
+        scale_x = content_w / self.width_mm if self.width_mm > 0 else 1
+        scale_y = content_h / self.height_mm if self.height_mm > 0 else 1
+
+        vx = x - content_x
+        vy = y - content_y
+        vx /= self.zoom_level
+        vy /= self.zoom_level
+        vx /= scale_x
+        vy = (content_h - vy) / scale_y
+
+        world_x = vx + self.pan_x_mm
+        world_y = vy + self.pan_y_mm
+
+        image_x = world_x
+        image_y = world_y
+        return image_x, image_y
+
+    def _find_point_near(self, x, y, threshold=10):
+        widget_w, widget_h = self.get_width(), self.get_height()
+        if widget_w <= 0 or widget_h <= 0:
+            return -1
+        content_x, content_y, content_w, content_h = (
+            self._axis_renderer.get_content_layout(widget_w, widget_h)
+        )
+        scale_x = content_w / self.width_mm if self.width_mm > 0 else 1
+
+        scaled_threshold = threshold / (self.zoom_level * scale_x)
+
+        for i, pt in enumerate(self.dialog.image_points or []):
+            if pt is not None:
+                if math.hypot(pt[0] - x, pt[1] - y) < scaled_threshold:
+                    return i
+        return -1
+
+    def on_image_click(self, gesture, n, x, y):
+        image_x, image_y = self.get_image_coords(x, y)
+        point_index = self._find_point_near(image_x, image_y)
+
+        if point_index >= 0:
+            self.dialog.set_active_point(point_index)
+        else:
+            self.dialog.image_points.append((image_x, image_y))
+            self.dialog.world_points.append((0.0, 0.0))
+            self.dialog.set_active_point(len(self.dialog.image_points) - 1)
+        self.queue_draw()
+        self.dialog.update_apply_button_sensitivity()
+
+    def on_drag_begin(self, gesture, start_x, start_y):
+        self.dialog._interaction_in_progress = True
+        image_x, image_y = self.get_image_coords(start_x, start_y)
+        point_index = self._find_point_near(image_x, image_y)
+        if point_index >= 0:
+            self.dragging_point_index = point_index
+            pt = self.dialog.image_points[point_index]
+            if pt is not None:
+                self.drag_offset_x = pt[0] - image_x
+                self.drag_offset_y = pt[1] - image_y
+            else:
+                self.drag_offset_x = 0.0
+                self.drag_offset_y = 0.0
+            self.dialog.set_active_point(point_index)
+            self.dialog._interaction_in_progress = True
+            self.dialog.bubble.set_visible(True)
+            gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+        else:
+            self.dragging_point_index = -1
+            gesture.set_state(Gtk.EventSequenceState.DENIED)
+
+    def on_drag_update(self, gesture, offset_x, offset_y):
+        idx = self.dragging_point_index
+        if idx < 0:
+            return
+        ok, start_x, start_y = gesture.get_start_point()
+        if not ok:
+            return
+        current_x = start_x + offset_x
+        current_y = start_y + offset_y
+        image_x, image_y = self.get_image_coords(current_x, current_y)
+        new_x = image_x + self.drag_offset_x
+        new_y = image_y + self.drag_offset_y
+        self.dialog.image_points[idx] = (new_x, new_y)
+
+        if idx == self.dialog.active_point_index:
+            self.dialog.bubble.set_image_coords(new_x, new_y)
+            self.dialog._position_bubble()
+        self.queue_draw()
+
+    def on_drag_end(self, gesture, offset_x, offset_y):
+        self.dialog._interaction_in_progress = False
+        if self.dragging_point_index >= 0:
+            self.dragging_point_index = -1
+            self.dialog._position_bubble()
+
+    def do_snapshot(self, snapshot: Gtk.Snapshot) -> None:
+        width, height = self.get_width(), self.get_height()
+        ctx = snapshot.append_cairo(Graphene.Rect().init(0, 0, width, height))
+
+        content_x, content_y, content_w, content_h = (
+            self._axis_renderer.get_content_layout(width, height)
+        )
+        scale_x = content_w / self.width_mm if self.width_mm > 0 else 1
+        scale_y = content_h / self.height_mm if self.height_mm > 0 else 1
+
+        ctx.save()
+        ctx.translate(content_x, content_y)
+        ctx.scale(self.zoom_level, self.zoom_level)
+        ctx.translate(0, content_h)
+        ctx.scale(scale_x, -scale_y)
+        ctx.translate(-self.pan_x_mm, -self.pan_y_mm)
+
+        pixbuf = self.controller.pixbuf
+        if pixbuf:
+            ctx.save()
+            ctx.translate(0, self.height_mm)
+            ctx.scale(1, -1)
+            Gdk.cairo_set_source_pixbuf(ctx, pixbuf, 0, 0)
+            ctx.paint()
+            ctx.restore()
+
+        for i, pt in enumerate(self.dialog.image_points):
+            if pt is not None:
+                world_x = pt[0]
+                world_y = pt[1]
+                radius = 5 / (self.zoom_level * scale_x)
+                ctx.arc(world_x, world_y, radius, 0, 2 * 3.14159)
+                if i == self.dialog.active_point_index:
+                    ctx.set_source_rgba(1, 0.2, 0.2, 0.8)
+                else:
+                    ctx.set_source_rgba(0.2, 0.6, 1.0, 0.8)
+                ctx.fill()
+                ctx.set_source_rgba(1, 1, 1, 1)
+                ctx.set_line_width(1.5 / (self.zoom_level * scale_x))
+                ctx.stroke()
+
+        ctx.restore()
+
+        self._update_theme_colors()
+        self._axis_renderer.draw_grid_and_labels(
+            ctx, self.view_transform, width, height
+        )
 
 
 class CameraAlignmentDialog(PatchedDialogWindow):
@@ -33,11 +220,13 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         self.camera = controller.config
         self.image_points: List[Optional[Pos]] = []
         self.world_points: List[Pos] = []
+
         self.active_point_index = -1
-        self.dragging_point_index = -1
-        self.drag_start_image_x = 0
-        self.drag_start_image_y = 0
         self._display_ready = False
+
+        # Interaction Lock: Blocks automatic idle positioning while dragging
+        # manually
+        self._interaction_in_progress = False
 
         apply_css(
             """
@@ -53,16 +242,44 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.set_content(content)
 
+        # --- Header Bar with Zoom Controls ---
         header_bar = Adw.HeaderBar()
+        header_title = _("{camera_name} – Image Alignment").format(
+            camera_name=self.camera.name
+        )
         header_bar.set_title_widget(
             Adw.WindowTitle(
-                title=_("{camera_name} – Image Alignment").format(
-                    camera_name=self.camera.name
-                ),
+                title=header_title,
                 subtitle="",
             )
         )
         content.append(header_bar)
+
+        zoom_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        zoom_box.add_css_class("linked")
+
+        btn_zoom_out = Gtk.Button(
+            child=get_icon("zoom-out-symbolic"),
+            tooltip_text=_("Zoom Out (Scroll Down)"),
+        )
+        btn_zoom_out.connect("clicked", self.on_zoom_out_click)
+
+        btn_zoom_fit = Gtk.Button(
+            child=get_icon("zoom-fit-best-symbolic"),
+            tooltip_text=_("Fit to Window"),
+        )
+        btn_zoom_fit.connect("clicked", self.on_zoom_fit_click)
+
+        btn_zoom_in = Gtk.Button(
+            child=get_icon("zoom-in-symbolic"),
+            tooltip_text=_("Zoom In (Scroll Up)"),
+        )
+        btn_zoom_in.connect("clicked", self.on_zoom_in_click)
+
+        zoom_box.append(btn_zoom_out)
+        zoom_box.append(btn_zoom_fit)
+        zoom_box.append(btn_zoom_in)
+        header_bar.pack_start(zoom_box)
 
         vbox = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
@@ -74,52 +291,58 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         )
         content.append(vbox)
 
-        self.overlay = Gtk.Overlay()
-        self.camera_display = CameraDisplay(controller)
-        self.overlay.set_child(self.camera_display)
-        vbox.append(self.overlay)
+        # --- Viewport & Hierarchy Setup ---
+        self.main_overlay = Gtk.Overlay()
+        vbox.append(self.main_overlay)
 
-        # um só bubble
+        self.camera_display = CameraAlignmentSurface(self, controller)
+        self.camera_display.set_hexpand(True)
+        self.camera_display.set_vexpand(True)
+        self.main_overlay.set_child(self.camera_display)
+
         self.bubble = PointBubbleWidget(0)
-        self.overlay.add_overlay(self.bubble)
+        # Prevent bubble from forcing parent size or interacting with expand
+        # logic
+        self.bubble.set_hexpand(False)
+        self.bubble.set_vexpand(False)
+        self.main_overlay.add_overlay(self.bubble)
         self.bubble.set_halign(Gtk.Align.START)
         self.bubble.set_valign(Gtk.Align.START)
         self.bubble.set_visible(False)
         self.bubble.value_changed.connect(self.update_apply_button_sensitivity)
         self.bubble.delete_requested.connect(self.on_point_delete_requested)
         self.bubble.focus_requested.connect(self.on_bubble_focus_requested)
+        self.bubble.nudge_requested.connect(self.on_nudge_requested)
 
-        # A floating, dismissible info box
         self.info_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
             spacing=6,
-            margin_top=24,  # Increased top margin
+            margin_top=24,
             margin_start=12,
             margin_end=12,
         )
         self.info_box.add_css_class("info-highlight")
         self.info_box.set_valign(Gtk.Align.START)
         self.info_box.set_halign(Gtk.Align.CENTER)
-        self.overlay.add_overlay(self.info_box)
+        self.main_overlay.add_overlay(self.info_box)
 
         icon = get_icon("info-symbolic")
-        icon.set_valign(Gtk.Align.CENTER)  # Vertically centered
+        icon.set_valign(Gtk.Align.CENTER)
         self.info_box.append(icon)
 
-        info_label = Gtk.Label(
-            label=_(
-                "Click the image to add new reference points. "
-                "Click or drag existing points to edit them."
-            ),
-            xalign=0,
+        info_text = _(
+            "Click the image to add reference points. Drag to move them.\n"
+            "Scroll to Zoom. Middle-click and drag to Pan.\n"
+            "Use the Arrow Keys to nudge the active point precisely."
         )
+        info_label = Gtk.Label(label=info_text, xalign=0)
         info_label.set_wrap(True)
         info_label.set_hexpand(True)
         self.info_box.append(info_label)
 
         dismiss_button = Gtk.Button(child=get_icon("close-symbolic"))
         dismiss_button.add_css_class("flat")
-        dismiss_button.set_valign(Gtk.Align.CENTER)  # Vertically centered
+        dismiss_button.set_valign(Gtk.Align.CENTER)
         dismiss_button.connect("clicked", lambda btn: self.info_box.hide())
         self.info_box.append(dismiss_button)
 
@@ -140,32 +363,19 @@ class CameraAlignmentDialog(PatchedDialogWindow):
             btn.add_css_class("flat")
             btn.connect("clicked", cb)
             btn_box.append(btn)
+
         self.apply_button = Gtk.Button(label=_("Apply"))
         self.apply_button.add_css_class("suggested-action")
         self.apply_button.connect("clicked", self.on_apply_clicked)
         btn_box.append(self.apply_button)
 
-        # Attach gestures to the camera_display, not the overlay.
-        click = Gtk.GestureClick.new()
-        click.set_button(Gdk.BUTTON_PRIMARY)
-        click.connect("pressed", self.on_image_click)
-        self.camera_display.add_controller(click)
-
-        drag = Gtk.GestureDrag.new()
-        drag.set_button(Gdk.BUTTON_PRIMARY)
-        drag.connect("drag-begin", self.on_drag_begin)
-        drag.connect("drag-update", self.on_drag_update)
-        drag.connect("drag-end", self.on_drag_end)
-        self.camera_display.add_controller(drag)
-
+        # --- Event Controllers ---
         key_controller = Gtk.EventControllerKey.new()
         key_controller.connect("key-pressed", self.on_key_pressed)
         self.add_controller(key_controller)
 
+        # --- Signal Connections ---
         self.camera_display.connect("realize", self._on_display_ready)
-        self.camera_display.connect(
-            "resize", lambda w, x, y: self._on_display_ready()
-        )
 
         if self.camera.image_to_world:
             img_pts, wld_pts = self.camera.image_to_world
@@ -173,6 +383,63 @@ class CameraAlignmentDialog(PatchedDialogWindow):
 
         self.set_active_point(0)
         self.update_apply_button_sensitivity()
+
+    # --- Calculation Helpers ---
+
+    def _calculate_bubble_margins(
+        self, img_x: float, img_y: float
+    ) -> Tuple[bool, int, int]:
+        surface = self.camera_display
+        widget_w, widget_h = surface.get_width(), surface.get_height()
+        if widget_w <= 0 or widget_h <= 0:
+            return False, 0, 0
+
+        content_x, content_y, content_w, content_h = (
+            surface._axis_renderer.get_content_layout(widget_w, widget_h)
+        )
+
+        scale_x = content_w / surface.width_mm if surface.width_mm > 0 else 1
+        scale_y = content_h / surface.height_mm if surface.height_mm > 0 else 1
+
+        world_x = img_x
+        world_y = img_y
+
+        vx = (world_x - surface.pan_x_mm) * scale_x
+        vy = (world_y - surface.pan_y_mm) * scale_y
+        vy = content_h - vy
+
+        vx *= surface.zoom_level
+        vy *= surface.zoom_level
+
+        display_x = vx + content_x
+        display_y = vy + content_y
+
+        alloc = self.bubble.get_allocation()
+        bubble_width, bubble_height = alloc.width, alloc.height
+
+        x = display_x - (bubble_width / 2)
+        x = max(12, min(x, widget_w - bubble_width - 12))
+
+        y = display_y + 16
+        if y + bubble_height > widget_h - 12:
+            y = display_y - bubble_height - 16
+
+        return True, int(x), int(y)
+
+    # --- Zoom Logic ---
+
+    def on_zoom_in_click(self, _):
+        new_val = min(10.0, self.camera_display.zoom_level * 1.25)
+        self.camera_display.set_zoom(new_val)
+
+    def on_zoom_out_click(self, _):
+        new_val = max(0.1, self.camera_display.zoom_level / 1.25)
+        self.camera_display.set_zoom(new_val)
+
+    def on_zoom_fit_click(self, _):
+        self.camera_display.reset_view()
+
+    # --- Interaction Logic ---
 
     def _on_display_ready(self, *args):
         if not self._display_ready:
@@ -182,143 +449,105 @@ class CameraAlignmentDialog(PatchedDialogWindow):
             self._position_bubble()
 
     def _position_bubble(self) -> bool:
-        # Wait until the display is ready and a point is selected.
-        if not self._display_ready or self.active_point_index < 0:
-            return False
+        """
+        Positions the bubble widget.
+        Returns GLib.SOURCE_REMOVE strictly to ensure idle loops terminate.
+        """
+        if self._interaction_in_progress:
+            return GLib.SOURCE_REMOVE
 
-        # Get the coordinates of the active point.
+        if not self._display_ready or self.active_point_index < 0:
+            return GLib.SOURCE_REMOVE
+
         coords = self.image_points[self.active_point_index]
         if coords is None:
-            return False
-        img_x, img_y = coords
+            return GLib.SOURCE_REMOVE
 
-        # Get the dimensions of the camera display.
-        display_width, display_height = (
-            self.camera_display.get_width(),
-            self.camera_display.get_height(),
-        )
-        if display_width <= 0 or display_height <= 0:
-            return True  # Try again if the display is not ready.
+        visible, x, y = self._calculate_bubble_margins(coords[0], coords[1])
+        if not visible:
+            return GLib.SOURCE_REMOVE
 
-        # Convert image coordinates to display coordinates.
-        source_width, source_height = self.controller.resolution
-        display_x = img_x * (display_width / source_width)
-        display_y = display_height - (img_y * (display_height / source_height))
+        # Optimization: Only update margins if changed to prevent thrashing
+        if self.bubble.get_margin_start() != x:
+            self.bubble.set_margin_start(x)
+        if self.bubble.get_margin_top() != y:
+            self.bubble.set_margin_top(y)
 
-        # Get the dimensions of the bubble widget.
-        alloc = self.bubble.get_allocation()
-        bubble_width, bubble_height = alloc.width, alloc.height
-        if bubble_width <= 0 or bubble_height <= 0:
-            return True  # Try again if the bubble is not ready.
-
-        # Center the bubble horizontally on the point, but keep it inside
-        # the display area.
-        x = max(
-            0, min(display_x - bubble_width / 2, display_width - bubble_width)
-        )
-
-        # Position the bubble below the point.
-        y = display_y + 10
-        # If it goes off-screen, position it above the point.
-        if y + bubble_height > display_height:
-            y = max(0, display_y - bubble_height - 10)
-
-        # Set the position of the bubble.
-        self.bubble.set_margin_start(int(x))
-        self.bubble.set_margin_top(int(y))
-
-        # Make the bubble visible if it's not already.
-        if not self.bubble.get_visible():
+        if (
+            not self.bubble.get_visible()
+            and self.camera_display.dragging_point_index == -1
+        ):
             self.bubble.set_visible(True)
 
-        return False  # Success, do not repeat
+        return GLib.SOURCE_REMOVE
 
     def set_active_point(self, index: int, widget=None):
         if index < 0 or index >= len(self.image_points):
             self.active_point_index = -1
             self.bubble.set_visible(False)
-            self.camera_display.set_marked_points(self.image_points, -1)
+            self.camera_display.queue_draw()
             return
+
         self.active_point_index = index
-        self.bubble.point_index = index
-        img = self.image_points[index]
-        if img:
-            self.bubble.set_image_coords(*img)
+        self.bubble.set_point_index(index)
+
+        coords = self.image_points[index]
+        if coords is not None:
+            self.bubble.set_image_coords(*coords)
+
         self.bubble.set_world_coords(*self.world_points[index])
-        GLib.idle_add(self._position_bubble)
+
+        if self.camera_display.dragging_point_index == -1:
+            self._interaction_in_progress = False
+            self._position_bubble()
+
         (widget or self.bubble.world_x_spin).grab_focus()
-        self.camera_display.set_marked_points(self.image_points, index)
+        self.camera_display.queue_draw()
 
     def on_bubble_focus_requested(self, bubble, widget):
         self.set_active_point(self.active_point_index, widget)
 
-    def on_image_click(self, gesture, n, x, y):
-        if gesture.get_current_button() != Gdk.BUTTON_PRIMARY:
+    def on_nudge_requested(self, bubble, dx, dy):
+        if self.active_point_index < 0:
             return
-        image_x, image_y = self._display_to_image_coords(x, y)
-        point_index = self._find_point_near(image_x, image_y)
-        if point_index >= 0:
-            self.set_active_point(point_index)
-        else:
-            self.image_points.append((image_x, image_y))
-            self.world_points.append((0.0, 0.0))
-            self.set_active_point(len(self.image_points) - 1)
-        self.camera_display.set_marked_points(
-            self.image_points, self.active_point_index
-        )
-        self.update_apply_button_sensitivity()
-
-    def on_drag_begin(self, gesture, x, y):
-        image_x, image_y = self._display_to_image_coords(x, y)
-        point_index = self._find_point_near(image_x, image_y)
-        if point_index >= 0:
-            point = self.image_points[point_index]
-            if point is None:
-                self.dragging_point_index = -1
-                gesture.set_state(Gtk.EventSequenceState.DENIED)
-                return
-
-            self.dragging_point_index = point_index
-            self.drag_start_image_x, self.drag_start_image_y = point
-            gesture.set_state(Gtk.EventSequenceState.CLAIMED)
-        else:
-            self.dragging_point_index = -1
-            gesture.set_state(Gtk.EventSequenceState.DENIED)
-
-    def on_drag_update(self, gesture, dx, dy):
-        idx = self.dragging_point_index
-        if idx < 0:
+        p = self.image_points[self.active_point_index]
+        if p is None:
             return
-
-        display_width, display_height = (
-            self.camera_display.get_width(),
-            self.camera_display.get_height(),
-        )
-        image_width, image_height = self.controller.resolution
-
-        scale_x = display_width / image_width if display_width > 0 else 1
-        scale_y = display_height / image_height if display_height > 0 else 1
-
-        new_image_x = self.drag_start_image_x + dx / scale_x
-        new_image_y = self.drag_start_image_y - dy / scale_y
-
-        self.image_points[idx] = new_image_x, new_image_y
-        if idx == self.active_point_index:
-            self.bubble.set_image_coords(new_image_x, new_image_y)
-            self._position_bubble()
-        self.camera_display.set_marked_points(
-            self.image_points, self.active_point_index
-        )
+        nx, ny = p[0] + dx, p[1] + dy
+        self.image_points[self.active_point_index] = (nx, ny)
+        self.bubble.set_image_coords(nx, ny)
+        self._position_bubble()
         self.camera_display.queue_draw()
-
-    def on_drag_end(self, gesture, dx, dy):
-        if self.dragging_point_index >= 0:
-            self.dragging_point_index = -1
 
     def on_key_pressed(self, controller, keyval, keycode, state):
         if keyval == Gdk.KEY_Escape:
             self.close()
             return Gdk.EVENT_STOP
+
+        focus_widget = self.get_focus()
+        is_typing = isinstance(focus_widget, Gtk.Text) or isinstance(
+            focus_widget, Gtk.SpinButton
+        )
+
+        if not is_typing and self.active_point_index >= 0:
+            dx, dy = 0.0, 0.0
+            step = 5.0 if (state & Gdk.ModifierType.SHIFT_MASK) else 0.5
+
+            if keyval == Gdk.KEY_Up:
+                dy = step
+            elif keyval == Gdk.KEY_Down:
+                dy = -step
+            elif keyval == Gdk.KEY_Left:
+                dx = -step
+            elif keyval == Gdk.KEY_Right:
+                dx = step
+            elif keyval in (Gdk.KEY_Delete, Gdk.KEY_BackSpace):
+                self.on_point_delete_requested(self.bubble)
+                return Gdk.EVENT_STOP
+
+            if dx != 0.0 or dy != 0.0:
+                self.on_nudge_requested(self.bubble, dx, dy)
+                return Gdk.EVENT_STOP
 
         return Gdk.EVENT_PROPAGATE
 
@@ -335,12 +564,14 @@ class CameraAlignmentDialog(PatchedDialogWindow):
             self.image_points = [None] * 4
             self.world_points = [(0.0, 0.0)] * 4
         self.set_active_point(0)
+        self.camera_display.queue_draw()
         self.update_apply_button_sensitivity()
 
     def on_clear_all_points_clicked(self, _):
         self.image_points.clear()
         self.world_points.clear()
         self.set_active_point(-1)
+        self.camera_display.queue_draw()
         self.update_apply_button_sensitivity()
 
     def on_point_delete_requested(self, bubble):
@@ -352,34 +583,23 @@ class CameraAlignmentDialog(PatchedDialogWindow):
             self.set_active_point(min(index, len(self.image_points) - 1))
         else:
             self.set_active_point(-1)
-        self.camera_display.set_marked_points(
-            self.image_points, self.active_point_index
-        )
+
+        self.camera_display.queue_draw()
         self.update_apply_button_sensitivity()
 
     def update_apply_button_sensitivity(self, *_):
-        # Update the world coordinates of the active point from the bubble.
-        if self.active_point_index >= 0 and self.active_point_index < len(
-            self.world_points
-        ):
-            self.world_points[self.active_point_index] = (
-                self.bubble.get_world_coords()
-            )
+        idx = self.active_point_index
+        if idx >= 0 and idx < len(self.world_points):
+            self.world_points[idx] = self.bubble.get_world_coords()
 
-        # Get a list of all valid points (i.e., points that have been set).
         valid_points = [
             (img, self.world_points[i])
-            for i, img in enumerate(self.image_points)
+            for i, img in enumerate(self.image_points or [])
             if img
         ]
 
-        # We need at least 4 points for a valid transformation.
         can_apply = len(valid_points) >= 4
         if can_apply:
-            # Check for collinearity of points. For a valid perspective
-            # transform, we need at least 3 non-collinear points.
-            # The rank of the matrix of homogeneous coordinates will be 3
-            # if they are not collinear.
             image_coords = np.array([p[0] for p in valid_points])
             world_coords = np.array([p[1] for p in valid_points])
 
@@ -390,7 +610,6 @@ class CameraAlignmentDialog(PatchedDialogWindow):
                 [world_coords, np.ones((len(valid_points), 1))]
             )
 
-            # Also check that world points are unique.
             world_points_are_unique = len(
                 {tuple(p) for p in world_coords}
             ) == len(world_coords)
@@ -401,20 +620,15 @@ class CameraAlignmentDialog(PatchedDialogWindow):
                 and world_points_are_unique
             )
 
-        # Enable or disable the "Apply" button based on the validity of the
-        # points.
         self.apply_button.set_sensitive(can_apply)
 
     def on_apply_clicked(self, _):
-        # Collect all valid points.
         image_points = []
         world_points = []
-        for i, img_coords in enumerate(self.image_points):
+        for i, img_coords in enumerate(self.image_points or []):
             if not img_coords:
                 continue
 
-            # Get the world coordinates from the bubble if it's the active
-            # point.
             world_x, world_y = (
                 self.bubble.get_world_coords()
                 if i == self.active_point_index
@@ -423,11 +637,9 @@ class CameraAlignmentDialog(PatchedDialogWindow):
             image_points.append(img_coords)
             world_points.append((world_x, world_y))
 
-        # Ensure we have enough points for the transformation.
         if len(image_points) < 4:
             raise ValueError("Less than 4 points for alignment.")
 
-        # Apply the new alignment to the camera.
         self.camera.image_to_world = (image_points, world_points)
         logger.info("Camera alignment applied.")
         self.close()
@@ -435,29 +647,3 @@ class CameraAlignmentDialog(PatchedDialogWindow):
     def on_cancel_clicked(self, _):
         self.camera_display.stop()
         self.close()
-
-    def _display_to_image_coords(
-        self, display_x: float, display_y: float
-    ) -> Tuple[float, float]:
-        """Converts display coordinates to image coordinates."""
-        display_width, display_height = (
-            self.camera_display.get_width(),
-            self.camera_display.get_height(),
-        )
-        image_width, image_height = self.controller.resolution
-
-        if display_width <= 0 or display_height <= 0:
-            return 0.0, 0.0
-
-        scale_x = display_width / image_width
-        scale_y = display_height / image_height
-
-        image_x = display_x / scale_x
-        image_y = (display_height - display_y) / scale_y
-        return image_x, image_y
-
-    def _find_point_near(self, x, y, threshold=10) -> int:
-        for i, pt in enumerate(self.image_points):
-            if pt and math.hypot(pt[0] - x, pt[1] - y) < threshold:
-                return i
-        return -1

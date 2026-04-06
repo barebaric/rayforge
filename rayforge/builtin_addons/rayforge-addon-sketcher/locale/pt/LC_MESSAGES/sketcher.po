@@ -1,0 +1,678 @@
+# Portuguese translations for Rayforge.
+# Copyright (C) 2025 The Rayforge Project
+# This file is distributed under the same license as the Rayforge package.
+# Samuel Abels <knipkap@gmail.com>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Rayforge\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-28 02:12+0100\n"
+"PO-Revision-Date: 2025-07-24 22:09+0200\n"
+"Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
+"Language-Team: Portuguese <LL@li.org>\n"
+"Language: pt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: sketcher/core/sketch.py sketcher/ui_gtk/property_provider.py
+msgid "Sketch Parameters"
+msgstr "Parâmetros do Esboço"
+
+#: sketcher/core/sketch.py
+msgid "Parameters that control this sketch's geometry"
+msgstr "Parâmetros que controlam a geometria deste esboço"
+
+#: sketcher/core/sketch.py
+msgid "Sketch"
+msgstr "Esboço"
+
+#: sketcher/core/constraints/equal_length.py
+msgid "Equal Length"
+msgstr "Comprimento Igual"
+
+#: sketcher/core/constraints/equal_length.py
+msgid "{} entities"
+msgstr "{} entidades"
+
+#: sketcher/core/constraints/parallelogram.py
+msgid "Parallelogram"
+msgstr "Paralelogramo"
+
+#: sketcher/core/constraints/parallelogram.py
+msgid "Origin at {}"
+msgstr "Origem em {}"
+
+#: sketcher/core/constraints/point_on_line.py
+msgid "Point on Line"
+msgstr "Ponto na Linha"
+
+#: sketcher/core/constraints/point_on_line.py
+msgid "Point at {}"
+msgstr "Ponto em {}"
+
+#: sketcher/core/constraints/collinear.py
+msgid "Collinear"
+msgstr "Colinear"
+
+#: sketcher/core/constraints/collinear.py
+msgid "{}, {}, {}"
+msgstr "{}, {}, {}"
+
+#: sketcher/core/constraints/tangent.py
+#: sketcher/ui_gtk/tools/tangent_constraint_tool.py
+msgid "Tangent"
+msgstr "Tangente"
+
+#: sketcher/core/constraints/tangent.py
+msgid "Line to {} at {}"
+msgstr "Linha para {} em {}"
+
+#: sketcher/core/constraints/distance.py
+#: sketcher/ui_gtk/tools/distance_constraint_tool.py
+msgid "Distance"
+msgstr "Distância"
+
+#: sketcher/core/constraints/distance.py sketcher/core/constraints/vertical.py
+#: sketcher/core/constraints/symmetry.py
+#: sketcher/core/constraints/horizontal.py
+#: sketcher/core/constraints/aspect_ratio.py
+msgid "From {} to {}"
+msgstr "De {} até {}"
+
+#: sketcher/core/constraints/vertical.py
+#: sketcher/ui_gtk/tools/vertical_constraint_tool.py
+msgid "Vertical"
+msgstr "Vertical"
+
+#: sketcher/core/constraints/equal_distance.py
+msgid "Equal Distance"
+msgstr "Distância Igual"
+
+#: sketcher/core/constraints/equal_distance.py
+msgid "{}-{} and {}-{}"
+msgstr "{}-{} e {}-{}"
+
+#: sketcher/core/constraints/perpendicular.py
+#: sketcher/ui_gtk/tools/perpendicular_constraint_tool.py
+msgid "Perpendicular"
+msgstr "Perpendicular"
+
+#: sketcher/core/constraints/perpendicular.py
+msgid "Between {} and {}"
+msgstr "Entre {} e {}"
+
+#: sketcher/core/constraints/symmetry.py
+#: sketcher/ui_gtk/tools/symmetry_constraint_tool.py
+msgid "Symmetry"
+msgstr "Simetria"
+
+#: sketcher/core/constraints/horizontal.py
+#: sketcher/ui_gtk/tools/horizontal_constraint_tool.py
+msgid "Horizontal"
+msgstr "Horizontal"
+
+#: sketcher/core/constraints/angle.py
+#: sketcher/ui_gtk/tools/angle_constraint_tool.py
+msgid "Angle"
+msgstr "Ângulo"
+
+#: sketcher/core/constraints/angle.py
+msgid "Between two lines"
+msgstr "Entre duas linhas"
+
+#: sketcher/core/constraints/diameter.py
+#: sketcher/ui_gtk/tools/diameter_constraint_tool.py
+msgid "Diameter"
+msgstr "Diâmetro"
+
+#: sketcher/core/constraints/diameter.py
+msgid "Circle at {}"
+msgstr "Círculo em {}"
+
+#: sketcher/core/constraints/coincident.py
+#: sketcher/ui_gtk/tools/coincident_constraint_tool.py
+msgid "Coincident"
+msgstr "Coincidente"
+
+#: sketcher/core/constraints/coincident.py
+msgid "At {}"
+msgstr "Em {}"
+
+#: sketcher/core/constraints/radius.py
+#: sketcher/ui_gtk/tools/radius_constraint_tool.py
+msgid "Radius"
+msgstr "Raio"
+
+#: sketcher/core/constraints/radius.py
+msgid "{} at {}"
+msgstr "{} em {}"
+
+#: sketcher/core/constraints/aspect_ratio.py
+#: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
+msgid "Aspect Ratio"
+msgstr "Proporção"
+
+#: sketcher/core/commands/circle.py
+msgid "Add Circle"
+msgstr "Adicionar Círculo"
+
+#: sketcher/core/commands/fillet.py
+msgid "Add Fillet"
+msgstr "Adicionar Filete"
+
+#: sketcher/core/commands/text_box.py sketcher/ui_gtk/tools/text_box_tool.py
+msgid "Add Text Box"
+msgstr "Adicionar Caixa de Texto"
+
+#: sketcher/core/commands/fill.py
+msgid "Add Fill"
+msgstr "Adicionar Preenchimento"
+
+#: sketcher/core/commands/fill.py
+msgid "Remove Fill"
+msgstr "Remover Preenchimento"
+
+#: sketcher/core/commands/constraint.py sketcher/ui_gtk/sketchcanvas.py
+msgid "Edit Constraint"
+msgstr "Editar Restrição"
+
+#: sketcher/core/commands/bezier.py sketcher/core/commands/line.py
+msgid "Add Line"
+msgstr "Adicionar Linha"
+
+#: sketcher/core/commands/bezier.py
+msgid "Add Bezier"
+msgstr "Adicionar Bézier"
+
+#: sketcher/core/commands/constraint_create.py
+msgid "Add Constraint"
+msgstr "Adicionar Restrição"
+
+#: sketcher/core/commands/constraint_create.py
+msgid "Add {}"
+msgstr "Adicionar {}"
+
+#: sketcher/core/commands/grid.py
+msgid "Add Grid"
+msgstr "Adicionar Grade"
+
+#: sketcher/core/commands/chamfer.py
+msgid "Add Chamfer"
+msgstr "Adicionar Chanfro"
+
+#: sketcher/core/commands/arc.py
+msgid "Add Arc"
+msgstr "Adicionar Arco"
+
+#: sketcher/core/commands/straighten.py
+#: sketcher/ui_gtk/tools/straighten_tool.py
+msgid "Straighten"
+msgstr "Endireitar"
+
+#: sketcher/core/commands/rounded_rect.py
+msgid "Add Rounded Rectangle"
+msgstr "Adicionar Retângulo Arredondado"
+
+#: sketcher/core/commands/rectangle.py
+msgid "Add Rectangle"
+msgstr "Adicionar Retângulo"
+
+#: sketcher/core/commands/text_property.py
+msgid "Modify Text Property"
+msgstr "Modificar Propriedade de Texto"
+
+#: sketcher/core/commands/waypoint.py
+msgid "Set Waypoint Type"
+msgstr "Definir Tipo de Ponto de Passagem"
+
+#: sketcher/core/commands/point.py
+msgid "Move Point"
+msgstr "Mover Ponto"
+
+#: sketcher/core/commands/point.py
+msgid "Move Control Point"
+msgstr "Mover Ponto de Controle"
+
+#: sketcher/core/commands/point.py
+msgid "Unstick Junction"
+msgstr "Descolar Junção"
+
+#: sketcher/core/commands/ellipse.py
+msgid "Add Ellipse"
+msgstr "Adicionar elipse"
+
+#: sketcher/core/commands/live_text_edit.py
+msgid "Edit Text"
+msgstr "Editar Texto"
+
+#: sketcher/ui_gtk/sketch_cmd.py
+msgid "Change Sketch Parameters"
+msgstr "Alterar Parâmetros do Esboço"
+
+#: sketcher/ui_gtk/sketch_mode_cmd.py sketcher/ui_gtk/__init__.py
+msgid "New Sketch"
+msgstr "Novo Esboço"
+
+#: sketcher/ui_gtk/sketch_mode_cmd.py
+msgid "Create Sketch Definition"
+msgstr "Criar Definição de Esboço"
+
+#: sketcher/ui_gtk/sketch_mode_cmd.py
+msgid "Selected item is not an editable sketch."
+msgstr "O item selecionado não é um esboço editável."
+
+#: sketcher/ui_gtk/sketch_mode_cmd.py
+msgid "Please select a single sketch to edit."
+msgstr "Por favor, selecione um único esboço para editar."
+
+#: sketcher/ui_gtk/sketch_mode_cmd.py
+msgid "Please select a single object to export."
+msgstr "Por favor, selecione um único objeto para exportar."
+
+#: sketcher/ui_gtk/__init__.py
+msgid "Edit Sketch"
+msgstr "Editar Esboço"
+
+#: sketcher/ui_gtk/__init__.py
+msgid "Export Object..."
+msgstr "Exportar objeto..."
+
+#: sketcher/ui_gtk/studio.py
+msgid "Toggle constraints"
+msgstr "Mostrar/Ocultar restrições"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Toggle construction geometry"
+msgstr "Mostrar/Ocultar geometria de construção"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Fill color:"
+msgstr "Cor de preenchimento:"
+
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/dimension_input.py
+#: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/tools/circle_tool.py
+#: sketcher/ui_gtk/sketchcanvas.py
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Finish"
+msgstr "Concluir"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Properties"
+msgstr "Propriedades"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Configure the sketch name and basic properties"
+msgstr "Configurar o nome e as propriedades básicas do esboço"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Name"
+msgstr "Nome"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Rename Sketch"
+msgstr "Renomear Esboço"
+
+#: sketcher/ui_gtk/tools/waypoint_symmetric_tool.py
+msgid "Symmetric"
+msgstr "Simétrico"
+
+#: sketcher/ui_gtk/tools/symmetry_constraint_tool.py
+msgid "Add Symmetry Constraint"
+msgstr "Adicionar Restrição de Simetria"
+
+#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/menu.py
+msgid "Select"
+msgstr "Selecionar"
+
+#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
+msgid "Constrain to Axis"
+msgstr "Restringir ao Eixo"
+
+#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
+#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/arc_tool.py
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Toggle Magnetic Snap"
+msgstr "Alternar ajuste magnético"
+
+#: sketcher/ui_gtk/tools/select_tool.py
+msgid "Select Connected"
+msgstr "Selecionar Conectados"
+
+#: sketcher/ui_gtk/tools/fillet_tool.py
+msgid "Fillet"
+msgstr "Arredondamento"
+
+#: sketcher/ui_gtk/tools/dimension_input.py
+msgid "Apply"
+msgstr "Aplicar"
+
+#: sketcher/ui_gtk/tools/dimension_input.py
+#: sketcher/ui_gtk/tools/delete_tool.py sketcher/ui_gtk/menu.py
+msgid "Delete"
+msgstr "Excluir"
+
+#: sketcher/ui_gtk/tools/dimension_input.py
+msgid "Next field"
+msgstr "Próximo campo"
+
+#: sketcher/ui_gtk/tools/dimension_input.py
+msgid "Prev field"
+msgstr "Campo anterior"
+
+#: sketcher/ui_gtk/tools/path_tool.py sketcher/ui_gtk/menu.py
+msgid "Path"
+msgstr "Caminho"
+
+#: sketcher/ui_gtk/tools/path_tool.py
+msgid "Snap to Grid"
+msgstr "Ajustar à Grade"
+
+#: sketcher/ui_gtk/tools/waypoint_sharp_tool.py
+msgid "Sharp"
+msgstr "Afiado"
+
+#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/menu.py
+msgid "Rectangle"
+msgstr "Retângulo"
+
+#: sketcher/ui_gtk/tools/rectangle_tool.py
+#: sketcher/ui_gtk/tools/rounded_rect_tool.py
+msgid "W"
+msgstr "L"
+
+#: sketcher/ui_gtk/tools/rectangle_tool.py
+#: sketcher/ui_gtk/tools/rounded_rect_tool.py
+msgid "H"
+msgstr "A"
+
+#: sketcher/ui_gtk/tools/rectangle_tool.py
+msgid "Type dimensions (W H)"
+msgstr "Digitar dimensões (L A)"
+
+#: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
+msgid "Add Aspect Ratio Constraint"
+msgstr "Adicionar Restrição de Proporção"
+
+#: sketcher/ui_gtk/tools/angle_constraint_tool.py
+msgid "Add Angle Constraint"
+msgstr "Adicionar Restrição de Ângulo"
+
+#: sketcher/ui_gtk/tools/fill_tool.py
+msgid "Fill"
+msgstr "Preenchimento"
+
+#: sketcher/ui_gtk/tools/arc_tool.py sketcher/ui_gtk/menu.py
+msgid "Arc"
+msgstr "Arco"
+
+#: sketcher/ui_gtk/tools/arc_tool.py
+msgid "Type radius"
+msgstr "Digitar raio"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Grid"
+msgstr "Grade"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Create Grid"
+msgstr "Criar Grade"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Rows"
+msgstr "Linhas"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Columns"
+msgstr "Colunas"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Create"
+msgstr "Criar"
+
+#: sketcher/ui_gtk/tools/tangent_constraint_tool.py
+msgid "Add Tangent Constraint"
+msgstr "Adicionar Restrição de Tangente"
+
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Ellipse"
+msgstr "Elipse"
+
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Center on start point"
+msgstr "Centralizar no ponto inicial"
+
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Constrain to circle"
+msgstr "Restringir a círculo"
+
+#: sketcher/ui_gtk/tools/vertical_constraint_tool.py
+msgid "Add Vertical Constraint"
+msgstr "Adicionar Restrição Vertical"
+
+#: sketcher/ui_gtk/tools/delete_tool.py
+msgid "Delete Selection"
+msgstr "Excluir Seleção"
+
+#: sketcher/ui_gtk/tools/rounded_rect_tool.py sketcher/ui_gtk/menu.py
+msgid "Rounded Rectangle"
+msgstr "Retângulo Arredondado"
+
+#: sketcher/ui_gtk/tools/rounded_rect_tool.py
+msgid "R"
+msgstr "R"
+
+#: sketcher/ui_gtk/tools/rounded_rect_tool.py
+msgid "Type dimensions (W H R)"
+msgstr "Digitar dimensões (L A R)"
+
+#: sketcher/ui_gtk/tools/construction_tool.py
+msgid "Construction"
+msgstr "Construção"
+
+#: sketcher/ui_gtk/tools/construction_tool.py sketcher/ui_gtk/menu.py
+msgid "Toggle Construction"
+msgstr "Alternar Construção"
+
+#: sketcher/ui_gtk/tools/radius_constraint_tool.py
+msgid "Add Radius Constraint"
+msgstr "Adicionar Restrição de Raio"
+
+#: sketcher/ui_gtk/tools/text_box_tool.py
+msgid "Text Box"
+msgstr "Caixa de texto"
+
+#: sketcher/ui_gtk/tools/diameter_constraint_tool.py
+msgid "Add Diameter Constraint"
+msgstr "Adicionar Restrição de Diâmetro"
+
+#: sketcher/ui_gtk/tools/waypoint_smooth_tool.py
+msgid "Smooth"
+msgstr "Suave"
+
+#: sketcher/ui_gtk/tools/coincident_constraint_tool.py
+msgid "Add Coincident Constraint"
+msgstr "Adicionar Restrição de Coincidência"
+
+#: sketcher/ui_gtk/tools/coincident_constraint_tool.py
+msgid "Add Point On Shape"
+msgstr "Adicionar Ponto na Forma"
+
+#: sketcher/ui_gtk/tools/perpendicular_constraint_tool.py
+msgid "Add Perpendicular Constraint"
+msgstr "Adicionar Restrição Perpendicular"
+
+#: sketcher/ui_gtk/tools/horizontal_constraint_tool.py
+msgid "Add Horizontal Constraint"
+msgstr "Adicionar Restrição Horizontal"
+
+#: sketcher/ui_gtk/tools/chamfer_tool.py
+msgid "Chamfer"
+msgstr "Chanfro"
+
+#: sketcher/ui_gtk/tools/equal_constraint_tool.py
+msgid "Equal"
+msgstr "Igual"
+
+#: sketcher/ui_gtk/tools/equal_constraint_tool.py
+msgid "Add Equal Constraint"
+msgstr "Adicionar Restrição de Igualdade"
+
+#: sketcher/ui_gtk/tools/distance_constraint_tool.py
+msgid "Add Distance Constraint"
+msgstr "Adicionar Restrição de Distância"
+
+#: sketcher/ui_gtk/conflicts_widget.py
+msgid "Conflicting Constraints"
+msgstr "Restrições em Conflito"
+
+#: sketcher/ui_gtk/conflicts_widget.py
+msgid "These constraints cannot be satisfied simultaneously"
+msgstr "Estas restrições não podem ser satisfeitas simultaneamente"
+
+#: sketcher/ui_gtk/conflicts_widget.py
+msgid "Delete constraint"
+msgstr "Excluir restrição"
+
+#: sketcher/ui_gtk/conflicts_widget.py
+msgid "Delete Constraint"
+msgstr "Excluir Restrição"
+
+#: sketcher/ui_gtk/property_provider.py
+msgid "Mixed Values"
+msgstr "Valores Mistos"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Finish Sketch"
+msgstr "Concluir Esboço"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Cancel Sketch"
+msgstr "Cancelar Esboço"
+
+#: sketcher/ui_gtk/menu.py
+msgid "_File"
+msgstr "_Arquivo"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Undo"
+msgstr "Desfazer"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Redo"
+msgstr "Refazer"
+
+#: sketcher/ui_gtk/menu.py
+msgid "_Edit"
+msgstr "_Editar"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Circle"
+msgstr "Círculo"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Fill Area"
+msgstr "Área de Preenchimento"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Tools"
+msgstr "Ferramentas"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Chamfer Corner"
+msgstr "Chanfrar Canto"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Modify"
+msgstr "Modificar"
+
+#: sketcher/ui_gtk/menu.py
+msgid "_Sketch"
+msgstr "_Esboço"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Fit View"
+msgstr "Ajustar à Vista"
+
+#: sketcher/ui_gtk/menu.py
+msgid "_View"
+msgstr "_Exibir"
+
+#: sketcher/ui_gtk/asset_row_widget.py
+msgid "Edit this sketch"
+msgstr "Editar este esboço"
+
+#: sketcher/ui_gtk/asset_row_widget.py
+msgid "No parameters"
+msgstr "Sem parâmetros"
+
+#: sketcher/ui_gtk/asset_row_widget.py
+msgid "1 parameter"
+msgstr "1 parâmetro"
+
+#: sketcher/ui_gtk/asset_row_widget.py
+#, python-brace-format
+msgid "{count} parameters"
+msgstr "{count} parâmetros"
+
+#: sketcher/ui_gtk/font_properties.py
+msgid "Font Properties"
+msgstr "Propriedades da Fonte"
+
+#: sketcher/ui_gtk/font_properties.py
+msgid "Configure font family, size, and style for text boxes"
+msgstr "Configurar a família, tamanho e estilo da fonte para caixas de texto"
+
+#: sketcher/ui_gtk/font_properties.py
+msgid "Font Family"
+msgstr "Família da Fonte"
+
+#: sketcher/ui_gtk/font_properties.py
+msgid "Font Size"
+msgstr "Tamanho da Fonte"
+
+#: sketcher/ui_gtk/font_properties.py
+msgid "Bold"
+msgstr "Negrito"
+
+#: sketcher/ui_gtk/font_properties.py
+msgid "Italic"
+msgstr "Itálico"
+
+#: sketcher/ui_gtk/font_properties.py
+msgid "Select Font"
+msgstr "Selecionar Fonte"
+
+#: sketcher/ui_gtk/sketchcanvas.py
+msgid "Enter radius or expression (e.g. 'width/2')."
+msgstr "Insira o raio ou uma expressão (ex: 'largura/2')."
+
+#: sketcher/ui_gtk/sketchcanvas.py
+msgid "Enter diameter or expression."
+msgstr "Insira o diâmetro ou uma expressão."
+
+#: sketcher/ui_gtk/sketchcanvas.py
+msgid "Enter angle in degrees or expression."
+msgstr "Insira o ângulo em graus ou uma expressão."
+
+#: sketcher/ui_gtk/sketchcanvas.py
+msgid "Enter length or expression."
+msgstr "Insira o comprimento ou uma expressão."
+
+#: sketcher/ui_gtk/sketchcanvas.py
+msgid "Enter value or expression."
+msgstr "Insira um valor ou uma expressão."
+
+#: sketcher/ui_gtk/sketchcanvas.py
+msgid "OK"
+msgstr "OK"
+
+#: sketcher/image/exporter.py sketcher/image/importer.py
+#, python-brace-format
+msgid "{app_name} Sketch"
+msgstr "Esboço {app_name}"

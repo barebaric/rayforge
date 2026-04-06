@@ -156,12 +156,26 @@ export default function Home() {
 
         <div className={styles.featuresWrapper}>
           <FeatureSection
+            blobClass={styles.blobPurple}
+            title="Diseño con IA"
+            description="Crea diseños simplemente describiendo lo que quieres. El Generador de Piezas por IA
+              convierte tus descripciones de texto en diseños listos para láser al instante."
+            features={[
+              'Genera diseños desde descripciones de texto',
+              'No se requieren habilidades de diseño',
+              'Funciona con cualquier proveedor compatible con OpenAI',
+            ]}
+            image="/images/ai-prompt.png"
+          />
+
+          <FeatureSection
             blobClass={styles.blobCyan}
             title="Tus Creaciones en 3D"
             description="Transición fluida de diseños 2D a trayectorias 3D. Rayforge genera G-code para cortadores y grabadores láser de 2 y 3 ejes, cerrando la brecha entre diseños planos y objetos físicos."
             compatibilityHeading="Compatible con: Grbl, Smoothieware"
             features={['Visualización 3D', 'Generación de Trayectorias', 'Control de Ejes']}
-            image="/assets/screenshot-3d-closeup.png"
+            image="/images/screenshot-3d-closeup.png"
+            reverse
           />
 
           <FeatureSection
@@ -173,8 +187,7 @@ export default function Home() {
               'Alinea todo perfectamente',
               'Define dimensiones que se actualizan automáticamente',
             ]}
-            image="/assets/screenshot-sketcher.png"
-            reverse
+            image="/images/screenshot-sketcher.png"
           />
 
           <FeatureSection
@@ -186,7 +199,8 @@ export default function Home() {
               'Ahorra material con diseño automático',
               'Curvas suaves y precisas',
             ]}
-            image="/assets/screenshot-optimizer.png"
+            image="/images/screenshot-optimizer.png"
+            reverse
           />
 
           <FeatureSection
@@ -199,7 +213,6 @@ export default function Home() {
               'Vista previa en vivo que se actualiza mientras diseñas',
             ]}
             image="/screenshots/main-simulation.png"
-            reverse
           />
 
           <FeatureSection
@@ -210,7 +223,8 @@ export default function Home() {
               'Guarda configuraciones para diferentes materiales',
               'Crea recetas reutilizables',
             ]}
-            image="/assets/screenshot-recipe.png"
+            image="/images/screenshot-recipe.png"
+            reverse
           />
         </div>
 

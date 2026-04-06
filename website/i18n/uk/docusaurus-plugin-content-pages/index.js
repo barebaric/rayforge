@@ -149,12 +149,26 @@ export default function Home() {
 
         <div className={styles.featuresWrapper}>
           <FeatureSection
+            blobClass={styles.blobPurple}
+            title="Дизайн на основі ШІ"
+            description="Створюйте дизайни, просто описуючи те, що ви хочете. Генератор деталей ШІ
+              миттєво перетворює ваші текстові описи на дизайни, готові для лазера."
+            features={[
+              'Генеруйте дизайни з текстових підказок',
+              'Не потрібні навички дизайну',
+              'Працює з будь-яким сумісним з OpenAI постачальником',
+            ]}
+            image="/images/ai-prompt.png"
+          />
+
+          <FeatureSection
             blobClass={styles.blobCyan}
             title="Ваші творіння в 3D"
             description="Безшовний перехід від 2D-дизайнів до 3D-траєкторій інструменту. Rayforge генерує G-код для 2-осьових та 3-осьових лазерних різаків і граверів, заповнюючи розрив між пласкими дизайнами та фізичними об'єктами."
             compatibilityHeading="Сумісно з: Grbl, Smoothieware"
             features={['3D-візуалізація', 'Генерація траєкторій інструменту', 'Керування осями']}
-            image="/assets/screenshot-3d-closeup.png"
+            image="/images/screenshot-3d-closeup.png"
+            reverse
           />
 
           <FeatureSection
@@ -166,8 +180,7 @@ export default function Home() {
               'Вирівнюйте все ідеально',
               'Встановлюйте розміри, що оновлюються автоматично',
             ]}
-            image="/assets/screenshot-sketcher.png"
-            reverse
+            image="/images/screenshot-sketcher.png"
           />
 
           <FeatureSection
@@ -179,7 +192,8 @@ export default function Home() {
               'Економте матеріал завдяки автоматичному компонуванню',
               'Плавні та точні криві',
             ]}
-            image="/assets/screenshot-optimizer.png"
+            image="/images/screenshot-optimizer.png"
+            reverse
           />
 
           <FeatureSection
@@ -192,7 +206,6 @@ export default function Home() {
               'Інтерактивний попередній перегляд, що оновлюється під час дизайну',
             ]}
             image="/screenshots/main-simulation.png"
-            reverse
           />
 
           <FeatureSection
@@ -203,7 +216,8 @@ export default function Home() {
               'Зберігайте налаштування для різних матеріалів',
               'Створюйте рецепти для повторного використання',
             ]}
-            image="/assets/screenshot-recipe.png"
+            image="/images/screenshot-recipe.png"
+            reverse
           />
         </div>
 

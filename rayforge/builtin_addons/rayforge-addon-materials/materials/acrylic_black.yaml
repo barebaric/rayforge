@@ -1,0 +1,28 @@
+uid: acrylic_black
+name:
+  default: Black Acrylic
+  de: Schwarzer Acryl
+  es: Acrílico Negro
+  fr: Acrylique Noir
+  pt: Acrílico Preto
+  uk: Чорний акрил
+  zh_CN: 黑色亚克力
+description:
+  default: Opaque black thermoplastic sheet
+  de: Undurchsichtiges schwarzes Thermoplastikblech
+  es: Lámina de termoplástico negro opaco
+  fr: Feuille de thermoplastique noir opaque
+  pt: Chapa de termoplástico preto opaco
+  uk: Непрозорий чорний термопластиковий лист
+  zh_CN: 不透明黑色热塑性塑料板
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color: "#1A1A1A"
+  pattern: solid

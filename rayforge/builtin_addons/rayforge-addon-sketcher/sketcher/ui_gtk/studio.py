@@ -1,0 +1,546 @@
+import logging
+from gettext import gettext as _
+from gi.repository import Gtk, Gio, Adw, GLib, Gdk
+from blinker import Signal
+from rayforge.core.undo.property_cmd import ChangePropertyCommand
+from rayforge.core.varset import FloatVar, IntVar, SliderFloatVar
+from rayforge.ui_gtk.icons import get_icon
+from rayforge.ui_gtk.shared.keyboard import PRIMARY_ACCEL
+from rayforge.ui_gtk.shared.status_bar import StatusBar
+from rayforge.ui_gtk.varset.varset_editor import VarSetEditorWidget
+from ..core.sketch import Sketch, DEFAULT_FILL_COLOR
+from ..core.entities.text_box import TextBoxEntity
+from .conflicts_widget import ConflictingConstraintsWidget
+from .font_properties import FontPropertiesWidget
+from .menu import SketchMenu
+from .sketchcanvas import SketchCanvas
+from .tools import ACTION_TOOL_MAP
+from .tools.fill_tool import FillTool
+
+logger = logging.getLogger(__name__)
+
+
+class SketchStudio(Gtk.Box):
+    """
+    The top-level container for the sketching environment.
+    Manages the layout of the canvas and side panels and orchestrates the
+    save/cancel lifecycle.
+    """
+
+    def __init__(
+        self,
+        parent_window: Gtk.Window,
+        width_mm: float = 1000.0,
+        height_mm: float = 1000.0,
+        **kwargs,
+    ):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
+        self.parent_window = parent_window
+        self.width_mm = width_mm
+        self.height_mm = height_mm
+
+        # Signals
+        self.finished = Signal()
+        self.cancelled = Signal()
+
+        self._build_ui()
+
+    def set_world_size(self, width_mm: float, height_mm: float):
+        """
+        Updates the world dimensions of the sketch canvas. This is called
+        by the main window when the machine configuration changes.
+        """
+        self.width_mm = width_mm
+        self.height_mm = height_mm
+        if self.canvas:
+            self.canvas.set_size(width_mm, height_mm)
+
+    def _build_toolbar(self):
+        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        toolbar.set_margin_bottom(2)
+        toolbar.set_margin_top(2)
+        toolbar.set_margin_start(12)
+        toolbar.set_margin_end(12)
+        self.append(toolbar)
+
+        self.constraints_button = Gtk.ToggleButton()
+        self.constraints_button.set_child(
+            get_icon("sketch-constrain-point-symbolic")
+        )
+        self.constraints_button.set_active(True)
+        self.constraints_button.set_tooltip_text(_("Toggle constraints"))
+        self.constraints_button.connect("toggled", self._on_toggle_constraints)
+        toolbar.append(self.constraints_button)
+
+        self.construction_button = Gtk.ToggleButton()
+        self.construction_button.set_child(
+            get_icon("sketch-construction-symbolic")
+        )
+        self.construction_button.set_active(True)
+        self.construction_button.set_tooltip_text(
+            _("Toggle construction geometry")
+        )
+        self.construction_button.connect(
+            "toggled", self._on_toggle_construction_visibility
+        )
+        toolbar.append(self.construction_button)
+
+        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        toolbar.append(sep)
+
+        color = FillTool.get_current_color()
+        logger.debug(f"FillTool current color: {color}")
+        if color[3] == 0:
+            color = DEFAULT_FILL_COLOR
+            FillTool.set_current_color(color)
+            logger.debug(f"Using default color: {color}")
+
+        self._fill_color = color
+        self.fill_color_swatch = Gtk.DrawingArea()
+        self.fill_color_swatch.set_size_request(24, 24)
+        self.fill_color_swatch.set_draw_func(self._on_draw_color_swatch)
+
+        self.fill_color_button = Gtk.Button()
+        self.fill_color_button.set_child(self.fill_color_swatch)
+        self.fill_color_button.connect(
+            "clicked", self._on_color_button_clicked
+        )
+
+        color_label = Gtk.Label(label=_("Fill color:"))
+        color_label.set_margin_start(6)
+
+        color_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        color_box.append(color_label)
+        color_box.append(self.fill_color_button)
+        toolbar.append(color_box)
+
+        spacer = Gtk.Box()
+        spacer.set_hexpand(True)
+        toolbar.append(spacer)
+
+        cancel_button = Gtk.Button(label=_("Cancel"))
+        cancel_button.connect("clicked", self._on_cancel_clicked)
+        toolbar.append(cancel_button)
+
+        finish_button = Gtk.Button(label=_("Finish"))
+        finish_button.add_css_class("suggested-action")
+        finish_button.connect("clicked", self._on_finish_clicked)
+        toolbar.append(finish_button)
+
+    def _on_draw_color_swatch(self, area, cr, width, height):
+        """Draw the color swatch."""
+        r, g, b, a = self._fill_color
+        cr.set_source_rgba(r, g, b, a)
+        cr.rectangle(0, 0, width, height)
+        cr.fill()
+
+    def _on_color_button_clicked(self, button):
+        """Show color chooser dialog."""
+        dialog = Gtk.ColorChooserDialog(
+            transient_for=self.parent_window,
+            modal=True,
+        )
+        dialog.set_use_alpha(True)
+        rgba = Gdk.RGBA()
+        rgba.red, rgba.green, rgba.blue, rgba.alpha = self._fill_color
+        dialog.set_rgba(rgba)
+
+        def on_response(dialog, response):
+            if response == Gtk.ResponseType.OK:
+                rgba = dialog.get_rgba()
+                self._fill_color = (
+                    rgba.red,
+                    rgba.green,
+                    rgba.blue,
+                    rgba.alpha,
+                )
+                FillTool.set_current_color(self._fill_color)
+                self.fill_color_swatch.queue_draw()
+            dialog.destroy()
+
+        dialog.connect("response", on_response)
+        dialog.show()
+
+    def _on_fill_color_changed(self, button):
+        """Handle fill color change from the color button."""
+        pass
+
+    def _build_ui(self):
+        self._build_toolbar()
+
+        # Main Content Area (Side Panel + Canvas)
+        # Use a Paned widget to allow resizing between the panel and canvas
+        main_paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        main_paned.set_vexpand(True)
+        main_paned.set_position(450)
+        self.append(main_paned)
+
+        # 2a. Side Panel
+        side_panel_scroller = Gtk.ScrolledWindow()
+        side_panel_scroller.set_policy(
+            Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC
+        )
+        # The paned widget handles sizing, no size request is needed here.
+        main_paned.set_start_child(side_panel_scroller)
+
+        side_panel_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, spacing=24
+        )
+        side_panel_box.set_margin_top(12)
+        side_panel_box.set_margin_bottom(12)
+        side_panel_box.set_margin_start(12)
+        side_panel_box.set_margin_end(12)
+        side_panel_scroller.set_child(side_panel_box)
+
+        # Properties Group (Name)
+        properties_group = Adw.PreferencesGroup()
+        properties_group.set_title(_("Properties"))
+        properties_group.set_description(
+            _("Configure the sketch name and basic properties")
+        )
+        self.name_row = Adw.EntryRow(title=_("Name"))
+        self.name_row.connect("changed", self._on_name_changed)
+        properties_group.add(self.name_row)
+        side_panel_box.append(properties_group)
+
+        # VarSet Editor Group
+        # Limit that types of variables that user can add to the sketch
+        self.varset_editor = VarSetEditorWidget(
+            vartypes={IntVar, FloatVar, SliderFloatVar}
+        )
+        side_panel_box.append(self.varset_editor)
+
+        # 2b. Canvas
+        self.canvas = SketchCanvas(
+            parent_window=self.parent_window,
+            single_mode=True,
+            width_mm=self.width_mm,
+            height_mm=self.height_mm,
+        )
+        # The paned widget will handle expansion.
+        main_paned.set_end_child(self.canvas)
+
+        # 3. Status Bar
+        self.status_bar = StatusBar()
+        self.append(self.status_bar)
+
+        # Connect history manager to varset editor for undo support
+        if self.canvas.sketch_editor:
+            self.varset_editor.undo_manager = (
+                self.canvas.sketch_editor.history_manager
+            )
+
+        # Font Properties Group (shows when a text box is selected)
+        self.font_properties = FontPropertiesWidget(self.canvas.sketch_editor)
+        side_panel_box.append(self.font_properties)
+
+        # Conflicting Constraints Group (shows when there are conflicts)
+        self.conflicts_widget = ConflictingConstraintsWidget()
+        side_panel_box.append(self.conflicts_widget)
+
+        # Initialize the VarSetEditor with the default sketch's parameters
+        # This ensures variables added before 'set_sketch' are attached to
+        # the current sketch
+        if self.canvas.sketch_element:
+            self.varset_editor.populate(
+                self.canvas.sketch_element.sketch.input_parameters
+            )
+
+        # 3. Initialize Actions and Menus
+        self._init_menu()
+        self._init_actions()
+
+    def _init_menu(self):
+        """Initializes the menu model."""
+        self.menu_model = SketchMenu()
+
+    def _init_actions(self):
+        """Initializes the action group and shortcut controller."""
+        self.action_group = Gio.SimpleActionGroup()
+
+        actions = [
+            ("finish", self._on_finish_clicked),
+            ("cancel", self._on_cancel_clicked),
+            ("undo", self._on_undo),
+            ("redo", self._on_redo),
+            ("delete", self._on_delete),
+            ("view_fit", self._on_view_fit),
+            ("toggle_construction", self._on_toggle_construction),
+            ("chamfer_corner", self._on_chamfer),
+        ]
+
+        for name, cb in actions:
+            action = Gio.SimpleAction.new(name, None)
+            action.connect("activate", cb)
+            self.action_group.add_action(action)
+
+        for action_name, tool_id in ACTION_TOOL_MAP.items():
+            action = Gio.SimpleAction.new(action_name, None)
+            action.connect(
+                "activate",
+                lambda a, p, t=tool_id: self.canvas.sketch_element.set_tool(t),
+            )
+            self.action_group.add_action(action)
+
+        self.shortcut_controller = Gtk.ShortcutController()
+        self.shortcut_controller.set_scope(Gtk.ShortcutScope.MANAGED)
+        self.shortcut_controller.set_propagation_phase(
+            Gtk.PropagationPhase.CAPTURE
+        )
+
+        shortcuts = {
+            "sketch.undo": [f"{PRIMARY_ACCEL}z"],
+            "sketch.redo": [f"{PRIMARY_ACCEL}y", f"{PRIMARY_ACCEL}<Shift>z"],
+            "sketch.delete": ["Delete"],
+            "sketch.view_fit": ["1"],
+            "sketch.finish": [f"{PRIMARY_ACCEL}Return"],
+        }
+
+        for action_name, accels in shortcuts.items():
+            for accel in accels:
+                shortcut = Gtk.Shortcut.new(
+                    Gtk.ShortcutTrigger.parse_string(accel),
+                    Gtk.NamedAction.new(action_name),
+                )
+                self.shortcut_controller.add_shortcut(shortcut)
+
+    def set_sketch(self, sketch: Sketch):
+        """Loads a sketch model into the studio."""
+        logger.debug(
+            f"Called with sketch '{sketch.name}' (id: {id(sketch)}) and "
+            f"VarSet (id: {id(sketch.input_parameters)})"
+        )
+        r, g, b, a = self._fill_color
+        logger.debug(
+            f"set_sketch: fill color = red={r}, green={g}, blue={b}, alpha={a}"
+        )
+        # Load sketch into the canvas element
+        self.canvas.set_sketch(sketch)
+
+        # Populate side panel with sketch data
+        self.name_row.set_text(sketch.name)
+        self.varset_editor.populate(sketch.input_parameters)
+
+        # Connect to selection changes to show/hide font properties
+        if self.canvas.sketch_element:
+            self.canvas.sketch_element.selection.changed.connect(
+                self._on_selection_changed
+            )
+            self.canvas.sketch_element.tool_changed.connect(
+                self._on_tool_changed
+            )
+            self.canvas.sketch_element.solved.connect(self._on_sketch_solved)
+            self.canvas.sketch_element.preview_changed.connect(
+                self._on_preview_changed
+            )
+            self.canvas.edit_drag_begin.connect(self._on_edit_drag_begin)
+            self.canvas.edit_drag_end.connect(self._on_edit_drag_end)
+            self._on_selection_changed(self.canvas.sketch_element.selection)
+
+            # Sync toolbar button states with sketch element
+            self.constraints_button.set_active(
+                self.canvas.sketch_element.show_constraints
+            )
+            self.construction_button.set_active(
+                self.canvas.sketch_element.show_construction_geometry
+            )
+
+            # Connect conflicts widget to sketch element
+            self.conflicts_widget.set_sketch_element(
+                self.canvas.sketch_element
+            )
+
+            # Connect to text editing signals to show font properties
+            text_tool = self.canvas.sketch_element.tools.get("text_box")
+            if text_tool:
+                text_tool.editing_started.connect(
+                    self._on_text_editing_started
+                )
+                text_tool.editing_finished.connect(
+                    self._on_text_editing_finished
+                )
+
+        # Ensure the element bounds are updated for the new content
+        self.canvas.sketch_element.update_bounds_from_sketch()
+        # Reset view to center content
+        self.canvas.reset_view()
+        # Grab focus for the canvas so keyboard shortcuts work
+        # Use a tick callback to ensure focus is grabbed after the widget
+        # is visible and the main loop has processed the visibility change
+
+        def grab_focus_callback(widget, clock):
+            self.canvas.grab_focus()
+            return GLib.SOURCE_REMOVE
+
+        self.add_tick_callback(grab_focus_callback)
+
+    # --- Action Handlers ---
+
+    def _on_name_changed(self, entry_row: Adw.EntryRow):
+        """Updates the sketch's name with undo support."""
+        if not self.canvas or not self.canvas.sketch_element:
+            return
+        sketch = self.canvas.sketch_element.sketch
+        new_name = entry_row.get_text()
+
+        if sketch.name == new_name:
+            return
+
+        if self.canvas.sketch_editor:
+            cmd = ChangePropertyCommand(
+                target=sketch,
+                property_name="name",
+                new_value=new_name,
+                on_change_callback=self._sync_name_ui,
+                name=_("Rename Sketch"),
+            )
+            self.canvas.sketch_editor.history_manager.execute(cmd)
+        else:
+            sketch.name = new_name
+
+    def _sync_name_ui(self):
+        """Updates to UI to match the underlying sketch object (for Undo)."""
+        if not self.canvas or not self.canvas.sketch_element:
+            return
+        sketch = self.canvas.sketch_element.sketch
+        if self.name_row.get_text() != sketch.name:
+            self.name_row.set_text(sketch.name)
+
+    def _on_selection_changed(self, selection):
+        """Handles selection changes to show/hide font properties."""
+        if not self.canvas or not self.canvas.sketch_element:
+            self.font_properties.set_text_entity(None)
+            self._update_status_bar()
+            return
+
+        text_entity_id = None
+        if len(selection.entity_ids) == 1:
+            entity_id = selection.entity_ids[0]
+            entity = self.canvas.sketch_element.sketch.registry.get_entity(
+                entity_id
+            )
+            if isinstance(entity, TextBoxEntity):
+                text_entity_id = entity_id
+
+        self.font_properties.set_text_entity(text_entity_id)
+        self._update_status_bar()
+
+    def _on_tool_changed(self, sender, tool_name: str):
+        """Handles tool changes to update status bar."""
+        self._update_status_bar()
+
+    def _on_edit_drag_begin(self, sender):
+        """Handles start of edit mode drag to show context shortcuts."""
+        self._update_status_bar()
+
+    def _on_edit_drag_end(self, sender):
+        """Handles end of edit mode drag to restore default shortcuts."""
+        self._update_status_bar()
+
+    def _on_preview_changed(self, sender):
+        """Handles preview state changes to update status bar shortcuts."""
+        self._update_status_bar()
+
+    def _on_sketch_solved(self, sender):
+        """Handles sketch solve completion to update conflicts widget."""
+        self.conflicts_widget._update_conflicts()
+
+    def _update_status_bar(self):
+        """Updates the status bar with current shortcuts."""
+        self.status_bar.clear()
+
+        if not self.canvas or not self.canvas.sketch_element:
+            return
+
+        element = self.canvas.sketch_element
+        tool = element.current_tool
+
+        def is_not_dragging():
+            return not (hasattr(tool, "_is_dragging") and tool._is_dragging())
+
+        # Tool shortcuts (key can be string or list of strings)
+        for key, label, condition in tool.get_active_shortcuts():
+            if condition is None or condition():
+                if isinstance(key, list):
+                    display_keys = key
+                else:
+                    display_keys = [key]
+                self.status_bar.add_shortcut_entry(
+                    display_keys, label, separator=""
+                )
+
+        # Global shortcuts from all tools
+        for tool_instance in element.tools.values():
+            if tool_instance.SHORTCUTS and tool_instance.shortcut_is_active():
+                key = tool_instance.SHORTCUTS[0]
+                label = tool_instance.LABEL or ""
+                if is_not_dragging():
+                    if key == " ":
+                        display_keys = ["Space"]
+                    else:
+                        display_keys = [k.upper() for k in key]
+                    self.status_bar.add_shortcut_entry(
+                        display_keys, label, separator=""
+                    )
+
+    def _on_text_editing_started(self, sender):
+        """Shows font properties when text editing begins."""
+        if sender.editing_entity_id is not None:
+            self.font_properties.set_text_entity(sender.editing_entity_id)
+
+    def _on_text_editing_finished(self, sender):
+        """Hides font properties when text editing ends."""
+        self.font_properties.set_text_entity(None)
+
+    def _on_undo(self, action, param):
+        if self.canvas.sketch_editor:
+            self.canvas.sketch_editor.history_manager.undo()
+
+    def _on_redo(self, action, param):
+        if self.canvas.sketch_editor:
+            self.canvas.sketch_editor.history_manager.redo()
+
+    def _on_delete(self, action, param):
+        if self.canvas.sketch_element:
+            self.canvas.sketch_element.delete_selection()
+
+    def _on_view_fit(self, action, param):
+        self.canvas.reset_view()
+
+    def _on_toggle_construction(self, action, param):
+        if self.canvas.sketch_element:
+            self.canvas.sketch_element.toggle_construction_on_selection()
+
+    def _on_chamfer(self, action, param):
+        if self.canvas.sketch_element:
+            self.canvas.sketch_element.add_chamfer_action()
+
+    def _on_toggle_constraints(self, btn):
+        if self.canvas.sketch_element:
+            self.canvas.sketch_element.show_constraints = btn.get_active()
+            self.canvas.sketch_element.mark_dirty()
+
+    def _on_toggle_construction_visibility(self, btn):
+        if self.canvas.sketch_element:
+            self.canvas.sketch_element.show_construction_geometry = (
+                btn.get_active()
+            )
+            self.canvas.sketch_element.mark_dirty()
+
+    def _on_cancel_clicked(self, btn, *args):
+        logger.info("SketchStudio: Cancel clicked")
+        self.cancelled.send(self)
+
+    def _on_finish_clicked(self, btn, *args):
+        logger.info("SketchStudio: Finish clicked")
+
+        # Ensure any active tool commits its pending state (e.g. text editing)
+        if self.canvas and self.canvas.sketch_element:
+            # Switching to 'select' ensures the current tool's on_deactivate()
+            # is called, which finalizes edits.
+            self.canvas.sketch_element.set_tool("select")
+
+        # Retrieve the modified sketch from the canvas element
+        if self.canvas.sketch_element:
+            sketch = self.canvas.sketch_element.sketch
+            self.finished.send(self, sketch=sketch)

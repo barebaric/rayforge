@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 from typing import List, Dict, Any, TYPE_CHECKING
 from gettext import gettext as _
+from ...core.geo import Geometry
 from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import CallbackProgressContext
@@ -11,7 +12,8 @@ from ..artifact import (
     WorkPieceArtifact,
 )
 from ..artifact.store import ArtifactStore, SharedMemoryNotFoundError
-from ..transformer import OpsTransformer, transformer_by_name
+from ..transformer import OpsTransformer
+from ..transformer.registry import transformer_registry
 
 if TYPE_CHECKING:
     pass
@@ -28,8 +30,13 @@ def _instantiate_transformers(
         if not t_dict.get("enabled", True):
             continue
         cls_name = t_dict.get("name")
-        if cls_name and cls_name in transformer_by_name:
-            cls = transformer_by_name[cls_name]
+        if cls_name:
+            cls = transformer_registry.get(cls_name)
+            if cls is None:
+                logger.warning(
+                    f"Transformer '{cls_name}' not found in registry"
+                )
+                continue
             try:
                 transformers.append(cls.from_dict(t_dict))
             except Exception as e:
@@ -70,8 +77,15 @@ def make_step_artifact_in_subprocess(
     artifacts = []
     num_items = len(workpiece_assembly_info)
 
+    stock_geometries: List[Geometry] = []
     for i, info in enumerate(workpiece_assembly_info):
         proxy.set_progress(i / num_items * 0.5)
+
+        if i == 0:
+            stock_geom_dicts = info.get("stock_geometries", [])
+            stock_geometries = [
+                Geometry.from_dict(d) for d in stock_geom_dicts
+            ]
 
         handle = create_handle_from_dict(info["artifact_handle_dict"])
         try:
@@ -98,39 +112,17 @@ def make_step_artifact_in_subprocess(
         message_callback=proxy.set_message,
     )
 
-    render_artifact, ops_artifact = compute_step_artifacts(
+    ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=transformers,
         generation_id=generation_id,
         context=context,
+        stock_geometries=stock_geometries,
     )
 
     proxy.set_message(_("Storing step data..."))
 
-    # 1. Store Render Artifact
-    render_handle = artifact_store.put(
-        render_artifact, creator_tag=f"{creator_tag}_r"
-    )
-
-    # Inter-process handoff: Send handle to main process and wait for adoption.
-    acked = proxy.send_event_and_wait(
-        "render_artifact_ready",
-        {
-            "handle_dict": render_handle.to_dict(),
-            "generation_id": generation_id,
-        },
-        logger=logger,
-    )
-    if acked:
-        artifact_store.forget(render_handle)
-    else:
-        logger.warning(
-            "Render artifact not acknowledged (NACK/Timeout). "
-            "Releasing handle."
-        )
-        artifact_store.release(render_handle)
-
-    # 2. Store Ops Artifact
+    # Store Ops Artifact
     ops_handle = artifact_store.put(
         ops_artifact, creator_tag=f"{creator_tag}_o"
     )
@@ -152,7 +144,7 @@ def make_step_artifact_in_subprocess(
         )
         artifact_store.release(ops_handle)
 
-    # 3. Calculate time estimate
+    # Calculate time estimate
     proxy.set_message(_("Calculating time estimate..."))
     final_time = ops_artifact.ops.estimate_time(
         default_cut_speed=cut_speed,

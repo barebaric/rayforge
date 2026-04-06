@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-27 16:06+0100\n"
+"POT-Creation-Date: 2026-03-30 19:31+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -17,73 +17,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: rayforge/package_mgr/update_cmd.py
-msgid "Checking for package updates..."
-msgstr "Comprobando actualizaciones de paquetes..."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "An update is available for {name}."
-msgstr "Hay una actualización disponible para {name}."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "Updates are available for {name1} and {name2}."
-msgstr "Hay actualizaciones disponibles para {name1} y {name2}."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "Updates are available for {name1}, {name2}, and {num} others."
-msgstr "Hay actualizaciones disponibles para {name1}, {name2} y otros {num}."
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Install All"
-msgstr "Instalar todo"
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Package updates found."
-msgstr "Se encontraron actualizaciones de paquetes."
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Packages are up to date."
-msgstr "Los paquetes están actualizados."
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Update check failed."
-msgstr "La comprobación de actualizaciones falló."
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "Installing package updates..."
-msgstr "Instalando actualizaciones de paquetes..."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "Package successfully updated."
-msgid_plural "{num} packages successfully updated."
-msgstr[0] "Paquete actualizado correctamente."
-msgstr[1] "{num} paquetes actualizados correctamente."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "{num_s} packages updated, {num_f} failed."
-msgstr "{num_s} paquetes actualizados, {num_f} fallaron."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "Failed to update package."
-msgid_plural "Failed to update {num} packages."
-msgstr[0] "Error al actualizar el paquete."
-msgstr[1] "Error al actualizar {num} paquetes."
-
-#: rayforge/package_mgr/update_cmd.py
-#, python-brace-format
-msgid "Finished with {num_failed} errors."
-msgstr "Finalizado con {num_failed} errores."
-
-#: rayforge/package_mgr/update_cmd.py
-msgid "All package updates installed!"
-msgstr "¡Todas las actualizaciones de paquetes instaladas!"
-
 #: rayforge/core/layer.py
 #, python-brace-format
 msgid "{name} Workflow"
@@ -92,6 +25,54 @@ msgstr "{name} Flujo de trabajo"
 #: rayforge/core/doc.py
 msgid "Layer 1"
 msgstr "Capa 1"
+
+#: rayforge/core/stock.py
+#, python-brace-format
+msgid "{name} (copy)"
+msgstr "{name} (copia)"
+
+#: rayforge/core/ai/provider.py
+msgid "Bad request"
+msgstr "Solicitud incorrecta"
+
+#: rayforge/core/ai/provider.py
+msgid "Authentication failed - please check your API key"
+msgstr "Autenticación fallida - por favor verifica tu clave API"
+
+#: rayforge/core/ai/provider.py
+msgid "Access forbidden - please check your API key permissions"
+msgstr "Acceso denegado - por favor verifica los permisos de tu clave API"
+
+#: rayforge/core/ai/provider.py
+msgid "API endpoint not found - please check the base URL"
+msgstr "Endpoint de API no encontrado - por favor verifica la URL base"
+
+#: rayforge/core/ai/provider.py
+msgid "Rate limited - please wait and try again"
+msgstr ""
+"Límite de solicitudes alcanzado - por favor espera e inténtalo de nuevo"
+
+#: rayforge/core/ai/provider.py
+msgid "Server error - please try again later"
+msgstr "Error del servidor - por favor inténtalo más tarde"
+
+#: rayforge/core/ai/provider.py
+msgid "Service unavailable - please try again later"
+msgstr "Servicio no disponible - por favor inténtalo más tarde"
+
+#: rayforge/core/ai/provider.py
+#, python-brace-format
+msgid "Server returned error {code}"
+msgstr "El servidor devolvió el error {code}"
+
+#: rayforge/core/ai/openai_provider.py
+msgid "Connection failed - please check your network"
+msgstr "Conexión fallida - por favor verifica tu red"
+
+#: rayforge/core/ai/openai_provider.py
+#, python-brace-format
+msgid "Model '{model}' not found. Available: {available}"
+msgstr "Modelo '{model}' no encontrado. Disponibles: {available}"
 
 #: rayforge/core/step.py
 #, python-brace-format
@@ -141,6 +122,28 @@ msgstr "El puerto no puede estar vacío."
 msgid "Port must be a number."
 msgstr "El puerto debe ser un número."
 
+#: rayforge/core/varset/urlvar.py
+msgid "URL cannot be empty."
+msgstr "La URL no puede estar vacía."
+
+#: rayforge/core/varset/urlvar.py
+msgid "URL must include a scheme (e.g., 'http://')."
+msgstr "La URL debe incluir un esquema (p. ej., 'http://')."
+
+#: rayforge/core/varset/urlvar.py
+msgid "URL must include a hostname."
+msgstr "La URL debe incluir un nombre de host."
+
+#: rayforge/core/varset/urlvar.py
+#, python-brace-format
+msgid "URL scheme must be one of: {schemes}."
+msgstr "El esquema de URL debe ser uno de: {schemes}."
+
+#: rayforge/core/varset/urlvar.py
+#, python-brace-format
+msgid "Invalid URL: {error}"
+msgstr "URL inválida: {error}"
+
 #: rayforge/core/varset/serialportvar.py
 msgid "Serial port cannot be empty."
 msgstr "El puerto serie no puede estar vacío."
@@ -154,8 +157,20 @@ msgid "Optionally force a specific laser head"
 msgstr "Opcionalmente, forzar un cabezal láser específico."
 
 #: rayforge/core/capability.py rayforge/ui_gtk/canvas2d/simulation_controls.py
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Power"
 msgstr "Potencia"
+
+#: rayforge/core/capability.py
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
+msgid "Tab Power"
+msgstr "Potencia de lengüeta"
+
+#: rayforge/core/capability.py
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
+#, python-format
+msgid "Laser power at tab positions (% of cut power)"
+msgstr "Potencia láser en posiciones de lengüeta (% de potencia de corte)"
 
 #: rayforge/core/capability.py
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
@@ -175,7 +190,7 @@ msgstr "Ancho de corte"
 msgid "The effective width of the laser beam"
 msgstr "El ancho efectivo del haz láser"
 
-#: rayforge/core/capability.py rayforge/pipeline/steps.py
+#: rayforge/core/capability.py
 msgid "Engrave"
 msgstr "Grabar"
 
@@ -190,6 +205,14 @@ msgstr "Marcar"
 #: rayforge/core/capability.py
 msgid "Score Speed"
 msgstr "Velocidad de marcado"
+
+#: rayforge/core/stock_asset.py
+msgid "Stock Material"
+msgstr "Material de stock"
+
+#: rayforge/core/source_asset.py
+msgid "Source"
+msgstr "Fuente"
 
 #: rayforge/core/expression/errors.py
 #, python-brace-format
@@ -206,155 +229,6 @@ msgstr "Variable o función desconocida: '{name}'"
 msgid "Cannot use operator '{op}' between types '{left}' and '{right}'"
 msgstr ""
 "No se puede usar el operador '{op}' entre los tipos '{left}' y '{right}'"
-
-#: rayforge/core/sketcher/sketch.py
-#: rayforge/ui_gtk/doceditor/sketch_properties.py
-#: rayforge/ui_gtk/doceditor/property_providers/sketch.py
-msgid "Sketch Parameters"
-msgstr "Parámetros del boceto"
-
-#: rayforge/core/sketcher/sketch.py
-msgid "Parameters that control this sketch's geometry"
-msgstr "Parámetros que controlan la geometría de este boceto"
-
-#: rayforge/core/sketcher/constraints/equal_length.py
-msgid "Equal Length"
-msgstr "Longitud Igual"
-
-#: rayforge/core/sketcher/constraints/parallelogram.py
-msgid "Parallelogram"
-msgstr "Paralelogramo"
-
-#: rayforge/core/sketcher/constraints/point_on_line.py
-msgid "Point on Line"
-msgstr "Punto en Línea"
-
-#: rayforge/core/sketcher/constraints/collinear.py
-msgid "Collinear"
-msgstr "Colineal"
-
-#: rayforge/core/sketcher/constraints/tangent.py
-msgid "Tangent"
-msgstr "Tangente"
-
-#: rayforge/core/sketcher/constraints/distance.py
-msgid "Distance"
-msgstr "Distancia"
-
-#: rayforge/core/sketcher/constraints/vertical.py
-msgid "Vertical"
-msgstr "Vertical"
-
-#: rayforge/core/sketcher/constraints/equal_distance.py
-msgid "Equal Distance"
-msgstr "Distancia Igual"
-
-#: rayforge/core/sketcher/constraints/perpendicular.py
-msgid "Perpendicular"
-msgstr "Perpendicular"
-
-#: rayforge/core/sketcher/constraints/symmetry.py
-msgid "Symmetry"
-msgstr "Simetría"
-
-#: rayforge/core/sketcher/constraints/horizontal.py
-msgid "Horizontal"
-msgstr "Horizontal"
-
-#: rayforge/core/sketcher/constraints/angle.py
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Angle"
-msgstr "Ángulo"
-
-#: rayforge/core/sketcher/constraints/diameter.py
-msgid "Diameter"
-msgstr "Diámetro"
-
-#: rayforge/core/sketcher/constraints/coincident.py
-msgid "Coincident"
-msgstr "Coincidente"
-
-#: rayforge/core/sketcher/constraints/radius.py
-msgid "Radius"
-msgstr "Radio"
-
-#: rayforge/core/sketcher/constraints/aspect_ratio.py
-msgid "Aspect Ratio"
-msgstr "Relación de aspecto"
-
-#: rayforge/core/sketcher/tools/select_tool.py
-msgid "Add Radius"
-msgstr "Añadir radio"
-
-#: rayforge/core/sketcher/tools/select_tool.py
-msgid "Add Distance"
-msgstr "Añadir distancia"
-
-#: rayforge/core/sketcher/tools/select_tool.py
-msgid "Add Diameter"
-msgstr "Añadir diámetro"
-
-#: rayforge/core/sketcher/tools/arc_tool.py
-msgid "Add Arc"
-msgstr "Añadir arco"
-
-#: rayforge/core/sketcher/tools/circle_tool.py
-msgid "Add Circle"
-msgstr "Añadir círculo"
-
-#: rayforge/core/sketcher/tools/line_tool.py
-msgid "Add Line"
-msgstr "Añadir línea"
-
-#: rayforge/core/sketcher/commands/fillet.py
-msgid "Add Fillet"
-msgstr "Añadir redondeo"
-
-#: rayforge/core/sketcher/commands/text_box.py
-msgid "Add Text Box"
-msgstr "Añadir cuadro de texto"
-
-#: rayforge/core/sketcher/commands/fill.py
-msgid "Add Fill"
-msgstr "Añadir relleno"
-
-#: rayforge/core/sketcher/commands/fill.py
-msgid "Remove Fill"
-msgstr "Eliminar relleno"
-
-#: rayforge/core/sketcher/commands/constraint.py
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Edit Constraint"
-msgstr "Editar restricción"
-
-#: rayforge/core/sketcher/commands/chamfer.py
-msgid "Add Chamfer"
-msgstr "Añadir chaflán"
-
-#: rayforge/core/sketcher/commands/rounded_rect.py
-msgid "Add Rounded Rectangle"
-msgstr "Añadir rectángulo redondeado"
-
-#: rayforge/core/sketcher/commands/rectangle.py
-msgid "Add Rectangle"
-msgstr "Añadir rectángulo"
-
-#: rayforge/core/sketcher/commands/text_property.py
-msgid "Modify Text Property"
-msgstr "Modificar propiedad de texto"
-
-#: rayforge/core/sketcher/commands/point.py
-msgid "Move Point"
-msgstr "Mover punto"
-
-#: rayforge/core/sketcher/commands/point.py
-msgid "Unstick Junction"
-msgstr "Despegar unión"
-
-#: rayforge/core/sketcher/commands/live_text_edit.py
-msgid "Edit Text"
-msgstr "Editar texto"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Command Letter"
@@ -922,7 +796,7 @@ msgstr "En ejecución"
 msgid "Hold"
 msgstr "En espera"
 
-#: rayforge/machine/driver/driver.py rayforge/machine/models/dialect.py
+#: rayforge/machine/driver/driver.py rayforge/machine/models/dialect/base.py
 msgid "Jog"
 msgstr "Jog"
 
@@ -959,6 +833,8 @@ msgid "Lock"
 msgstr "Bloqueado"
 
 #: rayforge/machine/driver/driver.py
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Unlock"
 msgstr "Desbloquear"
 
@@ -967,6 +843,7 @@ msgid "Cycle"
 msgstr "Ciclo"
 
 #: rayforge/machine/driver/driver.py
+#: rayforge/ui_gtk/settings/ai_settings_page.py
 msgid "Test"
 msgstr "Prueba"
 
@@ -1044,142 +921,27 @@ msgstr ""
 "No se pudo conectar al host '{host}'. Comprueba la dirección IP y la "
 "conexión de red."
 
+#: rayforge/machine/models/dialect_manager.py
+#: rayforge/machine/models/machine.py rayforge/machine/models/profile.py
+#, python-brace-format
+msgid "{label} (for {machine_name})"
+msgstr "{label} (para {machine_name})"
+
 #: rayforge/machine/models/laser.py
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Laser Head"
 msgstr "Cabezal láser"
 
-#: rayforge/machine/models/dialect.py
-msgid "General Information"
-msgstr "Información general"
-
-#: rayforge/machine/models/dialect.py rayforge/ui_gtk/varset/varset_editor.py
-msgid "Label"
-msgstr "Etiqueta"
-
-#: rayforge/machine/models/dialect.py
-msgid "User-facing name"
-msgstr "Nombre visible para el usuario"
-
-#: rayforge/machine/models/dialect.py rayforge/ui_gtk/varset/varset_editor.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "Description"
-msgstr "Descripción"
-
-#: rayforge/machine/models/dialect.py
-msgid "Short description"
-msgstr "Descripción corta"
-
-#: rayforge/machine/models/dialect.py
-msgid "Command Templates"
-msgstr "Plantillas de comandos"
-
-#: rayforge/machine/models/dialect.py
-msgid "Laser On"
-msgstr "Encender láser"
-
-#: rayforge/machine/models/dialect.py
-msgid "Laser Off"
-msgstr "Apagar láser"
-
-#: rayforge/machine/models/dialect.py
-msgid "Travel Move"
-msgstr "Movimiento de desplazamiento"
-
-#: rayforge/machine/models/dialect.py
-msgid "Linear Move"
-msgstr "Movimiento lineal"
-
-#: rayforge/machine/models/dialect.py
-msgid "Arc (CW)"
-msgstr "Arco (horario)"
-
-#: rayforge/machine/models/dialect.py
-msgid "Arc (CCW)"
-msgstr "Arco (antihorario)"
-
-#: rayforge/machine/models/dialect.py
-msgid "Tool Change"
-msgstr "Cambio de herramienta"
-
-#: rayforge/machine/models/dialect.py
-msgid "Set Speed"
-msgstr "Establecer velocidad"
-
-#: rayforge/machine/models/dialect.py
-msgid "Air On"
-msgstr "Encender aire"
-
-#: rayforge/machine/models/dialect.py
-msgid "Air Off"
-msgstr "Apagar aire"
-
-#: rayforge/machine/models/dialect.py rayforge/ui_gtk/machine/jog_widget.py
-msgid "Home All"
-msgstr "Referenciar todo"
-
-#: rayforge/machine/models/dialect.py
-msgid "Home Axis"
-msgstr "Referenciar eje"
-
-#: rayforge/machine/models/dialect.py
-msgid "Move To"
-msgstr "Mover a"
-
-#: rayforge/machine/models/dialect.py rayforge/ui_gtk/main_menu.py
-msgid "Clear Alarm"
-msgstr "Limpiar alarma"
-
-#: rayforge/machine/models/dialect.py
-msgid "Set WCS Offset"
-msgstr "Establecer desplazamiento WCS"
-
-#: rayforge/machine/models/dialect.py
-msgid "Probe Cycle"
-msgstr "Ciclo de sondeo"
-
-#: rayforge/machine/models/dialect.py
-msgid "Scripts"
-msgstr "Scripts"
-
-#: rayforge/machine/models/dialect.py
-msgid "Inject WCS after Preamble"
-msgstr "Inyectar WCS después del preámbulo"
-
-#: rayforge/machine/models/dialect.py
-#, python-brace-format
-msgid ""
-"Inject the active WCS command (e.g., G54) after the preamble script. When "
-"disabled, you can use {machine.active_wcs} in the preamble instead."
-msgstr ""
-"Inyectar el comando WCS activo (p. ej., G54) después del script de "
-"preámbulo. Cuando está deshabilitado, puedes usar {machine.active_wcs} en el "
-"preámbulo en su lugar."
-
-#: rayforge/machine/models/dialect.py
-msgid "Preamble"
-msgstr "Preámbulo"
-
-#: rayforge/machine/models/dialect.py
-msgid "Preamble script"
-msgstr "Script de preámbulo"
-
-#: rayforge/machine/models/dialect.py
-msgid "Postscript"
-msgstr "Epílogo"
-
-#: rayforge/machine/models/dialect.py
-msgid "Postscript script"
-msgstr "Script de epílogo"
-
 #: rayforge/machine/models/machine.py
 msgid "Default Machine"
 msgstr "Máquina por defecto"
 
-#: rayforge/machine/models/machine.py rayforge/machine/models/profile.py
-#, python-brace-format
-msgid "{label} (for {machine_name})"
-msgstr "{label} (para {machine_name})"
+#: rayforge/machine/models/rotary_module.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Rotary Module"
+msgstr "Módulo rotativo"
 
 #: rayforge/machine/models/profile.py
 msgid "Custom dialect for the Carvera Air machine."
@@ -1206,6 +968,193 @@ msgstr "Controlador '{driver}' no encontrado."
 #, python-brace-format
 msgid "An unexpected error occurred during validation: {error}"
 msgstr "Ocurrió un error inesperado durante la validación: {error}"
+
+#: rayforge/machine/models/dialect/mach4_m67.py
+msgid "Mach4 (M67 Analog)"
+msgstr "Mach4 (M67 Analógico)"
+
+#: rayforge/machine/models/dialect/mach4_m67.py
+msgid ""
+"Mach4 with M67 analog output for high-speed raster engraving. Uses M67 E0 "
+"Q<0-255> for laser power instead of inline S commands, reducing buffer "
+"pressure on the controller."
+msgstr ""
+"Mach4 con salida analógica M67 para grabado raster de alta velocidad. Usa "
+"M67 E0 Q<0-255> para la potencia del láser en lugar de comandos S en línea, "
+"reduciendo la presión del búfer en el controlador."
+
+#: rayforge/machine/models/dialect/smoothieware.py
+msgid "Smoothieware"
+msgstr "Smoothieware"
+
+#: rayforge/machine/models/dialect/smoothieware.py
+msgid "G-code dialect for Smoothieware-based controllers"
+msgstr "Dialecto G-code para controladores basados en Smoothieware"
+
+#: rayforge/machine/models/dialect/grbl_dynamic.py
+msgid "GRBL Dynamic"
+msgstr "GRBL Dinámico"
+
+#: rayforge/machine/models/dialect/grbl_dynamic.py
+msgid ""
+"GRBL with M4 dynamic power (Depth-Aware) mode. S parameter is included in "
+"motion commands"
+msgstr ""
+"GRBL con modo de potencia dinámica M4 (consciente de profundidad). El "
+"parámetro S se incluye en los comandos de movimiento"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "General Information"
+msgstr "Información general"
+
+#: rayforge/machine/models/dialect/base.py
+#: rayforge/ui_gtk/varset/varset_editor.py
+msgid "Label"
+msgstr "Etiqueta"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "User-facing name"
+msgstr "Nombre visible para el usuario"
+
+#: rayforge/machine/models/dialect/base.py
+#: rayforge/ui_gtk/varset/varset_editor.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+msgid "Description"
+msgstr "Descripción"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Short description"
+msgstr "Descripción corta"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Command Templates"
+msgstr "Plantillas de comandos"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Laser On"
+msgstr "Encender láser"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Laser Off"
+msgstr "Apagar láser"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Focus Laser On"
+msgstr "Enfocar láser"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Travel Move"
+msgstr "Movimiento de desplazamiento"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Linear Move"
+msgstr "Movimiento lineal"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Arc (CW)"
+msgstr "Arco (horario)"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Arc (CCW)"
+msgstr "Arco (antihorario)"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Tool Change"
+msgstr "Cambio de herramienta"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Set Speed"
+msgstr "Establecer velocidad"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Air On"
+msgstr "Encender aire"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Air Off"
+msgstr "Apagar aire"
+
+#: rayforge/machine/models/dialect/base.py
+#: rayforge/ui_gtk/machine/jog_widget.py
+msgid "Home All"
+msgstr "Referenciar todo"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Home Axis"
+msgstr "Referenciar eje"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Move To"
+msgstr "Mover a"
+
+#: rayforge/machine/models/dialect/base.py rayforge/ui_gtk/main_menu.py
+msgid "Clear Alarm"
+msgstr "Limpiar alarma"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Set WCS Offset"
+msgstr "Establecer desplazamiento WCS"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Probe Cycle"
+msgstr "Ciclo de sondeo"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Dwell"
+msgstr "Espera"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Scripts"
+msgstr "Scripts"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Inject WCS after Preamble"
+msgstr "Inyectar WCS después del preámbulo"
+
+#: rayforge/machine/models/dialect/base.py
+#, python-brace-format
+msgid ""
+"Inject the active WCS command (e.g., G54) after the preamble script. When "
+"disabled, you can use {machine.active_wcs} in the preamble instead."
+msgstr ""
+"Inyectar el comando WCS activo (p. ej., G54) después del script de "
+"preámbulo. Cuando está deshabilitado, puedes usar {machine.active_wcs} en el "
+"preámbulo en su lugar."
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Preamble"
+msgstr "Preámbulo"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Preamble script"
+msgstr "Script de preámbulo"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Postscript"
+msgstr "Epílogo"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Postscript script"
+msgstr "Script de epílogo"
+
+#: rayforge/machine/models/dialect/marlin.py
+msgid "Marlin"
+msgstr "Marlin"
+
+#: rayforge/machine/models/dialect/marlin.py
+msgid "G-code for Marlin-based controllers, common in 3D printers"
+msgstr "G-code para controladores basados en Marlin, común en impresoras 3D"
+
+#: rayforge/machine/models/dialect/grbl.py
+msgid "Grbl (Compat)"
+msgstr "Grbl (Compatibilidad)"
+
+#: rayforge/machine/models/dialect/grbl.py
+msgid ""
+"Grbl dialect with highest compatibility for most diode lasers and hobby CNCs"
+msgstr ""
+"Dialecto Grbl con máxima compatibilidad para la mayoría de láseres de diodo "
+"y CNC de afición"
 
 #: rayforge/machine/models/macro.py
 msgid "Layer Start"
@@ -1242,69 +1191,6 @@ msgstr "Después de procesar una pieza"
 #: rayforge/machine/models/macro.py
 msgid "Unnamed Macro"
 msgstr "Macro sin nombre"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "Grbl (Compat)"
-msgstr "Grbl (Compatibilidad)"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid ""
-"Grbl dialect with highest compatibility for most diode lasers and hobby CNCs"
-msgstr ""
-"Dialecto Grbl con máxima compatibilidad para la mayoría de láseres de diodo "
-"y CNC de afición"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "Grbl (Compat, no Z axis)"
-msgstr "Grbl (Compatibilidad, sin eje Z)"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid ""
-"Grbl dialect with highest compatibility, but removes Z axis commands for "
-"more efficient G-code"
-msgstr ""
-"Dialecto Grbl con máxima compatibilidad, pero elimina los comandos del eje Z "
-"para un G-code más eficiente"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "Smoothieware"
-msgstr "Smoothieware"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "G-code dialect for Smoothieware-based controllers"
-msgstr "Dialecto G-code para controladores basados en Smoothieware"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "Marlin"
-msgstr "Marlin"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "G-code for Marlin-based controllers, common in 3D printers"
-msgstr "G-code para controladores basados en Marlin, común en impresoras 3D"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "GRBL Dynamic"
-msgstr "GRBL Dinámico"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid ""
-"GRBL with M4 dynamic power (Depth-Aware) mode. S parameter is included in "
-"motion commands"
-msgstr ""
-"GRBL con modo de potencia dinámica M4 (consciente de profundidad). El "
-"parámetro S se incluye en los comandos de movimiento"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "GRBL Dynamic (no Z axis)"
-msgstr "GRBL Dinámico (sin eje Z)"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid ""
-"GRBL with M4 dynamic power (Depth-Aware) mode, but removes Z axis commands "
-"for more efficient G-code"
-msgstr ""
-"GRBL con modo de potencia dinámica M4 (consciente de profundidad), pero "
-"elimina los comandos del eje Z para un G-code más eficiente"
 
 #: rayforge/machine/cmd.py
 #, python-brace-format
@@ -1352,7 +1238,7 @@ msgid "Connected"
 msgstr "Conectado"
 
 #: rayforge/machine/transport/transport.py
-#: rayforge/ui_gtk/package_manager/package_list.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Error"
@@ -1384,10 +1270,6 @@ msgid "Add or remove machines."
 msgstr "Añadir o eliminar máquinas."
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
-msgid "+"
-msgstr "+"
-
-#: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid "This machine has an invalid configuration."
 msgstr "Esta máquina tiene una configuración inválida."
 
@@ -1409,7 +1291,10 @@ msgstr ""
 "Esta acción no se puede deshacer."
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
+#: rayforge/ui_gtk/settings/license_settings_page.py
+#: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/camera/selection_dialog.py
+#: rayforge/ui_gtk/camera/calibration_wizard.py
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/control_panel.py
@@ -1417,8 +1302,10 @@ msgstr ""
 #: rayforge/ui_gtk/machine/maintenance_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/profile_selector.py
-#: rayforge/ui_gtk/package_manager/package_list.py
-#: rayforge/ui_gtk/package_manager/dialog.py
+#: rayforge/ui_gtk/machine/template_selector.py
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
@@ -1429,30 +1316,242 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 #: rayforge/ui_gtk/doceditor/import_handler.py
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "Cancel"
 msgstr "Cancelar"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
+#: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Delete"
 msgstr "Eliminar"
 
-#: rayforge/ui_gtk/settings/package_manager_page.py
-msgid "Packages"
-msgstr "Paquetes"
+#: rayforge/ui_gtk/settings/machine_settings_page.py
+msgid "Add Machine"
+msgstr "Añadir máquina"
 
-#: rayforge/ui_gtk/settings/package_manager_page.py
-msgid "Installed Packages"
-msgstr "Paquetes instalados"
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Licenses"
+msgstr "Licencias"
 
-#: rayforge/ui_gtk/settings/package_manager_page.py
-msgid "Install, update, and remove packages and plugins."
-msgstr "Instalar, actualizar y eliminar paquetes y complementos."
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Patreon"
+msgstr "Patreon"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Link your Patreon account for early access to new addons."
+msgstr ""
+"Vincula tu cuenta de Patreon para acceso anticipado a nuevos complementos."
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Patreon Account Linked"
+msgstr "Cuenta de Patreon vinculada"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Early access addons are unlocked"
+msgstr "Los complementos de acceso anticipado están desbloqueados"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Unlink"
+msgstr "Desvincular"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Link Patreon Account"
+msgstr "Vincular cuenta de Patreon"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Get early access to premium addons"
+msgstr "Obtener acceso anticipado a complementos premium"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Link"
+msgstr "Vincular"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Addon Licenses"
+msgstr "Licencias de complementos"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Manage your purchased license keys."
+msgstr "Gestiona tus claves de licencia compradas."
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "No licenses installed"
+msgstr "No hay licencias instaladas"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Purchase a premium addon and enter the license key during installation."
+msgstr ""
+"Compra un complemento premium e introduce la clave de licencia durante la "
+"instalación."
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+#, python-brace-format
+msgid "{addons} (+{count} more)"
+msgstr "{addons} (+{count} más)"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+#, python-brace-format
+msgid "Product ID: {id}"
+msgstr "ID de producto: {id}"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
+msgid "Remove"
+msgstr "Eliminar"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Addons Requiring License"
+msgstr "Complementos que requieren licencia"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "These addons need a valid license to be activated"
+msgstr "Estos complementos necesitan una licencia válida para ser activados"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "License required"
+msgstr "Licencia requerida"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Buy"
+msgstr "Comprar"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Remove License?"
+msgstr "¿Eliminar licencia?"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid ""
+"This license key will be removed. You may need to re-enter it to use "
+"licensed addons."
+msgstr ""
+"Esta clave de licencia será eliminada. Es posible que necesites volver a "
+"introducirla para usar los complementos con licencia."
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Default provider"
+msgstr "Proveedor predeterminado"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Enable or disable this provider"
+msgstr "Habilitar o deshabilitar este proveedor"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Set as default"
+msgstr "Establecer como predeterminado"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Add Provider"
+msgstr "Añadir proveedor"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "No providers configured"
+msgstr "No hay proveedores configurados"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "New Provider"
+msgstr "Nuevo proveedor"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/recipe_list.py
+#: rayforge/ui_gtk/doceditor/material_list.py
+#, python-brace-format
+msgid "Delete '{name}'?"
+msgstr "¿Eliminar '{name}'?"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid ""
+"This AI provider will be permanently removed. This action cannot be undone."
+msgstr ""
+"Este proveedor de IA será eliminado permanentemente. Esta acción no se puede "
+"deshacer."
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/camera/properties_widget.py
+#: rayforge/ui_gtk/machine/gcode_editor.py
+#: rayforge/ui_gtk/machine/maintenance_page.py
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "Name"
+msgstr "Nombre"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Provider Type"
+msgstr "Tipo de proveedor"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "OpenAI Compatible"
+msgstr "Compatible con OpenAI"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Base URL"
+msgstr "URL base"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "API Key"
+msgstr "Clave API"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Default Model"
+msgstr "Modelo predeterminado"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Connection Test"
+msgstr "Prueba de conexión"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Verify the provider configuration is working"
+msgstr "Verificar que la configuración del proveedor funciona"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Edit Provider"
+msgstr "Editar proveedor"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Provider Settings"
+msgstr "Configuración del proveedor"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "Testing..."
+msgstr "Probando..."
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "AI"
+msgstr "IA"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid "AI Providers"
+msgstr "Proveedores de IA"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+msgid ""
+"Configure AI providers for use by addons. Addons can use these providers "
+"without needing their own API keys."
+msgstr ""
+"Configure proveedores de IA para su uso por complementos. Los complementos "
+"pueden usar estos proveedores sin necesidad de sus propias claves API."
+
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Addons"
+msgstr "Complementos"
+
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Installed Addons"
+msgstr "Complementos instalados"
+
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Install, update, and remove addons."
+msgstr "Instalar, actualizar y eliminar complementos."
 
 #: rayforge/ui_gtk/settings/recipe_manager_page.py
 msgid "Recipes"
@@ -1546,6 +1645,7 @@ msgstr ""
 "aplicación."
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
 msgid "Length"
 msgstr "Longitud"
 
@@ -1613,26 +1713,6 @@ msgstr ""
 "<a href=\"https://rayforge.org/docs/general-info/usage-tracking\">Más "
 "información</a> sobre el seguimiento de uso y privacidad."
 
-#: rayforge/ui_gtk/sketch_mode_cmd.py rayforge/ui_gtk/main_menu.py
-msgid "New Sketch"
-msgstr "Nuevo boceto"
-
-#: rayforge/ui_gtk/sketch_mode_cmd.py
-msgid "Create Sketch Definition"
-msgstr "Crear definición de boceto"
-
-#: rayforge/ui_gtk/sketch_mode_cmd.py
-msgid "Selected item is not an editable sketch."
-msgstr "El elemento seleccionado no es un boceto editable."
-
-#: rayforge/ui_gtk/sketch_mode_cmd.py
-msgid "Please select a single sketch to edit."
-msgstr "Por favor, selecciona un único boceto para editar."
-
-#: rayforge/ui_gtk/sketch_mode_cmd.py
-msgid "Please select a single object to export."
-msgstr "Por favor, selecciona un único objeto para exportar."
-
 #: rayforge/ui_gtk/canvas2d/elements/tab_handle.py
 msgid "Move Tab"
 msgstr "Mover pestaña de sujeción"
@@ -1653,18 +1733,9 @@ msgstr "Agrupar"
 msgid "Ungroup"
 msgstr "Desagrupar"
 
-#: rayforge/ui_gtk/canvas2d/context_menu.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
-msgid "Remove"
-msgstr "Eliminar"
-
-#: rayforge/ui_gtk/canvas2d/context_menu.py
-msgid "Edit Sketch"
-msgstr "Editar boceto"
-
-#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
-msgid "Export Object..."
-msgstr "Exportar objeto..."
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/doceditor/stock_cmd.py
+msgid "Convert to Stock"
+msgstr "Convertir en material"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
 msgid "Add Tab Here"
@@ -1675,7 +1746,6 @@ msgid "Remove Tab"
 msgstr "Eliminar pestaña de sujeción"
 
 #: rayforge/ui_gtk/canvas2d/simulation_controls.py
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Line"
 msgstr "Línea"
 
@@ -1691,23 +1761,6 @@ msgstr "Imagen importada del portapapeles"
 msgid "Failed to import image from clipboard"
 msgstr "Error al importar la imagen del portapapeles"
 
-#: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
-msgid "Empty Sketch"
-msgstr "Boceto vacío"
-
-#: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
-msgid ""
-"The selected sketch contains no geometry. Please edit the sketch to add "
-"lines or shapes before placing on the canvas."
-msgstr ""
-"El boceto seleccionado no contiene geometría. Edita el boceto para añadir "
-"líneas o formas antes de colocarlo en el lienzo."
-
-#: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Close"
-msgstr "Cerrar"
-
 #: rayforge/ui_gtk/view_mode_cmd.py
 msgid "3D view is not available due to missing dependencies."
 msgstr "La vista 3D no está disponible debido a dependencias faltantes."
@@ -1716,13 +1769,35 @@ msgstr "La vista 3D no está disponible debido a dependencias faltantes."
 msgid "Select a machine to open the 3D view."
 msgstr "Selecciona una máquina para abrir la vista 3D."
 
+#: rayforge/ui_gtk/actions.py
+msgid "Auto Layout (Simple)"
+msgstr "Disposición automática (Simple)"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Please select an available camera device"
+msgstr "Por favor, selecciona un dispositivo de cámara disponible"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Please select a configured camera"
+msgstr "Por favor, selecciona una cámara configurada"
+
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "Select Camera"
 msgstr "Seleccionar cámara"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "Please select an available camera device"
-msgstr "Por favor, selecciona un dispositivo de cámara disponible"
+msgid "No cameras configured."
+msgstr "No hay cámaras configuradas."
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+#, python-brace-format
+msgid "Failed to load image for Device ID: {device_id}"
+msgstr "Error al cargar la imagen para el ID de dispositivo: {device_id}"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+#, python-brace-format
+msgid "{name} (Device ID: {device_id})"
+msgstr "{name} (ID de dispositivo: {device_id})"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "No cameras found."
@@ -1734,20 +1809,18 @@ msgstr "No se encontraron cámaras."
 msgid "Camera {device_id}"
 msgstr "Cámara {device_id}"
 
-#: rayforge/ui_gtk/camera/selection_dialog.py
+#: rayforge/ui_gtk/camera/point_bubble_widget.py
 #, python-brace-format
-msgid "Failed to load image for Device ID: {device_id}"
-msgstr "Error al cargar la imagen para el ID de dispositivo: {device_id}"
-
-#: rayforge/ui_gtk/camera/selection_dialog.py
-#: rayforge/ui_gtk/camera/camera_preferences_page.py
-#, python-brace-format
-msgid "Device ID: {device_id}"
-msgstr "ID del dispositivo: {device_id}"
+msgid "Point {n}"
+msgstr "Punto {n}"
 
 #: rayforge/ui_gtk/camera/point_bubble_widget.py
 msgid "Delete this point"
 msgstr "Eliminar este punto"
+
+#: rayforge/ui_gtk/camera/point_bubble_widget.py
+msgid "Nudge Pixel:"
+msgstr "Mover píxel:"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Camera Properties"
@@ -1762,20 +1835,20 @@ msgid "Device ID"
 msgstr "ID del dispositivo"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
-#: rayforge/ui_gtk/machine/gcode_editor.py
-#: rayforge/ui_gtk/machine/maintenance_page.py
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Name"
-msgstr "Nombre"
+msgid "System identifier for the camera device"
+msgstr "Identificador del sistema para el dispositivo de cámara"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Display name for this camera"
+msgstr "Nombre para mostrar de esta cámara"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Enabled"
 msgstr "Habilitado"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Turn the camera stream on or off"
+msgstr "Activar o desactivar el flujo de la cámara"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Configure"
@@ -1786,8 +1859,218 @@ msgid "Image Settings"
 msgstr "Ajustes de imagen"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Adjust brightness, contrast, white balance, and noise"
+msgstr "Ajustar brillo, contraste, balance de blancos y ruido"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Image Alignment"
 msgstr "Alineación de imagen"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Calibrate camera position and perspective"
+msgstr "Calibrar posición y perspectiva de la cámara"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Waiting for camera..."
+msgstr "Esperando la cámara..."
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Lens Calibration Wizard"
+msgstr "Asistente de calibración de lente"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Back"
+msgstr "Atrás"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Next"
+msgstr "Siguiente"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Capture Frame"
+msgstr "Capturar imagen"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Clear"
+msgstr "Limpiar"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Calibrate"
+msgstr "Calibrar"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Instructions"
+msgstr "Instrucciones"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid ""
+"Print a calibration card to correct lens distortion. The card size should "
+"fit within your camera view."
+msgstr ""
+"Imprima una tarjeta de calibración para corregir la distorsión de la lente. "
+"El tamaño de la tarjeta debe caber en la vista de la cámara."
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Card Size"
+msgstr "Tamaño de tarjeta"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Adjust to fit your work surface."
+msgstr "Ajuste para que se adapte a su superficie de trabajo."
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Width"
+msgstr "Ancho"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Card width"
+msgstr "Ancho de tarjeta"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Height"
+msgstr "Alto"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Card height"
+msgstr "Alto de tarjeta"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Generated Pattern"
+msgstr "Patrón generado"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Details about the calibration pattern."
+msgstr "Detalles sobre el patrón de calibración."
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Grid Size"
+msgstr "Tamaño de cuadrícula"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Square Size"
+msgstr "Tamaño de cuadrado"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Physical Size"
+msgstr "Tamaño físico"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Save to PDF"
+msgstr "Guardar como PDF"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Export the calibration card for printing"
+msgstr "Exportar la tarjeta de calibración para imprimir"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/machine/dialect_editor.py
+#: rayforge/ui_gtk/machine/control_panel.py
+#: rayforge/ui_gtk/machine/gcode_editor.py
+#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/toolbar.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Save"
+msgstr "Guardar"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid ""
+"Capture the card at different positions. Important: include the image "
+"corners and edges for accurate distortion correction."
+msgstr ""
+"Capture la tarjeta en diferentes posiciones. Importante: incluya las "
+"esquinas y bordes de la imagen para una corrección precisa de la distorsión."
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Status"
+msgstr "Estado"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Progress of the calibration capture process."
+msgstr "Progreso del proceso de captura de calibración."
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Captured Frames"
+msgstr "Imágenes capturadas"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Corners Detected"
+msgstr "Esquinas detectadas"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Coverage"
+msgstr "Cobertura"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Not started"
+msgstr "No iniciado"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Move card to capture more positions"
+msgstr "Mueva la tarjeta para capturar más posiciones"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Capture Progress"
+msgstr "Progreso de captura"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Good"
+msgstr "Bueno"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Limited — reach edges"
+msgstr "Limitado — alcance los bordes"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Poor — reach all corners"
+msgstr "Deficiente — alcance todas las esquinas"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Calibration Failed"
+msgstr "Calibración fallida"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/machine/dialect_list.py
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/material_list.py
+msgid "OK"
+msgstr "Aceptar"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Calibration Complete"
+msgstr "Calibración completada"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+#, python-brace-format
+msgid ""
+"RMS Error: {rms:.4f} pixels\n"
+"Quality: {quality}\n"
+"Frames used: {frames}"
+msgstr ""
+"Error RMS: {rms:.4f} píxeles\n"
+"Calidad: {quality}\n"
+"Imágenes utilizadas: {frames}"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Discard"
+msgstr "Descartar"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Save Calibration"
+msgstr "Guardar calibración"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Save Calibration Card"
+msgstr "Guardar tarjeta de calibración"
+
+#: rayforge/ui_gtk/camera/calibration_wizard.py
+msgid "Calibration card saved"
+msgstr "Tarjeta de calibración guardada"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 #, python-brace-format
@@ -1795,12 +2078,27 @@ msgid "{camera_name} – Image Alignment"
 msgstr "{camera_name} – Alineación de imagen"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
+msgid "Zoom Out (Scroll Down)"
+msgstr "Alejar (desplazar hacia abajo)"
+
+#: rayforge/ui_gtk/camera/alignment_dialog.py
+msgid "Fit to Window"
+msgstr "Ajustar a la ventana"
+
+#: rayforge/ui_gtk/camera/alignment_dialog.py
+msgid "Zoom In (Scroll Up)"
+msgstr "Acercar (desplazar hacia arriba)"
+
+#: rayforge/ui_gtk/camera/alignment_dialog.py
 msgid ""
-"Click the image to add new reference points. Click or drag existing points "
-"to edit them."
+"Click the image to add reference points. Drag to move them.\n"
+"Scroll to Zoom. Middle-click and drag to Pan.\n"
+"Use the Arrow Keys to nudge the active point precisely."
 msgstr ""
-"Haz clic en la imagen para añadir nuevos puntos de referencia. Haz clic o "
-"arrastra los puntos existentes para editarlos."
+"Haga clic en la imagen para añadir puntos de referencia. Arrástrelos para "
+"moverlos.\n"
+"Desplácese para hacer zoom. Clic central y arrastrar para desplazar.\n"
+"Use las teclas de flecha para mover el punto activo con precisión."
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 msgid "Reset Points"
@@ -1824,6 +2122,10 @@ msgid "Camera Image Settings"
 msgstr "Ajustes de imagen de la cámara"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Adjust image quality and appearance parameters."
+msgstr "Ajustar parámetros de calidad y apariencia de la imagen."
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Auto White Balance"
 msgstr "Balance de blancos automático"
 
@@ -1836,12 +2138,33 @@ msgid "White Balance (Kelvin)"
 msgstr "Balance de blancos (Kelvin)"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Color temperature for accurate color representation"
+msgstr "Temperatura de color para una representación precisa del color"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Contrast"
 msgstr "Contraste"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Difference between light and dark areas"
+msgstr "Diferencia entre áreas claras y oscuras"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Brightness"
 msgstr "Brillo"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Overall lightness or darkness of the image"
+msgstr "Luminosidad u oscuridad general de la imagen"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Noise Reduction"
+msgstr "Reducción de ruido"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Temporal averaging, higher values cause trailing"
+msgstr "Promedio temporal, valores altos causan arrastre"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Transparency"
@@ -1851,6 +2174,71 @@ msgstr "Transparencia"
 msgid "Transparency on the worksurface"
 msgstr "Transparencia en la superficie de trabajo"
 
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Lens Calibration"
+msgstr "Calibración de lente"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid ""
+"Correct lens distortion for straighter lines. Use the wizard for automatic "
+"calibration or adjust manually."
+msgstr ""
+"Corrige la distorsión de la lente para obtener líneas más rectas. Use el "
+"asistente para calibración automática o ajuste manualmente."
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Wizard"
+msgstr "Asistente"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Radial 1 (k1)"
+msgstr "Radial 1 (k1)"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "First order radial distortion"
+msgstr "Distorsión radial de primer orden"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Radial 2 (k2)"
+msgstr "Radial 2 (k2)"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Second order radial distortion"
+msgstr "Distorsión radial de segundo orden"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Radial 3 (k3)"
+msgstr "Radial 3 (k3)"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Third order radial distortion"
+msgstr "Distorsión radial de tercer orden"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Tangential 1 (p1)"
+msgstr "Tangencial 1 (p1)"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "First order tangential distortion"
+msgstr "Distorsión tangencial de primer orden"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Tangential 2 (p2)"
+msgstr "Tangencial 2 (p2)"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Second order tangential distortion"
+msgstr "Distorsión tangencial de segundo orden"
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+#, python-brace-format
+msgid "Device ID: {device_id}"
+msgstr "ID del dispositivo: {device_id}"
+
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Add New Camera"
 msgstr "Añadir nueva cámara"
@@ -1858,6 +2246,31 @@ msgstr "Añadir nueva cámara"
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "No cameras configured"
 msgstr "No hay cámaras configuradas"
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Image Enhancement"
+msgstr "Mejora de imagen"
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Reduce noise and improve image stability."
+msgstr "Reducir ruido y mejorar la estabilidad de la imagen."
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Temporal averaging. Higher values remove more noise but cause trailing."
+msgstr ""
+"Promedio temporal. Valores altos eliminan más ruido pero causan arrastre."
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid ""
+"Straighten bowed lines using Radial (k1, k2) and Tangential (p1, p2) "
+"parameters. Note: Values are usually very small."
+msgstr ""
+"Enderezar líneas curvas usando parámetros Radiales (k1, k2) y Tangenciales "
+"(p1, p2). Nota: Los valores suelen ser muy pequeños."
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Lens Distortion Correction (Fisheye)"
+msgstr "Corrección de distorsión de lente (Ojo de pez)"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
@@ -1921,24 +2334,28 @@ msgid "Edit Dialect: {label}"
 msgstr "Editar dialecto: {label}"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
-#: rayforge/ui_gtk/machine/dialect_list.py
 msgid "New Dialect"
 msgstr "Nuevo dialecto"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
-#: rayforge/ui_gtk/machine/control_panel.py
-#: rayforge/ui_gtk/machine/gcode_editor.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
-#: rayforge/ui_gtk/toolbar.py
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Save"
-msgstr "Guardar"
+msgid "Update from Template"
+msgstr "Actualizar desde plantilla"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 msgid "Label cannot be empty."
 msgstr "La etiqueta no puede estar vacía."
+
+#: rayforge/ui_gtk/machine/dialect_editor.py
+msgid ""
+"Select a template to copy its settings. Your label and description will be "
+"preserved."
+msgstr ""
+"Seleccione una plantilla para copiar su configuración. Su etiqueta y "
+"descripción se conservarán."
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Console"
+msgstr "Consola"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Active System"
@@ -1955,6 +2372,19 @@ msgstr "Editar desplazamientos manualmente"
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Current Position"
 msgstr "Posición actual"
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Move to Lower-Left of Selection or Workarea"
+msgstr ""
+"Mover a la esquina inferior izquierda de la selección o área de trabajo"
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Move to Center of Selection or Workarea"
+msgstr "Mover al centro de la selección o área de trabajo"
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Move to Upper-Right of Selection or Workarea"
+msgstr "Mover a la esquina superior derecha de la selección o área de trabajo"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Zero Axes"
@@ -1987,6 +2417,14 @@ msgstr "Establecer la posición Z actual como 0 para el WCS activo"
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Set Work Zero at Current Position"
 msgstr "Establecer origen de trabajo en la posición actual"
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Click Canvas to Set Work Zero"
+msgstr "Clic en el lienzo para establecer cero de trabajo"
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Click on canvas to set work zero"
+msgstr "Clic en el lienzo para establecer cero de trabajo"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Jog Speed"
@@ -2382,21 +2820,8 @@ msgstr ""
 "ALARMA"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
-msgid "Built-in dialect"
-msgstr "Dialecto integrado"
-
-#: rayforge/ui_gtk/machine/dialect_list.py
-msgid "Copy & Edit"
-msgstr "Copiar y editar"
-
-#: rayforge/ui_gtk/machine/dialect_list.py
 msgid "Select this dialect"
 msgstr "Seleccionar este dialecto"
-
-#: rayforge/ui_gtk/machine/dialect_list.py
-#, python-brace-format
-msgid "{label} (Copy)"
-msgstr "{label} (Copia)"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 #, python-brace-format
@@ -2423,24 +2848,17 @@ msgstr ""
 "máquina(s): {machines}"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
-#: rayforge/ui_gtk/package_manager/package_list.py
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/material_list.py
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "OK"
-msgstr "Aceptar"
-
-#: rayforge/ui_gtk/machine/dialect_list.py
-msgid "Add New Dialect"
-msgstr "Añadir nuevo dialecto"
+msgid "Create from Template"
+msgstr "Crear desde plantilla"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "No custom dialects configured"
 msgstr "No hay dialectos personalizados configurados"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
-msgid "A new custom dialect"
-msgstr "Un nuevo dialecto personalizado"
+#, python-brace-format
+msgid "{label} (Copy)"
+msgstr "{label} (Copia)"
 
 #: rayforge/ui_gtk/machine/gcode_settings_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
@@ -2472,10 +2890,6 @@ msgid "Select, create and manage G-code dialect definitions."
 msgstr "Seleccionar, crear y gestionar definiciones de dialectos de código G."
 
 #: rayforge/ui_gtk/machine/jog_widget.py
-msgid "Home X"
-msgstr "Referenciar X"
-
-#: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move North-West"
 msgstr "Mover noroeste"
 
@@ -2487,9 +2901,10 @@ msgstr "Mover norte"
 msgid "Move North-East"
 msgstr "Mover noreste"
 
-#: rayforge/ui_gtk/machine/jog_widget.py
-msgid "Home Y"
-msgstr "Referenciar Y"
+#: rayforge/ui_gtk/machine/jog_widget.py rayforge/ui_gtk/mainwindow.py
+#: rayforge/ui_gtk/toolbar.py
+msgid "Send to machine"
+msgstr "Enviar a la máquina"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move West (Left)"
@@ -2500,8 +2915,8 @@ msgid "Move East (Right)"
 msgstr "Mover este (derecha)"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
-msgid "Home Z"
-msgstr "Referenciar Z"
+msgid "Increase Z-Distance"
+msgstr "Aumentar Distancia Z"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move South-West"
@@ -2516,12 +2931,24 @@ msgid "Move South-East"
 msgstr "Mover sureste"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
-msgid "Increase Z-Distance"
-msgstr "Aumentar Distancia Z"
-
-#: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Decrease Z-Distance"
 msgstr "Disminuir Distancia Z"
+
+#: rayforge/ui_gtk/machine/jog_widget.py
+msgid "Home X"
+msgstr "Referenciar X"
+
+#: rayforge/ui_gtk/machine/jog_widget.py
+msgid "Home Y"
+msgstr "Referenciar Y"
+
+#: rayforge/ui_gtk/machine/jog_widget.py
+msgid "Home Z"
+msgstr "Referenciar Z"
+
+#: rayforge/ui_gtk/machine/jog_widget.py rayforge/ui_gtk/toolbar.py
+msgid "Cancel running job"
+msgstr "Cancelar trabajo en curso"
 
 #: rayforge/ui_gtk/machine/profile_selector.py
 msgid "Add a New Machine"
@@ -2538,6 +2965,14 @@ msgstr "Seleccionar máquina"
 #: rayforge/ui_gtk/machine/machine_selector.py
 msgid "Select active machine"
 msgstr "Seleccionar máquina activa"
+
+#: rayforge/ui_gtk/machine/template_selector.py
+msgid "Select a Template"
+msgstr "Seleccionar plantilla"
+
+#: rayforge/ui_gtk/machine/template_selector.py
+msgid "Choose a built-in dialect as a starting point."
+msgstr "Elija un dialecto integrado como punto de partida."
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
@@ -2771,22 +3206,12 @@ msgid "G-code tool number (e.g., T0, T1)"
 msgstr "Número de herramienta de G-code (p. ej., T0, T1)"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 msgid "Max Power"
 msgstr "Potencia máxima"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Maximum power value in GCode"
 msgstr "Valor máximo de potencia en G-code"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Frame Power"
-msgstr "Potencia de encuadre"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Power value in percent to use when framing. 0 to disable"
-msgstr ""
-"Valor de potencia en porcentaje a usar al encuadrar. 0 para desactivar."
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Focus Power"
@@ -2811,6 +3236,193 @@ msgstr "Tamaño del punto Y"
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Size of the laser spot in the Y direction"
 msgstr "Tamaño del punto láser en la dirección Y"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Cut Color"
+msgstr "Color de corte"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Color for cutting operations"
+msgstr "Color para operaciones de corte"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Raster Color"
+msgstr "Color de rasterizado"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Color for engraving/raster operations"
+msgstr "Color para operaciones de grabado/rasterizado"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Framing"
+msgstr "Enmarcado"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Settings for the frame outline operation that traces the job boundary."
+msgstr ""
+"Configuración de la operación de contorno que traza el límite del trabajo."
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Frame Power"
+msgstr "Potencia de encuadre"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Power value in percent to use when framing. 0 to disable"
+msgstr ""
+"Valor de potencia en porcentaje a usar al encuadrar. 0 para desactivar."
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Frame Speed"
+msgstr "Velocidad del marco"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid ""
+"Speed for frame outline. Leave at 0 to use the machine's max travel speed"
+msgstr ""
+"Velocidad para el contorno. Déjelo en 0 para usar la velocidad máxima de la "
+"máquina"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Repeat Count"
+msgstr "Cantidad de repeticiones"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Number of times to trace the frame outline"
+msgstr "Número de veces que se traza el contorno"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Pause at Corners"
+msgstr "Pausa en esquinas"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid ""
+"Pause duration in seconds at each corner of the frame outline. 0 to disable"
+msgstr ""
+"Duración de la pausa en segundos en cada esquina del contorno. 0 para "
+"desactivar"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+#, python-brace-format
+msgid "Axis {axis}, {length}mm, chuck Ø{chuck:.0f}mm"
+msgstr "Eje {axis}, {length}mm, mandril Ø{chuck:.0f}mm"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Add Rotary Module"
+msgstr "Añadir módulo rotativo"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "No rotary modules configured"
+msgstr "No hay módulos rotativos configurados"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "New Rotary Module"
+msgstr "Nuevo módulo rotativo"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Rotary Defaults"
+msgstr "Valores predeterminados rotativos"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Default settings applied to new layers."
+msgstr "Configuración predeterminada aplicada a nuevas capas."
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Enable Rotary by Default"
+msgstr "Activar rotación por defecto"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "New layers will default to rotary mode"
+msgstr "Las nuevas capas usarán el modo rotativo por defecto"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Modules"
+msgstr "Módulos"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid ""
+"Define the physical rotary modules attached to your machine. Select one as "
+"the default."
+msgstr ""
+"Defina los módulos rotativos físicos conectados a su máquina. Seleccione uno "
+"como predeterminado."
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Module Properties"
+msgstr "Propiedades del módulo"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Configure the selected module."
+msgstr "Configure el módulo seleccionado."
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Axis"
+msgstr "Eje"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Axis letter for this module"
+msgstr "Letra de eje para este módulo"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Default Workpiece Diameter"
+msgstr "Diámetro de pieza predeterminado"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Default diameter for new layers using this module"
+msgstr "Diámetro predeterminado para nuevas capas que usan este módulo"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "X Position"
+msgstr "Posición X"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "X coordinate in machine space"
+msgstr "Coordenada X en el espacio de la máquina"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Y Position"
+msgstr "Posición Y"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Y coordinate in machine space"
+msgstr "Coordenada Y en el espacio de la máquina"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Z Position"
+msgstr "Posición Z"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Z coordinate in machine space"
+msgstr "Coordenada Z en el espacio de la máquina"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Length of the rotary module along the axis"
+msgstr "Longitud del módulo rotativo a lo largo del eje"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Chuck Diameter"
+msgstr "Diámetro del mandril"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Diameter of the chuck end"
+msgstr "Diámetro del extremo del mandril"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Tailstock Diameter"
+msgstr "Diámetro del contrapunto"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Diameter of the tailstock end"
+msgstr "Diámetro del extremo del contrapunto"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Max Height"
+msgstr "Altura máxima"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Maximum height above the mounting surface"
+msgstr "Altura máxima sobre la superficie de montaje"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #, python-brace-format
@@ -2990,6 +3602,240 @@ msgstr "Tipo no soportado: {t}"
 msgid "Apply Change"
 msgstr "Aplicar cambio"
 
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Addon Registry"
+msgstr "Registro de complementos"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Fetching registry..."
+msgstr "Obteniendo registro..."
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Install from URL..."
+msgstr "Instalar desde URL..."
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Connection Failed"
+msgstr "Fallo de conexión"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Could not reach the registry."
+msgstr "No se pudo acceder al registro."
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "No addons found in registry."
+msgstr "No se encontraron complementos en el registro."
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Install"
+msgstr "Instalar"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/doceditor/recipe_control_widget.py
+msgid "Update"
+msgstr "Actualizar"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Installed"
+msgstr "Instalado"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#, python-brace-format
+msgid "Version {v} already installed"
+msgstr "La versión {v} ya está instalada"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Incompatible"
+msgstr "Incompatible"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#, python-brace-format
+msgid "Requires {deps}, but current rayforge version is {current}"
+msgstr "Requiere {deps}, pero la versión actual de Rayforge es {current}"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Unavailable"
+msgstr "No disponible"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Manual Install"
+msgstr "Instalación manual"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+msgid "Enter the Git URL."
+msgstr "Introduce la URL de Git."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Enter License Key"
+msgstr "Introducir clave de licencia"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License Key"
+msgstr "Clave de licencia"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Activate"
+msgstr "Activar"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+#, python-brace-format
+msgid "Enter the license key you received when purchasing {addon_name}."
+msgstr "Introduce la clave de licencia que recibiste al comprar {addon_name}."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Please enter a license key."
+msgstr "Por favor, introduce una clave de licencia."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Validating license..."
+msgstr "Validando licencia..."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License validation failed."
+msgstr "La validación de la licencia falló."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License Invalid"
+msgstr "Licencia inválida"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "License Required"
+msgstr "Licencia requerida"
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+#, python-brace-format
+msgid ""
+"{addon_name} is a premium addon. Purchase a license to unlock it, or enter "
+"your license key if you already have one."
+msgstr ""
+"{addon_name} es un complemento premium. Compra una licencia para "
+"desbloquearlo, o introduce tu clave de licencia si ya tienes una."
+
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+msgid "Buy License"
+msgstr "Comprar licencia"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Failed to load this addon"
+msgstr "Error al cargar este complemento"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "This addon will be unloaded when active jobs finish"
+msgstr "Este complemento se descargará cuando terminen los trabajos activos"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "This addon is incompatible with the current version of Rayforge"
+msgstr "Este complemento es incompatible con la versión actual de Rayforge"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Premium addon"
+msgstr "Complemento premium"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Built-in addon"
+msgstr "Complemento integrado"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Uninstall Addon"
+msgstr "Desinstalar complemento"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Enable or disable this addon"
+msgstr "Activar o desactivar este complemento"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Install New Addon..."
+msgstr "Instalar nuevo complemento..."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "No addons installed."
+msgstr "No hay complementos instalados."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+#, python-brace-format
+msgid "Installing {name}..."
+msgstr "Instalando {name}..."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Failed to install addon."
+msgstr "Error al instalar el complemento."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Failed to enable addon and its dependencies."
+msgstr "Error al activar el complemento y sus dependencias."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Enable Dependencies?"
+msgstr "¿Activar dependencias?"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+#, python-brace-format
+msgid ""
+"This addon requires: {deps}\n"
+"\n"
+"Enable them as well?"
+msgstr ""
+"Este complemento requiere: {deps}\n"
+"\n"
+"¿Activarlos también?"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Enable All"
+msgstr "Activar todos"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Failed to enable addon. Check the logs for details."
+msgstr ""
+"Error al activar el complemento. Consulta los registros para más detalles."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Cannot Disable Addon"
+msgstr "No se puede desactivar el complemento"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+#, python-brace-format
+msgid ""
+"This addon cannot be disabled.\n"
+"\n"
+"{reason}"
+msgstr ""
+"Este complemento no se puede desactivar.\n"
+"\n"
+"{reason}"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Addon will be disabled when active jobs complete."
+msgstr "El complemento se desactivará cuando terminen los trabajos activos."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Failed to disable addon. Check the logs for details."
+msgstr ""
+"Error al desactivar el complemento. Consulta los registros para más detalles."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+#, python-brace-format
+msgid "Uninstall {name}?"
+msgstr "¿Desinstalar {name}?"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid ""
+"The addon files will be removed. Restart recommended to fully clear memory."
+msgstr ""
+"Los archivos del complemento serán eliminados. Se recomienda reiniciar para "
+"liberar completamente la memoria."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Uninstall"
+msgstr "Desinstalar"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Error deleting addon."
+msgstr "Error al eliminar el complemento."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Info"
+msgstr "Información"
+
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid "Help Improve Rayforge"
 msgstr "Ayudar a mejorar Rayforge"
@@ -3032,7 +3878,6 @@ msgid "Redo the last action"
 msgstr "Rehacer la última acción"
 
 #: rayforge/ui_gtk/shared/preferences_group.py
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "No parameters"
 msgstr "Sin parámetros"
 
@@ -3073,17 +3918,15 @@ msgstr "Exportar documento..."
 msgid "Quit"
 msgstr "Salir"
 
-#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/main_menu.py
 msgid "_File"
 msgstr "_Archivo"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
-#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Undo"
 msgstr "Deshacer"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
-#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Redo"
 msgstr "Rehacer"
 
@@ -3107,7 +3950,7 @@ msgstr "Seleccionar todo"
 msgid "Clear Document"
 msgstr "Limpiar documento"
 
-#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/main_menu.py
 msgid "_Edit"
 msgstr "_Editar"
 
@@ -3128,12 +3971,8 @@ msgid "Show Travel Moves"
 msgstr "Mostrar movimientos de desplazamiento"
 
 #: rayforge/ui_gtk/main_menu.py
-msgid "Show G-code Preview"
-msgstr "Mostrar vista previa de G-code"
-
-#: rayforge/ui_gtk/main_menu.py
-msgid "Show Control Panel"
-msgstr "Mostrar panel de control"
+msgid "Show Bottom Panel"
+msgstr "Mostrar panel inferior"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Simulate Execution"
@@ -3159,7 +3998,7 @@ msgstr "Vista isométrica"
 msgid "Toggle Perspective"
 msgstr "Alternar perspectiva"
 
-#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/main_menu.py
 msgid "_View"
 msgstr "_Ver"
 
@@ -3170,6 +4009,10 @@ msgstr "Añadir material de base"
 #: rayforge/ui_gtk/main_menu.py
 msgid "Split"
 msgstr "Dividir"
+
+#: rayforge/ui_gtk/main_menu.py
+msgid "Export Object..."
+msgstr "Exportar objeto..."
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
 msgid "Add Equidistant Tabs…"
@@ -3251,17 +4094,9 @@ msgstr "Voltear verticalmente"
 msgid "Flip"
 msgstr "Voltear"
 
-#: rayforge/ui_gtk/main_menu.py rayforge/doceditor/layout_cmd.py
-msgid "Auto Layout"
-msgstr "Disposición automática"
-
 #: rayforge/ui_gtk/main_menu.py
 msgid "Arrange"
 msgstr "Organizar"
-
-#: rayforge/ui_gtk/main_menu.py
-msgid "Create Material Test Grid"
-msgstr "Crear cuadrícula de prueba de material"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "_Tools"
@@ -3308,6 +4143,10 @@ msgid "(No Recent Items)"
 msgstr "(Sin elementos recientes)"
 
 #: rayforge/ui_gtk/mainwindow.py
+msgid "G-code Viewer"
+msgstr "Visor de G-code"
+
+#: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
 msgid "Maintenance Alert: {name} has reached its limit ({curr} / {limit})"
 msgstr ""
@@ -3345,10 +4184,6 @@ msgstr "Configura la potencia de encuadre para habilitar"
 msgid "Cycle laser head around the occupied area"
 msgstr "Encuadrar el área ocupada"
 
-#: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
-msgid "Send to machine"
-msgstr "Enviar a la máquina"
-
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Resume machine"
 msgstr "Reanudar máquina"
@@ -3356,6 +4191,10 @@ msgstr "Reanudar máquina"
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Pause machine"
 msgstr "Pausar máquina"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Please select a single object to export."
+msgstr "Por favor, selecciona un único objeto para exportar."
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Failed to create debug archive."
@@ -3375,110 +4214,6 @@ msgstr "Error al guardar el archivo: {msg}"
 #, python-brace-format
 msgid "An unexpected error occurred: {error}"
 msgstr "Ocurrió un error inesperado: {error}"
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Uninstall Package"
-msgstr "Desinstalar paquete"
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Install New Package..."
-msgstr "Instalar nuevo paquete..."
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "No packages installed."
-msgstr "No hay paquetes instalados."
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-#, python-brace-format
-msgid "Installing {name}..."
-msgstr "Instalando {name}..."
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Failed to install package."
-msgstr "Error al instalar el paquete."
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-#, python-brace-format
-msgid "Uninstall {name}?"
-msgstr "¿Desinstalar {name}?"
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid ""
-"The package files will be removed. Restart recommended to fully clear memory."
-msgstr ""
-"Los archivos del paquete se eliminarán. Se recomienda reiniciar para limpiar "
-"completamente la memoria."
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Uninstall"
-msgstr "Desinstalar"
-
-#: rayforge/ui_gtk/package_manager/package_list.py
-msgid "Error deleting package."
-msgstr "Error al eliminar el paquete."
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Package Registry"
-msgstr "Registro de paquetes"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Fetching registry..."
-msgstr "Obteniendo registro..."
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Install from URL..."
-msgstr "Instalar desde URL..."
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Connection Failed"
-msgstr "Fallo de conexión"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Could not reach the registry."
-msgstr "No se pudo acceder al registro."
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "No packages found in registry."
-msgstr "No se encontraron paquetes en el registro."
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Install"
-msgstr "Instalar"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-#: rayforge/ui_gtk/doceditor/recipe_control_widget.py
-msgid "Update"
-msgstr "Actualizar"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Installed"
-msgstr "Instalado"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-#, python-brace-format
-msgid "Version {v} already installed"
-msgstr "La versión {v} ya está instalada"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Incompatible"
-msgstr "Incompatible"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-#, python-brace-format
-msgid "Requires {deps}, but current rayforge version is {current}"
-msgstr "Requiere {deps}, pero la versión actual de Rayforge es {current}"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Unavailable"
-msgstr "No disponible"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Manual Install"
-msgstr "Instalación manual"
-
-#: rayforge/ui_gtk/package_manager/dialog.py
-msgid "Enter the Git URL."
-msgstr "Introduce la URL de Git."
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Open Project"
@@ -3513,16 +4248,50 @@ msgid "Toggle execution simulation"
 msgstr "Alternar simulación de ejecución"
 
 #: rayforge/ui_gtk/toolbar.py
-msgid "Toggle G-code Preview"
-msgstr "Alternar vista previa de G-code"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Toggle control panel"
-msgstr "Alternar panel de control"
+msgid "Toggle bottom panel"
+msgstr "Alternar panel inferior"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Toggle tab visibility"
 msgstr "Alternar visibilidad de pestañas de sujeción"
+
+#: rayforge/ui_gtk/toolbar.py
+msgid "Arrange selection"
+msgstr "Organizar selección"
+
+#: rayforge/ui_gtk/toolbar.py
+msgid "Add Cardinal Tabs (N,S,E,W)"
+msgstr "Añadir pestañas cardinales (N,S,E,O)"
+
+#: rayforge/ui_gtk/toolbar.py
+msgid "Add Tabs to selection"
+msgstr "Añadir pestañas a la selección"
+
+#: rayforge/ui_gtk/toolbar.py
+msgid "Home the machine"
+msgstr "Llevar la máquina al origen"
+
+#: rayforge/ui_gtk/toolbar.py
+msgid "Clear machine alarm (unlock)"
+msgstr "Desactivar alarma de la máquina (desbloquear)"
+
+#: rayforge/ui_gtk/toolbar.py
+msgid "Toggle focus laser"
+msgstr "Alternar láser de enfoque"
+
+#: rayforge/ui_gtk/toolbar.py
+msgid "Work Coordinate System"
+msgstr "Sistema de coordenadas de trabajo"
+
+#: rayforge/ui_gtk/toolbar.py
+msgid "Machine not fully configured"
+msgstr "Máquina no configurada completamente"
+
+#: rayforge/ui_gtk/toolbar.py
+msgid "Machine driver is missing required settings. Click to edit."
+msgstr ""
+"Faltan ajustes requeridos en el controlador de la máquina. Haz clic para "
+"editar."
 
 #: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
 msgid "Center Horizontally"
@@ -3547,52 +4316,6 @@ msgstr "Alinear arriba"
 #: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
 msgid "Align Bottom"
 msgstr "Alinear abajo"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Auto Layout (pack workpieces)"
-msgstr "Disposición automática (anidar piezas)"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Arrange selection"
-msgstr "Organizar selección"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Add Cardinal Tabs (N,S,E,W)"
-msgstr "Añadir pestañas cardinales (N,S,E,O)"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Add Tabs to selection"
-msgstr "Añadir pestañas a la selección"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Home the machine"
-msgstr "Llevar la máquina al origen"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Cancel running job"
-msgstr "Cancelar trabajo en curso"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Clear machine alarm (unlock)"
-msgstr "Desactivar alarma de la máquina (desbloquear)"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Toggle focus laser"
-msgstr "Alternar láser de enfoque"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Work Coordinate System"
-msgstr "Sistema de coordenadas de trabajo"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Machine not fully configured"
-msgstr "Máquina no configurada completamente"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Machine driver is missing required settings. Click to edit."
-msgstr ""
-"Faltan ajustes requeridos en el controlador de la máquina. Haz clic para "
-"editar."
 
 #: rayforge/ui_gtk/project_cmd.py
 msgid "Unsaved Changes"
@@ -3622,9 +4345,10 @@ msgstr "Nuevo proyecto creado"
 msgid "Untitled"
 msgstr "Sin título"
 
-#: rayforge/ui_gtk/doceditor/layer_view.py rayforge/doceditor/layer_cmd.py
-msgid "Assign stock material"
-msgstr "Asignar material de base"
+#: rayforge/ui_gtk/doceditor/layer_view.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Layer Settings"
+msgstr "Configuración de capa"
 
 #: rayforge/ui_gtk/doceditor/layer_view.py
 msgid "Delete this layer"
@@ -3639,10 +4363,6 @@ msgstr "{count} pieza de trabajo"
 #, python-brace-format
 msgid "{count} workpieces"
 msgstr "{count} piezas de trabajo"
-
-#: rayforge/ui_gtk/doceditor/layer_view.py
-msgid "Whole Surface"
-msgstr "Superficie completa"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Create New Layers"
@@ -3687,6 +4407,14 @@ msgid "Import vector data directly"
 msgstr "Importar datos de vectores directamente"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "DPI"
+msgstr "DPI"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Pixels per inch for unitless SVG dimensions"
+msgstr "Píxeles por pulgada para dimensiones SVG sin unidades"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Layers"
 msgstr "Capas"
 
@@ -3711,7 +4439,6 @@ msgid "Automatically determine the trace threshold"
 msgstr "Determinar automáticamente el umbral de trazado"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 msgid "Threshold"
 msgstr "Umbral"
 
@@ -3720,7 +4447,6 @@ msgid "Trace objects darker than this value"
 msgstr "Trazar objetos más oscuros que este valor"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 msgid "Invert"
 msgstr "Invertir"
 
@@ -3745,459 +4471,17 @@ msgstr "Capa con {n} vectores"
 msgid "Generating preview..."
 msgstr "Generando vista previa..."
 
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Enable Overscan"
-msgstr "Habilitar Overscan"
+#: rayforge/ui_gtk/doceditor/step_settings/placeholder.py
+msgid "This feature is not available."
+msgstr "Esta función no está disponible."
 
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Automatic Distance"
-msgstr "Distancia automática"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Calculate distance based on speed and acceleration with safety factor"
-msgstr ""
-"Calcular distancia basada en velocidad y aceleración con factor de seguridad"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Overscan Distance"
-msgstr "Distancia de Overscan"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Manual distance setting"
-msgstr "Ajuste manual de distancia"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Toggle Overscan"
-msgstr "Alternar Overscan"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Toggle Auto Overscan"
-msgstr "Alternar Overscan automático"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Auto Calculate Overscan Distance"
-msgstr "Calcular distancia de Overscan automáticamente"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Disable Auto Overscan"
-msgstr "Desactivar Sobrescanido Automático"
-
-#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
-msgid "Change Overscan Distance"
-msgstr "Cambiar distancia de Overscan"
-
-#: rayforge/ui_gtk/doceditor/step_settings/frame.py
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-#: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
-msgid "Cut Side"
-msgstr "Lado de corte"
-
-#: rayforge/ui_gtk/doceditor/step_settings/frame.py
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-#: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
-msgid "Path Offset (mm)"
-msgstr "Desplazamiento de trayectoria (mm)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/frame.py
-msgid "Absolute distance from content boundary"
-msgstr "Distancia absoluta desde el límite del contenido."
-
-#: rayforge/ui_gtk/doceditor/step_settings/frame.py
-msgid "Change Frame Setting"
-msgstr "Cambiar ajuste de marco"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Presets"
-msgstr "Preajustes"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Load common test configurations"
-msgstr "Cargar configuraciones de prueba comunes"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Test Type"
-msgstr "Tipo de prueba"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Cut: outlines; Engrave: fills with raster lines"
-msgstr "Corte: contornos; Grabado: rellenos con líneas de trama"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Speed &amp; Power"
-msgstr "Velocidad y Potencia"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Define the range of speeds and powers for the test grid"
-msgstr ""
-"Define el rango de velocidades y potencias para la cuadrícula de prueba"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Minimum Power (%)"
-msgstr "Potencia mínima (%)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "For first column"
-msgstr "Para la primera columna"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Maximum Power (%)"
-msgstr "Potencia máxima (%)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "For last column"
-msgstr "Para la última columna"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Minimum Speed"
-msgstr "Velocidad mínima"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Starting speed (mm/min)"
-msgstr "Velocidad inicial (mm/min)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Maximum Speed"
-msgstr "Velocidad máxima"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Ending speed (mm/min)"
-msgstr "Velocidad final (mm/min)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Columns (Power Steps)"
-msgstr "Columnas (Pasos de potencia)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Number of power variations"
-msgstr "Número de variaciones de potencia"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Rows (Speed Steps)"
-msgstr "Filas (Pasos de velocidad)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Number of speed variations"
-msgstr "Número de variaciones de velocidad"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Shape Size"
-msgstr "Tamaño de la forma"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Size of each test square (mm)"
-msgstr "Tamaño de cada cuadrado de prueba (mm)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Spacing"
-msgstr "Espaciado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Gap between test squares (mm)"
-msgstr "Separación entre cuadrados de prueba (mm)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Line Interval"
-msgstr "Intervalo de línea"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
+#: rayforge/ui_gtk/doceditor/step_settings/placeholder.py
 msgid ""
-"Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
-"to use laser spot size."
+"The required component '{}' could not be found. The document can still be "
+"saved."
 msgstr ""
-"Distancia entre líneas de escaneo en unidades de máquina (para modo "
-"Grabado). Dejar en 0 para usar el tamaño del punto láser."
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Include Labels"
-msgstr "Incluir etiquetas"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Add speed/power annotations to the grid"
-msgstr "Añadir anotaciones de velocidad/potencia a la cuadrícula"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Label Engrave Power (%)"
-msgstr "Potencia de grabado de etiqueta (%)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Change Power Range"
-msgstr "Cambiar rango de potencia"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-#, python-brace-format
-msgid "Change {param_name}"
-msgstr "Cambiar {param_name}"
-
-#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-msgid "Change Grid Dimensions"
-msgstr "Cambiar dimensiones de la cuadrícula"
-
-#: rayforge/ui_gtk/doceditor/step_settings/optimize.py
-msgid "Enable Optimization"
-msgstr "Habilitar optimización"
-
-#: rayforge/ui_gtk/doceditor/step_settings/optimize.py
-msgid "Toggle Path Optimization"
-msgstr "Alternar optimización de trayectoria"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Configure how the laser engraves your image."
-msgstr "Configurar cómo el láser graba tu imagen."
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Mode"
-msgstr "Modo"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Brightness cutoff for black/white (0-255)"
-msgstr "Umbral de brillo para blanco/negro (0-255)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Engraving Method"
-msgstr "Método de grabado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Algorithm for converting grayscale to binary"
-msgstr "Algoritmo para convertir escala de grises a binario"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Auto Levels"
-msgstr "Niveles Automáticos"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Automatically adjust black/white points"
-msgstr "Ajustar automáticamente los puntos negro/blanco"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Brightness Range"
-msgstr "Rango de brillo"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Auto-adjusted based on image content"
-msgstr "Ajustado automáticamente según el contenido de la imagen"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Drag markers to set black/white points"
-msgstr "Arrastra los marcadores para ajustar los puntos de blanco/negro"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Min Power"
-msgstr "Potencia mínima"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-#, python-format
-msgid "Power for lightest areas, as a % of the step's main power"
-msgstr ""
-"Potencia para las áreas más claras, como % de la potencia principal del paso."
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-#, python-format
-msgid "Power for darkest areas, as a % of the step's main power"
-msgstr ""
-"Potencia para las áreas más oscuras, como % de la potencia principal del "
-"paso."
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Number of Depth Levels"
-msgstr "Número de niveles de profundidad"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Z Step-Down per Level (mm)"
-msgstr "Descenso en Z por nivel (mm)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Rotate Angle Per Pass"
-msgstr "Ángulo de rotación por pasada"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Degrees to rotate each successive pass"
-msgstr "Grados para rotar cada pasada sucesiva"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Engraving Pattern"
-msgstr "Patrón de grabado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Settings that control the scan line pattern and orientation."
-msgstr ""
-"Ajustes que controlan el patrón y la orientación de las líneas de escaneo."
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Angle of scan lines in degrees"
-msgstr "Ángulo de las líneas de escaneo en grados"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Cross-Hatch"
-msgstr "Trama cruzada"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Add a second pass at 90 degrees"
-msgstr "Añadir una segunda pasada a 90 grados"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Line Spacing"
-msgstr "Espaciado de línea"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid ""
-"Distance between scan lines in machine units. Leave at 0 to use laser spot "
-"size"
-msgstr ""
-"Distancia entre líneas de escaneo en unidades de máquina. Dejar en 0 para "
-"usar el tamaño del punto láser"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Engrave white areas instead of black areas"
-msgstr "Grabar áreas blancas en lugar de áreas negras"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Change Min Power"
-msgstr "Cambiar potencia mínima"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Change Max Power"
-msgstr "Cambiar potencia máxima"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Min Power (Black)"
-msgstr "Potencia mínima (Negro)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Max Power (White)"
-msgstr "Potencia máxima (Blanco)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Min Power (White)"
-msgstr "Potencia mín. (Blanco)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Max Power (Black)"
-msgstr "Potencia máx. (Negro)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Change engraving setting"
-msgstr "Cambiar ajuste de grabado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Enable Smoothing"
-msgstr "Habilitar suavizado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Smoothness"
-msgstr "Suavizado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Corner Angle Threshold"
-msgstr "Umbral de ángulo de esquina"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Angles sharper than this are kept as corners (degrees)"
-msgstr "Los ángulos más agudos que este se mantienen como esquinas (grados)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Toggle Smoothing"
-msgstr "Alternar suavizado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Change smoothness"
-msgstr "Cambiar suavizado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/smooth.py
-msgid "Change corner angle"
-msgstr "Cambiar ángulo de esquina"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Remove Inner Paths"
-msgstr "Eliminar trayectorias internas"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "If enabled, only trace the outer outline of shapes"
-msgstr "Si está habilitado, solo traza el contorno exterior de las formas."
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Cut Order"
-msgstr "Orden de corte"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Processing order for nested paths"
-msgstr "Orden de procesamiento para trayectorias anidadas"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-#: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
-msgid ""
-"Absolute distance from original path, direction is controlled by Cut Side"
-msgstr ""
-"Distancia absoluta desde la trayectoria original. La dirección se controla "
-"con 'Lado de corte'."
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Rescan Content"
-msgstr "Reescanear contenido"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Ignore source geometry and re-trace within the workpiece"
-msgstr ""
-"Ignorar geometría de origen y volver a trazar dentro de la pieza de trabajo"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Tracing Threshold"
-msgstr "Umbral de trazado"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Brightness level (0.0-1.0) to define edges"
-msgstr "Nivel de brillo (0.0-1.0) para definir bordes"
-
-#: rayforge/ui_gtk/doceditor/step_settings/contour.py
-msgid "Change Edge Tracer Setting"
-msgstr "Cambiar ajuste del trazador de bordes"
-
-#: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
-msgid "Gravity"
-msgstr "Gravedad"
-
-#: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
-msgid "Pulls the hull inward. 0.0 is a standard convex hull"
-msgstr ""
-"Tira de la envoltura hacia adentro. 0.0 es una envoltura convexa estándar."
-
-#: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
-msgid "Change Shrinkwrap Setting"
-msgstr "Cambiar ajuste de envoltura"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Number of Passes"
-msgstr "Número de pasadas"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "How often to repeat the entire step"
-msgstr "Cuántas veces repetir el paso completo"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Z Step-Down per Pass"
-msgstr "Descenso de Z por pasada"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Distance to lower Z-axis for each subsequent pass in machine units"
-msgstr ""
-"Distancia para bajar el eje Z en cada pasada posterior en unidades de máquina"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Change number of passes"
-msgstr "Cambiar número de pasadas"
-
-#: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Change Z Step-Down"
-msgstr "Cambiar descenso en Z"
-
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/material_selector.py
-msgid "Core Materials"
-msgstr "Materiales base"
-
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-msgid "Read-only core library"
-msgstr "Biblioteca base de solo lectura"
+"El componente requerido '{}' no se encontró. El documento aún se puede "
+"guardar."
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "1 material"
@@ -4210,23 +4494,16 @@ msgstr "{count} materiales"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #, python-brace-format
-msgid "Library from package: ({source})"
-msgstr "Biblioteca del paquete: ({source})"
+msgid "{count} (Read-only)"
+msgstr "{count} (Solo lectura)"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "Add New Library"
 msgstr "Añadir nueva biblioteca"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
-msgid "No user libraries found."
-msgstr "No se encontraron bibliotecas de usuario."
-
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/recipe_list.py
-#: rayforge/ui_gtk/doceditor/material_list.py
-#, python-brace-format
-msgid "Delete '{name}'?"
-msgstr "¿Eliminar '{name}'?"
+msgid "No libraries found."
+msgstr "No se encontraron bibliotecas."
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid ""
@@ -4276,10 +4553,6 @@ msgid "Power, speed, and laser head selection for this operation."
 msgstr "Potencia, velocidad y selección de cabezal láser para esta operación."
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Power (%)"
-msgstr "Potencia (%)"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 #, python-brace-format
 msgid "Max: {max_speed}"
 msgstr "Máx.: {max_speed}"
@@ -4307,6 +4580,10 @@ msgstr "Cambiar ancho de corte"
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Change laser power"
 msgstr "Cambiar potencia del láser"
+
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
+msgid "Change tab power"
+msgstr "Cambiar potencia de lengüeta"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Change cut speed"
@@ -4423,20 +4700,12 @@ msgid "Reorder Assets"
 msgstr "Reordenar recursos"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
-msgid "Assets"
-msgstr "Recursos"
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
 msgid "Add Asset"
 msgstr "Añadir recurso"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
-msgid "Add Stock Material"
-msgstr "Añadir material de base"
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
-msgid "Add Sketch"
-msgstr "Añadir boceto"
+msgid "Assets"
+msgstr "Recursos"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
 #, python-brace-format
@@ -4468,11 +4737,9 @@ msgstr "Archivos G-code"
 msgid "Export Object"
 msgstr "Exportar objeto"
 
-#: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/sketch/exporter.py
-#: rayforge/image/sketch/importer.py
-#, python-brace-format
-msgid "{app_name} Sketch"
-msgstr "Boceto {app_name}"
+#: rayforge/ui_gtk/doceditor/file_dialogs.py
+msgid "Export Document"
+msgstr "Exportar documento"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/svg/exporter.py
 msgid "SVG (Scalable Vector Graphics)"
@@ -4481,10 +4748,6 @@ msgstr "SVG (Gráficos vectoriales escalables)"
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/dxf/exporter.py
 msgid "DXF (CAD Exchange Format)"
 msgstr "DXF (Formato de intercambio CAD)"
-
-#: rayforge/ui_gtk/doceditor/file_dialogs.py
-msgid "Export Document"
-msgstr "Exportar documento"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 #, python-brace-format
@@ -4573,7 +4836,6 @@ msgid "Material thickness"
 msgstr "Grosor del material"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Select"
 msgstr "Seleccionar"
 
@@ -4581,34 +4843,17 @@ msgstr "Seleccionar"
 msgid "None"
 msgstr "Ninguno"
 
-#: rayforge/ui_gtk/doceditor/sketch_properties.py
-msgid "Change Sketch Parameter"
-msgstr "Cambiar parámetro del boceto"
+#: rayforge/ui_gtk/doceditor/asset_row_widget.py
+msgid "Delete this asset"
+msgstr "Eliminar este activo"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Edit this sketch"
-msgstr "Editar este boceto"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Delete this sketch"
-msgstr "Eliminar este boceto"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "1 parameter"
-msgstr "1 parámetro"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-#, python-brace-format
-msgid "{count} parameters"
-msgstr "{count} parámetros"
+msgid "Toggle visibility"
+msgstr "Alternar visibilidad"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "Edit stock properties"
 msgstr "Editar propiedades del material de base"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Delete this stock asset"
-msgstr "Eliminar este recurso de material de base"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 #, python-brace-format
@@ -4619,6 +4864,26 @@ msgstr "Grosor: {thickness}"
 msgid "No thickness specified"
 msgstr "Grosor no especificado"
 
+#: rayforge/ui_gtk/doceditor/missing_features_dialog.py
+msgid "Missing Features"
+msgstr "Funciones faltantes"
+
+#: rayforge/ui_gtk/doceditor/missing_features_dialog.py
+msgid "This document uses a feature that is not available: {}"
+msgstr "Este documento usa una función que no está disponible: {}"
+
+#: rayforge/ui_gtk/doceditor/missing_features_dialog.py
+msgid "This document uses features that are not available: {}"
+msgstr "Este documento usa funciones que no están disponibles: {}"
+
+#: rayforge/ui_gtk/doceditor/missing_features_dialog.py
+msgid "The document can still be edited and saved."
+msgstr "El documento aún se puede editar y guardar."
+
+#: rayforge/ui_gtk/doceditor/missing_features_dialog.py
+msgid "_OK"
+msgstr "_Aceptar"
+
 #: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "Select Material"
 msgstr "Seleccionar material"
@@ -4627,18 +4892,10 @@ msgstr "Seleccionar material"
 msgid "Choose a material from the available libraries."
 msgstr "Elige un material de las bibliotecas disponibles."
 
-#: rayforge/ui_gtk/doceditor/property_providers/sketch.py
-msgid "Mixed Values"
-msgstr "Valores mixtos"
-
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 #, python-brace-format
 msgid "Relative to {wcs} origin"
 msgstr "Relativo al origen {wcs}"
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "X Position"
-msgstr "Posición X"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Zero is on the left side"
@@ -4649,24 +4906,12 @@ msgid "Reset X position to 0"
 msgstr "Restablecer posición X a 0"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Y Position"
-msgstr "Posición Y"
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset Y position to 0"
 msgstr "Restablecer posición Y a 0"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Fixed Ratio"
 msgstr "Proporción fija"
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Width"
-msgstr "Ancho"
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Height"
-msgstr "Alto"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset to natural width"
@@ -4679,6 +4924,10 @@ msgstr "Restablecer al alto natural"
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset to natural aspect ratio"
 msgstr "Restablecer a la relación de aspecto natural"
+
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Angle"
+msgstr "Ángulo"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Clockwise is positive"
@@ -4736,7 +4985,6 @@ msgid "(No source file)"
 msgstr "(Sin archivo de origen)"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
-#: rayforge/pipeline/transformer/tabs.py
 msgid "Tabs"
 msgstr "Pestañas de sujeción"
 
@@ -4873,13 +5121,50 @@ msgstr "Propiedades de la pieza de trabajo"
 msgid "Group Properties"
 msgstr "Propiedades del grupo"
 
-#: rayforge/ui_gtk/doceditor/layer_list.py
-msgid "Workpiece Layers"
-msgstr "Capas de piezas de trabajo"
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Close"
+msgstr "Cerrar"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Rotary Attachment"
+msgstr "Accesorio rotativo"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid ""
+"Configure rotary attachment for cylindrical objects. When enabled, Y-axis "
+"movements are converted to rotational movements in degrees."
+msgstr ""
+"Configure el accesorio rotativo para objetos cilíndricos. Cuando está "
+"activado, los movimientos del eje Y se convierten en movimientos "
+"rotacionales en grados."
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Enable Rotary Mode"
+msgstr "Activar modo rotativo"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Convert Y-axis to rotary axis"
+msgstr "Convertir eje Y a eje rotativo"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Select the rotary module for this layer"
+msgstr "Seleccione el módulo rotativo para esta capa"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Object Diameter"
+msgstr "Diámetro del objeto"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Diameter of the cylindrical object in machine units"
+msgstr "Diámetro del objeto cilíndrico en unidades de máquina"
 
 #: rayforge/ui_gtk/doceditor/layer_list.py
 msgid "Add New Layer"
 msgstr "Añadir nueva capa"
+
+#: rayforge/ui_gtk/doceditor/layer_list.py
+msgid "Workpiece Layers"
+msgstr "Capas de piezas de trabajo"
 
 #: rayforge/ui_gtk/doceditor/layer_list.py
 #, python-brace-format
@@ -5026,210 +5311,6 @@ msgstr " (+{tasks} más)"
 msgid "{tasks} tasks"
 msgstr "{tasks} tareas"
 
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Arc"
-msgstr "Arco"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Text Box"
-msgstr "Cuadro de texto"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Circle"
-msgstr "Círculo"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Rectangle"
-msgstr "Rectángulo"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Rounded Rectangle"
-msgstr "Rectángulo redondeado"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Fill"
-msgstr "Relleno"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Construction"
-msgstr "Construcción"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Chamfer"
-msgstr "Chaflán"
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Fillet"
-msgstr "Redondeo"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Toggle Construction"
-msgstr "Alternar construcción"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Delete Selection"
-msgstr "Eliminar selección"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Horizontal Constraint"
-msgstr "Añadir restricción horizontal"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Vertical Constraint"
-msgstr "Añadir restricción vertical"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Distance Constraint"
-msgstr "Añadir restricción de distancia"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Radius Constraint"
-msgstr "Añadir restricción de radio"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Diameter Constraint"
-msgstr "Añadir restricción de diámetro"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Coincident Constraint"
-msgstr "Añadir restricción de coincidencia"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Point On Shape"
-msgstr "Añadir punto en forma"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Perpendicular Constraint"
-msgstr "Añadir restricción perpendicular"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Angle Constraint"
-msgstr "Añadir restricción de ángulo"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Tangent Constraint"
-msgstr "Añadir restricción de tangencia"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Equal Constraint"
-msgstr "Añadir restricción de igualdad"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Symmetry Constraint"
-msgstr "Añadir restricción de simetría"
-
-#: rayforge/ui_gtk/sketcher/sketchelement.py
-msgid "Add Aspect Ratio Constraint"
-msgstr "Añadir restricción de relación de aspecto"
-
-#: rayforge/ui_gtk/sketcher/studio.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Cancel Sketch"
-msgstr "Cancelar boceto"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Sketch Studio"
-msgstr "Estudio de boceto"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid ""
-"Right-click background to draw, objects to edit. Double-click dimensions to "
-"edit values."
-msgstr ""
-"Haz clic derecho en el fondo para dibujar, en los objetos para editar. Haz "
-"doble clic en las cotas para editar los valores."
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Finish"
-msgstr "Finalizar"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Properties"
-msgstr "Propiedades"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Configure the sketch name and basic properties"
-msgstr "Configurar el nombre y las propiedades básicas del boceto"
-
-#: rayforge/ui_gtk/sketcher/studio.py
-msgid "Rename Sketch"
-msgstr "Renombrar boceto"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Finish Sketch"
-msgstr "Finalizar boceto"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Fill Area"
-msgstr "Rellenar área"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Tools"
-msgstr "Herramientas"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Chamfer Corner"
-msgstr "Achaflanar esquina"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Modify"
-msgstr "Modificar"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "_Sketch"
-msgstr "_Boceto"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Fit View"
-msgstr "Ajustar vista"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Font Properties"
-msgstr "Propiedades de fuente"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Configure font family, size, and style for text boxes"
-msgstr "Configurar la familia de fuente, tamaño y estilo para cuadros de texto"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Font Family"
-msgstr "Familia de fuente"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Font Size"
-msgstr "Tamaño de fuente"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Bold"
-msgstr "Negrita"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Italic"
-msgstr "Cursiva"
-
-#: rayforge/ui_gtk/sketcher/font_properties.py
-msgid "Select Font"
-msgstr "Seleccionar fuente"
-
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Enter radius or expression (e.g. 'width/2')."
-msgstr "Introduce el radio o una expresión (p. ej., 'ancho/2')."
-
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Enter diameter or expression."
-msgstr "Introduce el diámetro o una expresión."
-
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Enter angle in degrees or expression."
-msgstr "Introduce el ángulo en grados o una expresión."
-
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Enter length or expression."
-msgstr "Introduce la longitud o una expresión."
-
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "Enter value or expression."
-msgstr "Introduce un valor o una expresión."
-
 #: rayforge/ui_gtk/about.py
 msgid "Not found"
 msgstr "No encontrado"
@@ -5359,14 +5440,101 @@ msgstr "pulg/s²"
 msgid "ft/s²"
 msgstr "pies/s²"
 
-#: rayforge/shared/gcodeedit/viewer.py
-msgid "G-code too large to preview."
-msgstr "G-code demasiado grande para la previsualización."
+#: rayforge/shared/util/size.py
+#, python-brace-format
+msgid "{size} B"
+msgstr "{size} B"
+
+#: rayforge/shared/util/size.py
+#, python-brace-format
+msgid "{size:.1f} KB"
+msgstr "{size:.1f} KB"
+
+#: rayforge/shared/util/size.py
+#, python-brace-format
+msgid "{size:.1f} MB"
+msgstr "{size:.1f} MB"
 
 #: rayforge/shared/gcodeedit/viewer.py
+msgid "{line_count:,} lines  ·  {size}"
+msgstr "{line_count:,} líneas · {size}"
+
+#: rayforge/shared/gcodeedit/viewer.py
+msgid "— Truncated (showing first 20,000 of {line_count:,} lines) —"
+msgstr "— Truncado (mostrando las primeras 20,000 de {line_count:,} líneas) —"
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Checking for addon updates..."
+msgstr "Buscando actualizaciones de complementos..."
+
+#: rayforge/addon_mgr/update_cmd.py
 #, python-brace-format
-msgid "({line_count} lines > 20,000 line limit)"
-msgstr "({line_count} líneas > límite de 20.000 líneas)"
+msgid "An update is available for {name}."
+msgstr "Hay una actualización disponible para {name}."
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "Updates are available for {name1} and {name2}."
+msgstr "Hay actualizaciones disponibles para {name1} y {name2}."
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "Updates are available for {name1}, {name2}, and {num} others."
+msgstr "Hay actualizaciones disponibles para {name1}, {name2} y otros {num}."
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Install All"
+msgstr "Instalar todo"
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Addon updates found."
+msgstr "Se encontraron actualizaciones de complementos."
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Addons are up to date."
+msgstr "Los complementos están actualizados."
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Update check failed."
+msgstr "La comprobación de actualizaciones falló."
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "Installing addon updates..."
+msgstr "Instalando actualizaciones de complementos..."
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "Addon successfully updated."
+msgid_plural "{num} addons successfully updated."
+msgstr[0] "Complemento actualizado correctamente."
+msgstr[1] "{num} complementos actualizados correctamente."
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "{num_s} addons updated, {num_f} failed."
+msgstr "{num_s} complementos actualizados, {num_f} fallidos."
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "Failed to update addon."
+msgid_plural "Failed to update {num} addons."
+msgstr[0] "Error al actualizar el complemento."
+msgstr[1] "Error al actualizar {num} complementos."
+
+#: rayforge/addon_mgr/update_cmd.py
+#, python-brace-format
+msgid "Finished with {num_failed} errors."
+msgstr "Finalizado con {num_failed} errores."
+
+#: rayforge/addon_mgr/update_cmd.py
+msgid "All addon updates installed!"
+msgstr "¡Todas las actualizaciones de complementos instaladas!"
+
+#: rayforge/app.py
+#, python-brace-format
+msgid "Cannot open '{file}'. The required addon may be disabled."
+msgstr ""
+"No se puede abrir '{file}'. El complemento requerido puede estar desactivado."
 
 #: rayforge/app.py
 msgid "A GCode generator for laser cutters."
@@ -5419,50 +5587,14 @@ msgstr ""
 "Ruta a un directorio de configuración personalizado. Útil para pruebas con "
 "configuraciones aisladas."
 
-#: rayforge/pipeline/steps.py
-msgid "Contour"
-msgstr "Contorno"
+#: rayforge/pipeline/producer/placeholder.py
+msgid "Missing Producer"
+msgstr "Productor faltante"
 
-#: rayforge/pipeline/steps.py
-msgid "Shrink Wrap"
-msgstr "Envoltura"
-
-#: rayforge/pipeline/steps.py
-msgid "Frame Outline"
-msgstr "Contorno de marco"
-
-#: rayforge/pipeline/steps.py rayforge/doceditor/material_test_cmd.py
-msgid "Material Test Grid"
-msgstr "Cuadrícula de prueba de material"
-
-#: rayforge/pipeline/producer/raster.py
-msgid "Variable Power"
-msgstr "Potencia variable"
-
-#: rayforge/pipeline/producer/raster.py
-msgid "Constant Power"
-msgstr "Potencia constante"
-
-#: rayforge/pipeline/producer/raster.py
-msgid "Dither"
-msgstr "Tramado"
-
-#: rayforge/pipeline/producer/raster.py
-msgid "Multiple Depths"
-msgstr "Múltiples profundidades"
-
-#: rayforge/pipeline/producer/contour.py
-msgid "Inside-Outside"
-msgstr "Interior-Exterior"
-
-#: rayforge/pipeline/producer/contour.py
-msgid "Outside-Inside"
-msgstr "Exterior-Interior"
-
-#: rayforge/pipeline/producer/contour.py
-#: rayforge/pipeline/producer/shrinkwrap.py
-msgid "Optimizing path with arcs..."
-msgstr "Optimizando trayectoria con arcos..."
+#: rayforge/pipeline/producer/placeholder.py
+#: rayforge/pipeline/transformer/placeholder.py
+msgid "Missing: {}"
+msgstr "Falta: {}"
 
 #: rayforge/pipeline/producer/base.py
 msgid "Centerline"
@@ -5553,72 +5685,9 @@ msgstr "Renderizando textura..."
 msgid "Rendering complete."
 msgstr "Renderizado completo."
 
-#: rayforge/pipeline/transformer/overscan.py
-msgid "Overscan"
-msgstr "Overscan"
-
-#: rayforge/pipeline/transformer/overscan.py
-msgid "Extends raster lines to ensure constant engraving speed."
-msgstr ""
-"Extiende las líneas de rasterizado para asegurar una velocidad de grabado "
-"constante."
-
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Optimize Path"
-msgstr "Optimizar trayectoria"
-
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Minimizes travel distance by reordering segments."
-msgstr "Minimiza la distancia de desplazamiento reordenando los segmentos."
-
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Preprocessing for optimization..."
-msgstr "Preprocesando para la optimización..."
-
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Analyzing and bucketing path segments..."
-msgstr "Analizando y agrupando segmentos de trayectoria..."
-
-#: rayforge/pipeline/transformer/optimize.py
-#, python-brace-format
-msgid "Optimizing segment {i}/{total}..."
-msgstr "Optimizando segmento {i}/{total}..."
-
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Finding nearest paths..."
-msgstr "Buscando trayectorias más cercanas..."
-
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Applying 2-opt refinement..."
-msgstr "Aplicando refinamiento 2-opt..."
-
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Reassembling optimized paths..."
-msgstr "Reensamblando trayectorias optimizadas..."
-
-#: rayforge/pipeline/transformer/optimize.py
-msgid "Optimization complete"
-msgstr "Optimización completada"
-
-#: rayforge/pipeline/transformer/smooth.py
-msgid "Smooth Path"
-msgstr "Suavizar trayectoria"
-
-#: rayforge/pipeline/transformer/smooth.py
-msgid "Smooths the path by applying a Gaussian filter."
-msgstr "Suaviza la trayectoria aplicando un filtro gaussiano."
-
-#: rayforge/pipeline/transformer/tabs.py
-msgid "Creates holding tabs by adding gaps to cut paths"
-msgstr "Crea pestañas de sujeción añadiendo huecos a las trayectorias de corte"
-
-#: rayforge/pipeline/transformer/multipass.py
-msgid "Multi-Pass"
-msgstr "Múltiples pasadas"
-
-#: rayforge/pipeline/transformer/multipass.py
-msgid "Repeats the path multiple times, optionally stepping down in Z."
-msgstr "Repite la trayectoria varias veces, opcionalmente bajando en el eje Z."
+#: rayforge/pipeline/transformer/placeholder.py
+msgid "This transformer is not available."
+msgstr "Este transformador no está disponible."
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The name of the currently active coordinate system (e.g. 'G54')."
@@ -5693,10 +5762,6 @@ msgstr "El ancho de la pieza de trabajo."
 msgid "The height of the workpiece."
 msgstr "La altura de la pieza de trabajo."
 
-#: rayforge/doceditor/material_test_cmd.py
-msgid "Add Material Test"
-msgstr "Añadir prueba de material"
-
 #: rayforge/doceditor/transform_cmd.py
 msgid "Transform item(s)"
 msgstr "Transformar elemento(s)"
@@ -5717,9 +5782,9 @@ msgstr "Cambiar ángulo del elemento"
 msgid "Change item shear"
 msgstr "Cambiar inclinación del elemento"
 
-#: rayforge/doceditor/sketch_cmd.py
-msgid "Change Sketch Parameters"
-msgstr "Cambiar parámetros del boceto"
+#: rayforge/doceditor/asset_cmd.py
+msgid "Update Asset"
+msgstr "Actualizar activo"
 
 #: rayforge/doceditor/asset_cmd.py
 msgid "Rename Asset"
@@ -5737,6 +5802,10 @@ msgstr "Eliminar elemento dependiente"
 #: rayforge/doceditor/asset_cmd.py
 msgid "Remove asset definition"
 msgstr "Eliminar definición del recurso"
+
+#: rayforge/doceditor/asset_cmd.py
+msgid "Toggle Asset Visibility"
+msgstr "Alternar visibilidad del recurso"
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
@@ -5826,6 +5895,11 @@ msgid "File not found: {name}"
 msgstr "Archivo no encontrado: {name}"
 
 #: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid "{count} asset(s) require disabled addon(s)"
+msgstr "{count} recurso(s) requieren complemento(s) desactivado(s)"
+
+#: rayforge/doceditor/file_cmd.py
 msgid "Invalid project file format"
 msgstr "Formato de archivo de proyecto no válido"
 
@@ -5838,6 +5912,10 @@ msgstr "Error al cargar: {error}"
 #, python-brace-format
 msgid "Could not fit the following items: {item_names}"
 msgstr "No se pudieron encajar los siguientes elementos: {item_names}"
+
+#: rayforge/doceditor/stock_cmd.py
+msgid "Remove Stock Asset"
+msgstr "Eliminar material"
 
 #: rayforge/doceditor/stock_cmd.py
 #, python-brace-format
@@ -5905,6 +5983,11 @@ msgstr "Eliminar capa '{name}'"
 msgid "Reorder layers"
 msgstr "Reordenar capas"
 
+#: rayforge/doceditor/editor.py
+#, python-brace-format
+msgid "{count} asset(s) require disabled addon '{addon}'"
+msgstr "{count} recurso(s) requieren el complemento desactivado '{addon}'"
+
 #: rayforge/doceditor/group_cmd.py
 msgid "Grouping items..."
 msgstr "Agrupando elementos..."
@@ -5957,13 +6040,13 @@ msgstr "Eliminar todas las piezas de trabajo"
 msgid "Clear Layer Items"
 msgstr "Eliminar elementos de la capa"
 
-#: rayforge/doceditor/edit_cmd.py
-msgid "Add Sketch Instance"
-msgstr "Añadir instancia de boceto"
-
 #: rayforge/doceditor/layout_cmd.py
 msgid "Position at Point"
 msgstr "Posicionar en punto"
+
+#: rayforge/doceditor/layout_cmd.py
+msgid "Auto Layout"
+msgstr "Disposición automática"
 
 #: rayforge/image/png/importer.py rayforge/image/jpg/importer.py
 msgid "Failed to process image data."
@@ -5997,21 +6080,25 @@ msgstr "Error al rasterizar SVG para trazar."
 msgid "Failed to normalize image data."
 msgstr "Error al normalizar datos de imagen."
 
-#: rayforge/image/pdf/importer.py
+#: rayforge/image/pdf/pdf_trace.py rayforge/image/pdf/pdf_vector.py
 msgid "PDF file contains no pages."
 msgstr "El archivo PDF no contiene páginas."
 
-#: rayforge/image/pdf/importer.py
+#: rayforge/image/pdf/pdf_trace.py
 msgid "Failed to process PDF image data."
 msgstr "Error al procesar datos de imagen PDF."
 
-#: rayforge/image/pdf/importer.py
+#: rayforge/image/pdf/pdf_trace.py rayforge/image/pdf/pdf_vector.py
 msgid "PDF page has zero dimensions"
 msgstr "La página PDF tiene dimensiones cero"
 
-#: rayforge/image/pdf/importer.py
+#: rayforge/image/pdf/pdf_trace.py
 msgid "Failed to rasterize PDF"
 msgstr "Error al rasterizar PDF"
+
+#: rayforge/image/pdf/pdf_vector.py
+msgid "PDF contains no vector geometry."
+msgstr "El PDF no contiene geometría vectorial."
 
 #: rayforge/image/bmp/importer.py
 msgid "Invalid or unsupported BMP data."

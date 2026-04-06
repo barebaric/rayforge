@@ -2,10 +2,13 @@ import logging
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Any, Tuple, Optional, TYPE_CHECKING
 from gettext import gettext as _
+from ...core.geo import Rect
+from ..driver import get_driver_cls
+from .dialect import replace
 from .machine import Machine, Laser, Origin
 from .macro import Macro, MacroTrigger
-from ..driver import get_driver_cls
-from .dialect import get_dialect, replace
+from .rotary_module import RotaryModule
+from .zone import Zone
 
 if TYPE_CHECKING:
     from ...context import RayforgeContext
@@ -24,6 +27,7 @@ class DialectDefinition:
     label: Optional[str] = None
     description: Optional[str] = None
     laser_on: Optional[str] = None
+    focus_laser_on: Optional[str] = None
     laser_off: Optional[str] = None
     tool_change: Optional[str] = None
     set_speed: Optional[str] = None
@@ -58,8 +62,8 @@ class MachineProfile:
     gcode_precision: Optional[int] = None
     supports_arcs: Optional[bool] = None
     axis_extents: Optional[Tuple[float, float]] = None
-    work_margins: Optional[Tuple[float, float, float, float]] = None
-    soft_limits: Optional[Tuple[float, float, float, float]] = None
+    work_margins: Optional[Rect] = None
+    soft_limits: Optional[Rect] = None
     origin: Optional[Origin] = None
     max_travel_speed: Optional[int] = None
     max_cut_speed: Optional[int] = None
@@ -68,6 +72,9 @@ class MachineProfile:
     heads: Optional[List[Dict[str, Any]]] = None
     hookmacros: Optional[List[Dict[str, Any]]] = None
     dialect_definition: Optional[DialectDefinition] = None
+    rotary_enabled_default: Optional[bool] = None
+    rotary_modules: Optional[List[Dict[str, Any]]] = None
+    nogo_zones: Optional[List[Dict[str, Any]]] = None
 
     def create_machine(self, context: "RayforgeContext") -> Machine:
         """
@@ -98,13 +105,13 @@ class MachineProfile:
         if self.dialect_definition:
             base_dialect_uid = self.dialect_uid or "grbl"
             try:
-                base_dialect = get_dialect(base_dialect_uid)
+                base_dialect = context.dialect_mgr.get(base_dialect_uid)
             except ValueError:
                 logger.warning(
                     f"Base dialect '{base_dialect_uid}' not found for "
                     f"profile '{self.name}'. Falling back to 'grbl'."
                 )
-                base_dialect = get_dialect("grbl")
+                base_dialect = context.dialect_mgr.get("grbl")
 
             new_label = self.dialect_definition.label or _(
                 "{label} (for {machine_name})"
@@ -130,9 +137,11 @@ class MachineProfile:
             m.dialect_uid = new_dialect.uid
 
         elif self.dialect_uid is not None:
-            # No custom definition, just use the specified built-in or
-            # existing dialect UID.
-            m.dialect_uid = self.dialect_uid
+            m.dialect_uid, _migrated = (
+                context.dialect_mgr.migrate_builtin_dialect_to_copy(
+                    self.dialect_uid, self.name
+                )
+            )
 
         if self.gcode_precision is not None:
             m.gcode_precision = self.gcode_precision
@@ -152,6 +161,8 @@ class MachineProfile:
             m.max_cut_speed = self.max_cut_speed
         if self.home_on_start is not None:
             m.home_on_start = self.home_on_start
+        if self.rotary_enabled_default is not None:
+            m.rotary_enabled_default = self.rotary_enabled_default
         if self.hookmacros is not None:
             for s_data in self.hookmacros:
                 try:
@@ -176,6 +187,14 @@ class MachineProfile:
                 # Laser.from_dict can parse, such as "max_power",
                 # "frame_power_percent", and "spot_size_mm".
                 m.add_head(Laser.from_dict(head_profile))
+
+        if self.rotary_modules:
+            for rm_data in self.rotary_modules:
+                m.add_rotary_module(RotaryModule.from_dict(rm_data))
+
+        if self.nogo_zones:
+            for z_data in self.nogo_zones:
+                m.add_nogo_zone(Zone.from_dict(z_data))
 
         return m
 
@@ -264,6 +283,28 @@ PROFILES: List[MachineProfile] = [
         ],
     ),
     MachineProfile(
+        name="Acmer S1",
+        driver_class_name="GrblSerialDriver",
+        dialect_uid="grbl",
+        gcode_precision=3,
+        axis_extents=(130.0, 130.0),
+        origin=Origin.BOTTOM_LEFT,
+        max_travel_speed=3000,
+        max_cut_speed=3000,
+        home_on_start=True,
+        heads=[
+            {
+                "max_power": 1000,
+                "frame_power_percent": 1.0,
+                "focus_power_percent": 1.0,
+                "spot_size_mm": [0.1, 0.1],
+            }
+        ],
+        dialect_definition=DialectDefinition(
+            focus_laser_on="M3 S{power:.0f}",
+        ),
+    ),
+    MachineProfile(
         name="xTool D1 Pro",
         driver_class_name="GrblNetworkDriver",
         dialect_uid="grbl",
@@ -295,6 +336,67 @@ PROFILES: List[MachineProfile] = [
                 "M17",
                 "M106 S0",
             ],
+        ),
+    ),
+    MachineProfile(
+        name="OMTech K40+",
+        driver_class_name="GrblSerialDriver",
+        dialect_uid="grbl_dynamic",
+        gcode_precision=3,
+        axis_extents=(300.0, 200.0),
+        work_margins=(5.0, 5.0, 5.0, 5.0),
+        origin=Origin.TOP_LEFT,
+        max_travel_speed=3000,
+        max_cut_speed=18000,
+        home_on_start=True,
+        heads=[
+            {
+                "max_power": 1000,
+                "frame_power_percent": 0.0,
+                "focus_power_percent": 0.0,
+                "spot_size_mm": [0.1, 0.1],
+            }
+        ],
+    ),
+    MachineProfile(
+        name="Grbl MKS DLC32",
+        driver_class_name="GrblSerialDriver",
+        dialect_uid="grbl",
+        origin=Origin.BOTTOM_LEFT,
+        dialect_definition=DialectDefinition(
+            label="Grbl MKS DLC32",
+            description="Grbl dialect with compatibility for MKS DLC32",
+            laser_on="M4 S{power:.0f}",
+            focus_laser_on="M4 S{power:.0f}",
+            laser_off="M5",
+            tool_change="T{tool_number}",
+            set_speed="",
+            travel_move="G0 X{x} Y{y} Z{z}",
+            linear_move="G1 X{x} Y{y} Z{z}{f_command}",
+            arc_cw="G2 X{x} Y{y} Z{z} I{i} J{j}{f_command}",
+            arc_ccw="G3 X{x} Y{y} Z{z} I{i} J{j}{f_command}",
+            air_assist_on="M8",
+            air_assist_off="M9",
+            home_all="G0 X0 Y0",
+            home_axis="$H{axis_letter}",
+            move_to="$J=G90 G21 F{speed} X{x} Y{y}",
+            jog="$J=G91 G21 F{speed}",
+            clear_alarm="$X",
+            set_wcs_offset="G10 L2 P{p_num} X{x} Y{y} Z{z}",
+            probe_cycle="G38.2 {axis_letter}{max_travel} F{feed_rate}",
+            preamble=[
+                "G21 ;Set units to mm",
+                "G90 ;Absolute positioning",
+                "G92 X0 Y0 Z0 ;Optional: Reset current position",
+                "G10 L2 P1 X0 Y0 Z0 ;Explicitly reset WCS to 0",
+            ],
+            postscript=[
+                "M5 ;Turn off laser",
+                "G4 P0.5 ;Wait 0.5 seconds for motion to settle",
+                "G0 X0 Y0 ;Return to origin",
+                "G4 P0.5 ;Wait again to ensure the move completes",
+            ],
+            inject_wcs_after_preamble=True,
         ),
     ),
     MachineProfile(

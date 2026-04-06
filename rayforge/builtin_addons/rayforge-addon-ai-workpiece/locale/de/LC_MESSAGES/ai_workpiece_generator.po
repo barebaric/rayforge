@@ -1,0 +1,70 @@
+# German translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-30 19:31+0200\n"
+"PO-Revision-Date: 2026-03-07 20:16+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Generate a Workpiece"
+msgstr "Ein Werkstück erstellen"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Generate"
+msgstr "Erstellen"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid ""
+"Describe the design you want to create. Example: 'A simple star shape with 5 "
+"points'"
+msgstr ""
+"Beschreibe das Design, das du erstellen möchtest. Beispiel: 'Eine einfache "
+"Sternform mit 5 Spitzen'"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "No content generated."
+msgstr "Kein Inhalt generiert."
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Add AI-Generated Workpiece"
+msgstr "KI-generiertes Werkstück hinzufügen"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Close"
+msgstr "Schließen"
+
+#: ai_workpiece_generator/frontend.py
+msgid "Generate Workpiece with AI..."
+msgstr "Werkstück mit KI erstellen..."
+
+#: ai_workpiece_generator/generator.py
+msgid "No AI provider configured. Please configure an AI provider in Settings."
+msgstr ""
+"Kein KI-Anbieter konfiguriert. Bitte konfiguriere einen KI-Anbieter in den "
+"Einstellungen."
+
+#: ai_workpiece_generator/generator.py
+msgid "No response from AI provider."
+msgstr "Keine Antwort vom KI-Anbieter."
+
+#: ai_workpiece_generator/generator.py
+msgid "AI did not generate valid SVG code. Please try a different prompt."
+msgstr ""
+"Die KI hat keinen gültigen SVG-Code generiert. Bitte versuche einen anderen "
+"Prompt."

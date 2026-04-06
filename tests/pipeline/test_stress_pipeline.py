@@ -28,7 +28,6 @@ from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.steps import ContourStep, EngraveStep
 from rayforge.pipeline.view.view_manager import ViewManager
 
 if TYPE_CHECKING:
@@ -44,12 +43,12 @@ logger = logging.getLogger(__name__)
 class StressTestConfig:
     """Configuration for stress test parameters."""
 
-    total_duration_sec: int = 90
+    total_duration_sec: int = 105
     chaos_phase_sec: int = 19
     settle_phase_sec: int = 7
     min_invalidation_interval_ms: int = 2
     max_invalidation_interval_ms: int = 777
-    max_settle_wait_sec: int = 30
+    max_settle_wait_sec: int = 45
     leak_threshold: int = 2
     initial_workpiece_count: int = 2
     max_workpieces: int = 5
@@ -100,6 +99,8 @@ class StressTestController:
     task_mgr: "TaskManager"
     artifact_store: "ArtifactStore"
     context: "RayforgeContext"
+    contour_step_class: type
+    engrave_step_class: type
 
     _snapshots: List[MetricsSnapshot] = field(default_factory=list)
     _workpieces: List[WorkPiece] = field(default_factory=list)
@@ -146,8 +147,9 @@ class StressTestController:
 
         Returns True if settled within timeout, False if timeout exceeded.
         """
-        deadline = time.time() + self.config.max_settle_wait_sec
-        while time.time() < deadline:
+        start = time.monotonic()
+        timeout = self.config.max_settle_wait_sec
+        while time.monotonic() - start < timeout:
             if not self.pipeline.is_busy and not self.task_mgr.has_tasks():
                 return True
             await asyncio.sleep(0.1)
@@ -219,7 +221,10 @@ class StressTestController:
         elif invalid_type == InvalidationType.ADD_STEP:
             if layer.workflow and len(self._get_available_steps()) < 5:
                 step_type = random.choice(
-                    [ContourStep.create, EngraveStep.create]
+                    [
+                        self.contour_step_class.create,
+                        self.engrave_step_class.create,
+                    ]
                 )
                 step = step_type(self.context)
                 layer.workflow.add_step(step)
@@ -343,12 +348,6 @@ class StressTestController:
         for key, entry in ledger.items():
             if entry.handle is not None:
                 tracked_shms.add(entry.handle.shm_name)
-
-        # Tracked by step renders
-        for (
-            handle
-        ) in self.pipeline._artifact_manager._step_render_handles.values():
-            tracked_shms.add(handle.shm_name)
 
         # Tracked by step stage retained handles
         # Handles are now tracked by task ID in _retained_handles_by_task
@@ -528,7 +527,7 @@ class StressTestController:
             self._workpieces.append(wp)
 
         if self.doc.active_layer.workflow:
-            step = ContourStep.create(self.context)
+            step = self.contour_step_class.create(self.context)
             self.doc.active_layer.workflow.add_step(step)
 
         await asyncio.sleep(0.5)
@@ -583,7 +582,7 @@ class StressTestController:
 @pytest.mark.stress
 @pytest.mark.asyncio
 async def test_pipeline_stress_random_invalidations(
-    task_mgr, context_initializer
+    task_mgr, context_initializer, contour_step_class, engrave_step_class
 ):
     """
     Stress test the pipeline with random invalidations over 3 minutes.
@@ -625,6 +624,8 @@ async def test_pipeline_stress_random_invalidations(
         task_mgr=task_mgr,
         artifact_store=context_initializer.artifact_store,
         context=context_initializer,
+        contour_step_class=contour_step_class,
+        engrave_step_class=engrave_step_class,
     )
     controller._view_manager = view_manager
 

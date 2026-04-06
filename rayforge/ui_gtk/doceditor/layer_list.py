@@ -1,15 +1,15 @@
 import logging
 from gi.repository import Gtk
 from blinker import Signal
-from typing import cast, TYPE_CHECKING
+from typing import cast, Optional, TYPE_CHECKING
 from gettext import gettext as _
 
 from ...core.doc import Doc
 from ...core.layer import Layer
+from ...shared.util.time_format import format_seconds
 from ..shared.draglist import DragListBox
 from .layer_view import LayerView
-from ..shared.expander import Expander
-from ..icons import get_icon
+from ..shared.expander import ExpanderWithButton
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class LayerListView(Expander):
+class LayerListView(ExpanderWithButton):
     """
     A widget that displays a collapsible, reorderable list of Layers.
     """
@@ -25,48 +25,26 @@ class LayerListView(Expander):
     layer_activated = Signal()
 
     def __init__(self, editor: "DocEditor", **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(button_label=_("Add New Layer"), **kwargs)
         self.editor = editor
         self.doc = editor.doc
 
         self.set_title(_("Workpiece Layers"))
         self.set_expanded(True)
 
-        # A container for all content that will be revealed by the expander
-        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.set_child(content_box)
+        self.time_estimate_label = Gtk.Label()
+        self.time_estimate_label.add_css_class("expander-subtitle")
+        self.time_estimate_label.set_visible(False)
+        self.suffix_box.prepend(self.time_estimate_label)
 
-        # The reorderable list of Layers goes inside the content box
         self.draglist = DragListBox()
         self.draglist.add_css_class("layer-list-box")
         self.draglist.reordered.connect(self.on_layers_reordered)
         self.draglist.connect("row-activated", self.on_row_activated)
-        content_box.append(self.draglist)
+        self.append_content(self.draglist)
 
-        # An "Add" button
-        add_button = Gtk.Button()
-        add_button.add_css_class("darkbutton")
-        add_button.connect("clicked", self.on_button_add_clicked)
-        content_box.append(add_button)
+        self.add_button.connect("clicked", self.on_button_add_clicked)
 
-        # The button's content is a box with an icon and a label.
-        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        button_box.set_margin_top(10)
-        button_box.set_margin_end(12)
-        button_box.set_margin_bottom(10)
-        button_box.set_margin_start(12)
-
-        add_icon = get_icon("add-symbolic")
-        button_box.append(add_icon)
-
-        lbl = _("Add New Layer")
-        add_label = Gtk.Label()
-        add_label.set_markup(f"<span weight='normal'>{lbl}</span>")
-        add_label.set_xalign(0)
-        button_box.append(add_label)
-        add_button.set_child(button_box)
-
-        # Connect to document changes and perform initial population
         self._connect_signals()
         self.on_doc_changed(self.doc)
 
@@ -79,6 +57,15 @@ class LayerListView(Expander):
         self.doc = doc
         self._connect_signals()
         self.on_doc_changed(self.doc)
+
+    def set_estimated_time(self, time_seconds: Optional[float]):
+        if time_seconds is None or time_seconds <= 0:
+            self.time_estimate_label.set_visible(False)
+        else:
+            self.time_estimate_label.set_text(
+                "~" + format_seconds(time_seconds, compact=True)
+            )
+            self.time_estimate_label.set_visible(True)
 
     def _connect_signals(self):
         self.doc.updated.connect(self.on_doc_changed)

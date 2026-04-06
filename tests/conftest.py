@@ -1,6 +1,13 @@
 # flake8: noqa: E402
 import sys
 import multiprocessing
+import os
+import tempfile
+from pathlib import Path
+
+# MUST be set before any rayforge imports to isolate config directories
+_TEST_CONFIG_DIR = Path(tempfile.gettempdir()) / "rayforge_test_config"
+os.environ["RAYFORGE_CONFIG_DIR"] = str(_TEST_CONFIG_DIR)
 
 try:
     import gi
@@ -35,6 +42,9 @@ class PyvipsLogFilter(logging.Filter):
         return True
 
 
+logger = logging.getLogger(__name__)
+
+
 def pytest_configure(config):
     """
     Configure test-only components.
@@ -50,22 +60,34 @@ def pytest_configure(config):
         "pyvips.error",
     ]
     for name in pyvips_loggers:
-        logger = logging.getLogger(name)
-        logger.setLevel(logging.WARNING)
-        logger.propagate = False
-        logger.handlers = []
+        pyvips_logger = logging.getLogger(name)
+        pyvips_logger.setLevel(logging.WARNING)
+        pyvips_logger.propagate = False
+        pyvips_logger.handlers = []
 
     logging.getLogger().addFilter(PyvipsLogFilter())
+
+    # Ensure test config directory exists and is clean
+    if _TEST_CONFIG_DIR.exists():
+        import shutil
+
+        shutil.rmtree(_TEST_CONFIG_DIR, ignore_errors=True)
+    _TEST_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def pytest_unconfigure(config):
+    """Clean up test config directory after all tests complete."""
+    if _TEST_CONFIG_DIR.exists():
+        import shutil
+
+        shutil.rmtree(_TEST_CONFIG_DIR, ignore_errors=True)
 
 
 if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine
 
 
-logger = logging.getLogger(__name__)
-
-
-def _test_worker_initializer():
+def _test_worker_initializer(shared_state: dict):
     """
     A top-level, picklable worker initializer for the test environment.
     This patches GLib.idle_add inside the worker process to prevent deadlocks.
@@ -90,7 +112,7 @@ def _test_worker_initializer():
             ),
         ):
             # Now call the application's real initializer.
-            initialize_worker()
+            initialize_worker(shared_state)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -174,6 +196,12 @@ def clean_context_singleton():
     # Finally, reset the global singleton variable so the next test
     # starts with a completely fresh context.
     rayforge_context._context_instance = None
+
+    # Also reset the lazy loader to prevent pollution of sys.meta_path across tests
+    from rayforge.addon_mgr.lazy_loader import reset_addon_finder
+
+    reset_addon_finder()
+
     gc.collect()
 
 
@@ -216,16 +244,26 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
     temp_config_dir = tmp_path / "config"
     temp_dialect_dir = temp_config_dir / "dialects"
     temp_machine_dir = temp_config_dir / "machines"
+    temp_addons_dir = temp_config_dir / "addons"
     monkeypatch.setattr(config, "CONFIG_DIR", temp_config_dir)
     monkeypatch.setattr(config, "DIALECT_DIR", temp_dialect_dir)
     monkeypatch.setattr(config, "MACHINE_DIR", temp_machine_dir)
+    monkeypatch.setattr(config, "ADDONS_DIR", temp_addons_dir)
 
     # 2. Patch the global task_mgr proxy to use our test-isolated instance.
     monkeypatch.setattr(tasker.task_mgr, "_instance", task_mgr)
 
-    # 3. Get the context and run the full initialization
+    # 3. Get the context and configure for headless mode
     context = get_context()
-    context.initialize_full_context()
+    context._headless = True
+
+    # 4. Access addon_mgr to trigger lazy loading (backend_only=True)
+    # This happens before setting shared state, so we'll get a warning
+    # about missing shared state, but set_shared_state will rebuild it.
+    shared_state = task_mgr.get_shared_state()
+    context.addon_mgr.set_task_manager(task_mgr)
+    context.addon_mgr.set_shared_state(shared_state)
+
     yield context
 
     # 4. Teardown: shutdown and fully reset the context singleton and globals
@@ -242,17 +280,50 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
         config_file.unlink()
 
 
+@pytest.fixture
+def contour_step_class(context_initializer):
+    """Get ContourStep class from registry after addons are loaded."""
+    from rayforge.core.step_registry import step_registry
+
+    return step_registry.get("ContourStep")
+
+
+@pytest.fixture
+def engrave_step_class(context_initializer):
+    """Get EngraveStep class from registry after addons are loaded."""
+    from rayforge.core.step_registry import step_registry
+
+    return step_registry.get("EngraveStep")
+
+
+@pytest.fixture
+def contour_producer_class(context_initializer):
+    """Get ContourProducer class from registry after addons are loaded."""
+    from rayforge.pipeline.producer.registry import producer_registry
+
+    return producer_registry.get("ContourProducer")
+
+
+@pytest.fixture
+def rasterizer_class(context_initializer):
+    """Get Rasterizer class from registry after addons are loaded."""
+    from rayforge.pipeline.producer.registry import producer_registry
+
+    return producer_registry.get("Rasterizer")
+
+
 @pytest.fixture(scope="function")
 def lite_context(tmp_path, task_mgr, monkeypatch):
     """
     A lightweight context fixture for tests that only need the
-    MachineManager without cameras, materials, recipes, or plugins.
+    MachineManager without cameras, materials, recipes, or addons.
     Much faster than the full context_initializer.
     """
     from rayforge import config
     from rayforge.context import get_context
     from rayforge import context as context_module
     from rayforge.shared import tasker
+    from rayforge.machine.models.dialect_manager import DialectManager
 
     temp_config_dir = tmp_path / "config"
     temp_dialect_dir = temp_config_dir / "dialects"
@@ -265,6 +336,7 @@ def lite_context(tmp_path, task_mgr, monkeypatch):
 
     context = get_context()
     context.initialize_lite_context(temp_machine_dir)
+    context._dialect_mgr = DialectManager(temp_dialect_dir)
     yield context
 
     if task_mgr.has_tasks():
@@ -304,8 +376,19 @@ class MockDialectManager:
 
     def __init__(self):
         from blinker import Signal
+        from rayforge.machine.models.dialect import GRBL_DIALECT
 
         self.dialects_changed = Signal()
+        self._registry = {GRBL_DIALECT.uid.lower(): GRBL_DIALECT}
+
+    def get(self, uid):
+        return self._registry.get(uid.lower())
+
+    def get_all(self):
+        return list(self._registry.values())
+
+    def register(self, dialect):
+        self._registry[dialect.uid.lower()] = dialect
 
 
 @pytest.fixture
@@ -396,13 +479,20 @@ def ui_context_initializer(tmp_path, monkeypatch, ui_task_mgr):
     temp_config_dir = tmp_path / "config"
     temp_dialect_dir = temp_config_dir / "dialects"
     temp_machine_dir = temp_config_dir / "machines"
+    temp_addons_dir = temp_config_dir / "addons"
     monkeypatch.setattr(config, "CONFIG_DIR", temp_config_dir)
     monkeypatch.setattr(config, "DIALECT_DIR", temp_dialect_dir)
     monkeypatch.setattr(config, "MACHINE_DIR", temp_machine_dir)
+    monkeypatch.setattr(config, "ADDONS_DIR", temp_addons_dir)
     monkeypatch.setattr(tasker, "task_mgr", ui_task_mgr)
 
     context = get_context()
-    context.initialize_full_context()
+
+    # Wire up AddonManager with the UI task manager's shared state
+    shared_state = ui_task_mgr.get_shared_state()
+    context.addon_mgr.set_task_manager(ui_task_mgr)
+    context.addon_mgr.set_shared_state(shared_state)
+
     yield context
 
     asyncio.run(context.shutdown())
@@ -902,3 +992,39 @@ def mock_progress_context_v2():
     for sub in ctx._inner.sub_contexts:
         sub._progress_context.set_wrapper(sub)
     return ctx
+
+
+@pytest.fixture
+def get_transformer(context_initializer):
+    """Get a transformer class from the registry.
+
+    Requires context_initializer to ensure addons are loaded.
+
+    Usage:
+        def test_something(get_transformer):
+            Smooth = get_transformer("Smooth")
+            transformer = Smooth()
+    """
+    from rayforge.pipeline.transformer.registry import transformer_registry
+
+    def _get(name: str):
+        cls = transformer_registry.get(name)
+        if cls is None:
+            raise RuntimeError(f"Required transformer '{name}' not available")
+        return cls
+
+    return _get
+
+
+@pytest.fixture
+def get_transformer_sync(sync_addons_loaded):
+    """Sync version of get_transformer for tests that don't use context_initializer."""
+    from rayforge.pipeline.transformer.registry import transformer_registry
+
+    def _get(name: str):
+        cls = transformer_registry.get(name)
+        if cls is None:
+            raise RuntimeError(f"Required transformer '{name}' not available")
+        return cls
+
+    return _get

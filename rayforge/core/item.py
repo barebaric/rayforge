@@ -15,6 +15,7 @@ from typing import (
 import logging
 import numpy as np
 from blinker import Signal
+from .geo import Rect, Point
 from .matrix import Matrix
 
 if TYPE_CHECKING:
@@ -82,7 +83,7 @@ class DocItem(ABC):
         return False
 
     @property
-    def bbox(self) -> Tuple[float, float, float, float]:
+    def bbox(self) -> Rect:
         """
         The world-space bounding box of the item as (x, y, width, height).
         """
@@ -100,6 +101,48 @@ class DocItem(ABC):
     def from_dict(cls, data: Dict) -> "DocItem":
         """Deserializes the item from a dictionary."""
         raise NotImplementedError
+
+    @staticmethod
+    def create_from_dict(data: Dict) -> "DocItem":
+        """
+        Factory method that deserializes a dictionary into the appropriate
+        DocItem subclass based on the 'type' field.
+        """
+        item_type = data.get("type")
+
+        if item_type == "group":
+            from .group import Group
+
+            return Group.from_dict(data)
+        elif item_type == "stockitem":
+            from .stock import StockItem
+
+            return StockItem.from_dict(data)
+        elif item_type == "workpiece" or item_type is None:
+            from .workpiece import WorkPiece
+
+            return WorkPiece.from_dict(data)
+        else:
+            raise ValueError(f"Unknown item type: {item_type}")
+
+    def duplicate(self) -> "DocItem":
+        """
+        Creates a deep copy of this item with new UIDs.
+
+        Subclasses can override this method if they need custom duplication
+        logic, but the default implementation using serialization should
+        work for most cases.
+        """
+        item_dict = self.to_dict()
+        new_item = self.__class__.from_dict(item_dict)
+
+        def assign_new_uids(item: "DocItem"):
+            item.uid = str(uuid.uuid4())
+            for child in item.children:
+                assign_new_uids(child)
+
+        assign_new_uids(new_item)
+        return new_item
 
     def __iter__(self):
         """
@@ -128,7 +171,7 @@ class DocItem(ABC):
         return None
 
     @property
-    def pos(self) -> Tuple[float, float]:
+    def pos(self) -> Point:
         """
         The position (in mm) of the items's top-left corner in world space.
         """
@@ -136,7 +179,7 @@ class DocItem(ABC):
         return self.get_world_transform().transform_point((0.0, 0.0))
 
     @pos.setter
-    def pos(self, new_pos_world: Tuple[float, float]):
+    def pos(self, new_pos_world: Point):
         """
         Sets the world-space position of the items's top-left corner
         by manipulating the matrix's translation component.
@@ -261,7 +304,7 @@ class DocItem(ABC):
         """
         return self._natural_size
 
-    def get_local_bbox(self) -> Optional[Tuple[float, float, float, float]]:
+    def get_local_bbox(self) -> Optional[Rect]:
         """
         Returns the bounding box of the item in its own local coordinate space
         (before the local matrix is applied).

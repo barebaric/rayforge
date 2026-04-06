@@ -159,16 +159,38 @@ class MachineCmd:
         head = machine.get_default_head()
         if not head.frame_power_percent:
             logger.warning("Framing cancelled: Frame power is zero.")
-            return  # This is a successful cancellation, not an error
+            return
 
-        frame_ops = ops.get_frame(
-            power=head.frame_power_percent,
-            speed=machine.max_travel_speed,
+        frame_speed = (
+            head.frame_speed
+            if head.frame_speed > 0
+            else machine.max_travel_speed
         )
 
-        frame_with_laser = Ops()
-        frame_with_laser.set_laser(head.uid)
-        frame_with_laser += frame_ops * 20
+        min_x, min_y, max_x, max_y = ops.rect()
+
+        frame_ops = Ops()
+        frame_ops.set_laser(head.uid)
+        frame_ops.set_power(head.frame_power_percent)
+        frame_ops.set_cut_speed(frame_speed)
+
+        corners = [
+            (min_x, min_y),
+            (min_x, max_y),
+            (max_x, max_y),
+            (max_x, min_y),
+            (min_x, min_y),
+        ]
+        prev = corners[0]
+        for corner in corners[1:]:
+            frame_ops.move_to(*prev)
+            frame_ops.line_to(*corner)
+            if head.frame_corner_pause > 0:
+                frame_ops.dwell(head.frame_corner_pause * 1000)
+            prev = corner
+
+        frame_with_laser = frame_ops * head.frame_repeat_count
+        frame_with_laser.job_end()
 
         machine_code, op_map = machine.encode_ops(
             frame_with_laser, self._editor.doc
@@ -281,6 +303,20 @@ class MachineCmd:
             on_progress=on_progress,
         )
 
+    def run_send_job(self, machine: "Machine"):
+        """
+        Schedules the send_job coroutine to run via the task manager.
+        """
+        self._editor.task_manager.add_coroutine(
+            lambda ctx: self._start_job(
+                machine,
+                job_name="sending",
+                final_job_action=self._run_send_action,
+                on_progress=None,
+            ),
+            key="send-job",
+        )
+
     def set_hold(self, machine: "Machine", is_requesting_hold: bool):
         """
         Adds a task to set the machine's hold state (pause/resume).
@@ -354,6 +390,29 @@ class MachineCmd:
                 lambda ctx: machine.set_power(head, percent)
             )
 
+    def set_focus_power(self, head: "Laser", percent: float):
+        """
+        Adds a task to set the laser power for focus mode.
+
+        Args:
+            head: The laser head to control
+            percent: Power percentage (0-1.0). 0 disables power.
+        """
+        config = get_context().config
+        machine = config.machine
+        if machine:
+            self._editor.task_manager.add_coroutine(
+                lambda ctx: machine.set_focus_power(head, percent)
+            )
+
     def home(self, machine: "Machine", axis: Optional[Axis] = None):
         """Adds a task to home a specific axis."""
         self._editor.task_manager.add_coroutine(lambda ctx: machine.home(axis))
+
+    def move_to(self, machine: "Machine", x: float, y: float):
+        """Adds a task to move to an absolute position."""
+        driver = machine.driver
+        if driver:
+            self._editor.task_manager.add_coroutine(
+                lambda ctx: driver.move_to(x, y), key="move-to"
+            )

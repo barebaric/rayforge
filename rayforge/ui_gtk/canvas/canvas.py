@@ -6,6 +6,7 @@ from enum import Enum, auto
 import cairo
 from gi.repository import Gtk, Gdk, Graphene
 from blinker import Signal
+from ...core.geo import Point, Rect
 from ...core.matrix import Matrix
 from ..shared.keyboard import is_primary_keyval
 from . import transform
@@ -66,12 +67,7 @@ class Canvas(Gtk.DrawingArea):
         self._active_elem: Optional[CanvasElement] = None
 
         # Stores the state of an element or group at the start of a transform
-        self._active_origin: Optional[
-            Union[
-                Tuple[float, float, float, float],  # Group bbox (x,y,w,h)
-                Tuple[float, float, float, float],  # Legacy move rect
-            ]
-        ] = None
+        self._active_origin: Optional[Rect] = None  # Group bbox (x,y,w,h)
         # Stores the initial transform of a single element being transformed
         self._initial_transform: Optional[Matrix] = None
         self._initial_world_transform: Optional[Matrix] = None
@@ -89,9 +85,7 @@ class Canvas(Gtk.DrawingArea):
         self._selection_just_changed: bool = False
         self._selection_group: Optional[MultiSelectionGroup] = None
         self._framing_selection: bool = False
-        self._selection_frame_rect: Optional[
-            Tuple[float, float, float, float]
-        ] = None
+        self._selection_frame_rect: Optional[Rect] = None
         self._selection_before_framing: Set[CanvasElement] = set()
         self._group_hovered: bool = False
         self._last_mouse_x: float = 0.0
@@ -101,12 +95,13 @@ class Canvas(Gtk.DrawingArea):
         self._rotating: bool = False
         self._shearing: bool = False
         self._was_dragging: bool = False
+        self._edit_dragging: bool = False
         self._transforming_elements: List[CanvasElement] = []
         self.edit_context: Optional[CanvasElement] = None
 
         # --- Rotation State ---
         self._drag_start_angle: float = 0.0
-        self._rotation_pivot: Optional[Tuple[float, float]] = None
+        self._rotation_pivot: Optional[Point] = None
 
         # --- Signals ---
         self.move_begin = Signal()
@@ -125,6 +120,9 @@ class Canvas(Gtk.DrawingArea):
         self.selection_changed = Signal()
         self.active_element_changed = Signal()
         self.elem_removed = Signal()
+
+        self.edit_drag_begin = Signal()
+        self.edit_drag_end = Signal()
 
     def add(self, elem: CanvasElement):
         """Adds a top-level element to the canvas."""
@@ -152,9 +150,7 @@ class Canvas(Gtk.DrawingArea):
         """Gets the (width, height) of the canvas."""
         return self.root.size()
 
-    def _get_world_coords(
-        self, widget_x: float, widget_y: float
-    ) -> Tuple[float, float]:
+    def _get_world_coords(self, widget_x: float, widget_y: float) -> Point:
         """
         Converts widget pixel coordinates to canvas world coordinates using
         the active view_transform.
@@ -708,6 +704,9 @@ class Canvas(Gtk.DrawingArea):
             )
             world_dx = current_world_x - start_world_x
             world_dy = current_world_y - start_world_y
+            if not self._edit_dragging:
+                self._edit_dragging = True
+                self.edit_drag_begin.send(self)
             logger.debug(
                 f"on_mouse_drag: calling handle_edit_drag with "
                 f"dx={world_dx}, dy={world_dy}"
@@ -1016,12 +1015,16 @@ class Canvas(Gtk.DrawingArea):
         Handles the end of a drag operation, finalizing transforms.
         """
         if self.edit_context:
+            was_dragging = self._edit_dragging
             ok, start_x, start_y = self._drag_gesture.get_start_point()
             if ok:
                 world_x, world_y = self._get_world_coords(
                     start_x + offset_x, start_y + offset_y
                 )
                 self.edit_context.handle_edit_release(world_x, world_y)
+            if was_dragging:
+                self._edit_dragging = False
+                self.edit_drag_end.send(self)
             self.queue_draw()
             return
 
@@ -1210,9 +1213,7 @@ class Canvas(Gtk.DrawingArea):
         if len(selected) > 0:
             self._selection_mode = SelectionMode.RESIZE
 
-    def _get_element_world_corners(
-        self, elem: CanvasElement
-    ) -> List[Tuple[float, float]]:
+    def _get_element_world_corners(self, elem: CanvasElement) -> List[Point]:
         """
         Calculates the four corners of an element in world coordinates.
         """

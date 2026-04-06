@@ -1,0 +1,282 @@
+import logging
+import threading
+from typing import List
+from gettext import gettext as _
+
+from gi.repository import Adw, GLib, Gtk
+
+from ... import __version__
+from ...context import get_context
+from ...addon_mgr.addon import AddonMetadata
+from ...addon_mgr.addon_manager import UpdateStatus
+from ..icons import get_icon
+from ..shared.patched_dialog_window import PatchedDialogWindow
+from .license_dialog import LicenseRequiredDialog
+
+
+logger = logging.getLogger(__name__)
+
+
+class AddonRegistryDialog(PatchedDialogWindow):
+    """
+    A dialog that fetches and lists available addons from the
+    online registry via the AddonManager.
+    """
+
+    def __init__(self, parent_window, on_install_callback):
+        super().__init__()
+        self.set_transient_for(parent_window)
+        self.set_modal(True)
+        self.set_title(_("Addon Registry"))
+        self.set_default_size(600, 700)
+
+        self.on_install_callback = on_install_callback
+
+        # Main Layout
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(box)
+
+        # Header
+        header = Adw.HeaderBar()
+        box.append(header)
+
+        # Content area (Stack for Loading vs List)
+        self.stack = Gtk.Stack()
+        self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
+        box.append(self.stack)
+
+        # 1. Loading Page
+        loading_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=12,
+            valign=Gtk.Align.CENTER,
+            halign=Gtk.Align.CENTER,
+        )
+        spinner = Gtk.Spinner()
+        spinner.set_size_request(32, 32)
+        spinner.start()
+        loading_box.append(spinner)
+        loading_box.append(Gtk.Label(label=_("Fetching registry...")))
+        self.stack.add_named(loading_box, "loading")
+
+        # 2. List Page
+        list_page_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+        # Scrolled Window for the list
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_vexpand(True)
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
+        clamp = Adw.Clamp(maximum_size=800)
+        clamp.set_margin_top(24)
+        clamp.set_margin_bottom(24)
+        clamp.set_margin_start(12)
+        clamp.set_margin_end(12)
+
+        self.list_box = Gtk.ListBox()
+        self.list_box.set_selection_mode(Gtk.SelectionMode.NONE)
+        self.list_box.get_style_context().add_class("boxed-list")
+
+        clamp.set_child(self.list_box)
+        scrolled.set_child(clamp)
+        list_page_box.append(scrolled)
+
+        # Manual Install Button Footer
+        footer_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=12,
+            margin_bottom=12,
+            margin_top=12,
+        )
+        manual_btn = Gtk.Button(label=_("Install from URL..."))
+        manual_btn.get_style_context().add_class("flat")
+        manual_btn.set_halign(Gtk.Align.CENTER)
+        manual_btn.connect("clicked", self._on_manual_install_clicked)
+        footer_box.append(manual_btn)
+        list_page_box.append(footer_box)
+
+        self.stack.add_named(list_page_box, "list")
+
+        # 3. Error Page
+        self.error_box = Adw.StatusPage()
+        self.error_box.set_icon_name("error-symbolic")
+        self.error_box.set_title(_("Connection Failed"))
+        self.error_box.set_description(_("Could not reach the registry."))
+        self.stack.add_named(self.error_box, "error")
+
+        # Start fetching
+        self._fetch_registry()
+
+    def _fetch_registry(self):
+        """Fetches the registry using the AddonManager in a thread."""
+        context = get_context()
+
+        def _worker():
+            try:
+                logger.info("Fetching addon registry in background thread")
+                result = context.addon_mgr.fetch_registry()
+                logger.info(f"Registry fetch complete: {len(result)} items")
+                return result
+            except Exception:
+                logger.exception(
+                    "Unhandled exception in registry fetch worker"
+                )
+                return []
+
+        def _done(data):
+            if data is not None:
+                self._populate_list(data)
+                self.stack.set_visible_child_name("list")
+            else:
+                self.stack.set_visible_child_name("error")
+
+        def _thread_target():
+            result = _worker()
+            GLib.idle_add(_done, result)
+
+        thread = threading.Thread(target=_thread_target, daemon=True)
+        thread.start()
+
+    def _is_license_valid(self, addon: AddonMetadata) -> bool:
+        """Check if user already has a valid license for this addon."""
+        license_config = addon.license
+        if not license_config or not license_config.required:
+            return True
+
+        context = get_context()
+        validator = context.license_validator
+        if not validator:
+            return False
+
+        result = validator.validate(addon.name, license_config.to_dict())
+        return result.status.value == "valid"
+
+    def _get_product_ids(self, addon: AddonMetadata) -> List[str]:
+        """Extract product IDs from addon license config."""
+        license_config = addon.license
+        if not license_config:
+            return []
+
+        return license_config.get_all_product_ids()
+
+    def _populate_list(self, data: List[AddonMetadata]):
+        """Populates the list box with registry items."""
+        while child := self.list_box.get_row_at_index(0):
+            self.list_box.remove(child)
+
+        if not data:
+            empty_label = Gtk.Label(
+                label=_("No addons found in registry."), margin_top=24
+            )
+            self.list_box.append(empty_label)
+            return
+
+        context = get_context()
+
+        for addon in data:
+            row = Adw.ActionRow(
+                title=addon.display_name or addon.name or "?",
+                subtitle=addon.description,
+            )
+            row.add_prefix(get_icon("addon-symbolic"))
+
+            author_name = addon.author.name
+            if author_name:
+                lbl = Gtk.Label(label=f"by {author_name}")
+                lbl.get_style_context().add_class("dim-label")
+                row.add_suffix(lbl)
+
+            # --- Action Button Logic ---
+            btn = Gtk.Button(valign=Gtk.Align.CENTER)
+            status, local_ver = context.addon_mgr.check_update_status(addon)
+
+            license_config = addon.license
+            is_premium = license_config and license_config.required
+            has_license = self._is_license_valid(addon)
+
+            if status == UpdateStatus.NOT_INSTALLED:
+                if is_premium and not has_license:
+                    btn.set_label(_("Unlock"))
+                    btn.get_style_context().add_class("suggested-action")
+                    btn.connect("clicked", self._on_unlock_clicked, addon)
+                else:
+                    btn.set_label(_("Install"))
+                    btn.get_style_context().add_class("suggested-action")
+                    btn.connect("clicked", self._on_install_clicked, addon)
+            elif status == UpdateStatus.UPDATE_AVAILABLE:
+                btn.set_label(_("Update"))
+                btn.get_style_context().add_class("suggested-action")
+                btn.connect("clicked", self._on_install_clicked, addon)
+            elif status == UpdateStatus.UP_TO_DATE:
+                btn.set_label(_("Installed"))
+                btn.set_sensitive(False)
+                btn.set_tooltip_text(
+                    _("Version {v} already installed").format(v=local_ver)
+                )
+            elif status == UpdateStatus.INCOMPATIBLE:
+                btn.set_label(_("Incompatible"))
+                btn.set_sensitive(False)
+                deps_str = ", ".join(addon.depends)
+                btn.set_tooltip_text(
+                    _(
+                        "Requires {deps}, but current rayforge "
+                        "version is {current}"
+                    ).format(deps=deps_str, current=__version__)
+                )
+
+            if not addon.url:  # Handle invalid registry entries
+                btn.set_label(_("Unavailable"))
+                btn.set_sensitive(False)
+
+            row.add_suffix(btn)
+            self.list_box.append(row)
+
+    def _on_install_clicked(self, btn, addon_meta: AddonMetadata):
+        if addon_meta:
+            self.close()
+            self.on_install_callback(addon_meta)
+
+    def _on_unlock_clicked(self, btn, addon_meta: AddonMetadata):
+        """Handle click on Unlock button for premium addon."""
+        product_ids = self._get_product_ids(addon_meta)
+        purchase_url = None
+        if addon_meta.license:
+            purchase_url = addon_meta.license.purchase_url
+
+        display_name = addon_meta.display_name or addon_meta.name
+
+        def on_license_added():
+            self.close()
+            self.on_install_callback(addon_meta)
+
+        dialog = LicenseRequiredDialog(
+            addon_name=display_name,
+            product_ids=product_ids,
+            purchase_url=purchase_url,
+            on_license_added=on_license_added,
+        )
+        dialog.set_transient_for(self)
+        dialog.present()
+
+    def _on_manual_install_clicked(self, btn):
+        """Allows manual URL entry if not in registry."""
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading=_("Manual Install"),
+            body=_("Enter the Git URL."),
+        )
+        entry = Adw.EntryRow(title="URL")
+        dialog.set_extra_child(entry)
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("install", _("Install"))
+
+        def _cb(dlg, resp):
+            if resp == "install":
+                url = entry.get_text().strip()
+                if url:
+                    self.close()
+                    self.on_install_callback(url)
+            dlg.close()
+
+        dialog.connect("response", _cb)
+        dialog.present()

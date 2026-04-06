@@ -1,8 +1,11 @@
-# Flujo de Trabajo Multi-Capa
+# Flujo de trabajo con múltiples capas
 
-El sistema multi-capa de Rayforge te permite organizar trabajos complejos en etapas de procesamiento separadas, cada una con sus propias operaciones y ajustes. Esto es esencial para combinar diferentes procesos como grabado y corte, o trabajar con múltiples materiales.
+El sistema de múltiples capas de Rayforge le permite organizar trabajos complejos
+en etapas de procesamiento separadas, cada una con sus propias operaciones y
+ajustes. Esto es esencial para combinar diferentes procesos como grabado y corte,
+o para trabajar con múltiples materiales.
 
-## ¿Qué Son las Capas?
+## ¿Qué son las capas?
 
 Una **capa** en Rayforge es:
 
@@ -10,46 +13,48 @@ Una **capa** en Rayforge es:
 - **Un flujo de trabajo** que define cómo se procesan esas piezas de trabajo
 - **Un paso** procesado secuencialmente durante los trabajos
 
-**Concepto clave:** Las capas se procesan en orden, una tras otra, permitiéndote controlar la secuencia de operaciones.
+**Concepto clave:** Las capas se procesan en orden, una tras otra, lo que le
+permite controlar la secuencia de operaciones.
 
-:::note Capas y Piezas de Trabajo
-Una capa contiene una o más piezas de trabajo. Al importar archivos SVG con capas, cada capa de tu diseño se convierte en una capa separada en Rayforge. Esto te permite mantener tu diseño organizado exactamente como lo creaste.
+:::note Capas y piezas de trabajo
+Una capa contiene una o más piezas de trabajo. Al importar archivos SVG con
+capas, cada capa de su diseño se convierte en una capa separada en Rayforge.
+Esto le permite mantener su diseño organizado exactamente como lo creó.
 :::
-
 
 ---
 
-## ¿Por Qué Usar Múltiples Capas?
+## ¿Por qué usar múltiples capas?
 
-### Casos de Uso Comunes
+### Casos de uso comunes
 
-**1. Grabar y Luego Cortar**
+**1. Grabar y luego cortar**
 
-El flujo de trabajo multi-capa más común:
+El flujo de trabajo con múltiples capas más común:
 
-- **Capa 1:** Grabar raster el diseño
-- **Capa 2:** Cortar contorno del borde
+- **Capa 1:** Grabado ráster del diseño
+- **Capa 2:** Corte de contorno del perfil
 
 **¿Por qué capas separadas?**
 
 - Grabar primero asegura que la pieza no se mueva durante el grabado
-- Cortar al final previene que las piezas caigan antes de completar el grabado
+- Cortar al final evita que las piezas caigan antes de completar el grabado
 - Diferentes ajustes de potencia/velocidad para cada operación
 
-**2. Corte Multi-Pasada**
+**2. Corte en múltiples pasadas**
 
 Para materiales gruesos:
 
 - **Capa 1:** Primera pasada a potencia moderada
-- **Capa 2:** Segunda pasada a potencia completa (misma geometría)
+- **Capa 2:** Segunda pasada a potencia máxima (misma geometría)
 - **Capa 3:** Tercera pasada opcional si es necesario
 
 **Beneficios:**
 
-- Reduce chamuscado comparado con una sola pasada de alta potencia
+- Reduce el chamuscado en comparación con una sola pasada de alta potencia
 - Cada capa puede tener diferentes ajustes de velocidad/potencia
 
-**3. Proyectos Multi-Material**
+**3. Proyectos con múltiples materiales**
 
 Diferentes materiales en un trabajo:
 
@@ -59,10 +64,10 @@ Diferentes materiales en un trabajo:
 
 **Requisitos:**
 
-- Cada capa apunta a diferentes áreas de la cama
+- Cada capa se dirige a diferentes áreas de la mesa de trabajo
 - Diferentes velocidad/potencia/enfoque para cada material
 
-**4. Importación de Capas SVG**
+**4. Importación de capas SVG**
 
 Importar archivos SVG con estructura de capas existente:
 
@@ -72,229 +77,257 @@ Importar archivos SVG con estructura de capas existente:
 
 **Flujo de trabajo:**
 
-- Importar un archivo SVG que tiene capas
-- Habilitar "Usar Vectores Originales" en el diálogo de importación
+- Importar un archivo SVG que tenga capas
+- Activar "Usar vectores originales" en el diálogo de importación
 - Seleccionar qué capas importar de la lista de capas detectadas
 - Cada capa se convierte en una capa separada en Rayforge
 
 **Requisitos:**
 
-- Tu archivo SVG debe usar capas (creado en Inkscape o software similar)
-- Habilitar "Usar Vectores Originales" al importar
-- Los nombres de las capas se preservan de tu software de diseño
+- Su archivo SVG debe usar capas (creadas en Inkscape o software similar)
+- Activar "Usar vectores originales" al importar
+- Los nombres de las capas se conservan desde su software de diseño
 
 ---
 
-## Crear y Gestionar Capas
+## Crear y gestionar capas
 
-### Añadir una Nueva Capa
+### Añadir una nueva capa
 
-1. **Haz clic en el botón "+"** en el panel de Capas
-2. **Nombra la capa** descriptivamente (ej., "Capa de Grabado", "Capa de Corte")
+1. **Haga clic en el botón "+"** en el panel de Capas
+2. **Asigne un nombre** descriptivo a la capa (ej.: "Capa de grabado",
+   "Capa de corte")
 3. **La capa aparece** en la lista de capas
 
-**Por defecto:** Los documentos nuevos comienzan con una capa.
+**Predeterminado:** Los documentos nuevos comienzan con una capa.
 
-### Propiedades de Capa
+### Propiedades de las capas
 
 Cada capa tiene:
 
-| Propiedad        | Descripción                                          |
-| ---------------- | ---------------------------------------------------- |
-| **Nombre**       | El nombre mostrado en la lista de capas              |
-| **Visible**      | Alternar visibilidad en lienzo y previsualización    |
-| **Material Base**| Asociación opcional de material                      |
-| **Flujo de trabajo** | La(s) operación(es) aplicadas a piezas de trabajo en esta capa |
-| **Piezas de trabajo** | Las formas/imagenes contenidas en esta capa      |
+| Propiedad       | Descripción                                             |
+| --------------- | ------------------------------------------------------- |
+| **Nombre**      | El nombre mostrado en la lista de capas                 |
+| **Visible**     | Alterna la visibilidad en el lienzo y la vista previa   |
+| **Flujo de trabajo** | Las operaciones aplicadas a las piezas en esta capa |
+| **Rotativo**    | Si esta capa se ejecuta en modo rotativo                |
+| **Piezas de trabajo** | Las formas/imágenes contenidas en esta capa       |
 
-:::note Capas como Contenedores
-Las capas son contenedores para tus piezas de trabajo. Al importar archivos SVG con capas, cada capa de tu diseño se convierte en una capa separada en Rayforge.
+### Modo rotativo por capa
+
+Si tiene un [accesorio rotativo](../machine/rotary) configurado, puede activar
+el modo rotativo para capas individuales. Esto le permite combinar trabajo en
+superficie plana y cilíndrica en el mismo proyecto — por ejemplo, grabar un
+diseño en la tapa plana de una caja en una capa y envolver texto alrededor del
+cuerpo cilíndrico en otra.
+
+Las capas con el modo rotativo activo muestran un pequeño icono rotativo en la
+lista de capas. Cada capa recuerda su propio ajuste rotativo, por lo que puede
+mezclarlas libremente.
+
+:::note Capas como contenedores
+Las capas son contenedores para sus piezas de trabajo. Al importar archivos SVG
+con capas, cada capa de su diseño se convierte en una capa separada en Rayforge.
 :::
 
+### Reordenar capas
 
-### Reordenar Capas
-
-**Orden de ejecución = orden de capas en la lista (de arriba a abajo)**
+**El orden de ejecución = el orden de capas en la lista (de arriba a abajo)**
 
 Para reordenar:
 
-1. **Arrastra y suelta** capas en el panel de Capas
+1. **Arrastre y suelte** las capas en el panel de Capas
 2. **El orden importa** - las capas se ejecutan de arriba a abajo
 
 **Ejemplo:**
 
 ```
 Panel de Capas:
-1. Capa de Grabado     Se ejecuta primero
-2. Capa de Marcado     Se ejecuta segundo
-3. Capa de Corte       Se ejecuta último (recomendado)
+1. Capa de grabado     Se ejecuta primero
+2. Capa de marcado     Se ejecuta segundo
+3. Capa de corte       Se ejecuta al final (recomendado)
 ```
 
-### Eliminar Capas
+### Eliminar capas
 
-1. **Selecciona la capa** en el panel de Capas
-2. **Haz clic en el botón eliminar** o presiona Eliminar
-3. **Confirma la eliminación** (todas las piezas de trabajo en la capa son removidas)
+1. **Seleccione la capa** en el panel de Capas
+2. **Haga clic en el botón de eliminar** o pulse Suprimir
+3. **Confirme la eliminación** (todas las piezas de trabajo de la capa se
+   eliminan)
 
-:::warning La Eliminación es Permanente
-Eliminar una capa remueve todas sus piezas de trabajo y ajustes de flujo de trabajo. Usa Deshacer si eliminas accidentalmente.
+:::warning La eliminación es permanente
+Eliminar una capa borra todas sus piezas de trabajo y ajustes de flujo de
+trabajo. Use Deshacer si elimina accidentalmente.
 :::
-
 
 ---
 
-## Asignar Piezas de Trabajo a Capas
+## Asignar piezas de trabajo a capas
 
-### Asignación Manual
+### Asignación manual
 
-1. **Importa o crea** una pieza de trabajo
-2. **Arrastra la pieza de trabajo** a la capa deseada en el panel de Capas
-3. **O usa el panel de propiedades** para cambiar la capa de la pieza de trabajo
+1. **Importe o cree** una pieza de trabajo
+2. **Arrastre la pieza de trabajo** a la capa deseada en el panel de Capas
+3. **O use el panel de propiedades** para cambiar la capa de la pieza de
+   trabajo
 
-### Importación de Capas SVG
+### Importación de capas SVG
 
-Al importar archivos SVG con "Usar Vectores Originales" habilitado:
+Al importar archivos SVG con "Usar vectores originales" activado:
 
-1. **Habilita "Usar Vectores Originales"** en el diálogo de importación
-2. **Rayforge detecta capas** de tu archivo SVG
-3. **Selecciona qué capas** importar usando los interruptores de capa
-4. **Cada capa seleccionada** se convierte en una capa separada con su propia pieza de trabajo
+1. **Active "Usar vectores originales"** en el diálogo de importación
+2. **Rayforge detecta las capas** de su archivo SVG
+3. **Seleccione qué capas** importar usando los interruptores de capa
+4. **Cada capa seleccionada** se convierte en una capa separada con su propia
+   pieza
 
-:::note Detección de Capas
-Rayforge detecta automáticamente capas de tu archivo SVG. Cada capa que creaste en tu software de diseño aparecerá como una capa separada en Rayforge.
+:::note Detección de capas
+Rayforge detecta automáticamente las capas de su archivo SVG. Cada capa que
+creó en su software de diseño aparecerá como una capa separada en Rayforge.
 :::
 
-
-:::note Solo Importación Vectorial
-La selección de capas solo está disponible al usar importación vectorial directa. Al usar modo trazo, el SVG completo se procesa como una pieza de trabajo.
+:::note Solo importación de vectores
+La selección de capas solo está disponible al usar importación directa de
+vectores. Al usar el modo de trazado, el SVG completo se procesa como una sola
+pieza de trabajo.
 :::
 
-
-### Mover Piezas de Trabajo Entre Capas
+### Mover piezas de trabajo entre capas
 
 **Arrastrar y soltar:**
 
-- Selecciona pieza(s) de trabajo en el lienzo o panel de Documento
-- Arrastra a la capa objetivo en el panel de Capas
+- Seleccione pieza(s) de trabajo en el lienzo o panel de Documento
+- Arrastre a la capa de destino en el panel de Capas
 
 **Cortar y pegar:**
 
-- Corta pieza de trabajo de la capa actual (Ctrl+X)
-- Selecciona la capa objetivo
-- Pega (Ctrl+V)
+- Corte la pieza de trabajo de la capa actual (Ctrl+X)
+- Seleccione la capa de destino
+- Pegue (Ctrl+V)
 
-### Diálogo de Importación SVG
+### Diálogo de importación SVG
 
-Al importar archivos SVG, el diálogo de importación proporciona opciones que afectan el manejo de capas:
+Al importar archivos SVG, el diálogo de importación proporciona opciones que
+afectan el manejo de capas:
 
-**Modo de Importación:**
+**Modo de importación:**
 
-- **Usar Vectores Originales:** Preserva tus trayectorias vectoriales y estructura de capas. Cuando está habilitado, aparece una sección "Capas" mostrando todas las capas de tu archivo.
-- **Modo Trazo:** Convierte el SVG a un bitmap y traza los contornos. La selección de capas está deshabilitada en este modo.
+- **Usar vectores originales:** Preserva sus trazados vectoriales y la
+  estructura de capas. Cuando se activa, aparece una sección "Capas" que muestra
+  todas las capas de su archivo.
+- **Modo de trazado:** Convierte el SVG en un mapa de bits y traza los
+  contornos. La selección de capas está desactivada en este modo.
 
-**Sección de Capas (Solo Importación Vectorial):**
+**Sección de capadas (solo importación de vectores):**
 
-- Muestra todas las capas de tu archivo SVG
-- Cada capa tiene un interruptor para habilitar/deshabilitar importación
-- Los nombres de capas de tu software de diseño se preservan
+- Muestra todas las capas de su archivo SVG
+- Cada capa tiene un interruptor para activar/desactivar la importación
+- Los nombres de las capas de su software de diseño se conservan
 - Solo las capas seleccionadas se importan como capas separadas
 
-:::tip Preparar Archivos SVG para Importación de Capas
-Para usar importación de capas SVG, crea tu diseño con capas en software como Inkscape. Usa el panel de Capas para organizar tu diseño, y Rayforge preservará esa estructura.
+:::tip Preparar archivos SVG para importación de capas
+Para usar la importación de capas SVG, cree su diseño con capas en software como
+Inkscape. Use el panel de Capas para organizar su diseño, y Rayforge conservará
+esa estructura.
 :::
-
 
 ---
 
-## Flujos de Trabajo de Capa
+## Flujos de trabajo de capas
 
-Cada capa tiene un **Flujo de Trabajo** que define cómo se procesan sus piezas de trabajo.
+Cada capa tiene un **flujo de trabajo** que define cómo se procesan sus piezas
+de trabajo.
 
-### Configurar Flujos de Trabajo de Capa
+### Configurar flujos de trabajo de capas
 
-Para cada capa, eliges un tipo de operación y configuras sus ajustes:
+Para cada capa, elige un tipo de operación y configura sus ajustes:
 
-**Tipos de Operación:**
+**Tipos de operación:**
 
-- **Contorno** - Sigue contornos (para corte o marcado)
-- **Grabado Raster** - Graba imágenes y rellena áreas
-- **Grabado de Profundidad** - Crea grabados de profundidad variable
+- **Contorno** - Sigue los perfiles (para cortar o marcar)
+- **Grabado ráster** - Graba imágenes y rellena áreas
+- **Grabado con profundidad** - Crea grabados de profundidad variable
 
-**Mejoras Opcionales:**
+**Mejoras opcionales:**
 
-- **Pestañas** - Pequeños puentes para mantener piezas en su lugar durante el corte
-- **Overscan** - Extiende cortes más allá de la forma para bordes más limpios
-- **Ajuste de Kerf** - Compensa el ancho de corte del láser
+- **Pestañas** - Pequeños puentes para mantener las piezas en su lugar durante
+  el corte
+- **Sobrescaneo** - Extiende los cortes más allá de la forma para bordes más
+  limpios
+- **Ajuste de kerf** - Compensa el ancho de corte del láser
 
-### Configuraciones Comunes de Capa
+### Configuraciones comunes de capas
 
-**Capa de Grabado:**
+**Capa de grabado:**
 
-- Operación: Grabado Raster
+- Operación: Grabado ráster
 - Ajustes: 300-500 DPI, velocidad moderada
-- Típicamente no se necesitan opciones adicionales
+- Normalmente no se necesitan opciones adicionales
 
-**Capa de Corte:**
+**Capa de corte:**
 
-- Operación: Corte de Contorno
-- Opciones: Pestañas (para mantener piezas), Overscan (para bordes limpios)
+- Operación: Corte de contorno
+- Opciones: Pestañas (para sujetar piezas), Sobrescaneo (para bordes limpios)
 - Ajustes: Velocidad más lenta, mayor potencia
 
-**Capa de Marcado:**
+**Capa de marcado:**
 
 - Operación: Contorno (potencia ligera, no corta a través)
 - Ajustes: Baja potencia, velocidad rápida
-- Propósito: Líneas de doblez, líneas decorativas
+- Propósito: Líneas de pliegue, líneas decorativas
 
 ---
 
-## Visibilidad de Capas
+## Visibilidad de las capas
 
-Controla qué capas se muestran en el lienzo y previsualizaciones:
+Controle qué capas se muestran en el lienzo y las vistas previas:
 
-### Visibilidad en Lienzo
+### Visibilidad en el lienzo
 
-- **Icono de ojo** en panel de Capas alterna visibilidad
+- **Icono de ojo** en el panel de Capas alterna la visibilidad
 - **Capas ocultas:**
-  - No se muestran en lienzo 2D
-  - No se muestran en previsualización 3D
-  - **Aún se incluyen en G-code generado**
+  - No se muestran en el lienzo 2D
+  - No se muestran en la vista previa 3D
+  - **Se incluyen en el G-code generado**
 
 **Casos de uso:**
 
-- Ocultar capas de grabado complejas mientras posicionas capas de corte
-- Despejar el lienzo cuando trabajas en capas específicas
-- Enfocarte en una capa a la vez
+- Ocultar capas de grabado complejas mientras posiciona capas de corte
+- Despejar el lienzo al trabajar en capas específicas
+- Enfocarse en una capa a la vez
 
-### Visibilidad vs. Habilitado
+### Visibilidad vs. Activado
 
-| Estado                    | Lienzo | Previsualización | G-code |
-| ------------------------- | ------ | ---------------- | ------ |
-| **Visible y Habilitado**  | Sí     | Sí               | Sí     |
-| **Oculto y Habilitado**   | No     | No               | Sí     |
-| **Visible y Deshabilitado**| Sí    | Sí               | No     |
-| **Oculto y Deshabilitado**| No     | No               | No     |
+| Estado                    | Lienzo | Vista previa | G-code |
+| ------------------------- | ------ | ------------ | ------ |
+| **Visible y activado**    | Sí     | Sí           | Sí     |
+| **Oculto y activado**     | No     | No           | Sí     |
+| **Visible y desactivado** | Sí     | Sí           | No     |
+| **Oculto y desactivado**  | No     | No           | No     |
 
-:::note Deshabilitar Capas
+:::note Desactivar capas
 :::
 
-Para excluir temporalmente una capa de trabajos sin eliminarla, desactiva la operación de la capa o deshabilítala en los ajustes de capa.
+Para excluir temporalmente una capa de los trabajos sin eliminarla, desactive la
+operación de la capa o desactívela en los ajustes de la capa.
 
 ---
 
-## Orden de Ejecución de Capas
+## Orden de ejecución de las capas
 
-### Cómo se Procesan las Capas
+### Cómo se procesan las capas
 
-Durante la ejecución del trabajo, Rayforge procesa cada capa en orden de arriba a abajo. Dentro de cada capa, todas las piezas de trabajo se procesan antes de pasar a la siguiente capa.
+Durante la ejecución del trabajo, Rayforge procesa cada capa en orden de arriba
+a abajo. Dentro de cada capa, todas las piezas de trabajo se procesan antes de
+pasar a la siguiente capa.
 
-### El Orden Importa
+### El orden importa
 
 **Orden incorrecto:**
 
 ```
-1. Capa de Corte
-2. Capa de Grabado
+1. Capa de corte
+2. Capa de grabado
 ```
 
 **Problema:** ¡Las piezas cortadas pueden caerse o moverse antes del grabado!
@@ -302,191 +335,215 @@ Durante la ejecución del trabajo, Rayforge procesa cada capa en orden de arriba
 **Orden correcto:**
 
 ```
-1. Capa de Grabado
-2. Capa de Corte
+1. Capa de grabado
+2. Capa de corte
 ```
 
-**Por qué:** El grabado ocurre mientras la pieza aún está adjunta, luego el corte la libera.
+**Por qué:** El grabado ocurre mientras la pieza aún está sujeta, luego el
+corte la libera.
 
-### Múltiples Pasadas
+### Múltiples pasadas
 
-Para materiales gruesos, crea múltiples capas de corte:
+Para materiales gruesos, cree múltiples capas de corte:
 
 ```
-1. Capa de Grabado
-2. Capa de Corte (Pasada 1) - 50% potencia
-3. Capa de Corte (Pasada 2) - 75% potencia
-4. Capa de Corte (Pasada 3) - 100% potencia
+1. Capa de grabado
+2. Capa de corte (Pasada 1) - 50% potencia
+3. Capa de corte (Pasada 2) - 75% potencia
+4. Capa de corte (Pasada 3) - 100% potencia
 ```
 
-**Consejo:** Usa la misma geometría para todas las pasadas de corte (duplica la capa).
+**Consejo:** Use la misma geometría para todas las pasadas de corte (duplicar la
+capa).
 
 ---
 
-## Técnicas Avanzadas
+## Técnicas avanzadas
 
-### Agrupación de Capas por Material
+### Agrupación de capas por material
 
-Usa capas para organizar por material al ejecutar trabajos mixtos:
+Use capas para organizar por material al ejecutar trabajos mixtos:
 
 ```
-Material 1 (Acrílico 3mm):
-  - Capa de Grabado Acrílico
-  - Capa de Corte Acrílico
+Material 1 (Acrílico de 3mm):
+  - Capa de grabado de acrílico
+  - Capa de corte de acrílico
 
-Material 2 (Contrachapado 3mm):
-  - Capa de Grabado Madera
-  - Capa de Corte Madera
+Material 2 (Contrachapado de 3mm):
+  - Capa de grabado de madera
+  - Capa de corte de madera
 ```
 
 **Flujo de trabajo:**
 
-1. Procesa todas las capas del Material 1
-2. Cambia materiales
-3. Procesa todas las capas del Material 2
+1. Procesar todas las capas del Material 1
+2. Cambiar materiales
+3. Procesar todas las capas del Material 2
 
-**Alternativa:** Usa documentos separados para diferentes materiales.
+**Alternativa:** Use documentos separados para diferentes materiales.
 
-### Pausar Entre Capas
+### Pausar entre capas
 
-Puedes configurar Rayforge para pausar entre capas. Esto es útil cuando necesitas:
+Puede configurar Rayforge para hacer una pausa entre capas. Esto es útil cuando
+necesita:
 
 - Cambiar materiales a mitad del trabajo
-- Inspeccionar progreso antes de continuar
-- Ajustar enfoque para diferentes operaciones
+- Inspeccionar el progreso antes de continuar
+- Ajustar el enfoque para diferentes operaciones
 
-Para configurar pausas de capa, usa la función de hooks en los ajustes de tu máquina.
+Para configurar las pausas entre capas, use la función de hooks en los ajustes
+de su máquina.
 
-### Ajustes Específicos de Capa
+### Ajustes específicos por capa
 
 El flujo de trabajo de cada capa puede tener ajustes únicos:
 
 | Capa    | Operación | Velocidad  | Potencia | Pasadas |
 | ------- | --------- | ---------- | -------- | ------- |
-| Grabar  | Raster    | 300 mm/min | 20%      | 1       |
-| Marcar  | Contorno  | 500 mm/min | 10%      | 1       |
-| Cortar  | Contorno  | 100 mm/min | 90%      | 2       |
+| Grabado | Ráster    | 300 mm/min | 20%      | 1       |
+| Marcado | Contorno  | 500 mm/min | 10%      | 1       |
+| Corte   | Contorno  | 100 mm/min | 90%      | 2       |
 
 ---
 
-## Mejores Prácticas
+## Mejores prácticas
 
-### Convenciones de Nomenclatura
+### Convenciones de nomenclatura
 
-**Buenos nombres de capa:**
+**Buenos nombres de capas:**
 
 - "Grabado - Logo"
-- "Corte - Contorno Exterior"
-- "Marcado - Líneas de Doblez"
-- "Pasada 1 - Corte Bruto"
-- "Pasada 2 - Corte Final"
+- "Corte - Contorno exterior"
+- "Marcado - Líneas de pliegue"
+- "Pasada 1 - Corte rough"
+- "Pasada 2 - Corte final"
 
-**Nombres de capa pobres:**
+**Nombres de capas deficientes:**
 
-- "Capa 1", "Capa 2" (no descriptivo)
-- Descripciones largas (mantén conciso)
+- "Capa 1", "Capa 2" (no descriptivos)
+- Descripciones largas (mantener conciso)
 
-### Organización de Capas
+### Organización de capas
 
 1. **De arriba a abajo = orden de ejecución**
 2. **Grabado antes de corte** (regla general)
-3. **Agrupa operaciones relacionadas** (todo corte, todo grabado)
-4. **Usa visibilidad** para enfocarte en el trabajo actual
-5. **Elimina capas no usadas** para mantener proyectos limpios
+3. **Agrupar operaciones relacionadas** (todo el corte, todo el grabado)
+4. **Usar visibilidad** para enfocarse en el trabajo actual
+5. **Eliminar capas no usadas** para mantener los proyectos limpios
 
-### Preparar Archivos SVG para Importación de Capas
+### Preparar archivos SVG para importación de capas
 
 **Para mejores resultados al importar capas SVG:**
 
-1. **Usa el panel de Capas** en tu software de diseño para organizar tu diseño
-2. **Asigna nombres significativos** a cada capa (ej., "Grabado", "Corte")
-3. **Mantén capas planas** - evita poner capas dentro de otras capas
-4. **Guarda tu archivo** e importa en Rayforge
-5. **Verifica detección de capas** revisando el diálogo de importación
+1. **Use el panel de Capas** en su software de diseño para organizar su diseño
+2. **Asigne nombres significativos** a cada capa (ej.: "Grabado", "Corte")
+3. **Mantenga las capas planas** - evite poner capas dentro de otras capas
+4. **Guarde su archivo** e impórtelo en Rayforge
+5. **Verifique la detección de capas** revisando el diálogo de importación
 
-Rayforge funciona mejor con archivos SVG creados en Inkscape o software similar de diseño vectorial que soporte capas.
+Rayforge funciona mejor con archivos SVG creados en Inkscape o software similar
+de diseño vectorial que soporte capas.
 
 ### Rendimiento
 
 **Muchas capas:**
 
-- Sin impacto significativo en rendimiento
+- Sin impacto significativo en el rendimiento
 - 10-20 capas es común para trabajos complejos
-- Organiza lógicamente, no para minimizar conteo de capas
+- Organice lógicamente, no para minimizar la cantidad de capas
 
-**Simplifica si es necesario:**
+**Simplifique si es necesario:**
 
-- Combina operaciones similares en una capa cuando sea posible
-- Usa menos grabados raster (los más intensivos en recursos)
+- Combine operaciones similares en una capa cuando sea posible
+- Use menos grabados ráster (son los que más recursos consumen)
 
 ---
 
-## Solución de Problemas
+## Solución de problemas
 
-### La Capa No Genera G-code
+### La capa no genera G-code
 
 **Problema:** La capa aparece en el documento pero no en el G-code generado.
 
 **Soluciones:**
 
-1. **Verifica que la capa tenga piezas de trabajo** - Las capas vacías se saltan
-2. **Verifica que el flujo de trabajo esté configurado** - La capa necesita una operación
-3. **Verifica ajustes de operación** - Potencia > 0, velocidad válida, etc.
-4. **Verifica visibilidad de pieza de trabajo** - Piezas ocultas pueden no procesarse
-5. **Regenera G-code** - Haz un pequeño cambio para forzar regeneración
+1. **Verifique que la capa tiene piezas de trabajo** - Las capas vacías se
+   omiten
+2. **Verifique que el flujo de trabajo está configurado** - La capa necesita
+   una operación
+3. **Verifique los ajustes de operación** - Potencia > 0, velocidad válida,
+   etc.
+4. **Verifique la visibilidad de las piezas** - Las piezas ocultas pueden no
+   procesarse
+5. **Regenere el G-code** - Haga un pequeño cambio para forzar la regeneración
 
-### Orden de Capas Incorrecto
+### Orden incorrecto de capas
 
-**Problema:** Las operaciones se ejecutan en orden inesperado.
+**Problema:** Las operaciones se ejecutan en un orden inesperado.
 
-**Solución:** Reordena capas en el panel de Capas. Recuerda: arriba = primero.
+**Solución:** Reordene las capas en el panel de Capas. Recuerde: arriba =
+primero.
 
-### Capas Superpuestas en Previsualización
+### Capas superpuestas en la vista previa
 
-**Problema:** Múltiples capas muestran contenido superpuesto en previsualización.
+**Problema:** Múltiples capas muestran contenido superpuesto en la vista previa.
 
 **Aclaración:** Esto es normal si las capas comparten la misma área XY.
 
 **Soluciones:**
 
-- Usa visibilidad de capa para ocultar otras capas temporalmente
-- Revisa previsualización 3D para ver profundidad/orden
-- Verifica que esto sea intencional (ej., grabar y luego cortar la misma forma)
+- Use la visibilidad de capas para ocultar otras capas temporalmente
+- Verifique la vista previa 3D para ver la profundidad/orden
+- Confirme que esto es intencional (ej.: grabar y luego cortar la misma forma)
 
-### Pieza de Trabajo en Capa Incorrecta
+### Pieza de trabajo en la capa incorrecta
 
-**Problema:** La pieza de trabajo fue asignada a capa incorrecta.
+**Problema:** La pieza de trabajo fue asignada a una capa incorrecta.
 
-**Solución:** Arrastra pieza de trabajo a capa correcta en panel de Capas o árbol de Documento.
+**Solución:** Arrastre la pieza de trabajo a la capa correcta en el panel de
+Capas o en el árbol de Documento.
 
-### Capas SVG No Detectadas
+### Capas SVG no detectadas
 
-**Problema:** Importando un archivo SVG pero no aparecen capas en el diálogo de importación.
+**Problema:** Se importa un archivo SVG pero no aparecen capas en el diálogo de
+importación.
 
 **Soluciones:**
 
-1. **Verifica estructura SVG** - Abre tu archivo en Inkscape o software similar para verificar que tiene capas
-2. **Habilita "Usar Vectores Originales"** - La selección de capas solo está disponible en este modo de importación
-3. **Verifica que tu diseño tiene capas** - Asegúrate de crear capas en tu software de diseño, no solo grupos
-4. **Busca capas anidadas** - Capas dentro de otras capas pueden no detectarse correctamente
-5. **Vuelve a guardar tu archivo** - A veces volver a guardar con una versión actual de tu software de diseño ayuda
+1. **Verifique la estructura del SVG** - Abra su archivo en Inkscape o software
+   similar para verificar que tiene capas
+2. **Active "Usar vectores originales"** - La selección de capas solo está
+   disponible en este modo de importación
+3. **Verifique que su diseño tiene capas** - Asegúrese de haber creado capas en
+   su software de diseño, no solo grupos
+4. **Verifique si hay capas anidadas** - Las capas dentro de otras capas pueden
+   no detectarse correctamente
+5. **Guarde nuevamente su archivo** - A veces volver a guardar con una versión
+   actualizada de su software de diseño ayuda
 
-### Importación de Capa SVG Muestra Contenido Incorrecto
+### La importación de capas SVG muestra contenido incorrecto
 
 **Problema:** La capa importada muestra contenido de otras capas o está vacía.
 
 **Soluciones:**
 
-1. **Verifica selección de capa** - Confirma que las capas correctas están habilitadas en el diálogo de importación
-2. **Verifica tu diseño** - Abre el archivo original en tu software de diseño para confirmar que cada capa contiene el contenido correcto
-3. **Busca elementos compartidos** - Elementos que aparecen en múltiples capas pueden causar confusión
-4. **Prueba modo trazo** - Usa modo trazo como alternativa si la importación vectorial tiene problemas
+1. **Verifique la selección de capas** - Confirme que las capas correctas están
+   activadas en el diálogo de importación
+2. **Verifique su diseño** - Abra el archivo original en su software de diseño
+   para confirmar que cada capa contiene el contenido correcto
+3. **Verifique elementos compartidos** - Elementos que aparecen en múltiples
+   capas pueden causar confusión
+4. **Pruebe el modo de trazado** - Use el modo de trazado como alternativa si la
+   importación de vectores tiene problemas
 
 ---
 
-## Páginas Relacionadas
+## Páginas relacionadas
 
-- [Operaciones](./operations/contour) - Tipos de operación para flujos de trabajo de capa
-- [Modo Simulación](./simulation-mode) - Previsualizar ejecución multi-capa
-- [Macros y Hooks](../machine/hooks-macros) - Hooks a nivel de capa para automatización
-- [Previsualización 3D](../ui/3d-preview) - Visualizar pila de capas
+- [Operaciones](./operations/contour) - Tipos de operaciones para flujos de
+  trabajo de capas
+- [Modo de simulación](./simulation-mode) - Vista previa de la ejecución con
+  múltiples capas
+- [Macros y Hooks](../machine/hooks-macros) - Hooks a nivel de capa para
+  automatización
+- [Vista previa 3D](../ui/3d-preview) - Visualizar la pila de capas

@@ -14,6 +14,7 @@ from typing import (
 )
 from blinker import Signal
 from contextlib import contextmanager
+
 from ..core.doc import Doc
 from ..core.group import Group
 from ..core.item import DocItem
@@ -21,12 +22,13 @@ from ..core.layer import Layer
 from ..core.matrix import Matrix
 from ..core.ops import Ops
 from ..core.step import Step
+from ..core.stock import StockItem
+from ..core.workflow import Workflow
 from ..core.workpiece import WorkPiece
 from .artifact import (
     ArtifactManager,
     BaseArtifactHandle,
     JobArtifactHandle,
-    StepRenderArtifactHandle,
     StepOpsArtifactHandle,
     WorkPieceArtifact,
 )
@@ -70,9 +72,12 @@ class Pipeline:
             has been adopted.
         job_time_updated (Signal): Fired when the job time estimate is
             updated.
+        job_generation_finished (Signal): Fired when job generation completes
+            successfully.
     """
 
     RECONCILIATION_DELAY_MS = 200
+    REMOVAL_DEBOUNCE_DELAY_MS = 50
 
     def __init__(
         self,
@@ -104,6 +109,9 @@ class Pipeline:
         self._pause_count = 0
         self._last_known_busy_state = False
         self._reconciliation_timer: Optional[concurrent.futures.Future] = None
+        self._removal_timer: Optional[concurrent.futures.Future] = None
+        self._pending_workpiece_removals: List[tuple] = []
+        self._pending_step_removals: List[Step] = []
         self._is_shutting_down = False
 
         # Signals for notifying the UI of generation progress
@@ -112,6 +120,7 @@ class Pipeline:
         self.workpiece_artifact_ready = Signal()
         self.workpiece_artifact_adopted = Signal()
         self.step_assembly_starting = Signal()
+        self.job_generation_finished = Signal()
         self.job_time_updated = Signal()
         self.visual_chunk_available = Signal()
 
@@ -197,6 +206,9 @@ class Pipeline:
         if self._reconciliation_timer:
             self._reconciliation_timer.cancel()
             self._reconciliation_timer = None
+        if self._removal_timer:
+            self._removal_timer.cancel()
+            self._removal_timer = None
         logger.info("Pipeline shutting down...")
 
         for task in list(self._task_manager):
@@ -219,6 +231,13 @@ class Pipeline:
     def task_manager(self) -> "TaskManager":
         """Returns the task manager used by this pipeline."""
         return self._task_manager
+
+    @property
+    def last_completed_handle(
+        self,
+    ) -> Optional[JobArtifactHandle]:
+        """Returns the last completed job artifact handle, if any."""
+        return self._job_stage.last_completed_handle
 
     @property
     def doc(self) -> Optional[Doc]:
@@ -257,10 +276,13 @@ class Pipeline:
 
         The pipeline is busy if:
         1. A reconciliation timer is pending, OR
-        2. The scheduler has pending work (PROCESSING nodes), OR
-        3. Any context (active or inactive) has active tasks
+        2. A removal timer is pending, OR
+        3. The scheduler has pending work (PROCESSING nodes), OR
+        4. Any context (active or inactive) has active tasks
         """
         if self._reconciliation_timer is not None:
+            return True
+        if self._removal_timer is not None:
             return True
         if self._scheduler.has_pending_work():
             return True
@@ -402,6 +424,42 @@ class Pipeline:
                 return wp
         return None
 
+    def _should_invalidate_workpiece_for_transform(
+        self,
+        workpiece: WorkPiece,
+        step: Step,
+        size_changed: bool,
+    ) -> bool:
+        """
+        Determine if workpiece artifact should be invalidated for a transform.
+
+        Returns True if:
+        - Size changed (always invalidate)
+        - Position-sensitive transformers enabled (position may affect output)
+
+        Returns False if only position changed and step is not
+        position-sensitive.
+        """
+        if size_changed:
+            logger.debug(
+                f"_should_invalidate: size_changed=True for {workpiece.uid}, "
+                f"invalidating"
+            )
+            return True
+
+        if step.is_position_sensitive():
+            logger.debug(
+                f"_should_invalidate: step is position-sensitive for "
+                f"{workpiece.uid}, invalidating"
+            )
+            return True
+
+        logger.debug(
+            f"_should_invalidate: step is not position-sensitive for "
+            f"{workpiece.uid}, NOT invalidating"
+        )
+        return False
+
     def _invalidate_node(self, key: ArtifactKey) -> None:
         """
         Centralized invalidation using the DAG.
@@ -436,7 +494,7 @@ class Pipeline:
     def _on_descendant_removed(
         self, sender: Any, *, origin: DocItem, parent_of_origin: DocItem
     ) -> None:
-        """Handles removal of a model object using DAG-based invalidation."""
+        """Handles removal of a model object with debounced processing."""
         if isinstance(origin, WorkPiece):
             layer: Optional[Layer] = None
             current_item: Optional[DocItem] = parent_of_origin
@@ -446,36 +504,69 @@ class Pipeline:
                     break
                 current_item = current_item.parent
 
-            # Remove workpiece artifacts permanently (workpiece is deleted)
-            wp_key = ArtifactKey.for_workpiece(origin.uid)
+            self._pending_workpiece_removals.append((origin, layer))
+            self._schedule_removal_processing()
+
+        elif isinstance(origin, Step):
+            self._pending_step_removals.append(origin)
+            self._schedule_removal_processing()
+
+        self._schedule_reconciliation()
+
+    def _schedule_removal_processing(self) -> None:
+        """Schedules a debounced batch processing of pending removals."""
+        if self._removal_timer:
+            self._removal_timer.cancel()
+
+        self._removal_timer = (
+            self._task_manager.schedule_delayed_on_main_thread(
+                self.REMOVAL_DEBOUNCE_DELAY_MS,
+                self._process_pending_removals,
+            )
+        )
+
+    def _process_pending_removals(self) -> None:
+        """Process all pending workpiece and step removals in a batch."""
+        self._removal_timer = None
+
+        workpiece_removals = self._pending_workpiece_removals[:]
+        self._pending_workpiece_removals.clear()
+        step_removals = self._pending_step_removals[:]
+        self._pending_step_removals.clear()
+
+        affected_layers: set[Layer] = set()
+
+        for workpiece, layer in workpiece_removals:
+            wp_key = ArtifactKey.for_workpiece(workpiece.uid)
             self._artifact_manager.remove_for_workpiece(wp_key)
             self._scheduler.mark_node_dirty(wp_key)
 
-            if layer and layer.workflow:
+            if layer:
+                affected_layers.add(layer)
+
+        for layer in affected_layers:
+            if layer.workflow:
                 logger.debug(
-                    f"Workpiece '{origin.name}' removed from layer "
-                    f"'{layer.name}'. Invalidating step artifacts via DAG."
+                    f"Processing batched removals for layer '{layer.name}'. "
+                    f"Invalidating step artifacts."
                 )
                 for step in layer.workflow.steps:
                     step_key = ArtifactKey.for_step(step.uid)
                     self._invalidate_node(step_key)
 
-        elif isinstance(origin, Step):
+        for step in step_removals:
             logger.debug(
-                f"Step '{origin.name}' removed. Invalidating artifacts."
+                f"Step '{step.name}' removed. Invalidating artifacts."
             )
-            step_key = ArtifactKey.for_step(origin.uid)
+            step_key = ArtifactKey.for_step(step.uid)
 
-            # Cancel and invalidate all workpiece tasks for this step
             if self.doc:
                 for wp in self.doc.all_workpieces:
-                    wp_step_key = ArtifactKey.for_workpiece(wp.uid, origin.uid)
+                    wp_step_key = ArtifactKey.for_workpiece(wp.uid, step.uid)
                     self._invalidate_node(wp_step_key)
 
             self._artifact_manager.remove_for_step(step_key)
             self._invalidate_node(step_key)
-
-        self._schedule_reconciliation()
 
     def _collect_affected_workpieces(self, origin: DocItem) -> List[WorkPiece]:
         """
@@ -501,7 +592,7 @@ class Pipeline:
         self,
         sender: Any,
         *,
-        origin: Union[Step, WorkPiece],
+        origin: Union[Step, WorkPiece, Workflow],
         parent_of_origin: DocItem,
     ) -> None:
         """
@@ -518,7 +609,7 @@ class Pipeline:
 
         Args:
             sender: The signal sender.
-            origin: The Step or WorkPiece that was updated.
+            origin: The Step, WorkPiece, or Workflow that was updated.
             parent_of_origin: The parent of the updated item.
         """
         logger.debug(
@@ -539,6 +630,61 @@ class Pipeline:
                         origin.uid, step.uid
                     )
                     self._invalidate_node(wp_step_key)
+        elif isinstance(origin, Workflow):
+            layer = origin.parent if isinstance(origin.parent, Layer) else None
+            if layer:
+                for step in origin.steps:
+                    step_key = ArtifactKey.for_step(step.uid)
+                    self._invalidate_node(step_key)
+                    for wp in layer.all_workpieces:
+                        wp_step_key = ArtifactKey.for_workpiece(
+                            wp.uid, step.uid
+                        )
+                        self._invalidate_node(wp_step_key)
+
+        self._schedule_reconciliation()
+
+    def _on_stock_transform_changed(self, stock_item: "StockItem") -> None:
+        """
+        Handles stock item transform changes.
+
+        When a stock item moves, check all workpieces that have the
+        boundary filter enabled and invalidate only those whose
+        intersection with the stock has changed.
+        """
+        if not self.doc:
+            return
+
+        logger.debug(
+            f"_on_stock_transform_changed: stock={stock_item.uid} moved"
+        )
+
+        for layer in self.doc.layers:
+            if not layer.workflow:
+                continue
+
+            for wp in layer.all_workpieces:
+                for step in layer.workflow.steps:
+                    if not step.is_position_sensitive():
+                        continue
+
+                    should_invalidate = (
+                        self._should_invalidate_workpiece_for_transform(
+                            wp, step, size_changed=False
+                        )
+                    )
+                    logger.debug(
+                        f"_on_stock_transform_changed: "
+                        f"should_invalidate={should_invalidate} "
+                        f"for wp={wp.uid}"
+                    )
+                    if should_invalidate:
+                        wp_step_key = ArtifactKey.for_workpiece(
+                            wp.uid, step.uid
+                        )
+                        self._invalidate_node(wp_step_key)
+                    step_key = ArtifactKey.for_step(step.uid)
+                    self._invalidate_node(step_key)
 
         self._schedule_reconciliation()
 
@@ -546,7 +692,7 @@ class Pipeline:
         self,
         sender: Any,
         *,
-        origin: Union[WorkPiece, Group, Layer],
+        origin: Union[WorkPiece, Group, Layer, "StockItem"],
         parent_of_origin: DocItem,
         old_matrix: Optional["Matrix"] = None,
     ) -> None:
@@ -558,18 +704,26 @@ class Pipeline:
           regeneration since geometry is unchanged)
         - Size change: Use FULL_REPRODUCTION scope (workpiece geometry
           changed, requiring regeneration)
+        - Invalidate workpiece if the anything moved if a position-sensitive
+          step is present (e.g., crop-to-stock)
 
         This selective approach optimizes performance by avoiding
         unnecessary workpiece regeneration for pure position/rotation
-        changes.
+        changes that don't affect crop-to-stock.
 
         Args:
             sender: The signal sender.
-            origin: The WorkPiece, Group, or Layer whose transform changed.
+            origin: The WorkPiece, Group, Layer, or StockItem whose transform
+                    changed.
             parent_of_origin: The parent of the transformed item.
             old_matrix: The previous transform matrix, used to detect size
                          changes. Only provided for WorkPiece origins.
         """
+
+        if isinstance(origin, StockItem):
+            self._on_stock_transform_changed(origin)
+            return
+
         workpieces_to_check = self._collect_affected_workpieces(origin)
 
         for wp in workpieces_to_check:
@@ -587,7 +741,12 @@ class Pipeline:
 
             if wp.layer and wp.layer.workflow:
                 for step in wp.layer.workflow.steps:
-                    if size_changed:
+                    should_invalidate_wp = (
+                        self._should_invalidate_workpiece_for_transform(
+                            wp, step, size_changed
+                        )
+                    )
+                    if should_invalidate_wp:
                         wp_step_key = ArtifactKey.for_workpiece(
                             wp.uid, step.uid
                         )
@@ -788,6 +947,9 @@ class Pipeline:
         task_status: str,
     ) -> None:
         """Relays signal from the scheduler for successful job completion."""
+        self.job_generation_finished.send(
+            self, handle=handle, task_status=task_status
+        )
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )
@@ -911,15 +1073,6 @@ class Pipeline:
             key, self._data_generation_id
         )
 
-    def get_step_render_artifact_handle(
-        self, step_uid: str
-    ) -> Optional[StepRenderArtifactHandle]:
-        """
-        Retrieves the handle for a generated step render artifact. This is
-        the lightweight artifact intended for UI consumption.
-        """
-        return self._artifact_manager.get_step_render_handle(step_uid)
-
     def get_step_ops_artifact_handle(
         self, step_uid: str
     ) -> Optional[StepOpsArtifactHandle]:
@@ -993,6 +1146,8 @@ class Pipeline:
         step_uids = []
         for layer in doc.layers:
             if not layer.workflow:
+                continue
+            if not layer.all_workpieces:
                 continue
             for step in layer.workflow.steps:
                 if not step.visible:

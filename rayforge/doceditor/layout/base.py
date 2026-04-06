@@ -1,15 +1,18 @@
 from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Sequence, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Sequence, TYPE_CHECKING
 from blinker import Signal
-from ...core.matrix import Matrix
-from ...core.item import DocItem
-from ...core.workpiece import WorkPiece
+from ...core.geo import Rect
 from ...core.group import Group
+from ...core.item import DocItem
+from ...core.matrix import Matrix
+from ...core.stock import StockItem
+from ...core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
     from ...shared.tasker.context import ExecutionContext
+    from ...shared.tasker.manager import TaskManager
 
 
 class LayoutStrategy(ABC):
@@ -20,7 +23,7 @@ class LayoutStrategy(ABC):
     to a list of DocItems to achieve a specific layout.
     """
 
-    def __init__(self, items: Sequence[DocItem]):
+    def __init__(self, items: Sequence[DocItem], **kwargs):
         if not items:
             raise ValueError("LayoutStrategy requires at least one item.")
         # Filter out items that are descendants of other items in the selection
@@ -58,10 +61,11 @@ class LayoutStrategy(ABC):
     @staticmethod
     def _get_item_world_bbox(
         item: DocItem,
-    ) -> Optional[Tuple[float, float, float, float]]:
+    ) -> Optional[Rect]:
         """
         Calculates the axis-aligned bounding box (min_x, min_y, max_x, max_y)
-        of a single DocItem (WorkPiece or Group) in world (mm) coordinates.
+        of a single DocItem (WorkPiece, Group, or StockItem) in world (mm)
+        coordinates.
         """
 
         items_to_measure = []
@@ -70,6 +74,8 @@ class LayoutStrategy(ABC):
         elif isinstance(item, Group):
             # For a group, get all descendant workpieces to measure
             items_to_measure.extend(item.get_descendants(of_type=WorkPiece))
+        elif isinstance(item, StockItem):
+            items_to_measure.append(item)
         else:
             return None
 
@@ -96,7 +102,7 @@ class LayoutStrategy(ABC):
 
     def _get_selection_world_bbox(
         self,
-    ) -> Optional[Tuple[float, float, float, float]]:
+    ) -> Optional[Rect]:
         """
         Calculates the collective world-space bounding box for all
         items. Returns (min_x, min_y, max_x, max_y).
@@ -132,3 +138,21 @@ class LayoutStrategy(ABC):
             move it to the target position.
         """
         pass
+
+    async def calculate_deltas_async(
+        self,
+        context: Optional[ExecutionContext] = None,
+        task_manager: "Optional[TaskManager]" = None,
+    ) -> Dict[DocItem, Matrix]:
+        """
+        Asynchronous version of calculate_deltas.
+
+        Default implementation raises NotImplementedError. Subclasses can
+        override this to provide async implementations.
+
+        Returns:
+            A dictionary mapping each DocItem to a delta Matrix.
+        """
+        raise NotImplementedError(
+            "This layout strategy does not support async calculation"
+        )

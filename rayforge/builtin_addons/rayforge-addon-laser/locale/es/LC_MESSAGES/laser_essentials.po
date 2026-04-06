@@ -1,0 +1,453 @@
+# Spanish translations for Rayforge.
+# Copyright (C) 2025 The Rayforge Project
+# This file is distributed under the same license as the Rayforge package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Rayforge\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-21 16:34+0100\n"
+"PO-Revision-Date: 2025-08-08 10:00+0200\n"
+"Last-Translator: Samuel Abels\n"
+"Language-Team: Spanish <LL@li.org>\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: laser_essentials/producers/raster_producer.py
+msgid "Variable Power"
+msgstr "Potencia variable"
+
+#: laser_essentials/producers/raster_producer.py
+msgid "Constant Power"
+msgstr "Potencia constante"
+
+#: laser_essentials/producers/raster_producer.py
+msgid "Dither"
+msgstr "Tramado"
+
+#: laser_essentials/producers/raster_producer.py
+msgid "Multiple Depths"
+msgstr "Múltiples profundidades"
+
+#: laser_essentials/producers/shrinkwrap_producer.py
+#: laser_essentials/producers/contour_producer.py
+msgid "Optimizing path with arcs..."
+msgstr "Optimizando trayectoria con arcos..."
+
+#: laser_essentials/producers/contour_producer.py
+msgid "Inside-Outside"
+msgstr "Interior-Exterior"
+
+#: laser_essentials/producers/contour_producer.py
+msgid "Outside-Inside"
+msgstr "Exterior-Interior"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Configure how the laser engraves your image."
+msgstr "Configurar cómo el láser graba tu imagen."
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Mode"
+msgstr "Modo"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Threshold"
+msgstr "Umbral"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Brightness cutoff for black/white (0-255)"
+msgstr "Umbral de brillo para blanco/negro (0-255)"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Engraving Method"
+msgstr "Método de grabado"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Algorithm for converting grayscale to binary"
+msgstr "Algoritmo para convertir escala de grises a binario"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Auto Levels"
+msgstr "Niveles Automáticos"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Automatically adjust black/white points"
+msgstr "Ajustar automáticamente los puntos negro/blanco"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Brightness Range"
+msgstr "Rango de brillo"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Auto-adjusted based on image content"
+msgstr "Ajustado automáticamente según el contenido de la imagen"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Drag markers to set black/white points"
+msgstr "Arrastra los marcadores para ajustar los puntos de blanco/negro"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Min Power"
+msgstr "Potencia mínima"
+
+#: laser_essentials/widgets/raster_widget.py
+#, python-format
+msgid "Power for lightest areas, as a % of the step's main power"
+msgstr ""
+"Potencia para las áreas más claras, como % de la potencia principal del paso."
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Max Power"
+msgstr "Potencia máxima"
+
+#: laser_essentials/widgets/raster_widget.py
+#, python-format
+msgid "Power for darkest areas, as a % of the step's main power"
+msgstr ""
+"Potencia para las áreas más oscuras, como % de la potencia principal del "
+"paso."
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Power Levels"
+msgstr "Niveles de potencia"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Number of discrete power steps (lower = fewer moves)"
+msgstr "Número de pasos de potencia discretos (menor = menos movimientos)"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Number of Depth Levels"
+msgstr "Número de niveles de profundidad"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Z Step-Down per Level (mm)"
+msgstr "Descenso en Z por nivel (mm)"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Rotate Angle Per Pass"
+msgstr "Ángulo de rotación por pasada"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Degrees to rotate each successive pass"
+msgstr "Grados para rotar cada pasada sucesiva"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Engraving Pattern"
+msgstr "Patrón de grabado"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Settings that control the scan line pattern and orientation."
+msgstr ""
+"Ajustes que controlan el patrón y la orientación de las líneas de escaneo."
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Angle"
+msgstr "Ángulo"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Angle of scan lines in degrees"
+msgstr "Ángulo de las líneas de escaneo en grados"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Cross-Hatch"
+msgstr "Trama cruzada"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Add a second pass at 90 degrees"
+msgstr "Añadir una segunda pasada a 90 grados"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Line Spacing"
+msgstr "Espaciado de línea"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Distance between scan lines"
+msgstr "Distancia entre líneas de escaneo"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Sample Interval"
+msgstr "Intervalo de muestreo"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid ""
+"Distance between power samples along scan line. Lower values improve "
+"accuracy, but increase output size."
+msgstr ""
+"Distancia entre muestras de potencia a lo largo de la línea de escaneo. Los "
+"valores más bajos mejoran la precisión, pero aumentan el tamaño de salida."
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Invert"
+msgstr "Invertir"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Engrave white areas instead of black areas"
+msgstr "Grabar áreas blancas en lugar de áreas negras"
+
+#: laser_essentials/widgets/raster_widget.py
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Change Power Range"
+msgstr "Cambiar rango de potencia"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Change Min Power"
+msgstr "Cambiar potencia mínima"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Change Max Power"
+msgstr "Cambiar potencia máxima"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Min Power (Black)"
+msgstr "Potencia mínima (Negro)"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Max Power (White)"
+msgstr "Potencia máxima (Blanco)"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Min Power (White)"
+msgstr "Potencia mín. (Blanco)"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Max Power (Black)"
+msgstr "Potencia máx. (Negro)"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Change engraving setting"
+msgstr "Cambiar ajuste de grabado"
+
+#: laser_essentials/widgets/shrinkwrap_widget.py
+msgid "Gravity"
+msgstr "Gravedad"
+
+#: laser_essentials/widgets/shrinkwrap_widget.py
+msgid "Pulls the hull inward. 0.0 is a standard convex hull"
+msgstr ""
+"Tira de la envoltura hacia adentro. 0.0 es una envoltura convexa estándar."
+
+#: laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/frame_widget.py
+#: laser_essentials/widgets/contour_widget.py
+msgid "Cut Side"
+msgstr "Lado de corte"
+
+#: laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/frame_widget.py
+#: laser_essentials/widgets/contour_widget.py
+msgid "Path Offset"
+msgstr "Desplazamiento de trayectoria"
+
+#: laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/contour_widget.py
+msgid ""
+"Absolute distance from original path in machine units, direction is "
+"controlled by Cut Side"
+msgstr ""
+"Distancia absoluta desde la trayectoria original en unidades de máquina, la "
+"dirección está controlada por el lado de corte"
+
+#: laser_essentials/widgets/shrinkwrap_widget.py
+msgid "Change Shrinkwrap Setting"
+msgstr "Cambiar ajuste de envoltura"
+
+#: laser_essentials/widgets/frame_widget.py
+msgid "Absolute distance from content boundary in machine units"
+msgstr ""
+"Distancia absoluta desde el límite del contenido en unidades de máquina"
+
+#: laser_essentials/widgets/frame_widget.py
+msgid "Change Frame Setting"
+msgstr "Cambiar ajuste de marco"
+
+#: laser_essentials/widgets/contour_widget.py
+msgid "Remove Inner Paths"
+msgstr "Eliminar trayectorias internas"
+
+#: laser_essentials/widgets/contour_widget.py
+msgid "If enabled, only trace the outer outline of shapes"
+msgstr "Si está habilitado, solo traza el contorno exterior de las formas."
+
+#: laser_essentials/widgets/contour_widget.py
+msgid "Cut Order"
+msgstr "Orden de corte"
+
+#: laser_essentials/widgets/contour_widget.py
+msgid "Processing order for nested paths"
+msgstr "Orden de procesamiento para trayectorias anidadas"
+
+#: laser_essentials/widgets/contour_widget.py
+msgid "Rescan Content"
+msgstr "Reescanear contenido"
+
+#: laser_essentials/widgets/contour_widget.py
+msgid "Ignore source geometry and re-trace within the workpiece"
+msgstr ""
+"Ignorar geometría de origen y volver a trazar dentro de la pieza de trabajo"
+
+#: laser_essentials/widgets/contour_widget.py
+msgid "Tracing Threshold"
+msgstr "Umbral de trazado"
+
+#: laser_essentials/widgets/contour_widget.py
+msgid "Brightness level (0.0-1.0) to define edges"
+msgstr "Nivel de brillo (0.0-1.0) para definir bordes"
+
+#: laser_essentials/widgets/contour_widget.py
+msgid "Change Edge Tracer Setting"
+msgstr "Cambiar ajuste del trazador de bordes"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Presets"
+msgstr "Preajustes"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Load common test configurations"
+msgstr "Cargar configuraciones de prueba comunes"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Test Type"
+msgstr "Tipo de prueba"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Cut: outlines; Engrave: fills with raster lines"
+msgstr "Corte: contornos; Grabado: rellenos con líneas de trama"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Speed &amp; Power"
+msgstr "Velocidad y Potencia"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Define the range of speeds and powers for the test grid"
+msgstr ""
+"Define el rango de velocidades y potencias para la cuadrícula de prueba"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Minimum Power (%)"
+msgstr "Potencia mínima (%)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "For first column"
+msgstr "Para la primera columna"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Maximum Power (%)"
+msgstr "Potencia máxima (%)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "For last column"
+msgstr "Para la última columna"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Minimum Speed"
+msgstr "Velocidad mínima"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Starting speed (mm/min)"
+msgstr "Velocidad inicial (mm/min)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Maximum Speed"
+msgstr "Velocidad máxima"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Ending speed (mm/min)"
+msgstr "Velocidad final (mm/min)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Columns (Power Steps)"
+msgstr "Columnas (Pasos de potencia)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Number of power variations"
+msgstr "Número de variaciones de potencia"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Rows (Speed Steps)"
+msgstr "Filas (Pasos de velocidad)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Number of speed variations"
+msgstr "Número de variaciones de velocidad"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Shape Size"
+msgstr "Tamaño de la forma"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Size of each test square (mm)"
+msgstr "Tamaño de cada cuadrado de prueba (mm)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Spacing"
+msgstr "Espaciado"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Gap between test squares (mm)"
+msgstr "Separación entre cuadrados de prueba (mm)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Line Interval"
+msgstr "Intervalo de línea"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid ""
+"Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
+"to use laser spot size."
+msgstr ""
+"Distancia entre líneas de escaneo en unidades de máquina (para modo "
+"Grabado). Dejar en 0 para usar el tamaño del punto láser."
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Include Labels"
+msgstr "Incluir etiquetas"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Add speed/power annotations to the grid"
+msgstr "Añadir anotaciones de velocidad/potencia a la cuadrícula"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Label Engrave Power (%)"
+msgstr "Potencia de grabado de etiqueta (%)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+#, python-brace-format
+msgid "Change {param_name}"
+msgstr "Cambiar {param_name}"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Change Grid Dimensions"
+msgstr "Cambiar dimensiones de la cuadrícula"
+
+#: laser_essentials/steps/shrinkwrap_step.py
+msgid "Shrink Wrap"
+msgstr "Envoltura"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Frame Outline"
+msgstr "Contorno de marco"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Engrave"
+msgstr "Grabar"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Contour"
+msgstr "Contorno"
+
+#: laser_essentials/steps/material_test.py
+#: laser_essentials/commands/material_test_cmd.py
+msgid "Material Test Grid"
+msgstr "Cuadrícula de prueba de material"
+
+#: laser_essentials/backend.py
+msgid "Create Material Test Grid"
+msgstr "Crear cuadrícula de prueba de material"
+
+#: laser_essentials/commands/material_test_cmd.py
+msgid "Add Material Test"
+msgstr "Añadir prueba de material"

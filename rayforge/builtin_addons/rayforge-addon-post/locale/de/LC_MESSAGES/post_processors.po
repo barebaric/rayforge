@@ -1,0 +1,313 @@
+# German translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-25 22:24+0100\n"
+"PO-Revision-Date: 2026-03-18 23:38+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Enable Overscan"
+msgstr "Überlauf aktivieren"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Automatic Distance"
+msgstr "Automatischer Abstand"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Calculate distance based on speed and acceleration with safety factor"
+msgstr ""
+"Abstand basierend auf Geschwindigkeit und Beschleunigung mit "
+"Sicherheitsfaktor berechnen"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Overscan Distance"
+msgstr "Überlaufabstand"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Manual distance setting"
+msgstr "Manuelle Abstandseinstellung"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Toggle Overscan"
+msgstr "Überlauf umschalten"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Toggle Auto Overscan"
+msgstr "Automatischen Überlauf umschalten"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Auto Calculate Overscan Distance"
+msgstr "Überlaufabstand automatisch berechnen"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Disable Auto Overscan"
+msgstr "Automatischen Überlauf deaktivieren"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Change Overscan Distance"
+msgstr "Überlaufabstand ändern"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Enable Optimization"
+msgstr "Optimierung aktivieren"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Minimizes travel distance by reordering segments"
+msgstr "Minimiert Verfahrweg durch Neuanordnung der Segmente"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Allow Flipping"
+msgstr "Umkehrung zulassen"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Allow reversing path direction for shorter travel"
+msgstr "Umkehrung der Pfadrichtung für kürzeren Verfahrweg zulassen"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Preserve First Workpiece"
+msgstr "Erstes Werkstück beibehalten"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Keep the first workpiece at its original position"
+msgstr "Erstes Werkstück an seiner ursprünglichen Position behalten"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Toggle Path Optimization"
+msgstr "Pfadoptimierung umschalten"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Toggle Flipping"
+msgstr "Umkehrung umschalten"
+
+#: post_processors/widgets/optimize_widget.py
+msgid "Toggle Preserve First Workpiece"
+msgstr "Erstes Werkstück beibehalten umschalten"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Enable Crop-to-Stock"
+msgstr "Auf Material zuschneiden aktivieren"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Removes toolpaths extending beyond stock boundary"
+msgstr "Entfernt Werkzeugpfade, die über die Materialgrenze hinausgehen"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Offset"
+msgstr "Versatz"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Grow/shrink stock boundary before cropping"
+msgstr "Materialgrenze vor dem Zuschneiden vergrößern/verkleinern"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Toggle Crop-to-Stock"
+msgstr "Auf Material zuschneiden umschalten"
+
+#: post_processors/widgets/crop_widget.py
+msgid "Change Crop Offset"
+msgstr "Zuschnittversatz ändern"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Enable Smoothing"
+msgstr "Glättung aktivieren"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Smooths jagged edges using a Gaussian filter"
+msgstr "Glättet gezackte Kanten mit einem Gauß-Filter"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Smoothness"
+msgstr "Glättung"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Higher values produce smoother curves"
+msgstr "Höhere Werte erzeugen glattere Kurven"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Corner Angle Threshold"
+msgstr "Eckenschwellenwert"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Angles sharper than this are kept as corners (degrees)"
+msgstr "Scharfere Winkel als dieser werden als Ecken beibehalten (Grad)"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Toggle Smoothing"
+msgstr "Glättung umschalten"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Change smoothness"
+msgstr "Glättung ändern"
+
+#: post_processors/widgets/smooth_widget.py
+msgid "Change corner angle"
+msgstr "Eckenwinkel ändern"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Enable Merge Lines"
+msgstr "Linien zusammenführen aktivieren"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Merges overlapping line segments to avoid double passing"
+msgstr ""
+"Führt überlappende Liniensegmente zusammen, um doppeltes Bearbeiten zu "
+"vermeiden"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Tolerance"
+msgstr "Toleranz"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Maximum distance for lines to be considered overlapping"
+msgstr "Maximaler Abstand, damit Linien als überlappend gelten"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Toggle Merge Lines"
+msgstr "Linien zusammenführen umschalten"
+
+#: post_processors/widgets/merge_lines_widget.py
+msgid "Change merge tolerance"
+msgstr "Zusammenführungstoleranz ändern"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Number of Passes"
+msgstr "Anzahl Durchläufe"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "How often to repeat the entire step"
+msgstr "Wie oft der gesamte Schritt wiederholt werden soll"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Z Step-Down per Pass"
+msgstr "Z-Absenkung pro Durchlauf"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Distance to lower Z-axis for each subsequent pass in machine units"
+msgstr ""
+"Absenkung der Z-Achse für jeden nachfolgenden Durchlauf in Maschineneinheiten"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Change number of passes"
+msgstr "Anzahl Durchläufe ändern"
+
+#: post_processors/widgets/multipass_widget.py
+msgid "Change Z Step-Down"
+msgstr "Z-Absenkung ändern"
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Optimize Path"
+msgstr "Pfad optimieren"
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Minimizes travel distance by reordering segments."
+msgstr "Minimiert den Verfahrweg durch Neuanordnung der Segmente."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Analyzing workpieces..."
+msgstr "Werkstücke werden analysiert..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Optimizing workpiece order..."
+msgstr "Werkstückreihenfolge wird optimiert..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Applying 2-opt refinement..."
+msgstr "2-opt-Verfeinerung wird angewendet..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Reassembling optimized workpieces..."
+msgstr "Optimierte Werkstücke werden wieder zusammengesetzt..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Workpiece optimization complete"
+msgstr "Werkstückoptimierung abgeschlossen"
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Preprocessing for optimization..."
+msgstr "Vorverarbeitung für Optimierung..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Analyzing and bucketing path segments..."
+msgstr "Pfadsegmente werden analysiert und gruppiert..."
+
+#: post_processors/transformers/optimize_transformer.py
+#, python-brace-format
+msgid "Optimizing segment {i}/{total}..."
+msgstr "Segment {i}/{total} wird optimiert..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Finding nearest paths..."
+msgstr "Nächste Pfade werden gesucht..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Reassembling optimized paths..."
+msgstr "Optimierte Pfade werden wieder zusammengesetzt..."
+
+#: post_processors/transformers/optimize_transformer.py
+msgid "Optimization complete"
+msgstr "Optimierung abgeschlossen"
+
+#: post_processors/transformers/smooth_transformer.py
+msgid "Smooth Path"
+msgstr "Pfad glätten"
+
+#: post_processors/transformers/smooth_transformer.py
+msgid "Smooths the path by applying a Gaussian filter."
+msgstr "Glättet den Pfad durch Anwendung eines Gauß-Filters."
+
+#: post_processors/transformers/merge_lines_transformer.py
+msgid "Merge Lines"
+msgstr "Linien zusammenführen"
+
+#: post_processors/transformers/merge_lines_transformer.py
+msgid "Merges overlapping lines to avoid double passing."
+msgstr ""
+"Führt überlappende Linien zusammen, um doppeltes Bearbeiten zu vermeiden."
+
+#: post_processors/transformers/overscan_transformer.py
+msgid "Overscan"
+msgstr "Überlauf"
+
+#: post_processors/transformers/overscan_transformer.py
+msgid "Extends raster lines to ensure constant engraving speed."
+msgstr ""
+"Verlängert Rasterlinien, um eine konstante Gravurgeschwindigkeit zu "
+"gewährleisten."
+
+#: post_processors/transformers/crop_transformer.py
+msgid "Crop to Stock"
+msgstr "Auf Material zuschneiden"
+
+#: post_processors/transformers/crop_transformer.py
+msgid "Crops cutting lines to stock boundary."
+msgstr "Schneidet Schneidlinien auf die Materialgrenze zu."
+
+#: post_processors/transformers/multipass_transformer.py
+msgid "Multi-Pass"
+msgstr "Mehrfachdurchlauf"
+
+#: post_processors/transformers/multipass_transformer.py
+msgid "Repeats the path multiple times, optionally stepping down in Z."
+msgstr "Wiederholt den Pfad mehrmals, optional mit Absenkung in Z."
+
+#: post_processors/transformers/tabs_transformer.py
+msgid "Tabs"
+msgstr "Haltestege"
+
+#: post_processors/transformers/tabs_transformer.py
+msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
+msgstr ""
+"Erstellt Haltestege durch Hinzufügen von Lücken oder Reduzierung der "
+"Leistung auf Schneidpfaden"

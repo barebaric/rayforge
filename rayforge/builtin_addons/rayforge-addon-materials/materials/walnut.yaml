@@ -1,0 +1,28 @@
+uid: walnut
+name:
+  default: Walnut
+  de: Walnuss
+  es: Nogal
+  fr: Noyer
+  pt: Nogueira
+  uk: Горіх
+  zh_CN: 胡桃木
+description:
+  default: Dark hardwood with rich brown tones
+  de: Dunkles Hartholz mit reichen brauntönen
+  es: Madera dura oscura con tonos marrones ricos
+  fr: Bois dur foncé avec des tons bruns riches
+  pt: Madeira dura escura com tons marrons ricos
+  uk: Темна тверда деревина з багатими коричневими відтінками
+  zh_CN: 深色硬木，具有丰富的棕色调
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#5D4037"
+  pattern: wood_grain

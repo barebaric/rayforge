@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
-from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.image.assembler import ItemAssembler
 from rayforge.image.structures import LayoutItem
 from rayforge.core.source_asset import SourceAsset
@@ -72,7 +72,7 @@ def test_split_layers_creation(assembler, source, mock_geo):
     """
     mock_geo_a = MagicMock(spec=Geometry)
     mock_geo_b = MagicMock(spec=Geometry)
-    spec = PassthroughSpec(create_new_layers=True)
+    spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
     plan = [
         LayoutItem(
             layer_id="LayerA",

@@ -1,20 +1,7 @@
-import pytest
 from rayforge.machine.models.dialect import (
     GcodeDialect,
-    register_dialect,
-    _DIALECT_REGISTRY,
+    GRBL_DIALECT,
 )
-from rayforge.machine.models.dialect_builtins import GRBL_DIALECT
-
-
-@pytest.fixture(autouse=True)
-def clean_registry():
-    """Ensures the registry is clean before each test."""
-    _DIALECT_REGISTRY.clear()
-    # Register a base dialect to serve as a parent for tests
-    register_dialect(GRBL_DIALECT)
-    yield
-    _DIALECT_REGISTRY.clear()
 
 
 def test_instantiation():
@@ -24,6 +11,7 @@ def test_instantiation():
         description="A test description",
         laser_on="M3",
         laser_off="M5",
+        focus_laser_on="M3",
         tool_change="T1",
         set_speed="",
         travel_move="G0",
@@ -53,6 +41,7 @@ def test_serialization():
         description="Testing to_dict",
         laser_on="M4",
         laser_off="M5",
+        focus_laser_on="M3",
         tool_change="",
         set_speed="",
         travel_move="",
@@ -87,7 +76,7 @@ def test_deserialization_with_parent():
     Test that deserializing data with missing fields correctly inherits
     defaults from the parent dialect.
     """
-    # GRBL_DIALECT is already in the registry thanks to the fixture.
+    registry = {GRBL_DIALECT.uid.lower(): GRBL_DIALECT}
 
     partial_data = {
         "label": "My Custom GRBL",
@@ -96,7 +85,7 @@ def test_deserialization_with_parent():
         # Missing fields like laser_off, travel_move, etc. should be inherited
     }
 
-    dialect = GcodeDialect.from_dict(partial_data)
+    dialect = GcodeDialect.from_dict(partial_data, registry=registry)
 
     # Check override
     assert dialect.laser_on == "M3 S{power}"
@@ -178,6 +167,7 @@ def test_inject_wcs_after_preamble_default():
         description="A test description",
         laser_on="M3",
         laser_off="M5",
+        focus_laser_on="M3",
         tool_change="T1",
         set_speed="",
         travel_move="G0",
@@ -204,6 +194,7 @@ def test_inject_wcs_after_preamble_can_be_disabled():
         description="A test description",
         laser_on="M3",
         laser_off="M5",
+        focus_laser_on="M3",
         tool_change="T1",
         set_speed="",
         travel_move="G0",
@@ -231,6 +222,7 @@ def test_inject_wcs_after_preamble_serialization():
         description="Testing to_dict",
         laser_on="M4",
         laser_off="M5",
+        focus_laser_on="M3",
         tool_change="",
         set_speed="",
         travel_move="",
@@ -267,6 +259,7 @@ def test_forward_compatibility_unknown_fields():
         description="A test description",
         laser_on="M3",
         laser_off="M5",
+        focus_laser_on="M3",
         tool_change="T1",
         set_speed="",
         travel_move="G0",
@@ -321,6 +314,7 @@ def test_forward_compatibility_roundtrip():
         "description": "Testing roundtrip",
         "laser_on": "M3",
         "laser_off": "M5",
+        "focus_laser_on": "M3",
         "tool_change": "",
         "set_speed": "",
         "travel_move": "",

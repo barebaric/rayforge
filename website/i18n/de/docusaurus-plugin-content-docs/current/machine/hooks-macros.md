@@ -105,9 +105,7 @@ M5
 
 ---
 
----
-
-### Makro-Beispiele
+## Hooks
 
 Hooks sind **automatische G-Code-Einschleusungen**, die durch bestimmte Ereignisse während der Jobausführung ausgelöst werden.
 
@@ -117,12 +115,14 @@ Rayforge unterstützt diese Hook-Auslöser:
 
 | Auslöser            | Wann es ausgeführt wird            | Häufige Verwendungen                          |
 | ------------------- | ---------------------------------- | --------------------------------------------- |
-| **Job-Start**       | Ganz am Anfang des Jobs            | Referenzieren, Arbeits-Offset, Luftunterstützung ein, Vorheizen |
-| **Job-Ende**        | Ganz am Ende des Jobs              | Nach Hause zurückkehren, Luftunterstützung aus, Piepen, Abkühlen |
 | **Ebenen-Start**    | Vor der Verarbeitung jeder Ebene   | Werkzeugwechsel, Leistung anpassen, Kommentare |
 | **Ebenen-Ende**     | Nach der Verarbeitung jeder Ebene  | Fortschrittsbenachrichtigung, Pause           |
 | **Werkstück-Start** | Vor der Verarbeitung jedes Werkstücks | Teilenummerierung, Ausrichtungsmarkierungen   |
 | **Werkstück-Ende**  | Nach der Verarbeitung jedes Werkstücks | Abkühlen, Inspektionspause                    |
+
+:::note Job-Level G-Code
+Job-Start und -Ende G-Code wird über die Präambel- und Postscript-Einstellungen des Dialekts konfiguriert, nicht über Hooks. Siehe [G-Code-Einstellungen](gcode) für Details.
+:::
 
 ### Einen Hook erstellen
 
@@ -140,40 +140,6 @@ Rayforge unterstützt diese Hook-Auslöser:
    - Schalte Hooks ein/aus, ohne sie zu löschen
 
 ### Beispiel-Hooks
-
-#### Job-Start: Maschine initialisieren
-
-**Auslöser:** Job-Start
-**Code:**
-
-```gcode
-G21         ; Millimeter
-G90         ; Absolute Positionierung
-$H          ; Maschine referenzieren
-G0 X0 Y0    ; Zum Ursprung bewegen
-M3 S0       ; Laser an aber Leistung 0 (manche Controller benötigen dies)
-M8          ; Luftunterstützung EIN
-```
-
-**Zweck:** Stellt sicher, dass die Maschine vor jedem Job in einem bekannten Zustand ist.
-
----
-
-#### Job-Ende: Nach Hause zurückkehren und piepen
-
-**Auslöser:** Job-Ende
-**Code:**
-
-```gcode
-M5          ; Laser AUS
-M9          ; Luftunterstützung AUS
-G0 X0 Y0    ; Zum Ursprung zurückkehren
-M300 S800 P200  ; Piepen (falls unterstützt)
-```
-
-**Zweck:** Beendet den Job sicher und signalisiert den Abschluss.
-
----
 
 #### Ebenen-Start: Kommentar hinzufügen
 
@@ -208,24 +174,22 @@ M300 S800 P200  ; Piepen (falls unterstützt)
 Für einen Job mit 2 Ebenen, jede mit 2 Werkstücken:
 
 ```
-[Job-Start Hook]
   [Ebenen-Start Hook] (Ebene 1)
     [Werkstück-Start Hook] (Werkstück 1)
-      ... Werkstück 1 G-Code ...
+       ... Werkstück 1 G-Code ...
     [Werkstück-Ende Hook] (Werkstück 1)
     [Werkstück-Start Hook] (Werkstück 2)
-      ... Werkstück 2 G-Code ...
+       ... Werkstück 2 G-Code ...
     [Werkstück-Ende Hook] (Werkstück 2)
   [Ebenen-Ende Hook] (Ebene 1)
   [Ebenen-Start Hook] (Ebene 2)
     [Werkstück-Start Hook] (Werkstück 3)
-      ... Werkstück 3 G-Code ...
+       ... Werkstück 3 G-Code ...
     [Werkstück-Ende Hook] (Werkstück 3)
     [Werkstück-Start Hook] (Werkstück 4)
-      ... Werkstück 4 G-Code ...
+       ... Werkstück 4 G-Code ...
     [Werkstück-Ende Hook] (Werkstück 4)
   [Ebenen-Ende Hook] (Ebene 2)
-[Job-Ende Hook]
 ```
 
 ---
@@ -360,9 +324,6 @@ Teste Makros und Hooks immer im **Simulationsmodus** oder mit **deaktiviertem La
 
 - [ ] Makros enthalten Vorschub-Grenzen (`F`-Parameter)
 - [ ] Makros überprüfen Positionsgrenzen
-- [ ] Job-Start-Hooks enthalten `M5` oder Laser-aus-Befehl
-- [ ] Job-Ende-Hooks schalten Laser (`M5`) und Luftunterstützung (`M9`) aus
-- [ ] Keine destruktiven Befehle ohne Bestätigung
 - [ ] In Simulation oder mit deaktiviertem Laser getestet
 
 ---

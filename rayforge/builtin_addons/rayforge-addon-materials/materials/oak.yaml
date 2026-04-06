@@ -1,0 +1,28 @@
+uid: oak
+name:
+  default: Oak
+  de: Eiche
+  es: Roble
+  fr: Chêne
+  pt: Carvalho
+  uk: Дуб
+  zh_CN: 橡木
+description:
+  default: Hardwood with distinctive grain pattern
+  de: Hartholz mit ausgeprägter Maserung
+  es: Madera dura con patrón de veta distintivo
+  fr: Bois dur avec un motif de grain distinctif
+  pt: Madeira dura com padrão de grão distinto
+  uk: Тверда деревина з характерним візерунком
+  zh_CN: 具有独特纹理的硬木
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#A0522D"
+  pattern: wood_grain

@@ -66,16 +66,17 @@ Configura definições para objetos selecionados ou operações:
 - Número de passagens
 - Opções avançadas (overscan, kerf, abas)
 
-### 6. Painel de Controle
+### 6. Painel Inferior
 
-O Painel de Controle na parte inferior da janela fornece:
+O Painel Inferior na parte inferior da janela fornece:
 
+- **Aba do Console**: Terminal G-code interativo para monitoramento da máquina
+- **Aba do Visualizador G-code**: Visualização do G-code gerado com destaque de sintaxe
 - **Controles de Jog**: Movimento e posicionamento manual da máquina
 - **Status da Máquina**: Posição em tempo real e estado de conexão
-- **Visão de Log**: Comunicação G-code e histórico de operações
 - **Gerenciamento WCS**: Seleção e zeramento do sistema de coordenadas de trabalho
 
-Veja [Painel de Controle](control-panel) para informação detalhada.
+Veja [Painel Inferior](bottom-panel) para informação detalhada.
 
 ## Gerenciamento de Janela
 
@@ -109,5 +110,5 @@ Personalize a interface em **Editar → Preferências**:
 
 - [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems) - WCS
 - [Ferramentas da Tela](canvas-tools) - Ferramentas para manipular designs
-- [Painel de Controle](control-panel) - Controle manual da máquina, status e logs
+- [Painel Inferior](bottom-panel) - Controle manual da máquina, status e logs
 - [Visualização 3D](3d-preview) - Visualizar caminhos de ferramenta em 3D

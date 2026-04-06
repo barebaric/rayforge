@@ -3,16 +3,29 @@ from unittest.mock import MagicMock
 
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
+from rayforge.core.workpiece import WorkPiece
 from rayforge.core.geo import Geometry
+from rayforge.core.geo.constants import CMD_TYPE_ARC
 from rayforge.doceditor.stock_cmd import StockCmd
+from rayforge.pipeline.coordspace import (
+    MachineSpace,
+    OriginCorner,
+    AxisDirection,
+)
 
 
 @pytest.fixture
 def stock_cmd(doc_editor, context_initializer):
-    """Provides a StockCmd instance."""
     mock_machine = MagicMock()
     mock_machine.axis_extents = (200.0, 200.0)
     mock_machine.work_area = (0.0, 0.0, 200.0, 200.0)
+    mock_machine.get_reference_position_world.return_value = (0.0, 0.0)
+    mock_machine.get_coordinate_space.return_value = MachineSpace(
+        origin=OriginCorner.BOTTOM_LEFT,
+        x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+        y_positive_direction=AxisDirection.POSITIVE_UP,
+        extents=(200.0, 200.0),
+    )
     context_initializer.config.machine = mock_machine
     return StockCmd(doc_editor)
 
@@ -90,3 +103,40 @@ def test_set_stock_thickness_no_change(stock_cmd, sample_stock_item_and_asset):
     assert item.thickness == initial_thickness
     hm = stock_cmd._editor.doc.history_manager
     assert len(hm.undo_stack) == initial_history_len
+
+
+def test_convert_to_stock_preserves_arcs(stock_cmd, doc_editor):
+    """Test that converting a workpiece to stock preserves arcs."""
+    doc = doc_editor.doc
+
+    geometry = Geometry()
+    geometry.move_to(0, 0)
+    geometry.line_to(10, 0)
+    geometry.arc_to(10, 10, 0, 5, clockwise=True)
+    geometry.line_to(0, 10)
+    geometry.arc_to(0, 0, 0, -5, clockwise=True)
+    geometry.close_path()
+
+    workpiece = WorkPiece(name="Test Workpiece")
+    workpiece._edited_boundaries = geometry
+    doc.add_child(workpiece)
+
+    arc_count_before = sum(
+        1 for cmd in geometry.iter_commands() if cmd[0] == CMD_TYPE_ARC
+    )
+    assert arc_count_before == 2, "Test setup: geometry should have 2 arcs"
+
+    stock_item = stock_cmd.convert_to_stock(workpiece)
+
+    assert stock_item is not None
+    assert stock_item.name == "Test Workpiece"
+    assert workpiece not in doc.children
+
+    stock_geo = stock_item.geometry
+    arc_count_after = sum(
+        1 for cmd in stock_geo.iter_commands() if cmd[0] == CMD_TYPE_ARC
+    )
+
+    assert arc_count_after == arc_count_before, (
+        f"Expected {arc_count_before} arcs but got {arc_count_after}"
+    )

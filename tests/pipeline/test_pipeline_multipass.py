@@ -5,34 +5,32 @@ import pytest
 import logging
 import asyncio
 from pathlib import Path
+from rayforge.context import get_context
 from rayforge.core.doc import Doc
+from rayforge.core.geo import Geometry
 from rayforge.core.layer import Layer
-from rayforge.core.step import Step
-from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.transformer.multipass import MultiPassTransformer
-from rayforge.image import SVG_RENDERER
+from rayforge.core.ops import Ops
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
+from rayforge.core.step import Step
 from rayforge.core.vectorization_spec import PassthroughSpec
-from rayforge.core.geo import Geometry
-from rayforge.core.ops import Ops
-from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.steps import ContourStep
-from rayforge.pipeline.stage.workpiece_runner import (
-    make_workpiece_artifact_in_subprocess,
-)
-from rayforge.pipeline.stage.step_runner import (
-    make_step_artifact_in_subprocess,
-)
-from rayforge.pipeline.stage.job_runner import make_job_artifact_in_subprocess
+from rayforge.core.workpiece import WorkPiece
+from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
-    StepRenderArtifact,
     StepOpsArtifact,
     JobArtifact,
 )
-from rayforge.context import get_context
+from rayforge.pipeline.coord import CoordinateSystem
+from rayforge.pipeline.pipeline import Pipeline
+from rayforge.pipeline.stage.job_runner import make_job_artifact_in_subprocess
+from rayforge.pipeline.stage.step_runner import (
+    make_step_artifact_in_subprocess,
+)
+from rayforge.pipeline.stage.workpiece_runner import (
+    make_workpiece_artifact_in_subprocess,
+)
+
 
 logger = logging.getLogger(__name__)
 
@@ -135,22 +133,10 @@ class TestPipelineMultipass:
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         store = get_context().artifact_store
-                        render_artifact = StepRenderArtifact(generation_id=1)
-                        render_handle = store.put(render_artifact)
                         ops_artifact = StepOpsArtifact(
                             ops=Ops(), generation_id=1
                         )
                         ops_handle = store.put(ops_artifact)
-
-                        render_event = {
-                            "handle_dict": render_handle.to_dict(),
-                            "generation_id": gen_id,
-                        }
-                        task_info.when_event(
-                            task_obj,
-                            "render_artifact_ready",
-                            render_event,
-                        )
 
                         ops_event = {
                             "handle_dict": ops_handle.to_dict(),
@@ -224,8 +210,11 @@ class TestPipelineMultipass:
 
         assert handler_called.called
 
-    def test_multipass_change_sends_job_assembly_invalidated(self):
+    def test_multipass_change_sends_job_assembly_invalidated(
+        self, get_transformer
+    ):
         """Test multipass changes send job_assembly_invalidated signal."""
+        MultiPassTransformer = get_transformer("MultiPassTransformer")
         doc = Doc()
         layer = Layer(name="Test Layer")
         step = Step(typelabel="Test Step", name="Test Step")
@@ -255,12 +244,17 @@ class TestPipelineMultipass:
 
     @pytest.mark.asyncio
     async def test_multipass_change_triggers_step_assembly(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
         pipeline = Pipeline(
             doc,

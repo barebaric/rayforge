@@ -1,24 +1,21 @@
 import pytest
 from unittest.mock import patch
-import numpy as np
 
+from rayforge.context import get_context
 from rayforge.core.doc import Doc
-from rayforge.core.workpiece import WorkPiece
 from rayforge.core.ops import Ops, LineToCommand
+from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.machine import Machine, Laser
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
-    StepRenderArtifact,
     StepOpsArtifact,
     create_handle_from_dict,
 )
-from rayforge.context import get_context
 from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.core.matrix import Matrix
 from rayforge.pipeline.stage.step_runner import (
     make_step_artifact_in_subprocess,
 )
-from rayforge.pipeline.transformer import Optimize
+from rayforge.pipeline.transformer.registry import transformer_registry
 
 
 @pytest.fixture
@@ -84,17 +81,10 @@ def test_step_runner_correctly_scales_and_places_ops(
     assert result == 1
 
     calls = adopting_mock_proxy.send_event_and_wait.call_args_list
-    assert len(calls) == 2  # render_artifact_ready and ops_artifact_ready
+    assert len(calls) == 1
 
-    # Find and validate render artifact
-    render_call = next(c for c in calls if c[0][0] == "render_artifact_ready")
-    render_handle_dict = render_call[0][1]["handle_dict"]
-    render_handle = create_handle_from_dict(render_handle_dict)
-    render_artifact = get_context().artifact_store.get(render_handle)
-    assert isinstance(render_artifact, StepRenderArtifact)
-
-    # Find and validate ops artifact
-    ops_call = next(c for c in calls if c[0][0] == "ops_artifact_ready")
+    ops_call = calls[0]
+    assert ops_call[0][0] == "ops_artifact_ready"
     ops_handle_dict = ops_call[0][1]["handle_dict"]
     ops_handle = create_handle_from_dict(ops_handle_dict)
     ops_artifact = get_context().artifact_store.get(ops_handle)
@@ -116,96 +106,7 @@ def test_step_runner_correctly_scales_and_places_ops(
     assert line_cmd.end == pytest.approx(expected_end)
 
     get_context().artifact_store.release(base_handle)
-    get_context().artifact_store.release(render_handle)
     get_context().artifact_store.release(ops_handle)
-
-
-def test_step_runner_handles_texture_data(machine, adopting_mock_proxy):
-    """
-    Tests that texture data is correctly packaged into a TextureInstance
-    with correct final transformation matrix.
-    """
-    doc = Doc()
-    layer = doc.active_layer
-    wp = WorkPiece(name="wp1")
-    wp.set_size(20, 10)
-    # Final placement: translate to (50, 60) and rotate 90 degrees.
-    wp.pos = 50, 60
-    wp.angle = 90
-    layer.add_workpiece(wp)
-
-    base_artifact = WorkPieceArtifact(
-        ops=Ops(),
-        is_scalable=False,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-        generation_size=(20, 10),
-        generation_id=1,
-    )
-    base_handle = get_context().artifact_store.put(base_artifact)
-    assembly_info = [
-        {
-            "artifact_handle_dict": base_handle.to_dict(),
-            "world_transform_list": wp.get_world_transform().to_list(),
-            "workpiece_dict": wp.in_world().to_dict(),
-        }
-    ]
-
-    result = make_step_artifact_in_subprocess(
-        proxy=adopting_mock_proxy,
-        artifact_store=get_context().artifact_store,
-        workpiece_assembly_info=assembly_info,
-        step_uid="step1",
-        generation_id=1,
-        per_step_transformers_dicts=[],
-        cut_speed=machine.max_cut_speed,
-        travel_speed=machine.max_travel_speed,
-        acceleration=machine.acceleration,
-        creator_tag="tstp",
-    )
-    assert result == 1
-
-    assert adopting_mock_proxy.send_event_and_wait.call_count == 2
-    render_call = next(
-        c
-        for c in adopting_mock_proxy.send_event_and_wait.call_args_list
-        if c[0][0] == "render_artifact_ready"
-    )
-    render_handle_dict = render_call[0][1]["handle_dict"]
-    render_handle = create_handle_from_dict(render_handle_dict)
-    render_artifact = get_context().artifact_store.get(render_handle)
-
-    assert isinstance(render_artifact, StepRenderArtifact)
-    assert len(render_artifact.texture_instances) == 1
-    instance = render_artifact.texture_instances[0]
-
-    # The final transform should be:
-    # WorldPlacement @ LocalTranslation @ LocalScale
-    # The runner correctly extracts placement (pos/rot) and discards scale
-    # from workpiece's full world transform. The test must replicate this.
-    full_world_transform = wp.get_world_transform()
-    (tx, ty, angle, sx, sy, skew) = full_world_transform.decompose()
-    world_placement_matrix = Matrix.compose(
-        tx, ty, angle, 1.0, np.copysign(1.0, sy), skew
-    )
-
-    local_translation_matrix = Matrix.translation(0, 0)
-    local_scale_matrix = Matrix.scale(20, 10)
-    expected_transform_matrix = (
-        world_placement_matrix @ local_translation_matrix @ local_scale_matrix
-    )
-
-    np.testing.assert_allclose(
-        instance.world_transform,
-        expected_transform_matrix.to_4x4_numpy(),
-        atol=1e-6,
-    )
-
-    # Texture data dimensions are pixel dimensions (1000x500 at 50ppm)
-    assert instance.texture_data.dimensions_mm == (1000.0, 500.0)
-    assert instance.texture_data.position_mm == (0, 0)
-
-    get_context().artifact_store.release(base_handle)
-    get_context().artifact_store.release(render_handle)
 
 
 def test_step_runner_instantiates_transformers_from_dict(
@@ -251,10 +152,7 @@ def test_step_runner_instantiates_transformers_from_dict(
     with patch(
         "rayforge.pipeline.stage.step_compute.compute_step_artifacts"
     ) as mock_compute:
-        mock_compute.return_value = (
-            StepRenderArtifact(generation_id=1),
-            StepOpsArtifact(ops=Ops(), generation_id=1),
-        )
+        mock_compute.return_value = StepOpsArtifact(ops=Ops(), generation_id=1)
 
         result = make_step_artifact_in_subprocess(
             proxy=adopting_mock_proxy,
@@ -275,6 +173,8 @@ def test_step_runner_instantiates_transformers_from_dict(
         call_args = mock_compute.call_args
         transformers = call_args[1]["transformers"]
         assert len(transformers) == 1
+        Optimize = transformer_registry.get("Optimize")
+        assert Optimize is not None
         assert isinstance(transformers[0], Optimize)
 
     get_context().artifact_store.release(base_handle)

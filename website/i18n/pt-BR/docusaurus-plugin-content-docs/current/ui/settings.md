@@ -50,9 +50,9 @@ Para configuração detalhada de máquina, veja a seção [Configuração da Má
 
 A página Materiais gerencia sua biblioteca de materiais.
 
-- **Adicionar Material**: Criar uma nova predefinição de material
-- **Importar Biblioteca**: Importar materiais de um arquivo
-- **Exportar Biblioteca**: Exportar seus materiais para backup ou compartilhamento
+- **Adicionar Biblioteca**: Criar uma nova biblioteca de materiais
+- **Editar**: Renomear uma biblioteca selecionada
+- **Excluir**: Remover uma biblioteca selecionada
 
 Veja [Materiais](../application-settings/materials) para mais detalhes.
 
@@ -61,17 +61,30 @@ Veja [Materiais](../application-settings/materials) para mais detalhes.
 A página Receitas gerencia suas receitas de operação.
 
 - **Adicionar Receita**: Criar uma nova receita
-- **Importar Receitas**: Importar receitas de um arquivo
-- **Exportar Receitas**: Exportar suas receitas para backup ou compartilhamento
+- **Editar**: Modificar uma receita selecionada
+- **Excluir**: Remover uma receita selecionada
 
 Veja [Receitas](../application-settings/recipes) para mais detalhes.
 
-## Pacotes
+## Addons
 
-A página Pacotes mostra pacotes de extensão instalados.
+A página Addons mostra addons de extensão instalados.
 
-- **Lista de Pacotes**: Mostra todos pacotes instalados
-- **Detalhes do Pacote**: Ver informação sobre cada pacote
+- **Lista de Addons**: Mostra todos addons instalados
+- **Detalhes do Addon**: Ver informação sobre cada addon
+
+## Privacidade
+
+A página Privacidade controla o relatório de uso anônimo.
+
+- **Relatar Uso Anônimo**: Quando ativado, dados de uso anônimos são enviados para ajudar a melhorar o Rayforge. Nenhuma informação pessoal é coletada.
+
+## Licenças
+
+A página Licenças gerencia suas chaves de licença para recursos premium e addons.
+
+- **Vincular Conta Patreon**: Conecte sua conta Patreon para acessar benefícios de apoiador
+- **Chaves de Licença de Addons**: Insira chaves de licença para addons premium
 
 ---
 

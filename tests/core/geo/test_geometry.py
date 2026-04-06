@@ -1,3 +1,5 @@
+import io
+
 import pytest
 import math
 import numpy as np
@@ -1112,3 +1114,136 @@ def test_fit_arcs_mixed_geometry():
     # to polylines). Original was 3 commands (Move, Line, Arc).
     # Result should be close to that (e.g., <= 5 if the arc got split).
     assert len(geo.data) <= 5
+
+
+class TestToPolygons:
+    def test_empty_geometry(self):
+        geo = Geometry()
+        polygons = geo.to_polygons()
+        assert polygons == []
+
+    def test_single_triangle(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(10, 0)
+        geo.line_to(5, 10)
+        geo.close_path()
+
+        polygons = geo.to_polygons()
+        assert len(polygons) == 1
+        assert len(polygons[0]) >= 3
+
+    def test_single_square(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(10, 0)
+        geo.line_to(10, 10)
+        geo.line_to(0, 10)
+        geo.close_path()
+
+        polygons = geo.to_polygons()
+        assert len(polygons) == 1
+        assert len(polygons[0]) >= 3
+
+    def test_multiple_segments(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(10, 0)
+        geo.line_to(10, 10)
+        geo.line_to(0, 10)
+        geo.close_path()
+        geo.move_to(20, 0)
+        geo.line_to(30, 0)
+        geo.line_to(30, 10)
+        geo.line_to(20, 10)
+        geo.close_path()
+
+        polygons = geo.to_polygons()
+        assert len(polygons) == 2
+
+    def test_with_arc(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(10, 0)
+        geo.arc_to(10, 10, 0, 5, clockwise=False)
+        geo.line_to(0, 10)
+        geo.close_path()
+
+        polygons = geo.to_polygons(tolerance=0.5)
+        assert len(polygons) == 1
+        assert len(polygons[0]) >= 3
+
+    def test_open_path(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(10, 0)
+        geo.line_to(10, 10)
+
+        polygons = geo.to_polygons()
+        assert len(polygons) == 1
+
+    def test_tolerance_affects_cleaning(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(10, 0)
+        geo.line_to(10, 10)
+        geo.line_to(0, 10)
+        geo.close_path()
+
+        polygons_low_tol = geo.to_polygons(tolerance=0.01)
+        polygons_high_tol = geo.to_polygons(tolerance=1.0)
+
+        assert len(polygons_low_tol) == 1
+        assert len(polygons_high_tol) == 1
+
+    def test_nested_geometry(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(20, 0)
+        geo.line_to(20, 20)
+        geo.line_to(0, 20)
+        geo.close_path()
+        geo.move_to(5, 5)
+        geo.line_to(15, 5)
+        geo.line_to(15, 15)
+        geo.line_to(5, 15)
+        geo.close_path()
+
+        polygons = geo.to_polygons()
+        assert len(polygons) == 2
+
+
+class TestToPng:
+    PNG_HEADER = b"\x89PNG\r\n\x1a\n"
+
+    def test_empty_geometry_returns_none(self):
+        geo = Geometry()
+        assert geo.to_png(64) is None
+
+    def test_single_point_returns_none(self):
+        geo = Geometry.from_points([(5, 5)])
+        assert geo.to_png(64) is None
+
+    def test_returns_valid_png_bytes(self):
+        geo = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+        result = geo.to_png(64)
+        assert result is not None
+        assert isinstance(result, bytes)
+        assert result[:8] == self.PNG_HEADER
+
+    def test_size_matches_request(self):
+        geo = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+        for size in [32, 128]:
+            result = geo.to_png(size)
+            assert result is not None
+            surface = cairo.ImageSurface.create_from_png(io.BytesIO(result))
+            assert surface.get_width() == size
+            assert surface.get_height() == size
+
+    def test_larger_output_for_larger_size(self):
+        geo = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+        small = geo.to_png(32)
+        large = geo.to_png(128)
+        assert small is not None
+        assert large is not None
+        assert len(large) > len(small)

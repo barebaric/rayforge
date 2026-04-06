@@ -5,7 +5,7 @@ Tests for the TextureArtifactRenderer class.
 import pytest
 import numpy as np
 from unittest.mock import patch
-from rayforge.ui_gtk.canvas3d.texture_renderer import (
+from rayforge.ui_gtk.sim3d.canvas3d.texture_renderer import (
     TextureArtifactRenderer,
 )
 from rayforge.pipeline.artifact.base import TextureData
@@ -89,6 +89,10 @@ def test_add_instance_with_different_sizes():
         patch("OpenGL.GL.glTexImage2D"),
         patch("OpenGL.GL.glBindTexture"),
         patch("OpenGL.GL.glGenTextures", side_effect=[1, 2]),
+        patch(
+            "OpenGL.GL.glGetIntegerv",
+            side_effect=lambda name, out: setattr(out, "value", 8192),
+        ),
     ):
         # Initialize the renderer
         renderer.init_gl()

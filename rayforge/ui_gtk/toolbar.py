@@ -3,10 +3,11 @@ from typing import List
 from gettext import gettext as _
 from gi.repository import GLib, Gtk
 from blinker import Signal
+from .action_registry import action_registry
 from .icons import get_icon
-from .shared.undo_button import UndoButton, RedoButton
 from .shared.splitbutton import SplitMenuButton
-from .canvas3d import initialized as canvas3d_initialized
+from .shared.undo_button import UndoButton, RedoButton
+from .sim3d.canvas3d import initialized as canvas3d_initialized
 
 logger = logging.getLogger(__name__)
 
@@ -70,44 +71,6 @@ class MainToolbar(Gtk.Box):
         self.redo_button.set_action_name("win.redo")
         self.append(self.redo_button)
 
-        # Visibility controls
-        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
-        self.append(sep)
-
-        # The visibility button is a ToggleButton linked to a stateful action.
-        # It manages its own icon state by listening to its "toggled" signal.
-        self.visibility_on_icon = get_icon("visibility-on-symbolic")
-        self.visibility_off_icon = get_icon("visibility-off-symbolic")
-        self.visibility_button = Gtk.ToggleButton()
-        self.visibility_button.set_active(True)
-        self.visibility_button.set_child(self.visibility_on_icon)
-        self.visibility_button.set_tooltip_text(
-            _("Toggle workpiece visibility")
-        )
-        self.visibility_button.set_action_name("win.show_workpieces")
-        self.visibility_button.connect("toggled", self._on_visibility_toggled)
-        self.append(self.visibility_button)
-
-        self.camera_visibility_on_icon = get_icon("camera-on-symbolic")
-        self.camera_visibility_off_icon = get_icon("camera-off-symbolic")
-        self.camera_visibility_button = Gtk.ToggleButton()
-        self.camera_visibility_button.set_active(True)
-        self.camera_visibility_button.set_child(self.camera_visibility_on_icon)
-        self.camera_visibility_button.set_tooltip_text(
-            _("Toggle camera image visibility")
-        )
-        self.camera_visibility_button.set_action_name("win.toggle_camera_view")
-        self.append(self.camera_visibility_button)
-
-        self.show_travel_button = Gtk.ToggleButton()
-        self.show_travel_button.set_child(get_icon("travel-path-symbolic"))
-        self.show_travel_button.set_active(False)
-        self.show_travel_button.set_tooltip_text(
-            _("Toggle travel move visibility")
-        )
-        self.show_travel_button.set_action_name("win.toggle_travel_view")
-        self.append(self.show_travel_button)
-
         # Add a button to open the 3D preview window.
         view_3d_button = Gtk.ToggleButton(child=get_icon("3d-symbolic"))
         view_3d_button.set_action_name("win.show_3d_view")
@@ -128,76 +91,22 @@ class MainToolbar(Gtk.Box):
         self.simulate_button.set_action_name("win.simulate_mode")
         self.append(self.simulate_button)
 
-        # Add a button for the G-code Preview
-        self.gcode_preview_button = Gtk.ToggleButton()
-        self.gcode_preview_button.set_child(get_icon("gcode-symbolic"))
-        self.gcode_preview_button.set_active(False)
-        self.gcode_preview_button.set_tooltip_text(_("Toggle G-code Preview"))
-        self.gcode_preview_button.set_action_name("win.toggle_gcode_preview")
-        self.append(self.gcode_preview_button)
-
         # Add a button to toggle the control panel.
-        self.control_panel_button = Gtk.ToggleButton()
-        self.control_panel_button.set_child(get_icon("jog-symbolic"))
-        self.control_panel_button.set_active(False)
-        self.control_panel_button.set_tooltip_text(_("Toggle control panel"))
-        self.control_panel_button.set_action_name("win.toggle_control_panel")
-        self.append(self.control_panel_button)
-
-        # Add a button to toggle tab visibility.
-        self.show_tabs_button = Gtk.ToggleButton()
-        self.show_tabs_button.set_child(get_icon("tabs-visible-symbolic"))
-        self.show_tabs_button.set_active(True)
-        self.show_tabs_button.set_tooltip_text(_("Toggle tab visibility"))
-        self.show_tabs_button.set_action_name("win.show_tabs")
-        self.append(self.show_tabs_button)
+        self.bottom_panel_button = Gtk.ToggleButton()
+        self.bottom_panel_button.set_child(get_icon("jog-symbolic"))
+        self.bottom_panel_button.set_active(False)
+        self.bottom_panel_button.set_tooltip_text(_("Toggle bottom panel"))
+        self.bottom_panel_button.set_action_name("win.toggle_bottom_panel")
+        self.append(self.bottom_panel_button)
 
         # Arrangement buttons (Consolidated Dropdown)
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)
 
-        arrange_actions = [
-            (
-                _("Center Horizontally"),
-                "align-horizontal-center-symbolic",
-                "win.align-h-center",
-            ),
-            (
-                _("Center Vertically"),
-                "align-vertical-center-symbolic",
-                "win.align-v-center",
-            ),
-            (_("Align Left"), "align-left-symbolic", "win.align-left"),
-            (_("Align Right"), "align-right-symbolic", "win.align-right"),
-            (_("Align Top"), "align-top-symbolic", "win.align-top"),
-            (_("Align Bottom"), "align-bottom-symbolic", "win.align-bottom"),
-            (
-                _("Spread Horizontally"),
-                "distribute-horizontal-symbolic",
-                "win.spread-h",
-            ),
-            (
-                _("Spread Vertically"),
-                "distribute-vertical-symbolic",
-                "win.spread-v",
-            ),
-            (
-                _("Flip Horizontal"),
-                "flip-horizontal-symbolic",
-                "win.flip-horizontal",
-            ),
-            (
-                _("Flip Vertical"),
-                "flip-vertical-symbolic",
-                "win.flip-vertical",
-            ),
-            (
-                _("Auto Layout (pack workpieces)"),
-                "auto-layout-symbolic",
-                "win.layout-pixel-perfect",
-            ),
-        ]
-        self.arrange_menu_button = SplitMenuButton(actions=arrange_actions)
+        self.arrange_actions = self._build_arrange_actions()
+        self.arrange_menu_button = SplitMenuButton(
+            actions=self.arrange_actions
+        )
         self.arrange_menu_button.set_tooltip_text(_("Arrange selection"))
         self.append(self.arrange_menu_button)
 
@@ -306,13 +215,63 @@ class MainToolbar(Gtk.Box):
         self.machine_warning_box.add_controller(warning_click)
         self.append(self.machine_warning_box)
 
-    def _on_visibility_toggled(self, button: Gtk.ToggleButton):
-        """Callback to update the visibility icon when the button's
-        state changes for any reason (user click or action state change)."""
-        if button.get_active():
-            button.set_child(self.visibility_on_icon)
-        else:
-            button.set_child(self.visibility_off_icon)
+        # Connect to action registry changes for dynamic toolbar updates
+        action_registry.changed.connect(self._on_action_registry_changed)
+
+    def _build_arrange_actions(self):
+        """Build the list of arrange actions including registered layouts."""
+        arrange_actions = [
+            (
+                _("Center Horizontally"),
+                "align-horizontal-center-symbolic",
+                "win.align-h-center",
+            ),
+            (
+                _("Center Vertically"),
+                "align-vertical-center-symbolic",
+                "win.align-v-center",
+            ),
+            (_("Align Left"), "align-left-symbolic", "win.align-left"),
+            (_("Align Right"), "align-right-symbolic", "win.align-right"),
+            (_("Align Top"), "align-top-symbolic", "win.align-top"),
+            (_("Align Bottom"), "align-bottom-symbolic", "win.align-bottom"),
+            (
+                _("Spread Horizontally"),
+                "distribute-horizontal-symbolic",
+                "win.spread-h",
+            ),
+            (
+                _("Spread Vertically"),
+                "distribute-vertical-symbolic",
+                "win.spread-v",
+            ),
+            (
+                _("Flip Horizontal"),
+                "flip-horizontal-symbolic",
+                "win.flip-horizontal",
+            ),
+            (
+                _("Flip Vertical"),
+                "flip-vertical-symbolic",
+                "win.flip-vertical",
+            ),
+        ]
+        for info in action_registry.get_toolbar_items("arrange"):
+            if info.label:
+                icon = info.icon_name or "auto-layout-symbolic"
+                arrange_actions.append(
+                    (
+                        info.label,
+                        icon,
+                        f"win.{info.action_name}",
+                    )
+                )
+        return arrange_actions
+
+    def _on_action_registry_changed(self, sender):
+        """Handle action registry changes by refreshing arrange menu."""
+        self.arrange_actions = self._build_arrange_actions()
+        self.arrange_menu_button.update_actions(self.arrange_actions)
 
     def _on_focus_toggled(self, button: Gtk.ToggleButton):
         """Callback to update the focus icon when the button's

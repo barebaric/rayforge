@@ -11,9 +11,10 @@ from typing import (
     Optional,
     Set,
 )
-from .region import ElementRegion, get_region_rect, check_region_hit
-from . import element, transform
+from ...core.geo import Point, Rect
 from ...core.matrix import Matrix
+from . import element, transform
+from .region import ElementRegion, get_region_rect, check_region_hit
 
 
 # Forward declaration for type hinting to avoid circular imports
@@ -34,10 +35,10 @@ class MultiSelectionGroup:
 
         self.elements: List[CanvasElement] = elements
         self.canvas: Canvas = canvas
-        self._bounding_box: Tuple[float, float, float, float] = (0, 0, 0, 0)
-        self._center: Tuple[float, float] = (0, 0)
+        self._bounding_box: Rect = (0, 0, 0, 0)
+        self._center: Point = (0, 0)
         self.initial_states: List[Dict[str, Any]] = []
-        self.initial_center: Tuple[float, float] = (0, 0)
+        self.initial_center: Point = (0, 0)
 
         # The transformation matrix for the entire group, applied during a
         # drag operation.
@@ -62,7 +63,7 @@ class MultiSelectionGroup:
         return self._bounding_box[3]
 
     @property
-    def center(self) -> Tuple[float, float]:
+    def center(self) -> Point:
         return self._center
 
     def _calculate_bounding_box(self):
@@ -153,7 +154,7 @@ class MultiSelectionGroup:
         region: ElementRegion,
         base_handle_size: float,
         scale_compensation: Union[float, Tuple[float, float]] = 1.0,
-    ) -> Tuple[float, float, float, float]:
+    ) -> Rect:
         return get_region_rect(
             region,
             self.width,
@@ -199,8 +200,8 @@ class MultiSelectionGroup:
 
     def apply_resize(
         self,
-        new_box: Tuple[float, float, float, float],
-        original_box: Tuple[float, float, float, float],
+        new_box: Rect,
+        original_box: Rect,
     ):
         """
         Calculates a scale/translate transform that maps the original
@@ -227,9 +228,7 @@ class MultiSelectionGroup:
         )
         self._update_element_transforms()
 
-    def apply_rotate(
-        self, angle_delta: float, center: Optional[Tuple[float, float]] = None
-    ):
+    def apply_rotate(self, angle_delta: float, center: Optional[Point] = None):
         """
         Sets the group transform to a rotation around the group's initial
         center and updates elements.
@@ -244,7 +243,7 @@ class MultiSelectionGroup:
         active_region: ElementRegion,
         offset_x: float,
         offset_y: float,
-        active_origin: Tuple[float, float, float, float],
+        active_origin: Rect,
         ctrl_pressed: bool,
         shift_pressed: bool,
     ):
@@ -279,7 +278,7 @@ class MultiSelectionGroup:
         self,
         current_x: float,
         current_y: float,
-        rotation_pivot: Tuple[float, float],
+        rotation_pivot: Point,
         drag_start_angle: float,
     ):
         """
@@ -302,7 +301,7 @@ class MultiSelectionGroup:
         active_region: ElementRegion,
         world_dx: float,
         world_dy: float,
-        active_origin: Tuple[float, float, float, float],
+        active_origin: Rect,
     ):
         """Shears the entire selection group."""
         shx, shy = 0.0, 0.0

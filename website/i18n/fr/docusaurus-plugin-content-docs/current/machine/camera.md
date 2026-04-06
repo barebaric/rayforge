@@ -46,7 +46,7 @@ L'intégration caméra fournit :
 1. **Connectez votre caméra** à votre ordinateur via USB
 
 2. **Ouvrez les Paramètres Caméra :**
-   - Naviguez vers **Paramètres Préférences Caméra**
+   - Naviguez vers **Paramètres → Préférences → Caméra**
    - Ou utilisez le bouton de la barre d'outils caméra
 
 3. **Ajoutez une nouvelle caméra :**
@@ -86,7 +86,7 @@ L'alignement crée une matrice de transformation qui mappe les pixels de la cam�
 
 1. **Ouvrez la Boîte de Dialogue d'Alignement :**
    - Cliquez sur le bouton d'alignement caméra dans la barre d'outils
-   - Ou allez à **Caméra Aligner Caméra**
+   - Ou allez à **Caméra → Aligner Caméra**
 
 2. **Placez des marqueurs d'alignement :**
    - Vous avez besoin d'au moins 3 points de référence (4 recommandés pour une meilleure précision)
@@ -197,7 +197,8 @@ Une fois alignée, la superposition caméra aide à positionner les travaux avec
 | **Luminosité** | Luminosité globale de l'image | -100 à +100 |
 | **Contraste** | Définition des bords et contraste | 0 à 100 |
 | **Transparence** | Opacité de la superposition sur le canevas | 0% (opaque) à 100% (transparent) |
-| **Balance des Blancs** | Correction de la température de couleur | Auto ou 2000-10000K |
+| **Balance des Blancs** | Correction de la température de couleur | Auto ou 2500-10000K |
+| **Réduction de Bruit** | Réduction de bruit temporelle | 0.0 à 0.95 |
 
 ### Données d'Alignement
 
@@ -332,6 +333,7 @@ sudo lsof /dev/video0
 4. **Vérifiez la mise au point** - L'autofocus peut ne pas bien fonctionner ; utilisez le manuel si possible
 5. **Réduisez temporairement la transparence** pour voir l'image caméra plus clairement
 6. **Essayez différents paramètres de balance des blancs**
+7. **Ajustez la réduction de bruit** si l'image apparaît granuleuse
 
 ### Lag ou Saccades de la Caméra
 

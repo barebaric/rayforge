@@ -3,6 +3,7 @@
 import logging
 from typing import Optional
 from gettext import gettext as _
+from ...context import get_context
 from ...core.material_library import MaterialLibrary
 from ..doceditor.material_library_list import LibraryListWidget
 from ..doceditor.material_list import MaterialListWidget
@@ -53,6 +54,10 @@ class MaterialManagerPage(TrackedPreferencesPage):
             self._on_material_event
         )
 
+        get_context().material_mgr.libraries_changed.connect(
+            self._on_libraries_changed
+        )
+
         self.library_list_editor.populate_and_select()
 
     def _on_library_selected(
@@ -73,3 +78,7 @@ class MaterialManagerPage(TrackedPreferencesPage):
         material count in the subtitle is updated.
         """
         self.library_list_editor.populate_and_select(library.library_id)
+
+    def _on_libraries_changed(self, sender):
+        """Handle libraries being added or removed."""
+        self.library_list_editor.populate_and_select()

@@ -197,7 +197,7 @@ for target in ("dist/Rayforge", "dist/Rayforge.app"):
 PY
     # Generate macOS icon if it doesn't exist or if SVG is newer
     if [ ! -f "rayforge.icns" ] || \
-       [ "website/static/assets/icon-app.svg" -nt "rayforge.icns" ]; then
+       [ "website/static/images/icon-app.svg" -nt "rayforge.icns" ]; then
         echo "Generating macOS icon..."
         bash scripts/mac/mac_create_icon.sh
     else

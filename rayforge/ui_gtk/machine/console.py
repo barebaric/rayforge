@@ -42,6 +42,11 @@ class Console(Gtk.Box):
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
 
+        self.set_margin_start(0)
+        self.set_margin_end(0)
+        self.set_margin_top(9)
+        self.set_margin_bottom(9)
+
         self._show_verbose = False
         self._command_history: list[str] = []
         self._history_index = -1
@@ -83,19 +88,18 @@ class Console(Gtk.Box):
             _("Show verbose output (status polls)")
         )
         self.verbose_toggle.connect("toggled", self._on_verbose_toggled)
-        self.verbose_toggle.set_margin_top(6)
-        self.verbose_toggle.set_margin_end(6)
+        self.verbose_toggle.set_margin_top(9)
+        self.verbose_toggle.set_margin_end(9)
         self.verbose_toggle.set_halign(Gtk.Align.END)
         self.verbose_toggle.set_valign(Gtk.Align.START)
-        verbose_icon = get_icon("utilities-terminal-symbolic")
+        verbose_icon = get_icon("code-symbolic")
         self.verbose_toggle.set_child(verbose_icon)
         self.overlay.add_overlay(self.verbose_toggle)
 
         self.append(self.overlay)
 
         entry_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        entry_box.set_spacing(6)
-        entry_box.set_margin_top(6)
+        entry_box.set_margin_top(0)
 
         self.input_scrolled = Gtk.ScrolledWindow()
         self.input_scrolled.set_policy(

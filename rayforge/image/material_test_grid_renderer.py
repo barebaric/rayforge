@@ -140,12 +140,11 @@ class MaterialTestRenderer(Renderer):
         total_height = grid_height
 
         if include_labels:
-            font_scale = 4.375 / 2.5
-            label_margin = 15.0 * font_scale
-            total_width = grid_width + label_margin
-            total_height = grid_height + label_margin
-            offset_x = label_margin
-            offset_y = label_margin
+            base_margin = min(shape_size * 1.5, 15.0)
+            total_width = grid_width + base_margin
+            total_height = grid_height + base_margin
+            offset_x = base_margin
+            offset_y = base_margin
 
         scale_x = width / total_width if total_width > 0 else 1
         scale_y = height / total_height if total_height > 0 else 1

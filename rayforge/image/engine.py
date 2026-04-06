@@ -1,7 +1,9 @@
 import logging
-from typing import List, Tuple, Optional
+from typing import List, Optional
+from ..core.geo import Rect
 from ..core.matrix import Matrix
 from ..core.vectorization_spec import (
+    LayerImportMode,
     VectorizationSpec,
     PassthroughSpec,
     TraceSpec,
@@ -62,7 +64,7 @@ class NormalizationEngine:
 
     @staticmethod
     def calculate_layout_item(
-        bounds: Tuple[float, float, float, float],
+        bounds: Rect,
         parse_result: ParsingResult,
         layer_id: Optional[str] = None,
         layer_name: Optional[str] = None,
@@ -241,8 +243,7 @@ class NormalizationEngine:
         split_layers = False
         active_layers = None
         if isinstance(spec, PassthroughSpec):
-            # The decision to split is now based on the spec flag.
-            split_layers = spec.create_new_layers
+            split_layers = spec.layer_import_mode != LayerImportMode.FLATTEN
             if spec.active_layer_ids:
                 active_layers = set(spec.active_layer_ids)
 
@@ -301,9 +302,7 @@ class NormalizationEngine:
                 )
             ]
 
-    def _calculate_union_rect(
-        self, rects: List[Tuple[float, float, float, float]]
-    ) -> Tuple[float, float, float, float]:
+    def _calculate_union_rect(self, rects: List[Rect]) -> Rect:
         if not rects:
             return (0.0, 0.0, 0.0, 0.0)
 

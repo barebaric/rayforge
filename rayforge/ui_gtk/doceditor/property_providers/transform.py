@@ -7,6 +7,7 @@ from ....core.group import Group
 from ....core.item import DocItem
 from ....core.stock import StockItem
 from ....core.workpiece import WorkPiece
+from ...icons import get_icon
 from ...shared.adwfix import get_spinrow_float
 from .base import PropertyProvider
 
@@ -19,6 +20,8 @@ logger = logging.getLogger(__name__)
 
 class TransformPropertyProvider(PropertyProvider):
     """Provides UI for common transformation properties (pos, size, angle)."""
+
+    priority = 10
 
     def can_handle(self, items: List[DocItem]) -> bool:
         return bool(items)
@@ -286,7 +289,9 @@ class TransformPropertyProvider(PropertyProvider):
             self.height_row.set_subtitle("")
 
     def _create_reset_button(self, tooltip_text, on_clicked):
-        button = Gtk.Button.new_from_icon_name("edit-undo-symbolic")
+        icon = get_icon("undo-symbolic")
+        button = Gtk.Button()
+        button.set_child(icon)
         button.set_valign(Gtk.Align.CENTER)
         button.set_tooltip_text(tooltip_text)
         button.connect("clicked", on_clicked)

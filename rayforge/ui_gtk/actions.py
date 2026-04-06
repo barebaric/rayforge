@@ -1,16 +1,206 @@
-from typing import TYPE_CHECKING, Dict, Callable, Optional, cast
+import logging
+from typing import TYPE_CHECKING, Dict, Callable, List, Optional, cast
 from gi.repository import Gtk, Gio, GLib
+from gettext import gettext as _
 from ..context import get_context
 from ..core.group import Group
 from ..core.item import DocItem
 from ..core.layer import Layer
+from ..core.stock import StockItem
 from ..core.workpiece import WorkPiece
+from ..doceditor.layout.registry import layout_registry
+from .action_registry import action_registry, MenuPlacement, ToolbarPlacement
 from .doceditor.add_tabs_popover import AddTabsPopover
+from .doceditor.stock_properties_dialog import StockPropertiesDialog
 from .shared.keyboard import PRIMARY_ACCEL
 
 
 if TYPE_CHECKING:
     from .mainwindow import MainWindow
+
+logger = logging.getLogger(__name__)
+
+SHORTCUTS = {
+    # File
+    "win.new": f"{PRIMARY_ACCEL}n",
+    "win.open": f"{PRIMARY_ACCEL}o",
+    "win.save": f"{PRIMARY_ACCEL}s",
+    "win.save-as": f"{PRIMARY_ACCEL}<Shift>s",
+    "win.import": f"{PRIMARY_ACCEL}i",
+    "win.export": f"{PRIMARY_ACCEL}e",
+    "win.quit": f"{PRIMARY_ACCEL}q",
+    # Edit
+    "win.undo": f"{PRIMARY_ACCEL}z",
+    "win.redo": f"{PRIMARY_ACCEL}y",
+    "win.redo_alt": f"{PRIMARY_ACCEL}<Shift>z",
+    "win.cut": f"{PRIMARY_ACCEL}x",
+    "win.copy": f"{PRIMARY_ACCEL}c",
+    "win.paste": f"{PRIMARY_ACCEL}v",
+    "win.select_all": f"{PRIMARY_ACCEL}a",
+    "win.duplicate": f"{PRIMARY_ACCEL}d",
+    "win.remove": "Delete",
+    "win.clear": f"{PRIMARY_ACCEL}<Shift>Delete",
+    "win.settings": f"{PRIMARY_ACCEL}comma",
+    # View
+    "win.show_workpieces": "h",
+    "win.show_tabs": "t",
+    "win.toggle_camera_view": "<Ctrl><Alt>c",
+    "win.toggle_bottom_panel": f"{PRIMARY_ACCEL}l",
+    "win.toggle_travel_view": f"{PRIMARY_ACCEL}<Shift>t",
+    "win.show_3d_view": "F12",
+    "win.simulate_mode": "F11",
+    "win.view_top": "1",
+    "win.view_front": "2",
+    "win.view_right": "3",
+    "win.view_left": "4",
+    "win.view_back": "5",
+    "win.view_iso": "7",
+    "win.view_toggle_perspective": "p",
+    # Object
+    "win.add_stock": "<Ctrl><Alt>s",
+    "win.add-tabs-equidistant": "<Ctrl><Alt>t",
+    # Arrange
+    "win.group": f"{PRIMARY_ACCEL}g",
+    "win.ungroup": f"{PRIMARY_ACCEL}u",
+    "win.split": "<Ctrl><Alt>w",
+    "win.layer-move-up": f"{PRIMARY_ACCEL}Page_Up",
+    "win.layer-move-down": f"{PRIMARY_ACCEL}Page_Down",
+    "win.align-left": f"{PRIMARY_ACCEL}<Shift>Left",
+    "win.align-right": f"{PRIMARY_ACCEL}<Shift>Right",
+    "win.align-top": f"{PRIMARY_ACCEL}<Shift>Up",
+    "win.align-bottom": f"{PRIMARY_ACCEL}<Shift>Down",
+    "win.align-h-center": f"{PRIMARY_ACCEL}<Shift>Home",
+    "win.align-v-center": f"{PRIMARY_ACCEL}<Shift>End",
+    "win.spread-h": f"{PRIMARY_ACCEL}<Shift>h",
+    "win.spread-v": f"{PRIMARY_ACCEL}<Shift>v",
+    "win.flip-horizontal": "<Shift>h",
+    "win.flip-vertical": "<Shift>v",
+    # Machine & Help
+    "win.machine-settings": f"{PRIMARY_ACCEL}less",
+    "win.about": "F1",
+}
+
+
+ActionSetupHandler = Callable[["ActionManager"], None]
+ActionStateUpdateHandler = Callable[["ActionManager"], None]
+
+
+class ActionExtensionRegistry:
+    """
+    Registry for action extension handlers.
+
+    Allows modules to register their own actions and state update
+    handlers, enabling decoupling of functionality like the sketcher.
+    """
+
+    def __init__(self):
+        self._setup_handlers: List[ActionSetupHandler] = []
+        self._state_update_handlers: List[ActionStateUpdateHandler] = []
+        self._setup_addon_map: Dict[str, str] = {}
+        self._state_update_addon_map: Dict[str, str] = {}
+
+    def register_setup(self, handler: ActionSetupHandler, addon_name: str):
+        """Register a handler to be called during action setup."""
+        self._setup_handlers.append(handler)
+        if addon_name:
+            self._setup_addon_map[handler.__name__] = addon_name
+        logger.debug(f"Registered action setup handler: {handler.__name__}")
+
+    def unregister_setup(self, handler: ActionSetupHandler) -> bool:
+        """Unregister an action setup handler."""
+        try:
+            self._setup_handlers.remove(handler)
+            self._setup_addon_map.pop(handler.__name__, None)
+            return True
+        except ValueError:
+            return False
+
+    def register_state_update(
+        self, handler: ActionStateUpdateHandler, addon_name: str
+    ):
+        """Register a handler to be called during action state updates."""
+        self._state_update_handlers.append(handler)
+        if addon_name:
+            self._state_update_addon_map[handler.__name__] = addon_name
+        logger.debug(
+            f"Registered action state update handler: {handler.__name__}"
+        )
+
+    def unregister_state_update(
+        self, handler: ActionStateUpdateHandler
+    ) -> bool:
+        """Unregister an action state update handler."""
+        try:
+            self._state_update_handlers.remove(handler)
+            self._state_update_addon_map.pop(handler.__name__, None)
+            return True
+        except ValueError:
+            return False
+
+    def unregister_all_from_addon(self, addon_name: str) -> int:
+        """
+        Unregister all handlers registered by a specific addon.
+
+        Args:
+            addon_name: The name of the addon to clean up
+
+        Returns:
+            The number of handlers unregistered
+        """
+        count = 0
+
+        setup_to_remove = [
+            h
+            for h in self._setup_handlers
+            if self._setup_addon_map.get(h.__name__) == addon_name
+        ]
+        for h in setup_to_remove:
+            self._setup_handlers.remove(h)
+            self._setup_addon_map.pop(h.__name__, None)
+        count += len(setup_to_remove)
+
+        state_to_remove = [
+            h
+            for h in self._state_update_handlers
+            if self._state_update_addon_map.get(h.__name__) == addon_name
+        ]
+        for h in state_to_remove:
+            self._state_update_handlers.remove(h)
+            self._state_update_addon_map.pop(h.__name__, None)
+        count += len(state_to_remove)
+
+        if count > 0:
+            logger.debug(
+                f"Unregistered {count} action extension handlers "
+                f"from addon '{addon_name}'"
+            )
+        return count
+
+    def invoke_setup_handlers(self, action_manager: "ActionManager"):
+        """Invoke all registered setup handlers."""
+        for handler in self._setup_handlers:
+            try:
+                handler(action_manager)
+            except Exception as e:
+                logger.error(
+                    f"Error in action setup handler {handler.__name__}: {e}",
+                    exc_info=True,
+                )
+
+    def invoke_state_update_handlers(self, action_manager: "ActionManager"):
+        """Invoke all registered state update handlers."""
+        for handler in self._state_update_handlers:
+            try:
+                handler(action_manager)
+            except Exception as e:
+                logger.error(
+                    f"Error in action state update handler "
+                    f"{handler.__name__}: {e}",
+                    exc_info=True,
+                )
+
+
+action_extension_registry = ActionExtensionRegistry()
 
 
 class ActionManager:
@@ -19,6 +209,8 @@ class ActionManager:
     def __init__(self, win: "MainWindow"):
         self.win = win
         self.actions: Dict[str, Gio.SimpleAction] = {}
+        self._shortcut_controller: Optional[Gtk.ShortcutController] = None
+        self._layout_shortcuts: List[Gtk.Shortcut] = []
         # A convenient alias to the central controller
         self.editor = self.win.doc_editor
         self.doc = self.editor.doc
@@ -48,14 +240,12 @@ class ActionManager:
         )
         self._add_action("import", self.win.on_menu_import)
         self._add_action("export", self.win.on_export_clicked)
+        self._add_action("export-object", self.win.on_export_object_clicked)
         self._add_action("about", self.win.show_about_dialog)
         self._add_action("donate", self.win.on_donate_clicked)
         self._add_action("save_debug_log", self.win.on_save_debug_log)
         self._add_action("settings", self.win.show_settings)
         self._add_action("machine-settings", self.win.show_machine_settings)
-
-        # Tools Actions
-        self._add_action("material_test", self.win.on_show_material_test)
 
         # View Actions
         self._add_stateful_action(
@@ -80,14 +270,24 @@ class ActionManager:
         )
         config = get_context().config
         self._add_stateful_action(
-            "toggle_gcode_preview",
-            self.win.on_toggle_gcode_preview_state_change,
-            GLib.Variant.new_boolean(config.gcode_preview_visible),
+            "show_nogo_zones",
+            self.win.on_show_nogo_zones_state_change,
+            GLib.Variant.new_boolean(config.show_nogo_zones),
         )
         self._add_stateful_action(
-            "toggle_control_panel",
-            self.win.on_toggle_control_panel_state_change,
-            GLib.Variant.new_boolean(config.control_panel_visible),
+            "show_models",
+            self.win.on_show_models_state_change,
+            GLib.Variant.new_boolean(True),
+        )
+        self._add_stateful_action(
+            "toggle_bottom_panel",
+            self.win.on_toggle_bottom_panel_state_change,
+            GLib.Variant.new_boolean(config.bottom_panel_visible),
+        )
+        self._add_stateful_action(
+            "toggle_right_panel",
+            self.win.on_toggle_right_panel_state_change,
+            GLib.Variant.new_boolean(config.right_panel_visible),
         )
 
         self._add_stateful_action(
@@ -99,11 +299,14 @@ class ActionManager:
         # 3D View Control Actions
         self._add_action("view_top", self.win.on_view_top)
         self._add_action("view_front", self.win.on_view_front)
+        self._add_action("view_right", self.win.on_view_right)
+        self._add_action("view_left", self.win.on_view_left)
+        self._add_action("view_back", self.win.on_view_back)
         self._add_action("view_iso", self.win.on_view_iso)
         self._add_stateful_action(
             "view_toggle_perspective",
             self.win.on_view_perspective_state_change,
-            GLib.Variant.new_boolean(True),
+            GLib.Variant.new_boolean(config.perspective_mode),
         )
 
         # Edit & Clipboard Actions
@@ -126,19 +329,17 @@ class ActionManager:
         self._add_action("remove", self.win.on_menu_remove)
         self._add_action("clear", self.win.on_clear_clicked)
 
-        # Item Actions
-        self._add_action("new_sketch", self.win.sketch_mode_cmd.on_new_sketch)
+        # Asset Actions
+        self._add_action("add-stock", self.on_add_stock)
         self._add_action(
-            "edit_sketch", self.win.sketch_mode_cmd.on_edit_sketch
-        )
-        self._add_action(
-            "export_object", self.win.sketch_mode_cmd.on_export_object
+            "edit-stock-item",
+            self.on_edit_stock_item,
+            GLib.VariantType.new("s"),
         )
 
         # Layer Management Actions
         self._add_action("layer-move-up", self.on_layer_move_up)
         self._add_action("layer-move-down", self.on_layer_move_down)
-        self._add_action("add_stock", self.on_add_stock)
 
         # Grouping Actions
         self._add_action("group", self.on_group_action)
@@ -146,6 +347,9 @@ class ActionManager:
 
         # Split Action
         self._add_action("split", self.on_split_action)
+
+        # Convert to Stock Action
+        self._add_action("convert-to-stock", self.on_convert_to_stock)
 
         # Tabbing Actions
         self._add_action("add-tabs-equidistant", self.on_add_tabs_equidistant)
@@ -167,7 +371,8 @@ class ActionManager:
         self._add_action("align-bottom", self.on_align_bottom)
         self._add_action("spread-h", self.on_spread_h)
         self._add_action("spread-v", self.on_spread_v)
-        self._add_action("layout-pixel-perfect", self.on_layout_pixel_perfect)
+
+        self._register_layout_actions()
 
         # Transform Actions
         self._add_action("flip-horizontal", self.on_flip_horizontal)
@@ -208,14 +413,34 @@ class ActionManager:
             GLib.VariantType.new("s"),
         )
 
+        action_extension_registry.invoke_setup_handlers(self)
+
         self.update_action_states()
+
+    def _register_layout_actions(self):
+        """Register layout strategy actions with menu and toolbar placement."""
+        for strategy_class in layout_registry.list_all():
+            name = layout_registry.list_names()[
+                list(layout_registry.list_all()).index(strategy_class)
+            ]
+            if name == "pixel-perfect":
+                action = Gio.SimpleAction.new("layout-pixel-perfect", None)
+                action.connect("activate", self.on_layout_pixel_perfect)
+                action_registry.register(
+                    action_name="layout-pixel-perfect",
+                    action=action,
+                    addon_name="core",
+                    label=_("Auto Layout (Simple)"),
+                    icon_name="auto-layout-symbolic",
+                    shortcut="<Ctrl><Alt>a",
+                    menu=MenuPlacement(menu_id="arrange"),
+                    toolbar=ToolbarPlacement(group="arrange"),
+                )
 
     def update_action_states(self, *args, **kwargs):
         """Updates the enabled state of actions based on document state."""
-        self.actions["add_stock"].set_enabled(True)
-        self.actions["new_sketch"].set_enabled(True)
+        self.actions["add-stock"].set_enabled(True)
 
-        # Update save action state based on saved state
         is_unsaved = not self.editor.is_saved
         self.actions["save"].set_enabled(is_unsaved)
 
@@ -224,45 +449,41 @@ class ActionManager:
         self.actions["add-tabs-equidistant"].set_enabled(can_add_tabs)
         self.actions["add-tabs-cardinal"].set_enabled(can_add_tabs)
 
-        # Update context-sensitive tab actions based on the surface's public
-        # state
         context = self.win.surface.right_click_context
         can_add_single_tab = context and context.get("type") == "geometry"
         can_remove_single_tab = context and context.get("type") == "tab"
         self.actions["tab-add"].set_enabled(bool(can_add_single_tab))
         self.actions["tab-remove"].set_enabled(bool(can_remove_single_tab))
 
-        # Update layout-pixel-perfect action state
-        current_layer = self.doc.active_layer
-        has_workpieces = (
-            current_layer and len(current_layer.get_descendants(WorkPiece)) > 0
-        )
-        self.actions["layout-pixel-perfect"].set_enabled(has_workpieces)
-
-        # Update split action state
         selected_wps = self.win.surface.get_selected_workpieces()
+        if selected_wps:
+            has_workpieces = True
+        else:
+            current_layer = self.doc.active_layer
+            has_workpieces = (
+                current_layer
+                and len(current_layer.get_descendants(WorkPiece)) > 0
+            )
+        layout_info = action_registry.get("layout-pixel-perfect")
+        if layout_info and layout_info.action:
+            layout_info.action.set_enabled(has_workpieces)
+
         self.actions["split"].set_enabled(bool(selected_wps))
+        self.actions["export-object"].set_enabled(len(selected_wps) == 1)
 
-        # Update edit_sketch and export_object action states
-        # edit_sketch: Only enable for sketch-based workpieces
-        # export_object: Enable for any workpiece with geometry
-        can_edit_sketch = False
-        can_export_object = False
-        if len(selected_wps) == 1:
-            wp = selected_wps[0]
-            if wp.sketch_uid:
-                can_edit_sketch = True
-            if wp.boundaries is not None and not wp.boundaries.is_empty():
-                can_export_object = True
-
-        if "export_object" in self.actions:
-            self.actions["export_object"].set_enabled(can_export_object)
-        if "edit_sketch" in self.actions:
-            self.actions["edit_sketch"].set_enabled(can_edit_sketch)
+        action_extension_registry.invoke_state_update_handlers(self)
 
     def on_add_stock(self, action, param):
-        """Handler for the 'add_stock' action."""
+        """Handler for the 'add-stock' action."""
         self.editor.stock.add_stock()
+
+    def on_edit_stock_item(self, action, param):
+        """Handler for the 'edit-stock-item' action."""
+        item_uid = param.get_string()
+        item = self.doc.find_descendant_by_uid(item_uid)
+        if isinstance(item, StockItem):
+            dialog = StockPropertiesDialog(self.win, item, self.editor)
+            dialog.present()
 
     def _get_workpieces_for_tabbing(self) -> list[WorkPiece]:
         """
@@ -357,72 +578,39 @@ class ActionManager:
         """
         Populates the given ShortcutController with all application shortcuts.
         """
-        shortcuts = {
-            # File
-            "win.new": f"{PRIMARY_ACCEL}n",
-            "win.open": f"{PRIMARY_ACCEL}o",
-            "win.save": f"{PRIMARY_ACCEL}s",
-            "win.save-as": f"{PRIMARY_ACCEL}<Shift>s",
-            "win.import": f"{PRIMARY_ACCEL}i",
-            "win.export": f"{PRIMARY_ACCEL}e",
-            "win.quit": f"{PRIMARY_ACCEL}q",
-            # Edit
-            "win.undo": f"{PRIMARY_ACCEL}z",
-            "win.redo": f"{PRIMARY_ACCEL}y",
-            "win.redo_alt": f"{PRIMARY_ACCEL}<Shift>z",
-            "win.cut": f"{PRIMARY_ACCEL}x",
-            "win.copy": f"{PRIMARY_ACCEL}c",
-            "win.paste": f"{PRIMARY_ACCEL}v",
-            "win.select_all": f"{PRIMARY_ACCEL}a",
-            "win.duplicate": f"{PRIMARY_ACCEL}d",
-            "win.remove": "Delete",
-            "win.clear": f"{PRIMARY_ACCEL}<Shift>Delete",
-            "win.settings": f"{PRIMARY_ACCEL}comma",
-            # View
-            "win.show_workpieces": "h",
-            "win.show_tabs": "t",
-            "win.toggle_camera_view": "<Ctrl><Alt>c",
-            "win.toggle_control_panel": f"{PRIMARY_ACCEL}l",
-            "win.toggle_gcode_preview": f"{PRIMARY_ACCEL}<Shift>g",
-            "win.toggle_travel_view": f"{PRIMARY_ACCEL}<Shift>t",
-            "win.show_3d_view": "F12",
-            "win.simulate_mode": "F11",
-            "win.view_top": "1",
-            "win.view_front": "2",
-            "win.view_iso": "7",
-            "win.view_toggle_perspective": "p",
-            # Object
-            "win.add_stock": "<Ctrl><Alt>s",
-            "win.new_sketch": f"{PRIMARY_ACCEL}n",
-            "win.add-tabs-equidistant": "<Ctrl><Alt>t",
-            # Arrange
-            "win.group": f"{PRIMARY_ACCEL}g",
-            "win.ungroup": f"{PRIMARY_ACCEL}u",
-            "win.split": "<Ctrl><Alt>w",
-            "win.layer-move-up": f"{PRIMARY_ACCEL}Page_Up",
-            "win.layer-move-down": f"{PRIMARY_ACCEL}Page_Down",
-            "win.align-left": f"{PRIMARY_ACCEL}<Shift>Left",
-            "win.align-right": f"{PRIMARY_ACCEL}<Shift>Right",
-            "win.align-top": f"{PRIMARY_ACCEL}<Shift>Up",
-            "win.align-bottom": f"{PRIMARY_ACCEL}<Shift>Down",
-            "win.align-h-center": f"{PRIMARY_ACCEL}<Shift>Home",
-            "win.align-v-center": f"{PRIMARY_ACCEL}<Shift>End",
-            "win.spread-h": f"{PRIMARY_ACCEL}<Shift>h",
-            "win.spread-v": f"{PRIMARY_ACCEL}<Shift>v",
-            "win.layout-pixel-perfect": "<Ctrl><Alt>a",
-            "win.flip-horizontal": "<Shift>h",
-            "win.flip-vertical": "<Shift>v",
-            # Machine & Help
-            "win.machine-settings": f"{PRIMARY_ACCEL}less",
-            "win.about": "F1",
-        }
-
-        for action_name, shortcut_str in shortcuts.items():
+        for action_name, shortcut_str in SHORTCUTS.items():
             shortcut = Gtk.Shortcut.new(
                 Gtk.ShortcutTrigger.parse_string(shortcut_str),
                 Gtk.NamedAction.new(action_name),
             )
             controller.add_shortcut(shortcut)
+
+        self._shortcut_controller = controller
+        self._update_dynamic_shortcuts()
+
+        action_registry.changed.connect(self._on_action_registry_changed)
+
+    def _on_action_registry_changed(self, sender):
+        """Handle action registry changes by refreshing shortcuts."""
+        self._update_dynamic_shortcuts()
+
+    def _update_dynamic_shortcuts(self):
+        """Update shortcuts for actions registered via action_registry."""
+        if not self._shortcut_controller:
+            return
+
+        for shortcut in self._layout_shortcuts:
+            self._shortcut_controller.remove_shortcut(shortcut)
+        self._layout_shortcuts.clear()
+
+        for info in action_registry.get_all_with_shortcuts():
+            if info.shortcut:
+                shortcut = Gtk.Shortcut.new(
+                    Gtk.ShortcutTrigger.parse_string(info.shortcut),
+                    Gtk.NamedAction.new(f"win.{info.action_name}"),
+                )
+                self._shortcut_controller.add_shortcut(shortcut)
+                self._layout_shortcuts.append(shortcut)
 
     def get_action(self, name: str) -> Gio.SimpleAction:
         """Retrieves a registered action by its name."""
@@ -487,6 +675,15 @@ class ActionManager:
         new_items = self.editor.split.split_items(selected_workpieces)
         if new_items:
             self.win.surface.select_items(new_items)
+
+    def on_convert_to_stock(self, action, param):
+        """Handler for the 'convert-to-stock' action."""
+        selected_wps = self.win.surface.get_selected_workpieces()
+        if not selected_wps:
+            return
+
+        for wp in selected_wps:
+            self.editor.stock.convert_to_stock(wp)
 
     # --- Alignment Action Handlers ---
 

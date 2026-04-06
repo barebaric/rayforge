@@ -5,8 +5,6 @@ authors: rayforge_team
 tags: [multi-laser, operations, workflow]
 ---
 
-![Sobreposição de Câmera](/images/camera-overlay.png)
-
 Um dos recursos mais poderosos no Rayforge é a capacidade de atribuir
 diferentes lasers a diferentes operações dentro de um único trabalho. Isso
 abre possibilidades emocionantes para configurações multi-ferramentas e

@@ -82,6 +82,12 @@ Personaliza lo que ves:
 - **Colorear por Potencia**: Degradado basado en la potencia del láser
 - **Colorear por Velocidad**: Degradado basado en la velocidad de avance
 
+:::tip Colores por Láser
+Al usar máquinas con múltiples cabezales láser, cada láser puede tener sus propios
+colores de corte y raster configurados en [Ajustes de Láser](../machine/laser).
+Esto facilita identificar qué láser realizará cada operación.
+:::
+
 ### Visualización de Máquina
 
 - **Mostrar Origen**: Mostrar punto de referencia (0,0)

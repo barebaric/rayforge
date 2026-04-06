@@ -230,7 +230,7 @@ class TestRecipeManager:
         """
         stock = stock_item_factory("walnut", 3.0)
         results = manager_with_recipes.find_recipes(
-            stock, capabilities={CUT}, machine=machine_a
+            [stock], capabilities={CUT}, machine=machine_a
         )
 
         assert len(results) == 5
@@ -250,7 +250,7 @@ class TestRecipeManager:
         """Test that machine-specific recipes are filtered out."""
         stock = stock_item_factory("walnut", 3.0)
         results = manager_with_recipes.find_recipes(
-            stock, capabilities={CUT}, machine=machine_b
+            [stock], capabilities={CUT}, machine=machine_b
         )
 
         assert len(results) == 3
@@ -269,7 +269,7 @@ class TestRecipeManager:
         """
         stock = stock_item_factory("walnut", 3.0)
         results = manager_with_recipes.find_recipes(
-            stock, capabilities={CUT}, machine=None
+            [stock], capabilities={CUT}, machine=None
         )
 
         assert len(results) == 3
@@ -285,7 +285,7 @@ class TestRecipeManager:
         """Test finding recipes when only material matches."""
         stock = stock_item_factory("walnut", 10.0)  # Thickness mismatch
         results = manager_with_recipes.find_recipes(
-            stock, capabilities={CUT}, machine=machine_a
+            [stock], capabilities={CUT}, machine=machine_a
         )
 
         assert len(results) == 2
@@ -303,7 +303,7 @@ class TestRecipeManager:
         # This recipe doesn't match because it also has a machine spec
         # so only generic-cut should appear.
         results = manager_with_recipes.find_recipes(
-            stock, capabilities={CUT}, machine=machine_a
+            [stock], capabilities={CUT}, machine=machine_a
         )
 
         assert len(results) == 1
@@ -320,7 +320,7 @@ class TestRecipeManager:
         """
         stock = stock_item_factory("mdf", 10.0)
         results = manager_with_recipes.find_recipes(
-            stock, capabilities={CUT}, machine=machine_a
+            [stock], capabilities={CUT}, machine=machine_a
         )
 
         assert len(results) == 1
@@ -333,7 +333,7 @@ class TestRecipeManager:
         Test that only generic recipes are returned when no stock is provided.
         """
         results = manager_with_recipes.find_recipes(
-            None, capabilities={CUT}, machine=machine_a
+            [], capabilities={CUT}, machine=machine_a
         )
 
         assert len(results) == 1
@@ -348,7 +348,7 @@ class TestRecipeManager:
         """Test that find_recipes correctly filters by capability."""
         stock = stock_item_factory("walnut", 3.0)
         results = manager_with_recipes.find_recipes(
-            stock, capabilities={ENGRAVE}, machine=machine_a
+            [stock], capabilities={ENGRAVE}, machine=machine_a
         )
 
         assert len(results) == 1
@@ -363,7 +363,7 @@ class TestRecipeManager:
         """Test finding recipes that match one of several capabilities."""
         stock = stock_item_factory("walnut", 3.0)
         results = manager_with_recipes.find_recipes(
-            stock, capabilities={CUT, ENGRAVE}, machine=machine_a
+            [stock], capabilities={CUT, ENGRAVE}, machine=machine_a
         )
 
         assert len(results) == 6

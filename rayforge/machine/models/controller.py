@@ -1,10 +1,11 @@
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 from gettext import gettext as _
 
 from blinker import Signal
 
+from ...core.geo import Point3D
 from ...core.varset import ValidationError
 from ...shared.tasker import task_mgr
 from ..driver import get_driver_cls
@@ -38,9 +39,15 @@ class MachineController:
     re-emits to maintain backward compatibility.
     """
 
-    def __init__(self, machine: "Machine", context: "RayforgeContext"):
+    def __init__(
+        self,
+        machine: "Machine",
+        context: "RayforgeContext",
+        scheduler,
+    ):
         self.machine = machine
         self.context = context
+        self._scheduler = scheduler
 
         # Controller signals - Machine will connect to these and re-emit
         self.connection_status_changed = Signal()
@@ -56,6 +63,11 @@ class MachineController:
         self._last_driver_name = self.machine.driver_name
         self._last_driver_args = self.machine.driver_args.copy()
 
+        # The WCS that the device has actually confirmed via $G query.
+        # Used to guard _sync_wcs_offset_from_wco against stale WCO
+        # from status reports after a UI-initiated WCS switch.
+        self._confirmed_active_wcs: Optional[str] = None
+
         # Listen to machine's changed signal to rebuild driver when
         # driver configuration changes
         self.machine.changed.connect(self._on_machine_changed)
@@ -64,7 +76,7 @@ class MachineController:
         # the driver instance to match
         if self.machine.driver_name:
             task_mgr.add_coroutine(
-                self._rebuild_driver_instance,
+                self.rebuild_driver,
                 key=(self.machine.id, "rebuild-driver-on-init"),
             )
 
@@ -79,7 +91,7 @@ class MachineController:
         if self.driver is not None:
             await self.driver.cleanup()
             task_mgr.add_coroutine(
-                self._rebuild_driver_instance,
+                self.rebuild_driver,
                 key=(self.machine.id, "rebuild-driver"),
             )
 
@@ -117,7 +129,7 @@ class MachineController:
             self._last_driver_name = current_driver_name
             self._last_driver_args = current_driver_args.copy()
             task_mgr.add_coroutine(
-                self._rebuild_driver_instance,
+                self.rebuild_driver,
                 key=(self.machine.id, "rebuild-driver-on-change"),
             )
 
@@ -156,9 +168,7 @@ class MachineController:
         """
         self.machine.changed.send(self.machine)
 
-    async def _rebuild_driver_instance(
-        self, ctx: Optional["ExecutionContext"] = None
-    ):
+    async def rebuild_driver(self, ctx: Optional["ExecutionContext"] = None):
         """
         Instantiates and sets up the driver based on the machine's current
         configuration. Connects if auto_connect is enabled and the new driver
@@ -171,7 +181,7 @@ class MachineController:
 
         old_driver = self.driver
         self._disconnect_driver_signals()
-        self.machine.precheck_error = None
+        self.machine.set_precheck_error(None)
 
         if self.machine.driver_name:
             driver_cls = get_driver_cls(self.machine.driver_name)
@@ -184,7 +194,7 @@ class MachineController:
             logger.warning(
                 f"Precheck failed for driver {self.machine.driver_name}: {e}"
             )
-            self.machine.precheck_error = str(e)
+            self.machine.set_precheck_error(str(e))
 
         new_driver = driver_cls(self.context, self.machine)
         new_driver.setup(**self.machine.driver_args)
@@ -195,7 +205,7 @@ class MachineController:
         self._last_driver_name = self.machine.driver_name
         self._last_driver_args = self.machine.driver_args.copy()
 
-        self.machine._scheduler(self.machine.changed.send, self.machine)
+        self._scheduler(self.machine.changed.send, self.machine)
 
         if old_driver:
             await old_driver.cleanup()
@@ -218,17 +228,17 @@ class MachineController:
             self.machine.connection_status != TransportStatus.DISCONNECTED
         )
 
-        self.machine.device_state = DeviceState()
-        self.machine.connection_status = TransportStatus.DISCONNECTED
+        self.machine.set_device_state(DeviceState())
+        self.machine.set_connection_status(TransportStatus.DISCONNECTED)
 
         if state_actually_changed:
-            self.machine._scheduler(
+            self._scheduler(
                 self.state_changed.send,
                 self.machine,
                 state=self.machine.device_state,
             )
         if conn_actually_changed:
-            self.machine._scheduler(
+            self._scheduler(
                 self.connection_status_changed.send,
                 self.machine,
                 status=self.machine.connection_status,
@@ -243,8 +253,8 @@ class MachineController:
     ):
         """Proxies the connection status signal from the active driver."""
         if self.machine.connection_status != status:
-            self.machine.connection_status = status
-            self.machine._scheduler(
+            self.machine.set_connection_status(status)
+            self._scheduler(
                 self.connection_status_changed.send,
                 self.machine,
                 status=status,
@@ -252,7 +262,7 @@ class MachineController:
             )
             if status == TransportStatus.CONNECTED:
                 if self.machine.precheck_error:
-                    self.machine.precheck_error = None
+                    self.machine.set_precheck_error(None)
                 task_mgr.add_coroutine(
                     lambda ctx: self.machine.sync_wcs_from_device(),
                     key=(self.machine.id, "sync-wcs-offsets"),
@@ -265,14 +275,39 @@ class MachineController:
     def _on_driver_state_changed(self, driver: Driver, state: DeviceState):
         """Proxies the state changed signal from the active driver."""
         if self.machine.device_state != state:
-            self.machine.device_state = state
-            self.machine._scheduler(
-                self.state_changed.send, self.machine, state=state
-            )
+            self.machine.set_device_state(state)
+            self._sync_wcs_offset_from_wco(state)
+            self._scheduler(self.state_changed.send, self.machine, state=state)
+
+    def _sync_wcs_offset_from_wco(self, state: DeviceState):
+        """
+        Updates wcs_offsets for the active WCS from the WCO reported
+        in the device status report. This ensures wcs_offsets is current
+        even when the separate $# query hasn't completed yet.
+
+        Regression fix for issue #190: only sync when the device has
+        confirmed the active WCS via $G. After a UI-initiated WCS switch,
+        status reports still carry the old WCS's WCO until the device
+        actually switches. Without this guard, stale WCO would corrupt
+        the newly-selected WCS offset.
+        """
+        active_wcs = self.machine.active_wcs
+        if not active_wcs:
+            return
+        if active_wcs != self._confirmed_active_wcs:
+            return
+        if not all(v is not None for v in state.wco):
+            return
+        wco = cast(Tuple[float, float, float], state.wco)
+        new_offset = (wco[0], wco[1], wco[2])
+        current = self.machine.wcs_offsets.get(active_wcs)
+        if current != new_offset:
+            self.machine.update_wcs_offset(active_wcs, new_offset)
+            self._scheduler(self.wcs_updated.send, self.machine)
 
     def _on_driver_job_finished(self, driver: Driver):
         """Proxies the job finished signal from the active driver."""
-        self.machine._scheduler(self.job_finished.send, self.machine)
+        self._scheduler(self.job_finished.send, self.machine)
 
     def _on_driver_command_status_changed(
         self,
@@ -281,7 +316,7 @@ class MachineController:
         message: Optional[str] = None,
     ):
         """Proxies the command status changed signal from the active driver."""
-        self.machine._scheduler(
+        self._scheduler(
             self.command_status_changed.send,
             self.machine,
             status=status,
@@ -289,16 +324,16 @@ class MachineController:
         )
 
     def _on_driver_wcs_updated(
-        self, driver: Driver, offsets: Dict[str, Tuple[float, float, float]]
+        self, driver: Driver, offsets: Dict[str, Point3D]
     ):
         """Updates internal WCS state from driver updates."""
-        self.machine.wcs_offsets.update(offsets)
+        self.machine.update_wcs_offsets_batch(offsets)
         logger.debug(
             f"MachineController: Emitting wcs_updated for machine "
             f"{self.machine.id}. Sender: {self.machine}"
         )
-        self.machine._scheduler(self.wcs_updated.send, self.machine)
-        self.machine._scheduler(self.machine.changed.send, self.machine)
+        self._scheduler(self.wcs_updated.send, self.machine)
+        self._scheduler(self.machine.changed.send, self.machine)
 
     async def home(self, axes=None):
         """Homes the specified axes or all axes if none specified."""
@@ -370,6 +405,28 @@ class MachineController:
 
         await self.driver.set_power(head, percent)
 
+    async def set_focus_power(
+        self, head: Optional["Laser"] = None, percent: float = 0.0
+    ) -> None:
+        """
+        Sets the laser power for focus mode.
+
+        Args:
+            head: The laser head to control. If None, uses the default head.
+            percent: Power percentage (0-1.0). 0 disables power.
+        """
+        logger.debug(
+            f"Head {head.uid if head else None} focus power "
+            f"to {percent * 100}%"
+        )
+        if not self.driver:
+            raise ValueError("No driver configured for this machine.")
+
+        if head is None:
+            head = self.machine.get_default_head()
+
+        await self.driver.set_focus_power(head, percent)
+
     async def set_work_origin(
         self, x: float, y: float, z: float, wcs_slot: Optional[str] = None
     ):
@@ -391,9 +448,9 @@ class MachineController:
             return
 
         if not self.machine.is_connected():
-            self.machine.wcs_offsets[slot] = (x, y, z)
-            self.machine._scheduler(self.wcs_updated.send, self)
-            self.machine._scheduler(self.machine.changed.send, self)
+            self.machine.update_wcs_offset(slot, (x, y, z))
+            self._scheduler(self.wcs_updated.send, self.machine)
+            self._scheduler(self.machine.changed.send, self.machine)
             return
 
         await self.driver.set_wcs_offset(slot, x, y, z)
@@ -467,6 +524,7 @@ class MachineController:
                         f"Synced active WCS from device: '{active_wcs}'"
                     )
                     self.machine.set_active_wcs(active_wcs)
+                    self._confirmed_active_wcs = active_wcs
             except asyncio.TimeoutError:
                 logger.error(
                     "Failed to sync active WCS: device timed out "
@@ -479,6 +537,36 @@ class MachineController:
                 logger.error(
                     f"Failed to sync active WCS: connection error: {e}"
                 )
+
+    async def switch_active_wcs(self, wcs: str):
+        """
+        Switches the active WCS on both the model and the device.
+
+        Sends the G-code WCS command (e.g. G54), then queries $G
+        to confirm the switch before updating _confirmed_active_wcs.
+        This prevents stale WCO from status reports corrupting the
+        newly-selected WCS offset.
+        """
+        self.machine.active_wcs = wcs
+        self._scheduler(self.machine.changed.send, self.machine)
+        self._confirmed_active_wcs = None
+
+        if self.machine.is_connected():
+            try:
+                await self.driver.run_raw(wcs)
+                confirmed = await self.driver.read_parser_state()
+                if confirmed == wcs:
+                    self._confirmed_active_wcs = wcs
+                    await self.driver.read_wcs_offsets()
+                else:
+                    logger.warning(
+                        f"Device did not confirm WCS switch to {wcs}, "
+                        f"got {confirmed}"
+                    )
+            except (DeviceConnectionError, asyncio.TimeoutError) as e:
+                logger.warning(f"Failed to confirm WCS switch to {wcs}: {e}")
+        else:
+            self._confirmed_active_wcs = wcs
 
     @property
     def reports_granular_progress(self) -> bool:
@@ -524,14 +612,14 @@ class MachineController:
             return []
         return self.driver.get_setting_vars()
 
-    async def _read_from_device(self):
+    async def read_settings(self):
         """
         Task entry point for reading settings. This handles locking and
         all errors.
         """
-        logger.debug("Machine._read_from_device: Acquiring lock.")
+        logger.debug("Machine.read_settings: Acquiring lock.")
         async with self.machine._settings_lock:
-            logger.debug("_read_from_device: Lock acquired.")
+            logger.debug("read_settings: Lock acquired.")
             if self.driver is None:
                 err = ConnectionError("No driver instance for this machine.")
                 self.machine.settings_error.send(self, error=err)
@@ -540,7 +628,7 @@ class MachineController:
             def on_settings_read(sender, settings: List["VarSet"]):
                 logger.debug("on_settings_read: Handler called.")
                 sender.settings_read.disconnect(on_settings_read)
-                self.machine._scheduler(
+                self._scheduler(
                     self.machine.settings_updated.send,
                     self.machine,
                     var_sets=settings,
@@ -553,18 +641,18 @@ class MachineController:
             except (DeviceConnectionError, ConnectionError) as e:
                 logger.error(f"Failed to read settings from device: {e}")
                 self.driver.settings_read.disconnect(on_settings_read)
-                self.machine._scheduler(
+                self._scheduler(
                     self.machine.settings_error.send, self, error=e
                 )
             finally:
-                logger.debug("_read_from_device: Read operation finished.")
-        logger.debug("_read_from_device: Lock released.")
+                logger.debug("read_settings: Read operation finished.")
+        logger.debug("read_settings: Lock released.")
 
-    async def _write_setting_to_device(self, key: str, value: Any):
+    async def write_setting(self, key: str, value: Any):
         """
         Writes a single setting to the device and signals success or failure.
         """
-        logger.debug(f"_write_setting_to_device(key={key}): Acquiring lock.")
+        logger.debug(f"write_setting(key={key}): Acquiring lock.")
         if self.driver is None:
             err = ConnectionError("No driver instance for this machine.")
             self.machine.settings_error.send(self, error=err)
@@ -572,20 +660,14 @@ class MachineController:
 
         try:
             async with self.machine._settings_lock:
-                logger.debug(
-                    f"_write_setting_to_device(key={key}): Lock acquired."
-                )
+                logger.debug(f"write_setting(key={key}): Lock acquired.")
                 await self.driver.write_setting(key, value)
-                self.machine._scheduler(
-                    self.machine.setting_applied.send, self
-                )
+                self._scheduler(self.machine.setting_applied.send, self)
         except (DeviceConnectionError, ConnectionError) as e:
             logger.error(f"Failed to write setting to device: {e}")
-            self.machine._scheduler(
-                self.machine.settings_error.send, self, error=e
-            )
+            self._scheduler(self.machine.settings_error.send, self, error=e)
         finally:
-            logger.debug(f"_write_setting_to_device(key={key}): Done.")
+            logger.debug(f"write_setting(key={key}): Done.")
 
     def validate_driver_setup(self) -> Tuple[bool, Optional[str]]:
         """

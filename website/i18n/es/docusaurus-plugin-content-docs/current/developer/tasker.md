@@ -117,9 +117,10 @@ Usa el callback `when_done` para obtener el resultado o ver si ocurrió un error
 ```python
 def on_task_finished(task):
     if task.get_status() == 'completed':
-        print(f"Tarea terminada con resultado: {task.result()}")
-    elif task.get_status() == 'failed':
-        print(f"Tarea fallida: {task._task_exception}")
+        try:
+            print(f"Tarea terminada con resultado: {task.result()}")
+        except Exception as e:
+            print(f"Tarea fallida: {e}")
 
 task_mgr.run_process(my_cpu_task, 10, when_done=on_task_finished)
 ```

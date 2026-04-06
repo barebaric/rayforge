@@ -1,0 +1,28 @@
+uid: ash
+name:
+  default: Ash
+  de: Esche
+  es: Fresno
+  fr: Frêne
+  pt: Freixo
+  uk: Ясень
+  zh_CN: 白蜡木
+description:
+  default: Light-colored hardwood with straight grain
+  de: Helles Hartholz mit gerader Maserung
+  es: Madera dura de color claro con veta recta
+  fr: Bois dur de couleur claire avec un grain droit
+  pt: Madeira dura de cor clara com grão reto
+  uk: Світла тверда деревина з прямим візерунком
+  zh_CN: 浅色硬木，纹理直
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
+appearance:
+  color: "#F0E68C"
+  pattern: wood_grain

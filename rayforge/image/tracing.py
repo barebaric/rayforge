@@ -4,11 +4,12 @@ import cv2
 import vtracer
 import xml.etree.ElementTree as ET
 import re
-from typing import Tuple, List, Optional
+from enum import Enum
+from typing import List, Optional, Tuple
 import logging
 import threading
 import sys
-from ..core.geo import Geometry
+from ..core.geo import Geometry, Point
 from ..core.vectorization_spec import VectorizationSpec, TraceSpec
 from ..core.matrix import Matrix
 from .hull import get_enclosing_hull, get_hulls_from_image
@@ -29,6 +30,11 @@ VTRACER_PIXEL_LIMIT = 1_220_000
 # On Windows, we use a dedicated thread with increased stack size (8MB)
 # allowing us to maintain high resolution without stack overflows.
 VTRACER_WINDOWS_SAFE_LIMIT = 1_000_000
+
+
+class ColorMode(Enum):
+    BINARY = "binary"
+    COLOR = "color"
 
 
 def _get_image_from_surface(
@@ -227,11 +233,11 @@ def _flatten_bezier(
 
 
 def _transform_point_for_geometry(
-    p: Tuple[float, float],
+    p: Point,
     height_px: int,
     scale_x: float,
     scale_y: float,
-) -> Tuple[float, float]:
+) -> Point:
     """
     Transforms a point from vtracer's SVG coordinates to Y-down pixel
     coordinates relative to the original image (border removed).
@@ -524,10 +530,18 @@ def _encode_image_to_buffer(
 
 
 def _convert_buffer_to_svg_with_vtracer(
-    img_bytes: bytes, img_format: str
+    img_bytes: bytes, img_format: str, colormode: ColorMode = ColorMode.BINARY
 ) -> str:
-    """Converts image bytes to SVG string using vtracer."""
-    logger.debug("Entering _convert_buffer_to_svg_with_vtracer")
+    """Converts image bytes to SVG string using vtracer.
+
+    Args:
+        img_bytes: Image data as bytes
+        img_format: Image format (e.g., "bmp")
+        colormode: ColorMode.BINARY or ColorMode.COLOR
+    """
+    logger.debug(
+        f"Entering _convert_buffer_to_svg_with_vtracer ({colormode.value})"
+    )
 
     # Arguments for vtracer. We use POSITIONAL arguments here to bypass
     # a crash in the PyO3 keyword argument parser (extract_arguments_fastcall)
@@ -536,18 +550,32 @@ def _convert_buffer_to_svg_with_vtracer(
     # convert_raw_image_to_svg(bytes, fmt, colormode, hierarchical, mode,
     #                          speckle, color_prec, layer_diff, corner,
     #                          length, max_iter, splice, path_prec)
-    args = (
-        img_bytes,  # 1. img_bytes
-        img_format,  # 2. img_format
-        "binary",  # 3. colormode
-        "stacked",  # 4. hierarchical (default)
-        "polygon",  # 5. mode
-        0,  # 6. filter_speckle
-        6,  # 7. color_precision (default)
-        16,  # 8. layer_difference (default)
-        60,  # 9. corner_threshold (default)
-        3.5,  # 10. length_threshold
-    )
+    if colormode == ColorMode.COLOR:
+        args = (
+            img_bytes,
+            img_format,
+            "color",
+            "stacked",
+            "polygon",
+            2,
+            8,
+            8,
+            90,
+            4.0,
+        )
+    else:
+        args = (
+            img_bytes,
+            img_format,
+            "binary",
+            "stacked",
+            "polygon",
+            0,
+            6,
+            16,
+            60,
+            3.5,
+        )
 
     def _call_native():
         return vtracer.convert_raw_image_to_svg(*args)
@@ -754,6 +782,139 @@ def _apply_upscaling(
         for geo in geometries:
             geo.transform(upscale_matrix.to_4x4_numpy())
     return geometries
+
+
+def _encode_color_to_buffer(
+    color_image: np.ndarray,
+) -> Tuple[bool, bytes, str]:
+    """Encodes a BGR color image to BMP bytes for vtracer."""
+    logger.debug("Entering _encode_color_to_buffer")
+    if color_image.dtype != np.uint8:
+        color_image = color_image.astype(np.uint8)
+    rgb_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
+    success, buffer = cv2.imencode(".bmp", rgb_image)
+    if not success:
+        logger.error("Failed to encode color image to BMP for vtracer.")
+        return False, b"", ""
+    return True, buffer.tobytes(), "bmp"
+
+
+def _get_geometries_from_color(
+    color_image: np.ndarray, processing_surface_height: int
+) -> List[Geometry]:
+    """
+    Performs vectorization of a color image using vtracer in color mode.
+    """
+    success, img_bytes, img_fmt = _encode_color_to_buffer(color_image)
+    if not success:
+        return []
+
+    try:
+        raw_output = _convert_buffer_to_svg_with_vtracer(
+            img_bytes, img_fmt, colormode=ColorMode.COLOR
+        )
+        svg_str = _extract_svg_from_raw_output(raw_output)
+    except Exception as e:
+        logger.error(f"vtracer color failed: {e}")
+        return []
+
+    try:
+        total_sub_paths = _count_svg_subpaths(svg_str)
+        if total_sub_paths == 0:
+            logger.warning("vtracer color produced 0 sub-paths.")
+            return []
+        if total_sub_paths >= MAX_VECTORS_LIMIT:
+            logger.warning(
+                f"vtracer color produced {total_sub_paths} sub-paths, "
+                f"exceeding limit of {MAX_VECTORS_LIMIT}."
+            )
+            return []
+        return _svg_string_to_geometries(
+            svg_str, 1.0, 1.0, processing_surface_height
+        )
+    except ET.ParseError:
+        logger.error("Failed to parse SVG from vtracer color.")
+        return []
+
+
+def trace_color_image(
+    color_image: Optional[np.ndarray],
+) -> List[Geometry]:
+    """
+    Traces a BGR color image and returns a list of Geometry objects.
+
+    Uses vtracer's color mode to trace distinct color regions.
+
+    Args:
+        color_image: A 3-channel BGR numpy array.
+
+    Returns:
+        A list of Geometry objects representing the traced shapes.
+    """
+    logger.debug("Entering trace_color_image")
+
+    if color_image is None or color_image.size == 0:
+        return []
+
+    if len(color_image.shape) != 3:
+        color_image = cv2.cvtColor(color_image, cv2.COLOR_GRAY2BGR)
+
+    height, width = color_image.shape[:2]
+
+    pixel_limit = (
+        VTRACER_WINDOWS_SAFE_LIMIT
+        if sys.platform == "win32"
+        else VTRACER_PIXEL_LIMIT
+    )
+
+    if height * width > pixel_limit:
+        scale = (pixel_limit / (height * width)) ** 0.5
+        new_w = max(4, (int(width * scale) // 4) * 4)
+        new_h = max(4, (int(height * scale) // 4) * 4)
+        logger.warning(
+            f"Color image too large ({width}x{height}). "
+            f"Downscaling to {new_w}x{new_h}."
+        )
+        color_image = cv2.resize(
+            color_image, (new_w, new_h), interpolation=cv2.INTER_AREA
+        )
+        upscale_x = width / new_w
+        upscale_y = height / new_h
+        content_height = new_h
+    else:
+        upscale_x = 1.0
+        upscale_y = 1.0
+        content_height = height
+
+    color_image = cv2.copyMakeBorder(
+        color_image,
+        BORDER_SIZE,
+        BORDER_SIZE,
+        BORDER_SIZE,
+        BORDER_SIZE,
+        cv2.BORDER_CONSTANT,
+        value=[255, 255, 255],
+    )
+    processing_height = content_height + 2 * BORDER_SIZE
+
+    content_width = int(width / upscale_x) if upscale_x > 0 else width
+
+    geometries = _get_geometries_from_color(color_image, processing_height)
+
+    def _is_border_geometry(geo: Geometry, w: int, h: int) -> bool:
+        for poly in geo.to_polygons():
+            for pt in poly:
+                if pt[0] < -1 or pt[1] < -1 or pt[0] > w + 1 or pt[1] > h + 1:
+                    return True
+        return False
+
+    geometries = [
+        g
+        for g in geometries
+        if not _is_border_geometry(g, content_width, content_height)
+    ]
+
+    return _apply_upscaling(geometries, upscale_x, upscale_y)
 
 
 def trace_surface(

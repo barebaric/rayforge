@@ -301,7 +301,7 @@ def show_panel(
     Show or hide a UI panel.
 
     Args:
-        panel_name: Action name (e.g., "toggle_control_panel").
+        panel_name: Action name (e.g., "toggle_bottom_panel").
         visible: True to show, False to hide.
     """
 
@@ -310,6 +310,15 @@ def show_panel(
         action.change_state(GLib.Variant.new_boolean(visible))
 
     run_on_main_thread(_show)
+
+
+def show_bottom_tab(win: "MainWindow", tab_name: str) -> None:
+    """Switch the bottom panel to a given tab (e.g. 'console' or 'gcode')."""
+
+    def _switch() -> None:
+        win.bottom_panel.tab_widget.set_current_tab(tab_name)
+
+    run_on_main_thread(_switch)
 
 
 def hide_panel(win: "MainWindow", panel_name: str) -> None:
@@ -511,13 +520,14 @@ def open_recipe_editor(
 
 def open_material_test(win: "MainWindow") -> "StepSettingsDialog":
     """Open material test grid dialog."""
-    from rayforge.pipeline.steps import create_material_test_step
+    from rayforge.core.step_registry import step_registry
     from rayforge.ui_gtk.doceditor.step_settings_dialog import (
         StepSettingsDialog,
     )
 
     def _open() -> "StepSettingsDialog":
-        step = create_material_test_step(win.doc_editor.context)
+        step_cls = step_registry.get("MaterialTestStep")
+        step = step_cls.create(win.doc_editor.context)
         step.name = "Material Test Grid"
         dialog = StepSettingsDialog(
             editor=win.doc_editor,

@@ -1,28 +1,19 @@
 import pytest
-import numpy as np
 
 from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.ops import Ops, LineToCommand
-from rayforge.core.matrix import Matrix
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
-    StepRenderArtifact,
     StepOpsArtifact,
 )
-from rayforge.pipeline.artifact.base import TextureData, VertexData
 from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.transformer import Optimize, Smooth
 from rayforge.pipeline.stage.step_compute import (
     compute_step_artifacts,
     _apply_artifact_scaling,
     _create_workpiece_placement_matrix,
-    _calculate_texture_dimensions,
-    _create_texture_data,
-    _create_texture_instance,
     _process_artifact,
     _apply_transformers_to_ops,
-    _encode_vertex_data,
 )
 
 
@@ -80,13 +71,12 @@ def test_compute_step_artifacts_merges_ops(setup_two_artifacts):
     """Test that compute_step_artifacts merges ops from multiple artifacts."""
     artifacts = setup_two_artifacts
 
-    render_artifact, ops_artifact = compute_step_artifacts(
+    ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=[],
         generation_id=1,
     )
 
-    assert isinstance(render_artifact, StepRenderArtifact)
     assert isinstance(ops_artifact, StepOpsArtifact)
 
     line_commands = [
@@ -99,7 +89,7 @@ def test_compute_step_artifacts_applies_transforms(setup_two_artifacts):
     """Test that compute_step_artifacts applies world transforms."""
     artifacts = setup_two_artifacts
 
-    render_artifact, ops_artifact = compute_step_artifacts(
+    ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=[],
         generation_id=1,
@@ -124,7 +114,7 @@ def test_compute_step_artifacts_with_progress_callback(
     """Test that compute_step_artifacts calls progress callback."""
     artifacts = setup_two_artifacts
 
-    render_artifact, ops_artifact = compute_step_artifacts(
+    compute_step_artifacts(
         artifacts=artifacts,
         transformers=[],
         generation_id=1,
@@ -135,12 +125,15 @@ def test_compute_step_artifacts_with_progress_callback(
     assert mock_progress_context.progress_calls[-1][0] == 1.0
 
 
-def test_compute_step_artifacts_with_transformers(setup_two_artifacts):
+def test_compute_step_artifacts_with_transformers(
+    setup_two_artifacts, get_transformer
+):
     """Test that compute_step_artifacts applies transformers."""
     artifacts = setup_two_artifacts
+    Optimize = get_transformer("Optimize")
     transformer = Optimize()
 
-    render_artifact, ops_artifact = compute_step_artifacts(
+    ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=[transformer],
         generation_id=1,
@@ -152,24 +145,24 @@ def test_compute_step_artifacts_with_transformers(setup_two_artifacts):
 
 def test_compute_step_artifacts_empty_list():
     """Test compute_step_artifacts with empty artifacts list."""
-    render_artifact, ops_artifact = compute_step_artifacts(
+    ops_artifact = compute_step_artifacts(
         artifacts=[],
         transformers=[],
         generation_id=1,
     )
 
-    assert isinstance(render_artifact, StepRenderArtifact)
     assert isinstance(ops_artifact, StepOpsArtifact)
     assert ops_artifact.ops.is_empty()
 
 
 def test_compute_step_artifacts_with_message_callback(
-    setup_two_artifacts, mock_progress_context
+    setup_two_artifacts, mock_progress_context, get_transformer
 ):
     """Test that compute_step_artifacts calls message callback."""
     artifacts = setup_two_artifacts
+    Optimize = get_transformer("Optimize")
 
-    render_artifact, ops_artifact = compute_step_artifacts(
+    compute_step_artifacts(
         artifacts=artifacts,
         transformers=[Optimize()],
         generation_id=1,
@@ -202,31 +195,31 @@ def test_compute_step_artifacts_raster_artifact():
 
     artifacts = [(artifact, wp.get_world_transform(), wp)]
 
-    render_artifact, ops_artifact = compute_step_artifacts(
+    ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=[],
         generation_id=1,
     )
 
-    assert isinstance(render_artifact, StepRenderArtifact)
     assert isinstance(ops_artifact, StepOpsArtifact)
     assert not ops_artifact.ops.is_empty()
 
 
 def test_compute_step_artifacts_multiple_transformers(
-    setup_two_artifacts,
+    setup_two_artifacts, get_transformer
 ):
     """Test compute_step_artifacts with multiple transformers."""
     artifacts = setup_two_artifacts
+    Optimize = get_transformer("Optimize")
+    Smooth = get_transformer("Smooth")
     transformers = [Optimize(), Smooth()]
 
-    render_artifact, ops_artifact = compute_step_artifacts(
+    ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=transformers,
         generation_id=1,
     )
 
-    assert isinstance(render_artifact, StepRenderArtifact)
     assert isinstance(ops_artifact, StepOpsArtifact)
     assert not ops_artifact.ops.is_empty()
 
@@ -245,13 +238,12 @@ def test_compute_step_artifacts_without_source_dimensions(
         artifacts[1],
     ]
 
-    render_artifact, ops_artifact = compute_step_artifacts(
+    ops_artifact = compute_step_artifacts(
         artifacts=new_artifacts,
         transformers=[],
         generation_id=1,
     )
 
-    assert isinstance(render_artifact, StepRenderArtifact)
     assert isinstance(ops_artifact, StepOpsArtifact)
 
 
@@ -366,106 +358,6 @@ def test_create_workpiece_placement_matrix_with_flip():
     assert sy == pytest.approx(-1.0)
 
 
-def test_calculate_texture_dimensions_with_source_dimensions():
-    """Test _calculate_texture_dimensions with source dimensions."""
-    artifact = WorkPieceArtifact(
-        ops=Ops(),
-        is_scalable=False,
-        source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
-        source_dimensions=(500, 250),
-        generation_size=(10.0, 5.0),
-        generation_id=1,
-    )
-
-    width_px, height_px, px_per_mm_x, px_per_mm_y = (
-        _calculate_texture_dimensions(artifact)
-    )
-
-    assert width_px == 500
-    assert height_px == 250
-    assert px_per_mm_x == pytest.approx(50.0)
-    assert px_per_mm_y == pytest.approx(50.0)
-
-
-def test_calculate_texture_dimensions_without_source_dimensions():
-    """Test _calculate_texture_dimensions without source dimensions."""
-    artifact = WorkPieceArtifact(
-        ops=Ops(),
-        is_scalable=False,
-        source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
-        source_dimensions=None,
-        generation_size=(10.0, 5.0),
-        generation_id=1,
-    )
-
-    width_px, height_px, px_per_mm_x, px_per_mm_y = (
-        _calculate_texture_dimensions(artifact)
-    )
-
-    assert width_px == 500
-    assert height_px == 250
-    assert px_per_mm_x == pytest.approx(50.0)
-    assert px_per_mm_y == pytest.approx(50.0)
-
-
-def test_create_texture_data_non_scalable():
-    """Test _create_texture_data for non-scalable artifact."""
-    base_ops = Ops()
-    base_ops.move_to(0, 0)
-    base_ops.line_to(100, 0)
-
-    artifact = WorkPieceArtifact(
-        ops=base_ops,
-        is_scalable=False,
-        source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
-        source_dimensions=(500, 250),
-        generation_size=(10.0, 5.0),
-        generation_id=1,
-    )
-
-    texture_data = _create_texture_data(artifact)
-
-    assert texture_data is not None
-    assert texture_data.dimensions_mm == pytest.approx((10.0, 5.0))
-    assert texture_data.position_mm == pytest.approx((0.0, 0.0))
-
-
-def test_create_texture_data_scalable():
-    """Test _create_texture_data returns None for scalable artifact."""
-    base_ops = Ops()
-    base_ops.move_to(0, 0)
-    base_ops.line_to(100, 0)
-
-    artifact = WorkPieceArtifact(
-        ops=base_ops,
-        is_scalable=True,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-        source_dimensions=(100, 100),
-        generation_size=(10.0, 5.0),
-        generation_id=1,
-    )
-
-    texture_data = _create_texture_data(artifact)
-
-    assert texture_data is None
-
-
-def test_create_texture_instance():
-    """Test _create_texture_instance."""
-    texture_data = TextureData(
-        power_texture_data=np.array([1, 2, 3], dtype=np.uint8),
-        dimensions_mm=(10.0, 5.0),
-        position_mm=(1.0, 2.0),
-    )
-
-    placement_matrix = Matrix.translation(10.0, 20.0)
-
-    instance = _create_texture_instance(texture_data, placement_matrix)
-
-    assert instance.texture_data is texture_data
-    assert instance.world_transform is not None
-
-
 def test_process_artifact_scalable():
     """Test _process_artifact for scalable artifact."""
     wp = WorkPiece(name="test_wp")
@@ -488,10 +380,9 @@ def test_process_artifact_scalable():
 
     world_matrix = wp.get_world_transform()
 
-    ops, texture_instance = _process_artifact(artifact, world_matrix, wp)
+    ops = _process_artifact(artifact, world_matrix, wp)
 
     assert not ops.is_empty()
-    assert texture_instance is None
 
 
 def test_process_artifact_non_scalable():
@@ -516,10 +407,9 @@ def test_process_artifact_non_scalable():
 
     world_matrix = wp.get_world_transform()
 
-    ops, texture_instance = _process_artifact(artifact, world_matrix, wp)
+    ops = _process_artifact(artifact, world_matrix, wp)
 
     assert not ops.is_empty()
-    assert texture_instance is not None
 
 
 def test_apply_transformers_to_ops_empty_list():
@@ -528,15 +418,14 @@ def test_apply_transformers_to_ops_empty_list():
     ops.move_to(0, 0)
     ops.line_to(100, 0)
 
-    wp = WorkPiece(name="test")
-    wp.set_size(10, 10)
-    _apply_transformers_to_ops(ops, [], wp)
+    _apply_transformers_to_ops(ops, [])
 
     assert not ops.is_empty()
 
 
-def test_apply_transformers_to_ops_with_transformer():
+def test_apply_transformers_to_ops_with_transformer(get_transformer):
     """Test _apply_transformers_to_ops with transformer."""
+    Optimize = get_transformer("Optimize")
     ops = Ops()
     ops.move_to(0, 0)
     ops.line_to(100, 0)
@@ -544,46 +433,22 @@ def test_apply_transformers_to_ops_with_transformer():
 
     transformer = Optimize()
 
-    wp = WorkPiece(name="test")
-    wp.set_size(10, 10)
-    _apply_transformers_to_ops(ops, [transformer], wp)
+    _apply_transformers_to_ops(ops, [transformer])
 
     assert not ops.is_empty()
 
 
 def test_apply_transformers_to_ops_with_progress_context(
-    mock_progress_context,
+    mock_progress_context, get_transformer
 ):
     """Test _apply_transformers_to_ops with progress context."""
+    Optimize = get_transformer("Optimize")
     ops = Ops()
     ops.move_to(0, 0)
     ops.line_to(100, 0)
 
     transformer = Optimize()
 
-    wp = WorkPiece(name="test")
-    wp.set_size(10, 10)
-    _apply_transformers_to_ops(ops, [transformer], wp, mock_progress_context)
+    _apply_transformers_to_ops(ops, [transformer], mock_progress_context)
 
     assert len(mock_progress_context.message_calls) > 0
-
-
-def test_encode_vertex_data():
-    """Test _encode_vertex_data."""
-    ops = Ops()
-    ops.move_to(0, 0)
-    ops.line_to(100, 0)
-
-    vertex_data = _encode_vertex_data(ops)
-
-    assert isinstance(vertex_data, VertexData)
-    assert vertex_data is not None
-
-
-def test_encode_vertex_data_empty_ops():
-    """Test _encode_vertex_data with empty ops."""
-    ops = Ops()
-
-    vertex_data = _encode_vertex_data(ops)
-
-    assert isinstance(vertex_data, VertexData)

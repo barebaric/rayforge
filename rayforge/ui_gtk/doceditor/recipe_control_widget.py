@@ -152,9 +152,9 @@ class RecipeControlWidget(Adw.ActionRow):
 
     def _on_save_as_clicked(self, button: Gtk.Button):
         """Saves the current step settings as a new recipe."""
-        # 1. Gather context
-        active_layer = self.editor.doc.active_layer
-        stock_item = active_layer.stock_item if active_layer else None
+        # 1. Gather context - get first stock item from document
+        stock_items = self.editor.doc.stock_items
+        stock_item = stock_items[0] if stock_items else None
         capability = self._get_primary_capability()
 
         # 2. Create a template Recipe object to pre-fill the dialog
@@ -177,11 +177,11 @@ class RecipeControlWidget(Adw.ActionRow):
         dialog = AddEditRecipeDialog(
             parent=parent_window, recipe=template_recipe
         )
-        dialog.connect("response", self._on_save_as_dialog_response)
+        dialog.response.connect(self._on_save_as_dialog_response, weak=False)
         dialog.present()
 
     def _on_save_as_dialog_response(
-        self, dialog: AddEditRecipeDialog, response_id: str
+        self, dialog: AddEditRecipeDialog, *, response_id: str
     ):
         if response_id in ("add", "save"):
             data = dialog.get_recipe_data()

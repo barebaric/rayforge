@@ -3,7 +3,7 @@ import struct
 from pathlib import Path
 from pytest_mock import MockerFixture  # Import the mocker fixture type
 
-from rayforge.image.ruida.parser import RuidaParser, _unscramble
+from rayforge.image.ruida.parser import RuidaParser
 
 
 def _scramble(byte_val: int) -> int:
@@ -69,23 +69,15 @@ def simple_square_rd_file(tmp_path: Path) -> Path:
     return rd_file
 
 
-def test_scramble_unscramble_bijection():
-    """Verify that _unscramble is the perfect inverse of _scramble."""
-    for byte_val in range(256):
-        scrambled = _scramble(byte_val)
-        unscrambled = _unscramble(scrambled)
-        assert unscrambled == byte_val
-
-
 def test_parser_on_simple_square(
     simple_square_rd_file: Path, mocker: MockerFixture
 ):
     """
-    Tests the parser by mocking RuidaCommand to verify constructor calls.
-    This test is now independent of the RuidaCommand class implementation.
+    Tests the parser by mocking RuidaGeoCommand to verify constructor calls.
+    This test is now independent of the RuidaGeoCommand class implementation.
     """
-    # Mock the RuidaCommand class within the parser's namespace
-    mock_cmd_cls = mocker.patch("rayforge.image.ruida.parser.RuidaCommand")
+    # Mock the RuidaGeoCommand class within the parser's namespace
+    mock_cmd_cls = mocker.patch("rayforge.image.ruida.parser.RuidaGeoCommand")
 
     data = simple_square_rd_file.read_bytes()
     parser = RuidaParser(data)
@@ -97,7 +89,7 @@ def test_parser_on_simple_square(
     assert layer0.speed == pytest.approx(20.0)
     assert layer0.power == pytest.approx(50.0)
 
-    # Verify that RuidaCommand was called with the correct arguments
+    # Verify that RuidaGeoCommand was called with the correct arguments
     calls = mock_cmd_cls.call_args_list
     assert len(calls) == 6
 

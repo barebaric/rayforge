@@ -100,25 +100,16 @@ Le contour de cadrage supporte la compensation de kerf :
 - Assure des dimensions finales précises
 - Utilise la valeur de kerf de vos paramètres de tête laser
 
-## Options de Post-Traitement
+## Post-Traitement
 
 ![Paramètres de post-traitement du contour de cadrage](/screenshots/step-settings-frame-outline-post.png)
 
-### Passe Multiple
+Les opérations de Contour de Cadrage supportent plusieurs options de post-traitement :
 
-Coupez le cadre plusieurs fois :
-
-- **Passes :** Nombre de répétitions
-- **Avance en Z :** Abaisser Z entre les passes (nécessite axe Z)
-- Utile pour les matériaux épais
-
-### Ponts de Maintien
-
-Ajoutez des ponts pour maintenir la pièce encadrée attachée :
-
-- Empêche les pièces de tomber pendant la coupe
-- Configurez la largeur, hauteur et espacement des ponts
-- Voir [Ponts de Maintien](../holding-tabs) pour plus de détails
+- **[Ponts de Maintien](../holding-tabs)** - Maintenir la pièce encadrée attachée au stock
+- **[Rognage au Stock](../crop-to-stock)** - Limiter les coupes à la limite du matériau
+- **[Optimisation de Parcours](../path-optimization)** - Réduire la distance de déplacement
+- **[Passe Multiple](../multi-pass)** - Répéter les coupes pour les matériaux épais
 
 ## Cas d'Utilisation
 

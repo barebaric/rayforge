@@ -1,0 +1,63 @@
+# Chinese translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-30 19:31+0200\n"
+"PO-Revision-Date: 2026-03-07 20:16+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Generate a Workpiece"
+msgstr "生成工件"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Cancel"
+msgstr "取消"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Generate"
+msgstr "生成"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid ""
+"Describe the design you want to create. Example: 'A simple star shape with 5 "
+"points'"
+msgstr "描述您想要创建的设计。例如：'一个简单的5角星形'"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "No content generated."
+msgstr "未生成内容。"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Add AI-Generated Workpiece"
+msgstr "添加AI生成的工件"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Close"
+msgstr "关闭"
+
+#: ai_workpiece_generator/frontend.py
+msgid "Generate Workpiece with AI..."
+msgstr "使用AI生成工件..."
+
+#: ai_workpiece_generator/generator.py
+msgid "No AI provider configured. Please configure an AI provider in Settings."
+msgstr "未配置AI提供商。请在设置中配置AI提供商。"
+
+#: ai_workpiece_generator/generator.py
+msgid "No response from AI provider."
+msgstr "AI提供商无响应。"
+
+#: ai_workpiece_generator/generator.py
+msgid "AI did not generate valid SVG code. Please try a different prompt."
+msgstr "AI未生成有效的SVG代码。请尝试不同的提示。"

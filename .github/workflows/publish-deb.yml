@@ -29,7 +29,7 @@ jobs:
           - { name: "Ubuntu 24.04", codename: "noble", runner: "ubuntu-24.04" }
     runs-on: ${{ matrix.distro.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -106,6 +106,9 @@ jobs:
           # Verify the main executable is in the PATH and can be run
           # This simple command proves the installation was successful.
           rayforge --version
+          # Try running the app and immediately exiting again.
+          sudo apt-get install -y xvfb
+          xvfb-run rayforge --exit
 
       - name: Sign source package
         id: sign_source_package

@@ -25,6 +25,7 @@ from .primitives import (
     find_closest_point_on_bezier,
     get_arc_bounding_box,
 )
+from .types import Point, Point3D, Rect
 
 
 def _compute_cubic_bezier_bounds_1d(
@@ -124,7 +125,7 @@ def _compute_cubic_bezier_bounds_1d(
 
 def get_bounding_rect_from_array(
     data: np.ndarray,
-) -> Tuple[float, float, float, float]:
+) -> Rect:
     """
     Calculates the bounding box (min_x, min_y, max_x, max_y) from the
     geometry array.
@@ -284,15 +285,15 @@ def get_total_distance_from_array(data: np.ndarray) -> float:
 
 def find_closest_point_on_path_from_array(
     data: np.ndarray, x: float, y: float
-) -> Optional[Tuple[int, float, Tuple[float, float]]]:
+) -> Optional[Tuple[int, float, Point]]:
     """
     Finds the closest point on an entire path to a given 2D coordinate from a
     numpy array.
     """
     min_dist_sq = float("inf")
-    closest_info: Optional[Tuple[int, float, Tuple[float, float]]] = None
+    closest_info: Optional[Tuple[int, float, Point]] = None
 
-    last_pos_3d: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    last_pos_3d: Point3D = (0.0, 0.0, 0.0)
     for i in range(len(data)):
         row = data[i]
         cmd_type = row[COL_TYPE]
@@ -331,3 +332,22 @@ def find_closest_point_on_path_from_array(
         last_pos_3d = end_point_3d
 
     return closest_info
+
+
+def bboxes_intersect(bbox1: "Rect", bbox2: "Rect") -> bool:
+    """
+    Check if two axis-aligned bounding boxes intersect or touch.
+
+    Args:
+        bbox1: First bounding box as (min_x, min_y, max_x, max_y).
+        bbox2: Second bounding box as (min_x, min_y, max_x, max_y).
+
+    Returns:
+        True if the bounding boxes intersect or touch, False otherwise.
+    """
+    return not (
+        bbox1[2] < bbox2[0]
+        or bbox1[0] > bbox2[2]
+        or bbox1[3] < bbox2[1]
+        or bbox1[1] > bbox2[3]
+    )

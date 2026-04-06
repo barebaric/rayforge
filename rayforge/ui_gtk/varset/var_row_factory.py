@@ -22,6 +22,7 @@ from ...core.varset import (
     Var,
 )
 from ...machine.transport.serial import SerialTransport
+from ..shared.slider import create_slider_row
 
 logger = logging.getLogger(__name__)
 NULL_CHOICE_LABEL = _("None Selected")
@@ -183,17 +184,12 @@ class VarRowFactory:
         return row
 
     def _create_slider_row(self, var: SliderFloatVar, target_property: str):
-        row = Adw.ActionRow(title=escape_title(var.label))
-        if var.description:
-            row.set_subtitle(var.description)
-
         min_val = var.min_val if var.min_val is not None else 0.0
         max_val = var.max_val if var.max_val is not None else 1.0
         val = getattr(var, target_property)
         if val is None:
             val = min_val
 
-        # Calculate initial percentage for the slider
         initial_percent = 0.0
         range_size = max_val - min_val
         if range_size > 1e-9:
@@ -206,15 +202,13 @@ class VarRowFactory:
             step_increment=0.1,
             page_increment=10,
         )
-        scale = Gtk.Scale(
-            orientation=Gtk.Orientation.HORIZONTAL,
+        row, scale = create_slider_row(
+            title=escape_title(var.label),
+            subtitle=var.description if var.description else None,
             adjustment=adj,
             digits=1,
             draw_value=var.show_value,
-            hexpand=True,
         )
-        scale.set_size_request(200, -1)
-        row.add_suffix(scale)
         row.set_activatable_widget(scale)
         return row
 

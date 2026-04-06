@@ -5,6 +5,7 @@ from copy import copy, deepcopy
 from typing import (
     Iterator,
     List,
+    NamedTuple,
     Optional,
     Tuple,
     Generator,
@@ -16,6 +17,7 @@ import numpy as np
 import json
 from ..geo import linearize, clipping
 from ..geo.primitives import get_arc_bounding_box
+from ..geo.types import Point3D, Rect, Polygon
 from .commands import (
     State,
     Command,
@@ -23,6 +25,7 @@ from .commands import (
     MoveToCommand,
     LineToCommand,
     ArcToCommand,
+    DwellCommand,
     SetPowerCommand,
     SetCutSpeedCommand,
     SetTravelSpeedCommand,
@@ -51,13 +54,21 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class OpsSection(NamedTuple):
+    """A parsed section of Ops commands, bounded by section markers."""
+
+    section_type: Optional[SectionType]
+    markers: List[Command]
+    commands: List[Command]
+
+
 def _get_total_distance_legacy(commands: List[Command]) -> float:
     """
     Calculates the total 2D path length for all moving commands in a list.
     Legacy function for ops.Command lists.
     """
     total = 0.0
-    last: Optional[Tuple[float, float, float]] = None
+    last: Optional[Point3D] = None
     for cmd in commands:
         total += cmd.distance(last)
         # Update last point if the command was a move
@@ -75,8 +86,7 @@ class Ops:
 
     def __init__(self) -> None:
         self.commands: List[Command] = []
-        self._commands_ref_for_pyreverse: Command
-        self.last_move_to: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        self.last_move_to: Point3D = (0.0, 0.0, 0.0)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Ops object to a dictionary."""
@@ -99,6 +109,8 @@ class Ops:
                 center_offset=tuple(cmd_data["center_offset"]),
                 clockwise=cmd_data["clockwise"],
             )
+        elif cmd_type == "DwellCommand":
+            return DwellCommand(duration_ms=cmd_data["duration_ms"])
         elif cmd_type == "SetPowerCommand":
             return SetPowerCommand(power=cmd_data["power"])
         elif cmd_type == "SetCutSpeedCommand":
@@ -393,6 +405,39 @@ class Ops:
     def __iter__(self) -> Iterator[Command]:
         return iter(self.commands)
 
+    def iter_sections(self) -> Iterator[OpsSection]:
+        """
+        Iterate over parsed sections of this Ops object.
+
+        Yields OpsSection tuples, each representing either a marked
+        section (bounded by OpsSectionStartCommand/OpsSectionEndCommand)
+        or a run of commands outside any section. Unmarked runs have
+        section_type=None and an empty markers list.
+        """
+        active_type: Optional[SectionType] = None
+        markers: List[Command] = []
+        content: List[Command] = []
+
+        for cmd in self.commands:
+            if isinstance(cmd, OpsSectionStartCommand):
+                if content or markers:
+                    yield OpsSection(active_type, markers, content)
+                    markers = []
+                    content = []
+                active_type = cmd.section_type
+                markers = [cmd]
+            elif isinstance(cmd, OpsSectionEndCommand):
+                markers.append(cmd)
+                yield OpsSection(active_type, markers, content)
+                active_type = None
+                markers = []
+                content = []
+            else:
+                content.append(cmd)
+
+        if content or markers:
+            yield OpsSection(active_type, markers, content)
+
     def __add__(self, ops: Ops) -> Ops:
         result = Ops()
         result.commands = self.commands + ops.commands
@@ -486,9 +531,9 @@ class Ops:
 
     def bezier_to(
         self,
-        c1: Tuple[float, float, float],
-        c2: Tuple[float, float, float],
-        end: Tuple[float, float, float],
+        c1: Point3D,
+        c2: Point3D,
+        end: Point3D,
         num_steps: int = 20,
     ) -> None:
         """
@@ -535,6 +580,9 @@ class Ops:
         """
         cmd = SetTravelSpeedCommand(int(speed))
         self.commands.append(cmd)
+
+    def dwell(self, duration_ms: float) -> None:
+        self.commands.append(DwellCommand(duration_ms))
 
     def enable_air_assist(self, enable: bool = True) -> None:
         """
@@ -669,9 +717,7 @@ class Ops:
         """
         self.commands.append(OpsSectionEndCommand(section_type=section_type))
 
-    def rect(
-        self, include_travel: bool = False
-    ) -> Tuple[float, float, float, float]:
+    def rect(self, include_travel: bool = False) -> Rect:
         """
         Returns a rectangle (x1, y1, x2, y2) that encloses the
         occupied area in the XY plane.
@@ -807,7 +853,7 @@ class Ops:
         Like distance(), but only counts 2D cut distance.
         """
         total = 0.0
-        last: Optional[Tuple[float, float, float]] = None
+        last: Optional[Point3D] = None
         for cmd in self.commands:
             if cmd.is_cutting_command():
                 total += cmd.distance(last)
@@ -898,7 +944,7 @@ class Ops:
         is_non_uniform = not np.isclose(len_x, len_y)
 
         transformed_commands: List[Command] = []
-        last_point_untransformed: Optional[Tuple[float, float, float]] = None
+        last_point_untransformed: Optional[Point3D] = None
 
         for cmd in self.commands:
             original_cmd_end = (
@@ -991,7 +1037,7 @@ class Ops:
         Replaces all complex commands (e.g., Arcs) with simple LineToCommands.
         """
         new_commands: List[Command] = []
-        last_point: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        last_point: Point3D = (0.0, 0.0, 0.0)
         # Find initial position, in case path doesn't start with MoveTo
         for cmd in self.commands:
             if isinstance(cmd, MoveToCommand):
@@ -1047,9 +1093,22 @@ class Ops:
         if dist_sq > (width * 2) ** 2:  # Generous tolerance for clicking
             return False
 
-        # 2. Identify the continuous subpath containing the hit segment
+        # 2. Convert geometry index to command index (geometry excludes state
+        # commands, so we need to map)
+        command_index = 0
+        geo_idx = 0
+        for cmd_idx, cmd in enumerate(self.commands):
+            if isinstance(cmd, MovingCommand):
+                if geo_idx == segment_index:
+                    command_index = cmd_idx
+                    break
+                geo_idx += 1
+        else:
+            return False
+
+        # 3. Identify the continuous subpath containing the hit segment
         start_idx = 0
-        for i in range(segment_index, -1, -1):
+        for i in range(command_index, -1, -1):
             if isinstance(self.commands[i], MoveToCommand):
                 start_idx = i
                 break
@@ -1064,7 +1123,7 @@ class Ops:
         if not subpath_cmds or not isinstance(subpath_cmds[0], MovingCommand):
             return False
 
-        # 3. Create a temporary, linearized version of the subpath
+        # 4. Create a temporary, linearized version of the subpath
         temp_ops = Ops()
         temp_ops.commands = deepcopy(subpath_cmds)
         temp_ops.preload_state()
@@ -1075,6 +1134,17 @@ class Ops:
             return False
 
         # 4. Find closest point on the *linearized* path and calculate distance
+        # Filter to only geometric commands since to_geometry() excludes state
+        # commands, and we need indices to align.
+        linear_geo_cmds = [
+            cmd
+            for cmd in linear_cmds
+            if isinstance(cmd, (MoveToCommand, LineToCommand))
+        ]
+
+        if len(linear_geo_cmds) < 2:
+            return False
+
         linear_temp_geo = temp_ops.to_geometry()
         linear_closest = linear_temp_geo.find_closest_point(x, y)
         if not linear_closest:
@@ -1083,16 +1153,16 @@ class Ops:
         linear_segment_idx, linear_t, _ = linear_closest
 
         hit_dist = 0.0
-        last_pos = linear_cmds[0].end
+        last_pos = linear_geo_cmds[0].end
         assert last_pos is not None  # Should be MoveTo.end
 
         for i in range(1, linear_segment_idx):
-            cmd = linear_cmds[i]
+            cmd = linear_geo_cmds[i]
             if isinstance(cmd, LineToCommand):
                 hit_dist += math.dist(last_pos[:2], cmd.end[:2])
                 last_pos = cmd.end
 
-        hit_segment_cmd = linear_cmds[linear_segment_idx]
+        hit_segment_cmd = linear_geo_cmds[linear_segment_idx]
         if isinstance(hit_segment_cmd, LineToCommand) and hit_segment_cmd.end:
             dist = math.dist(last_pos[:2], hit_segment_cmd.end[:2])
             hit_dist += linear_t * dist
@@ -1184,12 +1254,10 @@ class Ops:
 
     def _add_clipped_segment_to_ops(
         self,
-        segment: Optional[
-            Tuple[Tuple[float, float, float], Tuple[float, float, float]]
-        ],
+        segment: Optional[Tuple[Point3D, Point3D]],
         new_ops: Ops,
-        current_pen_pos: Optional[Tuple[float, float, float]],
-    ) -> Optional[Tuple[float, float, float]]:
+        current_pen_pos: Optional[Point3D],
+    ) -> Optional[Point3D]:
         """
         Processes a single clipped segment, adding MoveTo/LineTo commands
         to the new_ops object as needed.
@@ -1218,7 +1286,7 @@ class Ops:
             # The segment was fully clipped, so the pen is now "up"
             return None
 
-    def clip(self, rect: Tuple[float, float, float, float]) -> Ops:
+    def clip_rect(self, rect: Rect) -> Ops:
         """
         Clips the Ops to the given rectangle.
         Returns a new, clipped Ops object.
@@ -1227,10 +1295,10 @@ class Ops:
         if not self.commands:
             return new_ops
 
-        last_point: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        last_point: Point3D = (0.0, 0.0, 0.0)
         # Tracks the last known position of the pen *within the clipped area*.
         # None means the pen is "up" or outside the clip rect.
-        clipped_pen_pos: Optional[Tuple[float, float, float]] = None
+        clipped_pen_pos: Optional[Point3D] = None
 
         for cmd in self.commands:
             if cmd.is_state_command() or cmd.is_marker():
@@ -1329,9 +1397,7 @@ class Ops:
         for segment in self.segments():
             print(segment)
 
-    def subtract_regions(
-        self, regions: List[List[Tuple[float, float]]]
-    ) -> "Ops":
+    def subtract_regions(self, regions: List[Polygon]) -> "Ops":
         """
         Clips the Ops by subtracting a list of polygonal regions.
         This modifies the Ops object in place and returns it.
@@ -1340,9 +1406,9 @@ class Ops:
             return self
 
         new_ops = Ops()
-        last_point: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        last_point: Point3D = (0.0, 0.0, 0.0)
         # Tracks the last known pen position of a *kept* segment
-        pen_pos: Optional[Tuple[float, float, float]] = None
+        pen_pos: Optional[Point3D] = None
 
         # Add any leading state/marker commands before the first move
         first_move_idx = next(
@@ -1432,6 +1498,135 @@ class Ops:
 
         self.commands = new_ops.commands
         # Update last_move_to to a valid point if ops is not empty
+        if new_ops.commands:
+            for cmd_rev in reversed(new_ops.commands):
+                if isinstance(cmd_rev, MoveToCommand):
+                    self.last_move_to = cmd_rev.end
+                    break
+        return self
+
+    def clip_to_regions(
+        self,
+        regions: List[List[Tuple[float, float]]],
+        tolerance: float = 0.3,
+    ) -> "Ops":
+        """
+        Clips the Ops to only include parts that lie inside the given polygonal
+        regions.
+
+        This is useful when you have multiple valid areas and you want to
+        remove any toolpaths that fall outside those areas.
+
+        This method modifies the Ops object in place and returns it.
+
+        Args:
+            regions: List of closed polygons defining valid areas. Each
+                     polygon is a list of (x, y) tuples.
+            tolerance: Tolerance for linearization and polygon operations
+
+        Returns:
+            The modified Ops object (self), containing only the clipped paths
+        """
+        if not regions or not self.commands:
+            return self
+
+        valid_regions: List[List[Tuple[float, float]]] = []
+        for region in regions:
+            if len(region) >= 3:
+                valid_regions.append(region)
+
+        if not valid_regions:
+            return self
+
+        new_ops = Ops()
+        last_point: Point3D = (0.0, 0.0, 0.0)
+        pen_pos: Optional[Point3D] = None
+
+        first_move_idx = next(
+            (
+                i
+                for i, cmd in enumerate(self.commands)
+                if isinstance(cmd, MovingCommand)
+            ),
+            len(self.commands),
+        )
+        for i in range(first_move_idx):
+            new_ops.add(deepcopy(self.commands[i]))
+
+        for cmd in self.commands[first_move_idx:]:
+            if not isinstance(cmd, MovingCommand) or cmd.end is None:
+                if not new_ops.commands or new_ops.commands[-1] is not cmd:
+                    new_ops.add(deepcopy(cmd))
+                continue
+
+            if isinstance(cmd, MoveToCommand):
+                last_point = cmd.end
+                pen_pos = None
+                continue
+
+            if isinstance(cmd, ScanLinePowerCommand):
+                kept_segments = clipping.clip_line_segment_to_regions(
+                    last_point, cmd.end, valid_regions
+                )
+                num_values = len(cmd.power_values)
+                p_start_orig = np.array(last_point)
+                p_end_orig = np.array(cmd.end)
+                vec_orig = p_end_orig - p_start_orig
+                len_sq = np.dot(vec_orig, vec_orig)
+
+                for new_start, new_end in kept_segments:
+                    if len_sq > 1e-9:
+                        t_start = (
+                            np.dot(
+                                np.array(new_start) - p_start_orig, vec_orig
+                            )
+                            / len_sq
+                        )
+                        t_end = (
+                            np.dot(np.array(new_end) - p_start_orig, vec_orig)
+                            / len_sq
+                        )
+                    else:
+                        t_start, t_end = 0.0, 1.0
+
+                    idx_start = int(num_values * t_start)
+                    idx_end = int(num_values * t_end)
+                    new_power = cmd.power_values[idx_start:idx_end]
+
+                    if new_power:
+                        if (
+                            pen_pos is None
+                            or math.dist(pen_pos, new_start) > 1e-6
+                        ):
+                            new_ops.move_to(*new_start)
+                        new_ops.add(ScanLinePowerCommand(new_end, new_power))
+                        pen_pos = new_end
+                last_point = cmd.end
+                continue
+
+            linearized_commands = cmd.linearize(last_point)
+
+            p_current_segment_start = last_point
+            for l_cmd in linearized_commands:
+                if l_cmd.end is None:
+                    continue
+                p_current_segment_end = l_cmd.end
+
+                kept_segments = clipping.clip_line_segment_to_regions(
+                    p_current_segment_start,
+                    p_current_segment_end,
+                    valid_regions,
+                )
+                for sub_p1, sub_p2 in kept_segments:
+                    if pen_pos is None or math.dist(pen_pos, sub_p1) > 1e-6:
+                        new_ops.move_to(*sub_p1)
+                    new_ops.line_to(*sub_p2)
+                    pen_pos = sub_p2
+                p_current_segment_start = p_current_segment_end
+
+            last_point = cmd.end
+
+        self.commands = new_ops.commands
         if new_ops.commands:
             for cmd_rev in reversed(new_ops.commands):
                 if isinstance(cmd_rev, MoveToCommand):

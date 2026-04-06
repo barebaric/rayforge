@@ -77,48 +77,45 @@ graph TD
 
 ```
 
-- Un `Doc` es el objeto de nivel superior. **Contiene** uno o más `Layer`s y `StockItem`s. También **gestiona** un registro de todos los `ImportSource`s en el proyecto.
+- Un `Doc` es el objeto de nivel superior. **Contiene** uno o más `Layer`s y
+  `StockItem`s. También **gestiona** el registro unificado `assets` de todos los `SourceAsset`s en el proyecto.
 - Cada `Layer` **contiene** el contenido del usuario: `WorkPiece`s y `Group`s. Crucialmente, un `Layer` también **posee uno** `Workflow`.
 - Un `Workflow` **contiene** una lista ordenada de `Step`s, que definen el proceso de manufactura para esa capa.
 - Un `Group` es un contenedor que puede contener `WorkPiece`s y otros `Group`s, permitiendo transformaciones anidadas.
-- Un `WorkPiece` es un elemento de diseño fundamental. No almacena sus datos crudos directamente. En su lugar, **referencia** un `ImportSource` via un UID. También **tiene** su propia `Geometry` (datos vectoriales) y puede tener una lista de `Tab`s.
+- Un `WorkPiece` es un elemento de diseño fundamental. No almacena sus
+  datos crudos directamente. En su lugar, **referencia** un `SourceAsset` via un
+  UID desde el registro unificado `assets` en el `Doc`. También **tiene** su propia `Geometry` (datos vectoriales) y puede tener una
+  lista de `Tab`s.
 
 ---
 
 ## Descripciones de DocItem
 
 - **`DocItem` (Abstracto)**
-
   - **Rol:** La base abstracta para todos los nodos del árbol.
   - **Propiedades Clave:** `uid`, `parent`, `children`, `matrix`, señal `updated`, señal `transform_changed`. Proporciona la lógica core del patrón composite.
 
 - **`Doc`**
-
   - **Rol:** La raíz del árbol del documento.
   - **Propiedades Clave:** `children` (Layers, StockItems), `import_sources` (un diccionario mapeando UIDs a objetos `ImportSource`), `active_layer`.
 
 - **`Layer`**
-
   - **Rol:** La unidad organizacional principal para contenido. Una capa asocia un grupo de workpieces con un solo flujo de trabajo de manufactura.
-  - **Propiedades Clave:** `children` (WorkPieces, Groups, un Workflow), `visible`, `stock_item_uid`.
+  - **Propiedades Clave:** `children` (WorkPieces, Groups, un Workflow), `visible`.
 
 - **`Group`**
-
   - **Rol:** Un contenedor para otros `DocItem`s (`WorkPiece`, `Group`). Permite que una colección de elementos sea transformada como una sola unidad.
 
 - **`WorkPiece`**
-
   - **Rol:** Representa un solo elemento de diseño tangible en el lienzo (ej., un SVG importado).
   - **Propiedades Clave:** `vectors` (un objeto `Geometry`), `import_source_uid`, `tabs`, `tabs_enabled`. Sus `vectors` están normalizados a una caja de 1x1, con todo el escalado y posicionamiento manejado por su `matrix` de transformación.
 
 - **`Workflow`**
-
   - **Rol:** Una secuencia ordenada de instrucciones de procesamiento. Propiedad de un `Layer`.
   - **Propiedades Clave:** `children` (una lista ordenada de `Step`s).
 
 - **`Step`**
-
   - **Rol:** Una sola instrucción de procesamiento dentro de un `Workflow` (ej., "Corte de Contorno" o "Grabado Raster"). Es un objeto de configuración que contiene diccionarios que definen el productor, modificadores y transformadores a usar.
 
 - **`StockItem`**
-  - **Rol:** Representa una pieza de material físico en el documento, definida por su propia `geometry` vectorial. Los `Layer`s pueden asignarse a un item de stock específico.
+  - **Rol:** Representa una pieza de material físico en el documento, definida por su `geometry` vectorial. Los StockItems son elementos a nivel de documento (hijos de `Doc`, junto con `Layer`s) y existen independientemente de las capas.

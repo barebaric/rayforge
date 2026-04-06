@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import List, Tuple, Optional, cast, Callable
+from typing import List, Tuple, Optional, cast, Callable, Sequence
 import numpy as np
 from scipy.optimize import least_squares
 from .analysis import arc_direction_is_clockwise
@@ -25,16 +25,14 @@ from .constants import (
 from .linearize import linearize_bezier_from_array, linearize_arc
 from .primitives import get_arc_angles
 from .simplify import simplify_points_to_array
+from .types import Point, Point2DOr3D, Point3D
 
 
 logger = logging.getLogger(__name__)
 
 
-Point2DOr3D = Tuple[float, float] | Tuple[float, float, float]
-
-
 def are_collinear(
-    points: List[Tuple[float, ...]], tolerance: float = 0.01
+    points: Sequence[Point2DOr3D], tolerance: float = 0.01
 ) -> bool:
     """
     Check if all points in a list are colinear within a given tolerance by
@@ -69,8 +67,8 @@ def are_collinear(
 
 
 def fit_circle_3_points(
-    p1: Tuple[float, ...], p2: Tuple[float, ...], p3: Tuple[float, ...]
-) -> Optional[Tuple[Tuple[float, float], float]]:
+    p1: Point2DOr3D, p2: Point2DOr3D, p3: Point2DOr3D
+) -> Optional[Tuple[Point, float]]:
     """
     Analytically calculates the center and radius of a circle passing through
     three 2D points. Returns None if the points are collinear.
@@ -106,8 +104,8 @@ def fit_circle_3_points(
 
 
 def fit_circle_to_points(
-    points: List[Tuple[float, ...]],
-) -> Optional[Tuple[Tuple[float, float], float, float]]:
+    points: Sequence[Point2DOr3D],
+) -> Optional[Tuple[Point, float, float]]:
     """
     Fits a circle to a list of 2D points using the least squares method.
 
@@ -149,8 +147,8 @@ def fit_circle_to_points(
 
 
 def project_circle_center_to_bisector(
-    p1: Tuple[float, ...], p2: Tuple[float, ...], center: Tuple[float, float]
-) -> Tuple[float, float]:
+    p1: Point2DOr3D, p2: Point2DOr3D, center: Point
+) -> Point:
     """
     Adjusts a circle center point so that it lies exactly on the perpendicular
     bisector of the segment p1-p2.
@@ -194,7 +192,7 @@ def project_circle_center_to_bisector(
 
 
 def get_arc_to_polyline_deviation(
-    points: List[Tuple[float, ...]], center: Tuple[float, float], radius: float
+    points: Sequence[Point2DOr3D], center: Point, radius: float
 ) -> float:
     """
     Computes the maximum deviation of a circular arc from the original
@@ -260,8 +258,8 @@ def get_arc_to_polyline_deviation(
 
 
 def convert_arc_to_beziers_from_array(
-    start_point: Tuple[float, float, float],
-    end_point: Tuple[float, float, float],
+    start_point: Point3D,
+    end_point: Point3D,
     center_offset: Tuple[float, float],
     clockwise: bool,
 ) -> List[np.ndarray]:
@@ -376,7 +374,7 @@ def convert_arc_to_beziers_from_array(
 
 
 def get_max_line_deviation(
-    pts: List[Tuple[float, ...]], start_idx: int, end_idx: int
+    pts: Sequence[Point2DOr3D], start_idx: int, end_idx: int
 ) -> Tuple[float, int]:
     """
     Calculates the max deviation from the chord line between two points.
@@ -438,7 +436,7 @@ def create_line_cmd(end_point: Point2DOr3D) -> np.ndarray:
 
 def create_arc_cmd(
     end_point: Point2DOr3D,
-    center: Tuple[float, float],
+    center: Point,
     start_point: Point2DOr3D,
 ) -> np.ndarray:
     """
@@ -473,7 +471,7 @@ def create_arc_cmd(
 
 
 def fit_points_recursive(
-    points: List[Tuple[float, ...]],
+    points: Sequence[Point2DOr3D],
     tolerance: float,
     start: int,
     end: int,
@@ -601,7 +599,7 @@ def fit_points_recursive(
 
 
 def fit_points_to_primitives(
-    points: List[Tuple[float, ...]], tolerance: float
+    points: Sequence[Point2DOr3D], tolerance: float
 ) -> List[np.ndarray]:
     """
     Approximates a list of points with a sequence of Line and Arc commands
@@ -649,7 +647,7 @@ def fit_arcs(
 
     logger.debug("Starting optimized fit_arcs process...")
     new_rows: List[np.ndarray] = []
-    line_point_chain: List[Tuple[float, float, float]] = []
+    line_point_chain: List[Point3D] = []
 
     # Calculate linearization resolution.
     resolution = tolerance * 0.25
@@ -738,7 +736,7 @@ def optimize_path_from_array(
         return np.array([])
 
     optimized_rows: List[np.ndarray] = []
-    point_chain: List[Tuple[float, float, float]] = []
+    point_chain: List[Point3D] = []
 
     def flush_chain():
         nonlocal point_chain

@@ -7,7 +7,7 @@ from pathlib import Path
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, Gdk
 import cairo
-from typing import Optional, Dict, Tuple, List
+from typing import Optional, Dict, List
 
 base_path = Path(__file__).parent
 logging.basicConfig(level=logging.DEBUG)
@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 from rayforge.ui_gtk.canvas import Canvas, CanvasElement, ShrinkWrapGroup
 from rayforge.core.matrix import Matrix
+from rayforge.core.geo import Point
 
 
 class ExampleElement(CanvasElement):
@@ -77,9 +78,7 @@ class ExampleElement(CanvasElement):
             self._draw_content(ctx, width, height)
         return surface
 
-    def handle_drag_move(
-        self, world_dx: float, world_dy: float
-    ) -> Tuple[float, float]:
+    def handle_drag_move(self, world_dx: float, world_dy: float) -> Point:
         """Overrides the drag behavior to implement grid snapping."""
         # If no grid is set, or if the element is not on a canvas,
         # perform default (unconstrained) dragging.
@@ -332,7 +331,7 @@ class EditableElement(CanvasElement):
 class CanvasApp(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="com.example.CanvasApp")
-        self.mouse_pos: Dict[Gtk.Widget, Tuple[float, float]] = {}
+        self.mouse_pos: Dict[Gtk.Widget, Point] = {}
         self.initial_pan_transforms: Dict[str, Matrix] = {}
 
     def do_activate(self):

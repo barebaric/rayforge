@@ -3,10 +3,14 @@
 import struct
 from typing import Dict, Tuple, Callable, Union
 
-from .job import RuidaJob, RuidaLayer, RuidaCommand
-
-# Conversion factor from micrometers (device units) to millimeters.
-UM_PER_MM = 1000.0
+from ...machine.driver.ruida.ruida_util import (
+    UM_PER_MM,
+    unswizzle_byte,
+    decode14,
+    decode_abs_coords,
+    decode_rel_coords,
+)
+from .job import RuidaJob, RuidaLayer, RuidaGeoCommand
 
 # A type alias for a command handler, defined at the module level for
 # correct type checking. A handler is a tuple of:
@@ -18,25 +22,6 @@ class RuidaParseError(Exception):
     """Custom exception for errors during Ruida file parsing."""
 
     pass
-
-
-def _unscramble(byte_val: int) -> int:
-    """
-    Decodes a single byte from a Ruida file stream. This is a required
-    proprietary decryption step.
-    """
-    # The scrambling algorithm is a simple byte-level substitution cipher.
-    # This function reverses it.
-    temp_val = byte_val - 1
-    if temp_val < 0:
-        temp_val += 0x100
-    temp_val ^= 0x88
-    msb = temp_val & 0x80
-    lsb = temp_val & 1
-    temp_val = temp_val - msb - lsb
-    temp_val |= lsb << 7
-    temp_val |= msb >> 7
-    return temp_val
 
 
 class RuidaParser:
@@ -59,7 +44,7 @@ class RuidaParser:
         else:
             raw_data = data
 
-        self.data = bytes([_unscramble(b) for b in raw_data])
+        self.data = bytes([unswizzle_byte(b, magic=0x88) for b in raw_data])
         self.index = 0
         self.current_color = 0
         self.x, self.y = 0.0, 0.0
@@ -134,55 +119,55 @@ class RuidaParser:
         self._ensure_layer(job, color_index).power = power
 
     def _handle_move_abs(self, job: RuidaJob, payload: bytes) -> None:
-        self.x, self.y = self._decode_abs_coords(payload)
-        cmd = RuidaCommand("Move_Abs", [self.x, self.y], self.current_color)
+        self.x, self.y = decode_abs_coords(payload)
+        cmd = RuidaGeoCommand("Move_Abs", [self.x, self.y], self.current_color)
         job.commands.append(cmd)
 
     def _handle_cut_abs(self, job: RuidaJob, payload: bytes) -> None:
-        self.x, self.y = self._decode_abs_coords(payload)
-        cmd = RuidaCommand("Cut_Abs", [self.x, self.y], self.current_color)
+        self.x, self.y = decode_abs_coords(payload)
+        cmd = RuidaGeoCommand("Cut_Abs", [self.x, self.y], self.current_color)
         job.commands.append(cmd)
 
     def _handle_move_rel_xy(self, job: RuidaJob, payload: bytes) -> None:
-        dx, dy = self._decode_rel_coords(payload)
+        dx, dy = decode_rel_coords(payload)
         self.x += dx
         self.y += dy
-        cmd = RuidaCommand("Move_Abs", [self.x, self.y], self.current_color)
+        cmd = RuidaGeoCommand("Move_Abs", [self.x, self.y], self.current_color)
         job.commands.append(cmd)
 
     def _handle_cut_rel_xy(self, job: RuidaJob, payload: bytes) -> None:
-        dx, dy = self._decode_rel_coords(payload)
+        dx, dy = decode_rel_coords(payload)
         self.x += dx
         self.y += dy
-        cmd = RuidaCommand("Cut_Abs", [self.x, self.y], self.current_color)
+        cmd = RuidaGeoCommand("Cut_Abs", [self.x, self.y], self.current_color)
         job.commands.append(cmd)
 
     def _handle_move_rel_x(self, job: RuidaJob, payload: bytes) -> None:
-        dx = self._decode_rel_coord(payload)
+        dx = decode14(payload) / UM_PER_MM
         self.x += dx
-        cmd = RuidaCommand("Move_Abs", [self.x, self.y], self.current_color)
+        cmd = RuidaGeoCommand("Move_Abs", [self.x, self.y], self.current_color)
         job.commands.append(cmd)
 
     def _handle_cut_rel_x(self, job: RuidaJob, payload: bytes) -> None:
-        dx = self._decode_rel_coord(payload)
+        dx = decode14(payload) / UM_PER_MM
         self.x += dx
-        cmd = RuidaCommand("Cut_Abs", [self.x, self.y], self.current_color)
+        cmd = RuidaGeoCommand("Cut_Abs", [self.x, self.y], self.current_color)
         job.commands.append(cmd)
 
     def _handle_move_rel_y(self, job: RuidaJob, payload: bytes) -> None:
-        dy = self._decode_rel_coord(payload)
+        dy = decode14(payload) / UM_PER_MM
         self.y += dy
-        cmd = RuidaCommand("Move_Abs", [self.x, self.y], self.current_color)
+        cmd = RuidaGeoCommand("Move_Abs", [self.x, self.y], self.current_color)
         job.commands.append(cmd)
 
     def _handle_cut_rel_y(self, job: RuidaJob, payload: bytes) -> None:
-        dy = self._decode_rel_coord(payload)
+        dy = decode14(payload) / UM_PER_MM
         self.y += dy
-        cmd = RuidaCommand("Cut_Abs", [self.x, self.y], self.current_color)
+        cmd = RuidaGeoCommand("Cut_Abs", [self.x, self.y], self.current_color)
         job.commands.append(cmd)
 
     def _handle_end(self, job: RuidaJob, payload: bytes) -> None:
-        job.commands.append(RuidaCommand("End"))
+        job.commands.append(RuidaGeoCommand("End"))
 
     def _build_command_table(self):
         """Constructs the mapping from command bytes to handlers."""
@@ -209,46 +194,3 @@ class RuidaParser:
         if color not in job.layers:
             job.layers[color] = RuidaLayer(color_index=color, speed=0, power=0)
         return job.layers[color]
-
-    def _decode_abs_coords(self, payload: bytes) -> Tuple[float, float]:
-        """Decodes a 10-byte absolute coordinate pair."""
-
-        def _decode_val(val_bytes: bytes) -> int:
-            """
-            Decodes a 5-byte, big-endian, variable-length integer into a
-            35-bit signed int.
-            """
-            val = 0
-            for i in range(5):
-                val <<= 7
-                val |= val_bytes[i] & 0x7F
-
-            # The value is 35 bits (5 * 7). The sign bit is the 35th bit.
-            # Sign bit mask: 1 << 34 = 0x400000000
-            # Range of a 35-bit number: 1 << 35 = 0x800000000
-            if val & 0x400000000:
-                val -= 0x800000000
-            return val
-
-        x_um = _decode_val(payload[:5])
-        y_um = _decode_val(payload[5:10])
-        return x_um / UM_PER_MM, y_um / UM_PER_MM
-
-    def _decode_rel_coord(self, payload: bytes) -> float:
-        """
-        Decodes a 2-byte, big-endian, variable-length relative coordinate.
-        Each byte contributes 7 bits of data, forming a 14-bit signed integer.
-        """
-        # Big-Endian: payload[0] is MSB, payload[1] is LSB.
-        val = ((payload[0] & 0x7F) << 7) | (payload[1] & 0x7F)
-
-        # Check the 14th bit (the sign bit) and apply two's complement.
-        if val & 0x2000:  # 0x2000 = 1 << 13
-            val -= 0x4000  # 0x4000 = 1 << 14
-        return val / UM_PER_MM
-
-    def _decode_rel_coords(self, payload: bytes) -> Tuple[float, float]:
-        """Decodes a 4-byte relative coordinate pair."""
-        dx = self._decode_rel_coord(payload[:2])
-        dy = self._decode_rel_coord(payload[2:4])
-        return dx, dy

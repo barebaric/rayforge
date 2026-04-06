@@ -1,11 +1,15 @@
 from __future__ import annotations
 import base64
 import uuid
+import logging
 from pathlib import Path
-from typing import Optional, Dict, Any, TYPE_CHECKING
+from typing import Optional, Dict, Any, TYPE_CHECKING, ClassVar
 from dataclasses import dataclass, field
+from gettext import gettext as _
 
 from .asset import IAsset
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from ..image.base_renderer import Renderer
@@ -18,6 +22,17 @@ class SourceAsset(IAsset):
     This is stored once per file in the document's central asset registry.
     """
 
+    is_addable: ClassVar[bool] = False
+    asset_type_name: ClassVar[str] = "source"
+    display_icon_name: ClassVar[str] = "image-x-generic-symbolic"
+    is_reorderable: ClassVar[bool] = False
+    is_draggable_to_canvas: ClassVar[bool] = True
+    type_display_name: ClassVar[str] = _("Source")
+    can_edit: ClassVar[bool] = False
+    add_action: ClassVar[Optional[str]] = None
+    activate_action: ClassVar[Optional[str]] = None
+    edit_item_action: ClassVar[Optional[str]] = None
+
     source_file: Path
     original_data: bytes
     renderer: "Renderer"
@@ -27,12 +42,17 @@ class SourceAsset(IAsset):
     height_px: Optional[int] = None
     width_mm: float = 0.0
     height_mm: float = 0.0
-    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+    _uid: str = field(init=False, default_factory=lambda: str(uuid.uuid4()))
     _name: str = field(init=False, repr=False)
     extra: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         self._name = self.source_file.name
+
+    @property
+    def uid(self) -> str:
+        """The unique identifier of the asset instance."""
+        return self._uid
 
     # --- IAsset Protocol Implementation ---
 
@@ -45,26 +65,6 @@ class SourceAsset(IAsset):
     def name(self, value: str) -> None:
         """Sets the asset name. Provided for protocol compatibility."""
         self._name = value
-
-    @property
-    def asset_type_name(self) -> str:
-        """A unique, machine-readable name like "source" or "sketch"."""
-        return "source"
-
-    @property
-    def display_icon_name(self) -> str:
-        """The name of the icon representing the asset type."""
-        return "image-x-generic-symbolic"
-
-    @property
-    def is_reorderable(self) -> bool:
-        """Indicates if this asset type supports manual reordering."""
-        return False
-
-    @property
-    def is_draggable_to_canvas(self) -> bool:
-        """Indicates if this asset can be dragged onto the canvas."""
-        return True
 
     @property
     def hidden(self) -> bool:
@@ -99,7 +99,8 @@ class SourceAsset(IAsset):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SourceAsset":
         """Deserializes a dictionary into a SourceAsset instance."""
-        from ..image import renderer_by_name
+        from ..image import renderer_registry
+        from ..image.base_renderer import UnknownRenderer
 
         known_keys = {
             "uid",
@@ -117,7 +118,13 @@ class SourceAsset(IAsset):
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
-        renderer = renderer_by_name[data["renderer_name"]]
+        renderer = renderer_registry.get(data["renderer_name"])
+        if renderer is None:
+            logger.warning(
+                f"Unknown renderer: {data['renderer_name']}. "
+                f"Using UnknownRenderer as fallback."
+            )
+            renderer = UnknownRenderer()
 
         original_data = base64.b64decode(data["original_data"])
         base_render_data = (
@@ -127,7 +134,6 @@ class SourceAsset(IAsset):
         )
 
         instance = cls(
-            uid=data["uid"],
             source_file=Path(data["source_file"]),
             original_data=original_data,
             base_render_data=base_render_data,
@@ -138,6 +144,8 @@ class SourceAsset(IAsset):
             width_mm=data.get("width_mm", 0.0),
             height_mm=data.get("height_mm", 0.0),
         )
+        if "uid" in data:
+            instance._uid = data["uid"]
         if "name" in data:
             instance.name = data["name"]
         instance.extra = extra

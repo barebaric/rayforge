@@ -14,11 +14,13 @@ from typing import (
     TYPE_CHECKING,
 )
 from dataclasses import dataclass
+from gettext import gettext as _
 import cairo
 import numpy as np
 from scipy.ndimage import binary_dilation
 from scipy.signal import fftconvolve
 from ...context import get_context
+from ...core.geo import Point, Rect
 from ...core.group import Group
 from ...core.matrix import Matrix
 from ...core.item import DocItem
@@ -39,7 +41,7 @@ class WorkpieceVariant:
 
     item: DocItem  # The original DocItem (WorkPiece or Group)
     mask: np.ndarray  # Dilated mask for collision detection
-    local_bbox: Tuple[float, float, float, float]  # Bbox in local coords
+    local_bbox: Rect  # Bbox in local coords
     angle_offset: int  # Rotation applied to create this variant
     unrotated_size_mm: Tuple[float, float]  # The size of source shape
 
@@ -72,6 +74,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         margin_mm: float = 0.5,
         resolution_px_per_mm: float = 8.0,
         allow_rotation: bool = True,
+        **kwargs,
     ):
         """
         Initializes pixel-perfect layout strategy.
@@ -83,7 +86,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                 Higher values lead to more accurate but slower packing.
             allow_rotation: Whether to allow 90-degree rotations.
         """
-        super().__init__(items)
+        super().__init__(items, **kwargs)
         self.margin_mm = margin_mm
         self.resolution = resolution_px_per_mm
         self.allow_rotation = allow_rotation
@@ -114,10 +117,19 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
 
         # Stock-aware Logic
         stock_item: Optional[StockItem] = None
+        stock_bbox = None
         doc = self.items[0].doc
-        # Get the stock item from the active layer
-        if doc and doc.active_layer:
-            stock_item = doc.active_layer.stock_item
+        if doc:
+            visible_stocks = [s for s in doc.stock_items if s.visible]
+            if visible_stocks:
+                stock_item = visible_stocks[0]
+
+        placements: List[PlacedItem] = []
+        group_offset = (0.0, 0.0)
+        canvas_h_mm = 0.0
+        canvas_h_px = 0
+        actual_canvas_h_px = 0
+        actual_canvas_h_mm = 0.0
 
         # Use stock as boundary if it exists, otherwise use whole surface.
         if stock_item:
@@ -125,37 +137,47 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             if context:
                 context.set_message("Using stock as boundary...")
 
-            stock_bbox = stock_item.bbox
-            canvas_origin_world = (stock_bbox[0], stock_bbox[1])
-            canvas_w_mm, canvas_h_mm = stock_bbox[2], stock_bbox[3]
-            canvas_w_px = round(canvas_w_mm * self.resolution)
-            canvas_h_px = round(canvas_h_mm * self.resolution)
+            stock_bbox = self._get_item_world_bbox(stock_item)
+            if stock_bbox:
+                canvas_origin_world = (stock_bbox[0], stock_bbox[1])
+                canvas_w_mm = stock_bbox[2] - stock_bbox[0]
+                canvas_h_mm = stock_bbox[3] - stock_bbox[1]
+                canvas_w_px = round(canvas_w_mm * self.resolution)
+                canvas_h_px = round(canvas_h_mm * self.resolution)
 
-            # Create a mask of the valid area from the stock's geometry.
-            allowed_area_mask = self._render_stock_to_mask(
-                stock_item, canvas_w_px, canvas_h_px
-            )
-            # Initialize the canvas with invalid areas already marked.
-            canvas = np.logical_not(allowed_area_mask)
-            group_offset = canvas_origin_world
+                allowed_area_mask = self._render_stock_to_mask(
+                    stock_item, canvas_w_px, canvas_h_px, canvas_origin_world
+                )
+                canvas = np.logical_not(allowed_area_mask)
+                group_offset = canvas_origin_world
+                actual_canvas_h_px = canvas.shape[0]
+                actual_canvas_h_mm = canvas_h_mm
 
-            placements, self.unplaced_items = self._pack_items(
-                prepared_items, canvas, context
-            )
+                placements, self.unplaced_items = self._pack_items(
+                    prepared_items, canvas, context
+                )
+            else:
+                logger.warning("Could not get stock bbox, falling back.")
 
-        else:
+        if not stock_item or stock_bbox is None:
             # Use whole surface (machine work area) as boundary
             logger.info("Using whole surface as layout boundary.")
             if context:
                 context.set_message("Using whole surface as boundary...")
 
             # Get machine work area
-            wa_x, wa_y, wa_w, wa_h = 0.0, 0.0, 200.0, 200.0  # Fallback
+            wa_w, wa_h = 200.0, 200.0  # Fallback
             machine = get_context().machine
             if machine:
-                wa_x, wa_y, wa_w, wa_h = machine.work_area
-
-            canvas_origin_world = (wa_x, wa_y)
+                work_area = machine.work_area
+                wa_w, wa_h = work_area[2], work_area[3]
+                ref_x, ref_y = machine.get_reference_position_world()
+                space = machine.get_coordinate_space()
+                canvas_origin_world = space.world_position_from_origin(
+                    ref_x, ref_y, (wa_w, wa_h)
+                )
+            else:
+                canvas_origin_world = (0.0, 0.0)
             canvas_w_mm, canvas_h_mm = wa_w, wa_h
             canvas_w_px = round(canvas_w_mm * self.resolution)
             canvas_h_px = round(canvas_h_mm * self.resolution)
@@ -165,6 +187,8 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             # Initialize the canvas with all areas marked as valid
             canvas = np.zeros((canvas_h_px, canvas_w_px), dtype=bool)
             group_offset = canvas_origin_world
+            actual_canvas_h_px = canvas.shape[0]
+            actual_canvas_h_mm = canvas_h_mm
 
             placements, self.unplaced_items = self._pack_items(
                 prepared_items, canvas, context
@@ -183,11 +207,13 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
 
         # 5. Compute the final transformation deltas for successfully
         # placed items.
-        deltas = self._compute_deltas_from_placements(placements, group_offset)
+        deltas = self._compute_deltas_from_placements(
+            placements, group_offset, actual_canvas_h_px, actual_canvas_h_mm
+        )
 
         # 6. If any items were unplaced and stock exists, move them
         #    outside the stock area.
-        if self.unplaced_items and stock_item and stock_item.bbox:
+        if self.unplaced_items and stock_item and stock_bbox:
             logger.info(
                 f"Moving {len(self.unplaced_items)} unplaced items "
                 "outside stock area."
@@ -206,9 +232,8 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
 
                 # Determine the target position for the collective bbox's
                 # top-left corner.
-                stock_bbox = stock_item.bbox
-                target_x = stock_bbox[0] + stock_bbox[2] + self.margin_mm * 4
-                target_y = stock_bbox[1] + stock_bbox[3]
+                target_x = stock_bbox[2] + self.margin_mm * 4
+                target_y = stock_bbox[3]
 
                 # Calculate a single (dx, dy) offset for the whole group
                 dx = target_x - unplaced_coll_bbox[0]
@@ -245,7 +270,11 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         return deltas
 
     def _render_stock_to_mask(
-        self, stock_item: StockItem, width_px: int, height_px: int
+        self,
+        stock_item: StockItem,
+        width_px: int,
+        height_px: int,
+        canvas_origin_world: Point,
     ) -> np.ndarray:
         """
         Renders the stock's transformed geometry to a boolean mask that
@@ -255,25 +284,35 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             stock_item: The stock item to render.
             width_px: The width of the target canvas in pixels.
             height_px: The height of the target canvas in pixels.
+            canvas_origin_world: The world coordinates of the canvas origin.
 
         Returns:
             A 2D boolean numpy array where True represents a valid area.
         """
         # 1. Get the transform that maps the stock's local geometry space to
         #    world, then to the canvas's local pixel space.
-        stock_world_transform = stock_item.get_world_transform()
-        canvas_origin_world = (stock_item.bbox[0], stock_item.bbox[1])
+        world_geo = stock_item.get_world_geometry()
+        if world_geo.is_empty():
+            world_geo = stock_item.get_world_rect_geometry()
+        if world_geo.is_empty():
+            return np.zeros((height_px, width_px), dtype=bool)
+
+        logger.debug(
+            f"Stock mask: canvas_origin={canvas_origin_world}, "
+            f"geo_rect={world_geo.rect()}"
+        )
+
         translation_to_canvas = Matrix.translation(
             -canvas_origin_world[0], -canvas_origin_world[1]
         )
-        final_transform_mm = translation_to_canvas @ stock_world_transform
 
         # 2. Apply this transform to a copy of the geometry.
         # The Geometry.transform method expects a 4x4 NumPy array.
-        geometry_for_render = stock_item.geometry.copy()
         m4x4 = np.identity(4)
-        m4x4[:2, :2] = final_transform_mm.m[:2, :2]
-        m4x4[:2, 3] = final_transform_mm.m[:2, 2]
+        m4x4[:2, :2] = translation_to_canvas.m[:2, :2]
+        m4x4[:2, 3] = translation_to_canvas.m[:2, 2]
+
+        geometry_for_render = world_geo.copy()
         geometry_for_render.transform(m4x4)
 
         # 3. Render the transformed geometry onto a cairo surface.
@@ -519,7 +558,11 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         return (max_x - min_x) * (max_y - min_y)
 
     def _compute_deltas_from_placements(
-        self, placements: List[PlacedItem], group_offset: Tuple[float, float]
+        self,
+        placements: List[PlacedItem],
+        group_offset: Point,
+        canvas_h_px: int,
+        canvas_h_mm: float,
     ) -> Dict[DocItem, Matrix]:
         """
         Converts a list of pixel placements into transform deltas.
@@ -527,6 +570,8 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         Args:
             placements: The list of `PlacedItem`s.
             group_offset: The (x, y) world coordinate of the packing origin.
+            canvas_h_px: The canvas height in pixels.
+            canvas_h_mm: The canvas height in mm.
 
         Returns:
             A dictionary mapping each DocItem to its required delta matrix.
@@ -536,13 +581,17 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             return deltas
         for item in placements:
             doc_item, delta = self._create_delta_for_placement(
-                item, group_offset
+                item, group_offset, canvas_h_px, canvas_h_mm
             )
             deltas[doc_item] = delta
         return deltas
 
     def _create_delta_for_placement(
-        self, item: PlacedItem, group_offset: Tuple[float, float]
+        self,
+        item: PlacedItem,
+        group_offset: Point,
+        canvas_h_px: int,
+        canvas_h_mm: float,
     ) -> Tuple[DocItem, Matrix]:
         """
         Calculates the final matrix and delta for a single placed item.
@@ -550,6 +599,8 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         Args:
             item: The `PlacedItem` to process.
             group_offset: The (x, y) world coordinate of the packing origin.
+            canvas_h_px: The canvas height in pixels.
+            canvas_h_mm: The canvas height in mm.
 
         Returns:
             A tuple of (DocItem, delta_Matrix).
@@ -561,8 +612,12 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
 
         # 1. Calculate the final position of the rotated bbox corner in world
         # space
-        true_x_px = x_px + margin_px
-        true_y_px = y_px + margin_px
+        total_margin_px = 2 * margin_px
+        true_x_px = x_px + total_margin_px
+        true_y_px = y_px + total_margin_px
+
+        px_to_mm_y = canvas_h_mm / canvas_h_px if canvas_h_px > 0 else 0.0
+        flipped_y_mm = (canvas_h_px - 1 - true_y_px) * px_to_mm_y
 
         if isinstance(doc_item, Group):
             # A Group is a rigid body. Calculate a pure
@@ -584,13 +639,10 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             rotated_bbox = item.variant.local_bbox
             w_mm = rotated_bbox[2] - rotated_bbox[0]
             h_mm = rotated_bbox[3] - rotated_bbox[1]
-            C_new_px = (
-                true_x_px + (w_mm * self.resolution) / 2,
-                true_y_px + (h_mm * self.resolution) / 2,
-            )
             C_new = (
-                group_offset_x + C_new_px[0] / self.resolution,
-                group_offset_y + C_new_px[1] / self.resolution,
+                group_offset_x
+                + (true_x_px + w_mm * self.resolution / 2) / self.resolution,
+                group_offset_y + flipped_y_mm - h_mm / 2,
             )
 
             # Create a world-space delta transform: translate, then rotate
@@ -604,11 +656,9 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         else:
             # For a WorkPiece, reconstruct its transform from scratch.
             packed_x = group_offset_x + (true_x_px / self.resolution)
-            packed_y = group_offset_y + (true_y_px / self.resolution)
-            bbox_off_x, bbox_off_y = (
-                item.variant.local_bbox[0],
-                item.variant.local_bbox[1],
-            )
+            packed_y = group_offset_y + flipped_y_mm
+            bbox_off_x = item.variant.local_bbox[0]
+            bbox_off_y = item.variant.local_bbox[3]
             final_x = packed_x - bbox_off_x
             final_y = packed_y - bbox_off_y
             T = Matrix.translation(final_x, final_y)
@@ -638,11 +688,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
 
     def _render_and_mask(
         self, item: DocItem, angle_offset: int
-    ) -> Optional[
-        Tuple[
-            np.ndarray, Tuple[float, float, float, float], Tuple[float, float]
-        ]
-    ]:
+    ) -> Optional[Tuple[np.ndarray, Rect, Tuple[float, float]]]:
         """
         Renders a DocItem to a pixel mask at a specific orientation.
 

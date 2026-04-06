@@ -44,11 +44,36 @@ Dieser Wert sollte mit der $30-Einstellung deiner Firmware übereinstimmen.
 
 #### Rahmen-Leistung
 
-Der Leistungswert, der für Rahmen-Operationen verwendet wird (Umreißen ohne Schneiden).
+Der Leistungswert, der für Rahmen-Operationen verwendet wird (Umreißen ohne
+Schneiden).
 
 - Auf 0 setzen, um Rahmen zu deaktivieren
-- Typische Werte: 5-20 (gerade sichtbar, markiert das Material nicht)
 - Passe ihn basierend auf deinem Laser und Material an
+
+#### Rahmen-Geschwindigkeit
+
+Die Geschwindigkeit, mit der sich der Laserkopf während des Einrahmens bewegt.
+Dies wird pro Laserkopf eingestellt, sodass du bei Maschinen mit mehreren Lasern
+mit unterschiedlichen Eigenschaften eine angemessene Geschwindigkeit für jeden
+wählen kannst. Langsamere Geschwindigkeiten machen den Rahmen-Pfad leichter
+visuell verfolgbar.
+
+#### Fokus-Leistung
+
+Die Leistungsstufe, die verwendet wird, wenn der Fokusmodus aktiviert ist.
+Der Fokusmodus schaltet den Laser mit niedriger Leistung ein, um als
+"Laserzeiger" zur Positionierung zu dienen.
+
+- Auf 0 setzen, um die Fokusmodus-Funktion zu deaktivieren
+- Verwende für visuelle Ausrichtung und Positionierung
+
+:::tip Fokusmodus verwenden
+Klicke auf die Fokus-Taste (Laser-Symbol) in der Symbolleiste, um den
+Fokusmodus umzuschalten. Der Laser wird bei dieser Leistungsstufe
+eingeschaltet und hilft dir, genau zu sehen, wo der Laser positioniert ist.
+Siehe [Werkstückpositionierung](../features/workpiece-positioning) für weitere
+Informationen.
+:::
 
 #### Punktgröße
 
@@ -65,6 +90,35 @@ Um deine Punktgröße zu messen:
 3. Verwende den Durchschnitt mehrerer Messungen
 :::
 
+#### Schnittfarbe
+
+Die Farbe, die zum Anzeigen von Schnittoperationen für diesen Laser im Canvas und
+in der 3D-Vorschau verwendet wird. Dies hilft dir, visuell zu unterscheiden,
+welcher Laser welche Schnittoperation durchführen wird, wenn du mit mehreren
+Laserköpfen arbeitest.
+
+- Klicke auf die Farbauswahl, um einen Farbwähler zu öffnen
+- Wähle eine Farbe, die gut mit deiner Materialvorschau kontrastiert
+- Standardfarben werden automatisch zugewiesen
+
+#### Rasterfarbe
+
+Die Farbe, die zum Anzeigen von Raster-/Gravuroperationen für diesen Laser im
+Canvas und in der 3D-Vorschau verwendet wird.
+
+- Klicke auf die Farbauswahl, um einen Farbwähler zu öffnen
+- Nützlich zur Unterscheidung von Rasteroperationen von Schnitten
+- Jeder Laser kann seine eigene Rasterfarbe haben
+
+:::tip Multi-Laser-Workflows
+Bei der Verwendung mehrerer Laserköpfe erleichtert das Zuweisen unterschiedlicher
+Farben zu jedem Laser es, zu erkennen, welche Operationen von welchem Laser
+durchgeführt werden. Verwende beispielsweise Rot für deinen Hauptschneidelaser
+und Blau für einen sekundären Gravurlaser.
+:::
+
 ## Siehe auch
 
 - [Geräteeinstellungen](device) - GRBL Lasermodus-Einstellungen
+- [Werkstückpositionierung](../features/workpiece-positioning) - Verwendung
+  von Fokusmodus und anderen Positionierungsmethoden

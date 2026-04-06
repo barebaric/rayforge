@@ -1,0 +1,110 @@
+from typing import Any, TYPE_CHECKING
+
+from gi.repository import Adw, Gtk
+from gettext import gettext as _
+
+from rayforge.core.undo import DictItemCommand
+from rayforge.pipeline.producer.base import CutSide
+from rayforge.shared.util.glib import DebounceMixin
+from rayforge.ui_gtk.doceditor.step_settings.base import (
+    StepComponentSettingsWidget,
+)
+from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
+from ..producers import FrameProducer
+
+if TYPE_CHECKING:
+    from rayforge.core.step import Step
+    from rayforge.doceditor.editor import DocEditor
+
+
+class FrameProducerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
+    """UI for configuring the FrameProducer."""
+
+    def __init__(
+        self,
+        editor: "DocEditor",
+        title: str,
+        producer: FrameProducer,
+        page: Adw.PreferencesPage,
+        step: "Step",
+        **kwargs,
+    ):
+        super().__init__(
+            editor,
+            title,
+            component=producer,
+            page=page,
+            step=step,
+            **kwargs,
+        )
+
+        # Cut Side
+        cut_side_choices = [cs.label() for cs in CutSide]
+        cut_side_row = Adw.ComboRow(
+            title=_("Cut Side"), model=Gtk.StringList.new(cut_side_choices)
+        )
+        cut_side_row.set_selected(list(CutSide).index(producer.cut_side))
+        self.add(cut_side_row)
+
+        # Path Offset
+        offset_adj = Gtk.Adjustment(
+            lower=0.0,
+            upper=100.0,
+            step_increment=0.1,
+            page_increment=1.0,
+        )
+        self.offset_row = Adw.SpinRow(
+            title=_("Path Offset"),
+            subtitle=_(
+                "Absolute distance from content boundary in machine units"
+            ),
+            adjustment=offset_adj,
+            digits=2,
+        )
+        offset_adj.set_value(producer.path_offset_mm)
+        self.add(self.offset_row)
+
+        # Connect signals
+        self.offset_row.connect(
+            "changed",
+            lambda r: self._debounce(
+                self._on_param_changed, "path_offset_mm", get_spinrow_float(r)
+            ),
+        )
+        cut_side_row.connect("notify::selected", self._on_cut_side_changed)
+
+        # Set initial sensitivity
+        self._update_offset_sensitivity(producer.cut_side)
+        cut_side_row.connect(
+            "notify::selected",
+            lambda r, _: self._update_offset_sensitivity(
+                list(CutSide)[r.get_selected()]
+            ),
+        )
+
+    def _update_offset_sensitivity(self, cut_side: CutSide):
+        self.offset_row.set_sensitive(cut_side != CutSide.CENTERLINE)
+
+    def _on_param_changed(self, key: str, new_value: Any):
+        params_dict = self.target_dict.setdefault("params", {})
+
+        # Use isclose for float comparison
+        if isinstance(new_value, float):
+            if abs(new_value - params_dict.get(key, 0.0)) < 1e-6:
+                return
+        elif new_value == params_dict.get(key):
+            return
+
+        command = DictItemCommand(
+            target_dict=params_dict,
+            key=key,
+            new_value=new_value,
+            name=_("Change Frame Setting"),
+            on_change_callback=lambda: self.step.updated.send(self.step),
+        )
+        self.history_manager.execute(command)
+
+    def _on_cut_side_changed(self, row, _):
+        selected_idx = row.get_selected()
+        new_mode = list(CutSide)[selected_idx]
+        self._on_param_changed("cut_side", new_mode.name)

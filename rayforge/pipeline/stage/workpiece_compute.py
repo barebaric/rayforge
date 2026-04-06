@@ -1,4 +1,12 @@
-from typing import Any, List, Tuple, Iterator, Optional, Callable
+from typing import (
+    Any,
+    List,
+    Tuple,
+    Iterator,
+    Optional,
+    Callable,
+    TYPE_CHECKING,
+)
 import logging
 from gettext import gettext as _
 from ...core.ops import Ops
@@ -8,6 +16,9 @@ from ...shared.tasker.progress import ProgressContext, set_progress
 from ..artifact import WorkPieceArtifact
 from ..producer import OpsProducer
 from ..transformer import OpsTransformer, ExecutionPhase
+
+if TYPE_CHECKING:
+    from ...core.geo import Geometry
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 
@@ -431,6 +442,8 @@ def _apply_transformers(
     execute_weight: float,
     transform_weight: float,
     context: Optional[ProgressContext] = None,
+    stock_geometries: Optional[List["Geometry"]] = None,
+    settings: Optional[dict] = None,
 ) -> None:
     """
     Apply enabled transformers to the operations in phases.
@@ -442,6 +455,8 @@ def _apply_transformers(
         execute_weight: Weight for execute phase in progress calculation.
         transform_weight: Weight for transform phase in progress calculation.
         context: Optional ProgressContext for progress reporting.
+        stock_geometries: Optional list of stock boundary geometries.
+        settings: Optional dictionary of step settings.
     """
     enabled_transformers = [t for t in transformers if t.enabled]
     if not enabled_transformers:
@@ -469,7 +484,13 @@ def _apply_transformers(
                     transformer=transformer.label, workpiece=workpiece.name
                 ),
             )
-            transformer.run(ops, workpiece=workpiece, context=None)
+            transformer.run(
+                ops,
+                workpiece=workpiece,
+                context=None,
+                stock_geometries=stock_geometries,
+                settings=settings,
+            )
             processed_count += 1
 
 
@@ -658,6 +679,7 @@ def compute_workpiece_artifact(
     generation_id: int,
     on_chunk: Optional[Callable[[WorkPieceArtifact], None]] = None,
     context: Optional[ProgressContext] = None,
+    stock_geometries: Optional[List["Geometry"]] = None,
 ) -> Optional[WorkPieceArtifact]:
     """
     Computes a WorkPieceArtifact from a WorkPiece using the given producer.
@@ -677,6 +699,7 @@ def compute_workpiece_artifact(
         generation_id: Unique identifier for this generation.
         on_chunk: Optional callback for progressive chunk reporting.
         context: Optional ProgressContext for progress reporting.
+        stock_geometries: Optional list of stock boundary geometries.
 
     Returns:
         A WorkPieceArtifact containing the generated operations and metadata,
@@ -719,6 +742,8 @@ def compute_workpiece_artifact(
         execute_weight,
         transform_weight,
         context,
+        stock_geometries,
+        settings,
     )
 
     if settings["air_assist"]:

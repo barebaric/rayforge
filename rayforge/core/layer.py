@@ -5,6 +5,7 @@ workpieces within a document.
 
 from __future__ import annotations
 import logging
+import math
 from gettext import gettext as _
 from typing import (
     List,
@@ -13,9 +14,7 @@ from typing import (
     TypeVar,
     Iterable,
     Dict,
-    TYPE_CHECKING,
     Any,
-    cast,
 )
 from blinker import Signal
 
@@ -25,9 +24,6 @@ from .matrix import Matrix
 from .step import Step
 from .workflow import Workflow
 from .workpiece import WorkPiece
-
-if TYPE_CHECKING:
-    from .stock import StockItem
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +48,9 @@ class Layer(DocItem):
         """
         super().__init__(name=name)
         self.visible: bool = True
-        self.stock_item_uid: Optional[str] = None
+        self.rotary_enabled: bool = False
+        self.rotary_diameter: float = 25.0
+        self.rotary_module_uid: Optional[str] = None
 
         # Signals for notifying other parts of the application of changes.
         # This one is special and is bubbled manually.
@@ -73,7 +71,9 @@ class Layer(DocItem):
             "name": self.name,
             "matrix": self.matrix.to_list(),
             "visible": self.visible,
-            "stock_item_uid": self.stock_item_uid,
+            "rotary_enabled": self.rotary_enabled,
+            "rotary_diameter": self.rotary_diameter,
+            "rotary_module_uid": self.rotary_module_uid,
             "children": [child.to_dict() for child in self.children],
         }
         result.update(self.extra)
@@ -88,7 +88,9 @@ class Layer(DocItem):
             "name",
             "matrix",
             "visible",
-            "stock_item_uid",
+            "rotary_enabled",
+            "rotary_diameter",
+            "rotary_module_uid",
             "children",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -97,7 +99,9 @@ class Layer(DocItem):
         layer.uid = data["uid"]
         layer.matrix = Matrix.from_list(data["matrix"])
         layer.visible = data.get("visible", True)
-        layer.stock_item_uid = data.get("stock_item_uid")
+        layer.rotary_enabled = data.get("rotary_enabled", False)
+        layer.rotary_diameter = data.get("rotary_diameter", 25.0)
+        layer.rotary_module_uid = data.get("rotary_module_uid")
         layer.extra = extra
 
         children = []
@@ -130,6 +134,15 @@ class Layer(DocItem):
         objects contained within this layer, including those inside groups.
         """
         return self.get_descendants(of_type=WorkPiece)
+
+    @property
+    def has_fills(self) -> bool:
+        """Check if any workpiece in this layer has fill geometry."""
+        for wp in self.all_workpieces:
+            fills = wp.fills
+            if fills is not None and len(fills) > 0:
+                return True
+        return False
 
     def get_content_items(self) -> List["DocItem"]:
         """
@@ -223,6 +236,33 @@ class Layer(DocItem):
         self.visible = visible
         self.updated.send(self)
 
+    def set_rotary_enabled(self, enabled: bool):
+        """Enable or disable rotary attachment mode."""
+        if self.rotary_enabled == enabled:
+            return
+        self.rotary_enabled = enabled
+        self.updated.send(self)
+
+    def set_rotary_diameter(self, diameter: float):
+        """Set the diameter of the object on the rotary attachment."""
+        if self.rotary_diameter == diameter:
+            return
+        self.rotary_diameter = diameter
+        self.updated.send(self)
+
+    def set_rotary_module_uid(self, uid: Optional[str]):
+        if self.rotary_module_uid == uid:
+            return
+        self.rotary_module_uid = uid
+        self.updated.send(self)
+
+    def mu_to_degrees(self, mu: float) -> float:
+        """Convert machine units to degrees for rotary axis."""
+        if self.rotary_diameter <= 0:
+            return 0.0
+        circumference = self.rotary_diameter * math.pi
+        return (mu / circumference) * 360.0
+
     def add_workpiece(self, workpiece: "WorkPiece"):
         """Adds a single workpiece to the layer."""
         self.add_child(workpiece)
@@ -261,32 +301,3 @@ class Layer(DocItem):
                 if step.visible:
                     items.append((step, workpiece))
         return items
-
-    @property
-    def stock_item(self) -> Optional["StockItem"]:
-        """
-        Gets the stock item assigned to this layer.
-
-        Returns None for "Whole Surface" which represents the entire machine
-        surface.
-        """
-        if not self.stock_item_uid or not self.doc:
-            return None
-
-        return cast(
-            "Optional[StockItem]",
-            self.doc.get_child_by_uid(self.stock_item_uid),
-        )
-
-    @stock_item.setter
-    def stock_item(self, stock_item: Optional["StockItem"]):
-        """Sets the stock item for this layer."""
-        if stock_item is None:
-            self.stock_item_uid = None
-        else:
-            self.stock_item_uid = stock_item.uid
-
-    def set_stock_item_uid(self, uid: Optional[str]):
-        """Setter method for use with undo commands."""
-        self.stock_item_uid = uid
-        self.updated.send(self)

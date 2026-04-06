@@ -1,0 +1,28 @@
+uid: stone
+name:
+  default: Stone
+  de: Stein
+  es: Piedra
+  fr: Pierre
+  pt: Pedra
+  uk: Камінь
+  zh_CN: 石材
+description:
+  default: Natural hard mineral material
+  de: Natürliches hartes Mineralmaterial
+  es: Material mineral duro natural
+  fr: Matériau minéral dur naturel
+  pt: Material mineral duro natural
+  uk: Природна тверда мінеральна речовина
+  zh_CN: 天然硬质矿物材料
+category:
+  default: Stone
+  de: Stein
+  es: Piedra
+  fr: Pierre
+  pt: Pedra
+  uk: Камінь
+  zh_CN: 石材
+appearance:
+  color: "#808080"
+  pattern: solid

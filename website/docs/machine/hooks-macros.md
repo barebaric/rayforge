@@ -34,7 +34,7 @@ Common macro use cases:
 ### Creating a Macro
 
 1. **Open Machine Settings:**
-   - Navigate to **Settings Machine Macros**
+   - Navigate to **Settings → Machine → Macros**
 
 2. **Add a new macro:**
    - Click the **"+"** button
@@ -105,9 +105,7 @@ M5
 
 ---
 
----
-
-### Macro Examples
+## Hooks
 
 Hooks are **automatic G-code injections** triggered by specific events during job execution.
 
@@ -117,17 +115,19 @@ Rayforge supports these hook triggers:
 
 | Trigger             | When It Runs                     | Common Uses                                 |
 | ------------------- | -------------------------------- | ------------------------------------------- |
-| **Job Start**       | Very beginning of the job        | Homing, work offset, air assist on, preheat |
-| **Job End**         | Very end of the job              | Return home, air assist off, beep, cooldown |
 | **Layer Start**     | Before processing each layer     | Tool change, power adjust, comments         |
 | **Layer End**       | After processing each layer      | Progress notification, pause                |
 | **Workpiece Start** | Before processing each workpiece | Part numbering, alignment marks             |
 | **Workpiece End**   | After processing each workpiece  | Cooldown, inspection pause                  |
 
+:::note Job-Level G-code
+Job start and end G-code is configured through the dialect's preamble and postscript settings, not hooks. See [G-code Settings](gcode) for details.
+:::
+
 ### Creating a Hook
 
 1. **Open Machine Settings:**
-   - Navigate to **Settings Machine Hooks**
+   - Navigate to **Settings → Machine → Hooks**
 
 2. **Select a trigger:**
    - Choose the event when this hook should run
@@ -140,40 +140,6 @@ Rayforge supports these hook triggers:
    - Toggle hooks on/off without deleting them
 
 ### Example Hooks
-
-#### Job Start: Initialize Machine
-
-**Trigger:** Job Start
-**Code:**
-
-```gcode
-G21         ; Millimeters
-G90         ; Absolute positioning
-$H          ; Home the machine
-G0 X0 Y0    ; Move to origin
-M3 S0       ; Laser on but power 0 (some controllers need this)
-M8          ; Air assist ON
-```
-
-**Purpose:** Ensures machine is in a known state before every job.
-
----
-
-#### Job End: Return Home and Beep
-
-**Trigger:** Job End
-**Code:**
-
-```gcode
-M5          ; Laser OFF
-M9          ; Air assist OFF
-G0 X0 Y0    ; Return to origin
-M300 S800 P200  ; Beep (if supported)
-```
-
-**Purpose:** Safely ends the job and signals completion.
-
----
 
 #### Layer Start: Add Comment
 
@@ -208,7 +174,6 @@ M300 S800 P200  ; Beep (if supported)
 For a job with 2 layers, each with 2 workpieces:
 
 ```
-[Job Start Hook]
   [Layer Start Hook] (Layer 1)
     [Workpiece Start Hook] (Workpiece 1)
       ... workpiece 1 G-code ...
@@ -225,7 +190,6 @@ For a job with 2 layers, each with 2 workpieces:
       ... workpiece 4 G-code ...
     [Workpiece End Hook] (Workpiece 4)
   [Layer End Hook] (Layer 2)
-[Job End Hook]
 ```
 
 ---
@@ -360,9 +324,6 @@ Always test macros and hooks in **simulation mode** or with the laser **disabled
 
 - [ ] Macros include feedrate limits (`F` parameter)
 - [ ] Macros check position bounds
-- [ ] Job Start hooks include `M5` or laser off command
-- [ ] Job End hooks turn off laser (`M5`) and air assist (`M9`)
-- [ ] No destructive commands without confirmation
 - [ ] Tested in simulation or with laser disabled
 
 ---

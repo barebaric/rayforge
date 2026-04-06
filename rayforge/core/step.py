@@ -4,6 +4,7 @@ from abc import ABC
 from typing import List, Optional, TYPE_CHECKING, Dict, Any, cast, Set
 from gettext import gettext as _
 from blinker import Signal
+from ..pipeline.transformer.registry import transformer_registry
 from ..shared.units.formatter import format_value
 from .capability import Capability, CAPABILITIES_BY_NAME
 from .item import DocItem
@@ -64,6 +65,7 @@ class Step(DocItem, ABC):
         self.max_travel_speed = 10000
         self.air_assist = False
         self.kerf_mm: float = 0.0
+        self.tab_power: float = 0.0
 
         # Forward compatibility: store unknown attributes
         self.extra: Dict[str, Any] = {}
@@ -113,10 +115,23 @@ class Step(DocItem, ABC):
             "max_travel_speed": self.max_travel_speed,
             "air_assist": self.air_assist,
             "kerf_mm": self.kerf_mm,
+            "tab_power": self.tab_power,
             "children": [child.to_dict() for child in self.children],
         }
         result.update(self.extra)
         return result
+
+    @classmethod
+    def get_default_transformers_dicts(cls) -> tuple[list, list]:
+        """
+        Returns default transformer configurations for this step type.
+
+        Returns:
+            A tuple of (per_workpiece_transformers_dicts,
+            per_step_transformers_dicts) for new steps of this type.
+            Subclasses should override this to provide their defaults.
+        """
+        return [], []
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Step":
@@ -146,12 +161,22 @@ class Step(DocItem, ABC):
             "max_travel_speed",
             "air_assist",
             "kerf_mm",
+            "tab_power",
             "children",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
-        step_type_name = data.get("step_type", "Step")
-        step_class = step_registry.get(step_type_name)
+        step_type_name = data.get("step_type")
+        if step_type_name:
+            step_class = step_registry.get(step_type_name)
+        else:
+            step_class = None
+
+        if step_class is None:
+            typelabel = data.get("typelabel")
+            if typelabel:
+                step_class = step_registry.get_by_typelabel(typelabel)
+
         if step_class is None:
             step_class = cls
 
@@ -171,10 +196,22 @@ class Step(DocItem, ABC):
         }
 
         step.opsproducer_dict = data["opsproducer_dict"]
-        step.per_workpiece_transformers_dicts = data[
-            "per_workpiece_transformers_dicts"
-        ]
-        step.per_step_transformers_dicts = data["per_step_transformers_dicts"]
+        loaded_per_wp = data["per_workpiece_transformers_dicts"]
+        loaded_per_step = data["per_step_transformers_dicts"]
+
+        default_per_wp, default_per_step = (
+            step_class.get_default_transformers_dicts()
+        )
+        step.per_workpiece_transformers_dicts = Step._merge_transformer_dicts(
+            loaded_per_wp, default_per_wp
+        )
+        step.per_step_transformers_dicts = Step._merge_transformer_dicts(
+            loaded_per_step, default_per_step
+        )
+
+        # Share dict references for transformers that appear in both lists
+        step._unify_shared_transformers()
+
         step.pixels_per_mm = data.get("pixels_per_mm", (100, 100))
         step.power = data.get("power", 1.0)
         step.max_power = data.get("max_power", 1000)
@@ -184,8 +221,45 @@ class Step(DocItem, ABC):
         step.max_travel_speed = data.get("max_travel_speed", 10000)
         step.air_assist = data.get("air_assist", False)
         step.kerf_mm = data.get("kerf_mm", 0.0)
+        step.tab_power = data.get("tab_power", 0.0)
         step.extra = extra
         return step
+
+    @staticmethod
+    def _merge_transformer_dicts(
+        loaded: List[Dict[str, Any]], defaults: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Merges loaded transformer dicts with defaults.
+
+        Adds any transformers from defaults that are not present in loaded,
+        preserving order where new transformers appear in the defaults list.
+        """
+        loaded_names = {t.get("name") for t in loaded if t.get("name")}
+        result = list(loaded)
+        for default_t in defaults:
+            name = default_t.get("name")
+            if name and name not in loaded_names:
+                result.append(default_t)
+        return result
+
+    def _unify_shared_transformers(self):
+        """
+        Ensures transformers that appear in both lists share the same dict.
+
+        Some transformers (like Optimize) are intended to be the same instance
+        in both per_workpiece and per_step lists. This method detects such
+        cases and unifies them to share the same dict reference.
+        """
+        per_wp_names = {
+            t.get("name"): t
+            for t in self.per_workpiece_transformers_dicts
+            if t.get("name")
+        }
+        for i, t in enumerate(self.per_step_transformers_dicts):
+            name = t.get("name")
+            if name and name in per_wp_names:
+                self.per_step_transformers_dicts[i] = per_wp_names[name]
 
     def get_settings(self) -> Dict[str, Any]:
         """
@@ -200,6 +274,7 @@ class Step(DocItem, ABC):
             "air_assist": self.air_assist,
             "pixels_per_mm": self.pixels_per_mm,
             "kerf_mm": self.kerf_mm,
+            "tab_power": self.tab_power,
             "generated_workpiece_uid": self.generated_workpiece_uid,
         }
 
@@ -292,6 +367,16 @@ class Step(DocItem, ABC):
             self.kerf_mm = float(kerf)
             self.updated.send(self)
 
+    def set_tab_power(self, power: float):
+        if not (0.0 <= power <= 1.0):
+            raise ValueError("Tab power must be between 0.0 and 1.0")
+        if self.tab_power != power:
+            self.tab_power = power
+            self.updated.send(self)
+
+    def get_operation_mode_short(self) -> Optional[str]:
+        return None
+
     def get_summary(self) -> str:
         power_percent = int(self.power * 100)
         speed_str = format_value(self.cut_speed, "speed")
@@ -301,3 +386,23 @@ class Step(DocItem, ABC):
 
     def dump(self, indent: int = 0):
         print("  " * indent, self.name)
+
+    def is_position_sensitive(self) -> bool:
+        """
+        Returns True if workpiece position changes may affect the output.
+
+        This is true when per-workpiece transformers are configured that
+        depend on the workpiece's world position (e.g., crop-to-stock).
+        """
+        for t_dict in self.per_workpiece_transformers_dicts:
+            if not t_dict.get("enabled", True):
+                continue
+            name = t_dict.get("name")
+            if not name or not isinstance(name, str):
+                continue
+            transformer_cls = transformer_registry.get(name)
+            if transformer_cls is None:
+                continue
+            if transformer_cls.POSITION_SENSITIVE:
+                return True
+        return False

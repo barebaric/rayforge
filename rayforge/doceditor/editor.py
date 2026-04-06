@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any
 
 from blinker import Signal
+from ..core.asset import UnknownAsset
 from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.vectorization_spec import VectorizationSpec
@@ -12,13 +13,12 @@ from ..pipeline.artifact import JobArtifactHandle, JobArtifact
 from ..pipeline.pipeline import Pipeline
 from ..pipeline.view import ViewManager
 from .asset_cmd import AssetCmd
+from .command_registry import command_registry
 from .edit_cmd import EditCmd
 from .file_cmd import FileCmd
 from .group_cmd import GroupCmd
 from .layer_cmd import LayerCmd
 from .layout_cmd import LayoutCmd
-from .material_test_cmd import MaterialTestCmd
-from .sketch_cmd import SketchCmd
 from .split_cmd import SplitCmd
 from .step_cmd import StepCmd
 from .stock_cmd import StockCmd
@@ -65,6 +65,17 @@ class DocEditor:
         self.task_manager = task_manager
         self._config_manager = context.config_mgr
         self.doc = doc or Doc()
+
+        if doc is None and context.machine:
+            self.doc.active_layer.set_rotary_enabled(
+                context.machine.rotary_enabled_default
+            )
+            default_rm = context.machine.get_default_rotary_module()
+            if default_rm:
+                self.doc.active_layer.set_rotary_diameter(
+                    default_rm.default_diameter
+                )
+                self.doc.active_layer.set_rotary_module_uid(default_rm.uid)
         self.pipeline = Pipeline(
             self.doc,
             self.task_manager,
@@ -103,6 +114,13 @@ class DocEditor:
         # Connect to history manager to track undo/redo for saved state
         self.history_manager.changed.connect(self._on_history_changed)
 
+        context.addon_mgr.addon_state_changed.connect(
+            self._on_addon_state_changed
+        )
+
+        if context.machine:
+            context.machine.changed.connect(self._on_machine_changed)
+
         # Instantiate and link command handlers, passing dependencies.
         self.asset = AssetCmd(self)
         self.edit = EditCmd(self)
@@ -110,21 +128,24 @@ class DocEditor:
         self.group = GroupCmd(self, self.task_manager)
         self.layer = LayerCmd(self)
         self.layout = LayoutCmd(self, self.task_manager)
-        self.material_test = MaterialTestCmd(self)
-        self.sketch = SketchCmd(self)
         self.split = SplitCmd(self)
         self.stock = StockCmd(self)
         self.step = StepCmd(self)
         self.tab = TabCmd(self)
         self.transform = TransformCmd(self)
 
+        # Instantiate addon-registered commands.
+        for name, cmd_class in command_registry.all_commands().items():
+            setattr(self, name, cmd_class(self))
+
     def cleanup(self):
         """
         Shuts down owned long-running services, like the Pipeline, to
         ensure cleanup of resources (e.g., shared memory).
         """
-        # This is the safety net for any transient job artifacts that were
-        # in-flight when the application was closed.
+        if self.context.machine:
+            self.context.machine.changed.disconnect(self._on_machine_changed)
+
         logger.info(
             f"Releasing {len(self._transient_artifact_handles)} "
             "transient job artifacts..."
@@ -139,6 +160,25 @@ class DocEditor:
 
         self.view_manager.shutdown()
         self.pipeline.shutdown()
+
+    def _on_machine_changed(self, sender, **kwargs):
+        machine = self.context.machine
+        if not machine:
+            return
+        default_rm = machine.get_default_rotary_module()
+        for layer in self.doc.layers:
+            if not layer.rotary_enabled:
+                continue
+            if (
+                layer.rotary_module_uid is not None
+                and machine.get_rotary_module_by_uid(layer.rotary_module_uid)
+            ):
+                continue
+            if default_rm:
+                layer.set_rotary_module_uid(default_rm.uid)
+                layer.set_rotary_diameter(default_rm.default_diameter)
+            else:
+                layer.set_rotary_module_uid(None)
 
     def add_tab_from_context(self, context: Dict[str, Any]):
         """
@@ -189,14 +229,14 @@ class DocEditor:
 
         settled_future = asyncio.get_running_loop().create_future()
 
-        # The signal sends `is_processing`, but the handler only needs
-        # `sender`.
         def on_settled(sender, is_processing: bool):
             if not is_processing and not settled_future.done():
                 settled_future.set_result(True)
 
         self.processing_state_changed.connect(on_settled)
         try:
+            if not self.is_processing and not settled_future.done():
+                settled_future.set_result(True)
             await asyncio.wait_for(settled_future, timeout)
         finally:
             self.processing_state_changed.disconnect(on_settled)
@@ -223,6 +263,37 @@ class DocEditor:
             return settled_event.wait(timeout=timeout)
         finally:
             self.processing_state_changed.disconnect(on_settled)
+
+    def _on_addon_state_changed(self, sender, addon_name: str):
+        """
+        Refresh the document after an addon is reloaded.
+
+        Re-serializes and deserializes the document to ensure all
+        producer/widget instances use fresh class references from
+        the reloaded addon.
+        """
+        logger.info(
+            f"Refreshing document after addon '{addon_name}' state change"
+        )
+        doc_data = self.doc.to_dict()
+        new_doc = Doc.from_dict(doc_data)
+        self.set_doc(new_doc)
+
+        unknown_assets = [
+            asset
+            for asset in new_doc.get_all_assets()
+            if isinstance(asset, UnknownAsset)
+        ]
+        if unknown_assets:
+            from gettext import gettext as _
+
+            self.notification_requested.send(
+                self,
+                message=_(
+                    "{count} asset(s) require disabled addon '{addon}'"
+                ).format(count=len(unknown_assets), addon=addon_name),
+                persistent=True,
+            )
 
     async def import_file_from_path(
         self,
@@ -307,6 +378,8 @@ class DocEditor:
 
         logger.debug("DocEditor is setting a new document.")
         self.doc = new_doc
+        self._reconcile_step_lasers()
+        self._reconcile_rotary_modules()
         self.history_manager = self.doc.history_manager
         # The Pipeline's setter handles cleanup and reconnection
         self.pipeline.doc = new_doc
@@ -326,6 +399,66 @@ class DocEditor:
         # Mark document as unsaved when setting a new doc
         # (unless called from load_project_from_path which will mark as saved)
         self.mark_as_unsaved()
+
+    def _reconcile_step_lasers(self):
+        """
+        Reconciles step laser UIDs with the current machine.
+
+        For each step, checks if its selected_laser_uid exists in the
+        machine's laser heads. If not, updates it to the default laser.
+        This handles the case where a project file references a laser
+        that doesn't exist in the current machine profile.
+        """
+        machine = self.context.machine
+        if not machine or not machine.heads:
+            return
+
+        valid_laser_uids = {head.uid for head in machine.heads}
+        default_laser_uid = machine.heads[0].uid
+
+        for layer in self.doc.layers:
+            if not layer.workflow:
+                continue
+            for step in layer.workflow.steps:
+                if step.selected_laser_uid not in valid_laser_uids:
+                    logger.info(
+                        f"Step '{step.name}' references non-existent laser "
+                        f"'{step.selected_laser_uid}', "
+                        f"resetting to default '{default_laser_uid}'"
+                    )
+                    step.selected_laser_uid = default_laser_uid
+
+    def _reconcile_rotary_modules(self):
+        """
+        Reconcile layer rotary_module_uid with the current machine.
+
+        For each layer, checks if its rotary_module_uid references a
+        module that exists on the machine. If not, updates it to the
+        default module. This handles the case where a project file
+        references a module that doesn't exist in the current machine.
+        """
+        machine = self.context.machine
+        if not machine:
+            return
+
+        default_rm = machine.get_default_rotary_module()
+        for layer in self.doc.layers:
+            if not layer.rotary_enabled:
+                continue
+            if (
+                layer.rotary_module_uid is not None
+                and machine.get_rotary_module_by_uid(layer.rotary_module_uid)
+            ):
+                continue
+            if default_rm:
+                logger.info(
+                    "Layer '%s' has no valid rotary module, assigning default",
+                    layer.name,
+                )
+                layer.set_rotary_module_uid(default_rm.uid)
+                layer.set_rotary_diameter(default_rm.default_diameter)
+            else:
+                layer.set_rotary_module_uid(None)
 
     @property
     def is_processing(self) -> bool:

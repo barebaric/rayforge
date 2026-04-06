@@ -19,11 +19,12 @@ from .constants import (
     COL_C2X,
     COL_C2Y,
 )
+from .types import Point, Point3D, Polygon
 
 
 def flatten_to_points(
     data: Optional[np.ndarray], resolution: float
-) -> List[List[Tuple[float, float, float]]]:
+) -> List[List[Point3D]]:
     """
     Converts geometry data into a list of dense point lists (one per
     subpath). Arcs and Beziers are linearized using the given resolution.
@@ -38,8 +39,8 @@ def flatten_to_points(
     if data is None or len(data) == 0:
         return []
 
-    subpaths: List[List[Tuple[float, float, float]]] = []
-    current_subpath: List[Tuple[float, float, float]] = []
+    subpaths: List[List[Point3D]] = []
+    current_subpath: List[Point3D] = []
     last_pos = (0.0, 0.0, 0.0)
 
     for row in data:
@@ -72,13 +73,11 @@ def flatten_to_points(
 
 def _linearize_arc_from_array(
     arc_row: np.ndarray,
-    start_point: Tuple[float, float, float],
+    start_point: Point3D,
     resolution: float = 0.1,
-) -> List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]]:
+) -> List[Tuple[Point3D, Point3D]]:
     """Internal, NumPy-native implementation for arc linearization."""
-    segments: List[
-        Tuple[Tuple[float, float, float], Tuple[float, float, float]]
-    ] = []
+    segments: List[Tuple[Point3D, Point3D]] = []
     p0 = start_point
     p1 = (arc_row[COL_X], arc_row[COL_Y], arc_row[COL_Z])
     center_offset = (arc_row[COL_I], arc_row[COL_J])
@@ -138,40 +137,36 @@ def _linearize_arc_from_array(
 
 def linearize_bezier_from_array(
     bezier_row: np.ndarray,
-    start_point: Tuple[float, float, float],
+    start_point: Point3D,
     resolution: float = 0.1,
-) -> List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]]:
+) -> List[Tuple[Point3D, Point3D]]:
     """Internal, NumPy-native implementation for Bezier linearization."""
     p0 = start_point
     p1 = (bezier_row[COL_X], bezier_row[COL_Y], bezier_row[COL_Z])
     c1_2d = (bezier_row[COL_C1X], bezier_row[COL_C1Y])
     c2_2d = (bezier_row[COL_C2X], bezier_row[COL_C2Y])
 
-    # Interpolate Z for control points for a smooth 3D curve
     z0, z1 = p0[2], p1[2]
     c1 = (c1_2d[0], c1_2d[1], z0 * (2 / 3) + z1 * (1 / 3))
     c2 = (c2_2d[0], c2_2d[1], z0 * (1 / 3) + z1 * (2 / 3))
 
-    # Estimate curve length by summing chord lengths
     l01 = math.dist(p0, c1)
     l12 = math.dist(c1, c2)
     l23 = math.dist(c2, p1)
     estimated_len = l01 + l12 + l23
     num_steps = max(2, int(estimated_len / resolution))
 
-    # Cast is needed here because linearize_bezier is generic, but we know
-    # we are passing it 3D points and expect 3D points back.
     return cast(
-        List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]],
+        List[Tuple[Point3D, Point3D]],
         linearize_bezier(p0, c1, c2, p1, num_steps),
     )
 
 
 def linearize_arc(
     arc_input: Any,
-    start_point: Tuple[float, float, float],
+    start_point: Point3D,
     resolution: float = 0.1,
-) -> List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]]:
+) -> List[Tuple[Point3D, Point3D]]:
     """
     Converts an arc into a list of line segments.
     This function is backward-compatible and accepts either a NumPy array row
@@ -247,13 +242,13 @@ def linearize_bezier(
 
 
 def linearize_bezier_adaptive(
-    p0: Tuple[float, float],
-    c1: Tuple[float, float],
-    c2: Tuple[float, float],
-    p1: Tuple[float, float],
+    p0: Point,
+    c1: Point,
+    c2: Point,
+    p1: Point,
     tolerance_sq: float,
     max_depth: int = 10,
-) -> List[Tuple[float, float]]:
+) -> Polygon:
     """
     Recursively flattens a cubic Bezier curve based on geometric error.
 
@@ -267,13 +262,13 @@ def linearize_bezier_adaptive(
         A list of points (excluding p0, including p1) that approximate the
         curve.
     """
-    points: List[Tuple[float, float]] = []
+    points: Polygon = []
 
     def recursive_step(
-        p0: Tuple[float, float],
-        c1: Tuple[float, float],
-        c2: Tuple[float, float],
-        p1: Tuple[float, float],
+        p0: Point,
+        c1: Point,
+        c2: Point,
+        p1: Point,
         depth: int,
     ):
         # 1. Determine if the curve is flat enough to be a line.
@@ -348,10 +343,10 @@ def linearize_bezier_adaptive(
 
 
 def resample_polyline(
-    points: List[Tuple[float, float, float]],
+    points: List[Point3D],
     max_segment_length: float,
     is_closed: bool,
-) -> List[Tuple[float, float, float]]:
+) -> List[Point3D]:
     """
     Resamples a polyline, adding points to increase its density such that
     no segment is longer than `max_segment_length`.

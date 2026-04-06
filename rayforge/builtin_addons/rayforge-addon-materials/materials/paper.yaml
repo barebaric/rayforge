@@ -1,0 +1,28 @@
+uid: paper
+name:
+  default: Paper
+  de: Papier
+  es: Papel
+  fr: Papier
+  pt: Papel
+  uk: Папір
+  zh_CN: 纸
+description:
+  default: Thin flexible sheet material
+  de: Dünnes flexibles Blattmaterial
+  es: Material de hoja delgada y flexible
+  fr: Matériau en feuille mince et flexible
+  pt: Material de folha fina e flexível
+  uk: Тонкий гнучкий листовий матеріал
+  zh_CN: 薄而柔韧的片状材料
+category:
+  default: Paper
+  de: Papier
+  es: Papel
+  fr: Papier
+  pt: Papel
+  uk: Папір
+  zh_CN: 纸张
+appearance:
+  color: "#FFFFFF"
+  pattern: solid

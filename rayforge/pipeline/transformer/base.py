@@ -1,11 +1,14 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
+from typing import List, Optional, Dict, Any, TYPE_CHECKING
 from blinker import Signal
 from enum import Enum, auto
 from ...core.ops import Ops
 from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import ProgressContext
+
+if TYPE_CHECKING:
+    from ...core.geo import Geometry
 
 
 class ExecutionPhase(Enum):
@@ -39,6 +42,8 @@ class OpsTransformer(ABC):
     - Applying travel path optimizations
     - Applying arc welding
     """
+
+    POSITION_SENSITIVE: bool = False
 
     def __init__(self, enabled: bool = True, **kwargs):
         self._enabled = enabled
@@ -83,6 +88,8 @@ class OpsTransformer(ABC):
         ops: Ops,
         workpiece: Optional[WorkPiece] = None,
         context: Optional[ProgressContext] = None,
+        stock_geometries: Optional[List["Geometry"]] = None,
+        settings: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Runs the transformation.
@@ -92,6 +99,8 @@ class OpsTransformer(ABC):
             workpiece: The WorkPiece model being processed.
             context: Optional progress context for reporting progress and
                     checking cancellation.
+            stock_geometries: List of stock boundary geometries in world space.
+            settings: Optional dictionary of step settings.
         """
         pass
 
@@ -120,16 +129,16 @@ class OpsTransformer(ABC):
                 f"{cls.__name__} must implement its own from_dict classmethod."
             )
 
-        # Lazy import to avoid circular dependency
-        from . import transformer_by_name
+        from .placeholder import PlaceholderTransformer
+        from .registry import transformer_registry
 
         name = data.get("name")
         if not name:
             raise ValueError("Transformer data is missing 'name' field.")
 
-        target_cls = transformer_by_name.get(name)
+        target_cls = transformer_registry.get(name)
         if not target_cls:
-            raise ValueError(f"Unknown transformer name: '{name}'")
+            return PlaceholderTransformer.from_dict(data)
 
         # Dispatch to the specific class's from_dict method
         instance = target_cls.from_dict(data)

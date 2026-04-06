@@ -2,12 +2,14 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from blinker import Signal
+from ...core.geo import Geometry
 from ...shared.util.size import sizes_are_close
 from ...shared.tasker.task import Task
-from ..artifact import StepOpsArtifactHandle, StepRenderArtifactHandle
+from ..artifact import StepOpsArtifactHandle
 from ..artifact.key import ArtifactKey
 from ..artifact.manager import StaleGenerationError
 from ..artifact.store import SharedMemoryNotFoundError
+from ..coordspace import MachineSpace
 from ..dag.node import NodeState
 from .base import PipelineStage
 
@@ -47,18 +49,7 @@ class StepPipelineStage(PipelineStage):
 
         self.generation_finished = Signal()
         self.assembly_starting = Signal()
-        self.render_artifact_ready = Signal()
         self.time_estimate_ready = Signal()
-
-    def handle_render_artifact_ready(
-        self, step_uid: str, step: "Step", handle: BaseArtifactHandle
-    ):
-        """Handles the render artifact ready event."""
-        if not isinstance(handle, StepRenderArtifactHandle):
-            raise TypeError("Expected a StepRenderArtifactHandle")
-
-        self._artifact_manager.put_step_render_handle(step_uid, handle)
-        self.render_artifact_ready.send(self, step=step)
 
     def handle_ops_artifact_ready(
         self,
@@ -113,9 +104,7 @@ class StepPipelineStage(PipelineStage):
             with self._artifact_manager.safe_adoption(
                 ledger_key, handle_dict
             ) as handle:
-                if event_name == "render_artifact_ready":
-                    self.handle_render_artifact_ready(step_uid, step, handle)
-                elif event_name == "ops_artifact_ready":
+                if event_name == "ops_artifact_ready":
                     self.handle_ops_artifact_ready(
                         step_uid, step, handle, generation_id
                     )
@@ -157,7 +146,6 @@ class StepPipelineStage(PipelineStage):
         logger.debug(f"[{ledger_key}] Task status is '{task_status}'.")
 
         if task_status == "canceled":
-            self._cleanup_step_render_handle(step_uid)
             with self._artifact_manager.report_cancellation(
                 ledger_key, task_generation_id
             ):
@@ -181,7 +169,6 @@ class StepPipelineStage(PipelineStage):
                     self, step=step, generation_id=task_generation_id
                 )
         else:
-            self._cleanup_step_render_handle(step_uid)
             self._emit_node_state(ledger_key, NodeState.ERROR)
             with self._artifact_manager.report_failure(
                 ledger_key, task_generation_id
@@ -189,12 +176,6 @@ class StepPipelineStage(PipelineStage):
                 self.generation_finished.send(
                     self, step=step, generation_id=task_generation_id
                 )
-
-    def _cleanup_step_render_handle(self, step_uid: str):
-        """Release the step render handle if one exists."""
-        render_handle = self._artifact_manager.pop_step_render_handle(step_uid)
-        if render_handle:
-            self._artifact_manager.release_handle(render_handle)
 
     def launch_task(
         self,
@@ -303,6 +284,25 @@ class StepPipelineStage(PipelineStage):
         assembly_info = []
         retained_handles = []
 
+        stock_geom_dicts = []
+        doc = step.layer.doc
+        if doc:
+            for stock_item in doc.stock_items:
+                geo = stock_item.get_world_geometry()
+                if geo:
+                    stock_geom_dicts.append(geo.to_dict())
+
+        if not stock_geom_dicts and self._machine:
+            space = MachineSpace.from_machine(self._machine)
+            wx, wy, w, h = space.get_workarea_world_rect()
+            geo = Geometry()
+            geo.move_to(wx, wy)
+            geo.line_to(wx + w, wy)
+            geo.line_to(wx + w, wy + h)
+            geo.line_to(wx, wy + h)
+            geo.close_path()
+            stock_geom_dicts.append(geo.to_dict())
+
         try:
             for wp in step.layer.all_workpieces:
                 handle = self._artifact_manager.get_workpiece_handle(
@@ -330,6 +330,7 @@ class StepPipelineStage(PipelineStage):
                     "artifact_handle_dict": handle.to_dict(),
                     "world_transform_list": wp.get_world_transform().to_list(),
                     "workpiece_dict": wp.in_world().to_dict(),
+                    "stock_geometries": stock_geom_dicts,
                 }
                 assembly_info.append(info)
         except ValueError:
@@ -366,12 +367,6 @@ class StepPipelineStage(PipelineStage):
         self._time_cache.pop(key, None)
 
         if full_invalidation:
-            render_handle = self._artifact_manager.pop_step_render_handle(key)
-            if render_handle:
-                logger.debug(
-                    f"Popped and released stale render handle for step {key}."
-                )
-                self._artifact_manager.release_handle(render_handle)
             self._artifact_manager.invalidate_for_step(
                 ArtifactKey.for_step(key)
             )

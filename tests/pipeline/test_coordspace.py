@@ -182,7 +182,7 @@ class TestMachineSpace:
         x, y = space.get_workarea_origin_in_machine()
 
         assert x == 10.0
-        assert y == 180.0
+        assert y == 20.0
 
     def test_get_workarea_origin_in_machine_top_right(self):
         """Workarea origin for TR origin machine should be at margins."""
@@ -196,8 +196,8 @@ class TestMachineSpace:
 
         x, y = space.get_workarea_origin_in_machine()
 
-        assert x == 170.0
-        assert y == 180.0
+        assert x == 30.0
+        assert y == 20.0
 
     def test_to_command_coords_with_wcs(self):
         """Command coords should subtract WCS offset."""
@@ -262,6 +262,31 @@ class TestMachineSpace:
 
         assert x == 100.0
         assert y == 0.0
+
+    def test_world_to_machine_matrix_identity(self):
+        """Test getting pipeline world-to-machine transform matrix."""
+        space = MachineSpace(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(100.0, 100.0),
+        )
+        matrix = space.get_world_to_machine_matrix()
+        np.testing.assert_array_almost_equal(matrix, np.identity(4))
+
+    def test_world_to_machine_matrix_reversed_y(self):
+        """Test pipeline matrix generation handling sign flips (reverse_y)."""
+        space = MachineSpace(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(100.0, 100.0),
+            reverse_y=True,
+        )
+        matrix = space.get_world_to_machine_matrix()
+        expected = np.identity(4, dtype=np.float64)
+        expected[1, 1] = -1.0
+        np.testing.assert_array_almost_equal(matrix, expected)
 
 
 class TestWorkareaSpace:

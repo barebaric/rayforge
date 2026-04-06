@@ -4,20 +4,19 @@ from blinker import Signal
 from typing import cast, TYPE_CHECKING, Dict, List
 from gettext import gettext as _
 from ...core.doc import Doc
-from ...core.sketcher.sketch import Sketch
-from ...core.stock_asset import StockAsset
+from ...core.asset import IAsset
+from ...core.asset_registry import asset_type_registry
+from ...core.stock import StockItem
 from ...core.undo import Command
 from ..shared.draglist import DragListBox
-from ..shared.expander import Expander
+from ..shared.expander import ExpanderWithButton
 from ..shared.gtk import apply_css
 from ..shared.popover_menu import PopoverMenu
-from ..icons import get_icon
 from .asset_row_factory import create_asset_row_widget
-from .asset_row_widget import StockAssetRowWidget, SketchAssetRowWidget
+from .asset_row_widget import IAssetRowWidget
 
 
 if TYPE_CHECKING:
-    from ...core.asset import IAsset
     from ...doceditor.editor import DocEditor
 
 logger = logging.getLogger(__name__)
@@ -73,19 +72,17 @@ class _ReorderAssetsCommand(Command):
         self.doc.set_asset_order(self.old_order)
 
 
-class AssetListView(Expander):
+class AssetListView(ExpanderWithButton):
     """
     A widget that displays a collapsible, reorderable list of all
     document assets (Stock, Sketches, etc.).
     """
 
-    add_stock_clicked = Signal()
-    add_sketch_clicked = Signal()
-    sketch_activated = Signal()
-    stock_activated = Signal()
+    add_asset_requested = Signal()
+    asset_activated = Signal()
 
     def __init__(self, editor: "DocEditor", **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(button_label=_("Add Asset"), **kwargs)
         apply_css(css)
         self.editor = editor
         self.doc = editor.doc
@@ -93,37 +90,13 @@ class AssetListView(Expander):
         self.set_title(_("Assets"))
         self.set_expanded(True)
 
-        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.set_child(content_box)
-
         self.draglist = DragListBox()
         self.draglist.add_css_class("asset-list-box")
         self.draglist.connect("row-activated", self.on_row_activated)
         self.draglist.reordered.connect(self.on_assets_reordered)
-        content_box.append(self.draglist)
+        self.append_content(self.draglist)
 
-        # A Gtk.Button, styled as a card, serves as our "Add" button
-        add_button = Gtk.Button()
-        add_button.add_css_class("darkbutton")
-        add_button.connect("clicked", self.on_add_button_clicked)
-        content_box.append(add_button)
-
-        # The button's content is a box with an icon and a label.
-        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        button_box.set_margin_top(10)
-        button_box.set_margin_end(12)
-        button_box.set_margin_bottom(10)
-        button_box.set_margin_start(12)
-
-        add_icon = get_icon("add-symbolic")
-        button_box.append(add_icon)
-
-        lbl = _("Add Asset")
-        add_label = Gtk.Label()
-        add_label.set_markup(f"<span weight='normal'>{lbl}</span>")
-        add_label.set_xalign(0)
-        button_box.append(add_label)
-        add_button.set_child(button_box)
+        self.add_button.connect("clicked", self.on_add_button_clicked)
 
         self._connect_signals()
         self.on_doc_changed(self.doc)
@@ -150,10 +123,12 @@ class AssetListView(Expander):
 
     def on_add_button_clicked(self, button: Gtk.Button):
         """Shows a popup to select and add a new asset type."""
-        asset_types = [
-            (_("Add Stock Material"), "stock"),
-            (_("Add Sketch"), "sketch"),
-        ]
+        asset_types = []
+        for type_name, asset_class in asset_type_registry.all_types().items():
+            if asset_class.is_addable:
+                display_name = f"Add {type_name.title()}"
+                asset_types.append((_(display_name), type_name))
+
         popup = PopoverMenu(items=asset_types)
         popup.set_parent(button)
         popup.popup()
@@ -161,10 +136,8 @@ class AssetListView(Expander):
 
     def on_add_dialog_response(self, popup: PopoverMenu):
         """Handles the creation of a new asset after the popup closes."""
-        if popup.selected_item == "stock":
-            self.add_stock_clicked.send(self)
-        elif popup.selected_item == "sketch":
-            self.add_sketch_clicked.send(self)
+        if popup.selected_item:
+            self.add_asset_requested.send(self, type_name=popup.selected_item)
 
     def on_doc_changed(self, sender, **kwargs):
         """
@@ -175,8 +148,6 @@ class AssetListView(Expander):
         # conflict with drag-drop operations.
         child = kwargs.get("child")
         if child:
-            from ...core.stock import StockItem
-
             # The UI for a StockAssetRowWidget depends on whether a
             # corresponding StockItem instance exists. Therefore, we must
             # refresh when a StockItem is added or removed. Any other
@@ -196,7 +167,7 @@ class AssetListView(Expander):
 
     def update_list(self):
         new_assets = [a for a in self.doc.get_all_assets() if not a.hidden]
-        uid_to_widget: Dict[str, Gtk.Widget] = {}
+        uid_to_widget: Dict[str, IAssetRowWidget] = {}
         child = self.draglist.get_first_child()
 
         while child:
@@ -206,9 +177,7 @@ class AssetListView(Expander):
             if isinstance(hbox, Gtk.Box):
                 # The actual asset widget is the last child of the hbox
                 widget = hbox.get_last_child()
-                if isinstance(
-                    widget, (StockAssetRowWidget, SketchAssetRowWidget)
-                ):
+                if isinstance(widget, IAssetRowWidget):
                     # Detach the widget from its parent hbox so we can reuse it
                     hbox.remove(widget)
                     uid_to_widget[widget.asset.uid] = widget
@@ -219,27 +188,22 @@ class AssetListView(Expander):
         for asset in new_assets:
             widget = uid_to_widget.get(asset.uid)
 
-            if widget:
-                if isinstance(
-                    widget, (StockAssetRowWidget, SketchAssetRowWidget)
-                ):
-                    widget.update_ui()
-            else:
+            if widget is None:
                 widget = create_asset_row_widget(asset, self.editor)
 
-            if not widget:
+            if widget is None:
                 continue
+
+            if isinstance(widget, IAssetRowWidget):
+                widget.update_ui()
+                widget.edit_clicked.connect(self.on_edit_clicked)
+                widget.delete_clicked.connect(self.on_delete_clicked)
+                widget.visibility_changed.connect(self.on_visibility_changed)
 
             new_row = Gtk.ListBoxRow()
             new_row.data = asset  # type: ignore
             new_row.set_activatable(True)
-            new_row.set_child(widget)
-
-            if isinstance(widget, SketchAssetRowWidget):
-                widget.edit_clicked.connect(self.on_edit_sketch_clicked)
-                widget.delete_clicked.connect(self.on_delete_sketch_clicked)
-            elif isinstance(widget, StockAssetRowWidget):
-                widget.delete_clicked.connect(self.on_delete_stock_clicked)
+            new_row.set_child(cast(Gtk.Widget, widget))
 
             self.draglist.add_row(new_row)
 
@@ -256,31 +220,21 @@ class AssetListView(Expander):
 
     def on_row_activated(self, listbox: Gtk.ListBox, row: Gtk.ListBoxRow):
         asset = row.data  # type: ignore
-        if isinstance(asset, Sketch):
-            self.sketch_activated.send(self, sketch=asset)
-        elif isinstance(asset, StockAsset):
-            self.stock_activated.send(self, stock_asset=asset)
+        self.asset_activated.send(self, asset=asset)
 
-    def on_edit_sketch_clicked(self, sketch_row_widget: SketchAssetRowWidget):
-        sketch = sketch_row_widget.asset
-        self.sketch_activated.send(self, sketch=sketch)
+    def on_edit_clicked(self, row_widget: IAssetRowWidget):
+        """Handles edit button click for any asset type."""
+        self.asset_activated.send(self, asset=row_widget.asset)
 
-    def on_delete_sketch_clicked(
-        self, sketch_row_widget: SketchAssetRowWidget
-    ):
-        sketch_to_delete = sketch_row_widget.asset
+    def on_delete_clicked(self, row_widget: IAssetRowWidget):
+        """Handles delete button click for any asset type."""
         logger.debug(
-            "on_delete_sketch_clicked: asset=%s, uid=%s",
-            sketch_to_delete,
-            sketch_to_delete.uid,
+            "on_delete_clicked: asset=%s, uid=%s",
+            row_widget.asset,
+            row_widget.asset.uid,
         )
-        self.editor.asset.delete_asset(sketch_to_delete)
+        self.editor.asset.delete_asset(row_widget.asset)
 
-    def on_delete_stock_clicked(self, stock_row_widget: StockAssetRowWidget):
-        asset_to_delete = stock_row_widget.asset
-        logger.debug(
-            "on_delete_stock_clicked: asset=%s, uid=%s",
-            asset_to_delete,
-            asset_to_delete.uid,
-        )
-        self.editor.asset.delete_asset(asset_to_delete)
+    def on_visibility_changed(self, row_widget: IAssetRowWidget):
+        """Handles visibility toggle for any asset type."""
+        self.editor.asset.toggle_asset_visibility(row_widget.asset)

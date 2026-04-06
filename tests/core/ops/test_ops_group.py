@@ -23,7 +23,6 @@ def _to_dict(item):
         d = item.__dict__.copy()
         # Remove state as it's not relevant for this comparison and can be None
         d.pop("state", None)
-        d.pop("_state_ref_for_pyreverse", None)
         return d
     return item
 

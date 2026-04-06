@@ -20,7 +20,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-DEFAULT_TEMPO = 1.05
+DEFAULT_TEMPO = 1.065
 
 
 def build_audio_filter_chain(tempo: float = 1.0) -> str:
@@ -441,6 +441,38 @@ def remove_silence(
     return True
 
 
+def has_video_stream(input_file: str) -> bool:
+    """Check if a file has a video stream.
+
+    Args:
+        input_file: Path to the input file.
+
+    Returns:
+        True if video stream exists, False otherwise.
+    """
+    cmd = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-select_streams",
+        "v",
+        "-show_entries",
+        "stream=codec_type",
+        "-of",
+        "csv=p=0",
+        input_file,
+    ]
+
+    result = subprocess.run(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+    return bool(result.stdout.strip())
+
+
 def process_video(
     input_path,
     output_path=None,
@@ -505,25 +537,60 @@ def process_video(
             current_input,
         ]
 
-        if tempo != 1.0:
-            video_filter = build_video_filter(tempo)
-            cmd.extend(["-vf", video_filter])
-            cmd.extend(["-c:v", "libx264", "-preset", "fast"])
-        else:
-            cmd.extend(["-c:v", "copy"])
+        is_audio_only = not has_video_stream(current_input)
 
-        cmd.extend(
-            [
-                "-c:a",
-                "aac",
-                "-b:a",
-                "192k",
-                "-af",
-                audio_filter,
-                "-y",
-                str(output_path),
-            ]
-        )
+        if is_audio_only:
+            cmd.extend(["-vn"])
+            if output_path.suffix.lower() == ".wav":
+                cmd.extend(
+                    [
+                        "-c:a",
+                        "pcm_s16le",
+                        "-ar",
+                        "44100",
+                        "-af",
+                        audio_filter,
+                        "-y",
+                        str(output_path),
+                    ]
+                )
+            else:
+                cmd.extend(
+                    [
+                        "-c:a",
+                        "aac",
+                        "-b:a",
+                        "192k",
+                        "-ar",
+                        "44100",
+                        "-af",
+                        audio_filter,
+                        "-y",
+                        str(output_path),
+                    ]
+                )
+        else:
+            if tempo != 1.0:
+                video_filter = build_video_filter(tempo)
+                cmd.extend(["-vf", video_filter])
+                cmd.extend(["-c:v", "libx264", "-preset", "fast"])
+            else:
+                cmd.extend(["-c:v", "copy"])
+
+            cmd.extend(
+                [
+                    "-c:a",
+                    "aac",
+                    "-b:a",
+                    "192k",
+                    "-ar",
+                    "44100",
+                    "-af",
+                    audio_filter,
+                    "-y",
+                    str(output_path),
+                ]
+            )
 
         speed_info = f" (tempo: {tempo}x)" if tempo != 1.0 else ""
         silence_info = " + silence removal" if remove_silence_flag else ""

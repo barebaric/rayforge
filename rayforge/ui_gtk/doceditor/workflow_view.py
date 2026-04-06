@@ -2,14 +2,13 @@ import logging
 from typing import Optional, List, Callable, cast, TYPE_CHECKING
 from gettext import gettext as _
 from gi.repository import Gtk
-from ..icons import get_icon
 from ...core.workflow import Workflow
 from ...core.undo.list_cmd import ListItemCommand, ReorderListCommand
 from ..shared.draglist import DragListBox
-from ..shared.expander import Expander
+from ..shared.expander import ExpanderWithButton
+from ..shared.popover_menu import PopoverMenu
 from .step_box import StepBox
 from .step_settings_dialog import StepSettingsDialog
-from ..shared.popover_menu import PopoverMenu
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -17,7 +16,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class WorkflowView(Expander):
+class WorkflowView(ExpanderWithButton):
     """
     A widget that displays a collapsible, reorderable list of Steps
     for a given Workflow.
@@ -30,46 +29,18 @@ class WorkflowView(Expander):
         step_factories: List[Callable],
         **kwargs,
     ):
-        super().__init__(**kwargs)
-        self.workflow: Optional[Workflow] = None  # Will be set by set_workflow
+        super().__init__(button_label=_("Add New Step..."), **kwargs)
+        self.workflow: Optional[Workflow] = None
         self.step_factories = step_factories
         self.editor = editor
         self.set_expanded(True)
 
-        # A container for all content that will be revealed by the expander
-        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.set_child(content_box)
-
-        # The reorderable list of steps goes inside the content box
         self.draglist = DragListBox()
         self.draglist.reordered.connect(self.on_workflow_reordered)
-        content_box.append(self.draglist)
+        self.append_content(self.draglist)
 
-        # A Gtk.Button, styled as a card, serves as our "Add" button
-        add_button = Gtk.Button()
-        add_button.add_css_class("darkbutton")
-        add_button.connect("clicked", self.on_button_add_clicked)
-        content_box.append(add_button)
+        self.add_button.connect("clicked", self.on_button_add_clicked)
 
-        # The button's content is a box with an icon and a label.
-        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        button_box.set_margin_top(10)
-        button_box.set_margin_end(12)
-        button_box.set_margin_bottom(10)
-        button_box.set_margin_start(12)
-
-        add_icon = get_icon("add-symbolic")
-        button_box.append(add_icon)
-
-        lbl = _("Add New Step...")
-        add_label = Gtk.Label()
-        add_label.set_markup(f"<span weight='normal'>{lbl}</span>")
-        add_label.set_xalign(0)  # Left-align the label
-        button_box.append(add_label)
-
-        add_button.set_child(button_box)
-
-        # Set initial workflow
         self.set_workflow(workflow)
 
     def set_workflow(self, workflow: Optional[Workflow]):
@@ -134,11 +105,9 @@ class WorkflowView(Expander):
             # update its summary.
             for i, row in enumerate(self.draglist):
                 row = cast(Gtk.ListBoxRow, row)
-                hbox = row.get_child()
-                assert hbox, "Failed to get hbox from draglist row"
-                stepbox = hbox.get_last_child()
+                stepbox = row.get_child()
                 if isinstance(stepbox, StepBox):
-                    stepbox.set_prefix(_("Step {seq}: ").format(seq=i + 1))
+                    stepbox.set_step_number(i + 1)
                     stepbox.on_step_changed(stepbox.step)
             return
 
@@ -150,7 +119,7 @@ class WorkflowView(Expander):
             stepbox = StepBox(
                 self.editor,
                 step,
-                prefix=_("Step {seq}: ").format(seq=seq),
+                step_number=seq,
             )
             stepbox.delete_clicked.connect(self.on_button_delete_clicked)
             row.set_child(stepbox)

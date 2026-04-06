@@ -6,6 +6,8 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 import logging
+from multiprocessing import Manager
+from multiprocessing.managers import DictProxy
 import threading
 from typing import (
     Any,
@@ -31,12 +33,15 @@ class TaskManager:
         main_thread_scheduler: Optional[Callable] = None,
         worker_initializer: Optional[Callable[..., None]] = None,
         worker_initargs: tuple = (),
+        shared_state: Optional[DictProxy[str, Any]] = None,
     ) -> None:
         logger.debug("Initializing TaskManager")
         self._tasks: Dict[Any, Task] = {}
         # A holding area for recently replaced/cancelled tasks to
         # catch in-flight messages.
         self._zombie_tasks: Dict[int, Task] = {}
+        # Invisible tasks that don't appear in UI but still need callbacks
+        self._invisible_tasks: Dict[int, Task] = {}
         self._progress_map: Dict[
             Any, float
         ] = {}  # Stores progress of all current tasks
@@ -50,11 +55,35 @@ class TaskManager:
         self._main_thread_scheduler = main_thread_scheduler or idle_add
         self._thread.start()
 
-        # Initialize the worker pool
-        self._pool = WorkerPoolManager(
-            initializer=worker_initializer, initargs=worker_initargs
-        )
+        # TaskManager owns the persistent Manager and shared state
+        self._manager = Manager()
+        if shared_state is None:
+            shared_state = self._manager.dict()
+        self._shared_state = shared_state
+
+        self._pool_kwargs = {
+            "initializer": worker_initializer,
+            "initargs": worker_initargs,
+            "shared_state": self._shared_state,
+        }
+        self._pool = WorkerPoolManager(**self._pool_kwargs)
         self._connect_pool_signals()
+
+    def restart_worker_pool(self) -> None:
+        """
+        Shuts down the current worker pool and starts a new one.
+        This is necessary to apply changes like addon installation or updates
+        to worker processes. The shared_state is preserved.
+        """
+        logger.info("Restarting worker pool to apply configuration changes...")
+        from rayforge.worker_init import invalidate_worker_addons_cache
+
+        invalidate_worker_addons_cache()
+        with self._lock:
+            self._pool.shutdown()
+            self._pool = WorkerPoolManager(**self._pool_kwargs)
+            self._connect_pool_signals()
+        logger.info("Worker pool restarted.")
 
     def _connect_pool_signals(self):
         """Connects to signals emitted by the WorkerPoolManager."""
@@ -85,7 +114,25 @@ class TaskManager:
     def _run_event_loop(self, loop: asyncio.AbstractEventLoop) -> None:
         """Run the asyncio event loop in a background thread."""
         asyncio.set_event_loop(loop)
-        loop.run_forever()
+        try:
+            loop.run_forever()
+        finally:
+            # Clean up when the thread is told to stop (during TaskManager
+            # shutdown)
+            try:
+                # 1. Cancel any lingering tasks to prevent "Task was destroyed
+                # but it is pending"
+                pending = asyncio.all_tasks(loop)
+                for t in pending:
+                    t.cancel()
+
+                # 2. Explicitly close the loop to free the self-pipe file
+                # descriptors.
+                if not loop.is_closed():
+                    loop.close()
+            except Exception as e:
+                logger.error(f"Error during event loop cleanup: {e}")
+                raise
 
     def _add_or_replace_task_unsafe(
         self,
@@ -181,10 +228,15 @@ class TaskManager:
         """
 
         async def delayed_execution():
-            await asyncio.sleep(delay_ms / 1000.0)
-            self._main_thread_scheduler(callback, *args, **kwargs)
+            try:
+                await asyncio.sleep(delay_ms / 1000.0)
+                self._main_thread_scheduler(callback, *args, **kwargs)
+            except asyncio.CancelledError:
+                pass
 
-        return asyncio.run_coroutine_threadsafe(delayed_execution(), self.loop)
+        coro = delayed_execution()
+        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
+        return future
 
     async def run_in_executor(
         self, func: Callable[..., Any], *args: Any
@@ -236,10 +288,25 @@ class TaskManager:
         key: Optional[Any] = None,
         when_done: Optional[Callable[[Task], None]] = None,
         when_event: Optional[Callable[[Task, str, dict], None]] = None,
+        visible: bool = True,
         **kwargs: Any,
     ) -> Task:
         """
         Creates, configures, and schedules a task to run in the worker pool.
+
+        Args:
+            func: The function to execute in the worker process.
+            *args: Positional arguments for the function.
+            key: Optional unique key for the task.
+            when_done: Callback invoked when task completes.
+            when_event: Callback for custom events from the worker.
+            visible: If False, the task is not tracked in the UI. Useful
+                     for child tasks of a parent operation that handles
+                     its own progress reporting.
+            **kwargs: Additional keyword arguments for the function.
+
+        Returns:
+            The Task object.
         """
         logger.debug(f"Creating task for worker pool {key}")
 
@@ -259,16 +326,21 @@ class TaskManager:
             task_type="process",
             **kwargs,
         )
+        task._visible = visible
 
         if when_event:
             task.event_received.connect(when_event, weak=False)
 
         with self._lock:
-            self._add_or_replace_task_unsafe(task)
+            if visible:
+                self._add_or_replace_task_unsafe(task)
+            else:
+                self._invisible_tasks[task.id] = task
 
         # Manually set status to running and notify
         task._status = "running"
-        task._emit_status_changed()
+        if visible:
+            task._emit_status_changed()
 
         # Submit the actual work to the pool
         self._pool.submit(task.key, task.id, func, *args, **kwargs)
@@ -299,13 +371,15 @@ class TaskManager:
                 self._pool.cancel(key, task.id)
                 if task.get_status() != "canceled":
                     task._status = "canceled"
-                    task._emit_status_changed()
+                    if task._visible:
+                        task._emit_status_changed()
 
                 # Move the task to the zombie dictionary to await final
                 # message.
                 del self._tasks[key]
                 self._zombie_tasks[task.id] = task
-                self._emit_tasks_updated_unsafe()
+                if task._visible:
+                    self._emit_tasks_updated_unsafe()
 
                 # Immediately invoke the when_done callback for cancelled
                 # pooled tasks. This ensures contexts are updated without
@@ -333,10 +407,49 @@ class TaskManager:
                     f"during shutdown when resources are being torn down."
                 )
 
+    def cancel_task_by_id(self, task_id: int) -> None:
+        """
+        Cancels a running task by its ID. Works for both visible and
+        invisible tasks.
+        """
+        with self._lock:
+            # Check invisible tasks first
+            task = self._invisible_tasks.get(task_id)
+            if task:
+                logger.debug(
+                    f"TaskManager: Cancelling invisible task "
+                    f"'{task.key}' (id: {task_id})."
+                )
+                task.cancel()
+                self._pool.cancel(task.key, task.id)
+                task._status = "canceled"
+                del self._invisible_tasks[task_id]
+                self._zombie_tasks[task_id] = task
+
+                callback = task.when_done_callback
+                if callback:
+                    task.when_done_callback = None
+                    try:
+                        callback(task)
+                    except Exception as e:
+                        logger.debug(
+                            f"when_done callback for cancelled task "
+                            f"'{task.key}' raised {type(e).__name__}: {e}"
+                        )
+
     def get_task(self, key: Any) -> Optional[Task]:
         """Retrieves a task by its key."""
         with self._lock:
             return self._tasks.get(key)
+
+    def get_shared_state(self) -> Any:
+        """
+        Return the shared state dict for worker initialization.
+
+        This provides a generic mechanism for passing data to worker
+        processes. The dict is managed by the TaskManager and persists.
+        """
+        return self._shared_state
 
     async def _run_task(
         self, task: Task, when_done: Optional[Callable[[Task], None]]
@@ -389,7 +502,13 @@ class TaskManager:
         )
 
     def _on_pool_task_event(
-        self, sender, key, task_id, event_name, data, adoption_signals
+        self,
+        sender,
+        key,
+        task_id,
+        event_name,
+        data,
+        adoption_signals: DictProxy[str, bool],
     ):
         signal_key = f"{task_id}:{event_name}"
         logger.debug(
@@ -438,6 +557,8 @@ class TaskManager:
             task = self._tasks.get(key)
             if not (task and task.id == task_id):
                 task = self._zombie_tasks.get(task_id)
+            if not task:
+                task = self._invisible_tasks.get(task_id)
 
         if task:
             task.update(progress, message)
@@ -453,7 +574,7 @@ class TaskManager:
         task_id: int,
         event_name: str,
         data: dict,
-        adoption_signals: dict,
+        adoption_signals: DictProxy[str, Any],
     ):
         """Dispatches a task event from the main thread."""
         with self._lock:
@@ -462,6 +583,9 @@ class TaskManager:
             if not (task and task.id == task_id):
                 # If not, check if it's for a recently replaced (zombie) task.
                 task = self._zombie_tasks.get(task_id)
+            if not task:
+                # Check invisible tasks
+                task = self._invisible_tasks.get(task_id)
 
         signal_key = f"{task_id}:{event_name}"
 
@@ -519,6 +643,16 @@ class TaskManager:
                     )
                     task = zombie_task
                     del self._zombie_tasks[task_id]
+                else:
+                    # Check invisible tasks
+                    invisible_task = self._invisible_tasks.get(task_id)
+                    if invisible_task:
+                        logger.debug(
+                            f"Finalizing INVISIBLE task '{key}' "
+                            f"(id: {task_id})."
+                        )
+                        task = invisible_task
+                        del self._invisible_tasks[task_id]
 
             if not task:
                 logger.debug(
@@ -542,7 +676,8 @@ class TaskManager:
                 task._task_exception = Exception(error)
 
         # Emit one final, authoritative signal for all outcomes.
-        task._emit_status_changed()
+        if task._visible:
+            task._emit_status_changed()
 
         # Call the user's callback if it was stored on the task.
         when_done = task.when_done_callback
@@ -559,7 +694,8 @@ class TaskManager:
             )
 
         with self._lock:
-            self._emit_tasks_updated_unsafe()
+            if task._visible:
+                self._emit_tasks_updated_unsafe()
 
     def _cleanup_task(self, task: Task) -> None:
         """
@@ -776,6 +912,13 @@ class TaskManagerProxy:
             if self._instance is not None:
                 raise RuntimeError("TaskManager has already been initialized.")
             self._init_kwargs = kwargs
+
+    def restart_worker_pool(self) -> None:
+        """
+        Shuts down the current worker pool and starts a new one.
+        """
+        if self._instance is not None:
+            self._instance.restart_worker_pool()
 
     def _get_instance(self) -> TaskManager:
         """

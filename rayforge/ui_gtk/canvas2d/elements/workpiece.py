@@ -112,6 +112,7 @@ class WorkPieceElement(CanvasElement):
 
         self.data.updated.connect(self._on_model_content_changed)
         self.data.transform_changed.connect(self._on_transform_changed)
+
         self.view_manager.source_artifact_ready.connect(
             self._on_source_artifact_ready
         )
@@ -559,7 +560,16 @@ class WorkPieceElement(CanvasElement):
         Args:
             ctx: The cairo context to draw on.
         """
-        if self._base_image_visible:
+        # Check if the workpiece depends on a hidden geometry provider
+        provider_hidden = False
+        if self.data.geometry_provider_uid and self.data.doc:
+            provider = self.data.doc.get_asset_by_uid(
+                self.data.geometry_provider_uid
+            )
+            if provider and getattr(provider, "hidden", False):
+                provider_hidden = True
+
+        if self._base_image_visible and not provider_hidden:
             # This handles the Y-flip for the base image and restores the
             # context, leaving it Y-UP for the next drawing operation.
             super().draw(ctx)

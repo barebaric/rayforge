@@ -25,7 +25,7 @@ You can create recipes through the main settings interface:
 
 #### 1. Access Recipe Manager
 
-Menu: Edit → Preferences → Recipes
+Menu: Edit → Settings, then select Recipes
 
 #### 2. Create New Recipe
 

@@ -14,10 +14,10 @@ from .layout import (
     BboxAlignMiddleStrategy,
     BboxAlignBottomStrategy,
     LayoutStrategy,
-    SpreadHorizontallyStrategy,
-    SpreadVerticallyStrategy,
     PixelPerfectLayoutStrategy,
     PositionAtStrategy,
+    SpreadHorizontallyStrategy,
+    SpreadVerticallyStrategy,
 )
 
 if TYPE_CHECKING:
@@ -35,16 +35,28 @@ class LayoutCmd:
         self._editor = editor
         self._task_manager = task_manager
 
-    def _execute_layout_task(
-        self, strategy: LayoutStrategy, transaction_name: str
+    def execute_layout(
+        self,
+        strategy: LayoutStrategy,
+        transaction_name: str,
+        use_async: bool = False,
     ):
         """
-        A synchronous helper that configures and launches a background layout
-        task.
+        Execute a layout strategy with undo/redo support.
 
-        The actual model mutation happens in the `when_done` callback, which is
-        guaranteed to run on the main GTK thread.
+        Configures and launches a background layout task. The actual model
+        mutation happens in the `when_done` callback, which is guaranteed
+        to run on the main GTK thread.
+
+        Args:
+            strategy: The layout strategy to execute.
+            transaction_name: Name for the undo transaction.
+            use_async: If True, use async calculation for the strategy.
         """
+        slug = transaction_name.lower().replace(" ", "-")
+        get_usage_tracker().track_page_view(
+            f"/doc/layout/{slug}", transaction_name
+        )
 
         # Define the handler that will receive error signals from the strategy.
         def on_error_reported(sender, message: str):
@@ -103,6 +115,10 @@ class LayoutCmd:
         # This simple coroutine just runs the calculation in the background
         # and returns the result.
         async def layout_coro(context):
+            if use_async:
+                return await strategy.calculate_deltas_async(
+                    context, self._task_manager
+                )
             return strategy.calculate_deltas(context)
 
         # Launch the coroutine and attach the main-thread callback.
@@ -122,7 +138,7 @@ class LayoutCmd:
         strategy = BboxAlignCenterStrategy(
             selected_items, surface_width_mm=surface_width_mm
         )
-        self._execute_layout_task(strategy, _("Center Horizontally"))
+        self.execute_layout(strategy, _("Center Horizontally"))
 
     def center_vertically(
         self, selected_items: List[DocItem], surface_height_mm: float
@@ -134,7 +150,7 @@ class LayoutCmd:
         strategy = BboxAlignMiddleStrategy(
             selected_items, surface_height_mm=surface_height_mm
         )
-        self._execute_layout_task(strategy, _("Center Vertically"))
+        self.execute_layout(strategy, _("Center Vertically"))
 
     def align_left(self, selected_items: List[DocItem]):
         """Action handler for aligning selected items to the left."""
@@ -142,7 +158,7 @@ class LayoutCmd:
             return
 
         strategy = BboxAlignLeftStrategy(selected_items)
-        self._execute_layout_task(strategy, _("Align Left"))
+        self.execute_layout(strategy, _("Align Left"))
 
     def align_right(
         self, selected_items: List[DocItem], surface_width_mm: float
@@ -154,7 +170,7 @@ class LayoutCmd:
         strategy = BboxAlignRightStrategy(
             selected_items, surface_width_mm=surface_width_mm
         )
-        self._execute_layout_task(strategy, _("Align Right"))
+        self.execute_layout(strategy, _("Align Right"))
 
     def align_top(
         self, selected_items: List[DocItem], surface_height_mm: float
@@ -166,7 +182,7 @@ class LayoutCmd:
         strategy = BboxAlignTopStrategy(
             selected_items, surface_height_mm=surface_height_mm
         )
-        self._execute_layout_task(strategy, _("Align Top"))
+        self.execute_layout(strategy, _("Align Top"))
 
     def align_bottom(self, selected_items: List[DocItem]):
         """Action handler for aligning selected items to the bottom."""
@@ -174,7 +190,7 @@ class LayoutCmd:
             return
 
         strategy = BboxAlignBottomStrategy(selected_items)
-        self._execute_layout_task(strategy, _("Align Bottom"))
+        self.execute_layout(strategy, _("Align Bottom"))
 
     def spread_horizontally(self, selected_items: List[DocItem]):
         """Action handler for spreading selected items horizontally."""
@@ -182,7 +198,7 @@ class LayoutCmd:
             return
 
         strategy = SpreadHorizontallyStrategy(selected_items)
-        self._execute_layout_task(strategy, _("Spread Horizontally"))
+        self.execute_layout(strategy, _("Spread Horizontally"))
 
     def spread_vertically(self, selected_items: List[DocItem]):
         """Action handler for spreading selected items vertically."""
@@ -190,7 +206,7 @@ class LayoutCmd:
             return
 
         strategy = SpreadVerticallyStrategy(selected_items)
-        self._execute_layout_task(strategy, _("Spread Vertically"))
+        self.execute_layout(strategy, _("Spread Vertically"))
 
     def position_at(
         self, selected_items: List[DocItem], position_mm: Tuple[float, float]
@@ -202,11 +218,27 @@ class LayoutCmd:
         strategy = PositionAtStrategy(
             items=selected_items, position_mm=position_mm
         )
-        self._execute_layout_task(strategy, _("Position at Point"))
+        self.execute_layout(strategy, _("Position at Point"))
 
     def layout_pixel_perfect(self, selected_items: List[DocItem]):
         """Action handler for the pixel-perfect packing layout."""
-        # Determine the actual items to be laid out based on selection context.
+        items_to_layout = self.get_items_to_layout(selected_items)
+
+        if not items_to_layout:
+            return
+
+        strategy = PixelPerfectLayoutStrategy(
+            items=items_to_layout,
+            margin_mm=0.5,
+            resolution_px_per_mm=8.0,
+            allow_rotation=True,
+        )
+        self.execute_layout(strategy, _("Auto Layout"))
+
+    def get_items_to_layout(
+        self, selected_items: List[DocItem]
+    ) -> List[DocItem]:
+        """Determine items to layout based on selection context."""
         if not selected_items:
             # If nothing is selected, get all top-level content items from
             # the current active layer only.
@@ -231,15 +263,4 @@ class LayoutCmd:
                 if not has_selected_ancestor:
                     items_to_layout.append(item)
 
-        if not items_to_layout:
-            return
-
-        get_usage_tracker().track_page_view("/doc/layout/auto", "Auto Layout")
-
-        strategy = PixelPerfectLayoutStrategy(
-            items=items_to_layout,
-            margin_mm=0.5,
-            resolution_px_per_mm=8.0,
-            allow_rotation=True,
-        )
-        self._execute_layout_task(strategy, _("Auto Layout"))
+        return items_to_layout

@@ -5,6 +5,187 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.4.1
+
+### Changed
+
+- PDF import now falls back to `fitz` when `pymupdf` is not installed (#186)
+- DPI setting in the SVG import dialog is now persistent between sessions
+
+## 1.4
+
+### Added
+
+- Full rotary axis support with 3D visualization
+- Support for multiple rotary modules
+- Configurable rotary mode per layer
+- Rotary icon displayed on rotary layers
+- PDF direct vector import with layer support
+- Improved five factor camera de-distortion algorithm
+- Charuco card based calibration wizard with guided setup process
+- Sketcher: ellipse tool replaces circle tool for more flexibility
+- Sketcher: many tools automatically constrain geometry during creation
+- Sketcher: magnetic snap now works while creating geometry
+- Sketcher: replaced snap to grid with smarter magnetic snap
+- Sketcher: equality constraint now works on ellipses
+- Configure frame speed in laser head settings
+- Corner dwell time setting for framing
+- Repeat count setting for framing
+- New merge lines post-processor to avoid double cutting
+- Machine profile for Acmer S1 added
+- Dialects support separate laser on command for focusing
+- Add a DPI setting to the SVG import dialog if the SVG is unitless
+
+### Changed
+
+- More compact left panel layout with add buttons moved into group headers
+- G-code viewer moved into the bottom panel
+- 3D canvas performance improvements
+- Dialects are now isolated copies (templates)
+- GRBL buffer size tracking improved
+- Texture dimension limit prevents memory exhaustion
+- Addon manager: safer threading approach
+
+### Fixed
+
+- Material test producer bugs (issues #181 and #182)
+- GRBL position reporting for machines with only X and Y axes (#179)
+- Sketcher: distance constraint shadowing the line
+- Texture renderer memory exhaustion on large images
+- Race condition in worker initialization
+
+## 1.3.2
+
+### Added
+
+- Raster step settings now display angle numerically
+
+### Fixed
+
+- Import issues on Windows
+- Unknown G-code dialects now fall back to Grbl instead of causing errors
+- Duplicate error notifications from the driver
+
+## 1.3.1
+
+### Fixed
+
+- Icon sizing issues on systems with Gtk 4.21
+- Windows and macOS build issues
+- Conflicting menu shortcuts in the sketcher
+
+## 1.3
+
+### Added
+
+- Sketcher: full support for bezier curves with intuitive handle-based editing
+- Sketcher: new unified path tool that combines lines and curves
+- Sketcher: grid tool for visual reference and alignment
+- Sketcher: toggle buttons to show/hide construction geometry and constraints
+- Sketcher: hold Shift to constrain movement to the nearest axis
+- Sketcher: endpoints connected by coincident constraint can be made smooth or symmetric
+- Sketcher: "straighten" tool to convert bezier curves to straight lines
+- Sketcher: path edit tool can now connect to existing points
+- Sketcher: conflicting constraints now shown in the panel
+- Raster operation: sample interval and power levels settings
+- G-code viewer now shows line count and byte size
+
+### Changed
+
+- Sketcher moved to an add-on (installed and enabled by default)
+- G-code now omits unchanged coordinates for more compact output
+- Removed obsolete "no-Z" G-code dialect variants
+- G-code viewer always shows at least the first 20,000 lines
+- Sketcher: hide gray background area for cleaner editing
+- AI workpiece generator now creates sketches when geometry can be mapped
+
+### Fixed
+
+- Most icons not displayed on systems with Gtk 4.21 or higher
+- Fillet and chamfer tools not working correctly
+- Texture encoder drawing spaced dots instead of lines in some cases
+- G1 emitted without coordinates when all coordinates unchanged
+- Loading project files with unknown assets
+
+## 1.2.1
+
+### Added
+
+- Buttons to move to center, bottom/left and top/right of workpiece
+- Support for setting a "tab power"
+- Sketcher: allow entering dimensions while adding geometry
+
+### Changed
+
+- Better button layout in the control panel
+- Sketcher: circle now uses diameter constraint consistently, not sometimes radius
+- Laser dot now always drawn on top, not obscured by workpieces
+
+### Fixed
+
+- Builtin addon yaml files not included in .snap
+- Imprecise tab location while dragging the tab handle
+- Tabs not working on beziers
+
+## 1.2
+
+### Added
+
+- AI workpiece generation
+- Camera image enhancement with temporal noise reduction (thanks
+  to MausRundung)
+- Fisheye lens distortion correction with radial and tangential parameters
+  (thanks to MausRundung)
+- Zoom, pan and keyboard navigation in camera alignment dialog
+  (thanks to MausRundung)
+- Complete addon system rewrite and refactoring
+- Tons of new materials in core materials addon
+- Sketcher: live preview for line tool
+- Sketcher: show dimensions while adding geometry
+- Sketcher: snap-to-grid on Ctrl press
+- Sketcher: highlight hovered entities and constraints
+- Sketcher: toolbar shows currently available shortcuts
+- Sketcher: Shift+Double click selects connected geometry
+- Sketcher: allow arc radius changes while adding second arc endpoint
+- Path optimizer now also optimizes inter-workpiece travel
+- Mach4 G-code dialect
+- Post-processor: crop-to-stock
+- Click canvas to set zero feature
+- Support for configuring cut/raster colors per laser
+- Support for duplicating stock and non-rectangular stock
+- Convert workpiece to stock (right-click menu)
+- RAYFORGE_DISABLE_3D environment variable
+- Machine profile for OMTech K40+
+- Navigation and zoom icons for UI controls
+
+### Changed
+
+- Stock is now a document-level concept - no more stock per layer
+- Improved camera selection dialog (left/right indicators, keyboard support)
+- Imported items and stock now aligned with WCS origin by default
+- Stock placed at WCS origin by default
+- Sketcher: preserve selection when creating lines, arcs, or circles
+- Sketcher symmetry constraint click order now aligns with FreeCAD
+- Maximum laser G-code power increased to 100.000
+- Addon terminology changed from "plugin" to "addon"
+- Context now lazy loads most services for better performance
+
+### Fixed
+
+- Undoing text box left entries in history manager stack
+- Y axis drawn on wrong side of canvas
+- Auto layout for rotated stock
+- SVG exporter stacking multiple workpieces on top of each other
+- Text color in Sketcher while editing
+- When opening project file referencing non-existent laser, assign default laser
+- Text box rotates while typing on Windows
+- Addon handling issues on Windows
+
+### macOS Specific
+
+- Narrow macOS app menu window to MainWindow - pgilfernandez
+- macOS app menu actions fix - pgilfernandez
+
 ## 1.1.2
 
 ### Fixed

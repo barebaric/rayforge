@@ -1,4 +1,4 @@
-from gi.repository import Gtk, Adw, Gdk
+from gi.repository import Gdk, Gsk, Graphene, Gtk
 from typing import Optional
 from gettext import gettext as _
 from ...machine.driver.driver import Axis
@@ -6,156 +6,179 @@ from ...machine.models.machine import JogDirection, Machine
 from ...machine.cmd import MachineCmd
 from ..icons import get_icon
 
+_GAP = 12
+_SPACING = 6
 
-class JogWidget(Adw.PreferencesGroup):
+
+class JogWidget(Gtk.Widget):
     """Widget for manually jogging the machine."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        self._jog_grid = Gtk.Grid()
+        self._jog_grid.set_parent(self)
+        self._jog_grid.set_row_spacing(_SPACING)
+        self._jog_grid.set_column_spacing(_SPACING)
+        self._jog_grid.set_row_homogeneous(True)
+        self._jog_grid.set_column_homogeneous(True)
+
+        self._action_grid = Gtk.Grid()
+        self._action_grid.set_parent(self)
+        self._action_grid.set_row_spacing(_SPACING)
+        self._action_grid.set_row_homogeneous(True)
+
         self.machine: Optional[Machine] = None
         self.machine_cmd: Optional[MachineCmd] = None
-        self.jog_speed = 1000  # Default jog speed in mm/min
-        self.jog_distance = 10.0  # Default jog distance in mm
+        self.jog_speed = 1000
+        self.jog_distance = 10.0
+        self._buttons = []
 
-        # Make the widget focusable to receive key events
         self.set_focusable(True)
 
-        # Create grid for jog buttons
-        jog_grid = Gtk.Grid()
-        jog_grid.set_row_spacing(6)
-        jog_grid.set_column_spacing(6)
-        jog_grid.set_halign(Gtk.Align.CENTER)
-        self.add(jog_grid)
-
-        # Create icon for buttons
-        def create_icon_button(icon_name, tooltip):
+        def create_button(icon_name, tooltip):
             button = Gtk.Button()
             button.set_size_request(60, 60)
             button.set_tooltip_text(tooltip)
             icon = get_icon(icon_name)
             button.set_child(icon)
+            button.set_hexpand(True)
+            button.set_vexpand(True)
+            self._buttons.append(button)
             return button
 
-        # Home X button (left column)
-        self.home_x_btn = Gtk.Button()
-        self.home_x_btn.set_size_request(60, 60)
-        self.home_x_btn.set_tooltip_text(_("Home X"))
-        self.home_x_btn.set_margin_end(12)
-        home_x_icon = get_icon("home-x-symbolic")
-        self.home_x_btn.set_child(home_x_icon)
-        self.home_x_btn.connect("clicked", self._on_home_x_clicked)
-        jog_grid.attach(self.home_x_btn, 0, 0, 1, 1)
-
-        # Top-left diagonal button
-        self.north_west_btn = create_icon_button(
+        # Row 0: NW - N - NE
+        self.north_west_btn = create_button(
             "arrow-north-west-symbolic", _("Move North-West")
         )
         self.north_west_btn.connect("clicked", self._on_x_minus_y_plus_clicked)
-        jog_grid.attach(self.north_west_btn, 1, 0, 1, 1)
+        self._jog_grid.attach(self.north_west_btn, 0, 0, 1, 1)
 
-        # Away/North button
-        self.north_btn = create_icon_button(
-            "arrow-north-symbolic", _("Move North")
-        )
+        self.north_btn = create_button("arrow-north-symbolic", _("Move North"))
         self.north_btn.connect("clicked", self._on_y_plus_clicked)
-        jog_grid.attach(self.north_btn, 2, 0, 1, 1)
+        self._jog_grid.attach(self.north_btn, 1, 0, 1, 1)
 
-        # Top-right diagonal button
-        self.north_east_btn = create_icon_button(
+        self.north_east_btn = create_button(
             "arrow-north-east-symbolic", _("Move North-East")
         )
         self.north_east_btn.connect("clicked", self._on_x_plus_y_plus_clicked)
-        jog_grid.attach(self.north_east_btn, 3, 0, 1, 1)
+        self._jog_grid.attach(self.north_east_btn, 2, 0, 1, 1)
 
-        # Home Y button (left column)
-        self.home_y_btn = Gtk.Button()
-        self.home_y_btn.set_size_request(60, 60)
-        self.home_y_btn.set_tooltip_text(_("Home Y"))
-        self.home_y_btn.set_margin_end(12)
-        home_y_icon = get_icon("home-y-symbolic")
-        self.home_y_btn.set_child(home_y_icon)
-        self.home_y_btn.connect("clicked", self._on_home_y_clicked)
-        jog_grid.attach(self.home_y_btn, 0, 1, 1, 1)
-
-        # Left/West button
-        self.west_btn = create_icon_button(
+        # Row 1: W - Home - E
+        self.west_btn = create_button(
             "arrow-west-symbolic", _("Move West (Left)")
         )
         self.west_btn.connect("clicked", self._on_x_minus_clicked)
-        jog_grid.attach(self.west_btn, 1, 1, 1, 1)
+        self._jog_grid.attach(self.west_btn, 0, 1, 1, 1)
 
-        # Home All button in center
-        self.home_all_btn = Gtk.Button()
-        self.home_all_btn.set_size_request(60, 60)
-        self.home_all_btn.set_tooltip_text(_("Home All"))
-        home_icon = get_icon("home-symbolic")
-        self.home_all_btn.set_child(home_icon)
-        self.home_all_btn.add_css_class("suggested-action")
+        self.home_all_btn = create_button("home-symbolic", _("Home All"))
         self.home_all_btn.connect("clicked", self._on_home_all_clicked)
-        jog_grid.attach(self.home_all_btn, 2, 1, 1, 1)
+        self._jog_grid.attach(self.home_all_btn, 1, 1, 1, 1)
 
-        # Right/East button
-        self.east_btn = create_icon_button(
+        self.east_btn = create_button(
             "arrow-east-symbolic", _("Move East (Right)")
         )
         self.east_btn.connect("clicked", self._on_x_plus_clicked)
-        jog_grid.attach(self.east_btn, 3, 1, 1, 1)
+        self._jog_grid.attach(self.east_btn, 2, 1, 1, 1)
 
-        # Home Z button (left column)
-        self.home_z_btn = Gtk.Button()
-        self.home_z_btn.set_size_request(60, 60)
-        self.home_z_btn.set_tooltip_text(_("Home Z"))
-        self.home_z_btn.set_margin_end(12)
-        home_z_icon = get_icon("home-z-symbolic")
-        self.home_z_btn.set_child(home_z_icon)
-        self.home_z_btn.connect("clicked", self._on_home_z_clicked)
-        jog_grid.attach(self.home_z_btn, 0, 2, 1, 1)
-
-        # Bottom-left diagonal button
-        self.south_west_btn = create_icon_button(
+        # Row 2: SW - S - SE
+        self.south_west_btn = create_button(
             "arrow-south-west-symbolic", _("Move South-West")
         )
         self.south_west_btn.connect(
             "clicked", self._on_x_minus_y_minus_clicked
         )
-        jog_grid.attach(self.south_west_btn, 1, 2, 1, 1)
+        self._jog_grid.attach(self.south_west_btn, 0, 2, 1, 1)
 
-        # Toward/South button
-        self.south_btn = create_icon_button(
-            "arrow-south-symbolic", _("Move South")
-        )
+        self.south_btn = create_button("arrow-south-symbolic", _("Move South"))
         self.south_btn.connect("clicked", self._on_y_minus_clicked)
-        jog_grid.attach(self.south_btn, 2, 2, 1, 1)
+        self._jog_grid.attach(self.south_btn, 1, 2, 1, 1)
 
-        # Bottom-right diagonal button
-        self.south_east_btn = create_icon_button(
+        self.south_east_btn = create_button(
             "arrow-south-east-symbolic", _("Move South-East")
         )
         self.south_east_btn.connect("clicked", self._on_x_plus_y_minus_clicked)
-        jog_grid.attach(self.south_east_btn, 3, 2, 1, 1)
+        self._jog_grid.attach(self.south_east_btn, 2, 2, 1, 1)
 
-        # Z buttons to the right
-        self.z_plus_btn = create_icon_button(
+        # Row 3: home x - home y - home z
+        self.home_x_btn = create_button("home-x-symbolic", _("Home X"))
+        self.home_x_btn.connect("clicked", self._on_home_x_clicked)
+        self._jog_grid.attach(self.home_x_btn, 0, 3, 1, 1)
+
+        self.home_y_btn = create_button("home-y-symbolic", _("Home Y"))
+        self.home_y_btn.connect("clicked", self._on_home_y_clicked)
+        self._jog_grid.attach(self.home_y_btn, 1, 3, 1, 1)
+
+        self.home_z_btn = create_button("home-z-symbolic", _("Home Z"))
+        self.home_z_btn.connect("clicked", self._on_home_z_clicked)
+        self._jog_grid.attach(self.home_z_btn, 2, 3, 1, 1)
+
+        # Action column (separate grid for extra gap)
+        self.send_btn = create_button("send-symbolic", _("Send to machine"))
+        self.send_btn.add_css_class("suggested-action")
+        self.send_btn.connect("clicked", self._on_send_clicked)
+        self._action_grid.attach(self.send_btn, 0, 0, 1, 1)
+
+        self.z_plus_btn = create_button(
             "arrow-z-up-symbolic", _("Increase Z-Distance")
         )
-        self.z_plus_btn.set_size_request(60, 60)
         self.z_plus_btn.connect("clicked", self._on_z_plus_clicked)
-        jog_grid.attach(self.z_plus_btn, 5, 0, 1, 1)
+        self._action_grid.attach(self.z_plus_btn, 0, 1, 1, 1)
 
-        self.z_minus_btn = create_icon_button(
+        self.z_minus_btn = create_button(
             "arrow-z-down-symbolic", _("Decrease Z-Distance")
         )
-        self.z_minus_btn.set_size_request(60, 60)
         self.z_minus_btn.connect("clicked", self._on_z_minus_clicked)
-        jog_grid.attach(self.z_minus_btn, 5, 2, 1, 1)
+        self._action_grid.attach(self.z_minus_btn, 0, 2, 1, 1)
 
-        # Add key controller for cursor key support
+        self.cancel_btn = create_button(
+            "stop-symbolic", _("Cancel running job")
+        )
+        self.cancel_btn.add_css_class("destructive-action")
+        self.cancel_btn.connect("clicked", self._on_cancel_clicked)
+        self._action_grid.attach(self.cancel_btn, 0, 3, 1, 1)
+
         key_controller = Gtk.EventControllerKey()
         key_controller.connect("key-pressed", self._on_key_pressed)
         self.add_controller(key_controller)
 
-        # Set initial sensitivity
         self._update_button_sensitivity()
+
+    @staticmethod
+    def _calc_grid_widths(height):
+        cell_h = (height - 3 * _SPACING) / 4
+        jog_w = 3 * cell_h + 2 * _SPACING
+        act_w = cell_h
+        return jog_w, act_w
+
+    def do_get_request_mode(self):
+        return Gtk.SizeRequestMode.WIDTH_FOR_HEIGHT
+
+    def do_measure(self, orientation, for_size):
+        if orientation == Gtk.Orientation.HORIZONTAL and for_size > 0:
+            jog_w, act_w = self._calc_grid_widths(for_size)
+            total = int(jog_w) + _GAP + int(act_w)
+            return (total, total, -1, -1)
+        return self._jog_grid.measure(orientation, for_size)
+
+    def do_size_allocate(self, width, height, baseline):
+        jog_w, act_w = self._calc_grid_widths(height)
+
+        total_needed = jog_w + _GAP + act_w
+        if width > total_needed:
+            extra = width - total_needed
+            jog_w += extra * 3 / 4
+            act_w += extra / 4
+
+        jog_w = int(jog_w)
+        act_w = int(act_w)
+
+        self._jog_grid.allocate(jog_w, height, baseline, None)
+
+        transform = Gsk.Transform().translate(
+            Graphene.Point().init(jog_w + _GAP, 0)
+        )
+        self._action_grid.allocate(act_w, height, baseline, transform)
 
     def set_machine(
         self, machine: Optional[Machine], machine_cmd: Optional[MachineCmd]
@@ -200,6 +223,8 @@ class JogWidget(Adw.PreferencesGroup):
         self.home_y_btn.set_sensitive(False)
         self.home_z_btn.set_sensitive(False)
         self.home_all_btn.set_sensitive(False)
+        self.send_btn.set_sensitive(False)
+        self.cancel_btn.set_sensitive(False)
 
         # Only enable buttons if machine exists, is connected
         if self.machine is None or not self.machine.is_connected():
@@ -236,6 +261,10 @@ class JogWidget(Adw.PreferencesGroup):
             machine.can_home(Axis.Z) and single_axis_homing
         )
         self.home_all_btn.set_sensitive(True)
+
+        # Send and Cancel buttons - always enabled when connected
+        self.send_btn.set_sensitive(True)
+        self.cancel_btn.set_sensitive(True)
 
         # Hide home buttons if single axis homing is not supported
         home_visible = single_axis_homing
@@ -449,6 +478,16 @@ class JogWidget(Adw.PreferencesGroup):
         """Handle Home Z button click."""
         if self.machine and self.machine_cmd:
             self.machine_cmd.home(self.machine, Axis.Z)
+
+    def _on_send_clicked(self, button):
+        """Handle Send button click."""
+        if self.machine and self.machine_cmd:
+            self.machine_cmd.run_send_job(self.machine)
+
+    def _on_cancel_clicked(self, button):
+        """Handle Cancel button click."""
+        if self.machine and self.machine_cmd:
+            self.machine_cmd.cancel_job(self.machine)
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
         """Handle key press events for cursor key jogging."""

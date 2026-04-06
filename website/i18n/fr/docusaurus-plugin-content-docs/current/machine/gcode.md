@@ -10,40 +10,28 @@ Sélectionnez le dialecte G-code qui correspond au firmware de votre contrôleur
 
 ### Dialectes Disponibles
 
-- **GRBL** : Le plus courant pour les découpeuses laser de loisir. Utilise M3/M5 pour le contrôle laser.
+- **Grbl (Compat)** : Dialecte GRBL standard pour les découpeuses laser de loisir. Utilise M3/M5 pour le contrôle laser.
+- **Grbl (Compat, no Z axis)** : Identique à Grbl (Compat) mais sans commandes d'axe Z. Pour machines 2D uniquement.
+- **GRBL Dynamic** : Utilise le mode de puissance laser dynamique de GRBL pour la gravure à puissance variable.
+- **GRBL Dynamic (no Z axis)** : Mode dynamique sans commandes d'axe Z.
 - **Smoothieware** : Pour Smoothieboard et contrôleurs similaires.
 - **Marlin** : Pour contrôleurs basés sur Marlin.
-- **GRBL-compatible** : Pour les contrôleurs qui suivent majoritairement la syntaxe GRBL.
 
 :::info
 Le dialecte affecte la façon dont la puissance laser, les mouvements et autres commandes sont formatés dans le G-code de sortie.
 :::
 
-## G-code Personnalisé
+## Préambule et Postscript du Dialecte
 
-Vous pouvez personnaliser le G-code que Rayforge génère à des points spécifiques du travail.
+Chaque dialecte inclut un préambule et un postscript G-code personnalisables qui s'exécutent au début et à la fin des travaux.
 
-### Début de Programme
+### Préambule
 
-Commandes G-code exécutées au début de chaque travail, avant toute opération de coupe.
+Commandes G-code exécutées au début de chaque travail, avant toute opération de coupe. Les utilisations courantes incluent la définition des unités (G21 pour mm), le mode de positionnement (G90 pour absolu) et l'initialisation de l'état de la machine.
 
-Utilisations courantes :
-- Définir les unités (G21 pour mm)
-- Définir le mode de positionnement (G90 pour absolu)
-- Initialiser l'état de la machine
+### Postscript
 
-### Fin de Programme
-
-Commandes G-code exécutées à la fin de chaque travail, après toutes les opérations de coupe.
-
-Utilisations courantes :
-- Éteindre le laser (M5)
-- Retourner à l'origine (G0 X0 Y0)
-- Parquer la tête
-
-### Changement d'Outil
-
-Commandes G-code exécutées lors du basculement entre têtes laser (pour machines multi-lasers).
+Commandes G-code exécutées à la fin de chaque travail, après toutes les opérations de coupe. Les utilisations courantes incluent l'extinction du laser (M5), le retour à l'origine (G0 X0 Y0) et le stationnement de la tête.
 
 ## Voir Aussi
 

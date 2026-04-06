@@ -1,6 +1,6 @@
 import math
 import logging
-from typing import Tuple, Optional, TYPE_CHECKING, TypeVar, List, Dict
+from typing import Optional, TYPE_CHECKING, TypeVar, List, Dict, TypedDict
 import numpy as np
 import pyclipper
 from .constants import (
@@ -19,10 +19,22 @@ from .constants import (
     COL_C2X,
     COL_C2Y,
 )
+from .contours import ContourData
 from .linearize import linearize_arc
+from .types import IntPolygon, Point, Polygon, Rect
 
 if TYPE_CHECKING:
     from .geometry import Geometry
+
+
+class _ContourItem(TypedDict):
+    geo: "Geometry"
+    verts: List[Point]
+    path: IntPolygon
+    rect: Rect
+    area: float
+    id: int
+
 
 # Define a TypeVar to make the function generic over Geometry and its
 # subclasses.
@@ -34,8 +46,8 @@ CLIPPER_SCALE = int(1e7)
 
 
 def _prepare_contour_items(
-    contour_data: List[Dict], scale: int = CLIPPER_SCALE
-) -> List[Dict]:
+    contour_data: List[ContourData], scale: int = CLIPPER_SCALE
+) -> List[_ContourItem]:
     """
     Prepares contour data items for hierarchy analysis.
 
@@ -46,7 +58,7 @@ def _prepare_contour_items(
     Returns:
         List of dicts with 'geo', 'verts', 'path', 'rect', 'area', 'id'.
     """
-    items = []
+    items: List[_ContourItem] = []
 
     for data in contour_data:
         if not data["is_closed"]:
@@ -89,7 +101,7 @@ def _prepare_contour_items(
 
 
 def _build_containment_hierarchy(
-    items: List[Dict],
+    items: List[_ContourItem],
     check_intersection_fn,
     is_point_in_polygon_fn,
 ) -> List[int]:
@@ -201,11 +213,11 @@ def _group_solids_and_holes(
 
 
 def _offset_contour_group(
-    solid_path: List[Tuple[int, int]],
-    hole_paths: List[List[Tuple[int, int]]],
+    solid_path: IntPolygon,
+    hole_paths: List[IntPolygon],
     offset: float,
     scale: int = CLIPPER_SCALE,
-) -> List[List[Tuple[float, float]]]:
+) -> List[Polygon]:
     """
     Offsets a solid with its holes using pyclipper.
 
@@ -218,22 +230,22 @@ def _offset_contour_group(
     Returns:
         List of offset contours as float coordinate tuples.
     """
-    if not pyclipper.Orientation(solid_path):  # type: ignore
+    if not pyclipper.Orientation(solid_path):
         solid_path = list(reversed(solid_path))
 
     paths_to_offset = [solid_path]
 
     for hole_path in hole_paths:
-        if pyclipper.Orientation(hole_path):  # type: ignore
+        if pyclipper.Orientation(hole_path):
             hole_path = list(reversed(hole_path))
         paths_to_offset.append(hole_path)
 
     try:
-        pco = pyclipper.PyclipperOffset()  # type: ignore
+        pco = pyclipper.PyclipperOffset()
         pco.AddPaths(
             paths_to_offset,
-            pyclipper.JT_MITER,  # type: ignore
-            pyclipper.ET_CLOSEDPOLYGON,  # type: ignore
+            pyclipper.JT_MITER,
+            pyclipper.ET_CLOSEDPOLYGON,
         )
         solution = pco.Execute(offset * scale)
     except Exception as e:
@@ -320,9 +332,9 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
 
 def map_geometry_to_frame(
     geometry: T_Geometry,
-    origin: Tuple[float, float],
-    p_width: Tuple[float, float],
-    p_height: Tuple[float, float],
+    origin: Point,
+    p_width: Point,
+    p_height: Point,
     anchor_y: Optional[float] = None,
     stable_src_height: Optional[float] = None,
 ) -> T_Geometry:

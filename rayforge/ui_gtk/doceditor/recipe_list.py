@@ -49,7 +49,7 @@ class RecipeRow(Gtk.Box):
         suffix_box = Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)
         self.append(suffix_box)
 
-        edit_button = Gtk.Button(child=get_icon("document-edit-symbolic"))
+        edit_button = Gtk.Button(child=get_icon("edit-symbolic"))
         edit_button.add_css_class("flat")
         edit_button.connect("clicked", lambda w: on_edit(recipe))
         suffix_box.append(edit_button)
@@ -132,7 +132,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
         )
         dialog = AddEditRecipeDialog(parent=parent_window)
 
-        def on_response(d, response_id: str):
+        def on_response(d, *, response_id: str):
             if response_id == "add":
                 data = d.get_recipe_data()
                 if data["name"]:
@@ -151,7 +151,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
                     self.recipes_changed.send(self)
             d.close()
 
-        dialog.connect("response", on_response)
+        dialog.response.connect(on_response, weak=False)
         dialog.present()
 
     def _on_edit_recipe(self, recipe: Recipe):
@@ -161,7 +161,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
         )
         dialog = AddEditRecipeDialog(parent=parent_window, recipe=recipe)
 
-        def on_response(d, response_id: str):
+        def on_response(d, *, response_id: str):
             if response_id == "save":
                 data = d.get_recipe_data()
                 if data["name"]:
@@ -180,7 +180,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
                     self.recipes_changed.send(self)
             d.close()
 
-        dialog.connect("response", on_response)
+        dialog.response.connect(on_response, weak=False)
         dialog.present()
 
     def _on_delete_recipe(self, recipe: Recipe):

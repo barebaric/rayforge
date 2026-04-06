@@ -1,6 +1,7 @@
 from gi.repository import Gio, Gtk, GLib
 from typing import List
 from gettext import gettext as _
+from .action_registry import action_registry
 from ..machine.models.macro import Macro
 
 
@@ -12,6 +13,9 @@ class MainMenu(Gio.Menu):
 
     def __init__(self):
         super().__init__()
+
+        # Store references to menus that can have addon items
+        self._addon_sections = {}
 
         # File Menu
         file_menu = Gio.Menu()
@@ -71,34 +75,25 @@ class MainMenu(Gio.Menu):
         # View Menu
         view_menu = Gio.Menu()
         visibility_group = Gio.Menu()
-        visibility_group.append(_("Show Workpieces"), "win.show_workpieces")
-        visibility_group.append(_("Show Tabs"), "win.show_tabs")
         visibility_group.append(
-            _("Show Camera Image"), "win.toggle_camera_view"
+            _("Show Right Panel"), "win.toggle_right_panel"
         )
         visibility_group.append(
-            _("Show Travel Moves"), "win.toggle_travel_view"
-        )
-        visibility_group.append(
-            _("Show G-code Preview"), "win.toggle_gcode_preview"
-        )
-        visibility_group.append(
-            _("Show Control Panel"), "win.toggle_control_panel"
+            _("Show Bottom Panel"), "win.toggle_bottom_panel"
         )
         view_menu.append_section(None, visibility_group)
 
-        # Simulation toggle
-        simulation_group = Gio.Menu()
-        simulation_group.append(_("Simulate Execution"), "win.simulate_mode")
-        view_menu.append_section(None, simulation_group)
-
-        view_3d_group = Gio.Menu()
-        view_3d_group.append(_("3D View"), "win.show_3d_view")
-        view_menu.append_section(None, view_3d_group)
+        view_group = Gio.Menu()
+        view_group.append(_("Simulator"), "win.simulate_mode")
+        view_group.append(_("3D View"), "win.show_3d_view")
+        view_menu.append_section(None, view_group)
 
         view_3d_commands = Gio.Menu()
         view_3d_commands.append(_("Top View"), "win.view_top")
         view_3d_commands.append(_("Front View"), "win.view_front")
+        view_3d_commands.append(_("Right View"), "win.view_right")
+        view_3d_commands.append(_("Left View"), "win.view_left")
+        view_3d_commands.append(_("Back View"), "win.view_back")
         view_3d_commands.append(_("Isometric View"), "win.view_iso")
         view_3d_commands.append(
             _("Toggle Perspective"), "win.view_toggle_perspective"
@@ -112,14 +107,14 @@ class MainMenu(Gio.Menu):
         stock_group.append(_("Add Stock"), "win.add_stock")
         object_menu.append_section(None, stock_group)
 
-        sketch_group = Gio.Menu()
-        sketch_group.append(_("New Sketch"), "win.new_sketch")
-        sketch_group.append(_("Export Object..."), "win.export_object")
-        object_menu.append_section(None, sketch_group)
-
         other_group = Gio.Menu()
         other_group.append(_("Split"), "win.split")
+        other_group.append(_("Export Object..."), "win.export-object")
         object_menu.append_section(None, other_group)
+
+        # Addon section for Object menu
+        self._addon_sections["object"] = Gio.Menu()
+        object_menu.append_section(None, self._addon_sections["object"])
 
         tab_submenu = Gio.Menu()
         tab_submenu.append(
@@ -164,16 +159,18 @@ class MainMenu(Gio.Menu):
         flip_submenu.append(_("Flip Vertical"), "win.flip-vertical")
         arrange_menu.append_submenu(_("Flip"), flip_submenu)
 
-        layout_group = Gio.Menu()
-        layout_group.append(_("Auto Layout"), "win.layout-pixel-perfect")
-        arrange_menu.append_section(None, layout_group)
+        self._layout_group = Gio.Menu()
+        arrange_menu.append_section(None, self._layout_group)
+
         self.append_submenu(_("Arrange"), arrange_menu)
 
         # Tools Menu
         tools_menu = Gio.Menu()
-        tools_group = Gio.Menu()
-        tools_group.append(_("Create Material Test Grid"), "win.material_test")
-        tools_menu.append_section(None, tools_group)
+
+        # Addon section for Tools menu
+        self._addon_sections["tools"] = Gio.Menu()
+        tools_menu.append_section(None, self._addon_sections["tools"])
+
         self.append_submenu(_("_Tools"), tools_menu)
 
         # Machine Menu
@@ -202,6 +199,11 @@ class MainMenu(Gio.Menu):
             _("Machine Settings"), "win.machine-settings"
         )
         machine_menu.append_section(None, machine_settings_group)
+
+        # Addon section for Machine menu
+        self._addon_sections["machine"] = Gio.Menu()
+        machine_menu.append_section(None, self._addon_sections["machine"])
+
         self.append_submenu(_("_Machine"), machine_menu)
 
         # Help Menu
@@ -210,6 +212,40 @@ class MainMenu(Gio.Menu):
         help_menu.append(_("Donate"), "win.donate")
         help_menu.append(_("Save Debug Log"), "win.save_debug_log")
         self.append_submenu(_("_Help"), help_menu)
+
+        # Populate addon menu items
+        self._populate_addon_items()
+        self._populate_layout_group()
+
+        # Connect to action registry changes
+        action_registry.changed.connect(self._on_action_registry_changed)
+
+    def _on_action_registry_changed(self, sender):
+        """Handle action registry changes by refreshing addon items."""
+        self._populate_addon_items()
+        self._populate_layout_group()
+
+    def _populate_layout_group(self):
+        """Populate layout strategies in the Arrange menu."""
+        self._layout_group.remove_all()
+        items = action_registry.get_menu_items("arrange")
+        for info in items:
+            if info.label:
+                self._layout_group.append(
+                    info.label, f"win.{info.action_name}"
+                )
+
+    def _populate_addon_items(self):
+        """Populate addon menu items from the action registry."""
+        for menu_id, section in self._addon_sections.items():
+            section.remove_all()
+            items = action_registry.get_menu_items(menu_id)
+            for info in items:
+                if info.label:
+                    menu_item = Gio.MenuItem.new(
+                        info.label, f"win.{info.action_name}"
+                    )
+                    section.append_item(menu_item)
 
     def update_macros_menu(self, macros: List[Macro]):
         """Clears and rebuilds the dynamic macro execution menu items."""

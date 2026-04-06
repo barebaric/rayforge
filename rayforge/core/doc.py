@@ -1,19 +1,27 @@
 import logging
-from typing import List, Optional, TypeVar, Iterable, Dict, TYPE_CHECKING, cast
+from typing import (
+    List,
+    Optional,
+    Set,
+    TypeVar,
+    Iterable,
+    Dict,
+    TYPE_CHECKING,
+    cast,
+)
 from gettext import gettext as _
 from blinker import Signal
 from ..core.undo import HistoryManager
-from .asset import IAsset
+from ..pipeline.producer.registry import producer_registry
+from .asset import IAsset, UnknownAsset
 from .item import DocItem
 from .layer import Layer
 from .source_asset import SourceAsset
 from .workpiece import WorkPiece
 
 if TYPE_CHECKING:
-    from .sketcher.sketch import Sketch
     from .stock import StockItem
     from .stock_asset import StockAsset
-
 
 logger = logging.getLogger(__name__)
 
@@ -49,26 +57,24 @@ class Doc(DocItem):
         """Deserializes the document from a dictionary."""
         from .stock import StockItem
         from .stock_asset import StockAsset
-        from .sketcher.sketch import Sketch
+        from .source_asset import SourceAsset
         from .geo import Geometry
         from .matrix import Matrix
-        from .source_asset import SourceAsset
+        from .asset_registry import asset_type_registry
 
         # --- Polymorphic Deserialization Factories ---
-        asset_class_map = {
-            "stock": StockAsset,
-            "sketch": Sketch,
-            "source": SourceAsset,
-        }
         item_class_map = {"layer": Layer, "stockitem": StockItem}
 
         def _deserialize_asset(asset_data: Dict) -> IAsset:
             asset_type = asset_data.get("type")
-            asset_class = None
-            if asset_type:
-                asset_class = asset_class_map.get(asset_type)
+            if not asset_type:
+                raise TypeError("Asset data missing 'type' field")
+            asset_class = asset_type_registry.get(asset_type)
             if not asset_class:
-                raise TypeError(f"Unknown asset type '{asset_type}'")
+                logger.warning(
+                    f"Unknown asset type '{asset_type}', creating UnknownAsset"
+                )
+                return UnknownAsset.from_dict(asset_data)
             return asset_class.from_dict(asset_data)
 
         def _deserialize_item(item_data: Dict) -> DocItem:
@@ -97,7 +103,9 @@ class Doc(DocItem):
             doc.add_asset(StockAsset.from_dict(sa_data))
         sketches_data = data.get("sketches", {})
         for uid, s_data in sketches_data.items():
-            doc.add_asset(Sketch.from_dict(s_data))
+            sketch_cls = asset_type_registry.get("sketch")
+            if sketch_cls:
+                doc.add_asset(sketch_cls.from_dict(s_data))
         source_assets_data = data.get("source_assets", {})
         for uid, src_data in source_assets_data.items():
             doc.add_asset(SourceAsset.from_dict(src_data))
@@ -219,6 +227,22 @@ class Doc(DocItem):
             self.assets[uid] for uid in self.asset_order if uid in self.assets
         ]
 
+    def get_assets_by_type(self, type_name: str) -> Dict[str, IAsset]:
+        """
+        Returns a dictionary of all assets of a specific type.
+
+        Args:
+            type_name: The asset type name (e.g., "sketch", "stock", "source")
+
+        Returns:
+            Dictionary mapping UIDs to assets of the specified type.
+        """
+        return {
+            uid: asset
+            for uid, asset in self.assets.items()
+            if asset.asset_type_name == type_name
+        }
+
     @property
     def source_assets(self) -> Dict[str, "SourceAsset"]:
         """
@@ -243,20 +267,6 @@ class Doc(DocItem):
             uid: cast(StockAsset, asset)
             for uid, asset in self.assets.items()
             if asset.asset_type_name == "stock"
-        }
-
-    @property
-    def sketches(self) -> Dict[str, "Sketch"]:
-        """
-        Returns a dictionary of all Sketches for compatibility.
-        NOTE: The order of this dictionary is not guaranteed.
-        """
-        from .sketcher.sketch import Sketch
-
-        return {
-            uid: cast(Sketch, asset)
-            for uid, asset in self.assets.items()
-            if asset.asset_type_name == "sketch"
         }
 
     @property
@@ -315,7 +325,6 @@ class Doc(DocItem):
                 self._active_layer_index = new_index
                 self.updated.send(self)
                 self.active_layer_changed.send(self)
-                self.update_stock_visibility()
         except ValueError:
             logger.warning("Attempted to set a non-existent layer as active.")
 
@@ -415,8 +424,11 @@ class Doc(DocItem):
             new_active_index = 0
 
         self._active_layer_index = new_active_index
-        current_stock_items = self.stock_items
-        new_children_list = new_layers_list + current_stock_items
+        # Preserve non-layer children (like StockItems)
+        non_layer_children = [
+            c for c in self.children if not isinstance(c, Layer)
+        ]
+        new_children_list = new_layers_list + non_layer_children
         self.set_children(new_children_list)
 
         # After the state is consistent, send the active_layer_changed signal
@@ -437,15 +449,22 @@ class Doc(DocItem):
             for step in layer.workflow.steps
         )
 
-    def update_stock_visibility(self):
+    @property
+    def missing_producer_types(self) -> Set[str]:
         """
-        Updates stock item visibility based on the active layer.
-        Only the stock item assigned to the active layer will be visible.
-        """
-        active_layer = self.active_layer
-        active_stock_uid = (
-            active_layer.stock_item_uid if active_layer else None
-        )
+        Returns a set of producer type names that are used in this document
+        but are not available (not registered in the producer registry).
 
-        for stock_item in self.stock_items:
-            stock_item.set_visible(stock_item.uid == active_stock_uid)
+        This is used to detect when a document uses features from an addon
+        that is not installed.
+        """
+        missing = set()
+        for layer in self.layers:
+            if layer.workflow:
+                for step in layer.workflow.steps:
+                    if step.opsproducer_dict:
+                        producer_type = step.opsproducer_dict.get("type")
+                        if producer_type:
+                            if producer_registry.get(producer_type) is None:
+                                missing.add(producer_type)
+        return missing

@@ -4,7 +4,7 @@ Maintenant que Rayforge est installé et votre machine configurée, lançons vot
 
 ## Étape 1 : Importer un Design
 
-Rayforge prend en charge divers formats de fichiers, notamment SVG, DXF, PDF et les images raster (JPEG, PNG, BMP).
+Rayforge prend en charge divers formats de fichiers, notamment SVG, DXF, PDF, Ruida (.rd) et les images raster (JPEG, PNG, BMP).
 
 1. **Cliquez** sur **Fichier → Ouvrir** ou appuyez sur <kbd>ctrl+o</kbd>
 2. Naviguez vers votre fichier de design et sélectionnez-le
@@ -56,7 +56,7 @@ Lorsque vous travaillez avec de nouveaux matériaux, commencez toujours avec des
 
 Avant d'envoyer à votre machine, prévisualisez le parcours d'outil en 3D :
 
-1. Cliquez sur **Affichage → Aperçu 3D** ou appuyez sur <kbd>ctrl+3</kbd>
+1. Cliquez sur **Affichage → Aperçu 3D** ou appuyez sur <kbd>F12</kbd>
 2. La fenêtre d'aperçu 3D affiche le parcours d'outil complet
 3. Utilisez votre souris pour faire pivoter et zoomer sur l'aperçu
 4. Vérifiez que le parcours semble correct
@@ -87,28 +87,21 @@ L'aperçu 3D vous aide à repérer les problèmes comme :
 
 1. Placez votre matériau sur le lit laser
 2. Faites la mise au point du laser selon les instructions de votre machine
-3. Si vous utilisez la caméra, alignez votre design en utilisant la [superposition caméra](../machine/camera)
+3. Positionnez votre design en utilisant l'une des méthodes du
+   [Guide de Positionnement de la Pièce](../features/workpiece-positioning)
 
 ### Démarrer le Travail
 
-1. **Positionnez le laser** : Utilisez les commandes de déplacement pour déplacer le laser à la position de départ
-   - Cliquez sur **Affichage → Panneau de Contrôle** ou appuyez sur <kbd>ctrl+l</kbd>
-   - Utilisez les boutons fléchés ou les flèches du clavier pour déplacer le laser
-   - Appuyez sur <kbd>home</kbd> pour mettre la machine à l'origine
+1. **Positionnez le laser** : Utilisez les commandes de déplacement pour déplacer le laser à la position de départ. Cliquez sur **Affichage → Panneau de Contrôle** ou appuyez sur <kbd>ctrl+l</kbd>, puis utilisez les boutons fléchés ou les flèches du clavier pour déplacer le laser.
 
-2. **Cadrer le design** : Exécutez la fonction de cadrage pour vérifier le placement
-   - Cliquez sur **Machine → Cadrer** ou appuyez sur <kbd>ctrl+f</kbd>
-   - Le laser tracera le rectangle englobant de votre design à faible/sans puissance
-   - Vérifiez qu'il tient dans votre matériau
+2. **Cadrer le design** : Exécutez la fonction de cadrage pour vérifier le placement. Cliquez sur **Machine → Cadrer** et le laser tracera le rectangle englobant de votre design à faible puissance. Vérifiez qu'il tient dans votre matériau.
 
-3. **Démarrer le travail** : Cliquez sur **Machine → Démarrer le Travail** ou appuyez sur <kbd>ctrl+r</kbd>
+3. **Démarrer le travail** : Cliquez sur **Machine → Démarrer le Travail**
 4. Surveillez la progression dans la barre d'état
 
 ### Pendant le Travail
 
-- La section droite de la barre d'état affiche la progression actuelle et l'estimation du temps d'exécution total
-- Vous pouvez mettre le travail en pause avec <kbd>ctrl+p</kbd> ou cliquer sur le bouton Pause
-- Appuyez sur <kbd>esc</kbd> ou cliquez sur Arrêter pour annuler le travail (arrêt d'urgence)
+La section droite de la barre d'état affiche la progression actuelle et l'estimation du temps d'exécution total. Utilisez les boutons Pause et Arrêter dans le panneau de contrôle pour contrôler le travail. Notez que <kbd>esc</kbd> quitte le mode simulation mais n'arrête pas un travail actif.
 
 ## Étape 6 : Terminer
 
@@ -127,9 +120,14 @@ Vous avez terminé votre premier travail Rayforge ! Vous pouvez maintenant explo
 
 Maintenant que vous avez terminé votre premier travail, explorez ces fonctionnalités :
 
-- **[Opérations Multi-Couches](../features/multi-layer)** : Assigner différentes opérations aux calques
-- **[Ponts de Maintien](../features/holding-tabs)** : Maintenir les pièces coupées en place pendant la coupe
-- **[Intégration Caméra](../machine/camera)** : Utiliser une caméra pour un alignement précis
+- **[Positionnement de Pièce](../features/workpiece-positioning)** :
+  Maîtrise toutes les méthodes de positionnement (mode focus, cadrage, WCS, caméra)
+- **[Opérations Multi-Couches](../features/multi-layer)** : Assigner différentes
+  opérations aux calques
+- **[Ponts de Maintien](../features/holding-tabs)** : Maintenir les pièces coupées
+  en place pendant la coupe
+- **[Intégration Caméra](../machine/camera)** : Utiliser une caméra pour
+  un alignement précis
 - **[Hooks & Macros](../machine/hooks-macros)** : Automatiser les tâches répétitives
 
 ## Conseils pour Réussir

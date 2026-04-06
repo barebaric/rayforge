@@ -1,6 +1,9 @@
 # Multi-Layer Workflow
 
-Rayforge's multi-layer system allows you to organize complex jobs into separate processing stages, each with its own operations and settings. This is essential for combining different processes like engraving and cutting, or working with multiple materials.
+Rayforge's multi-layer system allows you to organize complex jobs into separate
+processing stages, each with its own operations and settings. This is essential
+for combining different processes like engraving and cutting, or working with
+multiple materials.
 
 ## What Are Layers?
 
@@ -10,15 +13,14 @@ A **layer** in Rayforge is:
 - **A workflow** defining how those workpieces are processed
 - **A step** processed sequentially during jobs
 
-**Key concept:** Layers are processed in order, one after another, allowing
-you to control the sequence of operations.
+**Key concept:** Layers are processed in order, one after another, allowing you
+to control the sequence of operations.
 
 :::note Layers and Workpieces
-A layer contains one or more workpieces. When importing SVG files with
-layers, each layer from your design becomes a separate layer in Rayforge.
-This lets you keep your design organized exactly as you created it.
+A layer contains one or more workpieces. When importing SVG files with layers,
+each layer from your design becomes a separate layer in Rayforge. This lets you
+keep your design organized exactly as you created it.
 :::
-
 
 ---
 
@@ -106,15 +108,25 @@ Each layer has:
 | -------------- | ---------------------------------------------------- |
 | **Name**       | The name shown in the layer list                     |
 | **Visible**    | Toggle visibility in canvas and preview              |
-| **Stock Item** | Optional material association                        |
 | **Workflow**   | The operation(s) applied to workpieces in this layer |
+| **Rotary**     | Whether this layer runs in rotary mode               |
 | **Workpieces** | The shapes/images contained in this layer            |
 
-:::note Layers as Containers
-Layers are containers for your workpieces. When importing SVG files with
-layers, each layer from your design becomes a separate layer in Rayforge.
-:::
+### Rotary Mode Per Layer
 
+If you have a [rotary attachment](../machine/rotary) configured, you can enable
+rotary mode for individual layers. This lets you combine flat-bed work and
+cylindrical work in the same project — for example, engraving a design on the
+flat lid of a box on one layer and wrapping text around the cylindrical body on
+another.
+
+Layers with rotary mode active show a small rotary icon in the layer list. Each
+layer remembers its own rotary setting, so you can freely mix and match.
+
+:::note Layers as Containers
+Layers are containers for your workpieces. When importing SVG files with layers,
+each layer from your design becomes a separate layer in Rayforge.
+:::
 
 ### Reordering Layers
 
@@ -141,10 +153,9 @@ Layers Panel:
 3. **Confirm deletion** (all workpieces in the layer are removed)
 
 :::warning Deletion is Permanent
-Deleting a layer removes all its workpieces and workflow settings. Use Undo
-if you delete accidentally.
+Deleting a layer removes all its workpieces and workflow settings. Use Undo if
+you delete accidentally.
 :::
-
 
 ---
 
@@ -166,17 +177,14 @@ When importing SVG files with "Use Original Vectors" enabled:
 4. **Each selected layer** becomes a separate layer with its own workpiece
 
 :::note Layer Detection
-Rayforge automatically detects layers from your SVG file. Each layer
-you created in your design software will appear as a separate layer in
-Rayforge.
+Rayforge automatically detects layers from your SVG file. Each layer you created
+in your design software will appear as a separate layer in Rayforge.
 :::
-
 
 :::note Vector Import Only
-Layer selection is only available when using direct vector import.
-When using trace mode, the entire SVG is processed as one workpiece.
+Layer selection is only available when using direct vector import. When using
+trace mode, the entire SVG is processed as one workpiece.
 :::
-
 
 ### Moving Workpieces Between Layers
 
@@ -193,15 +201,15 @@ When using trace mode, the entire SVG is processed as one workpiece.
 
 ### SVG Import Dialog
 
-When importing SVG files, the import dialog provides options that affect
-layer handling:
+When importing SVG files, the import dialog provides options that affect layer
+handling:
 
 **Import Mode:**
 
 - **Use Original Vectors:** Preserves your vector paths and layer structure.
   When enabled, a "Layers" section appears showing all layers from your file.
-- **Trace Mode:** Converts the SVG to a bitmap and traces the outlines.
-  Layer selection is disabled in this mode.
+- **Trace Mode:** Converts the SVG to a bitmap and traces the outlines. Layer
+  selection is disabled in this mode.
 
 **Layers Section (Vector Import Only):**
 
@@ -212,10 +220,9 @@ layer handling:
 
 :::tip Preparing SVG Files for Layer Import
 To use SVG layer import, create your design with layers in software like
-Inkscape. Use the Layers panel to organize your design, and Rayforge
-will preserve that structure.
+Inkscape. Use the Layers panel to organize your design, and Rayforge will
+preserve that structure.
 :::
-
 
 ---
 
@@ -300,9 +307,8 @@ layer's operation or disable it in the layer settings.
 
 ### How Layers are Processed
 
-During job execution, Rayforge processes each layer in order from top to
-bottom. Within each layer, all workpieces are processed before moving to
-the next layer.
+During job execution, Rayforge processes each layer in order from top to bottom.
+Within each layer, all workpieces are processed before moving to the next layer.
 
 ### Order Matters
 
@@ -365,8 +371,8 @@ Material 2 (3mm Plywood):
 
 ### Pausing Between Layers
 
-You can configure Rayforge to pause between layers. This is useful when you
-need to:
+You can configure Rayforge to pause between layers. This is useful when you need
+to:
 
 - Change materials mid-job
 - Inspect progress before continuing
@@ -421,8 +427,8 @@ Each layer's workflow can have unique settings:
 4. **Save your file** and import into Rayforge
 5. **Verify layer detection** by checking the import dialog
 
-Rayforge works best with SVG files created in Inkscape or similar vector
-design software that supports layers.
+Rayforge works best with SVG files created in Inkscape or similar vector design
+software that supports layers.
 
 ### Performance
 
@@ -483,16 +489,16 @@ design software that supports layers.
 
 **Solutions:**
 
-1. **Check SVG structure** - Open your file in Inkscape or similar software
-   to verify it has layers
-2. **Enable "Use Original Vectors"** - Layer selection is only available in
-   this import mode
+1. **Check SVG structure** - Open your file in Inkscape or similar software to
+   verify it has layers
+2. **Enable "Use Original Vectors"** - Layer selection is only available in this
+   import mode
 3. **Verify your design has layers** - Make sure you created layers in your
    design software, not just groups
-4. **Check for nested layers** - Layers inside other layers may not be
-   detected properly
-5. **Re-save your file** - Sometimes re-saving with a current version of
-   your design software helps
+4. **Check for nested layers** - Layers inside other layers may not be detected
+   properly
+5. **Re-save your file** - Sometimes re-saving with a current version of your
+   design software helps
 
 ### SVG Layer Import Shows Wrong Content
 
@@ -502,12 +508,11 @@ design software that supports layers.
 
 1. **Check layer selection** - Verify the correct layers are enabled in the
    import dialog
-2. **Verify your design** - Open the original file in your design software
-   to confirm each layer contains the right content
-3. **Check for shared elements** - Elements that appear in multiple layers
-   may cause confusion
-4. **Try trace mode** - Use trace mode as a fallback if vector import has
-   issues
+2. **Verify your design** - Open the original file in your design software to
+   confirm each layer contains the right content
+3. **Check for shared elements** - Elements that appear in multiple layers may
+   cause confusion
+4. **Try trace mode** - Use trace mode as a fallback if vector import has issues
 
 ---
 

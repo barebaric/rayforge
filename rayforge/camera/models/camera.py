@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import Optional, Tuple, Dict, Sequence, Any
 import numpy as np
 import logging
@@ -23,24 +24,31 @@ class Camera:
         self._brightness: float = 0.0  # Default brightness (0 = no change)
         self._transparency: float = 0.2
 
-        # Properties for camera calibration
-        # How to determine calibration values:
-        # 1. Print a calibration pattern, e.g. a 8x6 grid with 25mm grid size
-        # 2. Capture 10 or so calibration images of the grid (camera static,
-        #    grid in different positions/rotations)
-        # 3. Detect checkerboard corners: cv2.findChessboardCorners()
-        # 4. Perform camera calibration: cv2.calibrateCamera()
-        self._camera_matrix: Optional[np.ndarray] = None
-        self._dist_coeffs: Optional[np.ndarray] = None
+        # Noise Reduction (0.0 to 1.0)
+        # 0.0 = No denoise, 1.0 = Max smoothing (high latency/ghosting)
+        self._denoise: float = 0.0
 
-        # Properties for camera calibration and alignment
-        # Example usage to map pixel positions (image points) to
-        # real world positions (in mm):
-        #   image_points:
-        #     List[Pos] = [(100, 100), (500, 100), (500, 400), (100, 400)]
-        #   world_points:
-        #     List[Pos] = [(-1, 120), (130, 120.5), (133, 0.1), (0, -0.1)]
-        #   camera.image_to_world = image_points, world_points
+        # Lens calibration parameters
+        # Distortion coefficients: k1, k2, p1, p2, k3 (OpenCV order)
+        self._distortion_k1: float = 0.0
+        self._distortion_k2: float = 0.0
+        self._distortion_p1: float = 0.0
+        self._distortion_p2: float = 0.0
+        self._distortion_k3: float = 0.0
+
+        # Camera matrix parameters (needed for proper undistortion)
+        self._camera_matrix_fx: Optional[float] = None
+        self._camera_matrix_fy: Optional[float] = None
+        self._camera_matrix_cx: Optional[float] = None
+        self._camera_matrix_cy: Optional[float] = None
+
+        # Calibration metadata
+        self._calibration_rms: Optional[float] = None
+        self._calibration_date: Optional[datetime] = None
+        self._calibration_image_size: Optional[Tuple[int, int]] = None
+        self._calibration_frames_used: Optional[int] = None
+
+        # Properties for camera alignment points
         self._image_to_world: Optional[Tuple[PointList, PointList]] = None
 
         # Signals
@@ -181,6 +189,154 @@ class Camera:
         self.settings_changed.send(self)
 
     @property
+    def denoise(self) -> float:
+        """Temporal noise reduction factor (0.0 - 1.0)."""
+        return self._denoise
+
+    @denoise.setter
+    def denoise(self, value: float):
+        if not isinstance(value, (int, float)):
+            raise ValueError("Denoise must be a number.")
+        # Clamp between 0.0 (off) and 0.95 (extreme smoothing)
+        value = max(0.0, min(value, 0.95))
+        if self._denoise == value:
+            return
+        logger.debug(f"Camera denoise changed from {self._denoise} to {value}")
+        self._denoise = value
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    # --- Fisheye/Distortion Properties ---
+
+    @property
+    def distortion_k1(self) -> float:
+        return self._distortion_k1
+
+    @distortion_k1.setter
+    def distortion_k1(self, value: float):
+        self._distortion_k1 = float(value)
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def distortion_k2(self) -> float:
+        return self._distortion_k2
+
+    @distortion_k2.setter
+    def distortion_k2(self, value: float):
+        self._distortion_k2 = float(value)
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def distortion_p1(self) -> float:
+        return self._distortion_p1
+
+    @distortion_p1.setter
+    def distortion_p1(self, value: float):
+        self._distortion_p1 = float(value)
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def distortion_p2(self) -> float:
+        return self._distortion_p2
+
+    @distortion_p2.setter
+    def distortion_p2(self, value: float):
+        self._distortion_p2 = float(value)
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def distortion_k3(self) -> float:
+        return self._distortion_k3
+
+    @distortion_k3.setter
+    def distortion_k3(self, value: float):
+        self._distortion_k3 = float(value)
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def camera_matrix_fx(self) -> Optional[float]:
+        return self._camera_matrix_fx
+
+    @camera_matrix_fx.setter
+    def camera_matrix_fx(self, value: Optional[float]):
+        self._camera_matrix_fx = value
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def camera_matrix_fy(self) -> Optional[float]:
+        return self._camera_matrix_fy
+
+    @camera_matrix_fy.setter
+    def camera_matrix_fy(self, value: Optional[float]):
+        self._camera_matrix_fy = value
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def camera_matrix_cx(self) -> Optional[float]:
+        return self._camera_matrix_cx
+
+    @camera_matrix_cx.setter
+    def camera_matrix_cx(self, value: Optional[float]):
+        self._camera_matrix_cx = value
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def camera_matrix_cy(self) -> Optional[float]:
+        return self._camera_matrix_cy
+
+    @camera_matrix_cy.setter
+    def camera_matrix_cy(self, value: Optional[float]):
+        self._camera_matrix_cy = value
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def has_calibration(self) -> bool:
+        return all(
+            v is not None
+            for v in [
+                self._camera_matrix_fx,
+                self._camera_matrix_fy,
+                self._camera_matrix_cx,
+                self._camera_matrix_cy,
+            ]
+        )
+
+    def get_camera_matrix(self) -> Optional[np.ndarray]:
+        if not self.has_calibration:
+            return None
+        return np.array(
+            [
+                [self._camera_matrix_fx, 0, self._camera_matrix_cx],
+                [0, self._camera_matrix_fy, self._camera_matrix_cy],
+                [0, 0, 1],
+            ],
+            dtype=np.float64,
+        )
+
+    def get_distortion_coeffs(self) -> np.ndarray:
+        return np.array(
+            [
+                self._distortion_k1,
+                self._distortion_k2,
+                self._distortion_p1,
+                self._distortion_p2,
+                self._distortion_k3,
+            ],
+            dtype=np.float64,
+        )
+
+    # ---------------------------------------------
+
+    @property
     def image_to_world(self) -> Optional[Tuple[PointList, PointList]]:
         return self._image_to_world
 
@@ -230,21 +386,59 @@ class Camera:
         self.changed.send(self)
         self.settings_changed.send(self)
 
-    def set_camera_calibration(
-        self, camera_matrix: np.ndarray, dist_coeffs: np.ndarray
-    ):
+    def set_calibration_result(self, result):
         """
-        Set the camera calibration parameters for distortion correction.
+        Set camera calibration from a CalibrationResult object.
+
+        Populates both the camera matrix parameters and distortion
+        coefficients into the unified storage.
 
         Args:
-            camera_matrix: 3x3 camera matrix from calibration
-            dist_coeffs: Distortion coefficients from calibration
+            result: CalibrationResult from the calibrator
         """
-        self._camera_matrix = camera_matrix
-        self._dist_coeffs = dist_coeffs
-        logger.debug("Camera calibration parameters set.")
+        from ..calibration.result import CalibrationResult
+
+        if not isinstance(result, CalibrationResult):
+            raise TypeError("Expected CalibrationResult object")
+
+        self._camera_matrix_fx = float(result.camera_matrix[0, 0])
+        self._camera_matrix_fy = float(result.camera_matrix[1, 1])
+        self._camera_matrix_cx = float(result.camera_matrix[0, 2])
+        self._camera_matrix_cy = float(result.camera_matrix[1, 2])
+
+        dist = result.distortion_coeffs.flatten()
+        self._distortion_k1 = float(dist[0]) if len(dist) > 0 else 0.0
+        self._distortion_k2 = float(dist[1]) if len(dist) > 1 else 0.0
+        self._distortion_p1 = float(dist[2]) if len(dist) > 2 else 0.0
+        self._distortion_p2 = float(dist[3]) if len(dist) > 3 else 0.0
+        self._distortion_k3 = float(dist[4]) if len(dist) > 4 else 0.0
+
+        self._calibration_rms = result.rms_error
+        self._calibration_date = result.calibration_date
+        self._calibration_image_size = result.image_size
+        self._calibration_frames_used = result.num_frames_used
+
+        logger.debug(
+            f"Camera calibration set from result: RMS={result.rms_error:.4f}"
+        )
         self.changed.send(self)
         self.settings_changed.send(self)
+
+    @property
+    def calibration_rms(self) -> Optional[float]:
+        return self._calibration_rms
+
+    @property
+    def calibration_date(self) -> Optional[datetime]:
+        return self._calibration_date
+
+    @property
+    def calibration_image_size(self) -> Optional[Tuple[int, int]]:
+        return self._calibration_image_size
+
+    @property
+    def calibration_frames_used(self) -> Optional[int]:
+        return self._calibration_frames_used
 
     def to_dict(self) -> Dict[str, Any]:
         data = {
@@ -255,6 +449,12 @@ class Camera:
             "contrast": self.contrast,
             "brightness": self.brightness,
             "transparency": self.transparency,
+            "denoise": self.denoise,
+            "distortion_k1": self.distortion_k1,
+            "distortion_k2": self.distortion_k2,
+            "distortion_p1": self.distortion_p1,
+            "distortion_p2": self.distortion_p2,
+            "distortion_k3": self.distortion_k3,
         }
         if self.image_to_world is not None:
             image_points, world_points = self.image_to_world
@@ -267,6 +467,25 @@ class Camera:
             ]
         else:
             data["image_to_world"] = None
+
+        if self.has_calibration:
+            data["camera_matrix_fx"] = self._camera_matrix_fx
+            data["camera_matrix_fy"] = self._camera_matrix_fy
+            data["camera_matrix_cx"] = self._camera_matrix_cx
+            data["camera_matrix_cy"] = self._camera_matrix_cy
+            data["calibration_rms"] = self._calibration_rms
+            data["calibration_date"] = (
+                self._calibration_date.isoformat()
+                if self._calibration_date
+                else None
+            )
+            data["calibration_image_size"] = (
+                list(self._calibration_image_size)
+                if self._calibration_image_size
+                else None
+            )
+            data["calibration_frames_used"] = self._calibration_frames_used
+
         data.update(self.extra)
         return data
 
@@ -280,7 +499,21 @@ class Camera:
             "contrast",
             "brightness",
             "transparency",
+            "denoise",
             "image_to_world",
+            "distortion_k1",
+            "distortion_k2",
+            "distortion_p1",
+            "distortion_p2",
+            "distortion_k3",
+            "camera_matrix_fx",
+            "camera_matrix_fy",
+            "camera_matrix_cx",
+            "camera_matrix_cy",
+            "calibration_rms",
+            "calibration_date",
+            "calibration_image_size",
+            "calibration_frames_used",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -290,6 +523,13 @@ class Camera:
         camera.contrast = data.get("contrast", camera.contrast)
         camera.brightness = data.get("brightness", camera.brightness)
         camera.transparency = data.get("transparency", camera.transparency)
+        camera.denoise = data.get("denoise", 0.0)
+
+        camera.distortion_k1 = data.get("distortion_k1", 0.0)
+        camera.distortion_k2 = data.get("distortion_k2", 0.0)
+        camera.distortion_p1 = data.get("distortion_p1", 0.0)
+        camera.distortion_p2 = data.get("distortion_p2", 0.0)
+        camera.distortion_k3 = data.get("distortion_k3", 0.0)
 
         image_to_world_data = data.get("image_to_world")
         if image_to_world_data is not None:
@@ -307,6 +547,21 @@ class Camera:
             camera.image_to_world = (image_points, world_points)
         else:
             camera.image_to_world = None
+
+        camera._camera_matrix_fx = data.get("camera_matrix_fx")
+        camera._camera_matrix_fy = data.get("camera_matrix_fy")
+        camera._camera_matrix_cx = data.get("camera_matrix_cx")
+        camera._camera_matrix_cy = data.get("camera_matrix_cy")
+        camera._calibration_rms = data.get("calibration_rms")
+        if data.get("calibration_date"):
+            camera._calibration_date = datetime.fromisoformat(
+                data["calibration_date"]
+            )
+        if data.get("calibration_image_size"):
+            camera._calibration_image_size = tuple(
+                data["calibration_image_size"]
+            )
+        camera._calibration_frames_used = data.get("calibration_frames_used")
 
         camera.extra = extra
         return camera

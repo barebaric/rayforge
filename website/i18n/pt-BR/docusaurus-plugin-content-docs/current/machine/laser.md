@@ -1,16 +1,19 @@
 # Configurações do Laser
 
-A página Laser nas Configurações da Máquina configura sua(s) cabeça(s) de laser e suas propriedades.
+A página Laser nas Configurações da Máquina configura sua(s) cabeça(s) de
+laser e suas propriedades.
 
 ![Configurações do Laser](/screenshots/machine-laser.png)
 
 ## Cabeças de Laser
 
-O Rayforge suporta máquinas com múltiplas cabeças de laser. Cada cabeça de laser tem sua própria configuração.
+O Rayforge suporta máquinas com múltiplas cabeças de laser. Cada cabeça de
+laser tem sua própria configuração.
 
 ### Adicionando uma Cabeça de Laser
 
-Clique no botão **Adicionar Laser** para criar uma nova configuração de cabeça de laser.
+Clique no botão **Adicionar Laser** para criar uma nova configuração de
+cabeça de laser.
 
 ### Propriedades da Cabeça de Laser
 
@@ -27,7 +30,8 @@ Exemplos:
 
 #### Número da Ferramenta
 
-O índice da ferramenta para esta cabeça de laser. Usado no G-code com o comando T.
+O índice da ferramenta para esta cabeça de laser. Usado no G-code com o
+comando T.
 
 - Máquinas de cabeça única: Use 0
 - Máquinas multi-cabeça: Atribua números únicos (0, 1, 2, etc.)
@@ -44,11 +48,35 @@ Este valor deve corresponder à configuração $30 do seu firmware.
 
 #### Potência de Enquadramento
 
-O nível de potência usado para operações de enquadramento (delinear sem cortar).
+O nível de potência usado para operações de enquadramento (delinear sem
+cortar).
 
 - Defina como 0 para desabilitar enquadramento
-- Valores típicos: 5-20 (apenas visível, não marcará o material)
 - Ajuste com base no seu laser e material
+
+#### Velocidade de Enquadramento
+
+A velocidade na qual a cabeça de laser se move durante o enquadramento. Isso é
+definido por cabeça de laser, portanto, se sua máquina tiver vários lasers com
+características diferentes, você poderá escolher uma velocidade apropriada para
+cada um. Velocidades mais lentas tornam o caminho do enquadramento mais fácil
+de ser seguido visualmente.
+
+#### Potência de Foco
+
+O nível de potência usado quando o modo foco está ativado. O modo foco liga o
+laser em baixa potência para atuar como "ponteiro laser" para posicionamento.
+
+- Defina como 0 para desabilitar o recurso de modo foco
+- Use para alinhamento visual e posicionamento
+
+:::tip Usando o Modo Foco
+Clique no botão foco (ícone de laser) na barra de ferramentas para alternar o
+modo foco. O laser ligará neste nível de potência, ajudando você a ver
+exatamente onde o laser está posicionado. Consulte
+[Posicionamento de Peça de Trabalho](../features/workpiece-positioning) para
+mais informações.
+:::
 
 #### Tamanho do Ponto
 
@@ -65,6 +93,34 @@ Para medir o tamanho do seu ponto:
 3. Use a média de múltiplas medições
 :::
 
+#### Cor de Corte
+
+A cor usada para exibir operações de corte para este laser na tela e na
+visualização 3D. Isso ajuda você a distinguir visualmente qual laser realizará
+cada operação de corte ao trabalhar com múltiplas cabeças de laser.
+
+- Clique na amostra de cor para abrir um seletor de cores
+- Escolha uma cor que contraste bem com a visualização do seu material
+- Cores padrão são atribuídas automaticamente
+
+#### Cor de Raster
+
+A cor usada para exibir operações de raster/gravação para este laser na tela e
+na visualização 3D.
+
+- Clique na amostra de cor para abrir um seletor de cores
+- Útil para diferenciar operações de raster de cortes
+- Cada laser pode ter sua própria cor de raster distinta
+
+:::tip Fluxos de Trabalho Multi-Laser
+Ao usar múltiplas cabeças de laser, atribuir cores diferentes a cada laser
+facilita ver quais operações serão realizadas por qual laser. Por exemplo, use
+vermelho para seu laser de corte principal e azul para um laser de gravação
+secundário.
+:::
+
 ## Veja Também
 
 - [Configurações do Dispositivo](device) - Configurações de modo laser GRBL
+- [Posicionamento de Peça de Trabalho](../features/workpiece-positioning) -
+  Usando modo foco e outros métodos de posicionamento

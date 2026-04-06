@@ -2,6 +2,7 @@ from typing import cast
 import pytest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
+from rayforge.image.registry import renderer_registry
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
@@ -9,7 +10,6 @@ from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.source_asset import SourceAsset
 from rayforge.image.svg.renderer import SvgRenderer
-from rayforge.core.sketcher.sketch import Sketch
 
 
 @pytest.fixture
@@ -30,38 +30,40 @@ def test_doc_initialization(doc):
     assert doc.source_assets == {}
     assert doc.stock_assets == {}
     assert doc.stock_items == []
-    assert doc.sketches == {}
+    assert doc.get_assets_by_type("sketch") == {}
 
 
 @pytest.mark.parametrize(
-    "asset_factory, compatibility_property_name",
+    "asset_factory, get_compatibility_dict",
     [
-        (lambda: StockAsset(name="Test Stock"), "stock_assets"),
-        (lambda: Sketch(name="Test Sketch"), "sketches"),
+        (
+            lambda: StockAsset(name="Test Stock"),
+            lambda d: d.stock_assets,
+        ),
         (
             lambda: SourceAsset(
                 source_file=Path("test.svg"),
                 original_data=b"",
                 renderer=SvgRenderer(),
             ),
-            "source_assets",
+            lambda d: d.source_assets,
         ),
     ],
 )
-def test_doc_asset_management(doc, asset_factory, compatibility_property_name):
+def test_doc_asset_management(doc, asset_factory, get_compatibility_dict):
     """Tests adding, removing, and getting all types of assets."""
     asset1 = asset_factory()
     asset2 = asset_factory()
 
     # 1. Test adding assets
     doc.add_asset(asset1)
-    compatibility_property = getattr(doc, compatibility_property_name)
+    compatibility_property = get_compatibility_dict(doc)
     assert len(doc.get_all_assets()) == 1
     assert len(compatibility_property) == 1
     assert asset1.uid in compatibility_property
 
     doc.add_asset(asset2)
-    compatibility_property = getattr(doc, compatibility_property_name)
+    compatibility_property = get_compatibility_dict(doc)
     assert len(doc.get_all_assets()) == 2
     assert len(compatibility_property) == 2
 
@@ -72,7 +74,7 @@ def test_doc_asset_management(doc, asset_factory, compatibility_property_name):
 
     # 3. Test removing asset
     doc.remove_asset(asset1)
-    compatibility_property = getattr(doc, compatibility_property_name)
+    compatibility_property = get_compatibility_dict(doc)
     assert len(doc.get_all_assets()) == 1
     assert len(compatibility_property) == 1
     assert asset1.uid not in compatibility_property
@@ -272,22 +274,23 @@ def test_doc_serialization_with_stock(doc):
 
 
 def test_doc_serialization_with_sketches(doc):
-    """Tests that the sketches registry is serialized correctly."""
-    sketch1 = Sketch()
-    sketch1.name = "My Sketch"
-    doc.add_asset(sketch1)
+    """Tests that the stock assets registry is serialized correctly."""
+    asset1 = StockAsset(name="My Stock")
+    asset1.thickness = 10.0
+    doc.add_asset(asset1)
 
     data_dict = doc.to_dict()
 
     assert "assets" in data_dict
     all_assets = data_dict["assets"]
-    sketch_dicts = [a for a in all_assets if a.get("type") == "sketch"]
+    stock_dicts = [a for a in all_assets if a.get("type") == "stock"]
 
-    assert len(sketch_dicts) == 1
-    sketch1_dict = sketch_dicts[0]
-    assert sketch1_dict["uid"] == sketch1.uid
-    assert sketch1_dict["type"] == "sketch"
-    assert sketch1_dict["name"] == "My Sketch"
+    assert len(stock_dicts) == 1
+    asset1_dict = stock_dicts[0]
+    assert asset1_dict["uid"] == asset1.uid
+    assert asset1_dict["type"] == "stock"
+    assert asset1_dict["name"] == "My Stock"
+    assert asset1_dict["thickness"] == 10.0
 
 
 def test_doc_from_dict_deserialization(doc):
@@ -314,7 +317,7 @@ def test_doc_from_dict_deserialization(doc):
 
         assert isinstance(new_doc, Doc)
         assert len(new_doc.children) == 1
-        assert new_doc.sketches == {}
+        assert new_doc.get_assets_by_type("sketch") == {}
         mock_layer_from_dict.assert_called_once_with(
             {
                 "uid": "layer1-uid",
@@ -337,15 +340,6 @@ def test_doc_from_dict_deserialization_modern_assets():
                 "geometry": {"commands": []},
             },
             {
-                "uid": "k1",
-                "type": "sketch",
-                "name": "Circle",
-                "params": {},
-                "registry": {},
-                "constraints": [],
-                "origin_id": "origin-0",
-            },
-            {
                 "uid": "r1",
                 "type": "source",
                 "name": "img.svg",
@@ -356,19 +350,17 @@ def test_doc_from_dict_deserialization_modern_assets():
         ],
     }
 
-    with patch.dict(
-        "rayforge.image.renderer_by_name",
+    with patch.object(
+        renderer_registry,
+        "_renderers",
         {"SvgRenderer": SvgRenderer()},
-        clear=True,
     ):
         new_doc = Doc.from_dict(doc_dict)
 
-    assert len(new_doc.get_all_assets()) == 3
+    assert len(new_doc.get_all_assets()) == 2
     assert len(new_doc.stock_assets) == 1
-    assert len(new_doc.sketches) == 1
     assert len(new_doc.source_assets) == 1
     assert "s1" in new_doc.stock_assets
-    assert "k1" in new_doc.sketches
     assert "r1" in new_doc.source_assets
 
 
@@ -406,15 +398,12 @@ def test_doc_deserialization_legacy_stock_format():
 
 
 def test_doc_deserialization_with_sketches():
-    """Tests deserializing a doc that contains sketches using a mock."""
-    sketch_data = {
-        "uid": "sketch-123",
-        "type": "sketch",
-        "name": "Test",
-        "params": {},
-        "registry": {},
-        "constraints": [],
-        "origin_id": "origin-0",
+    """Tests deserializing a doc that contains stock assets using a mock."""
+    stock_data = {
+        "uid": "stock-123",
+        "type": "stock",
+        "name": "Test Stock",
+        "geometry": {"commands": []},
     }
     doc_dict = {
         "uid": "test-doc-uid",
@@ -423,25 +412,25 @@ def test_doc_deserialization_with_sketches():
         "children": [],
         "stock_items": [],
         "source_assets": {},
-        "sketches": {"sketch-123": sketch_data},
+        "stock_assets": {"stock-123": stock_data},
     }
 
-    # Since we don't need to test Sketch.from_dict here, we can mock it
+    # Since we don't need to test StockAsset.from_dict here, we can mock it
     with patch(
-        "rayforge.core.sketcher.sketch.Sketch.from_dict"
-    ) as mock_sketch_from_dict:
-        mock_sketch = MagicMock(spec=Sketch)
-        mock_sketch.uid = "sketch-123"
-        # The mock needs asset_type_name for the .sketches property to work
-        mock_sketch.asset_type_name = "sketch"
-        mock_sketch_from_dict.return_value = mock_sketch
+        "rayforge.core.stock_asset.StockAsset.from_dict"
+    ) as mock_stock_from_dict:
+        mock_stock = MagicMock(spec=StockAsset)
+        mock_stock.uid = "stock-123"
+        # The mock needs asset_type_name for get_assets_by_type to work
+        mock_stock.asset_type_name = "stock"
+        mock_stock_from_dict.return_value = mock_stock
 
         doc = Doc.from_dict(doc_dict)
 
-        mock_sketch_from_dict.assert_called_once_with(sketch_data)
-        assert len(doc.sketches) == 1
-        assert "sketch-123" in doc.sketches
-        assert doc.get_asset_by_uid("sketch-123") is mock_sketch
+        mock_stock_from_dict.assert_called_once_with(stock_data)
+        assert len(doc.stock_assets) == 1
+        assert "stock-123" in doc.stock_assets
+        assert doc.get_asset_by_uid("stock-123") is mock_stock
 
 
 def test_doc_roundtrip_serialization():
@@ -455,10 +444,10 @@ def test_doc_roundtrip_serialization():
     original.add_layer(layer2)
     original.active_layer = layer2
 
-    # Add a sketch
-    sketch = Sketch()
-    sketch.name = "My Test Sketch"
-    original.add_asset(sketch)
+    # Add a stock asset
+    stock = StockAsset(name="My Test Stock")
+    stock.thickness = 10.0
+    original.add_asset(stock)
 
     # Serialize and deserialize
     data = original.to_dict()
@@ -470,13 +459,14 @@ def test_doc_roundtrip_serialization():
     assert restored.uid == "test-doc-uid"
     assert len(restored.layers) == 2
 
-    # Check that sketches were restored
-    assert len(restored.sketches) == 1
-    assert sketch.uid in restored.sketches
-    restored_sketch = cast(Sketch, restored.get_asset_by_uid(sketch.uid))
-    assert isinstance(restored_sketch, Sketch)
-    assert restored_sketch.uid == sketch.uid
-    assert restored_sketch.name == "My Test Sketch"
+    # Check that stock assets were restored
+    assert len(restored.stock_assets) == 1
+    assert stock.uid in restored.stock_assets
+    restored_stock = cast(StockAsset, restored.get_asset_by_uid(stock.uid))
+    assert isinstance(restored_stock, StockAsset)
+    assert restored_stock.uid == stock.uid
+    assert restored_stock.name == "My Test Stock"
+    assert restored_stock.thickness == 10.0
 
 
 def test_doc_from_dict_with_default_active_layer_index():
@@ -492,7 +482,7 @@ def test_doc_from_dict_with_default_active_layer_index():
         ],
         "stock_items": [],
         "source_assets": {},
-        "sketches": {},
+        "stock_assets": {},
     }
 
     with patch("rayforge.core.layer.Layer.from_dict") as mock_layer_from_dict:
@@ -680,68 +670,6 @@ def test_set_layers_active_layer_logic(doc):
     assert doc._active_layer_index == 0
 
 
-def test_update_stock_visibility(doc):
-    """
-    Tests that update_stock_visibility correctly shows/hides stock based
-    on the active layer's assigned stock.
-    """
-    layer1 = doc.layers[0]
-    layer2 = Layer("Layer 2")
-    doc.add_layer(layer2)
-
-    asset1 = StockAsset(name="Asset 1")
-    asset2 = StockAsset(name="Asset 2")
-    doc.add_asset(asset1)
-    doc.add_asset(asset2)
-
-    stock1 = StockItem(stock_asset_uid=asset1.uid, name="Wood")
-    stock2 = StockItem(stock_asset_uid=asset2.uid, name="Acrylic")
-    doc.add_child(stock1)
-    doc.add_child(stock2)
-
-    layer1.stock_item_uid = stock1.uid
-    layer2.stock_item_uid = stock2.uid
-
-    # Mock the method we want to check calls on
-    stock1.set_visible = MagicMock()
-    stock2.set_visible = MagicMock()
-
-    # Act 1: set layer 2 as active (this is a CHANGE from default)
-    doc.active_layer = layer2
-
-    # Assert 1: stock1 should be hidden, stock2 visible
-    stock1.set_visible.assert_called_once_with(False)
-    stock2.set_visible.assert_called_once_with(True)
-
-    stock1.set_visible.reset_mock()
-    stock2.set_visible.reset_mock()
-
-    # Act 2: set layer 1 as active (this is also a CHANGE)
-    doc.active_layer = layer1
-
-    # Assert 2: stock1 should be visible, stock2 hidden
-    stock1.set_visible.assert_called_once_with(True)
-    stock2.set_visible.assert_called_once_with(False)
-
-
-def test_active_layer_setter_triggers_update_stock_visibility(doc):
-    """
-    Tests that changing the active layer automatically calls
-    update_stock_visibility.
-    """
-    layer2 = Layer("Layer 2")
-    doc.add_layer(layer2)
-
-    with patch.object(doc, "update_stock_visibility") as mock_update:
-        doc.active_layer = layer2
-        mock_update.assert_called_once()
-
-    with patch.object(doc, "update_stock_visibility") as mock_update:
-        # Setting to the same layer should not trigger it again
-        doc.active_layer = layer2
-        mock_update.assert_not_called()
-
-
 def test_from_dict_clears_default_layer():
     """
     Tests that Doc.from_dict removes the default layer created by __init__
@@ -789,3 +717,79 @@ def test_from_dict_clears_default_layer():
     assert "Layer 1" not in layer_names  # Default name from __init__
     assert "Loaded Layer 1" in layer_names
     assert "Loaded Layer 2" in layer_names
+
+
+def test_from_dict_legacy_layer_stock_item_uid():
+    """
+    Tests that legacy documents with layer-level stock_item_uid load correctly.
+    The stock_item_uid is preserved in layer.extra for forward compatibility,
+    but stocks are now document-level.
+    """
+    legacy_doc_dict = {
+        "uid": "legacy-doc-uid",
+        "type": "doc",
+        "active_layer_index": 0,
+        "assets": [
+            {
+                "uid": "stock-asset-1",
+                "type": "stock",
+                "name": "Wood",
+                "thickness": 3.0,
+            }
+        ],
+        "children": [
+            {
+                "uid": "layer-1",
+                "type": "layer",
+                "name": "Layer with Stock",
+                "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                "visible": True,
+                "stock_item_uid": "stock-item-1",  # Legacy field
+                "children": [
+                    {
+                        "uid": "wf-1",
+                        "type": "workflow",
+                        "name": "Workflow",
+                        "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                        "children": [],
+                    }
+                ],
+            },
+            {
+                "uid": "stock-item-1",
+                "type": "stockitem",
+                "name": "Wood Stock",
+                "stock_asset_uid": "stock-asset-1",
+                "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                "visible": True,
+            },
+        ],
+    }
+
+    doc = Doc.from_dict(legacy_doc_dict)
+
+    # Verify document loaded correctly
+    assert len(doc.layers) == 1
+    assert len(doc.stock_items) == 1
+
+    # Verify stock is at document level
+    stock_item = doc.stock_items[0]
+    assert stock_item.uid == "stock-item-1"
+    assert stock_item.name == "Wood Stock"
+
+    # Verify layer loaded correctly
+    layer = doc.layers[0]
+    assert layer.name == "Layer with Stock"
+
+    # Verify legacy stock_item_uid is preserved in extra for forward
+    # compatibility
+    assert "stock_item_uid" in layer.extra
+    assert layer.extra["stock_item_uid"] == "stock-item-1"
+
+    # Verify round-trip serialization preserves the legacy field
+    re_serialized = doc.to_dict()
+    layer_dict = next(
+        c for c in re_serialized["children"] if c["type"] == "layer"
+    )
+    assert "stock_item_uid" in layer_dict
+    assert layer_dict["stock_item_uid"] == "stock-item-1"

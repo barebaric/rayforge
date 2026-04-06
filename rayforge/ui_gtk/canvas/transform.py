@@ -1,6 +1,7 @@
 from __future__ import annotations
 import math
 from typing import Tuple
+from ...core.geo import Point, Rect
 from ...core.matrix import Matrix
 from .element import CanvasElement
 from .region import ElementRegion
@@ -19,14 +20,14 @@ RESIZE_BEHAVIORS = {
 
 
 def calculate_resized_box(
-    original_box: Tuple[float, float, float, float],
+    original_box: Rect,
     active_region: ElementRegion,
-    drag_delta: Tuple[float, float],
+    drag_delta: Point,
     is_flipped: bool,
     constrain_aspect: bool = False,
     from_center: bool = False,
     min_size: Tuple[float, float] = (0.0, 0.0),
-) -> Tuple[float, float, float, float]:
+) -> Rect:
     """
     Calculates a new bounding box based on a resize operation.
     This is the central, data-driven logic for all resizing, and it
@@ -193,7 +194,7 @@ def rotate_element(
     world_x: float,
     world_y: float,
     initial_world_transform: Matrix,
-    rotation_pivot: Tuple[float, float],
+    rotation_pivot: Point,
     drag_start_angle: float,
 ):
     """

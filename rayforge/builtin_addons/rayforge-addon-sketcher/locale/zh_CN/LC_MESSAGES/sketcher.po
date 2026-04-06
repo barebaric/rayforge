@@ -1,0 +1,678 @@
+# Chinese (Simplified) translations for Rayforge package.
+# Copyright (C) 2025 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the Rayforge package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Rayforge\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-28 02:12+0100\n"
+"PO-Revision-Date: 2025-07-13 11:49+0200\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Chinese (Simplified)\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: sketcher/core/sketch.py sketcher/ui_gtk/property_provider.py
+msgid "Sketch Parameters"
+msgstr "草图参数"
+
+#: sketcher/core/sketch.py
+msgid "Parameters that control this sketch's geometry"
+msgstr "控制此草图几何形状的参数"
+
+#: sketcher/core/sketch.py
+msgid "Sketch"
+msgstr "草图"
+
+#: sketcher/core/constraints/equal_length.py
+msgid "Equal Length"
+msgstr "等长"
+
+#: sketcher/core/constraints/equal_length.py
+msgid "{} entities"
+msgstr "{} 个实体"
+
+#: sketcher/core/constraints/parallelogram.py
+msgid "Parallelogram"
+msgstr "平行四边形"
+
+#: sketcher/core/constraints/parallelogram.py
+msgid "Origin at {}"
+msgstr "原点在 {}"
+
+#: sketcher/core/constraints/point_on_line.py
+msgid "Point on Line"
+msgstr "点在线上"
+
+#: sketcher/core/constraints/point_on_line.py
+msgid "Point at {}"
+msgstr "点在 {}"
+
+#: sketcher/core/constraints/collinear.py
+msgid "Collinear"
+msgstr "共线"
+
+#: sketcher/core/constraints/collinear.py
+msgid "{}, {}, {}"
+msgstr "{}, {}, {}"
+
+#: sketcher/core/constraints/tangent.py
+#: sketcher/ui_gtk/tools/tangent_constraint_tool.py
+msgid "Tangent"
+msgstr "相切"
+
+#: sketcher/core/constraints/tangent.py
+msgid "Line to {} at {}"
+msgstr "直线到 {} 在 {}"
+
+#: sketcher/core/constraints/distance.py
+#: sketcher/ui_gtk/tools/distance_constraint_tool.py
+msgid "Distance"
+msgstr "距离"
+
+#: sketcher/core/constraints/distance.py sketcher/core/constraints/vertical.py
+#: sketcher/core/constraints/symmetry.py
+#: sketcher/core/constraints/horizontal.py
+#: sketcher/core/constraints/aspect_ratio.py
+msgid "From {} to {}"
+msgstr "从 {} 到 {}"
+
+#: sketcher/core/constraints/vertical.py
+#: sketcher/ui_gtk/tools/vertical_constraint_tool.py
+msgid "Vertical"
+msgstr "垂直"
+
+#: sketcher/core/constraints/equal_distance.py
+msgid "Equal Distance"
+msgstr "等距"
+
+#: sketcher/core/constraints/equal_distance.py
+msgid "{}-{} and {}-{}"
+msgstr "{}-{} 和 {}-{}"
+
+#: sketcher/core/constraints/perpendicular.py
+#: sketcher/ui_gtk/tools/perpendicular_constraint_tool.py
+msgid "Perpendicular"
+msgstr "垂直"
+
+#: sketcher/core/constraints/perpendicular.py
+msgid "Between {} and {}"
+msgstr "在 {} 和 {} 之间"
+
+#: sketcher/core/constraints/symmetry.py
+#: sketcher/ui_gtk/tools/symmetry_constraint_tool.py
+msgid "Symmetry"
+msgstr "对称"
+
+#: sketcher/core/constraints/horizontal.py
+#: sketcher/ui_gtk/tools/horizontal_constraint_tool.py
+msgid "Horizontal"
+msgstr "水平"
+
+#: sketcher/core/constraints/angle.py
+#: sketcher/ui_gtk/tools/angle_constraint_tool.py
+msgid "Angle"
+msgstr "角度"
+
+#: sketcher/core/constraints/angle.py
+msgid "Between two lines"
+msgstr "在两条直线之间"
+
+#: sketcher/core/constraints/diameter.py
+#: sketcher/ui_gtk/tools/diameter_constraint_tool.py
+msgid "Diameter"
+msgstr "直径"
+
+#: sketcher/core/constraints/diameter.py
+msgid "Circle at {}"
+msgstr "圆在 {}"
+
+#: sketcher/core/constraints/coincident.py
+#: sketcher/ui_gtk/tools/coincident_constraint_tool.py
+msgid "Coincident"
+msgstr "重合"
+
+#: sketcher/core/constraints/coincident.py
+msgid "At {}"
+msgstr "在 {}"
+
+#: sketcher/core/constraints/radius.py
+#: sketcher/ui_gtk/tools/radius_constraint_tool.py
+msgid "Radius"
+msgstr "半径"
+
+#: sketcher/core/constraints/radius.py
+msgid "{} at {}"
+msgstr "{} 在 {}"
+
+#: sketcher/core/constraints/aspect_ratio.py
+#: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
+msgid "Aspect Ratio"
+msgstr "宽高比"
+
+#: sketcher/core/commands/circle.py
+msgid "Add Circle"
+msgstr "添加圆形"
+
+#: sketcher/core/commands/fillet.py
+msgid "Add Fillet"
+msgstr "添加圆角"
+
+#: sketcher/core/commands/text_box.py sketcher/ui_gtk/tools/text_box_tool.py
+msgid "Add Text Box"
+msgstr "添加文本框"
+
+#: sketcher/core/commands/fill.py
+msgid "Add Fill"
+msgstr "添加填充"
+
+#: sketcher/core/commands/fill.py
+msgid "Remove Fill"
+msgstr "移除填充"
+
+#: sketcher/core/commands/constraint.py sketcher/ui_gtk/sketchcanvas.py
+msgid "Edit Constraint"
+msgstr "编辑约束"
+
+#: sketcher/core/commands/bezier.py sketcher/core/commands/line.py
+msgid "Add Line"
+msgstr "添加直线"
+
+#: sketcher/core/commands/bezier.py
+msgid "Add Bezier"
+msgstr "添加贝塞尔曲线"
+
+#: sketcher/core/commands/constraint_create.py
+msgid "Add Constraint"
+msgstr "添加约束"
+
+#: sketcher/core/commands/constraint_create.py
+msgid "Add {}"
+msgstr "添加 {}"
+
+#: sketcher/core/commands/grid.py
+msgid "Add Grid"
+msgstr "添加网格"
+
+#: sketcher/core/commands/chamfer.py
+msgid "Add Chamfer"
+msgstr "添加倒角"
+
+#: sketcher/core/commands/arc.py
+msgid "Add Arc"
+msgstr "添加圆弧"
+
+#: sketcher/core/commands/straighten.py
+#: sketcher/ui_gtk/tools/straighten_tool.py
+msgid "Straighten"
+msgstr "拉直"
+
+#: sketcher/core/commands/rounded_rect.py
+msgid "Add Rounded Rectangle"
+msgstr "添加圆角矩形"
+
+#: sketcher/core/commands/rectangle.py
+msgid "Add Rectangle"
+msgstr "添加矩形"
+
+#: sketcher/core/commands/text_property.py
+msgid "Modify Text Property"
+msgstr "修改文本属性"
+
+#: sketcher/core/commands/waypoint.py
+msgid "Set Waypoint Type"
+msgstr "设置路点类型"
+
+#: sketcher/core/commands/point.py
+msgid "Move Point"
+msgstr "移动点"
+
+#: sketcher/core/commands/point.py
+msgid "Move Control Point"
+msgstr "移动控制点"
+
+#: sketcher/core/commands/point.py
+msgid "Unstick Junction"
+msgstr "取消连接点"
+
+#: sketcher/core/commands/ellipse.py
+msgid "Add Ellipse"
+msgstr "添加椭圆"
+
+#: sketcher/core/commands/live_text_edit.py
+msgid "Edit Text"
+msgstr "编辑文本"
+
+#: sketcher/ui_gtk/sketch_cmd.py
+msgid "Change Sketch Parameters"
+msgstr "更改草图参数"
+
+#: sketcher/ui_gtk/sketch_mode_cmd.py sketcher/ui_gtk/__init__.py
+msgid "New Sketch"
+msgstr "新建草图"
+
+#: sketcher/ui_gtk/sketch_mode_cmd.py
+msgid "Create Sketch Definition"
+msgstr "创建草图定义"
+
+#: sketcher/ui_gtk/sketch_mode_cmd.py
+msgid "Selected item is not an editable sketch."
+msgstr "选定的项目不是可编辑的草图。"
+
+#: sketcher/ui_gtk/sketch_mode_cmd.py
+msgid "Please select a single sketch to edit."
+msgstr "请选择一个草图进行编辑。"
+
+#: sketcher/ui_gtk/sketch_mode_cmd.py
+msgid "Please select a single object to export."
+msgstr "请选择一个对象进行导出。"
+
+#: sketcher/ui_gtk/__init__.py
+msgid "Edit Sketch"
+msgstr "编辑草图"
+
+#: sketcher/ui_gtk/__init__.py
+msgid "Export Object..."
+msgstr "导出对象..."
+
+#: sketcher/ui_gtk/studio.py
+msgid "Toggle constraints"
+msgstr "切换约束"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Toggle construction geometry"
+msgstr "切换辅助几何"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Fill color:"
+msgstr "填充颜色："
+
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/dimension_input.py
+#: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/tools/circle_tool.py
+#: sketcher/ui_gtk/sketchcanvas.py
+msgid "Cancel"
+msgstr "取消"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Finish"
+msgstr "完成"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Properties"
+msgstr "属性"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Configure the sketch name and basic properties"
+msgstr "配置草图名称和基本属性"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Name"
+msgstr "名称"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Rename Sketch"
+msgstr "重命名草图"
+
+#: sketcher/ui_gtk/tools/waypoint_symmetric_tool.py
+msgid "Symmetric"
+msgstr "对称"
+
+#: sketcher/ui_gtk/tools/symmetry_constraint_tool.py
+msgid "Add Symmetry Constraint"
+msgstr "添加对称约束"
+
+#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/menu.py
+msgid "Select"
+msgstr "选择"
+
+#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
+msgid "Constrain to Axis"
+msgstr "约束到轴"
+
+#: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
+#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/arc_tool.py
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Toggle Magnetic Snap"
+msgstr "切换磁力吸附"
+
+#: sketcher/ui_gtk/tools/select_tool.py
+msgid "Select Connected"
+msgstr "选择相连对象"
+
+#: sketcher/ui_gtk/tools/fillet_tool.py
+msgid "Fillet"
+msgstr "圆角"
+
+#: sketcher/ui_gtk/tools/dimension_input.py
+msgid "Apply"
+msgstr "应用"
+
+#: sketcher/ui_gtk/tools/dimension_input.py
+#: sketcher/ui_gtk/tools/delete_tool.py sketcher/ui_gtk/menu.py
+msgid "Delete"
+msgstr "删除"
+
+#: sketcher/ui_gtk/tools/dimension_input.py
+msgid "Next field"
+msgstr "下一个字段"
+
+#: sketcher/ui_gtk/tools/dimension_input.py
+msgid "Prev field"
+msgstr "上一个字段"
+
+#: sketcher/ui_gtk/tools/path_tool.py sketcher/ui_gtk/menu.py
+msgid "Path"
+msgstr "路径"
+
+#: sketcher/ui_gtk/tools/path_tool.py
+msgid "Snap to Grid"
+msgstr "对齐网格"
+
+#: sketcher/ui_gtk/tools/waypoint_sharp_tool.py
+msgid "Sharp"
+msgstr "尖锐"
+
+#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/menu.py
+msgid "Rectangle"
+msgstr "矩形"
+
+#: sketcher/ui_gtk/tools/rectangle_tool.py
+#: sketcher/ui_gtk/tools/rounded_rect_tool.py
+msgid "W"
+msgstr "宽"
+
+#: sketcher/ui_gtk/tools/rectangle_tool.py
+#: sketcher/ui_gtk/tools/rounded_rect_tool.py
+msgid "H"
+msgstr "高"
+
+#: sketcher/ui_gtk/tools/rectangle_tool.py
+msgid "Type dimensions (W H)"
+msgstr "输入尺寸（宽 高）"
+
+#: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
+msgid "Add Aspect Ratio Constraint"
+msgstr "添加宽高比约束"
+
+#: sketcher/ui_gtk/tools/angle_constraint_tool.py
+msgid "Add Angle Constraint"
+msgstr "添加角度约束"
+
+#: sketcher/ui_gtk/tools/fill_tool.py
+msgid "Fill"
+msgstr "填充"
+
+#: sketcher/ui_gtk/tools/arc_tool.py sketcher/ui_gtk/menu.py
+msgid "Arc"
+msgstr "圆弧"
+
+#: sketcher/ui_gtk/tools/arc_tool.py
+msgid "Type radius"
+msgstr "输入半径"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Grid"
+msgstr "网格"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Create Grid"
+msgstr "创建网格"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Rows"
+msgstr "行"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Columns"
+msgstr "列"
+
+#: sketcher/ui_gtk/tools/grid_tool.py
+msgid "Create"
+msgstr "创建"
+
+#: sketcher/ui_gtk/tools/tangent_constraint_tool.py
+msgid "Add Tangent Constraint"
+msgstr "添加相切约束"
+
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Ellipse"
+msgstr "椭圆"
+
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Center on start point"
+msgstr "以起点为中心"
+
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Constrain to circle"
+msgstr "约束为圆形"
+
+#: sketcher/ui_gtk/tools/vertical_constraint_tool.py
+msgid "Add Vertical Constraint"
+msgstr "添加垂直约束"
+
+#: sketcher/ui_gtk/tools/delete_tool.py
+msgid "Delete Selection"
+msgstr "删除选中项"
+
+#: sketcher/ui_gtk/tools/rounded_rect_tool.py sketcher/ui_gtk/menu.py
+msgid "Rounded Rectangle"
+msgstr "圆角矩形"
+
+#: sketcher/ui_gtk/tools/rounded_rect_tool.py
+msgid "R"
+msgstr "R"
+
+#: sketcher/ui_gtk/tools/rounded_rect_tool.py
+msgid "Type dimensions (W H R)"
+msgstr "输入尺寸（宽 高 R）"
+
+#: sketcher/ui_gtk/tools/construction_tool.py
+msgid "Construction"
+msgstr "构造"
+
+#: sketcher/ui_gtk/tools/construction_tool.py sketcher/ui_gtk/menu.py
+msgid "Toggle Construction"
+msgstr "切换构造线"
+
+#: sketcher/ui_gtk/tools/radius_constraint_tool.py
+msgid "Add Radius Constraint"
+msgstr "添加半径约束"
+
+#: sketcher/ui_gtk/tools/text_box_tool.py
+msgid "Text Box"
+msgstr "文本框"
+
+#: sketcher/ui_gtk/tools/diameter_constraint_tool.py
+msgid "Add Diameter Constraint"
+msgstr "添加直径约束"
+
+#: sketcher/ui_gtk/tools/waypoint_smooth_tool.py
+msgid "Smooth"
+msgstr "平滑"
+
+#: sketcher/ui_gtk/tools/coincident_constraint_tool.py
+msgid "Add Coincident Constraint"
+msgstr "添加重合约束"
+
+#: sketcher/ui_gtk/tools/coincident_constraint_tool.py
+msgid "Add Point On Shape"
+msgstr "添加点在形状上"
+
+#: sketcher/ui_gtk/tools/perpendicular_constraint_tool.py
+msgid "Add Perpendicular Constraint"
+msgstr "添加垂直约束"
+
+#: sketcher/ui_gtk/tools/horizontal_constraint_tool.py
+msgid "Add Horizontal Constraint"
+msgstr "添加水平约束"
+
+#: sketcher/ui_gtk/tools/chamfer_tool.py
+msgid "Chamfer"
+msgstr "倒角"
+
+#: sketcher/ui_gtk/tools/equal_constraint_tool.py
+msgid "Equal"
+msgstr "相等"
+
+#: sketcher/ui_gtk/tools/equal_constraint_tool.py
+msgid "Add Equal Constraint"
+msgstr "添加相等约束"
+
+#: sketcher/ui_gtk/tools/distance_constraint_tool.py
+msgid "Add Distance Constraint"
+msgstr "添加距离约束"
+
+#: sketcher/ui_gtk/conflicts_widget.py
+msgid "Conflicting Constraints"
+msgstr "冲突的约束"
+
+#: sketcher/ui_gtk/conflicts_widget.py
+msgid "These constraints cannot be satisfied simultaneously"
+msgstr "这些约束无法同时满足"
+
+#: sketcher/ui_gtk/conflicts_widget.py
+msgid "Delete constraint"
+msgstr "删除约束"
+
+#: sketcher/ui_gtk/conflicts_widget.py
+msgid "Delete Constraint"
+msgstr "删除约束"
+
+#: sketcher/ui_gtk/property_provider.py
+msgid "Mixed Values"
+msgstr "混合值"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Finish Sketch"
+msgstr "完成草图"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Cancel Sketch"
+msgstr "取消草图"
+
+#: sketcher/ui_gtk/menu.py
+msgid "_File"
+msgstr "文件(_F)"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Undo"
+msgstr "撤销"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Redo"
+msgstr "重做"
+
+#: sketcher/ui_gtk/menu.py
+msgid "_Edit"
+msgstr "编辑(_E)"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Circle"
+msgstr "圆形"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Fill Area"
+msgstr "填充区域"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Tools"
+msgstr "工具"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Chamfer Corner"
+msgstr "倒角"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Modify"
+msgstr "修改"
+
+#: sketcher/ui_gtk/menu.py
+msgid "_Sketch"
+msgstr "草图(_S)"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Fit View"
+msgstr "适应视图"
+
+#: sketcher/ui_gtk/menu.py
+msgid "_View"
+msgstr "视图(_V)"
+
+#: sketcher/ui_gtk/asset_row_widget.py
+msgid "Edit this sketch"
+msgstr "编辑此草图"
+
+#: sketcher/ui_gtk/asset_row_widget.py
+msgid "No parameters"
+msgstr "无参数"
+
+#: sketcher/ui_gtk/asset_row_widget.py
+msgid "1 parameter"
+msgstr "1 个参数"
+
+#: sketcher/ui_gtk/asset_row_widget.py
+#, python-brace-format
+msgid "{count} parameters"
+msgstr "{count} 个参数"
+
+#: sketcher/ui_gtk/font_properties.py
+msgid "Font Properties"
+msgstr "字体属性"
+
+#: sketcher/ui_gtk/font_properties.py
+msgid "Configure font family, size, and style for text boxes"
+msgstr "配置文本框的字体系列、大小和样式"
+
+#: sketcher/ui_gtk/font_properties.py
+msgid "Font Family"
+msgstr "字体系列"
+
+#: sketcher/ui_gtk/font_properties.py
+msgid "Font Size"
+msgstr "字体大小"
+
+#: sketcher/ui_gtk/font_properties.py
+msgid "Bold"
+msgstr "粗体"
+
+#: sketcher/ui_gtk/font_properties.py
+msgid "Italic"
+msgstr "斜体"
+
+#: sketcher/ui_gtk/font_properties.py
+msgid "Select Font"
+msgstr "选择字体"
+
+#: sketcher/ui_gtk/sketchcanvas.py
+msgid "Enter radius or expression (e.g. 'width/2')."
+msgstr "输入半径或表达式（例如 'width/2'）。"
+
+#: sketcher/ui_gtk/sketchcanvas.py
+msgid "Enter diameter or expression."
+msgstr "输入直径或表达式。"
+
+#: sketcher/ui_gtk/sketchcanvas.py
+msgid "Enter angle in degrees or expression."
+msgstr "输入角度（度）或表达式。"
+
+#: sketcher/ui_gtk/sketchcanvas.py
+msgid "Enter length or expression."
+msgstr "输入长度或表达式。"
+
+#: sketcher/ui_gtk/sketchcanvas.py
+msgid "Enter value or expression."
+msgstr "输入值或表达式。"
+
+#: sketcher/ui_gtk/sketchcanvas.py
+msgid "OK"
+msgstr "确定"
+
+#: sketcher/image/exporter.py sketcher/image/importer.py
+#, python-brace-format
+msgid "{app_name} Sketch"
+msgstr "{app_name} 草图"

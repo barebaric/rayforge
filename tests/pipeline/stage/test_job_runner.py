@@ -12,7 +12,6 @@ from rayforge.pipeline.artifact import (
     create_handle_from_dict,
 )
 from rayforge.pipeline.artifact.key import ArtifactKey
-from rayforge.pipeline.steps import ContourStep
 from rayforge.pipeline.stage.job_runner import (
     make_job_artifact_in_subprocess,
     JobDescription,
@@ -31,7 +30,7 @@ def machine(context_initializer):
 
 
 def test_jobrunner_assembles_step_artifacts_correctly(
-    context_initializer, machine, adopting_mock_proxy
+    context_initializer, machine, adopting_mock_proxy, contour_step_class
 ):
     """
     Test that the jobrunner subprocess correctly assembles pre-computed
@@ -44,7 +43,7 @@ def test_jobrunner_assembles_step_artifacts_correctly(
 
     # This test simulates that step-level transformers have already run.
     # We create a StepOpsArtifact that contains the *result* of those.
-    step = ContourStep.create(context_initializer)
+    step = contour_step_class.create(context_initializer)
 
     layer.workflow.add_step(step)
 
@@ -119,7 +118,7 @@ def test_jobrunner_assembles_step_artifacts_correctly(
 
 
 def test_jobrunner_reconstructs_doc_from_dict(
-    context_initializer, machine, adopting_mock_proxy
+    context_initializer, machine, adopting_mock_proxy, contour_step_class
 ):
     """
     Test that the jobrunner correctly reconstructs the Doc object from
@@ -129,7 +128,7 @@ def test_jobrunner_reconstructs_doc_from_dict(
     layer = doc.active_layer
     assert layer.workflow is not None
 
-    step = ContourStep.create(context_initializer)
+    step = contour_step_class.create(context_initializer)
     layer.workflow.add_step(step)
 
     final_ops_for_step = Ops()

@@ -80,7 +80,6 @@ class AxisExtentFrameElement(CanvasElement):
 
         ctx.set_source_rgba(*self._color)
         ctx.set_hairline(True)
-
         ctx.new_path()
         ctx.rectangle(0, 0, self.width, self.height)
         ctx.stroke()

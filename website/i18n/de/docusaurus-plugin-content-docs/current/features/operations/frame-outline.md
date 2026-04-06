@@ -100,25 +100,16 @@ Rahmen-Umriss unterstützt Schnittbreiten-Kompensation:
 - Stellt genaue Endabmessungen sicher
 - Verwendet den Schnittbreiten-Wert aus deinen Laserkopf-Einstellungen
 
-## Nachbearbeitungsoptionen
+## Nachbearbeitung
 
 ![Rahmen-Umriss Nachbearbeitungseinstellungen](/screenshots/step-settings-frame-outline-post.png)
 
-### Mehrfach-Durchgang
+Rahmen-Umriss-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 
-Den Rahmen mehrmals schneiden:
-
-- **Durchgänge:** Anzahl der Wiederholungen
-- **Z-Abstieg:** Z zwischen Durchgängen absenken (erfordert Z-Achse)
-- Nützlich für dicke Materialien
-
-### Halte-Laschen
-
-Laschen hinzufügen, um das eingerahmte Teil befestigt zu halten:
-
-- Verhindert, dass Teile während des Schneidens fallen
-- Laschen-Breite, -Höhe und -Abstand konfigurieren
-- Siehe [Halte-Laschen](../holding-tabs) für Details
+- **[Halte-Laschen](../holding-tabs)** - Das eingerahmte Teil am Rohmaterial befestigt halten
+- **[Auf Rohmaterial zuschneiden](../crop-to-stock)** - Schnitte auf Materialgrenze beschränken
+- **[Pfad-Optimierung](../path-optimization)** - Verfahrdistanz reduzieren
+- **[Mehrfach-Durchgang](../multi-pass)** - Schnitte für dicke Materialien wiederholen
 
 ## Anwendungsfälle
 

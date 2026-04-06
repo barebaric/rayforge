@@ -1,10 +1,63 @@
+import importlib
 import logging
 import re
+from pathlib import Path
 from typing import List, Optional, Tuple
 
 import semver
 
 logger = logging.getLogger(__name__)
+
+
+class _UnknownVersion:
+    """
+    Sentinel class representing an unknown or undetermined version.
+
+    Used for Git repositories where version cannot be determined.
+    When displayed, built-in addons should fall back to
+    rayforge.__version__; external addons should show no version.
+    """
+
+    __slots__ = ()
+
+    def __repr__(self) -> str:
+        return "UnknownVersion"
+
+
+UnknownVersion = _UnknownVersion()
+
+
+def get_git_tag_version(path: Path) -> str:
+    """
+    Gets the version from git tags in the directory.
+
+    Args:
+        path (Path): The directory containing the Git repository.
+
+    Returns:
+        str: The version from the latest git tag.
+
+    Raises:
+        RuntimeError: If no git tags are found or git is unavailable.
+    """
+    try:
+        importlib.import_module("git")
+    except ImportError:
+        raise RuntimeError("GitPython is required to get git tag version")
+
+    from git import Repo
+
+    try:
+        repo = Repo(path)
+        tags = repo.tags
+        if tags:
+            latest_tag = sorted(
+                tags, key=lambda t: t.commit.committed_datetime
+            )[-1]
+            return latest_tag.name
+        raise RuntimeError(f"No git tags found in {path}")
+    except Exception as e:
+        raise RuntimeError(f"Failed to get git tag version from {path}: {e}")
 
 
 def is_newer_version(remote_str: str, local_str: str) -> bool:
@@ -19,6 +72,33 @@ def is_newer_version(remote_str: str, local_str: str) -> bool:
             "with semver. Falling back to string comparison."
         )
         return remote_str != local_str
+
+
+def parse_requirement(req: str) -> Tuple[str, Optional[str]]:
+    """
+    Parse a requirement string into name and version constraint.
+
+    Args:
+        req: Requirement string like "rayforge>=0.27.0" or "laser-essentials"
+
+    Returns:
+        Tuple of (name, constraint_or_none).
+        Constraint includes operator, e.g. ">=1.0.0".
+
+    Examples:
+        "laser-essentials" -> ("laser-essentials", None)
+        "laser-essentials>=1.0.0" -> ("laser-essentials", ">=1.0.0")
+        "rayforge >= 0.27.0" -> ("rayforge", ">=0.27.0")
+    """
+    req = req.strip()
+    match = re.match(
+        r"^([a-zA-Z0-9_-]+)\s*((?:>=|<=|==|!=|>|<|=|~|\^).*)?$", req
+    )
+    if match:
+        name = match.group(1)
+        constraint = match.group(2).strip() if match.group(2) else None
+        return name, constraint
+    return req, None
 
 
 def parse_version_constraint(constraint: str) -> Optional[Tuple[str, str]]:
@@ -108,7 +188,12 @@ def check_rayforge_compatibility(
         True if compatible, False otherwise.
     """
     try:
-        current_v = semver.VersionInfo.parse(current_version.lstrip("v"))
+        parsed_v = semver.VersionInfo.parse(current_version.lstrip("v"))
+        current_v = semver.VersionInfo(
+            major=parsed_v.major,
+            minor=parsed_v.minor,
+            patch=parsed_v.patch,
+        )
     except ValueError:
         return True
 
@@ -116,19 +201,21 @@ def check_rayforge_compatibility(
         parts = dep.split(",")
         first_part = parts[0].strip()
 
-        pkg_name = re.split(r"[~^><=!]+", first_part)[0]
+        pkg_name, constraint = parse_requirement(first_part)
         if pkg_name != "rayforge":
             continue
 
-        first_constraint = first_part[len(pkg_name) :].strip()
-        constraints = [first_constraint] + parts[1:]
+        constraints = [constraint] if constraint else []
+        for extra in parts[1:]:
+            extra = extra.strip()
+            if extra:
+                constraints.append(extra)
 
-        for constraint in constraints:
-            constraint = constraint.strip()
-            if not constraint:
+        for constraint_str in constraints:
+            if not constraint_str:
                 continue
 
-            parsed = parse_version_constraint(constraint)
+            parsed = parse_version_constraint(constraint_str)
             if not parsed:
                 return False
 

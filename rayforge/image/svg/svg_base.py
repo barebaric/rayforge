@@ -17,8 +17,9 @@ from svgelements import (
     Arc,
 )
 
-from ...core.geo import Geometry
+from ...core.geo import Geometry, Rect
 from ...core.source_asset import SourceAsset
+from ...core.vectorization_spec import PassthroughSpec
 from ..base_importer import (
     Importer,
 )
@@ -30,14 +31,14 @@ from ..structures import (
 from .renderer import SVG_RENDERER
 from .svgutil import (
     PPI,
-    MM_PER_PX,
     get_natural_size,
     extract_layer_manifest,
+    is_unitless_svg,
 )
 
 logger = logging.getLogger(__name__)
 
-ViewBoxType = Optional[Tuple[float, float, float, float]]
+ViewBoxType = Optional[Rect]
 ParsingFactsType = Optional[Tuple[float, float, ViewBoxType]]
 
 
@@ -54,6 +55,13 @@ class SvgImporterBase(Importer):
         super().__init__(data, source_file)
         self.trimmed_data: Optional[bytes] = None
         self.svg: Optional[SVG] = None
+
+    def _get_ppi(self) -> float:
+        if self._vectorization_spec and hasattr(
+            self._vectorization_spec, "ppi"
+        ):
+            return self._vectorization_spec.ppi
+        return PPI
 
     def scan(self) -> ImportManifest:
         """Shared scan logic."""
@@ -94,6 +102,7 @@ class SvgImporterBase(Importer):
             natural_size_mm=size_mm,
             warnings=self._warnings,
             errors=self._errors,
+            is_unitless=is_unitless_svg(self.raw_data),
         )
 
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
@@ -124,13 +133,16 @@ class SvgImporterBase(Importer):
 
         metadata: Dict[str, Any] = {}
         try:
-            untrimmed_size = get_natural_size(source.original_data)
+            ppi = self._get_ppi()
+            untrimmed_size = get_natural_size(source.original_data, ppi=ppi)
             if untrimmed_size:
                 metadata["untrimmed_width_mm"] = untrimmed_size[0]
                 metadata["untrimmed_height_mm"] = untrimmed_size[1]
 
             if source.base_render_data:
-                trimmed_size = get_natural_size(source.base_render_data)
+                trimmed_size = get_natural_size(
+                    source.base_render_data, ppi=ppi
+                )
                 if trimmed_size:
                     metadata["trimmed_width_mm"] = trimmed_size[0]
                     metadata["trimmed_height_mm"] = trimmed_size[1]
@@ -156,10 +168,10 @@ class SvgImporterBase(Importer):
     ) -> Optional[
         Tuple[
             SVG,
-            Tuple[float, float, float, float],
+            Rect,
             float,
-            Optional[Tuple[float, float, float, float]],
-            Tuple[float, float, float, float],
+            Optional[Rect],
+            Rect,
         ]
     ]:
         """
@@ -200,9 +212,11 @@ class SvgImporterBase(Importer):
         width_px, height_px, viewbox = facts
 
         # Get the physical size of the trimmed content
-        final_dims_mm = get_natural_size(self.trimmed_data)
+        ppi = self._get_ppi()
+        mm_per_px = 25.4 / ppi
+        final_dims_mm = get_natural_size(self.trimmed_data, ppi=ppi)
         if not final_dims_mm:
-            final_dims_mm = (width_px * MM_PER_PX, height_px * MM_PER_PX)
+            final_dims_mm = (width_px * mm_per_px, height_px * mm_per_px)
 
         if viewbox:
             # If ViewBox exists, we use ViewBox units as the Native Units.
@@ -216,9 +230,7 @@ class SvgImporterBase(Importer):
             unit_to_mm = final_dims_mm[0] / width_px if width_px > 0 else 1.0
 
         # Calculate untrimmed bounds in the same Native Units
-        untrimmed_document_bounds: Optional[
-            Tuple[float, float, float, float]
-        ] = None
+        untrimmed_document_bounds: Optional[Rect] = None
 
         # First, try to get the authoritative untrimmed viewbox by parsing
         # the original, untrimmed SVG data. This is the correct frame of
@@ -245,7 +257,7 @@ class SvgImporterBase(Importer):
 
         # If parsing failed, fall back to calculating from physical size
         if not untrimmed_document_bounds:
-            untrimmed_size_mm = get_natural_size(self.raw_data)
+            untrimmed_size_mm = get_natural_size(self.raw_data, ppi=ppi)
             if untrimmed_size_mm and unit_to_mm > 0:
                 untrimmed_w = untrimmed_size_mm[0] / unit_to_mm
                 untrimmed_h = untrimmed_size_mm[1] / unit_to_mm
@@ -283,7 +295,7 @@ class SvgImporterBase(Importer):
     def _analytical_trim(self, data: bytes) -> bytes:
         """Trims the SVG using vector geometry bounds."""
         try:
-            svg = SVG.parse(io.BytesIO(data), ppi=PPI)
+            svg = SVG.parse(io.BytesIO(data), ppi=self._get_ppi())
             root = ET.fromstring(data)
 
             # 1. Get geometry bounds in the SVG's native user coordinate
@@ -332,7 +344,10 @@ class SvgImporterBase(Importer):
             # 3. Calculate new viewBox with padding to prevent clipping
             width = max_x - min_x
             height = max_y - min_y
-            padding = max(width, height) * 0.01
+            trim_padding = 0.01  # Default 1%
+            if isinstance(self._vectorization_spec, PassthroughSpec):
+                trim_padding = self._vectorization_spec.trim_padding
+            padding = max(width, height) * trim_padding
 
             new_vb_x = min_x - padding
             new_vb_y = min_y - padding
@@ -370,7 +385,7 @@ class SvgImporterBase(Importer):
     def _parse_svg_data(self, data: bytes) -> Optional[SVG]:
         try:
             svg_stream = io.BytesIO(data)
-            return SVG.parse(svg_stream, ppi=PPI)
+            return SVG.parse(svg_stream, ppi=self._get_ppi())
         except (ET.ParseError, ValueError, TypeError) as e:
             logger.error(f"Failed to parse SVG for direct import: {e}")
             self.add_error(_(f"Failed to parse SVG structure: {e}"))

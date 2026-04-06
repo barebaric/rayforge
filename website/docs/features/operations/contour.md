@@ -114,18 +114,37 @@ Controls where the laser cuts relative to the vector path:
 - Reduces job time
 - Prevents missed cuts
 
-## Advanced Features
+## Post-Processing
 
 ![Contour post-processing settings](/screenshots/step-settings-contour-post.png)
 
-### Holding Tabs
+Contour operations support several post-processing options:
 
-Tabs keep cut pieces attached to stock material during cutting:
+- **[Smooth Path](../smooth)** - Reduce jagged edges in cutting paths
+- **[Holding Tabs](../holding-tabs)** - Keep cut pieces attached to stock material
+- **[Crop to Stock](../crop-to-stock)** - Limit cuts to material boundary
+- **[Path Optimization](../path-optimization)** - Reduce travel distance between cuts
+- **[Multi-Pass](../multi-pass)** - Repeat cuts for thick materials
 
-- Add tabs to prevent pieces from falling
-- Tabs are small uncut sections
-- Break tabs after job completes
-- See [Holding Tabs](../holding-tabs) for details
+### Retracing with Custom Threshold
+
+When working with bitmap images that have been converted to vectors, you can control which parts get traced:
+
+- **Override Threshold**: Enable custom brightness threshold for tracing
+- **Threshold (0-255)**: Brightness cutoff value when override is enabled
+  - Lower values trace darker areas only
+  - Higher values include lighter areas
+
+This is useful when the default tracing doesn't capture the detail level you need.
+
+### Remove Inner Paths
+
+For designs with holes or internal cutouts, you can choose to trace only the outermost boundary:
+
+- **Remove Inner Paths**: When enabled, only the outermost contour is traced
+- Internal holes and cutouts are ignored
+
+This is useful when you want to cut out a shape but preserve the interior, such as creating a frame or outline without cutting internal details.
 
 ### Kerf Compensation
 

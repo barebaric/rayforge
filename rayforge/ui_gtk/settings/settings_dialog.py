@@ -1,12 +1,15 @@
 from gettext import gettext as _
-from gi.repository import Adw, Gdk, Gtk
+from gi.repository import Adw, Gtk
 
 from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
+from .addon_manager_page import AddonManagerPage
+from .ai_settings_page import AISettingsPage
 from .general_preferences_page import GeneralPreferencesPage
+from .license_settings_page import LicenseSettingsPage
 from .machine_settings_page import MachineSettingsPage
 from .material_manager_page import MaterialManagerPage
-from .package_manager_page import PackageManagerPage
+from .model_manager_page import ModelManagerPage
 from .recipe_manager_page import RecipeManagerPage
 
 
@@ -20,8 +23,11 @@ class SettingsWindow(PatchedDialogWindow):
         "general": 0,
         "machines": 1,
         "materials": 2,
-        "recipes": 3,
-        "packages": 4,
+        "models": 3,
+        "recipes": 4,
+        "ai": 5,
+        "addons": 6,
+        "licenses": 7,
     }
 
     def __init__(self, initial_page: str = "general", **kwargs):
@@ -61,8 +67,11 @@ class SettingsWindow(PatchedDialogWindow):
         self._add_page(GeneralPreferencesPage)
         self._add_page(MachineSettingsPage)
         self._add_page(MaterialManagerPage)
+        self._add_page(ModelManagerPage)
         self._add_page(RecipeManagerPage)
-        self._add_page(PackageManagerPage)
+        self._add_page(AISettingsPage)
+        self._add_page(AddonManagerPage)
+        self._add_page(LicenseSettingsPage)
 
         # Create the content's NavigationPage wrapper
         pages = self.content_stack.get_pages()
@@ -80,13 +89,7 @@ class SettingsWindow(PatchedDialogWindow):
         initial_row = self.sidebar_list.get_row_at_index(initial_index)
         self.sidebar_list.select_row(initial_row)
 
-        # Key controller
-        key_controller = Gtk.EventControllerKey()
-        key_controller.connect("key-pressed", self._on_key_pressed)
-        self.add_controller(key_controller)
-
     def _add_page(self, page_class):
-        # ... (Same as existing code)
         page = page_class()
         page_name = page.get_title()
         self.content_stack.add_titled(page, page_name, page_name)
@@ -108,7 +111,6 @@ class SettingsWindow(PatchedDialogWindow):
         self.sidebar_list.append(row)
 
     def _on_row_selected(self, listbox, row):
-        # ... (Same as existing code)
         if row:
             index = row.get_index()
             pages = self.content_stack.get_pages()
@@ -117,10 +119,3 @@ class SettingsWindow(PatchedDialogWindow):
             self.content_stack.set_visible_child(widget_to_show)
             page_title = stack_page.get_title()
             self.content_page.set_title(page_title)
-
-    def _on_key_pressed(self, controller, keyval, keycode, state):
-        # ... (Same as existing code)
-        if keyval == Gdk.KEY_Escape:
-            self.close()
-            return True
-        return False

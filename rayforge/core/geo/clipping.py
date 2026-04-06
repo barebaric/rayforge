@@ -1,5 +1,7 @@
 from typing import List, Tuple, Optional
+from .polygon import Polygon, Point
 from .primitives import is_point_in_polygon, get_segment_region_intersections
+from .types import Point3D, Rect
 
 
 # Cohen-Sutherland outcodes
@@ -10,9 +12,7 @@ _BOTTOM = 4  # 0100
 _TOP = 8  # 1000
 
 
-def _compute_outcode(
-    x: float, y: float, rect: Tuple[float, float, float, float]
-) -> int:
+def _compute_outcode(x: float, y: float, rect: Rect) -> int:
     x_min, y_min, x_max, y_max = rect
     code = _INSIDE
     if x < x_min:
@@ -27,10 +27,10 @@ def _compute_outcode(
 
 
 def clip_line_segment(
-    p1: Tuple[float, float, float],
-    p2: Tuple[float, float, float],
-    rect: Tuple[float, float, float, float],
-) -> Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float]]]:
+    p1: Point3D,
+    p2: Point3D,
+    rect: Rect,
+) -> Optional[Tuple[Point3D, Point3D]]:
     """
     Clips a 3D line segment to an axis-aligned 2D rectangle using the
     Cohen-Sutherland algorithm. Z-coordinates are interpolated.
@@ -76,16 +76,14 @@ def clip_line_segment(
 
 
 def subtract_regions_from_line_segment(
-    p1: Tuple[float, float, float],
-    p2: Tuple[float, float, float],
-    regions: List[List[Tuple[float, float]]],
-) -> List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]]:
+    p1: Point3D,
+    p2: Point3D,
+    regions: List[Polygon],
+) -> List[Tuple[Point3D, Point3D]]:
     """
     Calculates the sub-segments of a line that lie outside a list of polygons.
     """
-    kept_segments: List[
-        Tuple[Tuple[float, float, float], Tuple[float, float, float]]
-    ] = []
+    kept_segments: List[Tuple[Point3D, Point3D]] = []
     sorted_cuts = get_segment_region_intersections(p1[:2], p2[:2], regions)
 
     for i in range(len(sorted_cuts) - 1):
@@ -105,13 +103,70 @@ def subtract_regions_from_line_segment(
         )
 
         if not is_inside_any_region:
-            # This sub-segment is kept. Interpolate its 3D coordinates.
-            sub_p1: Tuple[float, float, float] = (
+            sub_p1 = (
                 p1[0] + (p2[0] - p1[0]) * t1,
                 p1[1] + (p2[1] - p1[1]) * t1,
                 p1[2] + (p2[2] - p1[2]) * t1,
             )
-            sub_p2: Tuple[float, float, float] = (
+            sub_p2 = (
+                p1[0] + (p2[0] - p1[0]) * t2,
+                p1[1] + (p2[1] - p1[1]) * t2,
+                p1[2] + (p2[2] - p1[2]) * t2,
+            )
+            kept_segments.append((sub_p1, sub_p2))
+
+    return kept_segments
+
+
+def clip_line_segment_to_regions(
+    p1: Point3D,
+    p2: Point3D,
+    regions: List[Polygon],
+) -> List[Tuple[Point3D, Point3D]]:
+    """
+       Returns the sub-segments of a line segment that lie inside a list of
+    polygons.
+
+       This is the inverse of subtract_regions_from_line_segment.
+
+       Args:
+           p1: Start point of the line segment (x, y, z).
+           p2: End point of the line segment (x, y, z).
+           regions: List of closed polygons defining valid areas.
+
+       Returns:
+           List of (start_point, end_point) tuples representing the portions
+           of the line segment that are inside at least one of the regions.
+    """
+    kept_segments: List[Tuple[Point3D, Point3D]] = []
+
+    if not regions:
+        return kept_segments
+
+    sorted_cuts = get_segment_region_intersections(p1[:2], p2[:2], regions)
+
+    for i in range(len(sorted_cuts) - 1):
+        t1, t2 = sorted_cuts[i], sorted_cuts[i + 1]
+        if abs(t1 - t2) < 1e-9:
+            continue
+
+        mid_t = (t1 + t2) / 2.0
+        mid_p: Point = (
+            p1[0] + (p2[0] - p1[0]) * mid_t,
+            p1[1] + (p2[1] - p1[1]) * mid_t,
+        )
+
+        is_inside_any_region = any(
+            is_point_in_polygon(mid_p, r) for r in regions
+        )
+
+        if is_inside_any_region:
+            sub_p1 = (
+                p1[0] + (p2[0] - p1[0]) * t1,
+                p1[1] + (p2[1] - p1[1]) * t1,
+                p1[2] + (p2[2] - p1[2]) * t1,
+            )
+            sub_p2 = (
                 p1[0] + (p2[0] - p1[0]) * t2,
                 p1[1] + (p2[1] - p1[1]) * t2,
                 p1[2] + (p2[2] - p1[2]) * t2,

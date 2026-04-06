@@ -66,6 +66,227 @@
   </screenshots>
 
   <releases>
+    <release version="1.4.1" date="2026-04-01">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>PDF import now falls back to fitz when pymupdf is not installed</li>
+          <li>DPI setting in the SVG import dialog is now persistent between sessions</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.4" date="2026-03-29">
+      <description>
+        <p>Rotary Axis Support, PDF Layer Import, and Camera Calibration</p>
+        <p>Major Changes:</p>
+        <ul>
+          <li>Full rotary axis support with 3D visualization</li>
+          <li>PDF direct vector import with layer support</li>
+          <li>Camera de-distortion with Charuco calibration wizard</li>
+          <li>Sketcher: ellipse tool replacing circle tool</li>
+        </ul>
+        <p>Rotary Axis:</p>
+        <ul>
+          <li>Full 3D visualization for rotary mode</li>
+          <li>Support for multiple rotary modules</li>
+          <li>Configurable rotary mode per layer</li>
+          <li>Rotary icon displayed on rotary layers</li>
+        </ul>
+        <p>PDF Improvements:</p>
+        <ul>
+          <li>Direct vector import for PDF files</li>
+          <li>PDF importer now supports layers</li>
+          <li>Split PDF based workpieces into layers</li>
+        </ul>
+        <p>Camera Calibration:</p>
+        <ul>
+          <li>Improved five factor de-distortion algorithm</li>
+          <li>Charuco card based calibration wizard</li>
+          <li>Guided calibration setup process</li>
+        </ul>
+        <p>Sketcher Improvements:</p>
+        <ul>
+          <li>Ellipse tool replaces circle tool for more flexibility</li>
+          <li>Many tools automatically constrain geometry during creation</li>
+          <li>Magnetic snap now works while creating geometry</li>
+          <li>Replaced snap to grid with smarter magnetic snap</li>
+          <li>Equality constraint now works on ellipses</li>
+        </ul>
+        <p>Frame Feature:</p>
+        <ul>
+          <li>Configure frame speed in laser head settings</li>
+          <li>Corner dwell time setting for framing</li>
+          <li>Repeat count setting for framing</li>
+        </ul>
+        <p>Post-Processors:</p>
+        <ul>
+          <li>New merge lines post-processor to avoid double cutting</li>
+        </ul>
+        <p>UI Improvements:</p>
+        <ul>
+          <li>More compact left panel layout with add buttons in group headers</li>
+          <li>G-code viewer moved into the bottom panel</li>
+          <li>3D canvas performance improvements</li>
+        </ul>
+        <p>Other Improvements:</p>
+        <ul>
+          <li>Machine profile for Acmer S1 added</li>
+          <li>GRBL buffer size tracking improved</li>
+          <li>Dialects are now isolated copies (templates)</li>
+          <li>Dialects support separate laser on command for focusing</li>
+          <li>Texture dimension limit prevents memory exhaustion</li>
+        </ul>
+        <p>Fixed:</p>
+        <ul>
+          <li>Material test producer bugs (issues #181 and #182)</li>
+          <li>GRBL position reporting for machines with only X and Y axes (#179)</li>
+          <li>Sketcher: Distance constraint shadowing the line</li>
+          <li>Texture renderer memory exhaustion on large images</li>
+          <li>Race condition in worker initialization</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.3.2" date="2026-03-24">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>Raster step settings now display angle numerically</li>
+          <li>Fixed import issues on Windows</li>
+          <li>Unknown G-code dialects now fall back to Grbl</li>
+          <li>Fixed duplicate error notifications from the driver</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.3.1" date="2026-03-24">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>Fixed icon sizing issues on systems with Gtk 4.21</li>
+          <li>Fixed Windows and macOS build issues</li>
+          <li>Fixed conflicting menu shortcuts in the sketcher</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.3" date="2026-03-23">
+      <description>
+        <p>Bezier Curves in Sketcher and Modular Architecture</p>
+        <p>Major Changes:</p>
+        <ul>
+          <li>Full bezier curve support in the parametric sketcher</li>
+          <li>Sketcher moved to an optional add-on</li>
+          <li>New unified path tool combining lines and curves</li>
+          <li>More compact G-code output</li>
+        </ul>
+        <p>Sketcher Improvements:</p>
+        <ul>
+          <li>Intuitive bezier editing with drag handles</li>
+          <li>Connect curves to existing geometry</li>
+          <li>Smooth or symmetric endpoints for connected paths</li>
+          <li>Straighten tool to convert beziers to lines</li>
+          <li>Grid tool for visual reference</li>
+          <li>Show/hide construction geometry and constraints</li>
+          <li>Hold Shift to constrain movement to axis</li>
+          <li>Conflicting constraints shown in panel</li>
+        </ul>
+        <p>G-code Improvements:</p>
+        <ul>
+          <li>Unchanged coordinates now omitted for smaller files</li>
+          <li>G-code viewer shows line count and byte size</li>
+          <li>Raster operation gains sample interval and power levels settings</li>
+        </ul>
+        <p>Fixed:</p>
+        <ul>
+          <li>Most icons not displayed on systems with Gtk &gt; 4.21</li>
+          <li>Fillet and chamfer tools not working correctly</li>
+          <li>Texture encoder drawing spaced dots instead of lines</li>
+          <li>Loading project files with unknown assets</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.2.1" date="2026-03-19">
+      <description>
+        <p>Bug fix release</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Buttons to move to center, bottom/left and top/right of workpiece</li>
+          <li>Support for setting a "tab power"</li>
+          <li>Sketcher: allow entering dimensions while adding geometry</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Better button layout in the control panel</li>
+          <li>Sketcher: circle now uses diameter constraint consistently</li>
+          <li>Laser dot now always drawn on top, not obscured by workpieces</li>
+        </ul>
+        <p>Fixed:</p>
+        <ul>
+          <li>Builtin addon yaml files not included in .snap</li>
+          <li>Imprecise tab location while dragging the tab handle</li>
+          <li>Tabs not working on beziers</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.2" date="2026-03-18">
+      <description>
+        <p>Addon System Rewrite and AI Workpiece Generation</p>
+        <p>Major Changes:</p>
+        <ul>
+          <li>AI workpiece generation</li>
+          <li>Complete addon system rewrite and refactoring</li>
+          <li>Built-in addons: laser-essentials, core materials, post-processors, layout</li>
+          <li>Path optimizer now also optimizes inter-workpiece travel</li>
+          <li>Stock is now a document-level concept - no more stock per layer</li>
+        </ul>
+        <p>New Features:</p>
+        <ul>
+          <li>Camera image enhancement with temporal noise reduction</li>
+          <li>Fisheye lens distortion correction</li>
+          <li>Zoom, pan and keyboard navigation in camera alignment dialog</li>
+          <li>Tons of new materials in core materials addon</li>
+          <li>Mach4 G-code dialect</li>
+          <li>Post-processor: crop-to-stock</li>
+          <li>Click canvas to set zero feature</li>
+          <li>Support for configuring cut/raster colors per laser</li>
+          <li>Support for duplicating stock and non-rectangular stock</li>
+          <li>Convert workpiece to stock (right-click menu)</li>
+          <li>Machine profile for OMTech K40+</li>
+          <li>Navigation and zoom icons for UI controls</li>
+        </ul>
+        <p>Sketcher Improvements:</p>
+        <ul>
+          <li>Live preview for line tool</li>
+          <li>Dimension display while adding geometry</li>
+          <li>Snap-to-grid on Ctrl press</li>
+          <li>Hover highlighting for entities and constraints</li>
+          <li>Toolbar shows currently available shortcuts</li>
+          <li>Shift+Double click selects connected geometry</li>
+          <li>Arc radius can be changed while adding second endpoint</li>
+          <li>Selection preserved when creating lines, arcs, or circles</li>
+        </ul>
+        <p>Other Improvements:</p>
+        <ul>
+          <li>Imported items and stock aligned with WCS origin by default</li>
+          <li>Improved camera selection dialog (left/right indicators, keyboard support)</li>
+          <li>Sketcher symmetry constraint click order aligns with FreeCAD</li>
+          <li>Maximum laser G-code power increased to 100.000</li>
+          <li>Context lazy loads most services for better performance</li>
+          <li>RAYFORGE_DISABLE_3D environment variable</li>
+        </ul>
+        <p>Fixed:</p>
+        <ul>
+          <li>Undoing text box left entries in history manager stack</li>
+          <li>Y axis drawn on wrong side of canvas</li>
+          <li>Auto layout for rotated stock</li>
+          <li>SVG exporter stacking multiple workpieces on top of each other</li>
+          <li>Text color in Sketcher while editing</li>
+          <li>Default laser assignment when project references non-existent laser</li>
+          <li>Text box rotating while typing on Windows</li>
+          <li>Addon handling issues on Windows</li>
+          <li>macOS app menu window narrowed to MainWindow</li>
+          <li>macOS app menu actions</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.1.2" date="2026-02-28">
       <description>
         <p>Bug fix release</p>

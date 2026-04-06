@@ -1,251 +1,284 @@
-# Flux de Travail Multi-Couches
+# Flux de travail multi-couches
 
-Le système multi-couches de Rayforge vous permet d'organiser des travaux complexes en étapes de traitement séparées, chacune avec ses propres opérations et paramètres. C'est essentiel pour combiner différents processus comme la gravure et la coupe, ou travailler avec plusieurs matériaux.
+Le système multi-couches de Rayforge vous permet d'organiser des travaux
+complexes en étapes de traitement séparées, chacune avec ses propres opérations
+et paramètres. Ceci est essentiel pour combiner différents processus comme la
+gravure et la découpe, ou pour travailler avec plusieurs matériaux.
 
-## Que Sont les Calques ?
+## Que sont les couches ?
 
-Un **calque** dans Rayforge est :
+Une **couche** dans Rayforge est :
 
 - **Un conteneur** pour les pièces (formes importées, images, texte)
 - **Un flux de travail** définissant comment ces pièces sont traitées
 - **Une étape** traitée séquentiellement pendant les travaux
 
-**Concept clé :** Les calques sont traités dans l'ordre, un après l'autre, vous permettant de contrôler la séquence des opérations.
+**Concept clé :** Les couches sont traitées dans l'ordre, l'une après l'autre,
+vous permettant de contrôler la séquence des opérations.
 
-:::note Calques et Pièces
-Un calque contient une ou plusieurs pièces. Lors de l'importation de fichiers SVG avec des calques, chaque calque de votre design devient un calque séparé dans Rayforge.
-Cela vous permet de garder votre design organisé exactement comme vous l'avez créé.
+:::note Couches et pièces
+Une couche contient une ou plusieurs pièces. Lors de l'importation de fichiers
+SVG avec des couches, chaque couche de votre conception devient une couche
+séparée dans Rayforge. Cela vous permet de garder votre conception organisée
+exactement comme vous l'avez créée.
 :::
-
 
 ---
 
-## Pourquoi Utiliser Plusieurs Calques ?
+## Pourquoi utiliser plusieurs couches ?
 
-### Cas d'Utilisation Courants
+### Cas d'utilisation courants
 
-**1. Graver puis Couper**
+**1. Graver puis découper**
 
 Le flux de travail multi-couches le plus courant :
 
-- **Calque 1 :** Gravure raster du design
-- **Calque 2 :** Coupe de contour du contour
+- **Couche 1 :** Gravure tramée du motif
+- **Couche 2 :** Découpe de contour du profil
 
-**Pourquoi des calques séparés ?**
+**Pourquoi des couches séparées ?**
 
-- La gravure d'abord assure que la pièce ne bouge pas pendant la gravure
-- La coupe à la fin empêche les pièces de tomber avant la fin de la gravure
-- Différents paramètres puissance/vitesse pour chaque opération
+- La gravure en premier garantit que la pièce ne bouge pas pendant la gravure
+- La découpe en dernier empêche les pièces de tomber avant la fin de la gravure
+- Différents réglages de puissance/vitesse pour chaque opération
 
-**2. Coupe Multi-Passes**
+**2. Découpe en passes multiples**
 
 Pour les matériaux épais :
 
-- **Calque 1 :** Première passe à puissance modérée
-- **Calque 2 :** Deuxième passe à pleine puissance (même géométrie)
-- **Calque 3 :** Troisième passe optionnelle si nécessaire
+- **Couche 1 :** Première passe à puissance modérée
+- **Couche 2 :** Deuxième passe à pleine puissance (même géométrie)
+- **Couche 3 :** Troisième passe optionnelle si nécessaire
 
 **Avantages :**
 
-- Réduit le brunissement comparé à une seule passe à haute puissance
-- Chaque calque peut avoir des paramètres vitesse/puissance différents
+- Réduit la carbonisation par rapport à une seule passe à haute puissance
+- Chaque couche peut avoir différents réglages vitesse/puissance
 
-**3. Projets Multi-Matériaux**
+**3. Projets multi-matériaux**
 
-Différents matériaux dans un travail :
+Différents matériaux dans un seul travail :
 
-- **Calque 1 :** Couper les pièces en acrylique
-- **Calque 2 :** Graver les pièces en bois
-- **Calque 3 :** Marquer les pièces en métal
+- **Couche 1 :** Découper les pièces en acrylique
+- **Couche 2 :** Graver les pièces en bois
+- **Couche 3 :** Marquer les pièces en métal
 
-**Prérequis :**
+**Exigences :**
 
-- Chaque calque cible différentes zones du lit
-- Différents vitesse/puissance/mise au point pour chaque matériau
+- Chaque couche cible différentes zones du plateau
+- Différentes vitesse/puissance/mise au point pour chaque matériau
 
-**4. Import de Calques SVG**
+**4. Importation de couches SVG**
 
-Importer des fichiers SVG avec une structure de calques existante :
+Importer des fichiers SVG avec une structure de couches existante :
 
-- **Calque 1 :** Éléments de gravure du SVG
-- **Calque 2 :** Éléments de coupe du SVG
-- **Calque 3 :** Éléments de marquage du SVG
+- **Couche 1 :** Éléments de gravure du SVG
+- **Couche 2 :** Éléments de découpe du SVG
+- **Couche 3 :** Éléments de marquage du SVG
 
 **Flux de travail :**
 
-- Importez un fichier SVG qui a des calques
-- Activez "Utiliser les Vecteurs Originaux" dans la boîte de dialogue d'importation
-- Sélectionnez quels calques importer depuis la liste des calques détectés
-- Chaque calque devient un calque séparé dans Rayforge
+- Importer un fichier SVG contenant des couches
+- Activer « Utiliser les vecteurs originaux » dans la boîte de dialogue
+  d'importation
+- Sélectionner les couches à importer dans la liste des couches détectées
+- Chaque couche devient une couche séparée dans Rayforge
 
-**Prérequis :**
+**Exigences :**
 
-- Votre fichier SVG doit utiliser des calques (créés dans Inkscape ou logiciel similaire)
-- Activez "Utiliser les Vecteurs Originaux" lors de l'importation
-- Les noms de calques sont préservés depuis votre logiciel de design
+- Votre fichier SVG doit utiliser des couches (créées dans Inkscape ou logiciel
+  similaire)
+- Activer « Utiliser les vecteurs originaux » lors de l'importation
+- Les noms des couches sont préservés depuis votre logiciel de conception
 
 ---
 
-## Créer et Gérer les Calques
+## Créer et gérer les couches
 
-### Ajouter un Nouveau Calque
+### Ajouter une nouvelle couche
 
-1. **Cliquez sur le bouton "+"** dans le panneau Calques
-2. **Nommez le calque** de manière descriptive (ex : "Calque Gravure", "Calque Coupe")
-3. **Le calque apparaît** dans la liste des calques
+1. **Cliquez sur le bouton « + »** dans le panneau Couches
+2. **Nommez la couche** de manière descriptive (ex. : « Couche gravure »,
+   « Couche découpe »)
+3. **La couche apparaît** dans la liste des couches
 
-**Par défaut :** Les nouveaux documents commencent avec un calque.
+**Par défaut :** Les nouveaux documents commencent avec une couche.
 
-### Propriétés du Calque
+### Propriétés des couches
 
-Chaque calque a :
+Chaque couche possède :
 
-| Propriété | Description |
-| --------- | ----------- |
-| **Nom** | Le nom affiché dans la liste des calques |
-| **Visible** | Basculer la visibilité dans le canevas et l'aperçu |
-| **Élément de Matériau** | Association de matériau optionnelle |
-| **Flux de Travail** | Les opérations appliquées aux pièces de ce calque |
-| **Pièces** | Les formes/images contenues dans ce calque |
+| Propriété           | Description                                          |
+| ------------------- | ---------------------------------------------------- |
+| **Nom**             | Le nom affiché dans la liste des couches             |
+| **Visible**         | Basculer la visibilité sur le canevas et l'aperçu    |
+| **Flux de travail** | Les opérations appliquées aux pièces de cette couche |
+| **Rotatif**         | Indique si cette couche s'exécute en mode rotatif    |
+| **Pièces**          | Les formes/images contenues dans cette couche        |
 
-:::note Calques comme Conteneurs
-Les calques sont des conteneurs pour vos pièces. Lors de l'importation de fichiers SVG avec des calques, chaque calque de votre design devient un calque séparé dans Rayforge.
+### Mode rotatif par couche
+
+Si vous avez un [accessoire rotatif](../machine/rotary) configuré, vous pouvez
+activer le mode rotatif pour des couches individuelles. Cela vous permet de
+combiner un travail sur surface plane et un travail cylindrique dans le même
+projet — par exemple, graver un motif sur le couvercle plat d'une boîte sur une
+couche et enrouler du texte autour du corps cylindrique sur une autre.
+
+Les couches avec le mode rotatif actif affichent une petite icône rotative dans
+la liste des couches. Chaque couche mémorise son propre réglage rotatif, vous
+permettant de les mélanger librement.
+
+:::note Couches comme conteneurs
+Les couches sont des conteneurs pour vos pièces. Lors de l'importation de
+fichiers SVG avec des couches, chaque couche de votre conception devient une
+couche séparée dans Rayforge.
 :::
 
+### Réorganiser les couches
 
-### Réorganiser les Calques
-
-**L'ordre d'exécution = ordre des calques dans la liste (de haut en bas)**
+**L'ordre d'exécution = l'ordre des couches dans la liste (de haut en bas)**
 
 Pour réorganiser :
 
-1. **Glissez et déposez** les calques dans le panneau Calques
-2. **L'ordre compte** - les calques s'exécutent de haut en bas
+1. **Glissez-déposez** les couches dans le panneau Couches
+2. **L'ordre compte** - les couches s'exécutent de haut en bas
 
 **Exemple :**
 
 ```
-Panneau Calques :
-1. Calque Gravure     S'exécute en premier
-2. Calque Marquage    S'exécute en deuxième
-3. Calque Coupe       S'exécute en dernier (recommandé)
+Panneau Couches :
+1. Couche de gravure     S'exécute en premier
+2. Couche de marquage    S'exécute en deuxième
+3. Couche de découpe     S'exécute en dernier (recommandé)
 ```
 
-### Supprimer des Calques
+### Supprimer des couches
 
-1. **Sélectionnez le calque** dans le panneau Calques
-2. **Cliquez sur le bouton supprimer** ou appuyez sur Supprimer
-3. **Confirmez la suppression** (toutes les pièces du calque sont supprimées)
+1. **Sélectionnez la couche** dans le panneau Couches
+2. **Cliquez sur le bouton de suppression** ou appuyez sur Supprimer
+3. **Confirmez la suppression** (toutes les pièces de la couche sont
+   supprimées)
 
-:::warning La Suppression est Permanente
-Supprimer un calque supprime toutes ses pièces et ses paramètres de flux de travail. Utilisez Annuler si vous supprimez accidentellement.
+:::warning La suppression est définitive
+Supprimer une couche retire toutes ses pièces et ses paramètres de flux de
+travail. Utilisez Annuler en cas de suppression accidentelle.
 :::
-
 
 ---
 
-## Assigner des Pièces aux Calques
+## Assigner des pièces aux couches
 
-### Assignation Manuelle
+### Assignation manuelle
 
 1. **Importez ou créez** une pièce
-2. **Glissez la pièce** vers le calque souhaité dans le panneau Calques
-3. **Ou utilisez le panneau des propriétés** pour changer le calque de la pièce
+2. **Glissez la pièce** vers la couche souhaitée dans le panneau Couches
+3. **Ou utilisez le panneau de propriétés** pour changer la couche de la pièce
 
-### Import de Calques SVG
+### Importation de couches SVG
 
-Lors de l'importation de fichiers SVG avec "Utiliser les Vecteurs Originaux" activé :
+Lors de l'importation de fichiers SVG avec « Utiliser les vecteurs originaux »
+activé :
 
-1. **Activez "Utiliser les Vecteurs Originaux"** dans la boîte de dialogue d'importation
-2. **Rayforge détecte les calques** de votre fichier SVG
-3. **Sélectionnez quels calques** importer en utilisant les interrupteurs de calque
-4. **Chaque calque sélectionné** devient un calque séparé avec sa propre pièce
+1. **Activez « Utiliser les vecteurs originaux »** dans la boîte de dialogue
+   d'importation
+2. **Rayforge détecte les couches** de votre fichier SVG
+3. **Sélectionnez les couches** à importer avec les interrupteurs de couche
+4. **Chaque couche sélectionnée** devient une couche séparée avec sa propre
+   pièce
 
-:::note Détection de Calques
-Rayforge détecte automatiquement les calques de votre fichier SVG. Chaque calque que vous avez créé dans votre logiciel de design apparaîtra comme un calque séparé dans Rayforge.
+:::note Détection des couches
+Rayforge détecte automatiquement les couches de votre fichier SVG. Chaque couche
+que vous avez créée dans votre logiciel de conception apparaîtra comme une couche
+séparée dans Rayforge.
 :::
 
-
-:::note Import Vectoriel Uniquement
-La sélection de calques n'est disponible que lors de l'utilisation de l'import vectoriel direct.
-Lors de l'utilisation du mode trace, le SVG entier est traité comme une seule pièce.
+:::note Importation vectorielle uniquement
+La sélection de couches n'est disponible que lors de l'utilisation de
+l'importation directe de vecteurs. En mode tracé, le SVG entier est traité
+comme une seule pièce.
 :::
 
+### Déplacer des pièces entre les couches
 
-### Déplacer des Pièces Entre les Calques
+**Glisser-déposer :**
 
-**Glisser et déposer :**
-
-- Sélectionnez la/les pièce(s) dans le canevas ou le panneau Document
-- Glissez vers le calque cible dans le panneau Calques
+- Sélectionnez la ou les pièces sur le canevas ou le panneau Document
+- Glissez vers la couche cible dans le panneau Couches
 
 **Couper et coller :**
 
-- Coupez la pièce du calque actuel (Ctrl+X)
-- Sélectionnez le calque cible
+- Coupez la pièce de la couche actuelle (Ctrl+X)
+- Sélectionnez la couche cible
 - Collez (Ctrl+V)
 
-### Boîte de Dialogue d'Import SVG
+### Boîte de dialogue d'importation SVG
 
-Lors de l'importation de fichiers SVG, la boîte de dialogue d'importation fournit des options qui affectent la gestion des calques :
+Lors de l'importation de fichiers SVG, la boîte de dialogue d'importation
+fournit des options qui affectent la gestion des couches :
 
-**Mode d'Importation :**
+**Mode d'importation :**
 
-- **Utiliser les Vecteurs Originaux :** Préserve vos parcours vectoriels et la structure des calques.
-  Lorsqu'activé, une section "Calques" apparaît montrant tous les calques de votre fichier.
-- **Mode Trace :** Convertit le SVG en bitmap et trace les contours.
-  La sélection de calques est désactivée dans ce mode.
+- **Utiliser les vecteurs originaux :** Préserve vos tracés vectoriels et la
+  structure des couches. Lorsqu'activé, une section « Couches » apparaît
+  montrant toutes les couches de votre fichier.
+- **Mode tracé :** Convertit le SVG en image bitmap et trace les contours. La
+  sélection de couches est désactivée dans ce mode.
 
-**Section Calques (Import Vectoriel Uniquement) :**
+**Section Couches (importation vectorielle uniquement) :**
 
-- Affiche tous les calques de votre fichier SVG
-- Chaque calque a un interrupteur pour activer/désactiver l'importation
-- Les noms de calques de votre logiciel de design sont préservés
-- Seuls les calques sélectionnés sont importés comme calques séparés
+- Affiche toutes les couches de votre fichier SVG
+- Chaque couche possède un interrupteur pour activer/désactiver l'importation
+- Les noms des couches de votre logiciel de conception sont préservés
+- Seules les couches sélectionnées sont importées comme couches séparées
 
-:::tip Préparer les Fichiers SVG pour l'Import de Calques
-Pour utiliser l'import de calques SVG, créez votre design avec des calques dans un logiciel comme Inkscape. Utilisez le panneau Calques pour organiser votre design, et Rayforge
-préservera cette structure.
+:::tip Préparer les fichiers SVG pour l'importation de couches
+Pour utiliser l'importation de couches SVG, créez votre conception avec des
+couches dans un logiciel comme Inkscape. Utilisez le panneau Couches pour
+organiser votre conception, et Rayforge préservera cette structure.
 :::
-
 
 ---
 
-## Flux de Travail des Calques
+## Flux de travail des couches
 
-Chaque calque a un **Flux de Travail** qui définit comment ses pièces sont traitées.
+Chaque couche possède un **flux de travail** qui définit comment ses pièces sont
+traitées.
 
-### Configurer les Flux de Travail des Calques
+### Configurer les flux de travail des couches
 
-Pour chaque calque, vous choisissez un type d'opération et configurez ses paramètres :
+Pour chaque couche, vous choisissez un type d'opération et configurez ses
+paramètres :
 
-**Types d'Opérations :**
+**Types d'opération :**
 
-- **Contour** - Suit les contours (pour la coupe ou le marquage)
-- **Gravure Raster** - Grave les images et remplit les zones
-- **Gravure en Profondeur** - Crée des gravures de profondeur variable
+- **Contour** - Suit les contours (pour la découpe ou le marquage)
+- **Gravure tramée** - Grave des images et remplit des zones
+- **Gravure en profondeur** - Crée des gravures à profondeur variable
 
-**Améliorations Optionnelles :**
+**Améliorations optionnelles :**
 
-- **Onglets** - Petits ponts pour maintenir les pièces en place pendant la coupe
-- **Overscan** - Étend les coupes au-delà de la forme pour des bords plus propres
-- **Ajustement de Kerf** - Compense la largeur de coupe du laser
+- **Ponts** - Petits ponts pour maintenir les pièces en place pendant la
+  découpe
+- **Overscan** - Prolonge les coupes au-delà de la forme pour des bords plus
+  propres
+- **Ajustement du kerf** - Compense la largeur de coupe du laser
 
-### Configurations de Calques Courantes
+### Configurations courantes de couches
 
-**Calque de Gravure :**
+**Couche de gravure :**
 
-- Opération : Gravure Raster
+- Opération : Gravure tramée
 - Paramètres : 300-500 DPI, vitesse modérée
-- Typiquement aucune option supplémentaire nécessaire
+- Généralement aucune option supplémentaire nécessaire
 
-**Calque de Coupe :**
+**Couche de découpe :**
 
-- Opération : Coupe de Contour
-- Options : Onglets (pour maintenir les pièces), Overscan (pour des bords propres)
+- Opération : Découpe de contour
+- Options : Ponts (pour maintenir les pièces), Overscan (pour des bords
+  propres)
 - Paramètres : Vitesse plus lente, puissance plus élevée
 
-**Calque de Marquage :**
+**Couche de marquage :**
 
 - Opération : Contour (puissance légère, ne coupe pas à travers)
 - Paramètres : Faible puissance, vitesse rapide
@@ -253,245 +286,282 @@ Pour chaque calque, vous choisissez un type d'opération et configurez ses param
 
 ---
 
-## Visibilité des Calques
+## Visibilité des couches
 
-Contrôlez quels calques sont affichés dans le canevas et les aperçus :
+Contrôlez quelles couches sont affichées sur le canevas et dans les aperçus :
 
-### Visibilité du Canevas
+### Visibilité sur le canevas
 
-- **Icône œil** dans le panneau Calques bascule la visibilité
-- **Calques masqués :**
-  - Non affichés dans le canevas 2D
-  - Non affichés dans l'aperçu 3D
-  - **Toujours inclus dans le G-code généré**
+- **L'icône œil** dans le panneau Couches bascule la visibilité
+- **Couches masquées :**
+  - Non affichées sur le canevas 2D
+  - Non affichées dans l'aperçu 3D
+  - **Toujours incluses dans le G-code généré**
 
 **Cas d'utilisation :**
 
-- Masquer les calques de gravure complexes pendant le positionnement des calques de coupe
-- Désencombrer le canevas lors du travail sur des calques spécifiques
-- Se concentrer sur un calque à la fois
+- Masquer les couches de gravure complexes tout en positionnant les couches de
+  découpe
+- Dégager le canevas lors du travail sur des couches spécifiques
+- Se concentrer sur une couche à la fois
 
-### Visibilité vs Activé
+### Visibilité vs. Activé
 
-| État | Canevas | Aperçu | G-code |
-| ---- | ------- | ------ | ------ |
-| **Visible & Activé** | Oui | Oui | Oui |
-| **Masqué & Activé** | Non | Non | Oui |
-| **Visible & Désactivé** | Oui | Oui | Non |
-| **Masqué & Désactivé** | Non | Non | Non |
+| État                     | Canevas | Aperçu | G-code |
+| ------------------------ | ------- | ------ | ------ |
+| **Visible et activé**    | Oui     | Oui    | Oui    |
+| **Masqué et activé**     | Non     | Non    | Oui    |
+| **Visible et désactivé** | Oui     | Oui    | Non    |
+| **Masqué et désactivé**  | Non     | Non    | Non    |
 
-:::note Désactiver les Calques
+:::note Désactiver les couches
 :::
 
-Pour exclure temporairement un calque des travaux sans le supprimer, désactivez l'opération du calque ou désactivez-le dans les paramètres du calque.
+Pour exclure temporairement une couche des travaux sans la supprimer,
+désactivez l'opération de la couche ou désactivez-la dans les paramètres de la
+couche.
 
 ---
 
-## Ordre d'Exécution des Calques
+## Ordre d'exécution des couches
 
-### Comment les Calques Sont Traités
+### Comment les couches sont traitées
 
-Pendant l'exécution du travail, Rayforge traite chaque calque dans l'ordre de haut en bas. Dans chaque calque, toutes les pièces sont traitées avant de passer au calque suivant.
+Pendant l'exécution du travail, Rayforge traite chaque couche dans l'ordre de
+haut en bas. Au sein de chaque couche, toutes les pièces sont traitées avant de
+passer à la couche suivante.
 
-### L'Ordre Compte
+### L'ordre compte
 
 **Mauvais ordre :**
 
 ```
-1. Calque Coupe
-2. Calque Gravure
+1. Couche de découpe
+2. Couche de gravure
 ```
 
-**Problème :** Les pièces coupées peuvent tomber ou bouger avant la gravure !
+**Problème :** Les pièces découpées peuvent tomber ou bouger avant la gravure !
 
 **Ordre correct :**
 
 ```
-1. Calque Gravure
-2. Calque Coupe
+1. Couche de gravure
+2. Couche de découpe
 ```
 
-**Pourquoi :** La gravure se produit pendant que la pièce est encore attachée, puis la coupe la libère.
+**Pourquoi :** La gravure se fait pendant que la pièce est encore solidaire,
+ensuite la découpe la libère.
 
-### Passes Multiples
+### Passes multiples
 
-Pour les matériaux épais, créez plusieurs calques de coupe :
+Pour les matériaux épais, créez plusieurs couches de découpe :
 
 ```
-1. Calque Gravure
-2. Calque Coupe (Passe 1) - 50% puissance
-3. Calque Coupe (Passe 2) - 75% puissance
-4. Calque Coupe (Passe 3) - 100% puissance
+1. Couche de gravure
+2. Couche de découpe (Passe 1) - 50% puissance
+3. Couche de découpe (Passe 2) - 75% puissance
+4. Couche de découpe (Passe 3) - 100% puissance
 ```
 
-**Conseil :** Utilisez la même géométrie pour toutes les passes de coupe (dupliquez le calque).
+**Astuce :** Utilisez la même géométrie pour toutes les passes de découpe
+(dupliquez la couche).
 
 ---
 
-## Techniques Avancées
+## Techniques avancées
 
-### Groupement de Calques par Matériau
+### Regroupement des couches par matériau
 
-Utilisez les calques pour organiser par matériau lors de l'exécution de travaux mixtes :
+Utilisez les couches pour organiser par matériau lors de travaux mixtes :
 
 ```
-Matériau 1 (Acrylique 3mm) :
-  - Calque Gravure Acrylique
-  - Calque Coupe Acrylique
+Matériau 1 (Acrylique 3 mm) :
+  - Couche gravure acrylique
+  - Couche découpe acrylique
 
-Matériau 2 (Contreplaqué 3mm) :
-  - Calque Gravure Bois
-  - Calque Coupe Bois
+Matériau 2 (Contreplaqué 3 mm) :
+  - Couche gravure bois
+  - Couche découpe bois
 ```
 
 **Flux de travail :**
 
-1. Traitez tous les calques du Matériau 1
-2. Changez de matériau
-3. Traitez tous les calques du Matériau 2
+1. Traiter toutes les couches du Matériau 1
+2. Changer les matériaux
+3. Traiter toutes les couches du Matériau 2
 
 **Alternative :** Utilisez des documents séparés pour différents matériaux.
 
-### Pause Entre les Calques
+### Pause entre les couches
 
-Vous pouvez configurer Rayforge pour faire une pause entre les calques. C'est utile quand vous avez besoin de :
+Vous pouvez configurer Rayforge pour faire une pause entre les couches. Ceci est
+utile lorsque vous devez :
 
-- Changer de matériau en milieu de travail
-- Inspecter la progression avant de continuer
+- Changer de matériau en cours de travail
+- Inspecter l'avancement avant de continuer
 - Ajuster la mise au point pour différentes opérations
 
-Pour configurer les pauses de calque, utilisez la fonction hooks dans vos paramètres machine.
+Pour configurer les pauses entre couches, utilisez la fonctionnalité de hooks
+dans les paramètres de votre machine.
 
-### Paramètres Spécifiques au Calque
+### Paramètres spécifiques par couche
 
-Chaque flux de travail de calque peut avoir des paramètres uniques :
+Le flux de travail de chaque couche peut avoir des paramètres uniques :
 
-| Calque | Opération | Vitesse | Puissance | Passes |
-| ------ | --------- | ------- | --------- | ------ |
-| Gravure | Raster | 300 mm/min | 20% | 1 |
-| Marquage | Contour | 500 mm/min | 10% | 1 |
-| Coupe | Contour | 100 mm/min | 90% | 2 |
+| Couche   | Opération | Vitesse    | Puissance | Passes |
+| -------- | --------- | ---------- | --------- | ------ |
+| Gravure  | Tramée    | 300 mm/min | 20%       | 1      |
+| Marquage | Contour   | 500 mm/min | 10%       | 1      |
+| Découpe  | Contour   | 100 mm/min | 90%       | 2      |
 
 ---
 
-## Meilleures Pratiques
+## Bonnes pratiques
 
-### Conventions de Nommage
+### Conventions de nommage
 
-**Bons noms de calques :**
+**Bons noms de couches :**
 
-- "Gravure - Logo"
-- "Coupe - Contour Extérieur"
-- "Marquage - Lignes de Pliage"
-- "Passe 1 - Coupe Ébauche"
-- "Passe 2 - Coupe Finale"
+- « Gravure - Logo »
+- « Découpe - Contour extérieur »
+- « Marquage - Lignes de pliage »
+- « Passe 1 - Découpe ébauche »
+- « Passe 2 - Découpe finale »
 
-**Mauvais noms de calques :**
+**Mauvais noms de couches :**
 
-- "Calque 1", "Calque 2" (pas descriptif)
-- Longues descriptions (restez concis)
+- « Couche 1 », « Couche 2 » (non descriptifs)
+- Descriptions longues (restez concis)
 
-### Organisation des Calques
+### Organisation des couches
 
 1. **De haut en bas = ordre d'exécution**
-2. **Gravure avant coupe** (règle générale)
-3. **Groupez les opérations liées** (toute coupe, toute gravure)
-4. **Utilisez la visibilité** pour vous concentrer sur le travail actuel
-5. **Supprimez les calques inutilisés** pour garder les projets propres
+2. **Gravure avant découpe** (règle générale)
+3. **Regrouper les opérations connexes** (toute la découpe, toute la gravure)
+4. **Utiliser la visibilité** pour se concentrer sur le travail en cours
+5. **Supprimer les couches inutilisées** pour garder les projets propres
 
-### Préparer les Fichiers SVG pour l'Import de Calques
+### Préparer les fichiers SVG pour l'importation de couches
 
-**Pour de meilleurs résultats lors de l'importation de calques SVG :**
+**Pour de meilleurs résultats lors de l'importation de couches SVG :**
 
-1. **Utilisez le panneau Calques** dans votre logiciel de design pour organiser votre design
-2. **Assignez des noms significatifs** à chaque calque (ex : "Gravure", "Coupe")
-3. **Gardez les calques plats** - évitez de mettre des calques dans d'autres calques
-4. **Sauvegardez votre fichier** et importez dans Rayforge
-5. **Vérifiez la détection des calques** en vérifiant la boîte de dialogue d'importation
+1. **Utilisez le panneau Couches** dans votre logiciel de conception pour
+   organiser votre motif
+2. **Attribuez des noms significatifs** à chaque couche (ex. : « Gravure »,
+   « Découpe »)
+3. **Gardez les couches à plat** - évitez de placer des couches dans d'autres
+   couches
+4. **Enregistrez votre fichier** et importez-le dans Rayforge
+5. **Vérifiez la détection des couches** en consultant la boîte de dialogue
+   d'importation
 
-Rayforge fonctionne mieux avec les fichiers SVG créés dans Inkscape ou un logiciel de design vectoriel similaire qui supporte les calques.
+Rayforge fonctionne mieux avec les fichiers SVG créés dans Inkscape ou un
+logiciel similaire de conception vectorielle qui prend en charge les couches.
 
-### Performance
+### Performances
 
-**Beaucoup de calques :**
+**Nombreuses couches :**
 
 - Pas d'impact significatif sur les performances
-- 10-20 calques est courant pour les travaux complexes
-- Organisez logiquement, pas pour minimiser le nombre de calques
+- 10 à 20 couches sont courantes pour les travaux complexes
+- Organisez logiquement, pas pour minimiser le nombre de couches
 
 **Simplifiez si nécessaire :**
 
-- Combinez des opérations similaires dans un calque quand c'est possible
-- Utilisez moins de gravures raster (les plus gourmandes en ressources)
+- Combinez les opérations similaires en une seule couche si possible
+- Utilisez moins de gravures tramées (les plus gourmandes en ressources)
 
 ---
 
 ## Dépannage
 
-### Le Calque Ne Génère Pas de G-code
+### La couche ne génère pas de G-code
 
-**Problème :** Le calque apparaît dans le document mais pas dans le G-code généré.
+**Problème :** La couche apparaît dans le document mais pas dans le G-code
+généré.
 
 **Solutions :**
 
-1. **Vérifiez que le calque a des pièces** - Les calques vides sont ignorés
-2. **Vérifiez que le flux de travail est configuré** - Le calque a besoin d'une opération
-3. **Vérifiez les paramètres de l'opération** - Puissance > 0, vitesse valide, etc.
-4. **Vérifiez la visibilité de la pièce** - Les pièces masquées peuvent ne pas être traitées
-5. **Régénérez le G-code** - Faites un petit changement pour forcer la régénération
+1. **Vérifiez que la couche contient des pièces** - Les couches vides sont
+   ignorées
+2. **Vérifiez que le flux de travail est configuré** - La couche nécessite une
+   opération
+3. **Vérifiez les paramètres de l'opération** - Puissance > 0, vitesse valide,
+   etc.
+4. **Vérifiez la visibilité des pièces** - Les pièces masquées peuvent ne pas
+   être traitées
+5. **Régénérez le G-code** - Faites un petit changement pour forcer la
+   régénération
 
-### Mauvais Ordre de Calques
+### Ordre incorrect des couches
 
 **Problème :** Les opérations s'exécutent dans un ordre inattendu.
 
-**Solution :** Réorganisez les calques dans le panneau Calques. Rappelez-vous : haut = premier.
+**Solution :** Réorganisez les couches dans le panneau Couches. Souvenez-vous :
+haut = premier.
 
-### Calques Qui Se Chevauchent dans l'Aperçu
+### Couches superposées dans l'aperçu
 
-**Problème :** Plusieurs calques affichent un contenu qui se chevauche dans l'aperçu.
+**Problème :** Plusieurs couches affichent un contenu superposé dans l'aperçu.
 
-**Clarification :** C'est normal si les calques partagent la même zone XY.
-
-**Solutions :**
-
-- Utilisez la visibilité des calques pour masquer temporairement les autres calques
-- Vérifiez l'aperçu 3D pour voir la profondeur/ordre
-- Vérifiez que c'est intentionnel (ex : graver puis couper la même forme)
-
-### Pièce dans le Mauvais Calque
-
-**Problème :** La pièce a été assignée au mauvais calque.
-
-**Solution :** Glissez la pièce vers le bon calque dans le panneau Calques ou l'arborescence Document.
-
-### Calques SVG Non Détectés
-
-**Problème :** Importation d'un fichier SVG mais aucun calque n'apparaît dans la boîte de dialogue d'importation.
+**Précision :** C'est normal si les couches partagent la même zone XY.
 
 **Solutions :**
 
-1. **Vérifiez la structure SVG** - Ouvrez votre fichier dans Inkscape ou logiciel similaire pour vérifier qu'il a des calques
-2. **Activez "Utiliser les Vecteurs Originaux"** - La sélection de calques n'est disponible que dans ce mode d'importation
-3. **Vérifiez que votre design a des calques** - Assurez-vous d'avoir créé des calques dans votre logiciel de design, pas juste des groupes
-4. **Vérifiez les calques imbriqués** - Les calques dans d'autres calques peuvent ne pas être détectés correctement
-5. **Resauvegardez votre fichier** - Parfois resauvegarder avec une version actuelle de votre logiciel de design aide
+- Utilisez la visibilité des couches pour masquer temporairement les autres
+  couches
+- Vérifiez l'aperçu 3D pour voir la profondeur/l'ordre
+- Vérifiez que c'est intentionnel (ex. : graver puis découper la même forme)
 
-### L'Import de Calques SVG Affiche le Mauvais Contenu
+### Pièce dans la mauvaise couche
 
-**Problème :** Le calque importé affiche le contenu d'autres calques ou est vide.
+**Problème :** La pièce a été assignée à une couche incorrecte.
+
+**Solution :** Glissez la pièce vers la bonne couche dans le panneau Couches ou
+l'arborescence du Document.
+
+### Couches SVG non détectées
+
+**Problème :** Importation d'un fichier SVG mais aucune couche n'apparaît dans la
+boîte de dialogue d'importation.
 
 **Solutions :**
 
-1. **Vérifiez la sélection de calque** - Vérifiez que les bons calques sont activés dans la boîte de dialogue d'importation
-2. **Vérifiez votre design** - Ouvrez le fichier original dans votre logiciel de design pour confirmer que chaque calque contient le bon contenu
-3. **Vérifiez les éléments partagés** - Les éléments qui apparaissent dans plusieurs calques peuvent causer de la confusion
-4. **Essayez le mode trace** - Utilisez le mode trace comme solution de repli si l'import vectoriel a des problèmes
+1. **Vérifiez la structure du SVG** - Ouvrez votre fichier dans Inkscape ou un
+   logiciel similaire pour vérifier qu'il contient des couches
+2. **Activez « Utiliser les vecteurs originaux »** - La sélection de couches
+   n'est disponible que dans ce mode d'importation
+3. **Vérifiez que votre conception comporte des couches** - Assurez-vous d'avoir
+   créé des couches dans votre logiciel de conception, pas seulement des groupes
+4. **Vérifiez les couches imbriquées** - Les couches à l'intérieur d'autres
+   couches peuvent ne pas être détectées correctement
+5. **Réenregistrez votre fichier** - Parfois, réenregistrer avec une version
+   récente de votre logiciel de conception aide
+
+### L'importation de couches SVG affiche un contenu incorrect
+
+**Problème :** La couche importée affiche le contenu d'autres couches ou est
+vide.
+
+**Solutions :**
+
+1. **Vérifiez la sélection des couches** - Vérifiez que les bonnes couches sont
+   activées dans la boîte de dialogue d'importation
+2. **Vérifiez votre conception** - Ouvrez le fichier original dans votre
+   logiciel de conception pour confirmer que chaque couche contient le bon
+   contenu
+3. **Vérifiez les éléments partagés** - Les éléments apparaissant dans plusieurs
+   couches peuvent causer de la confusion
+4. **Essayez le mode tracé** - Utilisez le mode tracé comme alternative si
+   l'importation vectorielle pose problème
 
 ---
 
-## Pages Connexes
+## Pages associées
 
-- [Opérations](./operations/contour) - Types d'opérations pour les flux de travail de calque
-- [Mode Simulation](./simulation-mode) - Prévisualiser l'exécution multi-couches
-- [Macros & Hooks](../machine/hooks-macros) - Hooks au niveau du calque pour l'automatisation
-- [Aperçu 3D](../ui/3d-preview) - Visualiser la pile de calques
+- [Opérations](./operations/contour) - Types d'opérations pour les flux de
+  travail de couches
+- [Mode simulation](./simulation-mode) - Aperçu de l'exécution multi-couches
+- [Macros et Hooks](../machine/hooks-macros) - Hooks au niveau des couches pour
+  l'automatisation
+- [Aperçu 3D](../ui/3d-preview) - Visualiser l'empilement des couches

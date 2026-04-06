@@ -1,12 +1,33 @@
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import List, Tuple, Optional, Dict, TYPE_CHECKING
-from ..core.geo import Geometry
+from ..core.geo import Geometry, Rect
 from ..core.matrix import Matrix
+from ..shared.util.colors import ColorRGBA
 
 if TYPE_CHECKING:
+    from ..core.asset import IAsset
     from ..core.item import DocItem
     from ..core.source_asset import SourceAsset
-    from ..core.sketcher.sketch import Sketch
+
+
+class FillStyle(Enum):
+    """Fill rendering style."""
+
+    SOLID = "solid"
+    LINEAR_GRADIENT = "linear_gradient"
+    RADIAL_GRADIENT = "radial_gradient"
+
+
+@dataclass
+class FillRenderData:
+    """Data needed to render a fill region."""
+
+    geometry: Geometry
+    style: FillStyle
+    color: ColorRGBA
+    gradient_stops: Optional[List[Tuple[float, ColorRGBA]]] = None
+    gradient_angle: float = 0.0
 
 
 @dataclass
@@ -65,6 +86,7 @@ class ImportManifest:
     title: Optional[str] = None
     warnings: List[str] = field(default_factory=list)
     errors: List[str] = field(default_factory=list)
+    is_unitless: bool = False
 
 
 @dataclass
@@ -98,7 +120,7 @@ class LayerGeometry:
 
     layer_id: str
     name: str
-    content_bounds: Tuple[float, float, float, float]
+    content_bounds: Rect
 
 
 @dataclass
@@ -159,15 +181,13 @@ class ParsingResult:
     collected by the Importer and returned in ImportResult, not here.
     """
 
-    document_bounds: Tuple[float, float, float, float]
+    document_bounds: Rect
     native_unit_to_mm: float
     is_y_down: bool
     layers: List[LayerGeometry]
-    world_frame_of_reference: Tuple[float, float, float, float]
+    world_frame_of_reference: Rect
     background_world_transform: Matrix
-    untrimmed_document_bounds: Optional[Tuple[float, float, float, float]] = (
-        None
-    )
+    untrimmed_document_bounds: Optional[Rect] = None
     geometry_is_relative_to_bounds: bool = False
     is_cropped_to_content: bool = False
 
@@ -208,7 +228,7 @@ class VectorizationResult:
 
     geometries_by_layer: Dict[Optional[str], Geometry]
     source_parse_result: ParsingResult
-    fills_by_layer: Dict[Optional[str], List[Geometry]] = field(
+    fills_by_layer: Dict[Optional[str], List[FillRenderData]] = field(
         default_factory=dict
     )
 
@@ -258,7 +278,7 @@ class LayoutItem:
     layer_name: Optional[str]
     world_matrix: Matrix
     normalization_matrix: Matrix
-    crop_window: Tuple[float, float, float, float]
+    crop_window: Rect
 
 
 @dataclass
@@ -277,7 +297,8 @@ class ImportPayload:
     Attributes:
         source: The SourceAsset representing the imported file.
         items: List of DocItems (WorkPieces or Layers) ready for insertion.
-        sketches: Optional list of Sketch objects for special importers.
+        assets: Optional list of IAsset objects (e.g., Sketches) for special
+                importers that need to create reusable asset definitions.
 
     Error Handling:
     ---------------
@@ -287,7 +308,7 @@ class ImportPayload:
 
     source: "SourceAsset"
     items: List["DocItem"]
-    sketches: List["Sketch"] = field(default_factory=list)
+    assets: List["IAsset"] = field(default_factory=list)
 
 
 @dataclass

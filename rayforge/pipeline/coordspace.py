@@ -19,6 +19,8 @@ from typing import TYPE_CHECKING, Tuple
 
 import numpy as np
 
+from ..core.geo import Point, Point3D, Rect
+
 if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine
 
@@ -127,7 +129,7 @@ class CoordinateSpace(ABC):
 
     def transform_point_to_world(
         self, x: float, y: float, extents: Tuple[float, float]
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """
         Transform a point from this space to world space.
 
@@ -178,7 +180,7 @@ class MachineSpace(CoordinateSpace):
     """
 
     extents: Tuple[float, float] = (200.0, 200.0)
-    margins: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
+    margins: Rect = (0.0, 0.0, 0.0, 0.0)
 
     @classmethod
     def from_machine(cls, machine: "Machine") -> "MachineSpace":
@@ -232,6 +234,79 @@ class MachineSpace(CoordinateSpace):
             reverse_y=machine.reverse_y_axis,
         )
 
+    def get_transform_from_world(self) -> np.ndarray:
+        """
+        Returns the inverse transformation matrix (world → machine).
+
+        This is the inverse of get_transform_to_world(), used to convert
+        coordinates from world space to machine space.
+
+        Note: This matrix handles origin corner transformation only.
+        The reverse_x/reverse_y sign flips are applied separately in
+        world_point_to_machine().
+
+        Returns:
+            A 4x4 numpy array representing the inverse transformation matrix.
+        """
+        return np.linalg.inv(self.get_transform_to_world(self.extents))
+
+    def get_world_to_machine_matrix(self) -> np.ndarray:
+        """
+        Returns the full 4x4 transformation matrix to convert from world space
+        to machine space for the encoding pipeline.
+
+        This combines the origin corner transformation with the axis
+        reversal sign flips.
+        """
+        # The reflection matrix to apply origin shift works identically in both
+        # directions (to_world / from_world) because it is its own inverse.
+        matrix = self.get_transform_to_world(self.extents)
+
+        if self.reverse_x or self.reverse_y:
+            sign_flip = np.identity(4, dtype=np.float64)
+            if self.reverse_x:
+                sign_flip[0, 0] = -1.0
+            if self.reverse_y:
+                sign_flip[1, 1] = -1.0
+            matrix = sign_flip @ matrix
+
+        return matrix
+
+    def get_command_offset(
+        self,
+        wcs_offset: Point3D = (0.0, 0.0, 0.0),
+        wcs_is_workarea_origin: bool = False,
+    ) -> Point3D:
+        """
+        Calculates the offset to subtract from machine coordinates to obtain
+        command coordinates (G-code output).
+        """
+        if wcs_is_workarea_origin:
+            ml, mt, mr, mb = self.margins
+
+            origin_is_right = self.origin in (
+                OriginCorner.TOP_RIGHT,
+                OriginCorner.BOTTOM_RIGHT,
+            )
+            origin_is_top = self.origin in (
+                OriginCorner.TOP_LEFT,
+                OriginCorner.TOP_RIGHT,
+            )
+
+            if origin_is_right:
+                x_offset = -mr if self.reverse_x else mr
+            else:
+                x_offset = -ml if self.reverse_x else ml
+
+            if origin_is_top:
+                y_offset = -mt if self.reverse_y else mt
+            else:
+                y_offset = -mb if self.reverse_y else mb
+
+            return (float(x_offset), float(y_offset), 0.0)
+        else:
+            return (wcs_offset[0], wcs_offset[1], 0.0)
+
     @property
     def workarea_size(self) -> Tuple[float, float]:
         """Returns the (width, height) of the workarea in mm."""
@@ -239,9 +314,48 @@ class MachineSpace(CoordinateSpace):
         width, height = self.extents
         return width - ml - mr, height - mt - mb
 
+    def get_workarea_world_rect(self) -> Rect:
+        """
+        Returns the work area boundary as a Rect in world space.
+        """
+        pos = self.get_workarea_origin_in_machine()
+        w, h = self.workarea_size
+        wx, wy = self.machine_item_to_world(pos, (w, h))
+        return (wx, wy, w, h)
+
+    def world_position_from_origin(
+        self, ref_x: float, ref_y: float, size: Tuple[float, float]
+    ) -> Point:
+        """
+        Convert a reference position at the origin corner to world coords.
+
+        Given a reference point at the machine's origin corner and an item
+        size, returns the bottom-left position in world coordinates.
+        This is useful for positioning items in world space when you have
+        a reference point at the origin corner.
+
+        Args:
+            ref_x: X coordinate of reference point at origin corner (world).
+            ref_y: Y coordinate of reference point at origin corner (world).
+            size: (width, height) of the item.
+
+        Returns:
+            Tuple of (x, y) for bottom-left position in world coordinates.
+        """
+        width, height = size
+
+        if self.origin == OriginCorner.BOTTOM_LEFT:
+            return ref_x, ref_y
+        elif self.origin == OriginCorner.TOP_LEFT:
+            return ref_x, ref_y - height
+        elif self.origin == OriginCorner.BOTTOM_RIGHT:
+            return ref_x - width, ref_y
+        else:  # TOP_RIGHT
+            return ref_x - width, ref_y - height
+
     def get_workarea_origin_in_machine(
         self,
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """
         Returns the position of the workarea origin in machine coordinates.
 
@@ -261,12 +375,12 @@ class MachineSpace(CoordinateSpace):
         )
 
         if origin_is_right:
-            x = width - mr
+            x = mr
         else:
             x = ml
 
         if origin_is_top:
-            y = height - mt
+            y = mt
         else:
             y = mb
 
@@ -274,9 +388,9 @@ class MachineSpace(CoordinateSpace):
 
     def get_axis_label_origin(
         self,
-        wcs_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+        wcs_offset: Point3D = (0.0, 0.0, 0.0),
         wcs_is_workarea_origin: bool = False,
-    ) -> Tuple[float, float, float]:
+    ) -> Point3D:
         """
         Get the origin offset for axis labels.
 
@@ -327,9 +441,9 @@ class MachineSpace(CoordinateSpace):
         self,
         machine_x: float,
         machine_y: float,
-        wcs_offset: Tuple[float, float, float],
+        wcs_offset: Point3D,
         wcs_is_workarea_origin: bool = False,
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """
         Convert machine coordinates to command coordinates (G-code output).
 
@@ -354,25 +468,7 @@ class MachineSpace(CoordinateSpace):
         else:
             return machine_x - wcs_offset[0], machine_y - wcs_offset[1]
 
-    def get_transform_from_world(self) -> np.ndarray:
-        """
-        Returns the inverse transformation matrix (world → machine).
-
-        This is the inverse of get_transform_to_world(), used to convert
-        coordinates from world space to machine space.
-
-        Note: This matrix handles origin corner transformation only.
-        The reverse_x/reverse_y sign flips are applied separately in
-        world_point_to_machine().
-
-        Returns:
-            A 4x4 numpy array representing the inverse transformation matrix.
-        """
-        return np.linalg.inv(self.get_transform_to_world(self.extents))
-
-    def world_point_to_machine(
-        self, x: float, y: float
-    ) -> Tuple[float, float]:
+    def world_point_to_machine(self, x: float, y: float) -> Point:
         """
         Transform a point from world space to machine space.
 
@@ -418,9 +514,7 @@ class MachineSpace(CoordinateSpace):
 
         return mx, my
 
-    def machine_point_to_world(
-        self, x: float, y: float
-    ) -> Tuple[float, float]:
+    def machine_point_to_world(self, x: float, y: float) -> Point:
         """
         Transform a point from machine space to world space.
 
@@ -469,9 +563,9 @@ class MachineSpace(CoordinateSpace):
 
     def world_item_to_machine(
         self,
-        pos: Tuple[float, float],
+        pos: Point,
         size: Tuple[float, float],
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """
         Convert item position from world space to machine space.
 
@@ -517,9 +611,9 @@ class MachineSpace(CoordinateSpace):
 
     def machine_item_to_world(
         self,
-        pos: Tuple[float, float],
+        pos: Point,
         size: Tuple[float, float],
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """
         Convert item position from machine space to world space.
 
@@ -624,7 +718,7 @@ class PixelSpace(CoordinateSpace):
         x: float,
         y: float,
         mm_dimensions: Tuple[float, float],
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """
         Convert pixel coordinates to millimeter coordinates.
 
@@ -649,7 +743,7 @@ class PixelSpace(CoordinateSpace):
 
     def transform_point_to_world(
         self, x: float, y: float, extents: Tuple[float, float]
-    ) -> Tuple[float, float]:
+    ) -> Point:
         """
         Transform a point from pixel space to world space.
 

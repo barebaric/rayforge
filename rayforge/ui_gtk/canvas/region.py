@@ -1,6 +1,7 @@
 from __future__ import annotations
 from enum import Enum, auto
 from typing import Tuple, Union, Set, Optional
+from ...core.geo import Rect
 
 
 class ElementRegion(Enum):
@@ -96,7 +97,7 @@ def get_region_rect(
     height: float,
     base_handle_size: float,
     scale_compensation: Union[float, Tuple[float, float]] = 1.0,
-) -> Tuple[float, float, float, float]:
+) -> Rect:
     """
     A generic function to calculate the rectangle (x, y, w, h) for a given
     region, relative to a bounding box of a given width and height.

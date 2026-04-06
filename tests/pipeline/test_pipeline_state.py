@@ -3,7 +3,7 @@ import logging
 import asyncio
 from unittest.mock import MagicMock
 from pathlib import Path
-from rayforge.image import SVG_RENDERER
+from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.workpiece import WorkPiece
@@ -11,27 +11,25 @@ from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.geo import Geometry
 from rayforge.core.ops import Ops
-from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.steps import ContourStep
-from rayforge.pipeline.stage.workpiece_runner import (
-    make_workpiece_artifact_in_subprocess,
-)
-from rayforge.pipeline.stage.step_runner import (
-    make_step_artifact_in_subprocess,
-)
-from rayforge.pipeline.stage.job_runner import make_job_artifact_in_subprocess
+from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact import (
     ArtifactKey,
     ArtifactManager,
     JobArtifact,
     StepOpsArtifact,
-    StepRenderArtifact,
     WorkPieceArtifact,
 )
 from rayforge.pipeline.artifact.store import ArtifactStore
+from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.dag.node import ArtifactNode, NodeState
-from rayforge.context import get_context
+from rayforge.pipeline.pipeline import Pipeline
+from rayforge.pipeline.stage.job_runner import make_job_artifact_in_subprocess
+from rayforge.pipeline.stage.step_runner import (
+    make_step_artifact_in_subprocess,
+)
+from rayforge.pipeline.stage.workpiece_runner import (
+    make_workpiece_artifact_in_subprocess,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -124,22 +122,10 @@ class TestPipelineState:
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         store = get_context().artifact_store
-                        render_artifact = StepRenderArtifact(generation_id=0)
-                        render_handle = store.put(render_artifact)
                         ops_artifact = StepOpsArtifact(
                             ops=Ops(), generation_id=0
                         )
                         ops_handle = store.put(ops_artifact)
-
-                        render_event = {
-                            "handle_dict": render_handle.to_dict(),
-                            "generation_id": gen_id,
-                        }
-                        task_info.when_event(
-                            task_obj,
-                            "render_artifact_ready",
-                            render_event,
-                        )
 
                         ops_event = {
                             "handle_dict": ops_handle.to_dict(),
@@ -178,12 +164,17 @@ class TestPipelineState:
         mock_task_mgr.created_tasks.clear()
 
     def test_shutdown_releases_all_artifacts(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -288,12 +279,17 @@ class TestPipelineState:
         assert pipeline.doc is new_doc
 
     def test_is_busy_property(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -326,12 +322,17 @@ class TestPipelineState:
 
     @pytest.mark.asyncio
     async def test_pause_resume_functionality(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -373,12 +374,17 @@ class TestPipelineState:
 
     @pytest.mark.asyncio
     async def test_paused_context_manager(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -414,7 +420,9 @@ class TestPipelineState:
         # Reconciliation should happen after resume
         mock_task_mgr.run_process.assert_called()
 
-    def test_is_paused_property(self, doc, mock_task_mgr, context_initializer):
+    def test_is_paused_property(
+        self, doc, mock_task_mgr, context_initializer, contour_step_class
+    ):
         # Arrange
         pipeline = Pipeline(
             doc,
@@ -435,7 +443,12 @@ class TestPipelineState:
         assert pipeline.is_paused is False
 
     def test_preview_time_updated_signal_is_correct(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
     ):
         """
         Tests the new end-to-end time estimation by checking the final
@@ -444,7 +457,7 @@ class TestPipelineState:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = ContourStep.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(

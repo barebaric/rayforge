@@ -1,3 +1,4 @@
 asyncudp==0.11.0
 pyvips==3.0.0
+trimesh==4.6.8
 vtracer==0.6.11

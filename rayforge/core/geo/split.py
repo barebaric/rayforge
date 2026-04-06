@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from typing import List, TYPE_CHECKING, Set
 import numpy as np
-from .constants import CMD_TYPE_MOVE, COL_TYPE
+from .constants import CMD_TYPE_MOVE, COL_TYPE, COL_X, COL_Y, COL_Z
 
 if TYPE_CHECKING:
     from .geometry import Geometry
@@ -33,6 +33,11 @@ def split_into_contours(geometry: "Geometry") -> List["Geometry"]:
         if len(data) > 0:
             new_geo = Geometry()
             new_geo._data = data.copy()
+            new_geo.last_move_to = (
+                float(data[0, COL_X]),
+                float(data[0, COL_Y]),
+                float(data[0, COL_Z]),
+            )
             contours.append(new_geo)
     else:
         # Handle the first segment if it doesn't start with a move
@@ -48,6 +53,11 @@ def split_into_contours(geometry: "Geometry") -> List["Geometry"]:
             if len(arr) > 0:
                 new_geo = Geometry()
                 new_geo._data = arr.copy()
+                new_geo.last_move_to = (
+                    float(arr[0, COL_X]),
+                    float(arr[0, COL_Y]),
+                    float(arr[0, COL_Z]),
+                )
                 contours.append(new_geo)
 
     # Filter out any empty geometries that might have been created
