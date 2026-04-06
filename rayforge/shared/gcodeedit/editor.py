@@ -41,6 +41,11 @@ class GcodeEditor(Gtk.Box):
         self.search_bar = Gtk.SearchBar(child=self.search_entry)
         self.search_bar.set_key_capture_widget(self)
         self.search_entry.connect("search-changed", self._on_search_changed)
+        self.search_entry.connect("stop-search", self._on_stop_search)
+
+        ctrl = Gtk.EventControllerKey()
+        ctrl.connect("key-pressed", self._on_ctrl_key_pressed)
+        self.add_controller(ctrl)
 
         buffer = self.text_view.get_buffer()
         tag_table = buffer.get_tag_table()
@@ -82,7 +87,6 @@ class GcodeEditor(Gtk.Box):
             self.line_activated.send(self, line_number=line_number)
 
     def _on_search_changed(self, search_entry: Gtk.SearchEntry):
-        """Callback to highlight search results in the text buffer."""
         buffer = self.text_view.get_buffer()
         text = search_entry.get_text()
 
@@ -93,6 +97,7 @@ class GcodeEditor(Gtk.Box):
         if not text:
             return
 
+        first_match = None
         current_iter = buffer.get_start_iter()
         while True:
             try:
@@ -104,10 +109,31 @@ class GcodeEditor(Gtk.Box):
                     break
 
                 start, end = result
+                if first_match is None:
+                    first_match = start
                 buffer.apply_tag(self.search_tag, start, end)
                 current_iter = end
             except GLib.Error:
                 break
+
+        if first_match is not None:
+            mark = buffer.create_mark(None, first_match, False)
+            GLib.idle_add(self._scroll_to_mark, mark)
+
+    def _scroll_to_mark(self, mark):
+        self.text_view.scroll_to_mark(mark, 0.0, True, 0.5, 0.5)
+        buf = self.text_view.get_buffer()
+        buf.delete_mark(mark)
+
+    def _on_stop_search(self, search_entry):
+        self.search_bar.set_search_mode(False)
+
+    def _on_ctrl_key_pressed(self, controller, keyval, keycode, state):
+        if keyval == Gdk.KEY_f and state & Gdk.ModifierType.CONTROL_MASK:
+            self.search_bar.set_search_mode(True)
+            self.search_entry.grab_focus()
+            return True
+        return False
 
     def _on_map(self, widget: Gtk.Widget):
         """Starts the live highlighter when the widget is shown."""

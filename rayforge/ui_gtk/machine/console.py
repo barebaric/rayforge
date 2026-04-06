@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 from gettext import gettext as _
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib, Gdk
 from blinker import Signal
 from ...logging_setup import (
     get_memory_handler,
@@ -96,7 +96,18 @@ class Console(Gtk.Box):
         self.verbose_toggle.set_child(verbose_icon)
         self.overlay.add_overlay(self.verbose_toggle)
 
+        self.search_entry = Gtk.SearchEntry()
+        self.search_bar = Gtk.SearchBar(child=self.search_entry)
+        self.search_bar.set_key_capture_widget(self)
+        self.search_entry.connect("search-changed", self._on_search_changed)
+        self.search_entry.connect("stop-search", self._on_stop_search)
+
+        self.append(self.search_bar)
         self.append(self.overlay)
+
+        search_ctrl = Gtk.EventControllerKey()
+        search_ctrl.connect("key-pressed", self._on_search_key_pressed)
+        self.add_controller(search_ctrl)
 
         entry_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         entry_box.set_margin_top(0)
@@ -184,6 +195,12 @@ class Console(Gtk.Box):
                 style_context, "accent_color", "#729FCF"
             ),
         )
+        found, color = style_context.lookup_color("theme_selected_bg_color")
+        self.search_tag = self._create_tag(
+            tag_table,
+            "search",
+            background=color.to_string() if found and color else "#4A90D9",
+        )
 
     def _lookup_theme_color(
         self, context: Gtk.StyleContext, name: str, fallback: str
@@ -200,6 +217,7 @@ class Console(Gtk.Box):
         for prop, value in properties.items():
             tag.set_property(prop, value)
         tag_table.add(tag)
+        return tag
 
     def set_machine(self, machine: Optional[Machine]):
         self._machine = machine
@@ -403,6 +421,47 @@ class Console(Gtk.Box):
         self._show_verbose = button.get_active()
         self._populate_history()
 
+    def _on_search_changed(self, search_entry):
+        buffer = self.terminal.get_buffer()
+        text = search_entry.get_text()
+
+        buffer.remove_tag(
+            self.search_tag, buffer.get_start_iter(), buffer.get_end_iter()
+        )
+
+        if not text:
+            return
+
+        first_match = None
+        current_iter = buffer.get_start_iter()
+        while True:
+            try:
+                result = current_iter.forward_search(
+                    text, Gtk.TextSearchFlags.CASE_INSENSITIVE, None
+                )
+                if result is None:
+                    break
+                start, end = result
+                if first_match is None:
+                    first_match = start
+                buffer.apply_tag(self.search_tag, start, end)
+                current_iter = end
+            except GLib.Error:
+                break
+
+        if first_match is not None:
+            self.terminal.scroll_to_iter(first_match, 0.0, True, 0.5, 0.5)
+
+    def _on_stop_search(self, search_entry):
+        self.search_bar.set_search_mode(False)
+
+    def _on_search_key_pressed(self, controller, keyval, keycode, state):
+        if keyval == Gdk.KEY_f and state & Gdk.ModifierType.CONTROL_MASK:
+            self.search_bar.set_search_mode(True)
+            self.search_entry.grab_focus()
+            return True
+        return False
+
     def _get_input_text(self) -> str:
         start = self.input_buffer.get_start_iter()
         end = self.input_buffer.get_end_iter()
@@ -424,8 +483,6 @@ class Console(Gtk.Box):
     def _on_input_key_pressed(
         self, controller, keyval, keycode, state
     ) -> bool:
-        from gi.repository import Gdk
-
         if keyval == Gdk.KEY_Return or keyval == Gdk.KEY_KP_Enter:
             if state & Gdk.ModifierType.SHIFT_MASK:
                 return False
