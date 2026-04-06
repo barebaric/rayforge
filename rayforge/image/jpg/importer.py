@@ -78,6 +78,7 @@ class JpgImporter(Importer):
             original_data=self.raw_data,
             renderer=JPG_RENDERER,
             metadata=metadata,
+            thumbnail_data=self._render_thumbnail_from_vips(self._image),
             width_px=int(w_px),
             height_px=int(h_px),
             width_mm=width_mm,

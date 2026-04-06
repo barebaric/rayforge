@@ -88,10 +88,21 @@ class RuidaImporter(Importer):
         """
         _, _, w, h = parse_result.document_bounds
 
+        merged = Geometry()
+        for geo in self._geometries_by_layer.values():
+            if geo:
+                merged.extend(geo)
+        thumbnail_data = (
+            merged.to_png(256, line_width=2.0, color=(0.2, 0.2, 0.2, 1.0))
+            if not merged.is_empty()
+            else None
+        )
+
         source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=RUIDA_RENDERER,
+            thumbnail_data=thumbnail_data,
             width_mm=w,
             height_mm=h,
         )

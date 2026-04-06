@@ -2,6 +2,7 @@ from __future__ import annotations
 import base64
 import uuid
 import logging
+import pyvips
 from pathlib import Path
 from typing import Optional, Dict, Any, TYPE_CHECKING, ClassVar
 from dataclasses import dataclass, field
@@ -37,6 +38,7 @@ class SourceAsset(IAsset):
     original_data: bytes
     renderer: "Renderer"
     base_render_data: Optional[bytes] = None
+    thumbnail_data: Optional[bytes] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
     width_px: Optional[int] = None
     height_px: Optional[int] = None
@@ -80,29 +82,26 @@ class SourceAsset(IAsset):
     def get_thumbnail(self, size: int) -> Optional[bytes]:
         """Returns a PNG thumbnail of the rendered image."""
         try:
-            if not self.base_render_data:
-                return None
-
-            image = self.renderer.render_base_image(
-                self.base_render_data, size, size
-            )
-            if image:
-                aspect = image.width / image.height
-                if aspect > 1:
-                    new_width = size
-                    new_height = int(size / aspect)
-                else:
-                    new_height = size
-                    new_width = int(size * aspect)
-
-                image = image.resize(
-                    min(new_width / image.width, new_height / image.height)
-                )
-                return image.pngsave_buffer()
+            if self.thumbnail_data:
+                return self._scale_png(self.thumbnail_data, size)
             return None
         except Exception:
             logger.exception("Failed to generate source thumbnail")
             return None
+
+    def _scale_png(self, png_data: bytes, size: int) -> Optional[bytes]:
+        image = pyvips.Image.pngload_buffer(png_data)
+        aspect = image.width / image.height
+        if aspect > 1:
+            new_width = size
+            new_height = int(size / aspect)
+        else:
+            new_height = size
+            new_width = int(size * aspect)
+        image = image.resize(
+            min(new_width / image.width, new_height / image.height)
+        )
+        return image.pngsave_buffer()
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes SourceAsset to a dictionary."""
@@ -117,6 +116,11 @@ class SourceAsset(IAsset):
             "base_render_data": (
                 base64.b64encode(self.base_render_data).decode("utf-8")
                 if self.base_render_data
+                else None
+            ),
+            "thumbnail_data": (
+                base64.b64encode(self.thumbnail_data).decode("utf-8")
+                if self.thumbnail_data
                 else None
             ),
             "renderer_name": self.renderer.__class__.__name__,
@@ -143,6 +147,7 @@ class SourceAsset(IAsset):
             "source_file",
             "original_data",
             "base_render_data",
+            "thumbnail_data",
             "renderer_name",
             "metadata",
             "width_px",
@@ -167,11 +172,17 @@ class SourceAsset(IAsset):
             if data.get("base_render_data")
             else None
         )
+        thumbnail_data = (
+            base64.b64decode(data["thumbnail_data"])
+            if data.get("thumbnail_data")
+            else None
+        )
 
         instance = cls(
             source_file=Path(data["source_file"]),
             original_data=original_data,
             base_render_data=base_render_data,
+            thumbnail_data=thumbnail_data,
             renderer=renderer,
             metadata=data.get("metadata", {}),
             width_px=data.get("width_px"),

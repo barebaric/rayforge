@@ -2,7 +2,7 @@ import json
 import logging
 from typing import TYPE_CHECKING, Optional, cast
 
-from gi.repository import Gdk, GLib, Gtk, Pango
+from gi.repository import Gdk, GLib, Graphene, Gtk, Pango
 from blinker import Signal
 from gettext import gettext as _
 
@@ -54,7 +54,9 @@ css = """
     margin-top: 2px;
 }
 .asset-type-icon {
-    opacity: 0.5;
+    opacity: 0.9;
+    background-color: alpha(@card_bg_color, 0.95);
+    border-radius: 4px;
 }
 .asset-browser-empty {
     padding: 24px;
@@ -83,35 +85,37 @@ class AssetCard(Gtk.Box):
         self.set_hexpand(False)
         self.set_vexpand(False)
 
-        self._picture = Gtk.Picture()
-        self._picture.set_content_fit(Gtk.ContentFit.CONTAIN)
-        self._picture.set_size_request(THUMBNAIL_SIZE, THUMBNAIL_SIZE)
-
-        self._type_icon = get_icon(asset.display_icon_name)
-        self._type_icon.set_halign(Gtk.Align.END)
-        self._type_icon.set_valign(Gtk.Align.START)
-        self._type_icon.add_css_class("asset-type-icon")
-        self._type_icon.set_tooltip_text(asset.type_display_name)
-
-        overlay = Gtk.Overlay()
-        overlay.set_child(self._picture)
-        overlay.add_overlay(self._type_icon)
+        self._draw_area = Gtk.DrawingArea()
+        self._draw_area.set_content_width(THUMBNAIL_SIZE)
+        self._draw_area.set_content_height(THUMBNAIL_SIZE)
+        self._draw_area.set_draw_func(self._draw_thumbnail)
 
         self._icon_fallback = Gtk.Image()
         self._icon_fallback.set_pixel_size(THUMBNAIL_SIZE // 2)
         self._icon_fallback.set_visible(False)
 
         image_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        image_box.append(overlay)
+        image_box.append(self._draw_area)
         image_box.append(self._icon_fallback)
+
+        type_icon = get_icon(asset.display_icon_name)
+        type_icon.set_pixel_size(12)
+        type_icon.set_margin_end(4)
+        type_icon.set_tooltip_text(asset.type_display_name)
 
         self._label = Gtk.Label()
         self._label.add_css_class("asset-card-label")
         self._label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
         self._label.set_max_width_chars(10)
 
+        label_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label_box.set_halign(Gtk.Align.CENTER)
+        label_box.set_margin_top(4)
+        label_box.append(type_icon)
+        label_box.append(self._label)
+
         self.append(image_box)
-        self.append(self._label)
+        self.append(label_box)
         self.refresh()
 
     def invalidate(self):
@@ -125,17 +129,37 @@ class AssetCard(Gtk.Box):
                 self._texture = Gdk.Texture.new_from_bytes(bytes_data)
 
         if self._texture:
-            self._picture.set_paintable(self._texture)
-            self._picture.set_visible(True)
+            self._draw_area.set_visible(True)
             self._icon_fallback.set_visible(False)
         else:
-            self._picture.set_visible(False)
+            self._draw_area.set_visible(False)
             self._icon_fallback.set_from_icon_name(
                 self.asset.display_icon_name
             )
             self._icon_fallback.set_visible(True)
 
         self._label.set_label(self.asset.name)
+        self.set_tooltip_text(self.asset.name)
+
+    def _draw_thumbnail(self, area, cr, width, height):
+        if self._texture is None:
+            return
+        tex_w = self._texture.get_intrinsic_width()
+        tex_h = self._texture.get_intrinsic_height()
+        if tex_w <= 0 or tex_h <= 0:
+            return
+        scale = min(width / tex_w, height / tex_h)
+        draw_w = tex_w * scale
+        draw_h = tex_h * scale
+        x = (width - draw_w) / 2
+        y = (height - draw_h) / 2
+        snapshot = Gtk.Snapshot()
+        rect = Graphene.Rect()
+        rect.init(x, y, draw_w, draw_h)
+        snapshot.append_texture(self._texture, rect)
+        node = snapshot.to_node()
+        if node is not None:
+            node.draw(cr)
 
 
 class AssetBrowser(Gtk.Box):

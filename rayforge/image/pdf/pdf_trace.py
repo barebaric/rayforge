@@ -98,6 +98,7 @@ class PdfTraceImporter(Importer):
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=PDF_RENDERER,
+            thumbnail_data=self._render_thumbnail_from_vips(self._image),
             width_px=int(w_px),
             height_px=int(h_px),
             width_mm=width_mm,

@@ -108,8 +108,11 @@ class ProceduralImporter(Importer):
 
         return SourceAsset(
             source_file=self.source_file,
-            original_data=self.raw_data,  # This is the recipe data
+            original_data=self.raw_data,
             renderer=PROCEDURAL_RENDERER,
+            thumbnail_data=self._render_thumbnail_from_renderer(
+                PROCEDURAL_RENDERER, self.raw_data
+            ),
             width_mm=width_mm,
             height_mm=height_mm,
         )
