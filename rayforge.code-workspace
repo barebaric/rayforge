@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "rayforge/private_addons"
+		}
+	],
+	"settings": {
+		"python.defaultInterpreterPath": ".pixi/envs/default/bin/python",
+		"python-envs.defaultEnvManager": "ms-python.python:system"
+	}
+}
