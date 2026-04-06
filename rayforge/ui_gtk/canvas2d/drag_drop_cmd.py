@@ -5,6 +5,7 @@ This module encapsulates all drag-and-drop import functionality and clipboard
 paste operations, keeping them separate from the core UI components.
 """
 
+import json
 import logging
 import tempfile
 from pathlib import Path
@@ -12,6 +13,7 @@ from typing import TYPE_CHECKING, Optional, Tuple, List
 from gettext import gettext as _
 from gi.repository import GObject, Gdk, Gtk, Gio, GLib, Adw
 from ...context import get_context
+from ...core.stock_asset import StockAsset
 from ...doceditor.file_cmd import ImportAction
 from ...image import ImporterFeature
 from ...image.registry import importer_registry
@@ -113,29 +115,53 @@ class DragDropCmd:
         return False
 
     def _handle_asset_drop(
-        self, asset_uid: str, position_mm: Tuple[float, float]
+        self, data: str, position_mm: Tuple[float, float]
     ) -> bool:
-        doc = self.main_window.doc_editor.doc
-        asset = doc.get_asset_by_uid(asset_uid)
-        if asset is None:
-            logger.warning(f"Dropped asset UID {asset_uid} not found")
-            return False
-        if not asset.is_draggable_to_canvas:
-            return False
         try:
-            edit = self.main_window.doc_editor.edit
-            new_workpiece = edit.add_geometry_provider_instance(
-                asset_uid, position_mm
-            )
-            if new_workpiece:
-                logger.info(
-                    f"Created instance {new_workpiece.uid[:8]} "
-                    f"from asset {asset_uid[:8]} at {position_mm}"
+            uids = json.loads(data)
+            if not isinstance(uids, list):
+                uids = [uids]
+        except json.JSONDecodeError:
+            uids = [data]
+
+        success = False
+        offset_x = 0.0
+        offset_y = 0.0
+        spacing = 10.0
+
+        for i, asset_uid in enumerate(uids):
+            doc = self.main_window.doc_editor.doc
+            asset = doc.get_asset_by_uid(asset_uid)
+            if asset is None:
+                logger.warning(f"Dropped asset UID {asset_uid} not found")
+                continue
+            if not asset.is_draggable_to_canvas:
+                continue
+
+            if i > 0:
+                if isinstance(asset, StockAsset):
+                    w, _h = asset.get_natural_size()
+                    offset_x += w + spacing
+                else:
+                    offset_x += 50.0 + spacing
+
+            pos = (position_mm[0] + offset_x, position_mm[1] + offset_y)
+
+            try:
+                edit = self.main_window.doc_editor.edit
+                new_workpiece = edit.add_geometry_provider_instance(
+                    asset_uid, pos
                 )
-                return True
-        except Exception:
-            logger.exception(f"Error handling asset drop: {asset_uid}")
-        return False
+                if new_workpiece:
+                    logger.info(
+                        f"Created instance {new_workpiece.uid[:8]} "
+                        f"from asset {asset_uid[:8]} at {pos}"
+                    )
+                    success = True
+            except Exception:
+                logger.exception(f"Error handling asset drop: {asset_uid}")
+
+        return success
 
     # --- File Handlers ---
 

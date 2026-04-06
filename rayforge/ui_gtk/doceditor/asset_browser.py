@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import TYPE_CHECKING, Optional, cast
 
@@ -35,10 +36,15 @@ css = """
     min-width: 0;
     min-height: 0;
 }
+.asset-flowbox > flowboxchild:selected .asset-card {
+    background: alpha(@theme_selected_bg_color, 0.25);
+    border: 2px solid @theme_selected_bg_color;
+}
 .asset-card {
     background: @card_bg_color;
     border-radius: 6px;
     padding: 4px;
+    border: 2px solid transparent;
 }
 .asset-card:hover {
     background: alpha(@theme_selected_bg_color, 0.08);
@@ -158,12 +164,23 @@ class AssetBrowser(Gtk.Box):
         self._flowbox.set_row_spacing(6)
         self._flowbox.set_min_children_per_line(3)
         self._flowbox.set_max_children_per_line(200)
-        self._flowbox.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        self._flowbox.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
         self._flowbox.set_homogeneous(False)
         self._flowbox.set_valign(Gtk.Align.START)
+        self._flowbox.set_activate_on_single_click(False)
         self._flowbox.connect(
             "selected-children-changed", self._on_selection_changed
         )
+        self._flowbox.connect("child-activated", self._on_child_activated)
+
+        key_controller = Gtk.EventControllerKey()
+        key_controller.connect("key-pressed", self._on_key_pressed)
+        self._flowbox.add_controller(key_controller)
+
+        click_gesture = Gtk.GestureClick()
+        click_gesture.set_button(1)
+        click_gesture.connect("pressed", self._on_flowbox_pressed)
+        self._flowbox.add_controller(click_gesture)
 
         self._scrolled = Gtk.ScrolledWindow()
         self._scrolled.set_policy(
@@ -327,25 +344,68 @@ class AssetBrowser(Gtk.Box):
     def _on_drag_prepare(self, source, x, y):
         card = source.get_widget()
         asset = card.asset
-        if not getattr(asset, "is_draggable_to_canvas", False):
+        if not asset.is_draggable_to_canvas:
             return None
-        uid = str(asset.uid)
-        provider = Gdk.ContentProvider.new_for_value(uid)
-        snapshot = Gtk.Snapshot()
-        card.do_snapshot(card, snapshot)
-        paintable = snapshot.to_paintable()
-        if paintable:
-            source.set_icon(paintable, int(x), int(y))
+
+        selected = self._flowbox.get_selected_children()
+        uids: list[str] = []
+
+        if selected and card.asset.uid in [
+            cast(AssetCard, c.get_child()).asset.uid
+            for c in selected
+            if c.get_child()
+        ]:
+            for child in selected:
+                selected_card = cast(AssetCard, child.get_child())
+                if (
+                    selected_card
+                    and selected_card.asset.is_draggable_to_canvas
+                ):
+                    uids.append(str(selected_card.asset.uid))
+        else:
+            uids.append(str(asset.uid))
+
+        data = json.dumps(uids)
+        provider = Gdk.ContentProvider.new_for_value(data)
+        paintable = Gtk.WidgetPaintable.new(card)
+        source.set_icon(paintable, int(x), int(y))
         return provider
 
     def _on_selection_changed(self, flowbox):
-        selected = flowbox.get_selected_children()
-        if selected:
-            child = selected[0]
-            card = child.get_child()
+        pass
+
+    def _on_flowbox_pressed(self, gesture, n_press, x, y):
+        widget = self._flowbox.pick(x, y, Gtk.PickFlags.DEFAULT)
+        while widget and widget != self._flowbox:
+            if isinstance(widget, Gtk.FlowBoxChild):
+                return
+            widget = widget.get_parent()
+        self._flowbox.unselect_all()
+
+    def _on_child_activated(self, flowbox, child):
+        card = cast(AssetCard, child.get_child())
+        if card:
+            self.asset_activated.send(self, asset=card.asset)
+
+    def _on_key_pressed(self, controller, keyval, keycode, state):
+        if keyval == Gdk.KEY_Delete:
+            self._delete_selected_assets()
+            return True
+        return False
+
+    def _delete_selected_assets(self):
+        selected = self._flowbox.get_selected_children()
+        if not selected:
+            return
+
+        assets_to_delete = []
+        for child in selected:
+            card = cast(AssetCard, child.get_child())
             if card:
-                self.asset_activated.send(self, asset=card.asset)
-            flowbox.unselect_child(child)
+                assets_to_delete.append(card.asset)
+
+        for asset in assets_to_delete:
+            self.editor.asset.delete_asset(asset)
 
     def _on_add_clicked(self, button):
         asset_types = []
