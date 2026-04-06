@@ -3,7 +3,7 @@ import json
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple
 
 from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
@@ -36,6 +36,9 @@ class ProceduralImporter(Importer):
     """
 
     features = {ImporterFeature.PROCEDURAL_GENERATION}
+    label = "Procedural"
+    mime_types: Tuple[str, ...] = ()
+    extensions: Tuple[str, ...] = ()
 
     def __init__(
         self,

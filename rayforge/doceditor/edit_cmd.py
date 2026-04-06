@@ -7,7 +7,6 @@ from ..core.stock import StockItem
 from ..core.undo import ListItemCommand, ReorderListCommand
 from ..core.workpiece import WorkPiece
 from ..core.workflow import Workflow
-from .stock_cmd import RemoveStockAssetCommand
 
 if TYPE_CHECKING:
     from ..core.asset import IAsset
@@ -249,24 +248,6 @@ class EditCmd:
                     name=_("Remove item"),
                 )
                 t.execute(command)
-
-                if isinstance(item, StockItem):
-                    stock_item = cast(StockItem, item)
-                    stock_asset_uid = stock_item.stock_asset_uid
-
-                    other_items_using_asset = [
-                        other
-                        for other in self._editor.doc.stock_items
-                        if other.stock_asset_uid == stock_asset_uid
-                        and other.uid != stock_item.uid
-                    ]
-
-                    if not other_items_using_asset:
-                        t.execute(
-                            RemoveStockAssetCommand(
-                                self._editor.doc, stock_asset_uid
-                            )
-                        )
 
     def clear_all_items(self):
         """

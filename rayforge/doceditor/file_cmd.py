@@ -400,6 +400,8 @@ class FileCmd:
         if not content_to_transform:
             return
 
+        scale_factor = self._scale_to_fit_if_oversized(content_to_transform)
+
         if position_mm:
             # Note: PositionAtStrategy needs the top-level items to calculate
             # the current group position correctly.
@@ -418,7 +420,12 @@ class FileCmd:
                     f"item(s) at ({target_x:.2f}, {target_y:.2f}) mm"
                 )
         else:
-            self._fit_and_position_at_reference_origin(items)
+            self._position_at_reference_origin(content_to_transform)
+
+        if scale_factor < 1.0:
+            self._show_scale_down_notification(
+                content_to_transform, scale_factor
+            )
 
     @staticmethod
     def _unwrap_item(item: DocItem) -> List[DocItem]:
@@ -744,11 +751,12 @@ class FileCmd:
 
         return min_x, min_y, max_x - min_x, max_y - min_y
 
-    def _fit_and_position_at_reference_origin(self, items: List[DocItem]):
+    def _scale_to_fit_if_oversized(self, items: List[DocItem]) -> float:
         """
-        Scales imported items to fit within machine boundaries if they are too
-        large, preserving aspect ratio. Then, positions them at the reference
-        origin (workarea origin or WCS origin depending on machine settings).
+        Scales items to fit within machine work area if they are too
+        large, preserving aspect ratio.
+
+        Returns the scale factor applied (1.0 if no scaling was needed).
         """
         config = get_context().config
         if not config or not config.machine:
@@ -756,26 +764,25 @@ class FileCmd:
                 "Cannot fit/position imported items: "
                 "machine dimensions unknown."
             )
-            return
+            return 1.0
 
         # We must operate on the actual content (WorkPieces, Groups), not the
         # top-level containers (Layers).
         content_items = self._get_positionable_content(items)
         if not content_items:
             logger.warning("No positionable content found to fit/position.")
-            return
+            return 1.0
 
-        machine = config.machine
         # Calculate the bounding box of the actual content.
         bbox = self._calculate_items_bbox(content_items)
         if not bbox:
             logger.warning(
                 "Cannot fit/position imported items: no bounding box."
             )
-            return
+            return 1.0
 
         bbox_x, bbox_y, bbox_w, bbox_h = bbox
-        area_x, area_y, area_w, area_h = machine.work_area
+        area_x, area_y, area_w, area_h = config.machine.work_area
         logger.debug(
             f"_fit_and_position_at_reference_origin: bbox=({bbox_x:.2f}, "
             f"{bbox_y:.2f}, {bbox_w:.2f}, {bbox_h:.2f}), "
@@ -783,7 +790,7 @@ class FileCmd:
             f"({area_x:.2f}, {area_y:.2f}, {area_w:.2f}, {area_h:.2f})"
         )
 
-        # 1. Scale to fit if necessary, preserving aspect ratio
+        # Scale to fit if necessary, preserving aspect ratio
         scale_factor = 1.0
         if bbox_w > area_w or bbox_h > area_h:
             scale_w = area_w / bbox_w if bbox_w > 1e-9 else 1.0
@@ -805,13 +812,34 @@ class FileCmd:
             for item in content_items:
                 item.matrix = transform_matrix @ item.matrix
 
-            # After scaling, recalculate the bounding box for positioning
-            bbox = self._calculate_items_bbox(content_items)
-            if not bbox:
-                return  # Should not happen, but for safety
-            bbox_x, bbox_y, bbox_w, bbox_h = bbox
+        return scale_factor
 
-        # 2. Position at reference origin
+    def _position_at_reference_origin(self, items: List[DocItem]):
+        """
+        Positions items at the reference origin.
+
+        The caller is responsible for calling _scale_to_fit_if_oversized()
+        before this method.
+        """
+        config = get_context().config
+        if not config or not config.machine:
+            logger.warning(
+                "Cannot fit/position imported items: "
+                "machine dimensions unknown."
+            )
+            return
+
+        content_items = self._get_positionable_content(items)
+        if not content_items:
+            return
+
+        bbox = self._calculate_items_bbox(content_items)
+        if not bbox:
+            return  # Should not happen, but for safety
+        bbox_x, bbox_y, bbox_w, bbox_h = bbox
+
+        machine = config.machine
+        # Position at reference origin
         # The reference origin is where the user expects (0,0) to be.
         # get_reference_position_world returns WORLD coords of the reference
         # origin. We use world_position_from_origin to handle origin corner
@@ -833,53 +861,59 @@ class FileCmd:
             for item in content_items:
                 item.matrix = translation_matrix @ item.matrix
 
-        # 3. Notification with Undo logic
+    def _show_scale_down_notification(
+        self, content_items: List[DocItem], scale_factor: float
+    ):
+        """
+        Shows a persistent notification that the imported item was scaled
+        down, with an undo action that reverts the scaling.
+        """
+        # Notification with Undo logic
         # We define this after centering so the callback can handle the
         # final position correctly.
-        if scale_factor < 1.0:
 
-            def _undo_scaling_callback():
-                """
-                Reverts the auto-scaling applied during import.
-                It scales the items back up around their CURRENT center.
-                """
-                # Use the content items for calculation and transformation
-                current_bbox = self._calculate_items_bbox(content_items)
-                if not current_bbox:
-                    return
+        def _undo_scaling_callback():
+            """
+            Reverts the auto-scaling applied during import.
+            It scales the items back up around their CURRENT center.
+            """
+            # Use the content items for calculation and transformation
+            current_bbox = self._calculate_items_bbox(content_items)
+            if not current_bbox:
+                return
 
-                cur_x, cur_y, cur_w, cur_h = current_bbox
-                cur_cx = cur_x + cur_w / 2
-                cur_cy = cur_y + cur_h / 2
+            cur_x, cur_y, cur_w, cur_h = current_bbox
+            cur_cx = cur_x + cur_w / 2
+            cur_cy = cur_y + cur_h / 2
 
-                inv_scale = 1.0 / scale_factor
+            inv_scale = 1.0 / scale_factor
 
-                # Create a matrix that scales by 1/factor around the current
-                # center
-                undo_matrix = Matrix.scale(
-                    inv_scale, inv_scale, center=(cur_cx, cur_cy)
-                )
-
-                changes = []
-                for item in content_items:
-                    current = item.matrix
-                    new_m = undo_matrix @ current
-                    changes.append((item, current, new_m))
-
-                self._editor.transform.create_transform_transaction(changes)
-
-            msg = _(
-                "⚠️ Imported item was larger than the work area and has been "
-                "scaled down to fit."
+            # Create a matrix that scales by 1/factor around the current
+            # center
+            undo_matrix = Matrix.scale(
+                inv_scale, inv_scale, center=(cur_cx, cur_cy)
             )
-            logger.info(msg)
-            self._editor.notification_requested.send(
-                self,
-                message=msg,
-                persistent=True,
-                action_label=_("Reset"),
-                action_callback=_undo_scaling_callback,
-            )
+
+            changes = []
+            for item in content_items:
+                current = item.matrix
+                new_m = undo_matrix @ current
+                changes.append((item, current, new_m))
+
+            self._editor.transform.create_transform_transaction(changes)
+
+        msg = _(
+            "⚠️ Imported item was larger than the work area and has been "
+            "scaled down to fit."
+        )
+        logger.info(msg)
+        self._editor.notification_requested.send(
+            self,
+            message=msg,
+            persistent=True,
+            action_label=_("Reset"),
+            action_callback=_undo_scaling_callback,
+        )
 
     def assemble_job_in_background(
         self,
@@ -1140,3 +1174,89 @@ class FileCmd:
                 self, message=_("Load failed: {error}").format(error=str(e))
             )
             return False
+
+    def reimport_from_source_asset(
+        self,
+        source_asset: SourceAsset,
+        vectorization_spec: VectorizationSpec,
+        position_mm: Optional[Point] = None,
+    ) -> Optional[ImportResult]:
+        """
+        Re-run the import pipeline for an existing SourceAsset, producing
+        fresh (or additional) workpieces from the original data.
+
+        Unlike the normal import path, no new SourceAsset is added to the
+        document -- the existing one is reused.
+        """
+        meta = source_asset.metadata
+        importer_cls_name = meta.get("_importer_class")
+        if not importer_cls_name:
+            logger.warning(
+                "Cannot reimport: SourceAsset has no _importer_class metadata"
+            )
+            return None
+        importer_cls = importer_registry.get_by_name(importer_cls_name)
+        if not importer_cls:
+            logger.warning(
+                f"Cannot reimport: importer '{importer_cls_name}' not "
+                f"registered"
+            )
+            return None
+
+        importer = importer_cls(
+            data=source_asset.original_data,
+            source_file=source_asset.source_file or Path("Untitled"),
+        )
+        import_result = importer.get_doc_items_for_reimport(
+            source_asset, vectorization_spec
+        )
+
+        if not import_result or not import_result.payload:
+            return import_result
+
+        self._finalize_reimport(
+            import_result.payload.items,
+            position_mm,
+            vectorization_spec,
+        )
+        return import_result
+
+    def _finalize_reimport(
+        self,
+        items: List[DocItem],
+        position_mm: Optional[Point],
+        vectorization_spec: Optional[VectorizationSpec] = None,
+    ):
+        """
+        Commit reimported items to the document.
+
+        Unlike _finalize_import_on_main_thread, this does NOT add a new
+        SourceAsset -- the existing one is reused.
+        """
+        self._position_newly_imported_items(items, position_mm)
+
+        mode = LayerImportMode.NEW_LAYERS
+        if isinstance(vectorization_spec, PassthroughSpec):
+            mode = vectorization_spec.layer_import_mode
+        pairs = self._resolve_destinations(items, mode)
+
+        cmd_name = _("Re-Import")
+        with self._editor.history_manager.transaction(cmd_name) as t:
+            for owner, item in pairs:
+                t.execute(
+                    ListItemCommand(
+                        owner_obj=owner,
+                        item=item,
+                        undo_command="remove_child",
+                        redo_command="add_child",
+                    )
+                )
+
+        dest_layers = []
+        seen = set()
+        for owner, _item in pairs:
+            if isinstance(owner, Layer) and owner.uid not in seen:
+                dest_layers.append(owner)
+                seen.add(owner.uid)
+        if dest_layers:
+            self._editor.step.add_default_steps_for_layers(dest_layers)

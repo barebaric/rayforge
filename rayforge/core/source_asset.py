@@ -44,6 +44,7 @@ class SourceAsset(IAsset):
     height_mm: float = 0.0
     _uid: str = field(init=False, default_factory=lambda: str(uuid.uuid4()))
     _name: str = field(init=False, repr=False)
+    _hidden: bool = field(init=False, default=False)
     extra: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
@@ -69,7 +70,39 @@ class SourceAsset(IAsset):
     @property
     def hidden(self) -> bool:
         """Indicates if this asset should be hidden from the UI."""
-        return True
+        return self._hidden
+
+    @hidden.setter
+    def hidden(self, value: bool):
+        """Sets the hidden state."""
+        self._hidden = value
+
+    def get_thumbnail(self, size: int) -> Optional[bytes]:
+        """Returns a PNG thumbnail of the rendered image."""
+        try:
+            if not self.base_render_data:
+                return None
+
+            image = self.renderer.render_base_image(
+                self.base_render_data, size, size
+            )
+            if image:
+                aspect = image.width / image.height
+                if aspect > 1:
+                    new_width = size
+                    new_height = int(size / aspect)
+                else:
+                    new_height = size
+                    new_width = int(size * aspect)
+
+                image = image.resize(
+                    min(new_width / image.width, new_height / image.height)
+                )
+                return image.pngsave_buffer()
+            return None
+        except Exception:
+            logger.exception("Failed to generate source thumbnail")
+            return None
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes SourceAsset to a dictionary."""
@@ -92,6 +125,7 @@ class SourceAsset(IAsset):
             "height_px": self.height_px,
             "width_mm": self.width_mm,
             "height_mm": self.height_mm,
+            "hidden": self._hidden,
         }
         result.update(self.extra)
         return result
@@ -115,6 +149,7 @@ class SourceAsset(IAsset):
             "height_px",
             "width_mm",
             "height_mm",
+            "hidden",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -148,5 +183,7 @@ class SourceAsset(IAsset):
             instance._uid = data["uid"]
         if "name" in data:
             instance.name = data["name"]
+        if "hidden" in data:
+            instance._hidden = data["hidden"]
         instance.extra = extra
         return instance
