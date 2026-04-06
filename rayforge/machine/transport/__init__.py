@@ -7,6 +7,7 @@ from .telnet import TelnetTransport
 from .udp import UdpTransport
 from .udp_server import UdpServerTransport
 from .websocket import WebSocketTransport
+from .grbl import GrblSerialTransport
 
 if sys.platform != "win32":
     from .serial_server import SerialServerTransport
@@ -24,4 +25,5 @@ __all__ = [
     "UdpTransport",
     "UdpServerTransport",
     "WebSocketTransport",
+    "GrblSerialTransport",
 ]
