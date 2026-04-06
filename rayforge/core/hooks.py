@@ -4,7 +4,7 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 1
-PLUGIN_API_VERSION = 10
+PLUGIN_API_VERSION = 11
 
 
 """
