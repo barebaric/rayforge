@@ -50,6 +50,16 @@ css = """
 .asset-type-icon {
     opacity: 0.5;
 }
+.asset-browser-empty {
+    padding: 24px;
+}
+.asset-browser-empty-icon {
+    opacity: 0.15;
+}
+.asset-browser-empty-buttons button {
+    padding: 12px 24px;
+    font-size: 1.1em;
+}
 """
 
 
@@ -137,6 +147,11 @@ class AssetBrowser(Gtk.Box):
         self.editor = editor
         self.doc = editor.doc
 
+        self._main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self._main_box.set_hexpand(True)
+        self._main_box.set_vexpand(True)
+        self.append(self._main_box)
+
         self._flowbox = Gtk.FlowBox()
         self._flowbox.add_css_class("asset-flowbox")
         self._flowbox.set_column_spacing(6)
@@ -150,12 +165,17 @@ class AssetBrowser(Gtk.Box):
             "selected-children-changed", self._on_selection_changed
         )
 
-        scrolled = Gtk.ScrolledWindow()
-        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scrolled.set_child(self._flowbox)
-        scrolled.set_hexpand(True)
-        scrolled.set_vexpand(True)
-        self.append(scrolled)
+        self._scrolled = Gtk.ScrolledWindow()
+        self._scrolled.set_policy(
+            Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC
+        )
+        self._scrolled.set_child(self._flowbox)
+        self._scrolled.set_hexpand(True)
+        self._scrolled.set_vexpand(True)
+        self._main_box.append(self._scrolled)
+
+        self._empty_state = self._create_empty_state()
+        self._main_box.append(self._empty_state)
 
         toolbar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         toolbar.set_spacing(4)
@@ -172,6 +192,43 @@ class AssetBrowser(Gtk.Box):
         self._cards: dict[str, list] = {}
         self._connect_signals()
         self._sync_cards(self.doc)
+
+    def _create_empty_state(self) -> Gtk.Box:
+        empty_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        empty_box.add_css_class("asset-browser-empty")
+        empty_box.set_halign(Gtk.Align.CENTER)
+        empty_box.set_valign(Gtk.Align.CENTER)
+        empty_box.set_margin_top(24)
+        empty_box.set_margin_bottom(24)
+        empty_box.set_hexpand(True)
+        empty_box.set_vexpand(True)
+
+        icon = get_icon("sketch-edit-symbolic")
+        icon.set_pixel_size(128)
+        icon.add_css_class("asset-browser-empty-icon")
+        empty_box.append(icon)
+
+        buttons_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=12,
+            halign=Gtk.Align.CENTER,
+        )
+        buttons_box.add_css_class("asset-browser-empty-buttons")
+
+        add_stock_btn = Gtk.Button(label=_("Add Stock"))
+        add_stock_btn.connect("clicked", self._on_empty_add_clicked, "stock")
+        buttons_box.append(add_stock_btn)
+
+        add_sketch_btn = Gtk.Button(label=_("Add Sketch"))
+        add_sketch_btn.connect("clicked", self._on_empty_add_clicked, "sketch")
+        buttons_box.append(add_sketch_btn)
+
+        empty_box.append(buttons_box)
+
+        return empty_box
+
+    def _on_empty_add_clicked(self, button: Gtk.Button, type_name: str):
+        self.add_asset_requested.send(self, type_name=type_name)
 
     def set_doc(self, doc: Doc):
         """Updates the widget to track a new document instance."""
@@ -224,6 +281,10 @@ class AssetBrowser(Gtk.Box):
 
     def _sync_cards(self, doc: Doc):
         visible = [a for a in doc.get_all_assets() if not a.hidden]
+        has_assets = len(visible) > 0
+
+        self._scrolled.set_visible(has_assets)
+        self._empty_state.set_visible(not has_assets)
 
         old_cards: dict[str, AssetCard] = {}
         for uid, (card, signal, handler) in self._cards.items():
