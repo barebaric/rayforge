@@ -289,6 +289,30 @@ class Importer(ABC):
         if self.mime_types:
             source_asset.metadata["_importer_mime"] = self.mime_types[0]
 
+    @staticmethod
+    def _render_thumbnail_from_vips(image, size: int = 256) -> Optional[bytes]:
+        if image is None:
+            return None
+        try:
+            thumb = image.thumbnail_image(size, height=size, size="both")
+            return thumb.pngsave_buffer()
+        except Exception:
+            return None
+
+    @staticmethod
+    def _render_thumbnail_from_renderer(
+        renderer, data: Optional[bytes], size: int = 256
+    ) -> Optional[bytes]:
+        if not data:
+            return None
+        try:
+            image = renderer.render_base_image(data, size, size)
+            if image:
+                return image.pngsave_buffer()
+        except Exception:
+            pass
+        return None
+
     def _resolve_default_spec(self) -> "VectorizationSpec":
         if ImporterFeature.DIRECT_VECTOR in self.features:
             return PassthroughSpec()

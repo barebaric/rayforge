@@ -111,6 +111,9 @@ class SvgImporterBase(Importer):
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=SVG_RENDERER,
+            thumbnail_data=self._render_thumbnail_from_renderer(
+                SVG_RENDERER, self.trimmed_data
+            ),
         )
         source.base_render_data = self.trimmed_data
 

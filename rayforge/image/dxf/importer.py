@@ -110,15 +110,40 @@ class DxfImporter(Importer):
         width_mm = w * parse_result.native_unit_to_mm
         height_mm = h * parse_result.native_unit_to_mm
 
+        thumbnail_data = self._render_thumbnail()
+
         source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=DXF_RENDERER,
             metadata={"is_vector": True},
+            thumbnail_data=thumbnail_data,
             width_mm=width_mm,
             height_mm=height_mm,
         )
         return source
+
+    def _render_thumbnail(self, size: int = 256) -> Optional[bytes]:
+        merged = Geometry()
+        for geo in self._geometries_by_layer.values():
+            if geo:
+                merged.extend(geo)
+        if merged.is_empty():
+            return None
+        return merged.to_png(
+            size,
+            line_width=2.0,
+            color=(0.2, 0.2, 0.2, 1.0),
+        )
+
+    def _merged_geometry(self) -> Optional[Geometry]:
+        if not self._geometries_by_layer:
+            return None
+        merged = Geometry()
+        for geo in self._geometries_by_layer.values():
+            if geo:
+                merged.extend(geo)
+        return merged if not merged.is_empty() else None
 
     def vectorize(
         self,

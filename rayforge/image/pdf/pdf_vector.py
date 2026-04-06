@@ -256,6 +256,9 @@ class PdfVectorImporter(Importer):
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=PDF_RENDERER,
+            thumbnail_data=self._render_thumbnail_from_renderer(
+                PDF_RENDERER, self.raw_data
+            ),
             width_px=int(self._page_width_pt),
             height_px=int(self._page_height_pt),
             width_mm=width_mm,

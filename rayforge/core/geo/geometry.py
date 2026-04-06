@@ -1497,7 +1497,12 @@ class Geometry:
             float(row[7]),
         )
 
-    def to_png(self, size: int) -> Optional[bytes]:
+    def to_png(
+        self,
+        size: int,
+        line_width: Optional[float] = None,
+        color: Optional[Tuple[float, float, float, float]] = None,
+    ) -> Optional[bytes]:
         """
         Renders this geometry to PNG bytes fitting within a square of
         ``size`` pixels.
@@ -1529,8 +1534,10 @@ class Geometry:
         ctx.scale(scale, -scale)
         ctx.translate(-(x1 + gw / 2), -(y1 + gh / 2))
 
-        ctx.set_source_rgba(0.55, 0.55, 0.55, 1.0)
-        ctx.set_line_width(max(1.0 / scale, 0.5))
+        rgba = color or (0.55, 0.55, 0.55, 1.0)
+        ctx.set_source_rgba(*rgba)
+        width = line_width if line_width is not None else max(1.0 / scale, 0.5)
+        ctx.set_line_width(width)
         self.to_cairo(ctx)
         ctx.stroke()
 
