@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-21 16:34+0100\n"
+"POT-Creation-Date: 2026-04-05 21:32+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -32,6 +32,18 @@ msgstr "Pontilhamento"
 #: laser_essentials/producers/raster_producer.py
 msgid "Multiple Depths"
 msgstr "Múltiplas Profundidades"
+
+#: laser_essentials/producers/raster_producer.py
+msgid "Variable"
+msgstr "Variável"
+
+#: laser_essentials/producers/raster_producer.py
+msgid "Constant"
+msgstr "Constante"
+
+#: laser_essentials/producers/raster_producer.py
+msgid "Multi-Pass"
+msgstr "Multipasso"
 
 #: laser_essentials/producers/shrinkwrap_producer.py
 #: laser_essentials/producers/contour_producer.py
@@ -424,8 +436,8 @@ msgid "Shrink Wrap"
 msgstr "Envoltório"
 
 #: laser_essentials/steps/frame_step.py
-msgid "Frame Outline"
-msgstr "Contorno de Enquadramento"
+msgid "Frame"
+msgstr "Moldura"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Engrave"

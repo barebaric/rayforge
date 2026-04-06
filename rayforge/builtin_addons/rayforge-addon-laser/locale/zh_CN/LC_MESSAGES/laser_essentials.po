@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-21 16:34+0100\n"
+"POT-Creation-Date: 2026-04-05 21:32+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -32,6 +32,18 @@ msgstr "抖动"
 #: laser_essentials/producers/raster_producer.py
 msgid "Multiple Depths"
 msgstr "多深度"
+
+#: laser_essentials/producers/raster_producer.py
+msgid "Variable"
+msgstr "可变"
+
+#: laser_essentials/producers/raster_producer.py
+msgid "Constant"
+msgstr "恒定"
+
+#: laser_essentials/producers/raster_producer.py
+msgid "Multi-Pass"
+msgstr "多次扫描"
 
 #: laser_essentials/producers/shrinkwrap_producer.py
 #: laser_essentials/producers/contour_producer.py
@@ -414,8 +426,8 @@ msgid "Shrink Wrap"
 msgstr "收缩包裹"
 
 #: laser_essentials/steps/frame_step.py
-msgid "Frame Outline"
-msgstr "边框轮廓"
+msgid "Frame"
+msgstr "边框"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Engrave"
