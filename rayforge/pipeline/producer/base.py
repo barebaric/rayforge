@@ -124,6 +124,15 @@ class OpsProducer(ABC):
         """
         return True
 
+    @property
+    def show_recipe_settings(self) -> bool:
+        """
+        Returns True if the recipe control widget should be shown in the
+        step settings dialog. Producers that manage their own speed/power
+        ranges internally may not benefit from the recipe system.
+        """
+        return True
+
     def to_dict(self) -> dict:
         """
         Serializes the producer configuration to a dictionary.

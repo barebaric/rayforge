@@ -97,6 +97,9 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         self.recipe_control = RecipeControlWidget(self.editor, self.step)
         self.recipe_control.recipe_applied.connect(self._sync_widgets_to_model)
         general_group.add(self.recipe_control)
+        self.recipe_control.set_visible(
+            producer.show_recipe_settings if producer else False
+        )
 
         # Laser Head Selector
         if machine and machine.heads:
@@ -566,6 +569,12 @@ class StepSettingsDialog(PatchedDialogWindow):
             "toggled", self._on_tab_toggled, self.stack, "post-processing"
         )
         switcher_box.append(self.btn_post_processing)
+
+        has_post_processors = bool(
+            step.per_step_transformers_dicts
+            or step.per_workpiece_transformers_dicts
+        )
+        self.btn_post_processing.set_visible(has_post_processors)
 
         # Default to step-settings page
         self.btn_step_settings.set_active(True)
