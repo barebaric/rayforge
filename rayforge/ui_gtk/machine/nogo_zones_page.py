@@ -232,7 +232,9 @@ class NogoZonesPage(TrackedPreferencesPage):
         )
         self.x_row = Adw.SpinRow(
             title=_("X"),
-            subtitle=_("X position in machine space (mm)"),
+            subtitle=_("X position in {wcs}").format(
+                wcs=self.machine.machine_space_wcs_display_name
+            ),
             adjustment=x_adj,
             digits=2,
         )
@@ -244,7 +246,9 @@ class NogoZonesPage(TrackedPreferencesPage):
         )
         self.y_row = Adw.SpinRow(
             title=_("Y"),
-            subtitle=_("Y position in machine space (mm)"),
+            subtitle=_("Y position in {wcs}").format(
+                wcs=self.machine.machine_space_wcs_display_name
+            ),
             adjustment=y_adj,
             digits=2,
         )
@@ -256,7 +260,9 @@ class NogoZonesPage(TrackedPreferencesPage):
         )
         self.z_row = Adw.SpinRow(
             title=_("Z"),
-            subtitle=_("Z position in machine space (mm)"),
+            subtitle=_("Z position in {wcs}").format(
+                wcs=self.machine.machine_space_wcs_display_name
+            ),
             adjustment=z_adj,
             digits=2,
         )
