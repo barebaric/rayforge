@@ -14,6 +14,7 @@ from ..icons import get_icon
 from ..machine.console import Console
 from ..machine.jog_widget import JogWidget
 from ..shared.icon_tab_widget import IconTabWidget
+from ..shared.responsive_box import ResponsiveBox
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from .asset_browser import AssetBrowser
 
@@ -55,23 +56,24 @@ class BottomPanel(Gtk.Box):
 
         self.hbox.append(self.tab_widget)
 
-        right_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        right_hbox.set_spacing(12)
-        right_hbox.set_hexpand(False)
-        self.hbox.append(right_hbox)
+        self._controls = ResponsiveBox()
+        self._controls.set_hexpand(False)
+        self._controls.set_vexpand(True)
+        self._controls.set_valign(Gtk.Align.FILL)
+        self._controls.set_margin_end(15)
+        self._controls.set_margin_top(9)
+        self._controls.set_margin_bottom(9)
+        self.hbox.append(self._controls)
 
         if machine:
-            self._setup_wcs_controls(right_hbox)
+            self._setup_wcs_controls()
             self._connect_machine_signals()
 
         self.jog_widget = JogWidget()
-        self.jog_widget.set_vexpand(True)
-        self.jog_widget.set_valign(Gtk.Align.FILL)
-        self.jog_widget.set_hexpand(False)
-        self.jog_widget.set_margin_end(15)
-        self.jog_widget.set_margin_top(9)
-        self.jog_widget.set_margin_bottom(9)
-        right_hbox.append(self.jog_widget)
+        if machine:
+            self._controls.set_children(self.wcs_group, self.jog_widget)
+        else:
+            self._controls.set_children(self.jog_widget)
 
         if machine and machine_cmd:
             self.jog_widget.set_machine(machine, machine_cmd)
@@ -86,6 +88,10 @@ class BottomPanel(Gtk.Box):
         self.asset_browser = AssetBrowser(doc_editor)
 
         self.gcode_viewer = GcodeViewer()
+        self.gcode_viewer.set_margin_start(0)
+        self.gcode_viewer.set_margin_end(0)
+        self.gcode_viewer.set_margin_top(9)
+        self.gcode_viewer.set_margin_bottom(9)
 
         self.tab_widget.add_tab(
             "assets",
@@ -138,12 +144,8 @@ class BottomPanel(Gtk.Box):
 
         task_mgr.add_coroutine(send_command)
 
-    def _setup_wcs_controls(self, parent):
+    def _setup_wcs_controls(self):
         self.wcs_group = Adw.PreferencesGroup()
-        self.wcs_group.set_margin_top(9)
-        self.wcs_group.set_margin_bottom(9)
-        self.wcs_group.set_valign(Gtk.Align.CENTER)
-        parent.append(self.wcs_group)
 
         if self.machine:
             self.wcs_list = self.machine.supported_wcs

@@ -8,6 +8,7 @@ from ..icons import get_icon
 
 _GAP = 12
 _SPACING = 6
+_MAX_HEIGHT = 4 * 60 + 3 * _SPACING
 
 
 class JogWidget(Gtk.Widget):
@@ -155,11 +156,13 @@ class JogWidget(Gtk.Widget):
         return Gtk.SizeRequestMode.WIDTH_FOR_HEIGHT
 
     def do_measure(self, orientation, for_size):
-        if orientation == Gtk.Orientation.HORIZONTAL and for_size > 0:
-            jog_w, act_w = self._calc_grid_widths(for_size)
+        if orientation == Gtk.Orientation.HORIZONTAL:
+            h = for_size if for_size > 0 else _MAX_HEIGHT
+            jog_w, act_w = self._calc_grid_widths(h)
             total = int(jog_w) + _GAP + int(act_w)
             return (total, total, -1, -1)
-        return self._jog_grid.measure(orientation, for_size)
+        m = self._jog_grid.measure(orientation, for_size)
+        return (m[0], min(m[1], _MAX_HEIGHT), -1, -1)
 
     def do_size_allocate(self, width, height, baseline):
         jog_w, act_w = self._calc_grid_widths(height)
