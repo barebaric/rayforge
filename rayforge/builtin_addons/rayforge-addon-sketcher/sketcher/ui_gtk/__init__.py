@@ -15,14 +15,9 @@ from rayforge.ui_gtk.shared.keyboard import PRIMARY_ACCEL
 from rayforge.ui_gtk.canvas2d.context_menu import (
     context_menu_extension_registry,
 )
-from rayforge.ui_gtk.doceditor.asset_row_factory import (
-    asset_row_widget_registry,
-)
 from rayforge.ui_gtk.doceditor.property_providers import (
     property_provider_registry,
 )
-from ..core.sketch import Sketch
-from .asset_row_widget import SketchAssetRowWidget
 from .property_provider import SketchPropertyProvider
 from .sketch_mode_cmd import SketchModeCmd
 from .sketchelement import SketchElement
@@ -252,9 +247,6 @@ def register():
     register sketch-specific components with their respective registries.
     """
     property_provider_registry.register(SketchPropertyProvider, "sketcher")
-    asset_row_widget_registry.register(
-        Sketch, SketchAssetRowWidget, "sketcher"
-    )
     context_menu_extension_registry.register(
         _build_sketch_context_menu_items, "sketcher"
     )
@@ -268,7 +260,6 @@ def register():
 register()
 
 __all__ = [
-    "SketchAssetRowWidget",
     "SketchElement",
     "SketchModeCmd",
     "SketchPropertyProvider",

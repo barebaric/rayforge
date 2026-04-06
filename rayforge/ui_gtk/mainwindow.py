@@ -46,7 +46,6 @@ from .sim3d.canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .sim3d.canvas3d.camera import ViewDirection
 from .sim3d.canvas3d.viewport import ViewportConfig
 from .doceditor import file_dialogs
-from .doceditor.asset_row_factory import register_builtin_widgets
 from .doceditor.bottom_panel import BottomPanel
 from .doceditor.import_handler import start_interactive_import
 from .doceditor.item_properties import DocItemPropertiesWidget
@@ -380,9 +379,6 @@ class MainWindow(Adw.ApplicationWindow):
         right_pane_box.set_size_request(400, -1)
         self._right_pane.set_child(right_pane_box)
 
-        # Register built-in asset row widgets before creating the view
-        register_builtin_widgets()
-
         # Add the Layer list view
         self.layer_list_view = LayerListView(self.doc_editor)
         self.layer_list_view.set_margin_top(20)
@@ -681,7 +677,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.main_stack.set_visible_child_name("main")
 
     def on_add_child(self, sender):
-        """Handler for adding a new stock item, called from AssetListView."""
+        """Handler for adding a new stock item."""
         self.doc_editor.stock.add_stock()
 
     def on_add_asset_requested(self, sender, *, type_name: str):
