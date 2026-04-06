@@ -236,39 +236,8 @@ class WorkPieceElement(CanvasElement):
         self._update_future = None
         return False
 
-    def _on_view_artifact_updated(
-        self,
-        sender,
-        *,
-        step_uid: str,
-        workpiece_uid: str,
-        handle: BaseArtifactHandle,
-        **kwargs,
-    ):
-        """
-        Handler for when the content of a view artifact has been updated
-        by the background worker.
-        """
-        if workpiece_uid != self.data.uid or not self.canvas:
-            return
-        self.canvas.queue_draw()
-
-    def _on_view_generation_finished(
-        self,
-        sender,
-        *,
-        key,
-        workpiece_uid: str,
-        step_uid: str,
-        **kwargs,
-    ):
-        """
-        Handler for when view generation is complete.
-        This is the safe time to update the ops surface cache.
-        """
-        if workpiece_uid != self.data.uid:
-            return
-
+    def _update_ops_cache_from_handle(self, step_uid: str):
+        """Loads the view artifact from shared memory and caches it."""
         view_handle = self.view_manager.get_view_handle(
             self.data.uid, step_uid
         )
@@ -280,7 +249,7 @@ class WorkPieceElement(CanvasElement):
             return
 
         try:
-            new_data = np.copy(artifact.bitmap_data)
+            new_data = artifact.bitmap_data
             height, width, _ = new_data.shape
             stride = cairo.ImageSurface.format_stride_for_width(
                 cairo.FORMAT_ARGB32, width
@@ -298,12 +267,47 @@ class WorkPieceElement(CanvasElement):
                 artifact.bbox_mm,
                 artifact.workpiece_size_mm,
             )
-            if self.canvas:
-                self.canvas.queue_draw()
         except Exception as e:
             logger.warning(
                 f"Failed to update ops cache for step {step_uid}: {e}"
             )
+
+    def _on_view_artifact_updated(
+        self,
+        sender,
+        *,
+        step_uid: str,
+        workpiece_uid: str,
+        handle: BaseArtifactHandle,
+        **kwargs,
+    ):
+        """
+        Handler for when the content of a view artifact has been updated
+        by the background worker.
+        """
+        if workpiece_uid != self.data.uid or not self.canvas:
+            return
+        self._update_ops_cache_from_handle(step_uid)
+        self.canvas.queue_draw()
+
+    def _on_view_generation_finished(
+        self,
+        sender,
+        *,
+        key,
+        workpiece_uid: str,
+        step_uid: str,
+        **kwargs,
+    ):
+        """
+        Handler for when view generation is complete.
+        This is the safe time to update the ops surface cache.
+        """
+        if workpiece_uid != self.data.uid:
+            return
+        self._update_ops_cache_from_handle(step_uid)
+        if self.canvas:
+            self.canvas.queue_draw()
 
     def get_closest_point_on_path(
         self, world_x: float, world_y: float, threshold_px: float = 5.0
@@ -609,7 +613,7 @@ class WorkPieceElement(CanvasElement):
                         artifact = self.view_manager.store.get(view_handle)
                         if isinstance(artifact, WorkPieceViewArtifact):
                             try:
-                                new_data = np.copy(artifact.bitmap_data)
+                                new_data = artifact.bitmap_data
                                 height, width, _ = new_data.shape
                                 stride = (
                                     cairo.ImageSurface.format_stride_for_width(
