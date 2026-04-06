@@ -22,7 +22,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-CAIRO_MAX_DIMENSION = 30000
+CAIRO_MAX_DIMENSION = 8192
+MAX_TOTAL_PIXELS = CAIRO_MAX_DIMENSION * CAIRO_MAX_DIMENSION
 
 
 def _get_color_set_for_laser(
@@ -197,6 +198,11 @@ def calculate_render_dimensions(
 
     width_px = min(requested_width_px, CAIRO_MAX_DIMENSION)
     height_px = min(requested_height_px, CAIRO_MAX_DIMENSION)
+
+    if width_px * height_px > MAX_TOTAL_PIXELS:
+        scale = (MAX_TOTAL_PIXELS / (width_px * height_px)) ** 0.5
+        width_px = int(width_px * scale)
+        height_px = int(height_px * scale)
 
     if width_px <= 2 * margin or height_px <= 2 * margin:
         return None
