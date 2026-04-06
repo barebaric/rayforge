@@ -35,10 +35,10 @@ class SourceAsset(IAsset):
     edit_item_action: ClassVar[Optional[str]] = None
 
     source_file: Path
-    original_data: bytes
+    original_data: bytes = field(repr=False)
     renderer: "Renderer"
-    base_render_data: Optional[bytes] = None
-    thumbnail_data: Optional[bytes] = None
+    base_render_data: Optional[bytes] = field(default=None, repr=False)
+    thumbnail_data: Optional[bytes] = field(default=None, repr=False)
     metadata: Dict[str, Any] = field(default_factory=dict)
     width_px: Optional[int] = None
     height_px: Optional[int] = None

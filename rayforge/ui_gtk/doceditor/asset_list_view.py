@@ -229,8 +229,8 @@ class AssetListView(ExpanderWithButton):
     def on_delete_clicked(self, row_widget: IAssetRowWidget):
         """Handles delete button click for any asset type."""
         logger.debug(
-            "on_delete_clicked: asset=%s, uid=%s",
-            row_widget.asset,
+            "on_delete_clicked: name=%s, uid=%s",
+            row_widget.asset.name,
             row_widget.asset.uid,
         )
         self.editor.asset.delete_asset(row_widget.asset)
