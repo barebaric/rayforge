@@ -164,8 +164,8 @@ class AssetCmd:
         undoable transaction.
         """
         logger.debug(
-            "delete_asset called: asset=%s, uid=%s",
-            asset_to_delete,
+            "delete_asset called: name=%s, uid=%s",
+            asset_to_delete.name,
             asset_to_delete.uid,
         )
         history = self.doc.history_manager
