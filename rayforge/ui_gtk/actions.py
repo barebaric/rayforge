@@ -332,6 +332,11 @@ class ActionManager:
         # Asset Actions
         self._add_action("add-stock", self.on_add_stock)
         self._add_action(
+            "activate-stock",
+            self.on_activate_stock,
+            GLib.VariantType.new("s"),
+        )
+        self._add_action(
             "edit-stock-item",
             self.on_edit_stock_item,
             GLib.VariantType.new("s"),
@@ -476,6 +481,15 @@ class ActionManager:
     def on_add_stock(self, action, param):
         """Handler for the 'add-stock' action."""
         self.editor.stock.add_stock()
+
+    def on_activate_stock(self, action, param):
+        """Handler for the 'activate-stock' action."""
+        asset_uid = param.get_string()
+        for item in self.editor.doc.stock_items:
+            if item.stock_asset_uid == asset_uid:
+                dialog = StockPropertiesDialog(self.win, item, self.editor)
+                dialog.present()
+                break
 
     def on_edit_stock_item(self, action, param):
         """Handler for the 'edit-stock-item' action."""

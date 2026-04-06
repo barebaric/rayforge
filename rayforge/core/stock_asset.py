@@ -30,7 +30,7 @@ class StockAsset(IAsset):
     type_display_name: ClassVar[str] = _("Stock Material")
     can_edit: ClassVar[bool] = True
     add_action: ClassVar[Optional[str]] = "add-stock"
-    activate_action: ClassVar[Optional[str]] = None
+    activate_action: ClassVar[Optional[str]] = "activate-stock"
     edit_item_action: ClassVar[Optional[str]] = "edit-stock-item"
 
     def __init__(
