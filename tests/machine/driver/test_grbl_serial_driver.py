@@ -2,11 +2,11 @@ import pytest
 import pytest_asyncio
 import asyncio
 from unittest.mock import MagicMock, AsyncMock, PropertyMock
-from typing import cast
 from rayforge.core.doc import Doc
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
 from rayforge.core.varset import VarSet, Var
 from rayforge.machine.driver.grbl_serial import GrblSerialDriver
+from rayforge.machine.transport.grbl import GrblSerialTransport
 from rayforge.machine.transport import TransportStatus, SerialTransport
 from rayforge.machine.driver.driver import (
     DeviceStatus,
@@ -32,7 +32,8 @@ def mock_serial_transport(mocker):
 @pytest.fixture
 def driver(context_initializer, machine, mock_serial_transport, mocker):
     """
-    Provides a GrblSerialDriver instance with its transport already mocked.
+    Provides a GrblSerialDriver instance with its transport already
+    mocked.
     """
     mocker.patch(
         "rayforge.machine.driver.grbl_serial.SerialTransport.__init__",
@@ -40,12 +41,12 @@ def driver(context_initializer, machine, mock_serial_transport, mocker):
     )
 
     driver_instance = GrblSerialDriver(context_initializer, machine)
-    driver_instance.serial_transport = mock_serial_transport
-    assert driver_instance.serial_transport is not None
-    driver_instance.serial_transport.received.connect(
+    driver_instance.grbl_transport = GrblSerialTransport(mock_serial_transport)
+    assert driver_instance.grbl_transport is not None
+    driver_instance.grbl_transport.received.connect(
         driver_instance.on_serial_data_received
     )
-    driver_instance.serial_transport.status_changed.connect(
+    driver_instance.grbl_transport.status_changed.connect(
         driver_instance.on_serial_status_changed
     )
     driver_instance.did_setup = True
@@ -59,16 +60,15 @@ def doc():
 
 
 @pytest_asyncio.fixture
-async def connected_driver(driver: GrblSerialDriver, mocker):
+async def connected_driver(
+    driver: GrblSerialDriver, mock_serial_transport, mocker
+):
     """
     An async fixture that takes a driver, connects it, and handles async
     teardown.
     """
-    transport_mock = driver.serial_transport
-    assert transport_mock is not None
-
     mocker.patch.object(
-        transport_mock,
+        mock_serial_transport,
         "is_connected",
         new_callable=PropertyMock,
         return_value=True,
@@ -77,12 +77,14 @@ async def connected_driver(driver: GrblSerialDriver, mocker):
     connect_task = asyncio.create_task(driver.connect())
     await asyncio.sleep(0)
 
-    driver.on_serial_status_changed(transport_mock, TransportStatus.CONNECTED)
+    driver.on_serial_status_changed(
+        mock_serial_transport, TransportStatus.CONNECTED
+    )
     await asyncio.sleep(0)
     welcome_msg = b"Grbl 1.1h ['$' for help]\r\n"
-    driver.on_serial_data_received(transport_mock, welcome_msg)
+    driver.on_serial_data_received(mock_serial_transport, welcome_msg)
     await asyncio.sleep(0.01)
-    cast(MagicMock, transport_mock.send).reset_mock()
+    mock_serial_transport.send.reset_mock()
 
     yield driver
 
@@ -97,7 +99,6 @@ class TestGrblSerialDriver:
         """Test that get_encoder returns a GcodeEncoder instance."""
         encoder = driver.get_encoder()
         assert isinstance(encoder, GcodeEncoder)
-        # Verify it's configured with the machine's dialect
         assert encoder.dialect.uid == driver._machine.dialect.uid
 
     @pytest.mark.asyncio
@@ -115,7 +116,7 @@ class TestGrblSerialDriver:
     async def test_handshake_timeout_on_phantom_port(
         self, driver: GrblSerialDriver, mock_serial_transport, mocker
     ):
-        """Test connection fails when device doesn't respond (phantom COM)."""
+        """Test connection fails when device doesn't respond."""
         mocker.patch.object(
             mock_serial_transport,
             "is_connected",
@@ -138,16 +139,17 @@ class TestGrblSerialDriver:
 
     @pytest.mark.asyncio
     async def test_status_report_parsing(
-        self, connected_driver: GrblSerialDriver
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
     ):
-        """Test that status reports are correctly parsed and update state."""
+        """Test that status reports are correctly parsed."""
         driver = connected_driver
-        assert driver.serial_transport is not None
         state_changed_mock = MagicMock()
         driver.state_changed.send = state_changed_mock
 
         report = b"<Idle|MPos:10.0,20.5,-1.0|FS:500,0>\r\n"
-        driver.on_serial_data_received(driver.serial_transport, report)
+        driver.on_serial_data_received(mock_serial_transport, report)
         await asyncio.sleep(0)
 
         assert driver.state.status == DeviceStatus.IDLE
@@ -158,44 +160,42 @@ class TestGrblSerialDriver:
 
     @pytest.mark.asyncio
     async def test_execute_command_ok(
-        self, connected_driver: GrblSerialDriver
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
     ):
         """Test executing a simple command that succeeds."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
 
         cmd_task = asyncio.create_task(driver._execute_command("$X"))
         await asyncio.sleep(0.01)
-        cast(MagicMock, transport_mock.send).assert_called_once_with(b"$X\n")
-        driver.on_serial_data_received(transport_mock, b"ok\r\n")
+        mock_serial_transport.send.assert_called_once_with(b"$X\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
         response = await cmd_task
         assert response == ["ok"]
 
     @pytest.mark.asyncio
     async def test_execute_command_error(
-        self, connected_driver: GrblSerialDriver
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
     ):
         """Test executing a command that returns an error."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
 
         cmd_task = asyncio.create_task(driver._execute_command("G999"))
         await asyncio.sleep(0.01)
-        cast(MagicMock, transport_mock.send).assert_called_once_with(b"G999\n")
-        driver.on_serial_data_received(transport_mock, b"error:20\r\n")
+        mock_serial_transport.send.assert_called_once_with(b"G999\n")
+        driver.on_serial_data_received(mock_serial_transport, b"error:20\r\n")
         response = await cmd_task
         assert response == ["error:20"]
 
     @pytest.mark.asyncio
     async def test_run_streams_gcode_and_completes(
-        self, connected_driver: GrblSerialDriver, doc
+        self, connected_driver: GrblSerialDriver, mock_serial_transport, doc
     ):
         """Test the full G-code streaming process for a simple job."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
 
         driver._machine.set_active_wcs("G54")
 
@@ -219,9 +219,8 @@ class TestGrblSerialDriver:
 
         for line in gcode_lines:
             await asyncio.sleep(0.01)
-            send_mock = cast(MagicMock, transport_mock.send)
-            send_mock.assert_any_call(line)
-            driver.on_serial_data_received(transport_mock, b"ok\r\n")
+            mock_serial_transport.send.assert_any_call(line)
+            driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
 
         await run_task
         job_finished_mock.assert_called_once_with(driver)
@@ -229,16 +228,15 @@ class TestGrblSerialDriver:
 
     @pytest.mark.asyncio
     async def test_run_respects_buffer_size(
-        self, connected_driver: GrblSerialDriver
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
     ):
         """Test that the driver waits for buffer space before sending."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
-        send_mock = cast(MagicMock, transport_mock.send)
 
-        line1 = b"G1 X10 Y10 " + b"A" * 110 + b"\n"  # approx 123 bytes
-        line2 = b"G1 X20 Y20\n"  # 11 bytes
+        line1 = b"G1 X10 Y10 " + b"A" * 110 + b"\n"
+        line2 = b"G1 X20 Y20\n"
         assert len(line1) + len(line2) > 128
 
         run_task = asyncio.create_task(
@@ -246,27 +244,26 @@ class TestGrblSerialDriver:
         )
 
         await asyncio.sleep(0.01)
-        send_mock.assert_called_once_with(line1)
+        mock_serial_transport.send.assert_called_once_with(line1)
 
         await asyncio.sleep(0.05)
-        send_mock.assert_called_once_with(line1)
+        mock_serial_transport.send.assert_called_once_with(line1)
 
-        driver.on_serial_data_received(transport_mock, b"ok\r\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
         await asyncio.sleep(0.01)
-        send_mock.assert_called_with(line2)
+        mock_serial_transport.send.assert_called_with(line2)
 
-        driver.on_serial_data_received(transport_mock, b"ok\r\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
         await run_task
 
     @pytest.mark.asyncio
     async def test_run_handles_mid_job_error(
-        self, connected_driver: GrblSerialDriver
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
     ):
         """Test that an error from GRBL during a job halts the stream."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
-        send_mock = cast(MagicMock, transport_mock.send)
         job_finished_mock = MagicMock()
         driver.job_finished.send = job_finished_mock
 
@@ -274,12 +271,12 @@ class TestGrblSerialDriver:
         run_task = asyncio.create_task(driver.run_raw(gcode))
 
         await asyncio.sleep(0.01)
-        send_mock.assert_any_call(b"G0 X10\n")
-        driver.on_serial_data_received(transport_mock, b"ok\r\n")
+        mock_serial_transport.send.assert_any_call(b"G0 X10\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
 
         await asyncio.sleep(0.01)
-        send_mock.assert_any_call(b"G999\n")
-        driver.on_serial_data_received(transport_mock, b"error:20\r\n")
+        mock_serial_transport.send.assert_any_call(b"G999\n")
+        driver.on_serial_data_received(mock_serial_transport, b"error:20\r\n")
 
         try:
             await asyncio.wait_for(run_task, timeout=0.5)
@@ -294,18 +291,20 @@ class TestGrblSerialDriver:
         assert driver._job_exception is not None
         assert isinstance(driver._job_exception, DeviceConnectionError)
         assert "error:20" in str(driver._job_exception)
-        assert driver._sent_gcode_queue.empty()
-        assert driver._rx_buffer_count == 0
+        assert driver.grbl_transport is not None
+        assert driver.grbl_transport.pending_queue.empty()
+        assert driver.grbl_transport.buffer_count == 0
 
         job_finished_mock.assert_called_once_with(driver)
 
     @pytest.mark.asyncio
-    async def test_cancel_stops_job(self, connected_driver: GrblSerialDriver):
+    async def test_cancel_stops_job(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+    ):
         """Test that calling cancel() stops a running job."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
-        send_mock = cast(MagicMock, transport_mock.send)
         job_finished_mock = MagicMock()
         driver.job_finished.send = job_finished_mock
 
@@ -314,7 +313,7 @@ class TestGrblSerialDriver:
         await asyncio.sleep(0.05)
 
         await driver.cancel()
-        send_mock.assert_any_call(b"\x18")
+        mock_serial_transport.send.assert_any_call(b"\x18")
 
         try:
             await asyncio.wait_for(run_task, timeout=0.1)
@@ -325,36 +324,35 @@ class TestGrblSerialDriver:
 
     @pytest.mark.asyncio
     async def test_read_settings(
-        self, connected_driver: GrblSerialDriver, mocker
+        self, connected_driver: GrblSerialDriver, mock_serial_transport, mocker
     ):
         """Test reading and parsing device settings."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
-        send_mock = cast(MagicMock, transport_mock.send)
         settings_read_mock = MagicMock()
         driver.settings_read.send = settings_read_mock
 
-        # Fix: Use the key format ('0') that the regex extracts
         mock_setting_varset = VarSet(
             vars=[Var(key="0", label="$0 Step pulse", var_type=str)]
         )
         mocker.patch.object(
-            driver, "get_setting_vars", return_value=[mock_setting_varset]
+            driver,
+            "get_setting_vars",
+            return_value=[mock_setting_varset],
         )
 
         settings_response = b"$0=10\r\n$999=123\r\nok\r\n"
         read_task = asyncio.create_task(driver.read_settings())
 
         await asyncio.sleep(0.01)
-        send_mock.assert_called_with(b"$$\n")
-        driver.on_serial_data_received(transport_mock, settings_response)
+        mock_serial_transport.send.assert_called_with(b"$$\n")
+        driver.on_serial_data_received(
+            mock_serial_transport, settings_response
+        )
         await read_task
 
         settings_read_mock.assert_called_once()
         settings = settings_read_mock.call_args.kwargs["settings"]
 
-        # Find the VarSet by checking its keys, not the object itself
         step_pulse_varset = next(
             (s for s in settings if "0" in s.keys()), None
         )
@@ -362,23 +360,19 @@ class TestGrblSerialDriver:
         assert step_pulse_varset["0"].value == "10"
 
         unknown_varset = next(
-            (s for s in settings if s.title == "Unknown Settings"), None
+            (s for s in settings if s.title == "Unknown Settings"),
+            None,
         )
         assert unknown_varset is not None
-        # Note: the key for unknown vars is also just the number string
         assert unknown_varset["999"].value == "123"
 
     @pytest.mark.asyncio
     async def test_set_wcs_offset(
-        self, connected_driver: GrblSerialDriver, mocker
+        self, connected_driver: GrblSerialDriver, mock_serial_transport, mocker
     ):
         """Test setting a WCS offset."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
-        send_mock = cast(MagicMock, transport_mock.send)
 
-        # Patch gcode_to_p_number to return 2 for G55
         mocker.patch(
             "rayforge.machine.driver.grbl_serial.gcode_to_p_number",
             return_value=2,
@@ -388,29 +382,26 @@ class TestGrblSerialDriver:
             driver.set_wcs_offset("G55", 10.5, -20.0, 0.1)
         )
 
-        # Wait for command to be queued (not using sleep)
-        # Give the async task a chance to run
         done, pending = await asyncio.wait([cmd_task], timeout=0.1)
 
-        # Command shouldn't be done yet (waiting for response)
         assert cmd_task not in done
 
-        # Check that send was called
-        send_mock.assert_called_once_with(b"G10 L2 P2 X10.5 Y-20.0 Z0.1\n")
+        mock_serial_transport.send.assert_called_once_with(
+            b"G10 L2 P2 X10.5 Y-20.0 Z0.1\n"
+        )
 
-        # Complete the command
-        driver.on_serial_data_received(transport_mock, b"ok\r\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
 
-        # Now wait for the task to complete
         await cmd_task
 
     @pytest.mark.asyncio
-    async def test_read_wcs_offsets(self, connected_driver: GrblSerialDriver):
+    async def test_read_wcs_offsets(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+    ):
         """Test reading and parsing WCS offsets."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
-        send_mock = cast(MagicMock, transport_mock.send)
 
         response_data = (
             b"[G54:1.000,2.000,3.000]\r\n[G55:4.000,5.000,6.000]\r\nok\r\n"
@@ -418,8 +409,8 @@ class TestGrblSerialDriver:
 
         cmd_task = asyncio.create_task(driver.read_wcs_offsets())
         await asyncio.sleep(0.01)
-        send_mock.assert_called_once_with(b"$#\n")
-        driver.on_serial_data_received(transport_mock, response_data)
+        mock_serial_transport.send.assert_called_once_with(b"$#\n")
+        driver.on_serial_data_received(mock_serial_transport, response_data)
 
         offsets = await cmd_task
         assert offsets["G54"] == (1.0, 2.0, 3.0)
@@ -427,13 +418,12 @@ class TestGrblSerialDriver:
 
     @pytest.mark.asyncio
     async def test_probe_cycle_success(
-        self, connected_driver: GrblSerialDriver
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
     ):
         """Test a successful probing cycle."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
-        send_mock = cast(MagicMock, transport_mock.send)
 
         response_data = b"[PRB:10.123,20.456,-0.500:1]\r\nok\r\n"
 
@@ -441,97 +431,95 @@ class TestGrblSerialDriver:
             driver.run_probe_cycle(Axis.Z, -15, 100)
         )
         await asyncio.sleep(0.01)
-        send_mock.assert_called_once_with(b"G38.2 Z-15 F100\n")
-        driver.on_serial_data_received(transport_mock, response_data)
+        mock_serial_transport.send.assert_called_once_with(
+            b"G38.2 Z-15 F100\n"
+        )
+        driver.on_serial_data_received(mock_serial_transport, response_data)
 
         result = await cmd_task
         assert result == (10.123, 20.456, -0.5)
 
     @pytest.mark.asyncio
     async def test_probe_cycle_failure(
-        self, connected_driver: GrblSerialDriver
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
     ):
         """Test a probing cycle that does not trigger."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
 
         response_data = b"[PRB:0.000,0.000,0.000:0]\r\nok\r\n"
         cmd_task = asyncio.create_task(driver.run_probe_cycle(Axis.X, 20, 150))
         await asyncio.sleep(0.01)
-        driver.on_serial_data_received(transport_mock, response_data)
+        driver.on_serial_data_received(mock_serial_transport, response_data)
 
         result = await cmd_task
         assert result is None
 
     @pytest.mark.asyncio
     async def test_read_parser_state_g54(
-        self, connected_driver: GrblSerialDriver
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
     ):
         """Test read_parser_state parses $G response with G54."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
 
         response_data = b"[G54 G17 G21 G90 G94 M5 M9 T0 F0 S0]\r\nok\r\n"
         cmd_task = asyncio.create_task(driver.read_parser_state())
         await asyncio.sleep(0.01)
-        send_mock = cast(MagicMock, transport_mock.send)
-        send_mock.assert_called_once_with(b"$G\n")
-        driver.on_serial_data_received(transport_mock, response_data)
+        mock_serial_transport.send.assert_called_once_with(b"$G\n")
+        driver.on_serial_data_received(mock_serial_transport, response_data)
 
         result = await cmd_task
         assert result == "G54"
 
     @pytest.mark.asyncio
     async def test_read_parser_state_g59(
-        self, connected_driver: GrblSerialDriver
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
     ):
         """Test read_parser_state parses $G response with G59."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
 
         response_data = b"[G59 G17 G21 G90 G94 M5 M9 T0 F0 S0]\r\nok\r\n"
         cmd_task = asyncio.create_task(driver.read_parser_state())
         await asyncio.sleep(0.01)
-        send_mock = cast(MagicMock, transport_mock.send)
-        send_mock.assert_called_once_with(b"$G\n")
-        driver.on_serial_data_received(transport_mock, response_data)
+        mock_serial_transport.send.assert_called_once_with(b"$G\n")
+        driver.on_serial_data_received(mock_serial_transport, response_data)
 
         result = await cmd_task
         assert result == "G59"
 
     @pytest.mark.asyncio
     async def test_read_parser_state_no_wcs_found(
-        self, connected_driver: GrblSerialDriver
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
     ):
         """Test read_parser_state returns None when no G54-G59 found."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
 
         response_data = b"[G17 G21 G90 G94 M5 M9 T0 F0 S0]\r\nok\r\n"
         cmd_task = asyncio.create_task(driver.read_parser_state())
         await asyncio.sleep(0.01)
-        send_mock = cast(MagicMock, transport_mock.send)
-        send_mock.assert_called_once_with(b"$G\n")
-        driver.on_serial_data_received(transport_mock, response_data)
+        mock_serial_transport.send.assert_called_once_with(b"$G\n")
+        driver.on_serial_data_received(mock_serial_transport, response_data)
 
         result = await cmd_task
         assert result is None
 
     @pytest.mark.asyncio
     async def test_read_parser_state_connection_error(
-        self, connected_driver: GrblSerialDriver, mocker
+        self, connected_driver: GrblSerialDriver, mock_serial_transport, mocker
     ):
         """Test read_parser_state returns None on connection error."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
-        from rayforge.machine.driver.driver import DeviceConnectionError
+        from rayforge.machine.driver.driver import (
+            DeviceConnectionError,
+        )
 
-        # Mock _execute_command to raise DeviceConnectionError
         execute_command_mock = mocker.patch.object(
             driver,
             "_execute_command",
@@ -544,13 +532,12 @@ class TestGrblSerialDriver:
 
     @pytest.mark.asyncio
     async def test_alarm_stops_sending_and_driver_state_consistent(
-        self, connected_driver: GrblSerialDriver
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
     ):
         """Test that ALARM stops G-code sending and driver is consistent."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
-        send_mock = cast(MagicMock, transport_mock.send)
         job_finished_mock = MagicMock()
         driver.job_finished.send = job_finished_mock
 
@@ -562,20 +549,20 @@ class TestGrblSerialDriver:
 
         first_commands = [b"G0 X0\n", b"G0 X1\n", b"G0 X2\n"]
         for cmd in first_commands:
-            send_mock.assert_any_call(cmd)
+            mock_serial_transport.send.assert_any_call(cmd)
 
-        driver.on_serial_data_received(transport_mock, b"ok\r\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
         await asyncio.sleep(0.01)
 
-        driver.on_serial_data_received(transport_mock, b"ok\r\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
         await asyncio.sleep(0.01)
 
-        driver.on_serial_data_received(transport_mock, b"ok\r\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
         await asyncio.sleep(0.01)
 
-        send_mock.reset_mock()
+        mock_serial_transport.send.reset_mock()
 
-        driver.on_serial_data_received(transport_mock, b"ALARM:1\r\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ALARM:1\r\n")
         await asyncio.sleep(0.01)
 
         try:
@@ -592,22 +579,22 @@ class TestGrblSerialDriver:
         assert isinstance(driver._job_exception, DeviceConnectionError)
         assert "ALARM" in str(driver._job_exception)
 
-        assert driver._sent_gcode_queue.empty()
-        assert driver._rx_buffer_count == 0
+        assert driver.grbl_transport is not None
+        assert driver.grbl_transport.pending_queue.empty()
+        assert driver.grbl_transport.buffer_count == 0
 
         job_finished_mock.assert_called_once_with(driver)
 
-        send_mock.assert_any_call(b"\x18")
+        mock_serial_transport.send.assert_any_call(b"\x18")
 
     @pytest.mark.asyncio
     async def test_alarm_in_buffer_wait_stops_sending(
-        self, connected_driver: GrblSerialDriver
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
     ):
         """Test that ALARM while waiting for buffer space stops sending."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
-        send_mock = cast(MagicMock, transport_mock.send)
         job_finished_mock = MagicMock()
         driver.job_finished.send = job_finished_mock
 
@@ -616,11 +603,11 @@ class TestGrblSerialDriver:
         run_task = asyncio.create_task(driver.run_raw(gcode))
 
         await asyncio.sleep(0.01)
-        send_mock.assert_called_once()
-        driver.on_serial_data_received(transport_mock, b"ok\r\n")
+        mock_serial_transport.send.assert_called_once()
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
         await asyncio.sleep(0.01)
 
-        driver.on_serial_data_received(transport_mock, b"ALARM:2\r\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ALARM:2\r\n")
         await asyncio.sleep(0.01)
 
         try:
@@ -634,21 +621,21 @@ class TestGrblSerialDriver:
 
         assert driver._job_running is False
         assert driver._job_exception is not None
-        assert driver._sent_gcode_queue.empty()
-        assert driver._rx_buffer_count == 0
+        assert driver.grbl_transport is not None
+        assert driver.grbl_transport.pending_queue.empty()
+        assert driver.grbl_transport.buffer_count == 0
 
         job_finished_mock.assert_called_once_with(driver)
-        send_mock.assert_any_call(b"\x18")
+        mock_serial_transport.send.assert_any_call(b"\x18")
 
     @pytest.mark.asyncio
     async def test_alarm_state_check_stops_sending(
-        self, connected_driver: GrblSerialDriver
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
     ):
         """Test that status ALARM stops sending in stream loop."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
-        send_mock = cast(MagicMock, transport_mock.send)
         job_finished_mock = MagicMock()
         driver.job_finished.send = job_finished_mock
         state_changed_mock = MagicMock()
@@ -659,17 +646,17 @@ class TestGrblSerialDriver:
         run_task = asyncio.create_task(driver.run_raw(gcode))
 
         await asyncio.sleep(0.01)
-        send_mock.assert_any_call(b"G0 X0\n")
-        driver.on_serial_data_received(transport_mock, b"ok\r\n")
+        mock_serial_transport.send.assert_any_call(b"G0 X0\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
         await asyncio.sleep(0.01)
 
         alarm_report = b"<Alarm|MPos:0,0,0|FS:0,0>\r\n"
-        driver.on_serial_data_received(transport_mock, alarm_report)
+        driver.on_serial_data_received(mock_serial_transport, alarm_report)
         await asyncio.sleep(0.01)
 
         assert driver.state.status == DeviceStatus.ALARM
 
-        send_mock.reset_mock()
+        mock_serial_transport.send.reset_mock()
         await asyncio.sleep(0.05)
 
         try:
@@ -682,21 +669,21 @@ class TestGrblSerialDriver:
             pass
 
         assert driver._job_running is False
-        assert driver._sent_gcode_queue.empty()
-        assert driver._rx_buffer_count == 0
+        assert driver.grbl_transport is not None
+        assert driver.grbl_transport.pending_queue.empty()
+        assert driver.grbl_transport.buffer_count == 0
 
         job_finished_mock.assert_called_once_with(driver)
-        send_mock.assert_any_call(b"\x18")
+        mock_serial_transport.send.assert_any_call(b"\x18")
 
     @pytest.mark.asyncio
     async def test_alarm_clears_command_queue(
-        self, connected_driver: GrblSerialDriver
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
     ):
         """Test that alarm clears both streaming and command queues."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
-        send_mock = cast(MagicMock, transport_mock.send)
         job_finished_mock = MagicMock()
         driver.job_finished.send = job_finished_mock
 
@@ -704,11 +691,11 @@ class TestGrblSerialDriver:
         run_task = asyncio.create_task(driver.run_raw(gcode))
 
         await asyncio.sleep(0.01)
-        send_mock.assert_any_call(b"G0 X0\n")
-        driver.on_serial_data_received(transport_mock, b"ok\r\n")
+        mock_serial_transport.send.assert_any_call(b"G0 X0\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
         await asyncio.sleep(0.01)
 
-        driver.on_serial_data_received(transport_mock, b"ALARM:3\r\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ALARM:3\r\n")
         await asyncio.sleep(0.01)
 
         try:
@@ -720,22 +707,20 @@ class TestGrblSerialDriver:
         ):
             pass
 
-        assert driver._sent_gcode_queue.empty()
-        assert driver._rx_buffer_count == 0
+        assert driver.grbl_transport is not None
+        assert driver.grbl_transport.pending_queue.empty()
+        assert driver.grbl_transport.buffer_count == 0
         assert driver._job_running is False
 
         job_finished_mock.assert_called_once_with(driver)
-        send_mock.assert_any_call(b"\x18")
+        mock_serial_transport.send.assert_any_call(b"\x18")
 
     @pytest.mark.asyncio
     async def test_alarm_during_job_with_callbacks(
-        self, connected_driver: GrblSerialDriver, doc
+        self, connected_driver: GrblSerialDriver, mock_serial_transport, doc
     ):
         """Test alarm handling with on_command_done callbacks."""
         driver = connected_driver
-        transport_mock = driver.serial_transport
-        assert transport_mock is not None
-        send_mock = cast(MagicMock, transport_mock.send)
         job_finished_mock = MagicMock()
         driver.job_finished.send = job_finished_mock
         callback_mock = MagicMock()
@@ -753,15 +738,15 @@ class TestGrblSerialDriver:
         )
 
         await asyncio.sleep(0.01)
-        send_mock.assert_any_call(b"G0 X10 Y10\n")
-        driver.on_serial_data_received(transport_mock, b"ok\r\n")
+        mock_serial_transport.send.assert_any_call(b"G0 X10 Y10\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
         await asyncio.sleep(0.01)
 
-        send_mock.assert_any_call(b"G1 X20 Y20\n")
-        driver.on_serial_data_received(transport_mock, b"ok\r\n")
+        mock_serial_transport.send.assert_any_call(b"G1 X20 Y20\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
         await asyncio.sleep(0.01)
 
-        driver.on_serial_data_received(transport_mock, b"ALARM:4\r\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ALARM:4\r\n")
         await asyncio.sleep(0.01)
 
         try:
@@ -775,8 +760,9 @@ class TestGrblSerialDriver:
 
         assert driver._job_running is False
         assert driver._job_exception is not None
-        assert driver._sent_gcode_queue.empty()
-        assert driver._rx_buffer_count == 0
+        assert driver.grbl_transport is not None
+        assert driver.grbl_transport.pending_queue.empty()
+        assert driver.grbl_transport.buffer_count == 0
 
         job_finished_mock.assert_called_once_with(driver)
-        send_mock.assert_any_call(b"\x18")
+        mock_serial_transport.send.assert_any_call(b"\x18")
