@@ -145,7 +145,7 @@ class OctoprintDriver(Driver):
 
         self.base_url = f"http://{self.host}:{self.port}/"
         self.socket_url = f"ws://{self.host}:{self.port}/sockjs/websocket"
-        
+
         self.websocket = WebSocketTransport(self.socket_url)
         self.websocket.status_changed.connect(self.on_websocket_status_changed)
         self.websocket.received.connect(self.on_websocket_data_received)
@@ -154,9 +154,7 @@ class OctoprintDriver(Driver):
         try:
             data_str = data.decode("utf-8").strip()
         except UnicodeDecodeError:
-            logger.warning(
-                f"Received non-UTF8 data on WebSocket: {data!r}"
-            )
+            logger.warning(f"Received non-UTF8 data on WebSocket: {data!r}")
             return
         logger.debug(f"WebSocket data received: {data_str}")
         data: Dict[str, Any] = json.loads(data)
@@ -179,9 +177,7 @@ class OctoprintDriver(Driver):
                 state = data["state"]
                 print(state["flags"]["operational"])
                 active_flags = [
-                    flag
-                    for flag, active in state["flags"].items()
-                    if active
+                    flag for flag, active in state["flags"].items() if active
                 ]
                 if active_flags != self.connection_flags:
                     self.state.status = resolve_status(active_flags)
@@ -191,7 +187,7 @@ class OctoprintDriver(Driver):
                     self.connection_flags = active_flags
                 if data.get("job"):
                     current_job = JobInfos.from_dict(data["job"])
-                    if current_job:    
+                    if current_job:
                         print(current_job.file)
                 if data.get("progress"):
                     progress = Progress.from_dict(data["progress"])
@@ -203,6 +199,7 @@ class OctoprintDriver(Driver):
                             self.last_op_index = op_i
                             self.progress_notifier(self.last_op_index)
                     print(progress.completion)
+
     def on_websocket_status_changed(
         self, sender, status: TransportStatus, message: Optional[str] = None
     ):
@@ -214,8 +211,9 @@ class OctoprintDriver(Driver):
         if status == TransportStatus.CONNECTED:
             if not self.http_session:
                 return
-            self._connection_task = asyncio.create_task(self._on_web_socket_open())
-            
+            self._connection_task = asyncio.create_task(
+                self._on_web_socket_open()
+            )
 
     @classmethod
     def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
@@ -245,7 +243,9 @@ class OctoprintDriver(Driver):
                 self.connection_status_changed.send(
                     self,
                     status=TransportStatus.ERROR,
-                    message=_("Failed to connect to Octoprint API. Is CORS Enabled ?"),
+                    message=_(
+                        "Failed to connect to Octoprint API. Is CORS Enabled ?"
+                    ),
                 )
                 return
         await websocket.connect()
@@ -282,9 +282,7 @@ class OctoprintDriver(Driver):
             }
             while not websocket.is_connected:
                 await asyncio.sleep(1)
-            await websocket.send(
-                json.dumps(subscribe_payload).encode("utf-8")
-            )
+            await websocket.send(json.dumps(subscribe_payload).encode("utf-8"))
             auth_payload = {"auth": f"{usr_name}:{session_id}"}
             await websocket.send(json.dumps(auth_payload).encode("utf-8"))
         if self.connecting:
@@ -292,6 +290,7 @@ class OctoprintDriver(Driver):
                 self, status=TransportStatus.CONNECTED
             )
             self.connecting = False
+
     async def run(
         self,
         machine_code: Any,
@@ -412,19 +411,33 @@ class OctoprintDriver(Driver):
     async def run_probe_cycle(
         self, axis: Axis, max_travel: float, feed_rate: int
     ) -> Optional[Pos]:
-        """
-        Dummy implementation, simulates a successful probe after a short delay.
-        """
-        self.probe_status_changed.send(
-            self, message=f"Simulating probe cycle for axis {axis.name}..."
+        assert axis.name, "Probing requires a single, named axis."
+        axis_letter = axis.name.upper()
+        dialect = self._machine.dialect
+        cmd = dialect.probe_cycle.format(
+            axis_letter=axis_letter,
+            max_travel=max_travel,
+            feed_rate=feed_rate,
         )
-        await asyncio.sleep(0.5)
-        # Simulate a successful probe at a fixed position
-        simulated_pos = (10.0, 15.0, -1.0)
+
         self.probe_status_changed.send(
-            self, message=f"Probe triggered at {simulated_pos}"
+            self, message=f"Probing {axis_letter}..."
         )
-        return simulated_pos
+        response_lines = await self._execute_command(cmd)
+
+        for line in response_lines:
+            match = prb_re.match(line)
+            if match:
+                x_str, y_str, z_str, success = match.groups()
+                if int(success) == 1:
+                    pos: Pos = (float(x_str), float(y_str), float(z_str))
+                    self.probe_status_changed.send(
+                        self, message=f"Probe triggered at {pos}"
+                    )
+                    return pos
+
+        self.probe_status_changed.send(self, message="Probe failed")
+        return None
 
     async def cleanup(self):
         logger.info("Cleaning up OctoprintDriver resources...")

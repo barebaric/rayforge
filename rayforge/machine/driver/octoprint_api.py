@@ -112,6 +112,7 @@ class FilamentInfos:
     length: float
     volume: float
 
+
 @dataclass
 class JobInfos:
     file: FileInfos
@@ -126,13 +127,14 @@ class JobInfos:
         except:
             return None
 
+
 @dataclass
 class Progress:
-    completion: float # In %
-    filepos: float #Current position in the file being printed, in bytes from the beginning
-    printTime: float # Time already spent in seconds
-    printTimeLeft: float # Estimate of time left to print in seconds
-    printTimeLeftOrigin: str 
+    completion: float  # In %
+    filepos: float  # Current position in the file being printed, in bytes from the beginning
+    printTime: float  # Time already spent in seconds
+    printTimeLeft: float  # Estimate of time left to print in seconds
+    printTimeLeftOrigin: str
     """
     Origin of the current time left estimate. Can currently be either of:
 
@@ -149,13 +151,13 @@ class Progress:
             mixed-average: mixture of estimate and average
     """
 
-
     @staticmethod
     def from_dict(d: dict) -> "Optional[Progress]":
         try:
             return dacite.from_dict(data_class=Progress, data=d)
         except:
             return None
+
 
 class AuthorizationWorkflow:
     APP_NAME = "Rayforge"
