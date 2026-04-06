@@ -113,6 +113,10 @@ class MaterialTestGridProducer(OpsProducer):
     def supports_cut_speed(self) -> bool:
         return False
 
+    @property
+    def show_recipe_settings(self) -> bool:
+        return False
+
     def run(
         self,
         laser,
