@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-21 16:34+0100\n"
+"POT-Creation-Date: 2026-04-05 21:32+0200\n"
 "PO-Revision-Date: 2026-03-01 19:25+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -32,6 +32,18 @@ msgstr "Dither"
 #: laser_essentials/producers/raster_producer.py
 msgid "Multiple Depths"
 msgstr "Multiple Depths"
+
+#: laser_essentials/producers/raster_producer.py
+msgid "Variable"
+msgstr ""
+
+#: laser_essentials/producers/raster_producer.py
+msgid "Constant"
+msgstr ""
+
+#: laser_essentials/producers/raster_producer.py
+msgid "Multi-Pass"
+msgstr ""
 
 #: laser_essentials/producers/shrinkwrap_producer.py
 #: laser_essentials/producers/contour_producer.py
@@ -416,8 +428,8 @@ msgid "Shrink Wrap"
 msgstr "Shrink Wrap"
 
 #: laser_essentials/steps/frame_step.py
-msgid "Frame Outline"
-msgstr "Frame Outline"
+msgid "Frame"
+msgstr ""
 
 #: laser_essentials/steps/raster_step.py
 msgid "Engrave"
