@@ -83,6 +83,8 @@ class MainMenu(Gio.Menu):
         )
         view_menu.append_section(None, visibility_group)
 
+        self._view_addon_group = visibility_group
+
         view_group = Gio.Menu()
         view_group.append(_("Simulator"), "win.simulate_mode")
         view_group.append(_("3D View"), "win.show_3d_view")
@@ -246,6 +248,19 @@ class MainMenu(Gio.Menu):
                         info.label, f"win.{info.action_name}"
                     )
                     section.append_item(menu_item)
+
+        self._populate_view_addon_items()
+
+    def _populate_view_addon_items(self):
+        """Populate view addon items into the visibility group."""
+        n_static = 2
+        group = self._view_addon_group
+        while group.get_n_items() > n_static:
+            group.remove(n_static)
+        items = action_registry.get_menu_items("view")
+        for info in items:
+            if info.label:
+                group.append(info.label, f"win.{info.action_name}")
 
     def update_macros_menu(self, macros: List[Macro]):
         """Clears and rebuilds the dynamic macro execution menu items."""
