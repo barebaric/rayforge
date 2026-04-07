@@ -818,3 +818,31 @@ def arc_intersects_circle(
         return True
 
     return False
+
+
+def is_arc_fully_inside_regions(
+    start_pos: Point,
+    end_pos: Point,
+    center_offset: Point,
+    clockwise: bool,
+    regions: List[Polygon],
+) -> bool:
+    center = (
+        start_pos[0] + center_offset[0],
+        start_pos[1] + center_offset[1],
+    )
+    bbox = get_arc_bounding_box(start_pos, end_pos, center_offset, clockwise)
+    mid = get_arc_midpoint(start_pos, end_pos, center, clockwise)
+    sample_points = [
+        (bbox[0], bbox[1]),
+        (bbox[2], bbox[1]),
+        (bbox[2], bbox[3]),
+        (bbox[0], bbox[3]),
+        start_pos,
+        end_pos,
+        mid,
+    ]
+    for p in sample_points:
+        if not any(is_point_in_polygon(p, region) for region in regions):
+            return False
+    return True
