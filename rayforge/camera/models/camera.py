@@ -28,6 +28,8 @@ class Camera:
         # 0.0 = No denoise, 1.0 = Max smoothing (high latency/ghosting)
         self._denoise: float = 0.0
 
+        self._prefer_yuyv: bool = False
+
         # Lens calibration parameters
         # Distortion coefficients: k1, k2, p1, p2, k3 (OpenCV order)
         self._distortion_k1: float = 0.0
@@ -203,6 +205,24 @@ class Camera:
             return
         logger.debug(f"Camera denoise changed from {self._denoise} to {value}")
         self._denoise = value
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def prefer_yuyv(self) -> bool:
+        """Whether to prefer YUYV format over MJPEG (fixes green artifacts)."""
+        return self._prefer_yuyv
+
+    @prefer_yuyv.setter
+    def prefer_yuyv(self, value: bool):
+        if not isinstance(value, bool):
+            raise ValueError("prefer_yuyv must be a boolean.")
+        if self._prefer_yuyv == value:
+            return
+        logger.debug(
+            f"Camera prefer_yuyv changed from {self._prefer_yuyv} to {value}"
+        )
+        self._prefer_yuyv = value
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -450,6 +470,7 @@ class Camera:
             "brightness": self.brightness,
             "transparency": self.transparency,
             "denoise": self.denoise,
+            "prefer_yuyv": self.prefer_yuyv,
             "distortion_k1": self.distortion_k1,
             "distortion_k2": self.distortion_k2,
             "distortion_p1": self.distortion_p1,
@@ -500,6 +521,7 @@ class Camera:
             "brightness",
             "transparency",
             "denoise",
+            "prefer_yuyv",
             "image_to_world",
             "distortion_k1",
             "distortion_k2",
@@ -524,6 +546,7 @@ class Camera:
         camera.brightness = data.get("brightness", camera.brightness)
         camera.transparency = data.get("transparency", camera.transparency)
         camera.denoise = data.get("denoise", 0.0)
+        camera.prefer_yuyv = data.get("prefer_yuyv", False)
 
         camera.distortion_k1 = data.get("distortion_k1", 0.0)
         camera.distortion_k2 = data.get("distortion_k2", 0.0)
