@@ -837,7 +837,7 @@ class MainWindow(Adw.ApplicationWindow):
         """
         if not self.canvas3d:
             return
-        if self.canvas3d._current_job_handle is None:
+        if self.canvas3d.has_stale_job():
             self.refresh_previews()
         self.canvas3d.update_scene_from_doc()
 

@@ -233,6 +233,11 @@ class Pipeline:
         return self._task_manager
 
     @property
+    def data_generation_id(self) -> int:
+        """Returns the current data generation ID."""
+        return self._data_generation_id
+
+    @property
     def last_completed_handle(
         self,
     ) -> Optional[JobArtifactHandle]:
