@@ -143,28 +143,6 @@ Schnittbreite ist die Breite des vom Laserstrahl entfernten Materials:
 
 Siehe [Schnittbreite](../kerf) für detaillierte Anleitung.
 
-### Ein-/Ausbewegung
-
-Ein- und Ausbewegungen steuern, wo Schnitte beginnen und enden:
-
-**Einbewegung:**
-
-- Allmählicher Eintritt in den Schnitt
-- Verhindert Brandflecken am Startpunkt
-- Bewegt Laser auf volle Geschwindigkeit, bevor Materialkante getroffen wird
-
-**Ausbewegung:**
-
-- Allmählicher Austritt aus dem Schnitt
-- Verhindert Schäden am Endpunkt
-- Häufig bei Metallen und Acryl
-
-**Konfiguration:**
-
-- Länge: Wie weit die Einbewegung reicht (mm)
-- Winkel: Richtung des Einbewegungs-Pfads
-- Typ: Gerade Linie, Bogen oder Spirale
-
 ## Tipps & Best Practices
 
 ### Material-Testen
@@ -240,9 +218,8 @@ Rayforge konvertiert Vektorformen in G-Code:
 
 1. Pfad offseten (falls Innen-/Außen-Schneiden)
 2. Pfad-Reihenfolge optimieren (Verfahren minimieren)
-3. Ein-/Ausbewegung einfügen (falls konfiguriert)
-4. Halte-Laschen hinzufügen (falls konfiguriert)
-5. G-Code-Befehle generieren
+3. Halte-Laschen hinzufügen (falls konfiguriert)
+4. G-Code-Befehle generieren
 
 ### G-Code-Befehle
 

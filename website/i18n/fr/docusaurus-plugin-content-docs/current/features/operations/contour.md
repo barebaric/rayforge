@@ -144,28 +144,6 @@ Le kerf est la largeur du matériau retiré par le faisceau laser :
 
 Voir [Kerf](../kerf) pour un guide détaillé.
 
-### Entrée/Sortie
-
-Les entrées et sorties contrôlent où les coupes commencent et finissent :
-
-**Entrée :**
-
-- Entrée progressive dans la coupe
-- Empêche les marques de brûlure au point de départ
-- Déplace le laser à pleine vitesse avant de toucher le bord du matériau
-
-**Sortie :**
-
-- Sortie progressive de la coupe
-- Empêche les dommages au point de fin
-- Courant pour les métaux et acryliques
-
-**Configuration :**
-
-- Longueur : Jusqu'où s'étend l'entrée (mm)
-- Angle : Direction du parcours d'entrée
-- Type : Ligne droite, arc ou spirale
-
 ## Conseils & Meilleures Pratiques
 
 ### Test de Matériau
@@ -241,9 +219,8 @@ Rayforge convertit les formes vectorielles en G-code :
 
 1. Décalage du parcours (si coupe intérieur/extérieur)
 2. Optimisation de l'ordre du parcours (minimiser le déplacement)
-3. Insertion des entrées/sorties (si configurées)
-4. Ajout des ponts de maintien (si configurés)
-5. Génération des commandes G-code
+3. Ajout des ponts de maintien (si configurés)
+4. Génération des commandes G-code
 
 ### Commandes G-code
 

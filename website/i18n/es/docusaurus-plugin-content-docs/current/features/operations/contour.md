@@ -144,28 +144,6 @@ Kerf es el ancho de material removido por el haz láser:
 
 Ver [Kerf](../kerf) para guía detallada.
 
-### Entrada/Salida
-
-Las entradas y salidas controlan dónde comienzan y terminan los cortes:
-
-**Entrada:**
-
-- Entrada gradual al corte
-- Previene marcas de quemadura en el punto de inicio
-- Mueve el láser a velocidad completa antes de alcanzar el borde del material
-
-**Salida:**
-
-- Salida gradual del corte
-- Previene daño en el punto final
-- Común para metales y acrílicos
-
-**Configuración:**
-
-- Longitud: Qué tan lejos se extiende la entrada (mm)
-- Ángulo: Dirección de la trayectoria de entrada
-- Tipo: Línea recta, arco o espiral
-
 ## Consejos y Mejores Prácticas
 
 ### Prueba de Material
@@ -241,9 +219,8 @@ Rayforge convierte formas vectoriales a G-code:
 
 1. Desplazar trayectoria (si es corte interior/exterior)
 2. Optimizar orden de trayectoria (minimizar viaje)
-3. Insertar entrada/salida (si está configurado)
-4. Añadir pestañas de sujeción (si están configuradas)
-5. Generar comandos G-code
+3. Añadir pestañas de sujeción (si están configuradas)
+4. Generar comandos G-code
 
 ### Comandos G-code
 
