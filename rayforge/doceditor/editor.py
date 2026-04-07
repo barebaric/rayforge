@@ -1,6 +1,8 @@
 from __future__ import annotations
 import logging
 import asyncio
+import threading
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any
 
@@ -252,13 +254,14 @@ class DocEditor:
         """
         Synchronous version of wait_until_settled for use in scripts.
 
+        Uses a polling loop to detect when is_processing becomes False,
+        with the processing_state_changed signal as an early wakeup
+        hint. This avoids relying solely on signal delivery, which can
+        be missed when the pipeline transitions busy→idle faster than
+        _check_and_update_processing_state runs.
+
         Returns True if settled within timeout, False otherwise.
         """
-        import threading
-
-        if not self.is_processing:
-            return True
-
         settled_event = threading.Event()
 
         def on_settled(sender, is_processing: bool):
@@ -267,7 +270,16 @@ class DocEditor:
 
         self.processing_state_changed.connect(on_settled)
         try:
-            return settled_event.wait(timeout=timeout)
+            deadline = time.monotonic() + timeout
+            while time.monotonic() < deadline:
+                if not self.is_processing:
+                    return True
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                settled_event.wait(timeout=min(remaining, 0.2))
+                settled_event.clear()
+            return not self.is_processing
         finally:
             self.processing_state_changed.disconnect(on_settled)
 
