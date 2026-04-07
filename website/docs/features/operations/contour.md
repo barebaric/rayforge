@@ -164,28 +164,6 @@ Kerf is the width of material removed by the laser beam:
 
 See [Kerf](../kerf) for detailed guide.
 
-### Lead-In/Lead-Out
-
-Lead-ins and lead-outs control where cuts start and end:
-
-**Lead-in:**
-
-- Gradual entry to the cut
-- Prevents burn marks at start point
-- Moves laser to full speed before hitting the material edge
-
-**Lead-out:**
-
-- Gradual exit from the cut
-- Prevents damage at end point
-- Common for metals and acrylics
-
-**Configuration:**
-
-- Length: How far the lead extends (mm)
-- Angle: Direction of the lead path
-- Type: Straight line, arc, or spiral
-
 ## Tips & Best Practices
 
 ### Material Testing
@@ -261,9 +239,8 @@ Rayforge converts vector shapes to G-code:
 
 1. Offset path (if inside/outside cutting)
 2. Optimize path order (minimize travel)
-3. Insert lead-in/lead-out (if configured)
-4. Add holding tabs (if configured)
-5. Generate G-code commands
+3. Add holding tabs (if configured)
+4. Generate G-code commands
 
 ### G-code Commands
 

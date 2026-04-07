@@ -232,9 +232,8 @@ O Rayforge converte formas vetoriais para G-code:
 
 1. Desloca caminho (se corte interno/externo)
 2. Otimiza ordem do caminho (minimiza deslocamento)
-3. Insere entrada/saída (se configurado)
-4. Adiciona abas de fixação (se configurado)
-5. Gera comandos G-code
+3. Adiciona abas de fixação (se configurado)
+4. Gera comandos G-code
 
 ### Comandos G-code
 
