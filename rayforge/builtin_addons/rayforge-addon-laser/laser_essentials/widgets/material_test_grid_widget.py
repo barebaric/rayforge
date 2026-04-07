@@ -193,6 +193,46 @@ class MaterialTestGridSettingsWidget(
         self.speed_max_row.connect(
             "changed", lambda r: self._debounce(self._on_speed_max_changed, r)
         )
+
+        # Label settings
+        power_adj = Gtk.Adjustment(
+            lower=1,
+            upper=100,
+            step_increment=0.1,
+            value=producer.label_power_percent,
+        )
+        self.label_power_row, power_scale = create_slider_row(
+            title=_("Label Engrave Power (%)"),
+            adjustment=power_adj,
+            digits=1,
+            on_value_changed=lambda s: self._debounce(
+                self._on_label_power_changed, s
+            ),
+        )
+        group.add(self.label_power_row)
+
+        speed_adj = Gtk.Adjustment(
+            lower=1.0,
+            upper=machine_max_speed,
+            step_increment=10.0,
+            value=min(producer.label_speed, machine_max_speed),
+        )
+        self.label_speed_row = Adw.SpinRow(
+            title=_("Label Engrave Speed"),
+            subtitle=_("Speed for engraving labels (mm/min)"),
+            adjustment=speed_adj,
+            digits=0,
+        )
+        group.add(self.label_speed_row)
+        self.label_speed_row.connect(
+            "changed",
+            lambda r: self._debounce(self._on_label_speed_changed, r),
+        )
+
+        self._on_labels_toggled(
+            self.include_labels_switch, producer.include_labels
+        )
+
         return False  # for GLib.idle_add
 
     def _build_grid_dimensions(self, producer: MaterialTestGridProducer):
@@ -290,28 +330,8 @@ class MaterialTestGridSettingsWidget(
         labels_row.set_activatable_widget(self.include_labels_switch)
         self.add(labels_row)
 
-        power_adj = Gtk.Adjustment(
-            lower=1,
-            upper=100,
-            step_increment=0.1,
-            value=producer.label_power_percent,
-        )
-        self.label_power_row, power_scale = create_slider_row(
-            title=_("Label Engrave Power (%)"),
-            adjustment=power_adj,
-            digits=1,
-            on_value_changed=lambda s: self._debounce(
-                self._on_label_power_changed, s
-            ),
-        )
-        self.add(self.label_power_row)
-
         self.include_labels_switch.connect(
             "state-set", self._on_labels_toggled
-        )
-
-        self._on_labels_toggled(
-            self.include_labels_switch, producer.include_labels
         )
 
     # Signal handlers
@@ -434,11 +454,16 @@ class MaterialTestGridSettingsWidget(
 
     def _on_labels_toggled(self, switch, state):
         self.label_power_row.set_sensitive(state)
+        self.label_speed_row.set_sensitive(state)
         self._update_param("include_labels", state)
         return False
 
     def _on_label_power_changed(self, scale: Gtk.Scale):
         self._update_param("label_power_percent", scale.get_value())
+
+    def _on_label_speed_changed(self, spin_row):
+        new_value = get_spinrow_float(spin_row)
+        self._update_param("label_speed", new_value)
 
     # Helper methods
     def _update_param(self, param_name: str, new_value: Any):
