@@ -489,6 +489,18 @@ class CameraController:
     def _apply_settings(self, cap: cv2.VideoCapture):
         """Applies the current settings to the VideoCapture object."""
         try:
+            if self.config.prefer_yuyv:
+                yuyv = cv2.VideoWriter_fourcc(*"YUYV")  # type: ignore
+                if not cap.set(cv2.CAP_PROP_FOURCC, yuyv):
+                    logger.info(
+                        "YUYV not accepted by camera, leaving default format"
+                    )
+                else:
+                    try:
+                        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                    except cv2.error:
+                        pass
+
             if self.config.white_balance is None:
                 cap.set(cv2.CAP_PROP_AUTO_WB, 1)  # Enable auto white balance
             else:

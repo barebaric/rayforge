@@ -76,6 +76,22 @@ class CameraImageSettingsDialog(PatchedDialogWindow):
         )
         settings_box.append(image_group)
 
+        self.yuyv_row = Adw.ActionRow(
+            title=_("Prefer YUYV Format"),
+            subtitle=_(
+                "Use uncompressed YUYV instead of MJPEG. Fixes green "
+                "artifacts on some USB cameras but may reduce resolution "
+                "or frame rate on USB 2.0."
+            ),
+        )
+        self.yuyv_switch = Gtk.Switch()
+        self.yuyv_switch.set_valign(Gtk.Align.CENTER)
+        self.yuyv_switch.set_active(self.camera.prefer_yuyv)
+        self.yuyv_switch.connect("notify::active", self.on_yuyv_toggled)
+        self.yuyv_row.add_suffix(self.yuyv_switch)
+        self.yuyv_row.set_activatable_widget(self.yuyv_switch)
+        image_group.add(self.yuyv_row)
+
         self.auto_white_balance_row = Adw.ActionRow(
             title=_("Auto White Balance"),
             subtitle=_("Automatically adjust white balance"),
@@ -287,6 +303,9 @@ class CameraImageSettingsDialog(PatchedDialogWindow):
             self.camera.white_balance = None
         else:
             self.camera.white_balance = self.wb_adjustment.get_value()
+
+    def on_yuyv_toggled(self, switch_row, pspec):
+        self.camera.prefer_yuyv = switch_row.get_active()
 
     def on_contrast_changed(self, scale):
         self.camera.contrast = scale.get_value()
