@@ -1,6 +1,5 @@
 import pytest
-from typing import List
-from rayforge.core.ops import Ops, Command, LineToCommand, MoveToCommand
+from rayforge.core.ops import Ops, LineToCommand, MoveToCommand
 from post_processors.transformers import MultiPassTransformer
 
 
@@ -16,14 +15,9 @@ class TestMultiPassTransformer:
         no z_step_down is applied.
         """
         # Arrange
-        # Explicitly type the list to satisfy the type checker
-        # (List is invariant)
-        initial_commands: List[Command] = [
-            MoveToCommand(end=(10, 10, 0)),
-            LineToCommand(end=(20, 20, 0)),
-        ]
         ops = Ops()
-        ops.commands = initial_commands
+        ops.move_to(10, 10, 0)
+        ops.line_to(20, 20, 0)
 
         transformer = MultiPassTransformer(passes=3, z_step_down=0.0)
 
@@ -57,9 +51,8 @@ class TestMultiPassTransformer:
         each subsequent pass.
         """
         # Arrange
-        initial_commands: List[Command] = [LineToCommand(end=(10, 10, 5.0))]
         ops = Ops()
-        ops.commands = initial_commands
+        ops.line_to(10, 10, 5.0)
         num_passes = 3
         z_step = 0.5
 
@@ -91,9 +84,8 @@ class TestMultiPassTransformer:
         run method does nothing.
         """
         # Arrange
-        initial_commands: List[Command] = [MoveToCommand(end=(0, 0, 0))]
         ops = Ops()
-        ops.commands = initial_commands
+        ops.move_to(0, 0, 0)
         # Keep a reference to the original list object
         original_commands_list = ops.commands
 
@@ -114,7 +106,6 @@ class TestMultiPassTransformer:
         """
         # Arrange
         ops = Ops()
-        ops.commands = []
         transformer = MultiPassTransformer(passes=5)
 
         # Act

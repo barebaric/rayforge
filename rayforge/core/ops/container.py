@@ -85,15 +85,20 @@ class Ops:
     """
 
     def __init__(self) -> None:
-        self.commands: List[Command] = []
+        self._commands: List[Command] = []
         self.last_move_to: Point3D = (0.0, 0.0, 0.0)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Ops object to a dictionary."""
         return {
-            "commands": [cmd.to_dict() for cmd in self.commands],
+            "commands": [cmd.to_dict() for cmd in self._commands],
             "last_move_to": self.last_move_to,
         }
+
+    @property
+    def commands(self) -> List[Command]:
+        """Returns the list of commands in this Ops object."""
+        return self._commands
 
     @staticmethod
     def _create_command_from_dict(cmd_data: Dict[str, Any]) -> Command:
@@ -178,15 +183,15 @@ class Ops:
         Serializes the command list into a dictionary of NumPy arrays for
         efficient storage and transfer. This uses a Struct-of-Arrays approach.
         """
-        num_cmds = len(self.commands)
+        num_cmds = len(self._commands)
 
         # Pre-allocate arrays by inspecting commands first
         num_arcs = sum(
-            1 for cmd in self.commands if isinstance(cmd, ArcToCommand)
+            1 for cmd in self._commands if isinstance(cmd, ArcToCommand)
         )
         scanline_lengths = [
             len(cmd.power_values)
-            for cmd in self.commands
+            for cmd in self._commands
             if isinstance(cmd, ScanLinePowerCommand)
         ]
         total_scanline_bytes = sum(scanline_lengths)
@@ -214,7 +219,7 @@ class Ops:
 
         # Data Population
         arc_idx, scanline_idx, scanline_offset = 0, 0, 0
-        for i, cmd in enumerate(self.commands):
+        for i, cmd in enumerate(self._commands):
             types[i] = COMMAND_TYPE_MAP[type(cmd)]
 
             if isinstance(cmd, MovingCommand):
@@ -383,7 +388,7 @@ class Ops:
         from ..geo.geometry import Geometry
 
         new_geo = Geometry()
-        for op in self.commands:
+        for op in self._commands:
             if isinstance(op, MoveToCommand):
                 if op.end:
                     new_geo.move_to(*op.end)
@@ -403,7 +408,7 @@ class Ops:
         return new_geo
 
     def __iter__(self) -> Iterator[Command]:
-        return iter(self.commands)
+        return iter(self._commands)
 
     def iter_sections(self) -> Iterator[OpsSection]:
         """
@@ -418,7 +423,7 @@ class Ops:
         markers: List[Command] = []
         content: List[Command] = []
 
-        for cmd in self.commands:
+        for cmd in self._commands:
             if isinstance(cmd, OpsSectionStartCommand):
                 if content or markers:
                     yield OpsSection(active_type, markers, content)
@@ -440,7 +445,7 @@ class Ops:
 
     def __add__(self, ops: Ops) -> Ops:
         result = Ops()
-        result.commands = self.commands + ops.commands
+        result._commands = self._commands + ops._commands
         return result
 
     def __mul__(self, count: int) -> Ops:
@@ -448,20 +453,20 @@ class Ops:
         # Create distinct copies for each repetition to avoid shared
         # references.
         for _ in range(count):
-            result.commands.extend(deepcopy(self.commands))
+            result._commands.extend(deepcopy(self._commands))
         return result
 
     def __len__(self) -> int:
-        return len(self.commands)
+        return len(self._commands)
 
     def is_empty(self) -> bool:
         """Checks if the Ops object contains any commands."""
-        return not self.commands
+        return not self._commands
 
     def copy(self) -> Ops:
         """Creates a deep copy of the Ops object."""
         new_ops = Ops()
-        new_ops.commands = deepcopy(self.commands)
+        new_ops._commands = deepcopy(self._commands)
         new_ops.last_move_to = self.last_move_to
         return new_ops
 
@@ -473,33 +478,36 @@ class Ops:
         state during each command.
         """
         state = State()
-        for cmd in self.commands:
+        for cmd in self._commands:
             if cmd.is_state_command():
                 cmd.apply_to_state(state)
             elif not cmd.is_marker():
                 cmd.state = copy(state)
 
     def clear(self) -> None:
-        self.commands = []
+        self._commands = []
+
+    def replace_all(self, commands: List[Command]) -> None:
+        self._commands = commands
 
     def add(self, command: Command) -> None:
-        self.commands.append(command)
+        self._commands.append(command)
 
     def extend(self, other_ops: "Ops") -> None:
         """
         Appends all commands from another Ops object to this one.
         """
-        if other_ops and other_ops.commands:
-            self.commands.extend(other_ops.commands)
+        if other_ops and other_ops._commands:
+            self._commands.extend(other_ops._commands)
 
     def move_to(self, x: float, y: float, z: float = 0.0) -> None:
         self.last_move_to = (float(x), float(y), float(z))
         cmd = MoveToCommand(self.last_move_to)
-        self.commands.append(cmd)
+        self._commands.append(cmd)
 
     def line_to(self, x: float, y: float, z: float = 0.0) -> None:
         cmd = LineToCommand((float(x), float(y), float(z)))
-        self.commands.append(cmd)
+        self._commands.append(cmd)
 
     def close_path(self) -> None:
         """
@@ -521,7 +529,7 @@ class Ops:
         Adds an arc command with specified endpoint, center offsets,
         and direction (cw/ccw).
         """
-        self.commands.append(
+        self._commands.append(
             ArcToCommand(
                 (float(x), float(y), float(z)),
                 (float(i), float(j)),
@@ -541,11 +549,11 @@ class Ops:
         The curve starts from the current last point in the path. This method
         requires full 3D coordinates for all control and end points.
         """
-        if not self.commands or self.commands[-1].end is None:
+        if not self._commands or self._commands[-1].end is None:
             logger.warning("bezier_to called without a starting point.")
             return
 
-        start_point = self.commands[-1].end
+        start_point = self._commands[-1].end
         segments = linearize.linearize_bezier(
             start_point, c1, c2, end, num_steps
         )
@@ -563,7 +571,7 @@ class Ops:
                    1.0 (full power).
         """
         cmd = SetPowerCommand(power)
-        self.commands.append(cmd)
+        self._commands.append(cmd)
 
     def set_cut_speed(self, speed: float) -> None:
         """
@@ -571,7 +579,7 @@ class Ops:
         This is a state declaration.
         """
         cmd = SetCutSpeedCommand(int(speed))
-        self.commands.append(cmd)
+        self._commands.append(cmd)
 
     def set_travel_speed(self, speed: float) -> None:
         """
@@ -579,10 +587,10 @@ class Ops:
         This is a state declaration.
         """
         cmd = SetTravelSpeedCommand(int(speed))
-        self.commands.append(cmd)
+        self._commands.append(cmd)
 
     def dwell(self, duration_ms: float) -> None:
-        self.commands.append(DwellCommand(duration_ms))
+        self._commands.append(DwellCommand(duration_ms))
 
     def enable_air_assist(self, enable: bool = True) -> None:
         """
@@ -590,7 +598,7 @@ class Ops:
         This is a state declaration.
         """
         if enable:
-            self.commands.append(EnableAirAssistCommand())
+            self._commands.append(EnableAirAssistCommand())
         else:
             self.disable_air_assist()
 
@@ -599,7 +607,7 @@ class Ops:
         Sets the intended state of the air assist for subsequent commands.
         This is a state declaration.
         """
-        self.commands.append(DisableAirAssistCommand())
+        self._commands.append(DisableAirAssistCommand())
 
     def set_laser(self, laser_uid: str) -> None:
         """
@@ -607,7 +615,7 @@ class Ops:
         This is a state declaration.
         """
         cmd = SetLaserCommand(laser_uid)
-        self.commands.append(cmd)
+        self._commands.append(cmd)
 
     def scan_to(
         self,
@@ -632,21 +640,21 @@ class Ops:
 
         end_point = (float(x), float(y), float(z))
         cmd = ScanLinePowerCommand(end=end_point, power_values=power_values)
-        self.commands.append(cmd)
+        self._commands.append(cmd)
 
     def job_start(self) -> None:
         """
         Adds a job start marker command.
         This is a logical marker for the generator.
         """
-        self.commands.append(JobStartCommand())
+        self._commands.append(JobStartCommand())
 
     def job_end(self) -> None:
         """
         Adds a job end marker command.
         This is a logical marker for the generator.
         """
-        self.commands.append(JobEndCommand())
+        self._commands.append(JobEndCommand())
 
     def layer_start(self, layer_uid: str) -> None:
         """
@@ -656,7 +664,7 @@ class Ops:
         Args:
             layer_uid: Unique identifier for the layer.
         """
-        self.commands.append(LayerStartCommand(layer_uid=layer_uid))
+        self._commands.append(LayerStartCommand(layer_uid=layer_uid))
 
     def layer_end(self, layer_uid: str) -> None:
         """
@@ -666,7 +674,7 @@ class Ops:
         Args:
             layer_uid: Unique identifier for the layer.
         """
-        self.commands.append(LayerEndCommand(layer_uid=layer_uid))
+        self._commands.append(LayerEndCommand(layer_uid=layer_uid))
 
     def workpiece_start(self, workpiece_uid: str) -> None:
         """
@@ -676,7 +684,7 @@ class Ops:
         Args:
             workpiece_uid: Unique identifier for the workpiece.
         """
-        self.commands.append(
+        self._commands.append(
             WorkpieceStartCommand(workpiece_uid=workpiece_uid)
         )
 
@@ -688,7 +696,7 @@ class Ops:
         Args:
             workpiece_uid: Unique identifier for the workpiece.
         """
-        self.commands.append(WorkpieceEndCommand(workpiece_uid=workpiece_uid))
+        self._commands.append(WorkpieceEndCommand(workpiece_uid=workpiece_uid))
 
     def ops_section_start(
         self, section_type: SectionType, workpiece_uid: str
@@ -701,7 +709,7 @@ class Ops:
             section_type: The semantic type of the section.
             workpiece_uid: Unique identifier for the workpiece.
         """
-        self.commands.append(
+        self._commands.append(
             OpsSectionStartCommand(
                 section_type=section_type, workpiece_uid=workpiece_uid
             )
@@ -715,7 +723,7 @@ class Ops:
         Args:
             section_type: The semantic type of the section.
         """
-        self.commands.append(OpsSectionEndCommand(section_type=section_type))
+        self._commands.append(OpsSectionEndCommand(section_type=section_type))
 
     def rect(self, include_travel: bool = False) -> Rect:
         """
@@ -742,7 +750,7 @@ class Ops:
 
         has_content = False
 
-        for cmd in self.commands:
+        for cmd in self._commands:
             if not isinstance(cmd, MovingCommand):
                 continue
 
@@ -846,7 +854,7 @@ class Ops:
         """
         Calculates the total 2D path length for all moving commands.
         """
-        return _get_total_distance_legacy(self.commands)
+        return _get_total_distance_legacy(self._commands)
 
     def cut_distance(self) -> float:
         """
@@ -854,7 +862,7 @@ class Ops:
         """
         total = 0.0
         last: Optional[Point3D] = None
-        for cmd in self.commands:
+        for cmd in self._commands:
             if cmd.is_cutting_command():
                 total += cmd.distance(last)
 
@@ -886,7 +894,7 @@ class Ops:
         Returns:
             The estimated execution time in seconds.
         """
-        if not self.commands:
+        if not self._commands:
             return 0.0
 
         # Create a copy to avoid modifying the original Ops object
@@ -895,7 +903,7 @@ class Ops:
         ops_copy.preload_state()
 
         return estimate_time(
-            ops_copy.commands,
+            ops_copy._commands,
             default_cut_speed,
             default_travel_speed,
             acceleration,
@@ -903,7 +911,7 @@ class Ops:
 
     def segments(self) -> Generator[List[Command], None, None]:
         segment: List[Command] = []
-        for command in self.commands:
+        for command in self._commands:
             if not segment:
                 segment.append(command)
                 continue
@@ -946,7 +954,7 @@ class Ops:
         transformed_commands: List[Command] = []
         last_point_untransformed: Optional[Point3D] = None
 
-        for cmd in self.commands:
+        for cmd in self._commands:
             original_cmd_end = (
                 cmd.end if isinstance(cmd, MovingCommand) else None
             )
@@ -988,7 +996,7 @@ class Ops:
             if original_cmd_end is not None:
                 last_point_untransformed = original_cmd_end
 
-        self.commands = transformed_commands
+        self._commands = transformed_commands
         last_move_vec = np.array([*self.last_move_to, 1.0])
         transformed_last_move_vec = matrix @ last_move_vec
         self.last_move_to = tuple(transformed_last_move_vec[:3])
@@ -1039,12 +1047,12 @@ class Ops:
         new_commands: List[Command] = []
         last_point: Point3D = (0.0, 0.0, 0.0)
         # Find initial position, in case path doesn't start with MoveTo
-        for cmd in self.commands:
+        for cmd in self._commands:
             if isinstance(cmd, MoveToCommand):
                 last_point = cmd.end
                 break
 
-        for cmd in self.commands:
+        for cmd in self._commands:
             if isinstance(cmd, MovingCommand):
                 # The linearize method on the command itself will do the work.
                 linearized_cmds = cmd.linearize(last_point)
@@ -1058,7 +1066,7 @@ class Ops:
             else:
                 # Non-moving commands (state, markers) are passed through.
                 new_commands.append(cmd)
-        self.commands = new_commands
+        self._commands = new_commands
 
     def clip_at(self, x: float, y: float, width: float) -> bool:
         """
@@ -1097,7 +1105,7 @@ class Ops:
         # commands, so we need to map)
         command_index = 0
         geo_idx = 0
-        for cmd_idx, cmd in enumerate(self.commands):
+        for cmd_idx, cmd in enumerate(self._commands):
             if isinstance(cmd, MovingCommand):
                 if geo_idx == segment_index:
                     command_index = cmd_idx
@@ -1109,26 +1117,26 @@ class Ops:
         # 3. Identify the continuous subpath containing the hit segment
         start_idx = 0
         for i in range(command_index, -1, -1):
-            if isinstance(self.commands[i], MoveToCommand):
+            if isinstance(self._commands[i], MoveToCommand):
                 start_idx = i
                 break
 
-        end_idx = len(self.commands)
-        for i in range(start_idx + 1, len(self.commands)):
-            if isinstance(self.commands[i], MoveToCommand):
+        end_idx = len(self._commands)
+        for i in range(start_idx + 1, len(self._commands)):
+            if isinstance(self._commands[i], MoveToCommand):
                 end_idx = i
                 break
 
-        subpath_cmds = self.commands[start_idx:end_idx]
+        subpath_cmds = self._commands[start_idx:end_idx]
         if not subpath_cmds or not isinstance(subpath_cmds[0], MovingCommand):
             return False
 
         # 4. Create a temporary, linearized version of the subpath
         temp_ops = Ops()
-        temp_ops.commands = deepcopy(subpath_cmds)
+        temp_ops._commands = deepcopy(subpath_cmds)
         temp_ops.preload_state()
         temp_ops.linearize_all()
-        linear_cmds = temp_ops.commands
+        linear_cmds = temp_ops._commands
 
         if len(linear_cmds) < 2:
             return False
@@ -1245,10 +1253,10 @@ class Ops:
             new_subpath_cmds.append(MoveToCommand(original_endpoint))
 
         # 7. Replace original subpath
-        self.commands = (
-            self.commands[:start_idx]
+        self._commands = (
+            self._commands[:start_idx]
             + new_subpath_cmds
-            + self.commands[end_idx:]
+            + self._commands[end_idx:]
         )
         return True
 
@@ -1292,7 +1300,7 @@ class Ops:
         Returns a new, clipped Ops object.
         """
         new_ops = Ops()
-        if not self.commands:
+        if not self._commands:
             return new_ops
 
         last_point: Point3D = (0.0, 0.0, 0.0)
@@ -1300,7 +1308,7 @@ class Ops:
         # None means the pen is "up" or outside the clip rect.
         clipped_pen_pos: Optional[Point3D] = None
 
-        for cmd in self.commands:
+        for cmd in self._commands:
             if cmd.is_state_command() or cmd.is_marker():
                 new_ops.add(deepcopy(cmd))
                 continue
@@ -1402,7 +1410,7 @@ class Ops:
         Clips the Ops by subtracting a list of polygonal regions.
         This modifies the Ops object in place and returns it.
         """
-        if not regions or not self.commands:
+        if not regions or not self._commands:
             return self
 
         new_ops = Ops()
@@ -1414,19 +1422,19 @@ class Ops:
         first_move_idx = next(
             (
                 i
-                for i, cmd in enumerate(self.commands)
+                for i, cmd in enumerate(self._commands)
                 if isinstance(cmd, MovingCommand)
             ),
-            len(self.commands),
+            len(self._commands),
         )
         for i in range(first_move_idx):
-            new_ops.add(deepcopy(self.commands[i]))
+            new_ops.add(deepcopy(self._commands[i]))
 
-        for cmd in self.commands:
+        for cmd in self._commands:
             if not isinstance(cmd, MovingCommand) or cmd.end is None:
                 # State/marker commands are handled as they appear
                 # between moves
-                if not new_ops.commands or new_ops.commands[-1] is not cmd:
+                if not new_ops._commands or new_ops._commands[-1] is not cmd:
                     new_ops.add(deepcopy(cmd))
                 continue
 
@@ -1496,10 +1504,10 @@ class Ops:
 
             last_point = cmd.end
 
-        self.commands = new_ops.commands
+        self._commands = new_ops._commands
         # Update last_move_to to a valid point if ops is not empty
-        if new_ops.commands:
-            for cmd_rev in reversed(new_ops.commands):
+        if new_ops._commands:
+            for cmd_rev in reversed(new_ops._commands):
                 if isinstance(cmd_rev, MoveToCommand):
                     self.last_move_to = cmd_rev.end
                     break
@@ -1527,7 +1535,7 @@ class Ops:
         Returns:
             The modified Ops object (self), containing only the clipped paths
         """
-        if not regions or not self.commands:
+        if not regions or not self._commands:
             return self
 
         valid_regions: List[List[Tuple[float, float]]] = []
@@ -1545,17 +1553,17 @@ class Ops:
         first_move_idx = next(
             (
                 i
-                for i, cmd in enumerate(self.commands)
+                for i, cmd in enumerate(self._commands)
                 if isinstance(cmd, MovingCommand)
             ),
-            len(self.commands),
+            len(self._commands),
         )
         for i in range(first_move_idx):
-            new_ops.add(deepcopy(self.commands[i]))
+            new_ops.add(deepcopy(self._commands[i]))
 
-        for cmd in self.commands[first_move_idx:]:
+        for cmd in self._commands[first_move_idx:]:
             if not isinstance(cmd, MovingCommand) or cmd.end is None:
-                if not new_ops.commands or new_ops.commands[-1] is not cmd:
+                if not new_ops._commands or new_ops._commands[-1] is not cmd:
                     new_ops.add(deepcopy(cmd))
                 continue
 
@@ -1626,9 +1634,9 @@ class Ops:
 
             last_point = cmd.end
 
-        self.commands = new_ops.commands
-        if new_ops.commands:
-            for cmd_rev in reversed(new_ops.commands):
+        self._commands = new_ops._commands
+        if new_ops._commands:
+            for cmd_rev in reversed(new_ops._commands):
                 if isinstance(cmd_rev, MoveToCommand):
                     self.last_move_to = cmd_rev.end
                     break

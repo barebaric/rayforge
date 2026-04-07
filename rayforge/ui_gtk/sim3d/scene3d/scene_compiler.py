@@ -692,8 +692,8 @@ def compile_scene(
             continue
 
         layer_ops = Ops()
-        layer_ops.commands = list(
-            ops.commands[li["cmd_start"] : li["cmd_end"]]
+        layer_ops.replace_all(
+            list(ops.commands[li["cmd_start"] : li["cmd_end"]])
         )
 
         bbox = _scanline_bbox(layer_ops)
