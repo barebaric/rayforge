@@ -1,7 +1,13 @@
-bottom_panel_visible: true
+auto_pipeline: true
+bottom_panel_active_tab: gcode
+bottom_panel_tab_order: []
+bottom_panel_visible: false
 import_dpi: 96.0
 last_opened_project: tests/assets/rotary.ryp
 machine: 2f8f7281-9982-4473-a9b0-d72ff48630c2
+perspective_mode: false
+right_panel_visible: true
+show_nogo_zones: true
 startup_behavior: none
 startup_project_path: null
 theme: dark
