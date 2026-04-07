@@ -153,6 +153,8 @@ class WorkPieceElement(CanvasElement):
             return False
 
         self._surface = cache.get("surface")
+        if self._surface is not None:
+            self.surface = self._surface
         self._artifact_cache = cache.get("artifact_cache", {}).copy()
 
         return self._surface is not None or len(self._artifact_cache) > 0
@@ -230,6 +232,8 @@ class WorkPieceElement(CanvasElement):
         """
         if new_surface is not None:
             self.surface = new_surface
+            self._surface = new_surface
+            self._update_model_view_cache()
             self.mark_dirty(ancestors=True)
         if self.canvas:
             self.canvas.queue_draw()
