@@ -613,6 +613,8 @@ class ViewManager:
             workpiece_uid, step_uid, context, source_handle
         ):
             logger.debug(f"View for ({workpiece_uid}, {step_uid}) is valid.")
+            self._render_semaphore.release()
+            self._drain_pending_render_queue()
             return
 
         self._current_view_context = context
