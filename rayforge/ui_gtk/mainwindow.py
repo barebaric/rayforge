@@ -1840,6 +1840,12 @@ class MainWindow(Adw.ApplicationWindow):
     def on_clear_clicked(self, action, param):
         self.doc_editor.edit.clear_all_items()
 
+    def on_recalculate_clicked(self, action, param):
+        self.doc_editor.pipeline.recalculate()
+
+    def on_force_recalculate_clicked(self, action, param):
+        self.doc_editor.pipeline.recalculate(force=True)
+
     def _check_nogo_zones_and_proceed(self, proceed_callback):
         config = get_context().config
         machine = config.machine

@@ -189,6 +189,8 @@ class WorkSurface(WorldSurface):
         # outside of this widget.
         self.doc.history_manager.changed.connect(self._on_history_changed)
 
+        self.editor.pipeline.data_stale.connect(self._on_pipeline_data_stale)
+
         # Connect to view change signals to update pipeline view context
         self.aspect_ratio_changed.connect(self._on_aspect_ratio_changed)
 
@@ -390,6 +392,14 @@ class WorkSurface(WorldSurface):
             f"History changed, synchronizing selection state. Sender: {sender}"
         )
         self._sync_selection_state()
+        self.queue_draw()
+
+    def _on_pipeline_data_stale(self, sender, **kwargs):
+        """Clears ops overlays when the pipeline is in manual mode."""
+        if self.editor.pipeline.auto_pipeline:
+            return
+        for elem in self.find_by_type(WorkPieceElement):
+            cast(WorkPieceElement, elem).clear_all_ops_caches()
         self.queue_draw()
 
     def _on_any_transform_begin(

@@ -67,6 +67,19 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         self.theme_row.connect("notify::selected", self.on_theme_changed)
         app_settings_group.add(self.theme_row)
 
+        self.auto_pipeline_row = Adw.SwitchRow(
+            title=_("Auto-update operations"),
+            subtitle=_(
+                "Recalculate operations automatically after each change. "
+                "Disable for manual recalculation via the toolbar button."
+            ),
+        )
+        self.auto_pipeline_row.set_active(config.auto_pipeline)
+        self.auto_pipeline_row.connect(
+            "notify::active", self.on_auto_pipeline_changed
+        )
+        app_settings_group.add(self.auto_pipeline_row)
+
         # Units Preferences
         units_group = Adw.PreferencesGroup()
         units_group.set_title(_("Units"))
@@ -347,3 +360,8 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         consent = switch_row.get_active()
         get_context().config.set_usage_consent(consent)
         get_usage_tracker().set_enabled(consent)
+
+    def on_auto_pipeline_changed(self, switch_row, _):
+        """Called when the user toggles auto pipeline mode."""
+        enabled = switch_row.get_active()
+        get_context().config.set_auto_pipeline(enabled)

@@ -113,6 +113,8 @@ class Pipeline:
         self._pending_workpiece_removals: List[tuple] = []
         self._pending_step_removals: List[Step] = []
         self._is_shutting_down = False
+        self._data_stale_flag: bool = False
+        self._auto_pipeline: bool = True
 
         # Signals for notifying the UI of generation progress
         self.processing_state_changed = Signal()
@@ -123,13 +125,15 @@ class Pipeline:
         self.job_generation_finished = Signal()
         self.job_time_updated = Signal()
         self.visual_chunk_available = Signal()
+        self.data_stale = Signal()
 
         # Initialize stages and connect signals ONE time during construction.
         self._initialize_stages_and_connections()
 
         if self._doc:
             self._connect_signals()
-            self.reconcile_data()
+            if self._auto_pipeline:
+                self.reconcile_data()
 
     def _initialize_stages_and_connections(self):
         """A new helper method to contain all stage setup logic."""
@@ -271,7 +275,8 @@ class Pipeline:
 
         if self._doc:
             self._connect_signals()
-            self.reconcile_data()
+            if self._auto_pipeline:
+                self.reconcile_data()
 
     @property
     def is_busy(self) -> bool:
@@ -384,9 +389,68 @@ class Pipeline:
         """Returns True if the pipeline is currently paused."""
         return self._pause_count > 0
 
+    @property
+    def is_data_stale(self) -> bool:
+        """Returns True if data is stale and needs recalculation."""
+        return self._data_stale_flag
+
+    @property
+    def auto_pipeline(self) -> bool:
+        """Returns True if the pipeline recalculates automatically."""
+        return self._auto_pipeline
+
+    @auto_pipeline.setter
+    def auto_pipeline(self, value: bool) -> None:
+        """Sets whether the pipeline recalculates automatically.
+
+        When switching from manual to auto mode with stale data,
+        a reconciliation is triggered immediately.
+        """
+        if self._auto_pipeline == value:
+            return
+        self._auto_pipeline = value
+        if value and self._data_stale_flag:
+            self._data_stale_flag = False
+            self.reconcile_data()
+
+    def recalculate(self, force: bool = False) -> None:
+        """Triggers a recalculation of the pipeline.
+
+        This is the manual trigger used when ``auto_pipeline`` is disabled.
+        It clears the stale flag and runs ``reconcile_data()``.
+
+        Args:
+            force: If True, invalidates all existing artifacts first
+                   so every node is re-processed.
+        """
+        self._data_stale_flag = False
+        if force and self.doc:
+            for layer in self.doc.layers:
+                if layer.workflow:
+                    for step in layer.workflow.steps:
+                        step_key = ArtifactKey.for_step(step.uid)
+                        self._artifact_manager.invalidate_all_for_key(step_key)
+                        for wp in layer.all_workpieces:
+                            wp_key = ArtifactKey.for_workpiece(
+                                wp.uid, step.uid
+                            )
+                            self._artifact_manager.invalidate_all_for_key(
+                                wp_key
+                            )
+                            self._artifact_manager.invalidate_for_workpiece(
+                                wp_key
+                            )
+        self.reconcile_data()
+
     def _schedule_reconciliation(self) -> None:
         """Schedules a debounced call to the reconciliation logic."""
         if self.is_paused:
+            return
+
+        if not self._auto_pipeline:
+            if not self._data_stale_flag:
+                self._data_stale_flag = True
+                self.data_stale.send(self)
             return
 
         if self._reconciliation_timer:
