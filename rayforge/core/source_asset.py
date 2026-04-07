@@ -1,12 +1,13 @@
 from __future__ import annotations
 import base64
-import uuid
 import logging
 import pyvips
-from pathlib import Path
-from typing import Optional, Dict, Any, TYPE_CHECKING, ClassVar
+import uuid
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from gettext import gettext as _
+from pathlib import Path
+from typing import ClassVar, Dict, Any, Optional, TYPE_CHECKING
 
 from .asset import IAsset
 
@@ -48,9 +49,34 @@ class SourceAsset(IAsset):
     _name: str = field(init=False, repr=False)
     _hidden: bool = field(init=False, default=False)
     extra: Dict[str, Any] = field(default_factory=dict)
+    _base_image_cache: OrderedDict = field(
+        init=False, default_factory=OrderedDict, repr=False
+    )
+
+    _BASE_IMAGE_CACHE_MAX_SIZE: ClassVar[int] = 10
 
     def __post_init__(self):
         self._name = self.source_file.name
+
+    def get_cached_base_image(
+        self, data_id: int, width: int, height: int
+    ) -> Optional[pyvips.Image]:
+        key = (data_id, width, height)
+        return self._base_image_cache.get(key)
+
+    def cache_base_image(
+        self, data_id: int, width: int, height: int, image: pyvips.Image
+    ) -> None:
+        key = (data_id, width, height)
+        if key in self._base_image_cache:
+            self._base_image_cache.move_to_end(key)
+        else:
+            self._base_image_cache[key] = image
+        while len(self._base_image_cache) > self._BASE_IMAGE_CACHE_MAX_SIZE:
+            self._base_image_cache.popitem(last=False)
+
+    def clear_base_image_cache(self) -> None:
+        self._base_image_cache.clear()
 
     @property
     def uid(self) -> str:
