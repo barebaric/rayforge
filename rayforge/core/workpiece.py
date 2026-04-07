@@ -781,13 +781,26 @@ class WorkPiece(DocItem):
             self.source_segment, (width, height), ctx
         )
 
-        # 3. Render
-        raw_image = ctx.renderer.render_base_image(
-            spec.data, spec.width, spec.height, **spec.kwargs
-        )
-        if not raw_image:
-            logger.warning(f"WP {self.uid[:8]}: Renderer returned None.")
-            return None
+        # 3. Render (with SourceAsset-level cache for shared base images)
+        source = self.source
+        raw_image = None
+
+        if source is not None and not spec.kwargs:
+            raw_image = source.get_cached_base_image(
+                id(spec.data), spec.width, spec.height
+            )
+
+        if raw_image is None:
+            raw_image = ctx.renderer.render_base_image(
+                spec.data, spec.width, spec.height, **spec.kwargs
+            )
+            if not raw_image:
+                logger.warning(f"WP {self.uid[:8]}: Renderer returned None.")
+                return None
+            if source is not None and not spec.kwargs:
+                source.cache_base_image(
+                    id(spec.data), spec.width, spec.height, raw_image
+                )
 
         # 4. Process (Crop/Mask/Resize) based on the spec
         final_image = self._process_rendered_image_from_spec(
