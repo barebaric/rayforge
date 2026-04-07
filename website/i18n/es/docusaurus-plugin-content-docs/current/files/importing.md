@@ -48,6 +48,21 @@ archivo admitidos. El diálogo permite:
 
 ![Diálogo de importación](/screenshots/import-dialog.png)
 
+### Modo de importación de capas
+
+Al importar archivos que contienen múltiples capas (como archivos SVG o PDF
+con capas nombradas), el diálogo ofrece tres formas de manejarlas:
+
+- **Mapear a existentes**: Coincidir las capas importadas con las capas existentes del
+  documento. La primera capa del documento fuente se coloca en la primera capa
+  de tu proyecto, la segunda en la segunda y así sucesivamente.
+  Esta es la opción por defecto y funciona bien cuando tu documento ya tiene
+  capas configuradas.
+- **Nuevas capas**: Crear una nueva capa en el documento por cada capa importada.
+  Esto mantiene el contenido importado separado del trabajo existente.
+- **Aplanar**: Combinar todas las capas importadas en una sola capa. Útil cuando
+  quieres todo en una capa independientemente de la estructura original.
+
 ### Método 1: Menú Archivo
 
 1. **Importar archivo** (o Ctrl+I)
@@ -93,8 +108,8 @@ La notificación de redimensionado aparece como un mensaje emergente:
 - El mensaje permanece visible hasta que se descarta o se ejecuta la acción de
   restablecimiento
 
-Esto garantiza que sus diseños siempre se ajusten a las capacidades de su
-máquina, dándole la flexibilidad de restaurar el tamaño original si es necesario.
+Esto garantiza que tus diseños siempre se ajusten a las capacidades de tu
+máquina, dándote la flexibilidad de restaurar el tamaño original si es necesario.
 
 ---
 
@@ -137,7 +152,7 @@ Esta opción está habilitada por defecto en el diálogo de importación.
 
 #### 2. Trazar mapa de bits
 
-Desactive "Usar vectores originales" para utilizar este método.
+Desactiva "Usar vectores originales" para utilizar este método.
 
 **Cómo funciona:**
 
@@ -166,7 +181,7 @@ Desactive "Usar vectores originales" para utilizar este método.
 ### Vista previa en tiempo real
 
 El diálogo de importación muestra una vista previa en tiempo real de cómo se
-importará su SVG:
+importará tu SVG:
 
 - Los trazados vectoriales se muestran en una superposición azul
 - En modo de trazo, se muestra la imagen original con los trazados trazados
@@ -174,25 +189,30 @@ importará su SVG:
 
 ### Buenas prácticas SVG
 
-**Prepare su SVG para obtener los mejores resultados:**
+**Prepara tu SVG para obtener los mejores resultados:**
 
 1. **Convertir texto a trazados:**
+
    - Inkscape: `Trazado → Objeto a trazado`
    - Illustrator: `Texto → Crear contornos`
 
 2. **Simplificar trazados complejos:**
+
    - Inkscape: `Trazado → Simplificar` (Ctrl+L)
    - Eliminar nodos innecesarios
 
 3. **Desagrupar grupos anidados:**
+
    - Aplanar la jerarquía donde sea posible
    - `Objeto → Desagrupar` (Ctrl+Shift+G)
 
 4. **Eliminar elementos ocultos:**
+
    - Borrar guías, cuadrículas, líneas de construcción
    - Eliminar objetos invisibles/transparentes
 
 5. **Guardar como SVG simple:**
+
    - Inkscape: "SVG simple" o "SVG optimizado"
    - No "SVG de Inkscape" (contiene metadatos adicionales)
 
@@ -222,7 +242,7 @@ Rayforge admite formatos DXF estándar:
 - **R13, R14** - Buen soporte
 - **R2000+** - Generalmente funciona, pero R12 es más seguro
 
-**Consejo:** Exporte como DXF R12/LT2 para máxima compatibilidad.
+**Consejo:** Exporta como DXF R12/LT2 para máxima compatibilidad.
 
 ### Consejos para importación DXF
 
@@ -243,7 +263,7 @@ Rayforge admite formatos DXF estándar:
 
 4. **Usar precisión adecuada:**
    - La precisión láser es típicamente de 0,1 mm
-   - No especifique demasiada precisión
+   - No especifiques demasiada precisión
 
 **Después de importar:**
 
@@ -265,9 +285,9 @@ directamente, igual que archivos SVG o DXF. Esto proporciona geometría limpia y
 escalable sin pérdida de calidad por rasterización.
 
 Si el PDF contiene capas, Rayforge las detecta y permite seleccionar cuáles
-importar. Cada capa se convierte en una pieza de trabajo separada en su
+importar. Cada capa se convierte en una pieza de trabajo separada en tu
 documento. Esto funciona de la misma manera que la importación de capas SVG:
-habilite o deshabilite capas individuales en el diálogo de importación antes de
+habilita o deshabilita capas individuales en el diálogo de importación antes de
 importar.
 
 Esto es especialmente útil para PDF exportados desde software de diseño como
@@ -288,13 +308,13 @@ funciona igual que la importación de imágenes de mapa de bits.
 1. **Usar PDF vectoriales**: Los PDF creados desde software vectorial (Illustrator,
    Inkscape) producen los resultados más limpios con importación directa.
 
-2. **Verificar capas**: Si su PDF tiene capas, las verá listadas en el diálogo
-   de importación. Seleccione solo las capas que necesite.
+2. **Verificar capas**: Si tu PDF tiene capas, las verás listadas en el diálogo
+   de importación. Selecciona solo las capas que necesites.
 
-3. **Para documentos con texto**: Exporte como SVG con fuentes convertidas a
-   trazados para la mejor calidad, o use la alternativa de renderizar y trazar.
+3. **Para documentos con texto**: Exporta como SVG con fuentes convertidas a
+   trazados para la mejor calidad, o usa la alternativa de renderizar y trazar.
 
-4. **Usar la vista previa del diálogo de importación**: Ajuste los ajustes de
+4. **Usar la vista previa del diálogo de importación**: Ajusta los ajustes de
    umbral e invertir al usar el modo de trazo. La vista previa muestra
    exactamente cómo se trazará el PDF.
 
@@ -353,7 +373,7 @@ El diálogo de importación proporciona estos parámetros ajustables:
 
 **Los ajustes predeterminados** funcionan bien para la mayoría de las imágenes.
 El diálogo muestra una vista previa en tiempo real que se actualiza al ajustar
-estos parámetros, permitiéndole afinar el trazado antes de importar.
+estos parámetros, permitiéndote afinar el trazado antes de importar.
 
 ### Preparar imágenes para trazado
 

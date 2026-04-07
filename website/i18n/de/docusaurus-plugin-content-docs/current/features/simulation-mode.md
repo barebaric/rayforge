@@ -41,7 +41,13 @@ Verwende die Steuerelemente unten auf der Leinwand:
 - **Fortschrittsregler**: Ziehen, um durch den Job zu scrollen
 - **Pfeiltasten**: Anweisungen einzeln durchgehen
 
-Die Simulation und die G-Code-Ansicht bleiben synchronisiert - das Durchgehen der Simulation hebt den entsprechenden G-Code hervor, und das Klicken auf G-Code-Zeilen springt zu diesem Punkt in der Simulation.
+Die Simulation und die G-Code-Ansicht bleiben synchronisiert - das Durchgehen der
+Simulation hebt die entsprechende G-Code-Zeile hervor, und das Klicken auf eine
+G-Code-Zeile springt die Simulation zu diesem Punkt.
+
+Die 3D-Ansicht hat ebenfalls eine eigene Simulation mit synchronisierter Wiedergabe.
+Das Durchgehen des 3D-Simulators hebt die passende Zeile im G-Code-Viewer hervor
+und umgekehrt.
 
 ## Bearbeiten während der Simulation
 
@@ -49,5 +55,5 @@ Du kannst Werkstücke während der Simulation bearbeiten. Verschiebe, skaliere o
 
 ## Verwandte Themen
 
-- **[3D-Vorschau](../ui/3d-preview)** - 3D-Werkpfad-Visualisierung
+- **[3D-Vorschau](../ui/3d-preview)** - 3D-Werkzeugweg-Visualisierung
 - **[Materialtest-Raster](operations/material-test-grid)** - Verwende die Simulation zum Validieren von Tests

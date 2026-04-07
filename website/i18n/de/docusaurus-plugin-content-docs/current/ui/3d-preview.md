@@ -1,16 +1,16 @@
-# 3D-Vorschau
+# 3D-Ansicht
 
-Das 3D-Vorschau-Fenster ermöglicht dir, deine G-Code-Werkzeugwege zu visualisieren, bevor du sie an deine Maschine sendest. Diese leistungsstarke Funktion hilft dir, Fehler zu erkennen und deine Auftragskonfiguration zu verifizieren.
+Die 3D-Ansicht ermöglicht dir, deine G-Code-Werkzeugwege zu visualisieren und
+die Auftragsausführung zu simulieren, bevor du sie an deine Maschine sendest.
 
 ![3D-Vorschau](/screenshots/main-3d.png)
 
-## 3D-Vorschau öffnen
+## 3D-Ansicht öffnen
 
-Zugriff auf die 3D-Vorschau:
+Zugriff auf die 3D-Ansicht:
 
-- **Menü**: Ansicht → 3D-Vorschau
-- **Tastatur**: <kbd>Strg+3</kbd>
-- **Nach G-Code-Generierung**: Öffnet automatisch (konfigurierbar)
+- **Menü**: Ansicht → 3D-Ansicht
+- **Tastatur**: <kbd>F12</kbd>
 
 ## Navigation
 
@@ -20,162 +20,145 @@ Zugriff auf die 3D-Vorschau:
 - **Verschieben**: Rechtsklick und ziehen, oder Mittelklick und ziehen
 - **Zoom**: Mausrad, oder <kbd>Strg</kbd> + Linksklick und ziehen
 
-### Tastatursteuerung
-
-- <kbd>r</kbd>: Kamera auf Standardansicht zurücksetzen
-- <kbd>Pos1</kbd>: Zoom und Position zurücksetzen
-- <kbd>f</kbd>: Ansicht an Werkzeugweg anpassen
-- Pfeiltasten: Kamera drehen
-
 ### Ansicht-Presets
 
 Schnelle Kamerawinkel:
 
 - **Draufsicht** (<kbd>1</kbd>): Vogelperspektive
 - **Vorderansicht** (<kbd>2</kbd>): Frontale Ansicht
-- **Rechtsansicht** (<kbd>3</kbd>): Rechte Seitenansicht
-- **Isometrisch** (<kbd>4</kbd>): 3D-isometrische Ansicht
+- **Rechte Ansicht** (<kbd>3</kbd>): Rechte Seitenansicht
+- **Linke Ansicht** (<kbd>4</kbd>): Linke Seitenansicht
+- **Rückansicht** (<kbd>5</kbd>): Hintere Ansicht
+- **Isometrisch** (<kbd>7</kbd>): 3D-isometrische Ansicht
 
 ## Werkstückkoordinatensystem-Anzeige
 
-Die 3D-Vorschau visualisiert das aktive Werkstückkoordinatensystem (WCS) anders als die 2D-Canvas:
+Die 3D-Ansicht visualisiert das aktive Werkstückkoordinatensystem (WCS)
+anders als die 2D-Canvas:
 
 ### Raster und Achsen
 
-- **Isolierte Anzeige**: Das Raster und die Achsen erscheinen so, als wäre der WCS-Ursprung der Weltursprung
-- **Offset angewendet**: Das gesamte Raster ist verschoben, um mit dem ausgewählten WCS-Offset ausgerichtet zu sein
-- **Beschriftungen relativ zum WCS**: Koordinatenbeschriftungen zeigen Positionen relativ zum WCS-Ursprung, nicht zum Maschinenursprung
+- **Isolierte Anzeige**: Das Raster und die Achsen erscheinen so, als wäre
+  der WCS-Ursprung der Weltursprung
+- **Offset angewendet**: Das gesamte Raster ist verschoben, um mit dem
+  ausgewählten WCS-Offset ausgerichtet zu sein
+- **Beschriftungen relativ zum WCS**: Koordinatenbeschriftungen zeigen
+  Positionen relativ zum WCS-Ursprung, nicht zum Maschinenursprung
 
-Diese "in Isolation"-Anzeige erleichtert es zu verstehen, wo dein Auftrag relativ zum ausgewählten Werkstückkoordinatensystem laufen wird, ohne durch die absolute Position der Maschine verwirrt zu werden.
+Diese "in Isolation"-Anzeige erleichtert es zu verstehen, wo dein Auftrag
+relativ zum ausgewählten Werkstückkoordinatensystem laufen wird, ohne durch
+die absolute Position der Maschine verwirrt zu werden.
 
 ### WCS ändern
 
-Die 3D-Vorschau aktualisiert sich automatisch, wenn du das aktive WCS änderst:
+Die 3D-Ansicht aktualisiert sich automatisch, wenn du das aktive WCS änderst:
 - Ein anderes WCS aus der Symbolleisten-Dropdown auswählen
-- Das Raster und die Achsen verschieben sich, um den neuen WCS-Ursprung widerzuspiegeln
-- Beschriftungen aktualisieren sich, um Koordinaten relativ zum neuen WCS zu zeigen
+- Das Raster und die Achsen verschieben sich, um den neuen WCS-Ursprung
+  widerzuspiegeln
+- Beschriftungen aktualisieren sich, um Koordinaten relativ zum neuen WCS
+  zu zeigen
 
-:::tip WCS in der 3D-Vorschau
-Die 3D-Vorschau zeigt deine Werkzeugwege relativ zum ausgewählten WCS. Wenn du das WCS änderst, siehst du die Werkzeugwege scheinbar wandern, weil sich der Referenzpunkt (das Raster) geändert hat, nicht weil sich die Werkzeugwege selbst bewegt haben.
+:::tip WCS in der 3D-Ansicht
+Die 3D-Ansicht zeigt deine Werkzeugwege relativ zum ausgewählten WCS. Wenn du
+das WCS änderst, siehst du die Werkzeugwege scheinbar wandern, weil sich der
+Referenzpunkt (das Raster) geändert hat, nicht weil sich die Werkzeugwege
+selbst bewegt haben.
 :::
 
 
 ## Anzeigeoptionen
+
+Sichtbarkeits-Umschaltungen befinden sich als Overlay-Schaltflächen oben rechts
+auf der 3D-Canvas:
+
+- **Modell**: 3D-Maschinenmodell-Sichtbarkeit umschalten
+- **Eilgänge**: Eilgang-Sichtbarkeit umschalten
+- **No-Go-Zonen**: No-Go-Zonen-Sichtbarkeit umschalten
 
 ### Werkzeugweg-Visualisierung
 
 Passe an, was du siehst:
 
 - **Eilgänge anzeigen**: Positionierbewegungen anzeigen (gepunktete Linien)
-- **Arbeitsbewegungen anzeigen**: Schneid-/Gravurbewegungen anzeigen (durchgezogene Linien)
+- **Arbeitsbewegungen anzeigen**: Schneid-/Gravurbewegungen anzeigen
+  (durchgezogene Linien)
 - **Nach Operation färben**: Verschiedene Farben für jede Operation
-- **Nach Leistung färben**: Farbverlauf basierend auf Laserleistung
-- **Nach Geschwindigkeit färben**: Farbverlauf basierend auf Vorschubrate
 
 :::tip Farben pro Laser
 Bei Maschinen mit mehreren Laserköpfen kann jeder Laser eigene Schnitt- und
-Rasterfarben haben, die in den [Lasereinstellungen](../machine/laser) konfiguriert
-werden. Dies erleichtert die Identifizierung, welcher Laser welche Operation
-ausführt.
+Rasterfarben haben, die in den [Lasereinstellungen](../machine/laser)
+konfiguriert werden. Dies erleichtert die Identifizierung, welcher Laser
+welche Operation ausführt.
 :::
 
-### Maschinen-Visualisierung
+### Laserkopf-Modell
 
-- **Ursprung anzeigen**: (0,0)-Referenzpunkt anzeigen
-- **Arbeitsbereich anzeigen**: Maschinengrenzen anzeigen
-- **Laserkopf anzeigen**: Aktuelle Positionsanzeige anzeigen
+Die 3D-Ansicht rendert ein Modell deines Laserkopfes, das während der
+Simulation dem Werkzeugweg folgt. Du kannst jedem Laserkopf ein 3D-Modell
+auf der Seite [Lasereinstellungen](../machine/laser) in den
+Maschineneinstellungen zuweisen. Skalierung, Rotation und Fokusabstand des
+Modells können an dein physisches Setup angepasst werden.
 
-### Qualitätseinstellungen
+Während der Simulation wird ein leuchtender Laserstrahl vom Kopf nach unten
+gezeichnet, wenn der Laser aktiv ist.
 
-- **Linienbreite**: Dicke der Werkzeugweg-Linien
-- **Kantenglättung**: Glattes Linien-Rendering (kann Leistung beeinträchtigen)
-- **Hintergrund**: Hell, dunkel oder benutzerdefinierte Farbe
+## Simulation
 
-## Wiedergabesteuerung
+Die 3D-Ansicht enthält einen eingebauten Simulator mit
+Wiedergabesteuerungen, die am unteren Rand der Canvas überlagert sind.
 
-Auftragsausführung simulieren:
+### Wiedergabesteuerung
 
 - **Wiedergabe/Pause** (<kbd>Leertaste</kbd>): Werkzeugweg-Ausführung animieren
-- **Geschwindigkeit**: Wiedergabegeschwindigkeit anpassen (0,5x - 10x)
-- **Schritt vor/zurück**: Um einzelne G-Code-Befehle vorwärts
-- **Zu Position springen**: Auf Timeline klicken um zu spezifischem Punkt zu springen
+- **Schritt vor/zurück**: Jeweils eine Operation vorwärts oder zurück
+- **Geschwindigkeit**: Wiedergabegeschwindigkeiten durchschalten (1x, 2x, 4x, 8x, 16x)
+- **Timeline-Schieberegler**: Ziehen, um durch den Auftrag zu navigieren
 
-### Timeline
+### Synchronisierte G-Code-Ansicht
 
-Die Timeline zeigt:
-
-- Aktuelle Position im Auftrag
-- Operationsgrenzen (farbige Segmente)
-- Geschätzte Zeit an jedem Punkt
-
-## Analysewerkzeuge
-
-### Distanzmessung
-
-Distanzen in 3D messen:
-
-1. Messwerkzeug aktivieren
-2. Zwei Punkte auf dem Werkzeugweg anklicken
-3. Distanz in aktuellen Einheiten anzeigen
-
-### Statistik-Panel
-
-Auftragsstatistiken anzeigen:
-
-- **Gesamtdistanz**: Summe aller Bewegungen
-- **Arbeitsdistanz**: Nur Schneid-/Gravurdistanz
-- **Eilgangdistanz**: Nur Positionierbewegungen
-- **Geschätzte Zeit**: Auftragsdauer-Schätzung
-- **Begrenzungsrahmen**: Gesamtmaße
+Die Simulation bleibt mit dem G-Code-Viewer im unteren Panel synchronisiert.
+Das Durchgehen der Simulation hebt die entsprechende Zeile im G-Code-Viewer
+hervor, und das Klicken auf eine Zeile im G-Code-Viewer springt die Simulation
+zu diesem Punkt.
 
 ### Ebenen-Sichtbarkeit
 
-Sichtbarkeit von Operationen umschalten:
+Sichtbarkeit einzelner Ebenen umschalten:
 
-- Auf Operationsnamen klicken zum Anzeigen/Verbergen
-- Auf bestimmte Operationen für Inspektion fokussieren
-- Probleme isolieren ohne G-Code neu zu generieren
+- Auf einen Ebenennamen klicken, um ihn anzuzeigen oder zu verbergen
+- Auf bestimmte Ebenen für Inspektion fokussieren
 
 ## Verifizierungs-Checkliste
 
 Vor dem Senden an die Maschine verifizieren:
 
-- [ ] **Werkzeugweg ist vollständig**: Keine fehlenden Segmente
-- [ ] **Innerhalb des Arbeitsbereichs**: Bleibt innerhalb der Maschinengrenzen
-- [ ] **Korrekte Operationsreihenfolge**: Gravieren vor Schneiden
-- [ ] **Keine Kollisionen**: Kopf trifft keine Spannvorrichtungen
-- [ ] **Richtiger Ursprung**: Beginnt an erwarteter Position
-- [ ] **Halterungspositionen**: Halterungen an korrekten Orten (falls verwendet)
+- [ ] Werkzeugweg ist vollständig ohne fehlende Segmente
+- [ ] Pfade bleiben innerhalb des Maschinenarbeitsbereichs
+- [ ] Gravur-Operationen werden vor Schnitten ausgeführt
+- [ ] Kein Werkzeugweg betritt eine No-Go-Zone
+- [ ] Auftrag beginnt an der erwarteten Position
+- [ ] Halterungen befinden sich an den korrekten Positionen
 
 ## Leistungstipps
 
 Für große oder komplexe Aufträge:
 
-1. **Liniendetail reduzieren**: Niedrigere Anzeigequalität für schnelleres Rendering
-2. **Eilgänge ausblenden**: Nur auf Arbeitsbewegungen fokussieren
-3. **Kantenglättung deaktivieren**: Verbessert Bildrate
-4. **Andere Anwendungen schließen**: GPU-Ressourcen freigeben
+1. Eilgänge ausblenden, um sich auf Arbeitsbewegungen zu fokussieren
+2. Anzahl der sichtbaren Ebenen reduzieren
+3. Andere Anwendungen schließen, um GPU-Ressourcen freizugeben
 
 ## Fehlerbehebung
 
 ### Vorschau ist leer oder schwarz
 
-- G-Code neu generieren (<kbd>Strg+g</kbd>)
 - Prüfen, dass Operationen aktiviert sind
 - Verifizieren, dass Objekten Operationen zugewiesen sind
 
 ### Langsame oder ruckelige Vorschau
 
-- Linienbreite reduzieren
-- Kantenglättung deaktivieren
 - Eilgänge ausblenden
-- Grafiktreiber aktualisieren
-
-### Farben werden nicht korrekt angezeigt
-
-- Färbung-nach-Einstellung prüfen (Operation/Leistung/Geschwindigkeit)
-- Sicherstellen, dass Operationen verschiedene Farben zugewiesen haben
-- Ansichtseinstellungen auf Standard zurücksetzen
+- 3D-Modelle ausblenden
+- Anzahl der sichtbaren Ebenen reduzieren
 
 ---
 

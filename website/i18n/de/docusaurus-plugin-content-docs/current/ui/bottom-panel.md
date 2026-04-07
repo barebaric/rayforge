@@ -1,22 +1,32 @@
 # Unteres Panel
 
-Das untere Panel am unteren Rand des Rayforge-Fensters bietet manuelle Kontrolle über die Position deines Laserschneiders, Echtzeit-Maschinenstatus und eine Protokollansicht zur Überwachung von Operationen.
+Das untere Panel am unteren Rand des Rayforge-Fensters bietet manuelle
+Kontrolle über die Position deines Laserschneiders, Echtzeit-Maschinenstatus,
+eine Protokollansicht zur Überwachung von Operationen, einen G-Code-Viewer
+und einen Asset-Browser.
 
 ## Übersicht
 
-Das untere Panel kombiniert mehrere Funktionen in einer praktischen Schnittstelle:
+Das untere Panel kombiniert mehrere Funktionen in einer praktischen
+Schnittstelle:
 
-1. **Jog-Steuerung**: Manuelle Bewegung und Positionierung
-2. **Maschinenstatus**: Echtzeit-Position und Verbindungszustand
-3. **G-Code-Viewer-Tab**: G-Code mit Syntaxhervorhebung anzeigen
-4. **Konsole-Tab**: Interaktives G-Code-Terminal mit Syntaxhervorhebung
-5. **Werkstückkoordinatensystem (WCS)**: Schnelle WCS-Auswahl
+1. **Tab-Ansicht**: Zwischen Konsole, G-Code-Viewer und Assets wechseln
+   über die Icon-Leiste auf der linken Seite
+2. **Jog-Steuerung**: Manuelle Bewegung und Positionierung (immer sichtbar)
+3. **Maschinenstatus**: Echtzeit-Position und Verbindungszustand
+4. **Werkstückkoordinatensystem (WCS)**: Schnelle WCS-Auswahl (immer sichtbar)
+
+Die linke Seite des Panels enthält eine Icon-Tab-Leiste, mit der du zwischen
+der **Konsole**, dem **G-Code-Viewer** und dem **Assets**-Browser wechseln
+kannst. Die Jog-Steuerung und WCS-Steuerung auf der rechten Seite bleiben
+unabhängig davon sichtbar, welcher Tab aktiv ist. Tabs können durch Ziehen
+neu angeordnet werden.
 
 ![Unteres Panel](/screenshots/bottom-panel.png)
 
 ## Zugriff auf das untere Panel
 
-Das untere Panel ist immer am unteren Rand des Hauptfensters sichtbar. Es kann umgeschaltet werden über:
+Das untere Panel kann umgeschaltet werden über:
 
 - **Menü**: Ansicht → Unteres Panel
 - **Tastaturkürzel**: Strg+L
@@ -28,17 +38,17 @@ Die Jog-Steuerung ist nur verfügbar, wenn mit einer Maschine verbunden ist, die
 
 ## Jog-Steuerung
 
-Die Jog-Steuerung bietet manuelle Kontrolle über die Position deines Laserschneiders, sodass du den Laserkopf präzise für Einrichtung, Ausrichtung und Testzwecke bewegen kannst.
+Die Jog-Steuerung bietet manuelle Kontrolle über die Position deines
+Laserschneiders, sodass du den Laserkopf präzise für Einrichtung,
+Ausrichtung und Testzwecke bewegen kannst.
 
 ### Referenzfahrt-Steuerung
 
-Referenziere die Achsen deiner Maschine, um eine Referenzposition zu etablieren:
+Referenziere die Achsen deiner Maschine, um eine Referenzposition zu
+etablieren:
 
 | Schaltfläche | Funktion        | Beschreibung                             |
 | ------------ | --------------- | ---------------------------------------- |
-| X referenzieren | Referenziert X-Achse | Bewegt X-Achse zur Referenzposition |
-| Y referenzieren | Referenziert Y-Achse | Bewegt Y-Achse zur Referenzposition |
-| Z referenzieren | Referenziert Z-Achse | Bewegt Z-Achse zur Referenzposition |
 | Alle referenzieren | Referenziert alle Achsen | Referenziert alle Achsen gleichzeitig |
 
 :::tip Referenzfahrt-Sequenz
@@ -57,7 +67,7 @@ Die Jog-Steuerung bietet Schaltflächen für Richtungssteuerung:
 ```
 
 | Schaltfläche      | Bewegung                         | Tastaturkürzel |
-| ----------------- | -------------------------------- | ---------------|
+| ----------------- | -------------------------------- | -------------- |
 | ↑                 | Y+ (Y- wenn Maschine Y-gespiegelt ist) | Pfeil nach oben |
 | ↓                 | Y- (Y+ wenn Maschine Y-gespiegelt ist) | Pfeil nach unten |
 | ←                 | X- (links)                       | Pfeil nach links |
@@ -87,7 +97,7 @@ Die Jog-Schaltflächen bieten visuelles Feedback:
 Konfiguriere das Verhalten von Jog-Operationen:
 
 **Jog-Geschwindigkeit:**
-- **Bereich**: 1-10.000 mm/min
+- **Bereich**: 1-60.000 mm/min
 - **Standard**: 1.000 mm/min
 - **Zweck**: Steuert, wie schnell sich der Laserkopf bewegt
 
@@ -112,7 +122,7 @@ Konfiguriere das Verhalten von Jog-Operationen:
 
 ## Maschinenstatus-Anzeige
 
-Das untere Panel zeigt Echtzeitinformationen über deine Maschine:
+Das Steuerungs-Panel zeigt Echtzeitinformationen über deine Maschine:
 
 ### Aktuelle Position
 
@@ -138,7 +148,8 @@ Zeigt die Position des Laserkopfes im aktiven Koordinatensystem:
 
 ## Werkstückkoordinatensystem (WCS)
 
-Das untere Panel bietet schnellen Zugriff auf die Werkstückkoordinatensystem-Verwaltung.
+Das Steuerungs-Panel bietet schnellen Zugriff auf die
+Werkstückkoordinatensystem-Verwaltung.
 
 ### Aktives System auswählen
 
@@ -154,23 +165,17 @@ Wähle, welches Koordinatensystem gerade aktiv ist:
 | G58 (Arbeit 5)  | Benutzer | Fünftes Werkstückkoordinatensystem            |
 | G59 (Arbeit 6)  | Benutzer | Sechstes Werkstückkoordinatensystem           |
 
-### Aktuelle Offsets
-
-Zeigt die Offset-Werte für das aktive WCS:
-
-- Angezeigt als (X, Y, Z) in Millimetern
-- Stellt die Entfernung vom Maschinenursprung zum WCS-Ursprung dar
-- Aktualisiert sich automatisch wenn sich WCS-Offsets ändern
-
 ### WCS-Null setzen
 
 Definiere, wo der Ursprung des aktiven WCS sein soll:
 
-| Schaltfläche | Funktion | Beschreibung                                          |
-| ------------ | -------- | ---------------------------------------------------- |
-| X nullen     | X=0 setzen | Macht aktuelle X-Position zum X-Ursprung für aktives WCS |
-| Y nullen     | Y=0 setzen | Macht aktuelle Y-Position zum Y-Ursprung für aktives WCS |
-| Z nullen     | Z=0 setzen | Macht aktuelle Z-Position zum Z-Ursprung für aktives WCS |
+| Schaltfläche     | Funktion      | Beschreibung                                                 |
+| ---------------- | ------------- | ------------------------------------------------------------ |
+| Klicken zum Nullen | X,Y=0 setzen  | Auf das Fadenkreuz-Symbol klicken, dann auf die Canvas klicken um Arbeitsnullpunkt zu setzen |
+| Offsets bearbeiten | Bearbeiten    | WCS-Offset-Werte manuell bearbeiten                          |
+| X nullen         | X=0 setzen    | Macht aktuelle X-Position zum X-Ursprung für aktives WCS    |
+| Y nullen         | Y=0 setzen    | Macht aktuelle Y-Position zum Y-Ursprung für aktives WCS    |
+| Z nullen         | Z=0 setzen    | Macht aktuelle Z-Position zum Z-Ursprung für aktives WCS    |
 
 :::note G53 kann nicht geändert werden
 Null-Schaltflächen sind deaktiviert wenn G53 (Maschinenkoordinaten) ausgewählt ist, da Maschinenkoordinaten durch die Hardware festgelegt sind.
@@ -186,34 +191,16 @@ Null-Schaltflächen sind deaktiviert wenn G53 (Maschinenkoordinaten) ausgewählt
 :::
 
 
-## G-Code-Viewer-Tab
-
-Der G-Code-Viewer zeigt den generierten G-Code mit erweiterten Anzeigefunktionen:
-
-### Syntaxhervorhebung
-
-- **Bewegungsbefehle** (G0, G1, G2, G3): Verschiebe- und Schnittbefehle
-- **Parameter** (X, Y, Z, F, S): Koordinaten und Geschwindigkeits-/Leistungswerte
-- **Maschinenbefehle** (M-Befehle): Maschinensteuerungsbefehle
-- **Kommentare**: Inline-Kommentare im G-Code
-
-### Zeilenmarkierung
-
-- Aktuell ausgeführte Zeile wird hervorgehoben während der Auftragsausführung
-- Ermöglicht einfaches Verfolgen des Fortschritts
-
-### Automatische Aktualisierung
-
-- G-Code wird automatisch aktualisiert wenn sich das Projekt ändert
-- Kein manueller Aktualisierungsvorgang erforderlich
-
 ## Konsole-Tab
 
-Die Konsole bietet eine interaktive Terminal-ähnliche Schnittstelle zum Senden von G-Code-Befehlen und Überwachen der Maschinenkommunikation:
+Die Konsole bietet eine interaktive Terminal-ähnliche Schnittstelle zum Senden
+von G-Code-Befehlen und Überwachen der Maschinenkommunikation. Klicke auf das
+Konsolen-Symbol in der Tab-Leiste, um zu dieser Ansicht zu wechseln.
 
 ### Befehlseingabe
 
-Das Befehlseingabefeld ermöglicht dir, rohen G-Code direkt an die Maschine zu senden:
+Das Befehlseingabefeld ermöglicht dir, rohen G-Code direkt an die Maschine zu
+senden:
 
 - **Mehrzeilen-Unterstützung**: Mehrere Befehle einfügen oder eingeben
 - **Eingabetaste**: Sendet alle Befehle
@@ -222,17 +209,20 @@ Das Befehlseingabefeld ermöglicht dir, rohen G-Code direkt an die Maschine zu s
 
 ### Protokollanzeige
 
-Das Protokoll zeigt die Kommunikation zwischen Rayforge und deiner Maschine mit Syntaxhervorhebung zur einfachen Lesbarkeit:
+Das Protokoll zeigt die Kommunikation zwischen Rayforge und deiner Maschine
+mit Syntaxhervorhebung zur einfachen Lesbarkeit:
 
 - **Benutzerbefehle** (blau): Befehle, die du eingegeben oder während Aufträgen gesendet hast
 - **Zeitstempel** (grau): Uhrzeit jeder Nachricht
 - **Fehler** (rot): Fehlermeldungen von der Maschine
 - **Warnungen** (orange): Warnmeldungen
-- **Statusabfragen** (gedimmt): Echtzeit-Position/Statusberichte wie `<Idle|WPos:0.000,0.000,0.000|...>`
+- **Statusabfragen** (gedimmt): Echtzeit-Position/Statusberichte wie
+  `&lt;Idle|WPos:0.000,0.000,0.000|...&gt;`
 
 ### Ausführlicher Modus
 
-Klicke auf das Terminal-Symbol in der oberen rechten Ecke der Konsole um die ausführliche Ausgabe umzuschalten:
+Klicke auf das Terminal-Symbol in der oberen rechten Ecke der Konsole um die
+ausführliche Ausgabe umzuschalten:
 
 - **Aus** (Standard): Versteckt häufige Statusabfragen und "ok"-Antworten
 - **Ein**: Zeigt gesamte Maschinenkommunikation
@@ -254,6 +244,34 @@ Die Konsole ist unschätzbar wertvoll für die Diagnose von Problemen:
 - Verbindungsstatus und -stabilität überwachen
 - Ausführungsfortschritt von Aufträgen in Echtzeit überprüfen
 - Diagnosebefehle senden (z.B. `$$` um GRBL-Einstellungen anzuzeigen)
+
+## G-Code-Viewer-Tab
+
+Der G-Code-Viewer zeigt den generierten G-Code für die aktuellen Operationen
+an. Klicke auf das G-Code-Symbol in der Tab-Leiste, um zu dieser Ansicht zu
+wechseln.
+
+### Funktionen
+
+- **Syntaxhervorhebung**: G-Code-Befehle sind farbcodiert für bessere Lesbarkeit
+- **Zeilenmarkierung**: Die aktuell ausgeführte Zeile wird während der
+  Auftragsausführung hervorgehoben
+- **Automatische Aktualisierung**: Der G-Code-Inhalt wird automatisch
+  aktualisiert wenn sich Operationen oder Dokumenteinstellungen ändern
+
+## Assets-Tab
+
+Der Assets-Tab zeigt alle Rohmaterialien und Skizzen in deinem Dokument an.
+Klicke auf das Assets-Symbol in der Tab-Leiste, um zu dieser Ansicht zu
+wechseln.
+
+Wenn die Asset-Liste leer ist, werden Schaltflächen zum Hinzufügen von
+Rohmaterial oder Erstellen einer neuen Skizze angezeigt. Du kannst Assets
+aus dieser Liste auf die Canvas ziehen, um sie zu platzieren. Ein
+Doppelklick auf ein Rohmaterial-Asset öffnet dessen Eigenschaften.
+
+Wenn der Konsole- oder G-Code-Viewer-Tab aktiv ist, kannst du auch
+<kbd>Strg+F</kbd> drücken, um im Inhalt zu suchen.
 
 ## Maschinenkompatibilität
 

@@ -16,31 +16,39 @@ Accédez à toutes les fonctions Rayforge via des menus organisés :
 - **Affichage** : Zoom, grille, règles, panneaux et modes d'affichage
 - **Opérations** : Ajouter, modifier et gérer les opérations
 - **Machine** : Connecter, déplacer, mettre à l'origine, démarrer/arrêter les travaux
-- **Aide** : Documentation, à propos et support
+- **Aide** : À propos, Don, Enregistrer le journal de débogage
 
 ### 2. Barre d'outils
 
-Accès rapide aux outils fréquemment utilisés :
+Accès rapide aux contrôles fréquemment utilisés :
 
-- **Outil de sélection** : Sélectionner et déplacer des objets
-- **Outil panoramique** : Naviguer sur le canevas
-- **Outil zoom** : Zoomer/dézoomer sur des zones spécifiques
-- **Outil de mesure** : Mesurer des distances et des angles
-- **Outils d'alignement** : Aligner et distribuer des objets
-- **Liste déroulante WCS** : Sélectionner le système de coordonnées de travail actif (G53-G59)
+- **Liste déroulante Machine** : Sélectionne ta machine, affiche l'état de connexion et
+  montre le temps restant estimé pendant les travaux
+- **Liste déroulante WCS** : Sélectionne le système de coordonnées de travail actif (G53-G59)
+- **Basculer la simulation** : Active/désactive le mode simulation
+- **Focus laser** : Active/désactive le mode de mise au point du laser
+- **Contrôles de travail** : Boutons Origine, Cadrer, Envoyer, Pause et Annuler
 
-La liste déroulante WCS vous permet de basculer rapidement entre les systèmes de coordonnées.
+La liste déroulante Machine affiche l'état de connexion de ta machine et son état actuel
+(p. ex. Inactif, En cours) directement dans la barre d'outils. Pendant l'exécution d'un travail,
+elle affiche aussi une estimation du temps restant.
+
+La liste déroulante WCS te permet de basculer rapidement entre les systèmes de coordonnées.
 Voir [Systèmes de coordonnées de travail](../general-info/coordinate-systems) pour
 plus d'informations.
 
+Les bascules de visibilité pour les pièces, les onglets, le flux caméra, les déplacements
+rapides et d'autres éléments ont été déplacées vers des boutons superposés sur le canevas
+lui-même, pour qu'ils soient toujours à portée de main pendant que tu travailles.
+
 ### 3. Canevas
 
-L'espace de travail principal où vous :
+L'espace de travail principal où tu peux :
 
-- Importez et disposez des conceptions
-- Prévisualisez les trajets d'outil
-- Positionnez des objets par rapport à l'origine machine
-- Testez les limites de cadrage
+- Importer et organiser des conceptions
+- Prévisualiser les trajets d'outil
+- Positionner des objets par rapport à l'origine machine
+- Tester les limites de cadrage
 
 **Contrôles du canevas :**
 
@@ -50,17 +58,17 @@ L'espace de travail principal où vous :
 
 ### 4. Panneau Calques
 
-Gérez les opérations et les affectations de calques :
+Gère les opérations et les affectations de calques :
 
-- Visualisez toutes les opérations dans votre projet
-- Affectez des opérations aux éléments de conception
-- Réorganisez l'exécution des opérations
-- Activez/désactivez des opérations individuelles
-- Configurez les paramètres des opérations
+- Visualise toutes les opérations dans ton projet
+- Affecte des opérations aux éléments de conception
+- Réorganise l'exécution des opérations
+- Active/désactive des opérations individuelles
+- Configure les paramètres des opérations
 
 ### 5. Panneau Propriétés
 
-Configurez les paramètres pour les objets ou opérations sélectionnés :
+Configure les paramètres pour les objets ou opérations sélectionnés :
 
 - Type d'opération (Contour, Raster, etc.)
 - Paramètres de puissance et de vitesse
@@ -69,12 +77,10 @@ Configurez les paramètres pour les objets ou opérations sélectionnés :
 
 ### 6. Panneau inférieur
 
-Le panneau inférieur en bas de la fenêtre fournit :
-
-- **Contrôles de déplacement** : Mouvement et positionnement manuels de la machine
-- **État de la machine** : Position et état de connexion en temps réel
-- **Vue du journal** : Communication G-code et historique des opérations
-- **Gestion du WCS** : Sélection et mise à zéro du système de coordonnées de travail
+Le panneau inférieur fournit des onglets pour la Console, le Visualiseur G-code et
+les actifs de ton document (stock et croquis). Les contrôles de déplacement et la gestion
+du WCS sont toujours visibles sur le côté droit. Le temps estimé du travail est affiché
+dans l'en-tête de la liste des calques au-dessus du panneau des calques.
 
 Voir [Panneau inférieur](bottom-panel) pour des informations détaillées.
 
@@ -84,25 +90,23 @@ Voir [Panneau inférieur](bottom-panel) pour des informations détaillées.
 
 Afficher/masquer les panneaux selon les besoins :
 
-- **Panneau Calques** : Affichage → Panneau Calques (<kbd>ctrl+l</kbd>)
-- **Panneau Propriétés** : Affichage → Panneau Propriétés (<kbd>ctrl+i</kbd>)
+- **Panneau inférieur** : Affichage → Panneau inférieur (<kbd>ctrl+l</kbd>)
 
 ### Mode plein écran
 
-Concentrez-vous sur votre travail en plein écran :
+Concentre-toi sur ton travail en plein écran :
 
 - Entrer : <kbd>f11</kbd> ou Affichage → Plein écran
 - Quitter : <kbd>f11</kbd> ou <kbd>échappe</kbd>
 
 ## Personnalisation
 
-Personnalisez l'interface dans **Édition → Préférences** :
+Personnalise l'interface dans **Édition → Paramètres** :
 
 - **Thème** : Clair, sombre ou système
 - **Unités** : Millimètres ou pouces
 - **Grille** : Afficher/masquer et configurer l'espacement de la grille
 - **Règles** : Afficher/masquer les règles sur le canevas
-- **Barre d'outils** : Personnaliser les boutons visibles
 
 ---
 

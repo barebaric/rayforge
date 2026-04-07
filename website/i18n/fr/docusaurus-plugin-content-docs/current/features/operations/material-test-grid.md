@@ -1,6 +1,6 @@
 # Grille de Test de Matériau
 
-Le générateur de Grille de Test de Matériau crée des motifs de test paramétriques pour vous aider à trouver les paramètres laser optimaux pour différents matériaux.
+Le générateur de Grille de Test de Matériau crée des motifs de test paramétriques pour t'aider à trouver les paramètres laser optimaux pour différents matériaux.
 
 ## Aperçu
 
@@ -15,7 +15,7 @@ Les tests de matériau sont essentiels pour le travail laser - différents maté
 
 ### Étape 1 : Ouvrir le Générateur
 
-Accédez au générateur de Grille de Test de Matériau :
+Accéde au générateur de Grille de Test de Matériau :
 
 - Menu : **Outils → Grille de Test de Matériau**
 - Cela crée une pièce spéciale qui génère le motif de test
@@ -24,18 +24,18 @@ Accédez au générateur de Grille de Test de Matériau :
 
 Rayforge inclut des préréglages pour des scénarios courants :
 
-| Préréglage | Plage de Vitesse | Plage de Puissance | Utilisation |
-| ---------- | ---------------- | ------------------ | ----------- |
-| **Gravure Diode** | 1000-10000 mm/min | 10-100% | Gravure laser diode |
-| **Coupe Diode** | 100-5000 mm/min | 50-100% | Coupe laser diode |
-| **Gravure CO2** | 3000-20000 mm/min | 10-50% | Gravure laser CO2 |
-| **Coupe CO2** | 1000-20000 mm/min | 30-100% | Coupe laser CO2 |
+| Préréglage        | Plage de Vitesse  | Plage de Puissance | Utilisation         |
+| ----------------- | ----------------- | ------------------ | ------------------- |
+| **Gravure Diode** | 1000-10000 mm/min | 10-100%            | Gravure laser diode |
+| **Coupe Diode**   | 100-5000 mm/min   | 50-100%            | Coupe laser diode   |
+| **Gravure CO2**   | 3000-20000 mm/min | 10-50%             | Gravure laser CO2   |
+| **Coupe CO2**     | 1000-20000 mm/min | 30-100%            | Coupe laser CO2     |
 
-Les préréglages sont des points de départ - vous pouvez ajuster tous les paramètres après en avoir sélectionné un.
+Les préréglages sont des points de départ - tu peux ajuster tous les paramètres après en avoir sélectionné un.
 
 ### Étape 3 : Configurer les Paramètres
 
-Ajustez les paramètres de la grille de test dans la boîte de dialogue des paramètres :
+Ajuste les paramètres de la grille de test dans la boîte de dialogue des paramètres :
 
 ![Paramètres Grille de Test de Matériau](/screenshots/material-test-grid.png)
 
@@ -70,11 +70,20 @@ Ajustez les paramètres de la grille de test dans la boîte de dialogue des para
 
 - **Inclure les Étiquettes** : Activer/désactiver les étiquettes d'axe montrant les valeurs de vitesse et puissance
 - Les étiquettes apparaissent sur les bords gauche et supérieur
-- Les étiquettes sont gravées à 10% puissance, 1000 mm/min
+- **Puissance des étiquettes (%)** : Paramètre de puissance pour graver les étiquettes
+- **Vitesse des étiquettes (mm/min)** : Vitesse pour graver les étiquettes (défaut : 1000 mm/min)
+
+Les étiquettes sont gravées en premier, avant la grille de test, pour ne pas être masquées par le motif de test.
+
+#### Intervalle de ligne (Test gravure uniquement)
+
+- **Intervalle de ligne (mm)** : Espacement entre les lignes de balayage en mode gravure
+- Des valeurs plus petites créent des remplissages plus denses mais prennent plus de temps
+- Valeurs typiques : 0.1-0.3mm
 
 ### Étape 4 : Générer la Grille
 
-Cliquez sur **Générer** pour créer le motif de test. La grille apparaît sur votre canevas comme une pièce spéciale.
+Clique sur **Générer** pour créer le motif de test. La grille apparaît sur ton canevas comme une pièce spéciale.
 
 ## Comprendre la Disposition de la Grille
 
@@ -103,7 +112,7 @@ Puissance (%)     Vitesse (mm/min) →
 
 **Avec étiquettes :**
 
-- Ajoutez une marge de 15mm à gauche et en haut pour l'espace des étiquettes
+- Ajoute une marge de 15mm à gauche et en haut pour l'espace des étiquettes
 
 **Exemple :** Grille 5×5 avec carrés de 20mm et espacement de 5mm :
 
@@ -133,22 +142,22 @@ Ordre :  1  2  3
 
 ### Étape 1 : Exécuter le Test
 
-1. Chargez votre matériau dans le laser
-2. Faites la mise au point du laser correctement
-3. Exécutez le travail de grille de test de matériau
-4. Surveillez le test - arrêtez si une cellule cause des problèmes
+1. Charge ton matériau dans le laser
+2. Fais la mise au point du laser correctement
+3. Exécute le travail de grille de test de matériau
+4. Surveille le test - arrête si une cellule cause des problèmes
 
 ### Étape 2 : Évaluer les Résultats
 
-Après l'achèvement du test, examinez chaque cellule :
+Après l'achèvement du test, examine chaque cellule :
 
-- **Trop clair** : Augmentez la puissance ou diminuez la vitesse
-- **Trop foncé/brûlé** : Diminuez la puissance ou augmentez la vitesse
-- **Parfait** : Notez la combinaison vitesse/puissance
+- **Trop clair** : Augmente la puissance ou diminue la vitesse
+- **Trop foncé/brûlé** : Diminue la puissance ou augmente la vitesse
+- **Parfait** : Note la combinaison vitesse/puissance
 
 ### Étape 3 : Enregistrer les Paramètres
 
-Documentez vos paramètres réussis pour référence future :
+Documente tes paramètres réussis pour référence future :
 
 - Type et épaisseur du matériau
 - Type d'opération (gravure ou coupe)
@@ -157,26 +166,26 @@ Documentez vos paramètres réussis pour référence future :
 - Toutes notes spéciales
 
 :::tip Base de Données Matériaux
-Envisagez de créer un document de référence avec vos résultats de test de matériau pour une recherche rapide dans les projets futurs.
+Envisage de créer un document de référence avec tes résultats de test de matériau pour une recherche rapide dans les projets futurs.
 :::
 
 ## Utilisation Avancée
 
 ### Combiner avec d'Autres Opérations
 
-Les grilles de test de matériau sont des pièces régulières - vous pouvez les combiner avec d'autres opérations :
+Les grilles de test de matériau sont des pièces régulières - tu peux les combiner avec d'autres opérations :
 
 **Exemple de flux de travail :**
 
-1. Créez une grille de test de matériau
-2. Ajoutez une coupe de contour autour de toute la grille
-3. Exécutez le test, coupez libre, évaluez les résultats
+1. Crée une grille de test de matériau
+2. Ajoute une coupe de contour autour de toute la grille
+3. Exécute le test, coupe libre, évalue les résultats
 
 C'est utile pour couper la pièce de test libre du matériau de stock.
 
 ### Plages de Test Personnalisées
 
-Pour un réglage fin, créez des tests à plage étroite :
+Pour un réglage fin, crée des tests à plage étroite :
 
 **Test grossier** (trouver l'à peu près) :
 
@@ -190,30 +199,30 @@ Pour un réglage fin, créez des tests à plage étroite :
 
 ### Différents Matériaux, Même Grille
 
-Exécutez la même configuration de grille sur différents matériaux pour construire votre bibliothèque de matériaux plus rapidement.
+Exécute la même configuration de grille sur différents matériaux pour construire ta bibliothèque de matériaux plus rapidement.
 
 ## Conseils & Meilleures Pratiques
 
 ### Conception de Grille
 
-✅ **Commencez avec les préréglages** - Bons points de départ pour les scénarios courants
-✅ **Utilisez des grilles 5×5** - Bon équilibre entre détail et temps de test
-✅ **Activez les étiquettes** - Essentiel pour identifier les résultats
-✅ **Gardez les carrés ≥20mm** - Plus facile à voir et mesurer les résultats
+✅ **Commence avec les préréglages** - Bons points de départ pour les scénarios courants
+✅ **Utilise des grilles 5×5** - Bon équilibre entre détail et temps de test
+✅ **Active les étiquettes** - Essentiel pour identifier les résultats
+✅ **Garde les carrés ≥20mm** - Plus facile à voir et mesurer les résultats
 
 ### Stratégie de Test
 
-✅ **Testez sur du rebut d'abord** - Ne testez jamais sur le matériau final
-✅ **Une variable à la fois** - Testez la plage de vitesse OU de puissance, pas les deux extrêmes
-✅ **Permettez le refroidissement** - Attendez entre les tests sur le même matériau
+✅ **Teste sur du rebut d'abord** - Ne teste jamais sur le matériau final
+✅ **Une variable à la fois** - Teste la plage de vitesse OU de puissance, pas les deux extrêmes
+✅ **Permet le refroidissement** - Attends entre les tests sur le même matériau
 ✅ **Mise au point cohérente** - Même distance de mise au point pour tous les tests
 
 ### Sécurité
 
-⚠️ **Surveillez les tests** - Ne laissez jamais les tests en cours sans surveillance
-⚠️ **Commencez de manière conservatrice** - Commencez avec des plages de puissance plus basses
-⚠️ **Vérifiez la ventilation** - Assurez une extraction des fumées appropriée
-⚠️ **Surveillez le feu** - Ayez un extincteur prêt
+⚠️ **Surveille les tests** - Ne laisse jamais les tests en cours sans surveillance
+⚠️ **Commence de manière conservatrice** - Commence avec des plages de puissance plus basses
+⚠️ **Vérifie la ventilation** - Assure une extraction des fumées appropriée
+⚠️ **Surveille le feu** - Aie un extincteur prêt
 
 ## Dépannage
 
@@ -225,9 +234,9 @@ Exécutez la même configuration de grille sur différents matériaux pour const
 
 ### Les résultats sont incohérents
 
-- **Vérifiez** : Le matériau est plat et correctement sécurisé
-- **Vérifiez** : La mise au point est cohérente sur toute la zone de test
-- **Vérifiez** : La puissance laser est stable (vérifiez l'alimentation)
+- **Vérifie** : Le matériau est plat et correctement sécurisé
+- **Vérifie** : La mise au point est cohérente sur toute la zone de test
+- **Vérifie** : La puissance laser est stable (vérifie l'alimentation)
 - **Essayez** : Une grille plus petite pour réduire la zone de test
 
 ## Sujets Connexes

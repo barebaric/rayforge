@@ -5,8 +5,8 @@ Référence complète des raccourcis clavier dans Rayforge.
 :::note Conventions de plateforme
 
 - **Linux/Windows :** touche `Ctrl`
-- **macOS :** touche `⌘ (Command)`
-- La documentation utilise `Ctrl` - les utilisateurs macOS remplacent par `⌘`
+- **macOS :** touche `Command`
+- La documentation utilise `Ctrl` - les utilisateurs macOS remplacent par `Command`
   :::
 
 ---
@@ -43,15 +43,17 @@ Référence complète des raccourcis clavier dans Rayforge.
 
 ---
 
-## Affichage
+## Affichage et affichage
 
 | Raccourci      | Action               | Description                                |
 | -------------- | -------------------- | ------------------------------------------ |
 | `H`            | Basculer les pièces  | Afficher/masquer la visibilité des pièces  |
 | `T`            | Basculer les onglets | Afficher/masquer les onglets de maintien   |
-| `Alt+C`        | Basculer la caméra   | Afficher/masquer la superposition caméra   |
+| `Ctrl+Alt+C`   | Basculer la caméra   | Afficher/masquer la superposition caméra   |
 | `F12`          | Vue 3D               | Basculer la fenêtre de prévisualisation 3D |
-| `Ctrl+Shift+R` | Mode simulation      | Basculer le mode simulation                |
+| `F11`          | Mode simulation      | Basculer le mode simulation                |
+| `Ctrl+Shift+T` | Vue trajets          | Basculer la vue des trajets                |
+| `Ctrl+Alt+W`   | Scinder la pièce     | Scinder la pièce en parties                |
 
 ### Contrôles de la vue 3D
 
@@ -59,6 +61,9 @@ Référence complète des raccourcis clavier dans Rayforge.
 | --------- | -------------------- | -------------------------------------------- |
 | `1`       | Vue de dessus        | Passer à la vue de dessus                    |
 | `2`       | Vue de face          | Passer à la vue de face                      |
+| `3`       | Vue de droite        | Passer à la vue côté droit                   |
+| `4`       | Vue de gauche        | Passer à la vue côté gauche                  |
+| `5`       | Vue arrière          | Passer à la vue arrière                      |
 | `7`       | Vue isométrique      | Passer à la vue isométrique                  |
 | `P`       | Basculer perspective | Basculer entre perspective et orthographique |
 
@@ -72,16 +77,16 @@ Référence complète des raccourcis clavier dans Rayforge.
 | `Ctrl+U`         | Dissocier             | Dissocier le groupe sélectionné              |
 | `Ctrl+Page Up`   | Déplacer vers le haut | Déplacer le calque vers le haut dans la pile |
 | `Ctrl+Page Down` | Déplacer vers le bas  | Déplacer le calque vers le bas dans la pile  |
-| `Alt+S`          | Ajouter du matériel   | Ajouter un élément de stock/matériau         |
+| `Ctrl+Alt+S`     | Ajouter du matériel   | Ajouter un élément de stock/matériau         |
 
 ---
 
 ## Onglets (onglets de maintien)
 
-| Raccourci | Action                             | Description                                   |
-| --------- | ---------------------------------- | --------------------------------------------- |
-| `Alt+T`   | Ajouter des onglets (équidistants) | Ajouter des onglets régulièrement espacés     |
-| `T`       | Basculer la visibilité des onglets | Afficher/masquer la superposition des onglets |
+| Raccourci    | Action                             | Description                                   |
+| ------------ | ---------------------------------- | --------------------------------------------- |
+| `Ctrl+Alt+T` | Ajouter des onglets (équidistants) | Ajouter des onglets régulièrement espacés     |
+| `T`          | Basculer la visibilité des onglets | Afficher/masquer la superposition des onglets |
 
 ---
 
@@ -107,9 +112,9 @@ Référence complète des raccourcis clavier dans Rayforge.
 
 ### Disposition
 
-| Raccourci | Action        | Description                     |
-| --------- | ------------- | ------------------------------- |
-| `Alt+A`   | Pixel parfait | Aligner sur la grille de pixels |
+| Raccourci    | Action        | Description                     |
+| ------------ | ------------- | ------------------------------- |
+| `Ctrl+Alt+A` | Pixel parfait | Aligner sur la grille de pixels |
 
 ---
 
@@ -124,11 +129,11 @@ Référence complète des raccourcis clavier dans Rayforge.
 
 ## Contrôle de la machine
 
-| Raccourci | Action             | Description                                        |
-| --------- | ------------------ | -------------------------------------------------- |
-| `Ctrl+L`  | Panneau inférieur  | Basculer la visibilité du panneau inférieur        |
-| `Ctrl+<`  | Paramètres machine | Ouvrir la boîte de dialogue des paramètres machine |
-| `F1`      | À propos           | Afficher la boîte de dialogue À propos             |
+| Raccourci   | Action             | Description                                        |
+| ----------- | ------------------ | -------------------------------------------------- |
+| `Ctrl+L`    | Panneau inférieur  | Basculer la visibilité du panneau inférieur        |
+| `Ctrl+&lt;` | Paramètres machine | Ouvrir la boîte de dialogue des paramètres machine |
+| `F1`        | À propos           | Afficher la boîte de dialogue À propos             |
 
 :::note Opérations machine
 Les opérations de contrôle de la machine (Origine, Cadrer, Envoyer, etc.) n'ont actuellement pas de raccourcis par défaut mais sont accessibles via les boutons de la barre d'outils ou les menus.
@@ -193,10 +198,11 @@ Lors de l'édition de G-code ou de champs de texte :
 
 - `H` - Masquer/afficher les pièces
 - `T` - Masquer/afficher les onglets
-- `Alt+C` - Basculer la caméra
+- `Ctrl+Alt+C` - Basculer la caméra
 - `F12` - Vue 3D
 - `F11` - Mode simulation
-- `1`, `2`, `7` - Présélections de vue 3D
+- `Ctrl+Shift+T` - Vue trajets
+- `1`, `2`, `3`, `4`, `5`, `7` - Présélections de vue 3D
 - `P` - Basculer perspective
 
 ### Édition et transformation
@@ -213,7 +219,7 @@ Lors de l'édition de G-code ou de champs de texte :
 - `Shift+Touches fléchées` - Aligner sur les bords
 - `Shift+Orig` / `Shift+Fin` - Aligner au centre
 - `Ctrl+Shift+H` / `Ctrl+Shift+V` - Distribuer
-- `Alt+A` - Pixel parfait
+- `Ctrl+Alt+A` - Pixel parfait
 
 ---
 
@@ -229,7 +235,7 @@ Les raccourcis clavier sont actuellement codés en dur. La configuration de racc
 - Pas d'interface graphique pour la personnalisation des raccourcis
 - Certaines actions peuvent ne pas avoir de raccourcis attribués
 
-**Demande de fonctionnalité :** Si vous avez besoin de raccourcis personnalisés, veuillez ouvrir un ticket sur GitHub.
+**Demande de fonctionnalité :** Si tu as besoin de raccourcis personnalisés, ouvre un ticket sur GitHub.
 
 ---
 
@@ -237,11 +243,11 @@ Les raccourcis clavier sont actuellement codés en dur. La configuration de racc
 
 ### Conseils d'efficacité
 
-1. **Apprenez d'abord les raccourcis d'édition** - `Ctrl+Z/Y/C/V/D` sont utilisés constamment
-2. **Utilisez les bascules à touche unique** - `H`, `T`, `P` pour des changements de vue rapides
+1. **Apprends d'abord les raccourcis d'édition** - `Ctrl+Z/Y/C/V/D` sont utilisés constamment
+2. **Utilise les bascules à touche unique** - `H`, `T`, `P` pour des changements de vue rapides
 3. **Raccourcis de vue 3D** - `1`, `2`, `7` pour un changement de vue instantané
 4. **Raccourcis d'alignement** - `Shift+Flèche` plus rapide que de cliquer sur les boutons d'alignement
-5. **Mode simulation** - `Ctrl+Shift+S` pour vérifier rapidement l'exécution
+5. **Mode simulation** - `F11` pour vérifier rapidement l'exécution
 
 ### Raccourcis de flux de travail
 
@@ -271,8 +277,8 @@ Certains raccourcis moins connus :
 
 - `Ctrl+,` - Accès rapide aux préférences (standard sur macOS, fonctionne ici aussi)
 - `Ctrl+Shift+Z` - Rétablissement alternatif (pour les utilisateurs qui préfèrent cela à Ctrl+Y)
-- `Alt+A` - Alignement pixel parfait pour un placement précis
-- `Alt+T` - Placement rapide d'onglets équidistants
+- `Ctrl+Alt+A` - Alignement pixel parfait pour un placement précis
+- `Ctrl+Alt+T` - Placement rapide d'onglets équidistants
 
 ---
 
@@ -305,36 +311,36 @@ Certains raccourcis moins connus :
 
 **Problèmes courants :**
 
-1. **Focus sur le mauvais élément** - Assurez-vous que le canevas ou la fenêtre principale a le focus, pas un champ de texte
+1. **Focus sur le mauvais élément** - Assure-toi que le canevas ou la fenêtre principale a le focus, pas un champ de texte
 2. **Application conflictuelle** - Une autre application peut intercepter le raccourci
 3. **Raccourci de l'environnement de bureau** - Les raccourcis système peuvent remplacer (par exemple, Alt+F4)
-4. **Pavé numérique vs rangée de chiffres** - Utilisez la rangée de chiffres pour les raccourcis de vue 3D, pas le pavé numérique
+4. **Pavé numérique vs rangée de chiffres** - Utilise la rangée de chiffres pour les raccourcis de vue 3D, pas le pavé numérique
 
 **Solutions :**
 
-- Cliquez sur le canevas pour vous assurer qu'il a le focus
-- Vérifiez les raccourcis clavier du système pour les conflits
-- Essayez l'action du menu à la place pour vérifier la fonctionnalité
+- Clique sur le canevas pour t'assurer qu'il a le focus
+- Vérifie les raccourcis clavier du système pour les conflits
+- Essaye l'action du menu à la place pour vérifier la fonctionnalité
 
 ### Touches de modification
 
 **Si Ctrl ne fonctionne pas :**
 
-- Vérifiez que Verr. Maj est désactivé (peut interférer sur certains systèmes)
-- Essayez Ctrl des deux côtés du clavier
-- Vérifiez les paramètres de disposition du clavier
+- Vérifie que Verr. Maj est désactivé (peut interférer sur certains systèmes)
+- Essaye Ctrl des deux côtés du clavier
+- Vérifie les paramètres de disposition du clavier
 
 **Si Alt ne fonctionne pas :**
 
 - Certains gestionnaires de fenêtres capturent Alt pour le déplacement de fenêtres
-- Essayez de désactiver les raccourcis Alt du gestionnaire de fenêtres
-- Utilisez les éléments de menu comme alternative
+- Essaye de désactiver les raccourcis Alt du gestionnaire de fenêtres
+- Utilise les éléments de menu comme alternative
 
 ---
 
 ## Aide-mémoire des raccourcis
 
-**Imprimez cette référence rapide :**
+**Imprime cette référence rapide :**
 
 | Catégorie       | Raccourci    | Action               |
 | --------------- | ------------ | -------------------- |
@@ -354,9 +360,9 @@ Certains raccourcis moins connus :
 |                 | Suppr        | Supprimer            |
 | **Affichage**   | H            | Pièces               |
 |                 | T            | Onglets              |
-|                 | Alt+C        | Caméra               |
+|                 | Ctrl+Alt+C   | Caméra               |
 |                 | F12          | Vue 3D               |
-|                 | 1/2/7        | Présélections de vue |
+|                 | 1/2/3/4/5/7  | Présélections de vue |
 |                 | P            | Perspective          |
 | **Aligner**     | Shift+Gauche | Aligner à gauche     |
 |                 | Shift+Droite | Aligner à droite     |
@@ -370,7 +376,7 @@ Certains raccourcis moins connus :
 |                 | Ctrl+G       | Grouper              |
 |                 | Ctrl+U       | Dissocier            |
 | **Machine**     | Ctrl+L       | Panneau inférieur    |
-|                 | Ctrl+<       | Paramètres machine   |
+|                 | Ctrl+&lt;    | Paramètres machine   |
 |                 | F1           | À propos             |
 
 ---

@@ -8,8 +8,9 @@ Rayforge unterstützt derzeit diese G-Code-Dialekte:
 
 | Dialekt                          | Firmware     | Häufige Verwendung                |
 | -------------------------------- | ------------ | --------------------------------- |
-| **GRBL (universell)**            | GRBL 1.1+    | Diodenlaser, Hobby-CNC            |
-| **GRBL (keine Z-Achse)**         | GRBL 1.1+    | 2D-Laserschneider ohne Z          |
+| **Grbl (Compat)**                | GRBL 1.1+    | Diodenlaser, Hobby-CNC            |
+| **Grbl (Compat, keine Z-Achse)** | GRBL 1.1+    | 2D-Laserschneider ohne Z          |
+| **Grbl Raster**                  | GRBL 1.1+    | Optimiert für Rasterarbeit        |
 | **GRBL Dynamic (Tiefenbewusst)** | GRBL 1.1+    | Tiefenbewusstes Lasergravieren    |
 | **GRBL Dynamic (keine Z-Achse)** | GRBL 1.1+    | Tiefenbewusstes Lasergravieren    |
 | **Mach4 (M67 Analog)**           | Mach4        | Hochgeschwindigkeits-Rastergravur |
@@ -19,9 +20,16 @@ Rayforge unterstützt derzeit diese G-Code-Dialekte:
 :::note Empfohlene Dialekte
 :::
 
-**GRBL (universell)** ist der am besten getestete und empfohlene Dialekt für Standard-Laseranwendungen.
+**Grbl (Compat)** ist der am besten getestete und empfohlene Dialekt für
+Standard-Laseranwendungen.
 
-**GRBL Dynamic (Tiefenbewusst)** wird für tiefenbewusstes Lasergravieren empfohlen, bei dem die Leistung während der Schnitte variiert (z.B. Gravur mit variabler Tiefe).
+**Grbl Raster** ist optimiert für Rastergravur auf GRBL-Controllern. Er hält
+den Laser kontinuierlich im dynamischen Leistungsmodus (M4) und lässt
+redundante Vorschubbefehle aus, was zu glatterem und kompakterem G-Code führt.
+
+**GRBL Dynamic (Tiefenbewusst)** wird für tiefenbewusstes Lasergravieren
+empfohlen, bei dem die Leistung während der Schnitte variiert (z.B. Gravur
+mit variabler Tiefe).
 
 ---
 
@@ -69,6 +77,20 @@ Dialekts beeinflusst niemals andere, sodass du frei experimentieren kannst, ohne
 dir Sorgen machen zu müssen, eine bestehende Konfiguration zu beschädigen.
 Benutzerdefinierte Dialekte werden in deinem Konfigurationsverzeichnis gespeichert
 und können geteilt werden.
+
+### Dialekt-Einstellungen
+
+Beim Bearbeiten eines benutzerdefinierten Dialekts bietet die Einstellungsseite
+folgende Optionen:
+
+**Kontinuierlicher Lasermodus** hält den Laser während des gesamten Auftrags im
+dynamischen Leistungsmodus (M4) aktiv, anstatt M4/M5 zwischen Segmenten
+umzuschalten. Dies ist nützlich für Rastergravur, bei der der Laser während der
+Scan-Zeilen kontinuierlich eingeschaltet bleiben muss.
+
+**Modaler Vorschub** lässt den Vorschubparameter (F) in Bewegungsbefehlen weg,
+wenn er sich seit dem letzten Befehl nicht geändert hat. Dies erzeugt kompakteren
+G-Code und reduziert die Datenmenge, die an den Controller gesendet wird.
 
 ### Separater Laser-Ein-Befehl zur Fokussierung
 

@@ -5,8 +5,8 @@ Referência completa de atalhos de teclado no Rayforge.
 :::note Convenções de Plataforma
 
 - **Linux/Windows:** Tecla `Ctrl`
-- **macOS:** Tecla `⌘ (Command)`
-- Documentação usa `Ctrl` - usuários macOS substituam por `⌘`
+- **macOS:** Tecla `Command`
+- Documentação usa `Ctrl` - usuários macOS substituam por `Command`
   :::
 
 ---
@@ -45,13 +45,15 @@ Referência completa de atalhos de teclado no Rayforge.
 
 ## Visualizar e Exibir
 
-| Atalho         | Ação            | Descrição                              |
-| -------------- | --------------- | -------------------------------------- |
-| `H`            | Alternar Peças  | Mostrar/ocultar visibilidade de peças  |
-| `T`            | Alternar Abas   | Mostrar/ocultar abas de fixação        |
-| `Alt+C`        | Alternar Câmera | Mostrar/ocultar sobreposição de câmera |
-| `F12`          | Visão 3D        | Alternar janela de pré-visualização 3D |
-| `Ctrl+Shift+R` | Modo Simulação  | Alternar modo simulação                |
+| Atalho         | Ação                  | Descrição                              |
+| -------------- | --------------------- | -------------------------------------- |
+| `H`            | Alternar Peças        | Mostrar/ocultar visibilidade de peças  |
+| `T`            | Alternar Abas         | Mostrar/ocultar abas de fixação        |
+| `Ctrl+Alt+C`   | Alternar Câmera       | Mostrar/ocultar sobreposição de câmera |
+| `F12`          | Visão 3D              | Alternar janela de pré-visualização 3D |
+| `F11`          | Modo Simulação        | Alternar modo simulação                |
+| `Ctrl+Shift+T` | Visão de Deslocamento | Alternar visão de deslocamento         |
+| `Ctrl+Alt+W`   | Dividir Peça          | Dividir peça de trabalho em partes     |
 
 ### Controles de Visão 3D
 
@@ -59,6 +61,9 @@ Referência completa de atalhos de teclado no Rayforge.
 | ------ | -------------------- | ---------------------------------------- |
 | `1`    | Visão Superior       | Alternar para visão de cima para baixo   |
 | `2`    | Visão Frontal        | Alternar para visão frontal              |
+| `3`    | Visão Direita        | Alternar para visão lateral direita      |
+| `4`    | Visão Esquerda       | Alternar para visão lateral esquerda     |
+| `5`    | Visão Traseira       | Alternar para visão traseira             |
 | `7`    | Visão Isométrica     | Alternar para visão isométrica           |
 | `P`    | Alternar Perspectiva | Alternar entre perspectiva e ortográfica |
 
@@ -72,16 +77,16 @@ Referência completa de atalhos de teclado no Rayforge.
 | `Ctrl+U`         | Desagrupar              | Desagrupar grupo selecionado       |
 | `Ctrl+Page Up`   | Mover Camada para Cima  | Mover camada para cima na pilha    |
 | `Ctrl+Page Down` | Mover Camada para Baixo | Mover camada para baixo na pilha   |
-| `Alt+S`          | Adicionar Estoque       | Adicionar item de estoque/material |
+| `Ctrl+Alt+S`     | Adicionar Estoque       | Adicionar item de estoque/material |
 
 ---
 
 ## Abas (Abas de Fixação)
 
-| Atalho  | Ação                           | Descrição                              |
-| ------- | ------------------------------ | -------------------------------------- |
-| `Alt+T` | Adicionar Abas (Equidistantes) | Adicionar abas espaçadas uniformemente |
-| `T`     | Alternar Visibilidade de Abas  | Mostrar/ocultar sobreposição de abas   |
+| Atalho       | Ação                           | Descrição                              |
+| ------------ | ------------------------------ | -------------------------------------- |
+| `Ctrl+Alt+T` | Adicionar Abas (Equidistantes) | Adicionar abas espaçadas uniformemente |
+| `T`          | Alternar Visibilidade de Abas  | Mostrar/ocultar sobreposição de abas   |
 
 ---
 
@@ -107,9 +112,9 @@ Referência completa de atalhos de teclado no Rayforge.
 
 ### Layout
 
-| Atalho  | Ação           | Descrição                   |
-| ------- | -------------- | --------------------------- |
-| `Alt+A` | Pixel Perfeito | Encaixar na grade de pixels |
+| Atalho       | Ação           | Descrição                   |
+| ------------ | -------------- | --------------------------- |
+| `Ctrl+Alt+A` | Pixel Perfeito | Encaixar na grade de pixels |
 
 ---
 
@@ -124,14 +129,16 @@ Referência completa de atalhos de teclado no Rayforge.
 
 ## Controle da Máquina
 
-| Atalho   | Ação                     | Descrição                                 |
-| -------- | ------------------------ | ----------------------------------------- |
-| `Ctrl+L` | Painel Inferior          | Alternar visibilidade do painel inferior  |
-| `Ctrl+<` | Configurações da Máquina | Abrir diálogo de configurações da máquina |
-| `F1`     | Sobre                    | Mostrar diálogo sobre                     |
+| Atalho      | Ação                     | Descrição                                 |
+| ----------- | ------------------------ | ----------------------------------------- |
+| `Ctrl+L`    | Painel Inferior          | Alternar visibilidade do painel inferior  |
+| `Ctrl+&lt;` | Configurações da Máquina | Abrir diálogo de configurações da máquina |
+| `F1`        | Sobre                    | Mostrar diálogo sobre                     |
 
 :::note Operações da Máquina
-Operações de controle da máquina (Origem, Enquadrar, Enviar, etc.) atualmente não têm atalhos padrão mas podem ser acessadas via botões da barra de ferramentas ou menus.
+Operações de controle da máquina (Origem, Enquadrar, Enviar, etc.) atualmente
+não têm atalhos padrão mas podem ser acessadas via botões da barra de
+ferramentas ou menus.
 :::
 
 ---
@@ -140,14 +147,14 @@ Operações de controle da máquina (Origem, Enquadrar, Enviar, etc.) atualmente
 
 ### Controles do Mouse
 
-| Entrada                   | Ação             | Descrição                  |
-| ------------------------- | ---------------- | -------------------------- |
-| **Clique Esquerdo**       | Selecionar       | Selecionar item            |
-| **Arrastar Esquerdo**     | Mover            | Mover itens selecionados   |
-| `Ctrl+Arrastar Esquerdo`  | Seleção em Caixa | Selecionar múltiplos itens |
-| `Arrastar Clique do Meio` | Pan              | Mover a tela               |
-| **Roda de Rolagem**       | Zoom             | Zoom para dentro/fora      |
-| `Ctrl+Rolagem`            | Zoom de Precisão | Controle de zoom mais fino |
+| Entrada                     | Ação             | Descrição                  |
+| --------------------------- | ---------------- | -------------------------- |
+| **Clique Esquerdo**         | Selecionar       | Selecionar item            |
+| **Arrastar Esquerdo**       | Mover            | Mover itens selecionados   |
+| **Ctrl+Arrastar Esquerdo**  | Seleção em Caixa | Selecionar múltiplos itens |
+| **Arrastar Clique do Meio** | Pan              | Mover a tela               |
+| **Roda de Rolagem**         | Zoom             | Zoom para dentro/fora      |
+| **Ctrl+Rolagem**            | Zoom de Precisão | Controle de zoom mais fino |
 
 ### Teclas de Seta
 
@@ -193,10 +200,11 @@ Ao editar G-code ou campos de texto:
 
 - `H` - Ocultar/mostrar peças
 - `T` - Ocultar/mostrar abas
-- `Alt+C` - Alternar câmera
+- `Ctrl+Alt+C` - Alternar câmera
 - `F12` - Visão 3D
 - `F11` - Modo simulação
-- `1`, `2`, `7` - Predefinições de visão 3D
+- `Ctrl+Shift+T` - Visão de deslocamento
+- `1`, `2`, `3`, `4`, `5`, `7` - Predefinições de visão 3D
 - `P` - Alternar perspectiva
 
 ### Editar e Transformar
@@ -213,14 +221,15 @@ Ao editar G-code ou campos de texto:
 - `Shift+Teclas de Seta` - Alinhar às bordas
 - `Shift+Home` / `Shift+End` - Alinhar ao centro
 - `Ctrl+Shift+H` / `Ctrl+Shift+V` - Distribuir
-- `Alt+A` - Pixel perfeito
+- `Ctrl+Alt+A` - Pixel perfeito
 
 ---
 
 ## Personalizando Atalhos
 
 :::note Atalhos Personalizados
-Atalhos de teclado atualmente são fixos no código. Configuração de atalhos personalizados pode ser adicionada em versões futuras.
+Atalhos de teclado atualmente são fixos no código. Configuração de atalhos
+personalizados pode ser adicionada em versões futuras.
 :::
 
 **Limitações atuais:**
@@ -229,7 +238,8 @@ Atalhos de teclado atualmente são fixos no código. Configuração de atalhos p
 - Sem GUI para personalização de atalhos
 - Algumas ações podem não ter atalhos atribuídos
 
-**Solicitação de recurso:** Se você precisa de atalhos personalizados, por favor abra uma issue no GitHub.
+**Solicitação de recurso:** Se você precisa de atalhos personalizados, por
+favor abra uma issue no GitHub.
 
 ---
 
@@ -237,11 +247,14 @@ Atalhos de teclado atualmente são fixos no código. Configuração de atalhos p
 
 ### Dicas de Eficiência
 
-1. **Aprenda os atalhos de edição primeiro** - `Ctrl+Z/Y/C/V/D` são usados constantemente
-2. **Use alternâncias de tecla única** - `H`, `T`, `P` para mudanças rápidas de visualização
+1. **Aprenda os atalhos de edição primeiro** - `Ctrl+Z/Y/C/V/D` são usados
+   constantemente
+2. **Use alternâncias de tecla única** - `H`, `T`, `P` para mudanças rápidas de
+   visualização
 3. **Atalhos de visão 3D** - `1`, `2`, `7` para troca instantânea de visão
-4. **Atalhos de alinhamento** - `Shift+Seta` mais rápido que clicar botões de alinhamento
-5. **Modo simulação** - `Ctrl+Shift+S` para verificar rapidamente a execução
+4. **Atalhos de alinhamento** - `Shift+Seta` mais rápido que clicar botões de
+   alinhamento
+5. **Modo simulação** - `F11` para verificar rapidamente a execução
 
 ### Atalhos de Fluxo de Trabalho
 
@@ -269,10 +282,12 @@ Atalhos de teclado atualmente são fixos no código. Configuração de atalhos p
 
 Alguns atalhos menos conhecidos:
 
-- `Ctrl+,` - Acesso rápido às preferências (padrão no macOS, funciona aqui também)
-- `Ctrl+Shift+Z` - Refazer alternativo (para usuários que preferem isso ao Ctrl+Y)
-- `Alt+A` - Encaixe pixel-perfeito para colocação precisa
-- `Alt+T` - Colocação rápida de abas equidistantes
+- `Ctrl+,` - Acesso rápido às preferências (padrão no macOS, funciona aqui
+  também)
+- `Ctrl+Shift+Z` - Refazer alternativo (para usuários que preferem isso ao
+  Ctrl+Y)
+- `Ctrl+Alt+A` - Encaixe pixel-perfeito para colocação precisa
+- `Ctrl+Alt+T` - Colocação rápida de abas equidistantes
 
 ---
 
@@ -305,10 +320,13 @@ Alguns atalhos menos conhecidos:
 
 **Problemas comuns:**
 
-1. **Foco no elemento errado** - Certifique-se de que tela ou janela principal tem foco, não um campo de texto
+1. **Foco no elemento errado** - Certifique-se de que tela ou janela principal
+   tem foco, não um campo de texto
 2. **Aplicação conflitante** - Outro app pode estar interceptando o atalho
-3. **Atalho do ambiente de desktop** - Atalhos do sistema podem substituir (ex: Alt+F4)
-4. **Numpad vs linha de números** - Use linha de números para atalhos de visão 3D, não numpad
+3. **Atalho do ambiente de desktop** - Atalhos do sistema podem substituir (ex:
+   Alt+F4)
+4. **Numpad vs linha de números** - Use linha de números para atalhos de visão
+   3D, não numpad
 
 **Soluções:**
 
@@ -354,9 +372,9 @@ Alguns atalhos menos conhecidos:
 |                 | Delete       | Remover                  |
 | **Visualizar**  | H            | Peças                    |
 |                 | T            | Abas                     |
-|                 | Alt+C        | Câmera                   |
+|                 | Ctrl+Alt+C   | Câmera                   |
 |                 | F12          | Visão 3D                 |
-|                 | 1/2/7        | Predefinições de Visão   |
+|                 | 1/2/3/4/5/7  | Predefinições de Visão   |
 |                 | P            | Perspectiva              |
 | **Alinhar**     | Shift+Left   | Alinhar Esquerda         |
 |                 | Shift+Right  | Alinhar Direita          |
@@ -370,7 +388,7 @@ Alguns atalhos menos conhecidos:
 |                 | Ctrl+G       | Agrupar                  |
 |                 | Ctrl+U       | Desagrupar               |
 | **Máquina**     | Ctrl+L       | Painel Inferior          |
-|                 | Ctrl+<       | Configurações da Máquina |
+|                 | Ctrl+&lt;    | Configurações da Máquina |
 |                 | F1           | Sobre                    |
 
 ---

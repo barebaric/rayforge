@@ -17,6 +17,14 @@ Die Seite Allgemein enthält anwendungsweite Einstellungen.
 
 - **Design**: Wähle zwischen System, Hell oder Dunkel
 
+### Operationen
+
+- **Operationen automatisch aktualisieren**: Wenn aktiviert (Standard), werden
+  Operationen nach jeder Änderung automatisch neu berechnet. Deaktiviere dies,
+  wenn du die Neuberechnung lieber manuell über die Symbolleisten-Schaltfläche
+  auslösen möchtest — dies kann bei langsameren Maschinen oder sehr komplexen
+  Dokumenten hilfreich sein.
+
 ### Einheiten
 
 Konfiguriere Anzeigeeinheiten für verschiedene Werte in der gesamten Anwendung:

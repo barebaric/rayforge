@@ -47,6 +47,23 @@ ermöglicht dir:
 
 ![Import-Dialog](/screenshots/import-dialog.png)
 
+### Ebenen-Import-Modus
+
+Beim Importieren von Dateien, die mehrere Ebenen enthalten (wie SVG- oder
+PDF-Dateien mit benannten Ebenen), bietet der Dialog drei Möglichkeiten, diese
+zu verarbeiten:
+
+- **Bestehenden zuordnen**: Importierte Ebenen bestehenden Dokumentebenen
+  zuordnen. Die erste Ebene aus dem Quelldokument wird in die erste Ebene
+  deines Projekts eingefügt, die zweite in die zweite und so weiter.
+  Dies ist die Standardeinstellung und funktioniert gut, wenn dein Dokument
+  bereits Ebenen eingerichtet hat.
+- **Neue Ebenen**: Für jede importierte Ebene eine neue Ebene im Dokument
+  erstellen. Dies hält importierten Inhalt getrennt von bestehender Arbeit.
+- **Abflachen**: Alle importierten Ebenen in eine einzige Ebene zusammenführen.
+  Nützlich, wenn du alles auf einer Ebene haben möchtest, unabhängig von der
+  ursprünglichen Struktur.
+
 ### Methode 1: Dateimenü
 
 1. **Datei Importieren** (oder Strg+I)
@@ -85,12 +102,9 @@ wird Rayforge automatisch:
 
 Die Größenänderungs-Benachrichtigung erscheint als Toast-Meldung:
 
-- ⚠️ "Importiertes Element war größer als der Arbeitsbereich und wurde
-  herunterskaliert um zu passen."
-- Enthält eine **"Zurücksetzen"-Schaltfläche** um die automatische Größenänderung
-  rückgängig zu machen
-- Der Toast bleibt sichtbar bis er geschlossen wird oder die Zurücksetzen-Aktion
-  ausgeführt wird
+- ⚠️ "Importiertes Element war größer als der Arbeitsbereich und wurde herunterskaliert um zu passen."
+- Enthält eine **"Zurücksetzen"-Schaltfläche** um die automatische Größenänderung rückgängig zu machen
+- Der Toast bleibt sichtbar bis er geschlossen wird oder die Zurücksetzen-Aktion ausgeführt wird
 
 Dies stellt sicher, dass deine Designs immer in die Fähigkeiten deiner Maschine passen,
 während du die Flexibilität hast, die Originalgröße bei Bedarf wiederherzustellen.
@@ -174,22 +188,27 @@ Der Import-Dialog zeigt eine Live-Vorschau, wie dein SVG importiert wird:
 **Bereite dein SVG für beste Ergebnisse vor:**
 
 1. **Text in Pfade konvertieren:**
+
    - Inkscape: `Pfad → Objekt in Pfad`
    - Illustrator: `Typ → Umrisse erstellen`
 
 2. **Komplexe Pfade vereinfachen:**
+
    - Inkscape: `Pfad → Vereinfachen` (Strg+L)
    - Unnötige Knoten entfernen
 
 3. **Verschachtelte Gruppen auflösen:**
+
    - Hierarchie wo möglich abflachen
    - `Objekt → Gruppierung aufheben` (Strg+Umschalt+G)
 
 4. **Versteckte Elemente entfernen:**
+
    - Hilfslinien, Raster, Konstruktionslinien löschen
    - Unsichtbare/transparente Objekte entfernen
 
 5. **Als Plain SVG speichern:**
+
    - Inkscape: "Plain SVG" oder "Optimiertes SVG"
    - Nicht "Inkscape SVG" (hat zusätzliche Metadaten)
 

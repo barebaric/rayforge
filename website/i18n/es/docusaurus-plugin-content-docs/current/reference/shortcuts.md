@@ -5,8 +5,8 @@ Referencia completa de atajos de teclado en Rayforge.
 :::note Convenciones de Plataforma
 
 - **Linux/Windows:** Tecla `Ctrl`
-- **macOS:** Tecla `⌘ (Comando)`
-- La documentación usa `Ctrl` - usuarios de macOS sustituyan con `⌘`
+- **macOS:** Tecla `Command`
+- La documentación usa `Ctrl` - usuarios de macOS sustituyan con `Command`
   :::
 
 ---
@@ -49,9 +49,11 @@ Referencia completa de atajos de teclado en Rayforge.
 | -------------- | ----------------- | --------------------------------------- |
 | `H`            | Alternar Piezas   | Mostrar/ocultar visibilidad de piezas   |
 | `T`            | Alternar Pestañas | Mostrar/ocultar pestañas de sujeción    |
-| `Alt+C`        | Alternar Cámara   | Mostrar/ocultar superposición de cámara |
+| `Ctrl+Alt+C`   | Alternar Cámara   | Mostrar/ocultar superposición de cámara |
 | `F12`          | Vista 3D          | Alternar ventana de vista previa 3D     |
-| `Ctrl+Shift+R` | Modo Simulación   | Alternar modo simulación                |
+| `F11`          | Modo Simulación   | Alternar modo simulación                |
+| `Ctrl+Shift+T` | Vista de Desplaz. | Alternar vista de desplazamiento        |
+| `Ctrl+Alt+W`   | Dividir Pieza     | Dividir pieza de trabajo en partes      |
 
 ### Controles de Vista 3D
 
@@ -59,6 +61,9 @@ Referencia completa de atajos de teclado en Rayforge.
 | ----- | -------------------- | --------------------------------------- |
 | `1`   | Vista Superior       | Cambiar a vista desde arriba            |
 | `2`   | Vista Frontal        | Cambiar a vista frontal                 |
+| `3`   | Vista Derecha        | Cambiar a vista lateral derecha         |
+| `4`   | Vista Izquierda      | Cambiar a vista lateral izquierda       |
+| `5`   | Vista Posterior      | Cambiar a vista posterior               |
 | `7`   | Vista Isométrica     | Cambiar a vista isométrica              |
 | `P`   | Alternar Perspectiva | Cambiar entre perspectiva y ortográfica |
 
@@ -70,18 +75,18 @@ Referencia completa de atajos de teclado en Rayforge.
 | ------------- | ----------------- | --------------------------------- |
 | `Ctrl+G`      | Agrupar           | Agrupar elementos seleccionados   |
 | `Ctrl+U`      | Desagrupar        | Desagrupar grupo seleccionado     |
-| `Ctrl+Re Pag` | Mover Capa Arriba | Mover capa arriba en la pila      |
-| `Ctrl+Av Pag` | Mover Capa Abajo  | Mover capa abajo en la pila       |
-| `Alt+S`       | Añadir Stock      | Añadir elemento de stock/material |
+| `Ctrl+Re Pág` | Mover Capa Arriba | Mover capa arriba en la pila      |
+| `Ctrl+Av Pág` | Mover Capa Abajo  | Mover capa abajo en la pila       |
+| `Ctrl+Alt+S`  | Añadir Stock      | Añadir elemento de stock/material |
 
 ---
 
 ## Pestañas (Pestañas de Sujeción)
 
-| Atajo   | Acción                           | Descripción                               |
-| ------- | -------------------------------- | ----------------------------------------- |
-| `Alt+T` | Añadir Pestañas (Equidistantes)  | Añadir pestañas espaciadas uniformemente  |
-| `T`     | Alternar Visibilidad de Pestañas | Mostrar/ocultar superposición de pestañas |
+| Atajo        | Acción                           | Descripción                               |
+| ------------ | -------------------------------- | ----------------------------------------- |
+| `Ctrl+Alt+T` | Añadir Pestañas (Equidistantes)  | Añadir pestañas espaciadas uniformemente  |
+| `T`          | Alternar Visibilidad de Pestañas | Mostrar/ocultar superposición de pestañas |
 
 ---
 
@@ -107,9 +112,9 @@ Referencia completa de atajos de teclado en Rayforge.
 
 ### Diseño
 
-| Atajo   | Acción         | Descripción                     |
-| ------- | -------------- | ------------------------------- |
-| `Alt+A` | Píxel Perfecto | Ajustar a cuadrícula de píxeles |
+| Atajo        | Acción         | Descripción                     |
+| ------------ | -------------- | ------------------------------- |
+| `Ctrl+Alt+A` | Píxel Perfecto | Ajustar a cuadrícula de píxeles |
 
 ---
 
@@ -124,11 +129,11 @@ Referencia completa de atajos de teclado en Rayforge.
 
 ## Control de Máquina
 
-| Atajo    | Acción             | Descripción                             |
-| -------- | ------------------ | --------------------------------------- |
-| `Ctrl+L` | Panel Inferior     | Alternar visibilidad del panel inferior |
-| `Ctrl+<` | Ajustes de Máquina | Abrir diálogo de ajustes de máquina     |
-| `F1`     | Acerca de          | Mostrar diálogo acerca de               |
+| Atajo       | Acción             | Descripción                             |
+| ----------- | ------------------ | --------------------------------------- |
+| `Ctrl+L`    | Panel Inferior     | Alternar visibilidad del panel inferior |
+| `Ctrl+&lt;` | Ajustes de Máquina | Abrir diálogo de ajustes de máquina     |
+| `F1`        | Acerca de          | Mostrar diálogo acerca de               |
 
 :::note Operaciones de Máquina
 Las operaciones de control de máquina (Home, Enmarcar, Enviar, etc.) actualmente no tienen atajos predeterminados pero se pueden acceder vía botones de la barra de herramientas o menús.
@@ -193,10 +198,11 @@ Cuando se edita código G o campos de texto:
 
 - `H` - Ocultar/mostrar piezas
 - `T` - Ocultar/mostrar pestañas
-- `Alt+C` - Alternar cámara
+- `Ctrl+Alt+C` - Alternar cámara
 - `F12` - Vista 3D
 - `F11` - Modo simulación
-- `1`, `2`, `7` - Preajustes de vista 3D
+- `Ctrl+Shift+T` - Vista de desplazamiento
+- `1`, `2`, `3`, `4`, `5`, `7` - Preajustes de vista 3D
 - `P` - Alternar perspectiva
 
 ### Editar y Transformar
@@ -213,7 +219,7 @@ Cuando se edita código G o campos de texto:
 - `Shift+Teclas de Flecha` - Alinear a bordes
 - `Shift+Inicio` / `Shift+Fin` - Alinear al centro
 - `Ctrl+Shift+H` / `Ctrl+Shift+V` - Distribuir
-- `Alt+A` - Píxel perfecto
+- `Ctrl+Alt+A` - Píxel perfecto
 
 ---
 
@@ -241,7 +247,7 @@ Los atajos de teclado están actualmente codificados. La configuración de atajo
 2. **Usa alternadores de una sola tecla** - `H`, `T`, `P` para cambios rápidos de vista
 3. **Atajos de vista 3D** - `1`, `2`, `7` para cambio instantáneo de vista
 4. **Atajos de alineación** - `Shift+Flecha` más rápido que hacer clic en botones de alineación
-5. **Modo simulación** - `Ctrl+Shift+S` para verificar rápidamente la ejecución
+5. **Modo simulación** - `F11` para verificar rápidamente la ejecución
 
 ### Atajos de Flujo de Trabajo
 
@@ -271,8 +277,8 @@ Algunos atajos menos conocidos:
 
 - `Ctrl+,` - Acceso rápido a preferencias (estándar en macOS, también funciona aquí)
 - `Ctrl+Shift+Z` - Rehacer alternativo (para usuarios que prefieren esto sobre Ctrl+Y)
-- `Alt+A` - Ajuste píxel perfecto para colocación precisa
-- `Alt+T` - Colocación rápida de pestañas equidistantes
+- `Ctrl+Alt+A` - Ajuste píxel perfecto para colocación precisa
+- `Ctrl+Alt+T` - Colocación rápida de pestañas equidistantes
 
 ---
 
@@ -292,8 +298,8 @@ Algunos atajos menos conocidos:
 
 ### macOS
 
-- `Ctrl` se mapea a `⌘ (Comando)`
-- `Alt` se mapea a `⌥ (Opción)`
+- `Ctrl` se mapea a `(Command)`
+- `Alt` se mapea a `% (Option)`
 - Aplican las convenciones estándar de macOS
 - `Cmd+Q` para salir (en lugar de Ctrl+Q)
 
@@ -354,9 +360,9 @@ Algunos atajos menos conocidos:
 |                 | Delete          | Eliminar            |
 | **Ver**         | H               | Piezas              |
 |                 | T               | Pestañas            |
-|                 | Alt+C           | Cámara              |
+|                 | Ctrl+Alt+C      | Cámara              |
 |                 | F12             | Vista 3D            |
-|                 | 1/2/7           | Preajustes de Vista |
+|                 | 1/2/3/4/5/7     | Preajustes de Vista |
 |                 | P               | Perspectiva         |
 | **Alinear**     | Shift+Izquierda | Alinear Izquierda   |
 |                 | Shift+Derecha   | Alinear Derecha     |
@@ -370,7 +376,7 @@ Algunos atajos menos conocidos:
 |                 | Ctrl+G          | Agrupar             |
 |                 | Ctrl+U          | Desagrupar          |
 | **Máquina**     | Ctrl+L          | Panel Inferior      |
-|                 | Ctrl+<          | Ajustes de Máquina  |
+|                 | Ctrl+&lt;       | Ajustes de Máquina  |
 |                 | F1              | Acerca de           |
 
 ---

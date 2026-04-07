@@ -120,6 +120,15 @@ rojo para tu láser de corte principal y azul para un láser de grabado
 secundario.
 :::
 
+#### Modelo 3D
+
+Cada cabezal láser puede tener un modelo 3D asignado. Este modelo se renderiza
+en la [vista 3D](../ui/3d-preview) y sigue la trayectoria durante la simulación.
+
+Haz clic en la fila de selección de modelo para explorar los modelos disponibles.
+Una vez seleccionado un modelo, puedes ajustar su escala, rotación (X/Y/Z) y
+distancia focal para coincidir con tu cabezal láser físico.
+
 ## Ver También
 
 - [Ajustes de Dispositivo](device) - Ajustes de modo láser de GRBL

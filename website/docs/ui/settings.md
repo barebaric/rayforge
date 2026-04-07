@@ -17,6 +17,13 @@ The General page contains application-wide settings.
 
 - **Theme**: Choose between System, Light, or Dark theme
 
+### Operations
+
+- **Auto-update operations**: When enabled (the default), operations are
+  recalculated automatically after every change. Disable this if you prefer
+  to trigger recalculation manually via the toolbar button — this can be
+  helpful on slower machines or with very complex documents.
+
 ### Units
 
 Configure display units for various values throughout the application:

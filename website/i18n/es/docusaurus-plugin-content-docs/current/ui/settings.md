@@ -17,6 +17,13 @@ La página General contiene ajustes de toda la aplicación.
 
 - **Tema**: Elige entre tema del Sistema, Claro u Oscuro
 
+### Operaciones
+
+- **Auto-actualizar operaciones**: Cuando está habilitado (por defecto), las operaciones
+  se recalculan automáticamente después de cada cambio. Deshabilita esto si prefieres
+  activar el recálculo manualmente vía el botón de la barra de herramientas — esto puede
+  ser útil en máquinas más lentas o con documentos muy complejos.
+
 ### Unidades
 
 Configura las unidades de pantalla para varios valores a lo largo de la aplicación:

@@ -48,6 +48,20 @@ diálogo permite:
 
 ![Diálogo de importação](/screenshots/import-dialog.png)
 
+### Modo de Importação de Camadas
+
+Ao importar arquivos que contêm múltiplas camadas (como arquivos SVG ou PDF com
+camadas nomeadas), o diálogo oferece três formas de lidar com elas:
+
+- **Mapear para Existentes**: Corresponda as camadas importadas às camadas
+  existentes do documento. A primeira camada do documento fonte é colocada na
+  primeira camada do seu projeto, a segunda na segunda e assim por diante. Este
+  é o padrão e funciona bem quando seu documento já tem camadas configuradas.
+- **Novas Camadas**: Cria uma nova camada no documento para cada camada
+  importada. Isso mantém o conteúdo importado separado do trabalho existente.
+- **Achatar**: Mescla todas as camadas importadas em uma única camada. Útil
+  quando você quer tudo em uma camada independentemente da estrutura original.
+
 ### Método 1: Menu Arquivo
 
 1. **Importar arquivo** (ou Ctrl+I)
@@ -178,22 +192,27 @@ será importado:
 **Prepare seu SVG para obter os melhores resultados:**
 
 1. **Converter texto em caminhos:**
+
    - Inkscape: `Caminho → Objeto para caminho`
    - Illustrator: `Tipo → Criar contornos`
 
 2. **Simplificar caminhos complexos:**
+
    - Inkscape: `Caminho → Simplificar` (Ctrl+L)
    - Remover nós desnecessários
 
 3. **Desagrupar grupos aninhados:**
+
    - Achatar a hierarquia quando possível
    - `Objeto → Desagrupar` (Ctrl+Shift+G)
 
 4. **Remover elementos ocultos:**
+
    - Excluir guias, grades, linhas de construção
    - Remover objetos invisíveis/transparentes
 
 5. **Salvar como SVG simples:**
+
    - Inkscape: "SVG simples" ou "SVG otimizado"
    - Não "SVG do Inkscape" (contém metadados extras)
 

@@ -59,6 +59,18 @@ Dies gibt dir eine realistische Vorschau, wie das Design auf dem tatsächlichen 
 aussehen wird, und macht es einfacher, Größen- oder Platzierungsprobleme zu erkennen,
 bevor du mit dem Schneiden beginnst.
 
+### Rotationsmodul 3D-Modell
+
+Jedem Rotationsmodul kann ein 3D-Modell zugewiesen werden. Das Modell erscheint in
+der [3D-Ansicht](../ui/3d-preview) neben deinem Werkzeugpfad und gibt dir einen
+besseren Eindruck davon, wie das physische Setup aussieht. Du kannst Skalierung,
+Position und Rotation des Modells an deine tatsächliche Hardware anpassen.
+
+### Z-Abtrag
+
+Der Rotationsmodus unterstützt Z-Abtrag, sodass du auf zylindrischen Werkstücken
+über mehrere Durchgänge progressiv tiefer schneiden kannst.
+
 ## Tipps für gute Ergebnisse
 
 - **Messe den Umfang sorgfältig** — selbst ein kleiner Fehler hier wird dein Design

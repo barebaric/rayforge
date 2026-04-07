@@ -60,6 +60,18 @@ Esto te da una vista previa realista de cómo se verá el diseño en el objeto r
 facilitando la detección de problemas de tamaño o colocación antes de comenzar a
 cortar.
 
+### Modelo 3D del Módulo Rotativo
+
+Cada módulo rotativo puede tener un modelo 3D asignado. El modelo aparece en la
+[vista 3D](../ui/3d-preview) junto a tu trayectoria, dándote una mejor idea de
+cómo se ve la configuración física. Puedes ajustar la escala, posición y rotación
+del modelo para coincidir con tu hardware real.
+
+### Descenso de Z
+
+El modo rotativo soporta descenso de Z, permitiéndote cortar progresivamente más
+profundo en piezas de trabajo cilíndricas a través de múltiples pasadas.
+
 ## Consejos para buenos resultados
 
 - **Mide la circunferencia con cuidado** — incluso un pequeño error aquí deformará

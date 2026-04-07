@@ -14,24 +14,32 @@ Accede a todas las funciones de Rayforge a través de menús organizados:
 - **Archivo**: Abrir, guardar, importar, exportar y archivos recientes
 - **Editar**: Deshacer, rehacer, copiar, pegar, preferencias
 - **Ver**: Zoom, cuadrícula, reglas, paneles y modos de vista
-- **Operaciones**: Añadir, editar y gestionar operaciones
+- **Objeto**: Añadir, editar y gestionar operaciones
 - **Máquina**: Conectar, desplazar, origen, iniciar/detener trabajos
-- **Ayuda**: Documentación, acerca de y soporte
+- **Ayuda**: Acerca de, Donar, Guardar Registro de Depuración
 
 ### 2. Barra de Herramientas
 
-Acceso rápido a herramientas usadas frecuentemente:
+Acceso rápido a controles usados frecuentemente:
 
-- **Herramienta de selección**: Seleccionar y mover objetos
-- **Herramienta de desplazamiento**: Navegar el lienzo
-- **Herramienta de zoom**: Acercar/alejar en áreas específicas
-- **Herramienta de medición**: Medir distancias y ángulos
-- **Herramientas de alineación**: Alinear y distribuir objetos
+- **Menú desplegable de máquina**: Selecciona tu máquina, ve el estado de conexión y
+  el tiempo estimado durante los trabajos
 - **Menú desplegable WCS**: Seleccionar el Sistema de Coordenadas de Trabajo activo (G53-G59)
+- **Alternar simulación**: Habilitar/deshabilitar el modo de simulación de trabajo
+- **Enfocar láser**: Alternar el modo de enfoque del láser
+- **Controles de trabajo**: Botones Home, Enmarcar, Enviar, Pausar y Cancelar
+
+El menú desplegable de máquina muestra el estado de conexión de tu máquina y el estado
+actual (ej. Idle, Run) directamente en la barra de herramientas. Durante la ejecución del
+trabajo, también muestra el tiempo restante estimado.
 
 El menú desplegable WCS te permite cambiar rápidamente entre sistemas de coordenadas.
 Ver [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems) para
 más información.
+
+Los controles de visibilidad para piezas de trabajo, pestañas, transmisión de cámara,
+movimientos de desplazamiento y otros elementos se han movido a botones superpuestos
+en el lienzo mismo, para que siempre estén a mano mientras trabajas.
 
 ### 3. Lienzo
 
@@ -69,15 +77,10 @@ Configura ajustes para objetos u operaciones seleccionados:
 
 ### 6. Panel Inferior
 
-El Panel Inferior en la parte inferior de la ventana proporciona:
-
-- **Vista con Pestañas**: Alterna entre Consola y Visor de Código G vía la tira
-  de iconos
-- **Controles de Desplazamiento**: Movimiento y posicionamiento manual de la
-  máquina (siempre visibles)
-- **Estado de la Máquina**: Posición en tiempo real y estado de conexión
-- **Gestión de WCS**: Selección y puesta a cero del sistema de coordenadas de
-  trabajo
+El Panel Inferior proporciona pestañas para la Consola, el Visor de Código G y los
+activos de tu documento (material y bosquejos). Los controles de desplazamiento y la
+gestión de WCS siempre están visibles en el lado derecho. El tiempo estimado del trabajo
+se muestra en el encabezado de la lista de capas sobre el panel de capas.
 
 Ver [Panel Inferior](bottom-panel) para información detallada.
 
@@ -87,8 +90,7 @@ Ver [Panel Inferior](bottom-panel) para información detallada.
 
 Muestra/oculta paneles según sea necesario:
 
-- **Panel de Capas**: Ver → Panel de Capas (<kbd>ctrl+l</kbd>)
-- **Panel de Propiedades**: Ver → Panel de Propiedades (<kbd>ctrl+i</kbd>)
+- **Panel Inferior**: Ver → Panel Inferior (<kbd>ctrl+l</kbd>)
 
 ### Modo Pantalla Completa
 
@@ -99,13 +101,12 @@ Enfócate en tu trabajo con pantalla completa:
 
 ## Personalización
 
-Personaliza la interfaz en **Editar → Preferencias**:
+Personaliza la interfaz en **Editar → Ajustes**:
 
 - **Tema**: Claro, oscuro o del sistema
 - **Unidades**: Milímetros o pulgadas
 - **Cuadrícula**: Mostrar/ocultar y configurar espaciado de cuadrícula
 - **Reglas**: Mostrar/ocultar reglas en el lienzo
-- **Barra de Herramientas**: Personalizar botones visibles
 
 ---
 

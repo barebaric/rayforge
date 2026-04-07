@@ -1,6 +1,7 @@
 # Janela Principal
 
-A janela principal do Rayforge é sua área de trabalho principal para criar e gerenciar trabalhos de laser.
+A janela principal do Rayforge é sua área de trabalho principal para criar e
+gerenciar trabalhos de laser.
 
 ## Layout da Janela
 
@@ -13,24 +14,35 @@ Acesse todas as funções do Rayforge através de menus organizados:
 - **Arquivo**: Abrir, salvar, importar, exportar e arquivos recentes
 - **Editar**: Desfazer, refazer, copiar, colar, preferências
 - **Visualizar**: Zoom, grade, réguas, painéis e modos de visualização
-- **Operações**: Adicionar, editar e gerenciar operações
+- **Objeto**: Adicionar, editar e gerenciar operações
 - **Máquina**: Conectar, jog, origem, iniciar/parar trabalhos
-- **Ajuda**: Documentação, sobre e suporte
+- **Ajuda**: Sobre, Doar, Salvar Log de Debug
 
 ### 2. Barra de Ferramentas
 
-Acesso rápido a ferramentas frequentemente usadas:
+Acesso rápido a controles frequentemente usados:
 
-- **Ferramenta de seleção**: Selecionar e mover objetos
-- **Ferramenta de pan**: Navegar pela tela
-- **Ferramenta de zoom**: Zoom para dentro/fora em áreas específicas
-- **Ferramenta de medição**: Medir distâncias e ângulos
-- **Ferramentas de alinhamento**: Alinhar e distribuir objetos
-- **Menu suspenso WCS**: Selecionar o Sistema de Coordenadas de Trabalho ativo (G53-G59)
+- **Menu suspenso de máquina**: Selecione sua máquina, veja o status de conexão e
+  veja o tempo estimado durante os trabalhos
+- **Menu suspenso WCS**: Selecione o Sistema de Coordenadas de Trabalho ativo
+  (G53-G59)
+- **Alternar simulação**: Habilitar/desabilitar modo de simulação de trabalho
+- **Focar laser**: Alternar modo de focagem do laser
+- **Controles de trabalho**: Botões de Origem, Enquadrar, Enviar, Pausar e
+  Cancelar
+
+O menu suspenso de máquina mostra o status de conexão e o estado atual da sua
+máquina (ex: Ocioso, Executando) diretamente na barra de ferramentas. Durante a
+execução do trabalho, também exibe o tempo restante estimado.
 
 O menu suspenso WCS permite alternar rapidamente entre sistemas de coordenadas.
-Veja [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems) para
-mais informação.
+Veja [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems)
+para mais informação.
+
+Botões de alternância de visibilidade para peças de trabalho, abas, feed de
+câmera, movimentos de deslocamento e outros elementos foram movidos para botões
+de sobreposição na própria tela, então estão sempre à mão enquanto você
+trabalha.
 
 ### 3. Tela
 
@@ -68,13 +80,10 @@ Configura definições para objetos selecionados ou operações:
 
 ### 6. Painel Inferior
 
-O Painel Inferior na parte inferior da janela fornece:
-
-- **Aba do Console**: Terminal G-code interativo para monitoramento da máquina
-- **Aba do Visualizador G-code**: Visualização do G-code gerado com destaque de sintaxe
-- **Controles de Jog**: Movimento e posicionamento manual da máquina
-- **Status da Máquina**: Posição em tempo real e estado de conexão
-- **Gerenciamento WCS**: Seleção e zeramento do sistema de coordenadas de trabalho
+O Painel Inferior fornece abas para o Console, Visualizador G-code e seus
+ativos do documento (estoque e esboços). Os controles de jog e gerenciamento
+WCS estão sempre visíveis no lado direito. O tempo estimado do trabalho é
+mostrado no cabeçalho da lista de camadas acima do painel de camadas.
 
 Veja [Painel Inferior](bottom-panel) para informação detalhada.
 
@@ -84,8 +93,7 @@ Veja [Painel Inferior](bottom-panel) para informação detalhada.
 
 Mostrar/ocultar painéis conforme necessário:
 
-- **Painel de Camadas**: Visualizar → Painel de Camadas (<kbd>ctrl+l</kbd>)
-- **Painel de Propriedades**: Visualizar → Painel de Propriedades (<kbd>ctrl+i</kbd>)
+- **Painel Inferior**: Visualizar → Painel Inferior (<kbd>ctrl+l</kbd>)
 
 ### Modo Tela Cheia
 
@@ -96,13 +104,12 @@ Foque no seu trabalho com tela cheia:
 
 ## Personalização
 
-Personalize a interface em **Editar → Preferências**:
+Personalize a interface em **Editar → Configurações**:
 
 - **Tema**: Claro, escuro ou sistema
 - **Unidades**: Milímetros ou polegadas
 - **Grade**: Mostrar/ocultar e configurar espaçamento da grade
 - **Réguas**: Mostrar/ocultar réguas na tela
-- **Barra de ferramentas**: Personalizar botões visíveis
 
 ---
 

@@ -2,17 +2,17 @@
 
 ![Mode Simulation](/screenshots/main-simulation.png)
 
-Le mode simulation montre comment votre travail laser sera exécuté avant de le lancer sur la machine. Vous pouvez parcourir le code G pas à pas et voir exactement ce qui se passera.
+Le mode simulation montre comment ton travail laser sera exécuté avant de le lancer sur la machine. Tu peux parcourir le G-code pas à pas et voir exactement ce qui se passera.
 
 ## Activer le Mode Simulation
 
-- **Clavier**: Appuyez sur <kbd>F11</kbd>
-- **Menu**: Allez dans **Affichage → Simuler l'exécution**
-- **Barre d'outils**: Cliquez sur le bouton de simulation
+- **Clavier** : Appuie sur <kbd>F11</kbd>
+- **Menu** : Va dans **Affichage → Simuler l'exécution**
+- **Barre d'outils** : Clique sur le bouton de simulation
 
 ## Visualisation
 
-### Carte de Chaleur de Vitesse
+### Carte de chaleur de vitesse
 
 Les opérations sont colorées selon leur vitesse :
 
@@ -24,9 +24,9 @@ Les opérations sont colorées selon leur vitesse :
 | Rapide         | Jaune   |
 | La plus rapide | Rouge   |
 
-Les couleurs sont relatives à la plage de vitesse de votre travail - le bleu est le minimum, le rouge est le maximum.
+Les couleurs sont relatives à la plage de vitesse de ton travail - le bleu est le minimum, le rouge est le maximum.
 
-### Transparence de Puissance
+### Transparence de puissance
 
 L'opacité des lignes indique la puissance du laser :
 
@@ -35,19 +35,23 @@ L'opacité des lignes indique la puissance du laser :
 
 ## Contrôles de Lecture
 
-Utilisez les contrôles en bas du canevas :
+Utilise les contrôles en bas du canevas :
 
-- **Lecture/Pause** (<kbd>Espace</kbd>): Démarrer ou arrêter la lecture automatique
-- **Curseur de progression**: Glissez pour naviguer dans le travail
-- **Touches fléchées**: Parcourir les instructions une par une
+- **Lecture/Pause** (<kbd>Espace</kbd>) : Démarrer ou arrêter la lecture automatique
+- **Curseur de progression** : Glisser pour naviguer dans le travail
+- **Touches fléchées** : Parcourir les instructions une par une
 
-La simulation et la vue du code G restent synchronisées - parcourir la simulation met en surbrillance le code G correspondant, et cliquer sur les lignes de code G saute à ce point dans la simulation.
+La simulation et la vue du G-code restent synchronisées — avancer dans la simulation met en surbrillance la
+ligne de G-code correspondante, et cliquer sur une ligne de G-code fait sauter la simulation à ce point.
 
-## Modifier Pendant la Simulation
+La vue 3D possède aussi sa propre simulation avec lecture synchronisée. Avancer dans le simulateur
+3D met en surbrillance la ligne correspondante dans le visualiseur G-code, et vice versa.
 
-Vous pouvez modifier les pièces pendant la simulation. Déplacez, mettez à l'échelle ou faites pivoter des objets, et la simulation se met à jour automatiquement.
+## Modifier pendant la simulation
+
+Tu peux modifier les pièces pendant la simulation. Déplace, mets à l'échelle ou fais pivoter des objets, et la simulation se met à jour automatiquement.
 
 ## Sujets Connexes
 
-- **[Aperçu 3D](../ui/3d-preview)** - Visualisation du parcours d'outil 3D
-- **[Grille de Test de Matériau](operations/material-test-grid)** - Utilisez la simulation pour valider les tests
+- **[Vue 3D](../ui/3d-preview)** - Visualisation du trajet d'outil 3D
+- **[Grille de Test de Matériau](operations/material-test-grid)** - Utilise la simulation pour valider les tests

@@ -119,6 +119,7 @@ La alineación crea una matriz de transformación que mapea los píxeles de la c
 ### Consejos de Alineación
 
 :::tip Mejores Prácticas
+
 - Usa puntos en las esquinas de tu área de trabajo para máxima cobertura
 - Evita agrupar puntos en una área
 - Mide las coordenadas del mundo cuidadosamente - la precisión aquí determina la calidad general de la alineación
@@ -143,7 +144,7 @@ Una vez alineada, la superposición de cámara ayuda a posicionar trabajos con p
 
 ### Habilitando/Deshabilitando la Superposición
 
-- **Alternar cámara:** Haz clic en el ícono de cámara en la barra de herramientas
+- **Alternar cámara:** Haz clic en el icono de cámara en la barra de herramientas
 - **Ajustar transparencia:** Usa el deslizador en ajustes de cámara (20-50% funciona bien)
 - **Refrescar imagen:** La cámara se actualiza continuamente mientras está habilitada
 
@@ -184,29 +185,34 @@ Una vez alineada, la superposición de cámara ayuda a posicionar trabajos con p
 
 ### Ajustes de Dispositivo
 
-| Ajuste         | Descripción                     | Valores                               |
-| -------------- | ------------------------------- | ------------------------------------- |
-| **Nombre**     | Nombre descriptivo para la cámara | Cualquier texto                       |
-| **ID de Dispositivo** | Identificador de dispositivo del sistema | `/dev/video0` (Linux), `0` (Windows)  |
-| **Habilitado** | Estado activo de la cámara      | On/Off                                |
+| Ajuste                | Descripción                              | Valores                              |
+| --------------------- | ---------------------------------------- | ------------------------------------ |
+| **Nombre**            | Nombre descriptivo para la cámara        | Cualquier texto                      |
+| **ID de Dispositivo** | Identificador de dispositivo del sistema | `/dev/video0` (Linux), `0` (Windows) |
+| **Habilitado**        | Estado activo de la cámara               | On/Off                               |
 
 ### Ajuste de Imagen
 
-| Ajuste              | Descripción                   | Rango                               |
-| ------------------- | ----------------------------- | ----------------------------------- |
-| **Brillo**          | Brillo general de la imagen   | -100 a +100                         |
-| **Contraste**       | Definición de bordes y contraste | 0 a 100                           |
-| **Transparencia**   | Opacidad de la superposición en el lienzo | 0% (opaco) a 100% (transparente) |
-| **Balance de Blancos** | Corrección de temperatura de color | Auto o 2500-10000K                |
-| **Reducción de Ruido** | Reducción de ruido temporal | 0.0 a 0.95                        |
+| Ajuste                 | Descripción                                                                               |
+| ---------------------- | ----------------------------------------------------------------------------------------- |
+| **Brillo**             | Brillo general de la imagen (-100 a +100)                                                 |
+| **Contraste**          | Definición de bordes y contraste (0 a 100)                                                |
+| **Preferir YUYV**      | Usar YUYV sin comprimir en lugar de MJPEG. Más lento pero puede solucionar algunos fallos |
+| **Transparencia**      | Opacidad de la superposición en el lienzo (0% opaco a 100% transparente)                  |
+| **Balance de Blancos** | Corrección de temperatura de color (Auto o 2500-10000K)                                   |
+| **Reducción de Ruido** | Reducción de ruido temporal (0.0 a 0.95)                                                  |
+
+La opción YUYV es útil si tu cámara produce imágenes con tono verdoso con el
+formato MJPEG predeterminado. Ten en cuenta que YUYV no está comprimido y puede
+reducir la resolución disponible o la tasa de fotogramas en conexiones USB 2.0.
 
 ### Datos de Alineación
 
-| Propiedad                  | Descripción                         |
-| ------------------------- | ----------------------------------- |
-| **Puntos de Imagen**      | Coordenadas de píxel en imagen de cámara |
-| **Puntos del Mundo**      | Coordenadas de máquina del mundo real (mm) |
-| **Matriz de Transformación** | Mapeo calculado (interno)       |
+| Propiedad                    | Descripción                                |
+| ---------------------------- | ------------------------------------------ |
+| **Puntos de Imagen**         | Coordenadas de píxel en imagen de cámara   |
+| **Puntos del Mundo**         | Coordenadas de máquina del mundo real (mm) |
+| **Matriz de Transformación** | Mapeo calculado (interno)                  |
 
 ---
 
@@ -214,21 +220,32 @@ Una vez alineada, la superposición de cámara ayuda a posicionar trabajos con p
 
 ### Calibración de Cámara (Corrección de Distorsión de Lente)
 
-Para trabajo preciso, puedes calibrar la cámara para corregir la distorsión de barril/cojín:
+Si tu cámara tiene una lente gran angular o está montada en ángulo, la imagen puede
+mostrar curvatura visible — las líneas rectas aparecen dobladas, especialmente cerca
+de los bordes del encuadre. Esto se llama distorsión de lente, y puede afectar la
+alineación incluso si tus puntos de alineación están medidos con cuidado.
 
-1. **Imprime un patrón de tablero de ajedrez** (ej., cuadrícula de 8×6 con cuadrados de 25mm)
-2. **Captura 10+ imágenes** del patrón desde diferentes ángulos/posiciones
-3. **Usa herramientas de calibración OpenCV** para calcular la matriz de cámara y los coeficientes de distorsión
-4. **Aplica la calibración** en Rayforge (ajustes avanzados)
+Rayforge incluye un asistente de calibración guiado que corrige esta distorsión
+automáticamente. Así es como funciona:
+
+1. **Imprime la tarjeta de calibración** — Rayforge proporciona un patrón imprimible (una
+   cuadrícula de marcadores) que colocas en la cama láser
+2. **Sigue el asistente** — El asistente de calibración te guía para capturar varias
+   imágenes de la tarjeta desde diferentes posiciones de la cama
+3. **Aplica la corrección** — Rayforge calcula un modelo de distorsión a partir de las
+   imágenes capturadas y lo usa para enderezar la superposición de la cámara
+
+Una vez calibrada, la superposición de cámara mostrará una representación notablemente
+más precisa de lo que hay en la cama. Esto es especialmente útil para lentes gran angular,
+cámaras montadas fuera del centro, o trabajos que requieren tolerancias de alineación
+ajustadas.
 
 :::note Cuándo Calibrar
-La corrección de distorsión de lente solo es necesaria para:
-
-- Lentes gran angular con distorsión de barril notable
-- Trabajo de precisión que requiere <1mm de exactitud
-- Áreas de trabajo grandes donde la distorsión se acumula
-
-La mayoría de las cámaras web estándar funcionan bien sin calibración para trabajo láser típico.
+La calibración es más útil cuando notas que la superposición de cámara no se alinea bien
+con la cama real, incluso después de una alineación cuidadosa. Si tu alineación actual se
+ve bien, puede que no la necesites. Pero si las cosas parecen ligeramente desalineadas —
+especialmente hacia los bordes del encuadre — pasar por el asistente de calibración
+generalmente ayuda.
 :::
 
 ### Múltiples Cámaras

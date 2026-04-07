@@ -1,6 +1,7 @@
 # Lasereinstellungen
 
-Die Laser-Seite in den Maschineneinstellungen konfiguriert deine Laserköpfe und deren Eigenschaften.
+Die Laser-Seite in den Maschineneinstellungen konfiguriert deine Laserköpfe und
+deren Eigenschaften.
 
 ![Lasereinstellungen](/screenshots/machine-laser.png)
 
@@ -116,6 +117,16 @@ Farben zu jedem Laser es, zu erkennen, welche Operationen von welchem Laser
 durchgeführt werden. Verwende beispielsweise Rot für deinen Hauptschneidelaser
 und Blau für einen sekundären Gravurlaser.
 :::
+
+#### 3D-Modell
+
+Jedem Laserkopf kann ein 3D-Modell zugewiesen werden. Dieses Modell wird in
+der [3D-Ansicht](../ui/3d-preview) gerendert und folgt dem Werkzeugweg
+während der Simulation.
+
+Klicke auf die Modellauswahlzeile, um verfügbare Modelle zu durchsuchen.
+Sobald ein Modell ausgewählt ist, kannst du dessen Skalierung, Rotation (X/Y/Z)
+und Fokusabstand an deinen physischen Laserkopf anpassen.
 
 ## Siehe auch
 

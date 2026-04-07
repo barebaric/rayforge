@@ -1,10 +1,17 @@
 # Cortar para Estoque
 
-Cortar para Estoque limita os caminhos de corte ao limite do seu material. Quaisquer cortes que se estendem além da área do estoque são aparados, prevenindo que o laser corte fora do seu material.
+Cortar para Estoque limita os caminhos de corte ao limite do seu material.
+Quaisquer cortes que se estendem além da área do estoque são aparados,
+prevenindo que o laser corte fora do seu material.
 
 ## Como Funciona
 
-O transformador compara seus caminhos de corte contra o limite do estoque definido. Segmentos de caminho fora deste limite são removidos ou cortados até a borda do estoque.
+O transformador compara seus caminhos de corte contra o limite do estoque
+definido. Segmentos de caminho fora deste limite são removidos ou cortados até a
+borda do estoque.
+
+Se nenhum item de estoque estiver definido no seu documento, o limite de corte
+recai para a área de trabalho da máquina.
 
 ## Configurações
 
@@ -17,18 +24,22 @@ Ativa ou desativa o corte. Desabilitado por padrão.
 Ajusta o limite efetivo do estoque antes de cortar (-100 a +100 mm).
 
 - **Valores positivos:** Encolhe o limite (corta mais conservadoramente)
-- **Valores negativos:** Expande o limite (permite cortes mais próximos da borda)
+- **Valores negativos:** Expande o limite (permite cortes mais próximos da
+  borda)
 - **0 mm:** Usa o limite exato do estoque
 
-Use deslocamento quando você quer uma margem de segurança da borda do estoque, ou quando o posicionamento do seu material não está perfeitamente alinhado.
+Use deslocamento quando você quer uma margem de segurança da borda do estoque,
+ou quando o posicionamento do seu material não está perfeitamente alinhado.
 
 ## Quando Usar Cortar para Estoque
 
-**Designs parciais:** Seu design é maior que seu material, mas você quer cortar apenas a porção que cabe.
+**Designs parciais:** Seu design é maior que seu material, mas você quer cortar
+apenas a porção que cabe.
 
 **Margem de segurança:** Previne cortes acidentais além das bordas do material.
 
-**Chapas aninhadas:** Corta apenas as peças que cabem no seu pedaço atual de material.
+**Chapas aninhadas:** Corta apenas as peças que cabem no seu pedaço atual de
+material.
 
 **Cortes de teste:** Limita um teste a uma área específica do seu material.
 

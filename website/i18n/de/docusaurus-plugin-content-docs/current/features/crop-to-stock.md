@@ -6,6 +6,8 @@ Auf Rohmaterial zuschneiden begrenzt Schneidepfade auf deine Materialgrenze. All
 
 Der Transformator vergleicht deine Schneidepfade mit der definierten Rohmaterialgrenze. Pfadsegmente außerhalb dieser Grenze werden entfernt oder auf die Materialkante beschnitten.
 
+Wenn in deinem Dokument keine Rohmaterial-Elemente definiert sind, wird stattdessen der Arbeitsbereich der Maschine als Zuschneidegrenze verwendet.
+
 ## Einstellungen
 
 ### Auf-Rohmaterial-Zuschneiden aktivieren

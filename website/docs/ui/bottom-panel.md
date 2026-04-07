@@ -2,21 +2,22 @@
 
 The Bottom Panel at the bottom of the Rayforge window provides manual control
 over your laser cutter's position, real-time machine status, a log view
-for monitoring operations, and a G-code viewer.
+for monitoring operations, a G-code viewer, and an asset browser.
 
 ## Overview
 
 The Bottom Panel combines several functions into one convenient interface:
 
-1. **Tabbed View**: Switch between Console and G-code Viewer using the icon
-   strip on the left
+1. **Tabbed View**: Switch between Console, G-code Viewer, and Assets using
+   the icon strip on the left
 2. **Jog Controls**: Manual movement and positioning (always visible)
 3. **Machine Status**: Real-time position and connection state
 4. **Work Coordinate System (WCS)**: Quick WCS selection (always visible)
 
 The left side of the panel contains an icon tab strip that lets you switch
-between the **Console** and the **G-code Viewer**. The jog controls and WCS
-controls on the right side remain visible regardless of which tab is active.
+between the **Console**, the **G-code Viewer**, and the **Assets** browser.
+The jog controls and WCS controls on the right side remain visible regardless
+of which tab is active. Tabs can be reordered by dragging.
 
 ![Bottom Panel](/screenshots/bottom-panel.png)
 
@@ -253,6 +254,18 @@ operations. Click the G-code icon in the tab strip to switch to this view.
   job execution
 - **Auto-Refresh**: The G-code content updates automatically when operations
   or document settings change
+
+## Assets Tab
+
+The Assets tab shows all stock items and sketches in your document. Click the
+assets icon in the tab strip to switch to this view.
+
+When the asset list is empty, it displays buttons to add stock or create a new
+sketch. You can drag assets from this list onto the canvas to place them.
+Double-clicking a stock asset opens its properties.
+
+When the Console or G-code Viewer tab is active, you can also press
+<kbd>Ctrl+F</kbd> to search within the content.
 
 ## Machine Compatibility
 

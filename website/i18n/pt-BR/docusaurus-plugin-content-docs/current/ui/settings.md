@@ -17,6 +17,13 @@ A página Geral contém configurações gerais do aplicativo.
 
 - **Tema**: Escolha entre tema Sistema, Claro ou Escuro
 
+### Operações
+
+- **Atualizar operações automaticamente**: Quando habilitado (o padrão), as
+  operações são recalculadas automaticamente após cada alteração. Desabilite se
+  preferir acionar o recálculo manualmente pelo botão na barra de ferramentas —
+  isso pode ser útil em máquinas mais lentas ou com documentos muito complexos.
+
 ### Unidades
 
 Configure unidades de exibição para vários valores através do aplicativo:
@@ -27,14 +34,16 @@ Configure unidades de exibição para vários valores através do aplicativo:
 
 ### Inicialização
 
-Configure o que acontece quando você inicia o aplicativo. Arquivos especificados na linha de comando sempre substituem essas configurações.
+Configure o que acontece quando você inicia o aplicativo. Arquivos especificados
+na linha de comando sempre substituem essas configurações.
 
 - **Comportamento de inicialização**:
   - Abrir nada
   - Abrir último projeto
   - Abrir projeto específico
-- **Caminho do projeto**: Caminho para o projeto específico a abrir na inicialização
-  (visível apenas quando "Abrir projeto específico" está selecionado)
+- **Caminho do projeto**: Caminho para o projeto específico a abrir na
+  inicialização (visível apenas quando "Abrir projeto específico" está
+  selecionado)
 
 ## Máquinas
 
@@ -42,9 +51,11 @@ A página Máquinas permite gerenciar suas configurações de máquina.
 
 - **Adicionar Máquina**: Criar uma nova configuração de máquina
 - **Remover Máquina**: Excluir uma máquina selecionada
-- **Lista de Máquinas**: Mostra todas máquinas configuradas com seu status de conexão
+- **Lista de Máquinas**: Mostra todas máquinas configuradas com seu status de
+  conexão
 
-Para configuração detalhada de máquina, veja a seção [Configuração da Máquina](../machine/general).
+Para configuração detalhada de máquina, veja a seção
+[Configuração da Máquina](../machine/general).
 
 ## Materiais
 
@@ -77,13 +88,15 @@ A página Addons mostra addons de extensão instalados.
 
 A página Privacidade controla o relatório de uso anônimo.
 
-- **Relatar Uso Anônimo**: Quando ativado, dados de uso anônimos são enviados para ajudar a melhorar o Rayforge. Nenhuma informação pessoal é coletada.
+- **Relatar Uso Anônimo**: Quando ativado, dados de uso anônimos são enviados
+  para ajudar a melhorar o Rayforge. Nenhuma informação pessoal é coletada.
 
 ## Licenças
 
 A página Licenças gerencia suas chaves de licença para recursos premium e addons.
 
-- **Vincular Conta Patreon**: Conecte sua conta Patreon para acessar benefícios de apoiador
+- **Vincular Conta Patreon**: Conecte sua conta Patreon para acessar benefícios
+  de apoiador
 - **Chaves de Licença de Addons**: Insira chaves de licença para addons premium
 
 ---

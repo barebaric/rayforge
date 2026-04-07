@@ -41,7 +41,11 @@ Usa los controles en la parte inferior del lienzo:
 - **Control deslizante de progreso**: Arrastra para desplazarte por el trabajo
 - **Teclas de flecha**: Recorrer las instrucciones una por una
 
-La simulación y la vista de código G se mantienen sincronizadas - recorrer la simulación resalta el código G correspondiente, y hacer clic en líneas de código G salta a ese punto en la simulación.
+La simulación y la vista de código G se mantienen sincronizadas — recorrer la simulación resalta la
+línea de código G correspondiente, y hacer clic en una línea de código G salta la simulación a ese punto.
+
+La vista 3D también tiene su propia simulación con reproducción sincronizada. Recorrer el simulador
+3D resalta la línea correspondiente en el visor de código G, y viceversa.
 
 ## Editar Durante la Simulación
 

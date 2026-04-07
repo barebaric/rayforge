@@ -1,10 +1,13 @@
 # Grade de Teste de Material
 
-O gerador de Grade de Teste de Material cria padrões de teste paramétricos para ajudá-lo a encontrar configurações ideais de laser para diferentes materiais.
+O gerador de Grade de Teste de Material cria padrões de teste paramétricos para
+ajudá-lo a encontrar configurações ideais de laser para diferentes materiais.
 
 ## Visão Geral
 
-Teste de material é essencial para trabalho a laser - diferentes materiais requerem diferentes configurações de potência e velocidade. A Grade de Teste de Material automatiza este processo:
+Teste de material é essencial para trabalho a laser - diferentes materiais
+requerem diferentes configurações de potência e velocidade. A Grade de Teste de
+Material automatiza este processo:
 
 - Gerando grades de teste com faixas de velocidade/potência configuráveis
 - Fornecendo predefinições para tipos comuns de laser (Diodo, CO2)
@@ -24,14 +27,15 @@ Acesse o gerador de Grade de Teste de Material:
 
 O Rayforge inclui predefinições para cenários comuns:
 
-| Predefinição            | Faixa de Velocidade       | Faixa de Potência | Usar Para               |
-| ----------------- | ----------------- | ----------- | --------------------- |
-| **Gravação Diodo** | 1000-10000 mm/min | 10-100%     | Gravação com laser de diodo |
-| **Corte Diodo**     | 100-5000 mm/min   | 50-100%     | Corte com laser de diodo   |
-| **Gravação CO2**   | 3000-20000 mm/min | 10-50%      | Gravação com laser CO2   |
-| **Corte CO2**       | 1000-20000 mm/min | 30-100%     | Corte com laser CO2     |
+| Predefinição       | Faixa de Velocidade | Faixa de Potência | Usar Para                   |
+| ------------------ | ------------------- | ----------------- | --------------------------- |
+| **Gravação Diodo** | 1000-10000 mm/min   | 10-100%           | Gravação com laser de diodo |
+| **Corte Diodo**    | 100-5000 mm/min     | 50-100%           | Corte com laser de diodo    |
+| **Gravação CO2**   | 3000-20000 mm/min   | 10-50%            | Gravação com laser CO2      |
+| **Corte CO2**      | 1000-20000 mm/min   | 30-100%           | Corte com laser CO2         |
 
-Predefinições são pontos de partida - você pode ajustar todos os parâmetros após selecionar uma.
+Predefinições são pontos de partida - você pode ajustar todos os parâmetros
+após selecionar uma.
 
 ### Passo 3: Configurar Parâmetros
 
@@ -68,13 +72,27 @@ Ajuste os parâmetros da grade de teste no diálogo de configurações:
 
 #### Rótulos
 
-- **Incluir Rótulos**: Habilitar/desabilitar rótulos de eixo mostrando valores de velocidade e potência
+- **Incluir Rótulos**: Habilitar/desabilitar rótulos de eixo mostrando valores
+  de velocidade e potência
 - Rótulos aparecem nas bordas esquerda e superior
-- Rótulos são gravados a 10% de potência, 1000 mm/min
+- **Potência do Rótulo (%)**: Configuração de potência para gravar rótulos
+- **Velocidade do Rótulo (mm/min)**: Velocidade para gravar rótulos (padrão:
+  1000 mm/min)
+
+Rótulos são gravados primeiro, antes da grade de teste, para não serem
+obscurecidos pelo padrão de teste.
+
+#### Intervalo de Linha (Apenas Teste de Gravação)
+
+- **Intervalo de Linha (mm)**: Espaçamento entre linhas de varredura ao usar o
+  tipo de teste de gravação
+- Valores menores criam preenchimentos mais densos mas demoram mais para executar
+- Valores típicos: 0,1-0,3mm
 
 ### Passo 4: Gerar a Grade
 
-Clique em **Gerar** para criar o padrão de teste. A grade aparece na sua tela como uma peça especial.
+Clique em **Gerar** para criar o padrão de teste. A grade aparece na sua tela
+como uma peça especial.
 
 ## Entendendo o Layout da Grade
 
@@ -112,12 +130,16 @@ Potência (%)     Velocidade (mm/min) →
 
 ## Ordem de Execução (Otimização de Risco)
 
-O Rayforge executa células de teste em uma **ordem otimizada por risco** para prevenir dano ao material:
+O Rayforge executa células de teste em uma **ordem otimizada por risco** para
+prevenir dano ao material:
 
-1. **Velocidade mais alta primeiro**: Velocidades rápidas são mais seguras (menor acúmulo de calor)
-2. **Potência mais baixa dentro da velocidade**: Minimiza risco em cada nível de velocidade
+1. **Velocidade mais alta primeiro**: Velocidades rápidas são mais seguras
+   (menor acúmulo de calor)
+2. **Potência mais baixa dentro da velocidade**: Minimiza risco em cada nível de
+   velocidade
 
-Isso previne carbonização ou fogo de começar com combinações lentas e de alta potência.
+Isso previne carbonização ou fogo de começar com combinações lentas e de alta
+potência.
 
 **Exemplo de ordem de execução para grade 3×3:**
 
@@ -157,14 +179,16 @@ Documente suas configurações bem-sucedidas para referência futura:
 - Quaisquer notas especiais
 
 :::tip Banco de Dados de Materiais
-Considere criar um documento de referência com seus resultados de teste de material para consulta rápida em projetos futuros.
+Considere criar um documento de referência com seus resultados de teste de
+material para consulta rápida em projetos futuros.
 :::
 
 ## Uso Avançado
 
 ### Combinando com Outras Operações
 
-Grades de teste de material são peças regulares - você pode combiná-las com outras operações:
+Grades de teste de material são peças regulares - você pode combiná-las com
+outras operações:
 
 **Exemplo de fluxo de trabalho:**
 
@@ -190,7 +214,8 @@ Para ajuste fino, crie testes de faixa estreita:
 
 ### Diferentes Materiais, Mesma Grade
 
-Execute a mesma configuração de grade em materiais diferentes para construir sua biblioteca de materiais mais rápido.
+Execute a mesma configuração de grade em materiais diferentes para construir sua
+biblioteca de materiais mais rápido.
 
 ## Dicas e Melhores Práticas
 
@@ -204,7 +229,8 @@ Execute a mesma configuração de grade em materiais diferentes para construir s
 ### Estratégia de Teste
 
 ✅ **Teste sucata primeiro** - Nunca teste em material final
-✅ **Uma variável de cada vez** - Teste faixa de velocidade OU potência, não ambos extremos
+✅ **Uma variável de cada vez** - Teste faixa de velocidade OU potência, não
+ambos extremos
 ✅ **Permita resfriamento** - Espere entre testes no mesmo material
 ✅ **Foco consistente** - Mesma distância de foco para todos os testes
 
@@ -221,7 +247,7 @@ Execute a mesma configuração de grade em materiais diferentes para construir s
 
 - O Rayforge usa ordem otimizada por risco (velocidades mais rápidas primeiro)
 - Isso é intencional e não pode ser alterado
-- Veja [Ordem de Execução](#ordem-de-execucao-otimização-de-risco) acima
+- Veja [Ordem de Execução](#ordem-de-execucao-otimizacao-de-risco) acima
 
 ### Resultados são inconsistentes
 

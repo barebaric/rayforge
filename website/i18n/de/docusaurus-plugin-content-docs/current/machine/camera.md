@@ -119,6 +119,7 @@ Die Ausrichtung erstellt eine Transformationsmatrix, die Kamerapixel Maschinenko
 ### Ausrichtungs-Tipps
 
 :::tip Best Practices
+
 - Verwende Punkte an den Ecken deines Arbeitsbereichs für maximale Abdeckung
 - Vermeide es, Punkte in einem Bereich zu clusteren
 - Miss Weltkoordinaten sorgfältig - die Genauigkeit hier bestimmt die gesamte Ausrichtungsqualität
@@ -184,29 +185,34 @@ Sobald ausgerichtet, hilft das Kamera-Overlay beim präzisen Positionieren von J
 
 ### Geräteeinstellungen
 
-| Einstellung     | Beschreibung                  | Werte                                |
-| --------------- | ----------------------------- | ------------------------------------ |
-| **Name**        | Beschreibender Name für die Kamera | Beliebiger Text                      |
-| **Geräte-ID**   | System-Gerätekennung          | `/dev/video0` (Linux), `0` (Windows) |
-| **Aktiviert**   | Kamera-Aktivzustand           | Ein/Aus                              |
+| Einstellung   | Beschreibung                       | Werte                                |
+| ------------- | ---------------------------------- | ------------------------------------ |
+| **Name**      | Beschreibender Name für die Kamera | Beliebiger Text                      |
+| **Geräte-ID** | System-Gerätekennung               | `/dev/video0` (Linux), `0` (Windows) |
+| **Aktiviert** | Kamera-Aktivzustand                | Ein/Aus                              |
 
 ### Bildanpassung
 
-| Einstellung         | Beschreibung               | Bereich                             |
-| ------------------- | -------------------------- | ----------------------------------- |
-| **Helligkeit**      | Gesamtbildhelligkeit       | -100 bis +100                       |
-| **Kontrast**        | Kantendefinition und Kontrast | 0 bis 100                         |
-| **Transparenz**     | Overlay-Deckkraft auf Arbeitsfläche | 0% (undurchsichtig) bis 100% (transparent) |
-| **Weißabgleich**    | Farbtemperatur-Korrektur   | Auto oder 2500-10000K               |
-| **Rauschunterdrückung** | Zeitliche Rauschreduzierung | 0.0 bis 0.95                     |
+| Einstellung             | Beschreibung                                                                           |
+| ----------------------- | -------------------------------------------------------------------------------------- |
+| **Helligkeit**          | Gesamtbildhelligkeit (-100 bis +100)                                                   |
+| **Kontrast**            | Kantendefinition und Kontrast (0 bis 100)                                              |
+| **YUYV bevorzugen**     | Unkomprimiertes YUYV statt MJPEG verwenden. Langsamer, aber kann einige Fehler beheben |
+| **Transparenz**         | Overlay-Deckkraft auf Arbeitsfläche (0% undurchsichtig bis 100% transparent)           |
+| **Weißabgleich**        | Farbtemperatur-Korrektur (Auto oder 2500-10000K)                                       |
+| **Rauschunterdrückung** | Zeitliche Rauschreduzierung (0.0 bis 0.95)                                             |
+
+Die YUYV-Option ist nützlich, wenn deine Kamera grünstichige Bilder im
+Standard-MJPEG-Format erzeugt. Beachte, dass YUYV unkomprimiert ist und die
+verfügbare Auflösung oder Bildrate an USB-2.0-Verbindungen reduzieren kann.
 
 ### Ausrichtungsdaten
 
-| Eigenschaft                    | Beschreibung                          |
-| ------------------------------ | ------------------------------------ |
-| **Bildpunkte**                 | Pixelkoordinaten im Kamerabild       |
-| **Weltpunkte**                 | Reale Maschinenkoordinaten (mm)      |
-| **Transformationsmatrix**      | Berechnete Zuordnung (intern)        |
+| Eigenschaft               | Beschreibung                    |
+| ------------------------- | ------------------------------- |
+| **Bildpunkte**            | Pixelkoordinaten im Kamerabild  |
+| **Weltpunkte**            | Reale Maschinenkoordinaten (mm) |
+| **Transformationsmatrix** | Berechnete Zuordnung (intern)   |
 
 ---
 
@@ -214,21 +220,33 @@ Sobald ausgerichtet, hilft das Kamera-Overlay beim präzisen Positionieren von J
 
 ### Kamera-Kalibrierung (Linsenverzerrungskorrektur)
 
-Für präzise Arbeit kannst du die Kamera kalibrieren, um Tonnen-/Kissenverzerrung zu korrigieren:
+Wenn deine Kamera ein Weitwinkelobjektiv hat oder schräg montiert ist, zeigt das
+Bild möglicherweise sichtbare Krümmung — gerade Linien erscheinen gebogen,
+insbesondere in Richtung der Bildränder. Dies nennt man Linsenverzerrung, und sie
+kann die Ausrichtung beeinträchtigen, selbst wenn deine Ausrichtungspunkte sorgfältig
+gemessen wurden.
 
-1. **Drucke ein Schachbrettmuster** (z.B. 8×6 Raster mit 25mm Quadraten)
-2. **Erfasse 10+ Bilder** des Musters aus verschiedenen Winkeln/Positionen
-3. **Verwende OpenCV-Kalibrierungstools** um Kameramatrix und Verzerrungskoeffizienten zu berechnen
-4. **Kalibrierung anwenden** in Rayforge (erweiterte Einstellungen)
+Rayforge enthält einen geführten Kalibrierungsassistenten, der diese Verzerrung
+automatisch korrigiert. So funktioniert es:
+
+1. **Kalibrierungskarte drucken** — Rayforge bietet ein druckbares Muster (ein Raster
+   aus Markierungen), das du auf dein Laserbett legst
+2. **Dem Assistenten folgen** — Der Kalibrierungsassistent führt dich durch das
+   Aufnehmen mehrerer Bilder der Karte von verschiedenen Positionen auf dem Bett
+3. **Korrektur anwenden** — Rayforge berechnet ein Verzerrungsmodell aus den
+   aufgenommenen Bildern und verwendet es, um das Kamera-Overlay zu begradigen
+
+Nach der Kalibrierung zeigt das Kamera-Overlay eine deutlich genauere Darstellung
+dessen, was sich auf dem Bett befindet. Dies ist besonders hilfreich für
+Weitwinkellinsen, außermittig montierte Kameras oder Arbeiten, die enge
+Ausrichtungstoleranzen erfordern.
 
 :::note Wann kalibrieren
-Linsenverzerrungskorrektur ist nur notwendig für:
-
-- Weitwinkellinsen mit merklicher Tonnungsverzerrung
-- Präzisionsarbeit, die <1mm Genauigkeit erfordert
-- Große Arbeitsbereiche, in denen sich Verzerrung ansammelt
-
-Die meisten Standard-Webcams funktionieren ohne Kalibrierung für typische Laserarbeit.
+Kalibrierung ist am nützlichsten, wenn du merkst, dass das Kamera-Overlay nicht gut
+mit dem tatsächlichen Bett übereinstimmt, selbst nach sorgfältiger Ausrichtung. Wenn
+deine aktuelle Ausrichtung gut aussieht, brauchst du sie möglicherweise nicht. Aber
+wenn die Dinge leicht verschoben wirken — besonders in Richtung der Bildränder —
+hilft der Kalibrierungsassistent normalerweise.
 :::
 
 ### Mehrere Kameras

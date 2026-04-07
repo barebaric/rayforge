@@ -52,6 +52,18 @@ around a cylinder instead of on a flat surface.
 This gives you a realistic preview of how the design will look on the actual object,
 making it easier to spot sizing or placement issues before you start cutting.
 
+### Rotary Module 3D Model
+
+Each rotary module can have an assigned 3D model. The model appears in
+the [3D view](../ui/3d-preview) alongside your toolpath, giving you a
+better sense of how the physical setup looks. You can adjust the model's scale,
+position, and rotation to match your actual hardware.
+
+### Z Step Down
+
+Rotary mode supports Z step down, allowing you to cut progressively deeper on
+cylindrical workpieces across multiple passes.
+
 ## Tips for Good Results
 
 - **Measure circumference carefully** — even a small error here will stretch or compress

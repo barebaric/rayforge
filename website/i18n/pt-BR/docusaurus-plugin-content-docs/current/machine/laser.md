@@ -56,7 +56,7 @@ cortar).
 
 #### Velocidade de Enquadramento
 
-A velocidade na qual a cabeça de laser se move durante o enquadramento. Isso é
+A velocidade na qual a cabeça do laser se move durante o enquadramento. Isso é
 definido por cabeça de laser, portanto, se sua máquina tiver vários lasers com
 características diferentes, você poderá escolher uma velocidade apropriada para
 cada um. Velocidades mais lentas tornam o caminho do enquadramento mais fácil
@@ -83,7 +83,7 @@ mais informações.
 O tamanho físico do seu feixe de laser focalizado em milímetros.
 
 - Digite ambas as dimensões X e Y
-- A maioria dos lasers tem um ponto circular (ex: 0.1 x 0.1)
+- A maioria dos lasers tem um ponto circular (ex: 0,1 x 0,1)
 - Afeta cálculos de qualidade de gravação
 
 :::tip Medindo o Tamanho do Ponto
@@ -118,6 +118,16 @@ facilita ver quais operações serão realizadas por qual laser. Por exemplo, us
 vermelho para seu laser de corte principal e azul para um laser de gravação
 secundário.
 :::
+
+#### Modelo 3D
+
+Cada cabeça de laser pode ter um modelo 3D atribuído a ela. Este modelo é
+renderizado na [visualização 3D](../ui/3d-preview) e segue o caminho da
+ferramenta durante a simulação.
+
+Clique na linha de seleção de modelo para navegar pelos modelos disponíveis.
+Uma vez selecionado um modelo, você pode ajustar sua escala, rotação (X/Y/Z) e
+distância focal para corresponder à sua cabeça de laser física.
 
 ## Veja Também
 
