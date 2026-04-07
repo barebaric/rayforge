@@ -49,6 +49,8 @@ SHORTCUTS = {
     "win.toggle_travel_view": f"{PRIMARY_ACCEL}<Shift>t",
     "win.show_3d_view": "F12",
     "win.simulate_mode": "F11",
+    "win.recalculate": "F5",
+    "win.force-recalculate": "<Shift>F5",
     "win.view_top": "1",
     "win.view_front": "2",
     "win.view_right": "3",
@@ -328,6 +330,11 @@ class ActionManager:
         self._add_action("duplicate", self.win.on_menu_duplicate)
         self._add_action("remove", self.win.on_menu_remove)
         self._add_action("clear", self.win.on_clear_clicked)
+
+        self._add_action("recalculate", self.win.on_recalculate_clicked)
+        self._add_action(
+            "force-recalculate", self.win.on_force_recalculate_clicked
+        )
 
         # Asset Actions
         self._add_action("add-stock", self.on_add_stock)

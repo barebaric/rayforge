@@ -121,6 +121,9 @@ class DocEditor:
         if context.machine:
             context.machine.changed.connect(self._on_machine_changed)
 
+        context.config.changed.connect(self._on_config_changed)
+        self.pipeline.auto_pipeline = context.config.auto_pipeline
+
         # Instantiate and link command handlers, passing dependencies.
         self.asset = AssetCmd(self)
         self.edit = EditCmd(self)
@@ -179,6 +182,10 @@ class DocEditor:
                 layer.set_rotary_diameter(default_rm.default_diameter)
             else:
                 layer.set_rotary_module_uid(None)
+
+    def _on_config_changed(self, sender, **kwargs):
+        config = self.context.config
+        self.pipeline.auto_pipeline = config.auto_pipeline
 
     def add_tab_from_context(self, context: Dict[str, Any]):
         """

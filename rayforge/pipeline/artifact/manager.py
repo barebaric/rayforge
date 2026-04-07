@@ -471,6 +471,21 @@ class ArtifactManager:
                     step_entry.handle = None
                 step_entry.state = NodeState.DIRTY
 
+    def invalidate_all_for_key(self, key: ArtifactKey):
+        """Release handles and mark DIRTY across all generations for a key."""
+        keys_to_invalidate = [
+            ledger_key
+            for ledger_key in self._ledger
+            if extract_base_key(ledger_key) == key
+        ]
+        for ledger_key in keys_to_invalidate:
+            entry = self._ledger.get(ledger_key)
+            if entry:
+                if entry.handle is not None:
+                    self.release_handle(entry.handle)
+                    entry.handle = None
+                entry.state = NodeState.DIRTY
+
     def invalidate_for_job(self, key: ArtifactKey):
         keys_to_invalidate = [
             ledger_key

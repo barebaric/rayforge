@@ -44,6 +44,7 @@ class Config:
         self.right_panel_visible: bool = True
         self.perspective_mode: bool = False
         self.show_nogo_zones: bool = True
+        self.auto_pipeline: bool = True
         # Usage tracking consent date: None = not asked, "" = declined,
         # ISO date string = consent given on that date
         self.usage_consent_date: Optional[str] = None
@@ -146,6 +147,13 @@ class Config:
         self.import_dpi = dpi
         self.changed.send(self)
 
+    def set_auto_pipeline(self, enabled: bool):
+        """Sets whether the pipeline recalculates automatically."""
+        if self.auto_pipeline == enabled:
+            return
+        self.auto_pipeline = enabled
+        self.changed.send(self)
+
     def set_usage_consent(self, consent: bool):
         """Sets the usage tracking consent preference."""
         new_value = ""
@@ -196,6 +204,7 @@ class Config:
             "right_panel_visible": self.right_panel_visible,
             "perspective_mode": self.perspective_mode,
             "show_nogo_zones": self.show_nogo_zones,
+            "auto_pipeline": self.auto_pipeline,
             "usage_consent_date": self.usage_consent_date,
             "import_dpi": self.import_dpi,
         }
@@ -248,6 +257,7 @@ class Config:
         config.right_panel_visible = data.get("right_panel_visible", True)
         config.perspective_mode = data.get("perspective_mode", False)
         config.show_nogo_zones = data.get("show_nogo_zones", True)
+        config.auto_pipeline = data.get("auto_pipeline", True)
 
         # Load usage tracking consent date
         config.usage_consent_date = data.get("usage_consent_date", None)

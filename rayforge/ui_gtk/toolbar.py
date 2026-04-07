@@ -1,7 +1,7 @@
 import logging
 from typing import List
 from gettext import gettext as _
-from gi.repository import GLib, Gtk
+from gi.repository import GLib, Gdk, Gtk
 from blinker import Signal
 from .action_registry import action_registry
 from .icons import get_icon
@@ -90,6 +90,22 @@ class MainToolbar(Gtk.Box):
         self.simulate_button.set_tooltip_text(_("Toggle execution simulation"))
         self.simulate_button.set_action_name("win.simulate_mode")
         self.append(self.simulate_button)
+
+        self.recalculate_button = Gtk.Button(
+            child=get_icon("view-refresh-symbolic"),
+        )
+        self.recalculate_button.set_tooltip_text(
+            _("Recalculate (Shift+Click to force)")
+        )
+        self.recalculate_button.connect(
+            "clicked", self._on_recalculate_clicked
+        )
+        recalc_gesture = Gtk.GestureClick.new()
+        recalc_gesture.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        recalc_gesture.connect("pressed", self._on_recalculate_pressed)
+        self.recalculate_button.add_controller(recalc_gesture)
+        self.append(self.recalculate_button)
+        self._recalculate_force = False
 
         # Add a button to toggle the control panel.
         self.bottom_panel_button = Gtk.ToggleButton()
@@ -217,6 +233,17 @@ class MainToolbar(Gtk.Box):
 
         # Connect to action registry changes for dynamic toolbar updates
         action_registry.changed.connect(self._on_action_registry_changed)
+
+    def _on_recalculate_pressed(self, gesture, n_press, x, y):
+        self._recalculate_force = bool(
+            gesture.get_current_event_state() & Gdk.ModifierType.SHIFT_MASK
+        )
+
+    def _on_recalculate_clicked(self, button):
+        force = self._recalculate_force
+        self._recalculate_force = False
+        action_name = "win.force-recalculate" if force else "win.recalculate"
+        self.activate_action(action_name, None)
 
     def _build_arrange_actions(self):
         """Build the list of arrange actions including registered layouts."""
