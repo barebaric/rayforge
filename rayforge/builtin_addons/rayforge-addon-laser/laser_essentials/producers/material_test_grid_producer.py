@@ -158,6 +158,18 @@ class MaterialTestGridProducer(OpsProducer):
         main_ops = Ops()
         main_ops.set_laser(laser.uid)
 
+        # Labels are always outlines, engraved first at a configurable power.
+        if label_elements:
+            text_ops = self._vectorize_text_to_ops(params, width_mm, height_mm)
+            main_ops.ops_section_start(
+                SectionType.VECTOR_OUTLINE, workpiece.uid
+            )
+            main_ops.set_power(0.0)
+            main_ops.set_power(self.label_power_percent / 100.0)
+            main_ops.set_cut_speed(self.label_speed)
+            main_ops.extend(text_ops)
+            main_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+
         section_type = (
             SectionType.RASTER_FILL
             if self.test_type == MaterialTestGridType.ENGRAVE
@@ -187,19 +199,6 @@ class MaterialTestGridProducer(OpsProducer):
                 self._draw_rectangle(main_ops, **element)
 
         main_ops.ops_section_end(section_type)
-
-        # Labels are always outlines, engraved at a configurable power.
-        if label_elements:
-            text_ops = self._vectorize_text_to_ops(params, width_mm, height_mm)
-            main_ops.ops_section_start(
-                SectionType.VECTOR_OUTLINE, workpiece.uid
-            )
-            # Ensure laser is off before switching to label settings
-            main_ops.set_power(0.0)
-            main_ops.set_power(self.label_power_percent / 100.0)
-            main_ops.set_cut_speed(self.label_speed)
-            main_ops.extend(text_ops)
-            main_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
         if not main_ops.is_empty():
             main_ops.scale(1, -1)
