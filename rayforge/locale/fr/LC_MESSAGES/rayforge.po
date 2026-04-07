@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-06 14:28+0200\n"
+"POT-Creation-Date: 2026-04-07 22:48+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -1816,6 +1816,18 @@ msgid "Theme"
 msgstr "Thème"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Auto-update operations"
+msgstr "Mise à jour automatique des opérations"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid ""
+"Recalculate operations automatically after each change. Disable for manual "
+"recalculation via the toolbar button."
+msgstr ""
+"Recalculer les opérations automatiquement après chaque modification. "
+"Désactiver pour le recalcul manuel via le bouton de la barre d'outils."
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Units"
 msgstr "Unités"
 
@@ -2306,6 +2318,19 @@ msgstr "Paramètres d’image de la caméra"
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Adjust image quality and appearance parameters."
 msgstr "Ajuster les paramètres de qualité et d'apparence de l'image."
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Prefer YUYV Format"
+msgstr "Préférer le format YUYV"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid ""
+"Use uncompressed YUYV instead of MJPEG. Fixes green artifacts on some USB "
+"cameras but may reduce resolution or frame rate on USB 2.0."
+msgstr ""
+"Utiliser YUYV non compressé au lieu de MJPEG. Corrige les artefacts verts "
+"sur certaines caméras USB mais peut réduire la résolution ou la fréquence "
+"d'images sur USB 2.0."
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Auto White Balance"
@@ -4288,7 +4313,8 @@ msgstr "Basculer la perspective"
 msgid "_View"
 msgstr "_Vue"
 
-#: rayforge/ui_gtk/main_menu.py rayforge/doceditor/stock_cmd.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/doceditor/stock_cmd.py
 msgid "Add Stock"
 msgstr "Ajouter un brut"
 
@@ -4548,6 +4574,10 @@ msgid "Toggle execution simulation"
 msgstr "Activer/Désactiver la simulation d’exécution"
 
 #: rayforge/ui_gtk/toolbar.py
+msgid "Recalculate (Shift+Click to force)"
+msgstr "Recalculer (Maj+Clic pour forcer)"
+
+#: rayforge/ui_gtk/toolbar.py
 msgid "Toggle bottom panel"
 msgstr "Basculer le panneau inférieur"
 
@@ -4658,9 +4688,12 @@ msgid "{count} workpieces"
 msgstr "{count} pièces"
 
 #: rayforge/ui_gtk/doceditor/asset_browser.py
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
 msgid "Add Asset"
 msgstr "Ajouter une ressource"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Add Sketch"
+msgstr "Ajouter un croquis"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Map to Existing"
@@ -4700,6 +4733,10 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Switch to Trace Mode"
 msgstr "Passer en mode vectorisation"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py rayforge/doceditor/file_cmd.py
+msgid "Re-Import"
+msgstr "Réimporter"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import"
@@ -5011,25 +5048,6 @@ msgstr "Non trouvé"
 msgid "Any"
 msgstr "Indifférent"
 
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
-msgid "Reorder Assets"
-msgstr "Réorganiser les ressources"
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Assets"
-msgstr "Ressources"
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
-#, python-brace-format
-msgid "{count} asset"
-msgstr "{count} ressource"
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
-#, python-brace-format
-msgid "{count} assets"
-msgstr "{count} ressources"
-
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 msgid "Open File"
 msgstr "Ouvrir un fichier"
@@ -5149,6 +5167,10 @@ msgid "Material thickness"
 msgstr "Épaisseur du matériau"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid "Assets"
+msgstr "Ressources"
+
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "G-code Viewer"
 msgstr "Visualiseur de G-code"
 
@@ -5255,27 +5277,6 @@ msgstr "La machine doit être connectée pour définir le zéro ici"
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Set current position as 0"
 msgstr "Définir la position actuelle comme 0"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Delete this asset"
-msgstr "Supprimer cette ressource"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Toggle visibility"
-msgstr "Basculer la visibilité"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Edit stock properties"
-msgstr "Modifier les propriétés du brut"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-#, python-brace-format
-msgid "Thickness: {thickness}"
-msgstr "Épaisseur : {thickness}"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "No thickness specified"
-msgstr "Aucune épaisseur spécifiée"
 
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "Missing Features"

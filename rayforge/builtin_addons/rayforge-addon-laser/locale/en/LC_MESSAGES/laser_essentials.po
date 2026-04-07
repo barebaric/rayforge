@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-05 21:32+0200\n"
+"POT-Creation-Date: 2026-04-07 02:17+0200\n"
 "PO-Revision-Date: 2026-03-01 19:25+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -359,6 +359,18 @@ msgid "Ending speed (mm/min)"
 msgstr "Ending speed (mm/min)"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Label Engrave Power (%)"
+msgstr "Label Engrave Power (%)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Label Engrave Speed"
+msgstr ""
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Speed for engraving labels (mm/min)"
+msgstr ""
+
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Columns (Power Steps)"
 msgstr "Columns (Power Steps)"
 
@@ -409,10 +421,6 @@ msgstr "Include Labels"
 #: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Add speed/power annotations to the grid"
 msgstr "Add speed/power annotations to the grid"
-
-#: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Label Engrave Power (%)"
-msgstr "Label Engrave Power (%)"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
 #, python-brace-format

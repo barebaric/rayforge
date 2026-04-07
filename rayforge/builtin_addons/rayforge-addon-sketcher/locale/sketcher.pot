@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-28 02:12+0100\n"
+"POT-Creation-Date: 2026-04-07 01:01+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -619,23 +619,6 @@ msgstr ""
 
 #: sketcher/ui_gtk/menu.py
 msgid "_View"
-msgstr ""
-
-#: sketcher/ui_gtk/asset_row_widget.py
-msgid "Edit this sketch"
-msgstr ""
-
-#: sketcher/ui_gtk/asset_row_widget.py
-msgid "No parameters"
-msgstr ""
-
-#: sketcher/ui_gtk/asset_row_widget.py
-msgid "1 parameter"
-msgstr ""
-
-#: sketcher/ui_gtk/asset_row_widget.py
-#, python-brace-format
-msgid "{count} parameters"
 msgstr ""
 
 #: sketcher/ui_gtk/font_properties.py

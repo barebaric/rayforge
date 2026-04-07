@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-06 14:28+0200\n"
+"POT-Creation-Date: 2026-04-07 22:48+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -1699,6 +1699,16 @@ msgid "Theme"
 msgstr "主题"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Auto-update operations"
+msgstr "自动更新操作"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid ""
+"Recalculate operations automatically after each change. Disable for manual "
+"recalculation via the toolbar button."
+msgstr "每次更改后自动重新计算操作。禁用后可通过工具栏按钮手动重新计算。"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Units"
 msgstr "单位"
 
@@ -2179,6 +2189,18 @@ msgstr "摄像头图像设置"
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Adjust image quality and appearance parameters."
 msgstr "调整图像质量和外观参数。"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Prefer YUYV Format"
+msgstr "优先使用 YUYV 格式"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid ""
+"Use uncompressed YUYV instead of MJPEG. Fixes green artifacts on some USB "
+"cameras but may reduce resolution or frame rate on USB 2.0."
+msgstr ""
+"使用未压缩的 YUYV 而非 MJPEG。修复某些 USB 摄像头上的绿色伪影，但在 USB 2.0 "
+"上可能会降低分辨率或帧率。"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Auto White Balance"
@@ -4083,7 +4105,8 @@ msgstr "切换透视"
 msgid "_View"
 msgstr "视图(_V)"
 
-#: rayforge/ui_gtk/main_menu.py rayforge/doceditor/stock_cmd.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/doceditor/stock_cmd.py
 msgid "Add Stock"
 msgstr "添加毛坯"
 
@@ -4340,6 +4363,10 @@ msgid "Toggle execution simulation"
 msgstr "切换执行模拟"
 
 #: rayforge/ui_gtk/toolbar.py
+msgid "Recalculate (Shift+Click to force)"
+msgstr "重新计算（Shift+点击强制执行）"
+
+#: rayforge/ui_gtk/toolbar.py
 msgid "Toggle bottom panel"
 msgstr "切换底部面板"
 
@@ -4446,9 +4473,12 @@ msgid "{count} workpieces"
 msgstr "{count} 个工件"
 
 #: rayforge/ui_gtk/doceditor/asset_browser.py
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
 msgid "Add Asset"
 msgstr "添加资产"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Add Sketch"
+msgstr "添加草图"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Map to Existing"
@@ -4486,6 +4516,10 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Switch to Trace Mode"
 msgstr "切换到描摹模式"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py rayforge/doceditor/file_cmd.py
+msgid "Re-Import"
+msgstr "重新导入"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import"
@@ -4787,25 +4821,6 @@ msgstr "未找到"
 msgid "Any"
 msgstr "任何"
 
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
-msgid "Reorder Assets"
-msgstr "重新排序资产"
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Assets"
-msgstr "资产"
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
-#, python-brace-format
-msgid "{count} asset"
-msgstr "{count} 个资产"
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
-#, python-brace-format
-msgid "{count} assets"
-msgstr "{count} 个资产"
-
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 msgid "Open File"
 msgstr "打开文件"
@@ -4924,6 +4939,10 @@ msgid "Material thickness"
 msgstr "材料厚度"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid "Assets"
+msgstr "资产"
+
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "G-code Viewer"
 msgstr "G代码查看器"
 
@@ -5023,27 +5042,6 @@ msgstr "必须连接机器才能在此处归零"
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Set current position as 0"
 msgstr "将当前位置设置为0"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Delete this asset"
-msgstr "删除此资产"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Toggle visibility"
-msgstr "切换可见性"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Edit stock properties"
-msgstr "编辑毛坯属性"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-#, python-brace-format
-msgid "Thickness: {thickness}"
-msgstr "厚度：{thickness}"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "No thickness specified"
-msgstr "未指定厚度"
 
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "Missing Features"
