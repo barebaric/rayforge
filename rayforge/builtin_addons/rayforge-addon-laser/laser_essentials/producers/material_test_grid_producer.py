@@ -89,6 +89,7 @@ class MaterialTestGridProducer(OpsProducer):
         spacing: float = 2.0,
         include_labels: bool = True,
         label_power_percent: float = 10.0,
+        label_speed: float = 1000.0,
         line_interval_mm: Optional[float] = None,
     ):
         super().__init__()
@@ -103,6 +104,7 @@ class MaterialTestGridProducer(OpsProducer):
         self.spacing = spacing
         self.include_labels = include_labels
         self.label_power_percent = label_power_percent
+        self.label_speed = label_speed
         self.line_interval_mm = line_interval_mm
 
     @property
@@ -184,7 +186,7 @@ class MaterialTestGridProducer(OpsProducer):
             # Ensure laser is off before switching to label settings
             main_ops.set_power(0.0)
             main_ops.set_power(self.label_power_percent / 100.0)
-            main_ops.set_cut_speed(1000)
+            main_ops.set_cut_speed(self.label_speed)
             main_ops.extend(text_ops)
 
         main_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
@@ -475,6 +477,7 @@ class MaterialTestGridProducer(OpsProducer):
                 "spacing": self.spacing,
                 "include_labels": self.include_labels,
                 "label_power_percent": self.label_power_percent,
+                "label_speed": self.label_speed,
                 "line_interval_mm": self.line_interval_mm,
             },
         }
