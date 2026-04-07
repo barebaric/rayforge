@@ -38,6 +38,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 THROTTLE_INTERVAL = 0.033
+MAX_CONCURRENT_VIEW_RENDERS = 3
 
 
 @dataclass
@@ -88,6 +89,11 @@ class ViewManager:
         self._current_view_context: Optional[RenderContext] = None
         self._view_generation_id = 0
         self._is_shutdown = False
+        self._render_semaphore = threading.Semaphore(
+            MAX_CONCURRENT_VIEW_RENDERS
+        )
+        self._pending_render_queue: list[Tuple[str, str]] = []
+        self._pending_render_lock = threading.Lock()
 
         # Keys are (workpiece_uid, step_uid)
         self._source_artifact_handles: Dict[
@@ -545,16 +551,25 @@ class ViewManager:
             )
             return
 
+        if not self._render_semaphore.acquire(blocking=False):
+            logger.debug(
+                f"View render for ({workpiece_uid}, {step_uid}) "
+                "queued: max concurrent renders reached."
+            )
+            with self._pending_render_lock:
+                self._pending_render_queue.append((workpiece_uid, step_uid))
+            return
+
         context = self._current_view_context
         view_id = self._view_generation_id
 
-        # Get the unique task key for this specific view slot
         task_key = self._get_task_key(workpiece_uid, step_uid)
 
         source_handle = self._source_artifact_handles.get(
             (workpiece_uid, step_uid)
         )
         if source_handle is None:
+            self._render_semaphore.release()
             logger.warning(
                 f"Cannot render view for ({workpiece_uid}, {step_uid}): "
                 "No source artifact handle tracked."
@@ -626,6 +641,8 @@ class ViewManager:
                 f"[{key}] when_done_callback called, "
                 f"task_status={task.get_status()}"
             )
+            self._render_semaphore.release()
+            self._drain_pending_render_queue()
             if task.get_status() == "canceled":
                 logger.debug(
                     f"[{key}] Task was cancelled, skipping "
@@ -654,6 +671,44 @@ class ViewManager:
             when_event=self._on_render_event_received,
         )
 
+    def _drain_pending_render_queue(self):
+        """Process queued render requests now that a slot is available."""
+        while True:
+            with self._pending_render_lock:
+                if not self._pending_render_queue:
+                    return
+                workpiece_uid, step_uid = self._pending_render_queue.pop(0)
+
+            if not self._render_semaphore.acquire(blocking=False):
+                with self._pending_render_lock:
+                    self._pending_render_queue.insert(
+                        0, (workpiece_uid, step_uid)
+                    )
+                return
+
+            context = self._current_view_context
+            if context is None:
+                self._render_semaphore.release()
+                return
+
+            view_id = self._view_generation_id
+            task_key = self._get_task_key(workpiece_uid, step_uid)
+            source_handle = self._source_artifact_handles.get(
+                (workpiece_uid, step_uid)
+            )
+            if source_handle is None:
+                self._render_semaphore.release()
+                continue
+
+            self._request_view_render_internal(
+                task_key,
+                context,
+                view_id,
+                source_handle,
+                step_uid,
+                workpiece_uid,
+            )
+
     def shutdown(self):
         """Cancels any active rendering tasks and releases held handles."""
         logger.debug("ViewManager shutting down.")
@@ -676,6 +731,7 @@ class ViewManager:
                 timer.cancel()
         self._throttle_timers.clear()
         self._pending_updates.clear()
+        self._pending_render_queue.clear()
         self._last_update_time.clear()
 
         for handle in self._source_artifact_handles.values():

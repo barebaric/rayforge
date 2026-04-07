@@ -8,6 +8,10 @@ This module provides utilities for:
 - Unit conversion and layout (unit module)
 """
 
+from .cairo_util import (
+    rgba_to_cairo_surface,
+)
+
 from .grayscale import (
     normalize_grayscale,
     surface_to_grayscale,
@@ -49,6 +53,7 @@ __all__ = [
     "get_visible_grayscale_values",
     "make_surface_transparent",
     "make_transparent_except_color",
+    "rgba_to_cairo_surface",
     "resize_and_crop_from_full_image",
     "safe_crop",
     "extract_vips_metadata",
