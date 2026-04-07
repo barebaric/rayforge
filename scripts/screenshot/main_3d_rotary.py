@@ -12,6 +12,8 @@ from rayforge.ui_gtk.sim3d.canvas3d.camera import ViewDirection
 from utils import (
     load_project,
     wait_for_settled,
+    wait_for_3d_rendered,
+    seek_3d_playback,
     show_panel,
     hide_panel,
     show_bottom_tab,
@@ -21,28 +23,12 @@ from utils import (
     clear_window_subtitle,
     run_on_main_thread,
     set_window_size,
+    wcs,
 )
 
 logger = logging.getLogger(__name__)
 
 PANELS = ["show_3d_view", "toggle_bottom_panel"]
-
-
-def wait_for_3d_view(timeout: float = 10.0) -> bool:
-    start = time.time()
-    while time.time() - start < timeout:
-        is_3d = run_on_main_thread(
-            lambda: win.view_stack.get_visible_child_name() == "3d"
-        )
-        if is_3d:
-            canvas = run_on_main_thread(lambda: win.canvas3d)
-            if canvas is not None:
-                time.sleep(0.5)
-                logger.info("3D view is ready")
-                return True
-        time.sleep(0.1)
-    logger.warning("3D view not ready within timeout")
-    return False
 
 
 def main():
@@ -59,26 +45,43 @@ def main():
     logger.info("Setting up 3D mode with rotary project")
 
     saved_states = save_panel_states(win, PANELS)
-    show_panel(win, "show_3d_view", True)
-    hide_panel(win, "toggle_bottom_panel")
-    show_bottom_tab(win, "gcode")
 
-    logger.info("Waiting for 3D view to render...")
-    if not wait_for_3d_view(timeout=10):
-        logger.error("3D view did not initialize in time")
-        app.quit_idle()
-        return
+    with wcs(win, "G55"):
+        show_panel(win, "show_3d_view", True)
+        hide_panel(win, "toggle_bottom_panel")
+        show_bottom_tab(win, "gcode")
 
-    time.sleep(0.5)
+        logger.info(
+            "Waiting for pipeline to settle after 3D view activation..."
+        )
+        if not wait_for_settled(win, timeout=30):
+            logger.error("Pipeline did not settle after 3D view activation")
+            app.quit_idle()
+            return
 
-    run_on_main_thread(
-        lambda: win.view_cmd.set_view(ViewDirection.ISO, win.canvas3d)
-    )
-    time.sleep(0.5)
+        logger.info("Waiting for 3D scene to render...")
+        if not wait_for_3d_rendered(win, timeout=15):
+            logger.error("3D scene did not render in time")
+            app.quit_idle()
+            return
 
-    clear_window_subtitle(win)
-    logger.info("Taking screenshot: main-3d-rotary.png")
-    take_screenshot("main-3d-rotary.png")
+        run_on_main_thread(
+            lambda: win.view_cmd.set_view(ViewDirection.ISO, win.canvas3d)
+        )
+
+        def _set_perspective() -> None:
+            if win.canvas3d and win.canvas3d.camera:
+                win.canvas3d.camera.is_perspective = True
+                win.canvas3d.queue_render()
+
+        run_on_main_thread(_set_perspective)
+        time.sleep(0.5)
+
+        seek_3d_playback(win, 0.6)
+
+        clear_window_subtitle(win)
+        logger.info("Taking screenshot: main-3d-rotary.png")
+        take_screenshot("main-3d-rotary.png")
 
     restore_panel_states(win, saved_states)
 

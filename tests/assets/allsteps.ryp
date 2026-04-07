@@ -126,7 +126,8 @@
               "max_travel_speed": 3000,
               "air_assist": false,
               "kerf_mm": 0.1,
-              "children": []
+              "children": [],
+              "step_type": "ContourStep"
             },
             {
               "uid": "b2b6369c-5538-47ee-9795-62b37080cd19",
@@ -209,7 +210,8 @@
               "max_travel_speed": 3000,
               "air_assist": false,
               "kerf_mm": 0.0,
-              "children": []
+              "children": [],
+              "step_type": "EngraveStep"
             },
             {
               "uid": "ce8961db-c13b-43ca-bb2e-5e570cead897",
@@ -285,7 +287,8 @@
               "max_travel_speed": 3000,
               "air_assist": false,
               "kerf_mm": 0.1,
-              "children": []
+              "children": [],
+              "step_type": "ShrinkWrapStep"
             },
             {
               "uid": "f087530f-90c2-449b-92e3-6eb84dbebaab",
@@ -354,7 +357,8 @@
               "max_travel_speed": 3000,
               "air_assist": false,
               "kerf_mm": 0.1,
-              "children": []
+              "children": [],
+              "step_type": "FrameStep"
             }
           ]
         },
