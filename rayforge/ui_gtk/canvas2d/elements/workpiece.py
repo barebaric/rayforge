@@ -65,10 +65,7 @@ class WorkPieceElement(CanvasElement):
         self._artifact_cache: Dict[str, Optional[WorkPieceArtifact]] = {}
         self._ops_surface_cache: Dict[str, cairo.ImageSurface] = {}
         self._ops_surface_data_cache: Dict[str, np.ndarray] = {}
-        self._ops_metadata_cache: Dict[
-            str, Tuple
-        ] = {}  # (bbox_mm, workpiece_size_mm)
-        self._ops_cache_bytes: Dict[str, int] = {}
+        self._ops_metadata_cache: Dict[str, Tuple] = {}
 
         # Composited ops surface: a single surface that blends all
         # visible step surfaces, rebuilt incrementally.
@@ -250,7 +247,20 @@ class WorkPieceElement(CanvasElement):
         return False
 
     def _update_ops_cache_from_handle(self, step_uid: str):
-        """Loads the view artifact from shared memory and caches it."""
+        """
+        Loads the view artifact from shared memory and caches it.
+
+        Reads the current bitmap from the live view buffer in shared
+        memory, creates a Cairo surface wrapper around it, and stores
+        the result in the per-step ops cache.
+
+        Skips if the handle is absent, the artifact is not yet ready,
+        or the buffer is entirely blank (no chunks written yet).
+
+        Note: the numpy array backing the surface is a view into shared
+        memory, not a heap copy.  It is therefore NOT registered in the
+        ops-cache-registry (which tracks heap allocations only).
+        """
         view_handle = self.view_manager.get_view_handle(
             self.data.uid, step_uid
         )
@@ -263,6 +273,8 @@ class WorkPieceElement(CanvasElement):
 
         try:
             new_data = artifact.bitmap_data
+            if not np.any(new_data):
+                return
             height, width, _ = new_data.shape
             stride = cairo.ImageSurface.format_stride_for_width(
                 cairo.FORMAT_ARGB32, width
@@ -292,26 +304,29 @@ class WorkPieceElement(CanvasElement):
         data: np.ndarray,
         metadata: Tuple,
     ):
-        old_bytes = self._ops_cache_bytes.pop(step_uid, 0)
-        if old_bytes:
-            registry.remove(self.data.uid, step_uid, old_bytes)
-        byte_size = data.nbytes
+        """
+        Stores a step's Cairo surface, backing data, and metadata.
+
+        *data* is a view into shared memory managed by the artifact
+        store, so its byte size is not tracked in the OpsCacheRegistry.
+        """
         self._ops_surface_cache[step_uid] = surface
         self._ops_surface_data_cache[step_uid] = data
         self._ops_metadata_cache[step_uid] = metadata
-        self._ops_cache_bytes[step_uid] = byte_size
-        registry.add(self.data.uid, step_uid, byte_size)
 
     def _remove_ops_surface(self, step_uid: str):
-        byte_size = self._ops_cache_bytes.pop(step_uid, 0)
-        if byte_size:
-            registry.remove(self.data.uid, step_uid, byte_size)
+        """Removes a step's cached surface, data, and metadata."""
         self._ops_surface_cache.pop(step_uid, None)
         self._ops_surface_data_cache.pop(step_uid, None)
         self._ops_metadata_cache.pop(step_uid, None)
 
     def clear_all_ops_caches(self):
-        for step_uid in list(self._ops_cache_bytes.keys()):
+        """
+        Removes every step cache entry and disposes the composite.
+
+        Called by the registry's LRU eviction and during full invalidation.
+        """
+        for step_uid in list(self._ops_surface_cache.keys()):
             self._remove_ops_surface(step_uid)
         self._invalidate_composited()
 
@@ -332,12 +347,19 @@ class WorkPieceElement(CanvasElement):
         self._composited_bytes = 0
 
     def _rebuild_composited_surface(self):
-        """Builds a single composited surface from all visible step caches.
+        """
+        Builds a single composited surface from all visible step caches.
 
-        Computes the union bbox of all visible steps, creates a cleared
-        ARGB32 surface, and blits each step's cached surface into the
-        correct position.  Stores the result for single-paint use in
-        draw().
+        For each workflow step that is visible and has data, loads it
+        from the view handle on demand (if not already cached), computes
+        the union bounding box at the highest step PPM, allocates a
+        single ARGB32 buffer, and blits each step into position.
+
+        The composite buffer is reused across rebuilds when dimensions
+        match, avoiding repeated large allocations.  Only the composite
+        itself (a heap allocation) is tracked in the OpsCacheRegistry.
+
+        Called from ``draw()`` when ``_composited_dirty`` is True.
         """
         if not self.data.layer or not self.data.layer.workflow:
             self._dispose_composited()
@@ -354,6 +376,8 @@ class WorkPieceElement(CanvasElement):
         for step in self.data.layer.workflow.steps:
             if not self._ops_visibility.get(step.uid, True):
                 continue
+            if step.uid not in self._ops_surface_cache:
+                self._update_ops_cache_from_handle(step.uid)
             meta = self._ops_metadata_cache.get(step.uid)
             if meta is None:
                 continue
@@ -420,7 +444,14 @@ class WorkPieceElement(CanvasElement):
             self._composited_dirty = False
             return
 
-        comp_data = np.zeros((comp_h_px, comp_w_px, 4), dtype=np.uint8)
+        if (
+            self._composited_data is not None
+            and self._composited_data.shape == (comp_h_px, comp_w_px, 4)
+        ):
+            comp_data = self._composited_data
+            comp_data[:] = 0
+        else:
+            comp_data = np.zeros((comp_h_px, comp_w_px, 4), dtype=np.uint8)
         stride = cairo.ImageSurface.format_stride_for_width(
             cairo.FORMAT_ARGB32, comp_w_px
         )
@@ -580,19 +611,23 @@ class WorkPieceElement(CanvasElement):
         **kwargs,
     ):
         """
-        Handler for when the content of a view artifact has been updated
-        by the background worker (progressive rendering).
+        Handles progressive chunk updates from the background worker.
 
-        Incrementally blits the updated step into the composite surface
-        when possible, falls back to a dirty flag for full rebuild.
+        Marks the composite dirty and schedules a redraw.  The actual
+        data loading happens lazily in ``_rebuild_composited_surface``
+        during the next ``draw()`` call, so this method is O(1).
+
+        For invisible steps, the cache is evicted immediately so the
+        composite is rebuilt without them.
         """
         if workpiece_uid != self.data.uid or not self.canvas:
             return
-        self._remove_ops_surface(step_uid)
         if not self._ops_visibility.get(step_uid, True):
+            self._remove_ops_surface(step_uid)
+            self._composited_dirty = True
             self.canvas.queue_draw()
             return
-        self._composite_live_step(step_uid)
+        self._composited_dirty = True
         self.canvas.queue_draw()
 
     def _on_view_generation_finished(
@@ -741,9 +776,16 @@ class WorkPieceElement(CanvasElement):
 
     def clear_ops_surface(self, step_uid: str):
         """
-        Cancels any pending render and removes the cached surface for a step.
+        Removes the cached ops surface for a step and schedules a
+        composite rebuild.
+
+        Called by ``LayerElement.sync_with_model`` when a step is
+        deleted from the workflow.  Must mark the composite dirty so
+        the next draw() rebuilds it without the removed step.
         """
         logger.debug(f"Clearing ops surface for step '{step_uid}'")
+        self._remove_ops_surface(step_uid)
+        self._composited_dirty = True
         if self.canvas:
             self.canvas.queue_draw()
 
@@ -940,6 +982,7 @@ class WorkPieceElement(CanvasElement):
                 ctx.scale(1.0 / surface_w_px, 1.0 / surface_h_px)
 
                 ctx.set_source_surface(comp_surf, 0, 0)
+                ctx.get_source().set_filter(cairo.FILTER_NEAREST)
                 ctx.paint()
 
                 ctx.restore()
