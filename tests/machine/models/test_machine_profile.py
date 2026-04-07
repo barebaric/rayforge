@@ -3,14 +3,7 @@ import pytest_asyncio
 
 from typing import TYPE_CHECKING
 from rayforge.core.doc import Doc
-from rayforge.core.ops import (
-    Ops,
-    JobStartCommand,
-    JobEndCommand,
-    LineToCommand,
-    SetCutSpeedCommand,
-    SetPowerCommand,
-)
+from rayforge.core.ops import Ops
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.profile import MachineProfile, PROFILES
 from rayforge.shared import tasker
@@ -51,13 +44,11 @@ async def test_carvera_air_gcode_generation(carvera_air_machine: "Machine"):
     # --- Arrange ---
     machine = carvera_air_machine
     ops = Ops()
-    ops.commands = [
-        JobStartCommand(),
-        SetCutSpeedCommand(speed=600),
-        SetPowerCommand(power=0.5),  # 50% power
-        LineToCommand(end=(10.123, 20.456, 0)),
-        JobEndCommand(),
-    ]
+    ops.job_start()
+    ops.set_cut_speed(600)
+    ops.set_power(0.5)
+    ops.line_to(10.123, 20.456, 0)
+    ops.job_end()
     doc = Doc()
 
     # --- Act ---
@@ -104,13 +95,11 @@ async def test_inject_wcs_after_preamble_flag(carvera_air_machine: "Machine"):
     # --- Arrange ---
     machine = carvera_air_machine
     ops = Ops()
-    ops.commands = [
-        JobStartCommand(),
-        SetCutSpeedCommand(speed=600),
-        SetPowerCommand(power=0.5),
-        LineToCommand(end=(10.123, 20.456, 0)),
-        JobEndCommand(),
-    ]
+    ops.job_start()
+    ops.set_cut_speed(600)
+    ops.set_power(0.5)
+    ops.line_to(10.123, 20.456, 0)
+    ops.job_end()
     doc = Doc()
 
     # --- Act: With inject_wcs_after_preamble=True (default) ---

@@ -350,7 +350,7 @@ class TabOpsTransformer(OpsTransformer):
                 sp_ops = Ops()
                 # Create a distinct copy for each evaluation to avoid
                 # shared references.
-                sp_ops.commands = deepcopy(sp_cmds)
+                sp_ops.replace_all(deepcopy(sp_cmds))
                 sp_ops.preload_state()
                 geo = sp_ops.to_geometry()
                 closest = geo.find_closest_point(clip.x, clip.y)
@@ -393,9 +393,7 @@ class TabOpsTransformer(OpsTransformer):
                 clips = assignments.get(key, [])
                 if clips:
                     sp_ops = Ops()
-                    # Create a distinct copy to avoid modifying the
-                    # original subpath commands.
-                    sp_ops.commands = deepcopy(sp_cmds)
+                    sp_ops.replace_all(deepcopy(sp_cmds))
                     sp_ops.preload_state()
                     for clip in clips:
                         sp_ops.clip_at(clip.x, clip.y, clip.width)
@@ -403,7 +401,7 @@ class TabOpsTransformer(OpsTransformer):
                 else:
                     new_commands.extend(sp_cmds)
 
-        ops.commands = new_commands
+        ops.replace_all(new_commands)
 
     def _apply_tab_power(
         self,
@@ -441,7 +439,7 @@ class TabOpsTransformer(OpsTransformer):
                 else:
                     new_commands.extend(sp_cmds)
 
-        ops.commands = new_commands
+        ops.replace_all(new_commands)
 
     def _insert_power_commands(
         self,
@@ -451,7 +449,7 @@ class TabOpsTransformer(OpsTransformer):
         original_power: float,
     ) -> List[Command]:
         temp_ops = Ops()
-        temp_ops.commands = deepcopy(commands)
+        temp_ops.replace_all(deepcopy(commands))
         temp_ops.preload_state()
         temp_ops.linearize_all()
         linear_cmds = temp_ops.commands

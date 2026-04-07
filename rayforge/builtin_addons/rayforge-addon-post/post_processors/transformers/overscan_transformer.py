@@ -177,7 +177,7 @@ class OverscanTransformer(OpsTransformer):
                     new_commands.append(cmd)
 
         _process_buffer()
-        ops.commands = new_commands
+        ops.replace_all(new_commands)
 
     def _rewrite_buffered_line(
         self, buffer: List[Command]
