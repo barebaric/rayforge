@@ -1,8 +1,7 @@
 # 3D View
 
-The 3D view window lets you visualize your G-code toolpaths before
-sending them to your machine. This powerful feature helps you catch errors
-and verify your job setup.
+The 3D view lets you visualize your G-code toolpaths and simulate job
+execution before sending them to your machine.
 
 ![3D Preview](/screenshots/main-3d.png)
 
@@ -12,7 +11,6 @@ Access the 3D view:
 
 - **Menu**: View → 3D View
 - **Keyboard**: <kbd>F12</kbd>
-- **After G-code generation**: Automatically opens (configurable)
 
 ## Navigation
 
@@ -28,6 +26,9 @@ Quick camera angles:
 
 - **Top** (<kbd>1</kbd>): Bird's eye view
 - **Front** (<kbd>2</kbd>): Front elevation
+- **Right** (<kbd>3</kbd>): Right side view
+- **Left** (<kbd>4</kbd>): Left side view
+- **Back** (<kbd>5</kbd>): Back elevation
 - **Isometric** (<kbd>7</kbd>): 3D isometric view
 
 ## Work Coordinate System Display
@@ -64,6 +65,13 @@ point (the grid) has changed, not because the toolpaths themselves moved.
 
 ## Display Options
 
+Visibility toggles are located as overlay buttons at the top-right of the
+3D canvas:
+
+- **Model**: Toggle the 3D machine model visibility
+- **Travel moves**: Toggle rapid travel move visibility
+- **No-go zones**: Toggle no-go zone visibility
+
 ### Toolpath Visualization
 
 Customize what you see:
@@ -78,82 +86,74 @@ cut and raster colors configured in [Laser Settings](../machine/laser).
 This makes it easy to identify which laser will perform each operation.
 :::
 
-### Machine Visualization
+### Laser Head Model
 
-- **Show Origin**: Display (0,0) reference point
-- **Show Work Area**: Display machine boundaries
+The 3D view renders a model of your laser head that moves along the
+toolpath during simulation. You can assign a 3D model to each laser head
+in the [Laser Settings](../machine/laser) page of Machine Settings. The
+model's scale, rotation, and focal distance can be adjusted to match your
+physical setup.
 
-### Quality Settings
+During simulation, a glowing laser beam is drawn from the head downward
+when the laser is active.
 
-- **Line Width**: Thickness of toolpath lines
-- **Anti-aliasing**: Smooth line rendering (may impact performance)
-- **Background**: Light, dark, or custom color
+## Simulation
 
-## Playback Controls
+The 3D view includes a built-in simulator with playback controls overlaid
+at the bottom of the canvas.
 
-Simulate job execution:
+### Playback Controls
 
 - **Play/Pause** (<kbd>space</kbd>): Animate toolpath execution
-- **Speed**: Adjust playback speed (0.5x - 10x)
-- **Step Forward/Back**: Advance by individual G-code commands
-- **Jump to Position**: Click timeline to jump to specific point
+- **Step Forward/Back**: Advance or rewind by one operation at a time
+- **Speed**: Cycle through playback speeds (1x, 2x, 4x, 8x, 16x)
+- **Timeline slider**: Drag to scrub through the job
 
-### Timeline
+### Synchronized G-code View
 
-The timeline shows:
-
-- Current position in job
-- Operation boundaries (colored segments)
-- Estimated time at any point
+The simulation stays in sync with the G-code viewer in the bottom panel.
+Stepping through the simulation highlights the corresponding line in the
+G-code viewer, and clicking a line in the G-code viewer jumps the
+simulation to that point.
 
 ### Layer Visibility
 
-Toggle visibility of operations:
+Toggle visibility of individual layers:
 
-- Click operation name to show/hide
-- Focus on specific operations for inspection
-- Isolate problems without regenerating G-code
+- Click a layer name to show or hide it
+- Focus on specific layers for inspection
 
 ## Verification Checklist
 
 Before sending to machine, verify:
 
-- [ ] **Toolpath is complete**: No missing segments
-- [ ] **Within work area**: Stays inside machine boundaries
-- [ ] **Correct operation order**: Engrave before cut
-- [ ] **No collisions**: Head doesn't hit clamps/fixtures
-- [ ] **Proper origin**: Starts at expected position
-- [ ] **Tab positions**: Holding tabs in correct locations (if used)
+- [ ] Toolpath is complete with no missing segments
+- [ ] Paths stay within the machine work area
+- [ ] Engrave operations run before cuts
+- [ ] No toolpath enters a no-go zone
+- [ ] Job starts at the expected position
+- [ ] Holding tabs are in the correct locations
 
 ## Performance Tips
 
 For large or complex jobs:
 
-1. **Reduce line detail**: Lower display quality for faster rendering
-2. **Hide rapid moves**: Focus on work moves only
-3. **Disable anti-aliasing**: Improves framerate
-4. **Close other applications**: Free up GPU resources
+1. Hide rapid moves to focus on work moves only
+2. Reduce the number of visible layers
+3. Close other applications to free up GPU resources
 
 ## Troubleshooting
 
 ### Preview is blank or black
 
-- Regenerate G-code (<kbd>ctrl+g</kbd>)
 - Check that operations are enabled
 - Verify objects have operations assigned
 
 ### Slow or laggy preview
 
-- Reduce line width
-- Disable anti-aliasing
 - Hide rapid moves
-- Update graphics drivers
-
-### Colors not showing correctly
-
-- Check color by setting (operation)
-- Ensure operations have different colors assigned
-- Reset view settings to defaults
+- Hide 3D models
+- Reduce the number of visible layers
 
 ---
 

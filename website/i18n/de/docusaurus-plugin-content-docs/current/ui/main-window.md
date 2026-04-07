@@ -1,6 +1,7 @@
 # Hauptfenster
 
-Das Rayforge-Hauptfenster ist dein primärer Arbeitsbereich zum Erstellen und Verwalten von Laseraufträgen.
+Das Rayforge-Hauptfenster ist dein primärer Arbeitsbereich zum Erstellen und
+Verwalten von Laseraufträgen.
 
 ## Fensterlayout
 
@@ -15,22 +16,31 @@ Zugriff auf alle Rayforge-Funktionen durch organisierte Menüs:
 - **Ansicht**: Zoom, Raster, Lineale, Panels und Ansichtsmodi
 - **Operationen**: Hinzufügen, bearbeiten und Operationen verwalten
 - **Maschine**: Verbinden, jogen, referenzieren, Aufträge starten/stoppen
-- **Hilfe**: Dokumentation, Über und Support
+- **Hilfe**: Über, Spenden, Debug-Protokoll speichern
 
 ### 2. Symbolleiste
 
-Schneller Zugriff auf häufig verwendete Werkzeuge:
+Schneller Zugriff auf häufig verwendete Steuerungen:
 
-- **Auswahlwerkzeug**: Objekte auswählen und bewegen
-- **Verschiebe-Werkzeug**: Auf der Canvas navigieren
-- **Zoom-Werkzeug**: Auf bestimmte Bereiche vergrößern/verkleinern
-- **Messwerkzeug**: Distanzen und Winkel messen
-- **Ausrichtungswerkzeuge**: Objekte ausrichten und verteilen
+- **Maschinen-Dropdown**: Wähle deine Maschine, sieh den Verbindungsstatus und
+  die geschätzte verbleibende Zeit während Aufträgen
 - **WCS-Dropdown**: Das aktive Werkstückkoordinatensystem auswählen (G53-G59)
+- **Simulation umschalten**: Simulationsmodus aktivieren/deaktivieren
+- **Laser fokussieren**: Laserfokus-Modus umschalten
+- **Auftragssteuerung**: Referenzieren, Einrahmen, Senden, Halten und Abbrechen
 
-Das WCS-Dropdown ermöglicht dir, schnell zwischen Koordinatensystemen zu wechseln.
-Siehe [Werkstückkoordinatensysteme](../general-info/coordinate-systems) für
-weitere Informationen.
+Das Maschinen-Dropdown zeigt den Verbindungsstatus und aktuellen Zustand
+(z.B. Bereit, Ausführung) deiner Maschine direkt in der Symbolleiste an.
+Während der Auftragsausführung wird zusätzlich eine geschätzte verbleibende
+Zeit angezeigt.
+
+Das WCS-Dropdown ermöglicht dir, schnell zwischen Koordinatensystemen zu
+wechseln. Siehe [Werkstückkoordinatensysteme](../general-info/coordinate-systems)
+für weitere Informationen.
+
+Sichtbarkeits-Umschaltungen für Werkstücke, Halterungen, Kamera-Feed,
+Eilgänge und andere Elemente sind als Overlay-Schaltflächen direkt auf der
+Canvas verfügbar, sodass sie immer griffbereit sind, während du arbeitest.
 
 ### 3. Canvas
 
@@ -68,12 +78,10 @@ Einstellungen für ausgewählte Objekte oder Operationen konfigurieren:
 
 ### 6. Unteres Panel
 
-Das untere Panel am unteren Rand des Fensters bietet:
-
-- **Jog-Steuerung**: Manuelle Maschinenbewegung und Positionierung
-- **Maschinenstatus**: Echtzeit-Position und Verbindungszustand
-- **Protokollansicht**: G-Code-Kommunikation und Operationsverlauf
-- **WCS-Verwaltung**: Werkstückkoordinatensystem-Auswahl und Nullsetzung
+Das untere Panel bietet Tabs für die Konsole, den G-Code-Viewer und deine
+Dokument-Assets (Rohmaterial und Skizzen). Jog-Steuerung und WCS-Verwaltung
+sind auf der rechten Seite immer sichtbar. Die geschätzte Auftragszeit wird
+in der Ebenenlistenüberschrift über dem Ebenen-Panel angezeigt.
 
 Siehe [Unteres Panel](bottom-panel) für detaillierte Informationen.
 
@@ -83,8 +91,7 @@ Siehe [Unteres Panel](bottom-panel) für detaillierte Informationen.
 
 Panels nach Bedarf anzeigen/verbergen:
 
-- **Ebenen-Panel**: Ansicht → Ebenen-Panel (<kbd>Strg+l</kbd>)
-- **Eigenschaften-Panel**: Ansicht → Eigenschaften-Panel (<kbd>Strg+i</kbd>)
+- **Unteres Panel**: Ansicht → Unteres Panel (<kbd>Strg+l</kbd>)
 
 ### Vollbildmodus
 
@@ -101,7 +108,6 @@ Passe die Oberfläche an in **Bearbeiten → Einstellungen**:
 - **Einheiten**: Millimeter oder Zoll
 - **Raster**: Anzeigen/verbergen und Rasterabstand konfigurieren
 - **Lineale**: Lineale auf Canvas anzeigen/verbergen
-- **Symbolleiste**: Sichtbare Schaltflächen anpassen
 
 ---
 

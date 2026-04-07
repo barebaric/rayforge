@@ -9,8 +9,9 @@ Rayforge prend actuellement en charge ces dialectes G-code :
 
 | Dialecte                                      | Firmware     | Utilisation courante                   |
 | --------------------------------------------- | ------------ | -------------------------------------- |
-| **GRBL (universel)**                          | GRBL 1.1+    | Lasers à diode, CNC de loisir          |
-| **GRBL (sans axe Z)**                         | GRBL 1.1+    | Découpeurs laser 2D sans Z             |
+| **Grbl (Compat)**                             | GRBL 1.1+    | Lasers à diode, CNC de loisir          |
+| **Grbl (Compat, sans axe Z)**                 | GRBL 1.1+    | Découpeurs laser 2D sans Z             |
+| **Grbl Raster**                               | GRBL 1.1+    | Optimisé pour le travail raster        |
 | **GRBL Dynamique (sensible à la profondeur)** | GRBL 1.1+    | Gravure laser sensible à la profondeur |
 | **GRBL Dynamique (sans axe Z)**               | GRBL 1.1+    | Gravure laser sensible à la profondeur |
 | **Mach4 (M67 Analog)**                        | Mach4        | Gravure raster haute vitesse           |
@@ -20,8 +21,12 @@ Rayforge prend actuellement en charge ces dialectes G-code :
 :::note Dialectes recommandés
 :::
 
-**GRBL (universel)** est le dialecte le plus testé et recommandé pour les
+**Grbl (Compat)** est le dialecte le plus testé et recommandé pour les
 applications laser standard.
+
+**Grbl Raster** est optimisé pour la gravure raster sur les contrôleurs GRBL. Il garde
+le laser en mode de puissance dynamique (M4) en continu et omet les commandes de vitesse
+redondantes, ce qui produit un G-code plus fluide et plus compact.
 
 **GRBL Dynamique (sensible à la profondeur)** est recommandé pour la gravure
 laser sensible à la profondeur où la puissance varie pendant les coupes
@@ -47,11 +52,11 @@ analogique pour un contrôle précis de la puissance laser.
 
 ### Quand l'utiliser
 
-Utilisez ce dialecte lorsque :
+Utilise ce dialecte lorsque :
 
-- Vous avez un contrôleur Mach4 avec capacité de sortie analogique
-- Vous avez besoin de gravure raster haute vitesse
-- Votre contrôleur subit des débordements de tampon avec les commandes S en
+- Tu as un contrôleur Mach4 avec capacité de sortie analogique
+- Tu as besoin de gravure raster haute vitesse
+- Ton contrôleur subit des débordements de tampon avec les commandes S en
   ligne standard
 
 ### Format de commande
@@ -77,18 +82,31 @@ Pour créer un dialecte G-code personnalisé basé sur un dialecte intégré :
 4. Enregistrez votre dialecte personnalisé
 
 Chaque dialecte personnalisé est une copie indépendante. La modification d'un
-dialecte n'affecte jamais les autres, vous pouvez donc expérimenter librement
+dialecte n'affecte jamais les autres, tu peux donc expérimenter librement
 sans risquer de perturber une configuration existante. Les dialectes
-personnalisés sont stockés dans votre répertoire de configuration et peuvent
+personnalisés sont stockés dans ton répertoire de configuration et peuvent
 être partagés.
+
+### Paramètres du dialecte
+
+Lors de l'édition d'un dialecte personnalisé, la page Paramètres offre ces options :
+
+**Mode laser continu** garde le laser en mode de puissance dynamique (M4) actif
+pendant tout le travail au lieu de basculer M4/M5 entre les segments. C'est
+utile pour la gravure raster où le laser doit rester allumé en continu
+pendant les lignes de balayage.
+
+**Vitesse modale** omet le paramètre de vitesse (F) des commandes de mouvement lorsqu'il
+n'a pas changé depuis la dernière commande. Cela produit un G-code plus compact
+et réduit la quantité de données envoyées au contrôleur.
 
 ### Commande d'allumage laser séparée pour la mise au point
 
 Certains dialectes prennent en charge la configuration d'une commande séparée
 pour allumer le laser à faible puissance, ce qui est utile pour le mode mise au
-point. Cela vous permet d'utiliser une commande différente pour le comportement
+point. Cela te permet d'utiliser une commande différente pour le comportement
 visuel de « pointeur laser » que celle utilisée pendant la découpe ou la gravure
-réelle. Consultez la page des paramètres de votre dialecte pour cette option.
+réelle. Consulte la page des paramètres de ton dialecte pour cette option.
 
 ---
 

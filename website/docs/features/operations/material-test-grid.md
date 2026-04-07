@@ -70,8 +70,10 @@ Adjust the test grid parameters in the settings dialog:
 
 - **Include Labels**: Enable/disable axis labels showing speed and power values
 - Labels appear on left and top edges
-- **Label Power (%)**: Power setting for engraving labels (configurable)
+- **Label Power (%)**: Power setting for engraving labels
 - **Label Speed (mm/min)**: Speed for engraving labels (default: 1000 mm/min)
+
+Labels are engraved first, before the test grid, so they are not obscured by the test pattern.
 
 #### Line Interval (Engrave Test Only)
 

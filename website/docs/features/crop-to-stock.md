@@ -6,6 +6,8 @@ Crop to Stock limits cutting paths to your material boundary. Any cuts that exte
 
 The transformer compares your cutting paths against the defined stock boundary. Path segments outside this boundary are removed or clipped to the stock edge.
 
+If no stock items are defined in your document, the crop boundary falls back to the machine's work area instead.
+
 ## Settings
 
 ### Enable Crop-to-Stock

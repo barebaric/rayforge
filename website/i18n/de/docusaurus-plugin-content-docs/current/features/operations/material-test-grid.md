@@ -70,7 +70,16 @@ Passe die Testraster-Parameter im Einstellungsdialog an:
 
 - **Beschriftungen einschließen**: Achsenbeschriftungen ein/aus, die Geschwindigkeits- und Leistungswerte anzeigen
 - Beschriftungen erscheinen an linken und oberen Kanten
-- Beschriftungen werden bei 10% Leistung, 1000 mm/min graviert
+- **Beschriftungs-Leistung (%)**: Leistungseinstellung zum Gravieren der Beschriftungen
+- **Beschriftungs-Geschwindigkeit (mm/min)**: Geschwindigkeit zum Gravieren der Beschriftungen (Standard: 1000 mm/min)
+
+Beschriftungen werden zuerst graviert, vor dem Testraster, sodass sie nicht vom Testmuster verdeckt werden.
+
+#### Zeilenabstand (nur Gravurtest)
+
+- **Zeilenabstand (mm)**: Abstand zwischen den Scan-Zeilen bei Verwendung des Gravurtesttyps
+- Kleinere Werte erzeugen dichtere Füllungen, dauern aber länger
+- Typische Werte: 0,1-0,3mm
 
 ### Schritt 4: Das Raster generieren
 
@@ -176,7 +185,7 @@ Dies ist nützlich, um das Teststück aus Rohmaterial zu schneiden.
 
 ### Benutzerdefinierte Test-Bereiche
 
-Für Feinabstimmung erstellen Sie Testbereiche mit engen Grenzen:
+Für Feinabstimmung erstelle Testbereiche mit engen Grenzen:
 
 **Grobtest** (Bereich finden):
 - Geschwindigkeit: 1000-10000 mm/min (5 Spalten)
@@ -210,7 +219,7 @@ Führe dieselbe Rasterkonfiguration auf verschiedenen Materialien aus, um deine 
 
 ⚠️ **Tests überwachen** - Laufende Tests niemals unbeaufsichtigt lassen
 ⚠️ **Konservativ beginnen** - Mit niedrigeren Leistungsbereichen beginnen
-⚠️ **Belüftung überprüfen** - Sicherstellen, dassproper Rauchabsaugung vorhanden ist
+⚠️ **Belüftung überprüfen** - Sicherstellen, dass ordnungsgemäße Rauchabsaugung vorhanden ist
 ⚠️ **Feuerwache** - Feuerlöscher bereit haben
 
 ## Fehlerbehebung

@@ -1,6 +1,9 @@
 # Integração com Câmera
 
-O Rayforge suporta integração com câmera USB para alinhamento e posicionamento preciso de materiais. O recurso de sobreposição de câmera permite ver exatamente onde seu laser vai cortar ou gravar no material, eliminando suposições e reduzindo o desperdício de material.
+O Rayforge suporta integração com câmera USB para alinhamento e posicionamento
+preciso de materiais. O recurso de sobreposição de câmera permite ver exatamente
+onde seu laser vai cortar ou gravar no material, eliminando suposições e
+reduzindo o desperdício de material.
 
 ![Configurações da Câmera](/screenshots/machine-camera.png)
 
@@ -10,7 +13,8 @@ A integração com câmera fornece:
 
 - **Sobreposição de vídeo ao vivo** na tela mostrando seu material em tempo real
 - **Alinhamento de imagem** para calibrar a posição da câmera relativa ao laser
-- **Posicionamento visual** para colocar trabalhos com precisão em materiais irregulares ou pré-marcados
+- **Posicionamento visual** para colocar trabalhos com precisão em materiais
+  irregulares ou pré-marcados
 - **Pré-visualização do material** antes de executar trabalhos
 - **Suporte a múltiplas câmeras** para diferentes configurações de máquina
 
@@ -32,7 +36,8 @@ A integração com câmera fornece:
 
 - Webcams USB (mais comum)
 - Câmeras integradas de laptop (se executar Rayforge em laptop perto da máquina)
-- Qualquer câmera suportada por Video4Linux2 (V4L2) no Linux ou DirectShow no Windows
+- Qualquer câmera suportada por Video4Linux2 (V4L2) no Linux ou DirectShow no
+  Windows
 
 **Configuração recomendada:**
 
@@ -51,7 +56,8 @@ A integração com câmera fornece:
 
 3. **Adicione uma nova câmera:**
    - Clique no botão "+" para adicionar uma câmera
-   - Digite um nome descritivo (ex: "Câmera Superior", "Câmera da Área de Trabalho")
+   - Digite um nome descritivo (ex: "Câmera Superior", "Câmera da Área de
+     Trabalho")
    - Selecione o dispositivo no menu suspenso
      - No Linux: `/dev/video0`, `/dev/video1`, etc.
      - No Windows: Camera 0, Camera 1, etc.
@@ -63,14 +69,16 @@ A integração com câmera fornece:
 5. **Ajuste as configurações da câmera:**
    - **Brilho:** Ajuste se o material estiver muito escuro/claro
    - **Contraste:** Melhore a visibilidade das bordas
-   - **Transparência:** Controle a opacidade da sobreposição (20-50% recomendado)
+   - **Transparência:** Controle a opacidade da sobreposição (20-50%
+     recomendado)
    - **Balanço de Branco:** Auto ou temperatura Kelvin manual
 
 ---
 
 ## Alinhamento da Câmera
 
-O alinhamento da câmera calibra a relação entre pixels da câmera e coordenadas do mundo real, permitindo posicionamento preciso.
+O alinhamento da câmera calibra a relação entre pixels da câmera e coordenadas
+do mundo real, permitindo posicionamento preciso.
 
 ### Por Que o Alinhamento é Necessário
 
@@ -80,7 +88,8 @@ A câmera vê a área de trabalho de cima, mas a imagem pode estar:
 - Escalada de forma diferente nas direções X e Y
 - Distorcida pela perspectiva da lente
 
-O alinhamento cria uma matriz de transformação que mapeia pixels da câmera para coordenadas da máquina.
+O alinhamento cria uma matriz de transformação que mapeia pixels da câmera para
+coordenadas da máquina.
 
 ### Procedimento de Alinhamento
 
@@ -89,7 +98,8 @@ O alinhamento cria uma matriz de transformação que mapeia pixels da câmera pa
    - Ou vá para **Câmera → Alinhar Câmera**
 
 2. **Coloque marcadores de alinhamento:**
-   - Você precisa de pelo menos 3 pontos de referência (4 recomendados para melhor precisão)
+   - Você precisa de pelo menos 3 pontos de referência (4 recomendados para
+     melhor precisão)
    - Os pontos de alinhamento devem ser espalhados pela área de trabalho
    - Use posições conhecidas como:
      - Posição de origem da máquina
@@ -113,15 +123,18 @@ O alinhamento cria uma matriz de transformação que mapeia pixels da câmera pa
 
 6. **Verifique o alinhamento:**
    - Mova a cabeça do laser para uma posição conhecida
-   - Verifique se o ponto do laser se alinha com a posição esperada na visão da câmera
+   - Verifique se o ponto do laser se alinha com a posição esperada na visão da
+     câmera
    - Ajuste fino realinhando se necessário
 
 ### Dicas de Alinhamento
 
 :::tip Melhores Práticas
+
 - Use pontos nos cantos da sua área de trabalho para cobertura máxima
 - Evite agrupar pontos em uma área
-- Meça as coordenadas do mundo real com cuidado - a precisão aqui determina a qualidade geral do alinhamento
+- Meça as coordenadas do mundo real com cuidado - a precisão aqui determina a
+  qualidade geral do alinhamento
 - Realinhe se você mover a câmera ou alterar a distância do foco
 - Salve seu alinhamento - ele persiste entre sessões
   :::
@@ -139,12 +152,14 @@ O alinhamento cria uma matriz de transformação que mapeia pixels da câmera pa
 
 ## Usando a Sobreposição de Câmera
 
-Uma vez alinhada, a sobreposição de câmera ajuda a posicionar trabalhos com precisão.
+Uma vez alinhada, a sobreposição de câmera ajuda a posicionar trabalhos com
+precisão.
 
 ### Habilitando/Desabilitando a Sobreposição
 
 - **Alternar câmera:** Clique no ícone da câmera na barra de ferramentas
-- **Ajustar transparência:** Use o controle deslizante nas configurações da câmera (20-50% funciona bem)
+- **Ajustar transparência:** Use o controle deslizante nas configurações da
+  câmera (20-50% funciona bem)
 - **Atualizar imagem:** A câmera atualiza continuamente enquanto habilitada
 
 ### Posicionando Trabalhos com a Câmera
@@ -184,29 +199,34 @@ Uma vez alinhada, a sobreposição de câmera ajuda a posicionar trabalhos com p
 
 ### Configurações do Dispositivo
 
-| Configuração       | Descrição                     | Valores                               |
-| ------------- | ------------------------------- | ------------------------------------ |
-| **Nome**      | Nome descritivo para a câmera | Qualquer texto                             |
-| **ID do Dispositivo** | Identificador do dispositivo no sistema        | `/dev/video0` (Linux), `0` (Windows) |
-| **Habilitado**   | Estado ativo da câmera             | Ligado/Desligado                               |
+| Configuração          | Descrição                               | Valores                              |
+| --------------------- | --------------------------------------- | ------------------------------------ |
+| **Nome**              | Nome descritivo para a câmera           | Qualquer texto                       |
+| **ID do Dispositivo** | Identificador do dispositivo no sistema | `/dev/video0` (Linux), `0` (Windows) |
+| **Habilitado**        | Estado ativo da câmera                  | Ligado/Desligado                     |
 
 ### Ajuste de Imagem
 
-| Configuração           | Descrição                  | Faixa                             |
-| ----------------- | ---------------------------- | --------------------------------- |
-| **Brilho**    | Brilho geral da imagem     | -100 a +100                      |
-| **Contraste**      | Definição de bordas e contraste | 0 a 100                          |
-| **Transparência**  | Opacidade da sobreposição na tela    | 0% (opaco) a 100% (transparente) |
-| **Balanço de Branco** | Correção de temperatura de cor | Auto ou 2500-10000K               |
-| **Redução de Ruído** | Redução de ruído temporal | 0.0 a 0.95                      |
+| Configuração          | Descrição                                                                              |
+| --------------------- | -------------------------------------------------------------------------------------- |
+| **Brilho**            | Brilho geral da imagem (-100 a +100)                                                   |
+| **Contraste**         | Definição de bordas e contraste (0 a 100)                                              |
+| **Preferir YUYV**     | Usar YUYV não comprimido em vez de MJPEG. Mais lento mas pode corrigir alguns glitches |
+| **Transparência**     | Opacidade da sobreposição na tela (0% opaco a 100% transparente)                       |
+| **Balanço de Branco** | Correção de temperatura de cor (Auto ou 2500-10000K)                                   |
+| **Redução de Ruído**  | Redução de ruído temporal (0.0 a 0.95)                                                 |
+
+A opção YUYV é útil se sua câmera produz imagens esverdeadas com o formato MJPEG
+padrão. Note que YUYV é não comprimido e pode reduzir a resolução disponível ou
+a taxa de quadros em conexões USB 2.0.
 
 ### Dados de Alinhamento
 
-| Propriedade                  | Descrição                         |
-| ------------------------- | ----------------------------------- |
-| **Pontos na Imagem**          | Coordenadas de pixel na imagem da câmera   |
-| **Pontos do Mundo Real**          | Coordenadas da máquina no mundo real (mm) |
-| **Matriz de Transformação** | Mapeamento calculado (interno)       |
+| Propriedade                 | Descrição                                 |
+| --------------------------- | ----------------------------------------- |
+| **Pontos na Imagem**        | Coordenadas de pixel na imagem da câmera  |
+| **Pontos do Mundo Real**    | Coordenadas da máquina no mundo real (mm) |
+| **Matriz de Transformação** | Mapeamento calculado (interno)            |
 
 ---
 
@@ -214,21 +234,33 @@ Uma vez alinhada, a sobreposição de câmera ajuda a posicionar trabalhos com p
 
 ### Calibração da Câmera (Correção de Distorção de Lente)
 
-Para trabalho preciso, você pode calibrar a câmera para corrigir distorção de barril/almofada:
+Se sua câmera tem uma lente grande-angular ou está montada em um ângulo, a
+imagem pode mostrar curvatura visível — linhas retas aparecem curvadas,
+especialmente perto das bordas do quadro. Isso é chamado de distorção de lente,
+e pode comprometer o alinhamento mesmo que seus pontos de alinhamento sejam
+cuidadosamente medidos.
 
-1. **Imprima um padrão xadrez** (ex: grade 8x6 com quadrados de 25mm)
-2. **Capture 10+ imagens** do padrão de diferentes ângulos/posições
-3. **Use ferramentas de calibração OpenCV** para calcular matriz da câmera e coeficientes de distorção
-4. **Aplique a calibração** no Rayforge (configurações avançadas)
+O Rayforge inclui um assistente de calibração guiado que corrige essa distorção
+automaticamente. Veja como funciona:
+
+1. **Imprima o cartão de calibração** — O Rayforge fornece um padrão para
+   impressão (uma grade de marcadores) que você coloca na mesa do laser
+2. **Siga o assistente** — O assistente de calibração orienta você a capturar
+   várias imagens do cartão de diferentes posições na mesa
+3. **Aplique a correção** — O Rayforge calcula um modelo de distorção a partir
+   das imagens capturadas e o usa para endireitar a sobreposição da câmera
+
+Uma vez calibrada, a sobreposição da câmera mostrará uma representação
+notavelmente mais precisa do que está na mesa. Isso é especialmente útil para
+lentes grande-angular, câmeras montadas fora do centro, ou trabalhos que
+exigem tolerâncias de alinhamento rigorosas.
 
 :::note Quando Calibrar
-A correção de distorção de lente só é necessária para:
-
-- Lentes grande-angular com distorção de barril perceptível
-- Trabalho de precisão exigindo <1mm de precisão
-- Grandes áreas de trabalho onde a distorção se acumula
-
-A maioria das webcams padrão funciona bem sem calibração para trabalho típico de laser.
+A calibração é mais útil quando você percebe que a sobreposição da câmera não
+alinha bem com a mesa real, mesmo após um alinhamento cuidadoso. Se seu
+alinhamento atual parece bom, você pode não precisar. Mas se as coisas parecem
+ligeiramente desalinhadas — especialmente nas bordas do quadro — executar o
+assistente de calibração geralmente ajuda.
 :::
 
 ### Múltiplas Câmeras
@@ -276,8 +308,10 @@ sudo snap connect rayforge:camera
 
 **Windows:**
 
-- Verifique o Gerenciador de Dispositivos para câmera sob "Cameras" ou "Dispositivos de imagem"
-- Certifique-se de que nenhuma outra aplicação está usando a câmera (feche Zoom, Skype, etc.)
+- Verifique o Gerenciador de Dispositivos para câmera sob "Cameras" ou
+  "Dispositivos de imagem"
+- Certifique-se de que nenhuma outra aplicação está usando a câmera (feche
+  Zoom, Skype, etc.)
 - Tente uma porta USB diferente
 - Atualize os drivers da câmera
 
@@ -289,7 +323,8 @@ sudo snap connect rayforge:camera
 
 1. **Câmera em uso por outra aplicação** - Feche outros apps de vídeo
 2. **Dispositivo incorreto selecionado** - Tente IDs de dispositivo diferentes
-3. **Permissões da câmera** - No Linux Snap, certifique-se de que a interface da câmera está conectada
+3. **Permissões da câmera** - No Linux Snap, certifique-se de que a interface
+   da câmera está conectada
 4. **Problema de hardware** - Teste a câmera com outra aplicação
 
 **Soluções:**
@@ -318,7 +353,8 @@ sudo lsof /dev/video0
 - Use mais pontos de alinhamento (6-8 para áreas muito grandes)
 - Espalhe pontos por toda a área de trabalho
 - Meça as coordenadas do mundo real com muito cuidado
-- Use comandos de movimento da máquina para posicionar precisamente o laser em coordenadas conhecidas
+- Use comandos de movimento da máquina para posicionar precisamente o laser em
+  coordenadas conhecidas
 - Realinhe após qualquer ajuste da câmera
 
 ### Qualidade de Imagem Ruim
@@ -330,8 +366,10 @@ sudo lsof /dev/video0
 1. **Ajuste brilho/contraste** nas configurações da câmera
 2. **Melhore a iluminação** - Adicione iluminação consistente na área de trabalho
 3. **Limpe a lente da câmera** - Poeira e detritos reduzem a clareza
-4. **Verifique o foco** - Auto-foco pode não funcionar bem; use manual se possível
-5. **Reduza a transparência** temporariamente para ver a imagem da câmera mais claramente
+4. **Verifique o foco** - Auto-foco pode não funcionar bem; use manual se
+   possível
+5. **Reduza a transparência** temporariamente para ver a imagem da câmera mais
+   claramente
 6. **Tente diferentes configurações de balanço de branco**
 7. **Ajuste a redução de ruído** se a imagem aparecer granulada
 
@@ -351,7 +389,9 @@ sudo lsof /dev/video0
 
 ## Páginas Relacionadas
 
-- [Modo Simulação](../features/simulation-mode) - Pré-visualizar execução com sobreposição de câmera
+- [Modo Simulação](../features/simulation-mode) - Pré-visualizar execução com
+  sobreposição de câmera
 - [Visualização 3D](../ui/3d-preview) - Visualizar trabalhos em 3D
-- [Enquadramento de Trabalhos](../features/framing-your-job) - Verificar posição do trabalho
+- [Enquadramento de Trabalhos](../features/framing-your-job) - Verificar
+  posição do trabalho
 - [Configurações Gerais](general) - Configuração da máquina

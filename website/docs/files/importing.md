@@ -44,6 +44,21 @@ configuration options for all supported file types. The dialog allows you to:
 
 ![Import Dialog](/screenshots/import-dialog.png)
 
+### Layer Import Mode
+
+When importing files that contain multiple layers (such as SVG or PDF files
+with named layers), the dialog offers three ways to handle them:
+
+- **Map to Existing**: Match imported layers to existing document layers.
+  The first layer from the source document is put into the first layer
+  of your project, the second to the second and so on.
+  This is the default and works well when your document already has
+  layers set up.
+- **New Layers**: Create a new layer in the document for each imported layer.
+  This keeps imported content separate from existing work.
+- **Flatten**: Merge all imported layers into a single layer. Useful when
+  you want everything on one layer regardless of the original structure.
+
 ### Method 1: File Menu
 
 1. **File Import** (or Ctrl+I)

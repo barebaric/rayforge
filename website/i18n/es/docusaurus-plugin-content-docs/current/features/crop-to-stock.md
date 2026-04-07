@@ -6,6 +6,8 @@ Recortar al Material limita las trayectorias de corte al límite de tu material.
 
 El transformador compara tus trayectorias de corte contra el límite definido del material. Los segmentos de trayectoria fuera de este límite se eliminan o recortan al borde del material.
 
+Si no hay elementos de material definidos en tu documento, el límite de recorte recurre al área de trabajo de la máquina en su lugar.
+
 ## Ajustes
 
 ### Habilitar Recortar al Material

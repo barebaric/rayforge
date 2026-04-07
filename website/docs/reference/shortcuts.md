@@ -61,6 +61,9 @@ Complete reference of keyboard shortcuts in Rayforge.
 | -------- | ------------------ | ------------------------------------------- |
 | `1`      | Top View           | Switch to top-down view                     |
 | `2`      | Front View         | Switch to front view                        |
+| `3`      | Right View         | Switch to right side view                   |
+| `4`      | Left View          | Switch to left side view                    |
+| `5`      | Back View          | Switch to back view                         |
 | `7`      | Isometric View     | Switch to isometric view                    |
 | `P`      | Toggle Perspective | Switch between perspective and orthographic |
 
@@ -199,7 +202,7 @@ When editing G-code or text fields:
 - `F12` - 3D view
 - `F11` - Simulation mode
 - `Ctrl+Shift+T` - Travel view
-- `1`, `2`, `7` - 3D view presets
+- `1`, `2`, `3`, `4`, `5`, `7` - 3D view presets
 - `P` - Perspective toggle
 
 ### Edit & Transform
@@ -359,7 +362,7 @@ Some lesser-known shortcuts:
 |               | T            | Tabs             |
 |               | Ctrl+Alt+C   | Camera           |
 |               | F12          | 3D View          |
-|               | 1/2/7        | View Presets     |
+|               | 1/2/3/4/5/7 | View Presets     |
 |               | P            | Perspective      |
 | **Align**     | Shift+Left   | Align Left       |
 |               | Shift+Right  | Align Right      |

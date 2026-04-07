@@ -49,9 +49,11 @@ Vollständige Referenz der Tastaturkürzel in Rayforge.
 | ----------------- | ---------------------- | ------------------------------ |
 | `H`               | Werkstücke umschalten  | Werkstücksichtbarkeit ein/aus  |
 | `T`               | Halterungen umschalten | Halterungen ein/ausblenden     |
-| `Alt+C`           | Kamera umschalten      | Kamera-Overlay ein/ausblenden  |
+| `Strg+Alt+C`      | Kamera umschalten      | Kamera-Overlay ein/ausblenden  |
 | `F12`             | 3D-Ansicht             | 3D-Vorschau-Fenster umschalten |
-| `Strg+Umschalt+R` | Simulationsmodus       | Simulationsmodus umschalten    |
+| `F11`             | Simulationsmodus       | Simulationsmodus umschalten    |
+| `Strg+Umschalt+T` | Eilgang-Ansicht        | Eilgang-Ansicht umschalten     |
+| `Strg+Alt+W`      | Werkstück aufteilen    | Werkstück in Teile aufteilen   |
 
 ### 3D-Ansicht-Steuerung
 
@@ -59,6 +61,9 @@ Vollständige Referenz der Tastaturkürzel in Rayforge.
 | ------ | ---------------------- | --------------------------------------------- |
 | `1`    | Draufsicht             | Zur Draufsicht wechseln                       |
 | `2`    | Vorderansicht          | Zur Vorderansicht wechseln                    |
+| `3`    | Rechte Ansicht         | Zur rechten Seitenansicht wechseln            |
+| `4`    | Linke Ansicht          | Zur linken Seitenansicht wechseln             |
+| `5`    | Rückansicht            | Zur Rückansicht wechseln                      |
 | `7`    | Isometrische Ansicht   | Zur isometrischen Ansicht wechseln            |
 | `P`    | Perspektive umschalten | Zwischen Perspektive und Orthografie wechseln |
 
@@ -72,16 +77,16 @@ Vollständige Referenz der Tastaturkürzel in Rayforge.
 | `Strg+U`      | Gruppierung aufheben   | Ausgewählte Gruppe auflösen     |
 | `Strg+Bild ↑` | Ebene nach oben        | Ebene im Stapel nach oben       |
 | `Strg+Bild ↓` | Ebene nach unten       | Ebene im Stapel nach unten      |
-| `Alt+S`       | Rohmaterial hinzufügen | Rohmaterial/Material hinzufügen |
+| `Strg+Alt+S`  | Rohmaterial hinzufügen | Rohmaterial/Material hinzufügen |
 
 ---
 
 ## Halterungen (Tabs)
 
-| Kürzel  | Aktion                               | Beschreibung                                 |
-| ------- | ------------------------------------ | -------------------------------------------- |
-| `Alt+T` | Halterungen hinzufügen (äquidistant) | Gleichmäßig verteilte Halterungen hinzufügen |
-| `T`     | Halterungssichtbarkeit umschalten    | Halterungen-Overlay ein/ausblenden           |
+| Kürzel       | Aktion                               | Beschreibung                                 |
+| ------------- | ------------------------------------ | -------------------------------------------- |
+| `Strg+Alt+T` | Halterungen hinzufügen (äquidistant) | Gleichmäßig verteilte Halterungen hinzufügen |
+| `T`           | Halterungssichtbarkeit umschalten    | Halterungen-Overlay ein/ausblenden           |
 
 ---
 
@@ -107,9 +112,9 @@ Vollständige Referenz der Tastaturkürzel in Rayforge.
 
 ### Layout
 
-| Kürzel  | Aktion     | Beschreibung             |
-| ------- | ---------- | ------------------------ |
-| `Alt+A` | Pixelgenau | Am Pixelraster einrasten |
+| Kürzel      | Aktion     | Beschreibung             |
+| ----------- | ---------- | ------------------------ |
+| `Strg+Alt+A` | Pixelgenau | Am Pixelraster einrasten |
 
 ---
 
@@ -131,7 +136,7 @@ Vollständige Referenz der Tastaturkürzel in Rayforge.
 | `F1`     | Über                   | Über-Dialog anzeigen                  |
 
 :::note Maschinenoperationen
-Maschinensteuerungsoperationen (Home, Rahmen, Senden usw.) haben derzeit keine Standardkürzel, können aber über Symbolleisten-Buttons oder Menüs aufgerufen werden.
+Maschinensteuerungsoperationen (Referenzieren, Einrahmen, Senden usw.) haben derzeit keine Standardkürzel, können aber über Symbolleisten-Buttons oder Menüs aufgerufen werden.
 :::
 
 ---
@@ -145,7 +150,7 @@ Maschinensteuerungsoperationen (Home, Rahmen, Senden usw.) haben derzeit keine S
 | **Linksklick**          | Auswählen       | Element auswählen            |
 | **Links ziehen**        | Bewegen         | Ausgewählte Elemente bewegen |
 | `Strg`+**Links ziehen** | Auswahlrechteck | Mehrere Elemente auswählen   |
-| **Mitteltick ziehen**   | Verschieben     | Canvas verschieben           |
+| **Mittelklick ziehen**  | Verschieben     | Canvas verschieben           |
 | **Mausrad**             | Zoom            | Vergrößern/Verkleinern       |
 | `Strg`+**Mausrad**      | Präzisionszoom  | Feinere Zoomsteuerung        |
 
@@ -193,10 +198,11 @@ Beim Bearbeiten von G-Code oder Textfeldern:
 
 - `H` - Werkstücke ausblenden/anzeigen
 - `T` - Halterungen ausblenden/anzeigen
-- `Alt+C` - Kamera umschalten
+- `Strg+Alt+C` - Kamera umschalten
 - `F12` - 3D-Ansicht
 - `F11` - Simulationsmodus
-- `1`, `2`, `7` - 3D-Ansicht-Presets
+- `Strg+Umschalt+T` - Eilgang-Ansicht
+- `1`, `2`, `3`, `4`, `5`, `7` - 3D-Ansicht-Presets
 - `P` - Perspektive umschalten
 
 ### Bearbeiten & Transformieren
@@ -213,7 +219,7 @@ Beim Bearbeiten von G-Code oder Textfeldern:
 - `Umschalt+Pfeiltasten` - An Kanten ausrichten
 - `Umschalt+Pos1` / `Umschalt+Ende` - Zentrieren
 - `Strg+Umschalt+H` / `Strg+Umschalt+V` - Verteilen
-- `Alt+A` - Pixelgenau
+- `Strg+Alt+A` - Pixelgenau
 
 ---
 
@@ -229,7 +235,7 @@ Tastaturkürzel sind derzeit fest codiert. Eine Konfiguration benutzerdefinierte
 - Keine GUI für Kürzel-Anpassung
 - Einigen Aktionen sind möglicherweise keine Kürzel zugewiesen
 
-**Funktionswunsch:** Wenn du benutzerdefinierte Kürzel benötigen, öffnen Sie bitte ein Issue auf GitHub.
+**Funktionswunsch:** Wenn du benutzerdefinierte Kürzel benötigst, öffne bitte ein Issue auf GitHub.
 
 ---
 
@@ -237,11 +243,11 @@ Tastaturkürzel sind derzeit fest codiert. Eine Konfiguration benutzerdefinierte
 
 ### Effizienz-Tipps
 
-1. **Lernen Sie zuerst die Bearbeitungskürzel** – `Strg+Z/Y/C/V/D` werden ständig verwendet
+1. **Lerne zuerst die Bearbeitungskürzel** – `Strg+Z/Y/C/V/D` werden ständig verwendet
 2. **Verwende Ein-Tasten-Umschaltungen** – `H`, `T`, `P` für schnelle Ansichtswechsel
 3. **3D-Ansicht-Kürzel** – `1`, `2`, `7` für sofortigen Ansichtswechsel
 4. **Ausrichtungskürzel** – `Umschalt+Pfeil` schneller als Anklicken von Ausrichtungs-Buttons
-5. **Simulationsmodus** – `Strg+Umschalt+S` zur schnellen Überprüfung der Ausführung
+5. **Simulationsmodus** – `F11` zur schnellen Überprüfung der Ausführung
 
 ### Workflow-Kürzel
 
@@ -271,8 +277,8 @@ Einige weniger bekannte Kürzel:
 
 - `Strg+,` - Schneller Zugriff auf Einstellungen (Standard auf macOS, funktioniert auch hier)
 - `Strg+Umschalt+Z` - Alternative für Wiederholen (für Benutzer, die dies gegenüber Strg+Y bevorzugen)
-- `Alt+A` - Pixelgenaues Einrasten für präzise Platzierung
-- `Alt+T` - Schnelle äquidistante Halterungsplatzierung
+- `Strg+Alt+A` - Pixelgenaues Einrasten für präzise Platzierung
+- `Strg+Alt+T` - Schnelle äquidistante Halterungsplatzierung
 
 ---
 
@@ -334,7 +340,7 @@ Einige weniger bekannte Kürzel:
 
 ## Kürzel-Spickzettel
 
-**Drucken Sie diese Schnellreferenz:**
+**Drucke diese Schnellreferenz:**
 
 | Kategorie          | Kürzel          | Aktion                 |
 | ------------------ | --------------- | ---------------------- |
@@ -354,9 +360,9 @@ Einige weniger bekannte Kürzel:
 |                    | Entf            | Entfernen              |
 | **Ansicht**        | H               | Werkstücke             |
 |                    | T               | Halterungen            |
-|                    | Alt+C           | Kamera                 |
+|                    | Strg+Alt+C      | Kamera                 |
 |                    | F12             | 3D-Ansicht             |
-|                    | 1/2/7           | Ansicht-Presets        |
+|                    | 1/2/3/4/5/7    | Ansicht-Presets        |
 |                    | P               | Perspektive            |
 | **Ausrichten**     | Umschalt+←      | Links ausrichten       |
 |                    | Umschalt+→      | Rechts ausrichten      |

@@ -1,18 +1,16 @@
-# Prévisualisation 3D
+# Vue 3D
 
-La fenêtre de prévisualisation 3D vous permet de visualiser vos trajets d'outil G-code avant
-de les envoyer à votre machine. Cette fonctionnalité puissante vous aide à détecter les erreurs
-et à vérifier la configuration de votre travail.
+La vue 3D te permet de visualiser tes trajets d'outil G-code et de simuler l'exécution
+du travail avant de l'envoyer à ta machine.
 
 ![Prévisualisation 3D](/screenshots/main-3d.png)
 
-## Ouvrir la prévisualisation 3D
+## Ouvrir la vue 3D
 
-Accédez à la prévisualisation 3D :
+Accéde à la vue 3D :
 
-- **Menu** : Affichage → Prévisualisation 3D
-- **Clavier** : <kbd>ctrl+3</kbd>
-- **Après génération du G-code** : S'ouvre automatiquement (configurable)
+- **Menu** : Affichage → Vue 3D
+- **Clavier** : <kbd>F12</kbd>
 
 ## Navigation
 
@@ -22,25 +20,20 @@ Accédez à la prévisualisation 3D :
 - **Panoramique** : Clic droit et glisser, ou clic milieu et glisser
 - **Zoom** : Molette de défilement, ou <kbd>ctrl</kbd> + clic gauche et glisser
 
-### Contrôles clavier
-
-- <kbd>r</kbd> : Réinitialiser la caméra à la vue par défaut
-- <kbd>origine</kbd> : Réinitialiser le zoom et la position
-- <kbd>f</kbd> : Ajuster la vue au trajet d'outil
-- Touches fléchées : Rotation de la caméra
-
 ### Présélections de vue
 
 Angles de caméra rapides :
 
 - **Dessus** (<kbd>1</kbd>) : Vue à vol d'oiseau
 - **Face** (<kbd>2</kbd>) : Élévation avant
-- **Droite** (<kbd>3</kbd>) : Élévation côté droit
-- **Isométrique** (<kbd>4</kbd>) : Vue isométrique 3D
+- **Droite** (<kbd>3</kbd>) : Vue côté droit
+- **Gauche** (<kbd>4</kbd>) : Vue côté gauche
+- **Arrière** (<kbd>5</kbd>) : Élévation arrière
+- **Isométrique** (<kbd>7</kbd>) : Vue isométrique 3D
 
 ## Affichage du système de coordonnées de travail
 
-La prévisualisation 3D visualise le système de coordonnées de travail (WCS) actif
+La vue 3D visualise le système de coordonnées de travail (WCS) actif
 différemment du canevas 2D :
 
 ### Grille et axes
@@ -52,35 +45,40 @@ différemment du canevas 2D :
 - **Étiquettes relatives au WCS** : Les étiquettes de coordonnées affichent les positions relatives à
   l'origine du WCS, pas l'origine machine
 
-Cet affichage "en isolation" facilite la compréhension de l'endroit où votre travail
-s'exécutera par rapport au système de coordonnées de travail sélectionné, sans être confus
+Cet affichage « en isolation » facilite la compréhension de l'endroit où ton travail
+s'exécutera par rapport au système de coordonnées de travail sélectionné, sans être perturbé
 par la position absolue de la machine.
 
 ### Changer de WCS
 
-La prévisualisation 3D se met à jour automatiquement lorsque vous changez le WCS actif :
-- Sélectionnez un WCS différent dans la liste déroulante de la barre d'outils
+La vue 3D se met à jour automatiquement lorsque tu changes le WCS actif :
+- Sélectionne un WCS différent dans la liste déroulante de la barre d'outils
 - La grille et les axes se décalent pour refléter la nouvelle origine du WCS
 - Les étiquettes se mettent à jour pour afficher les coordonnées relatives au nouveau WCS
 
-:::tip WCS dans la prévisualisation 3D
-La prévisualisation 3D affiche vos trajets d'outil par rapport au WCS sélectionné. Lorsque vous
-changez de WCS, vous verrez les trajets d'outil sembler bouger parce que le point de référence
+:::tip WCS dans la vue 3D
+La vue 3D affiche tes trajets d'outil par rapport au WCS sélectionné. Lorsque tu
+changes de WCS, tu verras les trajets d'outil sembler bouger parce que le point de référence
 (la grille) a changé, non pas parce que les trajets d'outil eux-mêmes ont bougé.
 :::
 
 
 ## Options d'affichage
 
+Les bascules de visibilité se trouvent sous forme de boutons superposés en haut à droite
+du canevas 3D :
+
+- **Modèle** : Basculer la visibilité du modèle 3D de la machine
+- **Déplacements rapides** : Basculer la visibilité des déplacements rapides
+- **Zones interdites** : Basculer la visibilité des zones interdites
+
 ### Visualisation du trajet d'outil
 
-Personnalisez ce que vous voyez :
+Personnalise ce que tu vois :
 
 - **Afficher les déplacements rapides** : Afficher les déplacements de déplacement (lignes pointillées)
 - **Afficher les déplacements de travail** : Afficher les déplacements de coupe/gravure (lignes pleines)
 - **Couleur par opération** : Différentes couleurs pour chaque opération
-- **Couleur par puissance** : Dégradé basé sur la puissance laser
-- **Couleur par vitesse** : Dégradé basé sur la vitesse d'avance
 
 :::tip Couleurs par Laser
 Lors de l'utilisation de machines avec plusieurs têtes laser, chaque laser peut
@@ -89,103 +87,74 @@ avoir ses propres couleurs de coupe et de raster configurées dans
 qui effectuera chaque opération.
 :::
 
-### Visualisation de la machine
+### Modèle de tête laser
 
-- **Afficher l'origine** : Afficher le point de référence (0,0)
-- **Afficher la zone de travail** : Afficher les limites de la machine
-- **Afficher la tête laser** : Afficher l'indicateur de position actuelle
+La vue 3D affiche un modèle de ta tête laser qui se déplace le long du trajet d'outil
+pendant la simulation. Tu peux attribuer un modèle 3D à chaque tête laser dans la page
+[Paramètres Laser](../machine/laser) des Paramètres Machine. L'échelle, la rotation
+et la distance focale du modèle peuvent être ajustées pour correspondre à ton
+installation physique.
 
-### Paramètres de qualité
+Pendant la simulation, un faisceau laser lumineux est tracé depuis la tête vers le bas
+lorsque le laser est actif.
 
-- **Largeur de ligne** : Épaisseur des lignes de trajet d'outil
-- **Anti-crénelage** : Rendu de ligne lisse (peut impacter les performances)
-- **Arrière-plan** : Clair, sombre, ou couleur personnalisée
+## Simulation
 
-## Contrôles de lecture
+La vue 3D inclut un simulateur intégré avec des contrôles de lecture superposés
+en bas du canevas.
 
-Simulez l'exécution du travail :
+### Contrôles de lecture
 
 - **Lecture/Pause** (<kbd>espace</kbd>) : Animer l'exécution du trajet d'outil
-- **Vitesse** : Ajuster la vitesse de lecture (0.5x - 10x)
-- **Avancer/Reculer** : Avancer par commandes G-code individuelles
-- **Aller à la position** : Cliquer sur la timeline pour aller à un point spécifique
+- **Avancer/Reculer d'une étape** : Avancer ou reculer d'une opération à la fois
+- **Vitesse** : Parcourir les vitesses de lecture (1x, 2x, 4x, 8x, 16x)
+- **Curseur de timeline** : Glisser pour naviguer dans le travail
 
-### Timeline
+### Visualiseur G-code synchronisé
 
-La timeline affiche :
-
-- Position actuelle dans le travail
-- Limites des opérations (segments colorés)
-- Temps estimé à n'importe quel point
-
-## Outils d'analyse
-
-### Mesure de distance
-
-Mesurez des distances en 3D :
-
-1. Activez l'outil de mesure
-2. Cliquez sur deux points du trajet d'outil
-3. Visualisez la distance dans les unités actuelles
-
-### Panneau de statistiques
-
-Visualisez les statistiques du travail :
-
-- **Distance totale** : Somme de tous les mouvements
-- **Distance de travail** : Distance de coupe/gravure uniquement
-- **Distance rapide** : Déplacements de déplacement uniquement
-- **Temps estimé** : Estimation de la durée du travail
-- **Boîte englobante** : Dimensions globales
+La simulation reste synchronisée avec le visualiseur G-code dans le panneau inférieur.
+Avancer dans la simulation met en surbrillance la ligne correspondante dans le
+visualiseur G-code, et cliquer sur une ligne dans le visualiseur G-code fait sauter
+la simulation à ce point.
 
 ### Visibilité des calques
 
-Basculez la visibilité des opérations :
+Bascule la visibilité des calques individuels :
 
-- Cliquez sur le nom de l'opération pour afficher/masquer
-- Concentrez-vous sur des opérations spécifiques pour l'inspection
-- Isolez les problèmes sans régénérer le G-code
+- Clique sur le nom d'un calque pour l'afficher ou le masquer
+- Concentre-toi sur des calques spécifiques pour l'inspection
 
 ## Liste de vérification
 
-Avant d'envoyer à la machine, vérifiez :
+Avant d'envoyer à la machine, vérifie :
 
-- [ ] **Le trajet d'outil est complet** : Pas de segments manquants
-- [ ] **Dans la zone de travail** : Reste à l'intérieur des limites de la machine
-- [ ] **Ordre des opérations correct** : Graver avant de couper
-- [ ] **Pas de collisions** : La tête ne heurte pas les brides/fixations
-- [ ] **Origine appropriée** : Commence à la position attendue
-- [ ] **Positions des onglets** : Onglets de maintien aux bons emplacements (si utilisés)
+- [ ] Le trajet d'outil est complet sans segments manquants
+- [ ] Les parcours restent dans la zone de travail de la machine
+- [ ] Les opérations de gravure s'exécutent avant les coupes
+- [ ] Aucun trajet d'outil n'entre dans une zone interdite
+- [ ] Le travail commence à la position attendue
+- [ ] Les onglets de maintien sont aux bons emplacements
 
 ## Conseils de performance
 
 Pour les travaux volumineux ou complexes :
 
-1. **Réduisez le détail des lignes** : Baissez la qualité d'affichage pour un rendu plus rapide
-2. **Masquez les déplacements rapides** : Concentrez-vous sur les déplacements de travail uniquement
-3. **Désactivez l'anti-crénelage** : Améliore le taux de rafraîchissement
-4. **Fermez les autres applications** : Libérez des ressources GPU
+1. Masque les déplacements rapides pour te concentrer sur les déplacements de travail uniquement
+2. Réduis le nombre de calques visibles
+3. Ferme les autres applications pour libérer des ressources GPU
 
 ## Dépannage
 
 ### La prévisualisation est vide ou noire
 
-- Régénérez le G-code (<kbd>ctrl+g</kbd>)
-- Vérifiez que les opérations sont activées
-- Vérifiez que les objets ont des opérations attribuées
+- Vérifie que les opérations sont activées
+- Vérifie que les objets ont des opérations attribuées
 
 ### Prévisualisation lente ou saccadée
 
-- Réduisez la largeur de ligne
-- Désactivez l'anti-crénelage
-- Masquez les déplacements rapides
-- Mettez à jour les pilotes graphiques
-
-### Les couleurs ne s'affichent pas correctement
-
-- Vérifiez le paramètre de couleur par (opération/puissance/vitesse)
-- Assurez-vous que les opérations ont des couleurs différentes attribuées
-- Réinitialisez les paramètres de vue aux valeurs par défaut
+- Masque les déplacements rapides
+- Masque les modèles 3D
+- Réduis le nombre de calques visibles
 
 ---
 

@@ -1,33 +1,30 @@
 # Panel Inferior
 
-El Panel Inferior en la parte inferior de la ventana de Rayforge proporciona
-control manual sobre la posición de tu cortador láser, estado de la máquina en
-tiempo real, una vista de registro para monitorear operaciones y un visor de
-código G.
+El Panel Inferior en la parte inferior de la ventana de Rayforge proporciona control
+manual sobre la posición de tu cortador láser, estado de la máquina en tiempo real,
+una vista de registro para monitorear operaciones, un visor de código G y un navegador
+de activos.
 
 ## Resumen
 
 El Panel Inferior combina varias funciones en una interfaz conveniente:
 
-1. **Vista con Pestañas**: Alterna entre Consola y Visor de Código G usando la
-   tira de iconos a la izquierda
-2. **Controles de Desplazamiento**: Movimiento y posicionamiento manual
-   (siempre visibles)
+1. **Vista con Pestañas**: Alterna entre Consola, Visor de Código G y Activos usando
+   la tira de iconos a la izquierda
+2. **Controles de Desplazamiento**: Movimiento y posicionamiento manual (siempre visibles)
 3. **Estado de la Máquina**: Posición en tiempo real y estado de conexión
-4. **Sistema de Coordenadas de Trabajo (WCS)**: Selección rápida de WCS
-   (siempre visibles)
+4. **Sistema de Coordenadas de Trabajo (WCS)**: Selección rápida de WCS (siempre visibles)
 
-El lado izquierdo del panel contiene una tira de iconos con pestañas que te
-permite alternar entre la **Consola** y el **Visor de Código G**. Los controles
-de desplazamiento y WCS en el lado derecho permanecen visibles
-independientemente de la pestaña activa.
+El lado izquierdo del panel contiene una tira de iconos con pestañas que te permite
+alternar entre la **Consola**, el **Visor de Código G** y el navegador de **Activos**.
+Los controles de desplazamiento y WCS en el lado derecho permanecen visibles
+independientemente de la pestaña activa. Las pestañas se pueden reordenar arrastrando.
 
 ![Panel Inferior](/screenshots/bottom-panel.png)
 
 ## Accediendo al Panel Inferior
 
-El Panel Inferior siempre está visible en la parte inferior de la ventana
-principal. Puede alternarse vía:
+El Panel Inferior puede alternarse vía:
 
 - **Menú**: Ver → Panel Inferior
 - **Atajo de Teclado**: Ctrl+L
@@ -36,6 +33,7 @@ principal. Puede alternarse vía:
 Los controles de desplazamiento solo están disponibles cuando se está conectado a una máquina
 que soporta operaciones de desplazamiento.
 :::
+
 
 ## Controles de Desplazamiento
 
@@ -58,6 +56,7 @@ Lleva los ejes de tu máquina al origen para establecer una posición de referen
 Se recomienda llevar todos los ejes al origen antes de iniciar cualquier trabajo para asegurar
 posicionamiento preciso.
 :::
+
 
 ### Movimiento Direccional
 
@@ -86,6 +85,7 @@ Los controles de desplazamiento proporcionan botones para movimiento direccional
 Los atajos de teclado solo funcionan cuando la ventana principal tiene foco.
 :::
 
+
 ### Retroalimentación Visual
 
 Los botones de desplazamiento proporcionan retroalimentación visual:
@@ -100,16 +100,16 @@ Configura el comportamiento de las operaciones de desplazamiento:
 
 **Velocidad de Desplazamiento:**
 
-- **Rango**: 1-10,000 mm/min
+- **Rango**: 1-60,000 mm/min
 - **Por defecto**: 1,000 mm/min
 - **Propósito**: Controla qué tan rápido se mueve la cabeza del láser
 
 :::tip Selección de Velocidad
-
 - Usa velocidades más bajas (100-500 mm/min) para posicionamiento preciso
 - Usa velocidades más altas (1,000-3,000 mm/min) para movimientos grandes
 - Velocidades muy altas pueden causar pasos perdidos en algunas máquinas
-  :::
+:::
+
 
 **Distancia de Desplazamiento:**
 
@@ -118,15 +118,15 @@ Configura el comportamiento de las operaciones de desplazamiento:
 - **Propósito**: Controla qué tan lejos se mueve la cabeza del láser por presión de botón
 
 :::tip Selección de Distancia
-
 - Usa distancias pequeñas (0.1-1.0 mm) para ajuste fino
 - Usa distancias medianas (5-20 mm) para posicionamiento general
 - Usa distancias grandes (50-100 mm) para reposicionamiento rápido
-  :::
+:::
+
 
 ## Pantalla de Estado de la Máquina
 
-El Panel Inferior muestra información en tiempo real sobre tu máquina:
+El Panel de Control muestra información en tiempo real sobre tu máquina:
 
 ### Posición Actual
 
@@ -152,7 +152,7 @@ Muestra la posición de la cabeza del láser en el sistema de coordenadas activo
 
 ## Sistema de Coordenadas de Trabajo (WCS)
 
-El Panel Inferior proporciona acceso rápido a la gestión del Sistema de Coordenadas de Trabajo.
+El Panel de Control proporciona acceso rápido a la gestión del Sistema de Coordenadas de Trabajo.
 
 ### Selección del Sistema Activo
 
@@ -168,43 +168,38 @@ Selecciona qué sistema de coordenadas está actualmente activo:
 | G58 (Trabajo 5) | Usuario | Quinto sistema de coordenadas de trabajo               |
 | G59 (Trabajo 6) | Usuario | Sexto sistema de coordenadas de trabajo                |
 
-### Desplazamientos Actuales
-
-Muestra los valores de desplazamiento para el WCS activo:
-
-- Mostrados como (X, Y, Z) en milímetros
-- Representan la distancia desde el origen de máquina al origen WCS
-- Se actualiza automáticamente cuando cambian los desplazamientos WCS
-
 ### Estableciendo Cero WCS
 
 Define dónde debería estar el origen del WCS activo:
 
-| Botón  | Función        | Descripción                                                      |
-| ------ | -------------- | ---------------------------------------------------------------- |
-| Cero X | Establecer X=0 | Hace que la posición X actual sea el origen X para el WCS activo |
-| Cero Y | Establecer Y=0 | Hace que la posición Y actual sea el origen Y para el WCS activo |
-| Cero Z | Establecer Z=0 | Hace que la posición Z actual sea el origen Z para el WCS activo |
+| Botón          | Función        | Descripción                                                      |
+| -------------- | -------------- | ---------------------------------------------------------------- |
+| Clic para Cero | Establecer X,Y=0 | Haz clic en el icono de cruz, luego haz clic en el lienzo para establecer el cero de trabajo |
+| Editar Despl.  | Editar         | Editar manualmente los valores de desplazamiento WCS             |
+| Cero X         | Establecer X=0 | Hace que la posición X actual sea el origen X para el WCS activo |
+| Cero Y         | Establecer Y=0 | Hace que la posición Y actual sea el origen Y para el WCS activo |
+| Cero Z         | Establecer Z=0 | Hace que la posición Z actual sea el origen Z para el WCS activo |
 
 :::note G53 No Puede Cambiarse
 Los botones de cero están deshabilitados cuando G53 (Coordenadas de Máquina) está seleccionado,
 ya que las coordenadas de máquina están fijadas por hardware.
 :::
 
-:::tip Flujo de Trabajo para Establecer WCS
 
+:::tip Flujo de Trabajo para Establecer WCS
 1. Conéctate a tu máquina y lleva todos los ejes al origen
 2. Selecciona el WCS que quieres configurar (ej., G54)
 3. Desplaza la cabeza del láser a la posición de origen deseada
 4. Haz clic en Cero X y Cero Y para establecer esta posición como (0, 0)
 5. El desplazamiento se almacena en el controlador de tu máquina
-   :::
+:::
+
 
 ## Pestaña de Consola
 
-La Pestaña de Consola proporciona una interfaz estilo terminal interactiva para
-enviar comandos de código G y monitorear la comunicación de la máquina. Haz clic
-en el icono de consola en la tira de pestañas para cambiar a esta vista:
+La Pestaña de Consola proporciona una interfaz estilo terminal interactiva para enviar
+comandos de código G y monitorear la comunicación de la máquina. Haz clic en el icono
+de consola en la tira de pestañas para cambiar a esta vista.
 
 ### Entrada de Comandos
 
@@ -225,11 +220,11 @@ resaltado de sintaxis para fácil lectura:
 - **Errores** (rojo): Mensajes de error de la máquina
 - **Advertencias** (naranja): Mensajes de advertencia
 - **Sondeos de Estado** (tenue): Reportes de posición/estado en tiempo real como
-  `<Idle|WPos:0.000,0.000,0.000|...>`
+  `&lt;Idle|WPos:0.000,0.000,0.000|...&gt;`
 
 ### Modo Verbose
 
-Haz clic en el ícono de terminal en la esquina superior derecha de la consola para alternar
+Haz clic en el icono de terminal en la esquina superior derecha de la consola para alternar
 la salida verbose:
 
 - **Apagado** (por defecto): Oculta sondeos de estado frecuentes y respuestas "ok"
@@ -268,6 +263,18 @@ para cambiar a esta vista.
 - **Auto-Actualización**: El contenido del código G se actualiza
   automáticamente cuando cambian las operaciones o la configuración del
   documento
+
+## Pestaña de Activos
+
+La Pestaña de Activos muestra todos los materiales y bosquejos en tu documento. Haz
+clic en el icono de activos en la tira de pestañas para cambiar a esta vista.
+
+Cuando la lista de activos está vacía, muestra botones para añadir material o crear
+un nuevo bosquejo. Puedes arrastrar activos desde esta lista al lienzo para
+colocarlos. Hacer doble clic en un activo de material abre sus propiedades.
+
+Cuando la pestaña de Consola o Visor de Código G está activa, también puedes presionar
+<kbd>Ctrl+F</kbd> para buscar dentro del contenido.
 
 ## Compatibilidad de Máquina
 

@@ -1,57 +1,56 @@
 # Panneau inférieur
 
 Le panneau inférieur en bas de la fenêtre Rayforge fournit un contrôle manuel
-sur la position de votre découpeur laser, l'état de la machine en temps réel, et une vue du journal
-pour surveiller les opérations.
+sur la position de ton découpeur laser, l'état de la machine en temps réel, une vue du journal
+pour surveiller les opérations, un visualiseur G-code et un navigateur d'actifs.
 
 ## Aperçu
 
 Le panneau inférieur combine plusieurs fonctions dans une interface pratique :
 
-1. **Contrôles de déplacement** : Mouvement et positionnement manuels
-2. **État de la machine** : Position et état de connexion en temps réel
-3. **Onglet Console** : Terminal G-code interactif avec coloration syntaxique
-4. **Onglet Visualiseur G-code** : Visualisation et inspection du G-code généré
-5. **Système de coordonnées de travail (WCS)** : Sélection rapide du WCS
+1. **Vue à onglets** : Bascule entre Console, Visualiseur G-code et Actifs en utilisant
+   la bande d'icônes sur la gauche
+2. **Contrôles de déplacement** : Mouvement et positionnement manuels (toujours visibles)
+3. **État de la machine** : Position et état de connexion en temps réel
+4. **Système de coordonnées de travail (WCS)** : Sélection rapide du WCS (toujours visible)
+
+Le côté gauche du panneau contient une bande d'icônes d'onglets qui te permet de basculer
+entre la **Console**, le **Visualiseur G-code** et le navigateur d'**Actifs**.
+Les contrôles de déplacement et les contrôles WCS sur le côté droit restent visibles quel
+que soit l'onglet actif. Les onglets peuvent être réordonnés par glisser-déposer.
 
 ![Panneau inférieur](/screenshots/bottom-panel.png)
 
 ## Accéder au panneau inférieur
 
-Le panneau inférieur est toujours visible en bas de la fenêtre principale. Il peut
-être basculé via :
+Le panneau inférieur peut être basculé via :
 
 - **Menu** : Affichage → Panneau inférieur
 - **Raccourci clavier** : Ctrl+L
 
 :::note Connexion requise
-Les contrôles de déplacement ne sont disponibles que lorsque vous êtes connecté à une machine
+Les contrôles de déplacement ne sont disponibles que lorsque tu es connecté à une machine
 qui prend en charge les opérations de déplacement.
 :::
 
-
 ## Contrôles de déplacement
 
-Les contrôles de déplacement fournissent un contrôle manuel sur la position de votre découpeur laser,
-vous permettant de déplacer précisément la tête laser pour la configuration, l'alignement et
+Les contrôles de déplacement fournissent un contrôle manuel sur la position de ton découpeur laser,
+te permettant de déplacer précisément la tête laser pour la configuration, l'alignement et
 les tests.
 
 ### Contrôles de mise à l'origine
 
-Mettez à l'origine les axes de votre machine pour établir une position de référence :
+Mets à l'origine les axes de ta machine pour établir une position de référence :
 
-| Bouton     | Fonction                | Description                              |
-| ---------- | ----------------------- | ---------------------------------------- |
-| Origine X  | Met à l'origine l'axe X | Déplace l'axe X vers sa position d'origine |
-| Origine Y  | Met à l'origine l'axe Y | Déplace l'axe Y vers sa position d'origine |
-| Origine Z  | Met à l'origine l'axe Z | Déplace l'axe Z vers sa position d'origine |
+| Bouton       | Fonction                      | Description                                 |
+| ------------ | ----------------------------- | ------------------------------------------- |
 | Origine tout | Met à l'origine tous les axes | Met à l'origine tous les axes simultanément |
 
 :::tip Séquence de mise à l'origine
 Il est recommandé de mettre à l'origine tous les axes avant de commencer tout travail pour assurer
 un positionnement précis.
 :::
-
 
 ### Mouvement directionnel
 
@@ -63,23 +62,22 @@ Les contrôles de déplacement fournissent des boutons pour le mouvement directi
   ↙  ↓  ↘
 ```
 
-| Bouton            | Mouvement                       | Raccourci clavier |
-| ----------------- | ------------------------------- | ----------------- |
-| ↑                 | Y+ (Y- si la machine est Y-inversé) | Flèche haut    |
-| ↓                 | Y- (Y+ si la machine est Y-inversé) | Flèche bas     |
-| ←                 | X- (gauche)                     | Flèche gauche     |
-| →                 | X+ (droite)                     | Flèche droite     |
-| ↖ (haut-gauche)  | X- Y+/- (diagonale)             | -                 |
-| ↗ (haut-droite)  | X+ Y+/- (diagonale)             | -                 |
-| ↙ (bas-gauche)   | X- Y-/+ (diagonale)             | -                 |
-| ↘ (bas-droite)   | X+ Y-/+ (diagonale)             | -                 |
-| Z+                | Axe Z vers le haut              | Page Up           |
-| Z-                | Axe Z vers le bas               | Page Down         |
+| Bouton          | Mouvement                           | Raccourci clavier |
+| --------------- | ----------------------------------- | ----------------- |
+| ↑               | Y+ (Y- si la machine est Y-inversé) | Flèche haut       |
+| ↓               | Y- (Y+ si la machine est Y-inversé) | Flèche bas        |
+| ←               | X- (gauche)                         | Flèche gauche     |
+| →               | X+ (droite)                         | Flèche droite     |
+| ↖ (haut-gauche) | X- Y+/- (diagonale)                 | -                 |
+| ↗ (haut-droite) | X+ Y+/- (diagonale)                 | -                 |
+| ↙ (bas-gauche)  | X- Y-/+ (diagonale)                 | -                 |
+| ↘ (bas-droite)  | X+ Y-/+ (diagonale)                 | -                 |
+| Z+              | Axe Z vers le haut                  | Page Up           |
+| Z-              | Axe Z vers le bas                   | Page Down         |
 
 :::note Focus requis
 Les raccourcis clavier ne fonctionnent que lorsque la fenêtre principale a le focus.
 :::
-
 
 ### Retour visuel
 
@@ -91,42 +89,44 @@ Les boutons de déplacement fournissent un retour visuel :
 
 ### Paramètres de déplacement
 
-Configurez le comportement des opérations de déplacement :
+Configure le comportement des opérations de déplacement :
 
 **Vitesse de déplacement :**
-- **Plage** : 1-10 000 mm/min
+
+- **Plage** : 1-60 000 mm/min
 - **Par défaut** : 1 000 mm/min
 - **Objectif** : Contrôle la vitesse de déplacement de la tête laser
 
 :::tip Sélection de vitesse
-- Utilisez des vitesses plus faibles (100-500 mm/min) pour un positionnement précis
-- Utilisez des vitesses plus élevées (1 000-3 000 mm/min) pour des mouvements plus importants
-- Des vitétés très élevées peuvent causer des pas perdus sur certaines machines
-:::
 
+- Utilise des vitesses plus faibles (100-500 mm/min) pour un positionnement précis
+- Utilise des vitesses plus élevées (1 000-3 000 mm/min) pour des mouvements plus importants
+- Des vitesses très élevées peuvent causer des pas perdus sur certaines machines
+  :::
 
 **Distance de déplacement :**
+
 - **Plage** : 0.1-1 000 mm
 - **Par défaut** : 10.0 mm
 - **Objectif** : Contrôle la distance de déplacement de la tête laser par pression de bouton
 
 :::tip Sélection de distance
-- Utilisez de petites distances (0.1-1.0 mm) pour le réglage fin
-- Utilisez des distances moyennes (5-20 mm) pour le positionnement général
-- Utilisez de grandes distances (50-100 mm) pour le repositionnement rapide
-:::
 
+- Utilise de petites distances (0.1-1.0 mm) pour le réglage fin
+- Utilise des distances moyennes (5-20 mm) pour le positionnement général
+- Utilise de grandes distances (50-100 mm) pour le repositionnement rapide
+  :::
 
 ## Affichage de l'état de la machine
 
-Le panneau inférieur affiche des informations en temps réel sur votre machine :
+Le panneau de contrôle affiche des informations en temps réel sur ta machine :
 
 ### Position actuelle
 
 Affiche la position de la tête laser dans le système de coordonnées actif :
 
 - Les coordonnées sont relatives à l'origine du WCS sélectionné
-- Se met à jour en temps réel lorsque vous déplacez ou exécutez des travaux
+- Se met à jour en temps réel lorsque tu déplaces ou exécutes des travaux
 - Format : valeurs X, Y, Z en millimètres
 
 ### État de la connexion
@@ -145,117 +145,88 @@ Affiche la position de la tête laser dans le système de coordonnées actif :
 
 ## Système de coordonnées de travail (WCS)
 
-Le panneau inférieur fournit un accès rapide à la gestion du système de coordonnées de travail.
+Le panneau de contrôle fournit un accès rapide à la gestion du système de coordonnées de travail.
 
 ### Sélection du système actif
 
-Sélectionnez le système de coordonnées actuellement actif :
+Sélectionne le système de coordonnées actuellement actif :
 
-| Option        | Type  | Description                                     |
-| ------------- | ----- | ----------------------------------------------- |
-| G53 (Machine) | Fixe  | Coordonnées machine absolues, ne peut pas être modifié |
-| G54 (Travail 1)| Utilisateur | Premier système de coordonnées de travail    |
-| G55 (Travail 2)| Utilisateur | Deuxième système de coordonnées de travail   |
-| G56 (Travail 3)| Utilisateur | Troisième système de coordonnées de travail   |
-| G57 (Travail 4)| Utilisateur | Quatrième système de coordonnées de travail  |
-| G58 (Travail 5)| Utilisateur | Cinquième système de coordonnées de travail   |
-| G59 (Travail 6)| Utilisateur | Sixième système de coordonnées de travail    |
-
-### Décalages actuels
-
-Affiche les valeurs de décalage pour le WCS actif :
-
-- Affiché en (X, Y, Z) en millimètres
-- Représente la distance de l'origine machine à l'origine du WCS
-- Se met à jour automatiquement lorsque les décalages du WCS changent
+| Option          | Type        | Description                                            |
+| --------------- | ----------- | ------------------------------------------------------ |
+| G53 (Machine)   | Fixe        | Coordonnées machine absolues, ne peut pas être modifié |
+| G54 (Travail 1) | Utilisateur | Premier système de coordonnées de travail              |
+| G55 (Travail 2) | Utilisateur | Deuxième système de coordonnées de travail             |
+| G56 (Travail 3) | Utilisateur | Troisième système de coordonnées de travail            |
+| G57 (Travail 4) | Utilisateur | Quatrième système de coordonnées de travail            |
+| G58 (Travail 5) | Utilisateur | Cinquième système de coordonnées de travail            |
+| G59 (Travail 6) | Utilisateur | Sixième système de coordonnées de travail              |
 
 ### Définir l'origine du WCS
 
-Définissez où l'origine du WCS actif devrait être :
+Définis où l'origine du WCS actif devrait être :
 
-| Bouton | Fonction | Description                                          |
-| ------ | -------- | ---------------------------------------------------- |
-| Zéro X | Définir X=0 | Fait de la position X actuelle l'origine X pour le WCS actif |
-| Zéro Y | Définir Y=0 | Fait de la position Y actuelle l'origine Y pour le WCS actif |
-| Zéro Z | Définir Z=0 | Fait de la position Z actuelle l'origine Z pour le WCS actif |
+| Bouton               | Fonction      | Description                                                                                |
+| -------------------- | ------------- | ------------------------------------------------------------------------------------------ |
+| Cliquer pour zéro    | Définir X,Y=0 | Clique sur l'icône du réticule, puis clique sur le canevas pour définir le zéro de travail |
+| Éditer les décalages | Éditer        | Éditer manuellement les valeurs de décalage du WCS                                         |
+| Zéro X               | Définir X=0   | Fait de la position X actuelle l'origine X pour le WCS actif                               |
+| Zéro Y               | Définir Y=0   | Fait de la position Y actuelle l'origine Y pour le WCS actif                               |
+| Zéro Z               | Définir Z=0   | Fait de la position Z actuelle l'origine Z pour le WCS actif                               |
 
 :::note G53 ne peut pas être modifié
 Les boutons Zéro sont désactivés lorsque G53 (Coordonnées machine) est sélectionné,
 car les coordonnées machine sont fixes par le matériel.
 :::
 
-
 :::tip Flux de travail pour définir le WCS
-1. Connectez-vous à votre machine et mettez à l'origine tous les axes
-2. Sélectionnez le WCS que vous voulez configurer (par exemple, G54)
-3. Déplacez la tête laser à la position d'origine souhaitée
-4. Cliquez sur Zéro X et Zéro Y pour définir cette position comme (0, 0)
-5. Le décalage est stocké dans le contrôleur de votre machine
-:::
 
-
-## Onglet Visualiseur G-code
-
-Le visualiseur G-code affiche le code G généré pour votre projet dans un onglet du
-panneau inférieur, vous permettant d'inspecter et de vérifier le code avant l'envoi
-à la machine.
-
-### Caractéristiques
-
-- **Coloration syntaxique** : Les commandes G-code sont colorées pour une lecture
-  facile, avec différentes couleurs pour les mouvements, les paramètres et les
-  commentaires
-- **Surlignage de ligne** : La ligne actuellement exécutée est mise en surbrillance
-  pendant l'exécution du travail
-- **Actualisation automatique** : Le visualiseur se met à jour automatiquement lorsque
-  le G-code est régénéré
-
-### Navigation
-
-- Utilisez la barre de défilement ou la molette de la souris pour naviguer dans le code
-- Les numéros de ligne sont affichés pour faciliter le repérage
-- Basculez entre les onglets Visualiseur G-code et Console en cliquant sur les onglets
-  en haut du panneau inférieur
+1. Connecte-toi à ta machine et mets à l'origine tous les axes
+2. Sélectionne le WCS que tu veux configurer (par exemple, G54)
+3. Déplace la tête laser à la position d'origine souhaitée
+4. Clique sur Zéro X et Zéro Y pour définir cette position comme (0, 0)
+5. Le décalage est stocké dans le contrôleur de ta machine
+   :::
 
 ## Onglet Console
 
-La console fournit une interface de type terminal interactif pour envoyer des commandes G-code
-et surveiller la communication machine :
+L'onglet Console fournit une interface de type terminal interactif pour envoyer des
+commandes G-code et surveiller la communication machine. Clique sur l'icône console
+dans la bande d'onglets pour basculer vers cette vue.
 
 ### Saisie de commandes
 
-La boîte de saisie de commandes vous permet d'envoyer du G-code brut directement à la machine :
+La boîte de saisie de commandes te permet d'envoyer du G-code brut directement à la machine :
 
-- **Support multi-lignes** : Collez ou tapez plusieurs commandes
+- **Support multi-lignes** : Colle ou tape plusieurs commandes
 - **Entrée** : Envoie toutes les commandes
 - **Shift+Entrée** : Insère une nouvelle ligne (pour l'édition avant l'envoi)
-- **Historique** : Utilisez les flèches Haut/Bas pour naviguer dans les commandes précédemment envoyées
+- **Historique** : Utilise les flèches Haut/Bas pour naviguer dans les commandes précédemment envoyées
 
 ### Affichage du journal
 
-Le journal montre la communication entre Rayforge et votre machine avec
+Le journal montre la communication entre Rayforge et ta machine avec
 une coloration syntaxique pour une lecture facile :
 
-- **Commandes utilisateur** (bleu) : Commandes que vous avez saisies ou envoyées pendant les travaux
+- **Commandes utilisateur** (bleu) : Commandes que tu as saisies ou envoyées pendant les travaux
 - **Horodatages** (gris) : Heure de chaque message
 - **Erreurs** (rouge) : Messages d'erreur de la machine
 - **Avertissements** (orange) : Messages d'avertissement
 - **Interrogations d'état** (atténué) : Rapports de position/état en temps réel comme
-  `<Idle|WPos:0.000,0.000,0.000|...>`
+  `&lt;Idle|WPos:0.000,0.000,0.000|...&gt;`
 
 ### Mode verbeux
 
-Cliquez sur l'icône de terminal dans le coin supérieur droit de la console pour basculer
+Clique sur l'icône de terminal dans le coin supérieur droit de la console pour basculer
 la sortie verbeuse :
 
-- **Désactivé** (par défaut) : Masque les interrogations d'état fréquentes et les réponses "ok"
+- **Désactivé** (par défaut) : Masque les interrogations d'état fréquentes et les réponses « ok »
 - **Activé** : Affiche toute la communication machine
 
 ### Comportement du défilement automatique
 
 La console défile automatiquement pour afficher les nouveaux messages :
 
-- Faire défiler vers le haut désactive le défilement automatique pour que vous puissiez revoir l'historique
+- Faire défiler vers le haut désactive le défilement automatique pour que tu puisses revoir l'historique
 - Faire défiler vers le bas réactive le défilement automatique
 - Les nouveaux messages apparaissent immédiatement lorsque le défilement automatique est actif
 
@@ -263,15 +234,40 @@ La console défile automatiquement pour afficher les nouveaux messages :
 
 La console est inestimable pour diagnostiquer les problèmes :
 
-- Vérifiez que les commandes sont envoyées correctement
-- Recherchez les messages d'erreur du contrôleur
-- Surveillez l'état et la stabilité de la connexion
-- Passez en revue la progression de l'exécution du travail en temps réel
-- Envoyez des commandes de diagnostic (par exemple, `$$` pour voir les paramètres GRBL)
+- Vérifie que les commandes sont envoyées correctement
+- Recherche les messages d'erreur du contrôleur
+- Surveille l'état et la stabilité de la connexion
+- Passe en revue la progression de l'exécution du travail en temps réel
+- Envoie des commandes de diagnostic (par exemple, `$$` pour voir les paramètres GRBL)
+
+## Onglet Visualiseur G-code
+
+L'onglet Visualiseur G-code affiche le G-code généré pour les opérations actuelles.
+Clique sur l'icône G-code dans la bande d'onglets pour basculer vers cette vue.
+
+### Caractéristiques
+
+- **Coloration syntaxique** : Les commandes G-code sont colorées pour une meilleure lisibilité
+- **Surlignage de ligne** : La ligne actuellement exécutée est mise en surbrillance pendant
+  l'exécution du travail
+- **Actualisation automatique** : Le contenu du G-code se met à jour automatiquement lorsque
+  les opérations ou les paramètres du document changent
+
+## Onglet Actifs
+
+L'onglet Actifs affiche tous les éléments de stock et croquis dans ton document. Clique sur
+l'icône des actifs dans la bande d'onglets pour basculer vers cette vue.
+
+Lorsque la liste des actifs est vide, elle affiche des boutons pour ajouter du stock ou créer
+un nouveau croquis. Tu peux glisser les actifs depuis cette liste vers le canevas pour les
+placer. Double-cliquer sur un actif de stock ouvre ses propriétés.
+
+Lorsque l'onglet Console ou Visualiseur G-code est actif, tu peux aussi appuyer sur
+<kbd>Ctrl+F</kbd> pour rechercher dans le contenu.
 
 ## Compatibilité machine
 
-Le panneau inférieur s'adapte aux capacités de votre machine :
+Le panneau inférieur s'adapte aux capacités de ta machine :
 
 ### Support des axes
 
@@ -281,17 +277,17 @@ Le panneau inférieur s'adapte aux capacités de votre machine :
 
 ### Types de machines
 
-| Type de machine    | Support de déplacement | Notes                     |
-| ------------------ | ---------------------- | ------------------------- |
-| GRBL (v1.1+)       | Complet                | Prend en charge toutes les fonctionnalités de déplacement |
-| Smoothieware       | Complet                | Prend en charge toutes les fonctionnalités de déplacement |
-| Contrôleurs personnalisés | Variable         | Dépend de l'implémentation |
+| Type de machine           | Support de déplacement | Notes                                                     |
+| ------------------------- | ---------------------- | --------------------------------------------------------- |
+| GRBL (v1.1+)              | Complet                | Prend en charge toutes les fonctionnalités de déplacement |
+| Smoothieware              | Complet                | Prend en charge toutes les fonctionnalités de déplacement |
+| Contrôleurs personnalisés | Variable               | Dépend de l'implémentation                                |
 
 ## Fonctionnalités de sécurité
 
 ### Limites logicielles
 
-Lorsque les limites logicielles sont activées dans votre profil machine :
+Lorsque les limites logicielles sont activées dans ton profil machine :
 
 - Les boutons affichent un avertissement orange en approche des limites
 - Le mouvement est automatiquement limité pour éviter de dépasser les bornes
@@ -299,7 +295,7 @@ Lorsque les limites logicielles sont activées dans votre profil machine :
 
 ### État de la connexion
 
-- Tous les contrôles sont désactivés lorsque vous n'êtes pas connecté à une machine
+- Tous les contrôles sont désactivés lorsque tu n'es pas connecté à une machine
 - Les boutons mettent à jour leur sensibilité en fonction de l'état de la machine
 - Empêche le mouvement accidentel pendant l'opération
 
@@ -308,7 +304,7 @@ Lorsque les limites logicielles sont activées dans votre profil machine :
 **Pages connexes :**
 
 - [Systèmes de coordonnées de travail (WCS)](../general-info/coordinate-systems) - Gérer le WCS
-- [Configuration machine](../machine/general) - Configurez votre machine
+- [Configuration machine](../machine/general) - Configure ta machine
 - [Raccourcis clavier](../reference/shortcuts) - Référence complète des raccourcis
 - [Fenêtre principale](main-window) - Aperçu de l'interface principale
 - [Paramètres généraux](../machine/general) - Configuration de l'appareil

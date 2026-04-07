@@ -7,21 +7,27 @@ firmware de controlador.
 
 Rayforge actualmente soporta estos dialectos de código G:
 
-| Dialecto                                      | Firmware     | Uso Común                               |
-| --------------------------------------------- | ------------ | --------------------------------------- |
-| **GRBL (universal)**                          | GRBL 1.1+    | Láseres de diodo, CNC de aficionado     |
-| **GRBL (sin eje Z)**                          | GRBL 1.1+    | Cortadores láser 2D sin Z               |
-| **GRBL Dinámico (Consciente de Profundidad)** | GRBL 1.1+    | Grabado láser consciente de profundidad |
-| **GRBL Dinámico (sin eje Z)**                 | GRBL 1.1+    | Grabado láser consciente de profundidad |
-| **Mach4 (M67 Analog)**                        | Mach4        | Grabado ráster de alta velocidad        |
-| **Smoothieware**                              | Smoothieware | Cortadores láser, CNC                   |
-| **Marlin**                                    | Marlin 2.0+  | Impresoras 3D con láser                 |
+| Dialecto                                      | Firmware     | Uso Común                                    |
+| --------------------------------------------- | ------------ | -------------------------------------------- |
+| **Grbl (Compat)**                             | GRBL 1.1+    | Láseres de diodo, CNC de aficionado          |
+| **Grbl (Compat, sin eje Z)**                  | GRBL 1.1+    | Cortadores láser 2D sin Z                    |
+| **Grbl Raster**                               | GRBL 1.1+    | Optimizado para trabajo raster               |
+| **GRBL Dinámico (Consciente de Profundidad)** | GRBL 1.1+    | Grabado láser consciente de profundidad      |
+| **GRBL Dinámico (sin eje Z)**                 | GRBL 1.1+    | Grabado láser consciente de profundidad      |
+| **Mach4 (M67 Analog)**                        | Mach4        | Grabado ráster de alta velocidad             |
+| **Smoothieware**                              | Smoothieware | Cortadores láser, CNC                        |
+| **Marlin**                                    | Marlin 2.0+  | Impresoras 3D con láser                      |
 
 :::note Dialectos Recomendados
 :::
 
-**GRBL (universal)** es el dialecto más probado y recomendado para aplicaciones
+**Grbl (Compat)** es el dialecto más probado y recomendado para aplicaciones
 láser estándar.
+
+**Grbl Raster** está optimizado para grabado raster en controladores GRBL. Mantiene
+el láser en modo de potencia dinámica (M4) continuamente y omite comandos de
+velocidad de avance redundantes, resultando en una salida de código G más suave
+y compacta.
 
 **GRBL Dinámico (Consciente de Profundidad)** es recomendado para grabado láser
 consciente de profundidad donde la potencia varía durante los cortes (ej.,
@@ -47,11 +53,11 @@ para un control preciso de la potencia del láser.
 
 ### Cuándo Usar
 
-Use este dialecto cuando:
+Usa este dialecto cuando:
 
-- Tenga un controlador Mach4 con capacidad de salida analógica
-- Necesite grabado ráster de alta velocidad
-- Su controlador experimente desbordamiento de búfer con comandos S en línea
+- Tengas un controlador Mach4 con capacidad de salida analógica
+- Necesites grabado ráster de alta velocidad
+- Tu controlador experimente desbordamiento de búfer con comandos S en línea
   estándar
 
 ### Formato de Comando
@@ -71,7 +77,7 @@ M67 E0 Q0    ; Apagar láser
 Para crear un dialecto de código G personalizado basado en un dialecto integrado:
 
 1. Abre **Ajustes de Máquina** → **Dialecto de Código G**
-2. Haz clic en el ícono **Copiar** en un dialecto integrado para crear un nuevo
+2. Haz clic en el icono **Copiar** en un dialecto integrado para crear un nuevo
    dialecto personalizado
 3. Edita los ajustes del dialecto según sea necesario
 4. Guarda tu dialecto personalizado
@@ -80,6 +86,19 @@ Cada dialecto personalizado es una copia independiente. Cambiar un dialecto
 nunca afecta a otros, por lo que puedes experimentar libremente sin preocuparte
 por dañar una configuración existente. Los dialectos personalizados se almacenan
 en tu directorio de configuración y pueden compartirse.
+
+### Ajustes del Dialecto
+
+Al editar un dialecto personalizado, la página de Ajustes ofrece estas opciones:
+
+**Modo Láser Continuo** mantiene el láser en modo de potencia dinámica (M4) activo
+durante todo el trabajo en lugar de alternar M4/M5 entre segmentos. Esto es útil
+para grabado raster donde el láser necesita permanecer encendido continuamente
+durante las líneas de escaneo.
+
+**Velocidad de Avance Modal** omite el parámetro de velocidad de avance (F) de los
+comandos de movimiento cuando no ha cambiado desde el último comando. Esto produce
+código G más compacto y reduce la cantidad de datos enviados al controlador.
 
 ### Comando Separado de Encendido del Láser para Enfoque
 

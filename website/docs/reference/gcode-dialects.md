@@ -11,6 +11,7 @@ Rayforge currently supports these G-code dialects:
 | ------------------------------ | ------------ | --------------------------- |
 | **Grbl (Compat)**              | GRBL 1.1+    | Diode lasers, hobby CNC     |
 | **Grbl (Compat, no Z axis)**   | GRBL 1.1+    | 2D laser cutters without Z  |
+| **Grbl Raster**                | GRBL 1.1+    | Optimized for raster work   |
 | **GRBL Dynamic (Depth-Aware)** | GRBL 1.1+    | Depth-Aware laser engraving |
 | **GRBL Dynamic (no Z axis)**   | GRBL 1.1+    | Depth-Aware laser engraving |
 | **Mach4 (M67 Analog)**         | Mach4        | High-speed raster engraving |
@@ -22,6 +23,10 @@ Rayforge currently supports these G-code dialects:
 
 **Grbl (Compat)** is the most tested and recommended dialect for standard laser
 applications.
+
+**Grbl Raster** is optimized for raster engraving on GRBL controllers. It keeps
+the laser in dynamic power mode (M4) continuously and omits redundant feedrate
+commands, resulting in smoother and more compact G-code output.
 
 **GRBL Dynamic (Depth-Aware)** is recommended for Depth-Aware laser engraving
 where power varies during cuts (e.g., variable depth engraving).
@@ -75,6 +80,19 @@ Each custom dialect is an independent copy. Changing one dialect never affects
 others, so you can freely experiment without worrying about breaking an existing
 setup. Custom dialects are stored in your configuration directory and can be
 shared.
+
+### Dialect Settings
+
+When editing a custom dialect, the Settings page offers these options:
+
+**Continuous Laser Mode** keeps the laser in dynamic power mode (M4) active
+throughout the entire job instead of toggling M4/M5 between segments. This is
+useful for raster engraving where the laser needs to stay on continuously
+during scan lines.
+
+**Modal Feedrate** omits the feedrate parameter (F) from motion commands when
+it has not changed since the last command. This produces more compact G-code
+and reduces the amount of data sent to the controller.
 
 ### Separate Laser-On Command for Focusing
 

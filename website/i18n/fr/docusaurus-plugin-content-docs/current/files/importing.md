@@ -48,10 +48,25 @@ pris en charge. La boîte de dialogue permet de :
 
 ![Boîte de dialogue d'importation](/screenshots/import-dialog.png)
 
+### Mode d'importation des calques
+
+Lors de l'importation de fichiers contenant plusieurs calques (comme les fichiers SVG ou PDF
+avec des calques nommés), la boîte de dialogue offre trois façons de les gérer :
+
+- **Mapper vers l'existant** : Fait correspondre les calques importés aux calques existants du document.
+  Le premier calque du document source est placé dans le premier calque
+  de ton projet, le deuxième dans le deuxième, et ainsi de suite.
+  C'est le mode par défaut et il fonctionne bien lorsque ton document a déjà
+  des calques configurés.
+- **Nouveaux calques** : Crée un nouveau calque dans le document pour chaque calque importé.
+  Cela garde le contenu importé séparé du travail existant.
+- **Aplatir** : Fusionne tous les calques importés en un seul calque. Utile lorsque
+  tu veux tout sur un seul calque quelle que soit la structure d'origine.
+
 ### Méthode 1 : Menu Fichier
 
 1. **Importer un fichier** (ou Ctrl+I)
-2. **Sélectionner votre fichier** dans le sélecteur de fichiers
+2. **Sélectionner ton fichier** dans le sélecteur de fichiers
 3. **Configurer les paramètres d'importation** dans la boîte de dialogue
 4. **Prévisualiser** le résultat avant l'importation
 5. **Cliquer sur Importer** pour ajouter au canevas et à l'arborescence du
@@ -78,7 +93,7 @@ rayforge file1.svg file2.dxf
 
 ### Redimensionnement automatique à l'importation
 
-Lors de l'importation de fichiers plus grands que la zone de travail de votre
+Lors de l'importation de fichiers plus grands que la zone de travail de ta
 machine, Rayforge effectuera automatiquement les actions suivantes :
 
 1. **Réduire** le contenu importé pour qu'il tienne dans les limites de la
@@ -97,8 +112,8 @@ La notification de redimensionnement apparaît sous forme de message toast :
 - Le toast reste visible jusqu'à ce qu'il soit ignoré ou que l'action de
   réinitialisation soit effectuée
 
-Cela garantit que vos dessins s'adaptent toujours aux capacités de votre machine
-tout en vous offrant la flexibilité de restaurer la taille d'origine si
+Cela garantit que tes dessins s'adaptent toujours aux capacités de ta machine
+tout en t'offrant la flexibilité de restaurer la taille d'origine si
 nécessaire.
 
 ---
@@ -142,7 +157,7 @@ Cette option est activée par défaut dans la boîte de dialogue d'importation.
 
 #### 2. Vectoriser l'image
 
-Désactivez « Utiliser les vecteurs originaux » pour utiliser cette méthode.
+Désactive « Utiliser les vecteurs originaux » pour utiliser cette méthode.
 
 **Fonctionnement :**
 
@@ -171,34 +186,39 @@ Désactivez « Utiliser les vecteurs originaux » pour utiliser cette méthode.
 ### Aperçu en direct
 
 La boîte de dialogue d'importation affiche un aperçu en direct de l'importation
-de votre SVG :
+de ton SVG :
 
 - Les tracés vectoriels sont affichés en surbrillance bleue
 - En mode vectorisation, l'image originale est montrée avec les tracés
   vectorisés
-- L'aperçu se met à jour en temps réel lorsque vous modifiez les paramètres
+- L'aperçu se met à jour en temps réel lorsque tu modifies les paramètres
 
 ### Bonnes pratiques SVG
 
-**Préparez votre SVG pour obtenir les meilleurs résultats :**
+**Prépare ton SVG pour obtenir les meilleurs résultats :**
 
 1. **Convertir le texte en tracés :**
+
    - Inkscape : `Chemin → Objet en tracé`
    - Illustrator : `Texte → Vectoriser le texte`
 
 2. **Simplifier les tracés complexes :**
+
    - Inkscape : `Chemin → Simplifier` (Ctrl+L)
    - Supprimer les nœuds inutiles
 
 3. **Dégrouper les groupes imbriqués :**
+
    - Aplanir la hiérarchie lorsque c'est possible
    - `Objet → Dégrouper` (Ctrl+Shift+G)
 
 4. **Supprimer les éléments masqués :**
+
    - Effacer les guides, grilles, lignes de construction
    - Supprimer les objets invisibles/transparentes
 
 5. **Enregistrer en SVG simple :**
+
    - Inkscape : « SVG simple » ou « SVG optimisé »
    - Pas « SVG Inkscape » (contient des métadonnées supplémentaires)
 
@@ -228,7 +248,7 @@ Rayforge prend en charge les formats DXF standard :
 - **R13, R14** - Bonne prise en charge
 - **R2000+** - Fonctionne généralement, mais R12 est plus sûr
 
-**Astuce :** Exportez en DXF R12/LT2 pour une compatibilité maximale.
+**Astuce :** Exporte en DXF R12/LT2 pour une compatibilité maximale.
 
 ### Conseils pour l'importation DXF
 
@@ -267,14 +287,14 @@ matricielles, ou les deux.
 ### Importation vectorielle directe
 
 Lors de l'importation d'un PDF contenant des tracés vectoriels, Rayforge peut
-les importer directement — tout comme les fichiers SVG ou DXF. Cela vous donne
+les importer directement — tout comme les fichiers SVG ou DXF. Cela te donne
 une géométrie propre et redimensionnable sans perte de qualité due à la
 rastérisation.
 
-Si le PDF contient des calques, Rayforge les détecte et vous permet de choisir
-lesquels importer. Chaque calque devient une pièce distincte dans votre
+Si le PDF contient des calques, Rayforge les détecte et te permet de choisir
+lesquels importer. Chaque calque devient une pièce distincte dans ton
 document. Cela fonctionne de la même manière que l'importation de calques SVG :
-activez ou désactivez les calques individuels dans la boîte de dialogue
+active ou désactive les calques individuels dans la boîte de dialogue
 d'importation avant d'importer.
 
 Ceci est particulièrement utile pour les PDF exportés depuis des logiciels de
@@ -296,15 +316,15 @@ d'une vectorisation. Cela fonctionne comme l'importation d'images matricielles.
    vectoriels (Illustrator, Inkscape) donnent les résultats les plus propres
    avec l'importation directe.
 
-2. **Vérifier les calques** : Si votre PDF comporte des calques, ils seront
-   listés dans la boîte de dialogue d'importation. Sélectionnez uniquement les
-   calques dont vous avez besoin.
+2. **Vérifier les calques** : Si ton PDF comporte des calques, ils seront
+   listés dans la boîte de dialogue d'importation. Sélectionne uniquement les
+   calques dont tu as besoin.
 
-3. **Pour les documents avec du texte** : Exportez en SVG avec les polices
-   converties en tracés pour une qualité optimale, ou utilisez le repli rendu et
+3. **Pour les documents avec du texte** : Exporte en SVG avec les polices
+   converties en tracés pour une qualité optimale, ou utilise le repli rendu et
    vectorisation.
 
-4. **Utiliser l'aperçu de la boîte de dialogue** : Ajustez les paramètres de
+4. **Utiliser l'aperçu de la boîte de dialogue** : Ajuste les paramètres de
    seuil et d'inversion en mode vectorisation. L'aperçu montre exactement
    comment le PDF sera vectorisé.
 
@@ -362,8 +382,8 @@ La boîte de dialogue d'importation fournit les paramètres ajustables suivants 
 | **Inverser**          | Inverser les couleurs | Vectorise les objets clairs sur fond sombre         |
 
 **Les paramètres par défaut** fonctionnent bien pour la plupart des images. La
-boîte de dialogue affiche un aperçu en direct qui se met à jour lorsque vous
-ajustez ces paramètres, vous permettant d'affiner la vectorisation avant
+boîte de dialogue affiche un aperçu en direct qui se met à jour lorsque tu
+ajustes ces paramètres, te permettant d'affiner la vectorisation avant
 l'importation.
 
 ### Préparer les images pour la vectorisation

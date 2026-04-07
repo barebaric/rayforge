@@ -1,8 +1,7 @@
 # Visualização 3D
 
-A janela de visualização 3D permite visualizar seus caminhos de ferramenta G-code antes de
-enviá-los para sua máquina. Este recurso poderoso ajuda a detectar erros
-e verificar a configuração do seu trabalho.
+A visualização 3D permite visualizar seus caminhos de ferramenta G-code e
+simular a execução do trabalho antes de enviá-los para sua máquina.
 
 ![Visualização 3D](/screenshots/main-3d.png)
 
@@ -11,8 +10,7 @@ e verificar a configuração do seu trabalho.
 Acesse a visualização 3D:
 
 - **Menu**: Visualizar → Visualização 3D
-- **Teclado**: <kbd>ctrl+3</kbd>
-- **Após geração de G-code**: Abre automaticamente (configurável)
+- **Teclado**: <kbd>F12</kbd>
 
 ## Navegação
 
@@ -22,21 +20,16 @@ Acesse a visualização 3D:
 - **Panorâmica**: Clique direito e arraste, ou clique do meio e arraste
 - **Zoom**: Roda do mouse, ou <kbd>ctrl</kbd> + clique esquerdo e arraste
 
-### Controles de Teclado
-
-- <kbd>r</kbd>: Resetar câmera para visualização padrão
-- <kbd>home</kbd>: Resetar zoom e posição
-- <kbd>f</kbd>: Ajustar visualização ao caminho da ferramenta
-- Teclas de seta: Rotacionar câmera
-
 ### Predefinições de Visualização
 
 Ângulos rápidos de câmera:
 
 - **Topo** (<kbd>1</kbd>): Vista de cima
 - **Frente** (<kbd>2</kbd>): Elevação frontal
-- **Direita** (<kbd>3</kbd>): Elevação lateral direita
-- **Isométrico** (<kbd>4</kbd>): Visualização isométrica 3D
+- **Direita** (<kbd>3</kbd>): Vista lateral direita
+- **Esquerda** (<kbd>4</kbd>): Vista lateral esquerda
+- **Traseira** (<kbd>5</kbd>): Elevação traseira
+- **Isométrico** (<kbd>7</kbd>): Visualização isométrica 3D
 
 ## Exibição do Sistema de Coordenadas de Trabalho
 
@@ -49,12 +42,12 @@ de forma diferente da tela 2D:
   a origem do mundo
 - **Deslocamento aplicado**: A grade inteira é deslocada para alinhar com o
   deslocamento WCS selecionado
-- **Rótulos relativos ao WCS**: Rótulos de coordenadas mostram posições relativas à
-  origem WCS, não à origem da máquina
+- **Rótulos relativos ao WCS**: Rótulos de coordenadas mostram posições relativas
+  à origem WCS, não à origem da máquina
 
-Esta exibição "em isolamento" facilita entender onde seu trabalho vai
-rodar em relação ao sistema de coordenadas de trabalho selecionado, sem se confundir
-com a posição absoluta da máquina.
+Esta exibição "em isolamento" facilita entender onde seu trabalho vai rodar em
+relação ao sistema de coordenadas de trabalho selecionado, sem se confundir com
+a posição absoluta da máquina.
 
 ### Mudando WCS
 
@@ -64,127 +57,109 @@ A visualização 3D atualiza automaticamente quando você muda o WCS ativo:
 - Os rótulos atualizam para mostrar coordenadas relativas ao novo WCS
 
 :::tip WCS na Visualização 3D
-A visualização 3D mostra seus caminhos de ferramenta relativos ao WCS selecionado. Quando você
-muda o WCS, verá os caminhos de ferramenta parecerem se mover porque o ponto de referência
-(a grade) mudou, não porque os caminhos de ferramenta em si se moveram.
+A visualização 3D mostra seus caminhos de ferramenta relativos ao WCS
+selecionado. Quando você muda o WCS, verá os caminhos de ferramenta parecerem
+se mover porque o ponto de referência (a grade) mudou, não porque os caminhos
+de ferramenta em si se moveram.
 :::
 
 
 ## Opções de Exibição
 
+Botões de alternância de visibilidade estão localizados como botões de
+sobreposição no canto superior direito da tela 3D:
+
+- **Modelo**: Alternar visibilidade do modelo 3D da máquina
+- **Movimentos de deslocamento**: Alternar visibilidade dos movimentos rápidos
+- **Zonas de restrição**: Alternar visibilidade das zonas de restrição
+
 ### Visualização do Caminho da Ferramenta
 
 Personalize o que você vê:
 
-- **Mostrar Movimentos Rápidos**: Exibe movimentos de deslocamento (linhas tracejadas)
-- **Mostrar Movimentos de Trabalho**: Exibe movimentos de corte/gravação (linhas sólidas)
+- **Mostrar Movimentos Rápidos**: Exibe movimentos de deslocamento (linhas
+  tracejadas)
+- **Mostrar Movimentos de Trabalho**: Exibe movimentos de corte/gravação (linhas
+  sólidas)
 - **Colorir por Operação**: Cores diferentes para cada operação
-- **Colorir por Potência**: Gradiente baseado na potência do laser
-- **Colorir por Velocidade**: Gradiente baseado na taxa de avanço
 
 :::tip Cores por Laser
-Ao usar máquinas com múltiplas cabeças de laser, cada laser pode ter suas próprias
-cores de corte e raster configuradas nas [Configurações do Laser](../machine/laser).
-Isso facilita identificar qual laser realizará cada operação.
+Ao usar máquinas com múltiplas cabeças de laser, cada laser pode ter suas
+próprias cores de corte e raster configuradas nas
+[Configurações do Laser](../machine/laser). Isso facilita identificar qual laser
+realizará cada operação.
 :::
 
-### Visualização da Máquina
+### Modelo da Cabeça do Laser
 
-- **Mostrar Origem**: Exibe ponto de referência (0,0)
-- **Mostrar Área de Trabalho**: Exibe limites da máquina
-- **Mostrar Cabeça do Laser**: Exibe indicador de posição atual
+A visualização 3D renderiza um modelo da sua cabeça de laser que se move ao
+longo do caminho da ferramenta durante a simulação. Você pode atribuir um modelo
+3D a cada cabeça de laser na página de [Configurações do
+Laser](../machine/laser) nas Configurações da Máquina. A escala, rotação e
+distância focal do modelo podem ser ajustadas para corresponder à sua
+configuração física.
 
-### Configurações de Qualidade
+Durante a simulação, um feixe de laser brilhante é desenhado da cabeça para
+baixo quando o laser está ativo.
 
-- **Espessura da Linha**: Grossura das linhas do caminho da ferramenta
-- **Anti-aliasing**: Renderização suave de linhas (pode impactar desempenho)
-- **Fundo**: Cor clara, escura ou personalizada
+## Simulação
 
-## Controles de Reprodução
+A visualização 3D inclui um simulador integrado com controles de reprodução
+sobrepostos na parte inferior da tela.
 
-Simule a execução do trabalho:
+### Controles de Reprodução
 
-- **Reproduzir/Pausar** (<kbd>espaço</kbd>): Anima execução do caminho da ferramenta
-- **Velocidade**: Ajusta velocidade de reprodução (0.5x - 10x)
-- **Avançar/Voltar**: Avança por comandos G-code individuais
-- **Pular para Posição**: Clique na linha do tempo para pular para ponto específico
+- **Reproduzir/Pausar** (<kbd>espaço</kbd>): Anima execução do caminho da
+  ferramenta
+- **Avançar/Voltar**: Avança ou volta uma operação por vez
+- **Velocidade**: Alterna entre velocidades de reprodução (1x, 2x, 4x, 8x, 16x)
+- **Controle deslizante de linha do tempo**: Arraste para navegar pelo trabalho
 
-### Linha do Tempo
+### Visualizador G-code Sincronizado
 
-A linha do tempo mostra:
-
-- Posição atual no trabalho
-- Limites de operações (segmentos coloridos)
-- Tempo estimado em qualquer ponto
-
-## Ferramentas de Análise
-
-### Medição de Distância
-
-Meça distâncias em 3D:
-
-1. Ative a ferramenta de medição
-2. Clique em dois pontos no caminho da ferramenta
-3. Veja a distância nas unidades atuais
-
-### Painel de Estatísticas
-
-Veja estatísticas do trabalho:
-
-- **Distância Total**: Soma de todos os movimentos
-- **Distância de Trabalho**: Apenas distância de corte/gravação
-- **Distância Rápida**: Apenas movimentos de deslocamento
-- **Tempo Estimado**: Estimativa de duração do trabalho
-- **Caixa Delimitadora**: Dimensões gerais
+A simulação permanece sincronizada com o visualizador G-code no painel
+inferior. Percorrer a simulação destaca a linha correspondente no visualizador
+G-code, e clicar em uma linha no visualizador G-code pula a simulação para
+aquele ponto.
 
 ### Visibilidade de Camada
 
-Alterne visibilidade das operações:
+Alterne a visibilidade de camadas individuais:
 
-- Clique no nome da operação para mostrar/ocultar
-- Foque em operações específicas para inspeção
-- Isole problemas sem regenerar G-code
+- Clique no nome de uma camada para mostrar ou ocultá-la
+- Foque em camadas específicas para inspeção
 
 ## Lista de Verificação
 
 Antes de enviar para a máquina, verifique:
 
-- [ ] **Caminho da ferramenta está completo**: Sem segmentos faltando
-- [ ] **Dentro da área de trabalho**: Permanece dentro dos limites da máquina
-- [ ] **Ordem correta das operações**: Gravar antes de cortar
-- [ ] **Sem colisões**: Cabeça não atinge grampos/fixações
-- [ ] **Origem correta**: Começa na posição esperada
-- [ ] **Posições das abas**: Abas de fixação nos locais corretos (se usadas)
+- [ ] O caminho da ferramenta está completo sem segmentos faltando
+- [ ] Os caminhos permanecem dentro da área de trabalho da máquina
+- [ ] Operações de gravação executam antes dos cortes
+- [ ] Nenhum caminho de ferramenta entra em uma zona de restrição
+- [ ] O trabalho começa na posição esperada
+- [ ] Abas de fixação estão nos locais corretos
 
 ## Dicas de Desempenho
 
 Para trabalhos grandes ou complexos:
 
-1. **Reduza detalhe da linha**: Menor qualidade de exibição para renderização mais rápida
-2. **Oculte movimentos rápidos**: Foque apenas nos movimentos de trabalho
-3. **Desative anti-aliasing**: Melhora taxa de quadros
-4. **Feche outras aplicações**: Libere recursos da GPU
+1. Oculte movimentos rápidos para focar apenas nos movimentos de trabalho
+2. Reduza o número de camadas visíveis
+3. Feche outras aplicações para liberar recursos da GPU
 
 ## Solução de Problemas
 
-### Visualização está em branco ou preta
+### Pré-visualização está em branco ou preta
 
-- Regenere o G-code (<kbd>ctrl+g</kbd>)
 - Verifique se as operações estão ativadas
 - Verifique se os objetos têm operações atribuídas
 
-### Visualização lenta ou travando
+### Pré-visualização lenta ou travando
 
-- Reduza a espessura da linha
-- Desative anti-aliasing
 - Oculte movimentos rápidos
-- Atualize drivers de vídeo
-
-### Cores não aparecendo corretamente
-
-- Verifique a configuração de colorir por (operação/potência/velocidade)
-- Certifique-se que as operações têm cores diferentes atribuídas
-- Reset as configurações de visualização para os padrões
+- Oculte modelos 3D
+- Reduza o número de camadas visíveis
 
 ---
 

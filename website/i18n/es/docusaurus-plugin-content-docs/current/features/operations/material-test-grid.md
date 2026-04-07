@@ -41,35 +41,45 @@ Ajusta los parámetros de la cuadrícula de prueba en el diálogo de configuraci
 
 #### Tipo de Prueba
 
-- **Grabar:** Rellena cuadrados con patrón raster
-- **Cortar:** Corta el contorno de los cuadrados
+- **Grabar**: Rellena cuadrados con patrón raster
+- **Cortar**: Corta el contorno de los cuadrados
 
 #### Rango de Velocidad
 
-- **Velocidad Mín:** Velocidad más lenta a probar (mm/min)
-- **Velocidad Máx:** Velocidad más rápida a probar (mm/min)
+- **Velocidad Mín**: Velocidad más lenta a probar (mm/min)
+- **Velocidad Máx**: Velocidad más rápida a probar (mm/min)
 - Las columnas en la cuadrícula representan diferentes velocidades
 
 #### Rango de Potencia
 
-- **Potencia Mín:** Potencia más baja a probar (%)
-- **Potencia Máx:** Potencia más alta a probar (%)
+- **Potencia Mín**: Potencia más baja a probar (%)
+- **Potencia Máx**: Potencia más alta a probar (%)
 - Las filas en la cuadrícula representan diferentes niveles de potencia
 
 #### Dimensiones de la Cuadrícula
 
-- **Columnas:** Número de variaciones de velocidad (típicamente 3-7)
-- **Filas:** Número de variaciones de potencia (típicamente 3-7)
+- **Columnas**: Número de variaciones de velocidad (típicamente 3-7)
+- **Filas**: Número de variaciones de potencia (típicamente 3-7)
 
 #### Tamaño y Espaciado
 
-- **Tamaño de Forma:** Tamaño de cada cuadrado de prueba en mm (por defecto: 20mm)
-- **Espaciado:** Espacio entre cuadrados en mm (por defecto: 5mm)
+- **Tamaño de Forma**: Tamaño de cada cuadrado de prueba en mm (por defecto: 20mm)
+- **Espaciado**: Espacio entre cuadrados en mm (por defecto: 5mm)
 
 #### Etiquetas
-- **Incluir etiquetas**: Habilitar/deshabilitar etiquetas de ejes mostr values of speed and power
-- Las etiquetas aparecen en los bordes izquier y superior
-- Las etiquetas se graban con `label_power_percent` power and a configurable speed (default: 1000 mm/min) for different values
+
+- **Incluir Etiquetas**: Habilitar/deshabilitar etiquetas de ejes mostrando valores de velocidad y potencia
+- Las etiquetas aparecen en los bordes izquierdo y superior
+- **Potencia de Etiqueta (%)**: Ajuste de potencia para grabar etiquetas
+- **Velocidad de Etiqueta (mm/min)**: Velocidad para grabar etiquetas (por defecto: 1000 mm/min)
+
+Las etiquetas se graban primero, antes de la cuadrícula de prueba, para que no sean ocultadas por el patrón de prueba.
+
+#### Intervalo de Línea (Solo Prueba de Grabado)
+
+- **Intervalo de Línea (mm)**: Espaciado entre líneas de escaneo al usar el tipo de prueba de grabado
+- Valores menores crean rellenos más densos pero tardan más en ejecutarse
+- Valores típicos: 0.1-0.3mm
 
 ### Paso 4: Generar la Cuadrícula
 
@@ -89,9 +99,9 @@ Potencia (%)     Velocidad (mm/min) →
    10%      [  ]   [  ]   [  ]   [  ]   [  ]
 ```
 
-- **Columnas:** La velocidad aumenta de izquierda a derecha
-- **Filas:** La potencia aumenta de abajo hacia arriba
-- **Etiquetas:** Muestran valores exactos para cada fila/columna
+- **Columnas**: La velocidad aumenta de izquierda a derecha
+- **Filas**: La potencia aumenta de abajo hacia arriba
+- **Etiquetas**: Muestran valores exactos para cada fila/columna
 
 ### Cálculo del Tamaño de Cuadrícula
 
@@ -113,8 +123,8 @@ Potencia (%)     Velocidad (mm/min) →
 
 Rayforge ejecuta las celdas de prueba en un **orden optimizado por riesgo** para prevenir daño al material:
 
-1. **Velocidad más alta primero:** Las velocidades rápidas son más seguras (menor acumulación de calor)
-2. **Menor potencia dentro de cada velocidad:** Minimiza el riesgo en cada nivel de velocidad
+1. **Velocidad más alta primero**: Las velocidades rápidas son más seguras (menor acumulación de calor)
+2. **Menor potencia dentro de cada velocidad**: Minimiza el riesgo en cada nivel de velocidad
 
 Esto previene chamuscado o fuego al comenzar con combinaciones lentas y de alta potencia.
 
@@ -141,9 +151,9 @@ Orden:  1  2  3
 
 Después de completar la prueba, examina cada celda:
 
-- **Muy claro:** Aumenta potencia o disminuye velocidad
-- **Muy oscuro/chamuscado:** Disminuye potencia o aumenta velocidad
-- **Perfecto:** Anota la combinación de velocidad/potencia
+- **Muy claro**: Aumenta potencia o disminuye velocidad
+- **Muy oscuro/chamuscado**: Disminuye potencia o aumenta velocidad
+- **Perfecto**: Anota la combinación de velocidad/potencia
 
 ### Paso 3: Registrar Ajustes
 
@@ -224,10 +234,10 @@ Ejecuta la misma configuración de cuadrícula en diferentes materiales para con
 
 ### Los resultados son inconsistentes
 
-- **Verifica:** El material está plano y correctamente asegurado
-- **Verifica:** El enfoque es consistente en toda el área de prueba
-- **Verifica:** La potencia del láser es estable (revisa la fuente de alimentación)
-- **Prueba:** Cuadrícula más pequeña para reducir el área de prueba
+- **Verifica**: El material está plano y correctamente asegurado
+- **Verifica**: El enfoque es consistente en toda el área de prueba
+- **Verifica**: La potencia del láser es estable (revisa la fuente de alimentación)
+- **Prueba**: Cuadrícula más pequeña para reducir el área de prueba
 
 ## Temas Relacionados
 

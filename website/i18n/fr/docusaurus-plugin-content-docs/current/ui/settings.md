@@ -2,7 +2,7 @@
 
 ![Paramètres généraux](/screenshots/application-general.png)
 
-Personnalisez Rayforge pour correspondre à votre flux de travail et vos préférences.
+Personnalise Rayforge pour correspondre à ton flux de travail et tes préférences.
 
 ## Accéder aux paramètres
 
@@ -15,11 +15,18 @@ La page Général contient les paramètres à l'échelle de l'application.
 
 ### Apparence
 
-- **Thème** : Choisissez entre le thème Système, Clair ou Sombre
+- **Thème** : Choisis entre le thème Système, Clair ou Sombre
+
+### Opérations
+
+- **Mise à jour automatique des opérations** : Lorsqu'activé (par défaut), les opérations sont
+  recalculées automatiquement après chaque modification. Désactive cette option si tu préfères
+  déclencher le recalcul manuellement via le bouton de la barre d'outils — cela peut être
+  utile sur des machines plus lentes ou avec des documents très complexes.
 
 ### Unités
 
-Configurez les unités d'affichage pour diverses valeurs dans l'application :
+Configure les unités d'affichage pour diverses valeurs dans l'application :
 
 - **Longueur** : Millimètres, pouces et autres unités de longueur
 - **Vitesse** : mm/min, mm/sec, pouces/min et autres unités de vitesse
@@ -27,7 +34,7 @@ Configurez les unités d'affichage pour diverses valeurs dans l'application :
 
 ### Démarrage
 
-Configurez ce qui se passe au démarrage de l'application. Les fichiers spécifiés sur
+Configure ce qui se passe au démarrage de l'application. Les fichiers spécifiés sur
 la ligne de commande remplaceront toujours ces paramètres.
 
 - **Comportement au démarrage** :
@@ -35,11 +42,11 @@ la ligne de commande remplaceront toujours ces paramètres.
   - Ouvrir le dernier projet
   - Ouvrir un projet spécifique
 - **Chemin du projet** : Chemin vers le projet spécifique à ouvrir au démarrage
-  (visible uniquement lorsque "Ouvrir un projet spécifique" est sélectionné)
+  (visible uniquement lorsque « Ouvrir un projet spécifique » est sélectionné)
 
 ## Machines
 
-La page Machines vous permet de gérer vos configurations machine.
+La page Machines te permet de gérer tes configurations machine.
 
 - **Ajouter une machine** : Créer une nouvelle configuration machine
 - **Supprimer une machine** : Supprimer une machine sélectionnée
@@ -49,7 +56,7 @@ Pour une configuration détaillée de la machine, voir la section [Configuration
 
 ## Matériaux
 
-La page Matériaux gère votre bibliothèque de matériaux.
+La page Matériaux gère ta bibliothèque de matériaux.
 
 - **Ajouter une bibliothèque** : Créer une nouvelle bibliothèque de matériaux
 - **Éditer** : Renommer une bibliothèque sélectionnée
@@ -59,7 +66,7 @@ Voir [Matériaux](../application-settings/materials) pour plus de détails.
 
 ## Recettes
 
-La page Recettes gère vos recettes d'opérations.
+La page Recettes gère tes recettes d'opérations.
 
 - **Ajouter une recette** : Créer une nouvelle recette
 - **Éditer** : Modifier une recette sélectionnée
@@ -82,14 +89,14 @@ La page Confidentialité contrôle le rapport d'utilisation anonyme.
 
 ## Licences
 
-La page Licences gère vos clés de licence pour les fonctionnalités premium et les addons.
+La page Licences gère tes clés de licence pour les fonctionnalités premium et les addons.
 
-- **Lier le compte Patreon** : Connectez votre compte Patreon pour accéder aux avantages de supporteur
-- **Clés de licence d'addons** : Entrez les clés de licence pour les addons premium
+- **Lier le compte Patreon** : Connecte ton compte Patreon pour accéder aux avantages de supporteur
+- **Clés de licence d'addons** : Entre les clés de licence pour les addons premium
 
 ---
 
 ## Sujets connexes
 
-- [Configuration machine](../machine/general) - Configurez votre découpeur laser
+- [Configuration machine](../machine/general) - Configure ton découpeur laser
 - [Raccourcis](../reference/shortcuts) - Raccourcis clavier

@@ -34,6 +34,7 @@ module.exports = {
         'machine/device',
         'machine/laser',
         'machine/rotary',
+        'machine/nogo-zones',
         'machine/camera',
         'machine/maintenance',
       ],

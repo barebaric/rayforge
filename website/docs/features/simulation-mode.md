@@ -41,7 +41,11 @@ Use the controls at the bottom of the canvas:
 - **Progress slider**: Drag to scrub through the job
 - **Arrow keys**: Step through instructions one at a time
 
-The simulation and G-code view stay in sync - stepping through the simulation highlights the corresponding G-code, and clicking G-code lines jumps to that point in the simulation.
+The simulation and G-code view stay in sync — stepping through the simulation highlights the
+corresponding G-code line, and clicking a G-code line jumps the simulation to that point.
+
+The 3D view also has its own simulation with synchronized playback. Stepping through the 3D
+simulator highlights the matching line in the G-code viewer, and vice versa.
 
 ## Editing During Simulation
 

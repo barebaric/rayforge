@@ -113,6 +113,15 @@ it easy to see which operations will be performed by which laser. For example,
 use red for your main cutting laser and blue for a secondary engraving laser.
 :::
 
+#### 3D Model
+
+Each laser head can have a 3D model assigned to it. This model is rendered in
+the [3D view](../ui/3d-preview) and follows the toolpath during simulation.
+
+Click the model selection row to browse available models. Once a model is
+selected, you can adjust its scale, rotation (X/Y/Z), and focal distance to
+match your physical laser head.
+
 ## See Also
 
 - [Device Settings](device) - GRBL laser mode settings

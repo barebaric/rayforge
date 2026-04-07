@@ -196,13 +196,18 @@ Once aligned, the camera overlay helps position jobs accurately.
 
 ### Image Adjustment
 
-| Setting           | Description                  | Range                             |
-| ----------------- | ---------------------------- | --------------------------------- |
-| **Brightness**    | Overall image brightness     | -100 to +100                      |
-| **Contrast**      | Edge definition and contrast | 0 to 100                          |
-| **Transparency**  | Overlay opacity on canvas    | 0% (opaque) to 100% (transparent) |
-| **White Balance** | Color temperature correction | Auto or 2500-10000K               |
-| **Denoise**       | Temporal noise reduction     | 0.0 to 0.95                       |
+| Setting           | Description                                                              |
+| ----------------- | ------------------------------------------------------------------------ |
+| **Brightness**    | Overall image brightness (-100 to +100)                                  |
+| **Contrast**      | Edge definition and contrast (0 to 100)                                  |
+| **Prefer YUYV**   | Use uncompressed YUYV instead of MJPEG. Slower but can fix some glitches |
+| **Transparency**  | Overlay opacity on canvas (0% opaque to 100% transparent)                |
+| **White Balance** | Color temperature correction (Auto or 2500-10000K)                       |
+| **Denoise**       | Temporal noise reduction (0.0 to 0.95)                                   |
+
+The YUYV option is useful if your camera produces green-tinted images with the
+default MJPEG format. Note that YUYV is uncompressed and may reduce the
+available resolution or frame rate on USB 2.0 connections.
 
 ### Alignment Data
 
