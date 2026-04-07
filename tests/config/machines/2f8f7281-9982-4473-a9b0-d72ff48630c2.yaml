@@ -15,18 +15,37 @@ machine:
     gcode_precision: 3
   heads:
   - cut_color: '#ff00ff'
+    focal_distance: 5.0
     focus_power_percent: 0.0
     frame_corner_pause: 0
     frame_power_percent: 0.0
     frame_repeat_count: 20
     frame_speed: 0
     max_power: 1000
+    model_id: heads/head.glb
     name: Laser Head
     raster_color: '#000000'
     spot_size_mm:
     - 0.1
     - 0.1
     tool_number: 0
+    transform:
+    - 300.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - -300.0
+    - -3.6739403974420595e-14
+    - 0.0
+    - -0.0
+    - 3.6739403974420595e-14
+    - -300.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
     uid: d9277039-5ccc-456a-b3a6-5054b3c363b0
   home_on_start: false
   hookmacros: {}
