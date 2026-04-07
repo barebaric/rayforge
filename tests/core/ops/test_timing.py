@@ -2,8 +2,8 @@
 Tests for timing estimation functionality.
 """
 
+from rayforge.core.ops import Ops, MoveToCommand
 from rayforge.core.ops.timing import estimate_time
-from rayforge.core.ops.container import Ops
 
 
 class TestTiming:
@@ -131,3 +131,103 @@ class TestTiming:
         time_with_low_accel = estimate_time(list(ops), acceleration=100.0)
         # Higher acceleration should result in shorter time
         assert time_with_high_accel < time_with_low_accel
+
+    def test_estimate_time_does_not_mutate_commands(self):
+        """Test that estimate_time does not set .state on commands."""
+        ops = Ops()
+        ops.set_cut_speed(500)
+        ops.line_to(10, 0, 0)
+
+        for cmd in ops:
+            assert cmd.state is None
+
+        estimate_time(list(ops))
+
+        for cmd in ops:
+            assert cmd.state is None
+
+    def test_estimate_time_caching(self):
+        """Test that Ops.estimate_time() caches results."""
+        ops = Ops()
+        ops.move_to(0, 0)
+        ops.line_to(100, 0)
+
+        time1 = ops.estimate_time()
+        time2 = ops.estimate_time()
+        assert time1 == time2
+        assert not ops._time_dirty
+        assert ops._time_params == (1000.0, 3000.0, 1000.0)
+
+    def test_cache_invalidated_on_add(self):
+        """Test that adding a command invalidates the time cache."""
+        ops = Ops()
+        ops.line_to(10, 0, 0)
+        ops.estimate_time()
+        assert not ops._time_dirty
+
+        ops.line_to(20, 0, 0)
+        assert ops._time_dirty
+
+    def test_cache_invalidated_on_clear(self):
+        """Test that clearing commands invalidates the time cache."""
+        ops = Ops()
+        ops.line_to(10, 0, 0)
+        ops.estimate_time()
+        assert not ops._time_dirty
+
+        ops.clear()
+        assert ops._time_dirty
+        assert ops.estimate_time() == 0.0
+
+    def test_cache_invalidated_on_replace_all(self):
+        """Test that replace_all invalidates the time cache."""
+        ops = Ops()
+        ops.line_to(10, 0, 0)
+        ops.estimate_time()
+        assert not ops._time_dirty
+
+        ops.replace_all([MoveToCommand(end=(5, 5, 0))])
+        assert ops._time_dirty
+
+    def test_cache_keyed_on_params(self):
+        """Test that different machine parameters cause recomputation."""
+        ops = Ops()
+        ops.line_to(100, 0, 0)
+
+        time_fast = ops.estimate_time(default_cut_speed=2000.0)
+        time_slow = ops.estimate_time(default_cut_speed=500.0)
+        assert time_fast < time_slow
+
+    def test_cache_preserved_on_copy(self):
+        """Test that copy() preserves the cache state."""
+        ops = Ops()
+        ops.line_to(100, 0, 0)
+        ops.estimate_time()
+        assert not ops._time_dirty
+
+        copied = ops.copy()
+        assert not copied._time_dirty
+        assert copied._cached_time == ops._cached_time
+        assert copied._time_params == ops._time_params
+
+    def test_cache_after_transform(self):
+        """Test that transform() invalidates the cache."""
+        ops = Ops()
+        ops.line_to(100, 0, 0)
+        ops.estimate_time()
+        assert not ops._time_dirty
+
+        ops.translate(10, 10)
+        assert ops._time_dirty
+
+    def test_cache_after_extend(self):
+        """Test that extend() invalidates the cache."""
+        ops1 = Ops()
+        ops1.line_to(100, 0, 0)
+        ops1.estimate_time()
+        assert not ops1._time_dirty
+
+        ops2 = Ops()
+        ops2.move_to(50, 50)
+        ops1.extend(ops2)
+        assert ops1._time_dirty

@@ -87,6 +87,9 @@ class Ops:
     def __init__(self) -> None:
         self._commands: List[Command] = []
         self.last_move_to: Point3D = (0.0, 0.0, 0.0)
+        self._time_dirty: bool = True
+        self._cached_time: float = 0.0
+        self._time_params: Optional[tuple] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Ops object to a dictionary."""
@@ -99,6 +102,9 @@ class Ops:
     def commands(self) -> List[Command]:
         """Returns the list of commands in this Ops object."""
         return self._commands
+
+    def _invalidate_time_cache(self) -> None:
+        self._time_dirty = True
 
     @staticmethod
     def _create_command_from_dict(cmd_data: Dict[str, Any]) -> Command:
@@ -468,6 +474,9 @@ class Ops:
         new_ops = Ops()
         new_ops._commands = deepcopy(self._commands)
         new_ops.last_move_to = self.last_move_to
+        new_ops._time_dirty = self._time_dirty
+        new_ops._cached_time = self._cached_time
+        new_ops._time_params = self._time_params
         return new_ops
 
     def preload_state(self) -> None:
@@ -486,12 +495,15 @@ class Ops:
 
     def clear(self) -> None:
         self._commands = []
+        self._invalidate_time_cache()
 
     def replace_all(self, commands: List[Command]) -> None:
         self._commands = commands
+        self._invalidate_time_cache()
 
     def add(self, command: Command) -> None:
         self._commands.append(command)
+        self._invalidate_time_cache()
 
     def extend(self, other_ops: "Ops") -> None:
         """
@@ -499,15 +511,18 @@ class Ops:
         """
         if other_ops and other_ops._commands:
             self._commands.extend(other_ops._commands)
+            self._invalidate_time_cache()
 
     def move_to(self, x: float, y: float, z: float = 0.0) -> None:
         self.last_move_to = (float(x), float(y), float(z))
         cmd = MoveToCommand(self.last_move_to)
         self._commands.append(cmd)
+        self._invalidate_time_cache()
 
     def line_to(self, x: float, y: float, z: float = 0.0) -> None:
         cmd = LineToCommand((float(x), float(y), float(z)))
         self._commands.append(cmd)
+        self._invalidate_time_cache()
 
     def close_path(self) -> None:
         """
@@ -536,6 +551,7 @@ class Ops:
                 bool(clockwise),
             )
         )
+        self._invalidate_time_cache()
 
     def bezier_to(
         self,
@@ -580,6 +596,7 @@ class Ops:
         """
         cmd = SetCutSpeedCommand(int(speed))
         self._commands.append(cmd)
+        self._invalidate_time_cache()
 
     def set_travel_speed(self, speed: float) -> None:
         """
@@ -588,9 +605,11 @@ class Ops:
         """
         cmd = SetTravelSpeedCommand(int(speed))
         self._commands.append(cmd)
+        self._invalidate_time_cache()
 
     def dwell(self, duration_ms: float) -> None:
         self._commands.append(DwellCommand(duration_ms))
+        self._invalidate_time_cache()
 
     def enable_air_assist(self, enable: bool = True) -> None:
         """
@@ -599,6 +618,7 @@ class Ops:
         """
         if enable:
             self._commands.append(EnableAirAssistCommand())
+            self._invalidate_time_cache()
         else:
             self.disable_air_assist()
 
@@ -608,6 +628,7 @@ class Ops:
         This is a state declaration.
         """
         self._commands.append(DisableAirAssistCommand())
+        self._invalidate_time_cache()
 
     def set_laser(self, laser_uid: str) -> None:
         """
@@ -616,6 +637,7 @@ class Ops:
         """
         cmd = SetLaserCommand(laser_uid)
         self._commands.append(cmd)
+        self._invalidate_time_cache()
 
     def scan_to(
         self,
@@ -641,6 +663,7 @@ class Ops:
         end_point = (float(x), float(y), float(z))
         cmd = ScanLinePowerCommand(end=end_point, power_values=power_values)
         self._commands.append(cmd)
+        self._invalidate_time_cache()
 
     def job_start(self) -> None:
         """
@@ -648,6 +671,7 @@ class Ops:
         This is a logical marker for the generator.
         """
         self._commands.append(JobStartCommand())
+        self._invalidate_time_cache()
 
     def job_end(self) -> None:
         """
@@ -655,6 +679,7 @@ class Ops:
         This is a logical marker for the generator.
         """
         self._commands.append(JobEndCommand())
+        self._invalidate_time_cache()
 
     def layer_start(self, layer_uid: str) -> None:
         """
@@ -665,6 +690,7 @@ class Ops:
             layer_uid: Unique identifier for the layer.
         """
         self._commands.append(LayerStartCommand(layer_uid=layer_uid))
+        self._invalidate_time_cache()
 
     def layer_end(self, layer_uid: str) -> None:
         """
@@ -675,6 +701,7 @@ class Ops:
             layer_uid: Unique identifier for the layer.
         """
         self._commands.append(LayerEndCommand(layer_uid=layer_uid))
+        self._invalidate_time_cache()
 
     def workpiece_start(self, workpiece_uid: str) -> None:
         """
@@ -687,6 +714,7 @@ class Ops:
         self._commands.append(
             WorkpieceStartCommand(workpiece_uid=workpiece_uid)
         )
+        self._invalidate_time_cache()
 
     def workpiece_end(self, workpiece_uid: str) -> None:
         """
@@ -697,6 +725,7 @@ class Ops:
             workpiece_uid: Unique identifier for the workpiece.
         """
         self._commands.append(WorkpieceEndCommand(workpiece_uid=workpiece_uid))
+        self._invalidate_time_cache()
 
     def ops_section_start(
         self, section_type: SectionType, workpiece_uid: str
@@ -714,6 +743,7 @@ class Ops:
                 section_type=section_type, workpiece_uid=workpiece_uid
             )
         )
+        self._invalidate_time_cache()
 
     def ops_section_end(self, section_type: SectionType) -> None:
         """
@@ -724,6 +754,7 @@ class Ops:
             section_type: The semantic type of the section.
         """
         self._commands.append(OpsSectionEndCommand(section_type=section_type))
+        self._invalidate_time_cache()
 
     def rect(self, include_travel: bool = False) -> Rect:
         """
@@ -881,7 +912,9 @@ class Ops:
 
         This method calculates the time required to execute all commands in the
         Ops object, taking into account different speeds for cutting and travel
-        movements, as well as acceleration considerations.
+        movements, as well as acceleration considerations. Results are cached
+        and only recomputed when the command list changes or when different
+        machine parameters are used.
 
         Args:
             default_cut_speed: Default cutting speed in mm/min if not specified
@@ -897,17 +930,19 @@ class Ops:
         if not self._commands:
             return 0.0
 
-        # Create a copy to avoid modifying the original Ops object
-        ops_copy = self.copy()
-        # Ensure state is preloaded for accurate time estimation
-        ops_copy.preload_state()
+        params = (default_cut_speed, default_travel_speed, acceleration)
+        if not self._time_dirty and self._time_params == params:
+            return self._cached_time
 
-        return estimate_time(
-            ops_copy._commands,
+        self._cached_time = estimate_time(
+            self._commands,
             default_cut_speed,
             default_travel_speed,
             acceleration,
         )
+        self._time_dirty = False
+        self._time_params = params
+        return self._cached_time
 
     def segments(self) -> Generator[List[Command], None, None]:
         segment: List[Command] = []
@@ -997,6 +1032,7 @@ class Ops:
                 last_point_untransformed = original_cmd_end
 
         self._commands = transformed_commands
+        self._invalidate_time_cache()
         last_move_vec = np.array([*self.last_move_to, 1.0])
         transformed_last_move_vec = matrix @ last_move_vec
         self.last_move_to = tuple(transformed_last_move_vec[:3])
@@ -1067,6 +1103,7 @@ class Ops:
                 # Non-moving commands (state, markers) are passed through.
                 new_commands.append(cmd)
         self._commands = new_commands
+        self._invalidate_time_cache()
 
     def clip_at(self, x: float, y: float, width: float) -> bool:
         """
@@ -1258,6 +1295,7 @@ class Ops:
             + new_subpath_cmds
             + self._commands[end_idx:]
         )
+        self._invalidate_time_cache()
         return True
 
     def _add_clipped_segment_to_ops(
@@ -1505,6 +1543,7 @@ class Ops:
             last_point = cmd.end
 
         self._commands = new_ops._commands
+        self._invalidate_time_cache()
         # Update last_move_to to a valid point if ops is not empty
         if new_ops._commands:
             for cmd_rev in reversed(new_ops._commands):
@@ -1635,6 +1674,7 @@ class Ops:
             last_point = cmd.end
 
         self._commands = new_ops._commands
+        self._invalidate_time_cache()
         if new_ops._commands:
             for cmd_rev in reversed(new_ops._commands):
                 if isinstance(cmd_rev, MoveToCommand):
