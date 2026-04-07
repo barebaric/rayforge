@@ -8,7 +8,6 @@ as well as acceleration considerations.
 
 from typing import Optional, Sequence
 import math
-from copy import copy
 from ..geo.types import Point3D
 from .commands import MovingCommand, Command
 from .container import State
@@ -41,14 +40,6 @@ def estimate_time(
     """
     if not commands:
         return 0.0
-
-    # Preload state for accurate time estimation
-    state = State()
-    for cmd in commands:
-        if cmd.is_state_command():
-            cmd.apply_to_state(state)
-        elif not cmd.is_marker():
-            cmd.state = copy(state)
 
     total_time = 0.0
     last_point: Optional[Point3D] = (0.0, 0.0, 0.0)
