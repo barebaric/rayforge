@@ -1310,19 +1310,28 @@ class Canvas3D(Gtk.GLArea):
             "[CANVAS3D] _update_op_player: got ops with "
             "%d commands." % len(ops)
         )
+
+        saved_index = None
+        if self._op_player is not None and self._op_player.ops is ops:
+            saved_index = self._op_player.current_index
+
         self._op_player = OpPlayer(ops)
         self._current_layer_uid = None
         self._extract_playback_offsets_from_artifact()
 
-        # Auto-advance to the first LayerStartCommand so the canvas
-        # shows the first layer's surface (e.g. correct workpiece
-        # diameter) immediately instead of an empty default scene.
-        initial_index = 0
-        for i, cmd in enumerate(self._op_player.ops):
-            if isinstance(cmd, LayerStartCommand):
-                self._op_player.seek(i)
-                initial_index = i
-                break
+        if saved_index is not None:
+            self._op_player.seek(saved_index)
+            initial_index = saved_index
+        else:
+            # Auto-advance to the first LayerStartCommand so the canvas
+            # shows the first layer's surface (e.g. correct workpiece
+            # diameter) immediately instead of an empty default scene.
+            initial_index = 0
+            for i, cmd in enumerate(self._op_player.ops):
+                if isinstance(cmd, LayerStartCommand):
+                    self._op_player.seek(i)
+                    initial_index = i
+                    break
 
         GLib.idle_add(
             self._notify_playback_overlay,
