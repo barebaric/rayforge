@@ -10,7 +10,7 @@ from typing import (
     Sequence,
     Tuple,
 )
-from gi.repository import Gdk, Gtk, Graphene
+from gi.repository import Gdk, GLib, Gtk, Graphene
 from ...camera.controller import CameraController
 from ...context import get_context
 from ...core.group import Group
@@ -93,6 +93,12 @@ class WorkSurface(WorldSurface):
 
         # Click-to-zero mode state
         self._click_to_zero_mode = False
+
+        # Ops rendering suppression for lazy ops rendering (Idea 5).
+        # During pan/zoom/drag, ops drawing and pipeline context updates
+        # are suppressed. They are restored after ~200ms of idle time.
+        self._ops_suppressed: bool = False
+        self._ops_restore_timer_id: Optional[int] = None
 
         self._nogo_zone_elements: Dict[str, NogoZoneElement] = {}
         self._nogo_zones_visible = True
@@ -207,6 +213,44 @@ class WorkSurface(WorldSurface):
     def show_travel_moves(self) -> bool:
         """Returns True if travel moves should be rendered."""
         return self._show_travel_moves
+
+    @property
+    def ops_suppressed(self) -> bool:
+        """Returns True if ops rendering is suppressed during interaction."""
+        return self._ops_suppressed
+
+    def _suppress_ops(self):
+        """Suppresses ops rendering during pan/zoom/drag interactions."""
+        if not self._ops_suppressed:
+            logger.debug("Suppressing ops rendering during interaction")
+            self._ops_suppressed = True
+        if self._ops_restore_timer_id is not None:
+            GLib.source_remove(self._ops_restore_timer_id)
+            self._ops_restore_timer_id = None
+
+    def _defer_restore_ops(self, delay_ms: int = 200):
+        """Schedules deferred ops restoration after an idle period."""
+        if self._ops_restore_timer_id is not None:
+            GLib.source_remove(self._ops_restore_timer_id)
+        self._ops_restore_timer_id = GLib.timeout_add(
+            delay_ms, self._restore_ops
+        )
+
+    def _restore_ops(self) -> bool:
+        """Restores ops rendering after interaction ends."""
+        self._ops_restore_timer_id = None
+        logger.debug("Restoring ops rendering after idle")
+        self._ops_suppressed = False
+
+        self._update_pipeline_view_context()
+
+        ppm_x, _ = self.get_view_scale()
+        for elem in self.find_by_type(WorkPieceElement):
+            wp_view = cast(WorkPieceElement, elem)
+            wp_view.trigger_view_update(ppm_x)
+
+        self.queue_draw()
+        return False
 
     def set_laser_dot_visible(self, visible: bool = True) -> None:
         self._laser_dot.set_visible(visible)
@@ -365,6 +409,7 @@ class WorkSurface(WorldSurface):
             f"Transform begin for {len(elements)} element(s). "
             f"Drag target: {drag_target}"
         )
+        self._suppress_ops()
         self.transform_initiated.send(self)
         self._transform_start_states.clear()
 
@@ -464,6 +509,8 @@ class WorkSurface(WorldSurface):
         # If it was a resize, the ops are now stale. Resume the pipeline.
         if self._resizing:
             self.editor.pipeline.resume()
+
+        self._defer_restore_ops()
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
         """
@@ -653,25 +700,33 @@ class WorkSurface(WorldSurface):
                 diameter_mm = desired_diameter_px / new_scale_x
                 self._laser_dot.set_size(diameter_mm, diameter_mm)
 
-            # Always update pipeline view context when scale changes,
-            # so that newly added workpieces use the correct resolution
-            logger.debug(
-                "_rebuild_view_transform: Calling "
-                "_update_pipeline_view_context"
-            )
-            self._update_pipeline_view_context()
+            # Skip pipeline context updates and ops re-rendering during
+            # interaction. They will be restored after idle via
+            # _restore_ops().
+            if not self._ops_suppressed:
+                logger.debug(
+                    "_rebuild_view_transform: Calling "
+                    "_update_pipeline_view_context"
+                )
+                self._update_pipeline_view_context()
 
-            # Update handle transforms for WorkPieceElements
-            logger.debug(
-                "_rebuild_view_transform: Updating handle transforms "
-                f"for {len(list(self.find_by_type(WorkPieceElement)))} "
-                "WorkPieceElements"
-            )
-            ppm_x, _ = self.get_view_scale()
-            for elem in self.find_by_type(WorkPieceElement):
-                wp_view = cast(WorkPieceElement, elem)
-                wp_view.trigger_view_update(ppm_x)
-                wp_view.update_handle_transforms()
+                logger.debug(
+                    "_rebuild_view_transform: Updating handle transforms "
+                    f"for {len(list(self.find_by_type(WorkPieceElement)))} "
+                    "WorkPieceElements"
+                )
+                ppm_x, _ = self.get_view_scale()
+                for elem in self.find_by_type(WorkPieceElement):
+                    wp_view = cast(WorkPieceElement, elem)
+                    wp_view.trigger_view_update(ppm_x)
+                    wp_view.update_handle_transforms()
+            else:
+                logger.debug(
+                    "_rebuild_view_transform: ops suppressed, "
+                    "skipping pipeline context update"
+                )
+                for elem in self.find_by_type(WorkPieceElement):
+                    cast(WorkPieceElement, elem).update_handle_transforms()
 
         # Reposition the laser dot after any view change
         self.set_laser_dot_position(
@@ -679,6 +734,26 @@ class WorkSurface(WorldSurface):
         )
 
         return scale_changed
+
+    def on_pan_begin(
+        self, gesture: Gtk.GestureDrag, x: float, y: float
+    ) -> None:
+        self._suppress_ops()
+        super().on_pan_begin(gesture, x, y)
+
+    def on_pan_end(self, gesture: Gtk.GestureDrag, x: float, y: float) -> None:
+        super().on_pan_end(gesture, x, y)
+        self._defer_restore_ops()
+
+    def on_scroll(
+        self,
+        controller: Gtk.EventControllerScroll,
+        dx: float,
+        dy: float,
+    ) -> None:
+        self._suppress_ops()
+        super().on_scroll(controller, dx, dy)
+        self._defer_restore_ops()
 
     def set_show_travel_moves(self, show: bool):
         """Sets whether to display travel moves and triggers re-rendering."""

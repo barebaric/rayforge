@@ -70,6 +70,15 @@ class WorkPieceElement(CanvasElement):
         ] = {}  # (bbox_mm, workpiece_size_mm)
         self._ops_cache_bytes: Dict[str, int] = {}
 
+        # Composited ops surface: a single surface that blends all
+        # visible step surfaces, rebuilt incrementally.
+        self._composited_surface: Optional[cairo.ImageSurface] = None
+        self._composited_data: Optional[np.ndarray] = None
+        self._composited_dirty: bool = True
+        self._composited_bbox_mm: Optional[Tuple] = None
+        self._composited_wp_size_mm: Optional[Tuple] = None
+        self._composited_bytes: int = 0
+
         self._tab_handles: List[TabHandleElement] = []
         # Default to False; the correct state will be pulled from the surface.
         self._tabs_visible_override: bool = False
@@ -304,6 +313,262 @@ class WorkPieceElement(CanvasElement):
     def clear_all_ops_caches(self):
         for step_uid in list(self._ops_cache_bytes.keys()):
             self._remove_ops_surface(step_uid)
+        self._invalidate_composited()
+
+    def _invalidate_composited(self):
+        """Marks the composited surface as needing a full rebuild."""
+        self._composited_dirty = True
+        self._dispose_composited()
+
+    def _dispose_composited(self):
+        if self._composited_bytes:
+            registry.remove(
+                self.data.uid, "__composite__", self._composited_bytes
+            )
+        self._composited_surface = None
+        self._composited_data = None
+        self._composited_bbox_mm = None
+        self._composited_wp_size_mm = None
+        self._composited_bytes = 0
+
+    def _rebuild_composited_surface(self):
+        """Builds a single composited surface from all visible step caches.
+
+        Computes the union bbox of all visible steps, creates a cleared
+        ARGB32 surface, and blits each step's cached surface into the
+        correct position.  Stores the result for single-paint use in
+        draw().
+        """
+        if not self.data.layer or not self.data.layer.workflow:
+            self._dispose_composited()
+            self._composited_dirty = False
+            return
+
+        world_w, world_h = self.data.size
+        if world_w < 1e-9 or world_h < 1e-9:
+            self._dispose_composited()
+            self._composited_dirty = False
+            return
+
+        visible_steps = []
+        for step in self.data.layer.workflow.steps:
+            if not self._ops_visibility.get(step.uid, True):
+                continue
+            meta = self._ops_metadata_cache.get(step.uid)
+            if meta is None:
+                continue
+            surf = self._ops_surface_cache.get(step.uid)
+            if surf is None:
+                continue
+            visible_steps.append((step.uid, surf, meta))
+
+        if not visible_steps:
+            self._dispose_composited()
+            self._composited_dirty = False
+            return
+
+        # Compute union of all scaled bboxes in workpiece-local mm space.
+        union_x = float("inf")
+        union_y = float("inf")
+        union_r = float("-inf")
+        union_t = float("-inf")
+        ppm = 0.0
+
+        for step_uid, surf, meta in visible_steps:
+            bbox_mm, wp_size_mm = meta
+            vx, vy, vw, vh = bbox_mm
+            ref_w, ref_h = wp_size_mm
+            sx = world_w / ref_w if ref_w > 1e-9 else 1.0
+            sy = world_h / ref_h if ref_h > 1e-9 else 1.0
+            vx *= sx
+            vy *= sy
+            vw *= sx
+            vh *= sy
+            if vw < 1e-9 or vh < 1e-9:
+                continue
+            w_px = surf.get_width()
+            h_px = surf.get_height()
+            step_ppm = (
+                max(
+                    (w_px - 2 * OPS_MARGIN_PX) / vw,
+                    (h_px - 2 * OPS_MARGIN_PX) / vh,
+                )
+                if vw > 1e-9 and vh > 1e-9
+                else 0
+            )
+            if step_ppm > ppm:
+                ppm = step_ppm
+            margin_w = OPS_MARGIN_PX / step_ppm if step_ppm > 0 else 0
+            margin_h = margin_w
+            union_x = min(union_x, vx - margin_w)
+            union_y = min(union_y, vy - margin_h)
+            union_r = max(union_r, vx + vw + margin_w)
+            union_t = max(union_t, vy + vh + margin_h)
+
+        if ppm <= 0:
+            self._dispose_composited()
+            self._composited_dirty = False
+            return
+
+        composite_w_mm = union_r - union_x
+        composite_h_mm = union_t - union_y
+        comp_w_px = min(int(round(composite_w_mm * ppm)), CAIRO_MAX_DIMENSION)
+        comp_h_px = min(int(round(composite_h_mm * ppm)), CAIRO_MAX_DIMENSION)
+
+        if comp_w_px <= 0 or comp_h_px <= 0:
+            self._dispose_composited()
+            self._composited_dirty = False
+            return
+
+        comp_data = np.zeros((comp_h_px, comp_w_px, 4), dtype=np.uint8)
+        stride = cairo.ImageSurface.format_stride_for_width(
+            cairo.FORMAT_ARGB32, comp_w_px
+        )
+        comp_surf = cairo.ImageSurface.create_for_data(
+            comp_data, cairo.FORMAT_ARGB32, comp_w_px, comp_h_px, stride
+        )
+
+        # Blit each step surface into the composite.
+        comp_ctx = cairo.Context(comp_surf)
+        for step_uid, surf, meta in visible_steps:
+            bbox_mm, wp_size_mm = meta
+            vx, vy, vw, vh = bbox_mm
+            ref_w, ref_h = wp_size_mm
+            sx = world_w / ref_w if ref_w > 1e-9 else 1.0
+            sy = world_h / ref_h if ref_h > 1e-9 else 1.0
+            vx *= sx
+            vy *= sy
+            vw *= sx
+            vh *= sy
+            if vw < 1e-9 or vh < 1e-9:
+                continue
+            step_ppm_x = (
+                (surf.get_width() - 2 * OPS_MARGIN_PX) / vw if vw > 1e-9 else 0
+            )
+            step_ppm_y = (
+                (surf.get_height() - 2 * OPS_MARGIN_PX) / vh
+                if vh > 1e-9
+                else 0
+            )
+            if step_ppm_x <= 0 or step_ppm_y <= 0:
+                continue
+            dest_x = (vx - OPS_MARGIN_PX / step_ppm_x - union_x) * ppm
+            dest_y = (vy - OPS_MARGIN_PX / step_ppm_y - union_y) * ppm
+            comp_ctx.save()
+            comp_ctx.translate(dest_x, dest_y)
+            scale_factor = ppm / step_ppm_x
+            comp_ctx.scale(scale_factor, scale_factor)
+            comp_ctx.set_source_surface(surf, 0, 0)
+            comp_ctx.paint()
+            comp_ctx.restore()
+
+        self._dispose_composited()
+        self._composited_surface = comp_surf
+        self._composited_data = comp_data
+        self._composited_bbox_mm = (
+            union_x,
+            union_y,
+            composite_w_mm,
+            composite_h_mm,
+        )
+        self._composited_wp_size_mm = (world_w, world_h)
+        self._composited_bytes = comp_data.nbytes
+        registry.add(self.data.uid, "__composite__", self._composited_bytes)
+        self._composited_dirty = False
+
+    def _composite_live_step(self, step_uid: str):
+        """Incrementally blits a live (progressive) step surface into the
+        existing composite without requiring a full rebuild.
+
+        Falls back to marking dirty if the composite doesn't exist yet
+        or if the step's bbox falls outside the current composite bounds.
+        """
+        if self._composited_surface is None or self._composited_dirty:
+            self._composited_dirty = True
+            return
+
+        meta = self._ops_metadata_cache.get(step_uid)
+        if meta is None:
+            return
+
+        view_handle = self.view_manager.get_view_handle(
+            self.data.uid, step_uid
+        )
+        if view_handle is None:
+            return
+        artifact = self.view_manager.store.get(view_handle)
+        if not isinstance(artifact, WorkPieceViewArtifact):
+            return
+
+        try:
+            new_data = artifact.bitmap_data
+            height, width, _ = new_data.shape
+            stride = cairo.ImageSurface.format_stride_for_width(
+                cairo.FORMAT_ARGB32, width
+            )
+            step_surf = cairo.ImageSurface.create_for_data(
+                new_data, cairo.FORMAT_ARGB32, width, height, stride
+            )
+            self._store_ops_surface(
+                step_uid,
+                step_surf,
+                new_data,
+                (artifact.bbox_mm, artifact.workpiece_size_mm),
+            )
+        except Exception:
+            self._composited_dirty = True
+            return
+
+        # Now blit into the composite.
+        bbox_mm = artifact.bbox_mm
+        wp_size_mm = artifact.workpiece_size_mm
+        world_w, world_h = self.data.size
+        ref_w, ref_h = wp_size_mm
+        sx = world_w / ref_w if ref_w > 1e-9 else 1.0
+        sy = world_h / ref_h if ref_h > 1e-9 else 1.0
+        vx, vy, vw, vh = bbox_mm
+        vx *= sx
+        vy *= sy
+        vw *= sx
+        vh *= sy
+
+        if vw < 1e-9 or vh < 1e-9:
+            return
+
+        step_ppm_x = (width - 2 * OPS_MARGIN_PX) / vw if vw > 1e-9 else 0
+        step_ppm_y = (height - 2 * OPS_MARGIN_PX) / vh if vh > 1e-9 else 0
+        if step_ppm_x <= 0 or step_ppm_y <= 0:
+            return
+
+        comp_bbox = self._composited_bbox_mm
+        if comp_bbox is None:
+            self._composited_dirty = True
+            return
+
+        # Reconstruct composite ppm from composite dimensions.
+        comp_ppm = (
+            (self._composited_surface.get_width()) / comp_bbox[2]
+            if comp_bbox[2] > 1e-9
+            else 0
+        )
+        if comp_ppm <= 0:
+            self._composited_dirty = True
+            return
+
+        step_origin_x = vx - OPS_MARGIN_PX / step_ppm_x
+        step_origin_y = vy - OPS_MARGIN_PX / step_ppm_y
+
+        dest_x = (step_origin_x - comp_bbox[0]) * comp_ppm
+        dest_y = (step_origin_y - comp_bbox[1]) * comp_ppm
+        scale_factor = comp_ppm / step_ppm_x
+
+        comp_ctx = cairo.Context(self._composited_surface)
+        comp_ctx.save()
+        comp_ctx.translate(dest_x, dest_y)
+        comp_ctx.scale(scale_factor, scale_factor)
+        comp_ctx.set_source_surface(step_surf, 0, 0)
+        comp_ctx.paint()
+        comp_ctx.restore()
 
     def _on_view_artifact_updated(
         self,
@@ -316,15 +581,18 @@ class WorkPieceElement(CanvasElement):
     ):
         """
         Handler for when the content of a view artifact has been updated
-        by the background worker.
+        by the background worker (progressive rendering).
 
-        Does NOT cache here — just queues a redraw. The actual caching
-        happens lazily in draw() on first access, which is serialized
-        on the main thread and cannot pile up.
+        Incrementally blits the updated step into the composite surface
+        when possible, falls back to a dirty flag for full rebuild.
         """
         if workpiece_uid != self.data.uid or not self.canvas:
             return
         self._remove_ops_surface(step_uid)
+        if not self._ops_visibility.get(step_uid, True):
+            self.canvas.queue_draw()
+            return
+        self._composite_live_step(step_uid)
         self.canvas.queue_draw()
 
     def _on_view_generation_finished(
@@ -343,6 +611,7 @@ class WorkPieceElement(CanvasElement):
         if workpiece_uid != self.data.uid:
             return
         self._update_ops_cache_from_handle(step_uid)
+        self._composited_dirty = True
         if self.canvas:
             self.canvas.queue_draw()
 
@@ -466,6 +735,7 @@ class WorkPieceElement(CanvasElement):
                 f"Setting ops visibility for step '{step_uid}' to {visible}"
             )
             self._ops_visibility[step_uid] = visible
+            self._composited_dirty = True
             if self.canvas:
                 self.canvas.queue_draw()
 
@@ -617,9 +887,12 @@ class WorkPieceElement(CanvasElement):
             # context, leaving it Y-UP for the next drawing operation.
             super().draw(ctx)
 
-        # Draw Ops (hide during simulation mode)
+        # Draw Ops (hide during simulation mode or interaction)
         worksurface = cast("WorkSurface", self.canvas) if self.canvas else None
         if not worksurface or worksurface.is_simulation_mode():
+            return
+
+        if worksurface.ops_suppressed:
             return
 
         # Draw view artifacts (complete, pre-rendered bitmaps)
@@ -631,151 +904,50 @@ class WorkPieceElement(CanvasElement):
 
         if self.data.layer and self.data.layer.workflow:
             registry.touch(self.data.uid)
-            for step in self.data.layer.workflow.steps:
-                step_uid = step.uid
-                if not self._ops_visibility.get(step_uid, True):
-                    continue
 
-                # First try cached surface (prevents flicker during zoom)
-                surface = self._ops_surface_cache.get(step_uid)
-                metadata = self._ops_metadata_cache.get(step_uid)
-                bbox_mm = None
-                workpiece_size_mm = None
+            if self._composited_dirty:
+                self._rebuild_composited_surface()
 
-                if surface is not None and metadata is not None:
-                    bbox_mm, workpiece_size_mm = metadata
-                else:
-                    # No cache - try live artifact for progressive rendering
-                    view_handle = self.view_manager.get_view_handle(
-                        self.data.uid, step.uid
-                    )
-                    if view_handle is not None:
-                        artifact = self.view_manager.store.get(view_handle)
-                        if isinstance(artifact, WorkPieceViewArtifact):
-                            try:
-                                new_data = artifact.bitmap_data
-                                height, width, _ = new_data.shape
-                                stride = (
-                                    cairo.ImageSurface.format_stride_for_width(
-                                        cairo.FORMAT_ARGB32, width
-                                    )
-                                )
-                                surface = cairo.ImageSurface.create_for_data(
-                                    new_data,
-                                    cairo.FORMAT_ARGB32,
-                                    width,
-                                    height,
-                                    stride,
-                                )
-                                bbox_mm = artifact.bbox_mm
-                                workpiece_size_mm = artifact.workpiece_size_mm
-                                self._store_ops_surface(
-                                    step_uid,
-                                    surface,
-                                    new_data,
-                                    (bbox_mm, workpiece_size_mm),
-                                )
-                            except Exception:
-                                pass
+            comp_surf = self._composited_surface
+            comp_bbox = self._composited_bbox_mm
+            if comp_surf is None or comp_bbox is None:
+                return
 
-                if surface is None:
-                    continue
+            try:
+                view_x, view_y, view_w, view_h = comp_bbox
 
-                if bbox_mm is None or workpiece_size_mm is None:
-                    continue
+                if view_w < 1e-9 or view_h < 1e-9:
+                    return
 
-                try:
-                    view_x, view_y, view_w, view_h = bbox_mm
+                surface_w_px = comp_surf.get_width()
+                surface_h_px = comp_surf.get_height()
 
-                    if view_w < 1e-9 or view_h < 1e-9:
-                        logger.debug(
-                            f"Skipping step '{step_uid}': bbox too small"
-                        )
-                        continue
+                ppm_x = surface_w_px / view_w if view_w > 1e-9 else 0
+                ppm_y = surface_h_px / view_h if view_h > 1e-9 else 0
 
-                    world_w, world_h = self.data.size
-                    ref_w, ref_h = workpiece_size_mm
+                if ppm_x <= 0 or ppm_y <= 0:
+                    return
 
-                    scale_x = world_w / ref_w if ref_w > 1e-9 else 1.0
-                    scale_y = world_h / ref_h if ref_h > 1e-9 else 1.0
+                ctx.save()
 
-                    if not (
-                        abs(scale_x - 1.0) < 1e-6 and abs(scale_y - 1.0) < 1e-6
-                    ):
-                        view_x *= scale_x
-                        view_y *= scale_y
-                        view_w *= scale_x
-                        view_h *= scale_y
+                ctx.translate(view_x / world_w, view_y / world_h)
+                ctx.scale(
+                    surface_w_px / (world_w * ppm_x),
+                    surface_h_px / (world_h * ppm_y),
+                )
+                ctx.translate(0, 1)
+                ctx.scale(1, -1)
+                ctx.scale(1.0 / surface_w_px, 1.0 / surface_h_px)
 
-                    surface_w_px = surface.get_width()
-                    surface_h_px = surface.get_height()
+                ctx.set_source_surface(comp_surf, 0, 0)
+                ctx.paint()
 
-                    # Reconstruct the scale (ppm) used to generate
-                    # this image. The runner guarantees width =
-                    # min(round(w_mm * ppm) + 2 * margin, MAX)
-                    # So effective ppm might be different from requested
-                    # ppm if clamped.
-                    # effective_ppm = (width - 2*margin) / w_mm
-
-                    # Guard against zero division for 1D objects
-                    ppm_x = (
-                        (surface_w_px - 2 * OPS_MARGIN_PX) / view_w
-                        if view_w > 1e-9
-                        else 0
-                    )
-                    ppm_y = (
-                        (surface_h_px - 2 * OPS_MARGIN_PX) / view_h
-                        if view_h > 1e-9
-                        else 0
-                    )
-
-                    if ppm_x <= 0 or ppm_y <= 0:
-                        continue
-
-                    # Calculate the full world dimensions of the surface
-                    # (content + margins)
-                    surface_w_world = surface_w_px / ppm_x
-                    surface_h_world = surface_h_px / ppm_y
-
-                    # Calculate the world offset of the surface's
-                    # bottom-left corner relative to workpiece origin.
-                    # The content (view_x, view_y) starts at (margin,
-                    # margin) inside the surface (top-left in pixel,
-                    # bottom-left in world) So surface origin is at
-                    # (view_x - margin_w, view_y - margin_h)
-                    margin_w_world = OPS_MARGIN_PX / ppm_x
-                    margin_h_world = OPS_MARGIN_PX / ppm_y
-
-                    origin_x = view_x - margin_w_world
-                    origin_y = view_y - margin_h_world
-
-                    ctx.save()
-
-                    # Move to the bottom-left of the IMAGE in normalized
-                    # space
-                    ctx.translate(origin_x / world_w, origin_y / world_h)
-
-                    # Scale to the size of the IMAGE in normalized space
-                    ctx.scale(
-                        surface_w_world / world_w, surface_h_world / world_h
-                    )
-
-                    # Flip Y for drawing the raster image
-                    ctx.translate(0, 1)
-                    ctx.scale(1, -1)
-
-                    # Scale 1.0/px to draw the image 1:1
-                    ctx.scale(1.0 / surface_w_px, 1.0 / surface_h_px)
-
-                    ctx.set_source_surface(surface, 0, 0)
-                    ctx.paint()
-
-                    ctx.restore()
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to draw view artifact for step "
-                        f"{step_uid}: {e}"
-                    )
+                ctx.restore()
+            except Exception as e:
+                logger.warning(
+                    f"Failed to draw composited ops for "
+                    f"'{self.data.name}': {e}"
+                )
 
     def push_transform_to_model(self):
         """Updates the data model's matrix with the view's transform."""
@@ -786,19 +958,9 @@ class WorkPieceElement(CanvasElement):
             self.data.matrix = self.transform.copy()
 
     def on_travel_visibility_changed(self):
-        """
-        Handles changes in travel move visibility.
-
-        For the new rendering path, this simply clears any old-style raster
-        caches and triggers a redraw, as the drawing logic is dynamic.
-        """
-        logger.debug(
-            "Travel visibility changed. Clearing raster caches and redrawing."
-        )
-        # The new render path draws dynamically from vertex data,
-        # respecting the visibility flag at draw time.
-
-        # Also clear from persistent cache so they don't reappear on reload
+        """Handles changes in travel move visibility."""
+        logger.debug("Travel visibility changed. Invalidating composite.")
+        self._composited_dirty = True
         self._update_model_view_cache()
 
         if self.canvas:

@@ -6,6 +6,7 @@ import numpy as np
 from typing import Optional, Tuple, Iterator, TYPE_CHECKING
 from gettext import gettext as _
 from ...core.geo import Rect
+from ...image.util.cairo_util import rgba_to_cairo_surface
 from ...shared.tasker.progress import ProgressContext
 from ...shared.util.colors import ColorSet
 from ..artifact import WorkPieceArtifact
@@ -149,8 +150,8 @@ def _encode_vertex_and_texture_data(
             context_px_per_mm_x, context_px_per_mm_y = (
                 render_context.pixels_per_mm
             )
-            px_per_mm_x = max(source_px_per_mm_x, context_px_per_mm_x)
-            px_per_mm_y = max(source_px_per_mm_y, context_px_per_mm_y)
+            px_per_mm_x = min(source_px_per_mm_x, context_px_per_mm_x)
+            px_per_mm_y = min(source_px_per_mm_y, context_px_per_mm_y)
             width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
             height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
         else:
@@ -720,29 +721,15 @@ def _draw_texture(
     if power_data.size == 0:
         return
 
+    h, w = power_data.shape
     engrave_lut = color_set.get_lut("engrave")
-    rgba_texture = engrave_lut[power_data]
-    rgba_texture[power_data == 0, 3] = 0.0
+    lut_u8 = np.clip(engrave_lut * 255 + 0.5, 0, 255).astype(np.uint8)
 
-    h, w = rgba_texture.shape[:2]
-    alpha_ch = rgba_texture[..., 3, np.newaxis]
-    rgb_ch = rgba_texture[..., :3]
-    bgra_texture = np.empty((h, w, 4), dtype=np.uint8)
-    premultiplied_rgb = rgb_ch * alpha_ch * 255
-    premultiplied_rgb_int = np.clip(np.round(premultiplied_rgb), 0, 255)
-    premultiplied_rgb_int = premultiplied_rgb_int.astype(np.uint8)
+    rgba = lut_u8[power_data]
+    rgba[power_data == 0, 3] = 0
 
-    bgra_texture[..., 0] = premultiplied_rgb_int[..., 2]
-    bgra_texture[..., 1] = premultiplied_rgb_int[..., 1]
-    bgra_texture[..., 2] = premultiplied_rgb_int[..., 0]
-    bgra_texture[..., 3] = (alpha_ch.squeeze() * 255).astype(np.uint8)
+    texture_surface = rgba_to_cairo_surface(rgba)
 
-    texture_surface = cairo.ImageSurface.create_for_data(
-        memoryview(np.ascontiguousarray(bgra_texture)),
-        cairo.FORMAT_ARGB32,
-        w,
-        h,
-    )
     ctx.save()
     pos_mm = texture_data.position_mm
     dim_mm = texture_data.dimensions_mm

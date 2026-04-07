@@ -10,6 +10,7 @@ import pyvips
 
 from ...core.geo import Geometry, Rect
 from ...core.matrix import Matrix
+from .cairo_util import rgba_to_cairo_surface
 
 logger = logging.getLogger(__name__)
 
@@ -181,9 +182,8 @@ def vips_rgba_to_cairo_surface(image: pyvips.Image) -> cairo.ImageSurface:
     """
     Converts a 4-band RGBA pyvips image to a Cairo ARGB32 ImageSurface.
 
-    Performs premultiplication in numpy using uint16 arithmetic to avoid
-    the expensive float intermediate from vips.premultiply(). Combines
-    premultiply and RGBA→BGRA reorder into a single pass over the data.
+    Extracts the pixel data as uint8 RGBA and delegates to
+    rgba_to_cairo_surface for premultiplication and BGRA reorder.
     """
     assert image.bands == 4, "Input image must be normalized to RGBA first"
     assert image.format == "uchar", "Input image must be 8-bit uchar"
@@ -192,22 +192,7 @@ def vips_rgba_to_cairo_surface(image: pyvips.Image) -> cairo.ImageSurface:
     memory = image.write_to_memory()
     rgba = numpy.frombuffer(memory, dtype=numpy.uint8).reshape(h, w, 4)
 
-    a = rgba[..., 3].astype(numpy.uint16)
-    bgra = numpy.empty((h, w, 4), dtype=numpy.uint8)
-    bgra[..., 0] = (rgba[..., 2].astype(numpy.uint16) * a // 255).astype(
-        numpy.uint8
-    )
-    bgra[..., 1] = (rgba[..., 1].astype(numpy.uint16) * a // 255).astype(
-        numpy.uint8
-    )
-    bgra[..., 2] = (rgba[..., 0].astype(numpy.uint16) * a // 255).astype(
-        numpy.uint8
-    )
-    bgra[..., 3] = rgba[..., 3]
-
-    return cairo.ImageSurface.create_for_data(
-        memoryview(bgra), cairo.FORMAT_ARGB32, w, h
-    )
+    return rgba_to_cairo_surface(rgba)
 
 
 def _render_geometry_to_vips_mask(
