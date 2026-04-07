@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-05 21:32+0200\n"
+"POT-Creation-Date: 2026-04-07 02:17+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -372,6 +372,18 @@ msgid "Ending speed (mm/min)"
 msgstr "Vitesse finale (mm/min)"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Label Engrave Power (%)"
+msgstr "Puissance de gravure de l'étiquette (%)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Label Engrave Speed"
+msgstr "Vitesse de gravure des étiquettes"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Speed for engraving labels (mm/min)"
+msgstr "Vitesse pour graver les étiquettes (mm/min)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Columns (Power Steps)"
 msgstr "Colonnes (paliers de puissance)"
 
@@ -422,10 +434,6 @@ msgstr "Inclure les étiquettes"
 #: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Add speed/power annotations to the grid"
 msgstr "Ajouter les annotations de vitesse/puissance à la grille"
-
-#: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Label Engrave Power (%)"
-msgstr "Puissance de gravure de l'étiquette (%)"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
 #, python-brace-format

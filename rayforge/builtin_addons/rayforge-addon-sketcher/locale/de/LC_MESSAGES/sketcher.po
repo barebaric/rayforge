@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-28 02:12+0100\n"
+"POT-Creation-Date: 2026-04-07 01:01+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -602,23 +602,6 @@ msgstr "Ansicht anpassen"
 #: sketcher/ui_gtk/menu.py
 msgid "_View"
 msgstr "_Ansicht"
-
-#: sketcher/ui_gtk/asset_row_widget.py
-msgid "Edit this sketch"
-msgstr "Diese Skizze bearbeiten"
-
-#: sketcher/ui_gtk/asset_row_widget.py
-msgid "No parameters"
-msgstr "Keine Parameter"
-
-#: sketcher/ui_gtk/asset_row_widget.py
-msgid "1 parameter"
-msgstr "1 Parameter"
-
-#: sketcher/ui_gtk/asset_row_widget.py
-#, python-brace-format
-msgid "{count} parameters"
-msgstr "{count} Parameter"
 
 #: sketcher/ui_gtk/font_properties.py
 msgid "Font Properties"

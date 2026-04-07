@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-06 14:28+0200\n"
+"POT-Creation-Date: 2026-04-07 22:48+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1685,6 +1685,16 @@ msgid "Theme"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Auto-update operations"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid ""
+"Recalculate operations automatically after each change. Disable for manual "
+"recalculation via the toolbar button."
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Units"
 msgstr ""
 
@@ -2155,6 +2165,16 @@ msgstr ""
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Adjust image quality and appearance parameters."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Prefer YUYV Format"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid ""
+"Use uncompressed YUYV instead of MJPEG. Fixes green artifacts on some USB "
+"cameras but may reduce resolution or frame rate on USB 2.0."
 msgstr ""
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
@@ -4043,7 +4063,8 @@ msgstr ""
 msgid "_View"
 msgstr ""
 
-#: rayforge/ui_gtk/main_menu.py rayforge/doceditor/stock_cmd.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/doceditor/stock_cmd.py
 msgid "Add Stock"
 msgstr ""
 
@@ -4300,6 +4321,10 @@ msgid "Toggle execution simulation"
 msgstr ""
 
 #: rayforge/ui_gtk/toolbar.py
+msgid "Recalculate (Shift+Click to force)"
+msgstr ""
+
+#: rayforge/ui_gtk/toolbar.py
 msgid "Toggle bottom panel"
 msgstr ""
 
@@ -4406,8 +4431,11 @@ msgid "{count} workpieces"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/asset_browser.py
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
 msgid "Add Asset"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Add Sketch"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
@@ -4443,6 +4471,10 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Switch to Trace Mode"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py rayforge/doceditor/file_cmd.py
+msgid "Re-Import"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
@@ -4743,25 +4775,6 @@ msgstr ""
 msgid "Any"
 msgstr ""
 
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
-msgid "Reorder Assets"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Assets"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
-#, python-brace-format
-msgid "{count} asset"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/asset_list_view.py
-#, python-brace-format
-msgid "{count} assets"
-msgstr ""
-
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 msgid "Open File"
 msgstr ""
@@ -4880,6 +4893,10 @@ msgid "Material thickness"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid "Assets"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "G-code Viewer"
 msgstr ""
 
@@ -4978,27 +4995,6 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Set current position as 0"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Delete this asset"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Toggle visibility"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "Edit stock properties"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-#, python-brace-format
-msgid "Thickness: {thickness}"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "No thickness specified"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-05 21:32+0200\n"
+"POT-Creation-Date: 2026-04-07 02:17+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -364,6 +364,18 @@ msgid "Ending speed (mm/min)"
 msgstr "Кінцева швидкість (мм/хв)"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Label Engrave Power (%)"
+msgstr "Потужність гравіювання міток (%)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Label Engrave Speed"
+msgstr "Швидкість гравіювання міток"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Speed for engraving labels (mm/min)"
+msgstr "Швидкість гравіювання міток (мм/хв)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Columns (Power Steps)"
 msgstr "Стовпці (кроки потужності)"
 
@@ -414,10 +426,6 @@ msgstr "Включити мітки"
 #: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Add speed/power annotations to the grid"
 msgstr "Додати анотації швидкості/потужності до сітки"
-
-#: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Label Engrave Power (%)"
-msgstr "Потужність гравіювання міток (%)"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
 #, python-brace-format

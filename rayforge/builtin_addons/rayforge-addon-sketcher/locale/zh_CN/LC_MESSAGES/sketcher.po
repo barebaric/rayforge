@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-28 02:12+0100\n"
+"POT-Creation-Date: 2026-04-07 01:01+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -602,23 +602,6 @@ msgstr "适应视图"
 #: sketcher/ui_gtk/menu.py
 msgid "_View"
 msgstr "视图(_V)"
-
-#: sketcher/ui_gtk/asset_row_widget.py
-msgid "Edit this sketch"
-msgstr "编辑此草图"
-
-#: sketcher/ui_gtk/asset_row_widget.py
-msgid "No parameters"
-msgstr "无参数"
-
-#: sketcher/ui_gtk/asset_row_widget.py
-msgid "1 parameter"
-msgstr "1 个参数"
-
-#: sketcher/ui_gtk/asset_row_widget.py
-#, python-brace-format
-msgid "{count} parameters"
-msgstr "{count} 个参数"
 
 #: sketcher/ui_gtk/font_properties.py
 msgid "Font Properties"
