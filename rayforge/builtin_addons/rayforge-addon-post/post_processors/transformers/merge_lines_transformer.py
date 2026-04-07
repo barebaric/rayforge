@@ -87,7 +87,7 @@ class MergeLinesTransformer(OpsTransformer):
     The transformer should run before optimization and MultiPassTransformer.
     """
 
-    DEFAULT_TOLERANCE = 0.1
+    DEFAULT_TOLERANCE = 0.01
 
     def __init__(
         self, enabled: bool = True, tolerance: float = DEFAULT_TOLERANCE
