@@ -185,6 +185,15 @@ class Canvas3D(Gtk.GLArea):
         self._playback_overlay = overlay
         overlay.set_canvas(self)
 
+    def has_stale_job(self) -> bool:
+        """True if the cached job handle is from an older generation."""
+        if self._current_job_handle is None:
+            return True
+        return (
+            self._current_job_handle.generation_id
+            != self.pipeline.data_generation_id
+        )
+
     def _on_wcs_updated(self, machine: "Machine", **kwargs):
         """Handler for when the machine's WCS state changes."""
         if machine:
