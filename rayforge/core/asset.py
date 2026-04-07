@@ -1,5 +1,6 @@
 import uuid
 from typing import Protocol, runtime_checkable, Dict, Any, ClassVar, Optional
+from blinker import Signal
 from dataclasses import dataclass, field
 
 
@@ -35,6 +36,11 @@ class IAsset(Protocol):
 
     @name.setter
     def name(self, value: str) -> None: ...
+
+    @property
+    def updated(self) -> Signal:
+        """Signal emitted when the asset changes."""
+        ...
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the asset to a dictionary."""
@@ -77,6 +83,7 @@ class UnknownAsset(IAsset):
     _data: Dict[str, Any] = field(init=False, default_factory=dict)
     _uid: str = field(init=False, default_factory=lambda: str(uuid.uuid4()))
     _name: str = field(init=False)
+    _updated: Signal = field(init=False, default_factory=Signal)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "UnknownAsset":
@@ -93,6 +100,10 @@ class UnknownAsset(IAsset):
     def uid(self) -> str:
         """The unique identifier of the asset instance."""
         return self._uid
+
+    @property
+    def updated(self) -> Signal:
+        return self._updated
 
     @property
     def name(self) -> str:
