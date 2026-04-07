@@ -17,6 +17,7 @@ from rayforge.core.geo.primitives import (
     get_arc_midpoint,
     get_segment_region_intersections,
     is_angle_between,
+    is_arc_fully_inside_regions,
     is_point_in_polygon,
     is_point_in_rect,
     is_point_on_segment,
@@ -979,3 +980,52 @@ class TestArcIntersectsCircle:
         mid = get_arc_midpoint(start, end, center, False)
         cc = (mid[0], mid[1])
         assert arc_intersects_circle(start, end, center, False, cc, 1)
+
+
+class TestIsArcFullyInsideRegions:
+    def _square(self, x, y, w, h):
+        return [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
+
+    def test_small_arc_inside_large_square(self):
+        start = (4, 5)
+        end = (6, 5)
+        co = (1, 0)
+        regions = [self._square(0, 0, 10, 10)]
+        assert is_arc_fully_inside_regions(start, end, co, True, regions)
+
+    def test_arc_extending_outside(self):
+        start = (1, 5)
+        end = (9, 5)
+        co = (4, 0)
+        regions = [self._square(3, 0, 4, 10)]
+        assert not is_arc_fully_inside_regions(start, end, co, True, regions)
+
+    def test_arc_fully_outside(self):
+        start = (50, 50)
+        end = (52, 50)
+        co = (1, 0)
+        regions = [self._square(0, 0, 10, 10)]
+        assert not is_arc_fully_inside_regions(start, end, co, True, regions)
+
+    def test_empty_regions(self):
+        start = (4, 5)
+        end = (6, 5)
+        co = (1, 0)
+        assert not is_arc_fully_inside_regions(start, end, co, True, [])
+
+    def test_arc_center_inside_but_bbox_corner_outside(self):
+        start = (9, 5)
+        end = (11, 5)
+        co = (1, 0)
+        regions = [self._square(0, 0, 10, 10)]
+        assert not is_arc_fully_inside_regions(start, end, co, True, regions)
+
+    def test_multiple_regions_containing_arc(self):
+        start = (4, 5)
+        end = (6, 5)
+        co = (1, 0)
+        regions = [
+            self._square(0, 0, 5, 10),
+            self._square(5, 0, 5, 10),
+        ]
+        assert is_arc_fully_inside_regions(start, end, co, True, regions)

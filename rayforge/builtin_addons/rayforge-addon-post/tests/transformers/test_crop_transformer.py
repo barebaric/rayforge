@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import Mock, MagicMock
 
 from rayforge.core.ops import Ops
+from rayforge.core.ops.commands import ArcToCommand
 from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
@@ -352,3 +353,90 @@ class TestCropTransformerCropping:
 
         segments = list(ops.segments())
         assert len(segments) == 1
+
+
+class TestCropTransformerArcPreservation:
+    def test_arc_fully_inside_stock_is_preserved(
+        self, transformer, mock_workpiece
+    ):
+        ops = Ops()
+        ops.move_to(0.4, 0.5)
+        ops.arc_to(0.6, 0.5, 0.1, 0.0, clockwise=True)
+        stock_geo = create_rect_geometry(0, 0, 1, 1)
+        transformer.run(
+            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        )
+        arcs = [c for c in ops.commands if isinstance(c, ArcToCommand)]
+        assert len(arcs) == 1
+        assert arcs[0].end == pytest.approx((0.6, 0.5, 0.0), abs=1e-6)
+
+    def test_arc_partially_outside_stock_is_refitted(
+        self, transformer, mock_workpiece
+    ):
+        ops = Ops()
+        ops.move_to(0.1, 0.5)
+        ops.arc_to(0.9, 0.5, 0.4, 0.0, clockwise=True)
+        stock_geo = create_rect_geometry(0.3, 0, 0.4, 1)
+        transformer.run(
+            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        )
+        arcs = [c for c in ops.commands if isinstance(c, ArcToCommand)]
+        assert len(arcs) >= 1
+        segments = list(ops.segments())
+        for seg in segments:
+            for cmd in seg:
+                if hasattr(cmd, "end") and cmd.end is not None:
+                    assert 0.3 <= cmd.end[0] <= 0.7
+
+    def test_arc_fully_outside_stock_is_removed(
+        self, transformer, mock_workpiece
+    ):
+        ops = Ops()
+        ops.move_to(1.5, 0.5)
+        ops.arc_to(1.7, 0.5, 0.1, 0.0, clockwise=True)
+        stock_geo = create_rect_geometry(0, 0, 1, 1)
+        transformer.run(
+            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        )
+        segments = list(ops.segments())
+        assert len(segments) == 0
+
+    def test_mixed_line_and_arc_inside_stock(
+        self, transformer, mock_workpiece
+    ):
+        ops = Ops()
+        ops.move_to(0.2, 0.5)
+        ops.line_to(0.4, 0.5)
+        ops.arc_to(0.6, 0.5, 0.1, 0.0, clockwise=True)
+        ops.line_to(0.8, 0.5)
+        stock_geo = create_rect_geometry(0, 0, 1, 1)
+        transformer.run(
+            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        )
+        arcs = [c for c in ops.commands if isinstance(c, ArcToCommand)]
+        assert len(arcs) == 1
+        segments = list(ops.segments())
+        assert len(segments) == 1
+
+    def test_rounded_rect_arcs_preserved_when_inside_stock(
+        self, transformer, mock_workpiece
+    ):
+        r = 0.05
+        x, y = 0.2, 0.3
+        w, h = 0.6, 0.4
+        ops = Ops()
+        ops.move_to(x + r, y)
+        ops.line_to(x + w - r, y)
+        ops.arc_to(x + w, y + r, 0.0, r, clockwise=True)
+        ops.line_to(x + w, y + h - r)
+        ops.arc_to(x + w - r, y + h, -r, 0.0, clockwise=True)
+        ops.line_to(x + r, y + h)
+        ops.arc_to(x, y + h - r, 0.0, -r, clockwise=True)
+        ops.line_to(x, y + r)
+        ops.arc_to(x + r, y, r, 0.0, clockwise=True)
+        stock_geo = create_rect_geometry(0, 0, 1, 1)
+        transformer.run(
+            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        )
+        arcs = [c for c in ops.commands if isinstance(c, ArcToCommand)]
+        assert len(arcs) == 4
