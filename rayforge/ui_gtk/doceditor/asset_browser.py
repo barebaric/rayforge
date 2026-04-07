@@ -36,7 +36,7 @@ css = """
     min-width: 0;
     min-height: 0;
 }
-.asset-flowbox > flowboxchild:selected .asset-card {
+.asset-flowbox > flowboxchild.selected .asset-card {
     background: alpha(@theme_selected_bg_color, 0.25);
     border: 2px solid @theme_selected_bg_color;
 }
@@ -188,13 +188,10 @@ class AssetBrowser(Gtk.Box):
         self._flowbox.set_row_spacing(6)
         self._flowbox.set_min_children_per_line(3)
         self._flowbox.set_max_children_per_line(200)
-        self._flowbox.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
+        self._flowbox.set_selection_mode(Gtk.SelectionMode.NONE)
         self._flowbox.set_homogeneous(False)
         self._flowbox.set_valign(Gtk.Align.START)
         self._flowbox.set_activate_on_single_click(False)
-        self._flowbox.connect(
-            "selected-children-changed", self._on_selection_changed
-        )
         self._flowbox.connect("child-activated", self._on_child_activated)
 
         key_controller = Gtk.EventControllerKey()
@@ -204,6 +201,7 @@ class AssetBrowser(Gtk.Box):
         click_gesture = Gtk.GestureClick()
         click_gesture.set_button(1)
         click_gesture.connect("pressed", self._on_flowbox_pressed)
+        click_gesture.connect("released", self._on_flowbox_released)
         self._flowbox.add_controller(click_gesture)
 
         self._scrolled = Gtk.ScrolledWindow()
@@ -231,6 +229,7 @@ class AssetBrowser(Gtk.Box):
         self.append(toolbar)
 
         self._cards: dict[str, list] = {}
+        self._selected_uids: set[str] = set()
         self._connect_signals()
         self._sync_cards(self.doc)
 
@@ -293,12 +292,10 @@ class AssetBrowser(Gtk.Box):
 
     def _connect_asset_signal(self, card: AssetCard):
         asset = card.asset
-        signal = getattr(asset, "updated", None)
-        if signal is not None:
-            handler = signal.connect(
-                lambda sender, uid=asset.uid: self._on_asset_updated(uid)
-            )
-            self._cards[asset.uid] = [card, signal, handler]
+        handler = asset.updated.connect(
+            lambda sender, uid=asset.uid: self._on_asset_updated(uid)
+        )
+        self._cards[asset.uid] = [card, asset.updated, handler]
 
     def _disconnect_all_asset_signals(self):
         for uid, (card, signal, handler) in self._cards.items():
@@ -371,21 +368,13 @@ class AssetBrowser(Gtk.Box):
         if not asset.is_draggable_to_canvas:
             return None
 
-        selected = self._flowbox.get_selected_children()
         uids: list[str] = []
 
-        if selected and card.asset.uid in [
-            cast(AssetCard, c.get_child()).asset.uid
-            for c in selected
-            if c.get_child()
-        ]:
-            for child in selected:
-                selected_card = cast(AssetCard, child.get_child())
-                if (
-                    selected_card
-                    and selected_card.asset.is_draggable_to_canvas
-                ):
-                    uids.append(str(selected_card.asset.uid))
+        if self._selected_uids and asset.uid in self._selected_uids:
+            for uid in self._selected_uids:
+                entry = self._cards.get(uid)
+                if entry and entry[0].asset.is_draggable_to_canvas:
+                    uids.append(str(uid))
         else:
             uids.append(str(asset.uid))
 
@@ -395,16 +384,90 @@ class AssetBrowser(Gtk.Box):
         source.set_icon(paintable, int(x), int(y))
         return provider
 
-    def _on_selection_changed(self, flowbox):
-        pass
+    def _update_selection_visual(self):
+        child = self._flowbox.get_first_child()
+        while child:
+            card = (
+                child.get_child()
+                if isinstance(child, Gtk.FlowBoxChild)
+                else None
+            )
+            uid = card.asset.uid if isinstance(card, AssetCard) else None
+            if uid and uid in self._selected_uids:
+                child.add_css_class("selected")
+            else:
+                child.remove_css_class("selected")
+            child = child.get_next_sibling()
 
     def _on_flowbox_pressed(self, gesture, n_press, x, y):
+        modifier = (
+            gesture.get_current_event_state()
+            if gesture.get_current_event()
+            else 0
+        )
+        ctrl = bool(modifier & Gdk.ModifierType.CONTROL_MASK)
+        shift = bool(modifier & Gdk.ModifierType.SHIFT_MASK)
+
         widget = self._flowbox.pick(x, y, Gtk.PickFlags.DEFAULT)
+        clicked_child = None
         while widget and widget != self._flowbox:
             if isinstance(widget, Gtk.FlowBoxChild):
-                return
+                clicked_child = widget
+                break
             widget = widget.get_parent()
-        self._flowbox.unselect_all()
+
+        if clicked_child is None:
+            if not ctrl and not shift:
+                self._selected_uids.clear()
+                self._update_selection_visual()
+            return
+
+        card = cast(AssetCard, clicked_child.get_child())
+        if card is None:
+            return
+
+        uid = card.asset.uid
+        if n_press == 1:
+            if ctrl:
+                if uid in self._selected_uids:
+                    self._selected_uids.discard(uid)
+                else:
+                    self._selected_uids.add(uid)
+            elif shift and self._selected_uids:
+                self._select_range(uid)
+            elif uid not in self._selected_uids:
+                self._selected_uids = {uid}
+            self._update_selection_visual()
+
+    def _select_range(self, uid):
+        all_uids = []
+        child = self._flowbox.get_first_child()
+        while child:
+            card = (
+                child.get_child()
+                if isinstance(child, Gtk.FlowBoxChild)
+                else None
+            )
+            if isinstance(card, AssetCard):
+                all_uids.append(card.asset.uid)
+            child = child.get_next_sibling()
+
+        if not all_uids or uid not in all_uids:
+            return
+
+        anchor_uid = next(iter(self._selected_uids))
+        if anchor_uid not in all_uids:
+            self._selected_uids = {uid}
+            return
+
+        anchor_idx = all_uids.index(anchor_uid)
+        click_idx = all_uids.index(uid)
+        lo = min(anchor_idx, click_idx)
+        hi = max(anchor_idx, click_idx)
+        self._selected_uids = set(all_uids[lo : hi + 1])
+
+    def _on_flowbox_released(self, gesture, n_press, x, y):
+        pass
 
     def _on_child_activated(self, flowbox, child):
         card = cast(AssetCard, child.get_child())
@@ -418,18 +481,18 @@ class AssetBrowser(Gtk.Box):
         return False
 
     def _delete_selected_assets(self):
-        selected = self._flowbox.get_selected_children()
-        if not selected:
+        if not self._selected_uids:
             return
 
         assets_to_delete = []
-        for child in selected:
-            card = cast(AssetCard, child.get_child())
-            if card:
-                assets_to_delete.append(card.asset)
+        for uid in self._selected_uids:
+            entry = self._cards.get(uid)
+            if entry:
+                assets_to_delete.append(entry[0].asset)
 
         for asset in assets_to_delete:
             self.editor.asset.delete_asset(asset)
+        self._selected_uids.clear()
 
     def _on_add_clicked(self, button):
         asset_types = []

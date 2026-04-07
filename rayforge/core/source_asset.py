@@ -4,6 +4,7 @@ import logging
 import pyvips
 import uuid
 from collections import OrderedDict
+from blinker import Signal
 from dataclasses import dataclass, field
 from gettext import gettext as _
 from pathlib import Path
@@ -48,6 +49,7 @@ class SourceAsset(IAsset):
     _uid: str = field(init=False, default_factory=lambda: str(uuid.uuid4()))
     _name: str = field(init=False, repr=False)
     _hidden: bool = field(init=False, default=False)
+    _updated: Signal = field(init=False, default_factory=Signal)
     extra: Dict[str, Any] = field(default_factory=dict)
     _base_image_cache: OrderedDict = field(
         init=False, default_factory=OrderedDict, repr=False
@@ -82,6 +84,10 @@ class SourceAsset(IAsset):
     def uid(self) -> str:
         """The unique identifier of the asset instance."""
         return self._uid
+
+    @property
+    def updated(self) -> Signal:
+        return self._updated
 
     # --- IAsset Protocol Implementation ---
 
