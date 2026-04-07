@@ -10,9 +10,18 @@ GLib.idle_add for thread safety.
 import logging
 import subprocess
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from threading import Event
-from typing import Callable, List, Optional, Tuple, TypeVar, TYPE_CHECKING
+from typing import (
+    Callable,
+    Generator,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    TYPE_CHECKING,
+)
 from gi.repository import Adw, GLib
 import numpy as np
 from PIL import Image
@@ -237,6 +246,47 @@ def wait_for_settled(win: "MainWindow", timeout: float = 30.0) -> bool:
         True if settled within timeout.
     """
     return win.doc_editor.wait_until_settled_sync(timeout=timeout)
+
+
+def wait_for_3d_rendered(win: "MainWindow", timeout: float = 15.0) -> bool:
+    """
+    Wait for the 3D canvas to finish compiling and rendering the scene.
+
+    Waits until:
+    - The canvas has a compiled artifact
+    - All GL dirty flags have been consumed by a render frame
+    - No scene preparation task is in flight
+
+    Returns:
+        True if the scene is rendered within timeout.
+    """
+    start = time.time()
+
+    while time.time() - start < timeout:
+        canvas = run_on_main_thread(lambda: win.canvas3d)
+        if canvas is None:
+            time.sleep(0.1)
+            continue
+
+        ready = run_on_main_thread(
+            lambda: canvas._gl_initialized
+            and canvas._compiled_artifact is not None
+            and not canvas._artifact_gl_dirty
+            and not canvas._scene_gl_dirty
+            and (
+                canvas._scene_preparation_task is None
+                or canvas._scene_preparation_task.is_final()
+            )
+        )
+        if ready:
+            time.sleep(0.3)
+            logger.info("3D scene is compiled and rendered")
+            return True
+
+        time.sleep(0.1)
+
+    logger.warning("3D scene did not render within timeout")
+    return False
 
 
 def load_project(win: "MainWindow", project_name: str) -> None:
@@ -556,3 +606,45 @@ def clear_window_subtitle(win: "MainWindow") -> None:
             title_widget.set_subtitle("")
 
     run_on_main_thread(_clear)
+
+
+def seek_3d_playback(win: "MainWindow", fraction: float) -> None:
+    """
+    Seek the 3D playback to the given fraction (0.0 to 1.0).
+    """
+    from rayforge.simulator.op_player import OpPlayer
+
+    def _seek() -> None:
+        canvas = win.canvas3d
+        if canvas is None or canvas._op_player is None:
+            return
+        player = canvas._op_player
+        target = int(len(player.ops) * fraction)
+        target = max(0, min(target, len(player.ops) - 1))
+        player.seek(target)
+        if canvas._playback_overlay is not None:
+            canvas._playback_overlay.update_ops_range(len(player.ops), target)
+        canvas.queue_render()
+
+    run_on_main_thread(_seek)
+    time.sleep(0.3)
+
+
+@contextmanager
+def wcs(win: "MainWindow", wcs_name: str):
+    """
+    Context manager to temporarily switch the active WCS for a screenshot.
+
+    Restores the original WCS on exit.
+    """
+    machine = win.doc_editor.context.machine
+    original = run_on_main_thread(lambda: machine.active_wcs)
+
+    def _switch():
+        machine.set_active_wcs(wcs_name)
+
+    run_on_main_thread(_switch)
+    try:
+        yield
+    finally:
+        run_on_main_thread(lambda: machine.set_active_wcs(original))
