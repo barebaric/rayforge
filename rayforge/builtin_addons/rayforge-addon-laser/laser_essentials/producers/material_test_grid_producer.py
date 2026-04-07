@@ -157,7 +157,13 @@ class MaterialTestGridProducer(OpsProducer):
 
         main_ops = Ops()
         main_ops.set_laser(laser.uid)
-        main_ops.ops_section_start(SectionType.VECTOR_OUTLINE, workpiece.uid)
+
+        section_type = (
+            SectionType.RASTER_FILL
+            if self.test_type == MaterialTestGridType.ENGRAVE
+            else SectionType.VECTOR_OUTLINE
+        )
+        main_ops.ops_section_start(section_type, workpiece.uid)
 
         # Sort for risk, highest risk first (high speed -> low speed)
         grid_elements.sort(key=lambda e: (-e["speed"], e["power"]))
@@ -180,16 +186,20 @@ class MaterialTestGridProducer(OpsProducer):
             else:
                 self._draw_rectangle(main_ops, **element)
 
+        main_ops.ops_section_end(section_type)
+
         # Labels are always outlines, engraved at a configurable power.
         if label_elements:
             text_ops = self._vectorize_text_to_ops(params, width_mm, height_mm)
+            main_ops.ops_section_start(
+                SectionType.VECTOR_OUTLINE, workpiece.uid
+            )
             # Ensure laser is off before switching to label settings
             main_ops.set_power(0.0)
             main_ops.set_power(self.label_power_percent / 100.0)
             main_ops.set_cut_speed(self.label_speed)
             main_ops.extend(text_ops)
-
-        main_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+            main_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
         if not main_ops.is_empty():
             main_ops.scale(1, -1)
@@ -437,33 +447,26 @@ class MaterialTestGridProducer(OpsProducer):
 
     @staticmethod
     def _draw_filled_box(ops: Ops, line_spacing: float, **el):
-        """Generates a serpentine (back-and-forth) fill pattern."""
+        """Generates individual scan lines for raster fill."""
         x, y, w, h = el["x"], el["y"], el["width"], el["height"]
         if h < 1e-6:
             return
 
         num_lines = int(h / line_spacing)
         if num_lines < 1:
-            # If the box is thinner than the line spacing, draw one line
             ops.move_to(x, y + h / 2, 0.0)
             ops.line_to(x + w, y + h / 2, 0.0)
             return
 
         y_step = h / num_lines
-        ops.move_to(x, y, 0.0)
-        last_x = x
-
         for i in range(num_lines + 1):
             cur_y = y + i * y_step
-            # Move to the current Y level on the correct side
-            ops.line_to(last_x, cur_y, 0.0)
-
-            if i % 2 == 0:  # Even lines, go right
+            if i % 2 == 0:
+                ops.move_to(x, cur_y, 0.0)
                 ops.line_to(x + w, cur_y, 0.0)
-                last_x = x + w
-            else:  # Odd lines, go left
+            else:
+                ops.move_to(x + w, cur_y, 0.0)
                 ops.line_to(x, cur_y, 0.0)
-                last_x = x
 
     def to_dict(self) -> dict:
         return {
