@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 CAIRO_MAX_DIMENSION = 8192
 MAX_TOTAL_PIXELS = CAIRO_MAX_DIMENSION * CAIRO_MAX_DIMENSION
+MAX_TEXTURE_PIXELS = 4096 * 4096
 
 
 def _get_color_set_for_laser(
@@ -72,9 +73,24 @@ def compute_view_dimensions(
     texture_data = None
     if not artifact.is_scalable:
         if artifact.source_dimensions:
-            px_per_mm_x, px_per_mm_y = context.pixels_per_mm
+            source_px_per_mm_x = (
+                artifact.source_dimensions[0] / artifact.generation_size[0]
+            )
+            source_px_per_mm_y = (
+                artifact.source_dimensions[1] / artifact.generation_size[1]
+            )
+            context_px_per_mm_x, context_px_per_mm_y = context.pixels_per_mm
+            px_per_mm_x = max(source_px_per_mm_x, context_px_per_mm_x)
+            px_per_mm_y = max(source_px_per_mm_y, context_px_per_mm_y)
             width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
             height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
+            total_px = width_px * height_px
+            if total_px > MAX_TEXTURE_PIXELS:
+                scale = (MAX_TEXTURE_PIXELS / total_px) ** 0.5
+                width_px = max(1, int(width_px * scale))
+                height_px = max(1, int(height_px * scale))
+                px_per_mm_x = width_px / artifact.generation_size[0]
+                px_per_mm_y = height_px / artifact.generation_size[1]
             logger.debug(
                 f"compute_view_dimensions: Using generation_size for "
                 f"non-scalable artifact: "
@@ -150,10 +166,17 @@ def _encode_vertex_and_texture_data(
             context_px_per_mm_x, context_px_per_mm_y = (
                 render_context.pixels_per_mm
             )
-            px_per_mm_x = min(source_px_per_mm_x, context_px_per_mm_x)
-            px_per_mm_y = min(source_px_per_mm_y, context_px_per_mm_y)
+            px_per_mm_x = max(source_px_per_mm_x, context_px_per_mm_x)
+            px_per_mm_y = max(source_px_per_mm_y, context_px_per_mm_y)
             width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
             height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
+            total_px = width_px * height_px
+            if total_px > MAX_TEXTURE_PIXELS:
+                scale = (MAX_TEXTURE_PIXELS / total_px) ** 0.5
+                width_px = max(1, int(width_px * scale))
+                height_px = max(1, int(height_px * scale))
+                px_per_mm_x = width_px / artifact.generation_size[0]
+                px_per_mm_y = height_px / artifact.generation_size[1]
         else:
             px_per_mm_x, px_per_mm_y = render_context.pixels_per_mm
             width_px = int(round(artifact.generation_size[0] * px_per_mm_x))

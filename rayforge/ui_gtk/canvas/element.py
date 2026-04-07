@@ -965,7 +965,10 @@ class CanvasElement:
                 scale_y = self.height / source_h
                 ctx.scale(scale_x, scale_y)
                 ctx.set_source_surface(self.surface, 0, 0)
-                ctx.get_source().set_filter(cairo.FILTER_GOOD)
+                if scale_x < 1.0 or scale_y < 1.0:
+                    ctx.get_source().set_filter(cairo.FILTER_BILINEAR)
+                else:
+                    ctx.get_source().set_filter(cairo.FILTER_GOOD)
                 ctx.paint()
                 ctx.restore()
 
