@@ -1500,10 +1500,8 @@ class MainWindow(Adw.ApplicationWindow):
         self._update_status_message(tasks)
 
     def _update_status_message(self, tasks):
-        has_tasks = bool(tasks)
-        self._status_message_label.set_visible(has_tasks)
-
-        if not has_tasks:
+        if not tasks:
+            self._status_message_label.set_visible(False)
             return
 
         oldest_task = tasks[0]
@@ -1516,6 +1514,7 @@ class MainWindow(Adw.ApplicationWindow):
             status_text = _("{tasks} tasks").format(tasks=len(tasks))
 
         self._status_message_label.set_text(status_text)
+        self._status_message_label.set_visible(bool(status_text))
 
     def _update_actions_and_ui(self):
         config = get_context().config
