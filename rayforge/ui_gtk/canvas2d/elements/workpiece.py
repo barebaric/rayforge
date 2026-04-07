@@ -14,6 +14,7 @@ from ....pipeline.artifact import (
 from ....shared.util.colors import ColorSet
 from ...shared.gtk_color import GtkColorResolver, ColorSpecDict
 from ...canvas import CanvasElement
+from ..ops_cache_registry import registry
 from .tab_handle import TabHandleElement
 
 if TYPE_CHECKING:
@@ -67,6 +68,7 @@ class WorkPieceElement(CanvasElement):
         self._ops_metadata_cache: Dict[
             str, Tuple
         ] = {}  # (bbox_mm, workpiece_size_mm)
+        self._ops_cache_bytes: Dict[str, int] = {}
 
         self._tab_handles: List[TabHandleElement] = []
         # Default to False; the correct state will be pulled from the surface.
@@ -112,6 +114,7 @@ class WorkPieceElement(CanvasElement):
 
         self.data.updated.connect(self._on_model_content_changed)
         self.data.transform_changed.connect(self._on_transform_changed)
+        registry.register(self)
 
         self.view_manager.source_artifact_ready.connect(
             self._on_source_artifact_ready
@@ -170,11 +173,8 @@ class WorkPieceElement(CanvasElement):
         """
         logger.debug(f"Full invalidation for workpiece '{self.data.name}'")
         self._rendered_ppm = 0.0
-        # Clear the local artifact cache to prevent drawing stale vectors
         self._artifact_cache.clear()
-        self._ops_surface_cache.clear()
-        self._ops_surface_data_cache.clear()
-        self._ops_metadata_cache.clear()
+        self.clear_all_ops_caches()
 
         # Clear the model cache as well, since the data is invalid
         self.data._view_cache.clear()
@@ -261,16 +261,45 @@ class WorkPieceElement(CanvasElement):
                 height,
                 stride,
             )
-            self._ops_surface_cache[step_uid] = new_surface
-            self._ops_surface_data_cache[step_uid] = new_data
-            self._ops_metadata_cache[step_uid] = (
-                artifact.bbox_mm,
-                artifact.workpiece_size_mm,
+            self._store_ops_surface(
+                step_uid,
+                new_surface,
+                new_data,
+                (artifact.bbox_mm, artifact.workpiece_size_mm),
             )
         except Exception as e:
             logger.warning(
                 f"Failed to update ops cache for step {step_uid}: {e}"
             )
+
+    def _store_ops_surface(
+        self,
+        step_uid: str,
+        surface: cairo.ImageSurface,
+        data: np.ndarray,
+        metadata: Tuple,
+    ):
+        old_bytes = self._ops_cache_bytes.pop(step_uid, 0)
+        if old_bytes:
+            registry.remove(self.data.uid, step_uid, old_bytes)
+        byte_size = data.nbytes
+        self._ops_surface_cache[step_uid] = surface
+        self._ops_surface_data_cache[step_uid] = data
+        self._ops_metadata_cache[step_uid] = metadata
+        self._ops_cache_bytes[step_uid] = byte_size
+        registry.add(self.data.uid, step_uid, byte_size)
+
+    def _remove_ops_surface(self, step_uid: str):
+        byte_size = self._ops_cache_bytes.pop(step_uid, 0)
+        if byte_size:
+            registry.remove(self.data.uid, step_uid, byte_size)
+        self._ops_surface_cache.pop(step_uid, None)
+        self._ops_surface_data_cache.pop(step_uid, None)
+        self._ops_metadata_cache.pop(step_uid, None)
+
+    def clear_all_ops_caches(self):
+        for step_uid in list(self._ops_cache_bytes.keys()):
+            self._remove_ops_surface(step_uid)
 
     def _on_view_artifact_updated(
         self,
@@ -284,10 +313,14 @@ class WorkPieceElement(CanvasElement):
         """
         Handler for when the content of a view artifact has been updated
         by the background worker.
+
+        Does NOT cache here — just queues a redraw. The actual caching
+        happens lazily in draw() on first access, which is serialized
+        on the main thread and cannot pile up.
         """
         if workpiece_uid != self.data.uid or not self.canvas:
             return
-        self._update_ops_cache_from_handle(step_uid)
+        self._remove_ops_surface(step_uid)
         self.canvas.queue_draw()
 
     def _on_view_generation_finished(
@@ -403,6 +436,8 @@ class WorkPieceElement(CanvasElement):
         self.view_manager.generation_finished.disconnect(
             self._on_view_generation_finished
         )
+        self.clear_all_ops_caches()
+        registry.unregister(self.data.uid)
         super().remove()
 
     def set_base_image_visible(self, visible: bool):
@@ -570,7 +605,7 @@ class WorkPieceElement(CanvasElement):
             provider = self.data.doc.get_asset_by_uid(
                 self.data.geometry_provider_uid
             )
-            if provider and getattr(provider, "hidden", False):
+            if provider and provider.hidden:
                 provider_hidden = True
 
         if self._base_image_visible and not provider_hidden:
@@ -591,6 +626,7 @@ class WorkPieceElement(CanvasElement):
             return
 
         if self.data.layer and self.data.layer.workflow:
+            registry.touch(self.data.uid)
             for step in self.data.layer.workflow.steps:
                 step_uid = step.uid
                 if not self._ops_visibility.get(step_uid, True):
@@ -629,6 +665,12 @@ class WorkPieceElement(CanvasElement):
                                 )
                                 bbox_mm = artifact.bbox_mm
                                 workpiece_size_mm = artifact.workpiece_size_mm
+                                self._store_ops_surface(
+                                    step_uid,
+                                    surface,
+                                    new_data,
+                                    (bbox_mm, workpiece_size_mm),
+                                )
                             except Exception:
                                 pass
 
