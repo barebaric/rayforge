@@ -25,6 +25,7 @@ from ...core.varset import (
     HostnameVar,
     SerialPortVar,
     TextAreaVar,
+    OctoprintAuthFlowVar,
 )
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
@@ -656,6 +657,7 @@ class VarSetEditorWidget(PreferencesGroupWithButton):
         (_("Choice"), ChoiceVar),
         (_("Hostname / IP"), HostnameVar),
         (_("Serial Port"), SerialPortVar),
+        (_("Octoprint Auth Flow"), OctoprintAuthFlowVar),
     ]
 
     def __init__(

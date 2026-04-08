@@ -3,6 +3,9 @@ from typing import Any
 from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from blinker import Signal
+
+from rayforge.core.varset.octoprintauthflowvar import OctoprintAuthFlowVar
+from rayforge.ui_gtk.shared.octoprint_auth_flow_row import OctoprintAuthFlowRow
 from ...core.varset import (
     ChoiceVar,
     HostnameVar,
@@ -178,7 +181,10 @@ class VarSetWidget(Adw.PreferencesGroup):
                     value = var.get_value_for_display(display_str)
                 else:  # For BaudrateVar, SerialPortVar
                     value = display_str
-
+            elif isinstance(row, OctoprintAuthFlowRow) and isinstance(
+                var, OctoprintAuthFlowVar
+            ):
+                value = var.value
             values[key] = value
         return values
 
@@ -224,6 +230,11 @@ class VarSetWidget(Adw.PreferencesGroup):
                         if model.get_string(i) == display_str:
                             row.set_selected(i)
                             break
+            elif isinstance(row, OctoprintAuthFlowRow) and isinstance(
+                var, OctoprintAuthFlowVar
+            ):
+                row.host_row.set_text(var.host_var.value or "")
+                row.port_row.set_value(var.port_var.value or 80)
 
     def _on_data_changed(self, key: str):
         self.data_changed.send(self, key=key)
@@ -280,6 +291,12 @@ class VarSetWidget(Adw.PreferencesGroup):
 
             row.connect("changed", on_validate)
             on_validate(row)
+        elif isinstance(var, OctoprintAuthFlowVar) and isinstance(
+            row, OctoprintAuthFlowRow
+        ):
+            row.data_changed.connect(
+                lambda r: self._on_data_changed(var.key), weak=False
+            )
 
     def set_apply_buttons_sensitive(self, sensitive: bool):
         """Set the sensitivity of all apply buttons."""
