@@ -3,6 +3,7 @@ from typing import List, Tuple
 
 import numpy as np
 
+from ..core.geo.arc import linearize_arc
 from ..core.ops import Ops
 from ..core.ops.commands import (
     ArcToCommand,
@@ -12,7 +13,6 @@ from ..core.ops.commands import (
     ScanLinePowerCommand,
     SetPowerCommand,
 )
-from ..core.geo.linearize import linearize_arc
 
 
 @dataclass

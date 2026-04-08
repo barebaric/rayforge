@@ -14,7 +14,7 @@ from typing import Callable, List, Optional, Tuple
 
 import numpy as np
 
-from ....core.geo.linearize import linearize_arc
+from ....core.geo.arc import linearize_arc
 from ....core.ops import Ops
 from ....core.ops.commands import (
     ArcToCommand,

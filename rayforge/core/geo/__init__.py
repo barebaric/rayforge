@@ -6,6 +6,7 @@ generic and have no knowledge of the high-level objects that use them.
 
 from . import analysis
 from . import arc
+from . import bezier
 from . import circle
 from . import contours
 from . import fitting
@@ -20,6 +21,7 @@ from . import text
 from . import transform
 
 from .types import (
+    CubicBezier,
     Edge,
     IntPoint,
     IntPolygon,
@@ -27,6 +29,7 @@ from .types import (
     Point2DOr3D,
     Point3D,
     Polygon,
+    Polygon3D,
     Rect,
     Rect3D,
 )
@@ -52,6 +55,7 @@ from .font_config import FontConfig
 from .geometry import Geometry
 
 __all__ = [
+    "CubicBezier",
     "Edge",
     "IntPoint",
     "IntPolygon",
@@ -59,8 +63,10 @@ __all__ = [
     "Point2DOr3D",
     "Point3D",
     "Polygon",
+    "Polygon3D",
     "analysis",
     "arc",
+    "bezier",
     "circle",
     "contours",
     "fitting",

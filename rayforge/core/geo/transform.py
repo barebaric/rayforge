@@ -3,6 +3,7 @@ import logging
 from typing import Optional, TYPE_CHECKING, TypeVar, List, Dict, TypedDict
 import numpy as np
 import pyclipper
+from .arc import linearize_arc
 from .constants import (
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
@@ -20,7 +21,6 @@ from .constants import (
     COL_C2Y,
 )
 from .contours import ContourData
-from .linearize import linearize_arc
 from .types import IntPolygon, Point, Polygon, Rect
 
 if TYPE_CHECKING:

@@ -15,8 +15,9 @@ from typing import (
 )
 import numpy as np
 import json
-from ..geo import linearize, clipping
-from ..geo.arc import get_arc_bounding_box
+from ..geo import clipping
+from ..geo.arc import get_arc_bounding_box, linearize_arc
+from ..geo.bezier import linearize_bezier, linearize_bezier_from_array
 from ..geo.types import Point3D, Rect, Polygon
 from .commands import (
     State,
@@ -368,9 +369,7 @@ class Ops:
                 new_ops.add(ArcToCommand(end, center_offset, clockwise))
             elif cmd_type == geo.constants.CMD_TYPE_BEZIER:
                 # Ops doesn't have a native Bezier command, so we linearize.
-                segments = geo.linearize.linearize_bezier_from_array(
-                    row, last_pos
-                )
+                segments = linearize_bezier_from_array(row, last_pos)
                 for _, p2 in segments:
                     new_ops.add(LineToCommand(p2))
 
@@ -592,9 +591,7 @@ class Ops:
             return
 
         start_point = self._commands[-1].end
-        segments = linearize.linearize_bezier(
-            start_point, c1, c2, end, num_steps
-        )
+        segments = linearize_bezier(start_point, c1, c2, end, num_steps)
         for _, end_point in segments:
             self.line_to(*end_point)
 
@@ -1020,7 +1017,7 @@ class Ops:
                 # Use the last known untransformed point as the start for
                 # linearization
                 start_point = last_point_untransformed or (0.0, 0.0, 0.0)
-                segments = linearize.linearize_arc(cmd, start_point)
+                segments = linearize_arc(cmd, start_point)
                 for p1, p2 in segments:
                     point_vec = np.array([p2[0], p2[1], p2[2], 1.0])
                     transformed_vec = matrix @ point_vec

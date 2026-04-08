@@ -12,8 +12,10 @@ from rayforge.core.geo.arc import (
     get_arc_midpoint,
     is_angle_between,
     is_arc_fully_inside_regions,
+    linearize_arc,
     normalize_angle,
 )
+from rayforge.core.geo import Geometry
 
 
 @pytest.mark.parametrize(
@@ -633,3 +635,60 @@ class TestIsArcFullyInsideRegions:
             self._square(5, 0, 5, 10),
         ]
         assert is_arc_fully_inside_regions(start, end, co, True, regions)
+
+
+@pytest.fixture
+def sample_geometry():
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(10, 10)
+    geo.arc_to(20, 0, i=5, j=-10)
+    return geo
+
+
+def test_linearize_arc(sample_geometry):
+    """Tests the external linearize_arc function."""
+    assert sample_geometry.data is not None
+    start_point = tuple(sample_geometry.data[1, 1:4])
+    arc_row = sample_geometry.data[2]
+    arc_cmd = MockArc(
+        end=tuple(arc_row[1:4]),
+        center_offset=(arc_row[4], arc_row[5]),
+        clockwise=bool(arc_row[6]),
+    )
+
+    segments = linearize_arc(arc_cmd, start_point)
+
+    assert len(segments) >= 2
+
+    first_segment_start, _ = segments[0]
+    _, last_segment_end = segments[-1]
+
+    assert first_segment_start == pytest.approx(start_point)
+    assert last_segment_end == pytest.approx(arc_cmd.end)
+
+
+def test_linearize_arc_full_circle():
+    """Tests that linearizing a full circle (coincident start/end) works."""
+    start_point = (10.0, 0.0, 5.0)
+    arc_cmd = MockArc(
+        end=start_point,
+        center_offset=(-10.0, 0.0),
+        clockwise=False,
+    )
+
+    segments = linearize_arc(arc_cmd, start_point, resolution=1.0)
+
+    assert len(segments) > 50
+
+    first_segment_start, _ = segments[0]
+    _, last_segment_end = segments[-1]
+
+    assert first_segment_start == pytest.approx(start_point)
+    assert last_segment_end == pytest.approx(start_point, abs=1e-6)
+
+    mid_segment_idx = len(segments) // 2
+    _, mid_point = segments[mid_segment_idx - 1]
+
+    expected_mid_point = (-10.0, 0.0, 5.0)
+    assert mid_point == pytest.approx(expected_mid_point, abs=0.1)

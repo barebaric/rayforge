@@ -20,6 +20,95 @@ from .primitives import (
 from .types import Point, Point3D, Polygon, Rect
 
 
+def _linearize_arc_from_array(
+    arc_row: np.ndarray,
+    start_point: Point3D,
+    resolution: float = 0.1,
+) -> List[Tuple[Point3D, Point3D]]:
+    """Internal, NumPy-native implementation for arc linearization."""
+    segments: List[Tuple[Point3D, Point3D]] = []
+    p0 = start_point
+    p1 = (arc_row[COL_X], arc_row[COL_Y], arc_row[COL_Z])
+    center_offset = (arc_row[COL_I], arc_row[COL_J])
+    clockwise = bool(arc_row[COL_CW])
+    z0, z1 = p0[2], p1[2]
+
+    center = (
+        p0[0] + center_offset[0],
+        p0[1] + center_offset[1],
+    )
+
+    radius_start = math.dist(p0[:2], center)
+    radius_end = math.dist(p1[:2], center)
+
+    if radius_start < 1e-9:
+        return [(p0, p1)]
+
+    start_angle = math.atan2(p0[1] - center[1], p0[0] - center[0])
+    end_angle = math.atan2(p1[1] - center[1], p1[0] - center[0])
+
+    is_coincident = math.isclose(p0[0], p1[0], abs_tol=1e-9) and math.isclose(
+        p0[1], p1[1], abs_tol=1e-9
+    )
+
+    if is_coincident and radius_start > 1e-9:
+        angle_range = -2 * math.pi if clockwise else 2 * math.pi
+    else:
+        angle_range = end_angle - start_angle
+        if clockwise:
+            if angle_range > 1e-9:
+                angle_range -= 2 * math.pi
+        else:
+            if angle_range < -1e-9:
+                angle_range += 2 * math.pi
+
+    avg_radius = (radius_start + radius_end) / 2
+    arc_len = abs(angle_range * avg_radius)
+    num_segments = max(2, int(arc_len / resolution))
+
+    prev_pt = p0
+    for i in range(1, num_segments + 1):
+        t = i / num_segments
+        radius = radius_start + (radius_end - radius_start) * t
+        angle = start_angle + angle_range * t
+        z = z0 + (z1 - z0) * t
+        next_pt = (
+            center[0] + radius * math.cos(angle),
+            center[1] + radius * math.sin(angle),
+            z,
+        )
+        segments.append((prev_pt, next_pt))
+        prev_pt = next_pt
+    return segments
+
+
+def linearize_arc(
+    arc_input: Any,
+    start_point: Point3D,
+    resolution: float = 0.1,
+) -> List[Tuple[Point3D, Point3D]]:
+    """
+    Converts an arc into a list of line segments.
+    This function is backward-compatible and accepts either a NumPy array row
+    or an object with .end, .center_offset, and .clockwise attributes.
+    """
+    if isinstance(arc_input, np.ndarray):
+        return _linearize_arc_from_array(arc_input, start_point, resolution)
+    else:
+        temp_row = np.zeros(GEO_ARRAY_COLS, dtype=np.float64)
+        temp_row[COL_TYPE] = CMD_TYPE_ARC
+        if hasattr(arc_input, "end") and arc_input.end is not None:
+            temp_row[COL_X] = arc_input.end[0]
+            temp_row[COL_Y] = arc_input.end[1]
+            temp_row[COL_Z] = arc_input.end[2]
+        if hasattr(arc_input, "center_offset"):
+            temp_row[COL_I] = arc_input.center_offset[0]
+            temp_row[COL_J] = arc_input.center_offset[1]
+        if hasattr(arc_input, "clockwise"):
+            temp_row[COL_CW] = 1.0 if arc_input.clockwise else 0.0
+        return _linearize_arc_from_array(temp_row, start_point, resolution)
+
+
 def normalize_angle(angle: float) -> float:
     """Normalizes an angle to the [0, 2*pi) range."""
     return (angle + 2 * math.pi) % (2 * math.pi)
@@ -158,8 +247,6 @@ def _find_closest_on_linearized_arc(
     y: float,
 ) -> Optional[Tuple[float, Point, float]]:
     """Helper to find the closest point on a linearized arc."""
-    from .linearize import linearize_arc
-
     arc_segments = linearize_arc(arc_row, start_pos)
     if not arc_segments:
         return None
@@ -330,9 +417,6 @@ def arc_intersects_rect(
     )
     start_3d = (start_pos[0], start_pos[1], 0.0)
     radius = math.hypot(start_pos[0] - center[0], start_pos[1] - center[1])
-    # Use a sensible resolution for selection hit-testing
-    from .linearize import linearize_arc
-
     segments = linearize_arc(mock_cmd, start_3d, resolution=radius * 0.1)
 
     for p1_3d, p2_3d in segments:

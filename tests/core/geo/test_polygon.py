@@ -5,6 +5,7 @@ Tests for rayforge.core.geo.polygon module.
 from typing import cast, List
 
 import numpy as np
+import pytest
 
 from rayforge.core.geo.polygon import (
     Polygon,
@@ -45,6 +46,7 @@ from rayforge.core.geo.polygon import (
     polygon_perimeter_numpy,
     point_line_distance,
     extract_polygon_edges,
+    resample_polyline,
 )
 
 
@@ -1156,3 +1158,26 @@ class TestFlipPolygonsNumpy:
     def test_empty_list(self):
         flipped = flip_polygons_numpy([], flip_h=True, flip_v=True)
         assert flipped == []
+
+
+def test_resample_polyline_open_path():
+    points = [(0.0, 0.0, 1.0), (10.0, 0.0, 1.0)]
+    resampled = resample_polyline(points, 2.0, is_closed=False)
+    assert len(resampled) == 6
+    assert resampled[0] == (0.0, 0.0, 1.0)
+    assert resampled[-1] == (10.0, 0.0, 1.0)
+    assert resampled[1] == pytest.approx((2.0, 0.0, 1.0))
+
+
+def test_resample_polyline_closed_path():
+    points = [
+        (0.0, 0.0, 2.0),
+        (10.0, 0.0, 2.0),
+        (10.0, 10.0, 2.0),
+        (0.0, 10.0, 2.0),
+    ]
+    resampled = resample_polyline(points, 5.0, is_closed=True)
+    assert len(resampled) == 8
+    assert resampled[0] == (0.0, 0.0, 2.0)
+    assert resampled[-1] != resampled[0]
+    assert (5.0, 0.0, 2.0) in resampled

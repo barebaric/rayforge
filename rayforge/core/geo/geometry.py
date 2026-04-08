@@ -23,6 +23,7 @@ from .analysis import (
     get_area_from_array,
 )
 from .arc import find_closest_point_on_arc
+from .bezier import find_closest_point_on_bezier
 from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
@@ -49,7 +50,6 @@ from .font_config import FontConfig
 from .linearize import linearize_geometry
 from .primitives import (
     find_closest_point_on_line_segment,
-    find_closest_point_on_bezier,
 )
 from .query import (
     get_bounding_rect_from_array,

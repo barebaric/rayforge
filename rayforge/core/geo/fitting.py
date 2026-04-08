@@ -4,6 +4,8 @@ from typing import List, Tuple, Optional, cast, Callable, Sequence
 import numpy as np
 from scipy.optimize import least_squares
 from .analysis import arc_direction_is_clockwise
+from .arc import get_arc_angles, linearize_arc
+from .bezier import linearize_bezier_from_array
 from .constants import (
     CMD_TYPE_BEZIER,
     CMD_TYPE_LINE,
@@ -22,8 +24,6 @@ from .constants import (
     COL_CW,
     GEO_ARRAY_COLS,
 )
-from .linearize import linearize_bezier_from_array, linearize_arc
-from .arc import get_arc_angles
 from .simplify import simplify_points_to_array
 from .types import Point, Point2DOr3D, Point3D
 

@@ -19,7 +19,8 @@ from .constants import (
     COL_C2X,
     COL_C2Y,
 )
-from .linearize import linearize_arc, linearize_bezier_from_array
+from .arc import linearize_arc
+from .bezier import linearize_bezier_from_array
 from .primitives import is_point_in_polygon
 from .types import Point, Point2DOr3D, Polygon
 

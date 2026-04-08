@@ -12,7 +12,7 @@ from typing import List, Optional, Tuple, TYPE_CHECKING
 import numpy as np
 import pyclipper
 
-from .types import IntPolygon, Point, Polygon
+from .types import IntPolygon, Point, Point3D, Polygon
 
 if TYPE_CHECKING:
     from .geometry import Rect
@@ -867,3 +867,40 @@ def polygons_intersect_numpy(
         if abs(pyclipper.Area(path)) > min_area:
             return True
     return False
+
+
+def resample_polyline(
+    points: List[Point3D],
+    max_segment_length: float,
+    is_closed: bool,
+) -> List[Point3D]:
+    """
+    Resamples a polyline, adding points to increase its density such that
+    no segment is longer than `max_segment_length`.
+    """
+    if not points:
+        return []
+
+    new_points = [points[0]]
+    num_segments = len(points) if is_closed else len(points) - 1
+
+    for i in range(num_segments):
+        p1 = points[i]
+        p2 = points[(i + 1) % len(points)]  # Wraps for closed paths
+        dist = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
+
+        if dist > max_segment_length:
+            # If a segment is too long, subdivide it.
+            num_sub = math.ceil(dist / max_segment_length)
+            for j in range(1, int(num_sub)):
+                t = j / num_sub
+                # Linear interpolation to create new points.
+                px = p1[0] * (1 - t) + p2[0] * t
+                py = p1[1] * (1 - t) + p2[1] * t
+                new_points.append((px, py, p1[2]))
+
+        # Add the original endpoint, avoiding duplication for closed paths.
+        if not (is_closed and i == num_segments - 1):
+            new_points.append(p2)
+
+    return new_points
