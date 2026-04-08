@@ -12,9 +12,52 @@ Coordinate Spaces:
   or workarea offset)
 """
 
+import gc
+
 import pytest
+
+from rayforge import config
+from rayforge import context as context_module
+from rayforge.context import get_context
 from rayforge.core.ops import Ops
+from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine, Origin
+
+
+@pytest.fixture(autouse=True)
+def clean_context_singleton():
+    """Override conftest's per-test cleanup. Cleanup is handled by
+    the class-scoped lite_context fixture."""
+    yield
+
+
+@pytest.fixture(scope="class")
+def lite_context(tmp_path_factory):
+    """Class-scoped context shared across all TestCoordinateSpaces tests."""
+    from rayforge.addon_mgr.lazy_loader import reset_addon_finder
+
+    tmp_path = tmp_path_factory.mktemp("coordinate_spaces")
+    temp_config_dir = tmp_path / "config"
+    temp_dialect_dir = temp_config_dir / "dialects"
+    temp_machine_dir = tmp_path / "machines"
+    temp_config_dir.mkdir(parents=True, exist_ok=True)
+    temp_dialect_dir.mkdir(parents=True, exist_ok=True)
+    temp_machine_dir.mkdir(parents=True, exist_ok=True)
+
+    old_config = (config.CONFIG_DIR, config.DIALECT_DIR, config.MACHINE_DIR)
+    config.CONFIG_DIR = temp_config_dir
+    config.DIALECT_DIR = temp_dialect_dir
+    config.MACHINE_DIR = temp_machine_dir
+
+    ctx = get_context()
+    ctx.initialize_lite_context(temp_machine_dir)
+    ctx._dialect_mgr = DialectManager(temp_dialect_dir)
+    yield ctx
+
+    context_module._context_instance = None
+    config.CONFIG_DIR, config.DIALECT_DIR, config.MACHINE_DIR = old_config
+    reset_addon_finder()
+    gc.collect()
 
 
 @pytest.fixture
@@ -23,18 +66,21 @@ def machine(lite_context):
     return Machine(lite_context)
 
 
-class TestWorldToMachine:
+@pytest.mark.usefixtures("lite_context")
+class TestCoordinateSpaces:
     """
-    Comprehensive tests for Machine.world_point_to_machine().
+    Combined tests for coordinate space transformations.
 
-    Tests all 16 combinations of:
-    - 4 origins: BOTTOM_LEFT, TOP_LEFT, BOTTOM_RIGHT, TOP_RIGHT
-    - 2 x_reverse: True, False
-    - 2 y_reverse: True, False
-
-    Setup: machine extents (100, 100)
-    Input: point (10, 20) in WORLD space
+    Tests all coordinate space operations including:
+    - World-to-machine point conversion
+    - Workarea origin offsets
+    - Reference offset calculations
+    - Position display in workarea and WCS modes
+    - Full coordinate pipeline
+    - UI/G-code alignment
     """
+
+    # -- World-to-machine --
 
     WORLD_TO_MACHINE_SCENARIOS = [
         # (origin, reverse_x, reverse_y, expected_mx, expected_my)
@@ -119,17 +165,9 @@ class TestWorldToMachine:
         assert w2m_result[0] == pytest.approx(encoder_result[0])
         assert w2m_result[1] == pytest.approx(encoder_result[1])
 
-
-class TestGetWorkareaOriginOffset:
-    """
-    Tests for Machine.get_workarea_origin_offset().
-
-    This method returns the position of the workarea origin in WORLD
-    space. The workarea origin is at the corner specified by the
-    machine's origin setting.
-    Margins are: (left, top, right, bottom) = (10, 20, 30, 40)
-    Machine extents: (100, 100)
-    """
+    # -- Workarea origin offset --
+    # Margins are: (left, top, right, bottom) = (10, 20, 30, 40)
+    # Machine extents: (100, 100)
 
     @pytest.mark.parametrize(
         "origin,expected_offset",
@@ -155,16 +193,11 @@ class TestGetWorkareaOriginOffset:
         result = machine.get_workarea_origin_offset()
         assert result == pytest.approx(expected_offset)
 
+    # -- Workarea origin offset with reversed axes --
+    # Axis reversal is a WORLD↔MACHINE display transformation concern.
+    # The workarea origin offset is always in MACHINE space.
 
-class TestGetWorkareaOriginOffsetWithReversedAxes:
-    """
-    Tests that get_workarea_origin_offset is unaffected by axis reversal.
-
-    Axis reversal is a WORLD↔MACHINE display transformation concern.
-    The workarea origin offset is always in MACHINE space.
-    """
-
-    def test_unaffected_by_reverse_x(self, machine):
+    def test_workarea_offset_unaffected_by_reverse_x(self, machine):
         """Axis reversal should not affect workarea origin offset."""
         machine.set_axis_extents(100.0, 100.0)
         machine.set_work_margins(10.0, 20.0, 30.0, 40.0)
@@ -178,7 +211,7 @@ class TestGetWorkareaOriginOffsetWithReversedAxes:
         assert result_normal == result_reversed
         assert result_normal == pytest.approx((10.0, 40.0))
 
-    def test_unaffected_by_reverse_y(self, machine):
+    def test_workarea_offset_unaffected_by_reverse_y(self, machine):
         """Axis reversal should not affect workarea origin offset."""
         machine.set_axis_extents(100.0, 100.0)
         machine.set_work_margins(10.0, 20.0, 30.0, 40.0)
@@ -192,14 +225,10 @@ class TestGetWorkareaOriginOffsetWithReversedAxes:
         assert result_normal == result_reversed
         assert result_normal == pytest.approx((10.0, 40.0))
 
-
-class TestGetReferenceOffset:
-    """
-    Tests for Machine.get_reference_offset().
-
-    This method returns the appropriate offset for converting from
-    MACHINE coordinates to the user-visible REFERENCE coordinates.
-    """
+    # -- Reference offset --
+    # Tests for Machine.get_reference_offset().
+    # This method returns the appropriate offset for converting from
+    # MACHINE coordinates to the user-visible REFERENCE coordinates.
 
     def test_returns_wcs_offset_when_wcs_mode(self, machine):
         """
@@ -240,23 +269,20 @@ class TestGetReferenceOffset:
         result = machine.get_reference_offset()
         assert result == pytest.approx((10.0, 40.0, 0.0))
 
+    # -- Position display in workarea mode --
+    # Integration tests for position display in workarea mode.
+    #
+    # These tests simulate what the UI does:
+    # 1. Get workpiece position in WORLD coords
+    # 2. Convert to MACHINE coords via world_to_machine()
+    # 3. Get workarea offset in WORLD space via get_reference_offset()
+    # 4. Transform offset to MACHINE space via world_point_to_machine()
+    # 5. Subtract to get REFERENCE coords
+    #
+    # Margins: left=10, top=20, right=30, bottom=40
+    # Machine extents: (100, 100)
 
-class TestPositionDisplayInWorkareaMode:
-    """
-    Integration tests for position display in workarea mode.
-
-    These tests simulate what the UI does:
-    1. Get workpiece position in WORLD coords
-    2. Convert to MACHINE coords via world_to_machine()
-    3. Get workarea offset in WORLD space via get_reference_offset()
-    4. Transform offset to MACHINE space via world_point_to_machine()
-    5. Subtract to get REFERENCE coords
-
-    Margins: left=10, top=20, right=30, bottom=40
-    Machine extents: (100, 100)
-    """
-
-    def test_bottom_left_origin(self, machine):
+    def test_workarea_mode_bottom_left_origin(self, machine):
         """
         Workarea mode with BOTTOM_LEFT origin.
         """
@@ -281,7 +307,7 @@ class TestPositionDisplayInWorkareaMode:
         # BOTTOM_LEFT: no transform, so (20, 50) - (10, 40) = (10, 10)
         assert pos_ref == pytest.approx((10.0, 10.0))
 
-    def test_top_left_origin(self, machine):
+    def test_workarea_mode_top_left_origin(self, machine):
         """
         Workarea mode with TOP_LEFT origin.
         """
@@ -309,7 +335,7 @@ class TestPositionDisplayInWorkareaMode:
         # pos_ref: (20-10, 30-20) = (10, 10)
         assert pos_ref == pytest.approx((10.0, 10.0))
 
-    def test_bottom_right_origin(self, machine):
+    def test_workarea_mode_bottom_right_origin(self, machine):
         """
         Workarea mode with BOTTOM_RIGHT origin.
         """
@@ -337,7 +363,7 @@ class TestPositionDisplayInWorkareaMode:
         # pos_ref: (20-30, 50-40) = (-10, 10)
         assert pos_ref == pytest.approx((-10.0, 10.0))
 
-    def test_top_right_origin(self, machine):
+    def test_workarea_mode_top_right_origin(self, machine):
         """
         Workarea mode with TOP_RIGHT origin.
         """
@@ -365,7 +391,7 @@ class TestPositionDisplayInWorkareaMode:
         # pos_ref: (20-30, 30-20) = (-10, 10)
         assert pos_ref == pytest.approx((-10.0, 10.0))
 
-    def test_with_reversed_x_axis(self, machine):
+    def test_workarea_mode_with_reversed_x_axis(self, machine):
         """
         Workarea mode with BOTTOM_LEFT origin and reversed X axis.
         """
@@ -393,7 +419,7 @@ class TestPositionDisplayInWorkareaMode:
         # pos_ref: (-20 - (-10), 50 - 40) = (-10, 10)
         assert pos_ref == pytest.approx((-10.0, 10.0))
 
-    def test_with_reversed_y_axis(self, machine):
+    def test_workarea_mode_with_reversed_y_axis(self, machine):
         """
         Workarea mode with BOTTOM_LEFT origin and reversed Y axis.
         """
@@ -421,7 +447,7 @@ class TestPositionDisplayInWorkareaMode:
         # pos_ref: (20 - 10, -50 - (-40)) = (10, -10)
         assert pos_ref == pytest.approx((10.0, -10.0))
 
-    def test_with_both_axes_reversed(self, machine):
+    def test_workarea_mode_with_both_axes_reversed(self, machine):
         """
         Workarea mode with BOTTOM_LEFT origin and both axes reversed.
         """
@@ -450,15 +476,10 @@ class TestPositionDisplayInWorkareaMode:
         # pos_ref: (-20 - (-10), -50 - (-40)) = (-10, -10)
         assert pos_ref == pytest.approx((-10.0, -10.0))
 
-
-class TestFullCoordinatePipeline:
-    """
-    End-to-end tests for the full coordinate transformation pipeline.
-
-    These tests verify: WORLD → MACHINE → REFERENCE
-
-    The UI does this to display workpiece positions.
-    """
+    # -- Full coordinate pipeline --
+    # End-to-end tests for the full coordinate transformation pipeline.
+    # These tests verify: WORLD → MACHINE → REFERENCE
+    # The UI does this to display workpiece positions.
 
     def test_world_to_reference_bottom_left(self, machine):
         """
@@ -591,15 +612,12 @@ class TestFullCoordinatePipeline:
         assert offset_machine == pytest.approx((10.0, -40.0))
         assert pos_ref == pytest.approx((5.0, -5.0))
 
-
-class TestUIAndGcodeAlignment:
-    """
-    These tests verify that the UI and G-code encoder produce the
-    same reference coordinates when axis reversal is enabled.
-
-    The fix: world_point_to_machine() applies axis reversal, and the
-    offset is transformed through it before subtraction.
-    """
+    # -- UI and G-code alignment --
+    # These tests verify that the UI and G-code encoder produce the
+    # same reference coordinates when axis reversal is enabled.
+    #
+    # The fix: world_point_to_machine() applies axis reversal, and the
+    # offset is transformed through it before subtraction.
 
     def test_offset_transform_matches_encoder(self, machine):
         """
@@ -658,17 +676,10 @@ class TestUIAndGcodeAlignment:
         assert ui_pos_ref[0] == pytest.approx(-5.0)
         assert ui_pos_ref[1] == pytest.approx(5.0)
 
-
-class TestPositionDisplayInWCSMode:
-    """
-    Regression tests for issue #190: Position display in WCS mode
-    (wcs_origin_is_workarea_origin=False) must correctly apply the WCS
-    offset to convert from MACHINE coordinates to REFERENCE coordinates.
-
-    The existing TestPositionDisplayInWorkareaMode only tests workarea mode.
-    These tests verify the WCS mode path which was broken: the UI was
-    showing MPos instead of WPos = MPos - WCO.
-    """
+    # -- Position display in WCS mode --
+    # Regression tests for issue #190: Position display in WCS mode
+    # (wcs_origin_is_workarea_origin=False) must correctly apply the WCS
+    # offset to convert from MACHINE coordinates to REFERENCE coordinates.
 
     def test_wcs_offset_subtracted_from_machine_pos(self, machine):
         """
@@ -771,13 +782,10 @@ class TestPositionDisplayInWCSMode:
         )
         assert ref_pos == pytest.approx((10.0, -40.0))
 
-
-class TestGetCommandOffsetZ:
-    """
-    Tests that get_command_offset always returns Z=0 regardless of WCS
-    Z offset. The WCS Z offset is handled by the controller (via the
-    G54-G59 preamble command), not by subtracting from G-code coords.
-    """
+    # -- Command offset Z --
+    # Tests that get_command_offset always returns Z=0 regardless of WCS
+    # Z offset. The WCS Z offset is handled by the controller (via the
+    # G54-G59 preamble command), not by subtracting from G-code coords.
 
     def test_wcs_z_offset_not_subtracted(self, machine):
         """
