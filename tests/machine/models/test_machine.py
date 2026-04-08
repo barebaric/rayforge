@@ -1,6 +1,7 @@
 import asyncio
 from pathlib import Path
 from typing import Tuple, Generator
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -1495,310 +1496,6 @@ class TestMachine:
         assert new_machine.dialect_uid != "smoothieware"
         assert MacroTrigger.LAYER_START in new_machine.hookmacros
 
-    @pytest.mark.parametrize(
-        "direction, origin, reverse, distance, expected",
-        [
-            (JogDirection.EAST, Origin.BOTTOM_LEFT, False, 10.0, 10.0),
-            (JogDirection.WEST, Origin.BOTTOM_LEFT, False, 10.0, -10.0),
-            (JogDirection.NORTH, Origin.BOTTOM_LEFT, False, 10.0, 10.0),
-            (JogDirection.SOUTH, Origin.BOTTOM_LEFT, False, 10.0, -10.0),
-            (JogDirection.UP, Origin.BOTTOM_LEFT, False, 10.0, 10.0),
-            (JogDirection.DOWN, Origin.BOTTOM_LEFT, False, 10.0, -10.0),
-            (JogDirection.EAST, Origin.BOTTOM_RIGHT, False, 10.0, -10.0),
-            (JogDirection.WEST, Origin.BOTTOM_RIGHT, False, 10.0, 10.0),
-            (JogDirection.NORTH, Origin.BOTTOM_RIGHT, False, 10.0, 10.0),
-            (JogDirection.SOUTH, Origin.BOTTOM_RIGHT, False, 10.0, -10.0),
-            (JogDirection.UP, Origin.BOTTOM_RIGHT, False, 10.0, 10.0),
-            (JogDirection.DOWN, Origin.BOTTOM_RIGHT, False, 10.0, -10.0),
-            (JogDirection.EAST, Origin.TOP_LEFT, False, 10.0, 10.0),
-            (JogDirection.WEST, Origin.TOP_LEFT, False, 10.0, -10.0),
-            (JogDirection.NORTH, Origin.TOP_LEFT, False, 10.0, -10.0),
-            (JogDirection.SOUTH, Origin.TOP_LEFT, False, 10.0, 10.0),
-            (JogDirection.UP, Origin.TOP_LEFT, False, 10.0, 10.0),
-            (JogDirection.DOWN, Origin.TOP_LEFT, False, 10.0, -10.0),
-            (JogDirection.EAST, Origin.TOP_RIGHT, False, 10.0, -10.0),
-            (JogDirection.WEST, Origin.TOP_RIGHT, False, 10.0, 10.0),
-            (JogDirection.NORTH, Origin.TOP_RIGHT, False, 10.0, -10.0),
-            (JogDirection.SOUTH, Origin.TOP_RIGHT, False, 10.0, 10.0),
-            (JogDirection.UP, Origin.TOP_RIGHT, False, 10.0, 10.0),
-            (JogDirection.DOWN, Origin.TOP_RIGHT, False, 10.0, -10.0),
-            (JogDirection.EAST, Origin.BOTTOM_LEFT, True, 10.0, -10.0),
-            (JogDirection.WEST, Origin.BOTTOM_LEFT, True, 10.0, 10.0),
-            (JogDirection.NORTH, Origin.BOTTOM_LEFT, True, 10.0, -10.0),
-            (JogDirection.SOUTH, Origin.BOTTOM_LEFT, True, 10.0, 10.0),
-            (JogDirection.UP, Origin.BOTTOM_LEFT, True, 10.0, -10.0),
-            (JogDirection.DOWN, Origin.BOTTOM_LEFT, True, 10.0, 10.0),
-            (JogDirection.EAST, Origin.BOTTOM_RIGHT, True, 10.0, 10.0),
-            (JogDirection.WEST, Origin.BOTTOM_RIGHT, True, 10.0, -10.0),
-            (JogDirection.NORTH, Origin.BOTTOM_RIGHT, True, 10.0, -10.0),
-            (JogDirection.SOUTH, Origin.BOTTOM_RIGHT, True, 10.0, 10.0),
-            (JogDirection.UP, Origin.BOTTOM_RIGHT, True, 10.0, -10.0),
-            (JogDirection.DOWN, Origin.BOTTOM_RIGHT, True, 10.0, 10.0),
-            (JogDirection.EAST, Origin.TOP_LEFT, True, 10.0, -10.0),
-            (JogDirection.WEST, Origin.TOP_LEFT, True, 10.0, 10.0),
-            (JogDirection.NORTH, Origin.TOP_LEFT, True, 10.0, 10.0),
-            (JogDirection.SOUTH, Origin.TOP_LEFT, True, 10.0, -10.0),
-            (JogDirection.UP, Origin.TOP_LEFT, True, 10.0, -10.0),
-            (JogDirection.DOWN, Origin.TOP_LEFT, True, 10.0, 10.0),
-            (JogDirection.EAST, Origin.TOP_RIGHT, True, 10.0, 10.0),
-            (JogDirection.WEST, Origin.TOP_RIGHT, True, 10.0, -10.0),
-            (JogDirection.NORTH, Origin.TOP_RIGHT, True, 10.0, 10.0),
-            (JogDirection.SOUTH, Origin.TOP_RIGHT, True, 10.0, -10.0),
-            (JogDirection.UP, Origin.TOP_RIGHT, True, 10.0, -10.0),
-            (JogDirection.DOWN, Origin.TOP_RIGHT, True, 10.0, 10.0),
-        ],
-    )
-    def test_calculate_jog(
-        self,
-        isolated_machine: Machine,
-        direction,
-        origin,
-        reverse,
-        distance,
-        expected,
-    ):
-        """
-        Tests that jog delta calculation correctly accounts for origin
-        position and reverse axis settings.
-        """
-        isolated_machine.set_origin(origin)
-        if direction in (JogDirection.EAST, JogDirection.WEST):
-            isolated_machine.set_reverse_x_axis(reverse)
-        elif direction in (JogDirection.NORTH, JogDirection.SOUTH):
-            isolated_machine.set_reverse_y_axis(reverse)
-        else:
-            isolated_machine.set_reverse_z_axis(reverse)
-
-        result = isolated_machine.calculate_jog(direction, distance)
-        assert result == expected
-
-    @pytest.mark.parametrize(
-        "direction, origin, reverse, distance, expected_delta",
-        [
-            (JogDirection.EAST, Origin.BOTTOM_LEFT, False, 10.0, 10.0),
-            (JogDirection.WEST, Origin.BOTTOM_LEFT, False, 10.0, -10.0),
-            (JogDirection.NORTH, Origin.BOTTOM_LEFT, False, 10.0, 10.0),
-            (JogDirection.SOUTH, Origin.BOTTOM_LEFT, False, 10.0, -10.0),
-            (JogDirection.UP, Origin.BOTTOM_LEFT, False, 10.0, 10.0),
-            (JogDirection.DOWN, Origin.BOTTOM_LEFT, False, 10.0, -10.0),
-            (JogDirection.EAST, Origin.BOTTOM_RIGHT, False, 10.0, -10.0),
-            (JogDirection.WEST, Origin.BOTTOM_RIGHT, False, 10.0, 10.0),
-            (JogDirection.NORTH, Origin.BOTTOM_RIGHT, False, 10.0, 10.0),
-            (JogDirection.SOUTH, Origin.BOTTOM_RIGHT, False, 10.0, -10.0),
-            (JogDirection.UP, Origin.BOTTOM_RIGHT, False, 10.0, 10.0),
-            (JogDirection.DOWN, Origin.BOTTOM_RIGHT, False, 10.0, -10.0),
-            (JogDirection.EAST, Origin.TOP_LEFT, False, 10.0, 10.0),
-            (JogDirection.WEST, Origin.TOP_LEFT, False, 10.0, -10.0),
-            (JogDirection.NORTH, Origin.TOP_LEFT, False, 10.0, -10.0),
-            (JogDirection.SOUTH, Origin.TOP_LEFT, False, 10.0, 10.0),
-            (JogDirection.UP, Origin.TOP_LEFT, False, 10.0, 10.0),
-            (JogDirection.DOWN, Origin.TOP_LEFT, False, 10.0, -10.0),
-            (JogDirection.EAST, Origin.TOP_RIGHT, False, 10.0, -10.0),
-            (JogDirection.WEST, Origin.TOP_RIGHT, False, 10.0, 10.0),
-            (JogDirection.NORTH, Origin.TOP_RIGHT, False, 10.0, -10.0),
-            (JogDirection.SOUTH, Origin.TOP_RIGHT, False, 10.0, 10.0),
-            (JogDirection.UP, Origin.TOP_RIGHT, False, 10.0, 10.0),
-            (JogDirection.DOWN, Origin.TOP_RIGHT, False, 10.0, -10.0),
-            (JogDirection.EAST, Origin.BOTTOM_LEFT, True, 10.0, -10.0),
-            (JogDirection.WEST, Origin.BOTTOM_LEFT, True, 10.0, 10.0),
-            (JogDirection.NORTH, Origin.BOTTOM_LEFT, True, 10.0, -10.0),
-            (JogDirection.SOUTH, Origin.BOTTOM_LEFT, True, 10.0, 10.0),
-            (JogDirection.UP, Origin.BOTTOM_LEFT, True, 10.0, -10.0),
-            (JogDirection.DOWN, Origin.BOTTOM_LEFT, True, 10.0, 10.0),
-            (JogDirection.EAST, Origin.BOTTOM_RIGHT, True, 10.0, 10.0),
-            (JogDirection.WEST, Origin.BOTTOM_RIGHT, True, 10.0, -10.0),
-            (JogDirection.NORTH, Origin.BOTTOM_RIGHT, True, 10.0, -10.0),
-            (JogDirection.SOUTH, Origin.BOTTOM_RIGHT, True, 10.0, 10.0),
-            (JogDirection.UP, Origin.BOTTOM_RIGHT, True, 10.0, -10.0),
-            (JogDirection.DOWN, Origin.BOTTOM_RIGHT, True, 10.0, 10.0),
-            (JogDirection.EAST, Origin.TOP_LEFT, True, 10.0, -10.0),
-            (JogDirection.WEST, Origin.TOP_LEFT, True, 10.0, 10.0),
-            (JogDirection.NORTH, Origin.TOP_LEFT, True, 10.0, 10.0),
-            (JogDirection.SOUTH, Origin.TOP_LEFT, True, 10.0, -10.0),
-            (JogDirection.UP, Origin.TOP_LEFT, True, 10.0, -10.0),
-            (JogDirection.DOWN, Origin.TOP_LEFT, True, 10.0, 10.0),
-            (JogDirection.EAST, Origin.TOP_RIGHT, True, 10.0, 10.0),
-            (JogDirection.WEST, Origin.TOP_RIGHT, True, 10.0, -10.0),
-            (JogDirection.NORTH, Origin.TOP_RIGHT, True, 10.0, 10.0),
-            (JogDirection.SOUTH, Origin.TOP_RIGHT, True, 10.0, -10.0),
-            (JogDirection.UP, Origin.TOP_RIGHT, True, 10.0, -10.0),
-            (JogDirection.DOWN, Origin.TOP_RIGHT, True, 10.0, 10.0),
-        ],
-    )
-    @pytest.mark.asyncio
-    async def test_jog_delegates_correct_delta(
-        self,
-        machine: Machine,
-        mocker,
-        direction,
-        origin,
-        reverse,
-        distance,
-        expected_delta,
-        task_mgr: TaskManager,
-    ):
-        """
-        Tests that machine.jog() calls the driver with the correct signed
-        delta, accounting for origin position and reverse axis settings.
-        This verifies the integration between calculate_jog and jog.
-        """
-        await wait_for_tasks_to_finish(task_mgr)
-
-        # --- Arrange ---
-        machine.set_origin(origin)
-
-        dir_to_axis_map = {
-            JogDirection.EAST: Axis.X,
-            JogDirection.WEST: Axis.X,
-            JogDirection.NORTH: Axis.Y,
-            JogDirection.SOUTH: Axis.Y,
-            JogDirection.UP: Axis.Z,
-            JogDirection.DOWN: Axis.Z,
-        }
-        axis = dir_to_axis_map[direction]
-
-        axis_key_map = {Axis.X: "x", Axis.Y: "y", Axis.Z: "z"}
-        axis_key = axis_key_map[axis]
-
-        if axis == Axis.X:
-            machine.set_reverse_x_axis(reverse)
-        elif axis == Axis.Y:
-            machine.set_reverse_y_axis(reverse)
-        else:  # Axis.Z
-            machine.set_reverse_z_axis(reverse)
-
-        # Disable soft limits to isolate the delta calculation logic
-        machine.set_soft_limits_enabled(False)
-
-        jog_spy = mocker.spy(machine.driver, "jog")
-        speed = 1000
-
-        # --- Act ---
-        # Simulate the UI flow: calculate delta based on direction, then jog
-        calculated_delta = machine.calculate_jog(direction, distance)
-        assert calculated_delta == expected_delta  # Sanity check
-
-        await machine.jog({axis: calculated_delta}, speed)
-
-        # --- Assert ---
-        # The core assertion: driver receives the correctly calculated delta
-        expected_kwargs = {"speed": speed, axis_key: calculated_delta}
-        jog_spy.assert_called_once_with(**expected_kwargs)
-
-    @pytest.mark.parametrize(
-        "enabled, reverse_x, reverse_y, current_pos, axis, distance, expected",
-        [
-            # --- Standard Axes (Limits X:0-200, Y:0-300), Soft Limits ON ---
-            (True, False, False, (100, 150, 0), Axis.X, 50.0, False),  # Valid
-            (
-                True,
-                False,
-                False,
-                (100, 150, 0),
-                Axis.X,
-                100.1,
-                True,
-            ),  # Exceed max
-            (
-                True,
-                False,
-                False,
-                (100, 150, 0),
-                Axis.X,
-                -100.1,
-                True,
-            ),  # Exceed min
-            (
-                True,
-                False,
-                False,
-                (100, 150, 0),
-                Axis.Y,
-                150.1,
-                True,
-            ),  # Exceed Y max
-            # --- Reversed X-Axis (Limits X:-200-0), Soft Limits ON ---
-            (
-                True,
-                True,
-                False,
-                (-100, 150, 0),
-                Axis.X,
-                -50.0,
-                False,
-            ),  # Valid
-            (
-                True,
-                True,
-                False,
-                (-100, 150, 0),
-                Axis.X,
-                -100.1,
-                True,
-            ),  # Exceed min
-            (
-                True,
-                True,
-                False,
-                (-100, 150, 0),
-                Axis.X,
-                100.1,
-                True,
-            ),  # Exceed max
-            # --- Reversed Y-Axis (Limits Y:-300-0), Soft Limits ON ---
-            (True, False, True, (100, -150, 0), Axis.Y, 50.0, False),  # Valid
-            (
-                True,
-                False,
-                True,
-                (100, -150, 0),
-                Axis.Y,
-                150.1,
-                True,
-            ),  # Exceed max
-            (
-                True,
-                False,
-                True,
-                (100, -150, 0),
-                Axis.Y,
-                -150.1,
-                True,
-            ),  # Exceed min
-            # --- Edge Cases ---
-            # Soft limits disabled
-            (False, False, False, (100, 150, 0), Axis.X, 9999, False),
-            # Position unknown for the axis
-            (True, False, False, (None, 150, 0), Axis.X, 9999, False),
-            (True, False, False, (100, None, 0), Axis.Y, 9999, False),
-        ],
-    )
-    def test_would_jog_exceed_limits(
-        self,
-        isolated_machine: Machine,
-        enabled,
-        reverse_x,
-        reverse_y,
-        current_pos,
-        axis,
-        distance,
-        expected,
-    ):
-        """
-        Tests the soft limit checking logic under various conditions,
-        including reversed axes, disabled limits, and unknown positions.
-        """
-        isolated_machine.set_axis_extents(200, 300)
-        isolated_machine.set_soft_limits_enabled(enabled)
-        isolated_machine.set_reverse_x_axis(reverse_x)
-        isolated_machine.set_reverse_y_axis(reverse_y)
-        isolated_machine.device_state.machine_pos = current_pos
-
-        assert (
-            isolated_machine.would_jog_exceed_limits(axis, distance)
-            is expected
-        )
-
     @pytest.mark.asyncio
     async def test_sync_wcs_on_connect(
         self, machine: Machine, mocker, task_mgr: TaskManager
@@ -1949,6 +1646,334 @@ class TestMachine:
 
         offset = isolated_machine.get_visual_wcs_offset()
         assert offset == pytest.approx(expected_offset)
+
+
+class TestJogDelegation:
+    """
+    Tests jog-related logic: delta calculation, driver delegation, and
+    soft limit enforcement.
+
+    Uses isolated_context (mock-based, no I/O) with a real
+    MachineController + NoDeviceDriver.  No TaskManager or temp dirs
+    are needed, so each test case runs in microseconds.
+    """
+
+    @pytest.fixture
+    def jog_machine(self, isolated_context):
+        """
+        Machine backed by isolated_context but with a real controller
+        so that async jog() goes through the actual code path.
+        """
+        from rayforge.machine.models.controller import MachineController
+
+        m = Machine(isolated_context)
+        isolated_context.machine_mgr.get_controller.return_value = (
+            MachineController(m, isolated_context, MagicMock())
+        )
+        yield m
+
+    @pytest.mark.parametrize(
+        "direction, origin, reverse, distance, expected_delta",
+        [
+            (JogDirection.EAST, Origin.BOTTOM_LEFT, False, 10.0, 10.0),
+            (JogDirection.WEST, Origin.BOTTOM_LEFT, False, 10.0, -10.0),
+            (JogDirection.NORTH, Origin.BOTTOM_LEFT, False, 10.0, 10.0),
+            (JogDirection.SOUTH, Origin.BOTTOM_LEFT, False, 10.0, -10.0),
+            (JogDirection.UP, Origin.BOTTOM_LEFT, False, 10.0, 10.0),
+            (JogDirection.DOWN, Origin.BOTTOM_LEFT, False, 10.0, -10.0),
+            (JogDirection.EAST, Origin.BOTTOM_RIGHT, False, 10.0, -10.0),
+            (JogDirection.WEST, Origin.BOTTOM_RIGHT, False, 10.0, 10.0),
+            (JogDirection.NORTH, Origin.BOTTOM_RIGHT, False, 10.0, 10.0),
+            (JogDirection.SOUTH, Origin.BOTTOM_RIGHT, False, 10.0, -10.0),
+            (JogDirection.UP, Origin.BOTTOM_RIGHT, False, 10.0, 10.0),
+            (JogDirection.DOWN, Origin.BOTTOM_RIGHT, False, 10.0, -10.0),
+            (JogDirection.EAST, Origin.TOP_LEFT, False, 10.0, 10.0),
+            (JogDirection.WEST, Origin.TOP_LEFT, False, 10.0, -10.0),
+            (JogDirection.NORTH, Origin.TOP_LEFT, False, 10.0, -10.0),
+            (JogDirection.SOUTH, Origin.TOP_LEFT, False, 10.0, 10.0),
+            (JogDirection.UP, Origin.TOP_LEFT, False, 10.0, 10.0),
+            (JogDirection.DOWN, Origin.TOP_LEFT, False, 10.0, -10.0),
+            (JogDirection.EAST, Origin.TOP_RIGHT, False, 10.0, -10.0),
+            (JogDirection.WEST, Origin.TOP_RIGHT, False, 10.0, 10.0),
+            (JogDirection.NORTH, Origin.TOP_RIGHT, False, 10.0, -10.0),
+            (JogDirection.SOUTH, Origin.TOP_RIGHT, False, 10.0, 10.0),
+            (JogDirection.UP, Origin.TOP_RIGHT, False, 10.0, 10.0),
+            (JogDirection.DOWN, Origin.TOP_RIGHT, False, 10.0, -10.0),
+            (JogDirection.EAST, Origin.BOTTOM_LEFT, True, 10.0, -10.0),
+            (JogDirection.WEST, Origin.BOTTOM_LEFT, True, 10.0, 10.0),
+            (JogDirection.NORTH, Origin.BOTTOM_LEFT, True, 10.0, -10.0),
+            (JogDirection.SOUTH, Origin.BOTTOM_LEFT, True, 10.0, 10.0),
+            (JogDirection.UP, Origin.BOTTOM_LEFT, True, 10.0, -10.0),
+            (JogDirection.DOWN, Origin.BOTTOM_LEFT, True, 10.0, 10.0),
+            (JogDirection.EAST, Origin.BOTTOM_RIGHT, True, 10.0, 10.0),
+            (JogDirection.WEST, Origin.BOTTOM_RIGHT, True, 10.0, -10.0),
+            (JogDirection.NORTH, Origin.BOTTOM_RIGHT, True, 10.0, -10.0),
+            (JogDirection.SOUTH, Origin.BOTTOM_RIGHT, True, 10.0, 10.0),
+            (JogDirection.UP, Origin.BOTTOM_RIGHT, True, 10.0, -10.0),
+            (JogDirection.DOWN, Origin.BOTTOM_RIGHT, True, 10.0, 10.0),
+            (JogDirection.EAST, Origin.TOP_LEFT, True, 10.0, -10.0),
+            (JogDirection.WEST, Origin.TOP_LEFT, True, 10.0, 10.0),
+            (JogDirection.NORTH, Origin.TOP_LEFT, True, 10.0, 10.0),
+            (JogDirection.SOUTH, Origin.TOP_LEFT, True, 10.0, -10.0),
+            (JogDirection.UP, Origin.TOP_LEFT, True, 10.0, -10.0),
+            (JogDirection.DOWN, Origin.TOP_LEFT, True, 10.0, 10.0),
+            (JogDirection.EAST, Origin.TOP_RIGHT, True, 10.0, 10.0),
+            (JogDirection.WEST, Origin.TOP_RIGHT, True, 10.0, -10.0),
+            (JogDirection.NORTH, Origin.TOP_RIGHT, True, 10.0, 10.0),
+            (JogDirection.SOUTH, Origin.TOP_RIGHT, True, 10.0, -10.0),
+            (JogDirection.UP, Origin.TOP_RIGHT, True, 10.0, -10.0),
+            (JogDirection.DOWN, Origin.TOP_RIGHT, True, 10.0, 10.0),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_jog_delegates_correct_delta(
+        self,
+        jog_machine: Machine,
+        mocker,
+        direction,
+        origin,
+        reverse,
+        distance,
+        expected_delta,
+    ):
+        """
+        Tests that machine.jog() calls the driver with the correct signed
+        delta, accounting for origin position and reverse axis settings.
+        This verifies the integration between calculate_jog and jog.
+        """
+        machine = jog_machine
+
+        # --- Arrange ---
+        machine.set_origin(origin)
+
+        dir_to_axis_map = {
+            JogDirection.EAST: Axis.X,
+            JogDirection.WEST: Axis.X,
+            JogDirection.NORTH: Axis.Y,
+            JogDirection.SOUTH: Axis.Y,
+            JogDirection.UP: Axis.Z,
+            JogDirection.DOWN: Axis.Z,
+        }
+        axis = dir_to_axis_map[direction]
+
+        axis_key_map = {Axis.X: "x", Axis.Y: "y", Axis.Z: "z"}
+        axis_key = axis_key_map[axis]
+
+        if axis == Axis.X:
+            machine.set_reverse_x_axis(reverse)
+        elif axis == Axis.Y:
+            machine.set_reverse_y_axis(reverse)
+        else:  # Axis.Z
+            machine.set_reverse_z_axis(reverse)
+
+        # Disable soft limits to isolate the delta calculation logic
+        machine.set_soft_limits_enabled(False)
+
+        jog_spy = mocker.spy(machine.driver, "jog")
+        speed = 1000
+
+        # --- Act ---
+        # Simulate the UI flow: calculate delta based on direction, then jog
+        calculated_delta = machine.calculate_jog(direction, distance)
+        assert calculated_delta == expected_delta  # Sanity check
+
+        await machine.jog({axis: calculated_delta}, speed)
+
+        # --- Assert ---
+        # The core assertion: driver receives the correctly calculated delta
+        expected_kwargs = {"speed": speed, axis_key: calculated_delta}
+        jog_spy.assert_called_once_with(**expected_kwargs)
+
+    @pytest.mark.parametrize(
+        "direction, origin, reverse, distance, expected",
+        [
+            (JogDirection.EAST, Origin.BOTTOM_LEFT, False, 10.0, 10.0),
+            (JogDirection.WEST, Origin.BOTTOM_LEFT, False, 10.0, -10.0),
+            (JogDirection.NORTH, Origin.BOTTOM_LEFT, False, 10.0, 10.0),
+            (JogDirection.SOUTH, Origin.BOTTOM_LEFT, False, 10.0, -10.0),
+            (JogDirection.UP, Origin.BOTTOM_LEFT, False, 10.0, 10.0),
+            (JogDirection.DOWN, Origin.BOTTOM_LEFT, False, 10.0, -10.0),
+            (JogDirection.EAST, Origin.BOTTOM_RIGHT, False, 10.0, -10.0),
+            (JogDirection.WEST, Origin.BOTTOM_RIGHT, False, 10.0, 10.0),
+            (JogDirection.NORTH, Origin.BOTTOM_RIGHT, False, 10.0, 10.0),
+            (JogDirection.SOUTH, Origin.BOTTOM_RIGHT, False, 10.0, -10.0),
+            (JogDirection.UP, Origin.BOTTOM_RIGHT, False, 10.0, 10.0),
+            (JogDirection.DOWN, Origin.BOTTOM_RIGHT, False, 10.0, -10.0),
+            (JogDirection.EAST, Origin.TOP_LEFT, False, 10.0, 10.0),
+            (JogDirection.WEST, Origin.TOP_LEFT, False, 10.0, -10.0),
+            (JogDirection.NORTH, Origin.TOP_LEFT, False, 10.0, -10.0),
+            (JogDirection.SOUTH, Origin.TOP_LEFT, False, 10.0, 10.0),
+            (JogDirection.UP, Origin.TOP_LEFT, False, 10.0, 10.0),
+            (JogDirection.DOWN, Origin.TOP_LEFT, False, 10.0, -10.0),
+            (JogDirection.EAST, Origin.TOP_RIGHT, False, 10.0, -10.0),
+            (JogDirection.WEST, Origin.TOP_RIGHT, False, 10.0, 10.0),
+            (JogDirection.NORTH, Origin.TOP_RIGHT, False, 10.0, -10.0),
+            (JogDirection.SOUTH, Origin.TOP_RIGHT, False, 10.0, 10.0),
+            (JogDirection.UP, Origin.TOP_RIGHT, False, 10.0, 10.0),
+            (JogDirection.DOWN, Origin.TOP_RIGHT, False, 10.0, -10.0),
+            (JogDirection.EAST, Origin.BOTTOM_LEFT, True, 10.0, -10.0),
+            (JogDirection.WEST, Origin.BOTTOM_LEFT, True, 10.0, 10.0),
+            (JogDirection.NORTH, Origin.BOTTOM_LEFT, True, 10.0, -10.0),
+            (JogDirection.SOUTH, Origin.BOTTOM_LEFT, True, 10.0, 10.0),
+            (JogDirection.UP, Origin.BOTTOM_LEFT, True, 10.0, -10.0),
+            (JogDirection.DOWN, Origin.BOTTOM_LEFT, True, 10.0, 10.0),
+            (JogDirection.EAST, Origin.BOTTOM_RIGHT, True, 10.0, 10.0),
+            (JogDirection.WEST, Origin.BOTTOM_RIGHT, True, 10.0, -10.0),
+            (JogDirection.NORTH, Origin.BOTTOM_RIGHT, True, 10.0, -10.0),
+            (JogDirection.SOUTH, Origin.BOTTOM_RIGHT, True, 10.0, 10.0),
+            (JogDirection.UP, Origin.BOTTOM_RIGHT, True, 10.0, -10.0),
+            (JogDirection.DOWN, Origin.BOTTOM_RIGHT, True, 10.0, 10.0),
+            (JogDirection.EAST, Origin.TOP_LEFT, True, 10.0, -10.0),
+            (JogDirection.WEST, Origin.TOP_LEFT, True, 10.0, 10.0),
+            (JogDirection.NORTH, Origin.TOP_LEFT, True, 10.0, 10.0),
+            (JogDirection.SOUTH, Origin.TOP_LEFT, True, 10.0, -10.0),
+            (JogDirection.UP, Origin.TOP_LEFT, True, 10.0, -10.0),
+            (JogDirection.DOWN, Origin.TOP_LEFT, True, 10.0, 10.0),
+            (JogDirection.EAST, Origin.TOP_RIGHT, True, 10.0, 10.0),
+            (JogDirection.WEST, Origin.TOP_RIGHT, True, 10.0, -10.0),
+            (JogDirection.NORTH, Origin.TOP_RIGHT, True, 10.0, 10.0),
+            (JogDirection.SOUTH, Origin.TOP_RIGHT, True, 10.0, -10.0),
+            (JogDirection.UP, Origin.TOP_RIGHT, True, 10.0, -10.0),
+            (JogDirection.DOWN, Origin.TOP_RIGHT, True, 10.0, 10.0),
+        ],
+    )
+    def test_calculate_jog(
+        self,
+        isolated_machine: Machine,
+        direction,
+        origin,
+        reverse,
+        distance,
+        expected,
+    ):
+        """
+        Tests that jog delta calculation correctly accounts for origin
+        position and reverse axis settings.
+        """
+        isolated_machine.set_origin(origin)
+        if direction in (JogDirection.EAST, JogDirection.WEST):
+            isolated_machine.set_reverse_x_axis(reverse)
+        elif direction in (JogDirection.NORTH, JogDirection.SOUTH):
+            isolated_machine.set_reverse_y_axis(reverse)
+        else:
+            isolated_machine.set_reverse_z_axis(reverse)
+
+        result = isolated_machine.calculate_jog(direction, distance)
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        "enabled, reverse_x, reverse_y, current_pos, axis, distance, expected",
+        [
+            # --- Standard Axes (Limits X:0-200, Y:0-300), Soft Limits ON ---
+            (True, False, False, (100, 150, 0), Axis.X, 50.0, False),  # Valid
+            (
+                True,
+                False,
+                False,
+                (100, 150, 0),
+                Axis.X,
+                100.1,
+                True,
+            ),  # Exceed max
+            (
+                True,
+                False,
+                False,
+                (100, 150, 0),
+                Axis.X,
+                -100.1,
+                True,
+            ),  # Exceed min
+            (
+                True,
+                False,
+                False,
+                (100, 150, 0),
+                Axis.Y,
+                150.1,
+                True,
+            ),  # Exceed Y max
+            # --- Reversed X-Axis (Limits X:-200-0), Soft Limits ON ---
+            (
+                True,
+                True,
+                False,
+                (-100, 150, 0),
+                Axis.X,
+                -50.0,
+                False,
+            ),  # Valid
+            (
+                True,
+                True,
+                False,
+                (-100, 150, 0),
+                Axis.X,
+                -100.1,
+                True,
+            ),  # Exceed min
+            (
+                True,
+                True,
+                False,
+                (-100, 150, 0),
+                Axis.X,
+                100.1,
+                True,
+            ),  # Exceed max
+            # --- Reversed Y-Axis (Limits Y:-300-0), Soft Limits ON ---
+            (True, False, True, (100, -150, 0), Axis.Y, 50.0, False),  # Valid
+            (
+                True,
+                False,
+                True,
+                (100, -150, 0),
+                Axis.Y,
+                150.1,
+                True,
+            ),  # Exceed max
+            (
+                True,
+                False,
+                True,
+                (100, -150, 0),
+                Axis.Y,
+                -150.1,
+                True,
+            ),  # Exceed min
+            # --- Edge Cases ---
+            # Soft limits disabled
+            (False, False, False, (100, 150, 0), Axis.X, 9999, False),
+            # Position unknown for the axis
+            (True, False, False, (None, 150, 0), Axis.X, 9999, False),
+            (True, False, False, (100, None, 0), Axis.Y, 9999, False),
+        ],
+    )
+    def test_would_jog_exceed_limits(
+        self,
+        isolated_machine: Machine,
+        enabled,
+        reverse_x,
+        reverse_y,
+        current_pos,
+        axis,
+        distance,
+        expected,
+    ):
+        """
+        Tests the soft limit checking logic under various conditions,
+        including reversed axes, disabled limits, and unknown positions.
+        """
+        isolated_machine.set_axis_extents(200, 300)
+        isolated_machine.set_soft_limits_enabled(enabled)
+        isolated_machine.set_reverse_x_axis(reverse_x)
+        isolated_machine.set_reverse_y_axis(reverse_y)
+        isolated_machine.device_state.machine_pos = current_pos
+
+        assert (
+            isolated_machine.would_jog_exceed_limits(axis, distance)
+            is expected
+        )
 
 
 class TestPrepareOpsForEncoding:
