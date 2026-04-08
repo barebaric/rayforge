@@ -25,6 +25,7 @@ from rayforge.core.geo.primitives import (
     line_segment_intersection,
     line_segment_intersects_circle,
     line_segment_intersects_rect,
+    midpoint,
     normalize_angle,
     project_point_onto_circle,
     rect_a_contains_rect_b,
@@ -1029,3 +1030,17 @@ class TestIsArcFullyInsideRegions:
             self._square(5, 0, 5, 10),
         ]
         assert is_arc_fully_inside_regions(start, end, co, True, regions)
+
+
+def test_midpoint():
+    a = (1.0, 2.0, 3.0)
+    b = (5.0, 6.0, 7.0)
+    assert midpoint(a, b) == (3.0, 4.0, 5.0)
+
+
+def test_midpoint_negative():
+    assert midpoint((-2.0, 0.0, 4.0), (2.0, 0.0, -4.0)) == (
+        0.0,
+        0.0,
+        0.0,
+    )
