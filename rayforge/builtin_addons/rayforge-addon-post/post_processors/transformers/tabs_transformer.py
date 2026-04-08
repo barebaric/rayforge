@@ -305,18 +305,9 @@ class TabOpsTransformer(OpsTransformer):
         cmds: List[Command],
     ) -> List[List[Command]]:
         """Split commands into subpaths at MoveToCommand boundaries."""
-        subpaths: List[List[Command]] = []
-        current: List[Command] = []
-        for cmd in cmds:
-            if isinstance(cmd, MoveToCommand) and any(
-                isinstance(c, MoveToCommand) for c in current
-            ):
-                subpaths.append(current)
-                current = []
-            current.append(cmd)
-        if current:
-            subpaths.append(current)
-        return subpaths
+        temp_ops = Ops()
+        temp_ops.replace_all(cmds)
+        return temp_ops.split_into_subpaths()
 
     def _assign_clips_globally(
         self,
