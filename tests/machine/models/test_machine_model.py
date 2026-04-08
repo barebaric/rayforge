@@ -10,21 +10,64 @@ The Machine class delegates driver lifecycle and command logic to
 MachineController, so this module focuses on the data model aspects.
 """
 
+import gc
 import math
 
 import pytest
 
+from rayforge import config
+from rayforge import context as context_module
+from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
 from rayforge.machine.driver.driver import Axis
+from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.models.rotary_module import RotaryModule
 from rayforge.machine.transport import TransportStatus
 
 
+@pytest.fixture(autouse=True)
+def clean_context_singleton():
+    """Override conftest's per-test cleanup. Cleanup is handled by
+    the class-scoped lite_context fixture."""
+    yield
+
+
+@pytest.fixture(scope="class")
+def lite_context(tmp_path_factory):
+    """Class-scoped context shared across all TestMachineModel tests."""
+    from rayforge.addon_mgr.lazy_loader import reset_addon_finder
+
+    tmp_path = tmp_path_factory.mktemp("machine_model")
+    temp_config_dir = tmp_path / "config"
+    temp_dialect_dir = temp_config_dir / "dialects"
+    temp_machine_dir = temp_config_dir / "machines"
+    temp_config_dir.mkdir(parents=True, exist_ok=True)
+    temp_dialect_dir.mkdir(parents=True, exist_ok=True)
+    temp_machine_dir.mkdir(parents=True, exist_ok=True)
+
+    old_config = (config.CONFIG_DIR, config.DIALECT_DIR, config.MACHINE_DIR)
+    config.CONFIG_DIR = temp_config_dir
+    config.DIALECT_DIR = temp_dialect_dir
+    config.MACHINE_DIR = temp_machine_dir
+
+    ctx = get_context()
+    ctx.initialize_lite_context(temp_machine_dir)
+    ctx._dialect_mgr = DialectManager(temp_dialect_dir)
+    yield ctx
+
+    context_module._context_instance = None
+    config.CONFIG_DIR, config.DIALECT_DIR, config.MACHINE_DIR = old_config
+    reset_addon_finder()
+    gc.collect()
+
+
 @pytest.mark.usefixtures("lite_context")
 class TestMachineModel:
     """Test suite for the Machine data model."""
+
+    # -- Initialization and basic properties --
 
     def test_machine_initialization(self, lite_context):
         """Test that a Machine can be initialized with a context."""
@@ -82,10 +125,7 @@ class TestMachineModel:
         assert hasattr(machine, "command_status_changed")
         assert hasattr(machine, "wcs_updated")
 
-
-@pytest.mark.usefixtures("lite_context")
-class TestMachineAxisExtents:
-    """Test suite for axis_extents property."""
+    # -- Axis extents --
 
     def test_axis_extents_default(self, lite_context):
         """Test default axis_extents value."""
@@ -98,10 +138,7 @@ class TestMachineAxisExtents:
         machine.set_axis_extents(300, 400)
         assert machine.axis_extents == (300, 400)
 
-
-@pytest.mark.usefixtures("lite_context")
-class TestMachineWorkMargins:
-    """Test suite for work_margins property."""
+    # -- Work margins --
 
     def test_work_margins_default(self, lite_context):
         """Test default work_margins are all zero."""
@@ -146,10 +183,7 @@ class TestMachineWorkMargins:
         assert w >= 1
         assert h >= 1
 
-
-@pytest.mark.usefixtures("lite_context")
-class TestMachineSoftLimits:
-    """Test suite for soft_limits property."""
+    # -- Soft limits --
 
     def test_soft_limits_default_none(self, lite_context):
         """Test that soft_limits defaults to None."""
@@ -221,10 +255,7 @@ class TestMachineSoftLimits:
         limits = machine.get_soft_limits()
         assert limits == (-400.0, -400.0, -50.0, -50.0)
 
-
-@pytest.mark.usefixtures("lite_context")
-class TestMachineVisualExtentFrame:
-    """Test suite for get_visual_extent_frame method."""
+    # -- Visual extent frame --
 
     def test_extent_frame_default_no_margins(self, lite_context):
         """Test extent frame position with no margins."""
@@ -249,10 +280,7 @@ class TestMachineVisualExtentFrame:
         frame = machine.get_visual_extent_frame()
         assert all(isinstance(v, float) for v in frame)
 
-
-@pytest.mark.usefixtures("lite_context")
-class TestMachineHasCustomWorkArea:
-    """Test suite for has_custom_work_area method."""
+    # -- Custom work area --
 
     def test_no_custom_work_area_default(self, lite_context):
         """Test returns False when all margins are zero."""
@@ -289,10 +317,7 @@ class TestMachineHasCustomWorkArea:
         machine.set_work_margins(10, 20, 30, 40)
         assert machine.has_custom_work_area() is True
 
-
-@pytest.mark.usefixtures("lite_context")
-class TestMachineChangeSignals:
-    """Test suite for change signals on new properties."""
+    # -- Change signals --
 
     def test_signal_on_set_axis_extents(self, lite_context):
         """Test that changed signal fires on set_axis_extents."""
@@ -372,10 +397,7 @@ class TestMachineChangeSignals:
         machine.set_soft_limits(10, 20, 300, 400)
         assert len(signal_calls) == 0
 
-
-@pytest.mark.usefixtures("lite_context")
-class TestMachineSerialization:
-    """Test suite for serialization with new properties."""
+    # -- Serialization --
 
     def test_to_dict_includes_new_properties(self, lite_context):
         """
