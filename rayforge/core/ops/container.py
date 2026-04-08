@@ -416,6 +416,28 @@ class Ops:
     def __iter__(self) -> Iterator[Command]:
         return iter(self._commands)
 
+    def split_into_subpaths(self) -> List[List[Command]]:
+        """
+        Split commands into subpaths at MoveToCommand boundaries.
+
+        Each subpath begins with a MoveToCommand followed by zero or
+        more non-MoveTo commands. State commands and markers that
+        appear between MoveTo commands are grouped with the subpath
+        that precedes them.
+        """
+        subpaths: List[List[Command]] = []
+        current: List[Command] = []
+        for cmd in self._commands:
+            if isinstance(cmd, MoveToCommand) and any(
+                isinstance(c, MoveToCommand) for c in current
+            ):
+                subpaths.append(current)
+                current = []
+            current.append(cmd)
+        if current:
+            subpaths.append(current)
+        return subpaths
+
     def iter_sections(self) -> Iterator[OpsSection]:
         """
         Iterate over parsed sections of this Ops object.
