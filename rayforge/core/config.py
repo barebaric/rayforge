@@ -38,9 +38,7 @@ class Config:
         # Track the last opened project path
         self.last_opened_project: Optional[Path] = None
         # UI visibility states
-        self.bottom_panel_visible: bool = False
-        self.bottom_panel_tab_order = []
-        self.bottom_panel_active_tab: Optional[str] = None
+        self.bottom_panel: Optional[Dict[str, Any]] = None
         self.right_panel_visible: bool = True
         self.perspective_mode: bool = False
         self.show_nogo_zones: bool = True
@@ -98,25 +96,10 @@ class Config:
         self.last_opened_project = path
         self.changed.send(self)
 
-    def set_bottom_panel_visible(self, visible: bool):
-        """Sets the bottom panel visibility state."""
-        if self.bottom_panel_visible == visible:
+    def set_bottom_panel(self, data: Optional[Dict[str, Any]]):
+        if self.bottom_panel == data:
             return
-        self.bottom_panel_visible = visible
-        self.changed.send(self)
-
-    def set_bottom_panel_tab_order(self, order: list):
-        """Sets the bottom panel tab order."""
-        if self.bottom_panel_tab_order == order:
-            return
-        self.bottom_panel_tab_order = list(order)
-        self.changed.send(self)
-
-    def set_bottom_panel_active_tab(self, name: Optional[str]):
-        """Sets the bottom panel active tab name."""
-        if self.bottom_panel_active_tab == name:
-            return
-        self.bottom_panel_active_tab = name
+        self.bottom_panel = data
         self.changed.send(self)
 
     def set_right_panel_visible(self, visible: bool):
@@ -198,9 +181,7 @@ class Config:
                 if self.last_opened_project
                 else None
             ),
-            "bottom_panel_visible": self.bottom_panel_visible,
-            "bottom_panel_tab_order": self.bottom_panel_tab_order,
-            "bottom_panel_active_tab": self.bottom_panel_active_tab,
+            "bottom_panel": self.bottom_panel,
             "right_panel_visible": self.right_panel_visible,
             "perspective_mode": self.perspective_mode,
             "show_nogo_zones": self.show_nogo_zones,
@@ -249,11 +230,7 @@ class Config:
             config.last_opened_project = Path(last_opened_project_str)
 
         # Load UI visibility states
-        config.bottom_panel_visible = data.get("bottom_panel_visible", False)
-        config.bottom_panel_tab_order = data.get("bottom_panel_tab_order", [])
-        config.bottom_panel_active_tab = data.get(
-            "bottom_panel_active_tab", None
-        )
+        config.bottom_panel = data.get("bottom_panel", None)
         config.right_panel_visible = data.get("right_panel_visible", True)
         config.perspective_mode = data.get("perspective_mode", False)
         config.show_nogo_zones = data.get("show_nogo_zones", True)
