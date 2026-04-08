@@ -1014,17 +1014,3 @@ def get_transformer(context_initializer):
         return cls
 
     return _get
-
-
-@pytest.fixture
-def get_transformer_sync(sync_addons_loaded):
-    """Sync version of get_transformer for tests that don't use context_initializer."""
-    from rayforge.pipeline.transformer.registry import transformer_registry
-
-    def _get(name: str):
-        cls = transformer_registry.get(name)
-        if cls is None:
-            raise RuntimeError(f"Required transformer '{name}' not available")
-        return cls
-
-    return _get
