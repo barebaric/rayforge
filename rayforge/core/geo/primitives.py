@@ -16,6 +16,15 @@ from .linearize import linearize_arc, linearize_bezier_from_array
 from .types import Point, Point3D, Polygon, Rect
 
 
+def midpoint(a: Point3D, b: Point3D) -> Point3D:
+    """Returns the midpoint between two 3D points."""
+    return (
+        (a[0] + b[0]) / 2,
+        (a[1] + b[1]) / 2,
+        (a[2] + b[2]) / 2,
+    )
+
+
 def normalize_angle(angle: float) -> float:
     """Normalizes an angle to the [0, 2*pi) range."""
     return (angle + 2 * math.pi) % (2 * math.pi)
