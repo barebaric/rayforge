@@ -12,7 +12,11 @@ from typing import List, Optional, Set, Tuple, cast
 import numpy as np
 
 from .constants import COL_C1X, COL_C1Y, COL_C2X, COL_C2Y, COL_X, COL_Y, COL_Z
-from .primitives import midpoint, find_closest_point_on_line_segment
+from .primitives import (
+    find_closest_point_on_line_segment,
+    is_point_in_polygon,
+    midpoint,
+)
 from .types import CubicBezier, Point, Point3D, Polygon, Polygon3D, Rect
 
 
@@ -100,6 +104,30 @@ def bezier_bounds(p0: Point, c1: Point, c2: Point, p1: Point) -> Rect:
         max(candidates_x),
         max(candidates_y),
     )
+
+
+def is_bezier_fully_inside_regions(
+    start_pos: Point,
+    c1: Point,
+    c2: Point,
+    end_pos: Point,
+    regions: List[Polygon],
+) -> bool:
+    bbox = bezier_bounds(start_pos, c1, c2, end_pos)
+    mid = evaluate_bezier(start_pos, c1, c2, end_pos, 0.5)
+    sample_points = [
+        (bbox[0], bbox[1]),
+        (bbox[2], bbox[1]),
+        (bbox[2], bbox[3]),
+        (bbox[0], bbox[3]),
+        start_pos,
+        end_pos,
+        mid,
+    ]
+    for p in sample_points:
+        if not any(is_point_in_polygon(p, region) for region in regions):
+            return False
+    return True
 
 
 def intersect_bezier_rect(
