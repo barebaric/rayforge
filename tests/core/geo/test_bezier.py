@@ -8,6 +8,7 @@ from rayforge.core.geo.bezier import (
     intersect_bezier_rect,
     clip_bezier,
     bezier_to_quadratic,
+    is_bezier_fully_inside_regions,
     linearize_bezier,
     linearize_bezier_adaptive,
     linearize_bezier_segment,
@@ -457,3 +458,64 @@ def test_flatten_bezier_flat_emits_endpoint():
     assert len(pts) == 2
     assert pts[0] == a
     assert pts[1] == d
+
+
+class TestIsBezierFullyInsideRegions:
+    def _square(self, x0, y0, size):
+        return [
+            (x0, y0),
+            (x0 + size, y0),
+            (x0 + size, y0 + size),
+            (x0, y0 + size),
+        ]
+
+    def test_fully_inside_single_region(self):
+        region = self._square(0, 0, 10)
+        p0, c1, c2, p1 = (2, 2), (3, 4), (5, 4), (6, 2)
+        assert is_bezier_fully_inside_regions(p0, c1, c2, p1, [region])
+
+    def test_fully_outside(self):
+        region = self._square(0, 0, 10)
+        p0, c1, c2, p1 = (12, 12), (13, 14), (15, 14), (16, 12)
+        assert not is_bezier_fully_inside_regions(p0, c1, c2, p1, [region])
+
+    def test_bbox_corner_outside(self):
+        region = self._square(0, 0, 5)
+        p0, c1, c2, p1 = (2, 2), (3, 4), (5, 4), (6, 2)
+        assert not is_bezier_fully_inside_regions(p0, c1, c2, p1, [region])
+
+    def test_inside_one_of_multiple_regions(self):
+        r1 = self._square(0, 0, 5)
+        r2 = self._square(10, 0, 5)
+        p0, c1, c2, p1 = (11, 1), (12, 3), (13, 3), (14, 1)
+        assert is_bezier_fully_inside_regions(p0, c1, c2, p1, [r1, r2])
+
+    def test_spread_across_regions(self):
+        r1 = self._square(0, 0, 5)
+        r2 = self._square(10, 0, 5)
+        p0, c1, c2, p1 = (2, 2), (5, 4), (8, 4), (12, 2)
+        assert not is_bezier_fully_inside_regions(p0, c1, c2, p1, [r1, r2])
+
+    def test_degenerate_point_inside(self):
+        region = self._square(0, 0, 10)
+        p = (5, 5)
+        assert is_bezier_fully_inside_regions(p, p, p, p, [region])
+
+    def test_degenerate_point_outside(self):
+        region = self._square(0, 0, 10)
+        p = (15, 15)
+        assert not is_bezier_fully_inside_regions(p, p, p, p, [region])
+
+    def test_empty_regions(self):
+        p0, c1, c2, p1 = (2, 2), (3, 4), (5, 4), (6, 2)
+        assert not is_bezier_fully_inside_regions(p0, c1, c2, p1, [])
+
+    def test_midpoint_outside(self):
+        region = self._square(0, 0, 5)
+        p0, c1, c2, p1 = (2, 1), (3, 8), (4, 8), (3, 1)
+        assert not is_bezier_fully_inside_regions(p0, c1, c2, p1, [region])
+
+    def test_linear_segment_inside(self):
+        region = self._square(0, 0, 10)
+        p0, c1, c2, p1 = (1, 5), (3, 5), (5, 5), (7, 5)
+        assert is_bezier_fully_inside_regions(p0, c1, c2, p1, [region])
