@@ -5,6 +5,8 @@ generic and have no knowledge of the high-level objects that use them.
 """
 
 from . import analysis
+from . import arc
+from . import circle
 from . import contours
 from . import fitting
 from . import intersect
@@ -58,6 +60,8 @@ __all__ = [
     "Point3D",
     "Polygon",
     "analysis",
+    "arc",
+    "circle",
     "contours",
     "fitting",
     "intersect",

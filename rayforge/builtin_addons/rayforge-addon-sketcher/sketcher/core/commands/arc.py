@@ -3,7 +3,9 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, List, Optional, Set
 
-from rayforge.core.geo import Point as GeoPoint, primitives
+from rayforge.core.geo import Point as GeoPoint
+from rayforge.core.geo.arc import determine_arc_direction
+from rayforge.core.geo.circle import project_point_onto_circle
 from ..constraints import EqualDistanceConstraint, RadiusConstraint
 from ..entities import Arc, Point
 from ..types import EntityID
@@ -326,7 +328,7 @@ class ArcCommand(SketchChangeCommand):
             math.atan2(y - center.y, x - center.x)
         )
 
-        arc_ent.clockwise = primitives.determine_arc_direction(
+        arc_ent.clockwise = determine_arc_direction(
             (center.x, center.y), (start.x, start.y), (x, y)
         )
         preview_state.clockwise = arc_ent.clockwise
@@ -413,7 +415,7 @@ class ArcCommand(SketchChangeCommand):
 
         if end_pid is None:
             radius = math.hypot(start_p.x - center_p.x, start_p.y - center_p.y)
-            projected = primitives.project_point_onto_circle(
+            projected = project_point_onto_circle(
                 (final_x, final_y), (center_p.x, center_p.y), radius
             )
             if projected:

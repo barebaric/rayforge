@@ -13,11 +13,8 @@ from typing import (
 )
 from gettext import gettext as _
 from rayforge.core.geo import Point
-from rayforge.core.geo.primitives import (
-    line_intersection,
-    circle_circle_intersection,
-    is_point_on_segment,
-)
+from rayforge.core.geo.circle import circle_circle_intersection
+from rayforge.core.geo.primitives import line_intersection, is_point_on_segment
 from ..entities import Line, Arc, Circle
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus

@@ -5,7 +5,8 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
-from rayforge.core.geo.primitives import line_intersection, normalize_angle
+from rayforge.core.geo.arc import normalize_angle
+from rayforge.core.geo.primitives import line_intersection
 from ..entities import Line
 from ..types import EntityID
 

@@ -1,6 +1,10 @@
 import math
 from typing import List, Dict, Optional, Any, Sequence, TYPE_CHECKING
-from rayforge.core.geo import Geometry, Point, Rect, primitives
+from rayforge.core.geo import Geometry, Point, Rect
+from rayforge.core.geo.circle import (
+    circle_is_contained_by_rect,
+    circle_intersects_rect,
+)
 from ..types import EntityID
 from .entity import Entity
 
@@ -89,9 +93,7 @@ class Circle(Entity):
         center = registry.get_point(self.center_idx)
         radius_pt = registry.get_point(self.radius_pt_idx)
         radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
-        return primitives.circle_is_contained_by_rect(
-            center.pos(), radius, rect
-        )
+        return circle_is_contained_by_rect(center.pos(), radius, rect)
 
     def intersects_rect(
         self,
@@ -105,10 +107,10 @@ class Circle(Entity):
         # A circle that is contained by a rect also intersects it.
         # The primitive for intersection seems to miss this case, so we check
         # for containment first.
-        if primitives.circle_is_contained_by_rect(center.pos(), radius, rect):
+        if circle_is_contained_by_rect(center.pos(), radius, rect):
             return True
 
-        return primitives.circle_intersects_rect(center.pos(), radius, rect)
+        return circle_intersects_rect(center.pos(), radius, rect)
 
     def to_geometry(self, registry: "EntityRegistry") -> Geometry:
         """Converts the circle to a Geometry object."""

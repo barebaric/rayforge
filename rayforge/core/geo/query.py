@@ -1,6 +1,10 @@
 import math
 from typing import Tuple, Optional
 import numpy as np
+from .arc import (
+    find_closest_point_on_arc,
+    get_arc_bounding_box,
+)
 from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
@@ -21,9 +25,7 @@ from .constants import (
 from .linearize import linearize_bezier_from_array
 from .primitives import (
     find_closest_point_on_line_segment,
-    find_closest_point_on_arc,
     find_closest_point_on_bezier,
-    get_arc_bounding_box,
 )
 from .types import Point, Point3D, Rect
 

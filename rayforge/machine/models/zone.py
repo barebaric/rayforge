@@ -5,12 +5,9 @@ from typing import Any, Dict
 
 from blinker import Signal
 
-from ...core.geo.primitives import (
-    arc_intersects_circle,
-    arc_intersects_rect,
-    line_segment_intersects_circle,
-    line_segment_intersects_rect,
-)
+from ...core.geo.arc import arc_intersects_circle, arc_intersects_rect
+from ...core.geo.circle import line_segment_intersects_circle
+from ...core.geo.primitives import line_segment_intersects_rect
 from ...core.geo.types import Point
 
 
