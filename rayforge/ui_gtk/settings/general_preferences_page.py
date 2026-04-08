@@ -67,19 +67,6 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         self.theme_row.connect("notify::selected", self.on_theme_changed)
         app_settings_group.add(self.theme_row)
 
-        self.auto_pipeline_row = Adw.SwitchRow(
-            title=_("Auto-update operations"),
-            subtitle=_(
-                "Recalculate operations automatically after each change. "
-                "Disable for manual recalculation via the toolbar button."
-            ),
-        )
-        self.auto_pipeline_row.set_active(config.auto_pipeline)
-        self.auto_pipeline_row.connect(
-            "notify::active", self.on_auto_pipeline_changed
-        )
-        app_settings_group.add(self.auto_pipeline_row)
-
         # Units Preferences
         units_group = Adw.PreferencesGroup()
         units_group.set_title(_("Units"))
@@ -180,15 +167,24 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
 
         # Startup Preferences
         startup_group = Adw.PreferencesGroup()
-        startup_group.set_title(_("Startup"))
+        startup_group.set_title(_("Behavior"))
         startup_group.set_description(
-            _(
-                "Configure what happens when you start the application. "
-                "Files specified on the command line will always override "
-                "these settings."
-            )
+            _("Configure advanced application behavior.")
         )
         self.add(startup_group)
+
+        self.auto_pipeline_row = Adw.SwitchRow(
+            title=_("Auto-update operations"),
+            subtitle=_(
+                "Recalculate operations automatically after each change. "
+                "Disable for manual recalculation via the toolbar button."
+            ),
+        )
+        self.auto_pipeline_row.set_active(config.auto_pipeline)
+        self.auto_pipeline_row.connect(
+            "notify::active", self.on_auto_pipeline_changed
+        )
+        startup_group.add(self.auto_pipeline_row)
 
         # Startup behavior selector
         self.startup_behavior_row = Adw.ComboRow(
