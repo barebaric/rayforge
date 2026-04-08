@@ -284,7 +284,11 @@ class ActionManager:
         self._add_stateful_action(
             "toggle_bottom_panel",
             self.win.on_toggle_bottom_panel_state_change,
-            GLib.Variant.new_boolean(config.bottom_panel_visible),
+            GLib.Variant.new_boolean(
+                config.bottom_panel.get("visible", False)
+                if config.bottom_panel
+                else False
+            ),
         )
         self._add_stateful_action(
             "toggle_right_panel",

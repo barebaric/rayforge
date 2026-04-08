@@ -120,6 +120,27 @@ class IconTabWidget(Gtk.Box):
     def get_current_tab(self):
         return self._active_name
 
+    def tab_count(self):
+        return len(self._buttons)
+
+    def remove_tab(self, name):
+        if name not in self._buttons:
+            return
+        btn = self._buttons.pop(name)
+        del self._btn_to_name[btn]
+        self._icon_strip.remove(btn)
+        widget = self._stack.get_child_by_name(name)
+        if widget:
+            self._stack.remove(widget)
+        if self._active_name == name:
+            self._active_name = None
+            remaining = self.get_tab_order()
+            if remaining:
+                self._activate_tab(remaining[0])
+
+    def has_tab(self, name):
+        return name in self._buttons
+
     def _iter_children(self):
         child = self._icon_strip.get_first_child()
         while child is not None:

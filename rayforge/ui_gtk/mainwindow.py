@@ -450,14 +450,12 @@ class MainWindow(Adw.ApplicationWindow):
         )
 
         config = get_context().config
-        self.bottom_panel.apply_saved_state(
-            config.bottom_panel_tab_order,
-            config.bottom_panel_active_tab,
-        )
+        if config.bottom_panel:
+            self.bottom_panel.from_dict(config.bottom_panel)
 
         self.bottom_panel.tab_changed.connect(self._on_bottom_tab_changed)
-        self.bottom_panel.tab_order_changed.connect(
-            self._on_bottom_tab_order_changed
+        self.bottom_panel.layout_changed.connect(
+            self._on_bottom_layout_changed
         )
 
         self.bottom_panel.click_to_zero_mode_changed.connect(
@@ -609,7 +607,11 @@ class MainWindow(Adw.ApplicationWindow):
         bottom_panel_action = self.action_manager.get_action(
             "toggle_bottom_panel"
         )
-        if bottom_panel_action and config.bottom_panel_visible:
+        if (
+            bottom_panel_action
+            and config.bottom_panel
+            and config.bottom_panel.get("visible")
+        ):
             bottom_panel_action.change_state(GLib.Variant.new_boolean(True))
 
     def add_stack_page(self, name: str, widget: Gtk.Widget):
@@ -764,14 +766,15 @@ class MainWindow(Adw.ApplicationWindow):
         self._update_actions_and_ui()
 
     def _on_bottom_tab_changed(self, sender, *, name: str):
-        """Refresh previews when the G-code tab becomes visible."""
-        get_context().config.set_bottom_panel_active_tab(name)
         if name == "gcode":
             self.refresh_previews()
+        self._save_bottom_panel()
 
-    def _on_bottom_tab_order_changed(self, sender):
-        order = self.bottom_panel.tab_widget.get_tab_order()
-        get_context().config.set_bottom_panel_tab_order(order)
+    def _on_bottom_layout_changed(self, sender):
+        self._save_bottom_panel()
+
+    def _save_bottom_panel(self):
+        get_context().config.set_bottom_panel(self.bottom_panel.to_dict())
 
     def _on_gcode_line_activated(self, sender, *, line_number: int):
         """
@@ -1277,8 +1280,7 @@ class MainWindow(Adw.ApplicationWindow):
             self.simulator_cmd.reload_simulation(final_artifact)
 
             # 2. Update G-code Preview
-            current_tab = self.bottom_panel.tab_widget.get_current_tab()
-            is_gcode_visible = current_tab == "gcode"
+            is_gcode_visible = self.bottom_panel.is_item_visible("gcode")
             is_3d_visible = self.view_stack.get_visible_child_name() == "3d"
 
             if final_artifact and (is_gcode_visible or is_3d_visible):
@@ -1299,8 +1301,7 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         is_sim_active = self.simulator_cmd.simulation_overlay is not None
-        current_tab = self.bottom_panel.tab_widget.get_current_tab()
-        is_gcode_visible = current_tab == "gcode"
+        is_gcode_visible = self.bottom_panel.is_item_visible("gcode")
         is_3d_visible = self.view_stack.get_visible_child_name() == "3d"
 
         if not is_sim_active and not is_gcode_visible and not is_3d_visible:
@@ -1325,8 +1326,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _refresh_gcode_preview(self, sender=None, **kwargs):
         """Refresh G-code preview when machine settings change."""
-        current_tab = self.bottom_panel.tab_widget.get_current_tab()
-        if current_tab == "gcode":
+        if self.bottom_panel.is_item_visible("gcode"):
             self.refresh_previews()
 
     def _create_canvas3d(self, context, viewport: ViewportConfig):
@@ -1784,7 +1784,7 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             self.bottom_panel.set_visible(False)
 
-        get_context().config.set_bottom_panel_visible(is_visible)
+        self._save_bottom_panel()
 
     def on_toggle_right_panel_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant

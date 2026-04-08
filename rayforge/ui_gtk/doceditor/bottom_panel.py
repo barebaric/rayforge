@@ -13,7 +13,9 @@ from ...shared.tasker import task_mgr
 from ..icons import get_icon
 from ..machine.console import Console
 from ..machine.jog_widget import JogWidget
-from ..shared.icon_tab_widget import IconTabWidget
+from ..shared.dock_item import DockItem
+from ..shared.dock_layout import DockLayout
+from ..shared.gtk import apply_css
 from ..shared.responsive_box import ResponsiveBox
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from .asset_browser import AssetBrowser
@@ -22,6 +24,15 @@ if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
 
 logger = logging.getLogger(__name__)
+
+controls_css = """
+preferencesgroup.compact list {
+    margin-start: 0;
+    margin-end: 0;
+}
+"""
+
+apply_css(controls_css)
 
 
 class BottomPanel(Gtk.Box):
@@ -37,7 +48,7 @@ class BottomPanel(Gtk.Box):
         self.notification_requested = Signal()
         self.click_to_zero_mode_changed = Signal()
         self.tab_changed = Signal()
-        self.tab_order_changed = Signal()
+        self.layout_changed = Signal()
         self.machine = machine
         self.machine_cmd = machine_cmd
         self._edit_dialog = None
@@ -46,44 +57,14 @@ class BottomPanel(Gtk.Box):
             Callable[[], Optional[Tuple[float, float, float, float]]]
         ] = None
 
-        self.hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.hbox.set_spacing(12)
-        self.append(self.hbox)
-
-        self.tab_widget = IconTabWidget()
-        self.tab_widget.set_hexpand(True)
-        self.tab_widget.set_vexpand(True)
-
-        self.hbox.append(self.tab_widget)
-
-        self._controls = ResponsiveBox()
-        self._controls.set_hexpand(False)
-        self._controls.set_vexpand(True)
-        self._controls.set_valign(Gtk.Align.FILL)
-        self._controls.set_margin_end(15)
-        self._controls.set_margin_top(9)
-        self._controls.set_margin_bottom(9)
-        self.hbox.append(self._controls)
-
-        if machine:
-            self._setup_wcs_controls()
-            self._connect_machine_signals()
-
-        self.jog_widget = JogWidget()
-        if machine:
-            self._controls.set_children(self.wcs_group, self.jog_widget)
-        else:
-            self._controls.set_children(self.jog_widget)
-
-        if machine and machine_cmd:
-            self.jog_widget.set_machine(machine, machine_cmd)
-
         self.console = Console()
         self.console.set_hexpand(True)
         self.console.set_vexpand(True)
         if machine:
             self.console.set_machine(machine)
         self.console.command_submitted.connect(self._on_command_submitted)
+
+        ui_log_event_received.connect(self.console.on_log_received)
 
         self.asset_browser = AssetBrowser(doc_editor)
 
@@ -93,44 +74,104 @@ class BottomPanel(Gtk.Box):
         self.gcode_viewer.set_margin_top(9)
         self.gcode_viewer.set_margin_bottom(9)
 
-        self.tab_widget.add_tab(
-            "assets",
-            "image-x-generic-symbolic",
-            self.asset_browser,
-            _("Assets"),
+        self.jog_widget = JogWidget()
+        if machine and machine_cmd:
+            self.jog_widget.set_machine(machine, machine_cmd)
+
+        self._controls_widget = ResponsiveBox()
+        self._controls_widget.set_halign(Gtk.Align.FILL)
+        self._controls_widget.set_vexpand(True)
+        self._controls_widget.set_valign(Gtk.Align.FILL)
+        self._controls_widget.set_margin_end(9)
+        self._controls_widget.set_margin_top(9)
+        self._controls_widget.set_margin_bottom(9)
+
+        if machine:
+            self._setup_wcs_controls()
+            self._connect_machine_signals()
+            self._controls_widget.set_children(self.wcs_group, self.jog_widget)
+        else:
+            self._controls_widget.set_children(self.jog_widget)
+
+        self.dock_layout = DockLayout(orientation=Gtk.Orientation.HORIZONTAL)
+        self.dock_layout.layout_changed.connect(self._on_dock_layout_changed)
+        self.dock_layout.tab_changed.connect(self._on_dock_tab_changed)
+
+        self._register_items()
+        self._build_default_layout()
+        self.append(self.dock_layout)
+
+    def _register_items(self):
+        self.dock_layout.register_item(
+            DockItem(
+                name="assets",
+                icon_name="image-x-generic-symbolic",
+                widget=self.asset_browser,
+                label=_("Assets"),
+            )
         )
-        self.tab_widget.add_tab(
-            "gcode",
-            "gcode-symbolic",
-            self.gcode_viewer,
-            _("G-code Viewer"),
+        self.dock_layout.register_item(
+            DockItem(
+                name="gcode",
+                icon_name="gcode-symbolic",
+                widget=self.gcode_viewer,
+                label=_("G-code Viewer"),
+            )
         )
-        self.tab_widget.add_tab(
-            "console", "terminal-symbolic", self.console, _("Console")
+        self.dock_layout.register_item(
+            DockItem(
+                name="console",
+                icon_name="terminal-symbolic",
+                widget=self.console,
+                label=_("Console"),
+            )
+        )
+        self.dock_layout.register_item(
+            DockItem(
+                name="controls",
+                icon_name="jog-symbolic",
+                widget=self._controls_widget,
+                label=_("Controls"),
+                expands=False,
+            )
         )
 
-        ui_log_event_received.connect(self.console.on_log_received)
+    def _build_default_layout(self):
+        tabs_area = self.dock_layout.add_area()
+        tabs_area.add_item(self.dock_layout.get_item("assets"))
+        tabs_area.add_item(self.dock_layout.get_item("gcode"))
+        tabs_area.add_item(self.dock_layout.get_item("console"))
 
-        self.tab_widget.tab_changed.connect(self._on_tab_changed)
-        self.tab_widget.tab_order_changed.connect(self._on_tab_order_changed)
+        controls_area = self.dock_layout.add_area()
+        controls_area.add_item(self.dock_layout.get_item("controls"))
 
-    def apply_saved_state(self, tab_order, active_tab):
-        known = self.tab_widget.get_tab_order()
-        known_set = set(known)
-        if tab_order:
-            filtered = [n for n in tab_order if n in known_set]
-            self.tab_widget.set_tab_order(filtered)
+    def to_dict(self):
+        return {
+            "visible": self.get_visible(),
+            "areas": self.dock_layout.get_layout()["areas"],
+        }
 
-        if active_tab and active_tab in known_set:
-            self.tab_widget.set_current_tab(active_tab)
-        elif known:
-            self.tab_widget.set_current_tab(known[0])
+    def from_dict(self, data):
+        if not data:
+            return
+        visible = data.get("visible", False)
+        self.set_visible(visible)
+        areas = data.get("areas")
+        if areas:
+            self.dock_layout.apply_layout({"areas": areas})
 
-    def _on_tab_changed(self, sender, *, name: str):
+    def is_item_visible(self, name):
+        area = self.dock_layout.find_item_area(name)
+        if area is None:
+            return False
+        active = area.get_active_item()
+        return active == name
+
+    def _on_dock_layout_changed(self, sender):
+        self.layout_changed.send(self)
+
+    def _on_dock_tab_changed(self, sender, *, name):
         self.tab_changed.send(self, name=name)
-
-    def _on_tab_order_changed(self, sender):
-        self.tab_order_changed.send(self)
 
     def set_doc(self, doc):
         self.asset_browser.set_doc(doc)
@@ -146,6 +187,7 @@ class BottomPanel(Gtk.Box):
 
     def _setup_wcs_controls(self):
         self.wcs_group = Adw.PreferencesGroup()
+        self.wcs_group.add_css_class("compact")
 
         if self.machine:
             self.wcs_list = self.machine.supported_wcs
