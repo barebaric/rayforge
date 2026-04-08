@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 from gettext import gettext as _
 from gi.repository import Gio, Adw
+from ...core.layer import Layer
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import VectorizationSpec, TraceSpec
 from ...doceditor.file_cmd import ImportAction
@@ -268,6 +269,7 @@ def start_reimport(
     editor: "DocEditor",
     source_asset: SourceAsset,
     position_mm: Optional[tuple[float, float]] = None,
+    target_layer: Optional[Layer] = None,
 ):
     """
     Re-open the import dialog for an existing SourceAsset so the user
@@ -313,7 +315,7 @@ def start_reimport(
     def on_response(sender, *, response_id: str, spec: VectorizationSpec):
         if response_id == "import":
             editor.file.reimport_from_source_asset(
-                source_asset, spec, position_mm
+                source_asset, spec, position_mm, target_layer
             )
 
     dialog.response.connect(on_response, weak=False)

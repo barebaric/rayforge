@@ -1,17 +1,23 @@
+import json
 import logging
 from gettext import gettext as _
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, cast
 from gi.repository import Gdk, GObject, Gtk, Pango
+from ...context import get_context
 from ...core.doc import Doc
 from ...core.layer import Layer
+from ...core.source_asset import SourceAsset
+from ...core.stock_asset import StockAsset
 from ...core.workpiece import WorkPiece
 from ..icons import get_icon
 from ..shared.gtk import apply_css
+from . import import_handler
 from .layer_settings_dialog import LayerSettingsDialog
 from .workpiece_row import WorkpieceRow
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
+    from ...ui_gtk.mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +148,8 @@ class LayerColumn(Gtk.Box):
         self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
 
         drop_target = Gtk.DropTarget.new(
-            GObject.TYPE_STRING, Gdk.DragAction.MOVE
+            GObject.TYPE_STRING,
+            Gdk.DragAction.MOVE | Gdk.DragAction.COPY,
         )
         drop_target.connect("drop", self._on_drop)
         drop_target.connect("motion", self._on_drop_motion)
@@ -248,11 +255,14 @@ class LayerColumn(Gtk.Box):
             self.editor.layer.set_active_layer(self.layer)
 
     def _on_drop(self, drop_target, value, x, y):
-        uid = value
-        if not uid:
+        if not value:
             return False
 
-        wp = self._find_workpiece_by_uid(uid)
+        asset_uids = self._parse_asset_uids(value)
+        if asset_uids is not None:
+            return self._handle_asset_drop(asset_uids)
+
+        wp = self._find_workpiece_by_uid(value)
         if not wp:
             return False
         if not wp.layer or wp.layer is self.layer:
@@ -261,7 +271,77 @@ class LayerColumn(Gtk.Box):
         self.editor.layer.move_workpieces_to_layer([wp], self.layer)
         return True
 
+    def _parse_asset_uids(self, value: str):
+        try:
+            uids = json.loads(value)
+            if isinstance(uids, list) and len(uids) > 0:
+                return uids
+        except (json.JSONDecodeError, ValueError):
+            pass
+        return None
+
+    def _handle_asset_drop(self, asset_uids: list) -> bool:
+        for asset_uid in asset_uids:
+            asset = self.doc.get_asset_by_uid(asset_uid)
+            if isinstance(asset, StockAsset):
+                return False
+            if not asset or not asset.is_draggable_to_canvas:
+                continue
+
+        success = False
+        for asset_uid in asset_uids:
+            asset = self.doc.get_asset_by_uid(asset_uid)
+            if not asset or not asset.is_draggable_to_canvas:
+                continue
+            pos = self._get_center_position()
+            try:
+                if isinstance(asset, SourceAsset):
+                    self._create_source_instance(asset, pos)
+                    success = True
+                else:
+                    self.editor.edit.add_geometry_provider_instance(
+                        asset_uid, pos, target_layer=self.layer
+                    )
+                    success = True
+            except Exception:
+                logger.exception(
+                    "Error creating instance from asset %s", asset_uid[:8]
+                )
+        return success
+
+    def _create_source_instance(
+        self,
+        asset: SourceAsset,
+        pos: tuple,
+    ):
+        win = self.get_ancestor(Gtk.Window)
+        if not win:
+            return
+        import_handler.start_reimport(
+            cast("MainWindow", win),
+            self.editor,
+            asset,
+            pos,
+            target_layer=self.layer,
+        )
+
+    def _get_center_position(self) -> tuple:
+        machine = get_context().machine
+        if machine:
+            work_area = machine.work_area
+            wa_w, wa_h = work_area[2], work_area[3]
+            origin_x, origin_y = machine.get_reference_position_world()
+            space = machine.get_coordinate_space()
+            bl_x, bl_y = space.world_position_from_origin(
+                origin_x, origin_y, (wa_w, wa_h)
+            )
+            return (bl_x + wa_w / 2, bl_y + wa_h / 2)
+        return (50.0, 50.0)
+
     def _on_drop_motion(self, drop_target, x, y):
+        drop = drop_target.get_drop()
+        if drop and drop.get_actions() & Gdk.DragAction.COPY:
+            return Gdk.DragAction.COPY
         return Gdk.DragAction.MOVE
 
     def _on_drop_leave(self, drop_target):
