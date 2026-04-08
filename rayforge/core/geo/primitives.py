@@ -1,6 +1,4 @@
-import numpy as np
 from typing import List, Tuple, Optional
-from .linearize import linearize_bezier_from_array
 from .types import Point, Point3D, Polygon, Rect
 
 
@@ -212,40 +210,6 @@ def find_closest_point_on_line_segment(
     closest_y = p1[1] + t * dy
     dist_sq = (x - closest_x) ** 2 + (y - closest_y) ** 2
     return t, (closest_x, closest_y), dist_sq
-
-
-def find_closest_point_on_bezier(
-    bezier_row: np.ndarray,
-    start_pos: Point3D,
-    x: float,
-    y: float,
-) -> Optional[Tuple[float, Point, float]]:
-    """
-    Finds the closest point on a Bézier curve by linearizing it.
-    Uses a fine resolution (0.005) for accurate closest-point detection.
-    """
-    bezier_segments = linearize_bezier_from_array(bezier_row, start_pos, 0.005)
-    if not bezier_segments:
-        return None
-
-    min_dist_sq_sub = float("inf")
-    best_sub_result = None
-
-    for j, (p1_3d, p2_3d) in enumerate(bezier_segments):
-        t_sub, pt_sub, dist_sq_sub = find_closest_point_on_line_segment(
-            p1_3d[:2], p2_3d[:2], x, y
-        )
-        if dist_sq_sub < min_dist_sq_sub:
-            min_dist_sq_sub = dist_sq_sub
-            best_sub_result = (j, t_sub, pt_sub, dist_sq_sub)
-
-    if not best_sub_result:
-        return None
-
-    j_best, t_sub_best, pt_best, dist_sq_best = best_sub_result
-    # Approximate t for the whole curve from the linearized segment
-    t_bezier = (j_best + t_sub_best) / len(bezier_segments)
-    return t_bezier, pt_best, dist_sq_best
 
 
 def get_segment_region_intersections(

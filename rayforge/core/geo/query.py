@@ -5,6 +5,7 @@ from .arc import (
     find_closest_point_on_arc,
     get_arc_bounding_box,
 )
+from .bezier import find_closest_point_on_bezier, linearize_bezier_from_array
 from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
@@ -22,11 +23,7 @@ from .constants import (
     COL_C2X,
     COL_C2Y,
 )
-from .linearize import linearize_bezier_from_array
-from .primitives import (
-    find_closest_point_on_line_segment,
-    find_closest_point_on_bezier,
-)
+from .primitives import find_closest_point_on_line_segment
 from .types import Point, Point3D, Rect
 
 

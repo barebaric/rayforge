@@ -9,7 +9,7 @@ import math
 from typing import List, Optional, Tuple
 
 from .analysis import get_angle_at_vertex
-from .linearize import resample_polyline
+from .polygon import resample_polyline
 from .types import Point3D
 
 

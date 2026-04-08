@@ -4,7 +4,7 @@ import cairo
 import numpy as np
 from typing import Dict, Optional, Tuple
 from gi.repository import Gdk
-from ....core.geo.linearize import linearize_arc
+from ....core.geo.arc import linearize_arc
 from ....core.ops import Ops, State
 from ....core.ops.commands import ArcToCommand, ScanLinePowerCommand
 from ....simulator.machine_state import MachineState

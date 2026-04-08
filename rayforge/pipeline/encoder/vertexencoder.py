@@ -3,6 +3,7 @@ import math
 from typing import List, Optional
 import numpy as np
 from ...core.geo import Point3D
+from ...core.geo.arc import linearize_arc
 from ...core.ops import Ops
 from ...core.ops.commands import (
     MoveToCommand,
@@ -11,7 +12,6 @@ from ...core.ops.commands import (
     SetPowerCommand,
     ScanLinePowerCommand,
 )
-from ...core.geo.linearize import linearize_arc
 from .base import OpsEncoder
 from ..artifact.base import VertexData
 
