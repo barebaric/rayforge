@@ -19,7 +19,7 @@ from ..geo.constants import (
     COL_Z,
 )
 from ..geo.fitting import fit_points_to_primitives
-from ..geo.primitives import is_arc_fully_inside_regions
+from ..geo.arc import is_arc_fully_inside_regions
 from ..geo.types import Point3D, Polygon
 from .commands import (
     ArcToCommand,

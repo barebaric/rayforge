@@ -23,7 +23,7 @@ from .constants import (
     GEO_ARRAY_COLS,
 )
 from .linearize import linearize_bezier_from_array, linearize_arc
-from .primitives import get_arc_angles
+from .arc import get_arc_angles
 from .simplify import simplify_points_to_array
 from .types import Point, Point2DOr3D, Point3D
 

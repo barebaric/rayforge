@@ -1,5 +1,5 @@
 import math
-from rayforge.core.geo.primitives import determine_arc_direction
+from rayforge.core.geo.arc import determine_arc_direction
 from sketcher.core import Sketch
 from sketcher.core.commands import ArcCommand, ArcPreviewState
 from sketcher.core.entities import Arc

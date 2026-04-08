@@ -16,7 +16,7 @@ from typing import (
 import numpy as np
 import json
 from ..geo import linearize, clipping
-from ..geo.primitives import get_arc_bounding_box
+from ..geo.arc import get_arc_bounding_box
 from ..geo.types import Point3D, Rect, Polygon
 from .commands import (
     State,

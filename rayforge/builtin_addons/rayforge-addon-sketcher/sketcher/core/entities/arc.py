@@ -1,6 +1,12 @@
 import math
 from typing import List, Dict, Optional, Any, Sequence, TYPE_CHECKING
 from rayforge.core.geo import Geometry, Point, Polygon, Rect, primitives
+from rayforge.core.geo.arc import (
+    get_arc_bounding_box,
+    arc_intersects_rect,
+    get_arc_midpoint,
+    is_angle_between,
+)
 from ..types import EntityID
 from .entity import Entity
 
@@ -85,7 +91,7 @@ class Arc(Entity):
         # Note: primitive expects center_offset relative to start, so:
         # center = start + offset. Here center is absolute.
         # offset = center - start.
-        return primitives.get_arc_bounding_box(
+        return get_arc_bounding_box(
             start.pos(),
             end.pos(),
             (center.x - start.x, center.y - start.y),
@@ -110,7 +116,7 @@ class Arc(Entity):
         start = registry.get_point(self.start_idx)
         end = registry.get_point(self.end_idx)
         center = registry.get_point(self.center_idx)
-        return primitives.arc_intersects_rect(
+        return arc_intersects_rect(
             start.pos(), end.pos(), center.pos(), self.clockwise, rect
         )
 
@@ -236,7 +242,7 @@ class Arc(Entity):
         center = registry.get_point(self.center_idx)
         if not (start and end and center):
             return None
-        return primitives.get_arc_midpoint(
+        return get_arc_midpoint(
             start.pos(), end.pos(), center.pos(), self.clockwise
         )
 
@@ -253,9 +259,7 @@ class Arc(Entity):
         start_angle = math.atan2(start.y - center.y, start.x - center.x)
         end_angle = math.atan2(end.y - center.y, end.x - center.x)
 
-        return primitives.is_angle_between(
-            angle, start_angle, end_angle, self.clockwise
-        )
+        return is_angle_between(angle, start_angle, end_angle, self.clockwise)
 
     def __repr__(self) -> str:
         return (
