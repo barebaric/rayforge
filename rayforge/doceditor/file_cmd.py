@@ -438,12 +438,16 @@ class FileCmd:
         self,
         items: List[DocItem],
         mode: LayerImportMode,
+        target_layer: Optional[Layer] = None,
     ) -> List[Tuple[DocItem, DocItem]]:
         """
         Resolve each item to a (owner, item) pair based on the import mode.
         Returns a flat list of (destination_owner, item_to_add) tuples.
         """
-        target_layer = cast(Layer, self._editor.default_workpiece_layer)
+        target_layer = cast(
+            Layer,
+            target_layer or self._editor.default_workpiece_layer,
+        )
         doc = self._editor.doc
         pairs: List[Tuple[DocItem, DocItem]] = []
 
@@ -1183,6 +1187,7 @@ class FileCmd:
         source_asset: SourceAsset,
         vectorization_spec: VectorizationSpec,
         position_mm: Optional[Point] = None,
+        target_layer: Optional[Layer] = None,
     ) -> Optional[ImportResult]:
         """
         Re-run the import pipeline for an existing SourceAsset, producing
@@ -1221,6 +1226,7 @@ class FileCmd:
             import_result.payload.items,
             position_mm,
             vectorization_spec,
+            target_layer,
         )
         return import_result
 
@@ -1229,6 +1235,7 @@ class FileCmd:
         items: List[DocItem],
         position_mm: Optional[Point],
         vectorization_spec: Optional[VectorizationSpec] = None,
+        target_layer: Optional[Layer] = None,
     ):
         """
         Commit reimported items to the document.
@@ -1241,7 +1248,7 @@ class FileCmd:
         mode = LayerImportMode.NEW_LAYERS
         if isinstance(vectorization_spec, PassthroughSpec):
             mode = vectorization_spec.layer_import_mode
-        pairs = self._resolve_destinations(items, mode)
+        pairs = self._resolve_destinations(items, mode, target_layer)
 
         cmd_name = _("Re-Import")
         with self._editor.history_manager.transaction(cmd_name) as t:
