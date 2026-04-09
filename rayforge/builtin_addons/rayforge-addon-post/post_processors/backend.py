@@ -10,6 +10,7 @@ from pathlib import Path
 from rayforge.core.hooks import hookimpl
 from .transformers import (
     CropTransformer,
+    LeadInOutTransformer,
     MergeLinesTransformer,
     MultiPassTransformer,
     Optimize,
@@ -31,6 +32,7 @@ ADDON_NAME = "post_processors"
 def register_transformers(transformer_registry):
     """Register transformers with the transformer registry."""
     transformer_registry.register(CropTransformer, addon_name=ADDON_NAME)
+    transformer_registry.register(LeadInOutTransformer, addon_name=ADDON_NAME)
     transformer_registry.register(MergeLinesTransformer, addon_name=ADDON_NAME)
     transformer_registry.register(MultiPassTransformer, addon_name=ADDON_NAME)
     transformer_registry.register(Optimize, addon_name=ADDON_NAME)

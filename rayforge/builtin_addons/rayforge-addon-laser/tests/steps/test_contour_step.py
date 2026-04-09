@@ -37,13 +37,13 @@ class TestContourStep:
         assert step.name == "Created"
         assert step.opsproducer_dict is not None
         assert step.opsproducer_dict["type"] == "ContourProducer"
-        assert len(step.per_workpiece_transformers_dicts) == 4
+        assert len(step.per_workpiece_transformers_dicts) == 5
         assert len(step.per_step_transformers_dicts) == 3
         assert step.selected_laser_uid == "test-laser-uid"
 
     def test_create_without_optimize(self, mock_context):
         step = ContourStep.create(mock_context, optimize=False)
-        assert len(step.per_workpiece_transformers_dicts) == 3
+        assert len(step.per_workpiece_transformers_dicts) == 4
 
     def test_serialization_includes_step_type(self):
         step = ContourStep(name="Test")
