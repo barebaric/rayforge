@@ -61,6 +61,7 @@ class MachineProfile:
     dialect_uid: Optional[str] = None
     gcode_precision: Optional[int] = None
     supports_arcs: Optional[bool] = None
+    supports_curves: Optional[bool] = None
     axis_extents: Optional[Tuple[float, float]] = None
     work_margins: Optional[Rect] = None
     soft_limits: Optional[Rect] = None
@@ -147,6 +148,8 @@ class MachineProfile:
             m.gcode_precision = self.gcode_precision
         if self.supports_arcs is not None:
             m.supports_arcs = self.supports_arcs
+        if self.supports_curves is not None:
+            m.supports_curves = self.supports_curves
         if self.axis_extents is not None:
             m.set_axis_extents(*self.axis_extents)
         if self.work_margins is not None:

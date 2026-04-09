@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import math
 from ..geo import linearize as geo_linearize
+from ..geo.bezier import linearize_bezier_segment
 from ..geo.types import Point3D
 
 
@@ -171,6 +172,77 @@ class ArcToCommand(MovingCommand):
 
         self.center_offset = (new_i, new_j)
         self.clockwise = not self.clockwise
+
+
+class CurveToCommand(MovingCommand, ABC):
+    def is_cutting_command(self) -> bool:
+        return True
+
+
+class BezierToCommand(CurveToCommand):
+    def __init__(
+        self,
+        end: Point3D,
+        control1: Point3D,
+        control2: Point3D,
+    ) -> None:
+        super().__init__(end)
+        self.control1 = control1
+        self.control2 = control2
+
+    def linearize(self, start_point: Point3D) -> List[Command]:
+        polyline = linearize_bezier_segment(
+            start_point, self.control1, self.control2, self.end
+        )
+        new_cmds = []
+        for pt in polyline[1:]:
+            line_cmd = LineToCommand(pt)
+            line_cmd.state = self.state
+            new_cmds.append(line_cmd)
+        return new_cmds
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["control1"] = self.control1
+        d["control2"] = self.control2
+        return d
+
+
+class QuadraticBezierToCommand(CurveToCommand):
+    def __init__(
+        self,
+        end: Point3D,
+        control: Point3D,
+    ) -> None:
+        super().__init__(end)
+        self.control = control
+
+    def linearize(self, start_point: Point3D) -> List[Command]:
+        p0 = start_point
+        p1 = self.end
+        c = self.control
+        c1 = (
+            p0[0] + 2.0 / 3.0 * (c[0] - p0[0]),
+            p0[1] + 2.0 / 3.0 * (c[1] - p0[1]),
+            p0[2] + 2.0 / 3.0 * (c[2] - p0[2]),
+        )
+        c2 = (
+            p1[0] + 2.0 / 3.0 * (c[0] - p1[0]),
+            p1[1] + 2.0 / 3.0 * (c[1] - p1[1]),
+            p1[2] + 2.0 / 3.0 * (c[2] - p1[2]),
+        )
+        polyline = linearize_bezier_segment(p0, c1, c2, p1)
+        new_cmds = []
+        for pt in polyline[1:]:
+            line_cmd = LineToCommand(pt)
+            line_cmd.state = self.state
+            new_cmds.append(line_cmd)
+        return new_cmds
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["control"] = self.control
+        return d
 
 
 class SetPowerCommand(Command):
@@ -519,6 +591,8 @@ COMMAND_TYPE_MAP = {
     MoveToCommand: 1,
     LineToCommand: 2,
     ArcToCommand: 3,
+    BezierToCommand: 6,
+    QuadraticBezierToCommand: 7,
     ScanLinePowerCommand: 4,
     DwellCommand: 5,
     SetPowerCommand: 10,

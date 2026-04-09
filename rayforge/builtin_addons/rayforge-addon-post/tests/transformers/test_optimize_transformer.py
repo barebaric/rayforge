@@ -7,6 +7,7 @@ from rayforge.core.ops import (
     MovingCommand,
     ScanLinePowerCommand,
 )
+from rayforge.core.ops.commands import BezierToCommand
 from post_processors.transformers import (
     Optimize,
     greedy_order_segments,
@@ -703,3 +704,115 @@ def test_workpiece_level_optimization(mock_progress_context):
     assert wp_order == ["wp-a", "wp-b", "wp-c"], (
         f"Workpieces should be reordered to A, B, C, got {wp_order}"
     )
+
+
+def test_bezier_passes_through_optimizer(mock_progress_context):
+    """
+    Verify that the optimizer correctly handles segments containing
+    BezierToCommand and does not corrupt them.
+    """
+    ops = Ops()
+    ops.set_power(1.0)
+
+    # Path 1: vector line
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+
+    # Path 2: bezier curve
+    ops.move_to(100, 0)
+    ops.bezier_to((110, 10, 0), (120, 10, 0), (130, 0, 0))
+
+    optimizer = Optimize()
+    optimizer.run(ops, context=mock_progress_context)
+    ops.preload_state()
+
+    bezier_cmds = [c for c in ops.commands if isinstance(c, BezierToCommand)]
+    assert len(bezier_cmds) == 1
+    cmd = bezier_cmds[0]
+    assert cmd.control1 == (110, 10, 0)
+    assert cmd.control2 == (120, 10, 0)
+    assert cmd.end == (130, 0, 0)
+
+    line_cmds = [c for c in ops.commands if isinstance(c, LineToCommand)]
+    assert len(line_cmds) == 1
+
+    moving_cmds = [c for c in ops.commands if isinstance(c, MovingCommand)]
+    assert len(moving_cmds) == 4
+
+
+def test_bezier_segment_flip(mock_progress_context):
+    """
+    Verify that when the optimizer flips a segment containing a
+    BezierToCommand, the control points are correctly swapped.
+    """
+    ops = Ops()
+    ops.set_power(1.0)
+
+    # Path 1: ends at (10, 0)
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+
+    # Path 2: bezier that ends near (10, 0) — should be flipped
+    # to connect (10, 0) → (30, 0) via the bezier
+    ops.move_to(30, 0)
+    ops.bezier_to((25, 5, 0), (15, 5, 0), (10, 0, 0))
+
+    optimizer = Optimize()
+    optimizer.run(ops, context=mock_progress_context)
+    ops.preload_state()
+
+    bezier_cmds = [c for c in ops.commands if isinstance(c, BezierToCommand)]
+    assert len(bezier_cmds) == 1
+    cmd = bezier_cmds[0]
+
+    # The bezier should be flipped:
+    # - end changes from original (10, 0) to (30, 0)
+    # - control1/control2 are swapped
+    assert cmd.end == pytest.approx((30, 0, 0))
+    assert cmd.control1 == pytest.approx((15, 5, 0))
+    assert cmd.control2 == pytest.approx((25, 5, 0))
+
+
+def test_mixed_lines_and_bezier(mock_progress_context):
+    """
+    Verify the optimizer handles a mix of line and bezier segments,
+    correctly reordering them by proximity.
+    """
+    ops = Ops()
+    ops.set_power(1.0)
+
+    # Line segment at origin
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+
+    # Bezier segment far away
+    ops.move_to(100, 100)
+    ops.bezier_to((105, 105, 0), (115, 105, 0), (120, 100, 0))
+
+    # Line segment close to the first one
+    ops.move_to(10, 0)
+    ops.line_to(10, 10)
+
+    optimizer = Optimize()
+    optimizer.run(ops, context=mock_progress_context)
+
+    ops.preload_state()
+    travel_after = ops.distance() - ops.cut_distance()
+
+    ops_unoptimized = Ops()
+    ops_unoptimized.set_power(1.0)
+    ops_unoptimized.move_to(0, 0)
+    ops_unoptimized.line_to(10, 0)
+    ops_unoptimized.move_to(100, 100)
+    ops_unoptimized.bezier_to((105, 105, 0), (115, 105, 0), (120, 100, 0))
+    ops_unoptimized.move_to(10, 0)
+    ops_unoptimized.line_to(10, 10)
+    ops_unoptimized.preload_state()
+    travel_before = ops_unoptimized.distance() - ops_unoptimized.cut_distance()
+
+    assert travel_after < travel_before
+
+    bezier_cmds = [c for c in ops.commands if isinstance(c, BezierToCommand)]
+    assert len(bezier_cmds) == 1
+    line_cmds = [c for c in ops.commands if isinstance(c, LineToCommand)]
+    assert len(line_cmds) == 2

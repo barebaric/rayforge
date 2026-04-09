@@ -6,7 +6,11 @@ from rayforge.core.geo.smooth import (
     compute_gaussian_kernel,
     smooth_polyline,
 )
-from rayforge.core.ops import Ops, LineToCommand, MoveToCommand
+from rayforge.core.ops import (
+    Ops,
+    LineToCommand,
+    MoveToCommand,
+)
 from rayforge.core.workpiece import WorkPiece
 from rayforge.shared.tasker.progress import ProgressContext
 from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
@@ -111,7 +115,7 @@ class Smooth(OpsTransformer):
         if self.amount == 0:
             return
 
-        ops.linearize_all()
+        ops.linearize_arcs()
         segments = list(ops.segments())
         ops.clear()
         total_segments = len(segments)

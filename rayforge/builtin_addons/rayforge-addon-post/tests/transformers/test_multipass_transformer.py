@@ -1,5 +1,6 @@
 import pytest
 from rayforge.core.ops import Ops, LineToCommand, MoveToCommand
+from rayforge.core.ops.commands import BezierToCommand
 from post_processors.transformers import MultiPassTransformer
 
 
@@ -158,3 +159,49 @@ class TestMultiPassTransformer:
         assert recreated_transformer.enabled is False
         assert recreated_transformer.passes == 4
         assert recreated_transformer.z_step_down == 1.23
+
+    def test_bezier_duplicated_without_z_step(self):
+        ops = Ops()
+        ops.move_to(0, 0, 0)
+        ops.commands.append(
+            BezierToCommand(
+                end=(10.0, 0.0, 0.0),
+                control1=(3.0, 5.0, 0.0),
+                control2=(7.0, 5.0, 0.0),
+            )
+        )
+
+        transformer = MultiPassTransformer(passes=2, z_step_down=0.0)
+        transformer.run(ops)
+
+        bezier_cmds = [
+            c for c in ops.commands if isinstance(c, BezierToCommand)
+        ]
+        assert len(bezier_cmds) == 2
+        assert bezier_cmds[0].control1 == (3.0, 5.0, 0.0)
+        assert bezier_cmds[1].control1 == (3.0, 5.0, 0.0)
+
+    def test_bezier_with_z_step_down(self):
+        ops = Ops()
+        ops.move_to(0, 0, 2.0)
+        ops.commands.append(
+            BezierToCommand(
+                end=(10.0, 0.0, 2.0),
+                control1=(3.0, 5.0, 2.0),
+                control2=(7.0, 5.0, 2.0),
+            )
+        )
+
+        transformer = MultiPassTransformer(passes=2, z_step_down=0.5)
+        transformer.run(ops)
+
+        bezier_cmds = [
+            c for c in ops.commands if isinstance(c, BezierToCommand)
+        ]
+        assert len(bezier_cmds) == 2
+        assert bezier_cmds[0].control1[2] == pytest.approx(2.0)
+        assert bezier_cmds[1].control1[2] == pytest.approx(1.5)
+        assert bezier_cmds[0].control2[2] == pytest.approx(2.0)
+        assert bezier_cmds[1].control2[2] == pytest.approx(1.5)
+        assert bezier_cmds[0].end[2] == pytest.approx(2.0)
+        assert bezier_cmds[1].end[2] == pytest.approx(1.5)

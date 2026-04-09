@@ -19,7 +19,12 @@ from rayforge import config
 from rayforge import context as context_module
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
+from rayforge.core.ops import (
+    Ops,
+    MoveToCommand,
+    LineToCommand,
+    BezierToCommand,
+)
 from rayforge.machine.driver.driver import Axis
 from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine, Origin
@@ -515,3 +520,48 @@ class TestRotaryAxisGcodeOutput:
         expected_deg = (10.0 / circumference) * 360.0
         formatted_deg = f"{expected_deg:.3f}".rstrip("0").rstrip(".")
         assert formatted_deg in gcode
+
+    # -- Supports curves --
+
+    def test_default_is_false(self, lite_context):
+        machine = Machine(lite_context)
+        assert machine.supports_curves is False
+
+    def test_set_supports_curves(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_supports_curves(True)
+        assert machine.supports_curves is True
+
+    def test_no_signal_on_same_value(self, lite_context):
+        machine = Machine(lite_context)
+        signals = []
+        machine.changed.connect(lambda m: signals.append(m))
+        machine.set_supports_curves(False)
+        assert len(signals) == 0
+
+    def test_serialization_round_trip(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_supports_curves(True)
+        data = machine.to_dict()
+        restored = Machine.from_dict(data)
+        assert restored.supports_curves is True
+
+    def test_prepare_ops_linearizes_by_default(self, lite_context):
+        machine = Machine(lite_context)
+        ops = Ops()
+        ops.move_to(0, 0)
+        ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
+        prepared = machine._prepare_ops_for_encoding(ops)
+        assert not any(
+            isinstance(c, BezierToCommand) for c in prepared.commands
+        )
+        assert any(isinstance(c, LineToCommand) for c in prepared.commands)
+
+    def test_prepare_ops_preserves_curves_when_enabled(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_supports_curves(True)
+        ops = Ops()
+        ops.move_to(0, 0)
+        ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
+        prepared = machine._prepare_ops_for_encoding(ops)
+        assert any(isinstance(c, BezierToCommand) for c in prepared.commands)

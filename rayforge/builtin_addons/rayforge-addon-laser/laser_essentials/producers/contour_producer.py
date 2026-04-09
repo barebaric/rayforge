@@ -200,13 +200,16 @@ class ContourProducer(OpsProducer):
         allow_arcs = settings.get(
             "machine_supports_arcs", settings.get("output_arcs", True)
         )
+        supports_curves = settings.get("machine_supports_curves", False)
 
         if not final_geometry.is_empty():
-            if allow_arcs:
+            if allow_arcs or supports_curves:
                 if context:
-                    context.set_message(_("Optimizing path with arcs..."))
-                final_geometry = final_geometry.fit_arcs(
+                    context.set_message(_("Optimizing path with curves..."))
+                final_geometry = final_geometry.fit_curves(
                     tolerance,
+                    beziers=supports_curves,
+                    arcs=allow_arcs,
                     on_progress=(
                         lambda p: context.set_progress(p) if context else None
                     ),

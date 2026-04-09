@@ -2,6 +2,7 @@ import math
 import pytest
 import numpy as np
 from rayforge.core.ops import Ops, SectionType
+from rayforge.core.ops.commands import BezierToCommand
 from rayforge.pipeline.encoder.vertexencoder import VertexEncoder
 
 
@@ -279,6 +280,63 @@ class TestVertexEncoder:
         assert last_powered[0] == pytest.approx(2 * 100.0 + 4 * 10.0)
         assert last_powered[1] == pytest.approx(0.0)
         assert last_powered[2] == pytest.approx(0.0)
+
+    def test_encode_bezier_powered(self, encoder: VertexEncoder):
+        """Test that BezierToCommand is linearized into powered vertices."""
+        ops = Ops()
+        ops.set_power(0.5)
+        ops.move_to(0.0, 0.0, 0.0)
+        ops.commands.append(
+            BezierToCommand(
+                end=(10.0, 0.0, 0.0),
+                control1=(3.0, 5.0, 0.0),
+                control2=(7.0, 5.0, 0.0),
+            )
+        )
+
+        result = encoder.encode(ops)
+
+        assert result.powered_vertices.shape[0] >= 4
+        assert result.powered_vertices.shape[0] % 2 == 0
+        assert (
+            result.powered_colors.shape[0] == result.powered_vertices.shape[0]
+        )
+
+        powered_coords = result.powered_vertices
+        np.testing.assert_array_almost_equal(
+            powered_coords[0], [0.0, 0.0, 0.0]
+        )
+        np.testing.assert_array_almost_equal(
+            powered_coords[-1], [10.0, 0.0, 0.0]
+        )
+
+        expected_color = [0.49803922, 0.49803922, 0.49803922, 1.0]
+        np.testing.assert_array_almost_equal(
+            result.powered_colors[0], expected_color
+        )
+
+    def test_encode_bezier_zero_power(self, encoder: VertexEncoder):
+        """Test that zero-power bezier goes to zero_power_vertices."""
+        ops = Ops()
+        ops.move_to(0.0, 0.0, 0.0)
+        ops.set_power(0.0)
+        ops.commands.append(
+            BezierToCommand(
+                end=(10.0, 0.0, 0.0),
+                control1=(3.0, 5.0, 0.0),
+                control2=(7.0, 5.0, 0.0),
+            )
+        )
+
+        result = encoder.encode(ops)
+
+        assert result.powered_vertices.shape == (0, 3)
+        assert result.zero_power_vertices.shape[0] >= 4
+        assert result.zero_power_vertices.shape[0] % 2 == 0
+
+        zp_coords = result.zero_power_vertices
+        np.testing.assert_array_almost_equal(zp_coords[0], [0.0, 0.0, 0.0])
+        np.testing.assert_array_almost_equal(zp_coords[-1], [10.0, 0.0, 0.0])
 
 
 class TestTransformToCylinder:

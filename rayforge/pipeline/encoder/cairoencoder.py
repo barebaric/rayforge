@@ -8,6 +8,7 @@ from ...core.ops import (
     MoveToCommand,
     LineToCommand,
     ArcToCommand,
+    BezierToCommand,
     ScanLinePowerCommand,
     SetPowerCommand,
 )
@@ -113,7 +114,7 @@ class CairoEncoder(OpsEncoder):
                         prev_point_2d = adjusted_end
                         is_first_move = False
 
-                    case LineToCommand() | ArcToCommand():
+                    case LineToCommand() | ArcToCommand() | BezierToCommand():
                         is_zero_power = math.isclose(current_power, 0.0)
                         should_draw = (
                             show_zero_power_moves
@@ -148,7 +149,7 @@ class CairoEncoder(OpsEncoder):
                         # Add the command geometry to the current path.
                         if isinstance(cmd, LineToCommand):
                             ctx.line_to(*adjusted_end)
-                        else:  # ArcToCommand
+                        elif isinstance(cmd, ArcToCommand):
                             start_x, start_y = prev_point_2d
                             i, j = cmd.center_offset
                             center_x = start_x + i
@@ -171,6 +172,12 @@ class CairoEncoder(OpsEncoder):
                                 ctx.arc_negative(
                                     center_x, center_y, radius, angle1, angle2
                                 )
+                        else:  # BezierToCommand
+                            c1x = cmd.control1[0]
+                            c1y = ymax - cmd.control1[1]
+                            c2x = cmd.control2[0]
+                            c2y = ymax - cmd.control2[1]
+                            ctx.curve_to(c1x, c1y, c2x, c2y, *adjusted_end)
 
                         path_has_content = True
                         prev_point_2d = adjusted_end

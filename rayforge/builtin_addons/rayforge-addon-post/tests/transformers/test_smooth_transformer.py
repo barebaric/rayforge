@@ -7,6 +7,7 @@ from rayforge.core.ops import (
     Ops,
 )
 from rayforge.core.geo.smooth import smooth_polyline
+from rayforge.core.ops.commands import BezierToCommand
 from tests.conftest import MockProgressContext
 from post_processors.transformers import Smooth
 
@@ -148,3 +149,56 @@ def test_context_cancellation_and_progress():
 
     assert len(list(ops.segments())) == 5
     assert abs(context.progress_calls[-1] - 0.5) < 1e-9
+
+
+def test_bezier_passes_through_unchanged():
+    """
+    Bezier commands should pass through the smooth transformer
+    without being modified — they're already smooth curves.
+    """
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.bezier_to((10, 20, 0), (30, 20, 0), (40, 0, 0))
+
+    smoother = Smooth(amount=50)
+    smoother.run(ops)
+
+    bezier_cmds = [c for c in ops.commands if isinstance(c, BezierToCommand)]
+    assert len(bezier_cmds) == 1
+    cmd = bezier_cmds[0]
+    assert cmd.control1 == (10, 20, 0)
+    assert cmd.control2 == (30, 20, 0)
+    assert cmd.end == (40, 0, 0)
+
+
+def test_mixed_lines_and_bezier():
+    """
+    A segment with both lines and bezier should pass through unchanged.
+    A line-only segment in the same ops should still be smoothed.
+    """
+    ops = Ops()
+    ops.set_power(1.0)
+
+    # Segment 1: line-only (should be smoothed)
+    ops.move_to(0, 0, 0)
+    ops.line_to(50, 0, 0)
+    ops.line_to(100, 50, 0)
+
+    # Segment 2: contains a bezier (should pass through)
+    ops.move_to(0, 0, 0)
+    ops.line_to(10, 0, 0)
+    ops.bezier_to((20, 10, 0), (30, 10, 0), (40, 0, 0))
+
+    smoother = Smooth(amount=50)
+    smoother.run(ops)
+
+    bezier_cmds = [c for c in ops.commands if isinstance(c, BezierToCommand)]
+    assert len(bezier_cmds) == 1
+    assert bezier_cmds[0].control1 == (20, 10, 0)
+    assert bezier_cmds[0].control2 == (30, 10, 0)
+    assert bezier_cmds[0].end == (40, 0, 0)
+
+    line_cmds = [c for c in ops.commands if isinstance(c, LineToCommand)]
+    # Segment 1 was smoothed (subdivided into more lines)
+    # Segment 2's line is preserved but not smoothed
+    assert len(line_cmds) > 2

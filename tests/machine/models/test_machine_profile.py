@@ -124,6 +124,7 @@ async def test_inject_wcs_after_preamble_flag(carvera_air_machine: "Machine"):
         linear_move="",
         arc_cw="",
         arc_ccw="",
+        bezier_cubic="",
         air_assist_on="",
         air_assist_off="",
         home_all="",

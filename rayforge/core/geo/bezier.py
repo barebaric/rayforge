@@ -538,7 +538,7 @@ def flatten_bezier(
     flatten_bezier(r, q12, m23, d, tolerance_sq, depth + 1, points)
 
 
-_BEZIER_SEG_DEFAULT_TOLERANCE = 0.1
+_BEZIER_SEG_DEFAULT_TOLERANCE = 0.01
 
 
 def linearize_bezier_segment(

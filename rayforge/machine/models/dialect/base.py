@@ -25,6 +25,7 @@ class GcodeDialect:
     linear_move: str
     arc_cw: str
     arc_ccw: str
+    bezier_cubic: str
 
     air_assist_on: str
     air_assist_off: str
@@ -122,6 +123,7 @@ class GcodeDialect:
             ("linear_move", _("Linear Move")),
             ("arc_cw", _("Arc (CW)")),
             ("arc_ccw", _("Arc (CCW)")),
+            ("bezier_cubic", _("Bezier Cubic")),
             ("tool_change", _("Tool Change")),
             ("set_speed", _("Set Speed")),
             ("air_assist_on", _("Air On")),

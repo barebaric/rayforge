@@ -2,7 +2,11 @@ import pytest
 from unittest.mock import Mock, MagicMock
 
 from rayforge.core.ops import Ops
-from rayforge.core.ops.commands import ArcToCommand
+from rayforge.core.ops.commands import (
+    ArcToCommand,
+    BezierToCommand,
+    LineToCommand,
+)
 from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
@@ -440,3 +444,85 @@ class TestCropTransformerArcPreservation:
         )
         arcs = [c for c in ops.commands if isinstance(c, ArcToCommand)]
         assert len(arcs) == 4
+
+
+class TestCropTransformerBezierPreservation:
+    def test_bezier_fully_inside_stock_is_preserved(
+        self, transformer, mock_workpiece
+    ):
+        ops = Ops()
+        ops.move_to(0.3, 0.5)
+        ops.bezier_to((0.4, 0.3, 0.0), (0.6, 0.7, 0.0), (0.7, 0.5, 0.0))
+        stock_geo = create_rect_geometry(0, 0, 1, 1)
+        transformer.run(
+            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        )
+        beziers = [c for c in ops.commands if isinstance(c, BezierToCommand)]
+        assert len(beziers) == 1
+        assert beziers[0].end == pytest.approx((0.7, 0.5, 0.0), abs=1e-6)
+
+    def test_bezier_partially_outside_stock_is_refitted(
+        self, transformer, mock_workpiece
+    ):
+        ops = Ops()
+        ops.move_to(0.1, 0.5)
+        ops.bezier_to((0.3, 0.3, 0.0), (0.7, 0.7, 0.0), (0.9, 0.5, 0.0))
+        stock_geo = create_rect_geometry(0.3, 0, 0.4, 1)
+        transformer.run(
+            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        )
+        segments = list(ops.segments())
+        assert len(segments) >= 1
+        for seg in segments:
+            for cmd in seg:
+                if hasattr(cmd, "end") and cmd.end is not None:
+                    assert 0.3 <= cmd.end[0] <= 0.7
+
+    def test_bezier_fully_outside_stock_is_removed(
+        self, transformer, mock_workpiece
+    ):
+        ops = Ops()
+        ops.move_to(1.5, 0.5)
+        ops.bezier_to((1.6, 0.3, 0.0), (1.7, 0.7, 0.0), (1.8, 0.5, 0.0))
+        stock_geo = create_rect_geometry(0, 0, 1, 1)
+        transformer.run(
+            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        )
+        segments = list(ops.segments())
+        assert len(segments) == 0
+
+    def test_mixed_line_and_bezier_inside_stock(
+        self, transformer, mock_workpiece
+    ):
+        ops = Ops()
+        ops.move_to(0.2, 0.5)
+        ops.line_to(0.3, 0.5)
+        ops.bezier_to((0.35, 0.3, 0.0), (0.55, 0.7, 0.0), (0.7, 0.5, 0.0))
+        ops.line_to(0.8, 0.5)
+        stock_geo = create_rect_geometry(0, 0, 1, 1)
+        transformer.run(
+            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        )
+        beziers = [c for c in ops.commands if isinstance(c, BezierToCommand)]
+        assert len(beziers) == 1
+        segments = list(ops.segments())
+        assert len(segments) == 1
+
+    def test_bezier_state_preserved_after_refit(
+        self, transformer, mock_workpiece
+    ):
+        ops = Ops()
+        ops.move_to(0.1, 0.5)
+        ops.set_power(0.8)
+        ops.bezier_to((0.3, 0.3, 0.0), (0.7, 0.7, 0.0), (0.9, 0.5, 0.0))
+        stock_geo = create_rect_geometry(0.3, 0, 0.4, 1)
+        transformer.run(
+            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        )
+        cutting_cmds = [
+            c
+            for c in ops.commands
+            if isinstance(c, (LineToCommand, BezierToCommand))
+        ]
+        for cmd in cutting_cmds:
+            assert cmd.state == {"power": 0.8}

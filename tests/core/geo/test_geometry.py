@@ -1116,6 +1116,33 @@ def test_fit_arcs_mixed_geometry():
     assert len(geo.data) <= 5
 
 
+def test_fit_curves_preserves_beziers():
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.bezier_to(10, 10, c1x=2, c1y=5, c2x=8, c2y=5)
+    geo.line_to(15, 10)
+
+    geo.fit_curves(tolerance=0.1, beziers=True, arcs=True)
+
+    assert geo.data is not None
+    cmd_types = geo.data[:, COL_TYPE]
+    assert CMD_TYPE_BEZIER in cmd_types
+
+
+def test_fit_curves_delegates_to_fit_arcs():
+    geo = Geometry()
+    geo.move_to(0, 0)
+    for i in range(100):
+        angle = 2 * math.pi * i / 100
+        geo.line_to(10 * math.cos(angle), 10 * math.sin(angle))
+
+    geo.fit_arcs(tolerance=0.1)
+
+    assert geo.data is not None
+    cmd_types = geo.data[:, COL_TYPE]
+    assert CMD_TYPE_ARC in cmd_types
+
+
 class TestToPolygons:
     def test_empty_geometry(self):
         geo = Geometry()

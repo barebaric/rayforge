@@ -1,26 +1,22 @@
 from gettext import gettext as _
 from .base import GcodeDialect
 
-MACH4_M67_DIALECT = GcodeDialect(
-    uid="mach4_m67",
-    label=_("Mach4 (M67 Analog)"),
-    description=_(
-        "Mach4 with M67 analog output for high-speed raster engraving. "
-        "Uses M67 E0 Q<0-255> for laser power instead of inline S commands, "
-        "reducing buffer pressure on the controller."
-    ),
+LINUXCNC_DIALECT = GcodeDialect(
+    uid="linuxcnc",
+    label=_("LinuxCNC"),
+    description=_("G-code for LinuxCNC, supporting native cubic bezier (G5)"),
     can_g0_with_speed=True,
     omit_unchanged_coords=True,
-    laser_on="M67 E0 Q{power:.0f}",
-    laser_off="M67 E0 Q0",
-    focus_laser_on="M67 E0 Q{power:.0f}",
+    laser_on="M3 S{power:.0f}",
+    laser_off="M5",
+    focus_laser_on="M3 S{power:.0f}",
     tool_change="M6 T{tool_number}",
     set_speed="",
-    travel_move="G0{x_cmd}{y_cmd}{z_cmd}",
+    travel_move="G0{x_cmd}{y_cmd}{z_cmd}{f_command}",
     linear_move="G1{x_cmd}{y_cmd}{z_cmd}{f_command}",
     arc_cw="G2{x_cmd}{y_cmd}{z_cmd} I{i} J{j}{f_command}",
     arc_ccw="G3{x_cmd}{y_cmd}{z_cmd} I{i} J{j}{f_command}",
-    bezier_cubic="",  # not supported by Mach4
+    bezier_cubic="G5 X{x} Y{y} I{i} J{j} P{p} Q{q}{f_command}",
     air_assist_on="M8",
     air_assist_off="M9",
     home_all="G28",
@@ -32,7 +28,7 @@ MACH4_M67_DIALECT = GcodeDialect(
     probe_cycle="G38.2 {axis_letter}{max_travel} F{feed_rate}",
     preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],
     postscript=[
-        "M67 E0 Q0 ; Ensure laser is off",
+        "M5 ; Ensure laser is off",
         "G0 X0 Y0 ; Return to origin",
     ],
 )

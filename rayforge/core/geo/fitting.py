@@ -629,15 +629,41 @@ def fit_arcs(
 ) -> Optional[np.ndarray]:
     """
     Reconstructs geometry data using an optimal set of Line and Arc
-    commands. This function is optimized to handle both polylines and
-    existing curves (like Beziers) efficiently, ensuring output
-    contains only Lines and Arcs.
+    commands. Bezier curves are linearized and refitted.
+
+    Equivalent to fit_curves(data, tolerance, preserve_beziers=False,
+    preserve_arcs=True).
+    """
+    return fit_curves(
+        data,
+        tolerance,
+        preserve_beziers=False,
+        preserve_arcs=True,
+        on_progress=on_progress,
+    )
+
+
+def fit_curves(
+    data: Optional[np.ndarray],
+    tolerance: float,
+    preserve_beziers: bool = True,
+    preserve_arcs: bool = True,
+    on_progress: Optional[Callable[[float], None]] = None,
+) -> Optional[np.ndarray]:
+    """
+    Optimizes geometry by fitting primitives to line chains while
+    preserving selected curve types.
+
+    Line segments are collected into point chains, simplified with RDP,
+    and refitted with optimal primitives. Curve types marked for
+    preservation pass through without modification.
 
     Args:
         data: NumPy array of geometry commands.
         tolerance: The maximum allowable deviation.
-        on_progress: An optional callback function that receives progress
-                     updates from 0.0 to 1.0.
+        preserve_beziers: If True, keep Bezier segments intact.
+        preserve_arcs: If True, keep Arc segments intact.
+        on_progress: An optional callback for progress updates.
 
     Returns:
         A NumPy array of geometry commands.
@@ -645,7 +671,7 @@ def fit_arcs(
     if data is None or len(data) == 0:
         return data
 
-    logger.debug("Starting optimized fit_arcs process...")
+    logger.debug("Starting optimized fit_curves process...")
     new_rows: List[np.ndarray] = []
     line_point_chain: List[Point3D] = []
 
@@ -703,15 +729,27 @@ def fit_arcs(
 
         elif cmd_type == CMD_TYPE_ARC:
             # Linearize Arc and add to chain
-            segments = linearize_arc(row, last_pos, resolution)
-            for _, p_end in segments:
-                line_point_chain.append(p_end)
+            if preserve_arcs:
+                flush_line_chain()
+                new_rows.append(row)
+                line_point_chain.append(end_pos)
+            else:
+                segments = linearize_arc(row, last_pos, resolution)
+                for _, p_end in segments:
+                    line_point_chain.append(p_end)
 
         elif cmd_type == CMD_TYPE_BEZIER:
             # Linearize Bezier and add to chain
-            segments = linearize_bezier_from_array(row, last_pos, resolution)
-            for _, p_end in segments:
-                line_point_chain.append(p_end)
+            if preserve_beziers:
+                flush_line_chain()
+                new_rows.append(row)
+                line_point_chain.append(end_pos)
+            else:
+                segments = linearize_bezier_from_array(
+                    row, last_pos, resolution
+                )
+                for _, p_end in segments:
+                    line_point_chain.append(p_end)
 
         last_pos = end_pos
 

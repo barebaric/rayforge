@@ -17,15 +17,17 @@ import numpy as np
 import json
 from ..geo import clipping
 from ..geo.arc import get_arc_bounding_box, linearize_arc
-from ..geo.bezier import linearize_bezier, linearize_bezier_from_array
 from ..geo.types import Point3D, Rect, Polygon
 from .commands import (
     State,
     Command,
+    CurveToCommand,
     MovingCommand,
     MoveToCommand,
     LineToCommand,
     ArcToCommand,
+    BezierToCommand,
+    QuadraticBezierToCommand,
     DwellCommand,
     SetPowerCommand,
     SetCutSpeedCommand,
@@ -121,6 +123,17 @@ class Ops:
                 center_offset=tuple(cmd_data["center_offset"]),
                 clockwise=cmd_data["clockwise"],
             )
+        elif cmd_type == "BezierToCommand":
+            return BezierToCommand(
+                end=tuple(cmd_data["end"]),
+                control1=tuple(cmd_data["control1"]),
+                control2=tuple(cmd_data["control2"]),
+            )
+        elif cmd_type == "QuadraticBezierToCommand":
+            return QuadraticBezierToCommand(
+                end=tuple(cmd_data["end"]),
+                control=tuple(cmd_data["control"]),
+            )
         elif cmd_type == "DwellCommand":
             return DwellCommand(duration_ms=cmd_data["duration_ms"])
         elif cmd_type == "SetPowerCommand":
@@ -189,12 +202,18 @@ class Ops:
         """
         Serializes the command list into a dictionary of NumPy arrays for
         efficient storage and transfer. This uses a Struct-of-Arrays approach.
+
+        CurveToCommand instances store their control points in dedicated
+        bezier_data/bezier_map arrays, following the same pattern as arcs.
         """
         num_cmds = len(self._commands)
 
         # Pre-allocate arrays by inspecting commands first
         num_arcs = sum(
             1 for cmd in self._commands if isinstance(cmd, ArcToCommand)
+        )
+        num_beziers = sum(
+            1 for cmd in self._commands if isinstance(cmd, CurveToCommand)
         )
         scanline_lengths = [
             len(cmd.power_values)
@@ -208,10 +227,11 @@ class Ops:
         types = np.zeros(num_cmds, dtype=np.int32)
         endpoints = np.zeros((num_cmds, 3), dtype=np.float32)
 
-        arc_data = np.zeros((num_arcs, 3), dtype=np.float32)  # i, j, clockwise
-        arc_map = np.full(
-            num_cmds, -1, dtype=np.int32
-        )  # Maps command index to arc_data index
+        arc_data = np.zeros((num_arcs, 3), dtype=np.float32)
+        arc_map = np.full(num_cmds, -1, dtype=np.int32)
+
+        bezier_data = np.zeros((num_beziers, 6), dtype=np.float32)
+        bezier_map = np.full(num_cmds, -1, dtype=np.int32)
 
         scanline_data = np.zeros(total_scanline_bytes, dtype=np.uint8)
         scanline_map = np.full(
@@ -225,14 +245,38 @@ class Ops:
         state_marker_cmds_data = {}
 
         # Data Population
-        arc_idx, scanline_idx, scanline_offset = 0, 0, 0
+        arc_idx, bezier_idx = 0, 0
+        scanline_idx, scanline_offset = 0, 0
         for i, cmd in enumerate(self._commands):
-            types[i] = COMMAND_TYPE_MAP[type(cmd)]
+            types[i] = COMMAND_TYPE_MAP.get(type(cmd), 0)
 
-            if isinstance(cmd, MovingCommand):
+            if isinstance(cmd, BezierToCommand):
+                endpoints[i] = cmd.end
+                bezier_data[bezier_idx] = (
+                    cmd.control1[0],
+                    cmd.control1[1],
+                    cmd.control1[2],
+                    cmd.control2[0],
+                    cmd.control2[1],
+                    cmd.control2[2],
+                )
+                bezier_map[i] = bezier_idx
+                bezier_idx += 1
+            elif isinstance(cmd, QuadraticBezierToCommand):
+                endpoints[i] = cmd.end
+                bezier_data[bezier_idx] = (
+                    cmd.control[0],
+                    cmd.control[1],
+                    cmd.control[2],
+                    0.0,
+                    0.0,
+                    0.0,
+                )
+                bezier_map[i] = bezier_idx
+                bezier_idx += 1
+            elif isinstance(cmd, MovingCommand):
                 endpoints[i] = cmd.end
             else:
-                # Store state and marker command data for JSON serialization
                 state_marker_cmds_data[str(i)] = cmd.to_dict()
 
             if isinstance(cmd, ArcToCommand):
@@ -265,6 +309,8 @@ class Ops:
             "endpoints": endpoints,
             "arc_data": arc_data,
             "arc_map": arc_map,
+            "bezier_data": bezier_data,
+            "bezier_map": bezier_map,
             "scanline_data": scanline_data,
             "scanline_indices": scanline_indices,
             "scanline_map": scanline_map,
@@ -282,6 +328,10 @@ class Ops:
         endpoints = arrays["endpoints"]
         arc_data = arrays["arc_data"]
         arc_map = arrays["arc_map"]
+        bezier_data = arrays.get(
+            "bezier_data", np.zeros((0, 6), dtype=np.float32)
+        )
+        bezier_map = arrays.get("bezier_map", np.full(0, -1, dtype=np.int32))
         scanline_data = arrays["scanline_data"]
         scanline_indices = arrays["scanline_indices"]
         scanline_map = arrays["scanline_map"]
@@ -324,6 +374,21 @@ class Ops:
                     end=end_tuple,
                     center_offset=(i_val, j_val),
                     clockwise=bool(is_cw),
+                )
+            elif issubclass(CmdClass, BezierToCommand):
+                bez_idx = bezier_map[i]
+                c1x, c1y, c1z, c2x, c2y, c2z = bezier_data[bez_idx]
+                cmd = BezierToCommand(
+                    end=end_tuple,
+                    control1=(float(c1x), float(c1y), float(c1z)),
+                    control2=(float(c2x), float(c2y), float(c2z)),
+                )
+            elif issubclass(CmdClass, QuadraticBezierToCommand):
+                bez_idx = bezier_map[i]
+                cx, cy, cz = bezier_data[bez_idx][:3]
+                cmd = QuadraticBezierToCommand(
+                    end=end_tuple,
+                    control=(float(cx), float(cy), float(cz)),
                 )
             elif issubclass(CmdClass, ScanLinePowerCommand):
                 scan_idx = scanline_map[i]
@@ -368,10 +433,18 @@ class Ops:
                 clockwise = bool(cw)
                 new_ops.add(ArcToCommand(end, center_offset, clockwise))
             elif cmd_type == geo.constants.CMD_TYPE_BEZIER:
-                # Ops doesn't have a native Bezier command, so we linearize.
-                segments = linearize_bezier_from_array(row, last_pos)
-                for _, p2 in segments:
-                    new_ops.add(LineToCommand(p2))
+                c1 = (
+                    row[geo.constants.COL_C1X],
+                    row[geo.constants.COL_C1Y],
+                )
+                c2 = (
+                    row[geo.constants.COL_C2X],
+                    row[geo.constants.COL_C2Y],
+                )
+                z0, z1 = last_pos[2], end[2]
+                c1_3d = (c1[0], c1[1], z0 * (2 / 3) + z1 * (1 / 3))
+                c2_3d = (c2[0], c2[1], z0 * (1 / 3) + z1 * (2 / 3))
+                new_ops.add(BezierToCommand(end, c1_3d, c2_3d))
 
             # Update last_pos with the endpoint of the original command
             if cmd_type in (
@@ -408,6 +481,17 @@ class Ops:
                         op.center_offset[0],
                         op.center_offset[1],
                         op.clockwise,
+                        op.end[2],
+                    )
+            elif isinstance(op, BezierToCommand):
+                if op.end:
+                    new_geo.bezier_to(
+                        op.end[0],
+                        op.end[1],
+                        op.control1[0],
+                        op.control1[1],
+                        op.control2[0],
+                        op.control2[1],
                         op.end[2],
                     )
         return new_geo
@@ -579,10 +663,9 @@ class Ops:
         c1: Point3D,
         c2: Point3D,
         end: Point3D,
-        num_steps: int = 20,
     ) -> None:
         """
-        Adds a cubic Bézier curve approximated by a series of LineToCommands.
+        Adds a cubic Bézier curve command.
         The curve starts from the current last point in the path. This method
         requires full 3D coordinates for all control and end points.
         """
@@ -590,10 +673,8 @@ class Ops:
             logger.warning("bezier_to called without a starting point.")
             return
 
-        start_point = self._commands[-1].end
-        segments = linearize_bezier(start_point, c1, c2, end, num_steps)
-        for _, end_point in segments:
-            self.line_to(*end_point)
+        self._commands.append(BezierToCommand(end, c1, c2))
+        self._invalidate_time_cache()
 
     def set_power(self, power: float) -> None:
         """
@@ -1041,6 +1122,17 @@ class Ops:
                         new_offset_vec_3d[0],
                         new_offset_vec_3d[1],
                     )
+                elif isinstance(cmd, BezierToCommand):
+                    c1_vec = np.array([*cmd.control1, 1.0])
+                    transformed_c1 = matrix @ c1_vec
+                    cmd.control1 = tuple(transformed_c1[:3])
+                    c2_vec = np.array([*cmd.control2, 1.0])
+                    transformed_c2 = matrix @ c2_vec
+                    cmd.control2 = tuple(transformed_c2[:3])
+                elif isinstance(cmd, QuadraticBezierToCommand):
+                    c_vec = np.array([*cmd.control, 1.0])
+                    transformed_c = matrix @ c_vec
+                    cmd.control = tuple(transformed_c[:3])
                 transformed_commands.append(cmd)
             else:
                 transformed_commands.append(cmd)
@@ -1121,6 +1213,55 @@ class Ops:
             else:
                 # Non-moving commands (state, markers) are passed through.
                 new_commands.append(cmd)
+        self._commands = new_commands
+        self._invalidate_time_cache()
+
+    def linearize_curves(self) -> None:
+        """
+        Replaces all CurveToCommand instances with their linearized
+        LineToCommand output. This is the safety-net fallback used
+        before encoding when the machine does not support native curves.
+        """
+        new_commands: List[Command] = []
+        last_point: Point3D = (0.0, 0.0, 0.0)
+        for cmd in self._commands:
+            if isinstance(cmd, MoveToCommand):
+                last_point = cmd.end
+            if isinstance(cmd, CurveToCommand):
+                linearized = cmd.linearize(last_point)
+                new_commands.extend(linearized)
+                if linearized and linearized[-1].end is not None:
+                    last_point = linearized[-1].end
+                elif cmd.end is not None:
+                    last_point = cmd.end
+            else:
+                new_commands.append(cmd)
+                if isinstance(cmd, MovingCommand) and cmd.end is not None:
+                    last_point = cmd.end
+        self._commands = new_commands
+        self._invalidate_time_cache()
+
+    def linearize_arcs(self) -> None:
+        """
+        Replaces all ArcToCommand instances with their linearized
+        LineToCommand output. Curve commands are left intact.
+        """
+        new_commands: List[Command] = []
+        last_point: Point3D = (0.0, 0.0, 0.0)
+        for cmd in self._commands:
+            if isinstance(cmd, MoveToCommand):
+                last_point = cmd.end
+            if isinstance(cmd, ArcToCommand):
+                linearized = cmd.linearize(last_point)
+                new_commands.extend(linearized)
+                if linearized and linearized[-1].end is not None:
+                    last_point = linearized[-1].end
+                elif cmd.end is not None:
+                    last_point = cmd.end
+            else:
+                new_commands.append(cmd)
+                if isinstance(cmd, MovingCommand) and cmd.end is not None:
+                    last_point = cmd.end
         self._commands = new_commands
         self._invalidate_time_cache()
 

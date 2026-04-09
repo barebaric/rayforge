@@ -16,6 +16,7 @@ from ...core.ops import (
     MoveToCommand,
     LineToCommand,
     ArcToCommand,
+    BezierToCommand,
     ScanLinePowerCommand,
     JobStartCommand,
     JobEndCommand,
@@ -343,6 +344,9 @@ class GcodeEncoder(OpsEncoder):
                     context, gcode, cmd.end, cmd.center_offset, cmd.clockwise
                 )
                 self.current_pos = cmd.end
+            case BezierToCommand():
+                self._handle_bezier_to(context, gcode, cmd)
+                self.current_pos = cmd.end
             case DwellCommand():
                 if self.dialect.dwell:
                     gcode.append(
@@ -596,6 +600,26 @@ class GcodeEncoder(OpsEncoder):
         template_vars["i"] = self._format_coord(i)
         template_vars["j"] = self._format_coord(j)
         gcode.append(template.format(**template_vars))
+
+    def _handle_bezier_to(
+        self,
+        context: GcodeContext,
+        gcode: List[str],
+        cmd: BezierToCommand,
+    ) -> None:
+        if not self.dialect.bezier_cubic:
+            for line_cmd in cmd.linearize(self.current_pos):
+                assert isinstance(line_cmd, LineToCommand)
+                self._handle_line_to(context, gcode, *line_cmd.end)
+            return
+        start = self.current_pos
+        ex, ey, ez = cmd.end
+        template_vars = self._build_cut_move_vars(context, gcode, ex, ey, ez)
+        template_vars["i"] = self._format_coord(cmd.control1[0] - start[0])
+        template_vars["j"] = self._format_coord(cmd.control1[1] - start[1])
+        template_vars["p"] = self._format_coord(cmd.control2[0] - ex)
+        template_vars["q"] = self._format_coord(cmd.control2[1] - ey)
+        gcode.append(self.dialect.bezier_cubic.format(**template_vars))
 
     def _laser_on(self, context: GcodeContext, gcode: List[str]) -> None:
         """Activate laser if not already on"""
