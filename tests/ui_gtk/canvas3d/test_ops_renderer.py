@@ -125,6 +125,7 @@ def test_render_raises_on_invalid_executed_count(renderer, colors):
         patch("OpenGL.GL.glEnable"),
         patch("OpenGL.GL.glBlendFunc"),
         patch("OpenGL.GL.glDrawArrays"),
+        patch("rayforge.ui_gtk.sim3d.canvas3d.ops_renderer.set_line_width"),
     ):
         with pytest.raises(ValueError, match="executed_vertex_count"):
             renderer.render(
@@ -160,6 +161,7 @@ def test_render_draws_powered_and_travel(renderer, colors):
         patch("OpenGL.GL.glEnable"),
         patch("OpenGL.GL.glBlendFunc"),
         patch("OpenGL.GL.glDrawArrays") as mock_draw,
+        patch("rayforge.ui_gtk.sim3d.canvas3d.ops_renderer.set_line_width"),
     ):
         renderer.render(shader, mvp, colors, show_travel_moves=True)
 
@@ -192,6 +194,7 @@ def test_render_hides_travel_when_disabled(renderer, colors):
         patch("OpenGL.GL.glEnable"),
         patch("OpenGL.GL.glBlendFunc"),
         patch("OpenGL.GL.glDrawArrays") as mock_draw,
+        patch("rayforge.ui_gtk.sim3d.canvas3d.ops_renderer.set_line_width"),
     ):
         renderer.render(shader, mvp, colors, show_travel_moves=False)
 
@@ -210,6 +213,7 @@ def test_render_noop_when_empty(renderer, colors):
         patch("OpenGL.GL.glEnable"),
         patch("OpenGL.GL.glBlendFunc"),
         patch("OpenGL.GL.glDrawArrays") as mock_draw,
+        patch("rayforge.ui_gtk.sim3d.canvas3d.ops_renderer.set_line_width"),
     ):
         renderer.render(shader, mvp, colors, show_travel_moves=True)
 
