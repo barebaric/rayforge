@@ -14,7 +14,7 @@ import logging
 import numpy as np
 from OpenGL import GL
 
-from .gl_utils import BaseRenderer, Shader
+from .gl_utils import BaseRenderer, Shader, set_line_width
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +103,7 @@ class RingBufferRenderer(BaseRenderer):
         mvp_matrix: np.ndarray,
         executed_vertex_count: int = -1,
         alpha_pending: float = 0.2,
+        line_width: float = 1.0,
     ):
         if self.vertex_count == 0:
             return
@@ -127,9 +128,11 @@ class RingBufferRenderer(BaseRenderer):
         shader.set_float("uAlphaPending", alpha_pending)
 
         GL.glDisable(GL.GL_DEPTH_TEST)
+        set_line_width(line_width)
         GL.glBindVertexArray(self.vao)
         GL.glDrawArrays(GL.GL_LINES, 0, draw_count)
         GL.glBindVertexArray(0)
+        set_line_width(1.0)
         GL.glEnable(GL.GL_DEPTH_TEST)
 
         shader.set_float("uUseVertexColor", 0.0)
