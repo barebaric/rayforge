@@ -14,6 +14,7 @@ Rayforge actualmente soporta estos dialectos de código G:
 | **Grbl Raster**                               | GRBL 1.1+    | Optimizado para trabajo raster               |
 | **GRBL Dinámico (Consciente de Profundidad)** | GRBL 1.1+    | Grabado láser consciente de profundidad      |
 | **GRBL Dinámico (sin eje Z)**                 | GRBL 1.1+    | Grabado láser consciente de profundidad      |
+| **LinuxCNC**                                  | LinuxCNC     | Soporte nativo de Bézier (G5)               |
 | **Mach4 (M67 Analog)**                        | Mach4        | Grabado ráster de alta velocidad             |
 | **Smoothieware**                              | Smoothieware | Cortadores láser, CNC                        |
 | **Marlin**                                    | Marlin 2.0+  | Impresoras 3D con láser                      |
@@ -32,6 +33,11 @@ y compacta.
 **GRBL Dinámico (Consciente de Profundidad)** es recomendado para grabado láser
 consciente de profundidad donde la potencia varía durante los cortes (ej.,
 grabado de profundidad variable).
+
+**LinuxCNC** admite curvas Bézier cúbicas nativas a través del comando G5, lo
+que produce un código G muy suave y compacto para caminos curvos. Cuando uses
+este dialecto, activa la opción «Soportar curvas Bézier» en Ajustes Avanzados
+de Máquina para aprovechar la salida G5.
 
 ---
 

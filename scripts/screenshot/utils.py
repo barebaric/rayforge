@@ -366,7 +366,9 @@ def show_bottom_tab(win: "MainWindow", tab_name: str) -> None:
     """Switch the bottom panel to a given tab (e.g. 'console' or 'gcode')."""
 
     def _switch() -> None:
-        win.bottom_panel.tab_widget.set_current_tab(tab_name)
+        area = win.bottom_panel.dock_layout.find_item_area(tab_name)
+        if area is not None:
+            area.set_active_item(tab_name)
 
     run_on_main_thread(_switch)
 

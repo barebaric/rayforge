@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-25 22:24+0100\n"
+"POT-Creation-Date: 2026-04-09 03:49+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,16 +17,62 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: post_processors/widgets/overscan_widget.py
-msgid "Enable Overscan"
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Enable Lead-In/Out"
 msgstr ""
 
+#: post_processors/widgets/lead_in_out_widget.py
 #: post_processors/widgets/overscan_widget.py
 msgid "Automatic Distance"
 msgstr ""
 
+#: post_processors/widgets/lead_in_out_widget.py
 #: post_processors/widgets/overscan_widget.py
 msgid "Calculate distance based on speed and acceleration with safety factor"
+msgstr ""
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Lead-In Distance"
+msgstr ""
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Distance of zero-power move before cut starts"
+msgstr ""
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Lead-Out Distance"
+msgstr ""
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Distance of zero-power move after cut ends"
+msgstr ""
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Toggle Lead-In/Out"
+msgstr ""
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Toggle Auto Lead-In/Out"
+msgstr ""
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Auto Calculate Lead-In/Out Distance"
+msgstr ""
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Disable Auto Lead-In/Out"
+msgstr ""
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Change Lead-In Distance"
+msgstr ""
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Change Lead-Out Distance"
+msgstr ""
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Enable Overscan"
 msgstr ""
 
 #: post_processors/widgets/overscan_widget.py
@@ -199,6 +245,14 @@ msgstr ""
 
 #: post_processors/widgets/multipass_widget.py
 msgid "Change Z Step-Down"
+msgstr ""
+
+#: post_processors/transformers/lead_in_out_transformer.py
+msgid "Lead-In/Out"
+msgstr ""
+
+#: post_processors/transformers/lead_in_out_transformer.py
+msgid "Adds zero-power lead-in and lead-out moves to vector contours."
 msgstr ""
 
 #: post_processors/transformers/optimize_transformer.py

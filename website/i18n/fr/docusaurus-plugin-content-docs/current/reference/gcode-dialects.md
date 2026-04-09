@@ -14,6 +14,7 @@ Rayforge prend actuellement en charge ces dialectes G-code :
 | **Grbl Raster**                               | GRBL 1.1+    | Optimisé pour le travail raster        |
 | **GRBL Dynamique (sensible à la profondeur)** | GRBL 1.1+    | Gravure laser sensible à la profondeur |
 | **GRBL Dynamique (sans axe Z)**               | GRBL 1.1+    | Gravure laser sensible à la profondeur |
+| **LinuxCNC**                                  | LinuxCNC     | Prise en charge native des Bézier (G5) |
 | **Mach4 (M67 Analog)**                        | Mach4        | Gravure raster haute vitesse           |
 | **Smoothieware**                              | Smoothieware | Découpeurs laser, CNC                  |
 | **Marlin**                                    | Marlin 2.0+  | Imprimantes 3D avec laser              |
@@ -31,6 +32,12 @@ redondantes, ce qui produit un G-code plus fluide et plus compact.
 **GRBL Dynamique (sensible à la profondeur)** est recommandé pour la gravure
 laser sensible à la profondeur où la puissance varie pendant les coupes
 (par exemple, gravure à profondeur variable).
+
+**LinuxCNC** prend en charge les courbes Bézier cubiques natives via la
+commande G5, ce qui produit un G-code très fluide et compact pour les trajectoires
+courbes. Lorsque tu utilises ce dialecte, active l'option « Prise en charge
+des courbes Bézier » dans les paramètres avancés de la machine pour profiter
+de la sortie G5.
 
 ---
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-07 22:48+0200\n"
+"POT-Creation-Date: 2026-04-09 12:36+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -964,6 +964,14 @@ msgstr "Smoothieware"
 msgid "G-code dialect for Smoothieware-based controllers"
 msgstr "基于Smoothieware控制器的G代码方言"
 
+#: rayforge/machine/models/dialect/linuxcnc.py
+msgid "LinuxCNC"
+msgstr "LinuxCNC"
+
+#: rayforge/machine/models/dialect/linuxcnc.py
+msgid "G-code for LinuxCNC, supporting native cubic bezier (G5)"
+msgstr "适用于 LinuxCNC 的 G 代码，支持原生三次贝塞尔曲线 (G5)"
+
 #: rayforge/machine/models/dialect/grbl_dynamic.py
 msgid "GRBL Dynamic"
 msgstr "GRBL动态"
@@ -1065,6 +1073,10 @@ msgstr "圆弧（顺时针）"
 #: rayforge/machine/models/dialect/base.py
 msgid "Arc (CCW)"
 msgstr "圆弧（逆时针）"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Bezier Cubic"
+msgstr "三次贝塞尔曲线"
 
 #: rayforge/machine/models/dialect/base.py
 msgid "Tool Change"
@@ -1699,16 +1711,6 @@ msgid "Theme"
 msgstr "主题"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Auto-update operations"
-msgstr "自动更新操作"
-
-#: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid ""
-"Recalculate operations automatically after each change. Disable for manual "
-"recalculation via the toolbar button."
-msgstr "每次更改后自动重新计算操作。禁用后可通过工具栏按钮手动重新计算。"
-
-#: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Units"
 msgstr "单位"
 
@@ -1732,14 +1734,22 @@ msgid "Acceleration"
 msgstr "加速度"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Startup"
-msgstr "启动"
+msgid "Behavior"
+msgstr "行为"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Configure advanced application behavior."
+msgstr "配置高级应用程序行为。"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Auto-update operations"
+msgstr "自动更新操作"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid ""
-"Configure what happens when you start the application. Files specified on "
-"the command line will always override these settings."
-msgstr "配置启动应用程序时发生的情况。命令行上指定的文件将始终覆盖这些设置。"
+"Recalculate operations automatically after each change. Disable for manual "
+"recalculation via the toolbar button."
+msgstr "每次更改后自动重新计算操作。禁用后可通过工具栏按钮手动重新计算。"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Startup behavior"
@@ -2818,16 +2828,27 @@ msgid ""
 msgstr "生成圆弧命令以获得更平滑的路径。如果您的机器不支持圆弧，请禁用"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
-msgid "Arc Tolerance"
-msgstr "圆弧容差"
+msgid "Support Bézier Curves"
+msgstr "支持贝塞尔曲线"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid ""
-"Maximum deviation from original path when fitting arcs (in machine units). "
-"Lower values drastically increase processing time and job size"
+"Generate native cubic Bézier commands. Disable if your machine does not "
+"support them"
+msgstr "生成原生三次贝塞尔命令。如果您的机器不支持，请禁用"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Arc and Curve Tolerance"
+msgstr "弧线和曲线公差"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid ""
+"Maximum deviation from original path when fitting arcs and curves (in "
+"machine units). Lower values drastically increase processing time and job "
+"size"
 msgstr ""
-"拟合圆弧时与原始路径的最大偏差（以机器单位）。较低的值会大幅增加处理时间和作"
-"业大小"
+"拟合弧线和曲线时与原始路径的最大偏差（以机器单位计）。较低的值会大幅增加处理"
+"时间和作业大小"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Homing and Startup"
@@ -4949,6 +4970,10 @@ msgstr "G代码查看器"
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Console"
 msgstr "控制台"
+
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid "Controls"
+msgstr "控件"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Active System"

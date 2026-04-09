@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-25 22:24+0100\n"
+"POT-Creation-Date: 2026-04-09 03:49+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -16,17 +16,63 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: post_processors/widgets/overscan_widget.py
-msgid "Enable Overscan"
-msgstr "启用超扫描"
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Enable Lead-In/Out"
+msgstr "启用导入/导出"
 
+#: post_processors/widgets/lead_in_out_widget.py
 #: post_processors/widgets/overscan_widget.py
 msgid "Automatic Distance"
 msgstr "自动距离"
 
+#: post_processors/widgets/lead_in_out_widget.py
 #: post_processors/widgets/overscan_widget.py
 msgid "Calculate distance based on speed and acceleration with safety factor"
 msgstr "基于速度和加速度并考虑安全系数计算距离"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Lead-In Distance"
+msgstr "导入距离"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Distance of zero-power move before cut starts"
+msgstr "切割开始前的零功率移动距离"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Lead-Out Distance"
+msgstr "导出距离"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Distance of zero-power move after cut ends"
+msgstr "切割结束后的零功率移动距离"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Toggle Lead-In/Out"
+msgstr "切换导入/导出"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Toggle Auto Lead-In/Out"
+msgstr "切换自动导入/导出"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Auto Calculate Lead-In/Out Distance"
+msgstr "自动计算导入/导出距离"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Disable Auto Lead-In/Out"
+msgstr "禁用自动导入/导出"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Change Lead-In Distance"
+msgstr "更改导入距离"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Change Lead-Out Distance"
+msgstr "更改导出距离"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Enable Overscan"
+msgstr "启用超扫描"
 
 #: post_processors/widgets/overscan_widget.py
 msgid "Overscan Distance"
@@ -199,6 +245,14 @@ msgstr "更改通过次数"
 #: post_processors/widgets/multipass_widget.py
 msgid "Change Z Step-Down"
 msgstr "更改Z轴下刀量"
+
+#: post_processors/transformers/lead_in_out_transformer.py
+msgid "Lead-In/Out"
+msgstr "导入/导出"
+
+#: post_processors/transformers/lead_in_out_transformer.py
+msgid "Adds zero-power lead-in and lead-out moves to vector contours."
+msgstr "为矢量轮廓添加零功率导入和导出移动。"
 
 #: post_processors/transformers/optimize_transformer.py
 msgid "Optimize Path"

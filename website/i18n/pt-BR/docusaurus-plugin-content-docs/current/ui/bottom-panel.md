@@ -9,17 +9,19 @@ navegador de ativos.
 
 O Painel Inferior combina várias funções em uma interface conveniente:
 
-1. **Visão em Abas**: Alterne entre Console, Visualizador G-code e Ativos usando
+1. **Abas Ancoráveis**: Alterne entre Console, Visualizador G-code e Ativos usando
    a faixa de ícones à esquerda
 2. **Controles de Jog**: Movimento e posicionamento manual (sempre visível)
 3. **Status da Máquina**: Posição e estado de conexão em tempo real
 4. **Sistema de Coordenadas de Trabalho (WCS)**: Seleção rápida de WCS (sempre
    visível)
 
-O lado esquerdo do painel contém uma faixa de ícones que permite alternar entre
-o **Console**, o **Visualizador G-code** e o navegador de **Ativos**. Os
+Cada área do painel possui uma faixa de ícones à esquerda que permite alternar
+entre o **Console**, o **Visualizador G-code** e o navegador de **Ativos**. Os
 controles de jog e WCS no lado direito permanecem visíveis independentemente de
-qual aba está ativa. As abas podem ser reordenadas arrastando.
+qual aba está ativa. As abas podem ser reordenadas arrastando dentro de sua faixa,
+e você pode arrastar abas entre áreas do painel ou sobre os divisores para
+reorganizar o layout em múltiplas colunas. Colunas vazias são removidas automaticamente.
 
 ![Painel Inferior](/screenshots/bottom-panel.png)
 

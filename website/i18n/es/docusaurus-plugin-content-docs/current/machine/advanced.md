@@ -26,7 +26,7 @@ Cuando está habilitado, Rayforge limpia automáticamente cualquier estado de al
 
 Cuando está habilitado, puedes hacer homing de ejes individuales independientemente (X, Y o Z) en lugar de requerir que todos los ejes hagan homing juntos. Esto es útil para máquinas donde un eje ya puede estar posicionado correctamente.
 
-## Ajustes de Arcos
+## Ajustes de Arcos y Curvas
 
 Ajustes para controlar cómo las rutas curvas se convierten en movimientos de G-code.
 
@@ -36,9 +36,13 @@ Cuando está habilitado, Rayforge genera comandos de arco (G2/G3) para rutas cur
 
 Cuando está deshabilitado, todas las curvas se convierten en segmentos lineales (comandos G1), lo que proporciona máxima compatibilidad con controladores que no soportan arcos.
 
-### Tolerancia de Arco
+### Soportar Curvas Bézier
 
-Este ajuste controla la desviación máxima permitida al ajustar arcos a rutas curvas, especificada en milímetros. Un valor más pequeño produce arcos más precisos pero puede requerir más comandos de arco. Un valor más grande permite más desviación pero genera menos comandos.
+Cuando está habilitado, Rayforge genera comandos cúbicos Bézier nativos (como el comando G5 usado por LinuxCNC) para rutas curvas. Esto produce movimiento muy suave y G-code compacto en controladores que lo soportan. Debes deshabilitar esta opción si el firmware de tu máquina no entiende comandos Bézier, en cuyo caso las curvas se descompondrán en segmentos lineales.
+
+### Tolerancia de Arco y Curva
+
+Este ajuste controla la desviación máxima permitida al ajustar arcos y curvas a rutas curvas, especificada en milímetros. Un valor más pequeño produce rutas más precisas pero puede requerir más comandos. Un valor más grande permite más desviación pero genera menos comandos.
 
 Valores típicos van de 0.01mm para trabajo de precisión a 0.1mm para procesamiento más rápido.
 

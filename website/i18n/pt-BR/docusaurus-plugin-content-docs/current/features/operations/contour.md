@@ -125,6 +125,7 @@ Operações de contorno suportam várias opções de pós-processamento:
 - **[Cortar para Estoque](../crop-to-stock)** - Limita cortes ao limite do material
 - **[Otimização de Caminho](../path-optimization)** - Reduz distância de deslocamento entre cortes
 - **[Multi-Passagem](../multi-pass)** - Repete cortes para materiais espessos
+- **[Entrada/Saída](../lead-in-out)** - Adicionar movimentos de aproximação e saída sem potência para extremidades de corte mais limpas
 
 ### Compensação de Kerf
 

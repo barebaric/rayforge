@@ -75,6 +75,7 @@ module.exports = {
                 'features/overscan',
                 'features/holding-tabs',
                 'features/merge-lines',
+                'features/lead-in-out',
               ],
             },
             'features/sketcher',

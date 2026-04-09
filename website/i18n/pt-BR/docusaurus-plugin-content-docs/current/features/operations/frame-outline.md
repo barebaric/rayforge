@@ -110,6 +110,7 @@ Operações de Contorno de Moldura suportam várias opções de pós-processamen
 - **[Cortar para Estoque](../crop-to-stock)** - Limita cortes ao limite do material
 - **[Otimização de Caminho](../path-optimization)** - Reduz distância de deslocamento
 - **[Multi-Passagem](../multi-pass)** - Repete cortes para materiais espessos
+- **[Entrada/Saída](../lead-in-out)** - Adiciona movimentos de aproximação e saída sem potência para extremidades de corte mais limpas
 
 ## Casos de Uso
 

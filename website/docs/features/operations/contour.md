@@ -125,6 +125,7 @@ Contour operations support several post-processing options:
 - **[Crop to Stock](../crop-to-stock)** - Limit cuts to material boundary
 - **[Path Optimization](../path-optimization)** - Reduce travel distance between cuts
 - **[Multi-Pass](../multi-pass)** - Repeat cuts for thick materials
+- **[Lead-In/Out](../lead-in-out)** - Add zero-power approach and exit moves for cleaner cut ends
 
 ### Retracing with Custom Threshold
 

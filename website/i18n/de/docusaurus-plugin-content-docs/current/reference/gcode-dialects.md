@@ -13,6 +13,7 @@ Rayforge unterstützt derzeit diese G-Code-Dialekte:
 | **Grbl Raster**                  | GRBL 1.1+    | Optimiert für Rasterarbeit        |
 | **GRBL Dynamic (Tiefenbewusst)** | GRBL 1.1+    | Tiefenbewusstes Lasergravieren    |
 | **GRBL Dynamic (keine Z-Achse)** | GRBL 1.1+    | Tiefenbewusstes Lasergravieren    |
+| **LinuxCNC**                     | LinuxCNC     | Native Bézier-Unterstützung (G5)  |
 | **Mach4 (M67 Analog)**           | Mach4        | Hochgeschwindigkeits-Rastergravur |
 | **Smoothieware**                 | Smoothieware | Laserschneider, CNC               |
 | **Marlin**                       | Marlin 2.0+  | 3D-Drucker mit Laser              |
@@ -30,6 +31,11 @@ redundante Vorschubbefehle aus, was zu glatterem und kompakterem G-Code führt.
 **GRBL Dynamic (Tiefenbewusst)** wird für tiefenbewusstes Lasergravieren
 empfohlen, bei dem die Leistung während der Schnitte variiert (z.B. Gravur
 mit variabler Tiefe).
+
+**LinuxCNC** unterstützt native kubische Bézier-Kurven über den G5-Befehl, was
+sehr glatten und kompakten G-Code für Kurvenpfade erzeugt. Wenn du diesen
+Dialekt verwendest, aktiviere die Option „Bézier-Kurven unterstützen" in den
+Erweiterten Maschineneinstellungen, um die G5-Ausgabe zu nutzen.
 
 ---
 

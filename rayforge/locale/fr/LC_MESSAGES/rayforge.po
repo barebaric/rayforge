@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-07 22:48+0200\n"
+"POT-Creation-Date: 2026-04-09 12:36+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -1051,6 +1051,16 @@ msgstr "Smoothieware"
 msgid "G-code dialect for Smoothieware-based controllers"
 msgstr "Dialecte G-code pour les contrôleurs basés sur Smoothieware"
 
+#: rayforge/machine/models/dialect/linuxcnc.py
+msgid "LinuxCNC"
+msgstr "LinuxCNC"
+
+#: rayforge/machine/models/dialect/linuxcnc.py
+msgid "G-code for LinuxCNC, supporting native cubic bezier (G5)"
+msgstr ""
+"G-code pour LinuxCNC, prenant en charge les courbes de Bézier cubiques "
+"natives (G5)"
+
 #: rayforge/machine/models/dialect/grbl_dynamic.py
 msgid "GRBL Dynamic"
 msgstr "GRBL Dynamique"
@@ -1159,6 +1169,10 @@ msgstr "Arc (Sens horaire)"
 #: rayforge/machine/models/dialect/base.py
 msgid "Arc (CCW)"
 msgstr "Arc (Sens anti-horaire)"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Bezier Cubic"
+msgstr "Bézier Cubique"
 
 #: rayforge/machine/models/dialect/base.py
 msgid "Tool Change"
@@ -1816,18 +1830,6 @@ msgid "Theme"
 msgstr "Thème"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Auto-update operations"
-msgstr "Mise à jour automatique des opérations"
-
-#: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid ""
-"Recalculate operations automatically after each change. Disable for manual "
-"recalculation via the toolbar button."
-msgstr ""
-"Recalculer les opérations automatiquement après chaque modification. "
-"Désactiver pour le recalcul manuel via le bouton de la barre d'outils."
-
-#: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Units"
 msgstr "Unités"
 
@@ -1853,16 +1855,24 @@ msgid "Acceleration"
 msgstr "Accélération"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Startup"
-msgstr "Démarrage"
+msgid "Behavior"
+msgstr "Comportement"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Configure advanced application behavior."
+msgstr "Configurer le comportement avancé de l'application."
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Auto-update operations"
+msgstr "Mise à jour automatique des opérations"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid ""
-"Configure what happens when you start the application. Files specified on "
-"the command line will always override these settings."
+"Recalculate operations automatically after each change. Disable for manual "
+"recalculation via the toolbar button."
 msgstr ""
-"Configurez ce qui se passe lorsque vous démarrez l'application. Les fichiers "
-"spécifiés dans la ligne de commande remplaceront toujours ces paramètres."
+"Recalculer les opérations automatiquement après chaque modification. "
+"Désactiver pour le recalcul manuel via le bouton de la barre d'outils."
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Startup behavior"
@@ -2976,17 +2986,30 @@ msgstr ""
 "votre machine ne prend pas en charge les arcs"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
-msgid "Arc Tolerance"
-msgstr "Tolérance des arcs"
+msgid "Support Bézier Curves"
+msgstr "Prendre en charge les courbes de Bézier"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid ""
-"Maximum deviation from original path when fitting arcs (in machine units). "
-"Lower values drastically increase processing time and job size"
+"Generate native cubic Bézier commands. Disable if your machine does not "
+"support them"
 msgstr ""
-"Écart maximal du chemin d'origine lors de l'ajustement des arcs (en unités "
-"machine). Les valeurs plus faibles augmentent considérablement le temps de "
-"traitement et la taille du travail"
+"Générer des commandes Bézier cubiques natives. Désactiver si votre machine "
+"ne les prend pas en charge"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Arc and Curve Tolerance"
+msgstr "Tolérance des arcs et des courbes"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid ""
+"Maximum deviation from original path when fitting arcs and curves (in "
+"machine units). Lower values drastically increase processing time and job "
+"size"
+msgstr ""
+"Écart maximal par rapport au chemin d'origine lors de l'ajustement des arcs "
+"et des courbes (en unités machine). Des valeurs plus basses augmentent "
+"considérablement le temps de traitement et la taille du travail"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Homing and Startup"
@@ -5177,6 +5200,10 @@ msgstr "Visualiseur de G-code"
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Console"
 msgstr "Console"
+
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid "Controls"
+msgstr "Contrôles"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Active System"

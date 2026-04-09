@@ -26,7 +26,7 @@ Lorsqu'activé, Rayforge efface automatiquement tout état d'alarme lors de la c
 
 Lorsqu'activé, vous pouvez effectuer le homing d'axes individuels indépendamment (X, Y ou Z) au lieu de requiring tous les axes ensemble. Ceci est utile pour les machines où un axe peut déjà être correctement positionné.
 
-## Paramètres d'Arcs
+## Paramètres d'Arcs et de Courbes
 
 Paramètres pour contrôler comment les chemins courbes sont convertis en mouvements G-code.
 
@@ -36,9 +36,13 @@ Lorsqu'activé, Rayforge génère des commandes d'arc (G2/G3) pour les chemins c
 
 Lorsque désactivé, toutes les courbes sont converties en segments linéaires (commandes G1), ce qui fournit une compatibilité maximale avec les contrôleurs qui ne supportent pas les arcs.
 
-### Tolérance d'Arc
+### Supporter les Courbes Bézier
 
-Ce paramètre contrôle la déviation maximale autorisée lors de l'ajustement des arcs aux chemins courbes, spécifiée en millimètres. Une valeur plus petite produit des arcs plus précis mais peut nécessiter plus de commandes d'arc. Une valeur plus grande permet plus de déviation mais génère moins de commandes.
+Lorsqu'activé, Rayforge génère des commandes Bézier cubiques natives (comme la commande G5 utilisée par LinuxCNC) pour les chemins courbes. Cela produit un mouvement très fluide et un G-code compact sur les contrôleurs qui le supportent. Vous devriez désactiver ce paramètre si le firmware de votre machine ne comprend pas les commandes Bézier, auquel cas les courbes seront décomposées en segments linéaires.
+
+### Tolérance d'Arc et de Courbe
+
+Ce paramètre contrôle la déviation maximale autorisée lors de l'ajustement des arcs et des courbes aux chemins courbes, spécifiée en millimètres. Une valeur plus petite produit des chemins plus précis mais peut nécessiter plus de commandes. Une valeur plus grande permet plus de déviation mais génère moins de commandes.
 
 Les valeurs typiques vont de 0,01mm pour un travail de précision à 0,1mm pour un traitement plus rapide.
 

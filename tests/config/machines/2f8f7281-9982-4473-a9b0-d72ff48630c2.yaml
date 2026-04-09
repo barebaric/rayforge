@@ -114,6 +114,7 @@ machine:
     max_cut_speed: 1000
     max_travel_speed: 3000
   supports_arcs: true
+  supports_curves: false
   wcs_offsets:
     G54: &id001
     - 0.0

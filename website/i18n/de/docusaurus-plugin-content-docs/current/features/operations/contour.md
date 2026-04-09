@@ -124,6 +124,7 @@ Kontur-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 - **[Auf Rohmaterial zuschneiden](../crop-to-stock)** - Schnitte auf Materialgrenze beschränken
 - **[Pfad-Optimierung](../path-optimization)** - Verfahrdistanz zwischen Schnitten reduzieren
 - **[Mehrfach-Durchgang](../multi-pass)** - Schnitte für dicke Materialien wiederholen
+- **[Ein-/Auslauf](../lead-in-out)** - Nullleistung-An- und Abfahrtsbewegungen für sauberere Schnittenden hinzufügen
 
 ### Schnittbreiten-Kompensation
 

@@ -209,6 +209,7 @@ Las operaciones de Envoltura Contraída soportan varias opciones de post-procesa
 - **[Recortar al Material](../crop-to-stock)** - Limita los cortes al límite del material
 - **[Optimización de Trayectoria](../path-optimization)** - Reduce la distancia de viaje
 - **[Multi-Pasada](../multi-pass)** - Repite cortes para materiales gruesos
+- **[Entrada/Salida](../lead-in-out)** - Añade movimientos de aproximación y salida sin potencia para extremos de corte más limpios
 
 ## Consejos y Mejores Prácticas
 

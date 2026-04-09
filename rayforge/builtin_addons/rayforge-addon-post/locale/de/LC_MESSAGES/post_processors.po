@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-25 22:24+0100\n"
+"POT-Creation-Date: 2026-04-09 03:49+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,19 +17,65 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: post_processors/widgets/overscan_widget.py
-msgid "Enable Overscan"
-msgstr "Überlauf aktivieren"
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Enable Lead-In/Out"
+msgstr "Ein-/Auslauf aktivieren"
 
+#: post_processors/widgets/lead_in_out_widget.py
 #: post_processors/widgets/overscan_widget.py
 msgid "Automatic Distance"
 msgstr "Automatischer Abstand"
 
+#: post_processors/widgets/lead_in_out_widget.py
 #: post_processors/widgets/overscan_widget.py
 msgid "Calculate distance based on speed and acceleration with safety factor"
 msgstr ""
 "Abstand basierend auf Geschwindigkeit und Beschleunigung mit "
 "Sicherheitsfaktor berechnen"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Lead-In Distance"
+msgstr "Einlaufabstand"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Distance of zero-power move before cut starts"
+msgstr "Abstand der Nullleistungsbewegung vor Schnittbeginn"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Lead-Out Distance"
+msgstr "Auslaufabstand"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Distance of zero-power move after cut ends"
+msgstr "Abstand der Nullleistungsbewegung nach Schnittende"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Toggle Lead-In/Out"
+msgstr "Ein-/Auslauf umschalten"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Toggle Auto Lead-In/Out"
+msgstr "Automatischen Ein-/Auslauf umschalten"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Auto Calculate Lead-In/Out Distance"
+msgstr "Ein-/Auslaufabstand automatisch berechnen"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Disable Auto Lead-In/Out"
+msgstr "Automatischen Ein-/Auslauf deaktivieren"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Change Lead-In Distance"
+msgstr "Einlaufabstand ändern"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Change Lead-Out Distance"
+msgstr "Auslaufabstand ändern"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Enable Overscan"
+msgstr "Überlauf aktivieren"
 
 #: post_processors/widgets/overscan_widget.py
 msgid "Overscan Distance"
@@ -205,6 +251,14 @@ msgstr "Anzahl Durchläufe ändern"
 #: post_processors/widgets/multipass_widget.py
 msgid "Change Z Step-Down"
 msgstr "Z-Absenkung ändern"
+
+#: post_processors/transformers/lead_in_out_transformer.py
+msgid "Lead-In/Out"
+msgstr "Ein-/Auslauf"
+
+#: post_processors/transformers/lead_in_out_transformer.py
+msgid "Adds zero-power lead-in and lead-out moves to vector contours."
+msgstr "Fügt Nullleistung-Ein- und Auslaufbewegungen zu Vektorkonturen hinzu."
 
 #: post_processors/transformers/optimize_transformer.py
 msgid "Optimize Path"

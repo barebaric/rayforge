@@ -8,16 +8,18 @@ for monitoring operations, a G-code viewer, and an asset browser.
 
 The Bottom Panel combines several functions into one convenient interface:
 
-1. **Tabbed View**: Switch between Console, G-code Viewer, and Assets using
+1. **Dockable Tabs**: Switch between Console, G-code Viewer, and Assets using
    the icon strip on the left
 2. **Jog Controls**: Manual movement and positioning (always visible)
 3. **Machine Status**: Real-time position and connection state
 4. **Work Coordinate System (WCS)**: Quick WCS selection (always visible)
 
-The left side of the panel contains an icon tab strip that lets you switch
+Each panel area has an icon tab strip on the left that lets you switch
 between the **Console**, the **G-code Viewer**, and the **Assets** browser.
 The jog controls and WCS controls on the right side remain visible regardless
-of which tab is active. Tabs can be reordered by dragging.
+of which tab is active. Tabs can be reordered by dragging within their strip,
+and you can drag tabs between panel areas or onto dividers to rearrange the
+layout into multiple columns. Empty columns are removed automatically.
 
 ![Bottom Panel](/screenshots/bottom-panel.png)
 

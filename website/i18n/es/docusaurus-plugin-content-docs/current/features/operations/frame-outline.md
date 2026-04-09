@@ -110,6 +110,7 @@ Las operaciones de Perfilado de Marco soportan varias opciones de post-procesami
 - **[Recortar al Material](../crop-to-stock)** - Limita los cortes al límite del material
 - **[Optimización de Trayectoria](../path-optimization)** - Reduce la distancia de viaje
 - **[Multi-Pasada](../multi-pass)** - Repite cortes para materiales gruesos
+- **[Entrada/Salida](../lead-in-out)** - Añade movimientos de acercamiento y salida sin potencia para extremos de corte más limpios
 
 ## Casos de Uso
 

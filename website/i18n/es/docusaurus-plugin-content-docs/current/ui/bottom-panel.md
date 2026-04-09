@@ -9,16 +9,19 @@ de activos.
 
 El Panel Inferior combina varias funciones en una interfaz conveniente:
 
-1. **Vista con Pestañas**: Alterna entre Consola, Visor de Código G y Activos usando
+1. **Pestañas Acoplables**: Alterna entre Consola, Visor de Código G y Activos usando
    la tira de iconos a la izquierda
 2. **Controles de Desplazamiento**: Movimiento y posicionamiento manual (siempre visibles)
 3. **Estado de la Máquina**: Posición en tiempo real y estado de conexión
 4. **Sistema de Coordenadas de Trabajo (WCS)**: Selección rápida de WCS (siempre visibles)
 
-El lado izquierdo del panel contiene una tira de iconos con pestañas que te permite
+Cada área del panel tiene una tira de iconos con pestañas a la izquierda que te permite
 alternar entre la **Consola**, el **Visor de Código G** y el navegador de **Activos**.
 Los controles de desplazamiento y WCS en el lado derecho permanecen visibles
-independientemente de la pestaña activa. Las pestañas se pueden reordenar arrastrando.
+independientemente de la pestaña activa. Las pestañas se pueden reordenar arrastrando
+dentro de su tira, y puedes arrastrar pestañas entre áreas del panel o sobre los
+divisores para reorganizar el diseño en múltiples columnas. Las columnas vacías se
+eliminan automáticamente.
 
 ![Panel Inferior](/screenshots/bottom-panel.png)
 

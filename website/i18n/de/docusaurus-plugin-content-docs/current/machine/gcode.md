@@ -14,6 +14,7 @@ Wähle den G-Code-Dialekt, der mit deiner Controller-Firmware übereinstimmt. Ve
 - **Grbl (Compat, no Z axis)**: Wie Grbl (Compat), aber ohne Z-Achsen-Befehle. Für reine 2D-Maschinen.
 - **GRBL Dynamic**: Verwendet GRBLs dynamischen Laserleistungsmodus für variablen Leistungsgravur.
 - **GRBL Dynamic (no Z axis)**: Dynamischer Modus ohne Z-Achsen-Befehle.
+- **LinuxCNC**: Für LinuxCNC-Controller. Unterstützt native kubische Bézier (G5)-Kurven.
 - **Smoothieware**: Für Smoothieboard und ähnliche Controller.
 - **Marlin**: Für Marlin-basierte Controller.
 
