@@ -14,6 +14,7 @@ Rayforge currently supports these G-code dialects:
 | **Grbl Raster**                | GRBL 1.1+    | Optimized for raster work   |
 | **GRBL Dynamic (Depth-Aware)** | GRBL 1.1+    | Depth-Aware laser engraving |
 | **GRBL Dynamic (no Z axis)**   | GRBL 1.1+    | Depth-Aware laser engraving |
+| **LinuxCNC**                   | LinuxCNC     | Native Bézier (G5) support  |
 | **Mach4 (M67 Analog)**         | Mach4        | High-speed raster engraving |
 | **Smoothieware**               | Smoothieware | Laser cutters, CNC          |
 | **Marlin**                     | Marlin 2.0+  | 3D printers with laser      |
@@ -30,6 +31,11 @@ commands, resulting in smoother and more compact G-code output.
 
 **GRBL Dynamic (Depth-Aware)** is recommended for Depth-Aware laser engraving
 where power varies during cuts (e.g., variable depth engraving).
+
+**LinuxCNC** supports native cubic Bézier curves through the G5 command, which
+produces very smooth and compact G-code for curved paths. When using this
+dialect, enable the "Support Bézier Curves" option in Advanced Machine Settings
+to take advantage of G5 output.
 
 ---
 

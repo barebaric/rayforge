@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-07 22:48+0200\n"
+"POT-Creation-Date: 2026-04-09 12:36+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -961,6 +961,14 @@ msgstr ""
 msgid "G-code dialect for Smoothieware-based controllers"
 msgstr ""
 
+#: rayforge/machine/models/dialect/linuxcnc.py
+msgid "LinuxCNC"
+msgstr ""
+
+#: rayforge/machine/models/dialect/linuxcnc.py
+msgid "G-code for LinuxCNC, supporting native cubic bezier (G5)"
+msgstr ""
+
 #: rayforge/machine/models/dialect/grbl_dynamic.py
 msgid "GRBL Dynamic"
 msgstr ""
@@ -1060,6 +1068,10 @@ msgstr ""
 
 #: rayforge/machine/models/dialect/base.py
 msgid "Arc (CCW)"
+msgstr ""
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Bezier Cubic"
 msgstr ""
 
 #: rayforge/machine/models/dialect/base.py
@@ -1685,16 +1697,6 @@ msgid "Theme"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Auto-update operations"
-msgstr ""
-
-#: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid ""
-"Recalculate operations automatically after each change. Disable for manual "
-"recalculation via the toolbar button."
-msgstr ""
-
-#: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Units"
 msgstr ""
 
@@ -1718,13 +1720,21 @@ msgid "Acceleration"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Startup"
+msgid "Behavior"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Configure advanced application behavior."
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Auto-update operations"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid ""
-"Configure what happens when you start the application. Files specified on "
-"the command line will always override these settings."
+"Recalculate operations automatically after each change. Disable for manual "
+"recalculation via the toolbar button."
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
@@ -2789,13 +2799,24 @@ msgid ""
 msgstr ""
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
-msgid "Arc Tolerance"
+msgid "Support Bézier Curves"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid ""
-"Maximum deviation from original path when fitting arcs (in machine units). "
-"Lower values drastically increase processing time and job size"
+"Generate native cubic Bézier commands. Disable if your machine does not "
+"support them"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Arc and Curve Tolerance"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid ""
+"Maximum deviation from original path when fitting arcs and curves (in "
+"machine units). Lower values drastically increase processing time and job "
+"size"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
@@ -4902,6 +4923,10 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Console"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid "Controls"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py

@@ -125,6 +125,7 @@ Les opérations de contour supportent plusieurs options de post-traitement :
 - **[Rognage au Stock](../crop-to-stock)** - Limiter les coupes à la limite du matériau
 - **[Optimisation de Parcours](../path-optimization)** - Réduire la distance de déplacement entre les coupes
 - **[Passe Multiple](../multi-pass)** - Répéter les coupes pour les matériaux épais
+- **[Entrée/Sortie](../lead-in-out)** - Ajouter des mouvements d'approche et de sortie à puissance nulle pour des extrémités de coupe plus propres
 
 ### Compensation de Kerf
 

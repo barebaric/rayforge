@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-07 02:17+0200\n"
+"POT-Creation-Date: 2026-04-09 03:49+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -48,8 +48,8 @@ msgstr "Багатопрохідний"
 
 #: laser_essentials/producers/shrinkwrap_producer.py
 #: laser_essentials/producers/contour_producer.py
-msgid "Optimizing path with arcs..."
-msgstr "Оптимізація шляху з дугами..."
+msgid "Optimizing path with curves..."
+msgstr "Оптимізація шляху за допомогою кривих..."
 
 #: laser_essentials/producers/contour_producer.py
 msgid "Inside-Outside"

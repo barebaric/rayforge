@@ -7,16 +7,17 @@ firmware de controlador.
 
 O Rayforge atualmente suporta estes dialetos G-code:
 
-| Dialeto                                      | Firmware     | Uso Comum                                |
-| -------------------------------------------- | ------------ | ---------------------------------------- |
-| **Grbl (Compat)**                            | GRBL 1.1+    | Lasers de diodo, CNC hobby               |
-| **Grbl (Compat, sem eixo Z)**                | GRBL 1.1+    | Cortadores a laser 2D sem Z              |
-| **Grbl Raster**                              | GRBL 1.1+    | Otimizado para trabalho raster           |
-| **GRBL Dinâmico (Sensível à Profundidade)**  | GRBL 1.1+    | Gravação a laser sensível à profundidade |
-| **GRBL Dinâmico (sem eixo Z)**               | GRBL 1.1+    | Gravação a laser sensível à profundidade |
-| **Mach4 (M67 Analog)**                       | Mach4        | Gravação raster de alta velocidade       |
-| **Smoothieware**                             | Smoothieware | Cortadores a laser, CNC                  |
-| **Marlin**                                   | Marlin 2.0+  | Impressoras 3D com laser                 |
+| Dialeto                                     | Firmware     | Uso Comum                                |
+| ------------------------------------------- | ------------ | ---------------------------------------- |
+| **Grbl (Compat)**                           | GRBL 1.1+    | Lasers de diodo, CNC hobby               |
+| **Grbl (Compat, sem eixo Z)**               | GRBL 1.1+    | Cortadores a laser 2D sem Z              |
+| **Grbl Raster**                             | GRBL 1.1+    | Otimizado para trabalho raster           |
+| **GRBL Dinâmico (Sensível à Profundidade)** | GRBL 1.1+    | Gravação a laser sensível à profundidade |
+| **GRBL Dinâmico (sem eixo Z)**              | GRBL 1.1+    | Gravação a laser sensível à profundidade |
+| **LinuxCNC**                                | LinuxCNC     | Suporte nativo a Bézier (G5)             |
+| **Mach4 (M67 Analog)**                      | Mach4        | Gravação raster de alta velocidade       |
+| **Smoothieware**                            | Smoothieware | Cortadores a laser, CNC                  |
+| **Marlin**                                  | Marlin 2.0+  | Impressoras 3D com laser                 |
 
 :::note Dialetos Recomendados
 :::
@@ -31,6 +32,11 @@ de taxa de avanço redundantes, resultando em G-code mais suave e compacto.
 **GRBL Dinâmico (Sensível à Profundidade)** é recomendado para gravação a laser
 sensível à profundidade onde a potência varia durante os cortes (ex., gravação
 de profundidade variável).
+
+**LinuxCNC** suporta curvas Bézier cúbicas nativas através do comando G5, o
+que produz G-code muito suave e compacto para caminhos curvos. Ao usar este
+dialeto, ative a opção "Suportar curvas Bézier" nas Configurações Avançadas
+de Máquina para aproveitar a saída G5.
 
 ---
 

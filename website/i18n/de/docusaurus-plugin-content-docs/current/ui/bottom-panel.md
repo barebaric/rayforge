@@ -10,17 +10,19 @@ und einen Asset-Browser.
 Das untere Panel kombiniert mehrere Funktionen in einer praktischen
 Schnittstelle:
 
-1. **Tab-Ansicht**: Zwischen Konsole, G-Code-Viewer und Assets wechseln
+1. **Andockbare Tabs**: Zwischen Konsole, G-Code-Viewer und Assets wechseln
    über die Icon-Leiste auf der linken Seite
 2. **Jog-Steuerung**: Manuelle Bewegung und Positionierung (immer sichtbar)
 3. **Maschinenstatus**: Echtzeit-Position und Verbindungszustand
 4. **Werkstückkoordinatensystem (WCS)**: Schnelle WCS-Auswahl (immer sichtbar)
 
-Die linke Seite des Panels enthält eine Icon-Tab-Leiste, mit der du zwischen
-der **Konsole**, dem **G-Code-Viewer** und dem **Assets**-Browser wechseln
-kannst. Die Jog-Steuerung und WCS-Steuerung auf der rechten Seite bleiben
-unabhängig davon sichtbar, welcher Tab aktiv ist. Tabs können durch Ziehen
-neu angeordnet werden.
+Jeder Bereich des Panels hat eine Icon-Tab-Leiste auf der linken Seite, mit
+der du zwischen der **Konsole**, dem **G-Code-Viewer** und dem **Assets**-Browser
+wechseln kannst. Die Jog-Steuerung und WCS-Steuerung auf der rechten Seite
+bleiben unabhängig davon sichtbar, welcher Tab aktiv ist. Tabs können durch
+Ziehen innerhalb ihrer Leiste neu angeordnet werden, und du kannst Tabs
+zwischen Panelbereichen oder auf Trennlinien ziehen, um das Layout in mehrere
+Spalten umzuordnen. Leere Spalten werden automatisch entfernt.
 
 ![Unteres Panel](/screenshots/bottom-panel.png)
 

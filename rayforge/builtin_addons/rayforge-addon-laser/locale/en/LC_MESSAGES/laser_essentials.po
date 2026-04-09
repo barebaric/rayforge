@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-07 02:17+0200\n"
+"POT-Creation-Date: 2026-04-09 03:49+0200\n"
 "PO-Revision-Date: 2026-03-01 19:25+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -47,8 +47,8 @@ msgstr ""
 
 #: laser_essentials/producers/shrinkwrap_producer.py
 #: laser_essentials/producers/contour_producer.py
-msgid "Optimizing path with arcs..."
-msgstr "Optimizing path with arcs..."
+msgid "Optimizing path with curves..."
+msgstr ""
 
 #: laser_essentials/producers/contour_producer.py
 msgid "Inside-Outside"

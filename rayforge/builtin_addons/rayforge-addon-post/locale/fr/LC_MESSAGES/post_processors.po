@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-25 22:24+0100\n"
+"POT-Creation-Date: 2026-04-09 03:49+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,19 +17,65 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: post_processors/widgets/overscan_widget.py
-msgid "Enable Overscan"
-msgstr "Activer le surbalayage"
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Enable Lead-In/Out"
+msgstr "Activer l'entrée/sortie"
 
+#: post_processors/widgets/lead_in_out_widget.py
 #: post_processors/widgets/overscan_widget.py
 msgid "Automatic Distance"
 msgstr "Distance automatique"
 
+#: post_processors/widgets/lead_in_out_widget.py
 #: post_processors/widgets/overscan_widget.py
 msgid "Calculate distance based on speed and acceleration with safety factor"
 msgstr ""
 "Calculer la distance en fonction de la vitesse et de l'accélération avec un "
 "facteur de sécurité"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Lead-In Distance"
+msgstr "Distance d'entrée"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Distance of zero-power move before cut starts"
+msgstr "Distance du mouvement sans puissance avant le début de la coupe"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Lead-Out Distance"
+msgstr "Distance de sortie"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Distance of zero-power move after cut ends"
+msgstr "Distance du mouvement sans puissance après la fin de la coupe"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Toggle Lead-In/Out"
+msgstr "Basculer l'entrée/sortie"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Toggle Auto Lead-In/Out"
+msgstr "Basculer l'entrée/sortie automatique"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Auto Calculate Lead-In/Out Distance"
+msgstr "Calculer automatiquement la distance d'entrée/sortie"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Disable Auto Lead-In/Out"
+msgstr "Désactiver l'entrée/sortie automatique"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Change Lead-In Distance"
+msgstr "Modifier la distance d'entrée"
+
+#: post_processors/widgets/lead_in_out_widget.py
+msgid "Change Lead-Out Distance"
+msgstr "Modifier la distance de sortie"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "Enable Overscan"
+msgstr "Activer le surbalayage"
 
 #: post_processors/widgets/overscan_widget.py
 msgid "Overscan Distance"
@@ -208,6 +254,16 @@ msgstr "Modifier le nombre de passes"
 #: post_processors/widgets/multipass_widget.py
 msgid "Change Z Step-Down"
 msgstr "Modifier la descente en Z"
+
+#: post_processors/transformers/lead_in_out_transformer.py
+msgid "Lead-In/Out"
+msgstr "Entrée/Sortie"
+
+#: post_processors/transformers/lead_in_out_transformer.py
+msgid "Adds zero-power lead-in and lead-out moves to vector contours."
+msgstr ""
+"Ajoute des mouvements d'entrée et de sortie sans puissance aux contours "
+"vectoriels."
 
 #: post_processors/transformers/optimize_transformer.py
 msgid "Optimize Path"

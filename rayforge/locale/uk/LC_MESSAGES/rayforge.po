@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-07 22:48+0200\n"
+"POT-Creation-Date: 2026-04-09 12:36+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -1034,6 +1034,14 @@ msgstr "Smoothieware"
 msgid "G-code dialect for Smoothieware-based controllers"
 msgstr "Діалект G-коду для контролерів на базі Smoothieware"
 
+#: rayforge/machine/models/dialect/linuxcnc.py
+msgid "LinuxCNC"
+msgstr "LinuxCNC"
+
+#: rayforge/machine/models/dialect/linuxcnc.py
+msgid "G-code for LinuxCNC, supporting native cubic bezier (G5)"
+msgstr "G-код для LinuxCNC з підтримкою власних кубічних кривих Безьє (G5)"
+
 #: rayforge/machine/models/dialect/grbl_dynamic.py
 msgid "GRBL Dynamic"
 msgstr "GRBL Динамічний"
@@ -1141,6 +1149,10 @@ msgstr "Дуга (за годинниковою стрілкою)"
 #: rayforge/machine/models/dialect/base.py
 msgid "Arc (CCW)"
 msgstr "Дуга (проти годинникової стрілки)"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Bezier Cubic"
+msgstr "Кубічна крива Безьє"
 
 #: rayforge/machine/models/dialect/base.py
 msgid "Tool Change"
@@ -1789,18 +1801,6 @@ msgid "Theme"
 msgstr "Тема"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Auto-update operations"
-msgstr "Автоматичне оновлення операцій"
-
-#: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid ""
-"Recalculate operations automatically after each change. Disable for manual "
-"recalculation via the toolbar button."
-msgstr ""
-"Автоматично перераховувати операції після кожної зміни. Вимкнути для ручного "
-"перерахунку через кнопку панелі інструментів."
-
-#: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Units"
 msgstr "Одиниці"
 
@@ -1824,16 +1824,24 @@ msgid "Acceleration"
 msgstr "Прискорення"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Startup"
-msgstr "Запуск"
+msgid "Behavior"
+msgstr "Поведінка"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Configure advanced application behavior."
+msgstr "Налаштування розширеного поведінки програми."
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Auto-update operations"
+msgstr "Автоматичне оновлення операцій"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid ""
-"Configure what happens when you start the application. Files specified on "
-"the command line will always override these settings."
+"Recalculate operations automatically after each change. Disable for manual "
+"recalculation via the toolbar button."
 msgstr ""
-"Налаштувати дії при запуску програми. Файли, вказані в командному рядку, "
-"завжди матимуть пріоритет над цими налаштуваннями."
+"Автоматично перераховувати операції після кожної зміни. Вимкнути для ручного "
+"перерахунку через кнопку панелі інструментів."
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Startup behavior"
@@ -2943,16 +2951,29 @@ msgstr ""
 "підтримує дуги"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
-msgid "Arc Tolerance"
-msgstr "Допуск дуги"
+msgid "Support Bézier Curves"
+msgstr "Підтримка кривих Безьє"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid ""
-"Maximum deviation from original path when fitting arcs (in machine units). "
-"Lower values drastically increase processing time and job size"
+"Generate native cubic Bézier commands. Disable if your machine does not "
+"support them"
 msgstr ""
-"Максимальне відхилення від початкового шляху при апроксимації дуг (у "
-"одиницях верстата). Нижчі значення значно збільшують час обробки та розмір "
+"Генерувати власні кубічні команди Безьє. Вимкніть, якщо ваша машина їх не "
+"підтримує"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Arc and Curve Tolerance"
+msgstr "Допуск дуг і кривих"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid ""
+"Maximum deviation from original path when fitting arcs and curves (in "
+"machine units). Lower values drastically increase processing time and job "
+"size"
+msgstr ""
+"Максимальне відхилення від початкового шляху при апроксимації дуг і кривих "
+"(у одиницях машини). Нижчі значення значно збільшують час обробки та розмір "
 "завдання"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
@@ -5114,6 +5135,10 @@ msgstr "Переглядач G-code"
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Console"
 msgstr "Консоль"
+
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid "Controls"
+msgstr "Елементи керування"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Active System"

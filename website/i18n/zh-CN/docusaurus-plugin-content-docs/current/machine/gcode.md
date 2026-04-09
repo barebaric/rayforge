@@ -14,6 +14,7 @@
 - **Grbl (Compat, no Z axis)**：与 Grbl (Compat) 相同，但没有 Z 轴命令。用于仅 2D 的机器。
 - **GRBL Dynamic**：使用 GRBL 的动态激光功率模式进行可变功率雕刻。
 - **GRBL Dynamic (no Z axis)**：没有 Z 轴命令的动态模式。
+- **LinuxCNC**：用于 LinuxCNC 控制器。支持原生三次 Bézier (G5) 曲线。
 - **Smoothieware**：用于 Smoothieboard 和类似控制器。
 - **Marlin**：用于基于 Marlin 的控制器。
 

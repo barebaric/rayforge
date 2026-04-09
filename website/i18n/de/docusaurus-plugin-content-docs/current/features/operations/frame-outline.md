@@ -110,6 +110,7 @@ Rahmen-Umriss-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 - **[Auf Rohmaterial zuschneiden](../crop-to-stock)** - Schnitte auf Materialgrenze beschränken
 - **[Pfad-Optimierung](../path-optimization)** - Verfahrdistanz reduzieren
 - **[Mehrfach-Durchgang](../multi-pass)** - Schnitte für dicke Materialien wiederholen
+- **[Einlauf/Auslauf](../lead-in-out)** - Nullleistung-An- und Abfahrtsbewegungen hinzufügen für sauberere Schnittenden
 
 ## Anwendungsfälle
 

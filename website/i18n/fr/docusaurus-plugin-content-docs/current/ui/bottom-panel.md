@@ -8,16 +8,19 @@ pour surveiller les opérations, un visualiseur G-code et un navigateur d'actifs
 
 Le panneau inférieur combine plusieurs fonctions dans une interface pratique :
 
-1. **Vue à onglets** : Bascule entre Console, Visualiseur G-code et Actifs en utilisant
+1. **Onglets amarrables** : Bascule entre Console, Visualiseur G-code et Actifs en utilisant
    la bande d'icônes sur la gauche
 2. **Contrôles de déplacement** : Mouvement et positionnement manuels (toujours visibles)
 3. **État de la machine** : Position et état de connexion en temps réel
 4. **Système de coordonnées de travail (WCS)** : Sélection rapide du WCS (toujours visible)
 
-Le côté gauche du panneau contient une bande d'icônes d'onglets qui te permet de basculer
-entre la **Console**, le **Visualiseur G-code** et le navigateur d'**Actifs**.
+Chaque zone du panneau possède une bande d'icônes d'onglets sur la gauche qui te permet
+de basculer entre la **Console**, le **Visualiseur G-code** et le navigateur d'**Actifs**.
 Les contrôles de déplacement et les contrôles WCS sur le côté droit restent visibles quel
-que soit l'onglet actif. Les onglets peuvent être réordonnés par glisser-déposer.
+que soit l'onglet actif. Les onglets peuvent être réordonnés par glisser-déposer dans
+leur bande, et tu peux glisser des onglets entre les zones du panneau ou sur les
+séparateurs pour réorganiser la disposition en plusieurs colonnes. Les colonnes vides
+sont supprimées automatiquement.
 
 ![Panneau inférieur](/screenshots/bottom-panel.png)
 

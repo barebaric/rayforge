@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-07 02:17+0200\n"
+"POT-Creation-Date: 2026-04-09 03:49+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -47,8 +47,8 @@ msgstr "多次扫描"
 
 #: laser_essentials/producers/shrinkwrap_producer.py
 #: laser_essentials/producers/contour_producer.py
-msgid "Optimizing path with arcs..."
-msgstr "正在用圆弧优化路径..."
+msgid "Optimizing path with curves..."
+msgstr "正在使用曲线优化路径..."
 
 #: laser_essentials/producers/contour_producer.py
 msgid "Inside-Outside"

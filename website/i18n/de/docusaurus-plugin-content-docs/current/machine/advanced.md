@@ -26,7 +26,7 @@ Wenn aktiviert, löscht Rayforge automatisch jeden Alarmzustand beim Verbinden.
 
 Wenn aktiviert, kannst du einzelne Achsen unabhängig referenzieren (X, Y oder Z), anstatt alle Achsen gleichzeitig zu referenzieren. Dies ist nützlich für Maschinen, bei denen eine Achse bereits korrekt positioniert ist.
 
-## Bogeneinstellungen
+## Bogen- und Kurveneinstellungen
 
 Einstellungen zur Steuerung, wie gekrümmte Pfade in G-Code-Bewegungen umgewandelt werden.
 
@@ -36,9 +36,13 @@ Wenn aktiviert, generiert Rayforge Bogenbefehle (G2/G3) für gekrümmte Pfade, a
 
 Wenn deaktiviert, werden alle Kurven in Liniensegmente (G1-Befehle) umgewandelt, was maximale Kompatibilität mit Controllern bietet, die keine Bögen unterstützen.
 
-### Bogentoleranz
+### Bézier-Kurven unterstützen
 
-Diese Einstellung steuert die maximal erlaubte Abweichung beim Anpassen von Bögen an gekrümmte Pfade, angegeben in Millimetern. Ein kleinerer Wert erzeugt genauere Bögen, kann aber mehr Bogenbefehle erfordern. Ein größerer Wert erlaubt mehr Abweichung, generiert aber weniger Befehle.
+Wenn aktiviert, generiert Rayforge native kubische Bézier-Befehle (wie den G5-Befehl unter LinuxCNC) für gekrümmte Pfade. Dies erzeugt sehr flüssige Bewegungen und kompakten G-Code auf Controllern, die dies unterstützen. Du solltest diese Einstellung deaktivieren, wenn die Firmware deiner Maschine keine Bézier-Befehle versteht – in diesem Fall werden die Kurven stattdessen in Liniensegmente zerlegt.
+
+### Bogen- und Kurventoleranz
+
+Diese Einstellung steuert die maximal erlaubte Abweichung beim Anpassen von Bögen und Kurven an gekrümmte Pfade, angegeben in Millimetern. Ein kleinerer Wert erzeugt genauere Pfade, kann aber mehr Befehle erfordern. Ein größerer Wert erlaubt mehr Abweichung, generiert aber weniger Befehle.
 
 Typische Werte reichen von 0,01mm für Präzisionsarbeit bis 0,1mm für schnellere Verarbeitung.
 

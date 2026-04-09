@@ -14,6 +14,7 @@ Selecione o dialeto de G-code que corresponde ao firmware do seu controlador. Di
 - **Grbl (Compat, no Z axis)**: Igual ao Grbl (Compat) mas sem comandos de eixo Z. Para máquinas apenas 2D.
 - **GRBL Dynamic**: Usa o modo de potência laser dinâmica do GRBL para gravação de potência variável.
 - **GRBL Dynamic (no Z axis)**: Modo dinâmico sem comandos de eixo Z.
+- **LinuxCNC**: Para controladores LinuxCNC. Suporta curvas Bézier cúbicas (G5) nativas.
 - **Smoothieware**: Para Smoothieboard e controladores similares.
 - **Marlin**: Para controladores baseados em Marlin.
 
