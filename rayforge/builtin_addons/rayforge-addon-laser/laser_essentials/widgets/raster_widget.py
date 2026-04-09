@@ -460,7 +460,7 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
         self._debounce(self._commit_power_range_change)
 
-    def _on_mode_changed(self, row, _):
+    def _on_mode_changed(self, row, pspec):
         selected_idx = row.get_selected()
         selected_mode = list(DepthMode)[selected_idx]
         is_power_mode = selected_mode == DepthMode.POWER_MODULATION
@@ -492,7 +492,7 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
     def _on_white_point_changed(self, sender, white_point: int):
         self._on_param_changed("white_point", white_point)
 
-    def _on_auto_levels_changed(self, w, _):
+    def _on_auto_levels_changed(self, w, pspec):
         auto_levels = w.get_active()
         self.histogram_preview.auto_mode = auto_levels
         if auto_levels:
@@ -505,7 +505,7 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             )
         self._on_param_changed("auto_levels", auto_levels)
 
-    def _on_dither_algorithm_changed(self, row, _):
+    def _on_dither_algorithm_changed(self, row, pspec):
         selected_idx = row.get_selected()
         selected_algo = list(DitherAlgorithm)[selected_idx]
         self._on_param_changed("dither_algorithm", selected_algo.value)
@@ -519,7 +519,7 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.direction_preview.update(value, self.cross_hatch_row.get_active())
         self._debounce(self._on_param_changed, "scan_angle", value)
 
-    def _on_cross_hatch_changed(self, w, _):
+    def _on_cross_hatch_changed(self, w, pspec):
         cross_hatch = w.get_active()
         self.direction_preview.update(
             self.angle_scale.get_value(), cross_hatch
