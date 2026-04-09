@@ -66,6 +66,66 @@
   </screenshots>
 
   <releases>
+    <release version="1.5" date="2026-04-09">
+      <description>
+        <p>3D Simulator:</p>
+        <ul>
+          <li>Full playback with play/pause, step, scrubber, and speed control</li>
+          <li>Laser beam and head rendered during simulation</li>
+          <li>Rotary mode simulation with cylinder rotation</li>
+          <li>Non-blocking playback even on complex jobs</li>
+        </ul>
+        <p>Bezier Curves (G5):</p>
+        <ul>
+          <li>Native cubic bezier support through the entire pipeline</li>
+          <li>G5 output for LinuxCNC and Marlin, automatic linearization for others</li>
+          <li>Curves work with tabs, cropping, smoothing, multi-pass, and path optimization</li>
+        </ul>
+        <p>No-Go Zones:</p>
+        <ul>
+          <li>Define restricted areas in machine settings</li>
+          <li>Collision checking warns before sending G-code</li>
+        </ul>
+        <p>Performance and Memory:</p>
+        <ul>
+          <li>Canvas is significantly more responsive during interaction</li>
+          <li>Large images automatically scaled to prevent memory spikes</li>
+          <li>Smarter caching with memory limits and source-level reuse</li>
+          <li>Time estimation updates instantly</li>
+          <li>Two memory leaks fixed in the 3D simulator</li>
+        </ul>
+        <p>UI Improvements:</p>
+        <ul>
+          <li>Dockable bottom panel with rearrangeable tabs</li>
+          <li>Layer list moved to bottom panel with drag-and-drop</li>
+          <li>Asset browser overhaul with multi-selection and thumbnails</li>
+          <li>Status bar removed, info moved to contextual locations</li>
+          <li>Canvas overlay toggles for perspective, model, and no-go zones</li>
+          <li>3D model support for rotary axes with GLB import</li>
+        </ul>
+        <p>New Import Options:</p>
+        <ul>
+          <li>Three layer modes: flatten, merge to existing, create new</li>
+          <li>Default workflow steps added to imported layers automatically</li>
+        </ul>
+        <p>Post-Processing:</p>
+        <ul>
+          <li>Lead-in / lead-out postprocessor for approach and exit moves</li>
+          <li>Material test labels engraved first for cleaner results</li>
+          <li>Material test overscan and label speed support</li>
+        </ul>
+        <p>Other Additions:</p>
+        <ul>
+          <li>Ctrl+F search in console and G-code viewer</li>
+          <li>YUYV camera protocol support</li>
+          <li>Addons can register toggles in the View menu</li>
+          <li>Grbl MKS DLC32 machine profile</li>
+          <li>Single instance lock</li>
+          <li>Continuous laser mode and modal feedrate G-code options</li>
+          <li>GRBL raster dialect with cleaner M4/M5 handling</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.4.1" date="2026-04-01">
       <description>
         <p>Bug fix release</p>

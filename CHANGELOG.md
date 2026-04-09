@@ -5,6 +5,86 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.5
+
+### Added
+
+- 3D simulator with full playback: play/pause, step forward/backward, scrubber,
+  and speed control (1x to 16x)
+- End-to-end bezier curve support (G5) through the entire pipeline, from import
+  to G-code output
+- No-go zones: define restricted areas in machine settings with collision checking
+- 3D model support for rotary axes (GLB format) with shading and proper coloring
+- Global model manager for storing and reusing 3D models across machines
+- Import dialog now offers three layer modes: flatten, merge to existing, or
+  create new layers
+- Imported layers automatically get sensible default workflow steps
+- Dockable bottom panel: tabs can be rearranged freely and split into separate
+  columns
+- Layer list moved into the bottom panel with drag-and-drop from asset list
+- Asset browser overhaul: all assets visible, multi-selection, drag to canvas,
+  thumbnails for most image formats, helpful empty-state placeholder
+- Lead-in / lead-out postprocessor for zero-power approach and exit moves
+- Material test: labels engraved first for cleaner results
+- Material test: overscan transformer support
+- Material test: independent label engraving speed setting
+- Ctrl+F search in console and G-code viewer
+- Addons can register their own toggles in the View menu
+- YUYV camera protocol support
+- Canvas remembers state of view toggles between sessions
+- Double clicking a stock asset opens its properties
+- Drag assets from the asset list to the layer list
+- Continuous laser mode and modal feedrate G-code options
+- GRBL raster dialect that omits unnecessary M4/M5 spindle commands
+- Grbl MKS DLC32 machine profile
+- Laser head model rendered in the 3D simulator
+
+### Changed
+
+- Canvas is significantly more responsive during drag, pan, and zoom operations
+  by suppressing expensive path rendering until interaction stops
+- Multi-step workflows composite into a single surface for faster rendering
+- Large images are automatically scaled to prevent multi-gigabyte memory spikes
+- Image handling rewritten to avoid unnecessary copies, reducing overall RAM usage
+- Smarter caching: base images cached on source assets and reused across workpieces
+- Cache memory limit in the 2D canvas prevents unbounded memory growth
+- Time estimation updates instantly instead of recomputing from scratch
+- Pipeline recalculation can now be toggled off in settings
+- Status bar removed; machining time moved to layer list header, ETA to machine
+  dropdown, status messages to canvas overlay
+- Visibility toggles for perspective, model, and no-go zones moved to canvas
+  overlays
+- Rows in main window expanders are more compact
+- Bottom panel layout of coordinate controls and jog widget is responsive
+- Decreased default merge lines tolerance to 0.01
+- Crop-to-stock now crops to workarea if no stock is defined in the document
+- Illustrator files now use correct 72 DPI instead of 70
+
+### Fixed
+
+- Race condition causing 2D canvas re-renders to hang
+- Race condition in doceditor.wait_until_settled_sync()
+- Status overlay displayed even when no message was set
+- Stale job shown in 3D canvas after changes
+- 3D canvas not showing dimmed versions of travel moves
+- Wide strokes rendered incorrectly in import dialog preview
+- Item layers not added when importing from the command line
+- Tabs cutting paths in more than one place
+- Addon installation failing in Snap packages
+- 2D and 3D canvas stealing focus from the sketcher
+- Sketch parameters could not be edited in the properties panel
+- Crop-to-stock linearized arcs unnecessarily
+- Deadlock when switching WCS while 3D canvas visible
+- 3D canvas not updating fully after hardware changes
+- Toggling no-go zones off undimmed vertices in the 3D canvas
+- Mapping of stepped down vertices in rotary mode
+- Drag and drop bug in the asset browser
+- No G-code output if document contained an empty layer
+- Editing machine settings resetting the canvas perspective
+- Single instance lock: second window now gracefully exits
+- Two memory leaks in the 3D simulator (shared memory and shader)
+- 3D canvas empty if G-code viewer was not open
+
 ## 1.4.1
 
 ### Changed
