@@ -250,6 +250,7 @@ class ActionManager:
         self._add_action("machine-settings", self.win.show_machine_settings)
 
         # View Actions
+        cv = get_context().config.canvas_view
         self._add_stateful_action(
             "show_3d_view",
             self.win.on_show_3d_view,
@@ -258,29 +259,29 @@ class ActionManager:
         self._add_stateful_action(
             "show_workpieces",
             self.win.on_show_workpieces_state_change,
-            GLib.Variant.new_boolean(True),
+            GLib.Variant.new_boolean(cv.show_workpieces),
         )
         self._add_stateful_action(
             "toggle_camera_view",
             self.win.on_toggle_camera_view_state_change,
-            GLib.Variant.new_boolean(True),
+            GLib.Variant.new_boolean(cv.show_camera),
         )
         self._add_stateful_action(
             "toggle_travel_view",
             self.win.on_toggle_travel_view_state_change,
-            GLib.Variant.new_boolean(False),
+            GLib.Variant.new_boolean(cv.show_travel_lines),
         )
-        config = get_context().config
         self._add_stateful_action(
             "show_nogo_zones",
             self.win.on_show_nogo_zones_state_change,
-            GLib.Variant.new_boolean(config.show_nogo_zones),
+            GLib.Variant.new_boolean(cv.show_nogo_zones),
         )
         self._add_stateful_action(
             "show_models",
             self.win.on_show_models_state_change,
-            GLib.Variant.new_boolean(True),
+            GLib.Variant.new_boolean(cv.show_models),
         )
+        config = get_context().config
         self._add_stateful_action(
             "toggle_bottom_panel",
             self.win.on_toggle_bottom_panel_state_change,
@@ -312,7 +313,7 @@ class ActionManager:
         self._add_stateful_action(
             "view_toggle_perspective",
             self.win.on_view_perspective_state_change,
-            GLib.Variant.new_boolean(config.perspective_mode),
+            GLib.Variant.new_boolean(cv.perspective_mode),
         )
 
         # Edit & Clipboard Actions
@@ -375,7 +376,7 @@ class ActionManager:
         self._add_stateful_action(
             "show_tabs",
             self.on_show_tabs_state_change,
-            GLib.Variant.new_boolean(True),
+            GLib.Variant.new_boolean(cv.show_tabs),
         )
 
         # Alignment Actions
@@ -594,10 +595,11 @@ class ActionManager:
         controller that receives the user's intent to change the state.
         """
         is_visible = state.get_boolean()
-        # 1. Perform the action by telling the surface to update its state.
         self.win.surface.set_global_tab_visibility(is_visible)
-        # 2. Confirm the state change, which updates the action and widgets.
         action.set_state(state)
+        config = get_context().config
+        config.canvas_view.show_tabs = is_visible
+        config.changed.send(config)
 
     def register_shortcuts(self, controller: Gtk.ShortcutController):
         """

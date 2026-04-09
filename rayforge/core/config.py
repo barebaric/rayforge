@@ -1,6 +1,7 @@
 import yaml
 import logging
 from blinker import Signal
+from dataclasses import dataclass, fields
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -17,6 +18,28 @@ class StartupBehavior(Enum):
     NONE = "none"
     LAST_PROJECT = "last_project"
     SPECIFIC_PROJECT = "specific_project"
+
+
+@dataclass
+class CanvasViewState:
+    """Persistent view toggle states for the 2D/3D canvases."""
+
+    show_workpieces: bool = True
+    show_camera: bool = True
+    show_travel_lines: bool = False
+    show_nogo_zones: bool = True
+    show_models: bool = True
+    show_tabs: bool = True
+    perspective_mode: bool = False
+
+    def to_dict(self) -> Dict[str, bool]:
+        return {f.name: getattr(self, f.name) for f in fields(self)}
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "CanvasViewState":
+        valid_keys = {f.name for f in fields(cls)}
+        filtered = {k: v for k, v in data.items() if k in valid_keys}
+        return cls(**filtered)
 
 
 class Config:
@@ -40,8 +63,7 @@ class Config:
         # UI visibility states
         self.bottom_panel: Optional[Dict[str, Any]] = None
         self.right_panel_visible: bool = True
-        self.perspective_mode: bool = False
-        self.show_nogo_zones: bool = True
+        self.canvas_view: CanvasViewState = CanvasViewState()
         self.auto_pipeline: bool = True
         # Usage tracking consent date: None = not asked, "" = declined,
         # ISO date string = consent given on that date
@@ -109,20 +131,6 @@ class Config:
         self.right_panel_visible = visible
         self.changed.send(self)
 
-    def set_perspective_mode(self, enabled: bool):
-        """Sets the 3D view perspective mode."""
-        if self.perspective_mode == enabled:
-            return
-        self.perspective_mode = enabled
-        self.changed.send(self)
-
-    def set_show_nogo_zones(self, visible: bool):
-        """Sets the no-go zone visibility state."""
-        if self.show_nogo_zones == visible:
-            return
-        self.show_nogo_zones = visible
-        self.changed.send(self)
-
     def set_import_dpi(self, dpi: float):
         """Sets the default DPI for unitless SVG imports."""
         if self.import_dpi == dpi:
@@ -183,8 +191,7 @@ class Config:
             ),
             "bottom_panel": self.bottom_panel,
             "right_panel_visible": self.right_panel_visible,
-            "perspective_mode": self.perspective_mode,
-            "show_nogo_zones": self.show_nogo_zones,
+            "canvas_view": self.canvas_view.to_dict(),
             "auto_pipeline": self.auto_pipeline,
             "usage_consent_date": self.usage_consent_date,
             "import_dpi": self.import_dpi,
@@ -232,8 +239,9 @@ class Config:
         # Load UI visibility states
         config.bottom_panel = data.get("bottom_panel", None)
         config.right_panel_visible = data.get("right_panel_visible", True)
-        config.perspective_mode = data.get("perspective_mode", False)
-        config.show_nogo_zones = data.get("show_nogo_zones", True)
+        config.canvas_view = CanvasViewState.from_dict(
+            data.get("canvas_view", {})
+        )
         config.auto_pipeline = data.get("auto_pipeline", True)
 
         # Load usage tracking consent date

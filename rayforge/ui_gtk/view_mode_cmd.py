@@ -108,4 +108,6 @@ class ViewModeCmd:
             canvas3d.camera.is_perspective = is_perspective
             canvas3d.queue_render()
             action.set_state(value)
-            get_context().config.set_perspective_mode(is_perspective)
+            config = get_context().config
+            config.canvas_view.perspective_mode = is_perspective
+            config.changed.send(config)
