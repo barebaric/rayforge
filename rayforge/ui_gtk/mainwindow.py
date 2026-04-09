@@ -284,12 +284,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.action_manager.register_shortcuts(shortcut_controller)
         self.add_controller(shortcut_controller)
 
-        # Set the initial state of the surface based on the action's default
-        show_tabs_action = self.action_manager.get_action("show_tabs")
-        state = show_tabs_action.get_state()
-        initial_state = state.get_boolean() if state else True
-        self.surface.set_global_tab_visibility(initial_state)
-
         # Connect document signals
         doc = self.doc_editor.doc
         self._old_doc = doc  # Track initial document for signal reconnection
@@ -351,6 +345,8 @@ class MainWindow(Adw.ApplicationWindow):
 
         if canvas3d_initialized:
             self._create_canvas3d(context, viewport)
+
+        self._sync_view_toggle_actions()
 
         # Undo/Redo buttons are now connected to the doc via actions.
         self.toolbar.undo_button.set_history_manager(
@@ -868,6 +864,9 @@ class MainWindow(Adw.ApplicationWindow):
         is_visible = value.get_boolean()
         self.surface.set_workpieces_visible(is_visible)
         action.set_state(value)
+        config = get_context().config
+        config.canvas_view.show_workpieces = is_visible
+        config.changed.send(config)
 
     def on_toggle_camera_view_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -875,6 +874,9 @@ class MainWindow(Adw.ApplicationWindow):
         is_visible = value.get_boolean()
         self.surface.set_camera_image_visibility(is_visible)
         action.set_state(value)
+        config = get_context().config
+        config.canvas_view.show_camera = is_visible
+        config.changed.send(config)
 
     def on_toggle_travel_view_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -884,6 +886,9 @@ class MainWindow(Adw.ApplicationWindow):
         if self.canvas3d is not None:
             self.canvas3d.set_show_travel_moves(is_visible)
         action.set_state(value)
+        config = get_context().config
+        config.canvas_view.show_travel_lines = is_visible
+        config.changed.send(config)
 
     def on_show_nogo_zones_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -893,7 +898,9 @@ class MainWindow(Adw.ApplicationWindow):
         if self.canvas3d is not None:
             self.canvas3d.set_show_nogo_zones(is_visible)
         action.set_state(value)
-        get_context().config.set_show_nogo_zones(is_visible)
+        config = get_context().config
+        config.canvas_view.show_nogo_zones = is_visible
+        config.changed.send(config)
 
     def on_show_models_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -902,6 +909,9 @@ class MainWindow(Adw.ApplicationWindow):
         if self.canvas3d is not None:
             self.canvas3d.set_show_models(is_visible)
         action.set_state(value)
+        config = get_context().config
+        config.canvas_view.show_models = is_visible
+        config.changed.send(config)
 
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
@@ -939,6 +949,71 @@ class MainWindow(Adw.ApplicationWindow):
         steps to workpiece layers.
         """
         self.doc_editor.step.initialize_default_steps()
+
+    def _sync_view_toggle_actions(self):
+        """
+        Re-triggers each persisted view toggle action so that both the
+        canvas surfaces and the overlay buttons reflect the persisted
+        config values at startup.
+        """
+        am = self.action_manager
+        cv = get_context().config.canvas_view
+
+        am.get_action("show_workpieces").set_state(
+            GLib.Variant.new_boolean(not cv.show_workpieces)
+        )
+        self.on_show_workpieces_state_change(
+            am.get_action("show_workpieces"),
+            GLib.Variant.new_boolean(cv.show_workpieces),
+        )
+
+        am.get_action("toggle_camera_view").set_state(
+            GLib.Variant.new_boolean(not cv.show_camera)
+        )
+        self.on_toggle_camera_view_state_change(
+            am.get_action("toggle_camera_view"),
+            GLib.Variant.new_boolean(cv.show_camera),
+        )
+
+        am.get_action("toggle_travel_view").set_state(
+            GLib.Variant.new_boolean(not cv.show_travel_lines)
+        )
+        self.on_toggle_travel_view_state_change(
+            am.get_action("toggle_travel_view"),
+            GLib.Variant.new_boolean(cv.show_travel_lines),
+        )
+
+        am.get_action("show_nogo_zones").set_state(
+            GLib.Variant.new_boolean(not cv.show_nogo_zones)
+        )
+        self.on_show_nogo_zones_state_change(
+            am.get_action("show_nogo_zones"),
+            GLib.Variant.new_boolean(cv.show_nogo_zones),
+        )
+
+        am.get_action("show_models").set_state(
+            GLib.Variant.new_boolean(not cv.show_models)
+        )
+        self.on_show_models_state_change(
+            am.get_action("show_models"),
+            GLib.Variant.new_boolean(cv.show_models),
+        )
+
+        am.get_action("show_tabs").set_state(
+            GLib.Variant.new_boolean(not cv.show_tabs)
+        )
+        am.on_show_tabs_state_change(
+            am.get_action("show_tabs"),
+            GLib.Variant.new_boolean(cv.show_tabs),
+        )
+
+        am.get_action("view_toggle_perspective").set_state(
+            GLib.Variant.new_boolean(not cv.perspective_mode)
+        )
+        self.on_view_perspective_state_change(
+            am.get_action("view_toggle_perspective"),
+            GLib.Variant.new_boolean(cv.perspective_mode),
+        )
 
     def _connect_toolbar_signals(self):
         """Connects signals from the MainToolbar to their handlers.
@@ -1332,7 +1407,6 @@ class MainWindow(Adw.ApplicationWindow):
     def _create_canvas3d(self, context, viewport: ViewportConfig):
         """
         Creates a Canvas3D instance and adds it to the view stack.
-        Also syncs the travel view state from the action.
         """
         self.canvas3d = Canvas3D(
             context,
@@ -1354,11 +1428,6 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_3d_playback_step_changed
         )
         self.view_stack.add_named(self._canvas3d_overlay, "3d")
-
-        travel_action = self.action_manager.get_action("toggle_travel_view")
-        travel_state = travel_action.get_state()
-        if travel_state and travel_state.get_boolean():
-            self.canvas3d.set_show_travel_moves(True)
 
     def _on_document_settled(self, sender):
         """
