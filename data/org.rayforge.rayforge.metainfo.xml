@@ -66,6 +66,16 @@
   </screenshots>
 
   <releases>
+    <release version="1.5.1" date="2026-04-09">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>Fixed GRBL serial not connecting (#196)</li>
+          <li>Fixed auto brightness toggle setting not remembered in raster step settings</li>
+          <li>Better line width for rendered ops in 3D canvas</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.5" date="2026-04-09">
       <description>
         <p>3D Simulator:</p>
