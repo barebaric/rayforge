@@ -433,6 +433,8 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
 class PostProcessingSettingsView(TrackedPreferencesPage):
     """A view for the post-processing transformers of a Step."""
 
+    use_expanders = True
+
     def __init__(self, editor: "DocEditor", step: Step):
         super().__init__()
         self.editor = editor
@@ -445,6 +447,10 @@ class PostProcessingSettingsView(TrackedPreferencesPage):
         producer_key = producer_type.lower().replace("producer", "")
         self.key = f"{producer_key}/post-processing"
         self.path_prefix = "/step-settings/"
+
+        self._main_group = Adw.PreferencesGroup()
+        super().add(self._main_group)
+        self._has_expanders = False
 
         all_transformer_dicts = (
             step.per_workpiece_transformers_dicts or []
@@ -478,8 +484,7 @@ class PostProcessingSettingsView(TrackedPreferencesPage):
                         )
                     )
 
-        if self.get_first_child() is None:
-            placeholder_group = Adw.PreferencesGroup()
+        if not self._has_expanders:
             placeholder_label = Gtk.Label(
                 label=_("No post-processing options available for this step."),
                 halign=Gtk.Align.CENTER,
@@ -488,8 +493,47 @@ class PostProcessingSettingsView(TrackedPreferencesPage):
                 wrap=True,
             )
             placeholder_label.add_css_class("dim-label")
-            placeholder_group.add(placeholder_label)
-            self.add(placeholder_group)
+            self._main_group.add(placeholder_label)
+
+    def add(self, group):
+        rows = getattr(group, "_rows", None)
+        if rows is None:
+            super().add(group)
+            return
+
+        title = group.get_title()
+        subtitle = group.get_description()
+
+        expander = Adw.ExpanderRow(title=title or "")
+        if subtitle:
+            expander.set_subtitle(subtitle)
+        expander.set_expanded(False)
+
+        enable_switch_row = None
+        for row in rows:
+            if isinstance(row, Adw.SwitchRow) and enable_switch_row is None:
+                enable_switch_row = row
+                switch = Gtk.Switch()
+                switch.set_active(row.get_active())
+                switch.set_valign(Gtk.Align.CENTER)
+                expander.add_suffix(switch)
+
+                def _on_header_toggled(sw, pspec, orig=row):
+                    if orig.get_active() != sw.get_active():
+                        orig.set_active(sw.get_active())
+
+                switch.connect("notify::active", _on_header_toggled)
+
+                def _on_orig_toggled(r, pspec, sw=switch):
+                    if sw.get_active() != r.get_active():
+                        sw.set_active(r.get_active())
+
+                row.connect("notify::active", _on_orig_toggled)
+            else:
+                expander.add_row(row)
+
+        self._main_group.add(expander)
+        self._has_expanders = True
 
 
 class StepSettingsDialog(PatchedDialogWindow):
