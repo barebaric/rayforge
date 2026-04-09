@@ -24,6 +24,7 @@ class OpsRenderer(BaseRenderer):
         self.powered_colors_vbo: int = 0
         self.powered_index_vbo: int = 0
         self.travel_vbo: int = 0
+        self.travel_index_vbo: int = 0
 
         self.powered_vertex_count: int = 0
         self.travel_vertex_count: int = 0
@@ -33,6 +34,7 @@ class OpsRenderer(BaseRenderer):
         self.powered_colors_vbo = self._create_vbo()
         self.powered_index_vbo = self._create_vbo()
         self.travel_vbo = self._create_vbo()
+        self.travel_index_vbo = self._create_vbo()
 
         self.powered_vao = self._create_vao()
         GL.glBindVertexArray(self.powered_vao)
@@ -51,6 +53,9 @@ class OpsRenderer(BaseRenderer):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.travel_vbo)
         GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
         GL.glEnableVertexAttribArray(0)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.travel_index_vbo)
+        GL.glVertexAttribPointer(3, 1, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
+        GL.glEnableVertexAttribArray(3)
 
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
@@ -77,6 +82,8 @@ class OpsRenderer(BaseRenderer):
         self._load_buffer_data(self.powered_index_vbo, indices)
         self.travel_vertex_count = travel_vertices.size // 3
         self._load_buffer_data(self.travel_vbo, travel_vertices)
+        travel_indices = np.arange(self.travel_vertex_count, dtype=np.float32)
+        self._load_buffer_data(self.travel_index_vbo, travel_indices)
 
     def render(
         self,
@@ -99,9 +106,9 @@ class OpsRenderer(BaseRenderer):
             executed_vertex_count: Powered vertices drawn at full alpha.
                 -1 means all vertices at full alpha (IDLE mode).
             alpha_pending: Alpha multiplier for pending vertices (0..1).
-            executed_travel_vertex_count: Travel vertices to draw
-                progressively during simulation. -1 means use
-                show_travel_moves instead.
+            executed_travel_vertex_count: Travel vertices drawn at full
+                alpha during simulation. -1 means use show_travel_moves
+                instead.
         """
         if executed_vertex_count > self.powered_vertex_count:
             raise ValueError(
@@ -140,20 +147,17 @@ class OpsRenderer(BaseRenderer):
             GL.glDrawArrays(GL.GL_LINES, 0, self.powered_vertex_count)
 
         # Draw travel moves
-        travel_draw = 0
-        if executed_travel_vertex_count >= 0:
-            travel_draw = min(
-                executed_travel_vertex_count, self.travel_vertex_count
-            )
-        elif show_travel_moves:
-            travel_draw = self.travel_vertex_count
-
-        if travel_draw > 0:
+        should_draw_travel = self.travel_vertex_count > 0 and (
+            executed_travel_vertex_count >= 0 or show_travel_moves
+        )
+        if should_draw_travel:
             shader.set_float("uUseVertexColor", 0.0)
-            shader.set_int("uExecutedVertexCount", -1)
+            shader.set_int(
+                "uExecutedVertexCount", executed_travel_vertex_count
+            )
             shader.set_vec4("uColor", colors.get_rgba("travel"))
             GL.glBindVertexArray(self.travel_vao)
-            GL.glDrawArrays(GL.GL_LINES, 0, travel_draw)
+            GL.glDrawArrays(GL.GL_LINES, 0, self.travel_vertex_count)
 
         shader.set_float("uUseVertexColor", 0.0)
         shader.set_int("uExecutedVertexCount", -1)
