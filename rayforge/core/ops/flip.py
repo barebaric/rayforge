@@ -2,6 +2,7 @@ from copy import copy
 from typing import List
 from .commands import (
     ArcToCommand,
+    BezierToCommand,
     MovingCommand,
     MoveToCommand,
     ScanLinePowerCommand,
@@ -40,6 +41,13 @@ def flip_segment(segment: List[MovingCommand]) -> List[MovingCommand]:
             # For a reversed scanline, we only need to reverse the power data.
             # The geometry (start/end) is handled like any other MovingCommand.
             new_cmd.power_values = new_cmd.power_values[::-1]
+        elif isinstance(new_cmd, BezierToCommand):
+            # A reversed cubic bezier P0→C1→C2→P3 becomes P3→C2→C1→P0,
+            # so the control points must be swapped.
+            new_cmd.control1, new_cmd.control2 = (
+                new_cmd.control2,
+                new_cmd.control1,
+            )
         elif isinstance(new_cmd, ArcToCommand):
             # The original arc's start point is the endpoint of the command
             # before it in the original segment.

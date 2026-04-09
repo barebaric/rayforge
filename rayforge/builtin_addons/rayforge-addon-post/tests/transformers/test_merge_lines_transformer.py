@@ -1,5 +1,6 @@
 import math
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
+from rayforge.core.ops.commands import BezierToCommand
 from post_processors.transformers import MergeLinesTransformer
 
 
@@ -250,3 +251,54 @@ def test_triangle_shared_edge():
     line_count = sum(1 for c in ops.commands if isinstance(c, LineToCommand))
 
     assert line_count < original_line_count
+
+
+def test_bezier_passes_through_unchanged():
+    """Test that BezierToCommand passes through without modification."""
+    ops = Ops()
+    ops.set_power(1.0)
+
+    ops.move_to(0, 0, 0)
+    ops.commands.append(
+        BezierToCommand(
+            end=(10.0, 0.0, 0.0),
+            control1=(3.0, 5.0, 0.0),
+            control2=(7.0, 5.0, 0.0),
+        )
+    )
+
+    transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
+    transformer.run(ops)
+
+    bezier_cmds = [c for c in ops.commands if isinstance(c, BezierToCommand)]
+    assert len(bezier_cmds) == 1
+    assert bezier_cmds[0].end == (10.0, 0.0, 0.0)
+    assert bezier_cmds[0].control1 == (3.0, 5.0, 0.0)
+    assert bezier_cmds[0].control2 == (7.0, 5.0, 0.0)
+
+
+def test_mixed_lines_and_bezier():
+    """Test that lines are merged while bezier passes through."""
+    ops = Ops()
+    ops.set_power(1.0)
+
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    ops.commands.append(
+        BezierToCommand(
+            end=(20.0, 0.0, 0.0),
+            control1=(12.0, 5.0, 0.0),
+            control2=(18.0, 5.0, 0.0),
+        )
+    )
+    ops.line_to(30, 0)
+
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+
+    transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
+    transformer.run(ops)
+
+    bezier_cmds = [c for c in ops.commands if isinstance(c, BezierToCommand)]
+    assert len(bezier_cmds) == 1
+    assert bezier_cmds[0].control1 == (12.0, 5.0, 0.0)

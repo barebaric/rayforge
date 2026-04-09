@@ -1,6 +1,9 @@
 from rayforge.machine.models.dialect import (
     GcodeDialect,
     GRBL_DIALECT,
+    LINUXCNC_DIALECT,
+    MARLIN_DIALECT,
+    SMOOTHIEWARE_DIALECT,
 )
 
 
@@ -18,6 +21,7 @@ def test_instantiation():
         linear_move="G1",
         arc_cw="G2",
         arc_ccw="G3",
+        bezier_cubic="",
         air_assist_on="",
         air_assist_off="",
         home_all="$H",
@@ -48,6 +52,7 @@ def test_serialization():
         linear_move="",
         arc_cw="",
         arc_ccw="",
+        bezier_cubic="",
         air_assist_on="",
         air_assist_off="",
         home_all="",
@@ -174,6 +179,7 @@ def test_inject_wcs_after_preamble_default():
         linear_move="G1",
         arc_cw="G2",
         arc_ccw="G3",
+        bezier_cubic="",
         air_assist_on="",
         air_assist_off="",
         home_all="$H",
@@ -201,6 +207,7 @@ def test_inject_wcs_after_preamble_can_be_disabled():
         linear_move="G1",
         arc_cw="G2",
         arc_ccw="G3",
+        bezier_cubic="",
         air_assist_on="",
         air_assist_off="",
         home_all="$H",
@@ -229,6 +236,7 @@ def test_inject_wcs_after_preamble_serialization():
         linear_move="",
         arc_cw="",
         arc_ccw="",
+        bezier_cubic="",
         air_assist_on="",
         air_assist_off="",
         home_all="",
@@ -266,6 +274,7 @@ def test_forward_compatibility_unknown_fields():
         linear_move="G1",
         arc_cw="G2",
         arc_ccw="G3",
+        bezier_cubic="",
         air_assist_on="",
         air_assist_off="",
         home_all="$H",
@@ -321,6 +330,7 @@ def test_forward_compatibility_roundtrip():
         "linear_move": "",
         "arc_cw": "",
         "arc_ccw": "",
+        "bezier_cubic": "",
         "air_assist_on": "",
         "air_assist_off": "",
         "home_all": "",
@@ -346,3 +356,54 @@ def test_forward_compatibility_roundtrip():
     # All original fields should be preserved
     for key, value in original_data.items():
         assert result[key] == value
+
+
+def test_bezier_cubic_empty_on_dialects_without_g5():
+    """Dialects without G5 have empty bezier_cubic."""
+    assert GRBL_DIALECT.bezier_cubic == ""
+    assert SMOOTHIEWARE_DIALECT.bezier_cubic == ""
+
+
+def test_bezier_cubic_set_on_marlin():
+    """Marlin dialect should have a G5 bezier_cubic template."""
+    assert MARLIN_DIALECT.bezier_cubic.startswith("G5")
+
+
+def test_bezier_cubic_set_on_linuxcnc():
+    """LinuxCNC dialect should have a G5 bezier_cubic template."""
+    assert LINUXCNC_DIALECT.bezier_cubic.startswith("G5")
+
+
+def test_bezier_cubic_template_renders():
+    """Test that the bezier template can be formatted with variables."""
+    result = MARLIN_DIALECT.bezier_cubic.format(
+        x=10.0,
+        y=20.0,
+        i=1.0,
+        j=2.0,
+        p=3.0,
+        q=4.0,
+        f_command=" F1000",
+    )
+    assert "X10" in result
+    assert "Y20" in result
+    assert "I1" in result
+    assert "J2" in result
+    assert "P3" in result
+    assert "Q4" in result
+    assert "F1000" in result
+
+
+def test_bezier_cubic_in_editor_varsets():
+    """Test that bezier_cubic appears in the editor varsets."""
+    varsets = MARLIN_DIALECT.get_editor_varsets()
+    templates = varsets["templates"]
+    assert templates.get("bezier_cubic") is not None
+    assert templates["bezier_cubic"].value == MARLIN_DIALECT.bezier_cubic
+
+
+def test_bezier_cubic_serialization():
+    """Test that bezier_cubic survives serialization round-trip."""
+    data = MARLIN_DIALECT.to_dict()
+    assert "bezier_cubic" in data
+    assert data["bezier_cubic"] == MARLIN_DIALECT.bezier_cubic

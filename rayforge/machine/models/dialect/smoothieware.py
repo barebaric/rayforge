@@ -16,6 +16,7 @@ SMOOTHIEWARE_DIALECT = GcodeDialect(
     linear_move="G1{x_cmd}{y_cmd}{z_cmd}{f_command}",
     arc_cw="G2{x_cmd}{y_cmd}{z_cmd} I{i} J{j}{f_command}",
     arc_ccw="G3{x_cmd}{y_cmd}{z_cmd} I{i} J{j}{f_command}",
+    bezier_cubic="",  # not supported by Smoothieware
     air_assist_on="M8",
     air_assist_off="M9",
     home_all="$H",

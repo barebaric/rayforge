@@ -4,11 +4,13 @@ from typing import List, Optional
 import numpy as np
 from ...core.geo import Point3D
 from ...core.geo.arc import linearize_arc
+from ...core.geo.bezier import linearize_bezier_segment
 from ...core.ops import Ops
 from ...core.ops.commands import (
     MoveToCommand,
     LineToCommand,
     ArcToCommand,
+    BezierToCommand,
     SetPowerCommand,
     ScanLinePowerCommand,
 )
@@ -238,6 +240,26 @@ class VertexEncoder(OpsEncoder):
                         for seg_start, seg_end in segments:
                             zero_power_v.extend(seg_start)
                             zero_power_v.extend(seg_end)
+                    current_pos = cmd.end
+                    is_initial_position = False
+
+                case BezierToCommand():
+                    start_pos = current_pos
+                    polyline = linearize_bezier_segment(
+                        start_pos, cmd.control1, cmd.control2, cmd.end
+                    )
+                    if current_power > 0.0:
+                        power_byte = min(255, int(current_power * 255.0))
+                        color = self._grayscale_lut[power_byte]
+                        for i in range(len(polyline) - 1):
+                            powered_v.extend(polyline[i])
+                            powered_v.extend(polyline[i + 1])
+                            powered_c.extend(color)
+                            powered_c.extend(color)
+                    else:
+                        for i in range(len(polyline) - 1):
+                            zero_power_v.extend(polyline[i])
+                            zero_power_v.extend(polyline[i + 1])
                     current_pos = cmd.end
                     is_initial_position = False
 

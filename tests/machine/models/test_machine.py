@@ -1112,6 +1112,7 @@ class TestMachine:
             set_speed=current_dialect.set_speed,
             arc_cw=current_dialect.arc_cw,
             arc_ccw=current_dialect.arc_ccw,
+            bezier_cubic=current_dialect.bezier_cubic,
             air_assist_on=current_dialect.air_assist_on,
             air_assist_off=current_dialect.air_assist_off,
             home_all=current_dialect.home_all,

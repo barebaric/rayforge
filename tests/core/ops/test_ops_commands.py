@@ -1,6 +1,9 @@
 import pytest
 from rayforge.core.ops.commands import (
     ArcToCommand,
+    BezierToCommand,
+    QuadraticBezierToCommand,
+    CurveToCommand,
     MoveToCommand,
     LineToCommand,
     State,
@@ -454,3 +457,176 @@ def test_scan_line_power_command_split_by_power_empty():
 
     result = cmd.split_by_power(start_point, min_power=50)
     assert result == []
+
+
+# --- BezierToCommand Tests ---
+
+
+def test_bezier_to_command_construction():
+    cmd = BezierToCommand(
+        end=(4, 0, 0),
+        control1=(1, 3, 0),
+        control2=(3, 3, 0),
+    )
+    assert cmd.end == (4, 0, 0)
+    assert cmd.control1 == (1, 3, 0)
+    assert cmd.control2 == (3, 3, 0)
+    assert cmd.is_cutting_command()
+    assert not cmd.is_travel_command()
+
+
+def test_bezier_to_command_is_curve():
+    cmd = BezierToCommand(
+        end=(4, 0, 0),
+        control1=(1, 3, 0),
+        control2=(3, 3, 0),
+    )
+    assert isinstance(cmd, CurveToCommand)
+    assert isinstance(cmd, BezierToCommand)
+
+
+def test_bezier_to_command_linearize():
+    start_point = (0, 0, 0)
+    cmd = BezierToCommand(
+        end=(4, 0, 0),
+        control1=(1, 3, 0),
+        control2=(3, 3, 0),
+    )
+    linearized = cmd.linearize(start_point)
+    assert len(linearized) > 1
+    assert all(isinstance(c, LineToCommand) for c in linearized)
+    final_point = linearized[-1].end
+    assert final_point == pytest.approx((4.0, 0.0, 0.0))
+
+
+def test_bezier_to_command_linearize_start_matches():
+    start_point = (0, 0, 0)
+    cmd = BezierToCommand(
+        end=(10, 0, 0),
+        control1=(3, 6, 0),
+        control2=(7, 6, 0),
+    )
+    linearized = cmd.linearize(start_point)
+    first_seg_start = start_point
+    assert linearized[0].end != first_seg_start
+    assert linearized[-1].end == pytest.approx((10.0, 0.0, 0.0))
+
+
+def test_bezier_to_command_linearize_segment_count():
+    start_point = (0, 0, 0)
+    cmd = BezierToCommand(
+        end=(100, 0, 0),
+        control1=(33, 50, 0),
+        control2=(66, 50, 0),
+    )
+    linearized = cmd.linearize(start_point)
+    assert len(linearized) >= 3
+
+
+def test_bezier_to_command_serialization():
+    cmd = BezierToCommand(
+        end=(4, 0, 0),
+        control1=(1, 3, 0),
+        control2=(3, 3, 0),
+    )
+    data = cmd.to_dict()
+    assert data["type"] == "BezierToCommand"
+    assert data["end"] == (4, 0, 0)
+    assert data["control1"] == (1, 3, 0)
+    assert data["control2"] == (3, 3, 0)
+
+
+def test_bezier_to_command_state_propagated():
+    cmd = BezierToCommand(
+        end=(4, 0, 0),
+        control1=(1, 3, 0),
+        control2=(3, 3, 0),
+    )
+    cmd.state = State(power=0.5)
+    linearized = cmd.linearize((0, 0, 0))
+    for seg in linearized:
+        assert seg.state == cmd.state
+
+
+def test_bezier_to_command_distance():
+    start_point = (0.0, 0.0, 0.0)
+    cmd = BezierToCommand(
+        end=(3.0, 4.0, 0.0),
+        control1=(1.0, 1.0, 0.0),
+        control2=(2.0, 3.0, 0.0),
+    )
+    dist = cmd.distance(start_point)
+    assert dist == pytest.approx(5.0)
+
+
+# --- QuadraticBezierToCommand Tests ---
+
+
+def test_quadratic_bezier_to_command_construction():
+    cmd = QuadraticBezierToCommand(
+        end=(4, 0, 0),
+        control=(2, 4, 0),
+    )
+    assert cmd.end == (4, 0, 0)
+    assert cmd.control == (2, 4, 0)
+    assert cmd.is_cutting_command()
+    assert isinstance(cmd, CurveToCommand)
+
+
+def test_quadratic_bezier_to_command_linearize():
+    start_point = (0, 0, 0)
+    cmd = QuadraticBezierToCommand(
+        end=(4, 0, 0),
+        control=(2, 4, 0),
+    )
+    linearized = cmd.linearize(start_point)
+    assert len(linearized) > 1
+    assert all(isinstance(c, LineToCommand) for c in linearized)
+    final_point = linearized[-1].end
+    assert final_point == pytest.approx((4.0, 0.0, 0.0))
+
+
+def test_quadratic_bezier_to_command_midpoint():
+    start_point = (0, 0, 0)
+    cmd = QuadraticBezierToCommand(
+        end=(4, 0, 0),
+        control=(2, 4, 0),
+    )
+    linearized = cmd.linearize(start_point)
+    t_mid = len(linearized) // 2
+    mid_point = linearized[t_mid].end
+    assert mid_point is not None and mid_point[1] > 0
+
+
+def test_quadratic_bezier_to_command_serialization():
+    cmd = QuadraticBezierToCommand(
+        end=(4, 0, 0),
+        control=(2, 4, 0),
+    )
+    data = cmd.to_dict()
+    assert data["type"] == "QuadraticBezierToCommand"
+    assert data["end"] == (4, 0, 0)
+    assert data["control"] == (2, 4, 0)
+
+
+def test_quadratic_bezier_to_command_state_propagated():
+    cmd = QuadraticBezierToCommand(
+        end=(4, 0, 0),
+        control=(2, 4, 0),
+    )
+    cmd.state = State(power=0.8)
+    linearized = cmd.linearize((0, 0, 0))
+    for seg in linearized:
+        assert seg.state == cmd.state
+
+
+def test_curve_to_command_isinstance_check():
+    bezier = BezierToCommand((4, 0, 0), (1, 3, 0), (3, 3, 0))
+    quadratic = QuadraticBezierToCommand((4, 0, 0), (2, 4, 0))
+    line = LineToCommand((4, 0, 0))
+    arc = ArcToCommand((4, 0, 0), (2, 0), True)
+
+    assert isinstance(bezier, CurveToCommand)
+    assert isinstance(quadratic, CurveToCommand)
+    assert not isinstance(line, CurveToCommand)
+    assert not isinstance(arc, CurveToCommand)

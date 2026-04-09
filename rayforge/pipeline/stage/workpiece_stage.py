@@ -112,6 +112,7 @@ class WorkPiecePipelineStage(PipelineStage):
 
         settings = step.get_settings()
         settings["machine_supports_arcs"] = self._machine.supports_arcs
+        settings["machine_supports_curves"] = self._machine.supports_curves
         settings["arc_tolerance"] = self._machine.arc_tolerance
 
         try:

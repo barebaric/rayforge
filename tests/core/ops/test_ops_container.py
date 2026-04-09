@@ -12,6 +12,8 @@ from rayforge.core.ops import (
     MoveToCommand,
     LineToCommand,
     ArcToCommand,
+    BezierToCommand,
+    CurveToCommand,
     SetPowerCommand,
     SetCutSpeedCommand,
     SetTravelSpeedCommand,
@@ -188,31 +190,14 @@ def test_bezier_to():
         c1=(1.0, 1.0, 10.0),
         c2=(2.0, 1.0, 20.0),
         end=(3.0, 0.0, 20.0),
-        num_steps=2,
     )
 
-    assert len(ops.commands) == 3  # move_to + 2 line_to
+    assert len(ops.commands) == 2  # move_to + bezier_to
     assert isinstance(ops.commands[0], MoveToCommand)
-    assert isinstance(ops.commands[1], LineToCommand)
-    assert isinstance(ops.commands[2], LineToCommand)
-
-    # Check interpolated points
-    # t=0.5
-    # B(0.5) = 0.125*p0 + 0.375*c1 + 0.375*c2 + 0.125*p1
-    p0 = (0.0, 0.0, 10.0)
-    c1 = (1.0, 1.0, 10.0)
-    c2 = (2.0, 1.0, 20.0)
-    p1 = (3.0, 0.0, 20.0)
-    expected_x = 0.125 * p0[0] + 0.375 * c1[0] + 0.375 * c2[0] + 0.125 * p1[0]
-    expected_y = 0.125 * p0[1] + 0.375 * c1[1] + 0.375 * c2[1] + 0.125 * p1[1]
-    expected_z = 0.125 * p0[2] + 0.375 * c1[2] + 0.375 * c2[2] + 0.125 * p1[2]
-    # This is the endpoint of the first segment (t=0.5).
-    assert ops.commands[1].end == pytest.approx(
-        (expected_x, expected_y, expected_z)
-    )
-
-    # Check final point (t=1.0)
-    assert ops.commands[2].end == pytest.approx(p1)
+    assert isinstance(ops.commands[1], BezierToCommand)
+    assert ops.commands[1].end == (3.0, 0.0, 20.0)
+    assert ops.commands[1].control1 == (1.0, 1.0, 10.0)
+    assert ops.commands[1].control2 == (2.0, 1.0, 20.0)
 
 
 def test_bezier_to_no_start_point():
@@ -465,6 +450,97 @@ def test_transform_non_uniform():
 
     # Final point should be original arc end (0,10) scaled -> (0, 30)
     assert ops.commands[-1].end == pytest.approx((0, 30, 0))
+
+
+def test_transform_uniform_bezier():
+    """Uniform transform preserves BezierToCommand and transforms controls."""
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
+
+    angle_rad = math.radians(90)
+    cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
+    matrix = np.array(
+        [
+            [cos_a, -sin_a, 0, 5],
+            [sin_a, cos_a, 0, 10],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ]
+    )
+    ops.transform(matrix)
+
+    assert isinstance(ops.commands[1], BezierToCommand)
+    cmd = ops.commands[1]
+    assert cmd.end == pytest.approx((-5, 10, 0))
+    assert cmd.control1 == pytest.approx((5, 20, 0))
+    assert cmd.control2 == pytest.approx((-5, 20, 0))
+
+
+def test_transform_non_uniform_bezier():
+    """Non-uniform transform preserves BezierToCommand (affine invariance)."""
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
+
+    matrix = np.diag([2.0, 3.0, 1.0, 1.0])
+    ops.transform(matrix)
+
+    assert isinstance(ops.commands[1], BezierToCommand)
+    cmd = ops.commands[1]
+    assert cmd.end == pytest.approx((0, 30, 0))
+    assert cmd.control1 == pytest.approx((20, 0, 0))
+    assert cmd.control2 == pytest.approx((20, 30, 0))
+
+
+def test_transform_bezier_linearize_matches():
+    """Transform then linearize should match linearize then transform.
+
+    Bezier curves are affine-invariant: transforming control points
+    then evaluating produces the same curve as evaluating then
+    transforming.  We verify by comparing bounding boxes rather than
+    point-by-point (different subdivision counts are expected when
+    the linearization tolerance is applied in different scales).
+    """
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
+
+    ops_linearized_first = Ops()
+    ops_linearized_first.move_to(0, 0)
+    ops_linearized_first.bezier_to(
+        c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0)
+    )
+    ops_linearized_first.linearize_curves()
+
+    matrix = np.array(
+        [
+            [2, 0, 0, 5],
+            [0, 2, 0, 3],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ]
+    )
+
+    ops.transform(matrix)
+    ops.linearize_curves()
+
+    ops_linearized_first.transform(matrix)
+
+    def _endpoints(o):
+        return np.array(
+            [c.end for c in o.commands if isinstance(c, MovingCommand)]
+        )
+
+    pts_a = _endpoints(ops)
+    pts_b = _endpoints(ops_linearized_first)
+
+    assert pts_a[0] == pytest.approx(pts_b[0], abs=1e-9)
+    assert pts_a[-1] == pytest.approx(pts_b[-1], abs=1e-9)
+
+    for i in range(3):
+        assert pts_a[:, i].min() == pytest.approx(pts_b[:, i].min(), abs=0.1)
+        assert pts_a[:, i].max() == pytest.approx(pts_b[:, i].max(), abs=0.1)
 
 
 def test_linearize_all():
@@ -906,7 +982,6 @@ def test_from_geometry():
 
 
 def test_from_geometry_with_bezier():
-    # Use the actual Geometry class instead of mocks to ensure correct types
     geo_obj = Geometry()
     geo_obj.move_to(10, 10, 0)
     geo_obj.line_to(20, 20, 0)
@@ -914,18 +989,11 @@ def test_from_geometry_with_bezier():
 
     ops = Ops.from_geometry(geo_obj)
 
-    # arc_to_as_bezier() converts arcs to beziers.
-    # Ops.from_geometry linearizes beziers to lines.
-    assert len(ops.commands) > 3
     assert isinstance(ops.commands[0], MoveToCommand)
-    assert ops.commands[0].end == (10, 10, 0)
+    assert ops.commands[0].end == pytest.approx((10, 10, 0))
     assert isinstance(ops.commands[1], LineToCommand)
-    assert ops.commands[1].end == (20, 20, 0)
-
-    # Check that remaining commands are LineTo (linearized arc)
-    for cmd in ops.commands[2:]:
-        assert isinstance(cmd, LineToCommand)
-
+    assert ops.commands[1].end == pytest.approx((20, 20, 0))
+    assert all(isinstance(c, BezierToCommand) for c in ops.commands[2:])
     assert ops.commands[-1].end == pytest.approx((30, 10, 0))
     assert ops.last_move_to == geo_obj.last_move_to
 
@@ -1384,6 +1452,11 @@ def test_numpy_serialization_round_trip_all_commands():
     ops.move_to(1, 2, 3)  # Geometric
     ops.line_to(4, 5, 6)  # Geometric
     ops.arc_to(x=7, y=8, z=9, i=1, j=-1, clockwise=False)  # Geometric
+    ops.bezier_to(
+        c1=(8.0, 9.0, 10.0),
+        c2=(9.0, 10.0, 11.0),
+        end=(10.0, 11.0, 12.0),
+    )
     ops.scan_to(10, 11, 12, bytearray([10, 20, 30]))  # Geometric
     ops.disable_air_assist()  # State
     ops.layer_end("layer-1")  # Marker with data
@@ -1459,6 +1532,130 @@ def test_numpy_serialization_round_trip_empty():
     arrays = ops.to_numpy_arrays()
     reconstructed_ops = Ops.from_numpy_arrays(arrays)
     assert reconstructed_ops.is_empty()
+
+
+def test_numpy_serialization_bezier_arrays():
+    """Verifies bezier_data and bezier_map are populated correctly."""
+    ops = Ops()
+    ops.move_to(0, 0, 0)  # index 0
+    ops.bezier_to(c1=(1, 2, 3), c2=(4, 5, 6), end=(7, 8, 9))  # index 1
+    ops.line_to(10, 10, 10)  # index 2
+    ops.bezier_to(
+        c1=(11, 12, 13), c2=(14, 15, 16), end=(17, 18, 19)
+    )  # index 3
+
+    arrays = ops.to_numpy_arrays()
+
+    assert "bezier_data" in arrays
+    assert "bezier_map" in arrays
+    assert arrays["bezier_data"].shape == (2, 6)
+    assert arrays["bezier_map"][0] == -1
+    assert arrays["bezier_map"][1] == 0
+    assert arrays["bezier_map"][2] == -1
+    assert arrays["bezier_map"][3] == 1
+
+    np.testing.assert_allclose(arrays["bezier_data"][0], [1, 2, 3, 4, 5, 6])
+    np.testing.assert_allclose(
+        arrays["bezier_data"][1], [11, 12, 13, 14, 15, 16]
+    )
+
+
+def test_numpy_serialization_bezier_round_trip():
+    """Tests that BezierToCommand survives numpy serialization."""
+    ops = Ops()
+    ops.move_to(0, 0, 0)
+    ops.bezier_to(c1=(1.5, 2.5, 3.5), c2=(4.5, 5.5, 6.5), end=(7.5, 8.5, 9.5))
+    ops.set_power(0.5)
+    ops.add(
+        BezierToCommand(
+            end=(70, 80, 90),
+            control1=(10, 20, 30),
+            control2=(40, 50, 60),
+        )
+    )
+
+    arrays = ops.to_numpy_arrays()
+    reconstructed = Ops.from_numpy_arrays(arrays)
+
+    assert len(reconstructed.commands) == 4
+    assert isinstance(reconstructed.commands[0], MoveToCommand)
+    assert isinstance(reconstructed.commands[1], BezierToCommand)
+    assert isinstance(reconstructed.commands[2], SetPowerCommand)
+    assert isinstance(reconstructed.commands[3], BezierToCommand)
+
+    cmd1 = reconstructed.commands[1]
+    assert cmd1.end == pytest.approx((7.5, 8.5, 9.5))
+    assert cmd1.control1 == pytest.approx((1.5, 2.5, 3.5))
+    assert cmd1.control2 == pytest.approx((4.5, 5.5, 6.5))
+
+    cmd3 = reconstructed.commands[3]
+    assert cmd3.end == pytest.approx((70, 80, 90))
+    assert cmd3.control1 == pytest.approx((10, 20, 30))
+    assert cmd3.control2 == pytest.approx((40, 50, 60))
+
+
+def test_linearize_curves():
+    """Tests that linearize_curves replaces beziers with lines."""
+    ops = Ops()
+    ops.move_to(0, 0, 0)
+    ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
+    ops.set_power(0.8)
+    ops.line_to(5, 5, 0)
+
+    assert isinstance(ops.commands[1], BezierToCommand)
+    ops.linearize_curves()
+
+    assert not any(isinstance(c, CurveToCommand) for c in ops.commands)
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert all(
+        isinstance(c, LineToCommand)
+        for c in ops.commands[1:-1]
+        if isinstance(c, MovingCommand)
+    )
+    assert isinstance(ops.commands[-2], SetPowerCommand)
+    assert isinstance(ops.commands[-1], LineToCommand)
+    assert ops.commands[-1].end == (5, 5, 0)
+
+
+def test_linearize_curves_preserves_arcs():
+    """Tests that linearize_curves does not touch arcs."""
+    ops = Ops()
+    ops.move_to(10, 0)
+    ops.arc_to(0, 10, i=-10, j=0, clockwise=False)
+    ops.bezier_to(c1=(0, 10, 0), c2=(-10, 10, 0), end=(-10, 0, 0))
+
+    ops.linearize_curves()
+
+    assert isinstance(ops.commands[1], ArcToCommand)
+    assert isinstance(ops.commands[-1], LineToCommand)
+    assert not any(isinstance(c, CurveToCommand) for c in ops.commands)
+
+
+def test_linearize_arcs():
+    """Tests that linearize_arcs replaces arcs with lines."""
+    ops = Ops()
+    ops.move_to(10, 0)
+    ops.line_to(20, 0)
+    ops.arc_to(10, 10, i=-10, j=0, clockwise=False)
+    ops.set_power(1.0)
+    ops.move_to(10, 10)
+    ops.bezier_to(c1=(10, 10, 0), c2=(20, 10, 0), end=(20, 0, 0))
+
+
+def test_linearize_arcs_preserves_beziers():
+    """Tests that linearize_arcs does not touch bezier curves."""
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
+    ops.set_power(0.8)
+
+    ops.linearize_arcs()
+
+    bezier_cmds = [c for c in ops.commands if isinstance(c, BezierToCommand)]
+    assert len(bezier_cmds) == 1
+    assert bezier_cmds[0].control1 == (10, 0, 0)
+    assert bezier_cmds[0].control2 == (10, 10, 0)
+    assert bezier_cmds[0].end == (0, 10, 0)
 
 
 class TestIterSections:

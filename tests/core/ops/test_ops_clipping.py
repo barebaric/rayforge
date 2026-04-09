@@ -3,7 +3,12 @@ from typing import List, Tuple
 import pytest
 
 from rayforge.core.ops import Ops
-from rayforge.core.ops.commands import ArcToCommand, State, SetPowerCommand
+from rayforge.core.ops.commands import (
+    ArcToCommand,
+    BezierToCommand,
+    State,
+    SetPowerCommand,
+)
 from rayforge.core.ops.clipping import clip_ops_to_regions
 
 
@@ -168,3 +173,61 @@ class TestClipOpsToRegionsLeadingCommands:
             c for c in ops.commands if isinstance(c, SetPowerCommand)
         ]
         assert len(state_cmds) == 1
+
+
+class TestClipOpsToRegionsBezier:
+    def test_bezier_fully_inside_preserved(self):
+        ops = Ops()
+        ops.move_to(3, 5)
+        ops.bezier_to((4, 7, 0), (6, 7, 0), (7, 5, 0))
+        regions = [make_square_region(0, 0, 10, 10)]
+        clip_ops_to_regions(ops, regions)
+        beziers = [c for c in ops.commands if isinstance(c, BezierToCommand)]
+        assert len(beziers) == 1
+        assert beziers[0].end == pytest.approx((7, 5, 0), abs=1e-6)
+
+    def test_bezier_fully_outside_removed(self):
+        ops = Ops()
+        ops.move_to(50, 50)
+        ops.bezier_to((51, 53, 0), (53, 53, 0), (54, 50, 0))
+        regions = [make_square_region(0, 0, 10, 10)]
+        clip_ops_to_regions(ops, regions)
+        assert len(list(ops.segments())) == 0
+
+    def test_bezier_partially_outside_refitted(self):
+        ops = Ops()
+        ops.move_to(1, 5)
+        ops.bezier_to((3, 8, 0), (7, 8, 0), (9, 5, 0))
+        regions = [make_square_region(3, 0, 4, 10)]
+        clip_ops_to_regions(ops, regions)
+        segs = list(ops.segments())
+        assert len(segs) >= 1
+        for seg in segs:
+            for cmd in seg:
+                if hasattr(cmd, "end") and cmd.end is not None:
+                    assert 3.0 <= cmd.end[0] <= 7.0
+
+    def test_bezier_state_preserved_after_refit(self):
+        ops = Ops()
+        ops.move_to(1, 5)
+        bezier = BezierToCommand((9, 5, 0), (3, 8, 0), (7, 8, 0))
+        bezier.state = State(power=0.8)
+        ops.add(bezier)
+        regions = [make_square_region(3, 0, 4, 10)]
+        clip_ops_to_regions(ops, regions)
+        for cmd in ops.commands:
+            if isinstance(cmd, (ArcToCommand, BezierToCommand)):
+                assert cmd.state is not None
+                assert abs(cmd.state.power - 0.8) < 1e-6
+
+    def test_mixed_lines_and_beziers_inside(self):
+        ops = Ops()
+        ops.move_to(2, 5)
+        ops.line_to(3, 5)
+        ops.bezier_to((4, 7, 0), (6, 7, 0), (7, 5, 0))
+        ops.line_to(8, 5)
+        regions = [make_square_region(0, 0, 10, 10)]
+        clip_ops_to_regions(ops, regions)
+        beziers = [c for c in ops.commands if isinstance(c, BezierToCommand)]
+        assert len(beziers) == 1
+        assert len(list(ops.segments())) == 1

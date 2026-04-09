@@ -16,6 +16,7 @@ from typing import (
 
 from gettext import gettext as _
 
+from rayforge.core.geo.bezier import linearize_bezier
 from rayforge.core.geo.constants import (
     CMD_TYPE_ARC,
     CMD_TYPE_BEZIER,
@@ -23,9 +24,12 @@ from rayforge.core.geo.constants import (
 )
 from rayforge.core.geo.types import Point3D
 from rayforge.core.ops import (
+    BezierToCommand,
     Command,
+    CurveToCommand,
     LineToCommand,
     MoveToCommand,
+    MovingCommand,
     Ops,
     OpsSection,
     SectionType,
@@ -383,12 +387,21 @@ class TabOpsTransformer(OpsTransformer):
                 key = _SubpathKey(sec_idx, sp_idx)
                 clips = assignments.get(key, [])
                 if clips:
-                    sp_ops = Ops()
-                    sp_ops.replace_all(deepcopy(sp_cmds))
-                    sp_ops.preload_state()
-                    for clip in clips:
-                        sp_ops.clip_at(clip.x, clip.y, clip.width)
-                    new_commands.extend(sp_ops.commands)
+                    has_curves = any(
+                        isinstance(c, CurveToCommand) for c in sp_cmds
+                    )
+                    if has_curves:
+                        processed = self._clip_subpath_with_gaps(
+                            sp_cmds, clips
+                        )
+                        new_commands.extend(processed)
+                    else:
+                        sp_ops = Ops()
+                        sp_ops.replace_all(deepcopy(sp_cmds))
+                        sp_ops.preload_state()
+                        for clip in clips:
+                            sp_ops.clip_at(clip.x, clip.y, clip.width)
+                        new_commands.extend(sp_ops.commands)
                 else:
                     new_commands.extend(sp_cmds)
 
@@ -439,6 +452,12 @@ class TabOpsTransformer(OpsTransformer):
         tab_power: float,
         original_power: float,
     ) -> List[Command]:
+        has_curves = any(isinstance(c, CurveToCommand) for c in commands)
+        if has_curves:
+            return self._insert_power_commands_curve_aware(
+                commands, clip_data, tab_power, original_power
+            )
+
         temp_ops = Ops()
         temp_ops.replace_all(deepcopy(commands))
         temp_ops.preload_state()
@@ -676,6 +695,488 @@ class TabOpsTransformer(OpsTransformer):
         if last_event_type == _EventType.EXIT_TAB:
             return original_power
         return tab_power
+
+    # ------------------------------------------------------------------
+    # Bezier-aware helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _bezier_arc_length_2d(
+        p0: Point3D,
+        c1: Point3D,
+        c2: Point3D,
+        p1: Point3D,
+    ) -> float:
+        segments = linearize_bezier(p0, c1, c2, p1, 200)
+        return sum(math.dist(s[:2], e[:2]) for s, e in segments)
+
+    @staticmethod
+    def _bezier_distance_to_t(
+        p0: Point3D,
+        c1: Point3D,
+        c2: Point3D,
+        p1: Point3D,
+        target_dist: float,
+    ) -> float:
+        num_samples = 200
+        segments = linearize_bezier(p0, c1, c2, p1, num_samples)
+        accum = 0.0
+        for i, (seg_start, seg_end) in enumerate(segments):
+            seg_len = math.dist(seg_start[:2], seg_end[:2])
+            if accum + seg_len >= target_dist - 1e-9:
+                if seg_len < 1e-9:
+                    return min(1.0, i / num_samples)
+                local_t = max(0.0, min(1.0, (target_dist - accum) / seg_len))
+                return min(1.0, (i + local_t) / num_samples)
+            accum += seg_len
+        return 1.0
+
+    @staticmethod
+    def _extract_bezier_subsegment_3d(
+        p0: Point3D,
+        c1: Point3D,
+        c2: Point3D,
+        p1: Point3D,
+        t_start: float,
+        t_end: float,
+    ) -> Tuple[Point3D, Point3D, Point3D, Point3D]:
+        def _lerp_3d(a: Point3D, b: Point3D, t: float) -> Point3D:
+            return (
+                a[0] + t * (b[0] - a[0]),
+                a[1] + t * (b[1] - a[1]),
+                a[2] + t * (b[2] - a[2]),
+            )
+
+        def _subdivide_3d(
+            a: Point3D,
+            b: Point3D,
+            c: Point3D,
+            d: Point3D,
+            t: float,
+        ):
+            m01 = _lerp_3d(a, b, t)
+            m12 = _lerp_3d(b, c, t)
+            m23 = _lerp_3d(c, d, t)
+            m0112 = _lerp_3d(m01, m12, t)
+            m1223 = _lerp_3d(m12, m23, t)
+            sp = _lerp_3d(m0112, m1223, t)
+            return (a, m01, m0112, sp), (sp, m1223, m23, d)
+
+        if t_start <= 1e-9 and t_end >= 1.0 - 1e-9:
+            return (p0, c1, c2, p1)
+        if t_end >= 1.0 - 1e-9:
+            _, right = _subdivide_3d(p0, c1, c2, p1, t_start)
+            return right
+        if t_start <= 1e-9:
+            left, _ = _subdivide_3d(p0, c1, c2, p1, t_end)
+            return left
+        _, right = _subdivide_3d(p0, c1, c2, p1, t_start)
+        s = (t_end - t_start) / (1.0 - t_start)
+        sub_left, _ = _subdivide_3d(*right, s)
+        return sub_left
+
+    @staticmethod
+    def _compute_kept_ranges(
+        seg_start: float,
+        seg_end: float,
+        gap_regions: List[_TabRegion],
+    ) -> Optional[List[Tuple[float, float]]]:
+        overlapping = [
+            (max(g_start, seg_start), min(g_end, seg_end))
+            for g_start, g_end in gap_regions
+            if g_start < seg_end and g_end > seg_start
+        ]
+        if not overlapping:
+            return None
+        kept = [(seg_start, seg_end)]
+        for g_start, g_end in overlapping:
+            new_kept = []
+            for k_start, k_end in kept:
+                if k_start < g_start:
+                    new_kept.append((k_start, min(k_end, g_start)))
+                if k_end > g_end:
+                    new_kept.append((max(k_start, g_end), k_end))
+            kept = new_kept
+        return kept
+
+    @staticmethod
+    def _get_last_moving_end(
+        cmds: List[Command],
+    ) -> Optional[Point3D]:
+        for c in reversed(cmds):
+            if isinstance(c, MovingCommand) and c.end is not None:
+                return c.end
+        return None
+
+    def _compute_hit_distance_original(
+        self,
+        commands: List[Command],
+        target_geo_idx: int,
+        target_t: float,
+    ) -> Optional[float]:
+        accum = 0.0
+        last_pos: Optional[Point3D] = None
+        geo_idx = 0
+
+        for cmd in commands:
+            if not isinstance(cmd, MovingCommand) or cmd.end is None:
+                continue
+
+            if isinstance(cmd, MoveToCommand):
+                last_pos = cmd.end
+                if geo_idx == target_geo_idx:
+                    return accum
+                geo_idx += 1
+                continue
+
+            if last_pos is None:
+                last_pos = cmd.end
+                geo_idx += 1
+                continue
+
+            if isinstance(cmd, BezierToCommand):
+                seg_len = self._bezier_arc_length_2d(
+                    last_pos, cmd.control1, cmd.control2, cmd.end
+                )
+            else:
+                seg_len = math.dist(last_pos[:2], cmd.end[:2])
+
+            if geo_idx == target_geo_idx:
+                return accum + target_t * seg_len
+
+            accum += seg_len
+            last_pos = cmd.end
+            geo_idx += 1
+
+        return None
+
+    def _compute_gap_regions_from_original(
+        self,
+        commands: List[Command],
+        clip_data: List[_ClipPoint],
+    ) -> List[_TabRegion]:
+        temp_ops = Ops()
+        temp_ops.replace_all(deepcopy(commands))
+        temp_ops.preload_state()
+        geo = temp_ops.to_geometry()
+
+        if geo.data is None or len(geo.data) == 0:
+            return []
+
+        gap_regions: List[_TabRegion] = []
+        for clip in clip_data:
+            closest = geo.find_closest_point(clip.x, clip.y)
+            if not closest:
+                continue
+            _, _, pt = closest
+            dist_sq = (clip.x - pt[0]) ** 2 + (clip.y - pt[1]) ** 2
+            if dist_sq > (clip.width * 2) ** 2:
+                continue
+
+            seg_idx, t, _ = closest
+            hit_dist = self._compute_hit_distance_original(
+                commands, seg_idx, t
+            )
+            if hit_dist is None:
+                continue
+
+            gap_regions.append(
+                _TabRegion(
+                    max(0.0, hit_dist - clip.width / 2.0),
+                    hit_dist + clip.width / 2.0,
+                )
+            )
+
+        return gap_regions
+
+    def _clip_subpath_with_gaps(
+        self,
+        commands: List[Command],
+        clip_data: List[_ClipPoint],
+    ) -> List[Command]:
+        gap_regions = self._compute_gap_regions_from_original(
+            commands, clip_data
+        )
+        if not gap_regions:
+            return commands
+
+        new_cmds: List[Command] = []
+        accum_dist = 0.0
+        last_pos: Optional[Point3D] = None
+
+        for cmd in commands:
+            if isinstance(cmd, MoveToCommand):
+                new_cmds.append(deepcopy(cmd))
+                if cmd.end:
+                    last_pos = cmd.end
+                accum_dist = 0.0
+                continue
+
+            if not isinstance(cmd, MovingCommand):
+                if not any(
+                    g_start <= accum_dist <= g_end
+                    for g_start, g_end in gap_regions
+                ):
+                    new_cmds.append(deepcopy(cmd))
+                continue
+
+            if cmd.end is None or last_pos is None:
+                new_cmds.append(deepcopy(cmd))
+                if cmd.end:
+                    last_pos = cmd.end
+                continue
+
+            if isinstance(cmd, BezierToCommand):
+                seg_len = self._bezier_arc_length_2d(
+                    last_pos, cmd.control1, cmd.control2, cmd.end
+                )
+            else:
+                seg_len = math.dist(last_pos[:2], cmd.end[:2])
+
+            seg_start = accum_dist
+            seg_end = accum_dist + seg_len
+
+            if seg_len < 1e-9:
+                last_pos = cmd.end
+                accum_dist += seg_len
+                continue
+
+            kept = self._compute_kept_ranges(seg_start, seg_end, gap_regions)
+
+            if kept is None:
+                new_cmds.append(deepcopy(cmd))
+            else:
+                for k_start, k_end in kept:
+                    d_start = k_start - seg_start
+                    d_end = k_end - seg_start
+
+                    if isinstance(cmd, BezierToCommand):
+                        t_start = self._bezier_distance_to_t(
+                            last_pos,
+                            cmd.control1,
+                            cmd.control2,
+                            cmd.end,
+                            d_start,
+                        )
+                        t_end = self._bezier_distance_to_t(
+                            last_pos,
+                            cmd.control1,
+                            cmd.control2,
+                            cmd.end,
+                            d_end,
+                        )
+                        sub = self._extract_bezier_subsegment_3d(
+                            last_pos,
+                            cmd.control1,
+                            cmd.control2,
+                            cmd.end,
+                            t_start,
+                            t_end,
+                        )
+
+                        last_end = self._get_last_moving_end(new_cmds)
+                        if (
+                            last_end is not None
+                            and math.dist(last_end[:2], sub[0][:2]) > 1e-6
+                        ):
+                            new_cmds.append(MoveToCommand(sub[0]))
+
+                        new_cmd = BezierToCommand(
+                            end=sub[3],
+                            control1=sub[1],
+                            control2=sub[2],
+                        )
+                        new_cmd.state = (
+                            deepcopy(cmd.state) if cmd.state else None
+                        )
+                        new_cmds.append(new_cmd)
+                    else:
+                        t_s = d_start / seg_len
+                        t_e = d_end / seg_len
+                        start_pt = self._interpolate_point(
+                            last_pos, cmd.end, t_s
+                        )
+                        end_pt = self._interpolate_point(
+                            last_pos, cmd.end, t_e
+                        )
+
+                        last_end = self._get_last_moving_end(new_cmds)
+                        if (
+                            last_end is not None
+                            and math.dist(last_end[:2], start_pt[:2]) > 1e-6
+                        ):
+                            new_cmds.append(MoveToCommand(start_pt))
+
+                        new_line = LineToCommand(end_pt)
+                        new_line.state = (
+                            deepcopy(cmd.state) if cmd.state else None
+                        )
+                        new_cmds.append(new_line)
+
+            accum_dist += seg_len
+            last_pos = cmd.end
+
+        orig_endpoint = None
+        for c in reversed(commands):
+            if isinstance(c, MovingCommand) and c.end:
+                orig_endpoint = c.end
+                break
+
+        if orig_endpoint:
+            last_end = self._get_last_moving_end(new_cmds)
+            if last_end is None or math.dist(last_end, orig_endpoint) > 1e-6:
+                new_cmds.append(MoveToCommand(orig_endpoint))
+
+        return new_cmds
+
+    def _insert_power_commands_curve_aware(
+        self,
+        commands: List[Command],
+        clip_data: List[_ClipPoint],
+        tab_power: float,
+        original_power: float,
+    ) -> List[Command]:
+        tab_regions = self._compute_gap_regions_from_original(
+            commands, clip_data
+        )
+        if not tab_regions:
+            return commands
+        tab_regions.sort(key=lambda r: r.start)
+
+        new_cmds: List[Command] = []
+        accum_dist = 0.0
+        last_pos: Optional[Point3D] = None
+        current_power = original_power
+
+        for cmd in commands:
+            if isinstance(cmd, MoveToCommand):
+                new_cmds.append(deepcopy(cmd))
+                if cmd.end:
+                    last_pos = cmd.end
+                accum_dist = 0.0
+                continue
+
+            if isinstance(cmd, SetPowerCommand):
+                new_cmds.append(deepcopy(cmd))
+                continue
+
+            if not isinstance(cmd, MovingCommand):
+                new_cmds.append(deepcopy(cmd))
+                continue
+
+            if cmd.end is None or last_pos is None:
+                new_cmds.append(deepcopy(cmd))
+                if cmd.end:
+                    last_pos = cmd.end
+                continue
+
+            if isinstance(cmd, BezierToCommand):
+                seg_len = self._bezier_arc_length_2d(
+                    last_pos, cmd.control1, cmd.control2, cmd.end
+                )
+            else:
+                seg_len = math.dist(last_pos[:2], cmd.end[:2])
+
+            seg_start = accum_dist
+            seg_end = accum_dist + seg_len
+
+            if seg_len < 1e-9:
+                last_pos = cmd.end
+                accum_dist += seg_len
+                continue
+
+            events = self._collect_events(seg_start, seg_end, tab_regions)
+
+            if not events:
+                new_cmds.append(deepcopy(cmd))
+            elif isinstance(cmd, BezierToCommand):
+                self._split_bezier_with_power(
+                    new_cmds,
+                    cmd,
+                    last_pos,
+                    seg_start,
+                    events,
+                    tab_power,
+                    original_power,
+                    current_power,
+                )
+                current_power = self._get_final_power(
+                    events, tab_power, original_power
+                )
+            else:
+                for event_dist, event_type in events:
+                    if event_dist > seg_start + 1e-9:
+                        t = (event_dist - seg_start) / seg_len
+                        split_pt = self._interpolate_point(
+                            last_pos, cmd.end, t
+                        )
+                        new_line = LineToCommand(split_pt)
+                        new_line.state = (
+                            deepcopy(cmd.state) if cmd.state else None
+                        )
+                        new_cmds.append(new_line)
+
+                    if event_type == _EventType.ENTER_TAB:
+                        if current_power != tab_power:
+                            new_cmds.append(SetPowerCommand(tab_power))
+                            current_power = tab_power
+                    else:
+                        if current_power != original_power:
+                            new_cmds.append(SetPowerCommand(original_power))
+                            current_power = original_power
+
+                new_cmds.append(deepcopy(cmd))
+
+            accum_dist += seg_len
+            last_pos = cmd.end
+
+        return new_cmds
+
+    def _split_bezier_with_power(
+        self,
+        new_cmds: List[Command],
+        cmd: BezierToCommand,
+        last_pos: Point3D,
+        seg_start: float,
+        events: List[Tuple[float, _EventType]],
+        tab_power: float,
+        original_power: float,
+        current_power: float,
+    ) -> None:
+        p0 = last_pos
+        c1, c2, p1 = cmd.control1, cmd.control2, cmd.end
+
+        sub_segments: List[Tuple[float, float, float]] = []
+        last_t = 0.0
+        last_power = current_power
+
+        for event_dist, event_type in events:
+            d = event_dist - seg_start
+            t_event = self._bezier_distance_to_t(p0, c1, c2, p1, d)
+            if t_event > last_t + 1e-9:
+                sub_segments.append((last_t, t_event, last_power))
+            if event_type == _EventType.ENTER_TAB:
+                last_power = tab_power
+            else:
+                last_power = original_power
+            last_t = t_event
+
+        if last_t < 1.0 - 1e-9:
+            sub_segments.append((last_t, 1.0, last_power))
+
+        for t_start, t_end, power in sub_segments:
+            if power != current_power:
+                new_cmds.append(SetPowerCommand(power))
+                current_power = power
+
+            sub = self._extract_bezier_subsegment_3d(
+                p0, c1, c2, p1, t_start, t_end
+            )
+            new_cmd = BezierToCommand(
+                end=sub[3], control1=sub[1], control2=sub[2]
+            )
+            new_cmd.state = deepcopy(cmd.state) if cmd.state else None
+            new_cmds.append(new_cmd)
 
     @classmethod
     def from_dict(cls, data: Dict) -> "TabOpsTransformer":

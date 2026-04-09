@@ -7,9 +7,16 @@ from typing import List, Optional, Tuple
 import numpy as np
 
 from ..geo import clipping as geo_clipping
+from ..geo.arc import is_arc_fully_inside_regions
+from ..geo.bezier import is_bezier_fully_inside_regions
 from ..geo.constants import (
     CMD_TYPE_ARC,
+    CMD_TYPE_BEZIER,
     CMD_TYPE_LINE,
+    COL_C1X,
+    COL_C1Y,
+    COL_C2X,
+    COL_C2Y,
     COL_CW,
     COL_I,
     COL_J,
@@ -19,10 +26,10 @@ from ..geo.constants import (
     COL_Z,
 )
 from ..geo.fitting import fit_points_to_primitives
-from ..geo.arc import is_arc_fully_inside_regions
 from ..geo.types import Point3D, Polygon
 from .commands import (
     ArcToCommand,
+    BezierToCommand,
     LineToCommand,
     MoveToCommand,
     MovingCommand,
@@ -93,6 +100,32 @@ def clip_ops_to_regions(
                 continue
 
             pen_pos = _clip_and_refit_arc(
+                new_ops,
+                cmd,
+                last_point,
+                pen_pos,
+                valid_regions,
+                tolerance,
+            )
+            last_point = cmd.end
+            continue
+
+        if isinstance(cmd, BezierToCommand):
+            start_2d = (last_point[0], last_point[1])
+            end_2d = (cmd.end[0], cmd.end[1])
+            c1_2d = (cmd.control1[0], cmd.control1[1])
+            c2_2d = (cmd.control2[0], cmd.control2[1])
+            if is_bezier_fully_inside_regions(
+                start_2d, c1_2d, c2_2d, end_2d, valid_regions
+            ):
+                if pen_pos is None or math.dist(pen_pos, last_point) > 1e-6:
+                    new_ops.move_to(*last_point)
+                new_ops.add(deepcopy(cmd))
+                pen_pos = cmd.end
+                last_point = cmd.end
+                continue
+
+            pen_pos = _clip_and_refit_bezier(
                 new_ops,
                 cmd,
                 last_point,
@@ -220,9 +253,76 @@ def _clip_and_refit_arc(
                 co = (prim_row[COL_I], prim_row[COL_J])
                 cw = bool(prim_row[COL_CW])
                 new_cmd = ArcToCommand(end, co, cw)
+            elif ct == CMD_TYPE_BEZIER:
+                c1 = (prim_row[COL_C1X], prim_row[COL_C1Y], end[2])
+                c2 = (prim_row[COL_C2X], prim_row[COL_C2Y], end[2])
+                new_cmd = BezierToCommand(end, c1, c2)
             else:
                 continue
             new_cmd.state = arc_state
+            new_ops.add(new_cmd)
+        pen_pos = chain[-1]
+
+    return pen_pos
+
+
+def _clip_and_refit_bezier(
+    new_ops: Ops,
+    cmd: BezierToCommand,
+    last_point: Point3D,
+    pen_pos: Optional[Point3D],
+    valid_regions: List[Polygon],
+    tolerance: float,
+) -> Optional[Point3D]:
+    bezier_state = cmd.state
+    linearized_commands = cmd.linearize(last_point)
+    kept_pairs = []
+    p_seg_start = last_point
+    for l_cmd in linearized_commands:
+        if l_cmd.end is None:
+            continue
+        p_seg_end = l_cmd.end
+        segs = geo_clipping.clip_line_segment_to_regions(
+            p_seg_start,
+            p_seg_end,
+            valid_regions,
+        )
+        kept_pairs.extend(segs)
+        p_seg_start = p_seg_end
+
+    chains = []
+    for p1, p2 in kept_pairs:
+        if chains and math.dist(chains[-1][-1], p1) <= 1e-6:
+            chains[-1].append(p2)
+        else:
+            chains.append([p1, p2])
+
+    for chain in chains:
+        primitives = fit_points_to_primitives(chain, tolerance)
+        if not primitives:
+            continue
+        if pen_pos is None or math.dist(pen_pos, chain[0]) > 1e-6:
+            new_ops.move_to(*chain[0])
+        for prim_row in primitives:
+            ct = prim_row[COL_TYPE]
+            end = (
+                prim_row[COL_X],
+                prim_row[COL_Y],
+                prim_row[COL_Z],
+            )
+            if ct == CMD_TYPE_LINE:
+                new_cmd = LineToCommand(end)
+            elif ct == CMD_TYPE_ARC:
+                co = (prim_row[COL_I], prim_row[COL_J])
+                cw = bool(prim_row[COL_CW])
+                new_cmd = ArcToCommand(end, co, cw)
+            elif ct == CMD_TYPE_BEZIER:
+                c1 = (prim_row[COL_C1X], prim_row[COL_C1Y], end[2])
+                c2 = (prim_row[COL_C2X], prim_row[COL_C2Y], end[2])
+                new_cmd = BezierToCommand(end, c1, c2)
+            else:
+                continue
+            new_cmd.state = bezier_state
             new_ops.add(new_cmd)
         pen_pos = chain[-1]
 

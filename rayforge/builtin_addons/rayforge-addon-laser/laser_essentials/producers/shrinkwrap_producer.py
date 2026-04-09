@@ -130,12 +130,17 @@ class ShrinkWrapProducer(OpsProducer):
             allow_arcs = settings.get(
                 "machine_supports_arcs", settings.get("output_arcs", True)
             )
+            supports_curves = settings.get("machine_supports_curves", False)
 
-            if allow_arcs and not hull_geometry.is_empty():
+            if (
+                allow_arcs or supports_curves
+            ) and not hull_geometry.is_empty():
                 if context:
-                    context.set_message(_("Optimizing path with arcs..."))
-                hull_geometry.fit_arcs(
+                    context.set_message(_("Optimizing path with curves..."))
+                hull_geometry.fit_curves(
                     tolerance,
+                    beziers=supports_curves,
+                    arcs=allow_arcs,
                     on_progress=(
                         lambda p: context.set_progress(p) if context else None
                     ),

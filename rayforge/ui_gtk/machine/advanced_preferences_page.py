@@ -36,14 +36,25 @@ class AdvancedPreferencesPage(TrackedPreferencesPage):
         self.arcs_row.connect("notify::active", self.on_arcs_changed)
         path_group.add(self.arcs_row)
 
+        self.curves_row = Adw.SwitchRow(
+            title=_("Support Bézier Curves"),
+            subtitle=_(
+                "Generate native cubic Bézier commands. "
+                "Disable if your machine does not support them"
+            ),
+        )
+        self.curves_row.set_active(self.machine.supports_curves)
+        self.curves_row.connect("notify::active", self.on_curves_changed)
+        path_group.add(self.curves_row)
+
         tolerance_adjustment = Gtk.Adjustment(
             lower=0.001, upper=10.0, step_increment=0.001, page_increment=0.01
         )
         self.arc_tolerance_row = Adw.SpinRow(
-            title=_("Arc Tolerance"),
+            title=_("Arc and Curve Tolerance"),
             subtitle=_(
                 "Maximum deviation from original path when "
-                "fitting arcs (in machine units). Lower values "
+                "fitting arcs and curves (in machine units). Lower values "
                 "drastically increase processing time and job size"
             ),
             adjustment=tolerance_adjustment,
@@ -111,6 +122,10 @@ class AdvancedPreferencesPage(TrackedPreferencesPage):
     def on_arc_tolerance_changed(self, spinrow):
         """Update to machine's arc tolerance when value changes."""
         self.machine.set_arc_tolerance(spinrow.get_value())
+
+    def on_curves_changed(self, switch_row, _param):
+        """Update the machine's curve support when the value changes."""
+        self.machine.set_supports_curves(switch_row.get_active())
 
     def on_home_on_start_changed(self, row, _):
         self.machine.set_home_on_start(row.get_active())

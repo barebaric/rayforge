@@ -12,7 +12,6 @@ from blinker import Signal
 from ...camera.models.camera import Camera
 from ...context import RayforgeContext, get_context
 from ...core.geo import Point3D, Rect
-from ...core.ops.commands import MovingCommand
 from ...pipeline.coordspace import MachineSpace
 from ...pipeline.encoder.gcode import MachineCodeOpMap
 from ...shared.tasker import task_mgr
@@ -114,6 +113,7 @@ class Machine:
         self._hydrated_dialect: Optional[GcodeDialect] = None
         self.gcode_precision: int = 3
         self.supports_arcs: bool = True
+        self.supports_curves: bool = False
         self.arc_tolerance: float = 0.03
         self.hookmacros: Dict[MacroTrigger, Macro] = {}
         self.macros: Dict[str, Macro] = {}
@@ -447,6 +447,12 @@ class Machine:
         if self.arc_tolerance == tolerance:
             return
         self.arc_tolerance = tolerance
+        self.changed.send(self)
+
+    def set_supports_curves(self, supports: bool):
+        if self.supports_curves == supports:
+            return
+        self.supports_curves = supports
         self.changed.send(self)
 
     def set_home_on_start(self, home_on_start: bool = True):
@@ -1147,10 +1153,13 @@ class Machine:
         ops_for_encoder = ops.copy()
         space = self.get_coordinate_space()
 
-        # 1. Transform coordinates from WORLD to MACHINE space
+        # 1. Build combined transform applied in order:
+        #    world→machine, then WCS offset, then Z-flip.
+        combined = np.identity(4)
+
         transform = space.get_world_to_machine_matrix()
         if not np.allclose(transform, np.identity(4)):
-            ops_for_encoder.transform(transform)
+            combined = transform @ combined
 
         # 2. Convert from MACHINE coords to COMMAND coords
         wcs_offset = self.get_active_wcs_offset()
@@ -1158,26 +1167,23 @@ class Machine:
             wcs_offset=wcs_offset,
             wcs_is_workarea_origin=self.wcs_origin_is_workarea_origin,
         )
-
         if x_offset != 0.0 or y_offset != 0.0 or z_offset != 0.0:
-            for command in ops_for_encoder.commands:
-                if isinstance(command, MovingCommand):
-                    base_end = command.end or (0.0, 0.0, 0.0)
-                    command.end = (
-                        base_end[0] - x_offset,
-                        base_end[1] - y_offset,
-                        base_end[2] - z_offset,
-                    )
+            offset_matrix = np.identity(4)
+            offset_matrix[0, 3] = -x_offset
+            offset_matrix[1, 3] = -y_offset
+            offset_matrix[2, 3] = -z_offset
+            combined = offset_matrix @ combined
 
         if self.reverse_z_axis:
-            for command in ops_for_encoder.commands:
-                if isinstance(command, MovingCommand):
-                    if command.end is not None:
-                        command.end = (
-                            command.end[0],
-                            command.end[1],
-                            -command.end[2],
-                        )
+            z_flip = np.diag([1.0, 1.0, -1.0, 1.0])
+            combined = z_flip @ combined
+
+        if not np.allclose(combined, np.identity(4)):
+            ops_for_encoder.transform(combined)
+
+        # 3. Linearize curves if the machine does not support them
+        if not self.supports_curves:
+            ops_for_encoder.linearize_curves()
 
         return ops_for_encoder
 
@@ -1258,6 +1264,7 @@ class Machine:
                 "active_wcs": self.active_wcs,
                 "wcs_offsets": self.wcs_offsets,
                 "supports_arcs": self.supports_arcs,
+                "supports_curves": self.supports_curves,
                 "arc_tolerance": self.arc_tolerance,
                 "axis_extents": list(self._axis_extents),
                 "work_margins": list(self._work_margins),
@@ -1488,6 +1495,7 @@ class Machine:
         gcode = ma_data.get("gcode", {})
         ma.gcode_precision = gcode.get("gcode_precision", ma.gcode_precision)
         ma.supports_arcs = ma_data.get("supports_arcs", ma.supports_arcs)
+        ma.supports_curves = ma_data.get("supports_curves", ma.supports_curves)
         ma.arc_tolerance = ma_data.get("arc_tolerance", ma.arc_tolerance)
 
         hours_data = ma_data.get("machine_hours", {})

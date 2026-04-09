@@ -15,6 +15,7 @@ from rayforge.core.geo.fitting import (
     create_arc_cmd,
     fit_points_recursive,
     fit_arcs,
+    fit_curves,
     optimize_path_from_array,
     project_circle_center_to_bisector,
 )
@@ -895,3 +896,99 @@ def test_optimize_path_from_array_z_axis_preservation():
     assert len(result) == 2
     assert np.allclose(result[0, 1:4], (0, 0, 1))
     assert np.allclose(result[1, 1:4], (10, 0, 3))
+
+
+class TestFitCurves:
+    def test_preserve_bezier(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.bezier_to(10, 10, c1x=2, c1y=5, c2x=8, c2y=5)
+        geo._sync_to_numpy()
+
+        result = fit_curves(
+            geo.data, 0.1, preserve_beziers=True, preserve_arcs=True
+        )
+
+        assert result is not None
+        assert len(result) == 2
+        assert result[0][COL_TYPE] == CMD_TYPE_MOVE
+        assert result[1][COL_TYPE] == CMD_TYPE_BEZIER
+
+    def test_linearize_bezier(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.bezier_to(10, 10, c1x=2, c1y=5, c2x=8, c2y=5)
+        geo._sync_to_numpy()
+
+        result = fit_curves(
+            geo.data, 0.1, preserve_beziers=False, preserve_arcs=True
+        )
+
+        assert result is not None
+        assert len(result) >= 2
+        assert result[0][COL_TYPE] == CMD_TYPE_MOVE
+        for row in result[1:]:
+            assert row[COL_TYPE] in (CMD_TYPE_LINE, CMD_TYPE_ARC)
+
+    def test_preserve_arc(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.arc_to(10, 0, 5, 0, clockwise=True)
+        geo._sync_to_numpy()
+
+        result = fit_curves(
+            geo.data, 0.1, preserve_beziers=True, preserve_arcs=True
+        )
+
+        assert result is not None
+        assert len(result) == 2
+        assert result[0][COL_TYPE] == CMD_TYPE_MOVE
+        assert result[1][COL_TYPE] == CMD_TYPE_ARC
+
+    def test_linearize_arc(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.arc_to(10, 0, 5, 0, clockwise=True)
+        geo._sync_to_numpy()
+
+        result = fit_curves(
+            geo.data, 0.1, preserve_beziers=False, preserve_arcs=False
+        )
+
+        assert result is not None
+        assert result[0][COL_TYPE] == CMD_TYPE_MOVE
+        for row in result[1:]:
+            assert row[COL_TYPE] in (CMD_TYPE_LINE, CMD_TYPE_ARC)
+
+    def test_mixed_lines_beziers_arcs(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(5, 0)
+        geo.bezier_to(15, 5, c1x=7, c1y=3, c2x=13, c2y=3)
+        geo.arc_to(25, 0, 5, 0, clockwise=True)
+        geo._sync_to_numpy()
+
+        result = fit_curves(
+            geo.data, 0.1, preserve_beziers=True, preserve_arcs=True
+        )
+
+        assert result is not None
+        types = [r[COL_TYPE] for r in result]
+        assert CMD_TYPE_BEZIER in types
+        assert CMD_TYPE_ARC in types
+
+    def test_fit_curves_backwards_compat(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.bezier_to(10, 10, c1x=2, c1y=5, c2x=8, c2y=5)
+        geo._sync_to_numpy()
+
+        result_old = fit_arcs(geo.data, 0.1)
+        result_new = fit_curves(
+            geo.data, 0.1, preserve_beziers=False, preserve_arcs=True
+        )
+
+        assert result_old is not None
+        assert result_new is not None
+        assert len(result_old) == len(result_new)
+        np.testing.assert_array_equal(result_old, result_new)

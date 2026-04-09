@@ -15,9 +15,11 @@ from typing import Callable, List, Optional, Tuple
 import numpy as np
 
 from ....core.geo.arc import linearize_arc
+from ....core.geo.bezier import linearize_bezier_segment
 from ....core.ops import Ops
 from ....core.ops.commands import (
     ArcToCommand,
+    BezierToCommand,
     LayerEndCommand,
     LayerStartCommand,
     LineToCommand,
@@ -619,6 +621,26 @@ def compile_scene(
                 for seg_start, seg_end in segments:
                     acc.zpv.extend(seg_start)
                     acc.zpv.extend(seg_end)
+            current_pos = cmd.end
+            is_initial = False
+
+        elif isinstance(cmd, BezierToCommand):
+            polyline = linearize_bezier_segment(
+                current_pos, cmd.control1, cmd.control2, cmd.end
+            )
+            if current_power > 0.0:
+                power_byte = min(255, int(current_power * 255.0))
+                color = current_cut_lut[power_byte]
+                for j in range(len(polyline) - 1):
+                    acc.pv.extend(polyline[j])
+                    acc.pv.extend(polyline[j + 1])
+                    acc.pc.extend(color)
+                    acc.pc.extend(color)
+                acc.pv_cum += (len(polyline) - 1) * 2
+            else:
+                for j in range(len(polyline) - 1):
+                    acc.zpv.extend(polyline[j])
+                    acc.zpv.extend(polyline[j + 1])
             current_pos = cmd.end
             is_initial = False
 

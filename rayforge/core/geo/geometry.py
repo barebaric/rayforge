@@ -43,7 +43,7 @@ from .constants import (
 )
 from .fitting import (
     convert_arc_to_beziers_from_array,
-    fit_arcs,
+    fit_curves,
     optimize_path_from_array,
 )
 from .font_config import FontConfig
@@ -444,21 +444,26 @@ class Geometry:
         self._uniform_scalable = True  # Lines are scalable
         return self
 
-    def fit_arcs(
+    def fit_curves(
         self: T_Geometry,
         tolerance: float,
+        beziers: bool = True,
+        arcs: bool = True,
         on_progress: Optional[Callable[[float], None]] = None,
     ) -> T_Geometry:
         """
-        Reconstructs the geometry using an optimal set of Line and Arc
-        commands. This method is optimized to handle both polylines and
-        existing curves (like Beziers) efficiently, ensuring the output
-        contains only Lines and Arcs.
+        Optimizes geometry by fitting primitives to line chains while
+        preserving selected curve types.
+
+        Line segments are collected into point chains, simplified with RDP,
+        and refitted with optimal primitives (lines, arcs, or beziers).
+        Curve types that are preserved pass through without modification.
 
         Args:
             tolerance: The maximum allowable deviation.
-            on_progress: An optional callback function that receives progress
-                         updates from 0.0 to 1.0.
+            beziers: If True, preserve existing Bezier segments.
+            arcs: If True, preserve existing Arc segments.
+            on_progress: An optional callback for progress updates.
 
         Returns:
             The modified Geometry object (self).
@@ -467,7 +472,9 @@ class Geometry:
             return self
 
         self._sync_to_numpy()
-        new_data = fit_arcs(self._data, tolerance, on_progress)
+        new_data = fit_curves(
+            self._data, tolerance, beziers, arcs, on_progress
+        )
 
         if new_data is None or len(new_data) == 0:
             self._data = None
@@ -482,6 +489,28 @@ class Geometry:
         self._winding_cache.clear()
         self._uniform_scalable = False
         return self
+
+    def fit_arcs(
+        self: T_Geometry,
+        tolerance: float,
+        on_progress: Optional[Callable[[float], None]] = None,
+    ) -> T_Geometry:
+        """
+        Reconstructs the geometry using an optimal set of Line and Arc
+        commands. Bezier curves are linearized.
+
+        Equivalent to fit_curves(tolerance, beziers=False, arcs=True).
+
+        Args:
+            tolerance: The maximum allowable deviation.
+            on_progress: An optional callback for progress updates.
+
+        Returns:
+            The modified Geometry object (self).
+        """
+        return self.fit_curves(
+            tolerance, beziers=False, arcs=True, on_progress=on_progress
+        )
 
     def upgrade_to_scalable(self: T_Geometry) -> T_Geometry:
         """
