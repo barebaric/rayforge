@@ -49,6 +49,12 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
         self.page = page
         self.step = step
         self.history_manager = editor.history_manager
+        self._rows = []
+
+    def add(self, child):
+        self._rows.append(child)
+        if not getattr(self.page, "use_expanders", False):
+            super().add(child)
 
     @property
     def target_dict(self) -> Dict[str, Any]:
