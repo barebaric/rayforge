@@ -51,7 +51,7 @@ def test_init_gl_creates_buffers(renderer):
     ):
         renderer.init_gl()
 
-    assert mock_vbo.call_count == 4
+    assert mock_vbo.call_count == 5
     assert mock_vao.call_count == 2
 
 
