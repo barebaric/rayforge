@@ -100,7 +100,7 @@ class Step(DocItem, ABC):
             "selected_laser_uid": self.selected_laser_uid,
             "generated_workpiece_uid": self.generated_workpiece_uid,
             "applied_recipe_uid": self.applied_recipe_uid,
-            "capabilities": [c.name for c in self.capabilities],
+            "capabilities": sorted(c.name for c in self.capabilities),
             "opsproducer_dict": self.opsproducer_dict,
             "per_workpiece_transformers_dicts": (
                 self.per_workpiece_transformers_dicts
