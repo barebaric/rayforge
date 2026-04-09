@@ -13,6 +13,22 @@ from OpenGL.GL import shaders
 logger = logging.getLogger(__name__)
 
 
+def set_line_width(requested: float) -> None:
+    try:
+        width_range = GL.glGetFloatv(GL.GL_ALIASED_LINE_WIDTH_RANGE)
+    except Exception:
+        width_range = None
+
+    if width_range is None or len(width_range) < 2:
+        GL.glLineWidth(requested)
+        return
+
+    min_width = float(width_range[0])
+    max_width = float(width_range[1])
+    clamped = max(min_width, min(requested, max_width))
+    GL.glLineWidth(clamped)
+
+
 class Shader:
     """Manages a GLSL shader program, including compilation and uniforms."""
 

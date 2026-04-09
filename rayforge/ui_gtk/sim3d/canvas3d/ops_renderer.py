@@ -6,7 +6,7 @@ import logging
 import numpy as np
 from OpenGL import GL
 from ....shared.util.colors import ColorSet
-from .gl_utils import BaseRenderer, Shader
+from .gl_utils import BaseRenderer, Shader, set_line_width
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +94,7 @@ class OpsRenderer(BaseRenderer):
         executed_vertex_count: int = -1,
         alpha_pending: float = 0.2,
         executed_travel_vertex_count: int = -1,
+        line_width: float = 1.0,
     ) -> None:
         """
         Renders the toolpaths. The vertices are assumed to be in world space.
@@ -109,6 +110,7 @@ class OpsRenderer(BaseRenderer):
             executed_travel_vertex_count: Travel vertices drawn at full
                 alpha during simulation. -1 means use show_travel_moves
                 instead.
+            line_width: Width of lines in pixels (clamped to GPU range).
         """
         if executed_vertex_count > self.powered_vertex_count:
             raise ValueError(
@@ -142,6 +144,7 @@ class OpsRenderer(BaseRenderer):
 
         # Draw powered moves (which use vertex colors)
         if self.powered_vertex_count > 0:
+            set_line_width(line_width)
             shader.set_float("uUseVertexColor", 1.0)
             GL.glBindVertexArray(self.powered_vao)
             GL.glDrawArrays(GL.GL_LINES, 0, self.powered_vertex_count)
@@ -151,6 +154,7 @@ class OpsRenderer(BaseRenderer):
             executed_travel_vertex_count >= 0 or show_travel_moves
         )
         if should_draw_travel:
+            set_line_width(line_width)
             shader.set_float("uUseVertexColor", 0.0)
             shader.set_int(
                 "uExecutedVertexCount", executed_travel_vertex_count
@@ -159,6 +163,7 @@ class OpsRenderer(BaseRenderer):
             GL.glBindVertexArray(self.travel_vao)
             GL.glDrawArrays(GL.GL_LINES, 0, self.travel_vertex_count)
 
+        set_line_width(1.0)
         shader.set_float("uUseVertexColor", 0.0)
         shader.set_int("uExecutedVertexCount", -1)
         shader.set_float("uEmissive", 0.0)

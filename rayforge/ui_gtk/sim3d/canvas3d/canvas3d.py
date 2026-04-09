@@ -590,6 +590,33 @@ class Canvas3D(Gtk.GLArea):
             self._update_renderers_from_artifact()
             self._update_op_player()
 
+    @staticmethod
+    def _world_size_to_pixels(
+        mvp_gl: np.ndarray,
+        world_mm: float,
+        viewport_w: int,
+        viewport_h: int,
+    ) -> float:
+        mvp = mvp_gl.T
+        p0 = mvp @ np.array([0, 0, 0, 1], dtype=np.float32)
+        p1 = mvp @ np.array([world_mm, 0, 0, 1], dtype=np.float32)
+        if abs(p0[3]) < 1e-9 or abs(p1[3]) < 1e-9:
+            return 1.0
+        ndc_dx = (p1[0] / p1[3]) - (p0[0] / p0[3])
+        return abs(ndc_dx) * viewport_w * 0.5
+
+    def _compute_spot_line_width(self, mvp_gl: np.ndarray) -> float:
+        machine = self._context.machine
+        spot_mm = 0.1
+        if machine and machine.heads:
+            spot_mm = machine.heads[0].spot_size_mm[0]
+        if not self.camera:
+            return 2.0
+        px = self._world_size_to_pixels(
+            mvp_gl, spot_mm, self.camera.width, self.camera.height
+        )
+        return max(2.0, px)
+
     def on_render(self, area, ctx) -> bool:
         """The main rendering loop."""
         if not self.camera or not self._gl_initialized:
@@ -730,6 +757,7 @@ class Canvas3D(Gtk.GLArea):
                 rot_cyl_gl = rot_cyl.T.astype(np.float32)
 
             # Render each layer group (ops + ring buffer)
+            spot_line_width = self._compute_spot_line_width(mvp_matrix_ui_gl)
             for group in self._layer_groups:
                 mvp = rot_cyl_gl if group.is_rotary else mvp_matrix_ui_gl
 
@@ -771,6 +799,7 @@ class Canvas3D(Gtk.GLArea):
                         show_travel_moves=self._show_travel_moves,
                         executed_vertex_count=exec_powered,
                         executed_travel_vertex_count=exec_travel,
+                        line_width=spot_line_width,
                     )
 
                 if group.ring_renderer.vertex_count > 0 and self._main_shader:
@@ -784,6 +813,7 @@ class Canvas3D(Gtk.GLArea):
                         self._main_shader,
                         mvp,
                         executed_vertex_count=exec_ring,
+                        line_width=spot_line_width,
                     )
 
             laser_light_pos = None
