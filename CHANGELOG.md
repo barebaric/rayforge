@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Post processor page is more compact by putting each post processor into an expander
 - 3D canvas: better line width for rendered ops
 
 ### Fixed
