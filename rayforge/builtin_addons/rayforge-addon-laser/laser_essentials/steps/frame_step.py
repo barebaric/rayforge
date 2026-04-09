@@ -39,6 +39,7 @@ class FrameStep(Step):
 
     @classmethod
     def get_default_transformers_dicts(cls) -> tuple[list, list]:
+        LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")
         TabOpsTransformer = transformer_registry.get("TabOpsTransformer")
         CropTransformer = transformer_registry.get("CropTransformer")
         MergeLinesTransformer = transformer_registry.get(
@@ -46,6 +47,7 @@ class FrameStep(Step):
         )
         Optimize = transformer_registry.get("Optimize")
         MultiPassTransformer = transformer_registry.get("MultiPassTransformer")
+        assert LeadInOutTransformer is not None
         assert TabOpsTransformer is not None
         assert CropTransformer is not None
         assert MergeLinesTransformer is not None
@@ -53,6 +55,9 @@ class FrameStep(Step):
         assert MultiPassTransformer is not None
         optimize_dict = Optimize().to_dict()
         return [
+            LeadInOutTransformer(
+                enabled=False, lead_in_mm=0, lead_out_mm=0, auto=True
+            ).to_dict(),
             TabOpsTransformer().to_dict(),
             CropTransformer(enabled=False).to_dict(),
             optimize_dict,
@@ -76,6 +81,16 @@ class FrameStep(Step):
         step = cls(name=name)
         step.opsproducer_dict = cls.PRODUCER_CLASS().to_dict()
         per_wp, per_step = cls.get_default_transformers_dicts()
+
+        LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")
+        if LeadInOutTransformer:
+            calc = getattr(LeadInOutTransformer, "calculate_auto_distance")
+            auto_distance = calc(machine.max_cut_speed, machine.acceleration)
+            for t in per_wp:
+                if t.get("name") == "LeadInOutTransformer":
+                    t["lead_in_mm"] = auto_distance
+                    t["lead_out_mm"] = auto_distance
+
         step.per_workpiece_transformers_dicts = per_wp
         step.per_step_transformers_dicts = per_step
         step.selected_laser_uid = default_head.uid

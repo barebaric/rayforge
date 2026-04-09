@@ -40,6 +40,7 @@ class ContourStep(Step):
     @classmethod
     def get_default_transformers_dicts(cls) -> tuple[list, list]:
         Smooth = transformer_registry.get("Smooth")
+        LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")
         TabOpsTransformer = transformer_registry.get("TabOpsTransformer")
         CropTransformer = transformer_registry.get("CropTransformer")
         MergeLinesTransformer = transformer_registry.get(
@@ -48,6 +49,7 @@ class ContourStep(Step):
         Optimize = transformer_registry.get("Optimize")
         MultiPassTransformer = transformer_registry.get("MultiPassTransformer")
         assert Smooth is not None
+        assert LeadInOutTransformer is not None
         assert TabOpsTransformer is not None
         assert CropTransformer is not None
         assert MergeLinesTransformer is not None
@@ -56,6 +58,9 @@ class ContourStep(Step):
         optimize_dict = Optimize().to_dict()
         return [
             Smooth(enabled=False, amount=20).to_dict(),
+            LeadInOutTransformer(
+                enabled=False, lead_in_mm=0, lead_out_mm=0, auto=True
+            ).to_dict(),
             TabOpsTransformer().to_dict(),
             CropTransformer(enabled=False).to_dict(),
             optimize_dict,
@@ -82,6 +87,16 @@ class ContourStep(Step):
         per_wp, per_step = cls.get_default_transformers_dicts()
         if not optimize:
             per_wp = [t for t in per_wp if t.get("name") != "Optimize"]
+
+        LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")
+        if LeadInOutTransformer:
+            calc = getattr(LeadInOutTransformer, "calculate_auto_distance")
+            auto_distance = calc(machine.max_cut_speed, machine.acceleration)
+            for t in per_wp:
+                if t.get("name") == "LeadInOutTransformer":
+                    t["lead_in_mm"] = auto_distance
+                    t["lead_out_mm"] = auto_distance
+
         step.per_workpiece_transformers_dicts = per_wp
         step.per_step_transformers_dicts = per_step
         step.selected_laser_uid = default_head.uid
