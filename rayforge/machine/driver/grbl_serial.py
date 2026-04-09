@@ -1260,8 +1260,10 @@ class GrblSerialDriver(Driver):
             self.command_status_changed.send(
                 self, status=TransportStatus.ERROR, message=line
             )
+        elif line.startswith("Grbl "):
+            self._handshake_received.set()
+            logger.debug(f"Received Grbl welcome message: {line}")
         else:
-            # This could be a welcome message or other unsolicited info
             logger.debug(f"Received informational line: {line}")
 
     def get_error(self, error_code: str) -> Optional[DeviceError]:
