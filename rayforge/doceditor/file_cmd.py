@@ -517,6 +517,9 @@ class FileCmd:
             if isinstance(owner, Layer) and owner.uid not in seen:
                 dest_layers.append(owner)
                 seen.add(owner.uid)
+            elif isinstance(_item, Layer) and _item.uid not in seen:
+                dest_layers.append(_item)
+                seen.add(_item.uid)
         return dest_layers
 
     def _finalize_import_on_main_thread(
