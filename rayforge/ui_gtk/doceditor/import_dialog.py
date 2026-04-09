@@ -654,20 +654,25 @@ class ImportDialog(PatchedDialogWindow):
         # Set the master transform for all vector drawing.
         ctx.transform(cairo.Matrix(*world_to_canvas.for_cairo()))
 
+        # Compute constant pixel line width using the uniform
+        # world_to_canvas transform only, before any per-item
+        # transforms that may be non-uniform.
+        px, _ = ctx.device_to_user_distance(1.5, 0)
+        constant_line_width = abs(px)
+
         def draw_item(item: DocItem):
             if isinstance(item, WorkPiece) and item.boundaries:
                 ctx.save()
-                # Apply the item's personal world matrix.
-                ctx.transform(
-                    cairo.Matrix(*item.get_world_transform().for_cairo())
-                )
-
-                # Set line width to a consistent 1.5px in device space.
-                px, py = ctx.device_to_user_distance(1.5, 1.5)
-                ctx.set_line_width(max(abs(px), abs(py)))
+                # Transform boundaries into world space manually so
+                # we avoid putting the item's potentially non-uniform
+                # transform on the context, which would distort the
+                # stroke width.
+                world_geo = item.boundaries.copy()
+                world_geo.transform(item.get_world_transform().to_4x4_numpy())
+                ctx.set_line_width(constant_line_width)
                 ctx.set_source_rgb(0.1, 0.5, 1.0)  # Blue for vectors
                 ctx.new_path()
-                item.boundaries.to_cairo(ctx)
+                world_geo.to_cairo(ctx)
                 ctx.stroke()
                 ctx.restore()
             elif isinstance(item, Layer):
