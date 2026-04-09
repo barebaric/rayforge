@@ -261,6 +261,9 @@ class DockArea(Gtk.Box):
 
     def _on_drop_motion(self, target, x, y):
         source = DockArea._drag_source_area
+        if source is not None and source.get_parent() is None:
+            DockArea._drag_source_area = None
+            source = None
         if source is None:
             self._clear_highlight()
             self.remove_css_class("drag-active")
@@ -302,11 +305,14 @@ class DockArea(Gtk.Box):
             return False
         name = value
         source = DockArea._drag_source_area
+        if source is not None and source.get_parent() is None:
+            DockArea._drag_source_area = None
+            source = None
 
         if source is self and name in self.items:
             return self._handle_same_area_drop(x, y, name)
 
-        if name not in self.items:
+        if source is not None and name not in self.items:
             self.item_dropped.send(self, name=name)
             return True
 
