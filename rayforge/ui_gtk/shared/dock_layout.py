@@ -119,6 +119,7 @@ class DockLayout(Gtk.Widget):
         GLib.idle_add(self._deferred_move_item, name, target_area)
 
     def _deferred_move_item(self, item_name, to_area):
+        DockArea._drag_source_area = None
         self.move_item(item_name, to_area)
         return GLib.SOURCE_REMOVE
 
@@ -372,6 +373,7 @@ class DockLayout(Gtk.Widget):
         return True
 
     def _deferred_edge_drop(self, item_name, insert_idx):
+        DockArea._drag_source_area = None
         source_area = self.find_item_area(item_name)
         if source_area is None:
             return GLib.SOURCE_REMOVE
