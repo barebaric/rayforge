@@ -314,9 +314,7 @@ class AddonManager:
             )
             target_state["addon_manifest"] = manifest
         else:
-            logger.warning(
-                "No shared state available to update addon manifest."
-            )
+            logger.debug("No shared state available to update addon manifest.")
 
     def _parse_registry_dict(
         self, registry_data: Dict[str, Any]
