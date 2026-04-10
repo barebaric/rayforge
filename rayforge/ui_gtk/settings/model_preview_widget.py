@@ -146,7 +146,9 @@ class _SimpleModelRenderer(BaseRenderer):
         self._vao: int = 0
         self._vbo_pos: int = 0
         self._vbo_norm: int = 0
+        self._vbo_color: int = 0
         self._vertex_count: int = 0
+        self._has_colors: bool = False
         self._positions = None
         self._normals = None
 
@@ -171,6 +173,14 @@ class _SimpleModelRenderer(BaseRenderer):
         self._vbo_pos = self._create_vbo()
         self._vbo_norm = self._create_vbo()
 
+        colors = None
+        if self._mesh_data.colors is not None:
+            colors = self._mesh_data.colors[flat_indices]
+            if colors.dtype != np.float32:
+                colors = colors.astype(np.float32)
+            self._has_colors = True
+            self._vbo_color = self._create_vbo()
+
         GL.glBindVertexArray(self._vao)
 
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._vbo_pos)
@@ -193,6 +203,17 @@ class _SimpleModelRenderer(BaseRenderer):
         GL.glVertexAttribPointer(2, 3, GL.GL_FLOAT, GL.GL_TRUE, 0, None)
         GL.glEnableVertexAttribArray(2)
 
+        if self._has_colors and colors is not None:
+            GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._vbo_color)
+            GL.glBufferData(
+                GL.GL_ARRAY_BUFFER,
+                colors.nbytes,
+                colors,
+                GL.GL_STATIC_DRAW,
+            )
+            GL.glVertexAttribPointer(1, 4, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
+            GL.glEnableVertexAttribArray(1)
+
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
@@ -206,7 +227,7 @@ class _SimpleModelRenderer(BaseRenderer):
             return
         shader.use()
         shader.set_mat4("uMVP", mvp_matrix)
-        shader.set_float("uUseVertexColor", 0.0)
+        shader.set_float("uUseVertexColor", 1.0 if self._has_colors else 0.0)
         shader.set_vec4("uColor", (0.55, 0.65, 0.75, 1.0))
         shader.set_float("uHasNormals", 1.0)
         shader.set_vec3("uLightDir", (0.5, 0.8, 1.0))
