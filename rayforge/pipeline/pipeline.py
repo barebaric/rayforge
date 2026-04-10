@@ -1087,6 +1087,19 @@ class Pipeline:
             processing_data_gen_ids=processing_gen_ids,
         )
 
+        # Prune superseded contexts that have no active tasks.
+        # They auto-shutdown but linger in _contexts, making is_busy
+        # iterate over stale entries.
+        stale_gen_ids = [
+            gid
+            for gid, ctx in self._contexts.items()
+            if ctx._is_superseded()
+            and not ctx.has_active_tasks()
+            and gid != data_gen_id
+        ]
+        for gid in stale_gen_ids:
+            del self._contexts[gid]
+
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )

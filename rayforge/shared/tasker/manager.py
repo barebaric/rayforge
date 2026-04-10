@@ -590,6 +590,13 @@ class TaskManager:
         signal_key = f"{task_id}:{event_name}"
 
         if task:
+            if task.is_cancelled():
+                logger.debug(
+                    f"Dropping event '{event_name}' for cancelled "
+                    f"task '{key}' (id: {task_id})."
+                )
+                adoption_signals[signal_key] = False
+                return
             logger.debug(
                 f"TaskManager: Dispatching event '{event_name}' for task "
                 f"'{task.key}' (task_id={task_id})."
