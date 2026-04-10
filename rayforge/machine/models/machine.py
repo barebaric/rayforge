@@ -18,13 +18,7 @@ from ...pipeline.encoder.gcode import MachineCodeOpMap
 from ...shared.tasker import task_mgr
 from ..assembly import Assembly
 from ..driver.driver import DeviceState
-from ..kinematics import (
-    HeadSpec,
-    Kinematics,
-    RotarySpec,
-    build_cartesian_assembly,
-    build_rotary_assembly,
-)
+from ..kinematics import HeadSpec, Kinematics, build_assembly
 from ..models.axis import AxisConfig, AxisDirection, AxisSet, AxisType
 from ..transport import TransportStatus
 from .dialect import GcodeDialect
@@ -296,24 +290,17 @@ class Machine:
             if h.focal_distance > 0:
                 t[2, 3] += h.focal_distance
             head_specs.append((h.model_id, t))
-        if not rotaries:
-            return build_cartesian_assembly(head_specs)
-        mounted_uids = {r.uid for r in self._mounted_rotaries}
-        specs: List[RotarySpec] = [
-            (
-                Axis.Y,
-                self._pending_diameter
-                if self._pending_diameter is not None
-                else r.default_diameter,
-                r.transform,
-                r.model_id if r.uid in mounted_uids else None,
-            )
-            for r in rotaries
-        ]
-        return build_rotary_assembly(
+        rotary_modules_for_build: Dict[str, RotaryModule] = {}
+        if rotaries:
+            for r in rotaries:
+                rotary_modules_for_build[r.uid] = r
+                cfg = self.axes.get(r.axis)
+                if cfg is not None and self._pending_diameter is not None:
+                    cfg.rotary_diameter = self._pending_diameter
+        return build_assembly(
+            axis_set=self.axes,
             head_specs=head_specs,
-            rotary_specs=specs,
-            rotary_diameter=specs[0][1],
+            rotary_modules=rotary_modules_for_build or None,
         )
 
     @property
@@ -894,6 +881,7 @@ class Machine:
     def add_rotary_module(self, module: RotaryModule):
         self.rotary_modules[module.uid] = module
         module.changed.connect(self._on_rotary_module_changed)
+        self._sync_rotary_axis_config(module)
         self.invalidate_assembly()
         self.changed.send(self)
 
@@ -916,6 +904,7 @@ class Machine:
     def remove_rotary_module(self, module: RotaryModule):
         module.changed.disconnect(self._on_rotary_module_changed)
         del self.rotary_modules[module.uid]
+        self.axes.remove_config(module.axis)
         if self.default_rotary_module_uid == module.uid:
             remaining = list(self.rotary_modules.keys())
             self.default_rotary_module_uid = (
@@ -928,8 +917,33 @@ class Machine:
         self.changed.send(self)
 
     def _on_rotary_module_changed(self, module, *args):
+        self._sync_rotary_axis_config(module)
         self.invalidate_assembly()
         self.changed.send(self)
+
+    def _sync_rotary_axis_config(self, module: RotaryModule) -> None:
+        existing = self.axes.get(module.axis)
+        if existing is None:
+            self.axes.add_config(
+                AxisConfig(
+                    letter=module.axis,
+                    axis_type=AxisType.ROTARY,
+                    extents=(0, 360),
+                    rotary_diameter=module.default_diameter,
+                )
+            )
+        elif existing.axis_type != AxisType.ROTARY:
+            self.axes.remove_config(module.axis)
+            self.axes.add_config(
+                AxisConfig(
+                    letter=module.axis,
+                    axis_type=AxisType.ROTARY,
+                    extents=(0, 360),
+                    rotary_diameter=module.default_diameter,
+                )
+            )
+        else:
+            existing.rotary_diameter = module.default_diameter
 
     def add_nogo_zone(self, zone: Zone):
         self.nogo_zones[zone.uid] = zone
