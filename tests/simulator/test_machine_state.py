@@ -1,7 +1,6 @@
 from rayforge.simulator.machine_state import MachineState
-from rayforge.core.ops import Ops
+from rayforge.core.ops import Ops, Axis
 from rayforge.core.ops.commands import ScanLinePowerCommand
-from rayforge.machine.driver.driver import Axis
 
 
 def test_walk_movement_updates_axes():

@@ -14,8 +14,9 @@ from typing import (
 )
 from blinker import Signal
 from dataclasses import dataclass
-from enum import Enum, auto, IntFlag
+from enum import Enum, auto
 from ...context import RayforgeContext
+from ...core.ops.axis import Axis
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -113,24 +114,6 @@ class DeviceError:
 
 
 Pos = Tuple[Optional[float], Optional[float], Optional[float]]  # x, y, z in mm
-
-
-class Axis(IntFlag):
-    """Enum for machine axes"""
-
-    X = 1
-    Y = 2
-    Z = 4
-    A = 8
-    B = 16
-    C = 32
-    U = 64
-
-    def assert_single_axis(self) -> None:
-        if self.value.bit_count() != 1:
-            raise ValueError(
-                f"{self!r} combines multiple axes, expected a single axis"
-            )
 
 
 @dataclass

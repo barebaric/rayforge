@@ -7,7 +7,7 @@ from blinker import Signal
 
 from ...core.matrix import euler_rotation_matrix
 from ...core.geo import Rect3D
-from ..driver.driver import Axis
+from ...core.ops.axis import Axis
 
 
 class RotaryModule:

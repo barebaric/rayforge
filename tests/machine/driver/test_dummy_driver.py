@@ -2,11 +2,10 @@ import pytest
 import asyncio
 from unittest.mock import MagicMock, AsyncMock
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
+from rayforge.core.ops import Axis, Ops, MoveToCommand, LineToCommand
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.models.machine import Machine
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
-from rayforge.machine.driver.driver import Axis
 
 
 class TestDummyDriverCallback:

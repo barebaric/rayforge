@@ -14,11 +14,12 @@ from typing import (
     cast,
 )
 from ...context import RayforgeContext
+from ...core.ops.axis import Axis
 from ...core.varset import VarSet
 from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TransportStatus
-from .driver import Driver, Axis, Pos, DeviceStatus
+from .driver import Driver, Pos, DeviceStatus
 
 if TYPE_CHECKING:
     from ...core.doc import Doc

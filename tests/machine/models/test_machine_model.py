@@ -25,7 +25,7 @@ from rayforge.core.ops import (
     LineToCommand,
     BezierToCommand,
 )
-from rayforge.machine.driver.driver import Axis
+from rayforge.core.ops.axis import Axis
 from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.models.rotary_module import RotaryModule

@@ -6,7 +6,7 @@ from gi.repository import Adw, Gtk
 
 from ...context import get_context
 from ...core.model import Model
-from ...machine.driver.driver import Axis
+from ...core.ops.axis import Axis
 from ...machine.models.machine import Machine
 from ...machine.models.rotary_module import RotaryModule
 from ..icons import get_icon

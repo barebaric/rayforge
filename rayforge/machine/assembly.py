@@ -14,7 +14,7 @@ from typing import (
 import numpy as np
 
 from ..core.geo import Point3D
-from .driver.driver import Axis
+from ..core.ops.axis import Axis
 
 if TYPE_CHECKING:
     from ..simulator.machine_state import MachineState

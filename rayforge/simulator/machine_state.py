@@ -1,13 +1,12 @@
 from typing import Optional
 
-from ..core.ops import State
+from ..core.ops import Axis, State
 from ..core.ops.commands import (
     Command,
     LayerStartCommand,
     MovingCommand,
     ScanLinePowerCommand,
 )
-from ..machine.driver.driver import Axis
 
 
 class MachineState(State):

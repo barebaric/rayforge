@@ -5,8 +5,8 @@ import pytest
 import pytest_asyncio
 from unittest.mock import MagicMock
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
-from rayforge.machine.driver.driver import DeviceStatus, Axis
+from rayforge.core.ops import Axis, Ops, MoveToCommand, LineToCommand
+from rayforge.machine.driver.driver import DeviceStatus
 from rayforge.machine.driver.smoothie import SmoothieDriver
 from rayforge.machine.transport import TransportStatus
 from rayforge.pipeline.encoder.gcode import GcodeEncoder

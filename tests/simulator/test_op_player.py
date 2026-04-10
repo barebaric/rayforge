@@ -2,7 +2,7 @@ import pytest
 from rayforge.simulator.op_player import OpPlayer
 from rayforge.core.ops import Ops
 from rayforge.core.ops.commands import ScanLinePowerCommand
-from rayforge.machine.driver.driver import Axis
+from rayforge.core.ops.axis import Axis
 
 
 def _make_ops():
