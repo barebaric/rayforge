@@ -240,8 +240,10 @@ class ModelRenderer(BaseRenderer):
         shader.set_vec3("uCameraPos", cam_pos)
         if point_light_pos is not None:
             shader.set_vec3("uPointLightPos", point_light_pos)
+            shader.set_float("uPointLightOn", 1.0)
         else:
             shader.set_vec3("uPointLightPos", np.zeros(3, dtype=np.float32))
+            shader.set_float("uPointLightOn", 0.0)
 
         GL.glBindVertexArray(self._vao)
         GL.glDrawArrays(GL.GL_TRIANGLES, 0, self._vertex_count)
