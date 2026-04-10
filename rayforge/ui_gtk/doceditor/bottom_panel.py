@@ -27,8 +27,8 @@ logger = logging.getLogger(__name__)
 
 controls_css = """
 preferencesgroup.compact list {
-    margin-start: 0;
-    margin-end: 0;
+    margin-left: 0;
+    margin-right: 0;
 }
 """
 
