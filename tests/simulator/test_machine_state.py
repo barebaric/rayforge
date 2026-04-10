@@ -1,6 +1,15 @@
 from rayforge.simulator.machine_state import MachineState
 from rayforge.core.ops import Ops, Axis
-from rayforge.core.ops.commands import ScanLinePowerCommand
+from rayforge.core.ops.commands import (
+    MoveToCommand,
+    ScanLinePowerCommand,
+)
+from rayforge.machine.models.axis import (
+    AxisConfig,
+    AxisSet,
+    AxisType,
+    AxisDirection,
+)
 
 
 def test_walk_movement_updates_axes():
@@ -158,3 +167,74 @@ def test_mixed_ops_walk():
     assert state.power == 1.0
     assert state.cut_speed == 800
     assert state.laser_on is True
+
+
+def test_default_axes_xyz():
+    state = MachineState()
+    assert set(state.axes.keys()) == {Axis.X, Axis.Y, Axis.Z}
+
+
+def test_axis_letters_initializes_all_axes():
+    state = MachineState(axis_letters=[Axis.X, Axis.Y, Axis.Z, Axis.A])
+    assert set(state.axes.keys()) == {Axis.X, Axis.Y, Axis.Z, Axis.A}
+    assert state.axes[Axis.A] == 0.0
+
+
+def test_from_axis_set():
+    axis_set = AxisSet(
+        [
+            AxisConfig(
+                Axis.X, AxisType.LINEAR, (0, 400), AxisDirection.NORMAL
+            ),
+            AxisConfig(
+                Axis.Y, AxisType.LINEAR, (0, 200), AxisDirection.NORMAL
+            ),
+            AxisConfig(
+                Axis.Z, AxisType.LINEAR, (-50, 50), AxisDirection.NORMAL
+            ),
+            AxisConfig(
+                Axis.A, AxisType.ROTARY, (0, 3600), AxisDirection.NORMAL
+            ),
+        ]
+    )
+    state = MachineState.from_axis_set(axis_set)
+    assert set(state.axes.keys()) == {Axis.X, Axis.Y, Axis.Z, Axis.A}
+    assert state.axes[Axis.A] == 0.0
+
+
+def test_extra_axes_applied():
+    state = MachineState()
+    cmd = MoveToCommand(
+        (10.0, 20.0, 5.0),
+        extra_axes={Axis.A: 45.0, Axis.B: 0.0},
+    )
+    state.apply_command(cmd, 0)
+
+    assert state.axes[Axis.X] == 10.0
+    assert state.axes[Axis.Y] == 20.0
+    assert state.axes[Axis.Z] == 5.0
+    assert state.axes[Axis.A] == 45.0
+    assert state.axes[Axis.B] == 0.0
+
+
+def test_empty_extra_axes_no_extra_keys():
+    state = MachineState()
+    cmd = MoveToCommand((10.0, 20.0, 5.0))
+    state.apply_command(cmd, 0)
+
+    assert set(state.axes.keys()) == {Axis.X, Axis.Y, Axis.Z}
+
+
+def test_copy_preserves_extra_axes():
+    state = MachineState(axis_letters=[Axis.X, Axis.Y, Axis.Z, Axis.A])
+    cmd = MoveToCommand(
+        (10.0, 20.0, 5.0),
+        extra_axes={Axis.A: 90.0},
+    )
+    state.apply_command(cmd, 0)
+
+    snapshot = state.copy()
+
+    state.axes[Axis.A] = 0.0
+    assert snapshot.axes[Axis.A] == 90.0
+    assert set(snapshot.axes.keys()) == {Axis.X, Axis.Y, Axis.Z, Axis.A}

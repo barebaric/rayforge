@@ -8,12 +8,16 @@ from gettext import gettext as _
 import numpy as np
 
 from ...core.doc import Doc
+from ...core.layer import Layer
 from ...core.ops import Ops
+from ...core.ops.axis import Axis
+from ...core.ops.commands import LayerStartCommand
 from ...machine.models.machine import Machine
 from ...shared.tasker.progress import ProgressContext, set_progress
 from ..artifact import JobArtifact, StepOpsArtifact
 from ..artifact.base import VertexData
 from ..encoder.vertexencoder import VertexEncoder
+from ..transformer.axis_mapper import AxisMapper
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +25,7 @@ logger = logging.getLogger(__name__)
 def _assemble_final_ops(
     doc: Doc,
     step_artifacts_by_uid: Dict[str, StepOpsArtifact],
+    machine: Machine,
     context: Optional[ProgressContext] = None,
 ) -> Ops:
     """
@@ -33,7 +38,8 @@ def _assemble_final_ops(
         context: Optional ProgressContext for progress reporting.
 
     Returns:
-        An Ops object containing the assembled operations.
+        An Ops object containing the assembled operations in work
+        coordinates.
     """
     set_progress(context, 0.0, _("Assembling final job..."))
     final_ops = Ops()
@@ -78,6 +84,59 @@ def _assemble_final_ops(
         )
 
     return final_ops
+
+
+def _apply_axis_mapping(
+    ops: Ops,
+    machine: Machine,
+    doc: Doc,
+) -> None:
+    """
+    Applies AxisMapper in-place per-layer, mutating the ops from work
+    coordinates into machine coordinates. This must be called after
+    vertex encoding is complete.
+    """
+    if doc is None:
+        return
+    commands = ops._commands
+    i = 0
+    while i < len(commands):
+        cmd = commands[i]
+        if not isinstance(cmd, LayerStartCommand):
+            i += 1
+            continue
+
+        descendant = doc.find_descendant_by_uid(cmd.layer_uid)
+        if not isinstance(descendant, Layer):
+            i += 1
+            continue
+
+        rotary_axis = machine.get_rotary_axis_for_layer(descendant)
+        if rotary_axis is None:
+            i += 1
+            continue
+
+        has_physical_y = rotary_axis != Axis.Y
+        diameter = descendant.rotary_diameter
+        mapper = AxisMapper(
+            source_axis=Axis.Y,
+            rotary_axis=rotary_axis,
+            rotary_diameter=diameter,
+            has_physical_source=has_physical_y,
+        )
+
+        layer_cmds: list = []
+        i += 1
+        while i < len(commands) and not isinstance(
+            commands[i], LayerStartCommand
+        ):
+            if not commands[i].is_marker():
+                layer_cmds.append(commands[i])
+            i += 1
+
+        layer_ops = Ops()
+        layer_ops._commands = layer_cmds
+        mapper.run(layer_ops)
 
 
 def _calculate_time_estimate(
@@ -128,17 +187,25 @@ def _encode_gcode_and_opmap(
     """
     Encodes operations to G-code and operation map.
 
-    Args:
-        final_ops: The operations to encode.
-        doc: The document for encoding context.
-        machine: The machine model for encoding.
-        context: Optional ProgressContext for progress reporting.
-
-    Returns:
-        A tuple of (machine_code_bytes, op_map_bytes).
+    For rotary layers, the AxisMapper is applied to a transient copy
+    of the ops so that work coordinates are preserved in the stored
+    artifact while machine coordinates are used for G-code output.
     """
     set_progress(context, 0.8, _("Generating G-code..."))
-    gcode_str, op_map_obj = machine.encode_ops(final_ops, doc)
+
+    encode_ops = final_ops
+    if doc:
+        rotary_layers = [
+            layer
+            for layer in doc.layers
+            if layer.workflow
+            and machine.get_rotary_axis_for_layer(layer) is not None
+        ]
+        if rotary_layers:
+            encode_ops = final_ops.copy()
+            _apply_axis_mapping(encode_ops, machine, doc)
+
+    gcode_str, op_map_obj = machine.encode_ops(encode_ops, doc)
 
     machine_code_bytes = np.frombuffer(
         gcode_str.encode("utf-8"), dtype=np.uint8
@@ -194,16 +261,18 @@ def compute_job_artifact(
         A JobArtifact containing the final G-code, vertex data, and
         metadata.
     """
-    final_ops = _assemble_final_ops(doc, step_artifacts_by_uid, context)
+    final_ops = _assemble_final_ops(
+        doc, step_artifacts_by_uid, machine, context
+    )
 
     final_time = _calculate_time_estimate(final_ops, machine, context)
     final_distance = _calculate_distance(final_ops)
 
+    vertex_data = _encode_vertex_data(final_ops, context)
+
     machine_code_bytes, op_map_bytes = _encode_gcode_and_opmap(
         final_ops, doc, machine, context
     )
-
-    vertex_data = _encode_vertex_data(final_ops, context)
 
     set_progress(context, 1.0, _("Job finalization complete"))
 

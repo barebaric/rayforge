@@ -1,4 +1,6 @@
-from typing import Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Dict, Iterable, Optional
 
 from ..core.ops import Axis, State
 from ..core.ops.commands import (
@@ -8,18 +10,32 @@ from ..core.ops.commands import (
     ScanLinePowerCommand,
 )
 
+if TYPE_CHECKING:
+    from ..machine.models.axis import AxisSet
+
 
 class MachineState(State):
-    def __init__(self):
+    def __init__(
+        self,
+        axis_letters: Optional[Iterable[Axis]] = None,
+    ):
         super().__init__()
-        self.axes = {
-            Axis.X: 0.0,
-            Axis.Y: 0.0,
-            Axis.Z: 0.0,
-        }
+        if axis_letters is not None:
+            self.axes: Dict[Axis, float] = {a: 0.0 for a in axis_letters}
+        else:
+            self.axes = {
+                Axis.X: 0.0,
+                Axis.Y: 0.0,
+                Axis.Z: 0.0,
+            }
         self.laser_on = False
         self.reached_textures: set = set()
         self.current_layer_uid: Optional[str] = None
+
+    @classmethod
+    def from_axis_set(cls, axis_set: AxisSet) -> MachineState:
+        axes = (cfg.letter for cfg in axis_set.configs)
+        return cls(axis_letters=axes)
 
     def apply_command(self, cmd: Command, index: int):
         if cmd.is_state_command():
@@ -29,6 +45,8 @@ class MachineState(State):
                 self.axes[Axis.X] = cmd.end[0]
                 self.axes[Axis.Y] = cmd.end[1]
                 self.axes[Axis.Z] = cmd.end[2]
+            for axis, value in cmd.extra_axes.items():
+                self.axes[axis] = value
             if isinstance(cmd, ScanLinePowerCommand):
                 self.reached_textures.add(index)
             self.laser_on = cmd.is_cutting_command()
@@ -39,8 +57,8 @@ class MachineState(State):
         else:
             raise TypeError(f"Unknown command type: {type(cmd).__name__}")
 
-    def copy(self) -> "MachineState":
-        new = MachineState()
+    def copy(self) -> MachineState:
+        new = MachineState.__new__(MachineState)
         new.power = self.power
         new.air_assist = self.air_assist
         new.cut_speed = self.cut_speed

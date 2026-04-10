@@ -2,6 +2,7 @@ import math
 from unittest.mock import MagicMock
 
 from rayforge.core.ops import (
+    Axis,
     Ops,
     BezierToCommand,
     MoveToCommand,
@@ -50,7 +51,7 @@ def _make_context() -> GcodeContext:
 class TestHandleBezierTo:
     def test_bezier_with_g5_template(self):
         encoder = _make_encoder(MARLIN_DIALECT)
-        encoder.current_pos = (0.0, 0.0, 0.0)
+        encoder.current_pos = {Axis.X: 0.0, Axis.Y: 0.0, Axis.Z: 0.0}
         encoder.power = 1.0
         encoder.cut_speed = 1000.0
         context = _make_context()
@@ -76,7 +77,7 @@ class TestHandleBezierTo:
 
     def test_bezier_with_empty_template_falls_back_to_lines(self):
         encoder = _make_encoder(GRBL_DIALECT)
-        encoder.current_pos = (0.0, 0.0, 0.0)
+        encoder.current_pos = {Axis.X: 0.0, Axis.Y: 0.0, Axis.Z: 0.0}
         encoder.power = 1.0
         encoder.cut_speed = 1000.0
         context = _make_context()
@@ -98,7 +99,7 @@ class TestHandleBezierTo:
 
     def test_bezier_offset_computation(self):
         encoder = _make_encoder(MARLIN_DIALECT)
-        encoder.current_pos = (5.0, 5.0, 0.0)
+        encoder.current_pos = {Axis.X: 5.0, Axis.Y: 5.0, Axis.Z: 0.0}
         encoder.power = 1.0
         encoder.cut_speed = 1000.0
         context = _make_context()
@@ -120,7 +121,7 @@ class TestHandleBezierTo:
 
     def test_dispatch_in_handle_command(self):
         encoder = _make_encoder(MARLIN_DIALECT)
-        encoder.current_pos = (0.0, 0.0, 0.0)
+        encoder.current_pos = {Axis.X: 0.0, Axis.Y: 0.0, Axis.Z: 0.0}
         encoder.power = 1.0
         encoder.cut_speed = 1000.0
         context = _make_context()
@@ -135,8 +136,8 @@ class TestHandleBezierTo:
         encoder._handle_command(gcode, cmd, context)
 
         assert any("G5" in line for line in gcode)
-        assert math.isclose(encoder.current_pos[0], 10.0)
-        assert math.isclose(encoder.current_pos[1], 10.0)
+        assert math.isclose(encoder.current_pos[Axis.X], 10.0)
+        assert math.isclose(encoder.current_pos[Axis.Y], 10.0)
 
     def test_bezier_in_ops_encoding(self):
         ops = Ops()

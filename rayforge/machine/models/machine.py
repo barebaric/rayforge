@@ -16,8 +16,8 @@ from ...core.ops.axis import Axis
 from ...pipeline.coordspace import MachineSpace
 from ...pipeline.encoder.gcode import MachineCodeOpMap
 from ...shared.tasker import task_mgr
-from ..driver.driver import DeviceState
 from ..assembly import Assembly
+from ..driver.driver import DeviceState
 from ..kinematics import (
     HeadSpec,
     Kinematics,
@@ -25,6 +25,7 @@ from ..kinematics import (
     build_cartesian_assembly,
     build_rotary_assembly,
 )
+from ..models.axis import AxisConfig, AxisDirection, AxisSet, AxisType
 from ..transport import TransportStatus
 from .dialect import GcodeDialect
 from .laser import Laser
@@ -120,7 +121,25 @@ class Machine:
         self.max_travel_speed: int = 3000  # in mm/min
         self.max_cut_speed: int = 1000  # in mm/min
         self.acceleration: int = 1000  # in mm/s²
-        self._axis_extents: Tuple[float, float] = 200.0, 200.0
+        self.axes: AxisSet = AxisSet(
+            [
+                AxisConfig(
+                    letter=Axis.X,
+                    axis_type=AxisType.LINEAR,
+                    extents=(0, 200),
+                ),
+                AxisConfig(
+                    letter=Axis.Y,
+                    axis_type=AxisType.LINEAR,
+                    extents=(0, 200),
+                ),
+                AxisConfig(
+                    letter=Axis.Z,
+                    axis_type=AxisType.LINEAR,
+                    extents=(-50, 50),
+                ),
+            ]
+        )
         self._work_margins: Rect = (
             0.0,
             0.0,
@@ -129,9 +148,6 @@ class Machine:
         )
         self._soft_limits: Optional[Rect] = None
         self.origin: Origin = Origin.BOTTOM_LEFT
-        self.reverse_x_axis: bool = False
-        self.reverse_y_axis: bool = False
-        self.reverse_z_axis: bool = False
         self.rotary_enabled_default: bool = False
         self.default_rotary_module_uid: Optional[str] = None
         self.soft_limits_enabled: bool = True
@@ -484,13 +500,33 @@ class Machine:
     @property
     def axis_extents(self) -> Tuple[float, float]:
         """The full range of machine axis movement (width, height)."""
-        return self._axis_extents
+        x_cfg = self.axes.get(Axis.X)
+        y_cfg = self.axes.get(Axis.Y)
+        return (
+            x_cfg.extents[1] if x_cfg else 200.0,
+            y_cfg.extents[1] if y_cfg else 200.0,
+        )
+
+    @property
+    def reverse_x_axis(self) -> bool:
+        cfg = self.axes.get(Axis.X)
+        return cfg.direction == AxisDirection.REVERSED if cfg else False
+
+    @property
+    def reverse_y_axis(self) -> bool:
+        cfg = self.axes.get(Axis.Y)
+        return cfg.direction == AxisDirection.REVERSED if cfg else False
+
+    @property
+    def reverse_z_axis(self) -> bool:
+        cfg = self.axes.get(Axis.Z)
+        return cfg.direction == AxisDirection.REVERSED if cfg else False
 
     def _clamp_soft_limits(self):
         """Clamp soft limits to axis extents. Returns True if clamped."""
         if self._soft_limits is None:
             return False
-        w, h = self._axis_extents
+        w, h = self.axis_extents
         x_min, y_min, x_max, y_max = self._soft_limits
         clamped = (
             max(0.0, min(x_min, w)),
@@ -504,9 +540,14 @@ class Machine:
         return False
 
     def set_axis_extents(self, width: float, height: float):
-        if self._axis_extents == (width, height):
+        if self.axis_extents == (width, height):
             return
-        self._axis_extents = (width, height)
+        x_cfg = self.axes.get(Axis.X)
+        y_cfg = self.axes.get(Axis.Y)
+        if x_cfg:
+            x_cfg.extents = (0, width)
+        if y_cfg:
+            y_cfg.extents = (0, height)
         ml, mt, mr, mb = self._work_margins
         ml = min(ml, width - 1)
         mr = min(mr, width - ml - 1)
@@ -541,9 +582,8 @@ class Machine:
         Computed from axis_extents and work_margins.
         """
         ml, mt, mr, mb = self._work_margins
-        w = self._axis_extents[0] - ml - mr
-        h = self._axis_extents[1] - mt - mb
-        return (ml, mt, max(1.0, w), max(1.0, h))
+        w, h = self.axis_extents
+        return (ml, mt, max(1.0, w - ml - mr), max(1.0, h - mt - mb))
 
     @property
     def soft_limits(self) -> Optional[Rect]:
@@ -556,7 +596,7 @@ class Machine:
     def set_soft_limits(
         self, x_min: float, y_min: float, x_max: float, y_max: float
     ):
-        w, h = self._axis_extents
+        w, h = self.axis_extents
         clamped = (
             max(0.0, min(x_min, w)),
             max(0.0, min(y_min, h)),
@@ -576,21 +616,33 @@ class Machine:
         """Sets if the X-axis coordinate display is inverted."""
         if self.reverse_x_axis == is_reversed:
             return
-        self.reverse_x_axis = is_reversed
+        cfg = self.axes.get(Axis.X)
+        if cfg:
+            cfg.direction = (
+                AxisDirection.REVERSED if is_reversed else AxisDirection.NORMAL
+            )
         self.changed.send(self)
 
     def set_reverse_y_axis(self, is_reversed: bool):
         """Sets if the Y-axis coordinate display is inverted."""
         if self.reverse_y_axis == is_reversed:
             return
-        self.reverse_y_axis = is_reversed
+        cfg = self.axes.get(Axis.Y)
+        if cfg:
+            cfg.direction = (
+                AxisDirection.REVERSED if is_reversed else AxisDirection.NORMAL
+            )
         self.changed.send(self)
 
     def set_reverse_z_axis(self, is_reversed: bool):
         """Sets if the Z-axis direction is reversed."""
         if self.reverse_z_axis == is_reversed:
             return
-        self.reverse_z_axis = is_reversed
+        cfg = self.axes.get(Axis.Z)
+        if cfg:
+            cfg.direction = (
+                AxisDirection.REVERSED if is_reversed else AxisDirection.NORMAL
+            )
         self.changed.send(self)
 
     def set_rotary_enabled_default(self, enabled: bool):
@@ -690,7 +742,7 @@ class Machine:
                 y_min, y_max = -y_max, -y_min
             return (float(x_min), float(y_min), float(x_max), float(y_max))
 
-        w, h = float(self._axis_extents[0]), float(self._axis_extents[1])
+        w, h = float(self.axis_extents[0]), float(self.axis_extents[1])
 
         x_min = -w if self.reverse_x_axis else 0.0
         x_max = 0.0 if self.reverse_x_axis else w
@@ -855,6 +907,12 @@ class Machine:
             )
         return None
 
+    def get_rotary_axis_for_layer(self, layer: "Layer") -> Optional[Axis]:
+        if not layer.rotary_enabled or not layer.rotary_module_uid:
+            return None
+        module = self.rotary_modules.get(layer.rotary_module_uid)
+        return module.axis if module else None
+
     def remove_rotary_module(self, module: RotaryModule):
         module.changed.disconnect(self._on_rotary_module_changed)
         del self.rotary_modules[module.uid]
@@ -991,7 +1049,7 @@ class Machine:
             Tuple of (x, y) in WORLD space.
         """
         ml, mt, mr, mb = self._work_margins
-        width, height = self._axis_extents
+        width, height = self.axis_extents
 
         if self.origin == Origin.BOTTOM_LEFT:
             return (ml, mb)
@@ -1066,7 +1124,7 @@ class Machine:
             relative to the work area origin (0,0).
         """
         ml, mb = self._work_margins[0], self._work_margins[3]
-        extent_w, extent_h = self._axis_extents
+        extent_w, extent_h = self.axis_extents
         return (float(-ml), float(-mb), float(extent_w), float(extent_h))
 
     def has_custom_work_area(self) -> bool:
@@ -1264,7 +1322,8 @@ class Machine:
                 "supports_arcs": self.supports_arcs,
                 "supports_curves": self.supports_curves,
                 "arc_tolerance": self.arc_tolerance,
-                "axis_extents": list(self._axis_extents),
+                "axes": self.axes.to_dict(),
+                "axis_extents": list(self.axis_extents),
                 "work_margins": list(self._work_margins),
                 "soft_limits": list(self._soft_limits)
                 if self._soft_limits
@@ -1414,9 +1473,28 @@ class Machine:
         if "wcs_offsets" in ma_data:
             ma.wcs_offsets = ma_data["wcs_offsets"]
 
-        ma._axis_extents = tuple(ma_data.get("dimensions", ma._axis_extents))
-        if "axis_extents" in ma_data:
-            ma._axis_extents = tuple(ma_data["axis_extents"])
+        if "axes" in ma_data:
+            ma.axes = AxisSet.from_dict(ma_data["axes"])
+        else:
+            legacy_extents = tuple(ma_data.get("dimensions", ma.axis_extents))
+            if "axis_extents" in ma_data:
+                legacy_extents = tuple(ma_data["axis_extents"])
+            legacy_reverse_x = ma_data.get("reverse_x_axis", False)
+            legacy_reverse_y = ma_data.get("reverse_y_axis", False)
+            legacy_reverse_z = ma_data.get("reverse_z_axis", False)
+            if "x_axis_negative" in ma_data:
+                logger.info("Migrating legacy 'x_axis_negative' setting.")
+                legacy_reverse_x = ma_data["x_axis_negative"]
+            if "y_axis_negative" in ma_data:
+                logger.info("Migrating legacy 'y_axis_negative' setting.")
+                legacy_reverse_y = ma_data["y_axis_negative"]
+            ma.axes = AxisSet.from_legacy(
+                axis_extents=legacy_extents,
+                reverse_x=legacy_reverse_x,
+                reverse_y=legacy_reverse_y,
+                reverse_z=legacy_reverse_z,
+                rotary_modules=ma.rotary_modules,
+            )
 
         if "work_margins" in ma_data:
             ma._work_margins = tuple(ma_data["work_margins"])
@@ -1437,22 +1515,10 @@ class Machine:
                 else Origin.TOP_LEFT
             )
 
-        # Load new reverse axis settings if they exist
-        ma.reverse_x_axis = ma_data.get("reverse_x_axis", False)
-        ma.reverse_y_axis = ma_data.get("reverse_y_axis", False)
-        ma.reverse_z_axis = ma_data.get("reverse_z_axis", False)
         ma.rotary_enabled_default = ma_data.get(
             "rotary_enabled_default", False
         )
         ma.default_rotary_module_uid = ma_data.get("default_rotary_module_uid")
-
-        # Migrate from old "negative" settings if present
-        if "x_axis_negative" in ma_data:
-            logger.info("Migrating legacy 'x_axis_negative' setting.")
-            ma.reverse_x_axis = ma_data["x_axis_negative"]
-        if "y_axis_negative" in ma_data:
-            logger.info("Migrating legacy 'y_axis_negative' setting.")
-            ma.reverse_y_axis = ma_data["y_axis_negative"]
 
         ma.soft_limits_enabled = ma_data.get(
             "soft_limits_enabled", ma.soft_limits_enabled
