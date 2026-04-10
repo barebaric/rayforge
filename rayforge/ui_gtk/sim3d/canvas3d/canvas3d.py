@@ -226,7 +226,7 @@ class Canvas3D(Gtk.GLArea):
         Handler for when the pipeline's busy state changes. When it becomes
         not busy, the document has settled and the scene should be updated.
         """
-        if not is_processing:
+        if not is_processing and self._current_job_handle is not None:
             logger.debug("Pipeline has settled. Updating 3D scene.")
             self.update_scene_from_doc()
 
@@ -1179,6 +1179,21 @@ class Canvas3D(Gtk.GLArea):
         Adopts the shared memory handle so it survives worker cleanup.
         """
         if event_name == "scene_compiled":
+            if task.is_cancelled():
+                logger.debug(
+                    "[CANVAS3D] Ignoring scene_compiled event from "
+                    "cancelled task."
+                )
+                return
+            if (
+                self._scene_preparation_task
+                and task.id != self._scene_preparation_task.id
+            ):
+                logger.debug(
+                    "[CANVAS3D] Ignoring stale scene_compiled event "
+                    "(task mismatch)."
+                )
+                return
             handle_dict = data.get("handle_dict")
             if handle_dict is not None:
                 try:
