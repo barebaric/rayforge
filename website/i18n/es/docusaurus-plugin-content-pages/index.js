@@ -17,7 +17,7 @@ function HeroSection() {
             El <span className={styles.titleGradient}>Software Láser de Código Abierto Más Potente</span> del Mundo
           </h1>
           <p className={styles.heroSubtitle}>
-            Herramientas fluidas para mentes imaginativas. Rayforge es el estudio creativo completo para tu cortador láser,
+            Rayforge es un estudio creativo completo para tu cortador láser,
             combinando CAD 2D, CAM y control de máquina en un paquete vibrante.
           </p>
           <div className={styles.heroCtaButtons}>
@@ -173,8 +173,12 @@ export default function Home() {
             title="Tus Creaciones en 3D"
             description="Transición fluida de diseños 2D a trayectorias 3D. Rayforge genera G-code para cortadores y grabadores láser de 2 y 3 ejes, cerrando la brecha entre diseños planos y objetos físicos."
             compatibilityHeading="Compatible con: Grbl, Smoothieware"
-            features={['Visualización 3D', 'Generación de Trayectorias', 'Control de Ejes']}
-            image="/images/screenshot-3d-closeup.png"
+            features={[
+              'Simula tu trabajo en 3D',
+              'Corta y graba objetos redondos',
+              'Graba con descenso por pasos y ejes rotativos',
+            ]}
+            image="/images/screenshot-rotary-closeup.png"
             reverse
           />
 

@@ -18,7 +18,7 @@ function HeroSection() {
             The World's <span className={styles.titleGradient}>Most Powerful Open Source</span> Laser Software
           </h1>
           <p className={styles.heroSubtitle}>
-            Seamless tools for imaginative minds. Rayforge is the complete creative studio for your laser cutter,
+            Rayforge is a complete creative studio for your laser cutter,
             combining 2D CAD, CAM, and machine control in one vibrant package.
           </p>
           <div className={styles.heroCtaButtons}>
@@ -204,8 +204,12 @@ export default function Home() {
             title="Your Creations in 3D"
             description="Seamlessly transition from 2D designs to 3D toolpaths. Rayforge generates G-code for both 2-axis and 3-axis laser cutters and engravers, bridging the gap between flat designs and physical objects."
             compatibilityHeading="Compatible with: Grbl, Smoothieware"
-            features={['3D Visualization', 'Toolpath Generation', 'Axis Control']}
-            image="/images/screenshot-3d-closeup.png"
+            features={[
+              'Simulate your work in full 3D',
+              'Cut and engrave round objects',
+              'Engrave with step down and rotary axes',
+            ]}
+            image="/images/screenshot-rotary-closeup.png"
             reverse
           />
 

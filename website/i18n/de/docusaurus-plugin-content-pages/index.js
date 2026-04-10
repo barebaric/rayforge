@@ -16,7 +16,7 @@ function HeroSection() {
             <span className={styles.titleGradient}>Die weltweit leistungsstärkste Open-Source</span> Laser-Software
           </h1>
           <p className={styles.heroSubtitle}>
-            Nahtlose Werkzeuge für kreative Köpfe. Rayforge ist das komplette Kreativstudio für deinen Lasercutter,
+            Rayforge ist ein komplettes Kreativstudio für deinen Lasercutter,
             das 2D-CAD, CAM und Maschinensteuerung in einem dynamischen Paket vereint.
           </p>
           <div className={styles.heroCtaButtons}>
@@ -166,8 +166,12 @@ export default function Home() {
             title="Deine Kreationen in 3D"
             description="Nahtloser Übergang von 2D-Designs zu 3D-Werkzeugpfaden. Rayforge generiert G-Code für 2-Achsen- und 3-Achsen-Lasercutter und -gravierer und überbrückt die Lücke zwischen flachen Designs und physischen Objekten."
             compatibilityHeading="Kompatibel mit: Grbl, Smoothieware"
-            features={['3D-Visualisierung', 'Werkzeugpfad-Generierung', 'Achsensteuerung']}
-            image="/images/screenshot-3d-closeup.png"
+            features={[
+              'Simulieren Sie Ihre Arbeit in 3D',
+              'Schneiden und gravieren Sie runde Objekte',
+              'Gravieren Sie mit Schritt-ab und Rotationsachsen',
+            ]}
+            image="/images/screenshot-rotary-closeup.png"
             reverse
           />
 
