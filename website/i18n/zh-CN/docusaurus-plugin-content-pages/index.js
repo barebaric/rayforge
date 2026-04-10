@@ -17,7 +17,7 @@ function HeroSection() {
             全球<span className={styles.titleGradient}>最强大的开源</span>激光软件
           </h1>
           <p className={styles.heroSubtitle}>
-            为富有想象力的头脑提供无缝工具。Rayforge 是您的激光切割机的完整创意工作室，将 2D CAD、CAM 和机器控制集成在一个充满活力的软件包中。
+            Rayforge 是一款适合您激光切割机的完整创意工作室，将 2D CAD、CAM 和机器控制集成在一个充满活力的软件包中。
           </p>
           <div className={styles.heroCtaButtons}>
             <Link
@@ -172,8 +172,12 @@ export default function Home() {
             title="您的 3D 创作"
             description="无缝地从 2D 设计过渡到 3D 刀具路径。Rayforge 为 2 轴和 3 轴激光切割机和雕刻机生成 G-code，在平面设计和实体对象之间架起桥梁。"
             compatibilityHeading="兼容：Grbl、Smoothieware"
-            features={['3D 可视化', '刀具路径生成', '轴控制']}
-            image="/images/screenshot-3d-closeup.png"
+            features={[
+              '完整 3D 模拟您的工作',
+              '切割和雕刻圆形物体',
+              '使用步进下降和旋转轴进行雕刻',
+            ]}
+            image="/images/screenshot-rotary-closeup.png"
             reverse
           />
 

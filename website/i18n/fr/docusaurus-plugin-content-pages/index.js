@@ -19,7 +19,7 @@ function HeroSection() {
             au Monde
           </h1>
           <p className={styles.heroSubtitle}>
-            Des outils fluides pour les esprits imaginatifs. Rayforge est le studio créatif complet pour votre découpeuse laser,
+            Rayforge est un studio créatif complet pour votre découpeuse laser,
             combinant CAO 2D, FAO et contrôle de machine dans un package vibrant.
           </p>
           <div className={styles.heroCtaButtons}>
@@ -175,8 +175,12 @@ export default function Home() {
             title="Vos Créations en 3D"
             description="Passez facilement des conceptions 2D aux parcours d'outil 3D. Rayforge génère du G-code pour les découpeuses et graveuses laser 2 axes et 3 axes, comblant le fossé entre les conceptions plates et les objets physiques."
             compatibilityHeading="Compatible avec : Grbl, Smoothieware"
-            features={['Visualisation 3D', 'Génération de Parcours d\'Outil', 'Contrôle des Axes']}
-            image="/images/screenshot-3d-closeup.png"
+            features={[
+              'Simulez votre travail en 3D',
+              'Coupez et gravez des objets cylindriques',
+              'Gravez avec descente pas à pas et axes rotatifs',
+            ]}
+            image="/images/screenshot-rotary-closeup.png"
             reverse
           />
 
