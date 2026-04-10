@@ -570,7 +570,7 @@ class TestMachine:
 
     @pytest.mark.asyncio
     async def test_machine_serialization_with_reverse_axes(
-        self, machine: Machine, task_mgr: TaskManager
+        self, machine: Machine, task_mgr: TaskManager, lite_context
     ):
         """Test that reverse axis flags are serialized/deserialized."""
         await wait_for_tasks_to_finish(task_mgr)
@@ -583,7 +583,7 @@ class TestMachine:
         assert data["machine"]["reverse_y_axis"] is True
         assert data["machine"]["reverse_z_axis"] is True
 
-        new_machine = Machine.from_dict(data)
+        new_machine = Machine.from_dict(data, context=lite_context)
         await wait_for_tasks_to_finish(task_mgr)
 
         assert new_machine.reverse_x_axis is True
@@ -606,7 +606,7 @@ class TestMachine:
             }
         }
 
-        migrated_machine = Machine.from_dict(legacy_data)
+        migrated_machine = Machine.from_dict(legacy_data, context=lite_context)
         await wait_for_tasks_to_finish(task_mgr)
 
         assert migrated_machine.reverse_x_axis is True
@@ -890,7 +890,7 @@ class TestMachine:
 
     @pytest.mark.asyncio
     async def test_machine_serialization_with_acceleration(
-        self, machine: Machine, task_mgr: TaskManager
+        self, machine: Machine, task_mgr: TaskManager, lite_context
     ):
         """Test that acceleration is properly serialized and deserialized."""
         await wait_for_tasks_to_finish(task_mgr)
@@ -905,7 +905,7 @@ class TestMachine:
         assert machine_dict["machine"]["speeds"]["acceleration"] == 2500
 
         # Deserialize from dict
-        new_machine = Machine.from_dict(machine_dict)
+        new_machine = Machine.from_dict(machine_dict, context=lite_context)
 
         # Wait for the async driver rebuild scheduled by from_dict to finish
         await wait_for_tasks_to_finish(task_mgr)
@@ -1406,7 +1406,7 @@ class TestMachine:
         }
 
         # Act
-        new_machine = Machine.from_dict(legacy_data)
+        new_machine = Machine.from_dict(legacy_data, context=lite_context)
         await wait_for_tasks_to_finish(task_mgr)
 
         # Assert Migration
@@ -1449,7 +1449,7 @@ class TestMachine:
         }
 
         # Act
-        new_machine = Machine.from_dict(legacy_data)
+        new_machine = Machine.from_dict(legacy_data, context=lite_context)
         await wait_for_tasks_to_finish(task_mgr)
 
         # Assert Migration
@@ -1487,7 +1487,7 @@ class TestMachine:
             }
         }
 
-        new_machine = Machine.from_dict(modern_data)
+        new_machine = Machine.from_dict(modern_data, context=lite_context)
         await wait_for_tasks_to_finish(task_mgr)
 
         assert (

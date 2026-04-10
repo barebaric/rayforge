@@ -218,7 +218,7 @@ class MachineManager:
                 msg = f"skipping invalid machine file {f.name}"
                 logger.warning(msg)
                 return None
-        machine = Machine.from_dict(data)
+        machine = Machine.from_dict(data, context=get_context())
         machine.id = machine_id
         self.machines[machine.id] = machine
         machine.changed.connect(self.on_machine_changed)

@@ -47,7 +47,7 @@ def make_job_artifact_in_subprocess(
     Uses acknowledgment-based handover for shared memory artifacts.
     """
     job_desc = JobDescription(**job_description_dict)
-    machine = Machine.from_dict(job_desc.machine_dict, is_inert=True)
+    machine = Machine.from_dict(job_desc.machine_dict)
     doc = Doc.from_dict(job_desc.doc_dict)
     handles_by_uid = job_desc.step_artifact_handles_by_uid
 
