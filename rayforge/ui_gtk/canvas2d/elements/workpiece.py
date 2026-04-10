@@ -274,6 +274,8 @@ class WorkPieceElement(CanvasElement):
         try:
             new_data = artifact.bitmap_data
             if not np.any(new_data):
+                self._remove_ops_surface(step_uid)
+                self._invalidate_composited()
                 return
             height, width, _ = new_data.shape
             stride = cairo.ImageSurface.format_stride_for_width(
