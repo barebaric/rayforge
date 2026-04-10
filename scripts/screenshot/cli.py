@@ -2,6 +2,7 @@
 """Screenshot CLI for Rayforge."""
 
 import argparse
+import fnmatch
 import os
 import subprocess
 import sys
@@ -57,10 +58,21 @@ TARGETS = {
 
 
 def get_matching_targets(target: str) -> list[str]:
-    """Find all leaf targets that match the given prefix.
+    """Find all leaf targets that match the given target spec.
 
+    Supports glob patterns (e.g. "step-settings*post") and prefix
+    matching (e.g. "step-settings" matches all leaves under it).
     A leaf target is one with no children.
     """
+    if any(c in target for c in "*?["):
+        matches = [t for t in TARGETS if fnmatch.fnmatch(t, target)]
+        if not matches:
+            matches = [
+                t
+                for t in TARGETS
+                if fnmatch.fnmatch(t, target.replace("*", ":*"))
+            ]
+        return matches
     children = [t for t in TARGETS if t.startswith(target + ":")]
     if children:
         leaves = [
@@ -101,6 +113,8 @@ def generate_help_text() -> str:
     lines.append("  recipe-editor, etc.")
     lines.append("")
     lines.append("Use 'all' to run everything")
+    lines.append("")
+    lines.append("Glob patterns are supported (e.g. 'step-settings*post')")
     return "\n".join(lines)
 
 
@@ -112,14 +126,15 @@ def main() -> int:
     )
     parser.add_argument("target", help="Screenshot target")
     args = parser.parse_args()
+    target: str = args.target
 
-    if args.target == "all":
+    if target == "all":
         targets = list(TARGETS.keys())
     else:
-        targets = get_matching_targets(args.target)
+        targets = get_matching_targets(target)
 
     if not targets:
-        print(f"No targets match: {args.target}")
+        print(f"No targets match: {target}")
         return 1
 
     for target in targets:
