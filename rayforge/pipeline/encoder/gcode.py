@@ -1,9 +1,10 @@
 import logging
 import math
-from typing import TYPE_CHECKING, Optional, List, Tuple
+from typing import TYPE_CHECKING, Dict, Optional, List, Tuple
 from ...core.geo import Point3D
 from ...core.layer import Layer
 from ...core.ops import (
+    Axis,
     Ops,
     Command,
     DwellCommand,
@@ -65,13 +66,14 @@ class GcodeEncoder(OpsEncoder):
         self.air_assist: bool = False  # Air assist state
         self.laser_active: bool = False  # Laser on/off state
         self.active_laser_uid: Optional[str] = None
-        self.current_pos: Point3D = (0.0, 0.0, 0.0)
+        self.current_pos: Dict[Axis, float] = {
+            Axis.X: 0.0,
+            Axis.Y: 0.0,
+            Axis.Z: 0.0,
+        }
         self._coord_format: str = "{:.3f}"  # Default format
         self._feed_format: str = "{:.3f}"
         self._power_format: str = "{:.3f}"
-        self.rotary_enabled: bool = False
-        self.rotary_diameter: float = 25.0
-        self.rotary_axis: str = "A"
 
     @classmethod
     def for_machine(cls, machine: "Machine") -> "GcodeEncoder":
@@ -147,59 +149,53 @@ class GcodeEncoder(OpsEncoder):
             formatted = formatted.rstrip("0").rstrip(".")
         return formatted
 
-    def _mu_to_degrees(self, mu: float, z: float = 0.0) -> float:
-        """
-        Convert machine units to degrees for rotary axis.
-
-        Accounts for the effective diameter at the given Z depth:
-        cutting deeper (Z < 0) reduces the effective diameter, so the
-        same linear distance maps to a larger angle.
-
-        Args:
-            mu: Distance in machine units along the cylinder surface.
-            z: Current Z depth (0 = surface, negative = deeper).
-
-        Returns:
-            Angle in degrees for the rotary axis.
-        """
-        effective_diameter = self.rotary_diameter + 2.0 * z
-        if effective_diameter <= 0:
-            return 0.0
-        circumference = effective_diameter * math.pi
-        return (mu / circumference) * 360.0
-
-    def _build_coord_commands(self, x: float, y: float, z: float) -> dict:
+    def _build_coord_commands(
+        self,
+        x: float,
+        y: float,
+        z: float,
+        extra_axes: Optional[Dict[Axis, float]] = None,
+    ) -> dict:
         """
         Build coordinate template variables, with conditional commands
         that omit unchanged axes when omit_unchanged_coords is enabled.
 
         Args:
             x: Target X coordinate.
-            y: Target Y coordinate (or rotary angle in mm before conversion).
+            y: Target Y coordinate.
             z: Target Z coordinate.
+            extra_axes: Optional dict of additional axis values (e.g. A, B, C).
 
         Returns:
             A dict with 'x', 'y', 'z' (always populated) and
-            'x_cmd', 'y_cmd', 'z_cmd' (conditional, include axis letter).
+            'x_cmd', 'y_cmd', 'z_cmd', 'extra_cmd' (conditional,
+            include axis letter).
         """
-        prev_x, prev_y, prev_z = self.current_pos
-
-        if self.rotary_enabled:
-            y_axis_letter = self.rotary_axis
-            y_for_output = self._mu_to_degrees(y, z)
-            prev_y_for_output = self._mu_to_degrees(prev_y, prev_z)
-        else:
-            y_axis_letter = "Y"
-            y_for_output = y
-            prev_y_for_output = prev_y
+        prev_x = self.current_pos.get(Axis.X, 0.0)
+        prev_y = self.current_pos.get(Axis.Y, 0.0)
+        prev_z = self.current_pos.get(Axis.Z, 0.0)
 
         x_cmd = f" X{self._format_coord(x)}"
-        y_cmd = f" {y_axis_letter}{self._format_coord(y_for_output)}"
+        y_cmd = f" Y{self._format_coord(y)}"
         z_cmd = f" Z{self._format_coord(z)}"
+
+        extra_cmd = ""
+        if extra_axes:
+            parts = []
+            for axis, value in extra_axes.items():
+                letter = axis.name
+                prev_val = self.current_pos.get(axis, 0.0)
+                formatted = f" {letter}{self._format_coord(value)}"
+                if self.dialect.omit_unchanged_coords and math.isclose(
+                    value, prev_val
+                ):
+                    formatted = ""
+                parts.append(formatted)
+            extra_cmd = "".join(parts)
 
         if self.dialect.omit_unchanged_coords:
             x_changed = not math.isclose(x, prev_x)
-            y_changed = not math.isclose(y_for_output, prev_y_for_output)
+            y_changed = not math.isclose(y, prev_y)
             z_changed = not math.isclose(z, prev_z)
             none_changed = not (x_changed or y_changed or z_changed)
 
@@ -209,20 +205,13 @@ class GcodeEncoder(OpsEncoder):
 
         return {
             "x": self._format_coord(x),
-            "y": self._format_coord(y_for_output),
+            "y": self._format_coord(y),
             "z": self._format_coord(z),
             "x_cmd": x_cmd,
             "y_cmd": y_cmd,
             "z_cmd": z_cmd,
-            "y_axis_letter": y_axis_letter,
+            "extra_cmd": extra_cmd,
         }
-
-    def _get_rotary_axis_for_layer(self, machine: "Machine", layer) -> str:
-        if layer.rotary_module_uid:
-            rm = machine.get_rotary_module_by_uid(layer.rotary_module_uid)
-            if rm:
-                return rm.axis.name or "A"
-        return "A"
 
     def encode(
         self, ops: Ops, machine: "Machine", doc: "Doc"
@@ -232,22 +221,10 @@ class GcodeEncoder(OpsEncoder):
         self._coord_format = f"{{:.{machine.gcode_precision}f}}"
         self._feed_format = self._coord_format
         self._power_format = self._coord_format
-        self.current_pos = (0.0, 0.0, 0.0)
+        self.current_pos = {Axis.X: 0.0, Axis.Y: 0.0, Axis.Z: 0.0}
         self.active_laser_uid = None
         self.emitted_power = None
         self._emitted_cut_feed = None
-
-        if doc:
-            active_layer = doc.active_layer
-            self.rotary_enabled = active_layer.rotary_enabled
-            self.rotary_diameter = active_layer.rotary_diameter
-            self.rotary_axis = self._get_rotary_axis_for_layer(
-                machine, active_layer
-            )
-        else:
-            self.rotary_enabled = False
-            self.rotary_diameter = 25.0
-            self.rotary_axis = "A"
 
         context = GcodeContext(
             machine=machine, doc=doc, job=JobInfo(extents=ops.rect())
@@ -304,6 +281,20 @@ class GcodeEncoder(OpsEncoder):
         formatter = TemplateFormatter(context.machine, context)
         return [formatter.format_string(line) for line in lines]
 
+    def _update_current_pos(self, cmd) -> None:
+        self.current_pos[Axis.X] = cmd.end[0]
+        self.current_pos[Axis.Y] = cmd.end[1]
+        self.current_pos[Axis.Z] = cmd.end[2]
+        for axis, value in cmd.extra_axes.items():
+            self.current_pos[axis] = value
+
+    def _current_pos_xyz(self) -> Point3D:
+        return (
+            self.current_pos.get(Axis.X, 0.0),
+            self.current_pos.get(Axis.Y, 0.0),
+            self.current_pos.get(Axis.Z, 0.0),
+        )
+
     def _handle_command(
         self, gcode: List[str], cmd: Command, context: GcodeContext
     ) -> None:
@@ -326,27 +317,42 @@ class GcodeEncoder(OpsEncoder):
             case SetLaserCommand():
                 self._handle_set_laser(context, gcode, cmd.laser_uid)
             case MoveToCommand():
-                self._handle_move_to(context, gcode, *cmd.end)
-                self.current_pos = cmd.end
+                self._handle_move_to(
+                    context,
+                    gcode,
+                    *cmd.end,
+                    extra_axes=cmd.extra_axes,
+                )
+                self._update_current_pos(cmd)
             case LineToCommand():
-                self._handle_line_to(context, gcode, *cmd.end)
-                self.current_pos = cmd.end
+                self._handle_line_to(
+                    context,
+                    gcode,
+                    *cmd.end,
+                    extra_axes=cmd.extra_axes,
+                )
+                self._update_current_pos(cmd)
             case ScanLinePowerCommand():
                 # Deconstruct into simpler commands that the encoder already
                 # understands.
-                sub_commands = cmd.linearize(self.current_pos)
+                sub_commands = cmd.linearize(self._current_pos_xyz())
                 for sub_cmd in sub_commands:
                     self._handle_command(gcode, sub_cmd, context)
                 # To avoid float precision errors, explicitly set the final pos
-                self.current_pos = cmd.end
+                self._update_current_pos(cmd)
             case ArcToCommand():
                 self._handle_arc_to(
-                    context, gcode, cmd.end, cmd.center_offset, cmd.clockwise
+                    context,
+                    gcode,
+                    cmd.end,
+                    cmd.center_offset,
+                    cmd.clockwise,
+                    extra_axes=cmd.extra_axes,
                 )
-                self.current_pos = cmd.end
+                self._update_current_pos(cmd)
             case BezierToCommand():
                 self._handle_bezier_to(context, gcode, cmd)
-                self.current_pos = cmd.end
+                self._update_current_pos(cmd)
             case DwellCommand():
                 if self.dialect.dwell:
                     gcode.append(
@@ -384,11 +390,6 @@ class GcodeEncoder(OpsEncoder):
                 descendant = context.doc.find_descendant_by_uid(uid)
                 if isinstance(descendant, Layer):
                     context.layer = descendant
-                    self.rotary_enabled = descendant.rotary_enabled
-                    self.rotary_diameter = descendant.rotary_diameter
-                    self.rotary_axis = self._get_rotary_axis_for_layer(
-                        context.machine, descendant
-                    )
                 elif descendant is not None:
                     logger.warning(
                         f"Expected Layer for UID {uid}, but "
@@ -495,11 +496,12 @@ class GcodeEncoder(OpsEncoder):
         x: float,
         y: float,
         z: float,
+        extra_axes: Optional[Dict[Axis, float]] = None,
     ) -> None:
         """Rapid movement with laser safety"""
         self._laser_off(context, gcode)
 
-        coord_vars = self._build_coord_commands(x, y, z)
+        coord_vars = self._build_coord_commands(x, y, z, extra_axes=extra_axes)
         template_vars = {
             "x": coord_vars["x"],
             "y": coord_vars["y"],
@@ -507,6 +509,7 @@ class GcodeEncoder(OpsEncoder):
             "x_cmd": coord_vars["x_cmd"],
             "y_cmd": coord_vars["y_cmd"],
             "z_cmd": coord_vars["z_cmd"],
+            "extra_cmd": coord_vars["extra_cmd"],
         }
 
         f_command = ""
@@ -531,6 +534,7 @@ class GcodeEncoder(OpsEncoder):
         x: float,
         y: float,
         z: float,
+        extra_axes: Optional[Dict[Axis, float]] = None,
     ) -> dict:
         """Build template variables common to all cutting moves."""
         self._laser_on(context, gcode)
@@ -560,7 +564,7 @@ class GcodeEncoder(OpsEncoder):
             power_abs = self.power * current_laser.max_power
             s_command = f" S{self._format_power(power_abs)}"
 
-        coord_vars = self._build_coord_commands(x, y, z)
+        coord_vars = self._build_coord_commands(x, y, z, extra_axes=extra_axes)
         return {
             "x": coord_vars["x"],
             "y": coord_vars["y"],
@@ -568,6 +572,7 @@ class GcodeEncoder(OpsEncoder):
             "x_cmd": coord_vars["x_cmd"],
             "y_cmd": coord_vars["y_cmd"],
             "z_cmd": coord_vars["z_cmd"],
+            "extra_cmd": coord_vars["extra_cmd"],
             "f_command": f_command,
             "s_command": s_command,
             "power": power_abs,
@@ -581,9 +586,12 @@ class GcodeEncoder(OpsEncoder):
         x: float,
         y: float,
         z: float,
+        extra_axes: Optional[Dict[Axis, float]] = None,
     ) -> None:
         """Cutting movement with laser activation"""
-        template_vars = self._build_cut_move_vars(context, gcode, x, y, z)
+        template_vars = self._build_cut_move_vars(
+            context, gcode, x, y, z, extra_axes=extra_axes
+        )
         gcode.append(self.dialect.linear_move.format(**template_vars))
 
     def _handle_arc_to(
@@ -593,12 +601,15 @@ class GcodeEncoder(OpsEncoder):
         end: Point3D,
         center: Tuple[float, float],
         cw: bool,
+        extra_axes: Optional[Dict[Axis, float]] = None,
     ) -> None:
         """Cutting arc with laser activation"""
         x, y, z = end
         i, j = center
         template = self.dialect.arc_cw if cw else self.dialect.arc_ccw
-        template_vars = self._build_cut_move_vars(context, gcode, x, y, z)
+        template_vars = self._build_cut_move_vars(
+            context, gcode, x, y, z, extra_axes=extra_axes
+        )
         template_vars["i"] = self._format_coord(i)
         template_vars["j"] = self._format_coord(j)
         gcode.append(template.format(**template_vars))
@@ -610,13 +621,26 @@ class GcodeEncoder(OpsEncoder):
         cmd: BezierToCommand,
     ) -> None:
         if not self.dialect.bezier_cubic:
-            for line_cmd in cmd.linearize(self.current_pos):
+            start = self._current_pos_xyz()
+            for line_cmd in cmd.linearize(start):
                 assert isinstance(line_cmd, LineToCommand)
-                self._handle_line_to(context, gcode, *line_cmd.end)
+                self._handle_line_to(
+                    context,
+                    gcode,
+                    *line_cmd.end,
+                    extra_axes=line_cmd.extra_axes,
+                )
             return
-        start = self.current_pos
+        start = self._current_pos_xyz()
         ex, ey, ez = cmd.end
-        template_vars = self._build_cut_move_vars(context, gcode, ex, ey, ez)
+        template_vars = self._build_cut_move_vars(
+            context,
+            gcode,
+            ex,
+            ey,
+            ez,
+            extra_axes=cmd.extra_axes,
+        )
         template_vars["i"] = self._format_coord(cmd.control1[0] - start[0])
         template_vars["j"] = self._format_coord(cmd.control1[1] - start[1])
         template_vars["p"] = self._format_coord(cmd.control2[0] - ex)

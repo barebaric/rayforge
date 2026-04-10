@@ -400,7 +400,7 @@ def test_job_compute_time_and_distance(
 
 
 def test_assemble_final_ops_single_step(
-    context_initializer, mock_progress_context, contour_step_class
+    context_initializer, machine, mock_progress_context, contour_step_class
 ):
     """
     Test _assemble_final_ops with a single step.
@@ -421,7 +421,7 @@ def test_assemble_final_ops_single_step(
     }
 
     result = _assemble_final_ops(
-        doc, step_artifacts_by_uid, mock_progress_context
+        doc, step_artifacts_by_uid, machine, mock_progress_context
     )
 
     assert isinstance(result, Ops)
@@ -430,7 +430,7 @@ def test_assemble_final_ops_single_step(
 
 
 def test_assemble_final_ops_multiple_steps(
-    context_initializer, contour_step_class
+    context_initializer, machine, contour_step_class
 ):
     """
     Test _assemble_final_ops with multiple steps.
@@ -460,7 +460,7 @@ def test_assemble_final_ops_multiple_steps(
         step2.uid: StepOpsArtifact(ops=ops2, generation_id=1),
     }
 
-    result = _assemble_final_ops(doc, step_artifacts_by_uid)
+    result = _assemble_final_ops(doc, step_artifacts_by_uid, machine)
 
     assert isinstance(result, Ops)
     line_cmds = [c for c in result if isinstance(c, LineToCommand)]
@@ -468,7 +468,7 @@ def test_assemble_final_ops_multiple_steps(
 
 
 def test_assemble_final_ops_multiple_layers(
-    context_initializer, contour_step_class
+    context_initializer, machine, contour_step_class
 ):
     """
     Test _assemble_final_ops with multiple layers.
@@ -502,7 +502,7 @@ def test_assemble_final_ops_multiple_layers(
         step2.uid: StepOpsArtifact(ops=ops2, generation_id=1),
     }
 
-    result = _assemble_final_ops(doc, step_artifacts_by_uid)
+    result = _assemble_final_ops(doc, step_artifacts_by_uid, machine)
 
     assert isinstance(result, Ops)
     line_cmds = [c for c in result if isinstance(c, LineToCommand)]
@@ -510,7 +510,7 @@ def test_assemble_final_ops_multiple_layers(
 
 
 def test_assemble_final_ops_empty_artifacts(
-    context_initializer, contour_step_class
+    context_initializer, machine, contour_step_class
 ):
     """
     Test _assemble_final_ops with empty step artifacts.
@@ -524,13 +524,13 @@ def test_assemble_final_ops_empty_artifacts(
 
     step_artifacts_by_uid = {}
 
-    result = _assemble_final_ops(doc, step_artifacts_by_uid)
+    result = _assemble_final_ops(doc, step_artifacts_by_uid, machine)
 
     assert isinstance(result, Ops)
 
 
 def test_assemble_final_ops_missing_step(
-    context_initializer, contour_step_class
+    context_initializer, machine, contour_step_class
 ):
     """
     Test _assemble_final_ops with missing step artifacts.
@@ -555,7 +555,7 @@ def test_assemble_final_ops_missing_step(
         step1.uid: StepOpsArtifact(ops=ops, generation_id=1)
     }
 
-    result = _assemble_final_ops(doc, step_artifacts_by_uid)
+    result = _assemble_final_ops(doc, step_artifacts_by_uid, machine)
 
     assert isinstance(result, Ops)
     line_cmds = [c for c in result if isinstance(c, LineToCommand)]
@@ -563,7 +563,7 @@ def test_assemble_final_ops_missing_step(
 
 
 def test_assemble_final_ops_without_progress(
-    context_initializer, contour_step_class
+    context_initializer, machine, contour_step_class
 ):
     """
     Test _assemble_final_ops without progress callback.
@@ -583,7 +583,7 @@ def test_assemble_final_ops_without_progress(
         step.uid: StepOpsArtifact(ops=ops, generation_id=1)
     }
 
-    result = _assemble_final_ops(doc, step_artifacts_by_uid, None)
+    result = _assemble_final_ops(doc, step_artifacts_by_uid, machine, None)
 
     assert isinstance(result, Ops)
     line_cmds = [c for c in result if isinstance(c, LineToCommand)]
