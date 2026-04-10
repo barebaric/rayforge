@@ -13,10 +13,10 @@ from .job_monitor import JobMonitor
 
 
 if TYPE_CHECKING:
-    from .models.machine import Machine
-    from .driver.driver import Axis
+    from ..core.ops.axis import Axis
     from ..doceditor.editor import DocEditor
     from .models.laser import Laser
+    from .models.machine import Machine
 
 
 logger = logging.getLogger(__name__)

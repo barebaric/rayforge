@@ -1,7 +1,7 @@
 from gi.repository import Gdk, Gsk, Graphene, Gtk
 from typing import Optional
 from gettext import gettext as _
-from ...machine.driver.driver import Axis
+from ...core.ops.axis import Axis
 from ...machine.models.machine import JogDirection, Machine
 from ...machine.cmd import MachineCmd
 from ..icons import get_icon

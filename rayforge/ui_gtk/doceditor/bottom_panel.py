@@ -3,9 +3,9 @@ import logging
 from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from blinker import Signal
+from ...core.ops.axis import Axis
 from ...logging_setup import ui_log_event_received
 from ...machine.models.machine import Machine
-from ...machine.driver.driver import Axis
 from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.cmd import MachineCmd
 from ...shared.gcodeedit.viewer import GcodeViewer

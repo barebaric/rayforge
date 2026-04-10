@@ -1,7 +1,8 @@
 import pytest
 from unittest.mock import MagicMock
 from rayforge.machine.models.machine import Machine, Origin
-from rayforge.machine.driver.driver import Axis, DeviceState
+from rayforge.core.ops.axis import Axis
+from rayforge.machine.driver.driver import DeviceState
 from rayforge.machine.transport import TransportStatus
 
 # Jog distance and speed for testing

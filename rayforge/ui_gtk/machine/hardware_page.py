@@ -3,7 +3,7 @@ from gettext import gettext as _
 
 from gi.repository import Adw, Gtk
 
-from ...machine.driver.driver import Axis
+from ...core.ops.axis import Axis
 from ...machine.models.machine import Machine, Origin
 from ..shared.adwfix import get_spinrow_float
 from ..shared.preferences_page import TrackedPreferencesPage

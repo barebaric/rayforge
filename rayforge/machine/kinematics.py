@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 import numpy as np
 
 from ..core.geo import Point3D
+from ..core.ops.axis import Axis
 from .assembly import Assembly, JointType, Link, LinkRole
-from .driver.driver import Axis
 
 if TYPE_CHECKING:
     from ..simulator.machine_state import MachineState

@@ -10,7 +10,7 @@ from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
-from rayforge.core.ops import Ops
+from rayforge.core.ops import Ops, Axis
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
@@ -18,7 +18,7 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
 from rayforge.image import SVG_RENDERER
 from rayforge.machine.cmd import MachineCmd
-from rayforge.machine.driver.driver import Axis, DeviceState
+from rayforge.machine.driver.driver import DeviceState
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.driver.grbl import GrblNetworkDriver
 from rayforge.machine.driver.grbl_serial import GrblSerialDriver

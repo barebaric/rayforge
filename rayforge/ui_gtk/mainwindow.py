@@ -11,15 +11,16 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from .. import __version__
 from .. import const
 from ..context import get_context
-from ..core.group import Group
 from ..core.asset_registry import asset_type_registry
+from ..core.group import Group
 from ..core.item import DocItem
+from ..core.ops.axis import Axis
 from ..core.step_registry import step_registry
 from ..core.undo import Command, HistoryManager
 from ..core.workpiece import WorkPiece
 from ..doceditor.editor import DocEditor
 from ..machine.cmd import MachineCmd
-from ..machine.driver.driver import DeviceState, DeviceStatus, Axis
+from ..machine.driver.driver import DeviceState, DeviceStatus
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.models.machine import Machine
 from ..machine.models.zone import check_ops_collides_with_zones

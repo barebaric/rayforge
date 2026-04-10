@@ -6,7 +6,7 @@ from functools import partial
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
 from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.models.machine import Machine
-from rayforge.machine.driver.driver import Axis
+from rayforge.core.ops.axis import Axis
 from rayforge.pipeline.artifact import JobArtifact
 from rayforge.shared.tasker.manager import TaskManager
 

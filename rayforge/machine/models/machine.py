@@ -12,13 +12,11 @@ from blinker import Signal
 from ...camera.models.camera import Camera
 from ...context import RayforgeContext, get_context
 from ...core.geo import Point3D, Rect
+from ...core.ops.axis import Axis
 from ...pipeline.coordspace import MachineSpace
 from ...pipeline.encoder.gcode import MachineCodeOpMap
 from ...shared.tasker import task_mgr
-from ..driver.driver import (
-    Axis,
-    DeviceState,
-)
+from ..driver.driver import DeviceState
 from ..assembly import Assembly
 from ..kinematics import (
     HeadSpec,

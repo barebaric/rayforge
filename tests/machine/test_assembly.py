@@ -2,8 +2,8 @@ import math
 
 import pytest
 
+from rayforge.core.ops.axis import Axis
 from rayforge.machine.assembly import Assembly, JointType, Link, LinkRole
-from rayforge.machine.driver.driver import Axis
 from rayforge.simulator.machine_state import MachineState
 
 
