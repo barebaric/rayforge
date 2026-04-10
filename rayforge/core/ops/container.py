@@ -18,6 +18,7 @@ import json
 from ..geo import clipping
 from ..geo.arc import get_arc_bounding_box, linearize_arc
 from ..geo.types import Point3D, Rect, Polygon
+from .axis import Axis
 from .commands import (
     State,
     Command,
@@ -113,26 +114,39 @@ class Ops:
     def _create_command_from_dict(cmd_data: Dict[str, Any]) -> Command:
         """Factory method to create a Command instance from a dictionary."""
         cmd_type = cmd_data.get("type")
+        ea_raw = cmd_data.get("extra_axes")
+        extra_axes = None
+        if ea_raw:
+            extra_axes = {Axis[k]: v for k, v in ea_raw.items()}
         if cmd_type == "MoveToCommand":
-            return MoveToCommand(end=tuple(cmd_data["end"]))
+            return MoveToCommand(
+                end=tuple(cmd_data["end"]),
+                extra_axes=extra_axes,
+            )
         elif cmd_type == "LineToCommand":
-            return LineToCommand(end=tuple(cmd_data["end"]))
+            return LineToCommand(
+                end=tuple(cmd_data["end"]),
+                extra_axes=extra_axes,
+            )
         elif cmd_type == "ArcToCommand":
             return ArcToCommand(
                 end=tuple(cmd_data["end"]),
                 center_offset=tuple(cmd_data["center_offset"]),
                 clockwise=cmd_data["clockwise"],
+                extra_axes=extra_axes,
             )
         elif cmd_type == "BezierToCommand":
             return BezierToCommand(
                 end=tuple(cmd_data["end"]),
                 control1=tuple(cmd_data["control1"]),
                 control2=tuple(cmd_data["control2"]),
+                extra_axes=extra_axes,
             )
         elif cmd_type == "QuadraticBezierToCommand":
             return QuadraticBezierToCommand(
                 end=tuple(cmd_data["end"]),
                 control=tuple(cmd_data["control"]),
+                extra_axes=extra_axes,
             )
         elif cmd_type == "DwellCommand":
             return DwellCommand(duration_ms=cmd_data["duration_ms"])
@@ -175,6 +189,7 @@ class Ops:
             return ScanLinePowerCommand(
                 end=tuple(cmd_data["end"]),
                 power_values=bytearray(cmd_data["power_values"]),
+                extra_axes=extra_axes,
             )
         else:
             raise TypeError(
@@ -247,6 +262,7 @@ class Ops:
         # Data Population
         arc_idx, bezier_idx = 0, 0
         scanline_idx, scanline_offset = 0, 0
+        extra_axes_map: Dict[str, Any] = {}
         for i, cmd in enumerate(self._commands):
             types[i] = COMMAND_TYPE_MAP.get(type(cmd), 0)
 
@@ -301,10 +317,15 @@ class Ops:
                 scanline_offset += length
                 scanline_idx += 1
 
+            if isinstance(cmd, MovingCommand) and cmd.extra_axes:
+                extra_axes_map[str(i)] = {
+                    axis.name: value for axis, value in cmd.extra_axes.items()
+                }
+
         json_str = json.dumps(state_marker_cmds_data)
         json_bytes = np.frombuffer(json_str.encode("utf-8"), dtype=np.uint8)
 
-        return {
+        result = {
             "types": types,
             "endpoints": endpoints,
             "arc_data": arc_data,
@@ -316,6 +337,12 @@ class Ops:
             "scanline_map": scanline_map,
             "state_marker_json_bytes": json_bytes,
         }
+        if extra_axes_map:
+            ea_json_str = json.dumps(extra_axes_map)
+            result["extra_axes_json"] = np.frombuffer(
+                ea_json_str.encode("utf-8"), dtype=np.uint8
+            )
+        return result
 
     @classmethod
     def from_numpy_arrays(cls, arrays: Dict[str, np.ndarray]) -> "Ops":
@@ -344,6 +371,12 @@ class Ops:
             state_marker_cmds_data = json.loads(json_str)
         else:
             state_marker_cmds_data = {}
+
+        extra_axes_data: Dict[str, Any] = {}
+        ea_bytes = arrays.get("extra_axes_json")
+        if ea_bytes is not None and ea_bytes.size > 0:
+            ea_str = ea_bytes.tobytes().decode("utf-8")
+            extra_axes_data = json.loads(ea_str)
 
         for i in range(len(types)):
             # Check if this index corresponds to a state/marker command
@@ -398,6 +431,10 @@ class Ops:
             else:
                 # Should not be reached if logic is correct
                 continue
+
+            if str(i) in extra_axes_data:
+                ea_raw = extra_axes_data[str(i)]
+                cmd.extra_axes = {Axis[k]: v for k, v in ea_raw.items()}
 
             new_ops.add(cmd)
 
@@ -618,14 +655,26 @@ class Ops:
             self._commands.extend(other_ops._commands)
             self._invalidate_time_cache()
 
-    def move_to(self, x: float, y: float, z: float = 0.0) -> None:
+    def move_to(
+        self,
+        x: float,
+        y: float,
+        z: float = 0.0,
+        extra: Optional[Dict[Axis, float]] = None,
+    ) -> None:
         self.last_move_to = (float(x), float(y), float(z))
-        cmd = MoveToCommand(self.last_move_to)
+        cmd = MoveToCommand(self.last_move_to, extra_axes=extra)
         self._commands.append(cmd)
         self._invalidate_time_cache()
 
-    def line_to(self, x: float, y: float, z: float = 0.0) -> None:
-        cmd = LineToCommand((float(x), float(y), float(z)))
+    def line_to(
+        self,
+        x: float,
+        y: float,
+        z: float = 0.0,
+        extra: Optional[Dict[Axis, float]] = None,
+    ) -> None:
+        cmd = LineToCommand((float(x), float(y), float(z)), extra_axes=extra)
         self._commands.append(cmd)
         self._invalidate_time_cache()
 
@@ -644,6 +693,7 @@ class Ops:
         j: float,
         clockwise: bool = True,
         z: float = 0.0,
+        extra: Optional[Dict[Axis, float]] = None,
     ) -> None:
         """
         Adds an arc command with specified endpoint, center offsets,
@@ -654,6 +704,7 @@ class Ops:
                 (float(x), float(y), float(z)),
                 (float(i), float(j)),
                 bool(clockwise),
+                extra_axes=extra,
             )
         )
         self._invalidate_time_cache()
@@ -663,6 +714,7 @@ class Ops:
         c1: Point3D,
         c2: Point3D,
         end: Point3D,
+        extra: Optional[Dict[Axis, float]] = None,
     ) -> None:
         """
         Adds a cubic Bézier curve command.
@@ -673,7 +725,7 @@ class Ops:
             logger.warning("bezier_to called without a starting point.")
             return
 
-        self._commands.append(BezierToCommand(end, c1, c2))
+        self._commands.append(BezierToCommand(end, c1, c2, extra_axes=extra))
         self._invalidate_time_cache()
 
     def set_power(self, power: float) -> None:
@@ -745,6 +797,7 @@ class Ops:
         y: float,
         z: float = 0.0,
         power_values: Optional[bytearray] = None,
+        extra: Optional[Dict[Axis, float]] = None,
     ) -> None:
         """
         Adds a scan line command with variable power values.
@@ -761,7 +814,11 @@ class Ops:
             power_values = bytearray([255])
 
         end_point = (float(x), float(y), float(z))
-        cmd = ScanLinePowerCommand(end=end_point, power_values=power_values)
+        cmd = ScanLinePowerCommand(
+            end=end_point,
+            power_values=power_values,
+            extra_axes=extra,
+        )
         self._commands.append(cmd)
         self._invalidate_time_cache()
 

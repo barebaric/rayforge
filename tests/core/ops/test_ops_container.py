@@ -7,6 +7,7 @@ from contextlib import redirect_stdout
 from typing import cast
 from rayforge.core.geo.geometry import Geometry
 from rayforge.core.ops import (
+    Axis,
     Ops,
     OpsSection,
     MoveToCommand,
@@ -1835,3 +1836,198 @@ class TestIterSections:
         assert hasattr(section, "section_type")
         assert hasattr(section, "markers")
         assert hasattr(section, "commands")
+
+
+# --- Extra Axes Dict Serialization Tests ---
+
+
+def test_extra_axes_to_dict_no_extra_axes():
+    cmd = MoveToCommand((1, 2, 3))
+    data = cmd.to_dict()
+    assert "extra_axes" not in data
+
+
+def test_extra_axes_to_dict_with_extra_axes():
+    cmd = MoveToCommand((1, 2, 3), extra_axes={Axis.A: 45.0})
+    data = cmd.to_dict()
+    assert data["extra_axes"] == {"A": 45.0}
+
+
+def test_extra_axes_from_dict_no_extra_axes():
+    data = {
+        "commands": [
+            {"type": "MoveToCommand", "end": [1, 2, 3]},
+        ],
+        "last_move_to": [0, 0, 0],
+    }
+    ops = Ops.from_dict(data)
+    cmd = ops.commands[0]
+    assert isinstance(cmd, MoveToCommand)
+    assert cmd.extra_axes == {}
+
+
+def test_extra_axes_from_dict_with_extra_axes():
+    data = {
+        "commands": [
+            {
+                "type": "MoveToCommand",
+                "end": [1, 2, 3],
+                "extra_axes": {"A": 45.0},
+            },
+        ],
+        "last_move_to": [0, 0, 0],
+    }
+    ops = Ops.from_dict(data)
+    cmd = ops.commands[0]
+    assert isinstance(cmd, MoveToCommand)
+    assert cmd.extra_axes == {Axis.A: 45.0}
+
+
+def test_extra_axes_round_trip_mixed():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 10, extra={Axis.A: 45.0})
+    ops.move_to(20, 20)
+    ops.line_to(30, 30)
+
+    data = ops.to_dict()
+    restored = Ops.from_dict(data)
+
+    assert len(restored.commands) == 4
+    assert restored.commands[0].extra_axes == {}
+    assert restored.commands[1].extra_axes == {Axis.A: 45.0}
+    assert restored.commands[2].extra_axes == {}
+    assert restored.commands[3].extra_axes == {}
+
+
+# --- Extra Axes Numpy Serialization Tests ---
+
+
+def test_extra_axes_numpy_no_extra_axes_produces_no_key():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 10)
+    arrays = ops.to_numpy_arrays()
+    assert "extra_axes_json" not in arrays
+
+
+def test_extra_axes_numpy_round_trip_with_extra_axes():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 10, extra={Axis.A: 45.0})
+    ops.arc_to(
+        20,
+        20,
+        5,
+        5,
+        extra={Axis.B: 90.0},
+    )
+    ops.line_to(30, 30)
+
+    arrays = ops.to_numpy_arrays()
+    assert "extra_axes_json" in arrays
+
+    restored = Ops.from_numpy_arrays(arrays)
+    assert len(restored.commands) == 4
+    assert restored.commands[0].extra_axes == {}
+    assert restored.commands[1].extra_axes == {Axis.A: 45.0}
+    assert restored.commands[2].extra_axes == {Axis.B: 90.0}
+    assert restored.commands[3].extra_axes == {}
+
+
+def test_extra_axes_numpy_old_arrays_deserialize():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 10)
+    arrays = ops.to_numpy_arrays()
+    assert "extra_axes_json" not in arrays
+
+    restored = Ops.from_numpy_arrays(arrays)
+    for cmd in restored.commands:
+        if isinstance(cmd, MovingCommand):
+            assert cmd.extra_axes == {}
+
+
+def test_extra_axes_numpy_round_trip_preserves_all_data():
+    ops = Ops()
+    ops.set_power(0.5)
+    ops.move_to(0, 0)
+    ops.line_to(10, 10, extra={Axis.A: 30.0})
+    ops.scan_to(
+        20,
+        20,
+        0,
+        bytearray([100, 200]),
+        extra={Axis.A: 60.0},
+    )
+    ops.set_power(0.8)
+
+    arrays = ops.to_numpy_arrays()
+    restored = Ops.from_numpy_arrays(arrays)
+
+    for orig, rest in zip(ops.commands, restored.commands):
+        assert orig.to_dict() == rest.to_dict()
+
+
+# --- Extra Axes Convenience Tests ---
+
+
+def test_move_to_no_extra():
+    ops = Ops()
+    ops.move_to(10, 20)
+    cmd = ops.commands[0]
+    assert isinstance(cmd, MoveToCommand)
+    assert cmd.end == (10.0, 20.0, 0.0)
+    assert cmd.extra_axes == {}
+
+
+def test_move_to_with_extra():
+    ops = Ops()
+    ops.move_to(10, 20, 0, extra={Axis.A: 45.0})
+    cmd = ops.commands[0]
+    assert isinstance(cmd, MoveToCommand)
+    assert cmd.extra_axes == {Axis.A: 45.0}
+
+
+def test_line_to_with_extra():
+    ops = Ops()
+    ops.line_to(10, 20, extra={Axis.A: 90.0})
+    cmd = ops.commands[0]
+    assert isinstance(cmd, LineToCommand)
+    assert cmd.extra_axes == {Axis.A: 90.0}
+
+
+def test_arc_to_with_extra():
+    ops = Ops()
+    ops.arc_to(5, 5, 2, 3, extra={Axis.A: 45.0})
+    cmd = ops.commands[0]
+    assert isinstance(cmd, ArcToCommand)
+    assert cmd.extra_axes == {Axis.A: 45.0}
+
+
+def test_bezier_to_with_extra():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.bezier_to(
+        c1=(1, 1, 0),
+        c2=(2, 2, 0),
+        end=(3, 3, 0),
+        extra={Axis.A: 45.0},
+    )
+    cmd = ops.commands[1]
+    assert isinstance(cmd, BezierToCommand)
+    assert cmd.extra_axes == {Axis.A: 45.0}
+
+
+def test_scan_to_with_extra():
+    ops = Ops()
+    ops.scan_to(
+        10,
+        20,
+        0,
+        bytearray([100, 200]),
+        extra={Axis.A: 45.0},
+    )
+    cmd = ops.commands[0]
+    assert isinstance(cmd, ScanLinePowerCommand)
+    assert cmd.extra_axes == {Axis.A: 45.0}

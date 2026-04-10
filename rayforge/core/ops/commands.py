@@ -8,6 +8,7 @@ import math
 from ..geo import linearize as geo_linearize
 from ..geo.bezier import linearize_bezier_segment
 from ..geo.types import Point3D
+from .axis import Axis
 
 
 @dataclass
@@ -41,11 +42,13 @@ class Command:
         self,
         end: Optional[Point3D] = None,
         state: Optional["State"] = None,
+        extra_axes: Optional[Dict[Axis, float]] = None,
     ) -> None:
         self.end: Optional[Point3D] = end
         self.state: Optional["State"] = (
             state  # Intended state during execution
         )
+        self.extra_axes: Dict[Axis, float] = extra_axes or {}
 
     def __repr__(self) -> str:
         return f"<{super().__repr__()} {self.__dict__}"
@@ -84,6 +87,10 @@ class MovingCommand(Command, ABC):
     def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
         d["end"] = self.end
+        if self.extra_axes:
+            d["extra_axes"] = {
+                axis.name: value for axis, value in self.extra_axes.items()
+            }
         return d
 
     @abstractmethod
@@ -127,8 +134,9 @@ class ArcToCommand(MovingCommand):
         end: Point3D,
         center_offset: Tuple[float, float],
         clockwise: bool,
+        extra_axes: Optional[Dict[Axis, float]] = None,
     ) -> None:
-        super().__init__(end)
+        super().__init__(end, extra_axes=extra_axes)
         self.center_offset = center_offset
         self.clockwise = clockwise
 
@@ -185,8 +193,9 @@ class BezierToCommand(CurveToCommand):
         end: Point3D,
         control1: Point3D,
         control2: Point3D,
+        extra_axes: Optional[Dict[Axis, float]] = None,
     ) -> None:
-        super().__init__(end)
+        super().__init__(end, extra_axes=extra_axes)
         self.control1 = control1
         self.control2 = control2
 
@@ -213,8 +222,9 @@ class QuadraticBezierToCommand(CurveToCommand):
         self,
         end: Point3D,
         control: Point3D,
+        extra_axes: Optional[Dict[Axis, float]] = None,
     ) -> None:
-        super().__init__(end)
+        super().__init__(end, extra_axes=extra_axes)
         self.control = control
 
     def linearize(self, start_point: Point3D) -> List[Command]:
@@ -473,8 +483,9 @@ class ScanLinePowerCommand(MovingCommand):
         self,
         end: Point3D,
         power_values: bytearray,
+        extra_axes: Optional[Dict[Axis, float]] = None,
     ) -> None:
-        super().__init__(end)
+        super().__init__(end, extra_axes=extra_axes)
         self.power_values = power_values
 
     @property

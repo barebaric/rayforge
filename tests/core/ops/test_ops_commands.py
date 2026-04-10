@@ -1,4 +1,5 @@
 import pytest
+from rayforge.core.ops import Axis
 from rayforge.core.ops.commands import (
     ArcToCommand,
     BezierToCommand,
@@ -630,3 +631,70 @@ def test_curve_to_command_isinstance_check():
     assert isinstance(quadratic, CurveToCommand)
     assert not isinstance(line, CurveToCommand)
     assert not isinstance(arc, CurveToCommand)
+
+
+# --- Extra Axes Construction Tests ---
+
+
+def test_move_to_default_extra_axes():
+    cmd = MoveToCommand((1, 2, 3))
+    assert cmd.extra_axes == {}
+
+
+def test_move_to_with_extra_axes():
+    cmd = MoveToCommand((1, 2, 3), extra_axes={Axis.A: 45.0})
+    assert cmd.extra_axes == {Axis.A: 45.0}
+
+
+def test_line_to_default_extra_axes():
+    cmd = LineToCommand((1, 2, 3))
+    assert cmd.extra_axes == {}
+
+
+def test_line_to_with_extra_axes():
+    cmd = LineToCommand((1, 2, 3), extra_axes={Axis.A: 45.0})
+    assert cmd.extra_axes == {Axis.A: 45.0}
+
+
+def test_arc_to_default_extra_axes():
+    cmd = ArcToCommand((5, 5, 0), (2, 3), True)
+    assert cmd.extra_axes == {}
+
+
+def test_arc_to_with_extra_axes():
+    cmd = ArcToCommand(
+        (5, 5, 0),
+        (2, 3),
+        True,
+        extra_axes={Axis.A: 45.0},
+    )
+    assert cmd.extra_axes == {Axis.A: 45.0}
+
+
+def test_bezier_to_default_extra_axes():
+    cmd = BezierToCommand((4, 0, 0), (1, 3, 0), (3, 3, 0))
+    assert cmd.extra_axes == {}
+
+
+def test_bezier_to_with_extra_axes():
+    cmd = BezierToCommand(
+        (4, 0, 0),
+        (1, 3, 0),
+        (3, 3, 0),
+        extra_axes={Axis.A: 45.0},
+    )
+    assert cmd.extra_axes == {Axis.A: 45.0}
+
+
+def test_scan_line_default_extra_axes():
+    cmd = ScanLinePowerCommand((3, 0, 5), bytearray([100, 200]))
+    assert cmd.extra_axes == {}
+
+
+def test_scan_line_with_extra_axes():
+    cmd = ScanLinePowerCommand(
+        (3, 0, 5),
+        bytearray([100, 200]),
+        extra_axes={Axis.A: 45.0},
+    )
+    assert cmd.extra_axes == {Axis.A: 45.0}
