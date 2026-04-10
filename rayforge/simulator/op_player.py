@@ -1,25 +1,61 @@
-from typing import Optional
+from __future__ import annotations
 
+from typing import TYPE_CHECKING, Optional
+
+from ..core.layer import Layer
 from ..core.ops import Ops
-from ..core.ops.commands import MovingCommand
+from ..core.ops.axis import Axis
+from ..core.ops.commands import LayerStartCommand, MovingCommand
 from .machine_state import MachineState
+
+if TYPE_CHECKING:
+    from ..core.doc import Doc
+    from ..machine.models.machine import Machine
 
 
 class OpPlayer:
-    def __init__(self, ops: Ops):
+    def __init__(self, ops: Ops, machine: Machine, doc: Doc):
         if not ops or ops.is_empty():
             raise ValueError("OpPlayer requires a non-empty Ops")
         self.ops = ops
-        self.state = MachineState()
+        self._machine = machine
+        self._doc = doc
         self._current_index: int = -1
+        self._current_rotary_axis: Optional[Axis] = None
+        self.state = self._create_home_state()
 
     @property
     def current_index(self) -> int:
         return self._current_index
 
+    def _create_home_state(self) -> MachineState:
+        state = MachineState.from_axis_set(self._machine.axes)
+        space = self._machine.get_coordinate_space()
+        home_x, home_y = space.machine_point_to_world(0.0, 0.0)
+        state.axes[Axis.X] = home_x
+        state.axes[Axis.Y] = home_y
+        return state
+
+    def _update_rotary_config(self, layer_uid: str) -> None:
+        item = self._doc.find_descendant_by_uid(layer_uid)
+        if not isinstance(item, Layer):
+            self._current_rotary_axis = None
+            return
+        self._current_rotary_axis = self._machine.get_rotary_axis_for_layer(
+            item
+        )
+
+    def _apply_rotary_mapping(self) -> None:
+        ra = self._current_rotary_axis
+        if ra is None:
+            return
+        y = self.state.axes.get(Axis.Y, 0.0)
+        self.state.axes[ra] = y
+
     def seek(self, index: int):
-        self.state = MachineState()
+        self.state = self._create_home_state()
         self._current_index = -1
+        self._current_rotary_axis = None
         self.advance_to(index)
 
     def advance_to(self, index: int):
@@ -35,7 +71,12 @@ class OpPlayer:
                 f"(ops has {len(self.ops)} commands)"
             )
         for i in range(self._current_index + 1, index + 1):
-            self.state.apply_command(self.ops.commands[i], i)
+            cmd = self.ops.commands[i]
+            if isinstance(cmd, LayerStartCommand):
+                self._update_rotary_config(cmd.layer_uid)
+            self.state.apply_command(cmd, i)
+            if isinstance(cmd, MovingCommand):
+                self._apply_rotary_mapping()
         self._current_index = index
 
     def seek_last_movement(self) -> Optional[int]:

@@ -30,6 +30,7 @@ from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.models.rotary_module import RotaryModule
 from rayforge.machine.transport import TransportStatus
+from rayforge.pipeline.transformer.axis_mapper import AxisMapper
 
 
 @pytest.fixture(autouse=True)
@@ -487,6 +488,17 @@ def _encode_rotary_line(machine, doc):
     ops = Ops()
     ops.add(MoveToCommand((0.0, 0.0, 0.0)))
     ops.add(LineToCommand((10.0, 10.0, 0.0)))
+    for layer in doc.layers:
+        rotary_axis = machine.get_rotary_axis_for_layer(layer)
+        if rotary_axis is not None:
+            has_physical_y = rotary_axis != Axis.Y
+            mapper = AxisMapper(
+                source_axis=Axis.Y,
+                rotary_axis=rotary_axis,
+                rotary_diameter=layer.rotary_diameter,
+                has_physical_source=has_physical_y,
+            )
+            mapper.run(ops)
     gcode, _ = machine.encode_ops(ops, doc)
     return gcode
 
