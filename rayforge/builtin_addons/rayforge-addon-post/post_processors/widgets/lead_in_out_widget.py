@@ -45,10 +45,6 @@ class LeadInOutSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         if machine:
             machine.changed.connect(self._on_machine_changed)
 
-        switch_row = Adw.SwitchRow(title=_("Enable Lead-In/Out"))
-        switch_row.set_active(transformer.enabled)
-        self.add(switch_row)
-
         self.auto_row = Adw.SwitchRow(
             title=_("Automatic Distance"),
             subtitle=_(
@@ -97,8 +93,11 @@ class LeadInOutSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
         self.lead_out_helper.set_value_in_base_units(transformer.lead_out_mm)
 
-        switch_row.connect("notify::active", self._on_enable_toggled)
         self.auto_row.connect("notify::active", self._on_auto_toggled)
+        self.auto_row.connect(
+            "notify::active",
+            lambda w, _: self._update_sensitivity(),
+        )
         lead_in_row.connect(
             "changed",
             lambda r: self._debounce(self._on_lead_in_changed, r),
@@ -106,15 +105,6 @@ class LeadInOutSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         lead_out_row.connect(
             "changed",
             lambda r: self._debounce(self._on_lead_out_changed, r),
-        )
-
-        switch_row.connect(
-            "notify::active",
-            lambda w, _: self._update_sensitivity(),
-        )
-        self.auto_row.connect(
-            "notify::active",
-            lambda w, _: self._update_sensitivity(),
         )
 
         self._update_sensitivity()
@@ -129,17 +119,13 @@ class LeadInOutSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
 
     def _update_sensitivity(self):
-        enabled = self.target_dict.get("enabled", True)
-        auto = self.target_dict.get("auto", True)
+        assert self.enable_switch is not None
+        enabled = self.enable_switch.get_active()
+        auto = self.auto_row.get_active()
 
+        self.auto_row.set_sensitive(enabled)
         self.lead_in_row.set_sensitive(enabled and not auto)
         self.lead_out_row.set_sensitive(enabled and not auto)
-        self.auto_row.set_sensitive(enabled)
-
-    def _on_enable_toggled(self, row, pspec):
-        new_value = row.get_active()
-        self._set_step_param("enabled", new_value, _("Toggle Lead-In/Out"))
-        self._update_sensitivity()
 
     def _on_auto_toggled(self, row, pspec):
         new_value = row.get_active()

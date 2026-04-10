@@ -39,14 +39,6 @@ class SmoothSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             **kwargs,
         )
 
-        # Main toggle switch
-        switch_row = Adw.SwitchRow(
-            title=_("Enable Smoothing"),
-            subtitle=_("Smooths jagged edges using a Gaussian filter"),
-        )
-        switch_row.set_active(transformer.enabled)
-        self.add(switch_row)
-
         amount_adj = Gtk.Adjustment(
             lower=0, upper=100, step_increment=1, page_increment=10
         )
@@ -76,41 +68,12 @@ class SmoothSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         corner_adj.set_value(transformer.corner_angle_threshold)
         self.add(corner_row)
 
-        # Set initial sensitivity
-        is_enabled = transformer.enabled
-        amount_row.set_sensitive(is_enabled)
-        corner_row.set_sensitive(is_enabled)
-
-        # Connect signals
-        switch_row.connect("notify::active", self._on_enable_toggled)
-        switch_row.connect(
-            "notify::active",
-            self._on_sensitivity_toggled,
-            amount_row,
-            corner_row,
-        )
         corner_row.connect(
             "changed",
             lambda spin_row: self._debounce(
                 self._on_corner_angle_changed, spin_row
             ),
         )
-
-    def _on_enable_toggled(self, row, pspec):
-        new_value = row.get_active()
-        command = DictItemCommand(
-            target_dict=self.target_dict,
-            key="enabled",
-            new_value=new_value,
-            name=_("Toggle Smoothing"),
-            on_change_callback=lambda: self.step.updated.send(self.step),
-        )
-        self.history_manager.execute(command)
-
-    def _on_sensitivity_toggled(self, row, pspec, amount_row, corner_row):
-        is_active = row.get_active()
-        amount_row.set_sensitive(is_active)
-        corner_row.set_sensitive(is_active)
 
     def _on_amount_changed(self, scale):
         new_value = int(scale.get_value())
