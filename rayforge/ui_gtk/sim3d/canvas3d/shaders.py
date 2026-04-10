@@ -36,6 +36,7 @@ uniform int uExecutedVertexCount;
 uniform float uAlphaPending;
 uniform float uEmissive;
 uniform vec3 uPointLightPos;
+uniform float uPointLightOn;
 void main() {
     vec4 baseColor;
     if (uUseVertexColor > 0.5) {
@@ -57,14 +58,16 @@ void main() {
 
         float light = ambient + diffuse + specular;
 
-        // Point light from laser
-        vec3 toPoint = uPointLightPos - vPos;
-        float dist = length(toPoint);
-        float atten = 1.0 / (1.0 + 0.005 * dist * dist);
-        if (dist > 0.001) {
-            vec3 plDir = toPoint / dist;
-            float plDiff = max(dot(n, plDir), 0.0);
-            light += plDiff * atten;
+        if (uPointLightOn > 0.5) {
+            // Point light from laser
+            vec3 toPoint = uPointLightPos - vPos;
+            float dist = length(toPoint);
+            float atten = 1.0 / (1.0 + 0.005 * dist * dist);
+            if (dist > 0.001) {
+                vec3 plDir = toPoint / dist;
+                float plDiff = max(dot(n, plDir), 0.0);
+                light += plDiff * atten;
+            }
         }
 
         FragColor = vec4(baseColor.rgb * light, baseColor.a);
