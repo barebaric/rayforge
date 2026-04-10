@@ -880,12 +880,14 @@ class Canvas3D(Gtk.GLArea):
                         and self._main_shader
                         and self._op_player.state.laser_on
                     ):
-                        beam_pos = head_pos.copy()
                         if self._had_rotary_layers and asm.has_rotary:
+                            beam_pos = head_pos.copy()
+                            beam_pos[1] = grid_model_matrix[1, 3]
                             diameter = asm.rotary_diameter
                             if diameter and diameter > 0:
                                 beam_pos[2] += diameter / 2.0
-                            beam_pos[1] = offset_y
+                        else:
+                            beam_pos = head_pos.copy()
                         self._laser_beam_renderer.render(
                             self._main_shader,
                             proj_matrix,
@@ -923,7 +925,8 @@ class Canvas3D(Gtk.GLArea):
                             link = asm.get_link(link_name)
                             if link and link.role != LinkRole.CHUCK:
                                 module_transform[1, 3] = (
-                                    offset_y - margin_shift[1, 3]
+                                    grid_model_matrix[1, 3]
+                                    - margin_shift[1, 3]
                                 )
                                 diameter = asm.rotary_diameter
                                 if diameter and diameter > 0:
@@ -1390,7 +1393,10 @@ class Canvas3D(Gtk.GLArea):
         if self._op_player is not None and self._op_player.ops is ops:
             saved_index = self._op_player.current_index
 
-        self._op_player = OpPlayer(ops)
+        machine = self._context.machine
+        if machine is None:
+            return
+        self._op_player = OpPlayer(ops, machine=machine, doc=self.doc)
         self._current_layer_uid = None
         self._extract_playback_offsets_from_artifact()
 

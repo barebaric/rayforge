@@ -57,12 +57,23 @@ class AxisConfig:
 class AxisSet:
     def __init__(self, configs: List[AxisConfig]):
         self.configs = configs
+        self._rebuild_filters()
+
+    def _rebuild_filters(self) -> None:
         self.linear_axes = [
-            c for c in configs if c.axis_type == AxisType.LINEAR
+            c for c in self.configs if c.axis_type == AxisType.LINEAR
         ]
         self.rotary_axes = [
-            c for c in configs if c.axis_type == AxisType.ROTARY
+            c for c in self.configs if c.axis_type == AxisType.ROTARY
         ]
+
+    def add_config(self, config: AxisConfig) -> None:
+        self.configs.append(config)
+        self._rebuild_filters()
+
+    def remove_config(self, axis: Axis) -> None:
+        self.configs = [c for c in self.configs if c.letter != axis]
+        self._rebuild_filters()
 
     def get(self, axis: Axis) -> Optional[AxisConfig]:
         for c in self.configs:
