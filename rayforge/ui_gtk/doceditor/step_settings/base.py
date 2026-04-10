@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Union, Dict, Any
+from gettext import gettext as _
+from typing import TYPE_CHECKING, Union, Dict, Any, List, Optional
 
 from gi.repository import Adw
 
@@ -49,12 +50,45 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
         self.page = page
         self.step = step
         self.history_manager = editor.history_manager
-        self._rows = []
+        self._rows: List = []
+        self.enable_switch: Optional[Adw.SwitchRow] = None
+
+        if isinstance(component, OpsTransformer):
+            self._add_enable_switch(component)
 
     def add(self, child):
         self._rows.append(child)
         if not getattr(self.page, "use_expanders", False):
             super().add(child)
+        if self.enable_switch is not None and child is not self.enable_switch:
+            child.set_sensitive(self.enable_switch.get_active())
+
+    def _add_enable_switch(self, component):
+        switch_row = Adw.SwitchRow(
+            title=_("Enable {}").format(component.label),
+        )
+        switch_row.set_active(component.enabled)
+        self.add(switch_row)
+        self.enable_switch = switch_row
+        switch_row.connect("notify::active", self._on_enable_toggled)
+
+    def _on_enable_toggled(self, row, pspec):
+        assert isinstance(self.component, OpsTransformer)
+        new_value = row.get_active()
+        self.editor.step.set_step_param(
+            target_dict=self.target_dict,
+            key="enabled",
+            new_value=new_value,
+            name=_("Toggle {}").format(self.component.label),
+            on_change_callback=lambda: self.step.updated.send(self.step),
+        )
+        self._update_sensitivity()
+
+    def _update_sensitivity(self):
+        assert self.enable_switch is not None
+        enabled = self.enable_switch.get_active()
+        for row in self._rows[1:]:
+            row.set_sensitive(enabled)
 
     @property
     def target_dict(self) -> Dict[str, Any]:

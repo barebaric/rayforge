@@ -38,15 +38,6 @@ class MergeLinesSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             **kwargs,
         )
 
-        switch_row = Adw.SwitchRow(
-            title=_("Enable Merge Lines"),
-            subtitle=_(
-                "Merges overlapping line segments to avoid double passing"
-            ),
-        )
-        switch_row.set_active(transformer.enabled)
-        self.add(switch_row)
-
         tolerance_adj = Gtk.Adjustment(
             lower=0.01, upper=10.0, step_increment=0.1, page_increment=1.0
         )
@@ -61,36 +52,12 @@ class MergeLinesSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         tolerance_row.set_digits(2)
         self.add(tolerance_row)
 
-        is_enabled = transformer.enabled
-        tolerance_row.set_sensitive(is_enabled)
-
-        switch_row.connect("notify::active", self._on_enable_toggled)
-        switch_row.connect(
-            "notify::active",
-            self._on_sensitivity_toggled,
-            tolerance_row,
-        )
         tolerance_row.connect(
             "changed",
             lambda spin_row: self._debounce(
                 self._on_tolerance_changed, spin_row
             ),
         )
-
-    def _on_enable_toggled(self, row, pspec):
-        new_value = row.get_active()
-        command = DictItemCommand(
-            target_dict=self.target_dict,
-            key="enabled",
-            new_value=new_value,
-            name=_("Toggle Merge Lines"),
-            on_change_callback=self.step.per_step_transformer_changed.send,
-        )
-        self.history_manager.execute(command)
-
-    def _on_sensitivity_toggled(self, row, pspec, tolerance_row):
-        is_active = row.get_active()
-        tolerance_row.set_sensitive(is_active)
 
     def _on_tolerance_changed(self, spin_row):
         new_value = get_spinrow_float(spin_row)

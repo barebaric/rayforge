@@ -36,23 +36,11 @@ class OptimizeSettingsWidget(StepComponentSettingsWidget):
             **kwargs,
         )
 
-        # Main toggle switch
-        switch_row = Adw.SwitchRow(
-            title=_("Enable Optimization"),
-            subtitle=_("Minimizes travel distance by reordering segments"),
-        )
-        switch_row.set_active(transformer.enabled)
-        self.add(switch_row)
-
-        # Connect signals
-        switch_row.connect("notify::active", self._on_enable_toggled)
-
         self.flip_row = Adw.SwitchRow(
             title=_("Allow Flipping"),
             subtitle=_("Allow reversing path direction for shorter travel"),
         )
         self.flip_row.set_active(transformer.allow_flip)
-        self.flip_row.set_sensitive(transformer.enabled)
         self.add(self.flip_row)
         self.flip_row.connect("notify::active", self._on_flip_toggled)
 
@@ -61,28 +49,10 @@ class OptimizeSettingsWidget(StepComponentSettingsWidget):
             subtitle=_("Keep the first workpiece at its original position"),
         )
         self.preserve_row.set_active(transformer.preserve_first)
-        self.preserve_row.set_sensitive(transformer.enabled)
         self.add(self.preserve_row)
         self.preserve_row.connect(
             "notify::active", self._on_preserve_first_toggled
         )
-
-    def _on_enable_toggled(self, row, pspec):
-        new_value = row.get_active()
-        if new_value == self.target_dict.get("enabled"):
-            return
-
-        self.flip_row.set_sensitive(new_value)
-        self.preserve_row.set_sensitive(new_value)
-
-        command = DictItemCommand(
-            target_dict=self.target_dict,
-            key="enabled",
-            new_value=new_value,
-            name=_("Toggle Path Optimization"),
-            on_change_callback=lambda: self.step.updated.send(self.step),
-        )
-        self.history_manager.execute(command)
 
     def _on_flip_toggled(self, row, pspec):
         new_value = row.get_active()

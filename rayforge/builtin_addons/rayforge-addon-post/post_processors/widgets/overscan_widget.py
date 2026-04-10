@@ -46,11 +46,6 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         if machine:
             machine.changed.connect(self._on_machine_changed)
 
-        # Main toggle switch
-        switch_row = Adw.SwitchRow(title=_("Enable Overscan"))
-        switch_row.set_active(transformer.enabled)
-        self.add(switch_row)
-
         # Auto mode toggle
         self.auto_row = Adw.SwitchRow(
             title=_("Automatic Distance"),
@@ -82,20 +77,12 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.distance_helper.set_value_in_base_units(transformer.distance_mm)
 
         # Connect signals
-        switch_row.connect("notify::active", self._on_enable_toggled)
         self.auto_row.connect("notify::active", self._on_auto_toggled)
         distance_row.connect(
             "changed",
             lambda r: self._debounce(self._on_distance_changed, r),
         )
 
-        # Set initial sensitivity
-        is_sensitive = transformer.enabled and not transformer.auto
-        distance_row.set_sensitive(is_sensitive)
-        switch_row.connect(
-            "notify::active",
-            lambda w, _: self._update_sensitivity(),
-        )
         self.auto_row.connect(
             "notify::active",
             lambda w, _: self._update_sensitivity(),
@@ -113,17 +100,13 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
     def _update_sensitivity(self):
         """Update the sensitivity of UI elements based on current state."""
-        enabled = self.target_dict.get("enabled", True)
-        auto = self.target_dict.get("auto", True)
+        assert self.enable_switch is not None
+        enabled = self.enable_switch.get_active()
+        auto = self.auto_row.get_active()
 
         # Use the stored references to the rows
-        self.distance_row.set_sensitive(enabled and not auto)
         self.auto_row.set_sensitive(enabled)
-
-    def _on_enable_toggled(self, row, pspec):
-        new_value = row.get_active()
-        self._set_step_param("enabled", new_value, _("Toggle Overscan"))
-        self._update_sensitivity()
+        self.distance_row.set_sensitive(enabled and not auto)
 
     def _on_auto_toggled(self, row, pspec):
         new_value = row.get_active()

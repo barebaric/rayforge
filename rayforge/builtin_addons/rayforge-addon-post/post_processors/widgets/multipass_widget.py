@@ -76,8 +76,17 @@ class MultiPassSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             lambda r: self._debounce(self._on_z_step_down_changed, r),
         )
 
-        # Set initial sensitivity
-        z_step_row.set_sensitive(transformer.passes > 1)
+        # Z Step-down is only available with multiple passes
+        if transformer.passes <= 1:
+            z_step_row.set_sensitive(False)
+
+    def _update_sensitivity(self):
+        assert self.enable_switch is not None
+        enabled = self.enable_switch.get_active()
+        passes_row = self._rows[1]
+        z_step_row = self._rows[2]
+        passes_row.set_sensitive(enabled)
+        z_step_row.set_sensitive(enabled and passes_row.get_value() > 1)
 
     def _on_passes_changed(self, spin_row, z_step_row: Adw.SpinRow):
         new_value = get_spinrow_int(spin_row)
