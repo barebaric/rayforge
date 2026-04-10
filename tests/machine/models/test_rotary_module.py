@@ -329,7 +329,7 @@ class TestMachineRotaryModules:
         machine.add_rotary_module(rm)
 
         data = machine.to_dict()
-        machine2 = Machine.from_dict(data)
+        machine2 = Machine.from_dict(data, context=lite_context)
 
         assert len(machine2.rotary_modules) == 1
         rm2 = machine2.rotary_modules[rm.uid]
@@ -344,7 +344,7 @@ class TestMachineRotaryModules:
         data = machine.to_dict()
         assert data["machine"]["rotary_modules"] == []
 
-        machine2 = Machine.from_dict(data)
+        machine2 = Machine.from_dict(data, context=lite_context)
         assert machine2.rotary_modules == {}
 
     def test_serialization_multiple_modules(self, lite_context):
@@ -358,7 +358,7 @@ class TestMachineRotaryModules:
         machine.add_rotary_module(rm2)
 
         data = machine.to_dict()
-        machine2 = Machine.from_dict(data)
+        machine2 = Machine.from_dict(data, context=lite_context)
 
         assert len(machine2.rotary_modules) == 2
         assert machine2.rotary_modules[rm1.uid].name == "Module A"
@@ -373,7 +373,7 @@ class TestMachineRotaryModules:
         machine.add_rotary_module(rm)
 
         data = machine.to_dict()
-        machine2 = Machine.from_dict(data)
+        machine2 = Machine.from_dict(data, context=lite_context)
 
         assert len(machine2.rotary_modules) == 1
         rm2 = machine2.rotary_modules[rm.uid]
@@ -390,6 +390,6 @@ class TestMachineRotaryModules:
         data = machine.to_dict()
         assert data["machine"]["rotary_modules"][0]["model_id"] is None
 
-        machine2 = Machine.from_dict(data)
+        machine2 = Machine.from_dict(data, context=lite_context)
         rm2 = list(machine2.rotary_modules.values())[0]
         assert rm2.model_id is None

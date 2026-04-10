@@ -1368,9 +1368,12 @@ class Machine:
 
     @classmethod
     def from_dict(
-        cls, data: Dict[str, Any], is_inert: bool = False
+        cls,
+        data: Dict[str, Any],
+        context: Optional["RayforgeContext"] = None,
     ) -> "Machine":
-        context = get_context()
+        if context is None:
+            context = get_context()
         ma = cls(context)
         ma_data = data.get("machine", {})
         ma.id = ma_data.get("id", ma.id)

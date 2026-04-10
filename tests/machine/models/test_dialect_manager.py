@@ -178,7 +178,7 @@ class TestLegacyConfigMigration:
         with open(config_path) as f:
             data = yaml.safe_load(f)
 
-        machine = Machine.from_dict(data)
+        machine = Machine.from_dict(data, context=lite_context)
 
         assert machine.dialect_uid != "marlin"
         assert machine.dialect_migrated is True
@@ -194,7 +194,7 @@ class TestLegacyConfigMigration:
         with open(config_path) as f:
             data = yaml.safe_load(f)
 
-        machine = Machine.from_dict(data)
+        machine = Machine.from_dict(data, context=lite_context)
 
         assert machine.dialect_uid != "grbl"
         dialect = lite_context.dialect_mgr.get(machine.dialect_uid)
@@ -208,7 +208,7 @@ class TestLegacyConfigMigration:
         with open(config_path) as f:
             data = yaml.safe_load(f)
 
-        machine = Machine.from_dict(data)
+        machine = Machine.from_dict(data, context=lite_context)
 
         assert machine.dialect_uid != "grbl"
         assert machine.dialect_migrated is True
@@ -223,11 +223,11 @@ class TestLegacyConfigMigration:
         with open(config_path) as f:
             data = yaml.safe_load(f)
 
-        machine1 = Machine.from_dict(data)
+        machine1 = Machine.from_dict(data, context=lite_context)
         first_uid = machine1.dialect_uid
 
         serialized = machine1.to_dict()
-        machine2 = Machine.from_dict(serialized)
+        machine2 = Machine.from_dict(serialized, context=lite_context)
 
         assert machine2.dialect_uid == first_uid
         assert machine2.dialect_migrated is False

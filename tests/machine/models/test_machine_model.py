@@ -428,7 +428,7 @@ class TestMachineModel:
                 "soft_limits": [10, 10, 280, 380],
             }
         }
-        machine = Machine.from_dict(data)
+        machine = Machine.from_dict(data, context=lite_context)
         assert machine.axis_extents == (300, 400)
         assert machine.work_margins == (50, 50, 50, 50)
         assert machine.soft_limits == (10, 10, 280, 380)
@@ -441,7 +441,7 @@ class TestMachineModel:
                 "offsets": [100, 150],
             }
         }
-        machine = Machine.from_dict(data)
+        machine = Machine.from_dict(data, context=lite_context)
         assert machine.axis_extents == (400, 500)
         assert machine.work_margins == (100, 0, 0, 150)
         assert machine.work_area == (100, 0, 300, 350)
@@ -455,7 +455,7 @@ class TestMachineModel:
                 "dimensions": [350, 450],
             }
         }
-        machine = Machine.from_dict(data)
+        machine = Machine.from_dict(data, context=lite_context)
         assert machine.axis_extents == (350, 450)
 
     def test_work_margins_persist_through_serialization(self, lite_context):
@@ -466,7 +466,7 @@ class TestMachineModel:
 
         data = machine1.to_dict()
 
-        machine2 = Machine.from_dict(data)
+        machine2 = Machine.from_dict(data, context=lite_context)
         assert machine2.axis_extents == (500, 600)
         assert machine2.work_margins == (100, 150, 100, 100)
 
@@ -543,7 +543,7 @@ class TestRotaryAxisGcodeOutput:
         machine = Machine(lite_context)
         machine.set_supports_curves(True)
         data = machine.to_dict()
-        restored = Machine.from_dict(data)
+        restored = Machine.from_dict(data, context=lite_context)
         assert restored.supports_curves is True
 
     def test_prepare_ops_linearizes_by_default(self, lite_context):
