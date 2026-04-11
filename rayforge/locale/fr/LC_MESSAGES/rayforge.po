@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-09 12:36+0200\n"
+"POT-Creation-Date: 2026-04-11 11:22+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -4857,6 +4857,14 @@ msgid ""
 msgstr ""
 "Le composant requis '{}' est introuvable. Le document peut toujours être "
 "enregistré."
+
+#: rayforge/ui_gtk/doceditor/step_settings/base.py
+msgid "Enable {}"
+msgstr "Activer {}"
+
+#: rayforge/ui_gtk/doceditor/step_settings/base.py
+msgid "Toggle {}"
+msgstr "Basculer {}"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "1 material"

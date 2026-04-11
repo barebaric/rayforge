@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-09 12:36+0200\n"
+"POT-Creation-Date: 2026-04-11 11:22+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -4841,6 +4841,14 @@ msgid ""
 msgstr ""
 "El componente requerido '{}' no se encontró. El documento aún se puede "
 "guardar."
+
+#: rayforge/ui_gtk/doceditor/step_settings/base.py
+msgid "Enable {}"
+msgstr "Habilitar {}"
+
+#: rayforge/ui_gtk/doceditor/step_settings/base.py
+msgid "Toggle {}"
+msgstr "Alternar {}"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "1 material"

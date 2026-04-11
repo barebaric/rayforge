@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-09 03:49+0200\n"
+"POT-Creation-Date: 2026-04-10 23:41+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,10 +17,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-
-#: post_processors/widgets/lead_in_out_widget.py
-msgid "Enable Lead-In/Out"
-msgstr "Увімкнути в'їзд/виїзд"
 
 #: post_processors/widgets/lead_in_out_widget.py
 #: post_processors/widgets/overscan_widget.py
@@ -50,10 +46,6 @@ msgid "Distance of zero-power move after cut ends"
 msgstr "Відстань руху без потужності після завершення різання"
 
 #: post_processors/widgets/lead_in_out_widget.py
-msgid "Toggle Lead-In/Out"
-msgstr "Перемкнути в'їзд/виїзд"
-
-#: post_processors/widgets/lead_in_out_widget.py
 msgid "Toggle Auto Lead-In/Out"
 msgstr "Перемкнути автоматичний в'їзд/виїзд"
 
@@ -74,20 +66,12 @@ msgid "Change Lead-Out Distance"
 msgstr "Змінити відстань виїзду"
 
 #: post_processors/widgets/overscan_widget.py
-msgid "Enable Overscan"
-msgstr "Увімкнути перебіг"
-
-#: post_processors/widgets/overscan_widget.py
 msgid "Overscan Distance"
 msgstr "Відстань перебігу"
 
 #: post_processors/widgets/overscan_widget.py
 msgid "Manual distance setting"
 msgstr "Ручне налаштування відстані"
-
-#: post_processors/widgets/overscan_widget.py
-msgid "Toggle Overscan"
-msgstr "Перемкнути перебіг"
 
 #: post_processors/widgets/overscan_widget.py
 msgid "Toggle Auto Overscan"
@@ -106,14 +90,6 @@ msgid "Change Overscan Distance"
 msgstr "Змінити відстань перебігу"
 
 #: post_processors/widgets/optimize_widget.py
-msgid "Enable Optimization"
-msgstr "Увімкнути оптимізацію"
-
-#: post_processors/widgets/optimize_widget.py
-msgid "Minimizes travel distance by reordering segments"
-msgstr "Мінімізує відстань переміщення шляхом зміни порядку сегментів"
-
-#: post_processors/widgets/optimize_widget.py
 msgid "Allow Flipping"
 msgstr "Дозволити перевертання"
 
@@ -130,24 +106,12 @@ msgid "Keep the first workpiece at its original position"
 msgstr "Залишити першу деталь на її початковій позиції"
 
 #: post_processors/widgets/optimize_widget.py
-msgid "Toggle Path Optimization"
-msgstr "Перемкнути оптимізацію контуру"
-
-#: post_processors/widgets/optimize_widget.py
 msgid "Toggle Flipping"
 msgstr "Перемкнути перевертання"
 
 #: post_processors/widgets/optimize_widget.py
 msgid "Toggle Preserve First Workpiece"
 msgstr "Перемкнути збереження першої деталі"
-
-#: post_processors/widgets/crop_widget.py
-msgid "Enable Crop-to-Stock"
-msgstr "Увімкнути обрізання до заготовки"
-
-#: post_processors/widgets/crop_widget.py
-msgid "Removes toolpaths extending beyond stock boundary"
-msgstr "Видаляє траєкторії інструменту, що виходять за межі заготовки"
 
 #: post_processors/widgets/crop_widget.py
 msgid "Offset"
@@ -158,20 +122,8 @@ msgid "Grow/shrink stock boundary before cropping"
 msgstr "Збільшити/зменшити межу заготовки перед обрізанням"
 
 #: post_processors/widgets/crop_widget.py
-msgid "Toggle Crop-to-Stock"
-msgstr "Перемкнути обрізання до заготовки"
-
-#: post_processors/widgets/crop_widget.py
 msgid "Change Crop Offset"
 msgstr "Змінити зміщення обрізання"
-
-#: post_processors/widgets/smooth_widget.py
-msgid "Enable Smoothing"
-msgstr "Увімкнути згладжування"
-
-#: post_processors/widgets/smooth_widget.py
-msgid "Smooths jagged edges using a Gaussian filter"
-msgstr "Згладжує нерівні краї за допомогою фільтра Гауса"
 
 #: post_processors/widgets/smooth_widget.py
 msgid "Smoothness"
@@ -190,24 +142,12 @@ msgid "Angles sharper than this are kept as corners (degrees)"
 msgstr "Кути, гостріші за це, зберігаються як кути (градуси)"
 
 #: post_processors/widgets/smooth_widget.py
-msgid "Toggle Smoothing"
-msgstr "Перемкнути згладжування"
-
-#: post_processors/widgets/smooth_widget.py
 msgid "Change smoothness"
 msgstr "Змінити згладжування"
 
 #: post_processors/widgets/smooth_widget.py
 msgid "Change corner angle"
 msgstr "Змінити кут кута"
-
-#: post_processors/widgets/merge_lines_widget.py
-msgid "Enable Merge Lines"
-msgstr "Увімкнути об'єднання ліній"
-
-#: post_processors/widgets/merge_lines_widget.py
-msgid "Merges overlapping line segments to avoid double passing"
-msgstr "Об'єднує лінії, що перекриваються, щоб уникнути подвійного проходу"
 
 #: post_processors/widgets/merge_lines_widget.py
 msgid "Tolerance"
@@ -217,10 +157,6 @@ msgstr "Допуск"
 msgid "Maximum distance for lines to be considered overlapping"
 msgstr ""
 "Максимальна відстань, за якої лінії вважаються такими, що перекриваються"
-
-#: post_processors/widgets/merge_lines_widget.py
-msgid "Toggle Merge Lines"
-msgstr "Перемкнути об'єднання ліній"
 
 #: post_processors/widgets/merge_lines_widget.py
 msgid "Change merge tolerance"
