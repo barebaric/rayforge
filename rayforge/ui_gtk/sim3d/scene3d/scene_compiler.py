@@ -17,6 +17,7 @@ import numpy as np
 from ....core.geo.arc import linearize_arc
 from ....core.geo.bezier import linearize_bezier_segment
 from ....core.ops import Ops
+from ....core.ops.axis import Axis
 from ....core.ops.commands import (
     ArcToCommand,
     BezierToCommand,
@@ -77,10 +78,13 @@ def _apply_cylinder(
     verts: np.ndarray,
     diameter: float,
     colors: Optional[np.ndarray] = None,
+    source_axis: Axis = Axis.Y,
 ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
     if verts.size == 0 or diameter <= 0:
         return verts, colors
-    return transform_to_cylinder(verts.reshape(-1, 3), diameter, colors)
+    return transform_to_cylinder(
+        verts.reshape(-1, 3), diameter, colors, source_axis=source_axis
+    )
 
 
 def _to_arr(raw: List[float], cols: int) -> np.ndarray:
@@ -293,6 +297,7 @@ class _LayerAccumulator:
         "is_rotary",
         "rotary_segments",
         "current_rotary_seg",
+        "source_axis",
     )
 
     def __init__(self, total_cmds: int, is_rotary: bool):
@@ -311,6 +316,7 @@ class _LayerAccumulator:
         self.is_rotary = is_rotary
         self.rotary_segments: List[dict] = []
         self.current_rotary_seg: Optional[dict] = None
+        self.source_axis: Axis = Axis.Y
 
     def record_offset(self, cmd_idx: int):
         self.pv_off[cmd_idx + 1] = self.pv_cum
@@ -325,6 +331,7 @@ class _LayerAccumulator:
             "ov_start": len(self.ov_pos) // 3,
             "cmd_start": cmd_idx + 1,
             "diameter": 0.0,
+            "source_axis": self.source_axis,
         }
 
     def end_rotary_segment(self, diameter: float, cmd_idx: int):
@@ -427,6 +434,7 @@ def _apply_cylinder_wrapping(
 
     for seg in rotary_segments:
         d = seg["diameter"]
+        sa = seg.get("source_axis", Axis.Y)
         if d <= 0:
             continue
 
@@ -434,7 +442,10 @@ def _apply_cylinder_wrapping(
         pv_e = seg.get("pv_end", pv_cum)
         if pv_e > pv_s:
             pv_w, pc_w = _apply_cylinder(
-                pv_arr[pv_s:pv_e], d, pc_arr[pv_s:pv_e]
+                pv_arr[pv_s:pv_e],
+                d,
+                pc_arr[pv_s:pv_e],
+                source_axis=sa,
             )
             assert pc_w is not None
             _exp_pv.append(pv_w)
@@ -443,14 +454,21 @@ def _apply_cylinder_wrapping(
         tv_s = seg["tv_start"]
         tv_e = seg.get("tv_end", tv_cum)
         if tv_e > tv_s:
-            tv_w, _ = _apply_cylinder(tv_arr[tv_s:tv_e], d)
+            tv_w, _ = _apply_cylinder(
+                tv_arr[tv_s:tv_e],
+                d,
+                source_axis=sa,
+            )
             _exp_tv.append(tv_w)
 
         zpv_s = seg["zpv_vtx_start"]
         zpv_e = seg.get("zpv_vtx_end", len(zpv_arr))
         if zpv_e > zpv_s:
             zpv_w, zpc_w = _apply_cylinder(
-                zpv_arr[zpv_s:zpv_e], d, zpc_arr[zpv_s:zpv_e]
+                zpv_arr[zpv_s:zpv_e],
+                d,
+                zpc_arr[zpv_s:zpv_e],
+                source_axis=sa,
             )
             assert zpc_w is not None
             _exp_zpv.append(zpv_w)
@@ -460,7 +478,10 @@ def _apply_cylinder_wrapping(
         ov_e = seg.get("ov_end", ov_cum)
         if ov_e > ov_s:
             ov_pos_w, ov_col_w = _apply_cylinder(
-                ov_pos_arr[ov_s:ov_e], d, ov_col_arr[ov_s:ov_e]
+                ov_pos_arr[ov_s:ov_e],
+                d,
+                ov_col_arr[ov_s:ov_e],
+                source_axis=sa,
             )
             assert ov_col_w is not None
             _exp_ov_pos.append(ov_pos_w)
@@ -540,6 +561,11 @@ def compile_scene(
             rotary_diameter = layer_cfg.rotary_diameter if layer_cfg else 0.0
             acc = accumulators[is_rotary]
 
+            source_axis = Axis.Y
+            if layer_cfg and layer_cfg.source_axis is not None:
+                source_axis = layer_cfg.source_axis
+            acc.source_axis = source_axis
+
             if is_rotary and rotary_diameter > 0:
                 acc.begin_rotary_segment(i)
 
@@ -558,6 +584,7 @@ def compile_scene(
                         "has_scanlines": current_layer_has_scanlines,
                         "scanline_laser": current_layer_scanline_laser,
                         "activation_cmd_idx": (current_layer_start - 1),
+                        "source_axis": acc.source_axis,
                     }
                 )
             if acc.current_rotary_seg is not None:
@@ -743,12 +770,14 @@ def compile_scene(
         final_model = (transform @ model).astype(np.float32)
 
         scan_lut = _get_lut(config, li["scanline_laser"], "engrave")
+        layer_source_axis = li.get("source_axis", Axis.Y)
 
         cyl_verts = None
         if is_rot and diameter > 0:
             cyl_verts = generate_cylinder_vertices(
                 grid_matrix=final_model,
                 diameter=diameter,
+                source_axis=layer_source_axis,
             )
 
         texture_layers.append(
