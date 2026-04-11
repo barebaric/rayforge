@@ -5,6 +5,19 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.5.2
+
+### Fixed
+
+- G-code production could fail if no rotary axis commands were defined
+- G5 commands in LinuxCNC and Marlin templates did not respect the omit
+  unchanged axis flag
+- 2D canvas showing stale ops when operation generates zero ops
+- Model preview showing models in wrong orientation by default
+- Point light not turning off when laser is off
+- Potential race conditions in the pipeline and 3D canvas
+- Model preview now displays colors correctly
+
 ## 1.5.1
 
 ### Changed
