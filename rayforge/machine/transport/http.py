@@ -26,10 +26,6 @@ class HttpTransport(Transport):
 
     @property
     def is_connected(self) -> bool:
-        return self._connected
-
-    @property
-    def is_connected(self) -> bool:
         return self._running
 
     async def connect(self) -> None:
