@@ -520,6 +520,7 @@ class GcodeEncoder(OpsEncoder):
         if self.laser_active and self.dialect.continuous_laser_mode:
             s_command = " S0"
         template_vars["s_command"] = s_command
+        template_vars["extra_cmd"] = ""
 
         gcode.append(self.dialect.travel_move.format(**template_vars))
 
@@ -570,6 +571,7 @@ class GcodeEncoder(OpsEncoder):
             "f_command": f_command,
             "s_command": s_command,
             "power": power_abs,
+            "extra_cmd": "",
         }
 
     def _handle_line_to(
