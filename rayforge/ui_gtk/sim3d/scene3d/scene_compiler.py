@@ -757,6 +757,7 @@ def compile_scene(
                 powered_cmd_offsets=acc.pv_off,
                 travel_cmd_offsets=acc.tv_off,
                 is_rotary=acc.is_rotary,
+                source_axis=acc.source_axis,
             )
         )
 
@@ -766,6 +767,7 @@ def compile_scene(
                 colors=_to_flat(ov_col_arr),
                 cmd_offsets=acc.ov_off,
                 is_rotary=acc.is_rotary,
+                source_axis=acc.source_axis,
             )
         )
 

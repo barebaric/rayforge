@@ -759,28 +759,28 @@ class Canvas3D(Gtk.GLArea):
 
             # Compute cylinder rotation from assembly.
             cyl_angle = 0.0
-            source_idx = 1
+            sa = Axis.Y
+            if self._op_player:
+                sa = self._op_player.source_axis
+            source_idx = 0 if sa == Axis.X else 1
             cyl_idx = 1 - source_idx
             vis_rot_axis = np.zeros(3, dtype=np.float64)
             vis_rot_axis[cyl_idx] = 1.0
             if self._op_player and self._had_rotary_layers and machine:
                 asm = machine.assembly
                 if asm.has_rotary:
-                    chuck_links = asm.get_links_by_role(LinkRole.CHUCK)
-                    if chuck_links:
-                        driver_axis = chuck_links[0].driver_axis
-                        assert driver_axis is not None
-                        raw_y = self._op_player.state.axes.get(
-                            driver_axis, 0.0
-                        )
-                        cyl_pos = self._world_to_cyl_local @ np.array(
-                            [0, raw_y, 0, 1.0], dtype=np.float32
-                        )
-                        cyl_local_y = cyl_pos[1]
-                        diameter = asm.rotary_diameter
-                        assert diameter is not None
-                        circumference = diameter * np.pi
-                        cyl_angle = (cyl_local_y / circumference) * 2 * np.pi
+                    raw_val = self._op_player.state.axes.get(sa, 0.0)
+                    raw_vec = np.array([0.0, 0.0, 0.0, 1.0], dtype=np.float32)
+                    raw_vec[source_idx] = raw_val
+                    cyl_pos = self._world_to_cyl_local @ raw_vec
+                    cyl_local_src = cyl_pos[source_idx]
+                    diameter = asm.rotary_diameter
+                    assert diameter is not None
+                    circumference = diameter * np.pi
+                    theta = (cyl_local_src / circumference) * 2 * np.pi
+                    if cyl_idx == 1:
+                        theta = -theta
+                    cyl_angle = theta
 
             rot_cyl_gl = mvp_matrix_scene_gl
             if abs(cyl_angle) > 1e-9:
@@ -888,7 +888,9 @@ class Canvas3D(Gtk.GLArea):
                     ):
                         if self._had_rotary_layers and asm.has_rotary:
                             beam_pos = head_pos.copy()
-                            beam_pos[1] = grid_model_matrix[1, 3]
+                            beam_pos[source_idx] = grid_model_matrix[
+                                source_idx, 3
+                            ]
                             diameter = asm.rotary_diameter
                             if diameter and diameter > 0:
                                 beam_pos[2] += diameter / 2.0
@@ -930,9 +932,9 @@ class Canvas3D(Gtk.GLArea):
                         if is_rotary:
                             link = asm.get_link(link_name)
                             if link and link.role != LinkRole.CHUCK:
-                                module_transform[1, 3] = (
-                                    grid_model_matrix[1, 3]
-                                    - margin_shift[1, 3]
+                                module_transform[source_idx, 3] = (
+                                    grid_model_matrix[source_idx, 3]
+                                    - margin_shift[source_idx, 3]
                                 )
                                 diameter = asm.rotary_diameter
                                 if diameter and diameter > 0:
@@ -1534,10 +1536,14 @@ class Canvas3D(Gtk.GLArea):
 
         machine = self._context.machine
 
+        source_axis = Axis.Y
         desired_diameters: Dict[float, bool] = {}
         if machine and self._had_rotary_layers:
             for diameter in machine.assembly.chuck_diameters.values():
                 desired_diameters[diameter] = True
+            default_rm = machine.get_default_rotary_module()
+            if default_rm:
+                source_axis = default_rm.source_axis
 
         max_length = self._viewport.width_mm
         if machine:
@@ -1545,16 +1551,14 @@ class Canvas3D(Gtk.GLArea):
             if default_rm:
                 max_length = min(max_length, default_rm.max_workpiece_length)
 
-        # Remove renderers for diameters no longer needed
-        for diameter in list(self._cylinder_renderers.keys()):
+        for diameter, renderer in list(self._cylinder_renderers.items()):
             if diameter not in desired_diameters:
-                self._cylinder_renderers[diameter].cleanup()
+                renderer.cleanup()
                 del self._cylinder_renderers[diameter]
-                logger.debug(
-                    f"Removed cylinder renderer for diameter={diameter}mm"
-                )
+            elif renderer._source_axis != source_axis:
+                renderer.cleanup()
+                del self._cylinder_renderers[diameter]
 
-        # Create renderers for new diameters
         for diameter in desired_diameters:
             if diameter not in self._cylinder_renderers:
                 renderer = CylinderRenderer(
@@ -1562,6 +1566,7 @@ class Canvas3D(Gtk.GLArea):
                     length=max_length,
                     rings=24,
                     length_segments=12,
+                    source_axis=source_axis,
                 )
                 renderer.set_color((0.4, 0.6, 0.8, 0.25))
                 renderer.init_gl()
@@ -1734,6 +1739,12 @@ class Canvas3D(Gtk.GLArea):
             source_axis: Optional[Axis] = None
             if layer.rotary_enabled:
                 source_axis = Axis.Y
+                if machine and layer.rotary_module_uid:
+                    module = machine.rotary_modules.get(
+                        layer.rotary_module_uid
+                    )
+                    if module:
+                        source_axis = module.source_axis
             layer_configs[layer.uid] = LayerRenderConfig(
                 rotary_enabled=layer.rotary_enabled,
                 rotary_diameter=layer.rotary_diameter,
