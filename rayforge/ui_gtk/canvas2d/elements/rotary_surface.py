@@ -56,6 +56,13 @@ class RotarySurfaceElement(CanvasElement):
         self._x_axis_right = x_axis_right
         self._update_geometry()
 
+    def set_circumferential_axis(self, axis: Axis):
+        """Sets which axis maps to the circumferential dimension."""
+        if self._circumferential_axis == axis:
+            return
+        self._circumferential_axis = axis
+        self._update_geometry()
+
     def _update_geometry(self):
         """Recalculates position and size from diameter and origin."""
         circumference = math.pi * self._diameter
