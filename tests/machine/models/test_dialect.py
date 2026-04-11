@@ -377,8 +377,9 @@ def test_bezier_cubic_set_on_linuxcnc():
 def test_bezier_cubic_template_renders():
     """Test that the bezier template can be formatted with variables."""
     result = MARLIN_DIALECT.bezier_cubic.format(
-        x=10.0,
-        y=20.0,
+        x_cmd="X10.000",
+        y_cmd="Y20.000",
+        extra_cmd="",
         i=1.0,
         j=2.0,
         p=3.0,
