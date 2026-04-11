@@ -1,7 +1,7 @@
 import pytest
 from rayforge.simulator.op_player import OpPlayer
 from rayforge.core.ops import Ops
-from rayforge.core.ops.commands import ScanLinePowerCommand
+from rayforge.core.ops.commands import LayerStartCommand, ScanLinePowerCommand
 from rayforge.core.ops.axis import Axis
 from rayforge.core.doc import Doc
 from rayforge.machine.models.machine import Machine
@@ -157,12 +157,10 @@ def test_seek_resets_source_axis():
     assert player._source_axis == Axis.Y
 
 
-def test_passthrough_mode_no_rotary_mapping():
-    from rayforge.core.ops.commands import LayerStartCommand
-
+def test_replacement_mode_no_rotary_mapping():
     machine = _make_machine()
     rm = RotaryModule()
-    rm.set_mode(RotaryMode.PASSTHROUGH)
+    rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
     rm.set_source_axis(Axis.Y)
     machine.add_rotary_module(rm)
 
@@ -183,8 +181,6 @@ def test_passthrough_mode_no_rotary_mapping():
 
 
 def test_true_4th_axis_copies_to_rotary():
-    from rayforge.core.ops.commands import LayerStartCommand
-
     machine = _make_machine()
     rm = RotaryModule()
     rm.set_mode(RotaryMode.TRUE_4TH_AXIS)

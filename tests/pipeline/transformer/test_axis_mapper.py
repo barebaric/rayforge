@@ -211,8 +211,8 @@ class TestAxisMapperDegreeFormulaMatchesGcode:
         assert cmds[0].extra_axes[Axis.A] == pytest.approx(expected)
 
 
-class TestAxisMapperPassthroughRaw:
-    def test_passthrough_raw_y_unchanged(self):
+class TestAxisMapperReplacementRaw:
+    def test_replacement_raw_y_unchanged(self):
         ops = Ops()
         ops.move_to(10, 50, 0)
         ops.line_to(30, 100, 0)
@@ -221,7 +221,7 @@ class TestAxisMapperPassthroughRaw:
             source_axis=Axis.Y,
             rotary_axis=Axis.A,
             rotary_diameter=25.0,
-            mode=RotaryMode.PASSTHROUGH,
+            mode=RotaryMode.AXIS_REPLACEMENT,
             mm_per_rotation=0.0,
         )
         mapper.run(ops)
@@ -233,7 +233,7 @@ class TestAxisMapperPassthroughRaw:
         assert cmds[0].extra_axes == {}
         assert cmds[1].extra_axes == {}
 
-    def test_passthrough_raw_no_park_move(self):
+    def test_replacement_raw_no_park_move(self):
         ops = Ops()
         ops.move_to(10, 50, 0)
 
@@ -241,7 +241,7 @@ class TestAxisMapperPassthroughRaw:
             source_axis=Axis.Y,
             rotary_axis=Axis.A,
             rotary_diameter=25.0,
-            mode=RotaryMode.PASSTHROUGH,
+            mode=RotaryMode.AXIS_REPLACEMENT,
             mm_per_rotation=0.0,
         )
         mapper.run(ops)
@@ -250,8 +250,8 @@ class TestAxisMapperPassthroughRaw:
         assert len(cmds) == 1
 
 
-class TestAxisMapperPassthroughScaled:
-    def test_passthrough_scaled_y(self):
+class TestAxisMapperReplacementScaled:
+    def test_replacement_scaled_y(self):
         diameter = 25.0
         mm_per_rot = 100.0
 
@@ -262,7 +262,7 @@ class TestAxisMapperPassthroughScaled:
             source_axis=Axis.Y,
             rotary_axis=Axis.A,
             rotary_diameter=diameter,
-            mode=RotaryMode.PASSTHROUGH,
+            mode=RotaryMode.AXIS_REPLACEMENT,
             mm_per_rotation=mm_per_rot,
         )
         mapper.run(ops)
@@ -273,7 +273,7 @@ class TestAxisMapperPassthroughScaled:
         assert cmds[0].end[1] == pytest.approx(expected)
         assert cmds[0].extra_axes == {}
 
-    def test_passthrough_scaled_x(self):
+    def test_replacement_scaled_x(self):
         diameter = 25.0
         mm_per_rot = 100.0
 
@@ -284,7 +284,7 @@ class TestAxisMapperPassthroughScaled:
             source_axis=Axis.X,
             rotary_axis=Axis.A,
             rotary_diameter=diameter,
-            mode=RotaryMode.PASSTHROUGH,
+            mode=RotaryMode.AXIS_REPLACEMENT,
             mm_per_rotation=mm_per_rot,
         )
         mapper.run(ops)
@@ -294,7 +294,7 @@ class TestAxisMapperPassthroughScaled:
         assert cmds[0].end[0] == pytest.approx(expected)
         assert cmds[0].end[1] == pytest.approx(10.0)
 
-    def test_passthrough_scaled_bezier(self):
+    def test_replacement_scaled_bezier(self):
         diameter = 25.0
         mm_per_rot = 100.0
 
@@ -306,7 +306,7 @@ class TestAxisMapperPassthroughScaled:
             source_axis=Axis.Y,
             rotary_axis=Axis.A,
             rotary_diameter=diameter,
-            mode=RotaryMode.PASSTHROUGH,
+            mode=RotaryMode.AXIS_REPLACEMENT,
             mm_per_rotation=mm_per_rot,
         )
         mapper.run(ops)
@@ -319,7 +319,7 @@ class TestAxisMapperPassthroughScaled:
         assert b.control2[1] == pytest.approx(30.0 * scale)
         assert b.end[1] == pytest.approx(10.0 * scale)
 
-    def test_passthrough_scaled_arc(self):
+    def test_replacement_scaled_arc(self):
         diameter = 25.0
         mm_per_rot = 100.0
 
@@ -331,7 +331,7 @@ class TestAxisMapperPassthroughScaled:
             source_axis=Axis.Y,
             rotary_axis=Axis.A,
             rotary_diameter=diameter,
-            mode=RotaryMode.PASSTHROUGH,
+            mode=RotaryMode.AXIS_REPLACEMENT,
             mm_per_rotation=mm_per_rot,
         )
         mapper.run(ops)
@@ -342,7 +342,7 @@ class TestAxisMapperPassthroughScaled:
         assert arcs[0].center_offset[1] == pytest.approx(3.0 * scale)
         assert arcs[0].center_offset[0] == pytest.approx(5.0)
 
-    def test_passthrough_no_park_move(self):
+    def test_replacement_no_park_move(self):
         ops = Ops()
         ops.move_to(10, 50, 0)
 
@@ -350,7 +350,7 @@ class TestAxisMapperPassthroughScaled:
             source_axis=Axis.Y,
             rotary_axis=Axis.A,
             rotary_diameter=25.0,
-            mode=RotaryMode.PASSTHROUGH,
+            mode=RotaryMode.AXIS_REPLACEMENT,
             mm_per_rotation=100.0,
         )
         mapper.run(ops)
