@@ -86,7 +86,6 @@ class MainMenu(Gio.Menu):
         self._view_addon_group = visibility_group
 
         view_group = Gio.Menu()
-        view_group.append(_("Simulator"), "win.simulate_mode")
         view_group.append(_("3D View"), "win.show_3d_view")
         view_menu.append_section(None, view_group)
 

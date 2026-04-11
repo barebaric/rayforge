@@ -931,9 +931,9 @@ class WorkPieceElement(CanvasElement):
             # context, leaving it Y-UP for the next drawing operation.
             super().draw(ctx)
 
-        # Draw Ops (hide during simulation mode or interaction)
+        # Draw Ops (hide during interaction)
         worksurface = cast("WorkSurface", self.canvas) if self.canvas else None
-        if not worksurface or worksurface.is_simulation_mode():
+        if not worksurface:
             return
 
         if worksurface.ops_suppressed:

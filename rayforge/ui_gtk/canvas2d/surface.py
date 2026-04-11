@@ -36,7 +36,6 @@ from .elements.dot import DotElement
 from .elements.group import GroupElement
 from .elements.layer import LayerElement
 from .elements.rotary_surface import RotarySurfaceElement
-from .elements.simulation_overlay import SimulationOverlay
 from .elements.stock import StockElement
 from .elements.tab_handle import TabHandleElement
 from .elements.workpiece import WorkPieceElement
@@ -86,10 +85,6 @@ class WorkSurface(WorldSurface):
         self._cam_visible = cam_visible
         self._transform_start_states: Dict[CanvasElement, dict] = {}
         self.right_click_context: Optional[Dict] = None
-
-        # Simulation mode state
-        self._simulation_mode = False
-        self._simulation_overlay: Optional[CanvasElement] = None
 
         # Click-to-zero mode state
         self._click_to_zero_mode = False
@@ -927,13 +922,9 @@ class WorkSurface(WorldSurface):
         def sort_key(element: CanvasElement):
             """
             Sort key for root's children. Camera at bottom, then stock,
-            then layers, laser dot and simulation overlay on top.
+            then layers and laser dot on top.
             """
-            if isinstance(element, SimulationOverlay):
-                # Simulation overlay is always on top of everything
-                return float("inf")
             if isinstance(element, DotElement):
-                # Laser dot is always on top of workpieces
                 return float("inf") - 1
             if isinstance(element, LayerElement):
                 # LayerElements are ordered according to the doc.layers list.
@@ -1465,35 +1456,3 @@ class WorkSurface(WorldSurface):
                 elem.selected = True
 
         self._finalize_selection_state()
-
-    def is_simulation_mode(self) -> bool:
-        """Returns True if simulation mode is active."""
-        return self._simulation_mode
-
-    def set_simulation_mode(
-        self, enabled: bool, simulation_overlay: Optional[CanvasElement] = None
-    ):
-        """
-        Enables or disables simulation mode. When enabled:
-        - Workpiece selection and transformation remain enabled
-        - Zoom and pan gestures remain active
-        - Grid and axis render normally
-        - Simulation overlay is shown on top
-        """
-        if self._simulation_mode == enabled:
-            return
-
-        self._simulation_mode = enabled
-
-        if enabled:
-            # Add simulation overlay if provided
-            if simulation_overlay:
-                self._simulation_overlay = simulation_overlay
-                self.root.add(self._simulation_overlay)
-        else:
-            # Remove simulation overlay when exiting
-            if self._simulation_overlay:
-                self._simulation_overlay.remove()
-                self._simulation_overlay = None
-
-        self.queue_draw()
