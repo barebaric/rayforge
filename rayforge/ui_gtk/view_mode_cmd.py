@@ -60,13 +60,6 @@ class ViewModeCmd:
                 win.toast_overlay.add_toast(toast)
                 return
 
-            # If simulation mode is active, turn it off before switching
-            # to the 3D view.
-            sim_action = win.action_manager.get_action("simulate_mode")
-            sim_state = sim_action.get_state() if sim_action else None
-            if sim_state and sim_state.get_boolean():
-                sim_action.change_state(GLib.Variant.new_boolean(False))
-
             action.set_state(GLib.Variant.new_boolean(True))
             win.view_stack.set_visible_child_name("3d")
             if win.main_stack.get_visible_child_name() == "main":

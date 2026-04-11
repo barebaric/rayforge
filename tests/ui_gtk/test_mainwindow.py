@@ -26,7 +26,6 @@ gi.require_version("Gdk", "4.0")
 from gi.repository import Adw, GLib
 
 from rayforge.ui_gtk.mainwindow import MainWindow
-from rayforge.core.vectorization_spec import TraceSpec
 
 logger = logging.getLogger(__name__)
 
@@ -68,17 +67,6 @@ def wait_for_document_to_settle(window: MainWindow, timeout: int = 45) -> bool:
 
     window.doc_editor.document_settled.disconnect(handler_id)
     return window.doc_editor.doc.has_result()
-
-
-def activate_simulation_mode(window) -> bool:
-    """Activate simulation mode via its Gio.Action."""
-    action = window.action_manager.get_action("simulate_mode")
-    if not action:
-        return False
-
-    action.change_state(GLib.Variant.new_boolean(True))
-    process_events_for_duration(1.5)
-    return window.surface.is_simulation_mode()
 
 
 @pytest.fixture
@@ -130,48 +118,3 @@ def app_and_window(ui_context_initializer, request):
         win.close()
         app.quit()
     process_events_for_duration(0.2)
-
-
-@pytest.mark.ui
-def test_main_window_simulation_mode_activation(
-    app_and_window, test_file_path
-):
-    """
-    Tests that activating simulation mode correctly changes the application's
-    internal state and UI structure. This is a more robust alternative to
-    screenshot testing.
-    """
-    _app, win = app_and_window
-
-    # 1. Load a file and wait for the document pipeline to be ready.
-    win.doc_editor.file.load_file_from_path(
-        filename=test_file_path,
-        mime_type="image/png",
-        vectorization_spec=TraceSpec(),
-    )
-    assert wait_for_document_to_settle(win), (
-        "Document did not settle or has no result"
-    )
-
-    # 2. Assert the initial state (before activation).
-    assert not win.surface.is_simulation_mode(), (
-        "Should not be in sim mode initially"
-    )
-    assert win.simulator_cmd.preview_controls is None, (
-        "Sim controls should not exist initially"
-    )
-
-    # 3. Activate simulation mode.
-    assert activate_simulation_mode(win), "Failed to activate sim mode"
-
-    # 4. Assert the final state (after activation).
-    assert win.surface.is_simulation_mode(), "Surface failed to enter sim mode"
-    assert win.simulator_cmd.preview_controls is not None, (
-        "Sim preview controls were not created"
-    )
-    assert win.simulator_cmd.preview_controls.is_visible(), (
-        "Sim preview controls are not visible"
-    )
-    logger.info(
-        "Successfully verified simulation mode activation and UI state."
-    )

@@ -48,7 +48,6 @@ SHORTCUTS = {
     "win.toggle_bottom_panel": f"{PRIMARY_ACCEL}l",
     "win.toggle_travel_view": f"{PRIMARY_ACCEL}<Shift>t",
     "win.show_3d_view": "F12",
-    "win.simulate_mode": "F11",
     "win.recalculate": "F5",
     "win.force-recalculate": "<Shift>F5",
     "win.view_top": "1",
@@ -295,12 +294,6 @@ class ActionManager:
             "toggle_right_panel",
             self.win.on_toggle_right_panel_state_change,
             GLib.Variant.new_boolean(config.right_panel_visible),
-        )
-
-        self._add_stateful_action(
-            "simulate_mode",
-            self.win.simulator_cmd.toggle_mode,
-            GLib.Variant.new_boolean(False),
         )
 
         # 3D View Control Actions

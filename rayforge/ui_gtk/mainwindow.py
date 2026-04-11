@@ -41,7 +41,6 @@ from .actions import (
 from .canvas import CanvasElement
 from .canvas2d.drag_drop_cmd import DragDropCmd
 from .canvas2d.elements.stock import StockElement
-from .canvas2d.simulator_cmd import SimulatorCmd
 from .canvas2d.surface import WorkSurface
 from .sim3d.canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .sim3d.canvas3d.camera import ViewDirection
@@ -150,13 +149,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Instantiate UI-specific command handlers
         self.view_cmd = ViewModeCmd(self.doc_editor, self)
-        self.simulator_cmd = SimulatorCmd(self)
         self.project_cmd = ProjectCmd(self, self.doc_editor)
-
-        # Add a key controller to handle ESC key for exiting simulation mode
-        key_controller = Gtk.EventControllerKey()
-        key_controller.connect("key-pressed", self._on_key_pressed)
-        self.add_controller(key_controller)
 
         geometry = get_monitor_geometry()
         if geometry:
@@ -776,18 +769,14 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_gcode_line_activated(self, sender, *, line_number: int):
         """
         Handles the user activating a line in the G-code previewer.
-        Syncs the highlight and the simulation slider.
+        Syncs the highlight and the 3D playback slider.
         """
         # 1. Update the visual highlight to match the cursor, no scroll.
         self.bottom_panel.gcode_viewer.highlight_line(
             line_number, use_align=False
         )
 
-        # 2. If simulation is active, update its position.
-        if self.simulator_cmd.preview_controls:
-            self.simulator_cmd.sync_from_gcode(line_number)
-
-        # 3. If 3D playback is active, sync the slider.
+        # 2. If 3D playback is active, sync the slider.
         op_map = self.bottom_panel.gcode_viewer.op_map
         if op_map and line_number in op_map.machine_code_to_op:
             op_index = op_map.machine_code_to_op[line_number]
@@ -814,14 +803,7 @@ class MainWindow(Adw.ApplicationWindow):
             self._last_bottom_panel_height = panel_height
 
     def _on_surface_transform_initiated(self, sender):
-        """
-        Called when the user starts a transform on the canvas. If simulation
-        is active, this will turn it off.
-        """
-        sim_action = self.action_manager.get_action("simulate_mode")
-        state = sim_action.get_state() if sim_action else None
-        if state and state.get_boolean():
-            sim_action.change_state(GLib.Variant.new_boolean(False))
+        pass
 
     def _on_view_stack_changed(self, stack: Gtk.Stack, param):
         """Handles logic when switching between 2D and 3D views."""
@@ -1318,7 +1300,7 @@ class MainWindow(Adw.ApplicationWindow):
         """Callback for when the job assembly for previews is complete."""
         if error:
             logger.error(
-                "Failed to aggregate ops for preview/simulation",
+                "Failed to aggregate ops for preview",
                 exc_info=error,
             )
             # Release handle on error if it exists
@@ -1340,12 +1322,8 @@ class MainWindow(Adw.ApplicationWindow):
         artifact_manager = self.doc_editor.pipeline.artifact_manager
 
         with artifact_manager.checkout_handle(handle) as final_artifact:
-            # 1. Update Simulation
             if final_artifact is None:
-                # If handle was None (e.g. no machine configured), we still
-                # want to clear the previews.
                 if handle is None:
-                    self.simulator_cmd.reload_simulation(None)
                     self._update_gcode_preview(None, None)
                     return
 
@@ -1353,7 +1331,6 @@ class MainWindow(Adw.ApplicationWindow):
                 return
 
             assert isinstance(final_artifact, JobArtifact)
-            self.simulator_cmd.reload_simulation(final_artifact)
 
             # 2. Update G-code Preview
             is_gcode_visible = self.bottom_panel.is_item_visible("gcode")
@@ -1376,11 +1353,10 @@ class MainWindow(Adw.ApplicationWindow):
         if get_context().exit_after_settle:
             return
 
-        is_sim_active = self.simulator_cmd.simulation_overlay is not None
         is_gcode_visible = self.bottom_panel.is_item_visible("gcode")
         is_3d_visible = self.view_stack.get_visible_child_name() == "3d"
 
-        if not is_sim_active and not is_gcode_visible and not is_3d_visible:
+        if not is_gcode_visible and not is_3d_visible:
             return
 
         config = get_context().config
@@ -2331,13 +2307,3 @@ class MainWindow(Adw.ApplicationWindow):
         Updates the layer list header with the total estimated time.
         """
         self.layer_list_view.set_estimated_time(total_seconds)
-
-    def _on_key_pressed(self, controller, keyval, keycode, state):
-        """Handle key press events, ESC to exit simulation mode."""
-        if keyval == Gdk.KEY_Escape:
-            # Check if simulation mode is active
-            if self.surface.is_simulation_mode():
-                # Exit simulation mode
-                self.simulator_cmd._exit_mode()
-                return True  # Event handled
-        return False  # Allow other key presses to be processed normally
