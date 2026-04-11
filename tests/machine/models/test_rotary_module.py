@@ -4,7 +4,7 @@ from numpy.testing import assert_array_equal
 
 from rayforge.core.ops.axis import Axis
 from rayforge.machine.models.machine import Machine
-from rayforge.machine.models.rotary_module import RotaryModule
+from rayforge.machine.models.rotary_module import RotaryModule, RotaryMode
 
 
 @pytest.mark.usefixtures("lite_context")
@@ -14,6 +14,9 @@ class TestRotaryModule:
         assert rm.uid is not None
         assert rm.name == "Rotary Module"
         assert rm.axis == Axis.A
+        assert rm.mode == RotaryMode.TRUE_4TH_AXIS
+        assert rm.source_axis == Axis.Y
+        assert rm.mm_per_rotation == 0.0
         assert rm.default_diameter == 25.0
         assert rm.model_id is None
         assert_array_equal(rm.transform, np.eye(4))
@@ -49,6 +52,18 @@ class TestRotaryModule:
         rm.set_default_diameter(50.0)
         assert rm.default_diameter == 50.0
         assert len(signals) == 5
+
+        rm.set_mode(RotaryMode.PASSTHROUGH)
+        assert rm.mode == RotaryMode.PASSTHROUGH
+        assert len(signals) == 6
+
+        rm.set_source_axis(Axis.X)
+        assert rm.source_axis == Axis.X
+        assert len(signals) == 7
+
+        rm.set_mm_per_rotation(100.0)
+        assert rm.mm_per_rotation == 100.0
+        assert len(signals) == 8
 
     def test_set_position_no_signal_if_same(self):
         rm = RotaryModule()
@@ -95,10 +110,46 @@ class TestRotaryModule:
         rm.set_model_id(None)
         assert len(signals) == 0
 
+    def test_set_mode_no_signal_if_same(self):
+        rm = RotaryModule()
+        signals = []
+
+        def on_changed(sender, **kwargs):
+            signals.append(sender)
+
+        rm.changed.connect(on_changed)
+        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+        assert len(signals) == 0
+
+    def test_set_source_axis_no_signal_if_same(self):
+        rm = RotaryModule()
+        signals = []
+
+        def on_changed(sender, **kwargs):
+            signals.append(sender)
+
+        rm.changed.connect(on_changed)
+        rm.set_source_axis(Axis.Y)
+        assert len(signals) == 0
+
+    def test_set_mm_per_rotation_no_signal_if_same(self):
+        rm = RotaryModule()
+        signals = []
+
+        def on_changed(sender, **kwargs):
+            signals.append(sender)
+
+        rm.changed.connect(on_changed)
+        rm.set_mm_per_rotation(0.0)
+        assert len(signals) == 0
+
     def test_serialization_roundtrip(self):
         rm = RotaryModule()
         rm.name = "Test Rotary"
         rm.axis = Axis.B
+        rm.set_mode(RotaryMode.PASSTHROUGH)
+        rm.set_source_axis(Axis.X)
+        rm.set_mm_per_rotation(100.0)
         rm.set_position(10.0, 20.0, 5.0)
         rm.set_model_id("rotary/standard.glb")
 
@@ -108,6 +159,9 @@ class TestRotaryModule:
         assert rm2.uid == rm.uid
         assert rm2.name == "Test Rotary"
         assert rm2.axis == Axis.B
+        assert rm2.mode == RotaryMode.PASSTHROUGH
+        assert rm2.source_axis == Axis.X
+        assert rm2.mm_per_rotation == 100.0
         assert_array_equal(rm2.transform, rm.transform)
         assert rm2.model_id == "rotary/standard.glb"
 
@@ -116,8 +170,23 @@ class TestRotaryModule:
         rm = RotaryModule.from_dict(data)
         assert rm.uid == "test-uid"
         assert rm.axis == Axis.A
+        assert rm.mode == RotaryMode.TRUE_4TH_AXIS
+        assert rm.source_axis == Axis.Y
+        assert rm.mm_per_rotation == 0.0
         assert rm.model_id is None
         assert_array_equal(rm.transform, np.eye(4))
+
+    def test_mm_per_rotation_omitted_when_zero(self):
+        rm = RotaryModule()
+        rm.set_mm_per_rotation(0.0)
+        data = rm.to_dict()
+        assert "mm_per_rotation" not in data
+
+    def test_mm_per_rotation_included_when_positive(self):
+        rm = RotaryModule()
+        rm.set_mm_per_rotation(50.0)
+        data = rm.to_dict()
+        assert data["mm_per_rotation"] == 50.0
 
     def test_deserialization_extra_keys_preserved(self):
         data = {"uid": "test", "future_field": "value"}

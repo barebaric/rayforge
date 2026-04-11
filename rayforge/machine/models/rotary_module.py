@@ -1,4 +1,5 @@
 import uuid
+from enum import Enum
 from gettext import gettext as _
 from typing import Any, Dict, Optional
 
@@ -10,11 +11,19 @@ from ...core.geo import Rect3D
 from ...core.ops.axis import Axis
 
 
+class RotaryMode(Enum):
+    TRUE_4TH_AXIS = "true_4th_axis"
+    PASSTHROUGH = "passthrough"
+
+
 class RotaryModule:
     def __init__(self):
         self.uid: str = str(uuid.uuid4())
         self.name: str = _("Rotary Module")
         self.axis: Axis = Axis.A
+        self.mode: RotaryMode = RotaryMode.TRUE_4TH_AXIS
+        self.source_axis: Axis = Axis.Y
+        self.mm_per_rotation: float = 0.0
         self.default_diameter: float = 25.0
         self.max_workpiece_length: float = 300.0
         self.model_id: Optional[str] = None
@@ -33,6 +42,25 @@ class RotaryModule:
         if self.axis == axis:
             return
         self.axis = axis
+        self.changed.send(self)
+
+    def set_mode(self, mode: RotaryMode):
+        if self.mode == mode:
+            return
+        self.mode = mode
+        self.changed.send(self)
+
+    def set_source_axis(self, axis: Axis):
+        axis.assert_single_axis()
+        if self.source_axis == axis:
+            return
+        self.source_axis = axis
+        self.changed.send(self)
+
+    def set_mm_per_rotation(self, value: float):
+        if self.mm_per_rotation == value:
+            return
+        self.mm_per_rotation = value
         self.changed.send(self)
 
     def set_position(self, x: float, y: float, z: float):
@@ -107,11 +135,15 @@ class RotaryModule:
             "uid": self.uid,
             "name": self.name,
             "axis": self.axis.name,
+            "mode": self.mode.value,
+            "source_axis": self.source_axis.name,
             "default_diameter": self.default_diameter,
             "max_workpiece_length": self.max_workpiece_length,
             "model_id": self.model_id,
             "transform": self.transform.flatten().tolist(),
         }
+        if self.mm_per_rotation > 0:
+            result["mm_per_rotation"] = self.mm_per_rotation
         result.update(self.extra)
         return result
 
@@ -121,6 +153,9 @@ class RotaryModule:
             "uid",
             "name",
             "axis",
+            "mode",
+            "source_axis",
+            "mm_per_rotation",
             "default_diameter",
             "max_workpiece_length",
             "model_id",
@@ -145,6 +180,9 @@ class RotaryModule:
         rm.uid = data.get("uid", str(uuid.uuid4()))
         rm.name = data.get("name", _("Rotary Module"))
         rm.axis = Axis[data.get("axis", "A")]
+        rm.mode = RotaryMode(data.get("mode", "true_4th_axis"))
+        rm.source_axis = Axis[data.get("source_axis", "Y")]
+        rm.mm_per_rotation = data.get("mm_per_rotation", 0.0)
         rm.default_diameter = data.get("default_diameter", 25.0)
         rm.max_workpiece_length = data.get("max_workpiece_length", 300.0)
 

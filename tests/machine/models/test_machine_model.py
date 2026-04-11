@@ -28,7 +28,7 @@ from rayforge.core.ops import (
 from rayforge.core.ops.axis import Axis
 from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine, Origin
-from rayforge.machine.models.rotary_module import RotaryModule
+from rayforge.machine.models.rotary_module import RotaryModule, RotaryMode
 from rayforge.machine.transport import TransportStatus
 from rayforge.pipeline.transformer.axis_mapper import AxisMapper
 
@@ -590,6 +590,65 @@ class TestRotaryAxisGcodeOutput:
         assert "G1" in gcode
         cut_line = [ln for ln in gcode.split("\n") if ln.startswith("G1")][0]
         assert " Y" not in cut_line
+
+    def test_passthrough_raw_y_in_gcode(self, isolated_machine):
+        """PASSTHROUGH with mm_per_rotation=0 emits raw Y values."""
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.PASSTHROUGH)
+        rm.set_source_axis(Axis.Y)
+        isolated_machine.add_rotary_module(rm)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_diameter(25.0)
+        layer.set_rotary_module_uid(rm.uid)
+
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=layer.uid)
+        ops.move_to(0, 0, 0)
+        ops.line_to(10, 10, 0)
+        ops.layer_end(layer_uid=layer.uid)
+        ops.job_end()
+
+        gcode, _ = isolated_machine.encode_ops(ops, doc)
+
+        assert " A" not in gcode
+        assert " B" not in gcode
+        cut_lines = [ln for ln in gcode.split("\n") if ln.startswith("G1")]
+        assert len(cut_lines) >= 1
+        assert " Y10" in cut_lines[0]
+
+    def test_passthrough_scaled_y_in_gcode(self, isolated_machine):
+        """PASSTHROUGH with mm_per_rotation>0 scales Y values."""
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.PASSTHROUGH)
+        rm.set_source_axis(Axis.Y)
+        rm.set_mm_per_rotation(100.0)
+        isolated_machine.add_rotary_module(rm)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_diameter(25.0)
+        layer.set_rotary_module_uid(rm.uid)
+
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=layer.uid)
+        ops.move_to(0, 0, 0)
+        ops.line_to(10, 10, 0)
+        ops.layer_end(layer_uid=layer.uid)
+        ops.job_end()
+
+        gcode, _ = isolated_machine.encode_ops(ops, doc)
+
+        assert " A" not in gcode
+        assert " B" not in gcode
+        expected = 10.0 * 100.0 / (math.pi * 25.0)
+        formatted = f"{expected:.3f}".rstrip("0").rstrip(".")
+        assert formatted in gcode
 
     def test_prepare_ops_linearizes_by_default(self, lite_context):
         machine = Machine(lite_context)

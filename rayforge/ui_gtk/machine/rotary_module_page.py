@@ -8,7 +8,7 @@ from ...context import get_context
 from ...core.model import Model
 from ...core.ops.axis import Axis
 from ...machine.models.machine import Machine
-from ...machine.models.rotary_module import RotaryModule
+from ...machine.models.rotary_module import RotaryModule, RotaryMode
 from ..icons import get_icon
 from ..shared.adwfix import get_spinrow_float
 from ..shared.model_selection_dialog import ModelSelectionDialog
@@ -275,6 +275,23 @@ class RotaryModulePage(TrackedPreferencesPage):
         self.name_row.add_controller(name_focus_ctrl)
         self.general_group.add(self.name_row)
 
+        mode_store = Gtk.StringList()
+        mode_store.append(_("True 4th Axis"))
+        mode_store.append(_("Pass-through"))
+        self._mode_values = [
+            RotaryMode.TRUE_4TH_AXIS,
+            RotaryMode.PASSTHROUGH,
+        ]
+        self.mode_row = Adw.ComboRow(
+            title=_("Connection Mode"),
+            subtitle=_(
+                "How the rotary is connected to the machine controller"
+            ),
+            model=mode_store,
+        )
+        self.mode_row.connect("notify::selected", self._on_mode_changed)
+        self.general_group.add(self.mode_row)
+
         excluded = (Axis.X, Axis.Y)
         valid_axes = sorted(
             [a for a in Axis if a not in excluded],
@@ -294,6 +311,37 @@ class RotaryModulePage(TrackedPreferencesPage):
             "notify::selected", self._on_module_axis_changed
         )
         self.general_group.add(self.module_axis_row)
+
+        source_axis_store = Gtk.StringList()
+        source_axis_store.append(_("Y Axis"))
+        source_axis_store.append(_("X Axis"))
+        self._source_axis_display = [Axis.Y, Axis.X]
+        self.source_axis_row = Adw.ComboRow(
+            title=_("Workpiece Orientation"),
+            subtitle=_("Axis along which the workpiece extends"),
+            model=source_axis_store,
+        )
+        self.source_axis_row.connect(
+            "notify::selected", self._on_source_axis_changed
+        )
+        self.general_group.add(self.source_axis_row)
+
+        mm_per_rot_adj = Gtk.Adjustment(
+            lower=0, upper=100000, step_increment=1, page_increment=10
+        )
+        self.mm_per_rotation_row = Adw.SpinRow(
+            title=_("Travel per Rotation"),
+            subtitle=_(
+                "Firmware distance for one full 360° rotation. "
+                "0 = raw circumferential output."
+            ),
+            adjustment=mm_per_rot_adj,
+            digits=2,
+        )
+        self.mm_per_rotation_row.connect(
+            "notify::value", self._on_mm_per_rotation_changed
+        )
+        self.general_group.add(self.mm_per_rotation_row)
 
         default_diam_adj = Gtk.Adjustment(
             lower=1, upper=10000, step_increment=1, page_increment=10
@@ -449,6 +497,23 @@ class RotaryModulePage(TrackedPreferencesPage):
         except ValueError:
             selected = 0
         self.module_axis_row.set_selected(selected)
+
+        try:
+            mode_idx = self._mode_values.index(module.mode)
+        except ValueError:
+            mode_idx = 0
+        self.mode_row.set_selected(mode_idx)
+
+        if module.mode == RotaryMode.TRUE_4TH_AXIS:
+            perpendicular = self._perpendicular(module.source_axis)
+            src_idx = self._source_axis_display.index(perpendicular)
+        else:
+            src_idx = self._source_axis_display.index(module.source_axis)
+        self.source_axis_row.set_selected(src_idx)
+
+        self.mm_per_rotation_row.set_value(module.mm_per_rotation)
+        self._update_mode_dependent_rows(module)
+
         self.default_diameter_row.set_value(module.default_diameter)
         self.max_workpiece_length_row.set_value(module.max_workpiece_length)
         self._update_model_subtitle(module)
@@ -502,6 +567,70 @@ class RotaryModulePage(TrackedPreferencesPage):
         selected = row.get_selected()
         if selected < len(self._valid_axes):
             module.set_axis(self._valid_axes[selected])
+
+    def _update_mode_dependent_rows(self, module: RotaryModule):
+        is_passthrough = module.mode == RotaryMode.PASSTHROUGH
+        self.mm_per_rotation_row.set_visible(is_passthrough)
+        self.module_axis_row.set_visible(not is_passthrough)
+
+        self._is_updating = True
+        if is_passthrough:
+            src_idx = self._source_axis_display.index(module.source_axis)
+        else:
+            perpendicular = self._perpendicular(module.source_axis)
+            src_idx = self._source_axis_display.index(perpendicular)
+        self.source_axis_row.set_selected(src_idx)
+        self._is_updating = False
+
+        if is_passthrough:
+            self.source_axis_row.set_title(_("Connected To"))
+            self.source_axis_row.set_subtitle(
+                _("Which driver the rotary is plugged into")
+            )
+        else:
+            self.source_axis_row.set_title(_("Workpiece Orientation"))
+            self.source_axis_row.set_subtitle(
+                _("Axis along which the workpiece extends")
+            )
+
+    @staticmethod
+    def _perpendicular(axis: Axis) -> Axis:
+        if axis == Axis.X:
+            return Axis.Y
+        return Axis.X
+
+    def _on_mode_changed(self, row, _param):
+        if self._is_updating:
+            return
+        module = self._get_selected_module()
+        if not module:
+            return
+        selected = row.get_selected()
+        if selected < len(self._mode_values):
+            module.set_mode(self._mode_values[selected])
+            self._update_mode_dependent_rows(module)
+
+    def _on_source_axis_changed(self, row, _param):
+        if self._is_updating:
+            return
+        module = self._get_selected_module()
+        if not module:
+            return
+        selected = row.get_selected()
+        if selected >= len(self._source_axis_display):
+            return
+        displayed = self._source_axis_display[selected]
+        if module.mode == RotaryMode.TRUE_4TH_AXIS:
+            module.set_source_axis(self._perpendicular(displayed))
+        else:
+            module.set_source_axis(displayed)
+
+    def _on_mm_per_rotation_changed(self, spinrow, _param):
+        if self._is_updating:
+            return
+        module = self._get_selected_module()
+        if module:
+            module.set_mm_per_rotation(get_spinrow_float(spinrow))
 
     def _on_default_diameter_changed(self, spinrow, _param):
         if self._is_updating:
