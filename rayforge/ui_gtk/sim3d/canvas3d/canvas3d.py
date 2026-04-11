@@ -9,6 +9,7 @@ from ....context import RayforgeContext
 from ....core.geo import Point
 from ....core.model import Model
 from ....core.ops import Ops
+from ....core.ops.axis import Axis
 from ....core.ops.commands import LayerStartCommand
 from ....machine.assembly import LinkRole
 from ....machine.models.colors import OpsColorSet
@@ -65,8 +66,9 @@ logger = logging.getLogger(__name__)
 class _LayerRendererGroup:
     """Owns the GPU renderers and playback offsets for one compiled layer."""
 
-    def __init__(self, is_rotary: bool):
+    def __init__(self, is_rotary: bool, source_axis: Axis = Axis.Y):
         self.is_rotary = is_rotary
+        self.source_axis = source_axis
         self.ops_renderer = OpsRenderer()
         self.ring_renderer = RingBufferRenderer()
         self.powered_offsets: List[int] = []
@@ -757,6 +759,10 @@ class Canvas3D(Gtk.GLArea):
 
             # Compute cylinder rotation from assembly.
             cyl_angle = 0.0
+            source_idx = 1
+            cyl_idx = 1 - source_idx
+            vis_rot_axis = np.zeros(3, dtype=np.float64)
+            vis_rot_axis[cyl_idx] = 1.0
             if self._op_player and self._had_rotary_layers and machine:
                 asm = machine.assembly
                 if asm.has_rotary:
@@ -779,7 +785,7 @@ class Canvas3D(Gtk.GLArea):
             rot_cyl_gl = mvp_matrix_scene_gl
             if abs(cyl_angle) > 1e-9:
                 rot_3x3 = rotation_matrix_from_axis_angle(
-                    np.array([1.0, 0.0, 0.0]), cyl_angle
+                    vis_rot_axis, cyl_angle
                 )
                 rot_4x4 = np.eye(4, dtype=np.float64)
                 rot_4x4[:3, :3] = rot_3x3
@@ -958,7 +964,7 @@ class Canvas3D(Gtk.GLArea):
                 rot_cyl_mvp = mvp_matrix_scene
                 if abs(cyl_angle) > 1e-9:
                     rot_3x3 = rotation_matrix_from_axis_angle(
-                        np.array([1.0, 0.0, 0.0]), cyl_angle
+                        vis_rot_axis, cyl_angle
                     )
                     rot_4x4 = np.eye(4, dtype=np.float64)
                     rot_4x4[:3, :3] = rot_3x3
@@ -1320,7 +1326,9 @@ class Canvas3D(Gtk.GLArea):
 
         artifact = self._compiled_artifact
         for vl in artifact.vertex_layers:
-            group = _LayerRendererGroup(is_rotary=vl.is_rotary)
+            group = _LayerRendererGroup(
+                is_rotary=vl.is_rotary, source_axis=vl.source_axis
+            )
             group.init_gl()
             self._layer_groups.append(group)
 
@@ -1723,9 +1731,13 @@ class Canvas3D(Gtk.GLArea):
         layer_configs: Dict[str, LayerRenderConfig] = {}
         layer_color_luts: Dict[str, dict] = {}
         for layer in self.doc.layers:
+            source_axis: Optional[Axis] = None
+            if layer.rotary_enabled:
+                source_axis = Axis.Y
             layer_configs[layer.uid] = LayerRenderConfig(
                 rotary_enabled=layer.rotary_enabled,
                 rotary_diameter=layer.rotary_diameter,
+                source_axis=source_axis,
             )
             cut_rgba = hex_to_rgba(layer.color)
             cut_lut = create_lut_from_color(cut_rgba)

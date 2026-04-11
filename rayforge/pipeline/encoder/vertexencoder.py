@@ -6,6 +6,7 @@ from ...core.geo import Point3D
 from ...core.geo.arc import linearize_arc
 from ...core.geo.bezier import linearize_bezier_segment
 from ...core.ops import Ops
+from ...core.ops.axis import Axis
 from ...core.ops.commands import (
     MoveToCommand,
     LineToCommand,
@@ -22,30 +23,42 @@ def transform_to_cylinder(
     verts: np.ndarray,
     diameter: float,
     colors: Optional[np.ndarray] = None,
+    source_axis: Axis = Axis.Y,
 ) -> tuple:
     """
-    Transform flat XY vertices to cylindrical coordinates.
+    Transform flat vertices to cylindrical coordinates.
 
-    X remains unchanged (along cylinder axis).
-    Y maps to rotation angle around cylinder.
-    Z is computed from the angle.
+    The cylinder axis is the linear axis that is neither source_axis nor Z.
+    source_axis maps to the rotation angle. Z adjusts the radius.
 
-    Line segments are subdivided as needed to follow the cylinder surface
-    instead of cutting through the interior.
+    When source_axis == Axis.Y (default): X is the cylinder axis,
+    Y -> theta — identical to the original behavior.
+    When source_axis == Axis.X: Y is the cylinder axis,
+    X -> theta.
+
+    Line segments are subdivided as needed to follow the cylinder
+    surface instead of cutting through the interior.
 
     Args:
         verts: Array of shape (N, 3) with X, Y, Z coordinates.
                Vertices are in pairs (line segments for GL_LINES).
         diameter: Cylinder diameter in mm.
-        colors: Optional array of shape (N, 4) with per-vertex RGBA colors.
+        colors: Optional array of shape (N, 4) with per-vertex RGBA
+                colors.
+        source_axis: Which linear axis maps to the rotation angle
+                     (Axis.Y or Axis.X). Default Axis.Y.
 
     Returns:
         Tuple of (transformed_vertices, expanded_colors). The expanded
-        colors match the (possibly larger) vertex count after subdivision.
-        If colors is None, the second element is also None.
+        colors match the (possibly larger) vertex count after
+        subdivision. If colors is None, the second element is also
+        None.
     """
     if verts.size == 0 or diameter <= 0:
         return verts, colors
+
+    source_idx = 0 if source_axis == Axis.X else 1
+    cyl_idx = 1 - source_idx
 
     radius = diameter / 2.0
     circumference = diameter * math.pi
@@ -65,15 +78,15 @@ def transform_to_cylinder(
     p1 = verts[0::2][:num_pairs]
     p2 = verts[1::2][:num_pairs]
 
-    x1 = p1[:, 0].astype(np.float64)
-    y1 = p1[:, 1].astype(np.float64)
+    cyl1 = p1[:, cyl_idx].astype(np.float64)
+    src1 = p1[:, source_idx].astype(np.float64)
     z1 = p1[:, 2].astype(np.float64)
-    x2 = p2[:, 0].astype(np.float64)
-    y2 = p2[:, 1].astype(np.float64)
+    cyl2 = p2[:, cyl_idx].astype(np.float64)
+    src2 = p2[:, source_idx].astype(np.float64)
     z2 = p2[:, 2].astype(np.float64)
 
-    theta1 = (y1 / circumference) * 2.0 * np.pi
-    theta2 = (y2 / circumference) * 2.0 * np.pi
+    theta1 = (src1 / circumference) * 2.0 * np.pi
+    theta2 = (src2 / circumference) * 2.0 * np.pi
 
     delta_theta = (theta2 - theta1 + np.pi) % (2.0 * np.pi) - np.pi
     abs_delta = np.abs(delta_theta)
@@ -96,36 +109,36 @@ def transform_to_cylinder(
     prev_t = local_idx.astype(np.float64) / subs_f64
     curr_t = (local_idx + 1).astype(np.float64) / subs_f64
 
-    dx = x2[pair_indices] - x1[pair_indices]
-    dy = y2[pair_indices] - y1[pair_indices]
-    dz = z2[pair_indices] - z1[pair_indices]
-    px = x1[pair_indices]
-    py = y1[pair_indices]
-    pz = z1[pair_indices]
+    d_cyl = cyl2[pair_indices] - cyl1[pair_indices]
+    d_src = src2[pair_indices] - src1[pair_indices]
+    d_z = z2[pair_indices] - z1[pair_indices]
+    p_cyl = cyl1[pair_indices]
+    p_src = src1[pair_indices]
+    p_z = z1[pair_indices]
 
-    prev_x = px + prev_t * dx
-    prev_y = py + prev_t * dy
-    prev_z = pz + prev_t * dz
-    curr_x = px + curr_t * dx
-    curr_y = py + curr_t * dy
-    curr_z = pz + curr_t * dz
+    prev_cyl = p_cyl + prev_t * d_cyl
+    prev_src = p_src + prev_t * d_src
+    prev_z = p_z + prev_t * d_z
+    curr_cyl = p_cyl + curr_t * d_cyl
+    curr_src = p_src + curr_t * d_src
+    curr_z = p_z + curr_t * d_z
 
     prev_eff_r = radius + prev_z
     curr_eff_r = radius + curr_z
 
-    theta_prev = (prev_y / circumference) * 2.0 * np.pi
-    theta_curr = (curr_y / circumference) * 2.0 * np.pi
+    theta_prev = (prev_src / circumference) * 2.0 * np.pi
+    theta_curr = (curr_src / circumference) * 2.0 * np.pi
 
     result_verts = np.empty((total_segments * 2, 3), dtype=np.float32)
-    result_verts[0::2, 0] = prev_x.astype(np.float32)
-    result_verts[0::2, 1] = (prev_eff_r * np.sin(theta_prev)).astype(
+    result_verts[0::2, cyl_idx] = prev_cyl.astype(np.float32)
+    result_verts[0::2, source_idx] = (prev_eff_r * np.sin(theta_prev)).astype(
         np.float32
     )
     result_verts[0::2, 2] = (prev_eff_r * np.cos(theta_prev)).astype(
         np.float32
     )
-    result_verts[1::2, 0] = curr_x.astype(np.float32)
-    result_verts[1::2, 1] = (curr_eff_r * np.sin(theta_curr)).astype(
+    result_verts[1::2, cyl_idx] = curr_cyl.astype(np.float32)
+    result_verts[1::2, source_idx] = (curr_eff_r * np.sin(theta_curr)).astype(
         np.float32
     )
     result_verts[1::2, 2] = (curr_eff_r * np.cos(theta_curr)).astype(
