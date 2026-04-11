@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-09 03:49+0200\n"
+"POT-Creation-Date: 2026-04-10 23:41+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -16,10 +16,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-
-#: post_processors/widgets/lead_in_out_widget.py
-msgid "Enable Lead-In/Out"
-msgstr "Ein-/Auslauf aktivieren"
 
 #: post_processors/widgets/lead_in_out_widget.py
 #: post_processors/widgets/overscan_widget.py
@@ -50,10 +46,6 @@ msgid "Distance of zero-power move after cut ends"
 msgstr "Abstand der Nullleistungsbewegung nach Schnittende"
 
 #: post_processors/widgets/lead_in_out_widget.py
-msgid "Toggle Lead-In/Out"
-msgstr "Ein-/Auslauf umschalten"
-
-#: post_processors/widgets/lead_in_out_widget.py
 msgid "Toggle Auto Lead-In/Out"
 msgstr "Automatischen Ein-/Auslauf umschalten"
 
@@ -74,20 +66,12 @@ msgid "Change Lead-Out Distance"
 msgstr "Auslaufabstand ändern"
 
 #: post_processors/widgets/overscan_widget.py
-msgid "Enable Overscan"
-msgstr "Überlauf aktivieren"
-
-#: post_processors/widgets/overscan_widget.py
 msgid "Overscan Distance"
 msgstr "Überlaufabstand"
 
 #: post_processors/widgets/overscan_widget.py
 msgid "Manual distance setting"
 msgstr "Manuelle Abstandseinstellung"
-
-#: post_processors/widgets/overscan_widget.py
-msgid "Toggle Overscan"
-msgstr "Überlauf umschalten"
 
 #: post_processors/widgets/overscan_widget.py
 msgid "Toggle Auto Overscan"
@@ -106,14 +90,6 @@ msgid "Change Overscan Distance"
 msgstr "Überlaufabstand ändern"
 
 #: post_processors/widgets/optimize_widget.py
-msgid "Enable Optimization"
-msgstr "Optimierung aktivieren"
-
-#: post_processors/widgets/optimize_widget.py
-msgid "Minimizes travel distance by reordering segments"
-msgstr "Minimiert Verfahrweg durch Neuanordnung der Segmente"
-
-#: post_processors/widgets/optimize_widget.py
 msgid "Allow Flipping"
 msgstr "Umkehrung zulassen"
 
@@ -130,24 +106,12 @@ msgid "Keep the first workpiece at its original position"
 msgstr "Erstes Werkstück an seiner ursprünglichen Position behalten"
 
 #: post_processors/widgets/optimize_widget.py
-msgid "Toggle Path Optimization"
-msgstr "Pfadoptimierung umschalten"
-
-#: post_processors/widgets/optimize_widget.py
 msgid "Toggle Flipping"
 msgstr "Umkehrung umschalten"
 
 #: post_processors/widgets/optimize_widget.py
 msgid "Toggle Preserve First Workpiece"
 msgstr "Erstes Werkstück beibehalten umschalten"
-
-#: post_processors/widgets/crop_widget.py
-msgid "Enable Crop-to-Stock"
-msgstr "Auf Material zuschneiden aktivieren"
-
-#: post_processors/widgets/crop_widget.py
-msgid "Removes toolpaths extending beyond stock boundary"
-msgstr "Entfernt Werkzeugpfade, die über die Materialgrenze hinausgehen"
 
 #: post_processors/widgets/crop_widget.py
 msgid "Offset"
@@ -158,20 +122,8 @@ msgid "Grow/shrink stock boundary before cropping"
 msgstr "Materialgrenze vor dem Zuschneiden vergrößern/verkleinern"
 
 #: post_processors/widgets/crop_widget.py
-msgid "Toggle Crop-to-Stock"
-msgstr "Auf Material zuschneiden umschalten"
-
-#: post_processors/widgets/crop_widget.py
 msgid "Change Crop Offset"
 msgstr "Zuschnittversatz ändern"
-
-#: post_processors/widgets/smooth_widget.py
-msgid "Enable Smoothing"
-msgstr "Glättung aktivieren"
-
-#: post_processors/widgets/smooth_widget.py
-msgid "Smooths jagged edges using a Gaussian filter"
-msgstr "Glättet gezackte Kanten mit einem Gauß-Filter"
 
 #: post_processors/widgets/smooth_widget.py
 msgid "Smoothness"
@@ -190,10 +142,6 @@ msgid "Angles sharper than this are kept as corners (degrees)"
 msgstr "Scharfere Winkel als dieser werden als Ecken beibehalten (Grad)"
 
 #: post_processors/widgets/smooth_widget.py
-msgid "Toggle Smoothing"
-msgstr "Glättung umschalten"
-
-#: post_processors/widgets/smooth_widget.py
 msgid "Change smoothness"
 msgstr "Glättung ändern"
 
@@ -202,26 +150,12 @@ msgid "Change corner angle"
 msgstr "Eckenwinkel ändern"
 
 #: post_processors/widgets/merge_lines_widget.py
-msgid "Enable Merge Lines"
-msgstr "Linien zusammenführen aktivieren"
-
-#: post_processors/widgets/merge_lines_widget.py
-msgid "Merges overlapping line segments to avoid double passing"
-msgstr ""
-"Führt überlappende Liniensegmente zusammen, um doppeltes Bearbeiten zu "
-"vermeiden"
-
-#: post_processors/widgets/merge_lines_widget.py
 msgid "Tolerance"
 msgstr "Toleranz"
 
 #: post_processors/widgets/merge_lines_widget.py
 msgid "Maximum distance for lines to be considered overlapping"
 msgstr "Maximaler Abstand, damit Linien als überlappend gelten"
-
-#: post_processors/widgets/merge_lines_widget.py
-msgid "Toggle Merge Lines"
-msgstr "Linien zusammenführen umschalten"
 
 #: post_processors/widgets/merge_lines_widget.py
 msgid "Change merge tolerance"

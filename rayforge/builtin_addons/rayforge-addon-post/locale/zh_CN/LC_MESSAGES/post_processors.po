@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-09 03:49+0200\n"
+"POT-Creation-Date: 2026-04-10 23:41+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -15,10 +15,6 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-
-#: post_processors/widgets/lead_in_out_widget.py
-msgid "Enable Lead-In/Out"
-msgstr "启用导入/导出"
 
 #: post_processors/widgets/lead_in_out_widget.py
 #: post_processors/widgets/overscan_widget.py
@@ -47,10 +43,6 @@ msgid "Distance of zero-power move after cut ends"
 msgstr "切割结束后的零功率移动距离"
 
 #: post_processors/widgets/lead_in_out_widget.py
-msgid "Toggle Lead-In/Out"
-msgstr "切换导入/导出"
-
-#: post_processors/widgets/lead_in_out_widget.py
 msgid "Toggle Auto Lead-In/Out"
 msgstr "切换自动导入/导出"
 
@@ -71,20 +63,12 @@ msgid "Change Lead-Out Distance"
 msgstr "更改导出距离"
 
 #: post_processors/widgets/overscan_widget.py
-msgid "Enable Overscan"
-msgstr "启用超扫描"
-
-#: post_processors/widgets/overscan_widget.py
 msgid "Overscan Distance"
 msgstr "超扫描距离"
 
 #: post_processors/widgets/overscan_widget.py
 msgid "Manual distance setting"
 msgstr "手动距离设置"
-
-#: post_processors/widgets/overscan_widget.py
-msgid "Toggle Overscan"
-msgstr "切换超扫描"
 
 #: post_processors/widgets/overscan_widget.py
 msgid "Toggle Auto Overscan"
@@ -103,14 +87,6 @@ msgid "Change Overscan Distance"
 msgstr "更改超扫描距离"
 
 #: post_processors/widgets/optimize_widget.py
-msgid "Enable Optimization"
-msgstr "启用优化"
-
-#: post_processors/widgets/optimize_widget.py
-msgid "Minimizes travel distance by reordering segments"
-msgstr "通过重新排序段来最小化移动距离"
-
-#: post_processors/widgets/optimize_widget.py
 msgid "Allow Flipping"
 msgstr "允许翻转"
 
@@ -127,24 +103,12 @@ msgid "Keep the first workpiece at its original position"
 msgstr "将第一个工件保持在原始位置"
 
 #: post_processors/widgets/optimize_widget.py
-msgid "Toggle Path Optimization"
-msgstr "切换路径优化"
-
-#: post_processors/widgets/optimize_widget.py
 msgid "Toggle Flipping"
 msgstr "切换翻转"
 
 #: post_processors/widgets/optimize_widget.py
 msgid "Toggle Preserve First Workpiece"
 msgstr "切换保留第一个工件"
-
-#: post_processors/widgets/crop_widget.py
-msgid "Enable Crop-to-Stock"
-msgstr "启用裁剪到材料"
-
-#: post_processors/widgets/crop_widget.py
-msgid "Removes toolpaths extending beyond stock boundary"
-msgstr "移除超出材料边界的刀具路径"
 
 #: post_processors/widgets/crop_widget.py
 msgid "Offset"
@@ -155,20 +119,8 @@ msgid "Grow/shrink stock boundary before cropping"
 msgstr "在裁剪之前扩展/收缩材料边界"
 
 #: post_processors/widgets/crop_widget.py
-msgid "Toggle Crop-to-Stock"
-msgstr "切换裁剪到材料"
-
-#: post_processors/widgets/crop_widget.py
 msgid "Change Crop Offset"
 msgstr "更改裁剪偏移"
-
-#: post_processors/widgets/smooth_widget.py
-msgid "Enable Smoothing"
-msgstr "启用平滑"
-
-#: post_processors/widgets/smooth_widget.py
-msgid "Smooths jagged edges using a Gaussian filter"
-msgstr "使用高斯滤波器平滑锯齿边缘"
 
 #: post_processors/widgets/smooth_widget.py
 msgid "Smoothness"
@@ -187,10 +139,6 @@ msgid "Angles sharper than this are kept as corners (degrees)"
 msgstr "比此更尖锐的角度将保持为拐角（度）"
 
 #: post_processors/widgets/smooth_widget.py
-msgid "Toggle Smoothing"
-msgstr "切换平滑"
-
-#: post_processors/widgets/smooth_widget.py
 msgid "Change smoothness"
 msgstr "更改平滑度"
 
@@ -199,24 +147,12 @@ msgid "Change corner angle"
 msgstr "更改拐角角度"
 
 #: post_processors/widgets/merge_lines_widget.py
-msgid "Enable Merge Lines"
-msgstr "启用合并线条"
-
-#: post_processors/widgets/merge_lines_widget.py
-msgid "Merges overlapping line segments to avoid double passing"
-msgstr "合并重叠的线段以避免重复通过"
-
-#: post_processors/widgets/merge_lines_widget.py
 msgid "Tolerance"
 msgstr "容差"
 
 #: post_processors/widgets/merge_lines_widget.py
 msgid "Maximum distance for lines to be considered overlapping"
 msgstr "线条被视为重叠的最大距离"
-
-#: post_processors/widgets/merge_lines_widget.py
-msgid "Toggle Merge Lines"
-msgstr "切换合并线条"
 
 #: post_processors/widgets/merge_lines_widget.py
 msgid "Change merge tolerance"

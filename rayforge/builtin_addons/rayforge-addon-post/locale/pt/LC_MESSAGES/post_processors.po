@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-09 03:49+0200\n"
+"POT-Creation-Date: 2026-04-10 23:41+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -16,10 +16,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-
-#: post_processors/widgets/lead_in_out_widget.py
-msgid "Enable Lead-In/Out"
-msgstr "Ativar entrada/saída"
 
 #: post_processors/widgets/lead_in_out_widget.py
 #: post_processors/widgets/overscan_widget.py
@@ -49,10 +45,6 @@ msgid "Distance of zero-power move after cut ends"
 msgstr "Distância do movimento sem potência após o fim do corte"
 
 #: post_processors/widgets/lead_in_out_widget.py
-msgid "Toggle Lead-In/Out"
-msgstr "Alternar entrada/saída"
-
-#: post_processors/widgets/lead_in_out_widget.py
 msgid "Toggle Auto Lead-In/Out"
 msgstr "Alternar entrada/saída automática"
 
@@ -73,20 +65,12 @@ msgid "Change Lead-Out Distance"
 msgstr "Alterar distância de saída"
 
 #: post_processors/widgets/overscan_widget.py
-msgid "Enable Overscan"
-msgstr "Ativar Sobrescan"
-
-#: post_processors/widgets/overscan_widget.py
 msgid "Overscan Distance"
 msgstr "Distância do Sobrescan"
 
 #: post_processors/widgets/overscan_widget.py
 msgid "Manual distance setting"
 msgstr "Configuração manual de distância"
-
-#: post_processors/widgets/overscan_widget.py
-msgid "Toggle Overscan"
-msgstr "Alternar Sobrescan"
 
 #: post_processors/widgets/overscan_widget.py
 msgid "Toggle Auto Overscan"
@@ -105,14 +89,6 @@ msgid "Change Overscan Distance"
 msgstr "Alterar Distância do Sobrescan"
 
 #: post_processors/widgets/optimize_widget.py
-msgid "Enable Optimization"
-msgstr "Ativar Otimização"
-
-#: post_processors/widgets/optimize_widget.py
-msgid "Minimizes travel distance by reordering segments"
-msgstr "Minimiza a distância de deslocamento reordenando segmentos"
-
-#: post_processors/widgets/optimize_widget.py
 msgid "Allow Flipping"
 msgstr "Permitir Inversão"
 
@@ -129,25 +105,12 @@ msgid "Keep the first workpiece at its original position"
 msgstr "Manter a primeira peça de trabalho em sua posição original"
 
 #: post_processors/widgets/optimize_widget.py
-msgid "Toggle Path Optimization"
-msgstr "Alternar Otimização de Caminho"
-
-#: post_processors/widgets/optimize_widget.py
 msgid "Toggle Flipping"
 msgstr "Alternar Inversão"
 
 #: post_processors/widgets/optimize_widget.py
 msgid "Toggle Preserve First Workpiece"
 msgstr "Alternar Preservação da Primeira Peça de Trabalho"
-
-#: post_processors/widgets/crop_widget.py
-msgid "Enable Crop-to-Stock"
-msgstr "Ativar Recortar para Material"
-
-#: post_processors/widgets/crop_widget.py
-msgid "Removes toolpaths extending beyond stock boundary"
-msgstr ""
-"Remove caminhos de ferramenta que se estendem além do limite do material"
 
 #: post_processors/widgets/crop_widget.py
 msgid "Offset"
@@ -158,20 +121,8 @@ msgid "Grow/shrink stock boundary before cropping"
 msgstr "Expandir/retrair limite do material antes do recorte"
 
 #: post_processors/widgets/crop_widget.py
-msgid "Toggle Crop-to-Stock"
-msgstr "Alternar Recortar para Material"
-
-#: post_processors/widgets/crop_widget.py
 msgid "Change Crop Offset"
 msgstr "Alterar Deslocamento do Recorte"
-
-#: post_processors/widgets/smooth_widget.py
-msgid "Enable Smoothing"
-msgstr "Ativar Suavização"
-
-#: post_processors/widgets/smooth_widget.py
-msgid "Smooths jagged edges using a Gaussian filter"
-msgstr "Suaviza bordas irregulares usando um filtro gaussiano"
 
 #: post_processors/widgets/smooth_widget.py
 msgid "Smoothness"
@@ -190,10 +141,6 @@ msgid "Angles sharper than this are kept as corners (degrees)"
 msgstr "Ângulos mais agudos que este são mantidos como cantos (graus)"
 
 #: post_processors/widgets/smooth_widget.py
-msgid "Toggle Smoothing"
-msgstr "Alternar Suavização"
-
-#: post_processors/widgets/smooth_widget.py
 msgid "Change smoothness"
 msgstr "Alterar suavidade"
 
@@ -202,24 +149,12 @@ msgid "Change corner angle"
 msgstr "Alterar ângulo do canto"
 
 #: post_processors/widgets/merge_lines_widget.py
-msgid "Enable Merge Lines"
-msgstr "Ativar fusão de linhas"
-
-#: post_processors/widgets/merge_lines_widget.py
-msgid "Merges overlapping line segments to avoid double passing"
-msgstr "Funde segmentos de linha sobrepostos para evitar passagens duplas"
-
-#: post_processors/widgets/merge_lines_widget.py
 msgid "Tolerance"
 msgstr "Tolerância"
 
 #: post_processors/widgets/merge_lines_widget.py
 msgid "Maximum distance for lines to be considered overlapping"
 msgstr "Distância máxima para que as linhas sejam consideradas sobrepostas"
-
-#: post_processors/widgets/merge_lines_widget.py
-msgid "Toggle Merge Lines"
-msgstr "Alternar fusão de linhas"
 
 #: post_processors/widgets/merge_lines_widget.py
 msgid "Change merge tolerance"

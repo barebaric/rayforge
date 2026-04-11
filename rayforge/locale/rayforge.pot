@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-09 12:36+0200\n"
+"POT-Creation-Date: 2026-04-11 11:22+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -4589,6 +4589,14 @@ msgstr ""
 msgid ""
 "The required component '{}' could not be found. The document can still be "
 "saved."
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/base.py
+msgid "Enable {}"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/base.py
+msgid "Toggle {}"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py

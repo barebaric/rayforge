@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-09 12:36+0200\n"
+"POT-Creation-Date: 2026-04-11 11:22+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -4636,6 +4636,14 @@ msgid ""
 "The required component '{}' could not be found. The document can still be "
 "saved."
 msgstr "找不到所需的组件 '{}'。该文档仍可保存。"
+
+#: rayforge/ui_gtk/doceditor/step_settings/base.py
+msgid "Enable {}"
+msgstr "启用 {}"
+
+#: rayforge/ui_gtk/doceditor/step_settings/base.py
+msgid "Toggle {}"
+msgstr "切换 {}"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "1 material"
