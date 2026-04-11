@@ -487,8 +487,8 @@ def _encode_rotary_line(machine, doc):
     ops = Ops()
     ops.add(MoveToCommand((0.0, 0.0, 0.0)))
     ops.add(LineToCommand((10.0, 10.0, 0.0)))
-    gcode, _ = machine.encode_ops(ops, doc)
-    return gcode
+    encoded = machine.encode_ops(ops, doc)
+    return encoded.text
 
 
 class TestRotaryAxisGcodeOutput:

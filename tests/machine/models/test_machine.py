@@ -759,7 +759,8 @@ class TestMachine:
         await wait_for_tasks_to_finish(task_mgr)
 
         run_spy.assert_called_once()
-        machine_code = run_spy.call_args.args[0]
+        encoded = run_spy.call_args.args[0]
+        machine_code = encoded.text
 
         # Each frame cycle traces a rectangle (4 sides). With
         # frame_repeat_count=3, the laser should turn on 4*3=12 times.

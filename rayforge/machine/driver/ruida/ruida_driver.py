@@ -461,6 +461,9 @@ class RuidaDriver(Driver):
         laser_num = head.tool_number + 1
         await self._client.set_power_immediate(laser_num, power_percent)
 
+    async def set_focus_power(self, head: "Laser", percent: float) -> None:
+        await self.set_power(head, percent)
+
     def can_jog(self, axis: Optional[Axis] = None) -> bool:
         return True
 
