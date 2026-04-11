@@ -14,6 +14,7 @@ from ...core.ops.commands import (
 )
 from ...core.ops import Ops
 from ...core.workpiece import WorkPiece
+from ...machine.models.rotary_module import RotaryMode
 from ...shared.tasker.progress import ProgressContext
 from .base import ExecutionPhase, OpsTransformer
 
@@ -27,6 +28,8 @@ class AxisMapper(OpsTransformer):
         rotary_axis: Axis = Axis.A,
         rotary_diameter: float = 25.0,
         has_physical_source: bool = False,
+        mode: RotaryMode = RotaryMode.TRUE_4TH_AXIS,
+        mm_per_rotation: float = 0.0,
         enabled: bool = True,
         **kwargs,
     ):
@@ -35,6 +38,8 @@ class AxisMapper(OpsTransformer):
         self.rotary_axis = rotary_axis
         self.rotary_diameter = rotary_diameter
         self.has_physical_source = has_physical_source
+        self.mode = mode
+        self.mm_per_rotation = mm_per_rotation
 
     @property
     def label(self) -> str:
@@ -54,6 +59,14 @@ class AxisMapper(OpsTransformer):
             return 0.0
         circumference = effective_diameter * math.pi
         return (mu / circumference) * 360.0
+
+    def _scale_passthrough(self, mu: float, z: float) -> float:
+        if self.mm_per_rotation <= 0:
+            return mu
+        effective_diameter = self.rotary_diameter + 2.0 * z
+        if effective_diameter <= 0:
+            return 0.0
+        return mu * self.mm_per_rotation / (math.pi * effective_diameter)
 
     def _source_index(self) -> int:
         idx = _AXIS_INDEX.get(self.source_axis)
@@ -81,6 +94,46 @@ class AxisMapper(OpsTransformer):
         si = self._source_index()
         commands = ops._commands
 
+        if self.mode == RotaryMode.PASSTHROUGH:
+            self._run_passthrough(commands, si)
+        else:
+            self._run_true_4th_axis(commands, si)
+
+    def _run_passthrough(self, commands: list, si: int) -> None:
+        for cmd in commands:
+            if not isinstance(cmd, MovingCommand):
+                continue
+            if self.mm_per_rotation <= 0:
+                continue
+            src_val = cmd.end[si]
+            z_val = cmd.end[2]
+            scaled = self._scale_passthrough(src_val, z_val)
+            cmd.end = self._replace_source(cmd.end, si, scaled)
+
+            if isinstance(cmd, ArcToCommand):
+                z_val = cmd.end[2]
+                cp_scaled = self._scale_passthrough(
+                    cmd.center_offset[si], z_val
+                )
+                new_offset = list(cmd.center_offset)
+                new_offset[si] = cp_scaled
+                cmd.center_offset = (
+                    new_offset[0],
+                    new_offset[1],
+                )
+            elif isinstance(cmd, BezierToCommand):
+                for attr in ("control1", "control2"):
+                    cp = list(getattr(cmd, attr))
+                    z_val = cmd.end[2]
+                    cp[si] = self._scale_passthrough(cp[si], z_val)
+                    setattr(cmd, attr, tuple(cp))
+            elif isinstance(cmd, QuadraticBezierToCommand):
+                cp = list(cmd.control)
+                z_val = cmd.end[2]
+                cp[si] = self._scale_passthrough(cp[si], z_val)
+                cmd.control = (cp[0], cp[1], cp[2])
+
+    def _run_true_4th_axis(self, commands: list, si: int) -> None:
         insert_pos = 0
         park_inserted = False
 
@@ -99,9 +152,9 @@ class AxisMapper(OpsTransformer):
                 insert_pos += 1
                 park_inserted = True
 
-            y_val = cmd.end[si]
+            src_val = cmd.end[si]
             z_val = cmd.end[2]
-            degrees = self._mu_to_degrees(y_val, z_val)
+            degrees = self._mu_to_degrees(src_val, z_val)
 
             cmd.extra_axes[self.rotary_axis] = degrees
             cmd.end = self._replace_source(cmd.end, si, 0.0)

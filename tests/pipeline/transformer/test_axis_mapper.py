@@ -11,6 +11,7 @@ from rayforge.core.ops.commands import (
     MovingCommand,
 )
 from rayforge.pipeline.transformer.axis_mapper import AxisMapper
+from rayforge.machine.models.rotary_module import RotaryMode
 
 
 class TestAxisMapperIdentity:
@@ -208,3 +209,151 @@ class TestAxisMapperDegreeFormulaMatchesGcode:
 
         cmds = [c for c in ops if isinstance(c, MoveToCommand)]
         assert cmds[0].extra_axes[Axis.A] == pytest.approx(expected)
+
+
+class TestAxisMapperPassthroughRaw:
+    def test_passthrough_raw_y_unchanged(self):
+        ops = Ops()
+        ops.move_to(10, 50, 0)
+        ops.line_to(30, 100, 0)
+
+        mapper = AxisMapper(
+            source_axis=Axis.Y,
+            rotary_axis=Axis.A,
+            rotary_diameter=25.0,
+            mode=RotaryMode.PASSTHROUGH,
+            mm_per_rotation=0.0,
+        )
+        mapper.run(ops)
+
+        cmds = [c for c in ops if isinstance(c, MovingCommand)]
+        assert len(cmds) == 2
+        assert cmds[0].end[1] == pytest.approx(50.0)
+        assert cmds[1].end[1] == pytest.approx(100.0)
+        assert cmds[0].extra_axes == {}
+        assert cmds[1].extra_axes == {}
+
+    def test_passthrough_raw_no_park_move(self):
+        ops = Ops()
+        ops.move_to(10, 50, 0)
+
+        mapper = AxisMapper(
+            source_axis=Axis.Y,
+            rotary_axis=Axis.A,
+            rotary_diameter=25.0,
+            mode=RotaryMode.PASSTHROUGH,
+            mm_per_rotation=0.0,
+        )
+        mapper.run(ops)
+
+        cmds = [c for c in ops if isinstance(c, MovingCommand)]
+        assert len(cmds) == 1
+
+
+class TestAxisMapperPassthroughScaled:
+    def test_passthrough_scaled_y(self):
+        diameter = 25.0
+        mm_per_rot = 100.0
+
+        ops = Ops()
+        ops.move_to(10, 50, 0)
+
+        mapper = AxisMapper(
+            source_axis=Axis.Y,
+            rotary_axis=Axis.A,
+            rotary_diameter=diameter,
+            mode=RotaryMode.PASSTHROUGH,
+            mm_per_rotation=mm_per_rot,
+        )
+        mapper.run(ops)
+
+        cmds = [c for c in ops if isinstance(c, MovingCommand)]
+        assert len(cmds) == 1
+        expected = 50.0 * mm_per_rot / (math.pi * diameter)
+        assert cmds[0].end[1] == pytest.approx(expected)
+        assert cmds[0].extra_axes == {}
+
+    def test_passthrough_scaled_x(self):
+        diameter = 25.0
+        mm_per_rot = 100.0
+
+        ops = Ops()
+        ops.move_to(50, 10, 0)
+
+        mapper = AxisMapper(
+            source_axis=Axis.X,
+            rotary_axis=Axis.A,
+            rotary_diameter=diameter,
+            mode=RotaryMode.PASSTHROUGH,
+            mm_per_rotation=mm_per_rot,
+        )
+        mapper.run(ops)
+
+        cmds = [c for c in ops if isinstance(c, MovingCommand)]
+        expected = 50.0 * mm_per_rot / (math.pi * diameter)
+        assert cmds[0].end[0] == pytest.approx(expected)
+        assert cmds[0].end[1] == pytest.approx(10.0)
+
+    def test_passthrough_scaled_bezier(self):
+        diameter = 25.0
+        mm_per_rot = 100.0
+
+        ops = Ops()
+        ops.move_to(0, 0, 0)
+        ops.bezier_to(c1=(10, 20, 0), c2=(20, 30, 0), end=(30, 10, 0))
+
+        mapper = AxisMapper(
+            source_axis=Axis.Y,
+            rotary_axis=Axis.A,
+            rotary_diameter=diameter,
+            mode=RotaryMode.PASSTHROUGH,
+            mm_per_rotation=mm_per_rot,
+        )
+        mapper.run(ops)
+
+        beziers = [c for c in ops if isinstance(c, BezierToCommand)]
+        assert len(beziers) == 1
+        b = beziers[0]
+        scale = mm_per_rot / (math.pi * diameter)
+        assert b.control1[1] == pytest.approx(20.0 * scale)
+        assert b.control2[1] == pytest.approx(30.0 * scale)
+        assert b.end[1] == pytest.approx(10.0 * scale)
+
+    def test_passthrough_scaled_arc(self):
+        diameter = 25.0
+        mm_per_rot = 100.0
+
+        ops = Ops()
+        ops.move_to(10, 20, 0)
+        ops.arc_to(30, 40, i=5.0, j=3.0, clockwise=True, z=0.0)
+
+        mapper = AxisMapper(
+            source_axis=Axis.Y,
+            rotary_axis=Axis.A,
+            rotary_diameter=diameter,
+            mode=RotaryMode.PASSTHROUGH,
+            mm_per_rotation=mm_per_rot,
+        )
+        mapper.run(ops)
+
+        arcs = [c for c in ops if isinstance(c, ArcToCommand)]
+        assert len(arcs) == 1
+        scale = mm_per_rot / (math.pi * diameter)
+        assert arcs[0].center_offset[1] == pytest.approx(3.0 * scale)
+        assert arcs[0].center_offset[0] == pytest.approx(5.0)
+
+    def test_passthrough_no_park_move(self):
+        ops = Ops()
+        ops.move_to(10, 50, 0)
+
+        mapper = AxisMapper(
+            source_axis=Axis.Y,
+            rotary_axis=Axis.A,
+            rotary_diameter=25.0,
+            mode=RotaryMode.PASSTHROUGH,
+            mm_per_rotation=100.0,
+        )
+        mapper.run(ops)
+
+        cmds = [c for c in ops if isinstance(c, MovingCommand)]
+        assert len(cmds) == 1

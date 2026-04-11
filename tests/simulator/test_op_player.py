@@ -5,6 +5,7 @@ from rayforge.core.ops.commands import ScanLinePowerCommand
 from rayforge.core.ops.axis import Axis
 from rayforge.core.doc import Doc
 from rayforge.machine.models.machine import Machine
+from rayforge.machine.models.rotary_module import RotaryModule, RotaryMode
 from rayforge.context import RayforgeContext
 
 
@@ -154,3 +155,54 @@ def test_seek_resets_source_axis():
     player._source_axis = Axis.X
     player.seek(0)
     assert player._source_axis == Axis.Y
+
+
+def test_passthrough_mode_no_rotary_mapping():
+    from rayforge.core.ops.commands import LayerStartCommand
+
+    machine = _make_machine()
+    rm = RotaryModule()
+    rm.set_mode(RotaryMode.PASSTHROUGH)
+    rm.set_source_axis(Axis.Y)
+    machine.add_rotary_module(rm)
+
+    ops = Ops()
+    ops.move_to(0, 0, 0)
+    ops.add(LayerStartCommand(layer_uid="test"))
+    ops.line_to(10, 20, 0)
+
+    doc = Doc()
+    doc.active_layer.uid = "test"
+    doc.active_layer.set_rotary_enabled(True)
+    doc.active_layer.set_rotary_module_uid(rm.uid)
+
+    player = OpPlayer(ops, machine, doc)
+    player.seek(len(list(ops)) - 1)
+
+    assert player.state.axes.get(Axis.A, 0.0) == pytest.approx(0.0)
+
+
+def test_true_4th_axis_copies_to_rotary():
+    from rayforge.core.ops.commands import LayerStartCommand
+
+    machine = _make_machine()
+    rm = RotaryModule()
+    rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+    rm.set_axis(Axis.A)
+    rm.set_source_axis(Axis.Y)
+    machine.add_rotary_module(rm)
+
+    ops = Ops()
+    ops.move_to(0, 0, 0)
+    ops.add(LayerStartCommand(layer_uid="test"))
+    ops.line_to(10, 20, 0)
+
+    doc = Doc()
+    doc.active_layer.uid = "test"
+    doc.active_layer.set_rotary_enabled(True)
+    doc.active_layer.set_rotary_module_uid(rm.uid)
+
+    player = OpPlayer(ops, machine, doc)
+    player.seek(len(list(ops)) - 1)
+
+    assert player.state.axes[Axis.A] == pytest.approx(20.0)

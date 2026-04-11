@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING, Optional
 
 from ..core.layer import Layer
 from ..core.ops import Ops
 from ..core.ops.axis import Axis
 from ..core.ops.commands import LayerStartCommand, MovingCommand
+from ..machine.models.rotary_module import RotaryMode
 from .machine_state import MachineState
 
 if TYPE_CHECKING:
@@ -23,11 +25,18 @@ class OpPlayer:
         self._current_index: int = -1
         self._current_rotary_axis: Optional[Axis] = None
         self._source_axis: Axis = Axis.Y
+        self._mode: RotaryMode = RotaryMode.TRUE_4TH_AXIS
+        self._mm_per_rotation: float = 0.0
+        self._diameter: float = 0.0
         self.state = self._create_home_state()
 
     @property
     def current_index(self) -> int:
         return self._current_index
+
+    @property
+    def source_axis(self) -> Axis:
+        return self._source_axis
 
     def _create_home_state(self) -> MachineState:
         state = MachineState.from_axis_set(self._machine.axes)
@@ -41,25 +50,56 @@ class OpPlayer:
         item = self._doc.find_descendant_by_uid(layer_uid)
         if not isinstance(item, Layer):
             self._current_rotary_axis = None
+            self._source_axis = Axis.Y
+            self._mode = RotaryMode.TRUE_4TH_AXIS
+            self._mm_per_rotation = 0.0
+            self._diameter = 0.0
             return
-        self._current_rotary_axis = self._machine.get_rotary_axis_for_layer(
-            item
+        self._diameter = item.rotary_diameter
+        module = (
+            self._machine.rotary_modules.get(item.rotary_module_uid)
+            if item.rotary_module_uid
+            else None
         )
-        self._source_axis = Axis.Y
+        if module:
+            self._source_axis = module.source_axis
+            self._mode = module.mode
+            self._mm_per_rotation = module.mm_per_rotation
+            if module.mode == RotaryMode.TRUE_4TH_AXIS:
+                self._current_rotary_axis = module.axis
+            else:
+                self._current_rotary_axis = None
+        else:
+            self._source_axis = Axis.Y
+            self._current_rotary_axis = (
+                self._machine.get_rotary_axis_for_layer(item)
+            )
+            self._mode = RotaryMode.TRUE_4TH_AXIS
+            self._mm_per_rotation = 0.0
 
     def _apply_rotary_mapping(self) -> None:
-        ra = self._current_rotary_axis
-        if ra is None:
-            return
-        src = self._source_axis
-        value = self.state.axes.get(src, 0.0)
-        self.state.axes[ra] = value
+        if self._mode == RotaryMode.TRUE_4TH_AXIS:
+            ra = self._current_rotary_axis
+            if ra is None:
+                return
+            value = self.state.axes.get(self._source_axis, 0.0)
+            self.state.axes[ra] = value
+        elif self._mode == RotaryMode.PASSTHROUGH:
+            if self._mm_per_rotation > 0 and self._diameter > 0:
+                fw_val = self.state.axes.get(self._source_axis, 0.0)
+                mm_val = (
+                    fw_val * math.pi * self._diameter / self._mm_per_rotation
+                )
+                self.state.axes[self._source_axis] = mm_val
 
     def seek(self, index: int):
         self.state = self._create_home_state()
         self._current_index = -1
         self._current_rotary_axis = None
         self._source_axis = Axis.Y
+        self._mode = RotaryMode.TRUE_4TH_AXIS
+        self._mm_per_rotation = 0.0
+        self._diameter = 0.0
         self.advance_to(index)
 
     def advance_to(self, index: int):

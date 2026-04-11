@@ -28,7 +28,7 @@ from .dialect import GcodeDialect
 from .laser import Laser
 from .machine_hours import MachineHours
 from .macro import Macro, MacroTrigger
-from .rotary_module import RotaryModule
+from .rotary_module import RotaryModule, RotaryMode
 from .zone import Zone
 
 
@@ -1273,18 +1273,33 @@ class Machine:
                 i += 1
                 continue
 
-            rotary_axis = self.get_rotary_axis_for_layer(descendant)
-            if rotary_axis is None:
+            if not descendant.rotary_module_uid:
                 i += 1
                 continue
 
-            has_physical_source = rotary_axis != Axis.Y
+            module = self.rotary_modules.get(descendant.rotary_module_uid)
+            if module is None:
+                i += 1
+                continue
+
+            source_axis = module.source_axis
+            mode = module.mode
             diameter = descendant.rotary_diameter
+
+            if mode == RotaryMode.TRUE_4TH_AXIS:
+                rotary_axis = module.axis
+                mm_per_rotation = 0.0
+            else:
+                rotary_axis = source_axis
+                mm_per_rotation = module.mm_per_rotation
+
             mapper = AxisMapper(
-                source_axis=Axis.Y,
+                source_axis=source_axis,
                 rotary_axis=rotary_axis,
                 rotary_diameter=diameter,
-                has_physical_source=has_physical_source,
+                has_physical_source=(mode == RotaryMode.TRUE_4TH_AXIS),
+                mode=mode,
+                mm_per_rotation=mm_per_rotation,
             )
 
             layer_cmds = []
