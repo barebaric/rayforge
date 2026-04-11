@@ -66,6 +66,19 @@
   </screenshots>
 
   <releases>
+    <release version="1.5.2" date="2026-04-11">
+      <description>
+        <p>Maintenance release</p>
+        <ul>
+          <li>Fixed G-code production failure when no rotary axis commands are defined</li>
+          <li>Fixed G5 commands not respecting the omit unchanged axis flag</li>
+          <li>Fixed 2D canvas showing stale ops when operation generates zero ops</li>
+          <li>Fixed model preview orientation and color display</li>
+          <li>Fixed point light not turning off when laser is off</li>
+          <li>Fixed potential race conditions in pipeline and 3D canvas</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.5.1" date="2026-04-09">
       <description>
         <p>Bug fix release</p>
