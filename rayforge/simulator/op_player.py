@@ -84,7 +84,7 @@ class OpPlayer:
                 return
             value = self.state.axes.get(self._source_axis, 0.0)
             self.state.axes[ra] = value
-        elif self._mode == RotaryMode.PASSTHROUGH:
+        elif self._mode == RotaryMode.AXIS_REPLACEMENT:
             if self._mm_per_rotation > 0 and self._diameter > 0:
                 fw_val = self.state.axes.get(self._source_axis, 0.0)
                 mm_val = (

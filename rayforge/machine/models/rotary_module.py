@@ -13,7 +13,7 @@ from ...core.ops.axis import Axis
 
 class RotaryMode(Enum):
     TRUE_4TH_AXIS = "true_4th_axis"
-    PASSTHROUGH = "passthrough"
+    AXIS_REPLACEMENT = "axis_replacement"
 
 
 class RotaryModule:

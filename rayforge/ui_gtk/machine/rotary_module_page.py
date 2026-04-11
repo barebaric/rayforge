@@ -75,11 +75,13 @@ class RotaryModuleRow(Gtk.Box):
         self._update_selection_state()
 
     def _get_subtitle_text(self) -> str:
-        model_label = self.module.model_id or _("No model")
-        return _("Axis {axis}, {model}").format(
-            axis=self.module.axis.name,
-            model=model_label,
-        )
+        if self.module.mode == RotaryMode.AXIS_REPLACEMENT:
+            mode_label = _("Axis Replacement")
+            axis = self.module.source_axis.name
+        else:
+            mode_label = _("True 4th Axis")
+            axis = self.module.axis.name
+        return _("{mode}, Axis {axis}").format(mode=mode_label, axis=axis)
 
     def _update_selection_state(self):
         is_default = (
@@ -277,10 +279,10 @@ class RotaryModulePage(TrackedPreferencesPage):
 
         mode_store = Gtk.StringList()
         mode_store.append(_("True 4th Axis"))
-        mode_store.append(_("Pass-through"))
+        mode_store.append(_("Axis Replacement"))
         self._mode_values = [
             RotaryMode.TRUE_4TH_AXIS,
-            RotaryMode.PASSTHROUGH,
+            RotaryMode.AXIS_REPLACEMENT,
         ]
         self.mode_row = Adw.ComboRow(
             title=_("Connection Mode"),
@@ -569,12 +571,12 @@ class RotaryModulePage(TrackedPreferencesPage):
             module.set_axis(self._valid_axes[selected])
 
     def _update_mode_dependent_rows(self, module: RotaryModule):
-        is_passthrough = module.mode == RotaryMode.PASSTHROUGH
-        self.mm_per_rotation_row.set_visible(is_passthrough)
-        self.module_axis_row.set_visible(not is_passthrough)
+        is_replacement = module.mode == RotaryMode.AXIS_REPLACEMENT
+        self.mm_per_rotation_row.set_visible(is_replacement)
+        self.module_axis_row.set_visible(not is_replacement)
 
         self._is_updating = True
-        if is_passthrough:
+        if is_replacement:
             src_idx = self._source_axis_display.index(module.source_axis)
         else:
             perpendicular = self._perpendicular(module.source_axis)
@@ -582,7 +584,7 @@ class RotaryModulePage(TrackedPreferencesPage):
         self.source_axis_row.set_selected(src_idx)
         self._is_updating = False
 
-        if is_passthrough:
+        if is_replacement:
             self.source_axis_row.set_title(_("Connected To"))
             self.source_axis_row.set_subtitle(
                 _("Which driver the rotary is plugged into")

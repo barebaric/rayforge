@@ -60,7 +60,7 @@ class AxisMapper(OpsTransformer):
         circumference = effective_diameter * math.pi
         return (mu / circumference) * 360.0
 
-    def _scale_passthrough(self, mu: float, z: float) -> float:
+    def _scale_replacement(self, mu: float, z: float) -> float:
         if self.mm_per_rotation <= 0:
             return mu
         effective_diameter = self.rotary_diameter + 2.0 * z
@@ -94,12 +94,12 @@ class AxisMapper(OpsTransformer):
         si = self._source_index()
         commands = ops._commands
 
-        if self.mode == RotaryMode.PASSTHROUGH:
-            self._run_passthrough(commands, si)
+        if self.mode == RotaryMode.AXIS_REPLACEMENT:
+            self._run_replacement(commands, si)
         else:
             self._run_true_4th_axis(commands, si)
 
-    def _run_passthrough(self, commands: list, si: int) -> None:
+    def _run_replacement(self, commands: list, si: int) -> None:
         for cmd in commands:
             if not isinstance(cmd, MovingCommand):
                 continue
@@ -107,12 +107,12 @@ class AxisMapper(OpsTransformer):
                 continue
             src_val = cmd.end[si]
             z_val = cmd.end[2]
-            scaled = self._scale_passthrough(src_val, z_val)
+            scaled = self._scale_replacement(src_val, z_val)
             cmd.end = self._replace_source(cmd.end, si, scaled)
 
             if isinstance(cmd, ArcToCommand):
                 z_val = cmd.end[2]
-                cp_scaled = self._scale_passthrough(
+                cp_scaled = self._scale_replacement(
                     cmd.center_offset[si], z_val
                 )
                 new_offset = list(cmd.center_offset)
@@ -125,12 +125,12 @@ class AxisMapper(OpsTransformer):
                 for attr in ("control1", "control2"):
                     cp = list(getattr(cmd, attr))
                     z_val = cmd.end[2]
-                    cp[si] = self._scale_passthrough(cp[si], z_val)
+                    cp[si] = self._scale_replacement(cp[si], z_val)
                     setattr(cmd, attr, tuple(cp))
             elif isinstance(cmd, QuadraticBezierToCommand):
                 cp = list(cmd.control)
                 z_val = cmd.end[2]
-                cp[si] = self._scale_passthrough(cp[si], z_val)
+                cp[si] = self._scale_replacement(cp[si], z_val)
                 cmd.control = (cp[0], cp[1], cp[2])
 
     def _run_true_4th_axis(self, commands: list, si: int) -> None:

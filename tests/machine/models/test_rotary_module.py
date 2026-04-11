@@ -53,8 +53,8 @@ class TestRotaryModule:
         assert rm.default_diameter == 50.0
         assert len(signals) == 5
 
-        rm.set_mode(RotaryMode.PASSTHROUGH)
-        assert rm.mode == RotaryMode.PASSTHROUGH
+        rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
+        assert rm.mode == RotaryMode.AXIS_REPLACEMENT
         assert len(signals) == 6
 
         rm.set_source_axis(Axis.X)
@@ -147,7 +147,7 @@ class TestRotaryModule:
         rm = RotaryModule()
         rm.name = "Test Rotary"
         rm.axis = Axis.B
-        rm.set_mode(RotaryMode.PASSTHROUGH)
+        rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
         rm.set_source_axis(Axis.X)
         rm.set_mm_per_rotation(100.0)
         rm.set_position(10.0, 20.0, 5.0)
@@ -159,7 +159,7 @@ class TestRotaryModule:
         assert rm2.uid == rm.uid
         assert rm2.name == "Test Rotary"
         assert rm2.axis == Axis.B
-        assert rm2.mode == RotaryMode.PASSTHROUGH
+        assert rm2.mode == RotaryMode.AXIS_REPLACEMENT
         assert rm2.source_axis == Axis.X
         assert rm2.mm_per_rotation == 100.0
         assert_array_equal(rm2.transform, rm.transform)
