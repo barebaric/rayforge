@@ -274,12 +274,29 @@ class Layer(DocItem):
     def set_workpieces(self, workpieces: List["WorkPiece"]):
         """
         Sets the layer's workpieces to a new list, preserving the
-        existing workflow.
+        existing workflow and groups.
         """
+        groups = [c for c in self.children if isinstance(c, Group)]
         current_workflow = self.workflow
-        new_children: List[DocItem] = list(workpieces)
+        new_children: List[DocItem] = []
+        new_children.extend(workpieces)
+        new_children.extend(groups)
         if current_workflow:
             new_children.append(current_workflow)
+        self.set_children(new_children)
+
+    def reorder_workpieces(self, new_workpiece_order: List["WorkPiece"]):
+        """
+        Reorders workpieces while preserving the positions of groups
+        and the workflow.
+        """
+        wp_iter = iter(new_workpiece_order)
+        new_children = []
+        for child in self.children:
+            if isinstance(child, WorkPiece):
+                new_children.append(next(wp_iter))
+            else:
+                new_children.append(child)
         self.set_children(new_children)
 
     def get_renderable_items(self) -> List[Tuple[Step, WorkPiece]]:

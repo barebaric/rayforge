@@ -18,17 +18,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _z_order_sort_key(element: CanvasElement):
-    """Sort key to ensure StepElements are drawn after visual elements."""
-    if isinstance(element, (WorkPieceElement, GroupElement, StockElement)):
-        return 0  # Draw visual items first (at the bottom)
-    if isinstance(element, StepElement):
-        # StepElements are invisible managers, but we keep them in the
-        # sort order for consistency.
-        return 1
-    return 2
-
-
 class LayerElement(CanvasElement):
     """
     A non-selectable container that corresponds to a Layer model.
@@ -66,14 +55,34 @@ class LayerElement(CanvasElement):
             return
         super().set_size(width, height)
 
-        # StepElements are invisible but might need size for future features.
         for elem in self.children:
             if isinstance(elem, StepElement):
                 elem.set_size(width, height)
 
     def sort_children_by_z_order(self):
         """Sorts child elements to maintain correct drawing order."""
-        self.children.sort(key=_z_order_sort_key)
+        model_visual_items = [
+            c
+            for c in self.data.children
+            if isinstance(c, (WorkPiece, Group, StockItem))
+        ]
+        model_order = {
+            id(item): i for i, item in enumerate(model_visual_items)
+        }
+
+        def sort_key(element: CanvasElement):
+            if isinstance(
+                element, (WorkPieceElement, GroupElement, StockElement)
+            ):
+                return (
+                    0,
+                    model_order.get(id(element.data), len(model_visual_items)),
+                )
+            if isinstance(element, StepElement):
+                return (1, 0)
+            return (2, 0)
+
+        self.children.sort(key=sort_key)
 
     def sync_with_model(
         self,

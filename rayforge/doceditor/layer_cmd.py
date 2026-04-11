@@ -269,3 +269,14 @@ class LayerCmd:
             name=_("Reorder layers"),
         )
         self._editor.history_manager.execute(cmd)
+
+    def reorder_workpieces(self, layer: Layer, new_order: List[WorkPiece]):
+        """Reorders workpieces within a layer with an undoable command."""
+        cmd = ReorderListCommand(
+            target_obj=layer,
+            list_property_name="workpieces",
+            new_list=new_order,
+            setter_method_name="reorder_workpieces",
+            name=_("Reorder workpieces"),
+        )
+        self._editor.history_manager.execute(cmd)
