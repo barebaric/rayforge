@@ -99,6 +99,7 @@ def test_laser_dot_absolute_positioning(
     # 2. Mock UI dependencies
     mock_editor = MagicMock()
     mock_editor.doc = MagicMock()
+    mock_editor.doc.active_layer.rotary_enabled = False
     mock_window = MagicMock()
 
     # 3. Instantiate WorkSurface
@@ -170,6 +171,7 @@ class TestLaserDotWithWCSOffset:
 
         mock_editor = MagicMock()
         mock_editor.doc = MagicMock()
+        mock_editor.doc.active_layer.rotary_enabled = False
         mock_window = MagicMock()
         surface = WorkSurface(mock_editor, mock_window, machine)
 
@@ -200,6 +202,7 @@ class TestLaserDotWithWCSOffset:
 
         mock_editor = MagicMock()
         mock_editor.doc = MagicMock()
+        mock_editor.doc.active_layer.rotary_enabled = False
         mock_window = MagicMock()
         surface = WorkSurface(mock_editor, mock_window, machine)
 
@@ -232,6 +235,7 @@ class TestLaserDotWithWCSOffset:
 
         mock_editor = MagicMock()
         mock_editor.doc = MagicMock()
+        mock_editor.doc.active_layer.rotary_enabled = False
         mock_window = MagicMock()
         surface = WorkSurface(mock_editor, mock_window, machine)
 
