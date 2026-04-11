@@ -12,9 +12,12 @@ from blinker import Signal
 from ...camera.models.camera import Camera
 from ...context import RayforgeContext, get_context
 from ...core.geo import Point3D, Rect
-from ...core.ops.axis import Axis
+from ...core.layer import Layer
+from ...core.ops import Axis, Ops
+from ...core.ops.commands import LayerStartCommand
 from ...pipeline.coordspace import MachineSpace
 from ...pipeline.encoder.gcode import MachineCodeOpMap
+from ...pipeline.transformer.axis_mapper import AxisMapper
 from ...shared.tasker import task_mgr
 from ..assembly import Assembly
 from ..driver.driver import DeviceState
@@ -31,8 +34,6 @@ from .zone import Zone
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
-    from ...core.layer import Layer
-    from ...core.ops import Ops
     from ...core.varset import VarSet
     from ..driver.driver import Driver
     from .controller import MachineController
@@ -1257,6 +1258,48 @@ class Machine:
 
         return ops_for_encoder
 
+    def _apply_rotary_axis_mapping(self, ops: "Ops", doc: "Doc") -> None:
+        """Apply rotary axis mapping per-layer on prepared ops."""
+        commands = ops._commands
+        i = 0
+        while i < len(commands):
+            cmd = commands[i]
+            if not isinstance(cmd, LayerStartCommand):
+                i += 1
+                continue
+
+            descendant = doc.find_descendant_by_uid(cmd.layer_uid)
+            if not isinstance(descendant, Layer):
+                i += 1
+                continue
+
+            rotary_axis = self.get_rotary_axis_for_layer(descendant)
+            if rotary_axis is None:
+                i += 1
+                continue
+
+            has_physical_source = rotary_axis != Axis.Y
+            diameter = descendant.rotary_diameter
+            mapper = AxisMapper(
+                source_axis=Axis.Y,
+                rotary_axis=rotary_axis,
+                rotary_diameter=diameter,
+                has_physical_source=has_physical_source,
+            )
+
+            layer_cmds = []
+            i += 1
+            while i < len(commands) and not isinstance(
+                commands[i], LayerStartCommand
+            ):
+                if not commands[i].is_marker():
+                    layer_cmds.append(commands[i])
+                i += 1
+
+            layer_ops = Ops()
+            layer_ops._commands = layer_cmds
+            mapper.run(layer_ops)
+
     def encode_ops(
         self, ops: "Ops", doc: "Doc"
     ) -> Tuple[str, "MachineCodeOpMap"]:
@@ -1277,7 +1320,14 @@ class Machine:
         # 1. Prepare ops (pure math)
         ops_for_encoder = self._prepare_ops_for_encoding(ops)
 
-        # 2. Instantiate the correct encoder via the driver factory
+        # 2. Apply rotary axis mapping per-layer.
+        #    The mapper converts Y→degrees on MovingCommands including
+        #    bezier control points and arc center offsets, so native
+        #    curve support (e.g. G5) is preserved.
+        if doc:
+            self._apply_rotary_axis_mapping(ops_for_encoder, doc)
+
+        # 3. Instantiate the correct encoder via the driver factory
         from ..driver import get_driver_cls
         from ..driver.dummy import NoDeviceDriver
 

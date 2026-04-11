@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Any, Type
 
 import numpy as np
 
+from ....core.ops.axis import Axis
 from ....pipeline.artifact.base import BaseArtifact
 from ....pipeline.artifact.handle import BaseArtifactHandle
 
@@ -19,6 +20,7 @@ class VertexLayer:
     powered_cmd_offsets: list = field(default_factory=list)
     travel_cmd_offsets: list = field(default_factory=list)
     is_rotary: bool = False
+    source_axis: Axis = Axis.Y
 
 
 @dataclass
@@ -32,6 +34,7 @@ class TextureLayer:
     rotary_diameter: float = 0.0
     rotary_enabled: bool = False
     activation_cmd_idx: int = -1
+    source_axis: Axis = Axis.Y
 
 
 @dataclass
@@ -40,6 +43,7 @@ class ScanlineOverlayLayer:
     colors: np.ndarray
     cmd_offsets: list
     is_rotary: bool = False
+    source_axis: Axis = Axis.Y
 
 
 class CompiledSceneArtifactHandle(BaseArtifactHandle):
@@ -111,6 +115,10 @@ class CompiledSceneArtifact(BaseArtifact):
                 )
             if vl.is_rotary:
                 arrays[f"vl{i}_ir"] = np.array([1], dtype=np.int32)
+            if vl.source_axis != Axis.Y:
+                arrays[f"vl{i}_sa"] = np.array(
+                    [int(vl.source_axis)], dtype=np.int32
+                )
 
         for i, tl in enumerate(self.texture_layers):
             arrays[f"tl{i}_tex"] = tl.power_texture
@@ -132,6 +140,10 @@ class CompiledSceneArtifact(BaseArtifact):
                 arrays[f"tl{i}_clut"] = tl.color_lut
             if tl.cylinder_vertices is not None:
                 arrays[f"tl{i}_cv"] = tl.cylinder_vertices
+            if tl.source_axis != Axis.Y:
+                arrays[f"tl{i}_sa"] = np.array(
+                    [int(tl.source_axis)], dtype=np.int32
+                )
 
         for i, ol in enumerate(self.overlay_layers):
             arrays[f"ol{i}_pos"] = ol.positions
@@ -139,6 +151,10 @@ class CompiledSceneArtifact(BaseArtifact):
             arrays[f"ol{i}_co"] = np.array(ol.cmd_offsets, dtype=np.int32)
             if ol.is_rotary:
                 arrays[f"ol{i}_ir"] = np.array([1], dtype=np.int32)
+            if ol.source_axis != Axis.Y:
+                arrays[f"ol{i}_sa"] = np.array(
+                    [int(ol.source_axis)], dtype=np.int32
+                )
 
         return arrays
 
@@ -161,6 +177,9 @@ class CompiledSceneArtifact(BaseArtifact):
             is_rotary = False
             if f"{prefix}ir" in arrays:
                 is_rotary = bool(arrays[f"{prefix}ir"][0])
+            source_axis = Axis.Y
+            if f"{prefix}sa" in arrays:
+                source_axis = Axis(int(arrays[f"{prefix}sa"][0]))
             vl = VertexLayer(
                 powered_verts=arrays[f"{prefix}pv"].copy(),
                 powered_colors=arrays[f"{prefix}pc"].copy(),
@@ -174,6 +193,7 @@ class CompiledSceneArtifact(BaseArtifact):
                     tco_arr.tolist() if tco_arr is not None else []
                 ),
                 is_rotary=is_rotary,
+                source_axis=source_axis,
             )
             vertex_layers.append(vl)
 
@@ -198,6 +218,9 @@ class CompiledSceneArtifact(BaseArtifact):
             activation_cmd_idx = -1
             if f"{prefix}aci" in arrays:
                 activation_cmd_idx = int(arrays[f"{prefix}aci"][0])
+            source_axis = Axis.Y
+            if f"{prefix}sa" in arrays:
+                source_axis = Axis(int(arrays[f"{prefix}sa"][0]))
             tl = TextureLayer(
                 power_texture=arrays[f"{prefix}tex"].copy(),
                 width_px=width_px,
@@ -208,6 +231,7 @@ class CompiledSceneArtifact(BaseArtifact):
                 rotary_diameter=rotary_diameter,
                 rotary_enabled=rotary_enabled,
                 activation_cmd_idx=activation_cmd_idx,
+                source_axis=source_axis,
             )
             texture_layers.append(tl)
 
@@ -217,11 +241,15 @@ class CompiledSceneArtifact(BaseArtifact):
             is_rotary = False
             if f"{prefix}ir" in arrays:
                 is_rotary = bool(arrays[f"{prefix}ir"][0])
+            source_axis = Axis.Y
+            if f"{prefix}sa" in arrays:
+                source_axis = Axis(int(arrays[f"{prefix}sa"][0]))
             ol = ScanlineOverlayLayer(
                 positions=arrays[f"{prefix}pos"].copy(),
                 colors=arrays[f"{prefix}col"].copy(),
                 cmd_offsets=arrays[f"{prefix}co"].copy().tolist(),
                 is_rotary=is_rotary,
+                source_axis=source_axis,
             )
             overlay_layers.append(ol)
 

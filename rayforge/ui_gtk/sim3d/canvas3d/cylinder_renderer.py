@@ -7,6 +7,7 @@ import math
 from typing import Tuple
 import numpy as np
 from OpenGL import GL
+from ....core.ops.axis import Axis
 from .gl_utils import BaseRenderer, Shader
 
 logger = logging.getLogger(__name__)
@@ -21,26 +22,37 @@ class CylinderRenderer(BaseRenderer):
         length: float,
         rings: int = 16,
         length_segments: int = 8,
+        source_axis: Axis = Axis.Y,
     ):
         """
         Initializes the CylinderRenderer.
 
         Args:
             diameter: The diameter of the cylinder in mm.
-            length: The length of the cylinder along the X-axis in mm.
+            length: The length of the cylinder along the cylinder axis
+                    in mm.
             rings: Number of circular rings around the circumference.
             length_segments: Number of segments along the length.
+            source_axis: Which linear axis maps to the rotation angle.
+                         Axis.Y (default): cylinder along X.
+                         Axis.X: cylinder along Y.
         """
         super().__init__()
         self.diameter = diameter
         self.length = length
         self.rings = rings
         self.length_segments = length_segments
+        self._source_axis = source_axis
 
         self.vao: int = 0
         self.vbo: int = 0
         self.vertex_count = 0
-        self._color: Tuple[float, float, float, float] = (0.5, 0.5, 0.5, 0.3)
+        self._color: Tuple[float, float, float, float] = (
+            0.5,
+            0.5,
+            0.5,
+            0.3,
+        )
 
     def set_color(self, color: Tuple[float, float, float, float]):
         """Sets the wireframe color."""
@@ -50,31 +62,48 @@ class CylinderRenderer(BaseRenderer):
         """Generates cylinder wireframe vertices and initializes OpenGL."""
         vertices = []
         radius = self.diameter / 2.0
+        cyl_idx = 0 if self._source_axis == Axis.Y else 1
 
         for i in range(self.length_segments + 1):
-            x = (i / self.length_segments) * self.length
+            cyl_pos = (i / self.length_segments) * self.length
             for j in range(self.rings):
                 theta1 = (j / self.rings) * 2.0 * math.pi
                 theta2 = ((j + 1) / self.rings) * 2.0 * math.pi
 
-                y1 = radius * math.sin(theta1)
-                z1 = radius * math.cos(theta1)
-                y2 = radius * math.sin(theta2)
-                z2 = radius * math.cos(theta2)
+                r1a = radius * math.sin(theta1)
+                r1b = radius * math.cos(theta1)
+                r2a = radius * math.sin(theta2)
+                r2b = radius * math.cos(theta2)
 
-                vertices.extend([x, y1, z1])
-                vertices.extend([x, y2, z2])
+                p1 = [0.0, 0.0, 0.0]
+                p2 = [0.0, 0.0, 0.0]
+                p1[cyl_idx] = cyl_pos
+                p1[1 - cyl_idx] = r1a
+                p1[2] = r1b
+                p2[cyl_idx] = cyl_pos
+                p2[1 - cyl_idx] = r2a
+                p2[2] = r2b
+                vertices.extend(p1)
+                vertices.extend(p2)
 
         for j in range(self.rings):
             theta = (j / self.rings) * 2.0 * math.pi
-            y = radius * math.sin(theta)
-            z = radius * math.cos(theta)
+            ra = radius * math.sin(theta)
+            rb = radius * math.cos(theta)
 
             for i in range(self.length_segments):
-                x1 = (i / self.length_segments) * self.length
-                x2 = ((i + 1) / self.length_segments) * self.length
-                vertices.extend([x1, y, z])
-                vertices.extend([x2, y, z])
+                cyl1 = (i / self.length_segments) * self.length
+                cyl2 = ((i + 1) / self.length_segments) * self.length
+                p1 = [0.0, 0.0, 0.0]
+                p2 = [0.0, 0.0, 0.0]
+                p1[cyl_idx] = cyl1
+                p1[1 - cyl_idx] = ra
+                p1[2] = rb
+                p2[cyl_idx] = cyl2
+                p2[1 - cyl_idx] = ra
+                p2[2] = rb
+                vertices.extend(p1)
+                vertices.extend(p2)
 
         self.vertex_count = len(vertices) // 3
         vertex_data = np.array(vertices, dtype=np.float32)

@@ -558,6 +558,39 @@ class TestRotaryAxisGcodeOutput:
         restored = Machine.from_dict(data, context=lite_context)
         assert restored.supports_curves is True
 
+    def test_encode_ops_with_layer_markers_uses_b(self, isolated_machine):
+        """encode_ops maps Y to B when layer has rotary enabled."""
+        rm = RotaryModule()
+        rm.set_axis(Axis.B)
+        isolated_machine.add_rotary_module(rm)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_diameter(25.0)
+        layer.set_rotary_module_uid(rm.uid)
+
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=layer.uid)
+        ops.move_to(0, 0, 0)
+        ops.line_to(10, 10, 0)
+        ops.layer_end(layer_uid=layer.uid)
+        ops.job_end()
+
+        gcode, _ = isolated_machine.encode_ops(ops, doc)
+
+        diameter = 25.0
+        circumference = diameter * math.pi
+        expected_deg = (10.0 / circumference) * 360.0
+        formatted_deg = f"{expected_deg:.3f}".rstrip("0").rstrip(".")
+        assert " B" in gcode
+        assert formatted_deg in gcode
+        assert "G0 X0 Y0" not in gcode.split("M5")[0]
+        assert "G1" in gcode
+        cut_line = [ln for ln in gcode.split("\n") if ln.startswith("G1")][0]
+        assert " Y" not in cut_line
+
     def test_prepare_ops_linearizes_by_default(self, lite_context):
         machine = Machine(lite_context)
         ops = Ops()

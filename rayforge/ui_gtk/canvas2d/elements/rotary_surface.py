@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from typing import Optional
 import cairo
+from ....core.ops.axis import Axis
 from ...canvas import CanvasElement
 
 
@@ -11,12 +12,16 @@ class RotarySurfaceElement(CanvasElement):
     A non-interactive canvas element that draws a dashed rectangle
     indicating the overall rotary surface extent in rotary mode.
 
-    Y is centered on the WCS origin (origin_y ± circumference/2).
-    X starts at the WCS origin and extends away from the machine origin,
-    covering the remaining bed width in that direction.
+    The circumferential axis maps to one canvas dimension, and the
+    length axis maps to the other. By default (Axis.Y), circumference
+    maps to canvas Y and length maps to canvas X.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        circumferential_axis: Axis = Axis.Y,
+        **kwargs,
+    ):
         super().__init__(
             x=0,
             y=0,
@@ -34,6 +39,7 @@ class RotarySurfaceElement(CanvasElement):
         self._diameter = 25.0
         self._bed_width = 200.0
         self._max_length = 200.0
+        self._circumferential_axis = circumferential_axis
 
     def set_origin(self, x: float, y: float):
         """Sets the WCS origin position in world (canvas) coordinates."""
@@ -55,18 +61,33 @@ class RotarySurfaceElement(CanvasElement):
         circumference = math.pi * self._diameter
         half_circ = circumference / 2.0
 
-        y = self._origin_y - half_circ
-        height = circumference
+        if self._circumferential_axis == Axis.Y:
+            y = self._origin_y - half_circ
+            height = circumference
 
-        if self._x_axis_right:
-            width = min(self._origin_x, self._max_length)
-            x = self._origin_x - width
+            if self._x_axis_right:
+                width = min(self._origin_x, self._max_length)
+                x = self._origin_x - width
+            else:
+                x = self._origin_x
+                width = min(self._bed_width - self._origin_x, self._max_length)
         else:
-            x = self._origin_x
-            width = min(self._bed_width - self._origin_x, self._max_length)
+            x = self._origin_x - half_circ
+            width = circumference
+
+            if self._x_axis_right:
+                height = min(self._origin_y, self._max_length)
+                y = self._origin_y - height
+            else:
+                y = self._origin_y
+                height = min(
+                    self._bed_width - self._origin_y, self._max_length
+                )
 
         if width < 0:
             width = 0.0
+        if height < 0:
+            height = 0.0
 
         self.set_size(width, height)
         self.set_pos(x, y)

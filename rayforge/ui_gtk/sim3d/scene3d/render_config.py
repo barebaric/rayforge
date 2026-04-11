@@ -5,23 +5,33 @@ from typing import Dict, Optional, Tuple
 
 import numpy as np
 
+from ....core.ops.axis import Axis
+
 
 @dataclass
 class LayerRenderConfig:
     rotary_enabled: bool
     rotary_diameter: float
+    source_axis: Optional[Axis] = None
 
     def to_dict(self) -> dict:
-        return {
+        d = {
             "rotary_enabled": self.rotary_enabled,
             "rotary_diameter": self.rotary_diameter,
         }
+        if self.source_axis is not None and self.source_axis != Axis.Y:
+            d["source_axis"] = int(self.source_axis)
+        return d
 
     @classmethod
     def from_dict(cls, data: dict) -> "LayerRenderConfig":
+        source_axis = None
+        if "source_axis" in data:
+            source_axis = Axis(data["source_axis"])
         return cls(
             rotary_enabled=data["rotary_enabled"],
             rotary_diameter=data["rotary_diameter"],
+            source_axis=source_axis,
         )
 
 
