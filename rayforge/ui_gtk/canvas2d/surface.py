@@ -45,6 +45,7 @@ from .elements.stock import StockElement
 from .elements.tab_handle import TabHandleElement
 from .elements.workpiece import WorkPieceElement
 from .elements.work_origin import WorkOriginElement
+from .projection import CanvasProjection
 from . import context_menu
 
 if TYPE_CHECKING:
@@ -102,6 +103,7 @@ class WorkSurface(WorldSurface):
 
         self._nogo_zone_elements: Dict[str, NogoZoneElement] = {}
         self._nogo_zones_visible = True
+        self._projection = CanvasProjection()
 
         # Initialize the base WorldSurface with machine dimensions
         super().__init__(
@@ -220,6 +222,17 @@ class WorkSurface(WorldSurface):
     def doc(self):
         """Returns the current document from the editor."""
         return self.editor.doc
+
+    @property
+    def projection(self) -> CanvasProjection:
+        return self._projection
+
+    @projection.setter
+    def projection(self, value: CanvasProjection):
+        if self._projection != value:
+            self._projection = value
+            self._update_rotary_surface_element()
+            self.queue_draw()
 
     @property
     def show_travel_moves(self) -> bool:
@@ -1313,6 +1326,9 @@ class WorkSurface(WorldSurface):
             wcs_x, wcs_y, _ = self.machine.get_active_wcs_offset()
             canvas_x, canvas_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
 
+        self._rotary_surface_element.set_circumferential_axis(
+            self._projection.circumferential_axis
+        )
         self._rotary_surface_element.set_x_axis_right(
             self.machine.x_axis_right
         )
