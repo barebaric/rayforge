@@ -140,3 +140,17 @@ def test_scanline_tracked():
     assert 1 in player.state.reached_textures
     assert 0 not in player.state.reached_textures
     assert 2 not in player.state.reached_textures
+
+
+def test_default_source_axis_is_y():
+    ops = _make_ops()
+    player = OpPlayer(ops, _make_machine(), Doc())
+    assert player._source_axis == Axis.Y
+
+
+def test_seek_resets_source_axis():
+    ops = _make_ops()
+    player = OpPlayer(ops, _make_machine(), Doc())
+    player._source_axis = Axis.X
+    player.seek(0)
+    assert player._source_axis == Axis.Y

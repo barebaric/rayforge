@@ -22,6 +22,7 @@ class OpPlayer:
         self._doc = doc
         self._current_index: int = -1
         self._current_rotary_axis: Optional[Axis] = None
+        self._source_axis: Axis = Axis.Y
         self.state = self._create_home_state()
 
     @property
@@ -44,18 +45,21 @@ class OpPlayer:
         self._current_rotary_axis = self._machine.get_rotary_axis_for_layer(
             item
         )
+        self._source_axis = Axis.Y
 
     def _apply_rotary_mapping(self) -> None:
         ra = self._current_rotary_axis
         if ra is None:
             return
-        y = self.state.axes.get(Axis.Y, 0.0)
-        self.state.axes[ra] = y
+        src = self._source_axis
+        value = self.state.axes.get(src, 0.0)
+        self.state.axes[ra] = value
 
     def seek(self, index: int):
         self.state = self._create_home_state()
         self._current_index = -1
         self._current_rotary_axis = None
+        self._source_axis = Axis.Y
         self.advance_to(index)
 
     def advance_to(self, index: int):
