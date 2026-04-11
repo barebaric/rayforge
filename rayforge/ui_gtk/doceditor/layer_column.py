@@ -54,11 +54,17 @@ css = """
     background-color: transparent;
     border-radius: 4px;
     margin: 1px 4px;
+    border: none;
 }
 .layer-workpiece-list > row:drop(active) {
-    background-color: alpha(@accent_bg_color, 0.2);
-    outline: 2px solid @accent_bg_color;
-    outline-offset: -2px;
+    background-color: transparent;
+    outline: none;
+}
+.layer-workpiece-list > row.drop-above {
+    box-shadow: inset 0 2px 0 0 @accent_bg_color;
+}
+.layer-workpiece-list > row.drop-below {
+    box-shadow: inset 0 -2px 0 0 @accent_bg_color;
 }
 """
 
@@ -80,6 +86,7 @@ class LayerColumn(Gtk.Box):
         self.layer = layer
         self.editor = editor
         self._row_workpieces = {}
+        self._potential_drop_index = -1
 
         self._build_header(can_delete)
         self._build_workpiece_list()
@@ -219,6 +226,7 @@ class LayerColumn(Gtk.Box):
 
     def _on_layer_updated(self, sender, **kwargs):
         self._update_ui()
+        self._rebuild_workpiece_list()
 
     def _on_layer_structure_changed(self, sender, **kwargs):
         self._rebuild_workpiece_list()
@@ -260,16 +268,53 @@ class LayerColumn(Gtk.Box):
 
         asset_uids = self._parse_asset_uids(value)
         if asset_uids is not None:
+            self._remove_drop_markers()
             return self._handle_asset_drop(asset_uids)
 
         wp = self._find_workpiece_by_uid(value)
         if not wp:
+            self._remove_drop_markers()
             return False
-        if not wp.layer or wp.layer is self.layer:
+
+        if not wp.layer:
+            self._remove_drop_markers()
             return False
+
+        drop_index = self._potential_drop_index
+        self._remove_drop_markers()
+
+        if wp.layer is self.layer:
+            return self._handle_reorder_drop(wp, drop_index)
 
         self.editor.layer.move_workpieces_to_layer([wp], self.layer)
         return True
+
+    def _handle_reorder_drop(self, wp, drop_index):
+        if drop_index == -1:
+            return False
+        current_workpieces = list(self.layer.workpieces)
+        source_index = current_workpieces.index(wp)
+
+        target_index = drop_index
+        if source_index < target_index:
+            target_index -= 1
+
+        if source_index == target_index:
+            return True
+
+        new_order = list(current_workpieces)
+        new_order.pop(source_index)
+        new_order.insert(target_index, wp)
+        self.editor.layer.reorder_workpieces(self.layer, new_order)
+        return True
+
+    def _remove_drop_markers(self):
+        child = self.listbox.get_first_child()
+        while child:
+            child.remove_css_class("drop-above")
+            child.remove_css_class("drop-below")
+            child = child.get_next_sibling()
+        self._potential_drop_index = -1
 
     def _parse_asset_uids(self, value: str):
         try:
@@ -341,11 +386,37 @@ class LayerColumn(Gtk.Box):
     def _on_drop_motion(self, drop_target, x, y):
         drop = drop_target.get_drop()
         if drop and drop.get_actions() & Gdk.DragAction.COPY:
+            self._remove_drop_markers()
             return Gdk.DragAction.COPY
+
+        self._remove_drop_markers()
+
+        target_row = self._find_row_at(x, y)
+        if not target_row:
+            return Gdk.DragAction.MOVE
+
+        row_alloc = target_row.get_allocation()
+        row_center = row_alloc.y + row_alloc.height / 2
+
+        if y < row_center:
+            target_row.add_css_class("drop-above")
+            self._potential_drop_index = target_row.get_index()
+        else:
+            target_row.add_css_class("drop-below")
+            self._potential_drop_index = target_row.get_index() + 1
+
         return Gdk.DragAction.MOVE
 
     def _on_drop_leave(self, drop_target):
-        pass
+        self._remove_drop_markers()
+
+    def _find_row_at(self, x, y):
+        picked = self.listbox.pick(x, y, Gtk.PickFlags.DEFAULT)
+        while picked:
+            if isinstance(picked, Gtk.ListBoxRow):
+                return picked
+            picked = picked.get_parent()
+        return None
 
     def _find_workpiece_by_uid(self, uid: str) -> Optional[WorkPiece]:
         for layer in self.doc.layers:

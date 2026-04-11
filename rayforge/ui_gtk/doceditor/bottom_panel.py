@@ -108,7 +108,7 @@ class BottomPanel(Gtk.Box):
         self.dock_layout.register_item(
             DockItem(
                 name="layers",
-                icon_name="layer-symbolic",
+                icon_name="layers-symbolic",
                 widget=self.layers_tab,
                 label=_("Layers"),
             )
