@@ -13,7 +13,7 @@ PyGObject==3.50.0
 PyMuPDF==1.27.2.2
 PyOpenGL==3.1.10
 PyOpenGL_accelerate==3.1.10
-pypdf==6.9.2
+pypdf~=6.10.0
 pyserial_asyncio==0.6
 pyvips==3.0.0
 PyYAML==6.0.2
