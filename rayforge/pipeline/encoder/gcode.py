@@ -576,7 +576,6 @@ class GcodeEncoder(OpsEncoder):
             "f_command": f_command,
             "s_command": s_command,
             "power": power_abs,
-            "extra_cmd": "",
         }
 
     def _handle_line_to(
