@@ -71,9 +71,11 @@ logger = logging.getLogger(__name__)
 
 
 css = """
-.mainpaned > separator {
-    border: none;
-    box-shadow: none;
+.right-panel-overlay {
+    background-color: transparent;
+    border-radius: 8px;
+    margin: 6px 12px 12px 6px;
+    box-shadow: 0 2px 12px alpha(black, 0.2);
 }
 
 .status-message-overlay {
@@ -225,13 +227,12 @@ class MainWindow(Adw.ApplicationWindow):
         self._connect_toolbar_signals()
         main_ui_box.append(self.toolbar)
 
-        # Create the Paned splitting the window into left and right sections.
-        self.paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        self.paned.set_vexpand(True)
-        main_ui_box.append(self.paned)
+        # Create an overlay so the right panel can float above the canvas.
+        self._canvas_overlay = Gtk.Overlay()
+        self._canvas_overlay.set_vexpand(True)
+        main_ui_box.append(self._canvas_overlay)
 
         # Apply styles
-        self.paned.add_css_class("mainpaned")
         display = Gdk.Display.get_default()
         if display:
             provider = Gtk.CssProvider()
@@ -310,8 +311,8 @@ class MainWindow(Adw.ApplicationWindow):
             "notify::visible-child-name", self._on_view_stack_changed
         )
 
-        # The view stack is the start child of the main paned
-        self.paned.set_start_child(self.view_stack)
+        # The view stack is the base child of the canvas overlay
+        self._canvas_overlay.set_child(self.view_stack)
 
         # Wrap surface in an overlay to allow preview controls
         self.surface_overlay = Gtk.Overlay()
@@ -325,6 +326,7 @@ class MainWindow(Adw.ApplicationWindow):
             show_tabs=True,
             shortcuts=SHORTCUTS,
         )
+        self._surface_vis_overlay.set_margin_end(424)
         self.surface_overlay.add_overlay(self._surface_vis_overlay)
         self._time_estimate_overlay = TimeEstimateOverlay()
         self.surface_overlay.add_overlay(self._time_estimate_overlay)
@@ -358,12 +360,11 @@ class MainWindow(Adw.ApplicationWindow):
             Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC
         )
         self._right_pane.set_vexpand(True)
-        self._right_pane.set_margin_start(10)
-        self._right_pane.set_margin_top(6)
-        self._right_pane.set_margin_bottom(12)
-        self.paned.set_end_child(self._right_pane)
-        self.paned.set_resize_end_child(False)
-        self.paned.set_shrink_end_child(False)
+        self._right_pane.add_css_class("right-panel-overlay")
+        self._right_pane.set_halign(Gtk.Align.END)
+        self._right_pane.set_valign(Gtk.Align.START)
+        self._right_pane.set_propagate_natural_height(True)
+        self._canvas_overlay.add_overlay(self._right_pane)
 
         # Create a vertical box to organize the content within the
         # ScrolledWindow.
@@ -379,7 +380,7 @@ class MainWindow(Adw.ApplicationWindow):
             initial_workflow,
             step_factories=step_registry.get_factories(),
         )
-        self.workflowview.set_margin_top(20)
+        self.workflowview.set_margin_top(6)
         self.workflowview.set_margin_end(12)
         right_pane_box.append(self.workflowview)
 
@@ -391,7 +392,7 @@ class MainWindow(Adw.ApplicationWindow):
             editor=self.doc_editor
         )
         item_props_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.item_props_widget.set_margin_top(20)
+        self.item_props_widget.set_margin_top(6)
         self.item_props_widget.set_margin_end(12)
         item_props_container.append(self.item_props_widget)
 
