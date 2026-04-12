@@ -16,6 +16,11 @@ class RotaryMode(Enum):
     AXIS_REPLACEMENT = "axis_replacement"
 
 
+class RotaryType(Enum):
+    JAWS = "jaws"
+    ROLLERS = "rollers"
+
+
 class RotaryModule:
     def __init__(self):
         self.uid: str = str(uuid.uuid4())
@@ -26,6 +31,9 @@ class RotaryModule:
         self.mm_per_rotation: float = 0.0
         self.default_diameter: float = 25.0
         self.max_workpiece_length: float = 300.0
+        self.rotary_type: RotaryType = RotaryType.JAWS
+        self.roller_diameter: float = 0.0
+        self.reverse_axis: bool = False
         self.model_id: Optional[str] = None
         self.transform: np.ndarray = np.eye(4, dtype=np.float64)
         self.changed = Signal()
@@ -121,6 +129,24 @@ class RotaryModule:
         self.max_workpiece_length = length
         self.changed.send(self)
 
+    def set_rotary_type(self, rotary_type: RotaryType):
+        if self.rotary_type == rotary_type:
+            return
+        self.rotary_type = rotary_type
+        self.changed.send(self)
+
+    def set_roller_diameter(self, diameter: float):
+        if self.roller_diameter == diameter:
+            return
+        self.roller_diameter = diameter
+        self.changed.send(self)
+
+    def set_reverse_axis(self, reverse: bool):
+        if self.reverse_axis == reverse:
+            return
+        self.reverse_axis = reverse
+        self.changed.send(self)
+
     def set_model_id(self, model_id: Optional[str]):
         if self.model_id == model_id:
             return
@@ -139,11 +165,16 @@ class RotaryModule:
             "source_axis": self.source_axis.name,
             "default_diameter": self.default_diameter,
             "max_workpiece_length": self.max_workpiece_length,
+            "rotary_type": self.rotary_type.value,
             "model_id": self.model_id,
             "transform": self.transform.flatten().tolist(),
         }
         if self.mm_per_rotation > 0:
             result["mm_per_rotation"] = self.mm_per_rotation
+        if self.roller_diameter > 0:
+            result["roller_diameter"] = self.roller_diameter
+        if self.reverse_axis:
+            result["reverse_axis"] = self.reverse_axis
         result.update(self.extra)
         return result
 
@@ -158,6 +189,9 @@ class RotaryModule:
             "mm_per_rotation",
             "default_diameter",
             "max_workpiece_length",
+            "rotary_type",
+            "roller_diameter",
+            "reverse_axis",
             "model_id",
             "transform",
             "x",
@@ -185,6 +219,9 @@ class RotaryModule:
         rm.mm_per_rotation = data.get("mm_per_rotation", 0.0)
         rm.default_diameter = data.get("default_diameter", 25.0)
         rm.max_workpiece_length = data.get("max_workpiece_length", 300.0)
+        rm.rotary_type = RotaryType(data.get("rotary_type", "jaws"))
+        rm.roller_diameter = data.get("roller_diameter", 0.0)
+        rm.reverse_axis = data.get("reverse_axis", False)
 
         rm.model_id = data.get("model_id")
         if rm.model_id is None and "model_path" in data:
