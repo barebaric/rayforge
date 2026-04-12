@@ -627,6 +627,9 @@ class DocItem(ABC):
 
         self._recalculate_natural_size()
 
+        if old_set == new_set and old_children != new_children_list:
+            self.updated.send(self)
+
     def get_depth(self) -> int:
         """
         Calculates the depth of this item in the document hierarchy by

@@ -49,7 +49,6 @@ from .doceditor import file_dialogs
 from .doceditor.bottom_panel import BottomPanel
 from .doceditor.import_handler import start_interactive_import
 from .doceditor.item_properties import DocItemPropertiesWidget
-from .doceditor.layer_list import LayerListView
 from .doceditor.missing_features_dialog import MissingFeaturesDialog
 from .doceditor.property_providers import register_builtin_providers
 from .doceditor.workflow_view import WorkflowView
@@ -62,6 +61,7 @@ from .shared.gtk import get_monitor_geometry
 from .shared.playback_overlay import PlaybackOverlay
 from .shared.progress_bar import ProgressBar
 from .shared.usage_consent_dialog import UsageConsentDialog
+from .shared.time_estimate_overlay import TimeEstimateOverlay
 from .shared.visibility_overlay import VisibilityOverlay
 from .toolbar import MainToolbar
 from .view_mode_cmd import ViewModeCmd
@@ -326,6 +326,8 @@ class MainWindow(Adw.ApplicationWindow):
             shortcuts=SHORTCUTS,
         )
         self.surface_overlay.add_overlay(self._surface_vis_overlay)
+        self._time_estimate_overlay = TimeEstimateOverlay()
+        self.surface_overlay.add_overlay(self._time_estimate_overlay)
         self.view_stack.add_named(self.surface_overlay, "2d")
 
         # Add a click handler to unfocus when clicking the "dead space" of the
@@ -368,12 +370,6 @@ class MainWindow(Adw.ApplicationWindow):
         right_pane_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         right_pane_box.set_size_request(400, -1)
         self._right_pane.set_child(right_pane_box)
-
-        # Add the Layer list view
-        self.layer_list_view = LayerListView(self.doc_editor)
-        self.layer_list_view.set_margin_top(20)
-        self.layer_list_view.set_margin_end(12)
-        right_pane_box.append(self.layer_list_view)
 
         # The WorkflowView will be updated when a layer is activated.
         initial_workflow = self.doc_editor.doc.active_layer.workflow
@@ -1227,7 +1223,6 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update child views to point to the new document
         self.bottom_panel.set_doc(new_doc)
-        self.layer_list_view.set_doc(new_doc)
 
         # Initialize new document
         self._initialize_document()
@@ -2302,8 +2297,4 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.grab_focus()  # re-enables keyboard shortcuts
 
     def _on_job_time_updated(self, sender, *, total_seconds):
-        """
-        Handles the preview_time_updated signal from the pipeline.
-        Updates the layer list header with the total estimated time.
-        """
-        self.layer_list_view.set_estimated_time(total_seconds)
+        self._time_estimate_overlay.set_estimated_time(total_seconds)
