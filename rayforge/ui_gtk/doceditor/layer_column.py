@@ -123,32 +123,38 @@ class LayerColumn(Gtk.Box):
         self.header.add_css_class("layer-column-header")
         self.header.set_hexpand(True)
 
+        self.drag_label = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, spacing=4
+        )
+
         self.icon_container = Gtk.Box()
         self.icon_container.set_valign(Gtk.Align.CENTER)
         self.icon_container.set_margin_start(3)
         self.icon_container.set_margin_end(3)
-        self.header.append(self.icon_container)
+        self.drag_label.append(self.icon_container)
 
-        name_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        name_box.set_hexpand(True)
-        name_box.set_halign(Gtk.Align.START)
-        name_box.set_valign(Gtk.Align.CENTER)
+        self.name_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.name_box.set_hexpand(True)
+        self.name_box.set_halign(Gtk.Align.START)
+        self.name_box.set_valign(Gtk.Align.CENTER)
 
         name_label = Gtk.Label()
         name_label.set_text(self.layer.name)
         name_label.set_halign(Gtk.Align.START)
         name_label.set_ellipsize(Pango.EllipsizeMode.END)
         self.name_label = name_label
-        name_box.append(name_label)
+        self.name_box.append(name_label)
 
         subtitle_label = Gtk.Label()
         subtitle_label.set_halign(Gtk.Align.START)
         subtitle_label.set_ellipsize(Pango.EllipsizeMode.END)
         subtitle_label.add_css_class("dim-label")
         self.subtitle_label = subtitle_label
-        name_box.append(subtitle_label)
+        self.name_box.append(subtitle_label)
 
-        self.header.append(name_box)
+        self.drag_label.append(self.name_box)
+
+        self.header.append(self.drag_label)
 
         self.settings_button = Gtk.Button(child=get_icon("settings-symbolic"))
         self.settings_button.add_css_class("flat")
@@ -228,7 +234,7 @@ class LayerColumn(Gtk.Box):
 
     def _on_layer_drag_prepare(self, drag_source, x, y):
         snapshot = Gtk.Snapshot()
-        Gtk.Widget.do_snapshot(self.header, snapshot)
+        Gtk.Widget.do_snapshot(self.drag_label, snapshot)
         paintable = snapshot.to_paintable()
         if paintable:
             drag_source.set_icon(paintable, x, y)
