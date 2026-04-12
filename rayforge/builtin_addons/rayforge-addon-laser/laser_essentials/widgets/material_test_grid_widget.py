@@ -459,6 +459,18 @@ class MaterialTestGridSettingsWidget(
         self.min_power_adj.set_value(power_range[0])
         self.max_power_adj.set_value(power_range[1])
 
+        # Cancel any debounced callbacks triggered by set_value() above.
+        # DebounceMixin uses a single timer slot, so rapid set_value()
+        # calls cause earlier callbacks to be lost. We commit directly
+        # below instead.
+        if self._debounce_timer > 0:
+            GLib.source_remove(self._debounce_timer)
+            self._debounce_timer = 0
+
+        self._update_range_param("speed_range", 0, min_speed)
+        self._update_range_param("speed_range", 1, max_speed)
+        self._commit_power_range_change()
+
         model = cast(Gtk.StringList, self.test_type_row.get_model())
         for i in range(model.get_n_items()):
             if model.get_string(i) == test_type:

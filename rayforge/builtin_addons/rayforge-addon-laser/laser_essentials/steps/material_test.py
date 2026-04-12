@@ -68,7 +68,7 @@ class MaterialTestStep(Step):
         )
         assert OverscanTransformer is not None
         auto_distance = OverscanTransformer.calculate_auto_distance(
-            machine.max_cut_speed, machine.acceleration
+            step.cut_speed, machine.acceleration
         )
         for t in per_wp:
             if t.get("name") == "OverscanTransformer":
