@@ -5,7 +5,7 @@ from typing import Tuple, Dict, cast
 
 from rayforge.core.ops import Ops
 from rayforge.pipeline.encoder.cairoencoder import CairoEncoder
-from rayforge.shared.util.colors import ColorSet
+from rayforge.core.color import ColorSet
 
 # --- Test Constants for Matrix-based Testing ---
 CUT_COLOR_RGB = (1, 0, 0)  # Red

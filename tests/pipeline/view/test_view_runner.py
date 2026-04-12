@@ -20,7 +20,7 @@ from rayforge.pipeline.artifact import (
 from rayforge.pipeline.view.view_runner import (
     make_workpiece_view_artifact_in_subprocess,
 )
-from rayforge.shared.util.colors import ColorSet
+from rayforge.core.color import ColorSet
 
 
 def create_test_color_set(spec: dict) -> ColorSet:

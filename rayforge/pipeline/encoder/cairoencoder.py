@@ -13,7 +13,7 @@ from ...core.ops import (
     SetPowerCommand,
 )
 from .base import OpsEncoder
-from ...shared.util.colors import ColorSet
+from ...core.color import ColorSet
 
 
 logger = logging.getLogger(__name__)

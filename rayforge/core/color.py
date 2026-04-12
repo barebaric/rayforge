@@ -121,3 +121,25 @@ class ColorSet:
             else:
                 deserialized_data[key] = value  # Assume raw data for test
         return cls(_data=deserialized_data)
+
+
+COLOR_PALETTE = [
+    "#00ccff",
+    "#ff6600",
+    "#33cc33",
+    "#ffcc00",
+    "#cc3366",
+    "#66cccc",
+    "#ff9999",
+    "#9966ff",
+    "#00cc99",
+]
+
+
+def pick_unused_color(used_colors: set) -> str:
+    """Return the first color from COLOR_PALETTE not in used_colors."""
+    normalized = {c.upper() for c in used_colors}
+    for color in COLOR_PALETTE:
+        if color.upper() not in normalized:
+            return color
+    return COLOR_PALETTE[0]

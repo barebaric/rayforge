@@ -4,7 +4,7 @@ import uuid
 from typing import TYPE_CHECKING, List, Tuple, Optional
 from gettext import gettext as _
 from rayforge.image.structures import FillStyle
-from rayforge.shared.util.colors import ColorRGBA
+from rayforge.core.color import ColorRGBA
 from ..sketch import Fill, DEFAULT_FILL_COLOR
 from .base import SketchChangeCommand
 

@@ -10,6 +10,7 @@ from ..core.undo import (
 )
 from ..core.undo.list_cmd import ReorderListCommand
 from ..core.workpiece import WorkPiece
+from ..core.color import pick_unused_color
 
 if TYPE_CHECKING:
     from ..ui_gtk.canvas2d.surface import WorkSurface
@@ -71,7 +72,7 @@ class AddLayerAndSetActiveCommand(Command):
         self._old_active_layer: Optional[Layer] = None
 
     def _create_default_layer(self) -> Layer:
-        """Creates a new layer with a default, unique name."""
+        """Creates a new layer with a default, unique name and color."""
         # Find a unique default name for the new layer
         base_name = _("Layer")
         existing_names = {layer.name for layer in self._editor.doc.layers}
@@ -87,6 +88,9 @@ class AddLayerAndSetActiveCommand(Command):
 
         new_name = f"{base_name} {highest_num + 1}"
         layer = Layer(name=new_name)
+
+        used = {layer.color for layer in self._editor.doc.layers}
+        layer.set_color(pick_unused_color(used))
 
         return layer
 

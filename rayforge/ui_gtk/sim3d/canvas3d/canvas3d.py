@@ -16,7 +16,11 @@ from ....pipeline.artifact.base import TextureData
 from ....pipeline.artifact.handle import create_handle_from_dict
 from ....pipeline.artifact.job import JobArtifact, JobArtifactHandle
 from ....pipeline.pipeline import Pipeline
-from ....shared.util.colors import ColorSet, hex_to_rgba
+from ....core.color import (
+    ColorSet,
+    hex_to_rgba,
+    create_lut_from_color,
+)
 from ....shared.tasker import task_mgr, Task
 from ....simulator.machine_state import MachineState
 from ....simulator.op_player import OpPlayer
@@ -163,6 +167,8 @@ class Canvas3D(Gtk.GLArea):
             machine.changed.connect(self._on_wcs_updated)
             self._on_wcs_updated(machine)
 
+        self._context.config.changed.connect(self._on_config_changed)
+
     @property
     def doc(self) -> "Doc":
         """Returns the current document from the editor."""
@@ -246,6 +252,11 @@ class Canvas3D(Gtk.GLArea):
         """Marks theme resources as dirty when the GTK theme changes."""
         self._theme_is_dirty = True
         self.queue_render()
+
+    def _on_config_changed(self, sender, **kwargs):
+        """Re-compiles the scene when config settings change."""
+        if self._gl_initialized:
+            self.update_scene_from_doc()
 
     def get_world_coords_on_plane(
         self, x: float, y: float, camera: Camera
@@ -393,6 +404,7 @@ class Canvas3D(Gtk.GLArea):
         if machine:
             machine.wcs_updated.disconnect(self._on_wcs_updated)
             machine.changed.disconnect(self._on_wcs_updated)
+        self._context.config.changed.disconnect(self._on_config_changed)
         self._release_pending_scene_handle()
         try:
             self.make_current()
@@ -1685,11 +1697,20 @@ class Canvas3D(Gtk.GLArea):
             }
 
         layer_configs: Dict[str, LayerRenderConfig] = {}
+        layer_color_luts: Dict[str, dict] = {}
         for layer in self.doc.layers:
             layer_configs[layer.uid] = LayerRenderConfig(
                 rotary_enabled=layer.rotary_enabled,
                 rotary_diameter=layer.rotary_diameter,
             )
+            cut_rgba = hex_to_rgba(layer.color)
+            cut_lut = create_lut_from_color(cut_rgba)
+            layer_color_luts[layer.uid] = {
+                "cut": cut_lut.astype(np.float32).tobytes(),
+                "engrave": cut_lut.astype(np.float32).tobytes(),
+            }
+
+        ops_color_mode = self._context.config.ops_color_mode.value
 
         render_config = RenderConfig3D(
             world_to_visual=world_to_visual,
@@ -1703,6 +1724,8 @@ class Canvas3D(Gtk.GLArea):
             laser_color_luts=laser_color_luts,
             zero_power_rgba=self._color_set.get_rgba("zero_power"),
             layer_configs=layer_configs,
+            layer_color_luts=layer_color_luts,
+            ops_color_mode=ops_color_mode,
         )
 
         self._world_to_cyl_local = world_to_cyl_local

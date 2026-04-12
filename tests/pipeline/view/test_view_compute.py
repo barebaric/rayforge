@@ -29,7 +29,7 @@ from rayforge.pipeline.view.view_compute import (
     _prepare_powered_vertices_for_batching,
     _draw_powered_vertices_batch,
 )
-from rayforge.shared.util.colors import ColorSet
+from rayforge.core.color import ColorSet
 
 
 def create_test_color_set(spec: dict) -> ColorSet:

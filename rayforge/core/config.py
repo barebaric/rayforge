@@ -12,6 +12,13 @@ from ..machine.models.machine import Machine
 logger = logging.getLogger(__name__)
 
 
+class OpsColorMode(Enum):
+    """Enum for ops color source options."""
+
+    LASER = "laser"
+    LAYER = "layer"
+
+
 class StartupBehavior(Enum):
     """Enum for application startup behavior options."""
 
@@ -65,6 +72,7 @@ class Config:
         self.right_panel_visible: bool = True
         self.canvas_view: CanvasViewState = CanvasViewState()
         self.auto_pipeline: bool = True
+        self.ops_color_mode: OpsColorMode = OpsColorMode.LASER
         # Usage tracking consent date: None = not asked, "" = declined,
         # ISO date string = consent given on that date
         self.usage_consent_date: Optional[str] = None
@@ -145,6 +153,13 @@ class Config:
         self.auto_pipeline = enabled
         self.changed.send(self)
 
+    def set_ops_color_mode(self, mode: OpsColorMode):
+        """Sets the ops color mode."""
+        if self.ops_color_mode == mode:
+            return
+        self.ops_color_mode = mode
+        self.changed.send(self)
+
     def set_usage_consent(self, consent: bool):
         """Sets the usage tracking consent preference."""
         new_value = ""
@@ -193,6 +208,7 @@ class Config:
             "right_panel_visible": self.right_panel_visible,
             "canvas_view": self.canvas_view.to_dict(),
             "auto_pipeline": self.auto_pipeline,
+            "ops_color_mode": self.ops_color_mode.value,
             "usage_consent_date": self.usage_consent_date,
             "import_dpi": self.import_dpi,
         }
@@ -243,6 +259,14 @@ class Config:
             data.get("canvas_view", {})
         )
         config.auto_pipeline = data.get("auto_pipeline", True)
+
+        ops_color_mode_str = data.get(
+            "ops_color_mode", OpsColorMode.LASER.value
+        )
+        try:
+            config.ops_color_mode = OpsColorMode(ops_color_mode_str)
+        except ValueError:
+            config.ops_color_mode = OpsColorMode.LASER
 
         # Load usage tracking consent date
         config.usage_consent_date = data.get("usage_consent_date", None)

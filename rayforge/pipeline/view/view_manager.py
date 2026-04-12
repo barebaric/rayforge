@@ -48,6 +48,8 @@ class ViewEntry:
     handle: Optional[WorkPieceViewArtifactHandle] = None
     render_context: Optional[RenderContext] = None
     source_handle: Optional[WorkPieceArtifactHandle] = None
+    laser_uid: Optional[str] = None
+    layer_uid: Optional[str] = None
 
 
 class ViewManager:
@@ -279,33 +281,14 @@ class ViewManager:
             )
         return self._view_task_keys[composite_id]
 
-    def _get_laser_uid_for_step(self, step_uid: str) -> Optional[str]:
-        """
-        Look up the laser_uid for a step by its UID.
-
-        Args:
-            step_uid: The unique identifier of the step.
-
-        Returns:
-            The laser_uid for the step, or None if not found.
-        """
-        doc = self._pipeline.doc
-        if doc is None:
-            return None
-
-        for layer in doc.layers:
-            if layer.workflow:
-                for step in layer.workflow.steps:
-                    if step.uid == step_uid:
-                        return step.selected_laser_uid
-        return None
-
     def _is_view_stale(
         self,
         workpiece_uid: str,
         step_uid: str,
         new_context: Optional[RenderContext],
         source_handle: Optional[WorkPieceArtifactHandle],
+        laser_uid: Optional[str] = None,
+        layer_uid: Optional[str] = None,
     ) -> bool:
         """Check if a view needs re-rendering."""
         composite_id = (workpiece_uid, step_uid)
@@ -356,6 +339,18 @@ class ViewManager:
                 )
                 return True
 
+        if entry.laser_uid != laser_uid:
+            logger.debug(
+                f"_is_view_stale[{composite_id}]: laser_uid changed -> STALE"
+            )
+            return True
+
+        if entry.layer_uid != layer_uid:
+            logger.debug(
+                f"_is_view_stale[{composite_id}]: layer_uid changed -> STALE"
+            )
+            return True
+
         return False
 
     def update_render_context(
@@ -403,7 +398,11 @@ class ViewManager:
                 f"new_ppm={new_ppm:.2f}, ppm_changed={ppm_changed}, "
                 f"travel_changed={travel_changed}"
             )
-            if ppm_changed or travel_changed:
+            if (
+                ppm_changed
+                or travel_changed
+                or entry.render_context != context
+            ):
                 self.request_view_render(key[0], key[1])
 
     def _handles_represent_same_artifact(
@@ -526,10 +525,22 @@ class ViewManager:
                 handle=wp_handle,
             )
         else:
-            logger.debug(
-                f"Same artifact already tracked for {composite_id}, "
-                "skipping signal emission"
-            )
+            laser_uid = doc.get_laser_uid_for_step(step.uid)
+            layer_uid = doc.get_layer_uid_for_step(step.uid)
+            entry = self._view_entries.get(composite_id)
+            if entry and (
+                entry.laser_uid != laser_uid or entry.layer_uid != layer_uid
+            ):
+                logger.debug(
+                    f"Same artifact for {composite_id}, but "
+                    f"laser/layer uid changed -> requesting re-render"
+                )
+                self.request_view_render(workpiece.uid, step_uid=step.uid)
+            else:
+                logger.debug(
+                    f"Same artifact already tracked for {composite_id}, "
+                    "skipping signal emission"
+                )
 
     def request_view_render(
         self,
@@ -609,8 +620,18 @@ class ViewManager:
             f"_request_view_render_internal: workpiece_uid={workpiece_uid}, "
             f"step_uid={step_uid}, source_shm={source_handle.shm_name}"
         )
+
+        doc = self._pipeline.doc
+        laser_uid = doc.get_laser_uid_for_step(step_uid) if doc else None
+        layer_uid = doc.get_layer_uid_for_step(step_uid) if doc else None
+
         if not self._is_view_stale(
-            workpiece_uid, step_uid, context, source_handle
+            workpiece_uid,
+            step_uid,
+            context,
+            source_handle,
+            laser_uid,
+            layer_uid,
         ):
             logger.debug(f"View for ({workpiece_uid}, {step_uid}) is valid.")
             self._render_semaphore.release()
@@ -633,6 +654,8 @@ class ViewManager:
             self._view_entries[composite_id] = entry
         entry.render_context = context
         entry.source_handle = source_handle
+        entry.laser_uid = laser_uid
+        entry.layer_uid = layer_uid
 
         # Retain source handle for the duration of this task
         self._store.retain(source_handle)
@@ -656,8 +679,6 @@ class ViewManager:
                 )
             self._store.release(task_source_handle)
 
-        laser_uid = self._get_laser_uid_for_step(step_uid)
-
         self._task_manager.run_process(
             make_workpiece_view_artifact_in_subprocess,
             self._store,
@@ -669,6 +690,7 @@ class ViewManager:
             step_uid=step_uid,
             workpiece_uid=workpiece_uid,
             laser_uid=laser_uid,
+            layer_uid=layer_uid,
             when_done=when_done_callback,
             when_event=self._on_render_event_received,
         )
@@ -1033,7 +1055,9 @@ class ViewManager:
             render_context: The render context for the operation.
         """
         _, step_uid = composite_id
-        laser_uid = self._get_laser_uid_for_step(step_uid)
+        doc = self._pipeline.doc
+        laser_uid = doc.get_laser_uid_for_step(step_uid) if doc else None
+        layer_uid = doc.get_layer_uid_for_step(step_uid) if doc else None
 
         try:
             self._store.retain(view_handle)
@@ -1052,6 +1076,7 @@ class ViewManager:
                 view_handle.to_dict(),
                 render_context.to_dict(),
                 laser_uid,
+                layer_uid,
                 when_done=_cleanup_chunk_handle,
             )
         except Exception as e:

@@ -34,6 +34,8 @@ class RenderConfig3D:
     laser_color_luts: Dict[str, dict]
     zero_power_rgba: Tuple[float, ...]
     layer_configs: Optional[Dict[str, LayerRenderConfig]] = None
+    layer_color_luts: Optional[Dict[str, dict]] = None
+    ops_color_mode: str = "laser"
 
     def to_dict(self) -> dict:
         d = {
@@ -47,11 +49,18 @@ class RenderConfig3D:
             "default_color_lut_engrave": self.default_color_lut_engrave,
             "laser_color_luts": self.laser_color_luts,
             "zero_power_rgba": list(self.zero_power_rgba),
+            "ops_color_mode": (
+                self.ops_color_mode
+                if isinstance(self.ops_color_mode, str)
+                else self.ops_color_mode.value
+            ),
         }
         if self.layer_configs:
             d["layer_configs"] = {
                 k: v.to_dict() for k, v in self.layer_configs.items()
             }
+        if self.layer_color_luts:
+            d["layer_color_luts"] = self.layer_color_luts
         return d
 
     @classmethod
@@ -72,6 +81,8 @@ class RenderConfig3D:
                 k: LayerRenderConfig.from_dict(v)
                 for k, v in data["layer_configs"].items()
             }
+        layer_color_luts = data.get("layer_color_luts")
+        ops_color_mode = data.get("ops_color_mode", "laser")
         return cls(
             world_to_visual=w2v,
             world_to_cyl_local=w2c,
@@ -80,4 +91,6 @@ class RenderConfig3D:
             laser_color_luts=data["laser_color_luts"],
             zero_power_rgba=tuple(data["zero_power_rgba"]),
             layer_configs=layer_configs,
+            layer_color_luts=layer_color_luts,
+            ops_color_mode=ops_color_mode,
         )

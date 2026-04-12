@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from rayforge.shared.util.colors import ColorSet
+from rayforge.core.color import ColorSet
 
 
 class TestColorSetGetLut:

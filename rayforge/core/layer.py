@@ -18,6 +18,7 @@ from typing import (
 )
 from blinker import Signal
 
+from .color import COLOR_PALETTE
 from .group import Group
 from .item import DocItem
 from .matrix import Matrix
@@ -40,6 +41,8 @@ class Layer(DocItem):
     and bubbles up signals.
     """
 
+    DEFAULT_COLOR = COLOR_PALETTE[0]
+
     def __init__(self, name: str):
         """Initializes a Layer instance.
 
@@ -51,6 +54,7 @@ class Layer(DocItem):
         self.rotary_enabled: bool = False
         self.rotary_diameter: float = 25.0
         self.rotary_module_uid: Optional[str] = None
+        self.color: str = self.DEFAULT_COLOR
 
         # Signals for notifying other parts of the application of changes.
         # This one is special and is bubbled manually.
@@ -74,6 +78,7 @@ class Layer(DocItem):
             "rotary_enabled": self.rotary_enabled,
             "rotary_diameter": self.rotary_diameter,
             "rotary_module_uid": self.rotary_module_uid,
+            "color": self.color,
             "children": [child.to_dict() for child in self.children],
         }
         result.update(self.extra)
@@ -91,6 +96,7 @@ class Layer(DocItem):
             "rotary_enabled",
             "rotary_diameter",
             "rotary_module_uid",
+            "color",
             "children",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -102,6 +108,7 @@ class Layer(DocItem):
         layer.rotary_enabled = data.get("rotary_enabled", False)
         layer.rotary_diameter = data.get("rotary_diameter", 25.0)
         layer.rotary_module_uid = data.get("rotary_module_uid")
+        layer.color = data.get("color", cls.DEFAULT_COLOR)
         layer.extra = extra
 
         children = []
@@ -254,6 +261,12 @@ class Layer(DocItem):
         if self.rotary_module_uid == uid:
             return
         self.rotary_module_uid = uid
+        self.updated.send(self)
+
+    def set_color(self, color: str):
+        if self.color == color:
+            return
+        self.color = color
         self.updated.send(self)
 
     def get_subtitle(self, rotary_module_name: Optional[str] = None) -> str:
