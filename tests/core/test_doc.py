@@ -19,10 +19,10 @@ def doc():
 
 
 def test_doc_initialization(doc):
-    """Verify a new Doc starts with one Layer."""
-    assert len(doc.children) == 1
+    """Verify a new Doc starts with three Layers."""
+    assert len(doc.children) == 3
     assert isinstance(doc.children[0], Layer)
-    assert len(doc.layers) == 1
+    assert len(doc.layers) == 3
 
     # Check that the first layer is active
     assert doc.active_layer.name == "Layer 1"
@@ -439,10 +439,10 @@ def test_doc_roundtrip_serialization():
     original = Doc()
     original.uid = "test-doc-uid"
 
-    # Add a second layer
-    layer2 = Layer("Layer 2")
-    original.add_layer(layer2)
-    original.active_layer = layer2
+    # Add a fourth layer
+    layer4 = Layer("Layer 4")
+    original.add_layer(layer4)
+    original.active_layer = layer4
 
     # Add a stock asset
     stock = StockAsset(name="My Test Stock")
@@ -457,7 +457,7 @@ def test_doc_roundtrip_serialization():
     assert restored.uid == original.uid
     assert len(restored.layers) == len(original.layers)
     assert restored.uid == "test-doc-uid"
-    assert len(restored.layers) == 2
+    assert len(restored.layers) == 4
 
     # Check that stock assets were restored
     assert len(restored.stock_assets) == 1
@@ -548,10 +548,10 @@ def test_remove_layer_adjusts_active_index(doc):
     """
     layer1 = doc.layers[0]
     layer1.name = "Layer 1"
-    layer2 = Layer("Layer 2")
-    layer3 = Layer("Layer 3")
-    doc.add_layer(layer2)
-    doc.add_layer(layer3)
+    layer2 = doc.layers[1]
+    layer2.name = "Layer 2"
+    layer3 = doc.layers[2]
+    layer3.name = "Layer 3"
     doc.active_layer = layer2
     assert doc.active_layer is layer2
     assert doc._active_layer_index == 1
@@ -566,10 +566,10 @@ def test_remove_layer_adjusts_active_index(doc):
     doc_case2 = Doc()
     l1 = doc_case2.layers[0]
     l1.name = "L1"
-    l2 = Layer("L2")
-    l3 = Layer("L3")
-    doc_case2.add_layer(l2)
-    doc_case2.add_layer(l3)
+    l2 = doc_case2.layers[1]
+    l2.name = "L2"
+    l3 = doc_case2.layers[2]
+    l3.name = "L3"
     doc_case2.active_layer = l2
     assert doc_case2._active_layer_index == 1
 
@@ -586,10 +586,10 @@ def test_remove_layer_adjusts_active_index(doc):
     doc_case3 = Doc()
     ly1 = doc_case3.layers[0]
     ly1.name = "LY1"
-    ly2 = Layer("LY2")
-    ly3 = Layer("LY3")
-    doc_case3.add_layer(ly2)
-    doc_case3.add_layer(ly3)
+    ly2 = doc_case3.layers[1]
+    ly2.name = "LY2"
+    ly3 = doc_case3.layers[2]
+    ly3.name = "LY3"
     doc_case3.active_layer = ly2
     assert doc_case3._active_layer_index == 1
 
@@ -608,6 +608,8 @@ def test_remove_last_layer_is_noop(doc):
     Tests that an attempt to remove the last layer from a document does
     nothing.
     """
+    while len(doc.layers) > 1:
+        doc.remove_layer(doc.layers[-1])
     assert len(doc.layers) == 1
     last_layer = doc.layers[0]
     doc.remove_layer(last_layer)
@@ -620,13 +622,12 @@ def test_set_layers_preserves_stock_items(doc):
     Tests that set_layers replaces layers but preserves other children like
     StockItems.
     """
-    original_layer = doc.layers[0]
     asset = StockAsset(name="My Asset")
     doc.add_asset(asset)
     stock_item = StockItem(stock_asset_uid=asset.uid, name="My Stock")
     doc.add_child(stock_item)
 
-    assert set(doc.children) == {original_layer, stock_item}
+    assert set(doc.children) == set(doc.layers) | {stock_item}
 
     new_layer1 = Layer("New Layer 1")
     new_layer2 = Layer("New Layer 2")
