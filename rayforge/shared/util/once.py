@@ -6,7 +6,10 @@ def once_per_object(func):
 
     @functools.wraps(func)
     def wrapper(obj, *args, **kwargs):
-        key = id(obj)
+        if isinstance(obj, str):
+            key = obj
+        else:
+            key = id(obj)
         if key in seen:
             return
         seen.add(key)

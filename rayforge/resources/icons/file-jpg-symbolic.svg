@@ -6,14 +6,12 @@
    fill="#000000"
    version="1.1"
    id="svg1"
-   sodipodi:docname="sketch-rect-symbolic.svg"
+   sodipodi:docname="file-jpg-symbolic.svg"
    inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
-  <defs
-     id="defs1" />
   <sodipodi:namedview
      id="namedview1"
      pagecolor="#ffffff"
@@ -23,20 +21,19 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="36.916666"
-     inkscape:cx="6.3115125"
-     inkscape:cy="15.670429"
-     inkscape:window-width="3192"
-     inkscape:window-height="1763"
-     inkscape:window-x="50"
-     inkscape:window-y="82"
-     inkscape:window-maximized="0"
+     inkscape:zoom="64"
+     inkscape:cx="0.140625"
+     inkscape:cy="18.5"
+     inkscape:window-width="3840"
+     inkscape:window-height="2020"
+     inkscape:window-x="0"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
      inkscape:current-layer="svg1" />
-  <rect
-     style="fill:none;stroke:#000000;stroke-width:1.7;stroke-dasharray:none;stroke-opacity:1"
-     id="rect1"
-     width="16.161617"
-     height="11.712421"
-     x="3.9191914"
-     y="6.1437893" />
+  <defs
+     id="defs1" />
+  <path
+     d="M 6,16 H 18 V 8 H 6 Z M 4,20 Q 3.175,20 2.5875,19.4125 2,18.825 2,18 V 6 Q 2,5.175 2.5875,4.5875 3.175,4 4,4 H 20 Q 20.825,4 21.4125,4.5875 22,5.175 22,6 v 12 q 0,0.825 -0.5875,1.4125 Q 20.825,20 20,20 Z M 4,18 H 20 V 6 H 4 Z m 0,0 V 6 Z M 8,14 10.125,11.175 11.5,13 13.375,10.5 16,14 Z"
+     id="path1"
+     style="stroke-width:0.025" />
 </svg>

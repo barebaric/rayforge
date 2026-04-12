@@ -1,0 +1,525 @@
+import json
+import logging
+from gettext import gettext as _
+from typing import Optional, TYPE_CHECKING, cast
+from gi.repository import Gdk, GObject, Gtk, Pango
+from ...context import get_context
+from ...core.doc import Doc
+from ...core.layer import Layer
+from ...core.source_asset import SourceAsset
+from ...core.stock_asset import StockAsset
+from ...core.workpiece import WorkPiece
+from ..icons import get_icon
+from ..shared.gtk import apply_css
+from . import import_handler
+from .layer_settings_dialog import LayerSettingsDialog
+from .workflow_row import WorkflowRow
+from .workpiece_row import WorkpieceRow
+
+if TYPE_CHECKING:
+    from ...doceditor.editor import DocEditor
+    from ...ui_gtk.mainwindow import MainWindow
+
+logger = logging.getLogger(__name__)
+
+css = """
+.layer-column {
+    background-color: alpha(@theme_fg_color, 0.03);
+    border-radius: 8px;
+    border: 1px solid @borders;
+    min-width: 160px;
+}
+.layer-column.active-layer-column {
+    border-color: @accent_bg_color;
+    background-color: alpha(@accent_bg_color, 0.05);
+}
+.layer-column-header {
+    padding: 6px 8px;
+    border-bottom: 1px solid @borders;
+    border-radius: 8px 8px 0 0;
+    background-color: alpha(@theme_fg_color, 0.05);
+}
+.layer-column.active-layer-column .layer-column-header {
+    background-color: alpha(@accent_bg_color, 0.1);
+}
+.layer-column-header button.flat {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 2px;
+}
+.layer-column-header .dim-label {
+    font-size: smaller;
+}
+.layer-workpiece-list {
+    background-color: transparent;
+    padding: 0;
+}
+.layer-workpiece-list > row {
+    background-color: transparent;
+    border-radius: 4px;
+    margin: 1px 4px;
+    border: none;
+}
+.layer-workpiece-list > row:drop(active) {
+    background-color: transparent;
+    outline: none;
+}
+.layer-workpiece-list > row.drop-above {
+    box-shadow: inset 0 2px 0 0 @accent_bg_color;
+}
+.layer-workpiece-list > row.drop-below {
+    box-shadow: inset 0 -2px 0 0 @accent_bg_color;
+}
+.layer-column.drop-left {
+    box-shadow: inset 3px 0 0 0 @accent_bg_color;
+}
+.layer-column.drop-right {
+    box-shadow: inset -3px 0 0 0 @accent_bg_color;
+}
+"""
+
+_LAYER_UID_PREFIX = "layer:"
+
+
+class LayerColumn(Gtk.Box):
+    dragging = False
+
+    def __init__(
+        self,
+        doc: Doc,
+        layer: Layer,
+        editor: "DocEditor",
+        can_delete: bool = True,
+    ):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        apply_css(css)
+        self.add_css_class("layer-column")
+        self.set_margin_end(6)
+
+        self.doc = doc
+        self.layer = layer
+        self.editor = editor
+        self._row_workpieces = {}
+        self._potential_drop_index = -1
+
+        self._build_header(can_delete)
+        self._build_workflow_row()
+        self._build_workpiece_list()
+        self._setup_layer_drag_source()
+
+        self._click_gesture = Gtk.GestureClick()
+        self._click_gesture.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        self._click_gesture.connect("pressed", self._on_column_clicked)
+        self.add_controller(self._click_gesture)
+
+        self._connect_signals()
+        self._update_style()
+        self._update_subtitle()
+
+    def _build_header(self, can_delete: bool):
+        self.header = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, spacing=4
+        )
+        self.header.add_css_class("layer-column-header")
+        self.header.set_hexpand(True)
+
+        self.drag_label = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, spacing=4
+        )
+
+        self.icon_container = Gtk.Box()
+        self.icon_container.set_valign(Gtk.Align.CENTER)
+        self.icon_container.set_margin_start(3)
+        self.icon_container.set_margin_end(3)
+        self.drag_label.append(self.icon_container)
+
+        self.name_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.name_box.set_hexpand(True)
+        self.name_box.set_halign(Gtk.Align.START)
+        self.name_box.set_valign(Gtk.Align.CENTER)
+
+        name_label = Gtk.Label()
+        name_label.set_text(self.layer.name)
+        name_label.set_halign(Gtk.Align.START)
+        name_label.set_ellipsize(Pango.EllipsizeMode.END)
+        self.name_label = name_label
+        self.name_box.append(name_label)
+
+        subtitle_label = Gtk.Label()
+        subtitle_label.set_halign(Gtk.Align.START)
+        subtitle_label.set_ellipsize(Pango.EllipsizeMode.END)
+        subtitle_label.add_css_class("dim-label")
+        self.subtitle_label = subtitle_label
+        self.name_box.append(subtitle_label)
+
+        self.drag_label.append(self.name_box)
+
+        self.header.append(self.drag_label)
+
+        self.settings_button = Gtk.Button(child=get_icon("settings-symbolic"))
+        self.settings_button.add_css_class("flat")
+        self.settings_button.set_tooltip_text(_("Layer Settings"))
+        self.settings_button.connect("clicked", self._on_settings_clicked)
+        self.header.append(self.settings_button)
+
+        self.delete_button = Gtk.Button(child=get_icon("delete-symbolic"))
+        self.delete_button.add_css_class("flat")
+        self.delete_button.set_tooltip_text(_("Delete this layer"))
+        self.delete_button.set_visible(can_delete)
+        self.delete_button.connect("clicked", self._on_delete_clicked)
+        self.header.append(self.delete_button)
+
+        self.visibility_on_icon = get_icon("visibility-on-symbolic")
+        self.visibility_off_icon = get_icon("visibility-off-symbolic")
+
+        self.visibility_button = Gtk.ToggleButton()
+        self.visibility_button.set_active(self.layer.visible)
+        self.visibility_button.set_child(self.visibility_on_icon)
+        self.visibility_button.add_css_class("flat")
+        self.visibility_button.set_tooltip_text(_("Toggle layer visibility"))
+        self.visibility_button.connect("clicked", self._on_visibility_clicked)
+        self.header.append(self.visibility_button)
+
+        self.append(self.header)
+        self._update_icon()
+
+    def _build_workflow_row(self):
+        self.workflow_row = WorkflowRow(self.editor, self.layer)
+        self.append(self.workflow_row)
+
+    def _build_workpiece_list(self):
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_vexpand(True)
+        scrolled.set_hexpand(True)
+
+        self.listbox = Gtk.ListBox()
+        self.listbox.add_css_class("layer-workpiece-list")
+        self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
+
+        drop_target = Gtk.DropTarget.new(
+            GObject.TYPE_STRING,
+            Gdk.DragAction.MOVE | Gdk.DragAction.COPY,
+        )
+        drop_target.connect("drop", self._on_drop)
+        drop_target.connect("motion", self._on_drop_motion)
+        drop_target.connect("leave", self._on_drop_leave)
+        self.listbox.add_controller(drop_target)
+
+        scrolled.set_child(self.listbox)
+        self.append(scrolled)
+
+        self._rebuild_workpiece_list()
+
+    def _setup_layer_drag_source(self):
+        drag_source = Gtk.DragSource()
+        drag_source.set_actions(Gdk.DragAction.MOVE)
+        drag_source.connect("prepare", self._on_layer_drag_prepare)
+        drag_source.connect("drag-begin", self._on_layer_drag_begin)
+        drag_source.connect("drag-end", self._on_layer_drag_end)
+        drag_source.connect("drag-cancel", self._on_layer_drag_end)
+        self.header.add_controller(drag_source)
+
+    @staticmethod
+    def _on_layer_drag_begin(drag_source, drag):
+        LayerColumn.dragging = True
+
+    @staticmethod
+    def _on_layer_drag_end(drag_source, drag, delete):
+        LayerColumn.dragging = False
+
+    @staticmethod
+    def _on_layer_drag_cancel(drag_source, drag, reason):
+        LayerColumn.dragging = False
+
+    def _on_layer_drag_prepare(self, drag_source, x, y):
+        snapshot = Gtk.Snapshot()
+        Gtk.Widget.do_snapshot(self.drag_label, snapshot)
+        paintable = snapshot.to_paintable()
+        if paintable:
+            drag_source.set_icon(paintable, x, y)
+        return Gdk.ContentProvider.new_for_value(
+            _LAYER_UID_PREFIX + self.layer.uid
+        )
+
+    @staticmethod
+    def _parse_layer_uid(value):
+        if value and value.startswith(_LAYER_UID_PREFIX):
+            return value[len(_LAYER_UID_PREFIX) :]
+        return None
+
+    @staticmethod
+    def _remove_layer_drop_markers_from(widget):
+        child = widget.get_first_child()
+        while child:
+            child.remove_css_class("drop-left")
+            child.remove_css_class("drop-right")
+            child = child.get_next_sibling()
+
+    def _rebuild_workpiece_list(self):
+        child = self.listbox.get_first_child()
+        while child:
+            next_child = child.get_next_sibling()
+            self.listbox.remove(child)
+            child = next_child
+        self._row_workpieces.clear()
+
+        for wp in self.layer.workpieces:
+            row = Gtk.ListBoxRow()
+            wp_row = WorkpieceRow(wp)
+            row.set_child(wp_row)
+            self._row_workpieces[row] = wp
+            self.listbox.append(row)
+
+    def _update_icon(self):
+        if old := self.icon_container.get_first_child():
+            self.icon_container.remove(old)
+        icon_name = (
+            "rotary-symbolic"
+            if self.layer.rotary_enabled
+            else "layer-symbolic"
+        )
+        self.icon_container.append(get_icon(icon_name))
+
+    def _update_style(self):
+        if self.layer.active:
+            self.add_css_class("active-layer-column")
+        else:
+            self.remove_css_class("active-layer-column")
+
+    def _update_ui(self):
+        self.name_label.set_text(self.layer.name)
+        self._update_icon()
+        self._update_subtitle()
+        self.visibility_button.set_active(self.layer.visible)
+        if self.layer.visible:
+            self.visibility_button.set_child(self.visibility_on_icon)
+        else:
+            self.visibility_button.set_child(self.visibility_off_icon)
+
+    def _update_subtitle(self):
+        machine = get_context().machine
+        module_name = None
+        if machine and self.layer.rotary_module_uid:
+            rm = machine.get_rotary_module_by_uid(self.layer.rotary_module_uid)
+            if rm:
+                module_name = rm.name
+        self.subtitle_label.set_text(self.layer.get_subtitle(module_name))
+
+    def _connect_signals(self):
+        self.layer.updated.connect(self._on_layer_updated)
+        self.layer.descendant_added.connect(self._on_layer_structure_changed)
+        self.layer.descendant_removed.connect(self._on_layer_structure_changed)
+        self.doc.active_layer_changed.connect(self._on_active_layer_changed)
+
+    def do_destroy(self):
+        self.layer.updated.disconnect(self._on_layer_updated)
+        self.layer.descendant_added.disconnect(
+            self._on_layer_structure_changed
+        )
+        self.layer.descendant_removed.disconnect(
+            self._on_layer_structure_changed
+        )
+        self.doc.active_layer_changed.disconnect(self._on_active_layer_changed)
+
+    def _on_layer_updated(self, sender, **kwargs):
+        self._update_ui()
+        self._rebuild_workpiece_list()
+
+    def _on_layer_structure_changed(self, sender, **kwargs):
+        self.workflow_row.refresh()
+        self._rebuild_workpiece_list()
+
+    def _on_active_layer_changed(self, sender, **kwargs):
+        self._update_style()
+
+    def _on_settings_clicked(self, button):
+        toplevel = self.get_ancestor(Gtk.Window)
+        if not toplevel:
+            return
+        dialog = LayerSettingsDialog(self.layer, transient_for=toplevel)
+        dialog.present()
+
+    def _on_delete_clicked(self, button):
+        self.editor.layer.delete_layer(self.layer)
+
+    def _on_visibility_clicked(self, button):
+        new_visibility = button.get_active()
+        if new_visibility == self.layer.visible:
+            return
+        self.editor.layer.set_layer_visibility(self.layer, new_visibility)
+
+    def _on_column_clicked(self, gesture, n_press, x, y):
+        picked = self.pick(x, y, Gtk.PickFlags.DEFAULT)
+        if picked is not None:
+            widget = picked
+            while widget and widget is not self:
+                if isinstance(widget, (Gtk.Button, WorkpieceRow)):
+                    gesture.set_state(Gtk.EventSequenceState.DENIED)
+                    return
+                widget = widget.get_parent()
+        if self.doc.active_layer is not self.layer:
+            self.editor.layer.set_active_layer(self.layer)
+
+    def _on_drop(self, drop_target, value, x, y):
+        if not value:
+            return False
+
+        asset_uids = self._parse_asset_uids(value)
+        if asset_uids is not None:
+            self._remove_drop_markers()
+            return self._handle_asset_drop(asset_uids)
+
+        wp = self._find_workpiece_by_uid(value)
+        if not wp:
+            self._remove_drop_markers()
+            return False
+
+        if not wp.layer:
+            self._remove_drop_markers()
+            return False
+
+        drop_index = self._potential_drop_index
+        self._remove_drop_markers()
+
+        if wp.layer is self.layer:
+            return self._handle_reorder_drop(wp, drop_index)
+
+        self.editor.layer.move_workpieces_to_layer([wp], self.layer)
+        return True
+
+    def _handle_reorder_drop(self, wp, drop_index):
+        if drop_index == -1:
+            return False
+        current_workpieces = list(self.layer.workpieces)
+        source_index = current_workpieces.index(wp)
+
+        target_index = drop_index
+        if source_index < target_index:
+            target_index -= 1
+
+        if source_index == target_index:
+            return True
+
+        new_order = list(current_workpieces)
+        new_order.pop(source_index)
+        new_order.insert(target_index, wp)
+        self.editor.layer.reorder_workpieces(self.layer, new_order)
+        return True
+
+    def _remove_drop_markers(self):
+        child = self.listbox.get_first_child()
+        while child:
+            child.remove_css_class("drop-above")
+            child.remove_css_class("drop-below")
+            child = child.get_next_sibling()
+        self._potential_drop_index = -1
+
+    def _parse_asset_uids(self, value: str):
+        try:
+            uids = json.loads(value)
+            if isinstance(uids, list) and len(uids) > 0:
+                return uids
+        except (json.JSONDecodeError, ValueError):
+            pass
+        return None
+
+    def _handle_asset_drop(self, asset_uids: list) -> bool:
+        for asset_uid in asset_uids:
+            asset = self.doc.get_asset_by_uid(asset_uid)
+            if isinstance(asset, StockAsset):
+                return False
+            if not asset or not asset.is_draggable_to_canvas:
+                continue
+
+        success = False
+        for asset_uid in asset_uids:
+            asset = self.doc.get_asset_by_uid(asset_uid)
+            if not asset or not asset.is_draggable_to_canvas:
+                continue
+            pos = self._get_center_position()
+            try:
+                if isinstance(asset, SourceAsset):
+                    self._create_source_instance(asset, pos)
+                    success = True
+                else:
+                    self.editor.edit.add_geometry_provider_instance(
+                        asset_uid, pos, target_layer=self.layer
+                    )
+                    success = True
+            except Exception:
+                logger.exception(
+                    "Error creating instance from asset %s", asset_uid[:8]
+                )
+        return success
+
+    def _create_source_instance(
+        self,
+        asset: SourceAsset,
+        pos: tuple,
+    ):
+        win = self.get_ancestor(Gtk.Window)
+        if not win:
+            return
+        import_handler.start_reimport(
+            cast("MainWindow", win),
+            self.editor,
+            asset,
+            pos,
+            target_layer=self.layer,
+        )
+
+    def _get_center_position(self) -> tuple:
+        machine = get_context().machine
+        if machine:
+            work_area = machine.work_area
+            wa_w, wa_h = work_area[2], work_area[3]
+            origin_x, origin_y = machine.get_reference_position_world()
+            space = machine.get_coordinate_space()
+            bl_x, bl_y = space.world_position_from_origin(
+                origin_x, origin_y, (wa_w, wa_h)
+            )
+            return (bl_x + wa_w / 2, bl_y + wa_h / 2)
+        return (50.0, 50.0)
+
+    def _on_drop_motion(self, drop_target, x, y):
+        drop = drop_target.get_drop()
+        if drop and drop.get_actions() & Gdk.DragAction.COPY:
+            self._remove_drop_markers()
+            return Gdk.DragAction.COPY
+
+        self._remove_drop_markers()
+
+        target_row = self._find_row_at(x, y)
+        if not target_row:
+            return Gdk.DragAction.MOVE
+
+        row_alloc = target_row.get_allocation()
+        row_center = row_alloc.y + row_alloc.height / 2
+
+        if y < row_center:
+            target_row.add_css_class("drop-above")
+            self._potential_drop_index = target_row.get_index()
+        else:
+            target_row.add_css_class("drop-below")
+            self._potential_drop_index = target_row.get_index() + 1
+
+        return Gdk.DragAction.MOVE
+
+    def _on_drop_leave(self, drop_target):
+        self._remove_drop_markers()
+
+    def _find_row_at(self, x, y):
+        picked = self.listbox.pick(x, y, Gtk.PickFlags.DEFAULT)
+        while picked:
+            if isinstance(picked, Gtk.ListBoxRow):
+                return picked
+            picked = picked.get_parent()
+        return None
+
+    def _find_workpiece_by_uid(self, uid: str) -> Optional[WorkPiece]:
+        for layer in self.doc.layers:
+            for wp in layer.all_workpieces:
+                if wp.uid == uid:
+                    return wp
+        return None

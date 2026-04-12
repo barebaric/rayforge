@@ -3,7 +3,11 @@ import logging
 from typing import TYPE_CHECKING, Optional, List
 from gettext import gettext as _
 from ..core.layer import Layer
-from ..core.undo import Command, ChangePropertyCommand
+from ..core.undo import (
+    Command,
+    ChangePropertyCommand,
+    CompositeCommand,
+)
 from ..core.undo.list_cmd import ReorderListCommand
 from ..core.workpiece import WorkPiece
 
@@ -120,6 +124,26 @@ class LayerCmd:
 
     def __init__(self, editor: "DocEditor"):
         self._editor = editor
+
+    def move_workpieces_to_layer(
+        self, workpieces: List[WorkPiece], target_layer: Layer
+    ):
+        """
+        Creates an undoable command to move workpieces to a specific layer.
+
+        Args:
+            workpieces: The workpieces to move.
+            target_layer: The layer to move them to.
+        """
+        if not workpieces:
+            return
+        source_layer = workpieces[0].layer
+        if not source_layer or source_layer is target_layer:
+            return
+        cmd = MoveWorkpiecesLayerCommand(
+            workpieces, target_layer, source_layer
+        )
+        self._editor.history_manager.execute(cmd)
 
     def move_selected_to_adjacent_layer(
         self, surface: "WorkSurface", direction: int
@@ -241,11 +265,36 @@ class LayerCmd:
 
     def reorder_layers(self, new_order: List[Layer]):
         """Reorders layers with an undoable command."""
+        base_name = _("Layer")
+        commands: List[Command] = [
+            ReorderListCommand(
+                target_obj=self._editor.doc,
+                list_property_name="layers",
+                new_list=new_order,
+                setter_method_name="set_layers",
+            )
+        ]
+        for i, layer in enumerate(new_order):
+            expected_name = f"{base_name} {i + 1}"
+            if layer.name != expected_name:
+                commands.append(
+                    ChangePropertyCommand(
+                        target=layer,
+                        property_name="name",
+                        new_value=expected_name,
+                        setter_method_name="set_name",
+                    )
+                )
+        cmd = CompositeCommand(commands, name=_("Reorder layers"))
+        self._editor.history_manager.execute(cmd)
+
+    def reorder_workpieces(self, layer: Layer, new_order: List[WorkPiece]):
+        """Reorders workpieces within a layer with an undoable command."""
         cmd = ReorderListCommand(
-            target_obj=self._editor.doc,
-            list_property_name="layers",
+            target_obj=layer,
+            list_property_name="workpieces",
             new_list=new_order,
-            setter_method_name="set_layers",
-            name=_("Reorder layers"),
+            setter_method_name="reorder_workpieces",
+            name=_("Reorder workpieces"),
         )
         self._editor.history_manager.execute(cmd)

@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 class FrameStep(Step):
     TYPELABEL = _("Frame")
+    ICON = "step-frame-symbolic"
     DEFAULT_CAPABILITIES: Set[Capability] = {CUT, SCORE}
     PRODUCER_CLASS = FrameProducer
 

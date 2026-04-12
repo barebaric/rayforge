@@ -256,6 +256,24 @@ class Layer(DocItem):
         self.rotary_module_uid = uid
         self.updated.send(self)
 
+    def get_subtitle(self, rotary_module_name: Optional[str] = None) -> str:
+        """Returns a subtitle describing the layer type.
+
+        Args:
+            rotary_module_name: The name of the selected rotary module,
+                if any. The caller is responsible for resolving the
+                layer's ``rotary_module_uid`` to a name.
+
+        Returns:
+            A human-readable subtitle string (e.g. ``"Flat"`` or
+            ``"Rotary · Chuck Rotary"``).
+        """
+        if not self.rotary_enabled:
+            return _("Flat")
+        if rotary_module_name:
+            return _("Rotary · {name}").format(name=rotary_module_name)
+        return _("Rotary")
+
     def mu_to_degrees(self, mu: float) -> float:
         """Convert machine units to degrees for rotary axis."""
         if self.rotary_diameter <= 0:
@@ -274,12 +292,29 @@ class Layer(DocItem):
     def set_workpieces(self, workpieces: List["WorkPiece"]):
         """
         Sets the layer's workpieces to a new list, preserving the
-        existing workflow.
+        existing workflow and groups.
         """
+        groups = [c for c in self.children if isinstance(c, Group)]
         current_workflow = self.workflow
-        new_children: List[DocItem] = list(workpieces)
+        new_children: List[DocItem] = []
+        new_children.extend(workpieces)
+        new_children.extend(groups)
         if current_workflow:
             new_children.append(current_workflow)
+        self.set_children(new_children)
+
+    def reorder_workpieces(self, new_workpiece_order: List["WorkPiece"]):
+        """
+        Reorders workpieces while preserving the positions of groups
+        and the workflow.
+        """
+        wp_iter = iter(new_workpiece_order)
+        new_children = []
+        for child in self.children:
+            if isinstance(child, WorkPiece):
+                new_children.append(next(wp_iter))
+            else:
+                new_children.append(child)
         self.set_children(new_children)
 
     def get_renderable_items(self) -> List[Tuple[Step, WorkPiece]]:

@@ -11,6 +11,7 @@ from gi.repository import Gio
 
 from rayforge.core.hooks import hookimpl
 from rayforge.ui_gtk.action_registry import MenuPlacement
+from rayforge.ui_gtk.icons import register_icon_path
 from .producers import (
     ContourProducer,
     FrameProducer,
@@ -34,6 +35,9 @@ _t = gettext.translation(
 _ = _t.gettext
 
 ADDON_NAME = "laser_essentials"
+_ICONS_DIR = Path(__file__).parent / "resources" / "icons"
+
+register_icon_path(_ICONS_DIR)
 
 
 @hookimpl

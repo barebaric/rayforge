@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 class ContourStep(Step):
     TYPELABEL = _("Contour")
+    ICON = "step-contour-symbolic"
     DEFAULT_CAPABILITIES: Set[Capability] = {CUT, SCORE}
     PRODUCER_CLASS = ContourProducer
 

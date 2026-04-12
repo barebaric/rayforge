@@ -2,21 +2,44 @@ import importlib.resources
 import logging
 import pathlib
 from functools import lru_cache
-from typing import Dict, Union
+from typing import Dict, List, Union
 from gi.repository import Gtk, Gio, GdkPixbuf
 from ..resources import icons  # type: ignore
 
 
 logger = logging.getLogger(__name__)
 
+_icon_search_paths: List[pathlib.Path] = []
+
 # Global cache for loaded icons to avoid repeated expensive operations
 # We cache the Gio.Icon or icon name, not the Gtk.Image widget itself
 _icon_cache: Dict[str, Union[Gio.Icon, str]] = {}
 
 
+def register_icon_path(path):
+    """
+    Register an additional directory to search for icons.
+
+    Addons should call this to make their icons available via
+    ``get_icon()``.  Registered paths are searched before the
+    built-in ``rayforge.resources.icons`` package.
+    """
+    p = pathlib.Path(path)
+    if p.is_dir() and p not in _icon_search_paths:
+        _icon_search_paths.append(p)
+
+
 def get_icon_path(icon_name) -> pathlib.Path:
-    """Retrieve the path of an icon inside the resource directory."""
-    with importlib.resources.path(icons, f"{icon_name}.svg") as path:
+    """
+    Retrieve the path of an icon, searching addon-registered paths
+    first, then the built-in resource directory.
+    """
+    filename = f"{icon_name}.svg"
+    for search_path in _icon_search_paths:
+        candidate = search_path / filename
+        if candidate.is_file():
+            return candidate
+    with importlib.resources.path(icons, filename) as path:
         return path
 
 

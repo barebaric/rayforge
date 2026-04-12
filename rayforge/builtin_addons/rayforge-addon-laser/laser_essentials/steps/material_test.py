@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 class MaterialTestStep(Step):
     TYPELABEL = _("Material Test Grid")
+    ICON = "test-symbolic"
     DEFAULT_CAPABILITIES: Set[Capability] = set()
     PRODUCER_CLASS = MaterialTestGridProducer
     HIDDEN = True

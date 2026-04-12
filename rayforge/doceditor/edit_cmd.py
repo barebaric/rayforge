@@ -11,6 +11,7 @@ from ..core.workflow import Workflow
 if TYPE_CHECKING:
     from ..core.asset import IAsset
     from ..core.geometry_provider import IGeometryProvider
+    from ..core.layer import Layer
     from ..core.source_asset import SourceAsset
     from .editor import DocEditor
 
@@ -286,7 +287,10 @@ class EditCmd:
             self._paste_counter = 0
 
     def add_geometry_provider_instance(
-        self, provider_uid: str, position_mm: Tuple[float, float]
+        self,
+        provider_uid: str,
+        position_mm: Tuple[float, float],
+        target_layer: Optional["Layer"] = None,
     ) -> WorkPiece:
         """
         Creates a new WorkPiece instance from a geometry provider.
@@ -294,12 +298,14 @@ class EditCmd:
         Args:
             provider_uid: The UID of the geometry provider to instantiate
             position_mm: The (x, y) position in mm where to place the instance
+            target_layer: The layer to add the instance to. If None, uses
+                the active layer.
 
         Returns:
             The newly created WorkPiece instance
         """
         history = self._editor.history_manager
-        target_layer = self._editor.doc.active_layer
+        target_layer = target_layer or self._editor.doc.active_layer
 
         provider = cast(
             Optional["IGeometryProvider"],
