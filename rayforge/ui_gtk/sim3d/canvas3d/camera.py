@@ -68,6 +68,8 @@ class Camera:
         self.width = int(width)
         self.height = int(height)
         self.is_perspective = False
+        self._ortho_zoom = 1.0
+        self._ortho_ref_distance: float | None = None
 
     def get_view_matrix(self) -> np.ndarray:
         """
@@ -101,10 +103,13 @@ class Camera:
             A 4x4 numpy array for the projection transformation.
         """
         aspect_ratio = self.width / self.height if self.height > 0 else 1.0
-        near_clip, far_clip = 0.1, 10000.0
 
         if not self.is_perspective:
+            near_clip = 0.1
+            far_clip = 10000.0
             return self._get_ortho_matrix(aspect_ratio, near_clip, far_clip)
+
+        near_clip, far_clip = 0.1, 10000.0
         return self._get_perspective_matrix(aspect_ratio, near_clip, far_clip)
 
     def _get_perspective_matrix(
@@ -132,9 +137,12 @@ class Camera:
         self, aspect_ratio: float, near: float, far: float
     ) -> np.ndarray:
         """Builds an orthographic projection matrix."""
-        distance = np.linalg.norm(self.target - self.position)
+        ref = self._ortho_ref_distance
+        if ref is None:
+            ref = np.linalg.norm(self.target - self.position)
+        effective_distance = ref / self._ortho_zoom
         fov_y_rad = math.radians(45.0)
-        ortho_height = distance * math.tan(fov_y_rad / 2.0) * 2.0
+        ortho_height = effective_distance * math.tan(fov_y_rad / 2.0) * 2.0
         ortho_width = ortho_height * aspect_ratio
         right, top = ortho_width / 2.0, ortho_height / 2.0
 
@@ -157,7 +165,11 @@ class Camera:
             delta_y: The vertical change in screen coordinates.
         """
         distance = np.linalg.norm(self.target - self.position)
-        pan_speed = 0.001 * distance
+
+        if not self.is_perspective and self._ortho_ref_distance is not None:
+            pan_speed = 0.001 * self._ortho_ref_distance / self._ortho_zoom
+        else:
+            pan_speed = 0.001 * distance
 
         forward = self.target - self.position
         forward /= distance + 1e-9
@@ -175,13 +187,26 @@ class Camera:
         """
         Moves the camera forward or backward along its line of sight.
 
+        In orthographic mode, adjusts the zoom factor instead of dollying
+        the camera, preventing the ortho clip box from shrinking and
+        clipping model geometry.
+
         Args:
             delta_z: The amount to dolly (typically from a scroll wheel).
         """
+        if not self.is_perspective:
+            factor = 1.0 + delta_z * 0.1
+            if factor <= 0.01:
+                return
+            new_zoom = self._ortho_zoom / factor
+            if new_zoom > 1000.0 or new_zoom < 0.01:
+                return
+            self._ortho_zoom = new_zoom
+            return
+
         forward = self.target - self.position
         distance = np.linalg.norm(forward)
 
-        # Prevent zooming in too close
         if distance < 0.2 and delta_z < 0:
             return
 
@@ -235,3 +260,5 @@ class Camera:
         self.position = self.target + direction_vec * distance
 
         self.up = np.array(up_raw, dtype=np.float64)
+        self._ortho_zoom = 1.0
+        self._ortho_ref_distance = distance
