@@ -11,7 +11,7 @@ from rayforge.core.ops.commands import (
     MovingCommand,
 )
 from rayforge.pipeline.transformer.axis_mapper import AxisMapper
-from rayforge.machine.models.rotary_module import RotaryMode
+from rayforge.machine.models.rotary_module import RotaryMode, RotaryType
 
 
 class TestAxisMapperIdentity:
@@ -357,3 +357,143 @@ class TestAxisMapperReplacementScaled:
 
         cmds = [c for c in ops if isinstance(c, MovingCommand)]
         assert len(cmds) == 1
+
+
+class TestAxisMapperRollerDiameter:
+    def test_roller_degrees_4th_axis(self):
+        object_diameter = 70.0
+        roller_diameter = 20.0
+
+        ops = Ops()
+        ops.move_to(0, math.pi * object_diameter, 0)
+
+        mapper = AxisMapper(
+            source_axis=Axis.Y,
+            rotary_axis=Axis.A,
+            rotary_diameter=object_diameter,
+            rotary_type=RotaryType.ROLLERS,
+            roller_diameter=roller_diameter,
+        )
+        mapper.run(ops)
+
+        cmds = [c for c in ops if isinstance(c, MoveToCommand)]
+        gear_ratio = object_diameter / roller_diameter
+        expected = 360.0 * gear_ratio
+        assert cmds[0].extra_axes[Axis.A] == pytest.approx(expected)
+
+    def test_roller_replacement_scaled(self):
+        object_diameter = 70.0
+        roller_diameter = 20.0
+        mm_per_rot = 100.0
+
+        ops = Ops()
+        source_val = math.pi * object_diameter
+        ops.move_to(10, source_val, 0)
+
+        mapper = AxisMapper(
+            source_axis=Axis.Y,
+            rotary_axis=Axis.A,
+            rotary_diameter=object_diameter,
+            mode=RotaryMode.AXIS_REPLACEMENT,
+            mm_per_rotation=mm_per_rot,
+            rotary_type=RotaryType.ROLLERS,
+            roller_diameter=roller_diameter,
+        )
+        mapper.run(ops)
+
+        cmds = [c for c in ops if isinstance(c, MovingCommand)]
+        gear_ratio = object_diameter / roller_diameter
+        expected = (
+            source_val * mm_per_rot / (math.pi * object_diameter) * gear_ratio
+        )
+        assert cmds[0].end[1] == pytest.approx(expected)
+
+    def test_jaws_ignores_roller_diameter(self):
+        diameter = 25.0
+        ops = Ops()
+        ops.move_to(10, 50, 0)
+
+        mapper_jaws = AxisMapper(
+            source_axis=Axis.Y,
+            rotary_axis=Axis.A,
+            rotary_diameter=diameter,
+            rotary_type=RotaryType.JAWS,
+            roller_diameter=20.0,
+        )
+        ops_jaws = Ops()
+        ops_jaws.move_to(10, 50, 0)
+        mapper_jaws.run(ops_jaws)
+
+        mapper_baseline = AxisMapper(
+            source_axis=Axis.Y,
+            rotary_axis=Axis.A,
+            rotary_diameter=diameter,
+            rotary_type=RotaryType.JAWS,
+            roller_diameter=0.0,
+        )
+        ops_baseline = Ops()
+        ops_baseline.move_to(10, 50, 0)
+        mapper_baseline.run(ops_baseline)
+
+        cmds_jaws = [c for c in ops_jaws if isinstance(c, MovingCommand)]
+        cmds_baseline = [
+            c for c in ops_baseline if isinstance(c, MovingCommand)
+        ]
+        assert cmds_jaws[0].extra_axes[Axis.A] == pytest.approx(
+            cmds_baseline[0].extra_axes[Axis.A]
+        )
+
+
+class TestAxisMapperReverseAxis:
+    def test_reverse_4th_axis_negates_degrees(self):
+        diameter = 25.0
+        ops = Ops()
+        ops.move_to(10, 50, 0)
+
+        mapper = AxisMapper(
+            source_axis=Axis.Y,
+            rotary_axis=Axis.A,
+            rotary_diameter=diameter,
+            reverse_axis=True,
+        )
+        mapper.run(ops)
+
+        cmds = [c for c in ops if isinstance(c, MovingCommand)]
+        expected = -((50.0 / (diameter * math.pi)) * 360.0)
+        assert cmds[0].extra_axes[Axis.A] == pytest.approx(expected)
+
+    def test_reverse_replacement_negates_scaled(self):
+        diameter = 25.0
+        mm_per_rot = 100.0
+        ops = Ops()
+        ops.move_to(10, 50, 0)
+
+        mapper = AxisMapper(
+            source_axis=Axis.Y,
+            rotary_axis=Axis.A,
+            rotary_diameter=diameter,
+            mode=RotaryMode.AXIS_REPLACEMENT,
+            mm_per_rotation=mm_per_rot,
+            reverse_axis=True,
+        )
+        mapper.run(ops)
+
+        cmds = [c for c in ops if isinstance(c, MovingCommand)]
+        expected = -(50.0 * mm_per_rot / (math.pi * diameter))
+        assert cmds[0].end[1] == pytest.approx(expected)
+
+    def test_no_reverse_produces_positive(self):
+        diameter = 25.0
+        ops = Ops()
+        ops.move_to(10, 50, 0)
+
+        mapper = AxisMapper(
+            source_axis=Axis.Y,
+            rotary_axis=Axis.A,
+            rotary_diameter=diameter,
+            reverse_axis=False,
+        )
+        mapper.run(ops)
+
+        cmds = [c for c in ops if isinstance(c, MovingCommand)]
+        assert cmds[0].extra_axes[Axis.A] > 0

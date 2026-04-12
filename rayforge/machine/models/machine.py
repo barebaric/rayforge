@@ -1300,6 +1300,9 @@ class Machine:
                 has_physical_source=(mode == RotaryMode.TRUE_4TH_AXIS),
                 mode=mode,
                 mm_per_rotation=mm_per_rotation,
+                rotary_type=module.rotary_type,
+                roller_diameter=module.roller_diameter,
+                reverse_axis=module.reverse_axis,
             )
 
             layer_cmds = []
