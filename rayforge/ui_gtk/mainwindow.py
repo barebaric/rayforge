@@ -1393,6 +1393,7 @@ class MainWindow(Adw.ApplicationWindow):
             show_models=True,
             shortcuts=SHORTCUTS,
         )
+        self._canvas3d_vis_overlay.set_margin_end(424)
         self._canvas3d_overlay.add_overlay(self._canvas3d_vis_overlay)
         self._canvas3d_playback = PlaybackOverlay()
         self.canvas3d.set_playback_overlay(self._canvas3d_playback)
