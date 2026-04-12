@@ -20,11 +20,14 @@ class LayersTab(Gtk.Box):
         self.doc = editor.doc
         self._columns = []
         self._layer_drop_index = -1
+        self._pan_offset_x = 0.0
 
-        scrolled = Gtk.ScrolledWindow()
-        scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
-        scrolled.set_hexpand(True)
-        scrolled.set_vexpand(True)
+        self.scrolled = Gtk.ScrolledWindow()
+        self.scrolled.set_policy(
+            Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER
+        )
+        self.scrolled.set_hexpand(True)
+        self.scrolled.set_vexpand(True)
 
         self.columns_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL, spacing=0
@@ -33,8 +36,15 @@ class LayersTab(Gtk.Box):
         self.columns_box.set_margin_top(9)
         self.columns_box.set_margin_bottom(9)
         self.columns_box.set_valign(Gtk.Align.FILL)
-        scrolled.set_child(self.columns_box)
-        self.append(scrolled)
+        self.scrolled.set_child(self.columns_box)
+        self.append(self.scrolled)
+
+        self._pan_gesture = Gtk.GestureDrag.new()
+        self._pan_gesture.set_button(Gdk.BUTTON_MIDDLE)
+        self._pan_gesture.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        self._pan_gesture.connect("drag-begin", self._on_pan_begin)
+        self._pan_gesture.connect("drag-update", self._on_pan_update)
+        self.scrolled.add_controller(self._pan_gesture)
 
         drop_target = Gtk.DropTarget.new(
             GObject.TYPE_STRING, Gdk.DragAction.MOVE
@@ -182,3 +192,12 @@ class LayersTab(Gtk.Box):
 
     def _on_layer_drop_leave(self, drop_target):
         self._remove_layer_drop_markers()
+
+    def _on_pan_begin(self, gesture, start_x, start_y):
+        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+        adj = self.scrolled.get_hadjustment()
+        self._pan_offset_x = adj.get_value()
+
+    def _on_pan_update(self, gesture, offset_x, offset_y):
+        adj = self.scrolled.get_hadjustment()
+        adj.set_value(self._pan_offset_x - offset_x)
