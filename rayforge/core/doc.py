@@ -14,6 +14,7 @@ from blinker import Signal
 from ..core.undo import HistoryManager
 from ..pipeline.producer.registry import producer_registry
 from .asset import IAsset, UnknownAsset
+from .color import COLOR_PALETTE
 from .item import DocItem
 from .layer import Layer
 from .source_asset import SourceAsset
@@ -45,9 +46,11 @@ class Doc(DocItem):
         self.assets: Dict[str, IAsset] = {}
         self.asset_order: List[str] = []
 
-        # A new document starts with one empty workpiece layer
-        workpiece_layer = Layer(_("Layer 1"))
-        self.add_child(workpiece_layer)
+        # A new document starts with three empty workpiece layers
+        for i in range(3):
+            workpiece_layer = Layer(_(f"Layer {i + 1}"))
+            workpiece_layer.color = COLOR_PALETTE[i % len(COLOR_PALETTE)]
+            self.add_child(workpiece_layer)
 
         # The new workpiece layer should be active by default
         self._active_layer_index: int = 0

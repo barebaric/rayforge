@@ -95,6 +95,7 @@ class LayerColumn(Gtk.Box):
         apply_css(css)
         self.add_css_class("layer-column")
         self.set_margin_end(6)
+        self.set_hexpand(False)
 
         self.doc = doc
         self.layer = layer
@@ -115,6 +116,12 @@ class LayerColumn(Gtk.Box):
         self._connect_signals()
         self._update_style()
         self._update_subtitle()
+
+    def do_measure(self, orientation, for_size):
+        min_, nat, min_bl, nat_bl = super().do_measure(orientation, for_size)
+        if orientation == Gtk.Orientation.HORIZONTAL:
+            nat = min(nat, 400)
+        return min_, nat, min_bl, nat_bl
 
     def _build_header(self, can_delete: bool):
         self.header = Gtk.Box(
