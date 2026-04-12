@@ -101,6 +101,7 @@ class LayerSettingsDialog(PatchedDialogWindow):
             self.module_row.set_selected(self._module_uids.index(uid))
         elif self._module_uids:
             self.module_row.set_selected(0)
+            self.layer.set_rotary_module_uid(self._module_uids[0])
 
     def _on_rotary_enabled_changed(self, row, _):
         if self._is_initializing:
@@ -109,6 +110,16 @@ class LayerSettingsDialog(PatchedDialogWindow):
         self.module_row.set_sensitive(enabled)
         self.rotary_diameter_row.set_sensitive(enabled)
         self.layer.set_rotary_enabled(enabled)
+        if enabled and self.layer.rotary_module_uid is None:
+            machine = get_context().machine
+            if machine:
+                default_rm = machine.get_default_rotary_module()
+                if default_rm:
+                    self.layer.set_rotary_module_uid(default_rm.uid)
+                    self.layer.set_rotary_diameter(default_rm.default_diameter)
+                    self.rotary_diameter_row.set_value(
+                        default_rm.default_diameter
+                    )
 
     def _on_module_changed(self, row, _param):
         if self._is_initializing:
