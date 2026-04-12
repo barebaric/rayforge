@@ -13,6 +13,7 @@ from ..icons import get_icon
 from ..shared.gtk import apply_css
 from . import import_handler
 from .layer_settings_dialog import LayerSettingsDialog
+from .workflow_row import WorkflowRow
 from .workpiece_row import WorkpieceRow
 
 if TYPE_CHECKING:
@@ -102,6 +103,7 @@ class LayerColumn(Gtk.Box):
         self._potential_drop_index = -1
 
         self._build_header(can_delete)
+        self._build_workflow_row()
         self._build_workpiece_list()
         self._setup_layer_drag_source()
 
@@ -174,6 +176,10 @@ class LayerColumn(Gtk.Box):
 
         self.append(self.header)
         self._update_icon()
+
+    def _build_workflow_row(self):
+        self.workflow_row = WorkflowRow(self.editor, self.layer)
+        self.append(self.workflow_row)
 
     def _build_workpiece_list(self):
         scrolled = Gtk.ScrolledWindow()
@@ -315,6 +321,7 @@ class LayerColumn(Gtk.Box):
         self._rebuild_workpiece_list()
 
     def _on_layer_structure_changed(self, sender, **kwargs):
+        self.workflow_row.refresh()
         self._rebuild_workpiece_list()
 
     def _on_active_layer_changed(self, sender, **kwargs):

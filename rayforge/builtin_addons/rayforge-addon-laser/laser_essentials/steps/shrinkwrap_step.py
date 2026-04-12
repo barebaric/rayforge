@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 class ShrinkWrapStep(Step):
     TYPELABEL = _("Shrink Wrap")
+    ICON = "step-shrinkwrap-symbolic"
     DEFAULT_CAPABILITIES: Set[Capability] = {CUT, SCORE}
     PRODUCER_CLASS = ShrinkWrapProducer
 

@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 class EngraveStep(Step):
     TYPELABEL = _("Engrave")
+    ICON = "step-raster-symbolic"
     DEFAULT_CAPABILITIES: Set[Capability] = {ENGRAVE}
     PRODUCER_CLASS = Rasterizer
 

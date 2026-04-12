@@ -32,6 +32,7 @@ class Step(DocItem, ABC):
     """
 
     HIDDEN: bool = False
+    ICON: str = ""
 
     def __init__(
         self,
