@@ -1,11 +1,11 @@
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
-from gi.repository import Gtk
+from gi.repository import Gdk, GObject, Gtk
 from ...core.doc import Doc
 from ...core.layer import Layer
 from ..icons import get_icon
-from .layer_column import LayerColumn
+from .layer_column import LayerColumn, _LAYER_UID_PREFIX
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -19,6 +19,7 @@ class LayersTab(Gtk.Box):
         self.editor = editor
         self.doc = editor.doc
         self._columns = []
+        self._layer_drop_index = -1
 
         scrolled = Gtk.ScrolledWindow()
         scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
@@ -34,6 +35,14 @@ class LayersTab(Gtk.Box):
         self.columns_box.set_valign(Gtk.Align.FILL)
         scrolled.set_child(self.columns_box)
         self.append(scrolled)
+
+        drop_target = Gtk.DropTarget.new(
+            GObject.TYPE_STRING, Gdk.DragAction.MOVE
+        )
+        drop_target.connect("drop", self._on_layer_drop)
+        drop_target.connect("motion", self._on_layer_drop_motion)
+        drop_target.connect("leave", self._on_layer_drop_leave)
+        self.columns_box.add_controller(drop_target)
 
         add_button = Gtk.Button(child=get_icon("add-symbolic"))
         add_button.add_css_class("flat")
@@ -59,16 +68,23 @@ class LayersTab(Gtk.Box):
     def _connect_signals(self):
         self.doc.descendant_added.connect(self._on_structure_changed)
         self.doc.descendant_removed.connect(self._on_structure_changed)
+        self.doc.updated.connect(self._on_doc_updated)
 
     def _disconnect_signals(self):
         self.doc.descendant_added.disconnect(self._on_structure_changed)
         self.doc.descendant_removed.disconnect(self._on_structure_changed)
+        self.doc.updated.disconnect(self._on_doc_updated)
 
     def do_destroy(self):
         self._disconnect_signals()
 
     def _on_structure_changed(self, sender, **kwargs):
         self._rebuild()
+
+    def _on_doc_updated(self, sender, **kwargs):
+        current = [col.layer for col in self._columns]
+        if current != list(self.doc.layers):
+            self._rebuild()
 
     def _rebuild(self):
         for col in self._columns:
@@ -87,3 +103,82 @@ class LayersTab(Gtk.Box):
 
     def _on_add_clicked(self, button):
         self.editor.layer.add_layer_and_set_active()
+
+    def _find_column_at(self, x, y):
+        picked = self.columns_box.pick(x, y, Gtk.PickFlags.DEFAULT)
+        while picked:
+            if isinstance(picked, LayerColumn):
+                return picked
+            picked = picked.get_parent()
+        return None
+
+    def _remove_layer_drop_markers(self):
+        LayerColumn._remove_layer_drop_markers_from(self.columns_box)
+        self._layer_drop_index = -1
+
+    @staticmethod
+    def _parse_layer_uid(value):
+        if value and value.startswith(_LAYER_UID_PREFIX):
+            return value[len(_LAYER_UID_PREFIX) :]
+        return None
+
+    def _on_layer_drop(self, drop_target, value, x, y):
+        uid = self._parse_layer_uid(value)
+        if not uid:
+            return False
+
+        layers = list(self.doc.layers)
+        source = None
+        for layer in layers:
+            if layer.uid == uid:
+                source = layer
+                break
+        if not source:
+            self._remove_layer_drop_markers()
+            return False
+
+        drop_index = self._layer_drop_index
+        self._remove_layer_drop_markers()
+
+        if drop_index == -1 or drop_index > len(layers):
+            return False
+
+        source_index = layers.index(source)
+
+        insert_index = drop_index
+        if source_index < insert_index:
+            insert_index -= 1
+
+        if source_index == insert_index:
+            return True
+
+        new_order = list(layers)
+        new_order.pop(source_index)
+        new_order.insert(insert_index, source)
+        self.editor.layer.reorder_layers(new_order)
+        return True
+
+    def _on_layer_drop_motion(self, drop_target, x, y):
+        if not LayerColumn.dragging:
+            return 0
+
+        self._remove_layer_drop_markers()
+
+        col = self._find_column_at(x, y)
+        if not col:
+            return Gdk.DragAction.MOVE
+
+        col_alloc = col.get_allocation()
+        col_center_x = col_alloc.x + col_alloc.width / 2
+
+        if x < col_center_x:
+            col.add_css_class("drop-left")
+            self._layer_drop_index = self._columns.index(col)
+        else:
+            col.add_css_class("drop-right")
+            self._layer_drop_index = self._columns.index(col) + 1
+
+        return Gdk.DragAction.MOVE
+
+    def _on_layer_drop_leave(self, drop_target):
+        self._remove_layer_drop_markers()

@@ -66,10 +66,20 @@ css = """
 .layer-workpiece-list > row.drop-below {
     box-shadow: inset 0 -2px 0 0 @accent_bg_color;
 }
+.layer-column.drop-left {
+    box-shadow: inset 3px 0 0 0 @accent_bg_color;
+}
+.layer-column.drop-right {
+    box-shadow: inset -3px 0 0 0 @accent_bg_color;
+}
 """
+
+_LAYER_UID_PREFIX = "layer:"
 
 
 class LayerColumn(Gtk.Box):
+    dragging = False
+
     def __init__(
         self,
         doc: Doc,
@@ -90,6 +100,7 @@ class LayerColumn(Gtk.Box):
 
         self._build_header(can_delete)
         self._build_workpiece_list()
+        self._setup_layer_drag_source()
 
         self._click_gesture = Gtk.GestureClick()
         self._click_gesture.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
@@ -100,13 +111,15 @@ class LayerColumn(Gtk.Box):
         self._update_style()
 
     def _build_header(self, can_delete: bool):
-        header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
-        header.add_css_class("layer-column-header")
-        header.set_hexpand(True)
+        self.header = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, spacing=4
+        )
+        self.header.add_css_class("layer-column-header")
+        self.header.set_hexpand(True)
 
         self.icon_container = Gtk.Box()
         self.icon_container.set_valign(Gtk.Align.CENTER)
-        header.append(self.icon_container)
+        self.header.append(self.icon_container)
 
         name_label = Gtk.Label()
         name_label.set_text(self.layer.name)
@@ -115,20 +128,20 @@ class LayerColumn(Gtk.Box):
         name_label.set_valign(Gtk.Align.CENTER)
         name_label.set_ellipsize(Pango.EllipsizeMode.END)
         self.name_label = name_label
-        header.append(name_label)
+        self.header.append(name_label)
 
         self.settings_button = Gtk.Button(child=get_icon("settings-symbolic"))
         self.settings_button.add_css_class("flat")
         self.settings_button.set_tooltip_text(_("Layer Settings"))
         self.settings_button.connect("clicked", self._on_settings_clicked)
-        header.append(self.settings_button)
+        self.header.append(self.settings_button)
 
         self.delete_button = Gtk.Button(child=get_icon("delete-symbolic"))
         self.delete_button.add_css_class("flat")
         self.delete_button.set_tooltip_text(_("Delete this layer"))
         self.delete_button.set_visible(can_delete)
         self.delete_button.connect("clicked", self._on_delete_clicked)
-        header.append(self.delete_button)
+        self.header.append(self.delete_button)
 
         self.visibility_on_icon = get_icon("visibility-on-symbolic")
         self.visibility_off_icon = get_icon("visibility-off-symbolic")
@@ -139,9 +152,9 @@ class LayerColumn(Gtk.Box):
         self.visibility_button.add_css_class("flat")
         self.visibility_button.set_tooltip_text(_("Toggle layer visibility"))
         self.visibility_button.connect("clicked", self._on_visibility_clicked)
-        header.append(self.visibility_button)
+        self.header.append(self.visibility_button)
 
-        self.append(header)
+        self.append(self.header)
         self._update_icon()
 
     def _build_workpiece_list(self):
@@ -167,6 +180,51 @@ class LayerColumn(Gtk.Box):
         self.append(scrolled)
 
         self._rebuild_workpiece_list()
+
+    def _setup_layer_drag_source(self):
+        drag_source = Gtk.DragSource()
+        drag_source.set_actions(Gdk.DragAction.MOVE)
+        drag_source.connect("prepare", self._on_layer_drag_prepare)
+        drag_source.connect("drag-begin", self._on_layer_drag_begin)
+        drag_source.connect("drag-end", self._on_layer_drag_end)
+        drag_source.connect("drag-cancel", self._on_layer_drag_end)
+        self.header.add_controller(drag_source)
+
+    @staticmethod
+    def _on_layer_drag_begin(drag_source, drag):
+        LayerColumn.dragging = True
+
+    @staticmethod
+    def _on_layer_drag_end(drag_source, drag, delete):
+        LayerColumn.dragging = False
+
+    @staticmethod
+    def _on_layer_drag_cancel(drag_source, drag, reason):
+        LayerColumn.dragging = False
+
+    def _on_layer_drag_prepare(self, drag_source, x, y):
+        snapshot = Gtk.Snapshot()
+        Gtk.Widget.do_snapshot(self.header, snapshot)
+        paintable = snapshot.to_paintable()
+        if paintable:
+            drag_source.set_icon(paintable, x, y)
+        return Gdk.ContentProvider.new_for_value(
+            _LAYER_UID_PREFIX + self.layer.uid
+        )
+
+    @staticmethod
+    def _parse_layer_uid(value):
+        if value and value.startswith(_LAYER_UID_PREFIX):
+            return value[len(_LAYER_UID_PREFIX) :]
+        return None
+
+    @staticmethod
+    def _remove_layer_drop_markers_from(widget):
+        child = widget.get_first_child()
+        while child:
+            child.remove_css_class("drop-left")
+            child.remove_css_class("drop-right")
+            child = child.get_next_sibling()
 
     def _rebuild_workpiece_list(self):
         child = self.listbox.get_first_child()
