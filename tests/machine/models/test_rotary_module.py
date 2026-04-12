@@ -4,7 +4,11 @@ from numpy.testing import assert_array_equal
 
 from rayforge.core.ops.axis import Axis
 from rayforge.machine.models.machine import Machine
-from rayforge.machine.models.rotary_module import RotaryModule, RotaryMode
+from rayforge.machine.models.rotary_module import (
+    RotaryModule,
+    RotaryMode,
+    RotaryType,
+)
 
 
 @pytest.mark.usefixtures("lite_context")
@@ -18,6 +22,7 @@ class TestRotaryModule:
         assert rm.source_axis == Axis.Y
         assert rm.mm_per_rotation == 0.0
         assert rm.default_diameter == 25.0
+        assert rm.rotary_type == RotaryType.JAWS
         assert rm.model_id is None
         assert_array_equal(rm.transform, np.eye(4))
         assert rm.extra == {}
@@ -187,6 +192,123 @@ class TestRotaryModule:
         rm.set_mm_per_rotation(50.0)
         data = rm.to_dict()
         assert data["mm_per_rotation"] == 50.0
+
+    def test_roller_diameter_omitted_when_zero(self):
+        rm = RotaryModule()
+        rm.set_roller_diameter(0.0)
+        data = rm.to_dict()
+        assert "roller_diameter" not in data
+
+    def test_roller_diameter_included_when_positive(self):
+        rm = RotaryModule()
+        rm.set_roller_diameter(20.0)
+        data = rm.to_dict()
+        assert data["roller_diameter"] == 20.0
+
+    def test_rotary_type_always_serialized(self):
+        rm = RotaryModule()
+        data = rm.to_dict()
+        assert data["rotary_type"] == "jaws"
+        rm.set_rotary_type(RotaryType.ROLLERS)
+        data = rm.to_dict()
+        assert data["rotary_type"] == "rollers"
+
+    def test_reverse_axis_omitted_when_false(self):
+        rm = RotaryModule()
+        data = rm.to_dict()
+        assert "reverse_axis" not in data
+
+    def test_reverse_axis_included_when_true(self):
+        rm = RotaryModule()
+        rm.set_reverse_axis(True)
+        data = rm.to_dict()
+        assert data["reverse_axis"] is True
+
+    def test_roller_diameter_and_reverse_roundtrip(self):
+        rm = RotaryModule()
+        rm.set_rotary_type(RotaryType.ROLLERS)
+        rm.set_roller_diameter(20.0)
+        rm.set_reverse_axis(True)
+        data = rm.to_dict()
+        rm2 = RotaryModule.from_dict(data)
+        assert rm2.rotary_type == RotaryType.ROLLERS
+        assert rm2.roller_diameter == 20.0
+        assert rm2.reverse_axis is True
+
+    def test_set_roller_diameter_emits_changed(self):
+        rm = RotaryModule()
+        signals = []
+
+        def on_changed(sender, **kwargs):
+            signals.append(sender)
+
+        rm.changed.connect(on_changed)
+        rm.set_roller_diameter(20.0)
+        assert rm.roller_diameter == 20.0
+        assert len(signals) == 1
+
+    def test_set_roller_diameter_no_signal_if_same(self):
+        rm = RotaryModule()
+        signals = []
+
+        def on_changed(sender, **kwargs):
+            signals.append(sender)
+
+        rm.changed.connect(on_changed)
+        rm.set_roller_diameter(0.0)
+        assert len(signals) == 0
+
+    def test_set_rotary_type_emits_changed(self):
+        rm = RotaryModule()
+        signals = []
+
+        def on_changed(sender, **kwargs):
+            signals.append(sender)
+
+        rm.changed.connect(on_changed)
+        rm.set_rotary_type(RotaryType.ROLLERS)
+        assert rm.rotary_type == RotaryType.ROLLERS
+        assert len(signals) == 1
+
+    def test_set_rotary_type_no_signal_if_same(self):
+        rm = RotaryModule()
+        signals = []
+
+        def on_changed(sender, **kwargs):
+            signals.append(sender)
+
+        rm.changed.connect(on_changed)
+        rm.set_rotary_type(RotaryType.JAWS)
+        assert len(signals) == 0
+
+    def test_deserialization_defaults_includes_jaws_type(self):
+        data = {"uid": "test-uid"}
+        rm = RotaryModule.from_dict(data)
+        assert rm.rotary_type == RotaryType.JAWS
+        assert rm.roller_diameter == 0.0
+
+    def test_set_reverse_axis_emits_changed(self):
+        rm = RotaryModule()
+        signals = []
+
+        def on_changed(sender, **kwargs):
+            signals.append(sender)
+
+        rm.changed.connect(on_changed)
+        rm.set_reverse_axis(True)
+        assert rm.reverse_axis is True
+        assert len(signals) == 1
+
+    def test_set_reverse_axis_no_signal_if_same(self):
+        rm = RotaryModule()
+        signals = []
+
+        def on_changed(sender, **kwargs):
+            signals.append(sender)
+
+        rm.changed.connect(on_changed)
+        rm.set_reverse_axis(False)
+        assert len(signals) == 0
 
     def test_deserialization_extra_keys_preserved(self):
         data = {"uid": "test", "future_field": "value"}

@@ -8,7 +8,11 @@ from ...context import get_context
 from ...core.model import Model
 from ...core.ops.axis import Axis
 from ...machine.models.machine import Machine
-from ...machine.models.rotary_module import RotaryModule, RotaryMode
+from ...machine.models.rotary_module import (
+    RotaryModule,
+    RotaryMode,
+    RotaryType,
+)
 from ..icons import get_icon
 from ..shared.adwfix import get_spinrow_float
 from ..shared.model_selection_dialog import ModelSelectionDialog
@@ -328,6 +332,46 @@ class RotaryModulePage(TrackedPreferencesPage):
         )
         self.general_group.add(self.source_axis_row)
 
+        self.reverse_axis_row = Adw.SwitchRow(
+            title=_("Reversed Axis"),
+            subtitle=_("Reverse the rotation direction of the rotary axis"),
+        )
+        self.reverse_axis_row.connect(
+            "notify::active", self._on_reverse_axis_changed
+        )
+        self.general_group.add(self.reverse_axis_row)
+
+        rotary_type_store = Gtk.StringList()
+        rotary_type_store.append(_("Jaws / Chuck"))
+        rotary_type_store.append(_("Rollers"))
+        self._rotary_type_values = [
+            RotaryType.JAWS,
+            RotaryType.ROLLERS,
+        ]
+        self.rotary_type_row = Adw.ComboRow(
+            title=_("Drive Type"),
+            subtitle=_("How the rotary module drives the workpiece rotation"),
+            model=rotary_type_store,
+        )
+        self.rotary_type_row.connect(
+            "notify::selected", self._on_rotary_type_changed
+        )
+        self.general_group.add(self.rotary_type_row)
+
+        roller_diam_adj = Gtk.Adjustment(
+            lower=0, upper=10000, step_increment=1, page_increment=10
+        )
+        self.roller_diameter_row = Adw.SpinRow(
+            title=_("Roller Diameter"),
+            subtitle=_("Diameter of the drive roller"),
+            adjustment=roller_diam_adj,
+            digits=1,
+        )
+        self.roller_diameter_row.connect(
+            "notify::value", self._on_roller_diameter_changed
+        )
+        self.general_group.add(self.roller_diameter_row)
+
         mm_per_rot_adj = Gtk.Adjustment(
             lower=0, upper=100000, step_increment=1, page_increment=10
         )
@@ -518,6 +562,16 @@ class RotaryModulePage(TrackedPreferencesPage):
 
         self.default_diameter_row.set_value(module.default_diameter)
         self.max_workpiece_length_row.set_value(module.max_workpiece_length)
+
+        try:
+            type_idx = self._rotary_type_values.index(module.rotary_type)
+        except ValueError:
+            type_idx = 0
+        self.rotary_type_row.set_selected(type_idx)
+        self._update_type_dependent_rows(module)
+
+        self.roller_diameter_row.set_value(module.roller_diameter)
+        self.reverse_axis_row.set_active(module.reverse_axis)
         self._update_model_subtitle(module)
         t = module.transform
         self.x_row.set_value(float(t[0, 3]))
@@ -575,14 +629,12 @@ class RotaryModulePage(TrackedPreferencesPage):
         self.mm_per_rotation_row.set_visible(is_replacement)
         self.module_axis_row.set_visible(not is_replacement)
 
-        self._is_updating = True
         if is_replacement:
             src_idx = self._source_axis_display.index(module.source_axis)
         else:
             perpendicular = self._perpendicular(module.source_axis)
             src_idx = self._source_axis_display.index(perpendicular)
         self.source_axis_row.set_selected(src_idx)
-        self._is_updating = False
 
         if is_replacement:
             self.source_axis_row.set_title(_("Connected To"))
@@ -594,6 +646,10 @@ class RotaryModulePage(TrackedPreferencesPage):
             self.source_axis_row.set_subtitle(
                 _("Axis along which the workpiece extends")
             )
+
+    def _update_type_dependent_rows(self, module: RotaryModule):
+        is_roller = module.rotary_type == RotaryType.ROLLERS
+        self.roller_diameter_row.set_visible(is_roller)
 
     @staticmethod
     def _perpendicular(axis: Axis) -> Axis:
@@ -611,6 +667,17 @@ class RotaryModulePage(TrackedPreferencesPage):
         if selected < len(self._mode_values):
             module.set_mode(self._mode_values[selected])
             self._update_mode_dependent_rows(module)
+
+    def _on_rotary_type_changed(self, row, _param):
+        if self._is_updating:
+            return
+        module = self._get_selected_module()
+        if not module:
+            return
+        selected = row.get_selected()
+        if selected < len(self._rotary_type_values):
+            module.set_rotary_type(self._rotary_type_values[selected])
+            self._update_type_dependent_rows(module)
 
     def _on_source_axis_changed(self, row, _param):
         if self._is_updating:
@@ -647,6 +714,20 @@ class RotaryModulePage(TrackedPreferencesPage):
         module = self._get_selected_module()
         if module:
             module.set_max_workpiece_length(get_spinrow_float(spinrow))
+
+    def _on_roller_diameter_changed(self, spinrow, _param):
+        if self._is_updating:
+            return
+        module = self._get_selected_module()
+        if module:
+            module.set_roller_diameter(get_spinrow_float(spinrow))
+
+    def _on_reverse_axis_changed(self, switchrow, _param):
+        if self._is_updating:
+            return
+        module = self._get_selected_module()
+        if module:
+            module.set_reverse_axis(switchrow.get_active())
 
     def _on_model_activated(self, row):
         module = self._get_selected_module()
