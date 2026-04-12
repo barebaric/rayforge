@@ -7,6 +7,12 @@ from .base import BaseArtifact
 from .handle import BaseArtifactHandle
 
 
+def _get_ops_color_mode_enum():
+    from ...core.config import OpsColorMode
+
+    return OpsColorMode
+
+
 @dataclass
 class RenderContext:
     """
@@ -19,15 +25,31 @@ class RenderContext:
     margin_px: int
     color_set_dict: Dict[str, Any]
     laser_color_sets: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    layer_color_sets: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    ops_color_mode: Any = None
+
+    def __post_init__(self):
+        if self.ops_color_mode is None:
+            self.ops_color_mode = _get_ops_color_mode_enum().LASER
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the context to a dictionary."""
-        return asdict(self)
+        d = asdict(self)
+        d["ops_color_mode"] = self.ops_color_mode.value
+        return d
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "RenderContext":
         """Deserializes a RenderContext from a dictionary."""
-        return cls(**data)
+        OpsColorMode = _get_ops_color_mode_enum()
+        mode = data.get("ops_color_mode", OpsColorMode.LASER.value)
+        if isinstance(mode, str):
+            try:
+                mode = OpsColorMode(mode)
+            except ValueError:
+                mode = OpsColorMode.LASER
+        data = {k: v for k, v in data.items() if k != "ops_color_mode"}
+        return cls(ops_color_mode=mode, **data)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, RenderContext):
@@ -42,6 +64,10 @@ class RenderContext:
             and self._compare_color_sets(
                 self.laser_color_sets, other.laser_color_sets
             )
+            and self._compare_color_sets(
+                self.layer_color_sets, other.layer_color_sets
+            )
+            and self.ops_color_mode == other.ops_color_mode
         )
 
     def _compare_color_sets(

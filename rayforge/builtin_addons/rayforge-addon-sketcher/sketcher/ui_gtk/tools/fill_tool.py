@@ -1,6 +1,6 @@
 from gettext import gettext as _
 
-from rayforge.shared.util.colors import ColorRGBA
+from rayforge.core.color import ColorRGBA
 from ...core.commands import AddFillCommand, RemoveFillCommand
 from ...core.sketch import FillStyle, DEFAULT_FILL_COLOR
 from .base import SketchTool

@@ -3,7 +3,7 @@ import logging
 from typing import Dict, Optional, Tuple
 import cairo
 from gi.repository import Gdk, GLib
-from ...shared.util.colors import ColorRGBA
+from ...core.color import ColorRGBA
 from ..icons import get_icon_pixbuf
 from .region import ElementRegion, ROTATE_HANDLES
 

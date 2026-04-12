@@ -2,7 +2,7 @@ import json
 import logging
 from gettext import gettext as _
 from typing import Optional, TYPE_CHECKING, cast
-from gi.repository import Gdk, GObject, Gtk, Pango
+from gi.repository import Adw, Gdk, GObject, Gtk, Pango
 from ...context import get_context
 from ...core.doc import Doc
 from ...core.layer import Layer
@@ -279,7 +279,23 @@ class LayerColumn(Gtk.Box):
             if self.layer.rotary_enabled
             else "layer-symbolic"
         )
-        self.icon_container.append(get_icon(icon_name))
+        icon = get_icon(icon_name)
+        rgba = Gdk.RGBA()
+        rgba.parse(self.layer.color)
+        dark = Adw.StyleManager.get_default().get_dark()
+        alpha = 0.35 if dark else 0.9
+        bg = (
+            f"rgba({int(rgba.red * 255)},{int(rgba.green * 255)},"
+            f"{int(rgba.blue * 255)},{alpha})"
+        )
+        css_class = f"layer-icon-{self.layer.uid[:8]}"
+        icon.set_css_classes([css_class])
+        apply_css(
+            f".{css_class} "
+            f"{{ background: {bg}; border-radius: 4px; "
+            f"padding: 4px; }}"
+        )
+        self.icon_container.append(icon)
 
     def _update_style(self):
         if self.layer.active:

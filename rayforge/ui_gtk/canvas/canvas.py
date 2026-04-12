@@ -6,6 +6,7 @@ from enum import Enum, auto
 import cairo
 from gi.repository import Gtk, Gdk, Graphene
 from blinker import Signal
+from ...core.color import ColorRGBA
 from ...core.geo import Point, Rect
 from ...core.matrix import Matrix
 from ..shared.keyboard import is_primary_keyval
@@ -290,6 +291,14 @@ class Canvas(Gtk.DrawingArea):
         screen_transform = self.view_transform @ elem.get_world_transform()
         render_selection_frame(ctx, elem, screen_transform)
 
+    def _get_handle_color(self, elem: CanvasElement) -> Optional[ColorRGBA]:
+        """Returns an optional color for selection handles.
+
+        Override in subclasses to provide element-specific handle colors.
+        Returns None to use the default blue.
+        """
+        return None
+
     def _render_single_selection_overlay(
         self, ctx: cairo.Context, elem: CanvasElement
     ):
@@ -313,6 +322,7 @@ class Canvas(Gtk.DrawingArea):
             hovered_region=self._hovered_region,
             base_handle_size=self.BASE_HANDLE_SIZE,
             with_labels=False,  # Set to True to debug
+            color=self._get_handle_color(elem),
         )
 
     def _render_multi_selection_overlay(
@@ -332,6 +342,8 @@ class Canvas(Gtk.DrawingArea):
         if not (
             self._moving or self._resizing or self._rotating or self._shearing
         ):
+            colors = {self._get_handle_color(e) for e in group.elements}
+            color = colors.pop() if len(colors) == 1 else None
             render_selection_handles(
                 ctx,
                 target=group,
@@ -340,6 +352,7 @@ class Canvas(Gtk.DrawingArea):
                 hovered_region=self._hovered_region,
                 base_handle_size=self.BASE_HANDLE_SIZE,
                 with_labels=False,  # Set to True to debug
+                color=color,
             )
 
     def _update_hover_state(self, x: float, y: float) -> bool:

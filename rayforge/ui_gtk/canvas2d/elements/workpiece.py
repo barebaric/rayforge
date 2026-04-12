@@ -11,7 +11,7 @@ from ....pipeline.artifact import (
     BaseArtifactHandle,
     WorkPieceViewArtifact,
 )
-from ....shared.util.colors import ColorSet
+from ....core.color import ColorSet
 from ...shared.gtk_color import GtkColorResolver, ColorSpecDict
 from ...canvas import CanvasElement
 from ..ops_cache_registry import registry

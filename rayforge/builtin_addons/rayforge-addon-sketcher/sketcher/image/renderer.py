@@ -16,7 +16,7 @@ from rayforge.image.svg.svg_fallback import (
     render_svg_to_cairo,
     cairo_surface_to_vips,
 )
-from rayforge.shared.util.colors import ColorRGBA
+from rayforge.core.color import ColorRGBA
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)

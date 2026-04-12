@@ -1,8 +1,17 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Tuple, Union, Dict, Any, List
+from typing import (
+    TYPE_CHECKING,
+    Tuple,
+    Union,
+    Dict,
+    Any,
+    List,
+    Optional,
+)
 import cairo
 import math
 from ...core.matrix import Matrix
+from ...core.color import ColorRGBA
 from .region import (
     ElementRegion,
     ROTATE_SHEAR_HANDLES,
@@ -15,6 +24,28 @@ from .region import (
 if TYPE_CHECKING:
     from .canvas import CanvasElement, MultiSelectionGroup, SelectionMode
 
+_DEFAULT_HANDLE_COLOR: ColorRGBA = (0.2, 0.5, 0.8, 1.0)
+_DEFAULT_HANDLE_COLOR_HOVER: ColorRGBA = (0.3, 0.6, 0.9, 1.0)
+
+
+def _handle_colors(
+    base_color: Optional[ColorRGBA],
+    is_hovered: bool,
+) -> ColorRGBA:
+    if base_color:
+        r, g, b, _ = base_color
+        if is_hovered:
+            return (
+                min(r + 0.15, 1.0),
+                min(g + 0.15, 1.0),
+                min(b + 0.15, 1.0),
+                0.9,
+            )
+        return (r, g, b, 0.7)
+    if is_hovered:
+        return (*_DEFAULT_HANDLE_COLOR_HOVER[:3], 0.9)
+    return (*_DEFAULT_HANDLE_COLOR[:3], 0.7)
+
 
 def _draw_quad_handle(
     ctx: cairo.Context,
@@ -23,12 +54,10 @@ def _draw_quad_handle(
     p3: Tuple[float, float],
     p4: Tuple[float, float],
     is_hovered: bool,
+    color: Optional[ColorRGBA] = None,
 ):
     """Draws a quadrilateral handle given four screen-space points."""
-    if is_hovered:
-        ctx.set_source_rgba(0.3, 0.6, 0.9, 0.9)
-    else:
-        ctx.set_source_rgba(0.2, 0.5, 0.8, 0.7)
+    ctx.set_source_rgba(*_handle_colors(color, is_hovered))
 
     ctx.move_to(*p1)
     ctx.line_to(*p2)
@@ -39,14 +68,15 @@ def _draw_quad_handle(
 
 
 def _draw_square_handle(
-    ctx: cairo.Context, width: float, height: float, is_hovered: bool
+    ctx: cairo.Context,
+    width: float,
+    height: float,
+    is_hovered: bool,
+    color: Optional[ColorRGBA] = None,
 ):
     """Draws a square handle. Uses the smaller of width/height for size."""
     size = min(width, height)
-    if is_hovered:
-        ctx.set_source_rgba(0.3, 0.6, 0.9, 0.9)
-    else:
-        ctx.set_source_rgba(0.2, 0.5, 0.8, 0.7)
+    ctx.set_source_rgba(*_handle_colors(color, is_hovered))
 
     half_size = size / 2
     ctx.rectangle(-half_size, -half_size, size, size)
@@ -54,28 +84,33 @@ def _draw_square_handle(
 
 
 def _draw_rectangle_handle(
-    ctx: cairo.Context, width: float, height: float, is_hovered: bool
+    ctx: cairo.Context,
+    width: float,
+    height: float,
+    is_hovered: bool,
+    color: Optional[ColorRGBA] = None,
 ):
     """Draws a rectangular handle, perfect for stretched edge handles."""
-    if is_hovered:
-        ctx.set_source_rgba(0.3, 0.6, 0.9, 0.9)
-    else:
-        ctx.set_source_rgba(0.2, 0.5, 0.8, 0.7)
+    ctx.set_source_rgba(*_handle_colors(color, is_hovered))
 
     ctx.rectangle(-width / 2, -height / 2, width, height)
     ctx.fill()
 
 
 def _draw_arc_handle(
-    ctx: cairo.Context, width: float, height: float, is_hovered: bool
+    ctx: cairo.Context,
+    width: float,
+    height: float,
+    is_hovered: bool,
+    color: Optional[ColorRGBA] = None,
 ):
     """Draws a rotation arc handle. Uses average of width/height for size."""
     size = (width + height) / 2.0
-    if is_hovered:
-        ctx.set_source_rgba(0.3, 0.6, 0.9, 0.95)
-    else:
-        ctx.set_source_rgba(0.2, 0.5, 0.8, 0.8)
+    c = _handle_colors(color, is_hovered)
+    if not color:
+        c = (*c[:3], 0.95 if is_hovered else 0.8)
 
+    ctx.set_source_rgba(*c)
     ctx.set_line_width(2.0)
     ctx.set_line_cap(cairo.LINE_CAP_ROUND)
     radius = size * 0.5
@@ -85,24 +120,20 @@ def _draw_arc_handle(
     def draw_arrowhead(point_angle: float, is_start_arrow: bool):
         arrow_len, arrow_width = size * 0.18, size * 0.2
         ctx.save()
-        px, py = radius * math.cos(point_angle), radius * math.sin(point_angle)
+        px = radius * math.cos(point_angle)
+        py = radius * math.sin(point_angle)
         ctx.translate(px, py)
         tangent = point_angle - math.pi / 2.0
         ctx.rotate(tangent + (math.pi if is_start_arrow else 0))
         ctx.move_to(0, 0)
 
-        # Draw an asymmetric arrowhead. The inner tine is flatter.
         if is_start_arrow:
-            # Outer tine (slightly more pronounced)
             ctx.line_to(-arrow_len, -arrow_width * 0.9)
             ctx.move_to(0, 0)
-            # Inner tine (flatter)
             ctx.line_to(-arrow_len * 0.9, arrow_width * 1.2)
         else:
-            # Inner tine (flatter)
             ctx.line_to(-arrow_len * 0.9, -arrow_width * 1.2)
             ctx.move_to(0, 0)
-            # Outer tine (slightly more pronounced)
             ctx.line_to(-arrow_width, arrow_len * 0.9)
         ctx.restore()
 
@@ -112,14 +143,15 @@ def _draw_arc_handle(
 
 
 def _draw_arrow_handle(
-    ctx: cairo.Context, width: float, height: float, is_hovered: bool
+    ctx: cairo.Context,
+    width: float,
+    height: float,
+    is_hovered: bool,
+    color: Optional[ColorRGBA] = None,
 ):
     """Draws a bidirectional arrow. Uses average of width/height for size."""
     size = (width + height) / 2.0
-    if is_hovered:
-        ctx.set_source_rgba(0.3, 0.6, 0.9, 0.95)
-    else:
-        ctx.set_source_rgba(0.2, 0.5, 0.8, 0.8)
+    ctx.set_source_rgba(*_handle_colors(color, is_hovered))
 
     ctx.set_line_width(2.0)
     ctx.set_line_cap(cairo.LINE_CAP_ROUND)
@@ -252,6 +284,7 @@ def _render_handles(
     hovered_region: ElementRegion,
     base_handle_size: float,
     scale_compensation: Tuple[float, float],
+    color: Optional[ColorRGBA] = None,
 ):
     sx_abs, sy_abs = transform_to_screen.get_abs_scale()
 
@@ -281,6 +314,7 @@ def _render_handles(
                 ctx,
                 *corners_screen,
                 is_hovered=(region == hovered_region),
+                color=color,
             )
         else:  # Rotate or Shear handles
             draw_info = HANDLE_DRAW_INFO.get(region)
@@ -312,7 +346,11 @@ def _render_handles(
             ctx.translate(screen_x, screen_y)
             ctx.rotate(angle_rad)
             draw_info["draw"](
-                ctx, draw_w, draw_h, is_hovered=(region == hovered_region)
+                ctx,
+                draw_w,
+                draw_h,
+                is_hovered=(region == hovered_region),
+                color=color,
             )
             ctx.restore()
 
@@ -325,6 +363,7 @@ def render_selection_handles(
     hovered_region: ElementRegion,
     base_handle_size: float,
     with_labels: bool = False,
+    color: Optional[ColorRGBA] = None,
 ):
     """
     Renders selection handles for a target based on the current interaction
@@ -342,6 +381,7 @@ def render_selection_handles(
         hovered_region: The currently hovered region, for hover effects.
         base_handle_size: The base pixel size for the handles.
         with_labels: If True, draws debug text labels on the handles.
+        color: Optional ColorRGBA to color handles. Defaults to blue.
     """
     from .canvas import SelectionMode  # Avoid circular import at module level
 
@@ -371,6 +411,7 @@ def render_selection_handles(
             hovered_region,
             base_handle_size,
             scale_compensation,
+            color=color,
         )
 
     if with_labels:

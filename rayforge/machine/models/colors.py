@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Dict, Any, TYPE_CHECKING
 import numpy as np
 
-from ...shared.util.colors import (
+from ...core.color import (
     ColorSet,
     ColorRGBA,
     hex_to_rgba,

@@ -22,7 +22,12 @@ from ...core.workpiece import WorkPiece
 from ...machine.models.colors import OpsColorSet
 from ...machine.models.machine import Machine
 from ...pipeline.artifact import RenderContext
-from ...shared.util.colors import ColorSet
+from ...core.color import (
+    ColorRGBA,
+    ColorSet,
+    hex_to_rgba,
+    create_lut_from_color,
+)
 from ..canvas import WorldSurface, Canvas, CanvasElement
 from ..shared.gtk_color import GtkColorResolver
 from ..shared.keyboard import is_primary_modifier
@@ -189,6 +194,14 @@ class WorkSurface(WorldSurface):
         # Connect to view change signals to update pipeline view context
         self.aspect_ratio_changed.connect(self._on_aspect_ratio_changed)
 
+        # Refresh render context when doc structure changes (layer
+        # add/remove, workpiece moves between layers) so the view
+        # manager always has current layer color data.
+        self._connect_doc_structure_signals(self.doc)
+
+        # Reconnect signals when a new document is loaded.
+        self.editor.document_changed.connect(self._on_document_changed)
+
         # --- View State Management ---
         # This property holds the canonical global state for tab visibility.
         self._tabs_globally_visible: bool = True
@@ -200,6 +213,8 @@ class WorkSurface(WorldSurface):
         # Initialize pipeline view context to ensure workpiece artifacts
         # can be rendered immediately when adopted
         self._update_pipeline_view_context()
+
+        get_context().config.changed.connect(self._on_config_changed)
 
     @property
     def doc(self):
@@ -396,6 +411,26 @@ class WorkSurface(WorldSurface):
         for elem in self.find_by_type(WorkPieceElement):
             cast(WorkPieceElement, elem).clear_all_ops_caches()
         self.queue_draw()
+
+    def _on_config_changed(self, sender, **kwargs):
+        """Re-renders ops when config settings change."""
+        self._update_pipeline_view_context()
+
+    def _on_doc_structure_changed(self, sender, **kwargs):
+        """Refreshes render context when layers are added/removed."""
+        logger.debug(f"_on_doc_structure_changed fired: sender={sender}")
+        self._update_pipeline_view_context()
+
+    def _on_document_changed(self, sender, **kwargs):
+        """Reconnects doc structure signals when a new doc is loaded."""
+        doc = self.doc
+        if doc:
+            self._connect_doc_structure_signals(doc)
+        self._update_pipeline_view_context()
+
+    def _connect_doc_structure_signals(self, doc):
+        doc.descendant_added.connect(self._on_doc_structure_changed)
+        doc.descendant_removed.connect(self._on_doc_structure_changed)
 
     def _on_any_transform_begin(
         self,
@@ -807,6 +842,8 @@ class WorkSurface(WorldSurface):
 
         color_set_dict = self._get_theme_color_dict()
         laser_color_dicts = self._get_laser_color_dicts()
+        layer_color_dicts = self._get_layer_color_dicts()
+        ops_color_mode = get_context().config.ops_color_mode
 
         context = RenderContext(
             pixels_per_mm=(ppm_x, ppm_y),
@@ -814,6 +851,8 @@ class WorkSurface(WorldSurface):
             margin_px=5,
             color_set_dict=color_set_dict.to_dict(),
             laser_color_sets=laser_color_dicts,
+            layer_color_sets=layer_color_dicts,
+            ops_color_mode=ops_color_mode,
         )
 
         self.editor.view_manager.update_render_context(context)
@@ -836,6 +875,33 @@ class WorkSurface(WorldSurface):
 
         return laser_colors
 
+    def _get_layer_color_dicts(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Resolve colors for each layer in the document.
+
+        Returns a dictionary mapping layer UID to its color set dictionary.
+        """
+        doc = self.doc
+        if not doc:
+            return {}
+
+        theme_colors = self._get_theme_color_dict()
+        layer_colors: Dict[str, Dict[str, Any]] = {}
+
+        for layer in doc.layers:
+            cut_rgba = hex_to_rgba(layer.color)
+            cut_lut = create_lut_from_color(cut_rgba)
+            data = {
+                "cut": cut_lut,
+                "engrave": cut_lut,
+                "travel": theme_colors.get_rgba("travel"),
+                "zero_power": theme_colors.get_rgba("zero_power"),
+            }
+            color_set = ColorSet(_data=data)
+            layer_colors[layer.uid] = color_set.to_dict()
+
+        return layer_colors
+
     def _get_theme_color_dict(self) -> ColorSet:
         """
         Gets the current theme color set as a dictionary.
@@ -853,6 +919,16 @@ class WorkSurface(WorldSurface):
         }
 
         return color_resolver.resolve(spec_dict)
+
+    def _get_handle_color(self, elem: CanvasElement) -> Optional[ColorRGBA]:
+        """Returns the layer color for the element's selection handles."""
+        data = getattr(elem, "data", None)
+        if data is None:
+            return None
+        layer = getattr(data, "layer", None)
+        if layer is None:
+            return None
+        return hex_to_rgba(layer.color)
 
     def _create_and_add_layer_element(self, layer: "Layer"):
         """Creates a new LayerElement and adds it to the canvas root."""

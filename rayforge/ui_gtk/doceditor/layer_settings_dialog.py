@@ -1,6 +1,6 @@
 from gettext import gettext as _
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, Gdk, Gtk
 
 from ...context import get_context
 from ...core.layer import Layer
@@ -33,6 +33,26 @@ class LayerSettingsDialog(PatchedDialogWindow):
 
         content = Adw.PreferencesPage()
         main_box.append(content)
+
+        appearance_group = Adw.PreferencesGroup(
+            title=_("Appearance"),
+        )
+        content.add(appearance_group)
+
+        color_dialog = Gtk.ColorDialog()
+        color_dialog.set_with_alpha(False)
+        self.color_button = Gtk.ColorDialogButton(dialog=color_dialog)
+        rgba = Gdk.RGBA()
+        rgba.parse(layer.color)
+        self.color_button.set_rgba(rgba)
+        self.color_button.connect("notify::rgba", self._on_color_changed)
+
+        color_row = Adw.ActionRow(
+            title=_("Layer Color"),
+            subtitle=_("Color used for operations in this layer"),
+        )
+        color_row.add_suffix(self.color_button)
+        appearance_group.add(color_row)
 
         rotary_group = Adw.PreferencesGroup(
             title=_("Rotary Attachment"),
@@ -140,3 +160,13 @@ class LayerSettingsDialog(PatchedDialogWindow):
             return
         diameter = get_spinrow_float(spinrow)
         self.layer.set_rotary_diameter(diameter)
+
+    def _on_color_changed(self, button, _param):
+        if self._is_initializing:
+            return
+        rgba = button.get_rgba()
+        r = int(round(rgba.red * 255))
+        g = int(round(rgba.green * 255))
+        b = int(round(rgba.blue * 255))
+        hex_color = f"#{r:02x}{g:02x}{b:02x}"
+        self.layer.set_color(hex_color)

@@ -29,7 +29,7 @@ from rayforge.core.geo.constants import (
 from rayforge.core.geometry_provider import IGeometryProvider
 from rayforge.core.varset import VarSet
 from rayforge.image.structures import FillRenderData, FillStyle
-from rayforge.shared.util.colors import ColorRGBA
+from rayforge.core.color import ColorRGBA
 from .constraints import (
     AngleConstraint,
     AspectRatioConstraint,

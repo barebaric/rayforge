@@ -64,6 +64,25 @@ def _get_lut(
     return np.frombuffer(lut_bytes, dtype=np.float32).reshape(256, 4).copy()
 
 
+def _get_layer_lut(
+    config: RenderConfig3D,
+    layer_uid: str,
+    lut_type: str,
+) -> Optional[np.ndarray]:
+    if config.layer_color_luts is None:
+        return None
+    layer_luts = config.layer_color_luts.get(layer_uid, {})
+    lut_bytes = layer_luts.get(lut_type)
+    if lut_bytes is None:
+        if lut_type == "cut":
+            lut_bytes = config.default_color_lut_cut
+        elif lut_type == "engrave":
+            lut_bytes = config.default_color_lut_engrave
+    if lut_bytes is None:
+        return None
+    return np.frombuffer(lut_bytes, dtype=np.float32).reshape(256, 4).copy()
+
+
 def _transform_verts(verts: np.ndarray, transform: np.ndarray) -> np.ndarray:
     if verts.size == 0:
         return verts
@@ -525,6 +544,12 @@ def compile_scene(
         _default_engrave = np.zeros((256, 4), dtype=np.float32)
     current_engrave_lut: np.ndarray = _default_engrave
 
+    use_layer_colors = (
+        config.ops_color_mode == "layer"
+        if isinstance(config.ops_color_mode, str)
+        else config.ops_color_mode.value == "layer"
+    )
+
     for i, cmd in enumerate(ops.commands):
         if cancel_check is not None and cancel_check():
             raise RuntimeError("Cancelled")
@@ -547,6 +572,14 @@ def compile_scene(
             current_layer_has_scanlines = False
             current_layer_scanline_laser = ""
 
+            if use_layer_colors:
+                _cut = _get_layer_lut(config, layer_uid, "cut")
+                if _cut is not None:
+                    current_cut_lut = _cut
+                _engrave = _get_layer_lut(config, layer_uid, "engrave")
+                if _engrave is not None:
+                    current_engrave_lut = _engrave
+
         elif isinstance(cmd, LayerEndCommand):
             if current_layer_start is not None:
                 layer_infos.append(
@@ -566,18 +599,19 @@ def compile_scene(
 
         elif isinstance(cmd, SetLaserCommand):
             current_laser_uid = cmd.laser_uid
-            _cut = _get_lut(config, current_laser_uid, "cut")
-            current_cut_lut = (
-                _cut
-                if _cut is not None
-                else np.zeros((256, 4), dtype=np.float32)
-            )
-            _engrave = _get_lut(config, current_laser_uid, "engrave")
-            current_engrave_lut = (
-                _engrave
-                if _engrave is not None
-                else np.zeros((256, 4), dtype=np.float32)
-            )
+            if not use_layer_colors:
+                _cut = _get_lut(config, current_laser_uid, "cut")
+                current_cut_lut = (
+                    _cut
+                    if _cut is not None
+                    else np.zeros((256, 4), dtype=np.float32)
+                )
+                _engrave = _get_lut(config, current_laser_uid, "engrave")
+                current_engrave_lut = (
+                    _engrave
+                    if _engrave is not None
+                    else np.zeros((256, 4), dtype=np.float32)
+                )
 
         elif isinstance(cmd, SetPowerCommand):
             current_power = cmd.power

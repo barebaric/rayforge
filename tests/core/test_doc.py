@@ -793,3 +793,72 @@ def test_from_dict_legacy_layer_stock_item_uid():
     )
     assert "stock_item_uid" in layer_dict
     assert layer_dict["stock_item_uid"] == "stock-item-1"
+
+
+def test_get_laser_uid_for_step_returns_laser_uid(doc):
+    layer = doc.active_layer
+    workflow = layer.workflow
+    step = Step(typelabel="test")
+    step.selected_laser_uid = "laser-42"
+    workflow.add_step(step)
+
+    assert doc.get_laser_uid_for_step(step.uid) == "laser-42"
+
+
+def test_get_laser_uid_for_step_returns_none_when_no_laser(doc):
+    layer = doc.active_layer
+    workflow = layer.workflow
+    step = Step(typelabel="test")
+    workflow.add_step(step)
+
+    assert doc.get_laser_uid_for_step(step.uid) is None
+
+
+def test_get_laser_uid_for_step_returns_none_for_unknown_uid(doc):
+    assert doc.get_laser_uid_for_step("non-existent-uid") is None
+
+
+def test_get_laser_uid_for_step_finds_step_in_second_layer(doc):
+    layer1 = doc.layers[0]
+    layer2 = Layer("Layer 2")
+    doc.add_layer(layer2)
+
+    step1 = Step(typelabel="step1")
+    step1.selected_laser_uid = "laser-a"
+    layer1.workflow.add_step(step1)
+
+    assert layer2.workflow is not None
+    step2 = Step(typelabel="step2")
+    step2.selected_laser_uid = "laser-b"
+    layer2.workflow.add_step(step2)
+
+    assert doc.get_laser_uid_for_step(step2.uid) == "laser-b"
+
+
+def test_get_layer_uid_for_step_returns_layer_uid(doc):
+    layer = doc.active_layer
+    workflow = layer.workflow
+    step = Step(typelabel="test")
+    workflow.add_step(step)
+
+    assert doc.get_layer_uid_for_step(step.uid) == layer.uid
+
+
+def test_get_layer_uid_for_step_returns_none_for_unknown_uid(doc):
+    assert doc.get_layer_uid_for_step("non-existent-uid") is None
+
+
+def test_get_layer_uid_for_step_distinguishes_layers(doc):
+    layer1 = doc.layers[0]
+    layer2 = Layer("Layer 2")
+    doc.add_layer(layer2)
+
+    step1 = Step(typelabel="step1")
+    layer1.workflow.add_step(step1)
+
+    assert layer2.workflow is not None
+    step2 = Step(typelabel="step2")
+    layer2.workflow.add_step(step2)
+
+    assert doc.get_layer_uid_for_step(step1.uid) == layer1.uid
+    assert doc.get_layer_uid_for_step(step2.uid) == layer2.uid

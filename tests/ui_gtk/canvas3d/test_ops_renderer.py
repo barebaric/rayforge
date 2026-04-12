@@ -6,7 +6,7 @@ import pytest
 import numpy as np
 from unittest.mock import MagicMock, patch
 from rayforge.ui_gtk.sim3d.canvas3d.ops_renderer import OpsRenderer
-from rayforge.shared.util.colors import ColorSet
+from rayforge.core.color import ColorSet
 
 
 @pytest.fixture

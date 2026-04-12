@@ -3,7 +3,7 @@ from enum import Enum
 from typing import List, Tuple, Optional, Dict, TYPE_CHECKING
 from ..core.geo import Geometry, Rect
 from ..core.matrix import Matrix
-from ..shared.util.colors import ColorRGBA
+from ..core.color import ColorRGBA
 
 if TYPE_CHECKING:
     from ..core.asset import IAsset

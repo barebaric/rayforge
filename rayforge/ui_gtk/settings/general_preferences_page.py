@@ -7,7 +7,7 @@ from ...shared.units.definitions import (
     get_units_for_quantity,
     get_base_unit_for_quantity,
 )
-from ...core.config import StartupBehavior
+from ...core.config import OpsColorMode, StartupBehavior
 from ...ui_gtk.doceditor import file_dialogs
 from ...usage import get_usage_tracker
 from ..shared.preferences_page import TrackedPreferencesPage
@@ -40,6 +40,16 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         _("Open specific project"),
     ]
 
+    # Map for ops color mode options
+    OPS_COLOR_MODE_MAP = [
+        OpsColorMode.LASER.value,
+        OpsColorMode.LAYER.value,
+    ]
+    OPS_COLOR_MODE_LABELS = [
+        _("Laser Color"),
+        _("Layer Color"),
+    ]
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.set_title(_("General"))
@@ -66,6 +76,28 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
 
         self.theme_row.connect("notify::selected", self.on_theme_changed)
         app_settings_group.add(self.theme_row)
+
+        self.ops_color_mode_row = Adw.ComboRow(
+            model=Gtk.StringList.new(self.OPS_COLOR_MODE_LABELS)
+        )
+        self.ops_color_mode_row.set_title(_("Operation Colors"))
+        self.ops_color_mode_row.set_subtitle(
+            _(
+                "Choose whether operation colors represent the laser "
+                "or the layer"
+            )
+        )
+        try:
+            selected_index = [m.value for m in OpsColorMode].index(
+                config.ops_color_mode.value
+            )
+        except ValueError:
+            selected_index = 0
+        self.ops_color_mode_row.set_selected(selected_index)
+        self.ops_color_mode_row.connect(
+            "notify::selected", self.on_ops_color_mode_changed
+        )
+        app_settings_group.add(self.ops_color_mode_row)
 
         # Units Preferences
         units_group = Adw.PreferencesGroup()
@@ -284,6 +316,12 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         selected_index = combo_row.get_selected()
         theme_string = self.THEME_MAP[selected_index]
         get_context().config.set_theme(theme_string)
+
+    def on_ops_color_mode_changed(self, combo_row, _):
+        """Called when the user selects a new ops color mode."""
+        selected_index = combo_row.get_selected()
+        mode_string = self.OPS_COLOR_MODE_MAP[selected_index]
+        get_context().config.set_ops_color_mode(OpsColorMode(mode_string))
 
     def on_length_unit_changed(self, combo_row, _):
         """Called when the user selects a new length unit."""
