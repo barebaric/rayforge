@@ -46,6 +46,9 @@ css = """
     min-height: 28px;
     padding: 2px;
 }
+.layer-column-header .dim-label {
+    font-size: smaller;
+}
 .layer-workpiece-list {
     background-color: transparent;
     padding: 0;
@@ -109,6 +112,7 @@ class LayerColumn(Gtk.Box):
 
         self._connect_signals()
         self._update_style()
+        self._update_subtitle()
 
     def _build_header(self, can_delete: bool):
         self.header = Gtk.Box(
@@ -119,16 +123,30 @@ class LayerColumn(Gtk.Box):
 
         self.icon_container = Gtk.Box()
         self.icon_container.set_valign(Gtk.Align.CENTER)
+        self.icon_container.set_margin_start(3)
+        self.icon_container.set_margin_end(3)
         self.header.append(self.icon_container)
+
+        name_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        name_box.set_hexpand(True)
+        name_box.set_halign(Gtk.Align.START)
+        name_box.set_valign(Gtk.Align.CENTER)
 
         name_label = Gtk.Label()
         name_label.set_text(self.layer.name)
-        name_label.set_hexpand(True)
         name_label.set_halign(Gtk.Align.START)
-        name_label.set_valign(Gtk.Align.CENTER)
         name_label.set_ellipsize(Pango.EllipsizeMode.END)
         self.name_label = name_label
-        self.header.append(name_label)
+        name_box.append(name_label)
+
+        subtitle_label = Gtk.Label()
+        subtitle_label.set_halign(Gtk.Align.START)
+        subtitle_label.set_ellipsize(Pango.EllipsizeMode.END)
+        subtitle_label.add_css_class("dim-label")
+        self.subtitle_label = subtitle_label
+        name_box.append(subtitle_label)
+
+        self.header.append(name_box)
 
         self.settings_button = Gtk.Button(child=get_icon("settings-symbolic"))
         self.settings_button.add_css_class("flat")
@@ -260,11 +278,21 @@ class LayerColumn(Gtk.Box):
     def _update_ui(self):
         self.name_label.set_text(self.layer.name)
         self._update_icon()
+        self._update_subtitle()
         self.visibility_button.set_active(self.layer.visible)
         if self.layer.visible:
             self.visibility_button.set_child(self.visibility_on_icon)
         else:
             self.visibility_button.set_child(self.visibility_off_icon)
+
+    def _update_subtitle(self):
+        machine = get_context().machine
+        module_name = None
+        if machine and self.layer.rotary_module_uid:
+            rm = machine.get_rotary_module_by_uid(self.layer.rotary_module_uid)
+            if rm:
+                module_name = rm.name
+        self.subtitle_label.set_text(self.layer.get_subtitle(module_name))
 
     def _connect_signals(self):
         self.layer.updated.connect(self._on_layer_updated)
