@@ -51,6 +51,9 @@ def get_addon_data_dir(addon_name: str) -> Path:
 BUILTIN_ADDONS_DIR = Path(__file__).parent / "builtin_addons"
 PRIVATE_ADDONS_DIR = Path(__file__).parent / "private_addons"
 
+USER_DEVICES_DIR = CONFIG_DIR / "devices"
+BUILTIN_DEVICES_DIR = Path(__file__).parent / "resources" / "devices"
+
 # State files (like logs)
 LOG_DIR = Path(user_log_dir("rayforge"))
 logger.info(f"Log dir is {LOG_DIR}")

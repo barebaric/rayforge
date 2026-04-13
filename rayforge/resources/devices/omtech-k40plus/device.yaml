@@ -1,0 +1,25 @@
+api_version: 1
+device:
+  name: OMTech K40+
+machine:
+  driver: GrblSerialDriver
+  gcode_precision: 3
+  axis_extents:
+  - 300.0
+  - 200.0
+  work_margins:
+  - 5.0
+  - 5.0
+  - 5.0
+  - 5.0
+  origin: top_left
+  max_travel_speed: 3000
+  max_cut_speed: 18000
+  home_on_start: true
+  heads:
+  - max_power: 1000
+    frame_power_percent: 0.0
+    focus_power_percent: 0.0
+    spot_size_mm:
+    - 0.1
+    - 0.1

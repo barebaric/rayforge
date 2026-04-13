@@ -173,6 +173,9 @@ class MachineManager:
             task_mgr.add_coroutine(lambda ctx: controller.shutdown())
 
         machine.changed.disconnect(self.on_machine_changed)
+        machine.context.dialect_mgr.dialects_changed.disconnect(
+            machine._on_dialects_changed
+        )
         del self.machines[machine_id]
 
         machine_file = self.filename_from_id(machine_id)
