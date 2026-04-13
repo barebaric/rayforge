@@ -140,13 +140,9 @@ class StepBox(Gtk.Box):
         self.doc.history_manager.execute(command)
 
     def on_button_properties_clicked(self, button):
-        parent_window = self.get_root()
-        dialog = StepSettingsDialog(
-            self.editor,
-            self.step,
-            transient_for=parent_window,
+        StepSettingsDialog.present_for_step(
+            self.editor, self.step, self.get_root()
         )
-        dialog.present()
 
     def on_button_delete_clicked(self, button):
         self.delete_clicked.send(self, step=self.step)
