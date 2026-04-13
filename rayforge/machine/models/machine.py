@@ -214,7 +214,7 @@ class Machine:
         self.wcs_offsets[slot] = offset
 
     def update_wcs_offsets_batch(self, offsets: Dict[str, Point3D]):
-        self.wcs_offsets.update(offsets)
+        self.wcs_offsets = dict(offsets)
 
     @property
     def supported_wcs(self) -> List[str]:
