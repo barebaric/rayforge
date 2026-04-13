@@ -1,7 +1,9 @@
+import logging
+from pathlib import Path
 from typing import Optional
 from gettext import gettext as _
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, GLib, Gtk
 
 from ...camera.models import Camera
 from ...context import get_context
@@ -19,6 +21,8 @@ from .laser_preferences_page import LaserPreferencesPage
 from .maintenance_page import MaintenancePage
 from .rotary_module_page import RotaryModulePage
 from .nogo_zones_page import NogoZonesPage
+
+logger = logging.getLogger(__name__)
 
 
 class MachineSettingsDialog(PatchedDialogWindow):
@@ -56,6 +60,11 @@ class MachineSettingsDialog(PatchedDialogWindow):
 
         # Header bar
         header_bar = Adw.HeaderBar()
+        export_button = Gtk.Button(child=get_icon("share-symbolic"))
+        export_button.set_tooltip_text(_("Export Machine Profile"))
+        export_button.add_css_class("flat")
+        export_button.connect("clicked", self._on_export_clicked)
+        header_bar.pack_end(export_button)
         main_box.append(header_bar)
 
         # Navigation Split View for sidebar and content
@@ -188,6 +197,37 @@ class MachineSettingsDialog(PatchedDialogWindow):
                     break
         else:
             self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
+
+    def _on_export_clicked(self, button):
+        """Opens a folder chooser to export the machine as a zip."""
+        dialog = Gtk.FileDialog.new()
+        dialog.set_title(_("Export Machine Profile"))
+        dialog.select_folder(self, None, self._on_export_folder_selected)
+
+    def _on_export_folder_selected(self, dialog, result):
+        try:
+            folder = dialog.select_folder_finish(result)
+        except GLib.Error:
+            return
+        if not folder:
+            return
+        dest = Path(folder.get_path())
+        context = get_context()
+        try:
+            zip_path = context.device_profile_mgr.export_machine(
+                self.machine, dest, context.model_mgr
+            )
+            self.toast_overlay.add_toast(
+                Adw.Toast(
+                    title=_("Exported to {path}").format(path=zip_path.name),
+                    timeout=5,
+                )
+            )
+        except Exception as e:
+            logger.error(f"Export failed: {e}")
+            self.toast_overlay.add_toast(
+                Adw.Toast(title=_("Export failed: {error}").format(error=e))
+            )
 
     def _add_sidebar_row(
         self, label_text: str, icon_name: str, page_name: str
