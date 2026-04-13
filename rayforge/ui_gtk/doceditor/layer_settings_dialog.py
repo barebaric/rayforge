@@ -18,7 +18,7 @@ class LayerSettingsDialog(PatchedDialogWindow):
 
         self.set_title(_("{name} - Settings").format(name=layer.name))
         self.set_default_size(600, -1)
-        self.set_modal(True)
+        self.set_modal(False)
 
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.set_content(main_box)
