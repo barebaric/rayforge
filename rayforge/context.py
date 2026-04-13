@@ -327,11 +327,10 @@ class RayforgeContext:
     def model_mgr(self) -> "ModelManager":
         """Returns the model manager."""
         if self._model_mgr is None:
-            from .config import USER_MODELS_DIR
             from .core.model_manager import ModelManager
 
             logger.info("Lazy loading model manager")
-            self._model_mgr = ModelManager(USER_MODELS_DIR)
+            self._model_mgr = ModelManager()
             self._model_mgr.register_bundled_library()
 
             if not self._headless:
@@ -363,7 +362,7 @@ class RayforgeContext:
             self._device_pkg_mgr = DevicePackageManager(
                 [BUILTIN_DEVICES_DIR, USER_DEVICES_DIR]
             )
-            self._device_pkg_mgr.discover()
+            self._device_pkg_mgr.discover(context=self)
         return self._device_pkg_mgr
 
     @property

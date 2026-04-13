@@ -3,8 +3,9 @@ import logging
 import multiprocessing
 import uuid
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 from gettext import gettext as _
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
 import numpy as np
 from blinker import Signal
@@ -13,6 +14,7 @@ from ...camera.models.camera import Camera
 from ...context import RayforgeContext, get_context
 from ...core.geo import Point3D, Rect
 from ...core.layer import Layer
+from ...core.model import Model
 from ...core.ops import Axis, Ops
 from ...core.ops.commands import LayerStartCommand
 from ...pipeline.coordspace import MachineSpace
@@ -290,7 +292,12 @@ class Machine:
             t = h.transform.copy()
             if h.focal_distance > 0:
                 t[2, 3] += h.focal_distance
-            head_specs.append((h.model_id, t))
+            model = (
+                Model(name="", path=Path(h.model_path))
+                if h.model_path
+                else None
+            )
+            head_specs.append((model, t))
         rotary_modules_for_build: Dict[str, RotaryModule] = {}
         if rotaries:
             for r in rotaries:

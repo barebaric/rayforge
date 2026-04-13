@@ -3,7 +3,7 @@
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -13,14 +13,15 @@ class ModelLibrary:
     """
     Represents a source of 3D models.
 
-    Each library has a root ``path`` on the filesystem.  Models are
-    files within the category subdirectories of that path.
+    Each library has a root ``path`` on the filesystem.  Model files
+    (``.glb``, ``.gltf``) are discovered directly in the root
+    directory.
 
     Attributes:
-        library_id: Unique identifier (e.g. "user", "core").
+        library_id: Unique identifier (e.g. "core", "device:K40").
         display_name: Human-readable name shown in the UI.
-        path: Root directory containing category subdirectories.
-        read_only: Whether models can be added/removed.
+        path: Root directory containing model files.
+        read_only: Whether the library is read-only.
         icon_name: Icon name for the UI row.
     """
 
@@ -31,43 +32,19 @@ class ModelLibrary:
     icon_name: str = "folder-symbolic"
 
 
-@dataclass(frozen=True)
-class ModelCategory:
-    """
-    A fixed model category (e.g. machines, rotary).
-
-    Categories are defined once by the application and are the same
-    across all libraries.  Each category maps to a subdirectory name
-    inside every library root.
-
-    Attributes:
-        id: Directory name used as subdirectory (e.g. ``"machines"``).
-        display_name: Internationalized human-readable name.
-        description: Internationalized short description.
-    """
-
-    id: str
-    display_name: str
-    description: str = ""
-
-    def __str__(self) -> str:
-        return self.display_name
-
-
 @dataclass
 class Model:
     """
     A data class representing a 3D model asset in Rayforge.
 
     Models are referenced by a relative path (e.g.
-    ``Path("rotary/abc.glb")``) and resolved by the
+    ``Path("head.glb")``) and resolved by the
     ``ModelManager`` by searching registered libraries in order.
     """
 
     name: str
     path: Path
     description: str = ""
-    file_path: Optional[Path] = None
     extra: Dict[str, Any] = field(default_factory=dict)
 
     @classmethod

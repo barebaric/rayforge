@@ -1,4 +1,5 @@
 import math
+from pathlib import Path
 
 from rayforge.context import RayforgeContext
 from rayforge.core.layer import Layer
@@ -229,10 +230,10 @@ class TestAssemblyRotarySpecs:
         chucks = machine.assembly.get_links_by_role(LinkRole.CHUCK)
         assert chucks[0].driver_axis == Axis.A
 
-    def test_rotary_uses_module_model_id(self):
+    def test_rotary_uses_module_model_path(self):
         machine = _make_machine()
         module = RotaryModule()
-        module.model_id = "models/chuck.glb"
+        module.model_path = "chuck.glb"
         module.default_diameter = 25.0
         machine.add_rotary_module(module)
         layer = _make_layer(
@@ -242,7 +243,8 @@ class TestAssemblyRotarySpecs:
         )
         machine.configure_for_layer(layer)
         chucks = machine.assembly.get_links_by_role(LinkRole.CHUCK)
-        assert chucks[0].model_id == "models/chuck.glb"
+        assert chucks[0].model is not None
+        assert chucks[0].model.path == Path("chuck.glb")
 
     def test_rotary_uses_module_transform(self):
         import numpy as np

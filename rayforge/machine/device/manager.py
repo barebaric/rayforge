@@ -1,16 +1,37 @@
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    runtime_checkable,
+)
 
+from ...core.model import ModelLibrary
 from .package import DevicePackage, load as load_package, MANIFEST_FILENAME
 
+if TYPE_CHECKING:
+    from ...core.model_manager import ModelManager
+
 logger = logging.getLogger(__name__)
+
+
+@runtime_checkable
+class _HasModelManager(Protocol):
+    @property
+    def model_mgr(self) -> "ModelManager": ...
 
 
 class DevicePackageManager:
     """
     Discovers, loads, and manages device packages from one or more
     source directories.
+
+    When a device package contains a ``models/`` directory, it is
+    automatically registered as a read-only library in the
+    application's :class:`ModelManager`.
     """
 
     def __init__(
@@ -29,13 +50,20 @@ class DevicePackageManager:
         if directory not in self._source_dirs:
             self._source_dirs.append(directory)
 
-    def discover(self) -> List[DevicePackage]:
+    def discover(
+        self,
+        context: Optional[_HasModelManager] = None,
+    ) -> List[DevicePackage]:
         """
         Scan all source directories for device packages and return
         the loaded list.
 
         Packages with the same name from later source directories
         override earlier ones (user packages override built-in).
+
+        If *context* is provided, device packages that contain a
+        ``models/`` directory are registered as read-only libraries
+        in ``context.model_mgr``.
         """
         self._packages.clear()
         self._load_errors.clear()
@@ -44,6 +72,9 @@ class DevicePackageManager:
             if not source_dir.exists():
                 continue
             self._scan_directory(source_dir)
+
+        if context is not None:
+            self._register_model_libraries(context)
 
         return self.get_all()
 
@@ -83,4 +114,24 @@ class DevicePackageManager:
                 self._load_errors[key] = str(e)
                 logger.error(
                     f"Failed to load device package from {child}: {e}"
+                )
+
+    def _register_model_libraries(self, context: _HasModelManager):
+        model_mgr = context.model_mgr
+        for pkg in self._packages.values():
+            if pkg.source_dir is None:
+                continue
+            models_dir = pkg.source_dir / "models"
+            if not models_dir.is_dir():
+                continue
+            lib_id = f"device:{pkg.name}"
+            lib = ModelLibrary(
+                library_id=lib_id,
+                display_name=pkg.name,
+                path=models_dir,
+                read_only=True,
+            )
+            if model_mgr.add_library(lib):
+                logger.debug(
+                    f"Registered model library for device: {pkg.name}"
                 )
