@@ -71,6 +71,11 @@ jobs:
             echo "Found latest version to update: $VERSION_NAME"
           fi
           echo "version=$VERSION_NAME" >> $GITHUB_OUTPUT
+          if [[ "$VERSION_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Configure SSH
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.repository == 'barebaric/rayforge'
@@ -89,4 +94,5 @@ jobs:
           DEPLOY_REPO_URL: git@github.com:barebaric/rayforge-website.git
           DEPLOY_BRANCH: main
           IS_TAGGED_RELEASE: ${{ github.ref_type == 'tag' }}
+          IS_PRERELEASE: ${{ steps.get_version.outputs.is_prerelease }}
         run: pixi run -e website site-deploy

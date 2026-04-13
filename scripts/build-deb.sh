@@ -19,6 +19,7 @@ else
     UPSTREAM_VERSION_RAW=$(git describe --tags --always --long | sed -e 's/^v//' -e 's/\([^-]*\)-\([0-9]*\)-g\([0-9a-f]*\)/\1~dev\2~\3/')
 fi
 UPSTREAM_VERSION="${UPSTREAM_VERSION_RAW#v}"
+UPSTREAM_VERSION="${UPSTREAM_VERSION/-/\~}"
 echo "Detected upstream version: ${UPSTREAM_VERSION}"
 
 # --- 2. Vendor Dependencies: Pre-download wheels ---

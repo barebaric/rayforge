@@ -74,14 +74,27 @@ jobs:
           sudo snap install ${{ steps.build.outputs.snap }} --dangerous
           rayforge --help
 
-      - name: Publish to Snapcraft
+      - name: Determine release channel
+        id: release_info
         if: |
           github.repository == 'barebaric/rayforge' &&
           github.event_name == 'push' &&
           (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "channel=edge" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref_name }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            echo "channel=beta,edge" >> "$GITHUB_OUTPUT"
+          else
+            echo "channel=stable,edge" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to Snapcraft
+        if: steps.release_info.outputs.channel != ''
         uses: snapcore/action-publish@v1
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
         with:
           snap: ${{ steps.build.outputs.snap }}
-          release: ${{ startsWith(github.ref, 'refs/tags/') && 'stable,edge' || 'edge' }}
+          release: ${{ steps.release_info.outputs.channel }}
