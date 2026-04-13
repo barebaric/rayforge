@@ -233,8 +233,17 @@ class Canvas3D(Gtk.GLArea):
         not busy, the document has settled and the scene should be updated.
         """
         if not is_processing and self._current_job_handle is not None:
-            logger.debug("Pipeline has settled. Updating 3D scene.")
-            self.update_scene_from_doc()
+            if self.has_stale_job():
+                logger.debug(
+                    "Pipeline settled with stale job. Clearing 3D scene."
+                )
+                self._current_job_handle = None
+                self._compiled_artifact = None
+                self._artifact_gl_dirty = True
+                self.queue_render()
+            else:
+                logger.debug("Pipeline has settled. Updating 3D scene.")
+                self.update_scene_from_doc()
 
     def _on_job_generation_finished(self, sender, **kwargs):
         task_status = kwargs.get("task_status")
@@ -243,10 +252,19 @@ class Canvas3D(Gtk.GLArea):
             f"[CANVAS3D] _on_job_generation_finished: "
             f"status={task_status}, handle={'yes' if handle else 'none'}"
         )
-        if task_status == "completed" and handle is not None:
-            self._current_job_handle = handle
-            self.update_scene_from_doc()
-            self.queue_render()
+        if task_status == "completed":
+            if handle is not None:
+                self._current_job_handle = handle
+                self.update_scene_from_doc()
+                self.queue_render()
+            else:
+                logger.debug(
+                    "[CANVAS3D] Job completed with no output. Clearing scene."
+                )
+                self._current_job_handle = None
+                self._compiled_artifact = None
+                self._artifact_gl_dirty = True
+                self.queue_render()
 
     def _on_style_changed(self, widget, gparam):
         """Marks theme resources as dirty when the GTK theme changes."""

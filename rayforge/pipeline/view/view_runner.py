@@ -219,7 +219,15 @@ def make_workpiece_view_artifact_in_subprocess(
     shm = None
     try:
         logger.debug("Worker: Opening shared memory for rendering...")
-        shm = shared_memory.SharedMemory(name=view_handle.shm_name)
+        try:
+            shm = shared_memory.SharedMemory(name=view_handle.shm_name)
+        except FileNotFoundError:
+            logger.debug(
+                "Worker: View SHM '%s' already released, "
+                "workpiece likely deleted. Aborting.",
+                view_handle.shm_name,
+            )
+            return None
         shm_bitmap = np.ndarray(
             shape=(height_px, width_px, 4),
             dtype=np.uint8,

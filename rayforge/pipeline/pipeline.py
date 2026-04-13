@@ -1274,6 +1274,9 @@ class Pipeline:
                 "Job is empty."
             )
             when_done(None, None)
+            self.job_generation_finished.send(
+                self, handle=None, task_status="completed"
+            )
             return
 
         all_deps_ready = True
