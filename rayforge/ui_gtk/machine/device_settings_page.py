@@ -160,6 +160,9 @@ class DeviceSettingsPage(TrackedPreferencesPage):
 
     def _on_machine_config_changed(self, sender, **kwargs):
         logger.debug("_on_machine_config_changed: Rebuilding UI.")
+        if self.machine.id not in get_context().machine_mgr.machines:
+            logger.debug("_on_machine_config_changed: Machine removed.")
+            return
         self._not_connected_warning_dismissed = False
         for widget in self._varset_widgets:
             self.remove(widget)
@@ -198,6 +201,9 @@ class DeviceSettingsPage(TrackedPreferencesPage):
 
     def _update_ui_state(self):
         logger.debug(f"_update_ui_state: Starting (is_busy={self._is_busy}).")
+        if self.machine.id not in get_context().machine_mgr.machines:
+            logger.debug("_update_ui_state: Machine removed, skipping.")
+            return
         is_supported = self.machine.driver.supports_settings
         is_connected = self.machine.is_connected()
         is_running = self.machine.device_state.status == DeviceStatus.RUN
