@@ -5,9 +5,12 @@ from gettext import gettext as _
 
 from gi.repository import Adw, Gtk
 
+from rayforge.ui_gtk.shared.octoprint_auth_flow_row import OctoprintAuthFlowRow
+
 from ...core.varset import (
     BaudrateVar,
     BoolVar,
+    OctoprintAuthFlowVar,
     ChoiceVar,
     FloatVar,
     HostnameVar,
@@ -60,6 +63,7 @@ class VarRowFactory:
             FloatVar: self._create_float_row,
             IntVar: self._create_integer_row,
             BoolVar: self._create_boolean_row,
+            OctoprintAuthFlowVar: self._create_octoprint_auth_flow_row,
         }
 
     def create_row_for_var(
@@ -129,6 +133,11 @@ class VarRowFactory:
         row.add_suffix(switch)
         row.set_activatable_widget(switch)
         return row
+
+    def _create_octoprint_auth_flow_row(
+        self, var: OctoprintAuthFlowVar, target_property: str
+    ):
+        return OctoprintAuthFlowRow(var)
 
     def _create_integer_row(self, var: Var, target_property: str):
         # Use getattr to safely handle generic Vars that don't have min/max

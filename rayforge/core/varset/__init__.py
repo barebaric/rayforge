@@ -1,5 +1,6 @@
 from .baudratevar import BaudrateVar
 from .boolvar import BoolVar
+from .octoprintauthflowvar import OctoprintAuthFlowVar
 from .choicevar import ChoiceVar
 from .floatvar import FloatVar, SliderFloatVar
 from .hostnamevar import HostnameVar
@@ -14,6 +15,7 @@ from .varset import VarSet
 __all__ = [
     "BaudrateVar",
     "BoolVar",
+    "OctoprintAuthFlowVar",
     "ChoiceVar",
     "FloatVar",
     "HostnameVar",

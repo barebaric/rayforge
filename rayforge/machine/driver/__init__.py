@@ -5,6 +5,7 @@ from .dummy import NoDeviceDriver
 from .grbl import GrblNetworkDriver
 from .grbl_serial import GrblSerialDriver
 from .smoothie import SmoothieDriver
+from .octoprint import OctoprintDriver
 
 
 def isdriver(obj):
@@ -35,4 +36,5 @@ __all__ = [
     "GrblNetworkDriver",
     "GrblSerialDriver",
     "SmoothieDriver",
+    "OctoprintDriver",
 ]
