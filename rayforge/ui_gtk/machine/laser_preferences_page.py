@@ -742,7 +742,7 @@ class LaserPreferencesPage(TrackedPreferencesPage):
     def _update_model_subtitle(self, laser: Laser):
         if laser.model_path:
             model_mgr = get_context().model_mgr
-            model = Model(name="", path=Path(laser.model_path))
+            model = Model.from_path(Path(laser.model_path))
             resolved = model_mgr.resolve(model)
             if resolved:
                 self.model_row.set_subtitle(resolved.stem)
@@ -778,7 +778,7 @@ class LaserPreferencesPage(TrackedPreferencesPage):
 
     def _apply_model_scale(self, laser: Laser, model_path: str):
         resolved = get_context().model_mgr.resolve(
-            Model(name="", path=Path(model_path))
+            Model.from_path(Path(model_path))
         )
         if resolved is None:
             return

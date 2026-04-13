@@ -43,6 +43,7 @@ def _extract_zip_to(
     dest_dir: Path,
     prefix: str,
 ):
+    resolved_dest = dest_dir.resolve()
     for name in zf.namelist():
         if name.endswith("/"):
             continue
@@ -54,7 +55,11 @@ def _extract_zip_to(
             relative = name
         if not relative:
             continue
-        dest_file = dest_dir / relative
+        dest_file = (dest_dir / relative).resolve()
+        try:
+            dest_file.relative_to(resolved_dest)
+        except ValueError:
+            raise ValueError(f"Zip entry '{name}' escapes target directory")
         dest_file.parent.mkdir(parents=True, exist_ok=True)
         with zf.open(name) as src, open(dest_file, "wb") as dst:
             shutil.copyfileobj(src, dst)
@@ -146,7 +151,8 @@ class DeviceProfileManager:
 
         Validates that the zip contains a ``device.yaml`` with a
         compatible ``api_version``, then extracts to the install
-        directory.
+        directory.  Uses a temporary directory so a failed extraction
+        never leaves corrupted state.
         """
         if not zip_path.exists():
             raise FileNotFoundError(f"Zip file not found: {zip_path}")
@@ -163,14 +169,18 @@ class DeviceProfileManager:
             meta = parse_meta(data, zip_path)
             dest_dir = self._install_dir / _safe_filename(meta.name)
 
-            if dest_dir.exists():
-                shutil.rmtree(dest_dir)
-            dest_dir.mkdir(parents=True, exist_ok=True)
-
             prefix = str(Path(manifest_name).parent)
             if prefix == ".":
                 prefix = ""
-            _extract_zip_to(zf, dest_dir, prefix)
+
+            with tempfile.TemporaryDirectory() as tmp:
+                tmp_dir = Path(tmp) / "staging"
+                tmp_dir.mkdir()
+                _extract_zip_to(zf, tmp_dir, prefix)
+
+                if dest_dir.exists():
+                    shutil.rmtree(dest_dir)
+                shutil.move(str(tmp_dir), str(dest_dir))
 
         return self.load_profile(dest_dir)
 
@@ -179,6 +189,8 @@ class DeviceProfileManager:
         Zip a device profile directory.
 
         Returns the path to the created ``.rfdevice.zip`` file.
+        The zip is written to a temporary file first and then
+        atomically renamed to avoid partial writes.
         """
         if profile.source_dir is None:
             raise ValueError("Profile has no source directory")
@@ -186,11 +198,17 @@ class DeviceProfileManager:
         dest.mkdir(parents=True, exist_ok=True)
         zip_path = dest / f"{_safe_filename(profile.name)}.rfdevice.zip"
 
-        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-            for file_path in sorted(profile.source_dir.rglob("*")):
-                if file_path.is_file():
-                    arcname = file_path.relative_to(profile.source_dir)
-                    zf.write(file_path, arcname)
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_zip = Path(tmp) / "output.zip"
+            with zipfile.ZipFile(tmp_zip, "w", zipfile.ZIP_DEFLATED) as zf:
+                for file_path in sorted(profile.source_dir.rglob("*")):
+                    if file_path.is_file():
+                        arcname = file_path.relative_to(profile.source_dir)
+                        zf.write(file_path, arcname)
+
+            if zip_path.exists():
+                zip_path.unlink()
+            shutil.move(str(tmp_zip), str(zip_path))
 
         return zip_path
 
@@ -205,6 +223,8 @@ class DeviceProfileManager:
 
         Creates a temporary device profile directory from the
         machine's current configuration, zips it, and cleans up.
+        The zip is written to a temporary file first and then
+        atomically renamed to avoid partial writes.
         """
         safe = _safe_filename(machine.name)
         dest.mkdir(parents=True, exist_ok=True)
@@ -214,11 +234,16 @@ class DeviceProfileManager:
             pkg_dir = Path(tmp) / safe
             export_machine_to_dir(machine, pkg_dir, model_mgr)
 
-            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            tmp_zip = Path(tmp) / "output.zip"
+            with zipfile.ZipFile(tmp_zip, "w", zipfile.ZIP_DEFLATED) as zf:
                 for file_path in sorted(pkg_dir.rglob("*")):
                     if file_path.is_file():
                         arcname = file_path.relative_to(pkg_dir)
                         zf.write(file_path, arcname)
+
+            if zip_path.exists():
+                zip_path.unlink()
+            shutil.move(str(tmp_zip), str(zip_path))
 
         return zip_path
 

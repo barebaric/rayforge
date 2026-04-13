@@ -1,14 +1,15 @@
 import logging
 from gettext import gettext as _
-from pathlib import Path
+from typing import Optional
 
 from blinker import Signal
-from gi.repository import Adw, Gio, GLib, Gtk
+from gi.repository import Adw, Gtk
 
 from ..icons import get_icon
 from ..shared.gtk import apply_css
 from ...context import get_context
 from ...machine.device.profile import DeviceProfile
+from .profile_importer import open_profile_zip
 
 logger = logging.getLogger(__name__)
 
@@ -96,41 +97,14 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
         self.close()
 
     def _on_import_clicked(self, button):
-        filter_list = Gio.ListStore.new(Gtk.FileFilter)
-        zip_filter = Gtk.FileFilter()
-        zip_filter.set_name(_("Device Profile archives"))
-        zip_filter.add_pattern("*.rfdevice.zip")
-        filter_list.append(zip_filter)
+        open_profile_zip(self, self._on_import_result)
 
-        all_filter = Gtk.FileFilter()
-        all_filter.set_name(_("All files"))
-        all_filter.add_pattern("*")
-        filter_list.append(all_filter)
-
-        dialog = Gtk.FileDialog.new()
-        dialog.set_title(_("Import Device Profile"))
-        dialog.set_filters(filter_list)
-        dialog.set_default_filter(zip_filter)
-        dialog.open(self, None, self._on_import_file_selected)
-
-    def _on_import_file_selected(self, dialog, result):
-        try:
-            file = dialog.open_finish(result)
-        except GLib.Error:
+    def _on_import_result(
+        self, profile: Optional[DeviceProfile], error: Optional[str]
+    ):
+        if error is not None:
+            self._show_import_error(error)
             return
-        if not file:
-            return
-
-        context = get_context()
-        try:
-            profile = context.device_profile_mgr.install_from_zip(
-                Path(file.get_path())
-            )
-        except Exception as e:
-            logger.error(f"Import failed: {e}")
-            self._show_import_error(str(e))
-            return
-
         self.profile_selected.send(self, profile=profile)
         self.close()
 

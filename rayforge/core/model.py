@@ -48,6 +48,11 @@ class Model:
     extra: Dict[str, Any] = field(default_factory=dict)
 
     @classmethod
+    def from_path(cls, path: Path) -> "Model":
+        """Create a Model from a path, deriving the name from the stem."""
+        return cls(name=path.stem, path=path)
+
+    @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Model":
         """
         Create a Model instance from a dictionary.

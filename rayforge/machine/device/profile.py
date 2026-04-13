@@ -182,7 +182,7 @@ def _copy_model_ref(
     mp = data.get("model_path")
     if not mp:
         return
-    resolved = model_mgr.resolve(Model(name="", path=Path(mp)))
+    resolved = model_mgr.resolve(Model.from_path(Path(mp)))
     if resolved is None or not resolved.is_file():
         return
     models_dir.mkdir(parents=True, exist_ok=True)

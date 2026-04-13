@@ -17,10 +17,6 @@ from ....core.varset import VarSet, Var, TextAreaVar, BoolVar
 
 logger = logging.getLogger(__name__)
 
-_TEMPLATE_META_FIELDS = frozenset(
-    {"label", "description", "uid", "is_custom", "parent_uid", "extra"}
-)
-
 
 @dataclass
 class GcodeDialect:
@@ -29,8 +25,8 @@ class GcodeDialect:
     specific hardware dialect (e.g., GRBL, Marlin, Smoothieware).
     """
 
-    label: str
-    description: str
+    label: str = field(metadata={"template_meta": True})
+    description: str = field(metadata={"template_meta": True})
 
     laser_on: str
     laser_off: str
@@ -64,10 +60,17 @@ class GcodeDialect:
     continuous_laser_mode: bool = False
     modal_feedrate: bool = False
 
-    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
-    is_custom: bool = False
-    parent_uid: Optional[str] = None
-    extra: Dict[str, Any] = field(default_factory=dict)
+    uid: str = field(
+        default_factory=lambda: str(uuid.uuid4()),
+        metadata={"template_meta": True},
+    )
+    is_custom: bool = field(default=False, metadata={"template_meta": True})
+    parent_uid: Optional[str] = field(
+        default=None, metadata={"template_meta": True}
+    )
+    extra: Dict[str, Any] = field(
+        default_factory=dict, metadata={"template_meta": True}
+    )
 
     def get_editor_varsets(self) -> Dict[str, VarSet]:
         """
@@ -256,14 +259,24 @@ class GcodeDialect:
         instance.extra = extra
         return instance
 
+    @staticmethod
+    def _template_meta_fields() -> frozenset:
+        """Meta fields excluded from template serialization."""
+        return frozenset(
+            f.name
+            for f in fields(GcodeDialect)
+            if f.metadata.get("template_meta")
+        )
+
     @classmethod
     def _template_field_sets(
         cls,
     ) -> tuple[frozenset, frozenset, frozenset]:
+        meta = cls._template_meta_fields()
         required = set()
         optional = set()
         for f in fields(cls):
-            if f.name in _TEMPLATE_META_FIELDS:
+            if f.name in meta:
                 continue
             if f.default is not MISSING:
                 optional.add(f.name)
@@ -279,12 +292,13 @@ class GcodeDialect:
         """
         Serialize template fields for device profile export.
 
-        Excludes meta fields like ``uid``, ``label``,
-        ``is_custom``, etc.
+        Excludes meta fields (marked with ``template_meta`` metadata)
+        like ``uid``, ``label``, ``is_custom``, etc.
         """
+        meta = self._template_meta_fields()
         result: Dict[str, Any] = {}
         for f in fields(self):
-            if f.name not in _TEMPLATE_META_FIELDS:
+            if f.name not in meta:
                 result[f.name] = getattr(self, f.name)
         return result
 
@@ -324,7 +338,9 @@ class GcodeDialect:
         then constructs with only valid field names.
         """
         filtered = {
-            k: v for k, v in data.items() if k not in _TEMPLATE_META_FIELDS
+            k: v
+            for k, v in data.items()
+            if k not in cls._template_meta_fields()
         }
         filtered.update(overrides)
         valid = {f.name for f in fields(cls)}
