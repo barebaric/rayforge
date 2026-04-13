@@ -313,7 +313,20 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge'
     permissions:
       contents: write
+    outputs:
+      is_prerelease: ${{ steps.release_info.outputs.is_prerelease }}
     steps:
+      - name: Determine release type
+        id: release_info
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Download Intel app artifact
         uses: actions/download-artifact@v4
         with:
@@ -343,7 +356,7 @@ jobs:
             rayforge-${{ needs.version.outputs.version }}-macos-universal-app.zip
             rayforge-${{ needs.version.outputs.version }}-macos-universal.dmg
           draft: false
-          prerelease: false
+          prerelease: ${{ steps.release_info.outputs.is_prerelease }}
           name: Release ${{ needs.version.outputs.version }}
           tag_name: ${{ github.ref_name }}
         env:

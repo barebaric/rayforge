@@ -18,6 +18,10 @@ if [ -z "$IS_TAGGED_RELEASE" ]; then
   echo "Error: IS_TAGGED_RELEASE environment variable is not set."
   exit 1
 fi
+if [ -z "$IS_PRERELEASE" ]; then
+  echo "Error: IS_PRERELEASE environment variable is not set."
+  exit 1
+fi
 
 # Use absolute paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,6 +32,7 @@ WEBSITE_SRC_DIR="${PROJECT_ROOT}/website"
 
 echo "Starting website deployment for version: ${DEPLOY_VERSION}"
 echo "Tagged release: ${IS_TAGGED_RELEASE}"
+echo "Pre-release: ${IS_PRERELEASE}"
 echo "Project root: ${PROJECT_ROOT}"
 echo "Build directory: ${BUILD_DIR}"
 echo "Deploy directory: ${DEPLOY_DIR}"
@@ -50,7 +55,7 @@ npm install
 # Strip the 'v' prefix from version for download links (e.g., v1.0.2 -> 1.0.2)
 RAYFORGE_VERSION="${DEPLOY_VERSION#v}"
 echo "Building static site with version: ${RAYFORGE_VERSION}"
-RAYFORGE_VERSION="${RAYFORGE_VERSION}" npm run build
+RAYFORGE_VERSION="${RAYFORGE_VERSION}" IS_PRERELEASE="${IS_PRERELEASE}" npm run build
 
 # Verify build output
 echo "Build output:"

@@ -8,6 +8,7 @@ function rayforgeVersionPlugin() {
         plugins: [
           new webpack.DefinePlugin({
             RAYFORGE_VERSION: JSON.stringify(process.env.RAYFORGE_VERSION || '0.0.0'),
+            IS_PRERELEASE: JSON.stringify(process.env.IS_PRERELEASE || 'false'),
           }),
         ],
       };
@@ -28,6 +29,7 @@ module.exports = {
 
   customFields: {
     latestVersion: process.env.RAYFORGE_VERSION || '0.0.0',
+    isPrerelease: process.env.IS_PRERELEASE === 'true',
   },
 
   i18n: {
