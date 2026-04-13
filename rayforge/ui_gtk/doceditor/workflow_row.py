@@ -357,13 +357,9 @@ class WorkflowRow(Gtk.Box):
 
     def _make_step_clicked_handler(self, step):
         def handler(button):
-            parent_window = self.get_root()
-            dialog = StepSettingsDialog(
-                self.editor,
-                step,
-                transient_for=parent_window,
+            StepSettingsDialog.present_for_step(
+                self.editor, step, self.get_root()
             )
-            dialog.present()
 
         return handler
 
@@ -395,13 +391,9 @@ class WorkflowRow(Gtk.Box):
                 name=_("Add step '{name}'").format(name=new_step.name),
             )
             workflow.doc.history_manager.execute(command)
-            parent_window = self.get_root()
-            dialog = StepSettingsDialog(
-                self.editor,
-                new_step,
-                transient_for=parent_window,
+            StepSettingsDialog.present_for_step(
+                self.editor, new_step, self.get_root()
             )
-            dialog.present()
 
     def do_destroy(self):
         self._disconnect_machine()

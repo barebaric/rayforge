@@ -158,13 +158,9 @@ class WorkflowView(ExpanderWithButton):
             self.workflow.doc.history_manager.execute(command)
 
             # Open the step settings dialog for the new step
-            parent_window = self.get_root()
-            dialog = StepSettingsDialog(
-                self.editor,
-                new_step,
-                transient_for=parent_window,
+            StepSettingsDialog.present_for_step(
+                self.editor, new_step, self.get_root()
             )
-            dialog.present()
 
     def on_button_delete_clicked(self, sender, step, **kwargs):
         """Handles deletion of a step with an undoable command."""

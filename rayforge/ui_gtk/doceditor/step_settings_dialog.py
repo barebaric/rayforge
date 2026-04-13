@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from gettext import gettext as _
 
 from blinker import Signal
@@ -537,6 +537,8 @@ class PostProcessingSettingsView(TrackedPreferencesPage):
 
 
 class StepSettingsDialog(PatchedDialogWindow):
+    _open_dialogs: Dict[int, "StepSettingsDialog"] = {}
+
     def __init__(
         self,
         editor: "DocEditor",
@@ -623,6 +625,28 @@ class StepSettingsDialog(PatchedDialogWindow):
         # Default to step-settings page
         self.btn_step_settings.set_active(True)
         self.general_view._sync_widgets_to_model()
+
+    @classmethod
+    def present_for_step(
+        cls,
+        editor: "DocEditor",
+        step: Step,
+        parent_window: Optional[Gtk.Root],
+    ) -> "StepSettingsDialog":
+        existing = cls._open_dialogs.get(id(step))
+        if existing:
+            existing.present()
+            return existing
+        dialog = cls(editor, step, transient_for=parent_window)
+        cls._open_dialogs[id(step)] = dialog
+        dialog.connect("close-request", cls._on_dialog_closed)
+        dialog.present()
+        return dialog
+
+    @classmethod
+    def _on_dialog_closed(cls, dialog: "StepSettingsDialog", *_) -> bool:
+        cls._open_dialogs.pop(id(dialog.step), None)
+        return False
 
     def set_initial_page(self, page: str):
         """Set the initial visible page after dialog construction."""
