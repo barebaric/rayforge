@@ -2,7 +2,8 @@ from gettext import gettext as _
 from blinker import Signal
 from gi.repository import Adw, Gtk
 from ..shared.gtk import apply_css
-from ...machine.models.profile import MachineProfile, PROFILES
+from ...context import get_context
+from ...machine.device.package import DevicePackage
 
 
 css = """
@@ -22,11 +23,11 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
     profile_selected = Signal()
 
     class _ProfileRow(Adw.ActionRow):
-        """A custom row to hold a reference to its machine profile."""
+        """A custom row to hold a reference to its device package."""
 
-        def __init__(self, profile: MachineProfile, **kwargs):
+        def __init__(self, package: DevicePackage, **kwargs):
             super().__init__(**kwargs)
-            self.profile: MachineProfile = profile
+            self.package: DevicePackage = package
 
     def __init__(self, **kwargs):
         """Initializes the Machine Profile Selector dialog."""
@@ -66,14 +67,14 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
         self.set_default_response("cancel")
 
     def _populate_profile_list(self):
-        """Fills the list box with available machine profiles."""
-        sorted_profiles = sorted(PROFILES, key=lambda p: p.name.lower())
+        """Fills the list box with available device packages."""
+        packages = get_context().device_pkg_mgr.get_all()
 
-        for profile in sorted_profiles:
+        for pkg in packages:
             row = self._ProfileRow(
-                profile=profile,
-                title=profile.name,
-                subtitle=getattr(profile, "description", ""),
+                package=pkg,
+                title=pkg.name,
+                subtitle=pkg.meta.description,
                 activatable=True,
             )
             self.profile_list_box.append(row)
@@ -82,5 +83,5 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
         """
         Handles row activation, emits the signal, and closes the dialog.
         """
-        self.profile_selected.send(self, profile=row.profile)
+        self.profile_selected.send(self, package=row.package)
         self.close()

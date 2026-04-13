@@ -1,0 +1,6 @@
+api_version: 1
+device:
+  name: Grbl MKS DLC32
+machine:
+  driver: GrblSerialDriver
+  origin: bottom_left
