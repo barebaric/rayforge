@@ -360,7 +360,8 @@ class RayforgeContext:
 
             logger.info("Lazy loading device package manager")
             self._device_pkg_mgr = DevicePackageManager(
-                [BUILTIN_DEVICES_DIR, USER_DEVICES_DIR]
+                [BUILTIN_DEVICES_DIR, USER_DEVICES_DIR],
+                install_dir=USER_DEVICES_DIR,
             )
             self._device_pkg_mgr.discover(context=self)
         return self._device_pkg_mgr

@@ -1,9 +1,25 @@
 from __future__ import annotations
+
+import logging
 import uuid
-from dataclasses import dataclass, field, asdict, replace
+from dataclasses import (
+    dataclass,
+    field,
+    asdict,
+    fields,
+    MISSING,
+    replace,
+)
 from typing import List, Dict, Optional, Any
 from gettext import gettext as _
+
 from ....core.varset import VarSet, Var, TextAreaVar, BoolVar
+
+logger = logging.getLogger(__name__)
+
+_TEMPLATE_META_FIELDS = frozenset(
+    {"label", "description", "uid", "is_custom", "parent_uid", "extra"}
+)
 
 
 @dataclass
@@ -239,3 +255,77 @@ class GcodeDialect:
         instance = cls(**filtered_data)
         instance.extra = extra
         return instance
+
+    @classmethod
+    def _template_field_sets(
+        cls,
+    ) -> tuple[frozenset, frozenset, frozenset]:
+        required = set()
+        optional = set()
+        for f in fields(cls):
+            if f.name in _TEMPLATE_META_FIELDS:
+                continue
+            if f.default is not MISSING:
+                optional.add(f.name)
+            else:
+                required.add(f.name)
+        return (
+            frozenset(required),
+            frozenset(optional),
+            frozenset(required | optional),
+        )
+
+    def to_template_dict(self) -> Dict[str, Any]:
+        """
+        Serialize template fields for device package export.
+
+        Excludes meta fields like ``uid``, ``label``,
+        ``is_custom``, etc.
+        """
+        result: Dict[str, Any] = {}
+        for f in fields(self):
+            if f.name not in _TEMPLATE_META_FIELDS:
+                result[f.name] = getattr(self, f.name)
+        return result
+
+    @classmethod
+    def validate_template_dict(
+        cls,
+        data: Dict[str, Any],
+        source: str = "",
+    ):
+        """
+        Validate that *data* contains all required template fields.
+
+        Raises :class:`ValueError` on missing required fields.
+        Logs warnings for unknown keys.
+        """
+        if not isinstance(data, dict):
+            raise ValueError(f"Invalid dialect data: {source}")
+        required, _, all_fields = cls._template_field_sets()
+        missing = required - set(data.keys())
+        if missing:
+            raise ValueError(
+                f"Missing required dialect fields in {source}: "
+                f"{sorted(missing)}"
+            )
+        for key in data:
+            if key not in all_fields:
+                logger.warning(f"Unknown dialect field '{key}' in {source}")
+
+    @classmethod
+    def from_template_dict(
+        cls, data: Dict[str, Any], **overrides
+    ) -> "GcodeDialect":
+        """
+        Create a dialect from a device package template dict.
+
+        Filters out meta fields from *data*, applies *overrides*,
+        then constructs with only valid field names.
+        """
+        filtered = {
+            k: v for k, v in data.items() if k not in _TEMPLATE_META_FIELDS
+        }
+        filtered.update(overrides)
+        valid = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in filtered.items() if k in valid})

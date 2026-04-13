@@ -3,11 +3,21 @@ from pathlib import Path
 
 from rayforge.core.model import Model, ModelLibrary
 from rayforge.core.model_manager import ModelManager
+from rayforge.context import RayforgeContext
 
 
 @pytest.fixture
 def model_mgr():
     return ModelManager()
+
+
+class _FakeContext(RayforgeContext):
+    def __init__(self, model_mgr):
+        self._fake_model_mgr = model_mgr
+
+    @property
+    def model_mgr(self) -> ModelManager:
+        return self._fake_model_mgr
 
 
 class TestModel:
@@ -500,8 +510,3 @@ def _write_full_dialect(path):
             f,
             sort_keys=False,
         )
-
-
-class _FakeContext:
-    def __init__(self, model_mgr):
-        self.model_mgr = model_mgr
