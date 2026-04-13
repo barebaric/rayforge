@@ -8,7 +8,7 @@ from typing import Optional, List, Dict
 from gi.repository import Gtk, Adw
 
 from ...context import get_context
-from ...core.model import Model, ModelCategory
+from ...core.model import Model
 from ..icons import get_icon
 from ..sim3d.canvas3d import initialized as canvas3d_initialized
 
@@ -19,19 +19,17 @@ class ModelSelectionDialog(Adw.MessageDialog):
     """A picker dialog that lists models from ModelManager libraries.
 
     Shows a 3D preview via ModelPreviewWidget when a model is selected.
-    Returns the selected model_id string (or None on cancel).
+    Returns the selected model_path string (or None on cancel).
     """
 
     def __init__(
         self,
-        category: Optional[ModelCategory] = None,
-        current_model_id: Optional[str] = None,
+        current_model_path: Optional[str] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self._category = category
-        self._current_model_id = current_model_id
-        self._selected_model_id: Optional[str] = None
+        self._current_model_path = current_model_path
+        self._selected_model_path: Optional[str] = None
         self._row_paths: Dict[Adw.ActionRow, str] = {}
         self._setup_ui()
 
@@ -46,14 +44,7 @@ class ModelSelectionDialog(Adw.MessageDialog):
         self._preview_box.set_size_request(512, 288)
 
         model_mgr = get_context().model_mgr
-        category = self._category
-        if category is None:
-            categories = model_mgr.get_categories()
-            category = categories[0] if categories else None
-
-        models: List[Model] = []
-        if category:
-            models = model_mgr.get_all_models(category)
+        models: List[Model] = model_mgr.get_all_models()
 
         scrolled = Gtk.ScrolledWindow(
             min_content_height=200,
@@ -78,9 +69,9 @@ class ModelSelectionDialog(Adw.MessageDialog):
             row.add_prefix(get_icon("image-x-generic-symbolic"))
             self._list_box.append(row)
 
-        if self._current_model_id:
+        if self._current_model_path:
             for row, path in self._row_paths.items():
-                if path == self._current_model_id:
+                if path == self._current_model_path:
                     self._list_box.select_row(row)
                     break
         else:
@@ -104,15 +95,15 @@ class ModelSelectionDialog(Adw.MessageDialog):
             self._preview_box.remove(child)
 
         if row is None:
-            self._selected_model_id = None
+            self._selected_model_path = None
             return
 
         model_path = self._row_paths.get(row)
         if model_path is None:
-            self._selected_model_id = None
+            self._selected_model_path = None
             return
 
-        self._selected_model_id = model_path
+        self._selected_model_path = model_path
 
         if not canvas3d_initialized:
             return
@@ -131,5 +122,5 @@ class ModelSelectionDialog(Adw.MessageDialog):
         preview.set_hexpand(True)
         self._preview_box.append(preview)
 
-    def get_selected_model_id(self) -> Optional[str]:
-        return self._selected_model_id
+    def get_selected_model_path(self) -> Optional[str]:
+        return self._selected_model_path

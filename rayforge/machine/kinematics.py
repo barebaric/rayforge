@@ -1,8 +1,10 @@
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from pathlib import Path
 
 import numpy as np
 
 from ..core.geo import Point3D
+from ..core.model import Model
 from ..core.ops.axis import Axis
 from .assembly import Assembly, JointType, Link, LinkRole
 from .models.axis import AxisSet
@@ -10,7 +12,8 @@ from .models.axis import AxisSet
 if TYPE_CHECKING:
     from ..simulator.machine_state import MachineState
 
-HeadSpec = Tuple[Optional[str], np.ndarray]
+RotarySpec = Tuple[Axis, float, np.ndarray, Optional[Model]]
+HeadSpec = Tuple[Optional[Model], np.ndarray]
 
 
 def _axis_direction(axis_letter: Axis) -> Tuple[float, float, float]:
@@ -61,7 +64,7 @@ def build_assembly(
         )
         parent = name
 
-    for i, (model_id, transform) in enumerate(head_specs):
+    for i, (model, transform) in enumerate(head_specs):
         links.append(
             Link(
                 f"head_{i}",
@@ -70,7 +73,7 @@ def build_assembly(
                 joint_axis=(0.0, 0.0, 1.0),
                 driver_axis=Axis.Z,
                 role=LinkRole.HEAD,
-                model_id=model_id,
+                model=model,
                 model_transform=transform.copy(),
             )
         )
@@ -114,7 +117,11 @@ def build_assembly(
                 joint_axis=(1.0, 0.0, 0.0),
                 driver_axis=axis_config.letter,
                 role=LinkRole.CHUCK,
-                model_id=module.model_id if module else None,
+                model=(
+                    Model(name="", path=Path(module.model_path))
+                    if module and module.model_path
+                    else None
+                ),
             )
         )
 
@@ -148,7 +155,11 @@ def build_assembly(
                 joint_axis=joint_ax,
                 driver_axis=Axis.Y,
                 role=LinkRole.CHUCK,
-                model_id=module.model_id,
+                model=(
+                    Model(name="", path=Path(module.model_path))
+                    if module.model_path
+                    else None
+                ),
             )
         )
         rotary_modules_list.append(module)

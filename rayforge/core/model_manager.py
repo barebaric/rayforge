@@ -2,7 +2,6 @@
 
 import importlib.resources
 import logging
-import shutil
 from gettext import gettext as _
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -10,66 +9,31 @@ from typing import Dict, List, Optional
 from blinker import Signal
 
 from ..addon_mgr.addon_manager import AddonRegistry
-from .model import Model, ModelCategory, ModelLibrary
+from .model import Model, ModelLibrary
 
 logger = logging.getLogger(__name__)
 
 VALID_MODEL_EXTENSIONS = {".glb", ".gltf"}
 
-CATEGORIES: List[ModelCategory] = [
-    ModelCategory(
-        id="machines",
-        display_name=_("Machines"),
-        description=_("Complete machine models."),
-    ),
-    ModelCategory(
-        id="rotary",
-        display_name=_("Rotary"),
-        description=_("Rotary and workholding models."),
-    ),
-    ModelCategory(
-        id="heads",
-        display_name=_("Laser Heads"),
-        description=_("Laser head models."),
-    ),
-]
-
 
 class ModelManager(AddonRegistry):
     """
-    Application-wide manager for 3D model assets.
+    Application-wide read-only resolver for 3D model assets.
 
     Maintains an ordered collection of :class:`ModelLibrary`
     instances.  When resolving a model path the libraries are
     searched in registration order, so earlier libraries take
     precedence.
 
-    The ``user`` library is always registered first and points to the
-    user-writable directory.  Additional libraries (bundled resources,
-    addon-contributed) are registered via :meth:`add_library` or
-    :meth:`register_bundled_library`.
+    Libraries are registered by the core bundled resources,
+    device packages, and addons.  There is no user-writable
+    library — models travel with device packages.
     """
 
-    def __init__(self, user_dir: Path):
-        self.user_dir = user_dir
-        self.user_dir.mkdir(parents=True, exist_ok=True)
+    def __init__(self):
         self.changed = Signal()
         self._libraries: Dict[str, ModelLibrary] = {}
         self._library_addons: Dict[str, Optional[str]] = {}
-        self.add_library(
-            ModelLibrary(
-                library_id="user",
-                display_name=_("User"),
-                path=self.user_dir,
-                read_only=False,
-                icon_name="home-symbolic",
-            )
-        )
-
-    @staticmethod
-    def get_categories() -> List[ModelCategory]:
-        """Return the fixed list of model categories."""
-        return list(CATEGORIES)
 
     def get_libraries(self) -> List[ModelLibrary]:
         """Return all registered libraries in registration order."""
@@ -169,9 +133,7 @@ class ModelManager(AddonRegistry):
         Resolve a Model to an absolute filesystem path.
 
         Searches registered libraries in order.  Absolute paths are
-        returned directly if the file exists.  Falls back to
-        ``importlib.resources`` for backward compatibility with
-        paths that carry a ``models/`` prefix.
+        returned directly if the file exists.
         """
         path = model.path
 
@@ -183,55 +145,19 @@ class ModelManager(AddonRegistry):
             if full.is_file():
                 return full
 
-        return self._resolve_bundled(path)
+        return None
 
-    def get_user_models(self, subdir: Path = Path("")) -> List[Model]:
+    def get_models(self, library: ModelLibrary) -> List[Model]:
         """
-        List user models in the given subdirectory.
-
-        Args:
-            subdir: Subdirectory under the user models dir to list.
-
-        Returns:
-            List of Model instances for each file found.
-        """
-        user_lib = self._libraries.get("user")
-        if user_lib is None:
-            return []
-        target = user_lib.path / subdir
-        if not target.is_dir():
-            return []
-        files = sorted(
-            p
-            for p in target.iterdir()
-            if p.is_file()
-            and not p.name.startswith(".")
-            and p.suffix.lower() in VALID_MODEL_EXTENSIONS
-        )
-        return [
-            Model(
-                name=f.stem,
-                path=f.relative_to(user_lib.path),
-                file_path=f,
-            )
-            for f in files
-        ]
-
-    def get_models(
-        self, library: ModelLibrary, category: ModelCategory
-    ) -> List[Model]:
-        """
-        List models for *category* inside *library*.
+        List model files directly in the library root directory.
 
         Args:
             library: The ModelLibrary to query.
-            category: The ModelCategory to list models for.
 
         Returns:
             Sorted list of Model instances.
         """
-        subdir = Path(category.id)
-        target = library.path / subdir
+        target = library.path
         if not target.is_dir():
             return []
         files = sorted(
@@ -244,20 +170,16 @@ class ModelManager(AddonRegistry):
         return [
             Model(
                 name=f.stem,
-                path=subdir / f.name,
-                file_path=f,
+                path=Path(f.name),
             )
             for f in files
         ]
 
-    def get_all_models(self, category: ModelCategory) -> List[Model]:
+    def get_all_models(self) -> List[Model]:
         """
-        List all models for a category across all libraries.
+        List all models across all libraries.
 
-        Deduplicates by filename -- earlier libraries take precedence.
-
-        Args:
-            category: The ModelCategory to list models for.
+        Deduplicates by filename — earlier libraries take precedence.
 
         Returns:
             Sorted list of Model instances.
@@ -265,60 +187,12 @@ class ModelManager(AddonRegistry):
         seen_filenames: set = set()
         combined: List[Model] = []
         for lib in self._libraries.values():
-            models = self.get_models(lib, category)
+            models = self.get_models(lib)
             for m in models:
                 if m.path.name not in seen_filenames:
                     combined.append(m)
                     seen_filenames.add(m.path.name)
         return sorted(combined, key=lambda m: m.name)
-
-    def is_user_model(self, model: Model) -> bool:
-        """Return True if the model lives in the user dir."""
-        if model.file_path is None:
-            return False
-        try:
-            model.file_path.relative_to(self.user_dir)
-            return True
-        except ValueError:
-            return False
-
-    def add_model(self, src: Path, model: Model) -> Model:
-        """
-        Copy a model file into the user models directory.
-
-        Args:
-            src: Source file path to copy.
-            model: Model instance whose ``path`` field is used as
-                the relative destination under user_dir.
-
-        Returns:
-            A new Model instance with ``file_path`` set.
-        """
-        dest = self.user_dir / model.path
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dest)
-        self.changed.send(self)
-        return Model(
-            name=model.name,
-            path=model.path,
-            description=model.description,
-            file_path=dest,
-            extra=model.extra,
-        )
-
-    def remove_model(self, model: Model) -> bool:
-        """
-        Remove a model file from the user models directory.
-
-        Returns:
-            True if removed, False otherwise.
-        """
-        target = self.user_dir / model.path
-        if not target.is_file():
-            return False
-        target.unlink()
-        self.changed.send(self)
-        return True
 
     def _get_bundled_path(self) -> Optional[Path]:
         try:
@@ -331,25 +205,5 @@ class ModelManager(AddonRegistry):
             pass
         return None
 
-    def _resolve_bundled(self, relative_path: Path) -> Optional[Path]:
-        parts = relative_path.parts
-        if parts and parts[0] == "models":
-            resource_subpath = Path(*parts[1:])
-        else:
-            resource_subpath = relative_path
-
-        try:
-            from rayforge.resources import models as resource_models
-
-            resource_file = importlib.resources.files(
-                resource_models
-            ).joinpath(*resource_subpath.parts)
-            if resource_file.is_file():
-                return Path(str(resource_file))
-        except (FileNotFoundError, TypeError, ModuleNotFoundError):
-            pass
-
-        return None
-
     def __str__(self) -> str:
-        return f"ModelManager(user_dir={self.user_dir})"
+        return f"ModelManager(libraries={len(self._libraries)})"

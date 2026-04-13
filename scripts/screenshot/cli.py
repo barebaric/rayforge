@@ -19,8 +19,6 @@ TARGETS = {
     "app-settings:general": "app_settings_general",
     "app-settings:machines": "app_settings_machines",
     "app-settings:materials": "app_settings_materials",
-    "app-settings:models:libraries": "app_settings_models",
-    "app-settings:models:detail": "app_settings_models",
     "app-settings:recipes": "app_settings_recipes",
     "app-settings:addons": "app_settings_addons",
     "app-settings:ai": "app_settings_ai",

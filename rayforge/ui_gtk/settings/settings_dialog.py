@@ -9,7 +9,6 @@ from .general_preferences_page import GeneralPreferencesPage
 from .license_settings_page import LicenseSettingsPage
 from .machine_settings_page import MachineSettingsPage
 from .material_manager_page import MaterialManagerPage
-from .model_manager_page import ModelManagerPage
 from .recipe_manager_page import RecipeManagerPage
 
 
@@ -23,11 +22,10 @@ class SettingsWindow(PatchedDialogWindow):
         "general": 0,
         "machines": 1,
         "materials": 2,
-        "models": 3,
-        "recipes": 4,
-        "ai": 5,
-        "addons": 6,
-        "licenses": 7,
+        "recipes": 3,
+        "ai": 4,
+        "addons": 5,
+        "licenses": 6,
     }
 
     def __init__(self, initial_page: str = "general", **kwargs):
@@ -67,7 +65,6 @@ class SettingsWindow(PatchedDialogWindow):
         self._add_page(GeneralPreferencesPage)
         self._add_page(MachineSettingsPage)
         self._add_page(MaterialManagerPage)
-        self._add_page(ModelManagerPage)
         self._add_page(RecipeManagerPage)
         self._add_page(AISettingsPage)
         self._add_page(AddonManagerPage)

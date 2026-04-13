@@ -34,7 +34,7 @@ class RotaryModule:
         self.roller_diameter: float = 0.0
         self.reverse_axis: bool = False
         self.axis_position: np.ndarray = np.zeros(3, dtype=np.float64)
-        self.model_id: Optional[str] = None
+        self.model_path: Optional[str] = None
         self.transform: np.ndarray = np.eye(4, dtype=np.float64)
         self.changed = Signal()
         self.extra: Dict[str, Any] = {}
@@ -155,10 +155,10 @@ class RotaryModule:
         self.axis_position = new
         self.changed.send(self)
 
-    def set_model_id(self, model_id: Optional[str]):
-        if self.model_id == model_id:
+    def set_model_path(self, model_path: Optional[str]):
+        if self.model_path == model_path:
             return
-        self.model_id = model_id
+        self.model_path = model_path
         self.changed.send(self)
 
     def get_collision_bbox(self) -> Optional[Rect3D]:
@@ -173,7 +173,7 @@ class RotaryModule:
             "default_diameter": self.default_diameter,
             "max_workpiece_length": self.max_workpiece_length,
             "rotary_type": self.rotary_type.value,
-            "model_id": self.model_id,
+            "model_path": self.model_path,
             "transform": self.transform.flatten().tolist(),
         }
         if self.mu_per_rotation > 0:
@@ -201,7 +201,7 @@ class RotaryModule:
             "roller_diameter",
             "reverse_axis",
             "axis_position",
-            "model_id",
+            "model_path",
             "transform",
             "x",
             "y",
@@ -210,7 +210,6 @@ class RotaryModule:
             "chuck_diameter",
             "tailstock_diameter",
             "max_height",
-            "model_path",
             "viz_mode",
             "viz_scale",
             "viz_rotation",
@@ -235,11 +234,7 @@ class RotaryModule:
             raw_ap = [0.0, 0.0, 0.0]
         rm.axis_position = np.array(raw_ap, dtype=np.float64)
 
-        rm.model_id = data.get("model_id")
-        if rm.model_id is None and "model_path" in data:
-            raw_model_path = data["model_path"]
-            if raw_model_path:
-                rm.model_id = raw_model_path
+        rm.model_path = data.get("model_path")
 
         raw_transform = data.get("transform")
         if raw_transform is not None:
