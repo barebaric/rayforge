@@ -18,6 +18,7 @@ from ..structures import ParsingResult, LayerGeometry, VectorizationResult
 from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
 from .renderer import SVG_RENDERER
 from .svg_base import SvgImporterBase
+from .svgutil import trim_svg
 from ..engine import NormalizationEngine
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,9 @@ class SvgTraceImporter(SvgImporterBase):
     def __init__(self, data: bytes, source_file: Optional[Any] = None):
         super().__init__(data, source_file)
         self.traced_artefacts: Dict[str, Any] = {}
+
+    def _analytical_trim(self, data: bytes) -> bytes:
+        return trim_svg(data)
 
     def parse(self) -> Optional[ParsingResult]:
         # 1. Use base class to get dimensions and units
