@@ -1,9 +1,13 @@
-from .package import DeviceMeta, DevicePackage, load
+from .package import (
+    DeviceMeta,
+    DevicePackage,
+    export_machine_to_dir,
+)
 from .manager import DevicePackageManager
 
 __all__ = [
     "DeviceMeta",
     "DevicePackage",
     "DevicePackageManager",
-    "load",
+    "export_machine_to_dir",
 ]

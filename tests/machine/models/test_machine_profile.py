@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from rayforge.core.doc import Doc
 from rayforge.core.ops import Ops
 from rayforge.machine.models.machine import Machine
-from rayforge.machine.device.package import load
+from rayforge.machine.device.package import DevicePackage
 from rayforge.config import BUILTIN_DEVICES_DIR
 from rayforge.shared import tasker
 
@@ -18,7 +18,7 @@ async def carvera_air_machine(
     context_initializer: "RayforgeContext",
 ) -> "Machine":
     """Provides a Machine instance configured from the Carvera Air device."""
-    pkg = load(BUILTIN_DEVICES_DIR / "carvera-air")
+    pkg = DevicePackage.from_path(BUILTIN_DEVICES_DIR / "carvera-air")
     machine = pkg.create_machine(context_initializer)
     tasker.task_mgr.wait_until_settled(5000)
     return machine
@@ -143,7 +143,7 @@ async def test_builtin_devices_all_load():
     """All bundled device packages can be loaded."""
     for d in sorted(BUILTIN_DEVICES_DIR.iterdir()):
         if d.is_dir():
-            pkg = load(d)
+            pkg = DevicePackage.from_path(d)
             assert pkg.name
             assert pkg.dialect_config
 
@@ -153,6 +153,6 @@ async def test_device_without_rotary_modules(
     context_initializer: "RayforgeContext",
 ):
     """Devices without rotary_modules create machines with none."""
-    pkg = load(BUILTIN_DEVICES_DIR / "sculpfun-icube")
+    pkg = DevicePackage.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube")
     machine = pkg.create_machine(context_initializer)
     assert machine.rotary_modules == {}
