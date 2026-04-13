@@ -1,13 +1,13 @@
-from .package import (
+from .profile import (
     DeviceMeta,
-    DevicePackage,
+    DeviceProfile,
     export_machine_to_dir,
 )
-from .manager import DevicePackageManager
+from .manager import DeviceProfileManager
 
 __all__ = [
     "DeviceMeta",
-    "DevicePackage",
-    "DevicePackageManager",
+    "DeviceProfile",
+    "DeviceProfileManager",
     "export_machine_to_dir",
 ]

@@ -277,7 +277,7 @@ class GcodeDialect:
 
     def to_template_dict(self) -> Dict[str, Any]:
         """
-        Serialize template fields for device package export.
+        Serialize template fields for device profile export.
 
         Excludes meta fields like ``uid``, ``label``,
         ``is_custom``, etc.
@@ -318,7 +318,7 @@ class GcodeDialect:
         cls, data: Dict[str, Any], **overrides
     ) -> "GcodeDialect":
         """
-        Create a dialect from a device package template dict.
+        Create a dialect from a device profile template dict.
 
         Filters out meta fields from *data*, applies *overrides*,
         then constructs with only valid field names.

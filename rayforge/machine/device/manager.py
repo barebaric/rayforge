@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 from ...core.model import ModelLibrary
-from .package import (
-    DevicePackage,
+from .profile import (
+    DeviceProfile,
     export_machine_to_dir,
     parse_meta,
     MANIFEST_FILENAME,
@@ -60,12 +60,12 @@ def _extract_zip_to(
             shutil.copyfileobj(src, dst)
 
 
-class DevicePackageManager:
+class DeviceProfileManager:
     """
-    Discovers, loads, and manages device packages from one or more
+    Discovers, loads, and manages device profiles from one or more
     source directories.
 
-    When a device package contains a ``models/`` directory, it is
+    When a device profile contains a ``models/`` directory, it is
     automatically registered as a read-only library in the
     application's :class:`ModelManager`.
     """
@@ -77,7 +77,7 @@ class DevicePackageManager:
     ):
         self._source_dirs: List[Path] = source_dirs or []
         self._install_dir: Optional[Path] = install_dir
-        self._packages: Dict[str, DevicePackage] = {}
+        self._profiles: Dict[str, DeviceProfile] = {}
         self._load_errors: Dict[str, str] = {}
 
     @property
@@ -95,19 +95,19 @@ class DevicePackageManager:
     def discover(
         self,
         context: Optional["RayforgeContext"] = None,
-    ) -> List[DevicePackage]:
+    ) -> List[DeviceProfile]:
         """
-        Scan all source directories for device packages and return
+        Scan all source directories for device profiles and return
         the loaded list.
 
-        Packages with the same name from later source directories
-        override earlier ones (user packages override built-in).
+        Profiles with the same name from later source directories
+        override earlier ones (user profiles override built-in).
 
-        If *context* is provided, device packages that contain a
+        If *context* is provided, device profiles that contain a
         ``models/`` directory are registered as read-only libraries
         in ``context.model_mgr``.
         """
-        self._packages.clear()
+        self._profiles.clear()
         self._load_errors.clear()
 
         for source_dir in self._source_dirs:
@@ -120,29 +120,29 @@ class DevicePackageManager:
 
         return self.get_all()
 
-    def get_all(self) -> List[DevicePackage]:
-        return sorted(self._packages.values(), key=lambda p: p.name.lower())
+    def get_all(self) -> List[DeviceProfile]:
+        return sorted(self._profiles.values(), key=lambda p: p.name.lower())
 
-    def get(self, name: str) -> Optional[DevicePackage]:
-        return self._packages.get(name)
+    def get(self, name: str) -> Optional[DeviceProfile]:
+        return self._profiles.get(name)
 
     def get_load_errors(self) -> Dict[str, str]:
         return dict(self._load_errors)
 
-    def load_package(self, path: Path) -> DevicePackage:
+    def load_profile(self, path: Path) -> DeviceProfile:
         """
-        Load a single device package from the given directory.
+        Load a single device profile from the given directory.
 
-        Also registers it in the internal package map, replacing any
-        existing package with the same name.
+        Also registers it in the internal profile map, replacing any
+        existing profile with the same name.
         """
-        pkg = DevicePackage.from_path(path)
-        self._packages[pkg.name] = pkg
+        pkg = DeviceProfile.from_path(path)
+        self._profiles[pkg.name] = pkg
         return pkg
 
-    def install_from_zip(self, zip_path: Path) -> DevicePackage:
+    def install_from_zip(self, zip_path: Path) -> DeviceProfile:
         """
-        Install a device package from a ``.zip`` file.
+        Install a device profile from a ``.zip`` file.
 
         Validates that the zip contains a ``device.yaml`` with a
         compatible ``api_version``, then extracts to the install
@@ -172,24 +172,24 @@ class DevicePackageManager:
                 prefix = ""
             _extract_zip_to(zf, dest_dir, prefix)
 
-        return self.load_package(dest_dir)
+        return self.load_profile(dest_dir)
 
-    def export_to_zip(self, package: DevicePackage, dest: Path) -> Path:
+    def export_to_zip(self, profile: DeviceProfile, dest: Path) -> Path:
         """
-        Zip a device package directory.
+        Zip a device profile directory.
 
         Returns the path to the created ``.rfdevice.zip`` file.
         """
-        if package.source_dir is None:
-            raise ValueError("Package has no source directory")
+        if profile.source_dir is None:
+            raise ValueError("Profile has no source directory")
 
         dest.mkdir(parents=True, exist_ok=True)
-        zip_path = dest / f"{_safe_filename(package.name)}.rfdevice.zip"
+        zip_path = dest / f"{_safe_filename(profile.name)}.rfdevice.zip"
 
         with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-            for file_path in sorted(package.source_dir.rglob("*")):
+            for file_path in sorted(profile.source_dir.rglob("*")):
                 if file_path.is_file():
-                    arcname = file_path.relative_to(package.source_dir)
+                    arcname = file_path.relative_to(profile.source_dir)
                     zf.write(file_path, arcname)
 
         return zip_path
@@ -203,7 +203,7 @@ class DevicePackageManager:
         """
         Export a :class:`Machine` as a shareable ``.rfdevice.zip``.
 
-        Creates a temporary device package directory from the
+        Creates a temporary device profile directory from the
         machine's current configuration, zips it, and cleans up.
         """
         safe = _safe_filename(machine.name)
@@ -230,19 +230,19 @@ class DevicePackageManager:
             if not manifest.exists():
                 continue
             try:
-                pkg = DevicePackage.from_path(child)
-                self._packages[pkg.name] = pkg
-                logger.debug(f"Loaded device package: {pkg.name} from {child}")
+                pkg = DeviceProfile.from_path(child)
+                self._profiles[pkg.name] = pkg
+                logger.debug(f"Loaded device profile: {pkg.name} from {child}")
             except Exception as e:
                 key = str(child)
                 self._load_errors[key] = str(e)
                 logger.error(
-                    f"Failed to load device package from {child}: {e}"
+                    f"Failed to load device profile from {child}: {e}"
                 )
 
     def _register_model_libraries(self, context: "RayforgeContext"):
         model_mgr = context.model_mgr
-        for pkg in self._packages.values():
+        for pkg in self._profiles.values():
             if pkg.source_dir is None:
                 continue
             models_dir = pkg.source_dir / "models"

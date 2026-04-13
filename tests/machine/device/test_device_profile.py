@@ -4,15 +4,15 @@ from pathlib import Path
 
 import yaml
 
-from rayforge.machine.device.package import (
-    DevicePackage,
+from rayforge.machine.device.profile import (
+    DeviceProfile,
     export_machine_to_dir,
     CURRENT_API_VERSION,
     DIALECT_FILENAME,
     MANIFEST_FILENAME,
 )
 from rayforge.machine.models.machine import Origin
-from rayforge.machine.device.manager import DevicePackageManager
+from rayforge.machine.device.manager import DeviceProfileManager
 
 
 def _write_yaml(path: Path, data: dict):
@@ -79,12 +79,12 @@ def _make_device(
     return device_dir
 
 
-class TestDevicePackageLoad:
+class TestDeviceProfileLoad:
     def test_load_minimal(self, tmp_path):
         device_dir = _make_device(tmp_path)
-        pkg = DevicePackage.from_path(device_dir)
+        pkg = DeviceProfile.from_path(device_dir)
 
-        assert isinstance(pkg, DevicePackage)
+        assert isinstance(pkg, DeviceProfile)
         assert pkg.meta.name == "Test Device"
         assert pkg.meta.api_version == CURRENT_API_VERSION
         assert pkg.machine_config.driver == "GrblSerialDriver"
@@ -118,7 +118,7 @@ class TestDevicePackageLoad:
         )
         _write_grbl_dialect(device_dir)
 
-        pkg = DevicePackage.from_path(device_dir)
+        pkg = DeviceProfile.from_path(device_dir)
         assert pkg.meta.vendor == "OMTech"
         assert pkg.meta.model == "K40-40W"
         assert pkg.meta.description == "40W CO2 laser"
@@ -135,12 +135,12 @@ class TestDevicePackageLoad:
                 "laser_off": "M5",
             },
         )
-        pkg = DevicePackage.from_path(device_dir)
+        pkg = DeviceProfile.from_path(device_dir)
         assert pkg.dialect_config["laser_on"] == "M3 S{power:.0f}"
 
     def test_missing_manifest_raises(self, tmp_path):
         with pytest.raises(FileNotFoundError, match="not found"):
-            DevicePackage.from_path(tmp_path / "nonexistent")
+            DeviceProfile.from_path(tmp_path / "nonexistent")
 
     def test_missing_name_raises(self, tmp_path):
         device_dir = tmp_path / "no-name"
@@ -154,7 +154,7 @@ class TestDevicePackageLoad:
         )
         _write_grbl_dialect(device_dir)
         with pytest.raises(ValueError, match="Missing 'device.name'"):
-            DevicePackage.from_path(device_dir)
+            DeviceProfile.from_path(device_dir)
 
     def test_unsupported_api_version_raises(self, tmp_path):
         device_dir = tmp_path / "bad-version"
@@ -168,7 +168,7 @@ class TestDevicePackageLoad:
         )
         _write_grbl_dialect(device_dir)
         with pytest.raises(ValueError, match="Unsupported api_version"):
-            DevicePackage.from_path(device_dir)
+            DeviceProfile.from_path(device_dir)
 
     def test_missing_dialect_file_raises(self, tmp_path):
         device_dir = tmp_path / "no-dialect"
@@ -181,7 +181,7 @@ class TestDevicePackageLoad:
             },
         )
         with pytest.raises(FileNotFoundError, match="not found"):
-            DevicePackage.from_path(device_dir)
+            DeviceProfile.from_path(device_dir)
 
     def test_missing_dialect_fields_raises(self, tmp_path):
         device_dir = tmp_path / "partial-dialect"
@@ -198,7 +198,7 @@ class TestDevicePackageLoad:
             {"laser_on": "M4 S{power:.0f}"},
         )
         with pytest.raises(ValueError, match="Missing required dialect"):
-            DevicePackage.from_path(device_dir)
+            DeviceProfile.from_path(device_dir)
 
     def test_invalid_origin_raises(self, tmp_path):
         device_dir = _make_device(
@@ -208,7 +208,7 @@ class TestDevicePackageLoad:
             machine_extra={"origin": "middle_center"},
         )
         with pytest.raises(ValueError, match="Invalid origin"):
-            DevicePackage.from_path(device_dir)
+            DeviceProfile.from_path(device_dir)
 
     def test_invalid_axis_extents_raises(self, tmp_path):
         device_dir = _make_device(
@@ -218,7 +218,7 @@ class TestDevicePackageLoad:
             machine_extra={"axis_extents": [300]},
         )
         with pytest.raises(ValueError, match="axis_extents"):
-            DevicePackage.from_path(device_dir)
+            DeviceProfile.from_path(device_dir)
 
     def test_invalid_work_margins_raises(self, tmp_path):
         device_dir = _make_device(
@@ -228,14 +228,14 @@ class TestDevicePackageLoad:
             machine_extra={"work_margins": [5, 5]},
         )
         with pytest.raises(ValueError, match="work_margins"):
-            DevicePackage.from_path(device_dir)
+            DeviceProfile.from_path(device_dir)
 
     def test_non_mapping_manifest_raises(self, tmp_path):
         device_dir = tmp_path / "bad-manifest"
         device_dir.mkdir(parents=True)
         (device_dir / "device.yaml").write_text("just a string")
         with pytest.raises(ValueError, match="not a mapping"):
-            DevicePackage.from_path(device_dir)
+            DeviceProfile.from_path(device_dir)
 
     def test_non_mapping_machine_section_raises(self, tmp_path):
         device_dir = tmp_path / "bad-machine"
@@ -249,7 +249,7 @@ class TestDevicePackageLoad:
         )
         _write_grbl_dialect(device_dir)
         with pytest.raises(ValueError, match="Invalid 'machine'"):
-            DevicePackage.from_path(device_dir)
+            DeviceProfile.from_path(device_dir)
 
     def test_load_with_heads(self, tmp_path):
         device_dir = _make_device(
@@ -266,7 +266,7 @@ class TestDevicePackageLoad:
                 ],
             },
         )
-        pkg = DevicePackage.from_path(device_dir)
+        pkg = DeviceProfile.from_path(device_dir)
         assert pkg.machine_config.heads is not None
         assert len(pkg.machine_config.heads) == 1
         assert pkg.machine_config.heads[0]["max_power"] == 1000
@@ -285,25 +285,25 @@ class TestDevicePackageLoad:
                 ],
             },
         )
-        pkg = DevicePackage.from_path(device_dir)
+        pkg = DeviceProfile.from_path(device_dir)
         assert pkg.machine_config.hookmacros is not None
         assert len(pkg.machine_config.hookmacros) == 1
 
 
-class TestDevicePackageManager:
+class TestDeviceProfileManager:
     def test_discover_empty_dir(self, tmp_path):
-        mgr = DevicePackageManager([tmp_path / "empty"])
-        packages = mgr.discover()
-        assert packages == []
+        mgr = DeviceProfileManager([tmp_path / "empty"])
+        profiles = mgr.discover()
+        assert profiles == []
 
-    def test_discover_single_package(self, tmp_path):
+    def test_discover_single_profile(self, tmp_path):
         _make_device(tmp_path, name="Device A")
-        mgr = DevicePackageManager([tmp_path])
-        packages = mgr.discover()
-        assert len(packages) == 1
-        assert packages[0].name == "Device A"
+        mgr = DeviceProfileManager([tmp_path])
+        profiles = mgr.discover()
+        assert len(profiles) == 1
+        assert profiles[0].name == "Device A"
 
-    def test_discover_multiple_packages(self, tmp_path):
+    def test_discover_multiple_profiles(self, tmp_path):
         _make_device(tmp_path, name="Device A", subdir="dev-a")
         _make_device(
             tmp_path,
@@ -311,10 +311,10 @@ class TestDevicePackageManager:
             subdir="dev-b",
             machine_extra={"driver": "GrblNetworkDriver"},
         )
-        mgr = DevicePackageManager([tmp_path])
-        packages = mgr.discover()
-        assert len(packages) == 2
-        names = {p.name for p in packages}
+        mgr = DeviceProfileManager([tmp_path])
+        profiles = mgr.discover()
+        assert len(profiles) == 2
+        names = {p.name for p in profiles}
         assert names == {"Device A", "Device B"}
 
     def test_user_overrides_builtin(self, tmp_path):
@@ -328,43 +328,43 @@ class TestDevicePackageManager:
             machine_extra={"driver": "GrblNetworkDriver"},
         )
 
-        mgr = DevicePackageManager([builtin, user])
-        packages = mgr.discover()
-        assert len(packages) == 1
-        assert packages[0].machine_config.driver == "GrblNetworkDriver"
+        mgr = DeviceProfileManager([builtin, user])
+        profiles = mgr.discover()
+        assert len(profiles) == 1
+        assert profiles[0].machine_config.driver == "GrblNetworkDriver"
 
     def test_get_by_name(self, tmp_path):
         _make_device(tmp_path, name="FindMe")
-        mgr = DevicePackageManager([tmp_path])
+        mgr = DeviceProfileManager([tmp_path])
         mgr.discover()
         pkg = mgr.get("FindMe")
         assert pkg is not None
         assert pkg.name == "FindMe"
 
     def test_get_missing_returns_none(self, tmp_path):
-        mgr = DevicePackageManager([tmp_path])
+        mgr = DeviceProfileManager([tmp_path])
         mgr.discover()
         assert mgr.get("NonExistent") is None
 
-    def test_load_errors_on_bad_package(self, tmp_path):
-        bad_dir = tmp_path / "bad-pkg"
+    def test_load_errors_on_bad_profile(self, tmp_path):
+        bad_dir = tmp_path / "bad-profile"
         bad_dir.mkdir()
         (bad_dir / "device.yaml").write_text("not a dict")
 
-        mgr = DevicePackageManager([tmp_path])
+        mgr = DeviceProfileManager([tmp_path])
         mgr.discover()
         errors = mgr.get_load_errors()
         assert len(errors) == 1
 
-    def test_load_package_directly(self, tmp_path):
+    def test_load_profile_directly(self, tmp_path):
         device_dir = _make_device(tmp_path, name="Direct")
-        mgr = DevicePackageManager()
-        pkg = mgr.load_package(device_dir)
+        mgr = DeviceProfileManager()
+        pkg = mgr.load_profile(device_dir)
         assert pkg.name == "Direct"
         assert mgr.get("Direct") is pkg
 
     def test_add_source_dir(self, tmp_path):
-        mgr = DevicePackageManager()
+        mgr = DeviceProfileManager()
         mgr.add_source_dir(tmp_path)
         mgr.add_source_dir(tmp_path)
         assert len(mgr.source_dirs) == 1
@@ -372,29 +372,29 @@ class TestDevicePackageManager:
     def test_sorted_alphabetically(self, tmp_path):
         _make_device(tmp_path, name="Zebra Device", subdir="z-device")
         _make_device(tmp_path, name="Alpha Device", subdir="a-device")
-        mgr = DevicePackageManager([tmp_path])
-        packages = mgr.discover()
-        assert packages[0].name == "Alpha Device"
-        assert packages[1].name == "Zebra Device"
+        mgr = DeviceProfileManager([tmp_path])
+        profiles = mgr.discover()
+        assert profiles[0].name == "Alpha Device"
+        assert profiles[1].name == "Zebra Device"
 
     def test_skip_non_directory_entries(self, tmp_path):
         (tmp_path / "readme.txt").write_text("not a device")
         _make_device(tmp_path, name="Valid Device")
-        mgr = DevicePackageManager([tmp_path])
-        packages = mgr.discover()
-        assert len(packages) == 1
+        mgr = DeviceProfileManager([tmp_path])
+        profiles = mgr.discover()
+        assert len(profiles) == 1
 
     def test_skip_dirs_without_manifest(self, tmp_path):
         (tmp_path / "empty-dir").mkdir()
         _make_device(tmp_path, name="Valid Device")
-        mgr = DevicePackageManager([tmp_path])
-        packages = mgr.discover()
-        assert len(packages) == 1
+        mgr = DeviceProfileManager([tmp_path])
+        profiles = mgr.discover()
+        assert len(profiles) == 1
 
     def test_nonexistent_source_dir_ignored(self, tmp_path):
-        mgr = DevicePackageManager([tmp_path / "does_not_exist"])
-        packages = mgr.discover()
-        assert packages == []
+        mgr = DeviceProfileManager([tmp_path / "does_not_exist"])
+        profiles = mgr.discover()
+        assert profiles == []
 
 
 def _make_zip_from_device(
@@ -429,7 +429,7 @@ class TestInstallFromZip:
         )
         install_dir = tmp_path / "installed"
         install_dir.mkdir()
-        mgr = DevicePackageManager(install_dir=install_dir)
+        mgr = DeviceProfileManager(install_dir=install_dir)
 
         pkg = mgr.install_from_zip(zip_path)
 
@@ -444,7 +444,7 @@ class TestInstallFromZip:
         )
         install_dir = tmp_path / "installed"
         install_dir.mkdir()
-        mgr = DevicePackageManager(install_dir=install_dir)
+        mgr = DeviceProfileManager(install_dir=install_dir)
 
         pkg = mgr.install_from_zip(zip_path)
 
@@ -452,13 +452,13 @@ class TestInstallFromZip:
         assert (install_dir / "Zipped Device" / "device.yaml").exists()
 
     def test_install_missing_zip_raises(self, tmp_path):
-        mgr = DevicePackageManager(install_dir=tmp_path)
+        mgr = DeviceProfileManager(install_dir=tmp_path)
         with pytest.raises(FileNotFoundError, match="not found"):
             mgr.install_from_zip(tmp_path / "missing.zip")
 
     def test_install_no_install_dir_raises(self, tmp_path):
         zip_path = _make_zip_from_device(tmp_path, subdir="nodev")
-        mgr = DevicePackageManager()
+        mgr = DeviceProfileManager()
         with pytest.raises(RuntimeError, match="install directory"):
             mgr.install_from_zip(zip_path)
 
@@ -481,7 +481,7 @@ class TestInstallFromZip:
 
         install_dir = tmp_path / "installed"
         install_dir.mkdir()
-        mgr = DevicePackageManager(install_dir=install_dir)
+        mgr = DeviceProfileManager(install_dir=install_dir)
         with pytest.raises(ValueError, match="Unsupported api_version"):
             mgr.install_from_zip(zip_path)
 
@@ -493,7 +493,7 @@ class TestInstallFromZip:
         )
         install_dir = tmp_path / "installed"
         install_dir.mkdir()
-        mgr = DevicePackageManager(install_dir=install_dir)
+        mgr = DeviceProfileManager(install_dir=install_dir)
         mgr.install_from_zip(zip_path)
         assert mgr.get("Overwrite") is not None
 
@@ -512,7 +512,7 @@ class TestInstallFromZip:
 class TestExportToZip:
     def test_export_creates_zip(self, tmp_path):
         _make_device(tmp_path, name="Export Me")
-        mgr = DevicePackageManager([tmp_path])
+        mgr = DeviceProfileManager([tmp_path])
         mgr.discover()
         pkg = mgr.get("Export Me")
         assert pkg is not None
@@ -528,17 +528,17 @@ class TestExportToZip:
             assert DIALECT_FILENAME in names
 
     def test_export_no_source_dir_raises(self, tmp_path):
-        from rayforge.machine.device.package import (
+        from rayforge.machine.device.profile import (
             DeviceMeta,
             MachineConfig,
         )
 
-        pkg = DevicePackage(
+        pkg = DeviceProfile(
             meta=DeviceMeta(name="X"),
             machine_config=MachineConfig(),
             dialect_config={},
         )
-        mgr = DevicePackageManager()
+        mgr = DeviceProfileManager()
         with pytest.raises(ValueError, match="no source directory"):
             mgr.export_to_zip(pkg, tmp_path)
 
@@ -548,7 +548,7 @@ class TestExportToZip:
             name="Roundtrip",
             machine_extra={"axis_extents": [400, 300]},
         )
-        mgr = DevicePackageManager([tmp_path])
+        mgr = DeviceProfileManager([tmp_path])
         mgr.discover()
         pkg = mgr.get("Roundtrip")
         assert pkg is not None
@@ -558,7 +558,7 @@ class TestExportToZip:
 
         install_dir = tmp_path / "installed"
         install_dir.mkdir()
-        mgr2 = DevicePackageManager(install_dir=install_dir)
+        mgr2 = DeviceProfileManager(install_dir=install_dir)
         pkg2 = mgr2.install_from_zip(zip_path)
 
         assert pkg2.meta.name == "Roundtrip"
@@ -598,7 +598,7 @@ class TestExportMachine:
         machine = self._make_mock_machine("Test Export")
 
         dest = tmp_path / "output"
-        mgr = DevicePackageManager(install_dir=tmp_path / "inst")
+        mgr = DeviceProfileManager(install_dir=tmp_path / "inst")
         zip_path = mgr.export_machine(machine, dest)
 
         assert zip_path.exists()
