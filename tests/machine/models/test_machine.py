@@ -540,6 +540,38 @@ class TestMachine:
         )
 
     @pytest.mark.asyncio
+    async def test_batch_sync_removes_stale_wcs(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """
+        When a device previously reported a WCS that the machine learned,
+        and later the device no longer reports it, the stale entry must
+        be removed on sync.
+
+        update_wcs_offsets_batch replaces wcs_offsets with the device's
+        current state rather than merging, so removed WCS entries don't
+        persist forever.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        machine.wcs_offsets = {
+            "G54": (10.0, 20.0, 0.0),
+            "G55": (30.0, 40.0, 0.0),
+            "G56": (50.0, 60.0, 0.0),
+        }
+        assert "G56" in machine.wcs_offsets
+
+        machine.update_wcs_offsets_batch(
+            {"G54": (10.0, 20.0, 0.0), "G55": (30.0, 40.0, 0.0)}
+        )
+
+        assert "G56" not in machine.wcs_offsets
+        assert machine.wcs_offsets == {
+            "G54": (10.0, 20.0, 0.0),
+            "G55": (30.0, 40.0, 0.0),
+        }
+
+    @pytest.mark.asyncio
     async def test_reverse_axis_setters(
         self, machine: Machine, mocker, task_mgr: TaskManager
     ):
