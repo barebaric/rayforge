@@ -138,7 +138,9 @@ class DockArea(Gtk.Box):
             self._active_item = (
                 self._item_order[0] if self._item_order else None
             )
-            if self._active_item:
+            if self._active_item and self._stack.get_child_by_name(
+                self._active_item
+            ):
                 self._stack.set_visible_child_name(self._active_item)
 
         self._update_strip()
