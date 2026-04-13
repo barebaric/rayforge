@@ -200,10 +200,13 @@ class DeviceProfileManager:
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_zip = Path(tmp) / "output.zip"
+            source_resolved = profile.source_dir.resolve()
             with zipfile.ZipFile(tmp_zip, "w", zipfile.ZIP_DEFLATED) as zf:
                 for file_path in sorted(profile.source_dir.rglob("*")):
                     if file_path.is_file():
-                        arcname = file_path.relative_to(profile.source_dir)
+                        arcname = file_path.resolve().relative_to(
+                            source_resolved
+                        )
                         zf.write(file_path, arcname)
 
             if zip_path.exists():
@@ -235,10 +238,11 @@ class DeviceProfileManager:
             export_machine_to_dir(machine, pkg_dir, model_mgr)
 
             tmp_zip = Path(tmp) / "output.zip"
+            pkg_resolved = pkg_dir.resolve()
             with zipfile.ZipFile(tmp_zip, "w", zipfile.ZIP_DEFLATED) as zf:
                 for file_path in sorted(pkg_dir.rglob("*")):
                     if file_path.is_file():
-                        arcname = file_path.relative_to(pkg_dir)
+                        arcname = file_path.resolve().relative_to(pkg_resolved)
                         zf.write(file_path, arcname)
 
             if zip_path.exists():
