@@ -293,9 +293,7 @@ class Machine:
             if h.focal_distance > 0:
                 t[2, 3] += h.focal_distance
             model = (
-                Model(name="", path=Path(h.model_path))
-                if h.model_path
-                else None
+                Model.from_path(Path(h.model_path)) if h.model_path else None
             )
             head_specs.append((model, t))
         rotary_modules_for_build: Dict[str, RotaryModule] = {}

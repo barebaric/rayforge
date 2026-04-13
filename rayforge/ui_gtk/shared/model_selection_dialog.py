@@ -109,7 +109,7 @@ class ModelSelectionDialog(Adw.MessageDialog):
             return
 
         model_mgr = get_context().model_mgr
-        model = Model(name="", path=Path(model_path))
+        model = Model.from_path(Path(model_path))
         resolved = model_mgr.resolve(model)
         if resolved is None:
             return
