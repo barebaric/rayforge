@@ -326,6 +326,7 @@ class ConfigManager:
     def save(self):
         if not self.config:
             return
+        self.filepath.parent.mkdir(parents=True, exist_ok=True)
         with open(self.filepath, "w") as f:
             yaml.safe_dump(self.config.to_dict(), f)
 
