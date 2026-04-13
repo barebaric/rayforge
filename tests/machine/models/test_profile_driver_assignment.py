@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.driver.grbl_serial import GrblSerialDriver
-from rayforge.machine.device.package import DevicePackage
+from rayforge.machine.device.profile import DeviceProfile
 from rayforge.config import BUILTIN_DEVICES_DIR
 from rayforge.shared import tasker
 
@@ -18,7 +18,7 @@ async def sculpfun_icube_machine(
     context_initializer: "RayforgeContext",
 ) -> "Machine":
     """Provides a Machine instance from the Sculpfun iCube device."""
-    pkg = DevicePackage.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube")
+    pkg = DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube")
     machine = pkg.create_machine(context_initializer)
     context_initializer.machine_mgr.add_machine(machine)
 

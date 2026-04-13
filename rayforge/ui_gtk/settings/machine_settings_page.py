@@ -2,7 +2,7 @@ from typing import cast, Optional
 from gettext import gettext as _
 from gi.repository import Adw, Gtk
 from ...context import get_context
-from ...machine.device.package import DevicePackage
+from ...machine.device.profile import DeviceProfile
 from ...machine.models.machine import Machine
 from ..icons import get_icon
 from ..machine.profile_selector import MachineProfileSelectorDialog
@@ -203,9 +203,9 @@ class MachineSettingsPage(TrackedPreferencesPage):
         dialog.profile_selected.connect(self._on_profile_selected_for_add)
         dialog.present()
 
-    def _on_profile_selected_for_add(self, sender, *, package: DevicePackage):
+    def _on_profile_selected_for_add(self, sender, *, profile: DeviceProfile):
         """Creates a machine and opens its settings editor."""
-        new_machine = package.create_machine(get_context())
+        new_machine = profile.create_machine(get_context())
 
         editor_dialog = MachineSettingsDialog(
             machine=new_machine,

@@ -407,12 +407,12 @@ class TestModelManagerLibraryRegistration:
         assert result.read_text() == "addon"
 
 
-class TestModelManagerDevicePackageRegistration:
-    def test_device_package_models_registered_as_library(
+class TestModelManagerDeviceProfileRegistration:
+    def test_device_profile_models_registered_as_library(
         self, model_mgr, tmp_path
     ):
-        from rayforge.machine.device.manager import DevicePackageManager
-        from rayforge.machine.device.package import DIALECT_FILENAME
+        from rayforge.machine.device.manager import DeviceProfileManager
+        from rayforge.machine.device.profile import DIALECT_FILENAME
 
         device_dir = tmp_path / "devices" / "test-device"
         device_dir.mkdir(parents=True)
@@ -425,8 +425,8 @@ class TestModelManagerDevicePackageRegistration:
         models_dir.mkdir(parents=True)
         (models_dir / "head.glb").write_text("glb data")
 
-        pkg_mgr = DevicePackageManager([tmp_path / "devices"])
-        pkg_mgr.discover(context=_FakeContext(model_mgr))
+        profile_mgr = DeviceProfileManager([tmp_path / "devices"])
+        profile_mgr.discover(context=_FakeContext(model_mgr))
 
         libs = model_mgr.get_libraries()
         lib_ids = [lib.library_id for lib in libs]
@@ -440,8 +440,8 @@ class TestModelManagerDevicePackageRegistration:
     def test_device_without_models_dir_not_registered(
         self, model_mgr, tmp_path
     ):
-        from rayforge.machine.device.manager import DevicePackageManager
-        from rayforge.machine.device.package import DIALECT_FILENAME
+        from rayforge.machine.device.manager import DeviceProfileManager
+        from rayforge.machine.device.profile import DIALECT_FILENAME
 
         device_dir = tmp_path / "devices" / "bare-device"
         device_dir.mkdir(parents=True)
@@ -450,15 +450,15 @@ class TestModelManagerDevicePackageRegistration:
         )
         _write_full_dialect(device_dir / DIALECT_FILENAME)
 
-        pkg_mgr = DevicePackageManager([tmp_path / "devices"])
-        pkg_mgr.discover(context=_FakeContext(model_mgr))
+        profile_mgr = DeviceProfileManager([tmp_path / "devices"])
+        profile_mgr.discover(context=_FakeContext(model_mgr))
 
         lib_ids = [lib.library_id for lib in model_mgr.get_libraries()]
         assert "device:Bare Device" not in lib_ids
 
     def test_discover_without_context(self, tmp_path):
-        from rayforge.machine.device.manager import DevicePackageManager
-        from rayforge.machine.device.package import DIALECT_FILENAME
+        from rayforge.machine.device.manager import DeviceProfileManager
+        from rayforge.machine.device.profile import DIALECT_FILENAME
 
         device_dir = tmp_path / "devices" / "test-device"
         device_dir.mkdir(parents=True)
@@ -471,9 +471,9 @@ class TestModelManagerDevicePackageRegistration:
         models_dir.mkdir(parents=True)
         (models_dir / "head.glb").write_text("glb data")
 
-        pkg_mgr = DevicePackageManager([tmp_path / "devices"])
-        packages = pkg_mgr.discover()
-        assert len(packages) == 1
+        profile_mgr = DeviceProfileManager([tmp_path / "devices"])
+        profiles = profile_mgr.discover()
+        assert len(profiles) == 1
 
 
 def _write_full_dialect(path):

@@ -26,8 +26,8 @@ class ModelManager(AddonRegistry):
     precedence.
 
     Libraries are registered by the core bundled resources,
-    device packages, and addons.  There is no user-writable
-    library — models travel with device packages.
+    device profiles, and addons.  There is no user-writable
+    library — models travel with device profiles.
     """
 
     def __init__(self):

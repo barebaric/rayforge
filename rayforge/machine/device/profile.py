@@ -285,7 +285,7 @@ _MACHINE_CONFIG_KEYS = frozenset(f.name for f in dc_fields(MachineConfig))
 
 
 @dataclass
-class DevicePackage:
+class DeviceProfile:
     meta: DeviceMeta
     machine_config: MachineConfig
     dialect_config: Dict[str, Any]
@@ -296,16 +296,16 @@ class DevicePackage:
         return self.meta.name
 
     @classmethod
-    def from_path(cls, path: Path) -> "DevicePackage":
+    def from_path(cls, path: Path) -> "DeviceProfile":
         """
-        Load a device package from a directory containing a
+        Load a device profile from a directory containing a
         ``device.yaml`` manifest and a ``dialect.yaml`` file.
 
         Args:
             path: Path to the directory containing device.yaml.
 
         Returns:
-            A DevicePackage instance.
+            A DeviceProfile instance.
 
         Raises:
             FileNotFoundError: If device.yaml or dialect.yaml is
@@ -426,7 +426,7 @@ def export_machine_to_dir(
     machine: Machine,
     dest_dir: Path,
     model_mgr: Optional["ModelManager"] = None,
-) -> DevicePackage:
+) -> DeviceProfile:
     dest_dir.mkdir(parents=True, exist_ok=True)
 
     mc = MachineConfig.from_machine(machine)
@@ -445,4 +445,4 @@ def export_machine_to_dir(
     with open(dest_dir / DIALECT_FILENAME, "w") as f:
         yaml.safe_dump(machine.dialect.to_template_dict(), f, sort_keys=False)
 
-    return DevicePackage.from_path(dest_dir)
+    return DeviceProfile.from_path(dest_dir)

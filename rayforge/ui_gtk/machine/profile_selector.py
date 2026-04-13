@@ -3,7 +3,7 @@ from blinker import Signal
 from gi.repository import Adw, Gtk
 from ..shared.gtk import apply_css
 from ...context import get_context
-from ...machine.device.package import DevicePackage
+from ...machine.device.profile import DeviceProfile
 
 
 css = """
@@ -23,11 +23,11 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
     profile_selected = Signal()
 
     class _ProfileRow(Adw.ActionRow):
-        """A custom row to hold a reference to its device package."""
+        """A custom row to hold a reference to its device profile."""
 
-        def __init__(self, package: DevicePackage, **kwargs):
+        def __init__(self, profile: DeviceProfile, **kwargs):
             super().__init__(**kwargs)
-            self.package: DevicePackage = package
+            self.profile: DeviceProfile = profile
 
     def __init__(self, **kwargs):
         """Initializes the Machine Profile Selector dialog."""
@@ -67,12 +67,12 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
         self.set_default_response("cancel")
 
     def _populate_profile_list(self):
-        """Fills the list box with available device packages."""
-        packages = get_context().device_pkg_mgr.get_all()
+        """Fills the list box with available device profiles."""
+        profiles = get_context().device_profile_mgr.get_all()
 
-        for pkg in packages:
+        for pkg in profiles:
             row = self._ProfileRow(
-                package=pkg,
+                profile=pkg,
                 title=pkg.name,
                 subtitle=pkg.meta.description,
                 activatable=True,
@@ -83,5 +83,5 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
         """
         Handles row activation, emits the signal, and closes the dialog.
         """
-        self.profile_selected.send(self, package=row.package)
+        self.profile_selected.send(self, profile=row.profile)
         self.close()
