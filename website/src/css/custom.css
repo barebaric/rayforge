@@ -54,3 +54,16 @@
   background: #2d3436;
   color: #dfe6e9;
 }
+
+/* Hide the navbar search slot since search lives in the sidebar */
+.navbar > .navbar__inner .navbar__search {
+  display: none !important;
+}
+
+.blog-list-page article h2 {
+  color: var(--ifm-font-color-base);
+}
+
+.blog-list-page article h2 a {
+  color: inherit;
+}

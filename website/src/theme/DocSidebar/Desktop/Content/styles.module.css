@@ -1,0 +1,26 @@
+.sidebarSearch {
+  padding: 12px 12px 8px;
+}
+
+.sidebarSearch :global(.navbar__search) {
+  position: relative;
+  margin-left: 0;
+  width: 100%;
+}
+
+.sidebarSearch :global(.navbar__search-input) {
+  width: 100%;
+  padding-right: 3.5rem;
+}
+
+.sidebarSearch :global(.searchBarContainer) {
+  margin-left: 0;
+  width: 100%;
+}
+
+.sidebarSearch :global(.dropdownMenu) {
+  left: 0 !important;
+  right: 0 !important;
+  width: calc(100vw - var(--doc-sidebar-width) - 48px) !important;
+  max-width: 560px !important;
+}
