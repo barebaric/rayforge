@@ -1,5 +1,6 @@
 .sidebarSearch {
-  padding: 12px 12px 8px;
+  padding: 12px 12px 4px;
+  overflow: visible;
 }
 
 .sidebarSearch :global(.navbar__search) {
@@ -16,11 +17,4 @@
 .sidebarSearch :global(.searchBarContainer) {
   margin-left: 0;
   width: 100%;
-}
-
-.sidebarSearch :global(.dropdownMenu) {
-  left: 0 !important;
-  right: 0 !important;
-  width: calc(100vw - var(--doc-sidebar-width) - 48px) !important;
-  max-width: 560px !important;
 }
