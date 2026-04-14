@@ -379,25 +379,50 @@ class MaterialTestGridProducer(OpsProducer):
             grid_w = target_width - margin_left
             grid_h = target_height - margin_top
 
-            elements.extend(
-                [
+            axis_labels = [
+                {
+                    "x": margin_left + grid_w / 2,
+                    "y": margin_top * 0.3,
+                    "text": col_label_text,
+                    "class": "axis-label",
+                    "font_size": font_size_axis,
+                },
+                {
+                    "x": margin_left * 0.3,
+                    "y": margin_top + grid_h / 2,
+                    "text": row_label_text,
+                    "class": "axis-label",
+                    "font_size": font_size_axis,
+                    "transform": "rotate(-90)",
+                },
+            ]
+
+            fixed_label_font_size = font_size_grid * 0.8
+            fixed_label_offset = min(margin_left, margin_top) * 0.15
+            if grid_mode == "Power vs Passes":
+                axis_labels.append(
                     {
-                        "x": margin_left + grid_w / 2,
-                        "y": margin_top * 0.3,
-                        "text": col_label_text,
-                        "class": "axis-label",
-                        "font_size": font_size_axis,
-                    },
+                        "x": fixed_label_offset,
+                        "y": fixed_label_offset,
+                        "text": f"Speed: {int(fixed_speed)} mm/min",
+                        "class": "grid-label",
+                        "font_size": fixed_label_font_size,
+                        "align_h": "left",
+                    }
+                )
+            elif grid_mode == "Speed vs Passes":
+                axis_labels.append(
                     {
-                        "x": margin_left * 0.3,
-                        "y": margin_top + grid_h / 2,
-                        "text": row_label_text,
-                        "class": "axis-label",
-                        "font_size": font_size_axis,
-                        "transform": "rotate(-90)",
-                    },
-                ]
-            )
+                        "x": fixed_label_offset,
+                        "y": fixed_label_offset,
+                        "text": f"Power: {int(fixed_power)}%",
+                        "class": "grid-label",
+                        "font_size": fixed_label_font_size,
+                        "align_h": "left",
+                    }
+                )
+
+            elements.extend(axis_labels)
             # Position labels proportionally within their margin spaces.
             for c in range(cols):
                 col_val = col_range[0] + c * col_step
