@@ -7,10 +7,6 @@ on:
       - "*" # Include tags to trigger builds
   workflow_call: # Allow this workflow to be called by other workflows
 
-concurrency:
-  group: lint-test-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
-
 jobs:
   lint:
     name: Lint
