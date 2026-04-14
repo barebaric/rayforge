@@ -276,7 +276,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
         )
         jog_frame.set_child(jog_inner)
 
-        self._jog_widget = JogWidget()
+        self._jog_widget = JogWidget(show_actions=False)
         self._jog_widget.set_machine(self._machine, self._machine_cmd)
         jog_inner.append(self._jog_widget)
 
