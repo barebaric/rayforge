@@ -5,9 +5,6 @@ on:
       - "**" # Run on all branches
     tags:
       - "*" # Include tags to trigger builds
-  pull_request:
-    branches:
-      - "**" # Run on PRs targeting any branch
   workflow_call: # Allow this workflow to be called by other workflows
 
 concurrency:
