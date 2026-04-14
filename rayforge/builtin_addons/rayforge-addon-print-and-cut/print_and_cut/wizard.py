@@ -14,6 +14,7 @@ from rayforge.ui_gtk.shared.patched_dialog_window import (
     PatchedDialogWindow,
 )
 from rayforge.ui_gtk.canvas2d.elements.workpiece import WorkPieceElement
+from rayforge.ui_gtk.icons import get_icon
 from rayforge.ui_gtk.machine.jog_widget import JogWidget
 from rayforge.context import get_context
 from .pick_surface import PickSurface
@@ -280,6 +281,40 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._jog_widget.set_machine(self._machine, self._machine_cmd)
         jog_inner.append(self._jog_widget)
 
+        controls_group = Adw.PreferencesGroup()
+        box.append(controls_group)
+
+        distance_adjustment = Gtk.Adjustment(
+            value=10.0, lower=0.1, upper=1000, step_increment=1
+        )
+        self._distance_row = Adw.SpinRow(
+            title=_("Jog Distance"),
+            subtitle=_("Distance in machine units"),
+            adjustment=distance_adjustment,
+            digits=1,
+        )
+        self._distance_row.connect("changed", self._on_distance_changed)
+        controls_group.add(self._distance_row)
+
+        self._focus_active = False
+        self._focus_on_icon = get_icon("laser-on-symbolic")
+        self._focus_off_icon = get_icon("laser-off-symbolic")
+        self._focus_btn = Gtk.ToggleButton(
+            tooltip_text=_("Toggle focus laser"),
+            valign=Gtk.Align.CENTER,
+        )
+        self._focus_btn.set_child(self._focus_on_icon)
+        self._focus_btn.connect("toggled", self._on_focus_toggled)
+
+        self._focus_row = Adw.ActionRow(title=_("Focus Laser"))
+        self._focus_row.add_suffix(self._focus_btn)
+        controls_group.add(self._focus_row)
+
+        head = self._machine.get_default_head() if self._machine else None
+        if head:
+            head.changed.connect(self._on_head_changed)
+        self._update_focus_sensitivity()
+
         positions_group = Adw.PreferencesGroup(title=_("Positions"))
         box.append(positions_group)
 
@@ -471,6 +506,50 @@ class PrintAndCutWizard(PatchedDialogWindow):
                     f"X: {x_val:.2f}  Y: {y_val:.2f} mm"
                 )
 
+    def _on_distance_changed(self, spin_row):
+        self._jog_widget.jog_distance = float(spin_row.get_value())
+
+    def _on_focus_toggled(self, button):
+        if not self._machine or not self._machine_cmd:
+            return
+        head = self._machine.get_default_head()
+        if not head:
+            return
+        self._focus_active = button.get_active()
+        if self._focus_active:
+            self._machine_cmd.set_focus_power(head, head.focus_power_percent)
+            button.set_child(self._focus_off_icon)
+        else:
+            self._machine_cmd.set_focus_power(head, 0)
+            button.set_child(self._focus_on_icon)
+
+    def _disable_focus(self):
+        if self._focus_active and self._machine and self._machine_cmd:
+            head = self._machine.get_default_head()
+            if head:
+                self._machine_cmd.set_focus_power(head, 0)
+                self._focus_active = False
+                if self._focus_btn:
+                    self._focus_btn.set_active(False)
+
+    def _on_head_changed(self, head, *args):
+        self._update_focus_sensitivity()
+
+    def _update_focus_sensitivity(self):
+        head = self._machine.get_default_head() if self._machine else None
+        if head and head.focus_power_percent > 0:
+            self._focus_btn.set_sensitive(True)
+            self._focus_row.set_subtitle(
+                _("Turn on laser at focus power to locate position")
+            )
+        else:
+            self._focus_row.set_subtitle(
+                _("Set a focus power in laser preferences to enable")
+            )
+            self._focus_btn.set_sensitive(False)
+            if self._focus_active:
+                self._disable_focus()
+
     def _on_scale_toggled(self, check_btn):
         self._allow_scale = check_btn.get_active()
         self._update_apply_preview()
@@ -597,8 +676,11 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self.close()
 
     def close(self):
+        self._disable_focus()
         if self._machine:
             self._machine.state_changed.disconnect(
                 self._on_machine_state_changed
             )
+            head = self._machine.get_default_head()
+            head.changed.disconnect(self._on_head_changed)
         super().close()
