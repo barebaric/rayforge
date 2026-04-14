@@ -64,6 +64,16 @@ module.exports = {
   plugins: [
     rayforgeVersionPlugin,
     [
+      require.resolve("@easyops-cn/docusaurus-search-local"),
+      {
+        hashed: true,
+        language: ["en", "de", "es", "fr", "pt", "zh"],
+        indexBlog: true,
+        indexDocs: true,
+        explicitSearchResultPath: true,
+      },
+    ],
+    [
       '@docusaurus/theme-mermaid',
       {
         mermaid: {
