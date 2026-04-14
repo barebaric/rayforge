@@ -273,14 +273,15 @@ class MainWindow(Adw.ApplicationWindow):
         action_registry.set_window(self)
         self.action_registry = action_registry
 
-        # Setup keyboard actions using the new ActionManager.
-        self.action_manager = ActionManager(self)
-        self.action_manager.register_actions()
-
-        # Let addons register their actions (must be after window is set)
+        # Let addons register action extension handlers before
+        # ActionManager.register_actions() invokes setup handlers.
         context.plugin_mgr.hook.register_actions(
             action_registry=action_registry
         )
+
+        # Setup keyboard actions using the new ActionManager.
+        self.action_manager = ActionManager(self)
+        self.action_manager.register_actions()
 
         shortcut_controller = Gtk.ShortcutController()
         self.action_manager.register_shortcuts(shortcut_controller)
