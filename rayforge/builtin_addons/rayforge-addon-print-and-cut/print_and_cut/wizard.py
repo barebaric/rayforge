@@ -1,0 +1,604 @@
+import math
+import logging
+from gettext import gettext as _
+from typing import Optional, Tuple
+
+from gi.repository import Adw, Gtk
+
+from rayforge.core.matrix import Matrix
+from rayforge.core.workpiece import WorkPiece
+from rayforge.machine.models.machine import Machine
+from rayforge.machine.cmd import MachineCmd
+from rayforge.doceditor.editor import DocEditor
+from rayforge.ui_gtk.shared.patched_dialog_window import (
+    PatchedDialogWindow,
+)
+from rayforge.ui_gtk.canvas2d.elements.workpiece import WorkPieceElement
+from rayforge.ui_gtk.machine.jog_widget import JogWidget
+from rayforge.context import get_context
+from .pick_surface import PickSurface
+
+logger = logging.getLogger(__name__)
+
+MIN_POINT_DISTANCE = 0.5
+
+
+def calculate_alignment_transform(
+    d1: Tuple[float, float],
+    d2: Tuple[float, float],
+    p1: Tuple[float, float],
+    p2: Tuple[float, float],
+    allow_scale: bool = False,
+) -> Matrix:
+    angle_d = math.atan2(d2[1] - d1[1], d2[0] - d1[0])
+    angle_p = math.atan2(p2[1] - p1[1], p2[0] - p1[0])
+    angle = math.degrees(angle_p - angle_d)
+
+    dist_d = math.hypot(d2[0] - d1[0], d2[1] - d1[1])
+    dist_p = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
+    scale = dist_p / dist_d if allow_scale and dist_d > 0 else 1.0
+
+    return (
+        Matrix.translation(*p1)
+        @ Matrix.rotation(angle)
+        @ Matrix.scale(scale, scale)
+        @ Matrix.translation(-d1[0], -d1[1])
+    )
+
+
+class PrintAndCutWizard(PatchedDialogWindow):
+    def __init__(
+        self,
+        parent,
+        workpiece: WorkPiece,
+        machine: Machine,
+        machine_cmd: MachineCmd,
+        editor: DocEditor,
+        **kwargs,
+    ):
+        super().__init__(
+            transient_for=parent,
+            default_width=1150,
+            default_height=750,
+            title=_("Print & Cut"),
+            **kwargs,
+        )
+
+        self._workpiece = workpiece
+        self._machine = machine
+        self._machine_cmd = machine_cmd
+        self._editor = editor
+
+        self._design_point1: Optional[Tuple[float, float]] = None
+        self._design_point2: Optional[Tuple[float, float]] = None
+
+        self._physical_point1: Optional[Tuple[float, float]] = None
+        self._physical_point2: Optional[Tuple[float, float]] = None
+
+        self._allow_scale: bool = False
+
+        self._setup_ui()
+
+    def _setup_ui(self):
+        self.toast_overlay = Adw.ToastOverlay()
+        self.set_content(self.toast_overlay)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.toast_overlay.set_child(content)
+
+        header = Adw.HeaderBar()
+        content.append(header)
+
+        self._main_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=16,
+            margin_start=12,
+            margin_top=12,
+            margin_bottom=12,
+        )
+        content.append(self._main_box)
+
+        self._left_panel = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+        )
+        self._left_panel.set_hexpand(True)
+        self._left_panel.set_vexpand(True)
+        self._main_box.append(self._left_panel)
+
+        self._right_stack = Gtk.Stack()
+        self._right_stack.set_transition_type(
+            Gtk.StackTransitionType.SLIDE_LEFT_RIGHT
+        )
+        self._right_stack.set_hexpand(False)
+        self._main_box.append(self._right_stack)
+
+        self._setup_left_panel()
+        self._setup_right_stack()
+
+        self._button_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=12,
+            halign=Gtk.Align.END,
+            margin_end=12,
+            margin_bottom=12,
+        )
+        content.append(self._button_box)
+
+        self._back_btn = Gtk.Button(label=_("Back"))
+        self._back_btn.add_css_class("flat")
+        self._back_btn.connect("clicked", self._on_back_clicked)
+        self._back_btn.set_visible(False)
+        self._button_box.append(self._back_btn)
+
+        self._reset_btn = Gtk.Button(label=_("Reset"))
+        self._reset_btn.add_css_class("flat")
+        self._reset_btn.connect("clicked", self._on_reset_clicked)
+        self._button_box.append(self._reset_btn)
+
+        self._cancel_btn = Gtk.Button(label=_("Cancel"))
+        self._cancel_btn.add_css_class("flat")
+        self._cancel_btn.connect("clicked", lambda _: self.close())
+        self._button_box.append(self._cancel_btn)
+
+        self._next_btn = Gtk.Button(label=_("Next"))
+        self._next_btn.add_css_class("suggested-action")
+        self._next_btn.connect("clicked", self._on_next_clicked)
+        self._next_btn.set_sensitive(False)
+        self._button_box.append(self._next_btn)
+
+        self._apply_btn = Gtk.Button(label=_("Apply"))
+        self._apply_btn.add_css_class("suggested-action")
+        self._apply_btn.connect("clicked", self._on_apply_clicked)
+        self._apply_btn.set_visible(False)
+        self._button_box.append(self._apply_btn)
+
+        self._right_stack.connect(
+            "notify::visible-child", self._on_page_changed
+        )
+
+    def _setup_left_panel(self):
+        ctx = get_context()
+        machine = ctx.machine
+        if machine:
+            wa_w = float(machine.axis_extents[0])
+            wa_h = float(machine.axis_extents[1])
+        else:
+            wa_w, wa_h = 100.0, 100.0
+
+        self._pick_surface = PickSurface(
+            width_mm=wa_w,
+            height_mm=wa_h,
+        )
+
+        wp_elem = WorkPieceElement(
+            workpiece=self._workpiece,
+            view_manager=self._editor.view_manager,
+            canvas=self._pick_surface,
+        )
+        self._pick_surface.set_workpiece_elem(wp_elem)
+        self._pick_surface.set_hexpand(True)
+        self._pick_surface.set_vexpand(True)
+        self._pick_surface.set_halign(Gtk.Align.FILL)
+        self._pick_surface.point_picked.connect(self._on_design_point_picked)
+        self._pick_surface.points_reset.connect(self._on_design_points_reset)
+        self._pick_surface.points_changed.connect(
+            self._on_design_points_changed
+        )
+        self._left_panel.append(self._pick_surface)
+
+    def _setup_right_stack(self):
+        self._setup_pick_panel()
+        self._setup_jog_panel()
+        self._setup_apply_panel()
+
+    def _setup_pick_panel(self):
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self._right_stack.add_named(scroll, "pick")
+
+        box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=12,
+            width_request=500,
+            hexpand=False,
+        )
+        box.set_margin_start(12)
+        box.set_margin_end(32)
+        box.set_margin_top(4)
+        box.set_margin_bottom(12)
+        scroll.set_child(box)
+
+        intro_group = Adw.PreferencesGroup(
+            title=_("Instructions"),
+            description=_(
+                "Click on two alignment points on the design. "
+                "These will be matched to physical locations in "
+                "the next step."
+            ),
+        )
+        box.append(intro_group)
+
+        points_group = Adw.PreferencesGroup(title=_("Picked Points"))
+        box.append(points_group)
+
+        self._point1_row = Adw.ActionRow(title=_("Point 1"))
+        self._point1_row.set_subtitle(_("not set"))
+        points_group.add(self._point1_row)
+
+        self._point2_row = Adw.ActionRow(title=_("Point 2"))
+        self._point2_row.set_subtitle(_("not set"))
+        points_group.add(self._point2_row)
+
+        self._pick_status_row = Adw.ActionRow(title=_("Status"))
+        self._pick_status_row.set_subtitle(
+            _("Click on the first alignment point on the design.")
+        )
+        points_group.add(self._pick_status_row)
+
+    def _setup_jog_panel(self):
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self._right_stack.add_named(scroll, "jog")
+
+        box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=12,
+            width_request=500,
+            hexpand=False,
+        )
+        box.set_margin_start(12)
+        box.set_margin_end(32)
+        box.set_margin_top(4)
+        box.set_margin_bottom(12)
+        scroll.set_child(box)
+
+        intro_group = Adw.PreferencesGroup(
+            title=_("Instructions"),
+            description=_(
+                "Jog the laser to the physical location of each "
+                "point, then record the position."
+            ),
+        )
+        box.append(intro_group)
+
+        jog_frame = Gtk.Frame(halign=Gtk.Align.CENTER)
+        jog_frame.add_css_class("card")
+        box.append(jog_frame)
+
+        jog_inner = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=6,
+            margin_top=6,
+            margin_bottom=6,
+            margin_start=6,
+            margin_end=6,
+            halign=Gtk.Align.CENTER,
+        )
+        jog_frame.set_child(jog_inner)
+
+        self._jog_widget = JogWidget()
+        self._jog_widget.set_machine(self._machine, self._machine_cmd)
+        jog_inner.append(self._jog_widget)
+
+        positions_group = Adw.PreferencesGroup(title=_("Positions"))
+        box.append(positions_group)
+
+        self._record1_btn = Gtk.Button(
+            label=_("Record"), valign=Gtk.Align.CENTER
+        )
+        self._record1_btn.add_css_class("suggested-action")
+        self._record1_btn.connect("clicked", self._on_record_clicked, 0)
+
+        self._pos1_row = Adw.ActionRow(title=_("Position 1"))
+        self._pos1_row.set_subtitle(_("not set"))
+        self._pos1_row.add_suffix(self._record1_btn)
+        positions_group.add(self._pos1_row)
+
+        self._record2_btn = Gtk.Button(
+            label=_("Record"), valign=Gtk.Align.CENTER
+        )
+        self._record2_btn.add_css_class("suggested-action")
+        self._record2_btn.connect("clicked", self._on_record_clicked, 1)
+
+        self._pos2_row = Adw.ActionRow(title=_("Position 2"))
+        self._pos2_row.set_subtitle(_("not set"))
+        self._pos2_row.add_suffix(self._record2_btn)
+        positions_group.add(self._pos2_row)
+
+        self._laser_row = Adw.ActionRow(title=_("Laser Position"))
+        self._laser_row.set_subtitle(_("X: --- Y: ---"))
+        positions_group.add(self._laser_row)
+
+        if self._machine and self._machine.is_connected():
+            self._machine.state_changed.connect(self._on_machine_state_changed)
+            self._update_laser_position()
+        else:
+            self._jog_widget.set_sensitive(False)
+            self._record1_btn.set_sensitive(False)
+            self._record2_btn.set_sensitive(False)
+
+    def _setup_apply_panel(self):
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self._right_stack.add_named(scroll, "apply")
+
+        box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=12,
+            hexpand=True,
+        )
+        box.set_margin_start(24)
+        box.set_margin_end(24)
+        box.set_margin_top(12)
+        box.set_margin_bottom(12)
+        scroll.set_child(box)
+
+        intro_group = Adw.PreferencesGroup(
+            title=_("Transform Preview"),
+            description=_(
+                "Review the computed alignment transform before applying it."
+            ),
+        )
+        box.append(intro_group)
+
+        transform_group = Adw.PreferencesGroup(title=_("Transform"))
+        box.append(transform_group)
+
+        self._translation_row = Adw.ActionRow(title=_("Translation"))
+        self._translation_row.set_subtitle("---")
+        transform_group.add(self._translation_row)
+
+        self._rotation_row = Adw.ActionRow(title=_("Rotation"))
+        self._rotation_row.set_subtitle("---")
+        transform_group.add(self._rotation_row)
+
+        self._scale_row = Adw.ActionRow(title=_("Scale"))
+        self._scale_row.set_subtitle("---")
+        transform_group.add(self._scale_row)
+
+        self._scale_check = Gtk.CheckButton(
+            label=_("Allow scaling"),
+        )
+        self._scale_check.set_active(False)
+        self._scale_check.connect("toggled", self._on_scale_toggled)
+        box.append(self._scale_check)
+
+        self._warning_label = Gtk.Label(label="")
+        self._warning_label.add_css_class("warning-label")
+        self._warning_label.set_visible(False)
+        self._warning_label.set_wrap(True)
+        self._warning_label.set_xalign(0.0)
+        box.append(self._warning_label)
+
+    def _on_design_point_picked(self, sender, **kwargs):
+        index = kwargs.get("index", 0)
+        x = kwargs.get("x", 0.0)
+        y = kwargs.get("y", 0.0)
+
+        if index == 0:
+            self._design_point1 = (x, y)
+            self._point1_row.set_subtitle(f"({x:.2f}, {y:.2f}) mm")
+            self._pick_status_row.set_subtitle(
+                _("Click on the second alignment point on the design.")
+            )
+        elif index == 1:
+            self._design_point2 = (x, y)
+            self._point2_row.set_subtitle(f"({x:.2f}, {y:.2f}) mm")
+            self._pick_status_row.set_subtitle(
+                _("Both points selected. Click Next to continue.")
+            )
+
+        self._update_pick_next_btn()
+
+    def _on_design_points_changed(self, sender):
+        p1 = self._pick_surface.point1
+        p2 = self._pick_surface.point2
+        self._design_point1 = p1
+        self._design_point2 = p2
+        if p1 is not None:
+            self._point1_row.set_subtitle(f"({p1[0]:.2f}, {p1[1]:.2f}) mm")
+        if p2 is not None:
+            self._point2_row.set_subtitle(f"({p2[0]:.2f}, {p2[1]:.2f}) mm")
+        self._update_pick_next_btn()
+
+    def _on_design_points_reset(self, sender):
+        self._design_point1 = None
+        self._design_point2 = None
+        self._point1_row.set_subtitle(_("not set"))
+        self._point2_row.set_subtitle(_("not set"))
+        self._pick_status_row.set_subtitle(
+            _("Click on the first alignment point on the design.")
+        )
+        self._update_pick_next_btn()
+
+    def _update_pick_next_btn(self):
+        p1 = self._design_point1
+        p2 = self._design_point2
+        if p1 is not None and p2 is not None:
+            dist = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
+            self._next_btn.set_sensitive(dist >= MIN_POINT_DISTANCE)
+            if dist < MIN_POINT_DISTANCE:
+                self._pick_status_row.set_subtitle(
+                    _("Points are too close. Pick points further apart.")
+                )
+        else:
+            self._next_btn.set_sensitive(False)
+
+    def _on_record_clicked(self, button, pos_index):
+        if not self._machine or not self._machine.is_connected():
+            return
+
+        pos = self._machine.get_current_position()
+        if pos is None:
+            return
+
+        x_val, y_val, _z_val = pos
+        if x_val is None or y_val is None:
+            return
+
+        space = self._machine.get_coordinate_space()
+        wx, wy = space.machine_point_to_world(x_val, y_val)
+
+        if pos_index == 0:
+            self._physical_point1 = (wx, wy)
+            self._pos1_row.set_subtitle(f"({wx:.2f}, {wy:.2f}) mm")
+        else:
+            self._physical_point2 = (wx, wy)
+            self._pos2_row.set_subtitle(f"({wx:.2f}, {wy:.2f}) mm")
+
+        self._update_jog_next_btn()
+
+    def _update_jog_next_btn(self):
+        p1 = self._physical_point1
+        p2 = self._physical_point2
+        if p1 is not None and p2 is not None:
+            dist = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
+            self._next_btn.set_sensitive(dist >= MIN_POINT_DISTANCE)
+        else:
+            self._next_btn.set_sensitive(False)
+
+    def _on_machine_state_changed(self, machine, state):
+        self._update_laser_position()
+
+    def _update_laser_position(self):
+        if not self._machine:
+            return
+        pos = self._machine.get_current_position()
+        if pos:
+            x_val, y_val, _z_val = pos
+            if x_val is not None and y_val is not None:
+                self._laser_row.set_subtitle(
+                    f"X: {x_val:.2f}  Y: {y_val:.2f} mm"
+                )
+
+    def _on_scale_toggled(self, check_btn):
+        self._allow_scale = check_btn.get_active()
+        self._update_apply_preview()
+
+    def _update_apply_preview(self):
+        if (
+            self._design_point1 is None
+            or self._design_point2 is None
+            or self._physical_point1 is None
+            or self._physical_point2 is None
+        ):
+            return
+
+        T = calculate_alignment_transform(
+            self._design_point1,
+            self._design_point2,
+            self._physical_point1,
+            self._physical_point2,
+            allow_scale=self._allow_scale,
+        )
+
+        _tx, _ty, angle, sx, sy, _skew = T.decompose()
+        tx, ty = T.get_translation()
+
+        self._translation_row.set_subtitle(f"({tx:.2f}, {ty:.2f}) mm")
+        self._rotation_row.set_subtitle(f"{angle:.2f}\u00b0")
+
+        if self._allow_scale:
+            self._scale_row.set_subtitle(f"{sx:.4f} x {sy:.4f}")
+            self._warning_label.set_visible(False)
+        else:
+            dist_d = math.hypot(
+                self._design_point2[0] - self._design_point1[0],
+                self._design_point2[1] - self._design_point1[1],
+            )
+            dist_p = math.hypot(
+                self._physical_point2[0] - self._physical_point1[0],
+                self._physical_point2[1] - self._physical_point1[1],
+            )
+            self._scale_row.set_subtitle("1.0 (locked)")
+            if abs(dist_d - dist_p) > 0.1:
+                self._warning_label.set_text(
+                    _(
+                        "Note: Scale is locked. Point 2 may "
+                        "not align exactly if the physical "
+                        "distance differs from the design "
+                        "distance."
+                    )
+                )
+                self._warning_label.set_visible(True)
+            else:
+                self._warning_label.set_visible(False)
+
+    def _on_page_changed(self, stack, pspec):
+        visible = stack.get_visible_child_name()
+        if visible == "pick":
+            self._left_panel.set_visible(True)
+            self._back_btn.set_visible(False)
+            self._reset_btn.set_visible(True)
+            self._cancel_btn.set_visible(True)
+            self._next_btn.set_visible(True)
+            self._apply_btn.set_visible(False)
+            self._update_pick_next_btn()
+        elif visible == "jog":
+            self._left_panel.set_visible(True)
+            self._back_btn.set_visible(True)
+            self._reset_btn.set_visible(False)
+            self._cancel_btn.set_visible(True)
+            self._next_btn.set_visible(True)
+            self._apply_btn.set_visible(False)
+            self._update_jog_next_btn()
+        elif visible == "apply":
+            self._left_panel.set_visible(True)
+            self._back_btn.set_visible(True)
+            self._reset_btn.set_visible(False)
+            self._cancel_btn.set_visible(True)
+            self._next_btn.set_visible(False)
+            self._apply_btn.set_visible(True)
+            self._apply_btn.set_sensitive(True)
+            self._update_apply_preview()
+
+    def _on_back_clicked(self, button):
+        visible = self._right_stack.get_visible_child_name()
+        if visible == "jog":
+            self._right_stack.set_visible_child_name("pick")
+        elif visible == "apply":
+            self._right_stack.set_visible_child_name("jog")
+
+    def _on_next_clicked(self, button):
+        visible = self._right_stack.get_visible_child_name()
+        if visible == "pick":
+            self._right_stack.set_visible_child_name("jog")
+        elif visible == "jog":
+            self._right_stack.set_visible_child_name("apply")
+
+    def _on_reset_clicked(self, button):
+        self._pick_surface.reset()
+
+    def _on_apply_clicked(self, button):
+        if (
+            self._design_point1 is None
+            or self._design_point2 is None
+            or self._physical_point1 is None
+            or self._physical_point2 is None
+        ):
+            return
+
+        d1, d2 = self._design_point1, self._design_point2
+        p1, p2 = self._physical_point1, self._physical_point2
+
+        T = calculate_alignment_transform(
+            d1, d2, p1, p2, allow_scale=self._allow_scale
+        )
+
+        old_matrix = self._workpiece.matrix.copy()
+        new_matrix = T @ old_matrix
+
+        self._editor.transform.create_transform_transaction(
+            [(self._workpiece, old_matrix, new_matrix)]
+        )
+
+        toast = Adw.Toast(title=_("Alignment applied"))
+        self.toast_overlay.add_toast(toast)
+        self.close()
+
+    def close(self):
+        if self._machine:
+            self._machine.state_changed.disconnect(
+                self._on_machine_state_changed
+            )
+        super().close()
