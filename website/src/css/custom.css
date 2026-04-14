@@ -60,6 +60,19 @@
   display: none !important;
 }
 
+/* Allow search dropdown to escape sidebar container */
+.theme-doc-sidebar-container {
+  clip-path: none !important;
+  overflow: visible !important;
+}
+
+/* Override plugin's right-alignment for sidebar search dropdown */
+.theme-doc-sidebar-container .navbar__search [class*="dropdownMenu"] {
+  right: auto !important;
+  left: 0 !important;
+  width: min(calc(100vw - var(--doc-sidebar-width) - 48px), 560px) !important;
+}
+
 .blog-list-page article h2 {
   color: var(--ifm-font-color-base);
 }
