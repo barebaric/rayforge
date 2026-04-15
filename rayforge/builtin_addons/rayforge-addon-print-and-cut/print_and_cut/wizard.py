@@ -13,10 +13,8 @@ from rayforge.doceditor.editor import DocEditor
 from rayforge.ui_gtk.shared.patched_dialog_window import (
     PatchedDialogWindow,
 )
-from rayforge.ui_gtk.canvas2d.elements.workpiece import WorkPieceElement
 from rayforge.ui_gtk.icons import get_icon
 from rayforge.ui_gtk.machine.jog_widget import JogWidget
-from rayforge.context import get_context
 from .pick_surface import PickSurface
 
 logger = logging.getLogger(__name__)
@@ -161,25 +159,9 @@ class PrintAndCutWizard(PatchedDialogWindow):
         )
 
     def _setup_left_panel(self):
-        ctx = get_context()
-        machine = ctx.machine
-        if machine:
-            wa_w = float(machine.axis_extents[0])
-            wa_h = float(machine.axis_extents[1])
-        else:
-            wa_w, wa_h = 100.0, 100.0
-
         self._pick_surface = PickSurface(
-            width_mm=wa_w,
-            height_mm=wa_h,
-        )
-
-        wp_elem = WorkPieceElement(
             workpiece=self._workpiece,
-            view_manager=self._editor.view_manager,
-            canvas=self._pick_surface,
         )
-        self._pick_surface.set_workpiece_elem(wp_elem)
         self._pick_surface.set_hexpand(True)
         self._pick_surface.set_vexpand(True)
         self._pick_surface.set_halign(Gtk.Align.FILL)
@@ -499,10 +481,10 @@ class PrintAndCutWizard(PatchedDialogWindow):
 
         if pp1 is not None:
             self._physical_point1 = pp1
-            self._pos1_row.set_subtitle(f"({pp1[0]:.2f}, {pp1[1]:.2f}) mm")
+            self._pos1_row.set_subtitle(f"({pp1[0]:.2f}, {pp1[1]:.2f})")
         if pp2 is not None:
             self._physical_point2 = pp2
-            self._pos2_row.set_subtitle(f"({pp2[0]:.2f}, {pp2[1]:.2f}) mm")
+            self._pos2_row.set_subtitle(f"({pp2[0]:.2f}, {pp2[1]:.2f})")
 
         self._update_pick_next_btn()
 
@@ -527,15 +509,13 @@ class PrintAndCutWizard(PatchedDialogWindow):
         if x_val is None or y_val is None:
             return
 
-        space = self._machine.get_coordinate_space()
-        wx, wy = space.machine_point_to_world(x_val, y_val)
-
+        subtitle = f"({x_val:.2f}, {y_val:.2f})"
         if pos_index == 0:
-            self._physical_point1 = (wx, wy)
-            self._pos1_row.set_subtitle(f"({wx:.2f}, {wy:.2f}) mm")
+            self._physical_point1 = (x_val, y_val)
+            self._pos1_row.set_subtitle(subtitle)
         else:
-            self._physical_point2 = (wx, wy)
-            self._pos2_row.set_subtitle(f"({wx:.2f}, {wy:.2f}) mm")
+            self._physical_point2 = (x_val, y_val)
+            self._pos2_row.set_subtitle(subtitle)
 
         self._update_jog_next_btn()
         self._save_session_state()
@@ -570,9 +550,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
         if pos:
             x_val, y_val, _z_val = pos
             if x_val is not None and y_val is not None:
-                self._laser_row.set_subtitle(
-                    f"X: {x_val:.2f}  Y: {y_val:.2f} mm"
-                )
+                self._laser_row.set_subtitle(f"X: {x_val:.2f}  Y: {y_val:.2f}")
 
     def _on_distance_changed(self, spin_row):
         self._jog_widget.jog_distance = float(spin_row.get_value())
@@ -622,6 +600,32 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._allow_scale = check_btn.get_active()
         self._update_apply_preview()
 
+    def _local_to_world(
+        self, norm_x: float, norm_y: float
+    ) -> Tuple[float, float]:
+        return self._workpiece.get_world_transform().transform_point(
+            (norm_x, norm_y)
+        )
+
+    def _machine_to_world(self, wx: float, wy: float) -> Tuple[float, float]:
+        space = self._machine.get_coordinate_space()
+        wcs_x, wcs_y, _wcs_z = self._machine.get_active_wcs_offset()
+        return space.machine_point_to_world(wx + wcs_x, wy + wcs_y)
+
+    def _get_world_design_points(self):
+        assert self._design_point1 is not None
+        assert self._design_point2 is not None
+        d1 = self._local_to_world(*self._design_point1)
+        d2 = self._local_to_world(*self._design_point2)
+        return d1, d2
+
+    def _get_world_physical_points(self):
+        assert self._physical_point1 is not None
+        assert self._physical_point2 is not None
+        p1 = self._machine_to_world(*self._physical_point1)
+        p2 = self._machine_to_world(*self._physical_point2)
+        return p1, p2
+
     def _update_apply_preview(self):
         if (
             self._design_point1 is None
@@ -631,18 +635,17 @@ class PrintAndCutWizard(PatchedDialogWindow):
         ):
             return
 
+        d1, d2 = self._get_world_design_points()
+        p1, p2 = self._get_world_physical_points()
+
         T = calculate_alignment_transform(
-            self._design_point1,
-            self._design_point2,
-            self._physical_point1,
-            self._physical_point2,
-            allow_scale=self._allow_scale,
+            d1, d2, p1, p2, allow_scale=self._allow_scale
         )
 
         _tx, _ty, angle, sx, sy, _skew = T.decompose()
         tx, ty = T.get_translation()
 
-        self._translation_row.set_subtitle(f"({tx:.2f}, {ty:.2f}) mm")
+        self._translation_row.set_subtitle(f"({tx:.2f}, {ty:.2f})")
         self._rotation_row.set_subtitle(f"{angle:.2f}\u00b0")
 
         if self._allow_scale:
@@ -650,8 +653,8 @@ class PrintAndCutWizard(PatchedDialogWindow):
             self._warning_label.set_visible(False)
         else:
             dist_d = math.hypot(
-                self._design_point2[0] - self._design_point1[0],
-                self._design_point2[1] - self._design_point1[1],
+                d2[0] - d1[0],
+                d2[1] - d1[1],
             )
             dist_p = math.hypot(
                 self._physical_point2[0] - self._physical_point1[0],
@@ -725,8 +728,8 @@ class PrintAndCutWizard(PatchedDialogWindow):
         ):
             return
 
-        d1, d2 = self._design_point1, self._design_point2
-        p1, p2 = self._physical_point1, self._physical_point2
+        d1, d2 = self._get_world_design_points()
+        p1, p2 = self._get_world_physical_points()
 
         T = calculate_alignment_transform(
             d1, d2, p1, p2, allow_scale=self._allow_scale
@@ -738,8 +741,6 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._editor.transform.create_transform_transaction(
             [(self._workpiece, old_matrix, new_matrix)]
         )
-
-        _session_state.pop(self._workpiece.uid, None)
 
         toast = Adw.Toast(title=_("Alignment applied"))
         self.toast_overlay.add_toast(toast)
