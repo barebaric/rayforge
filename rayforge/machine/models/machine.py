@@ -1288,10 +1288,10 @@ class Machine:
 
             if mode == RotaryMode.TRUE_4TH_AXIS:
                 rotary_axis = module.axis
-                mm_per_rotation = 0.0
+                mu_per_rotation = 0.0
             else:
                 rotary_axis = source_axis
-                mm_per_rotation = module.mm_per_rotation
+                mu_per_rotation = module.mu_per_rotation
 
             mapper = AxisMapper(
                 source_axis=source_axis,
@@ -1299,7 +1299,7 @@ class Machine:
                 rotary_diameter=diameter,
                 has_physical_source=(mode == RotaryMode.TRUE_4TH_AXIS),
                 mode=mode,
-                mm_per_rotation=mm_per_rotation,
+                mu_per_rotation=mu_per_rotation,
                 rotary_type=module.rotary_type,
                 roller_diameter=module.roller_diameter,
                 reverse_axis=module.reverse_axis,

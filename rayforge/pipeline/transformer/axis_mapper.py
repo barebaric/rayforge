@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from typing import Dict, List, Optional, Any
 
 from ...core.geo.types import Point3D
@@ -14,6 +13,7 @@ from ...core.ops.commands import (
 )
 from ...core.ops import Ops
 from ...core.workpiece import WorkPiece
+from ...machine.kinematic_math import KinematicMath
 from ...machine.models.rotary_module import RotaryMode, RotaryType
 from ...shared.tasker.progress import ProgressContext
 from .base import ExecutionPhase, OpsTransformer
@@ -29,7 +29,7 @@ class AxisMapper(OpsTransformer):
         rotary_diameter: float = 25.0,
         has_physical_source: bool = False,
         mode: RotaryMode = RotaryMode.TRUE_4TH_AXIS,
-        mm_per_rotation: float = 0.0,
+        mu_per_rotation: float = 0.0,
         rotary_type: RotaryType = RotaryType.JAWS,
         roller_diameter: float = 0.0,
         reverse_axis: bool = False,
@@ -42,7 +42,7 @@ class AxisMapper(OpsTransformer):
         self.rotary_diameter = rotary_diameter
         self.has_physical_source = has_physical_source
         self.mode = mode
-        self.mm_per_rotation = mm_per_rotation
+        self.mm_per_rotation = mu_per_rotation
         self.rotary_type = rotary_type
         self.roller_diameter = roller_diameter
         self.reverse_axis = reverse_axis
@@ -59,40 +59,31 @@ class AxisMapper(OpsTransformer):
     def execution_phase(self) -> ExecutionPhase:
         return ExecutionPhase.GEOMETRY_REFINEMENT
 
-    def _gear_ratio(self) -> float:
-        if (
-            self.rotary_type == RotaryType.ROLLERS
-            and self.roller_diameter > 0
-            and self.rotary_diameter > 0
-        ):
-            return self.rotary_diameter / self.roller_diameter
-        return 1.0
-
     def _mu_to_degrees(self, mu: float, z: float) -> float:
-        effective_diameter = self.rotary_diameter + 2.0 * z
-        if effective_diameter <= 0:
-            return 0.0
-        circumference = effective_diameter * math.pi
-        degrees = (mu / circumference) * 360.0 * self._gear_ratio()
-        if self.reverse_axis:
-            degrees = -degrees
-        return degrees
+        eff_d = KinematicMath.effective_diameter(self.rotary_diameter, z)
+        ratio = KinematicMath.gear_ratio(
+            self.rotary_type == RotaryType.ROLLERS,
+            self.rotary_diameter,
+            self.roller_diameter,
+        )
+        return KinematicMath.mu_to_degrees(
+            mu, eff_d, gear_ratio=ratio, reverse=self.reverse_axis
+        )
 
     def _scale_replacement(self, mu: float, z: float) -> float:
-        if self.mm_per_rotation <= 0:
-            return mu
-        effective_diameter = self.rotary_diameter + 2.0 * z
-        if effective_diameter <= 0:
-            return 0.0
-        scaled = (
-            mu
-            * self.mm_per_rotation
-            / (math.pi * effective_diameter)
-            * self._gear_ratio()
+        eff_d = KinematicMath.effective_diameter(self.rotary_diameter, z)
+        ratio = KinematicMath.gear_ratio(
+            self.rotary_type == RotaryType.ROLLERS,
+            self.rotary_diameter,
+            self.roller_diameter,
         )
-        if self.reverse_axis:
-            scaled = -scaled
-        return scaled
+        return KinematicMath.mu_to_scaled_mu(
+            mu,
+            eff_d,
+            self.mm_per_rotation,
+            gear_ratio=ratio,
+            reverse=self.reverse_axis,
+        )
 
     def _source_index(self) -> int:
         idx = _AXIS_INDEX.get(self.source_axis)

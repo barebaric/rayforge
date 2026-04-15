@@ -7,6 +7,7 @@ from ...core.geo.arc import linearize_arc
 from ...core.geo.bezier import linearize_bezier_segment
 from ...core.ops import Ops
 from ...core.ops.axis import Axis
+from ...machine.kinematic_math import KinematicMath
 from ...core.ops.commands import (
     MoveToCommand,
     LineToCommand,
@@ -61,7 +62,6 @@ def transform_to_cylinder(
     cyl_idx = 1 - source_idx
 
     radius = diameter / 2.0
-    circumference = diameter * math.pi
     max_angle_per_segment = math.radians(15)
 
     num_pairs = verts.shape[0] // 2
@@ -85,8 +85,8 @@ def transform_to_cylinder(
     src2 = p2[:, source_idx].astype(np.float64)
     z2 = p2[:, 2].astype(np.float64)
 
-    theta1 = (src1 / circumference) * 2.0 * np.pi
-    theta2 = (src2 / circumference) * 2.0 * np.pi
+    theta1 = np.radians(KinematicMath.mu_to_degrees(src1, diameter))
+    theta2 = np.radians(KinematicMath.mu_to_degrees(src2, diameter))
 
     delta_theta = (theta2 - theta1 + np.pi) % (2.0 * np.pi) - np.pi
     abs_delta = np.abs(delta_theta)
@@ -126,8 +126,8 @@ def transform_to_cylinder(
     prev_eff_r = radius + prev_z
     curr_eff_r = radius + curr_z
 
-    theta_prev = (prev_src / circumference) * 2.0 * np.pi
-    theta_curr = (curr_src / circumference) * 2.0 * np.pi
+    theta_prev = np.radians(KinematicMath.mu_to_degrees(prev_src, diameter))
+    theta_curr = np.radians(KinematicMath.mu_to_degrees(curr_src, diameter))
 
     result_verts = np.empty((total_segments * 2, 3), dtype=np.float32)
     result_verts[0::2, cyl_idx] = prev_cyl.astype(np.float32)
