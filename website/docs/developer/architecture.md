@@ -1,3 +1,7 @@
+---
+description: "Rayforge architecture overview - understand the application structure, pipeline, driver system, and how components work together."
+---
+
 # Rayforge Architecture
 
 This document provides a high-level architectural overview of Rayforge,

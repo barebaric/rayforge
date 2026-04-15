@@ -1,3 +1,7 @@
+---
+description: "Organize complex laser jobs into separate layers with different settings. Manage cut order, operations, and materials with Rayforge's multi-layer system."
+---
+
 # Multi-Layer Workflow
 
 Rayforge's multi-layer system allows you to organize complex jobs into separate

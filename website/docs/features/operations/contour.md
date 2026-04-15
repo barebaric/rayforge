@@ -1,3 +1,7 @@
+---
+description: "Contour cutting traces vector outlines to cut shapes from material. Configure laser power, speed, passes, and kerf compensation for clean cuts."
+---
+
 # Contour Cutting
 
 Contour cutting traces the outline of vector shapes to cut them free from material. It's the most common laser operation for creating parts, signs, and decorative pieces.

@@ -3,6 +3,7 @@ slug: welcome-to-rayforge
 title: "Welcome to Rayforge: Modern Laser Control Software"
 authors: rayforge_team
 tags: [introduction, features]
+description: "Introducing Rayforge — a modern, open-source G-code sender and control software for GRBL-based laser cutters and engravers. Free laser cutting software for makers."
 ---
 
 ![Rayforge Main Window](/screenshots/main-standard.png)

@@ -1,3 +1,7 @@
+---
+description: "Export G-code from Rayforge to run on your laser cutter. Generate output files compatible with GRBL and Smoothieware controllers."
+---
+
 # Exporting from Rayforge
 
 Rayforge supports several export options for different purposes:

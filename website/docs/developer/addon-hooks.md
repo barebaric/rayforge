@@ -1,3 +1,7 @@
+---
+description: "Add-on hooks in Rayforge - lifecycle events and extension points for integrating custom functionality into the laser cutting workflow."
+---
+
 # Addon Hooks
 
 Hooks are the connection points between your addon and Rayforge. When something happens in the application—a step is created, a dialog opens, or the window initializes—Rayforge calls any registered hooks so your addon can respond.

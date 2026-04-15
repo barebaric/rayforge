@@ -1,3 +1,7 @@
+---
+description: "Rayforge add-on manifest reference - define your add-ons metadata, dependencies, hooks, and UI contributions."
+---
+
 # Addon Manifest
 
 Every addon needs a `rayforge-addon.yaml` file in its root directory. This manifest tells Rayforge about your addon—its name, what it provides, and how to load it.

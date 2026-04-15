@@ -1,3 +1,7 @@
+---
+description: "The Rayforge processing pipeline - how designs move from import through operations to G-code generation."
+---
+
 # Pipeline Architecture
 
 This document describes the pipeline architecture, which uses a Directed Acyclic

@@ -1,3 +1,7 @@
+---
+description: "The Rayforge driver system - how laser controller drivers work, and how to implement custom drivers for new hardware."
+---
+
 # Driver Development Guide
 
 This guide provides a high-level overview of how to create a driver in Rayforge

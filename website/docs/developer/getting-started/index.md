@@ -1,3 +1,7 @@
+---
+description: "Getting started with Rayforge development. Overview of the codebase, development workflow, and contribution guidelines."
+---
+
 # Getting the Code
 
 This guide covers how to obtain the Rayforge source code for development.

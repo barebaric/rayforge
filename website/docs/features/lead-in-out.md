@@ -1,3 +1,7 @@
+---
+description: "Add lead-in and lead-out moves to contour cuts for smoother entry and exit points. Improve cut quality at starting positions."
+---
+
 # Lead-In / Lead-Out
 
 Lead-in and lead-out moves extend each contour path with short zero-power

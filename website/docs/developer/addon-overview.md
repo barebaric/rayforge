@@ -1,3 +1,7 @@
+---
+description: "Develop add-ons for Rayforge. Learn the add-on system, hooks, manifests, and how to extend Rayforge with custom functionality."
+---
+
 # Addon Development Overview
 
 Rayforge uses an addon system based on [pluggy](https://pluggy.readthedocs.io/) that lets you extend functionality, add new machine drivers, or integrate custom logic without modifying the core codebase.

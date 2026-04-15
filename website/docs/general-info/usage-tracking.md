@@ -1,3 +1,7 @@
+---
+description: "How Rayforge handles anonymous usage tracking. Understand what data is collected and how to disable it."
+---
+
 # Usage Tracking
 
 Rayforge includes optional anonymous usage tracking to help us understand how the application is used and prioritize future development. This page explains what we track, how it works, and your privacy.

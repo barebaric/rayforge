@@ -1,3 +1,7 @@
+---
+description: "Merge adjacent lines in Rayforge to reduce laser travel and improve cutting efficiency. Combine collinear segments into single paths."
+---
+
 # Merge Lines
 
 When you import a design that contains overlapping paths, the laser may end up

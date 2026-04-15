@@ -1,3 +1,7 @@
+---
+description: "Laser engraving modes in Rayforge — constant power, variable power, dithering, and 3D relief. Configure engrave operations for photos, text, and artwork."
+---
+
 # Engrave
 
 Engrave operations fill areas with raster scanning lines, supporting multiple modes for different engraving effects. From smooth grayscale photos to 3D relief effects, choose the mode that best suits your design and material.

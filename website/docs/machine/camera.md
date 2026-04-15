@@ -1,3 +1,7 @@
+---
+description: "Set up camera calibration in Rayforge for accurate workpiece alignment. Use your camera to preview and position designs on materials."
+---
+
 # Camera Integration
 
 Rayforge supports USB camera integration for precise material alignment and positioning.

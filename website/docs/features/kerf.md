@@ -1,3 +1,7 @@
+---
+description: "Compensate for laser kerf width in Rayforge. Adjust cut paths inward or outward to achieve precise part dimensions after cutting."
+---
+
 # Kerf Compensation
 
 Kerf is the material removed by the laser beam during cutting. Kerf compensation adjusts toolpaths to account for this, ensuring cut parts match their designed dimensions.

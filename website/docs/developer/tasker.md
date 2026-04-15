@@ -1,3 +1,7 @@
+---
+description: "The Rayforge tasker system - background task management for long-running operations like path optimization and G-code generation."
+---
+
 # Tasker: Background Task Management
 
 `tasker` is a module for running long-running tasks in the background of a GTK application without freezing the UI. It provides a simple, unified API for both I/O-bound (`asyncio`) and CPU-bound (`multiprocessing`) work.

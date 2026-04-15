@@ -76,12 +76,14 @@ class GrblSerialTransport:
 
     async def send_poll(self, data: bytes) -> int:
         """
-        Send a status poll with buffer accounting.
-        Returns the buffer fill level after sending.
+        Send a status poll without buffer accounting.
+        Real-time commands (?) bypass the GRBL RX buffer.
         """
-        count = self._add(len(data))
+        # From the GRBL docs: "Like all real-time commands, the '?'
+        # character is intercepted and never enters the serial buffer"
+        # https://github.com/gnea/grbl/blob/master/doc/markdown/interface.md
         await self._transport.send(data)
-        return count
+        return self._get()
 
     async def send_command(self, data: bytes) -> int:
         """
@@ -151,12 +153,11 @@ class GrblSerialTransport:
 
     def ack_status_report(self) -> int:
         """
-        Account for the single-byte poll that triggered a status report.
-        Returns the new buffer fill level.
+        Process a status report.
+        Since polls bypass the RX buffer, we do not decrement the
+        buffer count here.
         """
-        count = self._sub(1)
-        task_mgr.loop.call_soon_threadsafe(self._space_available.set)
-        return count
+        return self._get()
 
     def reset(self) -> None:
         """Reset all buffer state (cancel, reconnect, cleanup)."""

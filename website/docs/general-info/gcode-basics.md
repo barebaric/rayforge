@@ -1,3 +1,7 @@
+---
+description: "G-code basics for laser cutting. Understand the G-code commands Rayforge generates to control your laser cutter or engraver."
+---
+
 # G-code Basics
 
 Understanding G-code helps you troubleshoot issues and customize Rayforge output.

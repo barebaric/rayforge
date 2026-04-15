@@ -7,7 +7,7 @@ export default function Contributing() {
   return (
     <Layout
       title="Contributing"
-      description="Learn how to contribute to Rayforge"
+      description="Learn how to contribute to Rayforge — report bugs, suggest features, submit code, improve docs, or support the project financially."
     >
       <div className="container container--fluid margin-vert--lg">
         <div className="row">
