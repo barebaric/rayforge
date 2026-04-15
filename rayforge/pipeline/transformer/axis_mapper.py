@@ -70,21 +70,6 @@ class AxisMapper(OpsTransformer):
             mu, eff_d, gear_ratio=ratio, reverse=self.reverse_axis
         )
 
-    def _scale_replacement(self, mu: float, z: float) -> float:
-        eff_d = KinematicMath.effective_diameter(self.rotary_diameter, z)
-        ratio = KinematicMath.gear_ratio(
-            self.rotary_type == RotaryType.ROLLERS,
-            self.rotary_diameter,
-            self.roller_diameter,
-        )
-        return KinematicMath.mu_to_scaled_mu(
-            mu,
-            eff_d,
-            self.mm_per_rotation,
-            gear_ratio=ratio,
-            reverse=self.reverse_axis,
-        )
-
     def _source_index(self) -> int:
         idx = _AXIS_INDEX.get(self.source_axis)
         if idx is None:
@@ -124,16 +109,15 @@ class AxisMapper(OpsTransformer):
                 continue
             src_val = cmd.end[si]
             z_val = cmd.end[2]
-            scaled = self._scale_replacement(src_val, z_val)
-            cmd.end = self._replace_source(cmd.end, si, scaled)
+            degrees = self._mu_to_degrees(src_val, z_val)
+            cmd.extra_axes[self.source_axis] = degrees
+            cmd.end = self._replace_source(cmd.end, si, 0.0)
 
             if isinstance(cmd, ArcToCommand):
-                z_val = cmd.end[2]
-                cp_scaled = self._scale_replacement(
-                    cmd.center_offset[si], z_val
-                )
+                src_offset = cmd.center_offset[si]
+                src_deg = self._mu_to_degrees(src_offset, z_val)
                 new_offset = list(cmd.center_offset)
-                new_offset[si] = cp_scaled
+                new_offset[si] = src_deg
                 cmd.center_offset = (
                     new_offset[0],
                     new_offset[1],
@@ -141,13 +125,13 @@ class AxisMapper(OpsTransformer):
             elif isinstance(cmd, BezierToCommand):
                 for attr in ("control1", "control2"):
                     cp = list(getattr(cmd, attr))
-                    z_val = cmd.end[2]
-                    cp[si] = self._scale_replacement(cp[si], z_val)
+                    src_deg = self._mu_to_degrees(cp[si], z_val)
+                    cp[si] = src_deg
                     setattr(cmd, attr, tuple(cp))
             elif isinstance(cmd, QuadraticBezierToCommand):
                 cp = list(cmd.control)
-                z_val = cmd.end[2]
-                cp[si] = self._scale_replacement(cp[si], z_val)
+                src_deg = self._mu_to_degrees(cp[si], z_val)
+                cp[si] = src_deg
                 cmd.control = (cp[0], cp[1], cp[2])
 
     def _run_true_4th_axis(self, commands: list, si: int) -> None:
@@ -200,3 +184,52 @@ class AxisMapper(OpsTransformer):
                 cmd.control = (cp[0], cp[1], cp[2])
 
             insert_pos += 1
+
+    @staticmethod
+    def degrees_to_scaled_mu_pass(
+        commands: list,
+        source_axis: "Axis",
+        mu_per_rotation: float,
+    ) -> None:
+        si = _AXIS_INDEX.get(source_axis)
+        if si is None or mu_per_rotation <= 0:
+            return
+        for cmd in commands:
+            if not isinstance(cmd, MovingCommand):
+                continue
+            degrees = cmd.extra_axes.pop(source_axis, None)
+            if degrees is None:
+                continue
+            scaled = KinematicMath.degrees_to_scaled_mu(
+                degrees, mu_per_rotation
+            )
+            end = list(cmd.end)
+            end[si] = scaled
+            cmd.end = (end[0], end[1], end[2])
+
+            if isinstance(cmd, ArcToCommand):
+                cp_deg = cmd.center_offset[si]
+                cp_scaled = KinematicMath.degrees_to_scaled_mu(
+                    cp_deg, mu_per_rotation
+                )
+                new_offset = list(cmd.center_offset)
+                new_offset[si] = cp_scaled
+                cmd.center_offset = (
+                    new_offset[0],
+                    new_offset[1],
+                )
+            elif isinstance(cmd, BezierToCommand):
+                for attr in ("control1", "control2"):
+                    cp = list(getattr(cmd, attr))
+                    cp_scaled = KinematicMath.degrees_to_scaled_mu(
+                        cp[si], mu_per_rotation
+                    )
+                    cp[si] = cp_scaled
+                    setattr(cmd, attr, tuple(cp))
+            elif isinstance(cmd, QuadraticBezierToCommand):
+                cp = list(cmd.control)
+                cp_scaled = KinematicMath.degrees_to_scaled_mu(
+                    cp[si], mu_per_rotation
+                )
+                cp[si] = cp_scaled
+                cmd.control = (cp[0], cp[1], cp[2])

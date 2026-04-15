@@ -1318,6 +1318,11 @@ class Machine:
             layer_ops._commands = layer_cmds
             mapper.run(layer_ops)
 
+            if mode == RotaryMode.AXIS_REPLACEMENT:
+                AxisMapper.degrees_to_scaled_mu_pass(
+                    layer_cmds, source_axis, mu_per_rotation
+                )
+
     def encode_ops(
         self, ops: "Ops", doc: "Doc"
     ) -> Tuple[str, "MachineCodeOpMap"]:
