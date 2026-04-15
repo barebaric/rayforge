@@ -1,3 +1,7 @@
+---
+description: "Optimize laser cutting paths to minimize travel distance. Reduce job time and improve cut quality with intelligent path ordering in Rayforge."
+---
+
 # Path Optimization
 
 Path optimization reorders cutting segments to minimize travel distance. The laser moves efficiently between cuts instead of jumping randomly across the work area.

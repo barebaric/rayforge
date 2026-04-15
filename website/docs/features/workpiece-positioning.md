@@ -1,3 +1,7 @@
+---
+description: "Position workpieces precisely on the canvas. Use alignment tools, snapping, and coordinate input to place designs exactly where you need them."
+---
+
 # Workpiece Positioning Guide
 
 This guide covers all the methods available in Rayforge for accurately

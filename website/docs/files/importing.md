@@ -1,3 +1,7 @@
+---
+description: "Import SVG, DXF, PDF, and raster image files into Rayforge. Supported formats and import options for laser cutting and engraving projects."
+---
+
 # Importing Files
 
 Rayforge supports importing various file formats, both vector and raster. This

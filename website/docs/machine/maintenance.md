@@ -1,3 +1,7 @@
+---
+description: "Laser cutter maintenance guide — keep your machine in top condition with regular cleaning, alignment checks, and component care."
+---
+
 # Maintenance
 
 The Maintenance page in Machine Settings helps you track machine usage and schedule maintenance tasks.

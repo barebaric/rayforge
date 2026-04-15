@@ -1,3 +1,7 @@
+---
+description: "How to submit changes to Rayforge. Follow the contribution workflow for pull requests, code review, and merging."
+---
+
 # Submitting Changes
 
 This guide covers the process for contributing code improvements to Rayforge.

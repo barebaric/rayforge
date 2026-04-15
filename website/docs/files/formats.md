@@ -1,3 +1,7 @@
+---
+description: "Supported file formats in Rayforge — SVG, DXF, PDF, PNG, JPG, BMP and more. Import vector and raster designs for laser cutting and engraving."
+---
+
 # Supported File Formats
 
 This page provides detailed information about all file formats supported by

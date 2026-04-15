@@ -1,3 +1,7 @@
+---
+description: "Canvas tools in Rayforge — select, move, resize, and transform workpieces. Master the design canvas for laser cutting and engraving projects."
+---
+
 # Canvas Tools
 
 The canvas provides tools for manipulating designs and preparing your laser jobs.

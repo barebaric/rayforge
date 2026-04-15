@@ -1,3 +1,7 @@
+---
+description: "Multi-pass cutting runs multiple passes over the same path to cut thicker materials. Configure pass count, power ramping, and progressive depth."
+---
+
 # Multi-Pass
 
 Multi-pass repeats the cutting or engraving path multiple times, optionally stepping down in Z between passes. This is useful for thick materials or creating deeper engravings.

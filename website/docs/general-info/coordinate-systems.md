@@ -1,3 +1,7 @@
+---
+description: "Understand coordinate systems in Rayforge and GRBL. Learn how X/Y axes, homing, and work coordinates relate to your laser cutter."
+---
+
 # Work Coordinate Systems (WCS)
 
 Work Coordinate Systems (WCS) allow you to define multiple reference points on

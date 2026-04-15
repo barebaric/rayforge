@@ -1,3 +1,7 @@
+---
+description: "Set up a rotary axis attachment in Rayforge for engraving and cutting cylindrical objects like cups, bottles, and tubes."
+---
+
 # Rotary Axis Setup
 
 Rayforge supports rotary attachments for engraving and cutting cylindrical objects like

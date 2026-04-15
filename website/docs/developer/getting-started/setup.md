@@ -1,3 +1,7 @@
+---
+description: "Set up the Rayforge development environment. Build, run, and debug the application from source code."
+---
+
 # Setup
 
 This guide covers setting up your development environment for Rayforge.

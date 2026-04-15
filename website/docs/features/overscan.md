@@ -1,3 +1,7 @@
+---
+description: "Overscan compensation in Rayforge - adjust for laser overshoot at high speeds to prevent overburning at scan line edges."
+---
+
 # Overscan
 
 Overscan extends raster engraving lines beyond the actual content area to ensure the laser reaches constant velocity during engraving, eliminating acceleration artifacts.

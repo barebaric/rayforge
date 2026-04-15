@@ -1,3 +1,7 @@
+---
+description: "Enable debug logging in Rayforge to diagnose issues. Collect logs and system information for bug reports and troubleshooting."
+---
+
 # Troubleshooting & Reporting Issues
 
 If you're experiencing problems with Rayforge, especially with connecting to or controlling your machine, we're here to help. The best way to get support is by providing a detailed debug report. Rayforge has a built-in tool that makes this easy.

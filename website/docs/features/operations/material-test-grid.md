@@ -1,3 +1,7 @@
+---
+description: "Generate a material test grid to find optimal laser power and speed settings for any material. Calibrate your laser cutter systematically."
+---
+
 # Material Test Grid
 
 The Material Test Grid generator creates parametric test patterns to help you find optimal laser settings for different materials.

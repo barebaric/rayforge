@@ -1,3 +1,7 @@
+---
+description: "Application settings in Rayforge — configure UI preferences, units, themes, and global defaults for your laser cutting workflow."
+---
+
 # Settings
 
 ![General Settings](/screenshots/application-general.png)

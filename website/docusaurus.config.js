@@ -18,7 +18,7 @@ function rayforgeVersionPlugin() {
 
 module.exports = {
   title: 'Rayforge',
-  tagline: 'Modern G-code sender and control software for GRBL-based laser cutters and engravers',
+  tagline: 'Free open-source laser cutter software — the LightBurn alternative for GRBL-based laser cutting and engraving',
   url: 'https://rayforge.org',
   baseUrl: '/',
   onBrokenLinks: 'warn',
@@ -51,11 +51,17 @@ module.exports = {
           path: 'blog',
           routeBasePath: 'blog',
           blogTitle: 'Rayforge Blog',
-          blogDescription: 'News, updates, tutorials, and tips about Rayforge',
+          blogDescription: 'News, release notes, tutorials, and tips about Rayforge — free laser cutting and engraving software',
           postsPerPage: 10,
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
+        },
+        sitemap: {
+          changefreq: 'weekly',
+          priority: 0.5,
+          ignorePatterns: ['/search'],
+          filename: 'sitemap.xml',
         },
       },
     ],
@@ -115,7 +121,98 @@ module.exports = {
     },
   ],
 
+  headTags: [
+    // JSON-LD: SoftwareApplication schema
+    {
+      tagName: 'script',
+      attributes: {
+        type: 'application/ld+json',
+      },
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'Rayforge',
+        description: 'Free open-source laser cutter software for GRBL-based machines. Design, simulate, and control your laser cutter or engraver with AI-powered tools, 3D preview, and a built-in sketcher.',
+        url: 'https://rayforge.org',
+        applicationCategory: 'DesignApplication',
+        operatingSystem: 'Linux, Windows, macOS',
+        offers: {
+          '@type': 'Offer',
+          price: '0',
+          priceCurrency: 'USD',
+        },
+        author: {
+          '@type': 'Organization',
+          name: 'barebaric',
+          url: 'https://github.com/barebaric',
+        },
+        screenshot: 'https://rayforge.org/screenshots/main-standard.png',
+        featureList: [
+          'AI-powered design generation',
+          '3D simulation and preview',
+          'Parametric 2D sketcher',
+          'GRBL and Smoothieware support',
+          'Rotary axis support',
+          'Material and recipe management',
+          'Path optimization',
+          'Multi-layer support',
+          'Camera calibration',
+        ].join(', '),
+        license: 'https://github.com/barebaric/rayforge/blob/main/LICENSE',
+        programmingLanguage: 'Python',
+        installUrl: 'https://rayforge.org/docs/getting-started/installation',
+      }),
+    },
+    // JSON-LD: Organization schema
+    {
+      tagName: 'script',
+      attributes: {
+        type: 'application/ld+json',
+      },
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'Rayforge',
+        url: 'https://rayforge.org',
+        logo: 'https://rayforge.org/images/icon.svg',
+        sameAs: [
+          'https://github.com/barebaric/rayforge',
+          'https://discord.gg/sTHNdTtpQJ',
+        ],
+      }),
+    },
+    // JSON-LD: WebSite schema with search action
+    {
+      tagName: 'script',
+      attributes: {
+        type: 'application/ld+json',
+      },
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'Rayforge',
+        url: 'https://rayforge.org',
+      }),
+    },
+  ],
+
   themeConfig: {
+    metadata: [
+      { name: 'keywords', content: 'laser cutter software, laser engraving software, LightBurn alternative, free laser software, open source laser software, GRBL, laser cutting software, laser control software, G-code sender, Rayforge' },
+      { name: 'author', content: 'Rayforge Contributors' },
+      { name: 'robots', content: 'index, follow' },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:site_name', content: 'Rayforge' },
+      { property: 'og:image', content: 'https://rayforge.org/images/social.png' },
+      { property: 'og:image:width', content: '1200' },
+      { property: 'og:image:height', content: '630' },
+      { property: 'og:image:alt', content: 'Rayforge - Free Open Source Laser Cutter Software' },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: 'Rayforge - Free Open Source Laser Cutter Software' },
+      { name: 'twitter:description', content: 'The complete creative studio for your laser cutter. Design, simulate, and control — with AI-powered tools, 3D preview, and a built-in sketcher.' },
+      { name: 'twitter:image', content: 'https://rayforge.org/images/social.png' },
+      { name: 'twitter:image:alt', content: 'Rayforge - Free Open Source Laser Cutter Software' },
+    ],
     navbar: {
       title: 'Rayforge',
       logo: {

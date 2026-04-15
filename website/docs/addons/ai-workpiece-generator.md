@@ -1,3 +1,7 @@
+---
+description: "Generate laser-ready designs from text descriptions using AI. The AI Workpiece Generator creates vector shapes from your prompts."
+---
+
 # AI Workpiece Generator
 
 Create laser-cut designs from text descriptions using artificial intelligence.

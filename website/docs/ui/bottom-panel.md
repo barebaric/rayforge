@@ -1,3 +1,7 @@
+---
+description: "The bottom panel in Rayforge provides job progress, G-code preview, and machine status. Monitor your laser cutter during operation."
+---
+
 # Bottom Panel
 
 The Bottom Panel at the bottom of the Rayforge window provides manual control
