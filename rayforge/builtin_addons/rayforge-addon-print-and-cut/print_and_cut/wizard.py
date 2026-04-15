@@ -226,11 +226,11 @@ class PrintAndCutWizard(PatchedDialogWindow):
         box.append(points_group)
 
         self._point1_row = Adw.ActionRow(title=_("Point 1"))
-        self._point1_row.set_subtitle(_("not set"))
+        self._point1_row.set_subtitle(_("No point picked"))
         points_group.add(self._point1_row)
 
         self._point2_row = Adw.ActionRow(title=_("Point 2"))
-        self._point2_row.set_subtitle(_("not set"))
+        self._point2_row.set_subtitle(_("No point picked"))
         points_group.add(self._point2_row)
 
         self._pick_status_row = Adw.ActionRow(title=_("Status"))
@@ -328,7 +328,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._record1_btn.connect("clicked", self._on_record_clicked, 0)
 
         self._pos1_row = Adw.ActionRow(title=_("Position 1"))
-        self._pos1_row.set_subtitle(_("not set"))
+        self._pos1_row.set_subtitle(_("Not recorded"))
         self._pos1_row.add_suffix(self._record1_btn)
         positions_group.add(self._pos1_row)
 
@@ -339,7 +339,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._record2_btn.connect("clicked", self._on_record_clicked, 1)
 
         self._pos2_row = Adw.ActionRow(title=_("Position 2"))
-        self._pos2_row.set_subtitle(_("not set"))
+        self._pos2_row.set_subtitle(_("Not recorded"))
         self._pos2_row.add_suffix(self._record2_btn)
         positions_group.add(self._pos2_row)
 
@@ -415,13 +415,13 @@ class PrintAndCutWizard(PatchedDialogWindow):
 
         if index == 0:
             self._design_point1 = (x, y)
-            self._point1_row.set_subtitle(f"({x:.2f}, {y:.2f}) mm")
+            self._point1_row.set_subtitle(_("Point picked"))
             self._pick_status_row.set_subtitle(
                 _("Click on the second alignment point on the design.")
             )
         elif index == 1:
             self._design_point2 = (x, y)
-            self._point2_row.set_subtitle(f"({x:.2f}, {y:.2f}) mm")
+            self._point2_row.set_subtitle(_("Point picked"))
             self._pick_status_row.set_subtitle(
                 _("Both points selected. Click Next to continue.")
             )
@@ -435,9 +435,9 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._design_point1 = p1
         self._design_point2 = p2
         if p1 is not None:
-            self._point1_row.set_subtitle(f"({p1[0]:.2f}, {p1[1]:.2f}) mm")
+            self._point1_row.set_subtitle(_("Point picked"))
         if p2 is not None:
-            self._point2_row.set_subtitle(f"({p2[0]:.2f}, {p2[1]:.2f}) mm")
+            self._point2_row.set_subtitle(_("Point picked"))
         self._update_pick_next_btn()
         self._save_session_state()
 
@@ -446,10 +446,10 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._design_point2 = None
         self._physical_point1 = None
         self._physical_point2 = None
-        self._point1_row.set_subtitle(_("not set"))
-        self._point2_row.set_subtitle(_("not set"))
-        self._pos1_row.set_subtitle(_("not set"))
-        self._pos2_row.set_subtitle(_("not set"))
+        self._point1_row.set_subtitle(_("No point picked"))
+        self._point2_row.set_subtitle(_("No point picked"))
+        self._pos1_row.set_subtitle(_("Not recorded"))
+        self._pos2_row.set_subtitle(_("Not recorded"))
         self._pick_status_row.set_subtitle(
             _("Click on the first alignment point on the design.")
         )
@@ -485,13 +485,9 @@ class PrintAndCutWizard(PatchedDialogWindow):
             self._design_point1 = dp1
             self._design_point2 = dp2
             if dp1 is not None:
-                self._point1_row.set_subtitle(
-                    f"({dp1[0]:.2f}, {dp1[1]:.2f}) mm"
-                )
+                self._point1_row.set_subtitle(_("Point picked"))
             if dp2 is not None:
-                self._point2_row.set_subtitle(
-                    f"({dp2[0]:.2f}, {dp2[1]:.2f}) mm"
-                )
+                self._point2_row.set_subtitle(_("Point picked"))
             if dp1 is not None and dp2 is not None:
                 self._pick_status_row.set_subtitle(
                     _("Both points selected. Click Next to continue.")
