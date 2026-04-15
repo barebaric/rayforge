@@ -22,8 +22,8 @@ class PickSurface(WorldSurface):
 
     def __init__(self, **kwargs):
         super().__init__(
-            show_grid=True,
-            show_axis=True,
+            show_grid=False,
+            show_axis=False,
             **kwargs,
         )
         self.remove_controller(self._drag_gesture)
