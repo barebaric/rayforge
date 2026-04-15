@@ -1,3 +1,7 @@
+---
+description: "Set up your laser controller device in Rayforge. Configure serial port, baud rate, and connection settings for GRBL-based machines."
+---
+
 # Device Settings
 
 The Device page in Machine Settings allows you to read and apply settings directly to your connected device (controller). These are also known as "dollar settings" or `$$` settings in GRBL.

@@ -15,7 +15,7 @@ function HeroSection() {
         {/* Left Side: Original Content */}
         <div className={styles.heroContent}>
           <h1 className={styles.heroTitle}>
-            The World's <span className={styles.titleGradient}>Most Powerful Open Source</span> Laser Software
+            Free Open Source <span className={styles.titleGradient}>Laser Cutter Software</span>
           </h1>
           <p className={styles.heroSubtitle}>
             Rayforge is a complete creative studio for your laser cutter,
@@ -178,7 +178,10 @@ function CommunitySection() {
 
 export default function Home() {
   return (
-    <Layout description="Design and create with your laser cutter - the complete creative studio for makers, artists, and crafters">
+    <Layout
+      title="Free Open Source Laser Cutter Software"
+      description="Rayforge is free open-source laser cutter and engraving software for GRBL-based machines. Design with AI, simulate in 3D, and control your laser — the LightBurn alternative."
+    >
       <main className={styles.pageWrapper}>
         
         <HeroSection />

@@ -1,3 +1,7 @@
+---
+description: "Troubleshoot connection issues with your laser cutter in Rayforge. Fix serial port, USB, and GRBL communication problems."
+---
+
 # Connection Issues
 
 This page helps you diagnose and resolve problems connecting Rayforge to your laser machine via serial connection.

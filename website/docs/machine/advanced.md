@@ -1,3 +1,7 @@
+---
+description: "Advanced machine settings in Rayforge — custom G-code, homing, and fine-tuning for experienced laser cutter users."
+---
+
 # Advanced Settings
 
 The Advanced page in Machine Settings contains additional configuration options for specialized use cases.

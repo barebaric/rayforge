@@ -1,3 +1,7 @@
+---
+description: "Frame your laser job before cutting to verify positioning. Trace the job outline with the laser at low power to confirm alignment on the material."
+---
+
 # Framing Your Job
 
 Learn how to use the framing feature to preview your job boundaries and ensure

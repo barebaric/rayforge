@@ -1,3 +1,7 @@
+---
+description: "Configure hardware settings in Rayforge — stepper motors, acceleration, travel limits, and physical dimensions of your laser cutter."
+---
+
 # Hardware Settings
 
 The Hardware page in Machine Settings configures the physical dimensions, coordinate system, and movement limits of your machine.

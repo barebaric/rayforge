@@ -1,3 +1,7 @@
+---
+description: "Configure AI provider settings in Rayforge. Connect to OpenAI-compatible services for AI-powered workpiece generation."
+---
+
 # AI Provider
 
 ![AI Provider Settings](/screenshots/application-ai.png)

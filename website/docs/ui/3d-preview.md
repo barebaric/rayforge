@@ -1,3 +1,7 @@
+---
+description: "Preview your laser job in full 3D. Visualize toolpaths, rotary axis operations, and material removal before sending G-code to your machine."
+---
+
 # 3D View
 
 The 3D view lets you visualize your G-code toolpaths and simulate job

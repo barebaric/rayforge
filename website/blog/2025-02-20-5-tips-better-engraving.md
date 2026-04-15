@@ -3,6 +3,7 @@ slug: 5-tips-better-engraving
 title: 5 Tips for Better Laser Engraving Results with Rayforge
 authors: rayforge_team
 tags: [engraving, optimization, quality, workflow]
+description: "Improve your laser engraving results with these 5 practical tips using Rayforge — free laser engraving software for better quality, speed, and consistency."
 ---
 
 ![3D Preview](/screenshots/main-3d.png)

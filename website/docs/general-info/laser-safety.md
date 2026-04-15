@@ -1,3 +1,7 @@
+---
+description: "Essential laser safety information — fire prevention, eye protection, ventilation, and safe operating procedures for laser cutters and engravers."
+---
+
 # Laser Safety
 
 Laser cutting and engraving equipment poses serious safety risks including fire, toxic fumes, and permanent eye damage.

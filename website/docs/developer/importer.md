@@ -1,3 +1,7 @@
+---
+description: "The Rayforge importer system - how file importers work and how to add support for new file formats."
+---
+
 # Importer Architecture
 
 This document describes the architecture of Rayforge's file import system,

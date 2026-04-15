@@ -1,3 +1,7 @@
+---
+description: "Manage materials in Rayforge. Save material profiles with recommended laser power and speed settings for consistent results."
+---
+
 # Materials
 
 ![Materials Settings](/screenshots/application-materials.png)

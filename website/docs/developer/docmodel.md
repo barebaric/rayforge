@@ -1,3 +1,7 @@
+---
+description: "The Rayforge document model - how designs, operations, and workpieces are represented internally in the application."
+---
+
 # Document Model Architecture
 
 The document model is the backbone of the application, representing the

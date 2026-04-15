@@ -1,3 +1,7 @@
+---
+description: "Shrink-wrap operations automatically fit engraving to the exact shape of your design. Ideal for engraving within vector outlines."
+---
+
 # Shrink Wrap
 
 Shrink Wrap creates an efficient cutting path around multiple objects by generating a boundary that "shrinks" around them. It's useful for cutting multiple parts from a sheet with minimal waste.

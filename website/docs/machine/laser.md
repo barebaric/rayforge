@@ -1,3 +1,7 @@
+---
+description: "Configure laser settings in Rayforge — set power, speed, and mode for your laser tube or diode for optimal cutting and engraving results."
+---
+
 # Laser Settings
 
 The Laser page in Machine Settings configures your laser head(s) and their

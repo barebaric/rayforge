@@ -1,3 +1,7 @@
+---
+description: "Fix Snap package permission issues in Rayforge. Grant USB serial port and camera access on Linux systems."
+---
+
 # Snap Permissions (Linux)
 
 This page explains how to configure permissions for Rayforge when installed as a Snap package on Linux.

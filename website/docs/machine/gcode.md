@@ -1,3 +1,7 @@
+---
+description: "Configure custom G-code settings in Rayforge. Adjust start, end, and pause commands for your specific GRBL or Smoothieware laser controller."
+---
+
 # G-code Settings
 
 The G-code page in Machine Settings configures how Rayforge generates G-code for your machine.

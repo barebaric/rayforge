@@ -1,3 +1,7 @@
+---
+description: "Smooth post-processing reduces jagged edges on laser-cut paths. Improve curve quality and surface finish on your laser-cut parts."
+---
+
 # Smooth Path
 
 Path smoothing reduces jagged edges and sharp transitions in your cutting paths, resulting in cleaner curves and smoother machine motion.

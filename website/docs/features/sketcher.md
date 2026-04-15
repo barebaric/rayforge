@@ -1,3 +1,7 @@
+---
+description: "Use Rayforge's built-in parametric 2D sketcher to create custom laser-ready designs with lines, circles, bezier curves, and constraints."
+---
+
 # Parametric 2D Sketcher
 
 The Parametric 2D Sketcher is a powerful feature in Rayforge that allows you to

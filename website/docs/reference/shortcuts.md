@@ -1,3 +1,7 @@
+---
+description: "Keyboard shortcuts and hotkeys in Rayforge. Speed up your laser cutting workflow with quick access to common tools and commands."
+---
+
 # Keyboard Shortcuts
 
 Complete reference of keyboard shortcuts in Rayforge.

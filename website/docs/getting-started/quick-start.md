@@ -1,3 +1,7 @@
+---
+description: "Run your first laser job with Rayforge. Learn to import a design, configure cutting and engraving operations, and send G-code to your machine."
+---
+
 # Quick Start Guide
 
 Now that Rayforge is installed and your machine is configured, let's run your first laser job! This guide will walk you through importing a design, configuring operations, and sending G-code to your machine.

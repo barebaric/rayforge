@@ -1,3 +1,7 @@
+---
+description: "Configure your laser cutter or engraver for the first time. Set up your machine, connect via USB, and get ready to cut with Rayforge."
+---
+
 # First Time Setup
 
 After installing Rayforge, you'll need to configure your laser cutter or engraver. This guide will walk you through creating your first machine and establishing a connection.

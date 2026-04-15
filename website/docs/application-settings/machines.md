@@ -1,3 +1,7 @@
+---
+description: "Manage machines in Rayforge - add, configure, and switch between different laser cutters and engravers for your projects."
+---
+
 # Machines
 
 ![Machines Settings](/screenshots/application-machines.png)

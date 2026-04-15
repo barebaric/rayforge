@@ -1,3 +1,7 @@
+---
+description: "Define no-go zones in Rayforge to protect sensitive areas of your laser cutter. Prevent the laser head from colliding with clamps and fixtures."
+---
+
 # No-Go Zones
 
 No-go zones define restricted areas on the work surface that the laser should
