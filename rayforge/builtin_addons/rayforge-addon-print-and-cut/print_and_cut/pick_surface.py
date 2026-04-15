@@ -104,6 +104,21 @@ class PickSurface(WorldSurface):
         self.points_reset.send(self)
         self.queue_draw()
 
+    def set_points(
+        self,
+        p1: Optional[Tuple[float, float]],
+        p2: Optional[Tuple[float, float]],
+    ):
+        self._point1 = p1
+        self._point2 = p2
+        if p1 is not None and p2 is not None:
+            self._pick_phase = 2
+        elif p1 is not None:
+            self._pick_phase = 1
+        else:
+            self._pick_phase = 0
+        self.queue_draw()
+
     def _hit_test_point(self, px: float, py: float) -> Optional[int]:
         if self._point1 is not None:
             sx, sy = self._world_to_pixel(*self._point1)
