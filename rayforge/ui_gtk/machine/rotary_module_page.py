@@ -375,7 +375,7 @@ class RotaryModulePage(TrackedPreferencesPage):
         mm_per_rot_adj = Gtk.Adjustment(
             lower=0, upper=100000, step_increment=1, page_increment=10
         )
-        self.mm_per_rotation_row = Adw.SpinRow(
+        self.mu_per_rotation_row = Adw.SpinRow(
             title=_("Travel per Rotation"),
             subtitle=_(
                 "Firmware distance for one full 360° rotation. "
@@ -384,10 +384,10 @@ class RotaryModulePage(TrackedPreferencesPage):
             adjustment=mm_per_rot_adj,
             digits=2,
         )
-        self.mm_per_rotation_row.connect(
+        self.mu_per_rotation_row.connect(
             "notify::value", self._on_mm_per_rotation_changed
         )
-        self.general_group.add(self.mm_per_rotation_row)
+        self.general_group.add(self.mu_per_rotation_row)
 
         default_diam_adj = Gtk.Adjustment(
             lower=1, upper=10000, step_increment=1, page_increment=10
@@ -557,7 +557,7 @@ class RotaryModulePage(TrackedPreferencesPage):
             src_idx = self._source_axis_display.index(module.source_axis)
         self.source_axis_row.set_selected(src_idx)
 
-        self.mm_per_rotation_row.set_value(module.mm_per_rotation)
+        self.mu_per_rotation_row.set_value(module.mu_per_rotation)
         self._update_mode_dependent_rows(module)
 
         self.default_diameter_row.set_value(module.default_diameter)
@@ -626,7 +626,7 @@ class RotaryModulePage(TrackedPreferencesPage):
 
     def _update_mode_dependent_rows(self, module: RotaryModule):
         is_replacement = module.mode == RotaryMode.AXIS_REPLACEMENT
-        self.mm_per_rotation_row.set_visible(is_replacement)
+        self.mu_per_rotation_row.set_visible(is_replacement)
         self.module_axis_row.set_visible(not is_replacement)
 
         if is_replacement:

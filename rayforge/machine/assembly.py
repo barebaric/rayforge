@@ -15,6 +15,7 @@ import numpy as np
 
 from ..core.geo import Point3D
 from ..core.ops.axis import Axis
+from .kinematic_math import KinematicMath
 
 if TYPE_CHECKING:
     from ..simulator.machine_state import MachineState
@@ -248,8 +249,8 @@ class Assembly:
                 if child_name in chuck_names:
                     diameter = self._chuck_diameters.get(child_name)
                     if diameter:
-                        circumference = diameter * math.pi
-                        angle_rad = (angle / circumference) * 2 * math.pi
+                        degrees = KinematicMath.mu_to_degrees(angle, diameter)
+                        angle_rad = math.radians(degrees)
                     else:
                         angle_rad = math.radians(angle)
                 else:
@@ -293,11 +294,11 @@ class Assembly:
             if not diameter:
                 result[name] = 0.0
                 continue
-            circumference = diameter * math.pi
             chuck = self._link_map[name]
             assert chuck.driver_axis is not None
             y = state.axes.get(chuck.driver_axis, 0.0)
-            result[name] = (y / circumference) * 2 * math.pi
+            degrees = KinematicMath.mu_to_degrees(y, diameter)
+            result[name] = math.radians(degrees)
         return result
 
 

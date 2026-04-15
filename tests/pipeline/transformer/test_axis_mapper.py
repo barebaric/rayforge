@@ -222,7 +222,7 @@ class TestAxisMapperReplacementRaw:
             rotary_axis=Axis.A,
             rotary_diameter=25.0,
             mode=RotaryMode.AXIS_REPLACEMENT,
-            mm_per_rotation=0.0,
+            mu_per_rotation=0.0,
         )
         mapper.run(ops)
 
@@ -242,7 +242,7 @@ class TestAxisMapperReplacementRaw:
             rotary_axis=Axis.A,
             rotary_diameter=25.0,
             mode=RotaryMode.AXIS_REPLACEMENT,
-            mm_per_rotation=0.0,
+            mu_per_rotation=0.0,
         )
         mapper.run(ops)
 
@@ -263,7 +263,7 @@ class TestAxisMapperReplacementScaled:
             rotary_axis=Axis.A,
             rotary_diameter=diameter,
             mode=RotaryMode.AXIS_REPLACEMENT,
-            mm_per_rotation=mm_per_rot,
+            mu_per_rotation=mm_per_rot,
         )
         mapper.run(ops)
 
@@ -285,7 +285,7 @@ class TestAxisMapperReplacementScaled:
             rotary_axis=Axis.A,
             rotary_diameter=diameter,
             mode=RotaryMode.AXIS_REPLACEMENT,
-            mm_per_rotation=mm_per_rot,
+            mu_per_rotation=mm_per_rot,
         )
         mapper.run(ops)
 
@@ -307,7 +307,7 @@ class TestAxisMapperReplacementScaled:
             rotary_axis=Axis.A,
             rotary_diameter=diameter,
             mode=RotaryMode.AXIS_REPLACEMENT,
-            mm_per_rotation=mm_per_rot,
+            mu_per_rotation=mm_per_rot,
         )
         mapper.run(ops)
 
@@ -332,7 +332,7 @@ class TestAxisMapperReplacementScaled:
             rotary_axis=Axis.A,
             rotary_diameter=diameter,
             mode=RotaryMode.AXIS_REPLACEMENT,
-            mm_per_rotation=mm_per_rot,
+            mu_per_rotation=mm_per_rot,
         )
         mapper.run(ops)
 
@@ -351,7 +351,7 @@ class TestAxisMapperReplacementScaled:
             rotary_axis=Axis.A,
             rotary_diameter=25.0,
             mode=RotaryMode.AXIS_REPLACEMENT,
-            mm_per_rotation=100.0,
+            mu_per_rotation=100.0,
         )
         mapper.run(ops)
 
@@ -395,7 +395,7 @@ class TestAxisMapperRollerDiameter:
             rotary_axis=Axis.A,
             rotary_diameter=object_diameter,
             mode=RotaryMode.AXIS_REPLACEMENT,
-            mm_per_rotation=mm_per_rot,
+            mu_per_rotation=mm_per_rot,
             rotary_type=RotaryType.ROLLERS,
             roller_diameter=roller_diameter,
         )
@@ -473,7 +473,7 @@ class TestAxisMapperReverseAxis:
             rotary_axis=Axis.A,
             rotary_diameter=diameter,
             mode=RotaryMode.AXIS_REPLACEMENT,
-            mm_per_rotation=mm_per_rot,
+            mu_per_rotation=mm_per_rot,
             reverse_axis=True,
         )
         mapper.run(ops)

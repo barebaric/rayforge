@@ -20,7 +20,7 @@ class TestRotaryModule:
         assert rm.axis == Axis.A
         assert rm.mode == RotaryMode.TRUE_4TH_AXIS
         assert rm.source_axis == Axis.Y
-        assert rm.mm_per_rotation == 0.0
+        assert rm.mu_per_rotation == 0.0
         assert rm.default_diameter == 25.0
         assert rm.rotary_type == RotaryType.JAWS
         assert rm.model_id is None
@@ -67,7 +67,7 @@ class TestRotaryModule:
         assert len(signals) == 7
 
         rm.set_mm_per_rotation(100.0)
-        assert rm.mm_per_rotation == 100.0
+        assert rm.mu_per_rotation == 100.0
         assert len(signals) == 8
 
     def test_set_position_no_signal_if_same(self):
@@ -166,7 +166,7 @@ class TestRotaryModule:
         assert rm2.axis == Axis.B
         assert rm2.mode == RotaryMode.AXIS_REPLACEMENT
         assert rm2.source_axis == Axis.X
-        assert rm2.mm_per_rotation == 100.0
+        assert rm2.mu_per_rotation == 100.0
         assert_array_equal(rm2.transform, rm.transform)
         assert rm2.model_id == "rotary/standard.glb"
 
@@ -177,7 +177,7 @@ class TestRotaryModule:
         assert rm.axis == Axis.A
         assert rm.mode == RotaryMode.TRUE_4TH_AXIS
         assert rm.source_axis == Axis.Y
-        assert rm.mm_per_rotation == 0.0
+        assert rm.mu_per_rotation == 0.0
         assert rm.model_id is None
         assert_array_equal(rm.transform, np.eye(4))
 

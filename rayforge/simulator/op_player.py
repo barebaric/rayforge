@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import math
 from typing import TYPE_CHECKING, Optional
 
 from ..core.layer import Layer
 from ..core.ops import Ops
 from ..core.ops.axis import Axis
 from ..core.ops.commands import LayerStartCommand, MovingCommand
+from ..machine.kinematic_math import KinematicMath
 from ..machine.models.rotary_module import RotaryMode, RotaryType
 from .machine_state import MachineState
 
@@ -26,7 +26,7 @@ class OpPlayer:
         self._current_rotary_axis: Optional[Axis] = None
         self._source_axis: Axis = Axis.Y
         self._mode: RotaryMode = RotaryMode.TRUE_4TH_AXIS
-        self._mm_per_rotation: float = 0.0
+        self._mu_per_rotation: float = 0.0
         self._diameter: float = 0.0
         self._rotary_type: RotaryType = RotaryType.JAWS
         self._roller_diameter: float = 0.0
@@ -55,7 +55,7 @@ class OpPlayer:
             self._current_rotary_axis = None
             self._source_axis = Axis.Y
             self._mode = RotaryMode.TRUE_4TH_AXIS
-            self._mm_per_rotation = 0.0
+            self._mu_per_rotation = 0.0
             self._diameter = 0.0
             self._rotary_type = RotaryType.JAWS
             self._roller_diameter = 0.0
@@ -70,7 +70,7 @@ class OpPlayer:
         if module:
             self._source_axis = module.source_axis
             self._mode = module.mode
-            self._mm_per_rotation = module.mm_per_rotation
+            self._mu_per_rotation = module.mu_per_rotation
             self._rotary_type = module.rotary_type
             self._roller_diameter = module.roller_diameter
             self._reverse_axis = module.reverse_axis
@@ -84,40 +84,35 @@ class OpPlayer:
                 self._machine.get_rotary_axis_for_layer(item)
             )
             self._mode = RotaryMode.TRUE_4TH_AXIS
-            self._mm_per_rotation = 0.0
+            self._mu_per_rotation = 0.0
             self._rotary_type = RotaryType.JAWS
             self._roller_diameter = 0.0
             self._reverse_axis = False
 
-    def _gear_ratio(self) -> float:
-        if (
-            self._rotary_type == RotaryType.ROLLERS
-            and self._roller_diameter > 0
-            and self._diameter > 0
-        ):
-            return self._diameter / self._roller_diameter
-        return 1.0
-
     def _apply_rotary_mapping(self) -> None:
-        ratio = self._gear_ratio()
-        sign = -1.0 if self._reverse_axis else 1.0
+        ratio = KinematicMath.gear_ratio(
+            self._rotary_type == RotaryType.ROLLERS,
+            self._diameter,
+            self._roller_diameter,
+        )
         if self._mode == RotaryMode.TRUE_4TH_AXIS:
             ra = self._current_rotary_axis
             if ra is None:
                 return
             value = self.state.axes.get(self._source_axis, 0.0)
+            sign = -1.0 if self._reverse_axis else 1.0
             self.state.axes[ra] = value * ratio * sign
         elif self._mode == RotaryMode.AXIS_REPLACEMENT:
-            if self._mm_per_rotation > 0 and self._diameter > 0:
+            if self._mu_per_rotation > 0 and self._diameter > 0:
                 fw_val = self.state.axes.get(self._source_axis, 0.0)
-                mm_val = (
-                    fw_val
-                    * math.pi
-                    * self._diameter
-                    / self._mm_per_rotation
-                    / ratio
-                ) * sign
-                self.state.axes[self._source_axis] = mm_val
+                mu_val = KinematicMath.scaled_mu_to_mu(
+                    fw_val,
+                    self._diameter,
+                    self._mu_per_rotation,
+                    gear_ratio=ratio,
+                    reverse=self._reverse_axis,
+                )
+                self.state.axes[self._source_axis] = mu_val
 
     def seek(self, index: int):
         self.state = self._create_home_state()
@@ -125,7 +120,7 @@ class OpPlayer:
         self._current_rotary_axis = None
         self._source_axis = Axis.Y
         self._mode = RotaryMode.TRUE_4TH_AXIS
-        self._mm_per_rotation = 0.0
+        self._mu_per_rotation = 0.0
         self._diameter = 0.0
         self._rotary_type = RotaryType.JAWS
         self._roller_diameter = 0.0
