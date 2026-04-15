@@ -1,3 +1,7 @@
+---
+description: "Configure general machine settings in Rayforge — set workspace dimensions, maximum speeds, and basic parameters for your laser cutter or engraver."
+---
+
 # General Settings
 
 The General page in Machine Settings contains basic machine information and speed settings.

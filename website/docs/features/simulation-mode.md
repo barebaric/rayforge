@@ -1,3 +1,7 @@
+---
+description: "Simulate your laser job before cutting. Preview toolpaths in 2D or full 3D, catch mistakes early, and save materials with Rayforge's simulation mode."
+---
+
 # Simulation Mode
 
 ![Simulation Mode](/screenshots/main-simulation.png)

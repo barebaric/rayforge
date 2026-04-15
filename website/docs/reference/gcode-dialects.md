@@ -1,3 +1,7 @@
+---
+description: "G-code dialects supported by Rayforge. Configure output for different GRBL versions and Smoothieware-compatible laser controllers."
+---
+
 # G-code Dialect Support
 
 Rayforge supports multiple G-code dialects to work with different controller

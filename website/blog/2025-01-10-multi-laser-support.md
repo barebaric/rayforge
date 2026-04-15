@@ -1,8 +1,9 @@
 ---
 slug: multi-laser-support
-title: Multi-Laser Support - Choose Different Lasers for Each Operation
+title: "Multi-Laser Support in Rayforge"
 authors: rayforge_team
-tags: [multi-laser, operations, workflow]
+tags: [features, multi-laser]
+description: "Rayforge now supports multiple lasers on a single machine. Configure and switch between different laser heads for cutting and engraving workflows."
 ---
 
 One of the most powerful features in Rayforge is the ability to assign

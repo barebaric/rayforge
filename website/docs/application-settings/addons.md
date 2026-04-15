@@ -1,3 +1,7 @@
+---
+description: "Install and manage add-ons in Rayforge. Extend functionality with community-built plugins for your laser cutting workflow."
+---
+
 # Addons
 
 ![Addons Settings](/screenshots/application-addons.png)

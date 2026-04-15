@@ -1,3 +1,7 @@
+---
+description: "Supported firmware in Rayforge — GRBL, Smoothieware, and compatible controllers. Choose the right firmware for your laser cutter."
+---
+
 # Firmware Compatibility
 
 This page documents firmware compatibility for laser controllers used with Rayforge.

@@ -1,3 +1,7 @@
+---
+description: "Explore the Rayforge main window — canvas, toolbar, panels, and controls for designing, simulating, and sending jobs to your laser cutter."
+---
+
 # Main Window
 
 The Rayforge main window is your primary workspace for creating and managing

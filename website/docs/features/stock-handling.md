@@ -1,3 +1,7 @@
+---
+description: "Manage stock material dimensions and positioning in Rayforge. Define workpiece size, origin, and alignment for consistent laser cutting results."
+---
+
 # Stock Handling
 
 Stock in Rayforge represents the physical material you'll be cutting or engraving. Stock is a **document-global** concept—your document can have one or more stock items, and they exist independently of layers.

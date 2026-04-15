@@ -1,3 +1,7 @@
+---
+description: "Publish and discover add-ons through Rayforge registries. Share your extensions with the laser cutting community."
+---
+
 # Addon Registries
 
 Registries are how Rayforge manages extensibility. Each registry holds a collection of related components—steps, producers, actions, and so on. When your addon registers something, it becomes available throughout the application.

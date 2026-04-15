@@ -1,3 +1,7 @@
+---
+description: "Frame outline operations trace a rectangle around your design. Use for positioning, test runs, and alignment before cutting."
+---
+
 # Frame Outline
 
 Frame Outline creates a simple rectangular cutting path around your entire design. It's the quickest way to add a clean border or cut your work free from the material sheet.

@@ -1,3 +1,7 @@
+---
+description: "Add holding tabs to laser-cut parts to keep them secured to the stock material during cutting. Prevent small pieces from shifting."
+---
+
 # Holding Tabs
 
 Holding tabs (also called bridges or tabs) are small uncut sections left along cut paths that keep parts attached to the surrounding material. This prevents cut pieces from moving during the job, which could cause misalignment, damage, or fire hazards.

@@ -1,3 +1,7 @@
+---
+description: "Automatically crop designs to fit within stock material boundaries. Prevent laser operations from exceeding the work area."
+---
+
 # Crop to Stock
 
 Crop to Stock limits cutting paths to your material boundary. Any cuts that extend beyond the stock area are trimmed, preventing the laser from cutting outside your material.
