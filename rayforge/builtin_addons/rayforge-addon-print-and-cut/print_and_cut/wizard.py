@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 MIN_POINT_DISTANCE = 0.5
 
+_session_state: dict = {}
+
 
 def calculate_alignment_transform(
     d1: Tuple[float, float],
@@ -79,6 +81,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._allow_scale: bool = False
 
         self._setup_ui()
+        self._restore_session_state()
 
     def _setup_ui(self):
         self.toast_overlay = Adw.ToastOverlay()
@@ -344,13 +347,13 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._laser_row.set_subtitle(_("X: --- Y: ---"))
         positions_group.add(self._laser_row)
 
-        if self._machine and self._machine.is_connected():
+        if self._machine:
             self._machine.state_changed.connect(self._on_machine_state_changed)
+            self._machine.connection_status_changed.connect(
+                self._on_connection_status_changed
+            )
+            self._update_connection_sensitive()
             self._update_laser_position()
-        else:
-            self._jog_widget.set_sensitive(False)
-            self._record1_btn.set_sensitive(False)
-            self._record2_btn.set_sensitive(False)
 
     def _setup_apply_panel(self):
         scroll = Gtk.ScrolledWindow()
@@ -424,6 +427,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
             )
 
         self._update_pick_next_btn()
+        self._save_session_state()
 
     def _on_design_points_changed(self, sender):
         p1 = self._pick_surface.point1
@@ -435,16 +439,22 @@ class PrintAndCutWizard(PatchedDialogWindow):
         if p2 is not None:
             self._point2_row.set_subtitle(f"({p2[0]:.2f}, {p2[1]:.2f}) mm")
         self._update_pick_next_btn()
+        self._save_session_state()
 
     def _on_design_points_reset(self, sender):
         self._design_point1 = None
         self._design_point2 = None
+        self._physical_point1 = None
+        self._physical_point2 = None
         self._point1_row.set_subtitle(_("not set"))
         self._point2_row.set_subtitle(_("not set"))
+        self._pos1_row.set_subtitle(_("not set"))
+        self._pos2_row.set_subtitle(_("not set"))
         self._pick_status_row.set_subtitle(
             _("Click on the first alignment point on the design.")
         )
         self._update_pick_next_btn()
+        self._save_session_state()
 
     def _update_pick_next_btn(self):
         p1 = self._design_point1
@@ -458,6 +468,56 @@ class PrintAndCutWizard(PatchedDialogWindow):
                 )
         else:
             self._next_btn.set_sensitive(False)
+
+    def _restore_session_state(self):
+        wp_id = self._workpiece.uid
+        state = _session_state.get(wp_id)
+        if state is None:
+            return
+
+        dp1 = state.get("design_point1")
+        dp2 = state.get("design_point2")
+        pp1 = state.get("physical_point1")
+        pp2 = state.get("physical_point2")
+
+        if dp1 is not None or dp2 is not None:
+            self._pick_surface.set_points(dp1, dp2)
+            self._design_point1 = dp1
+            self._design_point2 = dp2
+            if dp1 is not None:
+                self._point1_row.set_subtitle(
+                    f"({dp1[0]:.2f}, {dp1[1]:.2f}) mm"
+                )
+            if dp2 is not None:
+                self._point2_row.set_subtitle(
+                    f"({dp2[0]:.2f}, {dp2[1]:.2f}) mm"
+                )
+            if dp1 is not None and dp2 is not None:
+                self._pick_status_row.set_subtitle(
+                    _("Both points selected. Click Next to continue.")
+                )
+            elif dp1 is not None:
+                self._pick_status_row.set_subtitle(
+                    _("Click on the second alignment point on the design.")
+                )
+
+        if pp1 is not None:
+            self._physical_point1 = pp1
+            self._pos1_row.set_subtitle(f"({pp1[0]:.2f}, {pp1[1]:.2f}) mm")
+        if pp2 is not None:
+            self._physical_point2 = pp2
+            self._pos2_row.set_subtitle(f"({pp2[0]:.2f}, {pp2[1]:.2f}) mm")
+
+        self._update_pick_next_btn()
+
+    def _save_session_state(self):
+        wp_id = self._workpiece.uid
+        _session_state[wp_id] = {
+            "design_point1": self._design_point1,
+            "design_point2": self._design_point2,
+            "physical_point1": self._physical_point1,
+            "physical_point2": self._physical_point2,
+        }
 
     def _on_record_clicked(self, button, pos_index):
         if not self._machine or not self._machine.is_connected():
@@ -482,6 +542,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
             self._pos2_row.set_subtitle(f"({wx:.2f}, {wy:.2f}) mm")
 
         self._update_jog_next_btn()
+        self._save_session_state()
 
     def _update_jog_next_btn(self):
         p1 = self._physical_point1
@@ -494,6 +555,17 @@ class PrintAndCutWizard(PatchedDialogWindow):
 
     def _on_machine_state_changed(self, machine, state):
         self._update_laser_position()
+
+    def _on_connection_status_changed(self, sender, **kwargs):
+        self._update_connection_sensitive()
+
+    def _update_connection_sensitive(self):
+        connected = self._machine and self._machine.is_connected()
+        self._record1_btn.set_sensitive(connected)
+        self._record2_btn.set_sensitive(connected)
+        self._update_focus_sensitivity()
+        if connected:
+            self._update_laser_position()
 
     def _update_laser_position(self):
         if not self._machine:
@@ -671,6 +743,8 @@ class PrintAndCutWizard(PatchedDialogWindow):
             [(self._workpiece, old_matrix, new_matrix)]
         )
 
+        _session_state.pop(self._workpiece.uid, None)
+
         toast = Adw.Toast(title=_("Alignment applied"))
         self.toast_overlay.add_toast(toast)
         self.close()
@@ -680,6 +754,9 @@ class PrintAndCutWizard(PatchedDialogWindow):
         if self._machine:
             self._machine.state_changed.disconnect(
                 self._on_machine_state_changed
+            )
+            self._machine.connection_status_changed.disconnect(
+                self._on_connection_status_changed
             )
             head = self._machine.get_default_head()
             head.changed.disconnect(self._on_head_changed)
