@@ -42,6 +42,7 @@ from .grbl_util import (
     error_code_to_device_error,
     CommandRequest,
     parse_grbl_parser_state,
+    parse_version,
 )
 
 if TYPE_CHECKING:
@@ -333,6 +334,9 @@ class GrblSerialDriver(Driver):
 
                 logger.info("Connection established successfully.")
                 self._update_connection_status(TransportStatus.CONNECTED)
+
+                await self._send_command("$I")
+
                 logger.debug("Connection verified. Starting status polling.")
                 while transport.is_connected and self.keep_running:
                     # Skip status polling during jobs if configured
@@ -545,7 +549,23 @@ class GrblSerialDriver(Driver):
                                 "Machine entered ALARM state during job."
                             )
                         break
-                    await transport.wait_for_space()
+
+                    try:
+                        await asyncio.wait_for(
+                            transport.wait_for_space(), timeout=2.0
+                        )
+                    except asyncio.TimeoutError:
+                        if self.state.status == DeviceStatus.IDLE:
+                            logger.error(
+                                "Deadlock detected: "
+                                "machine is IDLE but buffer is full."
+                            )
+                            self._job_exception = DeviceConnectionError(
+                                "Deadlock detected during streaming: "
+                                "lost synchronization with device."
+                            )
+                            break
+
                     if self._job_exception:
                         break
                     if self._is_cancelled:
@@ -594,20 +614,34 @@ class GrblSerialDriver(Driver):
                 logger.debug(
                     "All G-code sent. Waiting for all 'ok' responses."
                 )
-                try:
-                    await transport.wait_all_pending(timeout=10.0)
-                    logger.debug("All 'ok' responses received.")
-                except asyncio.TimeoutError:
-                    if self._job_exception:
-                        logger.debug(
-                            "Join timed out due to job exception. "
-                            "Raising exception."
+
+                # Deadlock recovery
+                while not transport.pending_queue.empty():
+                    if (
+                        self._job_exception
+                        or self.state.status == DeviceStatus.ALARM
+                    ):
+                        break
+                    if self._is_cancelled:
+                        break
+
+                    try:
+                        await asyncio.wait_for(
+                            transport.pending_queue.join(), timeout=2.0
                         )
-                        raise self._job_exception
-                    logger.warning(
-                        "Join timed out without job exception. "
-                        "This may indicate a problem with the device."
-                    )
+                        logger.debug("All 'ok' responses received.")
+                        break
+                    except asyncio.TimeoutError:
+                        if self.state.status == DeviceStatus.IDLE:
+                            logger.error(
+                                "Deadlock detected: machine is IDLE but "
+                                "commands are unacknowledged."
+                            )
+                            self._job_exception = DeviceConnectionError(
+                                "Deadlock detected at end of job: lost "
+                                "synchronization with device."
+                            )
+                            break
 
             if self._job_exception:
                 raise self._job_exception
@@ -1260,6 +1294,11 @@ class GrblSerialDriver(Driver):
             self.command_status_changed.send(
                 self, status=TransportStatus.ERROR, message=line
             )
+        elif line.startswith("[VER:"):
+            version_info = parse_version([line])
+            if version_info:
+                ver_num, ver_let = version_info
+                logger.info(f"Connected to GRBL version {ver_num}{ver_let}")
         elif line.startswith("Grbl "):
             self._handshake_received.set()
             logger.debug(f"Received Grbl welcome message: {line}")
