@@ -43,6 +43,7 @@ from .grbl_util import (
     CommandRequest,
     parse_grbl_parser_state,
     parse_version,
+    strip_gcode_comments,
 )
 
 if TYPE_CHECKING:
@@ -528,7 +529,7 @@ class GrblSerialDriver(Driver):
                             )
                     break
 
-                line = line.strip()
+                line = strip_gcode_comments(line)
                 if not line:
                     continue
 

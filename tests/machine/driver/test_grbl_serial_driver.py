@@ -296,24 +296,43 @@ class TestGrblSerialDriver:
         assert driver.grbl_transport.buffer_count == 0
 
         job_finished_mock.assert_called_once_with(driver)
+        mock_serial_transport.send.assert_any_call(b"\x18")
 
     @pytest.mark.asyncio
-    async def test_cancel_stops_job(
+    async def test_comments_stripped_from_gcode(
         self,
         connected_driver: GrblSerialDriver,
         mock_serial_transport,
     ):
-        """Test that calling cancel() stops a running job."""
+        """Test that comments are stripped before sending to device."""
         driver = connected_driver
         job_finished_mock = MagicMock()
         driver.job_finished.send = job_finished_mock
 
-        long_gcode = "\n".join([f"G0 X{i}" for i in range(50)])
-        run_task = asyncio.create_task(driver.run_raw(long_gcode))
-        await asyncio.sleep(0.05)
+        gcode = (
+            "G0 X10 ; rapid move\n"
+            "(this is a comment line)\n"
+            "G1 X20 (cut move) Y30\n"
+            "; pure comment\n"
+            "G0 X40"
+        )
+        run_task = asyncio.create_task(driver.run_raw(gcode))
 
-        await driver.cancel()
-        mock_serial_transport.send.assert_any_call(b"\x18")
+        expected = [
+            b"G0 X10\n",
+            b"G1 X20  Y30\n",
+            b"G0 X40\n",
+        ]
+        for cmd in expected:
+            await asyncio.sleep(0.01)
+            mock_serial_transport.send.assert_any_call(cmd)
+            driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
+
+        await run_task
+        job_finished_mock.assert_called_once_with(driver)
+        mock_serial_transport.send.assert_any_call(b"G0 X10\n")
+        mock_serial_transport.send.assert_any_call(b"G1 X20  Y30\n")
+        mock_serial_transport.send.assert_any_call(b"G0 X40\n")
 
         try:
             await asyncio.wait_for(run_task, timeout=0.1)
