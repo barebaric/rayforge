@@ -8,7 +8,8 @@ from .serial import SerialTransport
 
 logger = logging.getLogger(__name__)
 
-GRBL_RX_BUFFER_SIZE = 128
+# Older Grbl versions support a maximum RX buffer size of 127.
+GRBL_RX_BUFFER_SIZE = 127
 
 
 class PendingCommand(NamedTuple):
@@ -21,11 +22,10 @@ class GrblSerialTransport:
     Wraps a SerialTransport with GRBL's character-counting flow control
     protocol.
 
-    GRBL devices have a 128-byte serial receive buffer. This transport
-    tracks how many bytes are outstanding and provides backpressure so
-    callers never overflow it. Thread-safe: the buffer count is mutated
-    from both async tasks and the serial receive callback (which may run
-    in a separate thread).
+    GRBL devices have a 128-byte serial receive buffer (safe limit 127).
+    This transport tracks how many bytes are outstanding and provides
+    backpressure so callers never overflow it. Thread-safe: the buffer count
+    is mutated from both async tasks and the serial receive callback.
     """
 
     def __init__(self, transport: SerialTransport):
