@@ -7,6 +7,23 @@ from gettext import gettext as _
 from ...core.varset import Var, VarSet
 from .driver import DeviceStatus, DeviceState, Pos, DeviceError
 
+_gcode_comment_re = re.compile(r"\([^)]*\)")
+
+
+def strip_gcode_comments(line: str) -> str:
+    """
+    Strip G-code comments from a line.
+
+    Removes:
+    - Everything after ';' (semicolon comments)
+    - Content between '(' and ')' (parenthetical comments)
+    """
+    line = _gcode_comment_re.sub("", line)
+    idx = line.find(";")
+    if idx >= 0:
+        line = line[:idx]
+    return line.strip()
+
 
 # GRBL Next-gen command requests
 @dataclass

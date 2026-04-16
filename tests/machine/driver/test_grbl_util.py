@@ -13,6 +13,7 @@ from rayforge.machine.driver.grbl_util import (
     _parse_pos_triplet,
     parse_version,
     version_supports_single_axis_homing,
+    strip_gcode_comments,
 )
 from rayforge.machine.driver.driver import DeviceStatus, DeviceState
 
@@ -562,3 +563,23 @@ class TestVersionSupportsSingleAxisHoming:
             version_num, version_letter
         )
         assert result == expected
+
+
+class TestStripGcodeComments:
+    @pytest.mark.parametrize(
+        "input_line, expected",
+        [
+            ("G0 X10 ; rapid move", "G0 X10"),
+            ("G0 X10;rapid move", "G0 X10"),
+            ("; just a comment", ""),
+            ("G0 X10", "G0 X10"),
+            ("G0 X10 (rapid move)", "G0 X10"),
+            ("G0 X10 (rapid) Y20 (another)", "G0 X10  Y20"),
+            ("(whole line comment)", ""),
+            ("G0 X10 (inline) ; trailing", "G0 X10"),
+            ("  G0 X10  ", "G0 X10"),
+            ("", ""),
+        ],
+    )
+    def test_strip_comments(self, input_line, expected):
+        assert strip_gcode_comments(input_line) == expected
