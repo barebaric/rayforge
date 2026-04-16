@@ -316,7 +316,7 @@
     "message": "拔掉您的激光控制器，等待 5 秒钟，然后重新插入。"
   },
   "install.restartRayforge": {
-    "message": "重启 Rayforge："
+    "message": "重启 Rayforge"
   },
   "install.closeRelaunch": {
     "message": "完全关闭并重新启动。"
@@ -686,5 +686,203 @@
   },
   "homepage.community.cta": {
     "message": "分享您的作品"
+  },
+  "sponsor.title": {
+    "message": "赞助 Rayforge"
+  },
+  "sponsor.description": {
+    "message": "让您的激光切割机入驻 Rayforge —— 预配置、精美展示，还有视频内容和教程支持。一起合作吧！"
+  },
+  "sponsor.hero.gradient": {
+    "message": "合作"
+  },
+  "sponsor.hero.title": {
+    "message": "Rayforge"
+  },
+  "sponsor.hero.subtitle": {
+    "message": "让您的机器被全球激光切割和雕刻爱好者看到。软件、教程、社区交给我们 —— 您只管做好硬件。"
+  },
+  "sponsor.hero.cta": {
+    "message": "联系我们"
+  },
+  "sponsor.stats.downloads": {
+    "message": "月下载量"
+  },
+  "sponsor.stats.stars": {
+    "message": "GitHub 星标"
+  },
+  "sponsor.stats.commits": {
+    "message": "提交数"
+  },
+  "sponsor.stats.languages": {
+    "message": "语言"
+  },
+  "sponsor.stats.platforms": {
+    "message": "平台"
+  },
+  "sponsor.stats.opensource": {
+    "message": "免费且开源"
+  },
+  "sponsor.benefits.title": {
+    "message": "您能获得什么"
+  },
+  "sponsor.benefits.subtitle": {
+    "message": "我们做的是真正的深度集成，不是随便放个 logo。来看看合作都包含什么。"
+  },
+  "sponsor.benefit.brandSelector.title": {
+    "message": "首次运行设置"
+  },
+  "sponsor.benefit.brandSelector.description": {
+    "message": "用户首次打开 Rayforge，选个品牌和型号就全搞定了。"
+  },
+  "sponsor.benefit.machineProfile.title": {
+    "message": "品牌专属配置"
+  },
+  "sponsor.benefit.machineProfile.description": {
+    "message": "您的机器带着 logo 和照片出现在选择器里，您的品牌每天都在用户眼前。"
+  },
+  "sponsor.benefit.showcase.title": {
+    "message": "推荐展示"
+  },
+  "sponsor.benefit.showcase.description": {
+    "message": "应用和网站上都有专门位置展示合作伙伴机器，附带照片、规格和购买链接。"
+  },
+  "sponsor.benefit.badgeProgram.title": {
+    "message": "\"兼容 Rayforge\""
+  },
+  "sponsor.benefit.badgeProgram.description": {
+    "message": "获得带品牌标识的徽章素材，用于您的网站、包装和电商平台商品页，链接回 Rayforge 以建立更高的客户信任。"
+  },
+  "sponsor.benefit.materialPresets.title": {
+    "message": "材料预设"
+  },
+  "sponsor.benefit.materialPresets.description": {
+    "message": "我们专门为您的机器调好功率、速度和次数参数。支持工单少了，客户更开心。"
+  },
+  "sponsor.benefit.coBrandedInstall.title": {
+    "message": "捆绑安装"
+  },
+  "sponsor.benefit.coBrandedInstall.description": {
+    "message": "通过二维码或定制安装包把 Rayforge 随机器一起发。省掉自己做软件的成本。"
+  },
+  "sponsor.benefit.prioritySupport.title": {
+    "message": "优先支持"
+  },
+  "sponsor.benefit.prioritySupport.description": {
+    "message": "有新控制器？我们很快就能支持 —— 想想发布当天，而不是几个月后。您的路线图有着落了。"
+  },
+  "sponsor.benefit.youtubeSpotlights.title": {
+    "message": "机器视频"
+  },
+  "sponsor.benefit.youtubeSpotlights.description": {
+    "message": "教程、安装、开箱、材料测试等内容，全在 Barebaric YouTube 频道。"
+  },
+  "sponsor.benefit.githubVisibility.title": {
+    "message": "GitHub 曝光"
+  },
+  "sponsor.benefit.githubVisibility.description": {
+    "message": "您的 logo 出现在 Rayforge README 里，开发者和创客都能看到。机器配置文件标注\"由 [品牌] 贡献\"。"
+  },
+  "sponsor.benefit.forumPresence.title": {
+    "message": "社区入驻"
+  },
+  "sponsor.benefit.forumPresence.description": {
+    "message": "在 GitHub Discussions 和 Discord 上有您的品牌官方位置，直接和用户交流。"
+  },
+  "sponsor.benefit.analytics.title": {
+    "message": "用户洞察"
+  },
+  "sponsor.benefit.analytics.description": {
+    "message": "关于客户实际使用材料和功能的汇总匿名数据。（当然都是用户自愿参与的。）"
+  },
+  "sponsor.benefit.coMarketing.title": {
+    "message": "交叉推广"
+  },
+  "sponsor.benefit.coMarketing.description": {
+    "message": "博客文章、社媒推荐和评测，覆盖 YouTube、GitHub 和 Discord。"
+  },
+  "sponsor.comparison.title": {
+    "message": "为什么选择 Rayforge？"
+  },
+  "sponsor.comparison.subtitle": {
+    "message": "没有其他免费激光软件能为厂商提供这样的合作机会。来看看对比。"
+  },
+  "sponsor.comparison.costToUser": {
+    "message": "用户成本"
+  },
+  "sponsor.comparison.free": {
+    "message": "免费"
+  },
+  "sponsor.comparison.costToBrand": {
+    "message": "品牌成本"
+  },
+  "sponsor.comparison.lb.costToBrand": {
+    "message": "按许可证转售"
+  },
+  "sponsor.comparison.grbl.costToBrand": {
+    "message": "无计划"
+  },
+  "sponsor.comparison.rf.costToBrand": {
+    "message": "可选合作"
+  },
+  "sponsor.comparison.brandVisibility": {
+    "message": "品牌可见性"
+  },
+  "sponsor.comparison.lb.brandVisibility": {
+    "message": "兼容性列表"
+  },
+  "sponsor.comparison.grbl.brandVisibility": {
+    "message": "联属优惠券"
+  },
+  "sponsor.comparison.rf.brandVisibility": {
+    "message": "应用内首次运行品牌选择器 + 展示"
+  },
+  "sponsor.comparison.machineProfiles": {
+    "message": "机器配置文件"
+  },
+  "sponsor.comparison.lb.machineProfiles": {
+    "message": "通用（按控制器）"
+  },
+  "sponsor.comparison.grbl.machineProfiles": {
+    "message": "无"
+  },
+  "sponsor.comparison.rf.machineProfiles": {
+    "message": "品牌专属，预调优"
+  },
+  "sponsor.comparison.linuxSupport": {
+    "message": "Linux 支持"
+  },
+  "sponsor.comparison.no": {
+    "message": "否"
+  },
+  "sponsor.comparison.rf.linuxSupport": {
+    "message": "原生（GTK4 / Flatpak / Snap）"
+  },
+  "sponsor.comparison.crossPlatform": {
+    "message": "跨平台"
+  },
+  "sponsor.comparison.grbl.crossPlatform": {
+    "message": "仅限 Windows"
+  },
+  "sponsor.comparison.devPace": {
+    "message": "开发节奏"
+  },
+  "sponsor.comparison.lb.devPace": {
+    "message": "中等"
+  },
+  "sponsor.comparison.grbl.devPace": {
+    "message": "停滞"
+  },
+  "sponsor.comparison.rf.devPace": {
+    "message": "每周发布"
+  },
+  "sponsor.cta.title": {
+    "message": "聊聊吧"
+  },
+  "sponsor.cta.text": {
+    "message": "不管您是想把机器预配置到 Rayforge 里、做个专属视频评测，还是来点完全定制化的合作 —— 都可以聊聊。我很灵活，乐意找到对双方都有意义的合作方式。用来开发配置文件的硬件借用也随时欢迎。"
+  },
+  "sponsor.cta.button": {
+    "message": "打个招呼"
   }
 }

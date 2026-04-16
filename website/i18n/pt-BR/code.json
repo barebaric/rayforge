@@ -686,5 +686,204 @@
   },
   "homepage.community.cta": {
     "message": "Compartilhe suas criações"
+  },
+  "sponsor.title": {
+    "message": "Patrocine o Rayforge"
+  },
+  "sponsor.description": {
+    "message": "Coloque suas máquinas laser no Rayforge — pré-configuradas, em destaque e com conteúdo de vídeo e tutoriais. Vamos trabalhar juntos!"
+  },
+  "sponsor.hero.gradient": {
+    "message": "Parceria"
+  },
+  "sponsor.hero.title": {
+    "message": "com o Rayforge"
+  },
+  "sponsor.hero.subtitle": {
+    "message": "Mostre suas máquinas para entusiastas de corte e gravação a laser em todo lugar. Nós cuidamos do software, dos tutoriais e da comunidade — você faz um hardware excelente."
+  },
+  "sponsor.hero.cta": {
+    "message": "Entre em Contato"
+  },
+  "sponsor.stats.downloads": {
+    "message": "Downloads Mensais"
+  },
+  "sponsor.stats.stars": {
+    "message": "Estrelas no GitHub"
+  },
+  "sponsor.stats.commits": {
+    "message": "Commits"
+  },
+  "sponsor.stats.languages": {
+    "message": "Idiomas"
+  },
+  "sponsor.stats.platforms": {
+    "message": "Plataformas"
+  },
+  "sponsor.stats.opensource": {
+    "message": "Gratuito e Código Aberto"
+  },
+  "sponsor.benefits.title": {
+    "message": "O que Você Ganha"
+  },
+  "sponsor.benefits.subtitle": {
+    "message": "Estamos construindo integrações de verdade, não só colando seu logo em uma página. Veja como é uma parceria."
+  },
+  "sponsor.benefit.brandSelector.title": {
+    "message": "Configuração Inicial"
+  },
+  "sponsor.benefit.brandSelector.description": {
+    "message": "Quando alguém abre o Rayforge pela primeira vez, escolhe a marca e o modelo — e tudo funciona automaticamente."
+  },
+  "sponsor.benefit.machineProfile.title": {
+    "message": "Perfis com Marca"
+  },
+  "sponsor.benefit.machineProfile.description": {
+    "message": "Suas máquinas aparecem com seu logo e fotos direto no seletor. Sua marca, em destaque, todo dia."
+  },
+  "sponsor.benefit.showcase.title": {
+    "message": "Vitrine Recomendada"
+  },
+  "sponsor.benefit.showcase.description": {
+    "message": "Um espaço dedicado no app e no site mostrando máquinas parceiras com fotos, especificações e links de compra."
+  },
+  "sponsor.benefit.badgeProgram.title": {
+    "message": "\"Funciona com Rayforge\""
+  },
+  "sponsor.benefit.badgeProgram.description": {
+    "message": "Receba gráficos de selo com sua marca para seu site, embalagem e anúncios em marketplaces, com links de volta ao Rayforge para aumentar a confiança dos clientes."
+  },
+  "sponsor.benefit.materialPresets.title": {
+    "message": "Presets de Material"
+  },
+  "sponsor.benefit.materialPresets.description": {
+    "message": "Ajustamos potência, velocidade e passes especificamente para suas máquinas. Menos dor de cabeça no suporte e clientes mais felizes."
+  },
+  "sponsor.benefit.coBrandedInstall.title": {
+    "message": "Instalação Inclusa"
+  },
+  "sponsor.benefit.coBrandedInstall.description": {
+    "message": "Envie o Rayforge com sua máquina via QR code ou instalador personalizado. Economize o custo de criar seu próprio software."
+  },
+  "sponsor.benefit.prioritySupport.title": {
+    "message": "Suporte Prioritário"
+  },
+  "sponsor.benefit.prioritySupport.description": {
+    "message": "Tem um controlador novo? A gente adiciona suporte rápido — pense no dia do lançamento, não meses depois. Seu roadmap está coberto."
+  },
+  "sponsor.benefit.youtubeSpotlights.title": {
+    "message": "Destaques de Máquinas"
+  },
+  "sponsor.benefit.youtubeSpotlights.description": {
+    "message": "Tutoriais, configuração, unboxing, testes de material e mais — tudo no canal Barebaric no YouTube."
+  },
+  "sponsor.benefit.githubVisibility.title": {
+    "message": "Visibilidade no GitHub"
+  },
+  "sponsor.benefit.githubVisibility.description": {
+    "message": "Seu logo no README do Rayforge, visto por desenvolvedores e makers. Perfis de máquina são commitados com \"Contribuído por [Marca]\"."
+  },
+  "sponsor.benefit.forumPresence.title": {
+    "message": "Presença na Comunidade"
+  },
+  "sponsor.benefit.forumPresence.description": {
+    "message": "Um espaço oficial para sua marca no GitHub Discussions e Discord para conversar diretamente com os usuários."
+  },
+  "sponsor.benefit.analytics.title": {
+    "message": "Insights de Uso"
+  },
+  "sponsor.benefit.analytics.description": {
+    "message": "Dados agregados e anonimizados sobre quais materiais e recursos seus clientes realmente usam. (Tudo opt-in, claro.)"
+  },
+  "sponsor.benefit.coMarketing.title": {
+    "message": "Promoção Cruzada"
+  },
+  "sponsor.benefit.coMarketing.description": {
+    "message": "Posts em blog, menções nas redes sociais e reviews pelo YouTube, GitHub e Discord."
+  },
+  "sponsor.comparison.title": {
+    "message": "Por que Rayforge?"
+  },
+  "sponsor.comparison.subtitle": {
+    "message": "Nenhum outro software laser gratuito oferece aos fabricantes nada parecido. Veja como nos comparamos."
+  },
+  "sponsor.comparison.costToUser": {
+    "message": "Custo para o Usuário"
+  },
+  "sponsor.comparison.free": {
+    "message": "Gratuito"
+  },
+  "sponsor.comparison.costToBrand": {
+    "message": "Custo para a Marca"
+  },
+  "sponsor.comparison.lb.costToBrand": {
+    "message": "Revenda por licença"
+  },
+  "sponsor.comparison.grbl.costToBrand": {
+    "message": "Sem programa"
+  },
+  "sponsor.comparison.rf.costToBrand": {
+    "message": "Parceria Opcional"
+  },
+  "sponsor.comparison.brandVisibility": {
+    "message": "Visibilidade de Marca"
+  },
+  "sponsor.comparison.lb.brandVisibility": {
+    "message": "Lista de compatibilidade"
+  },
+  "sponsor.comparison.grbl.brandVisibility": {
+    "message": "Cupons de afiliados"
+  },
+  "sponsor.comparison.rf.brandVisibility": {
+    "message": "Seletor de marca no app na primeira execução + vitrine"
+  },
+  "sponsor.comparison.machineProfiles": {
+    "message": "Perfis de Máquina"
+  },
+  "sponsor.comparison.lb.machineProfiles": {
+    "message": "Genéricos (por controlador)"
+  },
+  "sponsor.comparison.grbl.machineProfiles": {
+    "message": "Nenhum"
+  },
+  "sponsor.comparison.rf.machineProfiles": {
+    "message": "Específicos da marca, pré-ajustados"
+  },
+  "sponsor.comparison.linuxSupport": {
+    "message": "Suporte Linux"
+  },
+  "sponsor.comparison.no": {
+    "message": "Não"
+  },
+  "sponsor.comparison.rf.linuxSupport": {
+    "message": "Nativo (GTK4 / Flatpak / Snap)"
+  },
+  "sponsor.comparison.crossPlatform": {
+    "message": "Multiplataforma"
+  },
+  "sponsor.comparison.grbl.crossPlatform": {
+    "message": "Somente Windows"
+  },
+  "sponsor.comparison.devPace": {
+    "message": "Ritmo de Desenvolvimento"
+  },
+  "sponsor.comparison.lb.devPace": {
+    "message": "Moderado"
+  },
+  "sponsor.comparison.grbl.devPace": {
+    "message": "Estagnado"
+  },
+  "sponsor.comparison.rf.devPace": {
+    "message": "Lançamentos semanais"
+  },
+
+  "sponsor.cta.title": {
+    "message": "Vamos Conversar"
+  },
+  "sponsor.cta.text": {
+    "message": "Seja para ter suas máquinas pré-configuradas no Rayforge, um review em vídeo dedicado ou algo totalmente personalizado — me mande uma mensagem. Sou flexível e estou sempre aberto a encontrar algo que faça sentido para os dois. Empréstimo de hardware para desenvolvimento de perfis também é sempre bem-vindo."
+  },
+  "sponsor.cta.button": {
+    "message": "Diga Olá"
   }
 }
