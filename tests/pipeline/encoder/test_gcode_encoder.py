@@ -5,12 +5,15 @@ from rayforge.core.ops import (
     Ops,
     BezierToCommand,
     MoveToCommand,
+    LineToCommand,
     SetPowerCommand,
     SetCutSpeedCommand,
+    SetTravelSpeedCommand,
     JobStartCommand,
     JobEndCommand,
 )
 from rayforge.machine.models.dialect.grbl import GRBL_DIALECT
+from rayforge.machine.models.dialect.grbl_raster import GRBL_RASTER_DIALECT
 from rayforge.machine.models.dialect.marlin import MARLIN_DIALECT
 from rayforge.pipeline.encoder.context import GcodeContext, JobInfo
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
@@ -162,3 +165,80 @@ class TestHandleBezierTo:
 
         joined = "\n".join(gcode)
         assert "G5" in joined
+
+
+class TestG0G1FeedrateSharing:
+    """
+    Regression test for issue #210.
+
+    In GRBL, the F word is modal across G0 and G1. When G0 emits an F
+    parameter, subsequent G1 commands must re-emit their own F value,
+    even when modal_feedrate is enabled.
+    """
+
+    def _encode_ops(self, ops, dialect):
+        encoder = _make_encoder(dialect)
+        context = _make_context()
+        gcode = []
+        for cmd in ops:
+            encoder._handle_command(gcode, cmd, context)
+        return gcode
+
+    def test_g1_re_emits_feedrate_after_g0_with_modal_feedrate(self):
+        ops = Ops()
+        ops.add(JobStartCommand())
+        ops.add(SetPowerCommand(1.0))
+        ops.add(SetCutSpeedCommand(3000))
+        ops.add(SetTravelSpeedCommand(1000))
+        ops.add(MoveToCommand((0.0, 0.0, 0.0)))
+        ops.add(LineToCommand((10.0, 0.0, 0.0)))
+        ops.add(LineToCommand((10.0, 10.0, 0.0)))
+        ops.add(MoveToCommand((20.0, 0.0, 0.0)))
+        ops.add(LineToCommand((30.0, 0.0, 0.0)))
+        ops.add(JobEndCommand())
+
+        gcode = self._encode_ops(ops, GRBL_RASTER_DIALECT)
+
+        g1_lines = [line for line in gcode if line.startswith("G1")]
+        assert len(g1_lines) == 3
+        assert "F3000" in g1_lines[0]
+        assert "F3000" in g1_lines[2]
+
+    def test_g1_omits_feedrate_when_no_g0_intervenes(self):
+        ops = Ops()
+        ops.add(JobStartCommand())
+        ops.add(SetPowerCommand(1.0))
+        ops.add(SetCutSpeedCommand(3000))
+        ops.add(SetTravelSpeedCommand(1000))
+        ops.add(MoveToCommand((0.0, 0.0, 0.0)))
+        ops.add(LineToCommand((10.0, 0.0, 0.0)))
+        ops.add(LineToCommand((10.0, 10.0, 0.0)))
+        ops.add(LineToCommand((0.0, 10.0, 0.0)))
+        ops.add(JobEndCommand())
+
+        gcode = self._encode_ops(ops, GRBL_RASTER_DIALECT)
+
+        g1_lines = [line for line in gcode if line.startswith("G1")]
+        assert len(g1_lines) == 3
+        assert "F3000" in g1_lines[0]
+        assert "F" not in g1_lines[1]
+        assert "F" not in g1_lines[2]
+
+    def test_non_modal_dialect_always_emits_feedrate(self):
+        ops = Ops()
+        ops.add(JobStartCommand())
+        ops.add(SetPowerCommand(1.0))
+        ops.add(SetCutSpeedCommand(3000))
+        ops.add(SetTravelSpeedCommand(1000))
+        ops.add(MoveToCommand((0.0, 0.0, 0.0)))
+        ops.add(LineToCommand((10.0, 0.0, 0.0)))
+        ops.add(MoveToCommand((20.0, 0.0, 0.0)))
+        ops.add(LineToCommand((30.0, 0.0, 0.0)))
+        ops.add(JobEndCommand())
+
+        gcode = self._encode_ops(ops, GRBL_DIALECT)
+
+        g1_lines = [line for line in gcode if line.startswith("G1")]
+        assert len(g1_lines) == 2
+        assert "F3000" in g1_lines[0]
+        assert "F3000" in g1_lines[1]
