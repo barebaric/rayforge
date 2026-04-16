@@ -514,6 +514,7 @@ class GcodeEncoder(OpsEncoder):
             self._emit_modal_speed(gcode, self.travel_speed or 0)
             if self.travel_speed is not None:
                 f_command = f" F{self._format_feed(self.travel_speed)}"
+                self._emitted_cut_feed = None
             template_vars["f_command"] = f_command
 
         s_command = ""
