@@ -5,7 +5,6 @@ channels = ["conda-forge"]
 platforms = ["linux-64", "win-64"]
 
 [tool.pixi]
-workdir = ".."
 
 [environments]
 default = { features = ["build"] }
@@ -39,13 +38,13 @@ pytest-mock = "*"
 pytest-cov = "*"
 
 [tasks]
-compile-translations = "bash scripts/update_translations.sh --compile-only"
+compile-translations = "cd .. && bash scripts/update_translations.sh --compile-only"
 
 [tasks.test]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)" }
-cmd = "pwd && ls tests/ && pytest -v --ignore=tests/ui_gtk --tb=short -rA"
+cmd = "cd .. && pwd && ls tests/ && pytest -v --ignore=tests/ui_gtk --tb=short -rA"
 
 [tasks.build]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)" }
-cmd = "bash scripts/win/pixi_win_build.sh"
+cmd = "cd .. && bash scripts/win/pixi_win_build.sh"
 depends-on = ["compile-translations"]
