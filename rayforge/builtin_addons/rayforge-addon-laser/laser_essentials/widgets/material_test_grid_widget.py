@@ -74,6 +74,7 @@ class MaterialTestGridSettingsWidget(
 
         self._build_preset_selector(producer)
         self._build_test_type_selector(producer)
+        self._build_grid_mode_selector(producer)
         self._build_grid_dimensions(producer)
         self._build_shape_size(producer)
         self._build_spacing(producer)
@@ -117,17 +118,76 @@ class MaterialTestGridSettingsWidget(
             "notify::selected", self._on_test_type_changed
         )
 
+    def _build_grid_mode_selector(self, producer: MaterialTestGridProducer):
+        """Builds the grid mode dropdown."""
+        from ..producers.material_test_grid_producer import GridMode
+
+        mode_labels = [m.value for m in GridMode]
+        string_list = Gtk.StringList.new(mode_labels)
+        self.grid_mode_row = Adw.ComboRow(
+            title=_("Grid Mode"),
+            subtitle=_("Choose which parameters to vary on axes"),
+            model=string_list,
+        )
+        current_mode = producer.grid_mode.value
+        for i, label in enumerate(mode_labels):
+            if label == current_mode:
+                self.grid_mode_row.set_selected(i)
+                break
+        self.add(self.grid_mode_row)
+        self.grid_mode_row.connect(
+            "notify::selected", self._on_grid_mode_changed
+        )
+
     def _build_power_and_speed_group(self, producer: MaterialTestGridProducer):
         """Builds the group for power and speed settings."""
         group = Adw.PreferencesGroup(
-            title=_("Speed &amp; Power"),
-            description=_(
-                "Define the range of speeds and powers for the test grid"
-            ),
+            title=_("Parameters"),
+            description=_("Define the parameter ranges for the test grid"),
         )
         self.page.add(group)
+        self._param_group = group
 
-        # Power Range
+        machine_max_speed = self.step.max_cut_speed
+
+        # Fixed Speed (used in Power vs Passes mode)
+        fixed_speed_adj = Gtk.Adjustment(
+            lower=1.0,
+            upper=machine_max_speed,
+            step_increment=10.0,
+            value=min(producer.fixed_speed, machine_max_speed),
+        )
+        self.fixed_speed_row = Adw.SpinRow(
+            title=_("Fixed Speed"),
+            subtitle=_("Constant speed for all cells (mm/min)"),
+            adjustment=fixed_speed_adj,
+            digits=0,
+        )
+        group.add(self.fixed_speed_row)
+        self.fixed_speed_row.connect(
+            "changed",
+            lambda r: self._debounce(self._on_fixed_speed_changed, r),
+        )
+
+        # Fixed Power (used in Speed vs Passes mode)
+        fixed_power_adj = Gtk.Adjustment(
+            lower=1,
+            upper=100,
+            step_increment=0.1,
+            value=producer.fixed_power,
+        )
+        self.fixed_power_row, self.fixed_power_scale = create_slider_row(
+            title=_("Fixed Power (%)"),
+            adjustment=fixed_power_adj,
+            subtitle=_("Constant power for all cells"),
+            digits=1,
+            on_value_changed=lambda s: self._debounce(
+                self._on_fixed_power_changed, s
+            ),
+        )
+        group.add(self.fixed_power_row)
+
+        # Power Range (used in Power vs Speed and Power vs Passes modes)
         min_power, max_power = producer.power_range
         self.min_power_adj = Gtk.Adjustment(
             lower=1, upper=100, step_increment=0.1, value=min_power
@@ -138,7 +198,8 @@ class MaterialTestGridSettingsWidget(
             subtitle=_("For first column"),
             digits=1,
         )
-        group.add(min_power_row)
+        self.min_power_row = min_power_row
+        group.add(self.min_power_row)
 
         self.max_power_adj = Gtk.Adjustment(
             lower=1, upper=100, step_increment=0.1, value=max_power
@@ -149,7 +210,8 @@ class MaterialTestGridSettingsWidget(
             subtitle=_("For last column"),
             digits=1,
         )
-        group.add(max_power_row)
+        self.max_power_row = max_power_row
+        group.add(self.max_power_row)
 
         self.min_power_handler_id = self.min_power_scale.connect(
             "value-changed", self._on_min_power_scale_changed
@@ -158,7 +220,7 @@ class MaterialTestGridSettingsWidget(
             "value-changed", self._on_max_power_scale_changed
         )
 
-        # Speed Range
+        # Speed Range (used in Power vs Speed and Speed vs Passes modes)
         min_speed, max_speed = producer.speed_range
         machine_max_speed = self.step.max_cut_speed
         min_speed = min(min_speed, machine_max_speed)
@@ -192,6 +254,39 @@ class MaterialTestGridSettingsWidget(
         )
         self.speed_max_row.connect(
             "changed", lambda r: self._debounce(self._on_speed_max_changed, r)
+        )
+
+        # Passes Range (used in Power vs Passes and Speed vs Passes modes)
+        min_passes, max_passes = producer.passes_range
+        min_passes_adj = Gtk.Adjustment(
+            lower=1, upper=50, step_increment=1, value=min_passes
+        )
+        self.passes_min_row = Adw.SpinRow(
+            title=_("Minimum Passes"),
+            subtitle=_("Starting number of passes"),
+            adjustment=min_passes_adj,
+            digits=0,
+        )
+        group.add(self.passes_min_row)
+
+        max_passes_adj = Gtk.Adjustment(
+            lower=1, upper=50, step_increment=1, value=max_passes
+        )
+        self.passes_max_row = Adw.SpinRow(
+            title=_("Maximum Passes"),
+            subtitle=_("Ending number of passes"),
+            adjustment=max_passes_adj,
+            digits=0,
+        )
+        group.add(self.passes_max_row)
+
+        self.passes_min_row.connect(
+            "changed",
+            lambda r: self._debounce(self._on_passes_min_changed, r),
+        )
+        self.passes_max_row.connect(
+            "changed",
+            lambda r: self._debounce(self._on_passes_max_changed, r),
         )
 
         # Label settings
@@ -232,6 +327,9 @@ class MaterialTestGridSettingsWidget(
         self._on_labels_toggled(
             self.include_labels_switch, producer.include_labels
         )
+
+        self._update_control_visibility()
+        self._update_dimension_labels()
 
         return False  # for GLib.idle_add
 
@@ -361,6 +459,18 @@ class MaterialTestGridSettingsWidget(
         self.min_power_adj.set_value(power_range[0])
         self.max_power_adj.set_value(power_range[1])
 
+        # Cancel any debounced callbacks triggered by set_value() above.
+        # DebounceMixin uses a single timer slot, so rapid set_value()
+        # calls cause earlier callbacks to be lost. We commit directly
+        # below instead.
+        if self._debounce_timer > 0:
+            GLib.source_remove(self._debounce_timer)
+            self._debounce_timer = 0
+
+        self._update_range_param("speed_range", 0, min_speed)
+        self._update_range_param("speed_range", 1, max_speed)
+        self._commit_power_range_change()
+
         model = cast(Gtk.StringList, self.test_type_row.get_model())
         for i in range(model.get_n_items()):
             if model.get_string(i) == test_type:
@@ -464,6 +574,85 @@ class MaterialTestGridSettingsWidget(
     def _on_label_speed_changed(self, spin_row):
         new_value = get_spinrow_float(spin_row)
         self._update_param("label_speed", new_value)
+
+    def _on_grid_mode_changed(self, row: Adw.ComboRow, _pspec):
+        selected_idx = row.get_selected()
+        if selected_idx == Gtk.INVALID_LIST_POSITION:
+            return
+        model = cast(Gtk.StringList, row.get_model())
+        mode_text = model.get_string(selected_idx)
+        self._update_param("grid_mode", mode_text)
+        self._update_control_visibility()
+        self._update_dimension_labels()
+
+    def _on_fixed_speed_changed(self, spin_row):
+        new_value = get_spinrow_float(spin_row)
+        self._update_param("fixed_speed", new_value)
+
+    def _on_fixed_power_changed(self, scale: Gtk.Scale):
+        self._update_param("fixed_power", scale.get_value())
+
+    def _on_passes_min_changed(self, spin_row):
+        new_value = get_spinrow_int(spin_row)
+        self._update_range_param("passes_range", 0, new_value)
+
+    def _on_passes_max_changed(self, spin_row):
+        new_value = get_spinrow_int(spin_row)
+        self._update_range_param("passes_range", 1, new_value)
+
+    def _get_current_grid_mode(self) -> str:
+        from ..producers.material_test_grid_producer import GridMode
+
+        selected_idx = self.grid_mode_row.get_selected()
+        if selected_idx == Gtk.INVALID_LIST_POSITION:
+            return GridMode.POWER_VS_SPEED.value
+        model = cast(Gtk.StringList, self.grid_mode_row.get_model())
+        text = model.get_string(selected_idx)
+        return text if text else GridMode.POWER_VS_SPEED.value
+
+    def _update_control_visibility(self):
+        mode = self._get_current_grid_mode()
+        show_power_range = mode in ("Power vs Speed", "Power vs Passes")
+        show_speed_range = mode in ("Power vs Speed", "Speed vs Passes")
+        show_passes_range = mode in ("Power vs Passes", "Speed vs Passes")
+        show_fixed_speed = mode == "Power vs Passes"
+        show_fixed_power = mode == "Speed vs Passes"
+
+        self.fixed_speed_row.set_visible(show_fixed_speed)
+        self.fixed_power_row.set_visible(show_fixed_power)
+
+        self.min_power_row.set_visible(show_power_range)
+        self.max_power_row.set_visible(show_power_range)
+        self.min_power_scale.set_visible(show_power_range)
+        self.max_power_scale.set_visible(show_power_range)
+
+        self.speed_min_row.set_visible(show_speed_range)
+        self.speed_max_row.set_visible(show_speed_range)
+
+        self.passes_min_row.set_visible(show_passes_range)
+        self.passes_max_row.set_visible(show_passes_range)
+
+    def _update_dimension_labels(self):
+        mode = self._get_current_grid_mode()
+        if mode == "Power vs Passes":
+            col_title = _("Columns (Power Steps)")
+            col_sub = _("Number of power variations")
+            row_title = _("Rows (Passes Steps)")
+            row_sub = _("Number of passes variations")
+        elif mode == "Speed vs Passes":
+            col_title = _("Columns (Speed Steps)")
+            col_sub = _("Number of speed variations")
+            row_title = _("Rows (Passes Steps)")
+            row_sub = _("Number of passes variations")
+        else:
+            col_title = _("Columns (Power Steps)")
+            col_sub = _("Number of power variations")
+            row_title = _("Rows (Speed Steps)")
+            row_sub = _("Number of speed variations")
+        self.cols_row.set_title(col_title)
+        self.cols_row.set_subtitle(col_sub)
+        self.rows_row.set_title(row_title)
+        self.rows_row.set_subtitle(row_sub)
 
     # Helper methods
     def _update_param(self, param_name: str, new_value: Any):

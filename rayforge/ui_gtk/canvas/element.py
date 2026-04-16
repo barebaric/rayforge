@@ -155,6 +155,7 @@ class CanvasElement:
         self.debounce_ms: int = debounce_ms
         self._debounce_timer_id: Optional[int] = None
         self._update_future: Optional[Future] = None
+        self._update_generation: int = 0
         self.pixel_perfect_hit = pixel_perfect_hit
         self.hit_distance: float = hit_distance
         self.is_editable: bool = is_editable
@@ -398,16 +399,24 @@ class CanvasElement:
                 self.canvas.queue_draw()
             return False
 
+        # Bump the generation so that any stale render results from
+        # earlier updates (still in-flight on other thread-pool workers)
+        # are silently discarded in _on_update_complete.
+        self._update_generation += 1
+        gen = self._update_generation
+
         # Submit the thread-safe part to the executor with correct pixel dims.
         self._update_future = self._executor.submit(
             self.render_to_surface, render_width, render_height
         )
         # Add a callback to handle the result on the main thread
-        self._update_future.add_done_callback(self._on_update_complete)
+        self._update_future.add_done_callback(
+            lambda f, g=gen: self._on_update_complete(f, g)
+        )
 
         return False  # For GLib.timeout_add, run only once
 
-    def _on_update_complete(self, future: Future):
+    def _on_update_complete(self, future: Future, generation: int):
         """
         Callback executed when the background render is finished.
 
@@ -416,6 +425,8 @@ class CanvasElement:
 
         Args:
             future: The Future object from the completed task.
+            generation: The generation counter value that was current
+                when this render was submitted.
         """
         if future.cancelled():
             logger.debug(f"Update for {self.__class__.__name__} cancelled.")
@@ -427,6 +438,13 @@ class CanvasElement:
                 f"{self.__class__.__name__}: {exc}",
                 exc_info=exc,
             )
+            return
+
+        # Discard stale render results.  When rapid changes occur
+        # (e.g. switching presets), multiple render futures can be
+        # in-flight concurrently.  Only the result whose generation
+        # matches the current one is applied.
+        if generation != self._update_generation:
             return
 
         # The result is the new cairo surface
