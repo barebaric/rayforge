@@ -43,7 +43,7 @@ compile-translations = "bash scripts/update_translations.sh --compile-only"
 
 [tasks.test]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)" }
-cmd = "pytest -v --ignore=tests/ui_gtk"
+cmd = "pwd && ls tests/ && pytest -v --ignore=tests/ui_gtk --tb=short -rA"
 
 [tasks.build]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)" }
