@@ -146,6 +146,11 @@ class GrblSerialTransport:
         Raises ``asyncio.QueueEmpty`` when no pending command exists.
         """
         pending = self._pending.get_nowait()
+        logger.debug(
+            f"Buffer ack: freeing {pending.length} bytes for "
+            f"op_index={pending.op_index} "
+            f"(pending queue size: {self._pending.qsize()})"
+        )
         self._sub(pending.length)
         self._pending.task_done()
         task_mgr.loop.call_soon_threadsafe(self._space_available.set)
@@ -188,6 +193,11 @@ class GrblSerialTransport:
         with self._lock:
             self._rx_buffer_count -= n
             if self._rx_buffer_count < 0:
+                logger.warning(
+                    f"Buffer underflow: count went to "
+                    f"{self._rx_buffer_count} after freeing {n} "
+                    f"bytes. Clamping to 0."
+                )
                 self._rx_buffer_count = 0
             return self._rx_buffer_count
 
