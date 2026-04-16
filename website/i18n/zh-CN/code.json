@@ -104,12 +104,7 @@
   "install.cloneRepo": {
     "message": "克隆仓库"
   },
-  "install.installSystemDependency": {
-    "message": "安装系统依赖"
-  },
-  "install.installGtkAdwaita": {
-    "message": "安装所需的 Gtk/Adwaita 包："
-  },
+
   "install.installDependencies": {
     "message": "安装依赖项"
   },

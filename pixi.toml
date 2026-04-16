@@ -152,6 +152,10 @@ depends-on = ["compile-translations"]
 cmd = "bash scripts/build-deb.sh --source"
 depends-on = ["compile-translations"]
 
+[dependencies]
+libglvnd = ">=1.7.0,<2"
+libadwaita = ">=1.8.4,<2"
+
 # Tasks for developing and generating the website
 [feature.website.tasks]
 site-install = { cmd = "npm install", cwd = "website" }

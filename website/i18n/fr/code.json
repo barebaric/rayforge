@@ -104,12 +104,7 @@
   "install.cloneRepo": {
     "message": "Cloner le dépôt"
   },
-  "install.installSystemDependency": {
-    "message": "Installer la dépendance système"
-  },
-  "install.installGtkAdwaita": {
-    "message": "Installez le paquet Gtk/Adwaita requis :"
-  },
+
   "install.installDependencies": {
     "message": "Installer les dépendances"
   },

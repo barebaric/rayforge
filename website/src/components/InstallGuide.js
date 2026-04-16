@@ -365,15 +365,6 @@ cd rayforge`}
       <div className="install-step">
         <div className="install-step-number">3</div>
         <div className="install-step-content">
-          <h5><Translate id="install.installSystemDependency">Install System Dependency</Translate></h5>
-          <p><Translate id="install.installGtkAdwaita">Install the required Gtk/Adwaita package:</Translate></p>
-          <CodeBlock language="bash">sudo apt install gir1.2-adw-1</CodeBlock>
-        </div>
-      </div>
-
-      <div className="install-step">
-        <div className="install-step-number">4</div>
-        <div className="install-step-content">
           <h5><Translate id="install.installDependencies">Install Dependencies</Translate></h5>
           <p>
             <Translate id="install.pixi.autoVenv">
@@ -386,7 +377,7 @@ cd rayforge`}
       </div>
 
       <div className="install-step">
-        <div className="install-step-number">5</div>
+        <div className="install-step-number">4</div>
         <div className="install-step-content">
           <h5><Translate id="install.addDialoutGroup">Add User to dialout Group</Translate></h5>
           <p><Translate id="install.requiredSerialAccess">Required for serial port access:</Translate></p>
@@ -401,7 +392,7 @@ cd rayforge`}
       </div>
 
       <div className="install-step">
-        <div className="install-step-number">6</div>
+        <div className="install-step-number">5</div>
         <div className="install-step-content">
           <h5><Translate id="install.runRayforge">Run Rayforge</Translate></h5>
           <CodeBlock language="bash">pixi run rayforge</CodeBlock>
