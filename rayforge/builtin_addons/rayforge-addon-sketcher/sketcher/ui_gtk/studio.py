@@ -285,7 +285,7 @@ class SketchStudio(Gtk.Box):
         self.shortcut_controller = Gtk.ShortcutController()
         self.shortcut_controller.set_scope(Gtk.ShortcutScope.MANAGED)
         self.shortcut_controller.set_propagation_phase(
-            Gtk.PropagationPhase.CAPTURE
+            Gtk.PropagationPhase.BUBBLE
         )
 
         shortcuts = {
