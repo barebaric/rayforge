@@ -44,84 +44,22 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
-      - name: Set up MSYS2 Environment Shell
-        id: msys2
-        uses: msys2/setup-msys2@v2
+      - uses: prefix-dev/setup-pixi@v0.8.3
         with:
-          msystem: MINGW64
-          #update: true
-          # Minimal packages required to run the setup script itself
-          install: base-devel git unzip wget zip
+          manifest-path: windows/pixi.toml
 
-      - name: Configure Environment Paths
-        shell: msys2 {0}
-        run: |
-          # Use cygpath to reliably convert the runner's Windows path to an MSYS2 path.
-          # This is the standard and most robust method.
-          MSYS2_PATH_VAR=$(cygpath -u "${{ steps.msys2.outputs.msys2-location }}")
+      - name: Run Test Suite
+        run: pixi run --manifest-path windows/pixi.toml test
 
-          echo "MSYS2_PATH=$MSYS2_PATH_VAR" >> $GITHUB_ENV
-
-          # Add necessary binaries to the system PATH for subsequent steps
-          echo "$MSYS2_PATH_VAR/mingw64/bin" >> $GITHUB_PATH
-          echo "$MSYS2_PATH_VAR/usr/bin" >> $GITHUB_PATH
-
-      - name: Install Dependencies (win_setup.sh)
-        shell: msys2 {0}
-        run: |
-          # The MSYS2_PATH is required by the setup script to generate the .msys2_env file.
-          export MSYS2_PATH=${{ env.MSYS2_PATH }}
-          bash scripts/win/win_setup.sh
-
-      - name: Verify GI Typelib Files
-        shell: msys2 {0}
-        if: false
-        run: |
-          source $GITHUB_WORKSPACE/.msys2_env
-          echo "Listing GI typelib files:"
-          ls -l $GI_TYPELIB_PATH/*.typelib
-
-      - name: List MSYS2 packages
-        shell: msys2 {0}
-        if: false
-        run: |
-          source $GITHUB_WORKSPACE/.msys2_env
-          pacman --version
-          pacman -Q
-
-      - name: Check Cairo DLL Dependencies
-        shell: msys2 {0}
-        if: false
-        run: |
-          source $GITHUB_WORKSPACE/.msys2_env
-          $MSYS2_PATH/mingw64/bin/ntldd -R $MSYS2_PATH/mingw64/bin/libcairo-2.dll
-          $MSYS2_PATH/mingw64/bin/ntldd -R $MSYS2_PATH/mingw64/bin/libcairo-gobject-2.dll
-          $MSYS2_PATH/mingw64/bin/objdump -p $MSYS2_PATH/mingw64/bin/libcairo-2.dll | grep "DLL Name"
-          $MSYS2_PATH/mingw64/bin/objdump -p $MSYS2_PATH/mingw64/bin/libcairo-gobject-2.dll | grep "DLL Name"
-
-      - name: Run Test Suite (win_test.sh)
-        shell: msys2 {0}
-        run: |
-          # Enable debug logging for Python
-          export PYTHONUNBUFFERED=1
-          export PYTHONFAULTHANDLER=1
-          # Enable RUST backtrace for vtracer
-          export RUST_BACKTRACE=1
-          # The test script will source .msys2_env internally.
-          bash scripts/win/win_test.sh
-
-      - name: Run Build Process (win_build.sh)
-        shell: msys2 {0}
-        run: |
-          # The build script will source .msys2_env internally.
-          bash scripts/win/win_build.sh "${{ env.VERSION }}"
+      - name: Run Build Process
+        shell: bash
+        run: pixi run --manifest-path windows/pixi.toml build "${{ env.VERSION }}"
 
       - name: Compress PyInstaller Bundle
-        shell: msys2 {0}
+        shell: pwsh
         run: |
-          BUNDLE_DIR="dist/rayforge-v${{ env.VERSION }}"
-          ZIP_FILE="dist/rayforge-v${{ env.VERSION }}-windows-bundle.zip"
-          zip -r9 "${ZIP_FILE}" "${BUNDLE_DIR}"
+          Compress-Archive -Path "dist/rayforge-v${{ env.VERSION }}" `
+            -DestinationPath "dist/rayforge-v${{ env.VERSION }}-windows-bundle.zip"
 
       - name: Upload PyInstaller bundle
         uses: actions/upload-artifact@v4
@@ -151,24 +89,16 @@ jobs:
           name: rayforge-v${{ needs.build.outputs.version }}-windows-bundle
 
       - name: Extract Bundle
-        shell: bash
+        shell: pwsh
         run: |
-          unzip rayforge-v${{ needs.build.outputs.version }}-windows-bundle.zip
+          Expand-Archive -Path "rayforge-v${{ needs.build.outputs.version }}-windows-bundle.zip" `
+            -DestinationPath "dist"
 
       - name: Test Executable (CLI)
         shell: bash
         run: |
-          echo "Listing files in current directory:"
-          ls -l
-
-          # Define paths based on the extracted directory
           BUNDLE_DIR="dist/rayforge-v${{ needs.build.outputs.version }}"
           EXECUTABLE_NAME="rayforge-v${{ needs.build.outputs.version }}.exe"
-
-          echo "Listing files in extracted directory:"
-          ls -lR "${BUNDLE_DIR}"
-
-          echo "Running executable directly:"
           ./"${BUNDLE_DIR}/${EXECUTABLE_NAME}" --help
 
       - name: Test Executable (UI Smoke Test)
@@ -200,13 +130,11 @@ jobs:
       - name: Download Installer Artifact
         uses: actions/download-artifact@v4
         with:
-          # For the release, we use the installer artifact
           name: rayforge-v${{ needs.build.outputs.version }}-installer.zip
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          # The file to attach to the release is the installer
           files: rayforge-v${{ needs.build.outputs.version }}-installer.exe
           draft: false
           prerelease: ${{ steps.release_info.outputs.is_prerelease }}
