@@ -30,5 +30,9 @@
   "item.label.Discord": {
     "message": "Discord",
     "description": "Navbar item with label Discord"
+  },
+  "item.label.Sponsor": {
+    "message": "赞助",
+    "description": "Navbar item with label Sponsor"
   }
 }

@@ -238,6 +238,11 @@ module.exports = {
           position: 'left',
         },
         {
+          to: '/sponsor',
+          label: 'Sponsor',
+          position: 'left',
+        },
+        {
           to: '/blog',
           label: 'Blog',
           position: 'left',

@@ -1,0 +1,487 @@
+/* Sponsor Page Styles */
+
+.pageWrapper {
+  background-color: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* --- Hero Section --- */
+.hero {
+  position: relative;
+  padding: 5rem 2rem 4rem;
+  text-align: center;
+  background:
+    radial-gradient(at 30% 0%, rgba(255, 159, 67, 0.1) 0px, transparent 50%),
+    radial-gradient(at 70% 0%, rgba(95, 39, 205, 0.1) 0px, transparent 50%),
+    linear-gradient(180deg, var(--ifm-background-color) 0%, var(--ifm-background-color) 100%);
+}
+
+html[data-theme='dark'] .hero {
+  background:
+    radial-gradient(at 30% 0%, rgba(255, 159, 67, 0.06) 0px, transparent 50%),
+    radial-gradient(at 70% 0%, rgba(95, 39, 205, 0.06) 0px, transparent 50%),
+    linear-gradient(180deg, #121212 0%, #1a1a1c 100%);
+}
+
+.heroInner {
+  max-width: 800px;
+  margin: 0 auto;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.heroTitle {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 1.25rem;
+  color: var(--ifm-font-color-base);
+}
+
+.heroTitleGradient {
+  background: linear-gradient(135deg, #ff9f43 0%, #ee5253 50%, #5f27cd 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline;
+}
+
+.heroSubtitle {
+  font-size: 1.2rem;
+  color: var(--ifm-color-emphasis-700);
+  line-height: 1.7;
+  margin-bottom: 2rem;
+}
+
+.heroCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem 2.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff !important;
+  background: linear-gradient(90deg, #ff9f43, #ee5253);
+  border-radius: 50px;
+  text-decoration: none !important;
+  box-shadow: 0 10px 20px rgba(238, 82, 83, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  gap: 0.5rem;
+}
+
+.heroCta:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px rgba(238, 82, 83, 0.4);
+  color: #fff !important;
+}
+
+/* --- Stats Section --- */
+.statsSection {
+  padding: 3rem 1rem;
+  background: var(--ifm-color-emphasis-50);
+  border-top: 1px solid var(--ifm-color-emphasis-100);
+  border-bottom: 1px solid var(--ifm-color-emphasis-100);
+}
+
+html[data-theme='dark'] .statsSection {
+  background: #161618;
+  border-color: #2a2a2c;
+}
+
+.statsGrid {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.5rem;
+  text-align: center;
+}
+
+.statItem {
+  padding: 1rem;
+}
+
+.statNumber {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+  background: linear-gradient(135deg, #ff9f43, #5f27cd);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.statLabel {
+  font-size: 0.85rem;
+  color: var(--ifm-color-emphasis-600);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* --- Benefits Section --- */
+.benefitsSection {
+  padding: 5rem 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.sectionTitle {
+  font-size: 2.25rem;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 1rem;
+  color: var(--ifm-font-color-base);
+}
+
+.sectionSubtitle {
+  text-align: center;
+  color: var(--ifm-color-emphasis-700);
+  font-size: 1.1rem;
+  margin-bottom: 3.5rem;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.7;
+}
+
+.benefitGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.benefitCard {
+  background: var(--ifm-card-background-color, #fff);
+  border-radius: 20px;
+  padding: 2rem;
+  border: 1px solid var(--ifm-color-emphasis-100);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
+}
+
+html[data-theme='dark'] .benefitCard {
+  background: #1e1e20;
+  border-color: #2a2a2c;
+}
+
+.benefitCard:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+}
+
+.benefitIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.benefitIconCyan {
+  background: rgba(0, 210, 211, 0.1);
+  color: #00d2d3;
+}
+
+.benefitIconPurple {
+  background: rgba(95, 39, 205, 0.1);
+  color: #5f27cd;
+}
+
+.benefitIconOrange {
+  background: rgba(255, 159, 67, 0.1);
+  color: #ff9f43;
+}
+
+.benefitIconRed {
+  background: rgba(238, 82, 83, 0.1);
+  color: #ee5253;
+}
+
+.benefitTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: var(--ifm-font-color-base);
+}
+
+.benefitDescription {
+  font-size: 0.95rem;
+  color: var(--ifm-color-emphasis-700);
+  line-height: 1.65;
+  margin-bottom: 1rem;
+}
+
+.benefitValue {
+  font-size: 0.85rem;
+  color: var(--ifm-color-emphasis-600);
+  font-style: italic;
+  padding-left: 1rem;
+  border-left: 3px solid var(--color-ray-purple-light);
+  line-height: 1.6;
+}
+
+html[data-theme='dark'] .benefitValue {
+  border-left-color: #5f27cd;
+}
+
+/* --- Comparison Section --- */
+.comparisonSection {
+  padding: 5rem 1rem;
+  background: var(--ifm-color-emphasis-50);
+  border-top: 1px solid var(--ifm-color-emphasis-100);
+  border-bottom: 1px solid var(--ifm-color-emphasis-100);
+}
+
+html[data-theme='dark'] .comparisonSection {
+  background: #161618;
+  border-color: #2a2a2c;
+}
+
+.comparisonInner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.comparisonTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--ifm-color-emphasis-100);
+  background: var(--ifm-card-background-color, #fff);
+}
+
+html[data-theme='dark'] .comparisonTable {
+  background: #1e1e20;
+  border-color: #2a2a2c;
+}
+
+.comparisonTable th {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--ifm-color-emphasis-100);
+  color: var(--ifm-color-emphasis-700);
+}
+
+html[data-theme='dark'] .comparisonTable th {
+  background: #252527;
+  color: var(--ifm-color-emphasis-500);
+}
+
+.comparisonTable td {
+  padding: 0.875rem 1.25rem;
+  border-top: 1px solid var(--ifm-color-emphasis-100);
+  font-size: 0.95rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+html[data-theme='dark'] .comparisonTable td {
+  border-top-color: #2a2a2c;
+}
+
+.comparisonTable td:first-child {
+  font-weight: 600;
+  color: var(--ifm-font-color-base);
+}
+
+.comparisonHighlight {
+  color: #ff9f43 !important;
+  font-weight: 700 !important;
+}
+
+.comparisonTable tr:hover td {
+  background: var(--ifm-color-emphasis-50);
+}
+
+html[data-theme='dark'] .comparisonTable tr:hover td {
+  background: #252527;
+}
+
+/* --- Tiers Section --- */
+.tiersSection {
+  padding: 5rem 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.tiersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.tierCard {
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  border: 2px solid var(--ifm-color-emphasis-100);
+  background: var(--ifm-card-background-color, #fff);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+html[data-theme='dark'] .tierCard {
+  background: #1e1e20;
+  border-color: #2a2a2c;
+}
+
+.tierCard:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+}
+
+.tierFeatured {
+  border-color: #ff9f43;
+  box-shadow: 0 0 40px rgba(255, 159, 67, 0.1);
+}
+
+.tierFeatured:hover {
+  box-shadow: 0 20px 40px rgba(255, 159, 67, 0.15);
+}
+
+.tierBadge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, #ff9f43, #ee5253);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 1.25rem;
+  border-radius: 50px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tierName {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  color: var(--ifm-font-color-base);
+  text-align: center;
+}
+
+.tierPrice {
+  font-size: 2.5rem;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 0.25rem;
+  background: linear-gradient(135deg, #ff9f43, #5f27cd);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.tierPriceSuffix {
+  font-size: 0.9rem;
+  color: var(--ifm-color-emphasis-600);
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.tierFeatures {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tierFeatures li {
+  padding: 0.5rem 0;
+  padding-left: 1.75rem;
+  position: relative;
+  font-size: 0.95rem;
+  color: var(--ifm-color-emphasis-700);
+  line-height: 1.5;
+}
+
+.tierFeatures li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #00d2d3;
+  font-weight: 900;
+}
+
+/* --- CTA Section --- */
+.ctaSection {
+  padding: 5rem 1rem;
+  text-align: center;
+  background:
+    radial-gradient(at 50% 100%, rgba(95, 39, 205, 0.08) 0px, transparent 50%),
+    var(--ifm-background-color);
+}
+
+html[data-theme='dark'] .ctaSection {
+  background:
+    radial-gradient(at 50% 100%, rgba(95, 39, 205, 0.05) 0px, transparent 50%),
+    #121212;
+}
+
+.ctaInner {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.ctaTitle {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  color: var(--ifm-font-color-base);
+}
+
+.ctaText {
+  color: var(--ifm-color-emphasis-700);
+  font-size: 1.1rem;
+  line-height: 1.7;
+  margin-bottom: 2rem;
+}
+
+/* --- Animations --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Mobile --- */
+@media (max-width: 996px) {
+  .heroTitle {
+    font-size: 2.25rem;
+  }
+
+  .benefitGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .tiersGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .comparisonTable {
+    font-size: 0.85rem;
+  }
+
+  .comparisonTable th,
+  .comparisonTable td {
+    padding: 0.625rem 0.75rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

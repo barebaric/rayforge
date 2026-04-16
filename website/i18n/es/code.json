@@ -375,6 +375,309 @@
   "install.needHelpDescription": {
     "message": "Para ayuda adicional, informe de un problema en GitHub o únase a nuestro Discord."
   },
+  "theme.ErrorPageContent.title": {
+    "message": "Esta página no existe.",
+    "description": "The title of the fallback page when the page crashed"
+  },
+  "theme.BackToTopButton.buttonAriaLabel": {
+    "message": "Volver arriba",
+    "description": "The ARIA label for the back to top button"
+  },
+  "theme.blog.archive.title": {
+    "message": "Archivo",
+    "description": "The page & hero title of the blog archive page"
+  },
+  "theme.blog.archive.description": {
+    "message": "Archivo",
+    "description": "The page & hero description of the blog archive page"
+  },
+  "theme.blog.paginator.navAriaLabel": {
+    "message": "Navegación de la lista de artículos del blog",
+    "description": "The ARIA label for the blog pagination"
+  },
+  "theme.blog.paginator.newerEntries": {
+    "message": "Entradas más recientes",
+    "description": "The label used to navigate to the newer blog posts page (previous page)"
+  },
+  "theme.blog.paginator.olderEntries": {
+    "message": "Entradas más antiguas",
+    "description": "The label used to navigate to the older blog posts page (next page)"
+  },
+  "theme.blog.post.paginator.navAriaLabel": {
+    "message": "Navegación de artículos del blog",
+    "description": "The ARIA label for the blog posts pagination"
+  },
+  "theme.blog.post.paginator.newerPost": {
+    "message": "Artículo más reciente",
+    "description": "The blog post button label to navigate to the newer/previous post"
+  },
+  "theme.blog.post.paginator.olderPost": {
+    "message": "Artículo más antiguo",
+    "description": "The blog post button label to navigate to the older/next post"
+  },
+  "theme.tags.tagsPageLink": {
+    "message": "Ver todas las etiquetas",
+    "description": "The label of the link targeting the tag list page"
+  },
+  "theme.colorToggle.ariaLabel.mode.system": {
+    "message": "Modo del sistema",
+    "description": "The name for the system color mode"
+  },
+  "theme.colorToggle.ariaLabel.mode.light": {
+    "message": "Modo claro",
+    "description": "The name for the light color mode"
+  },
+  "theme.colorToggle.ariaLabel.mode.dark": {
+    "message": "Modo oscuro",
+    "description": "The name for the dark color mode"
+  },
+  "theme.colorToggle.ariaLabel": {
+    "message": "Cambiar entre modo claro y oscuro (actualmente {mode})",
+    "description": "The ARIA label for the color mode toggle"
+  },
+  "theme.docs.breadcrumbs.navAriaLabel": {
+    "message": "Migas de pan",
+    "description": "The ARIA label for the breadcrumbs"
+  },
+  "theme.docs.DocCard.categoryDescription.plurals": {
+    "message": "{count} elementos",
+    "description": "The default description for a category card in the generated index about how many items this category includes"
+  },
+  "theme.docs.paginator.navAriaLabel": {
+    "message": "Navegación de documentos",
+    "description": "The ARIA label for the docs pagination"
+  },
+  "theme.docs.paginator.previous": {
+    "message": "Anterior",
+    "description": "The label used to navigate to the previous doc"
+  },
+  "theme.docs.paginator.next": {
+    "message": "Siguiente",
+    "description": "The label used to navigate to the next doc"
+  },
+  "theme.docs.tagDocListPageTitle.nDocsTagged": {
+    "message": "un documento etiquetado|{count} documentos etiquetados",
+    "description": "Pluralized label for \"{count} docs tagged\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.docs.tagDocListPageTitle": {
+    "message": "{nDocsTagged} con \"{tagName}\"",
+    "description": "The title of the page for a docs tag"
+  },
+  "theme.docs.versionBadge.label": {
+    "message": "Versión: {versionLabel}"
+  },
+  "theme.docs.versions.unreleasedVersionLabel": {
+    "message": "Esta es documentación no publicada para {siteTitle} {versionLabel}.",
+    "description": "The label used to tell the user that he's browsing an unreleased doc version"
+  },
+  "theme.docs.versions.unmaintainedVersionLabel": {
+    "message": "Esta es documentación para {siteTitle} {versionLabel}, que ya no se mantiene activamente.",
+    "description": "The label used to tell the user that he's browsing an unmaintained doc version"
+  },
+  "theme.docs.versions.latestVersionSuggestionLabel": {
+    "message": "Para documentación actualizada, vea {latestVersionLink} ({versionLabel}).",
+    "description": "The label used to tell the user to check the latest version"
+  },
+  "theme.docs.versions.latestVersionLinkLabel": {
+    "message": "última versión",
+    "description": "The label used for the latest version suggestion link label"
+  },
+  "theme.common.editThisPage": {
+    "message": "Editar esta página",
+    "description": "The link label to edit the current page"
+  },
+  "theme.common.headingLinkTitle": {
+    "message": "Enlace directo al título",
+    "description": "Title for link to heading"
+  },
+  "theme.lastUpdated.atDate": {
+    "message": " el {date}",
+    "description": "The words used to describe on which date a page has been last updated"
+  },
+  "theme.lastUpdated.byUser": {
+    "message": " por {user}",
+    "description": "The words used to describe by who the page has been last updated"
+  },
+  "theme.lastUpdated.lastUpdatedAtBy": {
+    "message": "Última actualización{atDate}{byUser}",
+    "description": "The sentence used to display when a page has been last updated, and by who"
+  },
+  "theme.navbar.mobileVersionsDropdown.label": {
+    "message": "Versiones",
+    "description": "The label for the navbar versions dropdown on mobile view"
+  },
+  "theme.NotFound.title": {
+    "message": "Página no encontrada",
+    "description": "The title of the 404 page"
+  },
+  "theme.tags.tagsListLabel": {
+    "message": "Etiquetas:",
+    "description": "The label alongside a tag list"
+  },
+  "theme.AnnouncementBar.closeButtonAriaLabel": {
+    "message": "Cerrar",
+    "description": "The ARIA label for close button of announcement bar"
+  },
+  "theme.blog.sidebar.navAriaLabel": {
+    "message": "Navegación de artículos recientes del blog",
+    "description": "The ARIA label for recent posts in the blog sidebar"
+  },
+  "theme.DocSidebarItem.expandCategoryAriaLabel": {
+    "message": "Expandir la categoría '{label}' de la barra lateral",
+    "description": "The ARIA label to expand the sidebar category"
+  },
+  "theme.DocSidebarItem.collapseCategoryAriaLabel": {
+    "message": "Colapsar la categoría '{label}' de la barra lateral",
+    "description": "The ARIA label to collapse the sidebar category"
+  },
+  "theme.IconExternalLink.ariaLabel": {
+    "message": "(se abre en una nueva pestaña)",
+    "description": "The ARIA label for the external link icon"
+  },
+  "theme.NavBar.navAriaLabel": {
+    "message": "Navegación principal",
+    "description": "The ARIA label for the main navigation"
+  },
+  "theme.navbar.mobileLanguageDropdown.label": {
+    "message": "Idiomas",
+    "description": "The label for the mobile language switcher dropdown"
+  },
+  "theme.NotFound.p1": {
+    "message": "No pudimos encontrar lo que buscaba.",
+    "description": "The first paragraph of the 404 page"
+  },
+  "theme.NotFound.p2": {
+    "message": "Por favor, contacte al propietario del sitio que le trajo aquí e infórmele que el enlace está roto.",
+    "description": "The 2nd paragraph of the 404 page"
+  },
+  "theme.TOCCollapsible.toggleButtonLabel": {
+    "message": "En esta página",
+    "description": "The label used by the button on the collapsible TOC component"
+  },
+  "theme.blog.post.readMore": {
+    "message": "Leer más",
+    "description": "The label used in blog post item excerpts to link to full blog posts"
+  },
+  "theme.blog.post.readMoreLabel": {
+    "message": "Leer más sobre {title}",
+    "description": "The ARIA label for the link to full blog posts from excerpts"
+  },
+  "theme.blog.post.readingTime.plurals": {
+    "message": "Un minuto de lectura|{readingTime} minutos de lectura",
+    "description": "Pluralized label for \"{readingTime} min read\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.CodeBlock.copy": {
+    "message": "Copiar",
+    "description": "The copy button label on code blocks"
+  },
+  "theme.CodeBlock.copied": {
+    "message": "Copiado",
+    "description": "The copied button label on code blocks"
+  },
+  "theme.CodeBlock.copyButtonAriaLabel": {
+    "message": "Copiar al portapapeles",
+    "description": "The ARIA label for copy code blocks button"
+  },
+  "theme.CodeBlock.wordWrapToggle": {
+    "message": "Alternar ajuste de línea",
+    "description": "The title attribute for toggle word wrapping button of code block lines"
+  },
+  "theme.docs.breadcrumbs.home": {
+    "message": "Inicio",
+    "description": "The ARIA label for the home page in the breadcrumbs"
+  },
+  "theme.docs.sidebar.collapseButtonTitle": {
+    "message": "Colapsar barra lateral",
+    "description": "The title attribute for collapse button of doc sidebar"
+  },
+  "theme.docs.sidebar.collapseButtonAriaLabel": {
+    "message": "Colapsar barra lateral",
+    "description": "The title attribute for collapse button of doc sidebar"
+  },
+  "theme.docs.sidebar.navAriaLabel": {
+    "message": "Barra lateral de documentación",
+    "description": "The ARIA label for the sidebar navigation"
+  },
+  "theme.docs.sidebar.closeSidebarButtonAriaLabel": {
+    "message": "Cerrar barra de navegación",
+    "description": "The ARIA label for close button of mobile sidebar"
+  },
+  "theme.navbar.mobileSidebarSecondaryMenu.backButtonLabel": {
+    "message": "← Volver al menú principal",
+    "description": "The label of the back button to return to main menu, inside the mobile navbar sidebar secondary menu (notably used to display the docs sidebar)"
+  },
+  "theme.docs.sidebar.toggleSidebarButtonAriaLabel": {
+    "message": "Alternar barra de navegación",
+    "description": "The ARIA label for hamburger menu button of mobile navigation"
+  },
+  "theme.navbar.mobileDropdown.collapseButton.expandAriaLabel": {
+    "message": "Expandir menú desplegable",
+    "description": "The ARIA label of the button to expand the mobile dropdown navbar item"
+  },
+  "theme.navbar.mobileDropdown.collapseButton.collapseAriaLabel": {
+    "message": "Colapsar menú desplegable",
+    "description": "The ARIA label of the button to collapse the mobile dropdown navbar item"
+  },
+  "theme.docs.sidebar.expandButtonTitle": {
+    "message": "Expandir barra lateral",
+    "description": "The ARIA label and title attribute for expand button of doc sidebar"
+  },
+  "theme.docs.sidebar.expandButtonAriaLabel": {
+    "message": "Expandir barra lateral",
+    "description": "The ARIA label and title attribute for expand button of doc sidebar"
+  },
+  "theme.blog.post.plurals": {
+    "message": "Un artículo|{count} artículos",
+    "description": "Pluralized label for \"{count} posts\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.blog.tagTitle": {
+    "message": "{nPosts} etiquetados con \"{tagName}\"",
+    "description": "The title of the page for a blog tag"
+  },
+  "theme.blog.author.pageTitle": {
+    "message": "{authorName} - {nPosts}",
+    "description": "The title of the page for a blog author"
+  },
+  "theme.blog.authorsList.pageTitle": {
+    "message": "Autores",
+    "description": "The title of the authors page"
+  },
+  "theme.blog.authorsList.viewAll": {
+    "message": "Ver todos los autores",
+    "description": "The label of the link targeting the blog authors page"
+  },
+  "theme.blog.author.noPosts": {
+    "message": "Este autor aún no ha escrito ningún artículo.",
+    "description": "The text for authors with 0 blog post"
+  },
+  "theme.contentVisibility.unlistedBanner.title": {
+    "message": "Página no listada",
+    "description": "The unlisted content banner title"
+  },
+  "theme.contentVisibility.unlistedBanner.message": {
+    "message": "Esta página no está listada. Los motores de búsqueda no la indexarán y solo los usuarios con el enlace directo pueden acceder.",
+    "description": "The unlisted content banner message"
+  },
+  "theme.contentVisibility.draftBanner.title": {
+    "message": "Página en borrador",
+    "description": "The draft content banner title"
+  },
+  "theme.contentVisibility.draftBanner.message": {
+    "message": "Esta página es un borrador. Solo es visible en desarrollo y se excluirá de la compilación de producción.",
+    "description": "The draft content banner message"
+  },
+  "theme.ErrorPageContent.tryAgain": {
+    "message": "Intentar de nuevo",
+    "description": "The label of the button to try again rendering when the React error boundary captures an error"
+  },
+  "theme.common.skipToMainContent": {
+    "message": "Ir al contenido principal",
+    "description": "The skip to content label used for accessibility, allowing to rapidly navigate to main content with keyboard tab/enter navigation"
+  },
+  "theme.tags.tagsPageTitle": {
+    "message": "Etiquetas",
+    "description": "The title of the tag list page"
+  },
   "homepage.community.title": {
     "message": "Hecho con Rayforge"
   },
@@ -383,5 +686,203 @@
   },
   "homepage.community.cta": {
     "message": "Comparte tus creaciones"
+  },
+  "sponsor.title": {
+    "message": "Patrocinar Rayforge"
+  },
+  "sponsor.description": {
+    "message": "Lleva tus máquinas láser a Rayforge — preconfiguradas, en escaparate, y con contenido en video y tutoriales. Trabajemos juntos!"
+  },
+  "sponsor.hero.gradient": {
+    "message": "Asóciese"
+  },
+  "sponsor.hero.title": {
+    "message": "con Rayforge"
+  },
+  "sponsor.hero.subtitle": {
+    "message": "Pon tus máquinas frente a entusiastas del corte y grabado láser de todo el mundo. Nosotros nos encargamos del software, los tutoriales y la comunidad — tú haces que el hardware sea genial."
+  },
+  "sponsor.hero.cta": {
+    "message": "Contáctenos"
+  },
+  "sponsor.stats.downloads": {
+    "message": "Descargas Mensuales"
+  },
+  "sponsor.stats.stars": {
+    "message": "Estrellas en GitHub"
+  },
+  "sponsor.stats.commits": {
+    "message": "Commits"
+  },
+  "sponsor.stats.languages": {
+    "message": "Idiomas"
+  },
+  "sponsor.stats.platforms": {
+    "message": "Plataformas"
+  },
+  "sponsor.stats.opensource": {
+    "message": "Gratuito y Código Abierto"
+  },
+  "sponsor.benefits.title": {
+    "message": "Lo que obtienes"
+  },
+  "sponsor.benefits.subtitle": {
+    "message": "No vamos a poner tu logo en una página y ya. Construimos integraciones de verdad. Así es como sería una colaboración."
+  },
+  "sponsor.benefit.brandSelector.title": {
+    "message": "Configuración inicial"
+  },
+  "sponsor.benefit.brandSelector.description": {
+    "message": "Cuando alguien abre Rayforge por primera vez, elige su marca y modelo — y todo funciona automáticamente."
+  },
+  "sponsor.benefit.machineProfile.title": {
+    "message": "Perfiles con tu marca"
+  },
+  "sponsor.benefit.machineProfile.description": {
+    "message": "Tus máquinas aparecen con tu logo y fotos directamente en el selector. Tu marca, siempre visible, cada día."
+  },
+  "sponsor.benefit.showcase.title": {
+    "message": "Escaparate recomendado"
+  },
+  "sponsor.benefit.showcase.description": {
+    "message": "Un espacio dedicado en la app y en la web mostrando las máquinas colaboradoras con fotos, especificaciones y enlaces de compra."
+  },
+  "sponsor.benefit.badgeProgram.title": {
+    "message": "\"Compatible con Rayforge\""
+  },
+  "sponsor.benefit.badgeProgram.description": {
+    "message": "Recibe gráficos de insignias con tu marca para tu sitio web, empaquetado y listados en marketplaces, con enlaces a Rayforge para generar mayor confianza en los clientes."
+  },
+  "sponsor.benefit.materialPresets.title": {
+    "message": "Presets de material"
+  },
+  "sponsor.benefit.materialPresets.description": {
+    "message": "Ajustamos potencia, velocidad y pasadas específicamente para tus máquinas. Menos dolores de cabeza de soporte y clientes más contentos."
+  },
+  "sponsor.benefit.coBrandedInstall.title": {
+    "message": "Instalación incluida"
+  },
+  "sponsor.benefit.coBrandedInstall.description": {
+    "message": "Envía Rayforge con tu máquina por código QR o con un instalador personalizado. Ahórrate el coste de desarrollar tu propio software."
+  },
+  "sponsor.benefit.prioritySupport.title": {
+    "message": "Soporte prioritario"
+  },
+  "sponsor.benefit.prioritySupport.description": {
+    "message": "¿Tienes un controlador nuevo? Añadimos soporte rápido — piensa en el día de lanzamiento, no meses después. Tu hoja de ruta está cubierta."
+  },
+  "sponsor.benefit.youtubeSpotlights.title": {
+    "message": "Destacados de máquinas"
+  },
+  "sponsor.benefit.youtubeSpotlights.description": {
+    "message": "Tutoriales, configuración, unboxing, pruebas de materiales y más — todo en el canal de YouTube de Barebaric."
+  },
+  "sponsor.benefit.githubVisibility.title": {
+    "message": "Visibilidad en GitHub"
+  },
+  "sponsor.benefit.githubVisibility.description": {
+    "message": "Tu logo en el README de Rayforge, visto por desarrolladores y makers. Los perfiles de máquina se suben con \"Contribuido por [Marca]\"."
+  },
+  "sponsor.benefit.forumPresence.title": {
+    "message": "Presencia en la comunidad"
+  },
+  "sponsor.benefit.forumPresence.description": {
+    "message": "Un espacio oficial para tu marca en GitHub Discussions y Discord para hablar directamente con los usuarios."
+  },
+  "sponsor.benefit.analytics.title": {
+    "message": "Información de usuarios"
+  },
+  "sponsor.benefit.analytics.description": {
+    "message": "Datos agregados y anonimizados sobre qué materiales y funciones usan realmente tus clientes. (Todo opt-in, por supuesto.)"
+  },
+  "sponsor.benefit.coMarketing.title": {
+    "message": "Promoción cruzada"
+  },
+  "sponsor.benefit.coMarketing.description": {
+    "message": "Posts en el blog, menciones en redes sociales y reviews en YouTube, GitHub y Discord."
+  },
+  "sponsor.comparison.title": {
+    "message": "¿Por qué Rayforge?"
+  },
+  "sponsor.comparison.subtitle": {
+    "message": "Ningún otro software láser gratuito ofrece a los fabricantes algo así. Así nos comparamos."
+  },
+  "sponsor.comparison.costToUser": {
+    "message": "Costo para el usuario"
+  },
+  "sponsor.comparison.free": {
+    "message": "Gratuito"
+  },
+  "sponsor.comparison.costToBrand": {
+    "message": "Costo para la marca"
+  },
+  "sponsor.comparison.lb.costToBrand": {
+    "message": "Reventa por licencia"
+  },
+  "sponsor.comparison.grbl.costToBrand": {
+    "message": "Sin programa"
+  },
+  "sponsor.comparison.rf.costToBrand": {
+    "message": "Asociación opcional"
+  },
+  "sponsor.comparison.brandVisibility": {
+    "message": "Visibilidad de marca"
+  },
+  "sponsor.comparison.lb.brandVisibility": {
+    "message": "Lista de compatibilidad"
+  },
+  "sponsor.comparison.grbl.brandVisibility": {
+    "message": "Cupones de afiliados"
+  },
+  "sponsor.comparison.rf.brandVisibility": {
+    "message": "Selector de marca en la app al primer inicio + escaparate"
+  },
+  "sponsor.comparison.machineProfiles": {
+    "message": "Perfiles de máquina"
+  },
+  "sponsor.comparison.lb.machineProfiles": {
+    "message": "Genéricos (por controlador)"
+  },
+  "sponsor.comparison.grbl.machineProfiles": {
+    "message": "Ninguno"
+  },
+  "sponsor.comparison.rf.machineProfiles": {
+    "message": "Específicos de marca, preajustados"
+  },
+  "sponsor.comparison.linuxSupport": {
+    "message": "Soporte Linux"
+  },
+  "sponsor.comparison.no": {
+    "message": "No"
+  },
+  "sponsor.comparison.rf.linuxSupport": {
+    "message": "Nativo (GTK4 / Flatpak / Snap)"
+  },
+  "sponsor.comparison.crossPlatform": {
+    "message": "Multiplataforma"
+  },
+  "sponsor.comparison.grbl.crossPlatform": {
+    "message": "Solo Windows"
+  },
+  "sponsor.comparison.devPace": {
+    "message": "Ritmo de desarrollo"
+  },
+  "sponsor.comparison.lb.devPace": {
+    "message": "Moderado"
+  },
+  "sponsor.comparison.grbl.devPace": {
+    "message": "Estancado"
+  },
+  "sponsor.comparison.rf.devPace": {
+    "message": "Lanzamientos semanales"
+  },
+  "sponsor.cta.title": {
+    "message": "Hablemos"
+  },
+  "sponsor.cta.text": {
+    "message": "Ya sea que quieras tus máquinas preconfiguradas en Rayforge, un video de review dedicado, o algo totalmente a medida — escríbeme. Soy flexible y encantado de buscar algo que tenga sentido para ambos. Los préstamos de hardware para desarrollar perfiles siempre son bienvenidos."
+  },
+  "sponsor.cta.button": {
+    "message": "Saluda"
   }
 }
