@@ -34,6 +34,7 @@ class RotaryModule:
         self.rotary_type: RotaryType = RotaryType.JAWS
         self.roller_diameter: float = 0.0
         self.reverse_axis: bool = False
+        self.axis_position: np.ndarray = np.zeros(3, dtype=np.float64)
         self.model_id: Optional[str] = None
         self.transform: np.ndarray = np.eye(4, dtype=np.float64)
         self.changed = Signal()
@@ -147,6 +148,21 @@ class RotaryModule:
         self.reverse_axis = reverse
         self.changed.send(self)
 
+    def world_axis_position(self) -> np.ndarray:
+        """Return the axis position in world space.
+
+        The axis position is the module's mounting position
+        (transform[:3, 3]) plus the local axis offset (axis_position).
+        """
+        return self.transform[:3, 3] + self.axis_position
+
+    def set_axis_position(self, x: float, y: float, z: float):
+        new = np.array([x, y, z], dtype=np.float64)
+        if np.array_equal(self.axis_position, new):
+            return
+        self.axis_position = new
+        self.changed.send(self)
+
     def set_model_id(self, model_id: Optional[str]):
         if self.model_id == model_id:
             return
@@ -175,6 +191,8 @@ class RotaryModule:
             result["roller_diameter"] = self.roller_diameter
         if self.reverse_axis:
             result["reverse_axis"] = self.reverse_axis
+        if not np.allclose(self.axis_position, 0):
+            result["axis_position"] = self.axis_position.tolist()
         result.update(self.extra)
         return result
 
@@ -192,6 +210,7 @@ class RotaryModule:
             "rotary_type",
             "roller_diameter",
             "reverse_axis",
+            "axis_position",
             "model_id",
             "transform",
             "x",
@@ -222,6 +241,10 @@ class RotaryModule:
         rm.rotary_type = RotaryType(data.get("rotary_type", "jaws"))
         rm.roller_diameter = data.get("roller_diameter", 0.0)
         rm.reverse_axis = data.get("reverse_axis", False)
+        raw_ap = data.get("axis_position", [0.0, 0.0, 0.0])
+        if isinstance(raw_ap, (int, float)):
+            raw_ap = [0.0, 0.0, 0.0]
+        rm.axis_position = np.array(raw_ap, dtype=np.float64)
 
         rm.model_id = data.get("model_id")
         if rm.model_id is None and "model_path" in data:

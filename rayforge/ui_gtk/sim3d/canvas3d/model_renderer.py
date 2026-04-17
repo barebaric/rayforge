@@ -96,9 +96,16 @@ def _load_mesh_data(path: Path) -> Optional[_CachedModelData]:
 
         positions = np.array(mesh.vertices, dtype=np.float32)
         normals = np.array(mesh.vertex_normals, dtype=np.float32)
+
+        y_up_to_z_up = np.array(
+            [[1, 0, 0], [0, 0, -1], [0, 1, 0]], dtype=np.float32
+        )
+        positions = (y_up_to_z_up @ positions.T).T
+        normals = (y_up_to_z_up @ normals.T).T
+
         bounds = (
-            mesh.bounds[0].copy(),
-            mesh.bounds[1].copy(),
+            positions.min(axis=0),
+            positions.max(axis=0),
         )
 
         faces = np.array(mesh.faces, dtype=np.uint32)

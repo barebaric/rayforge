@@ -94,12 +94,11 @@ def test_cartesian_no_rotary():
 
 def test_rotary_chuck_angles_quarter_turn():
     diameter = 50.0
-    circumference = diameter * math.pi
     kinematics = create_kinematics(
         axis_set=_make_4axis_set(diameter),
         rotary_modules={"a": _make_module_a(diameter)},
     )
-    state = _make_state(a=circumference / 4)
+    state = _make_state(a=90.0)
     angles = kinematics.chuck_angles(state)
     assert abs(angles["rotary_chuck_0"] - math.pi / 2) < 1e-9
 

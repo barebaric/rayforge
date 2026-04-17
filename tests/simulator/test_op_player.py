@@ -1,3 +1,5 @@
+import math
+
 import pytest
 from rayforge.simulator.op_player import OpPlayer
 from rayforge.core.ops import Ops
@@ -181,6 +183,8 @@ def test_replacement_mode_no_rotary_mapping():
 
 
 def test_true_4th_axis_copies_to_rotary():
+    from rayforge.machine.kinematic_mapping import KinematicMapping
+
     machine = _make_machine()
     rm = RotaryModule()
     rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
@@ -193,6 +197,13 @@ def test_true_4th_axis_copies_to_rotary():
     ops.add(LayerStartCommand(layer_uid="test"))
     ops.line_to(10, 20, 0)
 
+    mapping = KinematicMapping(
+        source_axis=Axis.Y,
+        rotary_axis=Axis.A,
+        diameter=25.0,
+    )
+    mapping.apply(ops)
+
     doc = Doc()
     doc.active_layer.uid = "test"
     doc.active_layer.set_rotary_enabled(True)
@@ -201,4 +212,6 @@ def test_true_4th_axis_copies_to_rotary():
     player = OpPlayer(ops, machine, doc)
     player.seek(len(list(ops)) - 1)
 
-    assert player.state.axes[Axis.A] == pytest.approx(20.0)
+    diameter = 25.0
+    expected_deg = (20.0 / (diameter * math.pi)) * 360.0
+    assert player.state.axes[Axis.A] == pytest.approx(expected_deg)
