@@ -1069,10 +1069,18 @@ class GrblSerialDriver(Driver):
                 "data": data,
             },
         )
-        # Buffer bytes directly to avoid decoding errors on split chars
+        logger.debug(
+            f"STATUS_BUFFER before extend: "
+            f"{len(self._status_buffer)} bytes: "
+            f"{bytes(self._status_buffer)!r}"
+        )
         self._status_buffer.extend(data)
+        logger.debug(
+            f"STATUS_BUFFER after extend: "
+            f"{len(self._status_buffer)} bytes: "
+            f"{bytes(self._status_buffer)!r}"
+        )
 
-        # Process all complete messages (ending with '\r\n') in buffer
         while b"\r\n" in self._status_buffer:
             end_idx = self._status_buffer.find(b"\r\n") + 2
             message_bytes = self._status_buffer[:end_idx]
@@ -1085,6 +1093,13 @@ class GrblSerialDriver(Driver):
                 logger.warning(
                     f"Dropped invalid UTF-8 message bytes: {message_bytes!r}"
                 )
+
+        if self._status_buffer:
+            logger.debug(
+                f"STATUS_BUFFER remainder: "
+                f"{len(self._status_buffer)} bytes: "
+                f"{bytes(self._status_buffer)!r}"
+            )
 
     def _process_message(self, message: str):
         """
