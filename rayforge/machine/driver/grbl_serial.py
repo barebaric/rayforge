@@ -1119,7 +1119,22 @@ class GrblSerialDriver(Driver):
             return
 
         responses = self.grbl_transport.parse_incoming(data)
+
+        # Process LINE responses before OK/ERROR to ensure
+        # informational lines are collected before the command
+        # is marked as finished. _extract_acks_from_buffer
+        # returns OK/ERROR first, but _handle_ok schedules
+        # request.finished.set() via call_soon_threadsafe on a
+        # separate thread. If that thread executes before
+        # _handle_line runs, the lines would be lost.
+        lines = []
+        acks = []
         for resp in responses:
+            if resp.type == GrblResponseType.LINE:
+                lines.append(resp)
+            else:
+                acks.append(resp)
+        for resp in lines + acks:
             self._handle_response(resp)
 
     def _handle_response(self, resp):
