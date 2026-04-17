@@ -20,7 +20,11 @@ from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ...shared.tasker import task_mgr
 from ..transport import TransportStatus, SerialTransport
-from ..transport.grbl import GrblSerialTransport, GRBL_RX_BUFFER_SIZE
+from ..transport.grbl import (
+    GrblSerialTransport,
+    GrblResponseType,
+    GRBL_RX_BUFFER_SIZE,
+)
 from ..transport.serial import SerialPortPermissionError
 from .driver import (
     Driver,
@@ -74,7 +78,6 @@ class GrblSerialDriver(Driver):
         self._cmd_lock = asyncio.Lock()
         self._command_queue: asyncio.Queue[CommandRequest] = asyncio.Queue()
         self._command_task: Optional[asyncio.Task] = None
-        self._status_buffer = bytearray()
         self._is_cancelled = False
         self._job_running = False
         self._on_command_done: Optional[
@@ -293,7 +296,6 @@ class GrblSerialDriver(Driver):
         self._on_command_done = None
         self.grbl_transport.reset()
         self._job_exception = None
-        self._status_buffer = bytearray()
         self._connection_task = asyncio.create_task(self._connection_loop())
         self._command_task = asyncio.create_task(self._process_command_queue())
 
@@ -1097,8 +1099,8 @@ class GrblSerialDriver(Driver):
 
     def on_serial_data_received(self, sender, data: bytes):
         """
-        Primary handler for incoming serial data. Decodes, buffers, and
-        delegates processing of complete messages.
+        Primary handler for incoming serial data. Delegates parsing
+        to the transport layer and processes structured responses.
         """
         buf_count = (
             self.grbl_transport.buffer_count if self.grbl_transport else 0
@@ -1112,56 +1114,24 @@ class GrblSerialDriver(Driver):
                 "data": data,
             },
         )
-        logger.debug(
-            f"STATUS_BUFFER before extend: "
-            f"{len(self._status_buffer)} bytes: "
-            f"{bytes(self._status_buffer)!r}"
-        )
-        self._status_buffer.extend(data)
-        logger.debug(
-            f"STATUS_BUFFER after extend: "
-            f"{len(self._status_buffer)} bytes: "
-            f"{bytes(self._status_buffer)!r}"
-        )
 
-        while b"\r\n" in self._status_buffer:
-            end_idx = self._status_buffer.find(b"\r\n") + 2
-            message_bytes = self._status_buffer[:end_idx]
-            self._status_buffer = self._status_buffer[end_idx:]
-
-            try:
-                message = message_bytes.decode("utf-8")
-                self._process_message(message)
-            except UnicodeDecodeError:
-                logger.warning(
-                    f"Dropped invalid UTF-8 message bytes: {message_bytes!r}"
-                )
-
-        if self._status_buffer:
-            logger.debug(
-                f"STATUS_BUFFER remainder: "
-                f"{len(self._status_buffer)} bytes: "
-                f"{bytes(self._status_buffer)!r}"
-            )
-
-    def _process_message(self, message: str):
-        """
-        Routes a complete message to the appropriate handler based on
-        its content.
-        """
-        stripped_message = message.strip()
-        if not stripped_message:
+        if not self.grbl_transport:
             return
 
-        # Status reports are frequent and start with '<'
-        if stripped_message.startswith("<") and stripped_message.endswith(">"):
-            self._handshake_received.set()
-            self._handle_status_report(stripped_message)
+        responses = self.grbl_transport.parse_incoming(data)
+        for resp in responses:
+            self._handle_response(resp)
+
+    def _handle_response(self, resp):
+        """
+        Route a parsed GrblResponse to the appropriate handler.
+        """
+        if resp.type == GrblResponseType.OK:
+            self._handle_ok(resp)
+        elif resp.type == GrblResponseType.ERROR:
+            self._handle_error(resp.text)
         else:
-            # Handle other responses line by line (e.g., 'ok', 'error:')
-            for line in message.strip().splitlines():
-                if line:  # Ensure we don't process empty lines
-                    self._handle_general_response(line)
+            self._handle_line(resp.text)
 
     def _handle_status_report(self, report: str):
         """
@@ -1195,157 +1165,97 @@ class GrblSerialDriver(Driver):
                 )
             self.state_changed.send(self, state=self.state)
 
-    def _handle_general_response(self, line: str):
-        """
-        Handles non-status-report lines like 'ok', 'error:', welcome
-        messages, or settings output.
-        """
-        logger.debug(f"Processing received line: {line}")
+    def _handle_ok(self, resp):
+        """Handle a parsed 'ok' response."""
+        pending = resp.pending
+        logger.info("ok", extra=self._log_extra("MACHINE_RESPONSE"))
 
-        # Basic heuristic to filter out broken/fragmented status reports
-        # that missed the opening '<' due to serial corruption. Treating
-        # them as general responses can confuse command handlers.
-        if "Pos:" in line and "|" in line:
-            logger.debug(f"Ignoring fragmented status report line: {line}")
+        if pending is not None:
+            transport = self.grbl_transport
+            assert transport is not None
+            logger.debug(
+                f"Processed 'ok', freed {pending.length} bytes "
+                f"(buf: {transport.buffer_count}"
+                f"/{GRBL_RX_BUFFER_SIZE}, "
+                f"op_index={pending.op_index})"
+            )
+
+        # Logic for single, interactive commands
+        request = self._current_request
+        if request and not request.finished.is_set():
+            request.response_lines.append("ok")
+            self.command_status_changed.send(self, status=TransportStatus.IDLE)
+            logger.debug(f"Command '{request.command}' completed with 'ok'")
+            task_mgr.loop.call_soon_threadsafe(request.finished.set)
+
+        # Logic for streaming protocol during a job
+        if self._job_running and pending is not None:
+            if self._on_command_done and pending.op_index is not None:
+                for i in range(
+                    self._last_reported_op_index + 1,
+                    pending.op_index + 1,
+                ):
+                    try:
+                        logger.debug(
+                            "GrblSerialDriver: Firing "
+                            "on_command_done for op_index "
+                            f"{i}"
+                        )
+                        result = self._on_command_done(i)
+                        if inspect.isawaitable(result):
+                            asyncio.ensure_future(result)
+                    except Exception as e:
+                        logger.error(
+                            "Error in on_command_done callback",
+                            exc_info=e,
+                        )
+                self._last_reported_op_index = pending.op_index
+
+    def _handle_error(self, text: str):
+        """Handle a parsed 'error:...' response."""
+        logger.info(text, extra=self._log_extra("MACHINE_EVENT"))
+        error_code = text.split(":")[1].strip() if ":" in text else ""
+        self.state.error = error_code_to_device_error(error_code)
+        self.state_changed.send(self, state=self.state)
+
+        request = self._current_request
+        if request and not request.finished.is_set():
+            request.response_lines.append(text)
+            self.command_status_changed.send(
+                self, status=TransportStatus.ERROR, message=text
+            )
+            task_mgr.loop.call_soon_threadsafe(request.finished.set)
+
+        if self._job_running:
+            self.command_status_changed.send(
+                self, status=TransportStatus.ERROR, message=text
+            )
+            logger.error(
+                f"GRBL error during job: {text}. Halting stream.",
+                extra={"log_category": "ERROR"},
+            )
+            self._job_exception = DeviceConnectionError(f"GRBL error: {text}")
+            if self.grbl_transport:
+                self.grbl_transport.signal_space_available()
+
+    def _handle_line(self, line: str):
+        """Handle a parsed general line (status report, alarm, info)."""
+        if "Pos:" in line and "|" in line and not line.startswith("<"):
+            logger.debug(f"Ignoring fragmented status report: {line}")
             return
 
-        category = "MACHINE_RESPONSE" if line == "ok" else "MACHINE_EVENT"
-        logger.info(line, extra=self._log_extra(category))
+        if line.startswith("<") and line.endswith(">"):
+            self._handshake_received.set()
+            self._handle_status_report(line.strip())
+            return
 
-        # Logic for single, interactive commands must be checked first
+        logger.info(line, extra=self._log_extra("MACHINE_EVENT"))
+
+        # Collect response lines for pending single commands
         request = self._current_request
         if request and not request.finished.is_set():
             request.response_lines.append(line)
-            if line == "ok":
-                self.command_status_changed.send(
-                    self, status=TransportStatus.IDLE
-                )
-                logger.debug(
-                    f"Command '{request.command}' completed with 'ok'"
-                )
-                if self.grbl_transport:
-                    try:
-                        self.grbl_transport.ack_ok()
-                    except asyncio.QueueEmpty:
-                        pass
-                task_mgr.loop.call_soon_threadsafe(request.finished.set)
-                return  # Line consumed by single command
-            elif line.startswith("error:"):
-                error_code = line.split(":")[1].strip()
-                self.state.error = error_code_to_device_error(error_code)
-                self.state_changed.send(self, state=self.state)
-                self.command_status_changed.send(
-                    self, status=TransportStatus.ERROR, message=line
-                )
-                if self.grbl_transport:
-                    try:
-                        self.grbl_transport.ack_ok()
-                    except asyncio.QueueEmpty:
-                        pass
-                task_mgr.loop.call_soon_threadsafe(request.finished.set)
-                # Fall through to allow job error handling as well
 
-        # Logic for character-counting streaming protocol during a job
-        if self._job_running:
-            # First, perform the strict, correct check.
-            is_ack = line == "ok"
-
-            # If the strict check fails, apply a surgical patch ONLY
-            # for NULL byte corruption. This is a specific workaround
-            # for a known hardware/firmware-level serial fault.
-            if not is_ack:
-                # Remove only NULL bytes and re-check for exact
-                # equality.
-                line_without_nulls = line.replace("\x00", "")
-                if line_without_nulls == "ok":
-                    logger.critical(
-                        "HARDWARE FAULT DETECTED: A corrupted 'ok' "
-                        f"acknowledgement with NULL bytes was received "
-                        f"({repr(line)}). The job is continuing, but "
-                        "this indicates a critical problem with the "
-                        "USB cable, electrical noise (EMI), or power "
-                        "supply. The hardware connection MUST be fixed "
-                        "for reliable operation."
-                    )
-                    is_ack = True
-
-            if is_ack:
-                try:
-                    transport = self.grbl_transport
-                    assert transport is not None
-                    pending = transport.ack_ok()
-                    logger.debug(
-                        f"Processed 'ok', freed {pending.length} bytes "
-                        f"(buf: {transport.buffer_count}"
-                        f"/{GRBL_RX_BUFFER_SIZE})"
-                    )
-
-                    # If this command was part of a job, update progress.
-                    if self._on_command_done and pending.op_index is not None:
-                        # Fire callbacks for all ops from the last
-                        # reported one up to this one. This ensures ops
-                        # with no G-code are also reported.
-                        for i in range(
-                            self._last_reported_op_index + 1,
-                            pending.op_index + 1,
-                        ):
-                            try:
-                                logger.debug(
-                                    "GrblSerialDriver: Firing "
-                                    "on_command_done for op_index "
-                                    f"{i}"
-                                )
-                                result = self._on_command_done(i)
-                                if inspect.isawaitable(result):
-                                    asyncio.ensure_future(result)
-                            except Exception as e:
-                                logger.error(
-                                    "Error in on_command_done callback",
-                                    exc_info=e,
-                                )
-                        self._last_reported_op_index = pending.op_index
-                except asyncio.QueueEmpty:
-                    logger.warning(
-                        "Received 'ok' during job, but sent gcode "
-                        "queue was empty. Ignoring."
-                    )
-            elif line.startswith("error:"):
-                error_code = line.split(":")[1].strip()
-                self.state.error = error_code_to_device_error(error_code)
-                self.state_changed.send(self, state=self.state)
-                self.command_status_changed.send(
-                    self, status=TransportStatus.ERROR, message=line
-                )
-                logger.error(
-                    f"GRBL error during job: {line}. Halting stream.",
-                    extra={"log_category": "ERROR"},
-                )
-                self._job_exception = DeviceConnectionError(
-                    f"GRBL error: {line}"
-                )
-                if self.grbl_transport:
-                    self.grbl_transport.signal_space_available()
-            elif line.startswith("ALARM:"):
-                alarm_code = line.split(":")[1].strip()
-                self.state.error = error_code_to_device_error(alarm_code)
-                self.state_changed.send(self, state=self.state)
-                self.command_status_changed.send(
-                    self, status=TransportStatus.ERROR, message=line
-                )
-                logger.error(
-                    f"GRBL ALARM during job: {line}. Halting stream.",
-                    extra={"log_category": "ERROR"},
-                )
-                self._job_exception = DeviceConnectionError(
-                    f"GRBL ALARM: {line}"
-                )
-                # Unblock the run loop so it can see the exception
-                # and terminate
-                if self.grbl_transport:
-                    self.grbl_transport.signal_space_available()
-            return
-
-        # Handle non-job-related alarms if no single command is active
         if line.startswith("ALARM:"):
             alarm_code = line.split(":")[1].strip()
             self.state.error = error_code_to_device_error(alarm_code)
@@ -1353,6 +1263,16 @@ class GrblSerialDriver(Driver):
             self.command_status_changed.send(
                 self, status=TransportStatus.ERROR, message=line
             )
+            if self._job_running:
+                logger.error(
+                    f"GRBL ALARM during job: {line}. Halting stream.",
+                    extra={"log_category": "ERROR"},
+                )
+                self._job_exception = DeviceConnectionError(
+                    f"GRBL ALARM: {line}"
+                )
+                if self.grbl_transport:
+                    self.grbl_transport.signal_space_available()
         elif line.startswith("[VER:"):
             version_info = parse_version([line])
             if version_info:

@@ -1,7 +1,8 @@
 import asyncio
 import threading
 import logging
-from typing import Optional, NamedTuple
+from typing import Optional, NamedTuple, List
+from enum import Enum, auto
 
 from ...shared.tasker import task_mgr
 from .serial import SerialTransport
@@ -17,6 +18,18 @@ class PendingCommand(NamedTuple):
     op_index: Optional[int]
 
 
+class GrblResponseType(Enum):
+    OK = auto()
+    ERROR = auto()
+    LINE = auto()
+
+
+class GrblResponse(NamedTuple):
+    type: GrblResponseType
+    text: str
+    pending: Optional[PendingCommand] = None
+
+
 class GrblSerialTransport:
     """
     Wraps a SerialTransport with GRBL's character-counting flow control
@@ -24,8 +37,13 @@ class GrblSerialTransport:
 
     GRBL devices have a 128-byte serial receive buffer (safe limit 127).
     This transport tracks how many bytes are outstanding and provides
-    backpressure so callers never overflow it. Thread-safe: the buffer count
-    is mutated from both async tasks and the serial receive callback.
+    backpressure so callers never overflow it.
+
+    Also handles low-level GRBL response parsing: extracts 'ok' and
+    'error:' from the raw byte stream for buffer accounting, even when
+    they are interleaved with status reports by buggy firmware.
+    Thread-safe: the buffer count is mutated from both async tasks and
+    the serial receive callback.
     """
 
     def __init__(self, transport: SerialTransport):
@@ -35,6 +53,7 @@ class GrblSerialTransport:
         self._pending: asyncio.Queue[PendingCommand] = asyncio.Queue()
         self._space_available = asyncio.Event()
         self._space_available.set()
+        self._status_buffer = bytearray()
 
     @property
     def is_connected(self) -> bool:
@@ -57,6 +76,150 @@ class GrblSerialTransport:
     @property
     def status_changed(self):
         return self._transport.status_changed
+
+    def parse_incoming(self, data: bytes) -> List[GrblResponse]:
+        """
+        Parse raw serial bytes into GRBL responses.
+
+        Scans for 'ok' and 'error:' responses in the byte stream,
+        handling buffer accounting for them, before line-splitting.
+        This prevents lost 'ok' acknowledgements when firmware
+        interleaves them with status reports.
+
+        Returns a list of GrblResponse for non-ok/error lines
+        (status reports, alarms, info messages, etc.).
+        """
+        self._status_buffer.extend(data)
+        responses: List[GrblResponse] = []
+
+        self._extract_acks_from_buffer(responses)
+
+        while b"\r\n" in self._status_buffer:
+            end_idx = self._status_buffer.find(b"\r\n") + 2
+            message_bytes = self._status_buffer[:end_idx]
+            self._status_buffer = self._status_buffer[end_idx:]
+
+            try:
+                message = message_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                logger.warning(
+                    f"Dropped invalid UTF-8 bytes: {message_bytes!r}"
+                )
+                continue
+
+            for line in message.strip().splitlines():
+                if not line:
+                    continue
+                resp = self._parse_line(line)
+                if resp:
+                    responses.append(resp)
+
+        return responses
+
+    def _extract_acks_from_buffer(self, responses):
+        """
+        Scan _status_buffer for 'ok\\r\\n' and 'error:...\\r\\n'
+        patterns and extract them before line-based processing.
+
+        This ensures buffer accounting is always correct, even when
+        the firmware interleaves these responses into other messages.
+        Also detects NULL-byte corrupted 'ok' responses as a hardware
+        fault indicator.
+        """
+        ok_marker = b"ok\r\n"
+        while ok_marker in self._status_buffer:
+            idx = self._status_buffer.index(ok_marker)
+            self._status_buffer = (
+                self._status_buffer[:idx]
+                + self._status_buffer[idx + len(ok_marker) :]
+            )
+            pending = self._ack_ok()
+            responses.append(GrblResponse(GrblResponseType.OK, "ok", pending))
+
+        # Detect NULL-byte corrupted 'ok' (hardware fault)
+        null_ok = self._find_null_corrupted_ok()
+        while null_ok is not None:
+            start, end = null_ok
+            self._status_buffer = (
+                self._status_buffer[:start] + self._status_buffer[end:]
+            )
+            logger.critical(
+                "HARDWARE FAULT DETECTED: A corrupted 'ok' "
+                "acknowledgement with NULL bytes was received. "
+                "This indicates a critical problem with the "
+                "USB cable, electrical noise (EMI), or power "
+                "supply. The hardware connection MUST be fixed "
+                "for reliable operation."
+            )
+            pending = self._ack_ok()
+            responses.append(GrblResponse(GrblResponseType.OK, "ok", pending))
+            null_ok = self._find_null_corrupted_ok()
+
+        error_marker = b"error:"
+        error_end = b"\r\n"
+        while error_marker in self._status_buffer:
+            start = self._status_buffer.index(error_marker)
+            end = self._status_buffer.find(error_end, start)
+            if end == -1:
+                break
+            end += 2
+            error_bytes = self._status_buffer[start:end]
+            self._status_buffer = (
+                self._status_buffer[:start] + self._status_buffer[end:]
+            )
+            try:
+                error_text = error_bytes.decode("utf-8").strip()
+            except UnicodeDecodeError:
+                continue
+            logger.debug(
+                f"Extracted '{error_text}' from raw buffer "
+                f"(interleaved recovery)"
+            )
+            self._ack_ok()
+            responses.append(GrblResponse(GrblResponseType.ERROR, error_text))
+
+    def _find_null_corrupted_ok(self):
+        """
+        Search _status_buffer for a pattern like
+        b'o\\x00k\\r\\n' where NULL bytes are interspersed
+        in 'ok'. Returns (start, end) indices or None.
+        """
+        buf = self._status_buffer
+        i = 0
+        while i < len(buf):
+            if buf[i] == ord(b"o"):
+                j = i + 1
+                while j < len(buf) and buf[j] == 0:
+                    j += 1
+                if (
+                    j < len(buf)
+                    and buf[j] == ord(b"k")
+                    and j + 2 < len(buf)
+                    and buf[j + 1] == ord(b"\r")
+                    and buf[j + 2] == ord(b"\n")
+                    and j > i + 1
+                ):
+                    return (i, j + 3)
+            i += 1
+        return None
+
+    def _parse_line(self, line: str) -> Optional[GrblResponse]:
+        """
+        Parse a single decoded line into a GrblResponse.
+        Handles 'ok', 'error:', and returns everything else
+        as a LINE type.
+        """
+        if line == "ok":
+            pending = self._ack_ok()
+            return GrblResponse(GrblResponseType.OK, "ok", pending)
+        if line.startswith("error:"):
+            self._ack_ok()
+            return GrblResponse(GrblResponseType.ERROR, line)
+        return GrblResponse(GrblResponseType.LINE, line)
+
+    def clear_buffer(self) -> None:
+        """Clear the internal line buffer."""
+        self._status_buffer = bytearray()
 
     # --- Flow-controlled sending ---
 
@@ -138,14 +301,19 @@ class GrblSerialTransport:
         self._space_available.clear()
         await self._space_available.wait()
 
-    def ack_ok(self) -> PendingCommand:
+    def _ack_ok(self) -> Optional[PendingCommand]:
         """
-        Process an ``ok`` acknowledgement.  Pops the corresponding
-        pending command, frees buffer space, and signals waiters.
+        Process an ``ok`` or ``error:`` acknowledgement.  Pops the
+        corresponding pending command, frees buffer space, and
+        signals waiters.
 
-        Raises ``asyncio.QueueEmpty`` when no pending command exists.
+        Returns None when no pending command exists.
         """
-        pending = self._pending.get_nowait()
+        try:
+            pending = self._pending.get_nowait()
+        except asyncio.QueueEmpty:
+            logger.warning("Received ack but sent gcode queue was empty.")
+            return None
         logger.debug(
             f"Buffer ack: freeing {pending.length} bytes for "
             f"op_index={pending.op_index} "
@@ -171,6 +339,7 @@ class GrblSerialTransport:
         self._pending = asyncio.Queue()
         self._space_available = asyncio.Event()
         self._space_available.set()
+        self._status_buffer = bytearray()
 
     def signal_space_available(self) -> None:
         """Unblock any waiters (e.g. on cancel)."""
