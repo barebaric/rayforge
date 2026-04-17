@@ -544,6 +544,46 @@ def test_transform_bezier_linearize_matches():
         assert pts_a[:, i].max() == pytest.approx(pts_b[:, i].max(), abs=0.1)
 
 
+def test_transform_preserves_extra_axes():
+    """Ops.transform() must not modify extra_axes on any command."""
+    ops = Ops()
+    ops.move_to(10, 20, 0, extra={Axis.A: 45.0, Axis.Y: 0.0})
+    ops.line_to(30, 40, 0, extra={Axis.A: 90.0, Axis.Y: 10.0})
+
+    angle_rad = math.radians(90)
+    cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
+    matrix = np.array(
+        [
+            [cos_a, -sin_a, 0, 5],
+            [sin_a, cos_a, 0, 10],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ]
+    )
+    ops.transform(matrix)
+
+    assert ops.commands[0].extra_axes == {Axis.A: 45.0, Axis.Y: 0.0}
+    assert ops.commands[1].extra_axes == {Axis.A: 90.0, Axis.Y: 10.0}
+
+    assert ops.commands[0].end != pytest.approx((10, 20, 0))
+    assert ops.commands[1].end != pytest.approx((30, 40, 0))
+
+
+def test_transform_preserves_extra_axes_with_identity():
+    """Even with identity matrix, extra_axes must survive untouched."""
+    ops = Ops()
+    ops.move_to(5, 5, 0, extra={Axis.B: 180.0})
+    ops.line_to(15, 25, 0, extra={Axis.B: 270.0})
+
+    matrix = np.identity(4)
+    ops.transform(matrix)
+
+    assert ops.commands[0].extra_axes == {Axis.B: 180.0}
+    assert ops.commands[1].extra_axes == {Axis.B: 270.0}
+    assert ops.commands[0].end == pytest.approx((5, 5, 0))
+    assert ops.commands[1].end == pytest.approx((15, 25, 0))
+
+
 def test_linearize_all():
     ops = Ops()
     ops.move_to(10, 0)

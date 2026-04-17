@@ -30,7 +30,7 @@ from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.models.rotary_module import RotaryModule, RotaryMode
 from rayforge.machine.transport import TransportStatus
-from rayforge.pipeline.transformer.axis_mapper import AxisMapper
+from rayforge.machine.kinematic_mapping import KinematicMapping
 
 
 @pytest.fixture(autouse=True)
@@ -491,14 +491,12 @@ def _encode_rotary_line(machine, doc):
     for layer in doc.layers:
         rotary_axis = machine.get_rotary_axis_for_layer(layer)
         if rotary_axis is not None:
-            has_physical_y = rotary_axis != Axis.Y
-            mapper = AxisMapper(
+            mapping = KinematicMapping(
                 source_axis=Axis.Y,
                 rotary_axis=rotary_axis,
-                rotary_diameter=layer.rotary_diameter,
-                has_physical_source=has_physical_y,
+                diameter=layer.rotary_diameter,
             )
-            mapper.run(ops)
+            mapping.apply(ops)
     gcode, _ = machine.encode_ops(ops, doc)
     return gcode
 
@@ -669,3 +667,105 @@ class TestRotaryAxisGcodeOutput:
         ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
         prepared = machine._prepare_ops_for_encoding(ops)
         assert any(isinstance(c, BezierToCommand) for c in prepared.commands)
+
+    def test_true_4th_axis_top_left_origin(self, isolated_machine):
+        """TRUE_4TH_AXIS degrees come from world-space Y regardless of
+        origin.  With TOP_LEFT the world→machine matrix flips Y but the
+        A-axis rotation must still correspond to the world-space distance
+        on the cylinder surface."""
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+        rm.set_axis(Axis.A)
+        isolated_machine.add_rotary_module(rm)
+        isolated_machine.set_origin(Origin.TOP_LEFT)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_diameter(25.0)
+        layer.set_rotary_module_uid(rm.uid)
+
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=layer.uid)
+        ops.move_to(0, 0, 0)
+        ops.line_to(10, 10, 0)
+        ops.layer_end(layer_uid=layer.uid)
+        ops.job_end()
+
+        gcode, _ = isolated_machine.encode_ops(ops, doc)
+
+        diameter = 25.0
+        circumference = diameter * math.pi
+        expected_deg = (10.0 / circumference) * 360.0
+        formatted_deg = f"{expected_deg:.3f}".rstrip("0").rstrip(".")
+        assert formatted_deg in gcode
+        assert " A" in gcode
+
+    def test_replacement_scaled_y_top_left_origin(self, isolated_machine):
+        """AXIS_REPLACEMENT computes degrees from world-space Y.
+
+        After Phase 3 the kinematic mapping runs on world-space ops
+        before world→machine, so the scaled-Y value in the G-code
+        reflects the world-space surface distance (not machine-space).
+        """
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
+        rm.set_source_axis(Axis.Y)
+        rm.set_mm_per_rotation(100.0)
+        isolated_machine.add_rotary_module(rm)
+        isolated_machine.set_origin(Origin.TOP_LEFT)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_diameter(25.0)
+        layer.set_rotary_module_uid(rm.uid)
+
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=layer.uid)
+        ops.move_to(0, 0, 0)
+        ops.line_to(10, 10, 0)
+        ops.layer_end(layer_uid=layer.uid)
+        ops.job_end()
+
+        gcode, _ = isolated_machine.encode_ops(ops, doc)
+
+        assert " A" not in gcode
+        assert " B" not in gcode
+        expected = 10.0 * 100.0 / (math.pi * 25.0)
+        formatted = f"{expected:.3f}".rstrip("0").rstrip(".")
+        assert formatted in gcode
+
+    def test_true_4th_axis_reversed_y(self, isolated_machine):
+        """TRUE_4TH_AXIS with reversed Y axis: degrees still match
+        world-space surface distance."""
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+        rm.set_axis(Axis.A)
+        isolated_machine.add_rotary_module(rm)
+
+        isolated_machine.set_reverse_y_axis(True)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_diameter(25.0)
+        layer.set_rotary_module_uid(rm.uid)
+
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=layer.uid)
+        ops.move_to(0, 0, 0)
+        ops.line_to(10, 10, 0)
+        ops.layer_end(layer_uid=layer.uid)
+        ops.job_end()
+
+        gcode, _ = isolated_machine.encode_ops(ops, doc)
+
+        diameter = 25.0
+        circumference = diameter * math.pi
+        expected_deg = (10.0 / circumference) * 360.0
+        formatted_deg = f"{expected_deg:.3f}".rstrip("0").rstrip(".")
+        assert formatted_deg in gcode

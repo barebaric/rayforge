@@ -9,6 +9,7 @@ import numpy as np
 
 from ...core.doc import Doc
 from ...core.ops import Ops
+from ...machine.kinematic_mapping import KinematicMapping
 from ...machine.models.machine import Machine
 from ...shared.tasker.progress import ProgressContext, set_progress
 from ..artifact import JobArtifact, StepOpsArtifact
@@ -130,9 +131,8 @@ def _encode_gcode_and_opmap(
     """
     Encodes operations to G-code and operation map.
 
-    For rotary layers, the AxisMapper is applied to a transient copy
-    of the ops so that work coordinates are preserved in the stored
-    artifact while machine coordinates are used for G-code output.
+    encode_ops() handles rotary mapping internally, so callers pass
+    unmapped (world-space) ops.
     """
     set_progress(context, 0.8, _("Generating G-code..."))
 
@@ -199,6 +199,10 @@ def compute_job_artifact(
     final_time = _calculate_time_estimate(final_ops, machine, context)
     final_distance = _calculate_distance(final_ops)
 
+    mapped_ops = final_ops.copy()
+    if machine.rotary_modules:
+        KinematicMapping.apply_to_job_ops(mapped_ops, doc, machine)
+
     vertex_data = _encode_vertex_data(final_ops, context)
 
     machine_code_bytes, op_map_bytes = _encode_gcode_and_opmap(
@@ -215,4 +219,5 @@ def compute_job_artifact(
         machine_code_bytes=machine_code_bytes,
         op_map_bytes=op_map_bytes,
         time_estimate=final_time,
+        mapped_ops=mapped_ops,
     )

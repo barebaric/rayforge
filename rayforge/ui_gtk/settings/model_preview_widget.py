@@ -156,11 +156,6 @@ class _SimpleModelRenderer(BaseRenderer):
         flat_indices = self._mesh_data.faces.flatten()
         self._positions = self._mesh_data.positions[flat_indices].copy()
         self._normals = self._mesh_data.normals[flat_indices]
-        y_up_to_z_up = np.array(
-            [[1, 0, 0], [0, 0, -1], [0, 1, 0]], dtype=np.float32
-        )
-        self._positions = (y_up_to_z_up @ self._positions.T).T
-        self._normals = (y_up_to_z_up @ self._normals.T).T
         bmin = self._positions.min(axis=0)
         bmax = self._positions.max(axis=0)
         center = (bmin + bmax) / 2.0

@@ -280,7 +280,7 @@ class TestAssemblyRotarySpecs:
         )
         machine.configure_for_layer(layer)
         state = MachineState()
-        state.axes[Axis.A] = 42.0 * math.pi
+        state.axes[Axis.A] = 360.0
         angles = machine.assembly.chuck_angles(state)
         chuck_names = list(angles.keys())
         assert len(chuck_names) == 1

@@ -323,8 +323,8 @@ class RotaryModulePage(TrackedPreferencesPage):
         source_axis_store.append(_("X Axis"))
         self._source_axis_display = [Axis.Y, Axis.X]
         self.source_axis_row = Adw.ComboRow(
-            title=_("Workpiece Orientation"),
-            subtitle=_("Axis along which the workpiece extends"),
+            title=_("Connected To"),
+            subtitle=_("Which driver the rotary is plugged into"),
             model=source_axis_store,
         )
         self.source_axis_row.connect(
@@ -340,6 +340,45 @@ class RotaryModulePage(TrackedPreferencesPage):
             "notify::active", self._on_reverse_axis_changed
         )
         self.general_group.add(self.reverse_axis_row)
+
+        self.axis_position_x_row = Adw.SpinRow(
+            title=_("Axis Offset X"),
+            subtitle=_("Offset from module position to rotation axis (X)"),
+            adjustment=Gtk.Adjustment(
+                lower=-10000, upper=10000, step_increment=1, page_increment=10
+            ),
+            digits=2,
+        )
+        self.axis_position_x_row.connect(
+            "notify::value", self._on_axis_position_changed
+        )
+        self.general_group.add(self.axis_position_x_row)
+
+        self.axis_position_y_row = Adw.SpinRow(
+            title=_("Axis Offset Y"),
+            subtitle=_("Offset from module position to rotation axis (Y)"),
+            adjustment=Gtk.Adjustment(
+                lower=-10000, upper=10000, step_increment=1, page_increment=10
+            ),
+            digits=2,
+        )
+        self.axis_position_y_row.connect(
+            "notify::value", self._on_axis_position_changed
+        )
+        self.general_group.add(self.axis_position_y_row)
+
+        self.axis_position_z_row = Adw.SpinRow(
+            title=_("Axis Offset Z"),
+            subtitle=_("Offset from module position to rotation axis (Z)"),
+            adjustment=Gtk.Adjustment(
+                lower=-10000, upper=10000, step_increment=1, page_increment=10
+            ),
+            digits=2,
+        )
+        self.axis_position_z_row.connect(
+            "notify::value", self._on_axis_position_changed
+        )
+        self.general_group.add(self.axis_position_z_row)
 
         rotary_type_store = Gtk.StringList()
         rotary_type_store.append(_("Jaws / Chuck"))
@@ -550,13 +589,6 @@ class RotaryModulePage(TrackedPreferencesPage):
             mode_idx = 0
         self.mode_row.set_selected(mode_idx)
 
-        if module.mode == RotaryMode.TRUE_4TH_AXIS:
-            perpendicular = self._perpendicular(module.source_axis)
-            src_idx = self._source_axis_display.index(perpendicular)
-        else:
-            src_idx = self._source_axis_display.index(module.source_axis)
-        self.source_axis_row.set_selected(src_idx)
-
         self.mu_per_rotation_row.set_value(module.mu_per_rotation)
         self._update_mode_dependent_rows(module)
 
@@ -572,6 +604,9 @@ class RotaryModulePage(TrackedPreferencesPage):
 
         self.roller_diameter_row.set_value(module.roller_diameter)
         self.reverse_axis_row.set_active(module.reverse_axis)
+        self.axis_position_x_row.set_value(float(module.axis_position[0]))
+        self.axis_position_y_row.set_value(float(module.axis_position[1]))
+        self.axis_position_z_row.set_value(float(module.axis_position[2]))
         self._update_model_subtitle(module)
         t = module.transform
         self.x_row.set_value(float(t[0, 3]))
@@ -628,34 +663,14 @@ class RotaryModulePage(TrackedPreferencesPage):
         is_replacement = module.mode == RotaryMode.AXIS_REPLACEMENT
         self.mu_per_rotation_row.set_visible(is_replacement)
         self.module_axis_row.set_visible(not is_replacement)
-
+        self.source_axis_row.set_visible(is_replacement)
         if is_replacement:
             src_idx = self._source_axis_display.index(module.source_axis)
-        else:
-            perpendicular = self._perpendicular(module.source_axis)
-            src_idx = self._source_axis_display.index(perpendicular)
-        self.source_axis_row.set_selected(src_idx)
-
-        if is_replacement:
-            self.source_axis_row.set_title(_("Connected To"))
-            self.source_axis_row.set_subtitle(
-                _("Which driver the rotary is plugged into")
-            )
-        else:
-            self.source_axis_row.set_title(_("Workpiece Orientation"))
-            self.source_axis_row.set_subtitle(
-                _("Axis along which the workpiece extends")
-            )
+            self.source_axis_row.set_selected(src_idx)
 
     def _update_type_dependent_rows(self, module: RotaryModule):
         is_roller = module.rotary_type == RotaryType.ROLLERS
         self.roller_diameter_row.set_visible(is_roller)
-
-    @staticmethod
-    def _perpendicular(axis: Axis) -> Axis:
-        if axis == Axis.X:
-            return Axis.Y
-        return Axis.X
 
     def _on_mode_changed(self, row, _param):
         if self._is_updating:
@@ -688,11 +703,7 @@ class RotaryModulePage(TrackedPreferencesPage):
         selected = row.get_selected()
         if selected >= len(self._source_axis_display):
             return
-        displayed = self._source_axis_display[selected]
-        if module.mode == RotaryMode.TRUE_4TH_AXIS:
-            module.set_source_axis(self._perpendicular(displayed))
-        else:
-            module.set_source_axis(displayed)
+        module.set_source_axis(self._source_axis_display[selected])
 
     def _on_mm_per_rotation_changed(self, spinrow, _param):
         if self._is_updating:
@@ -728,6 +739,17 @@ class RotaryModulePage(TrackedPreferencesPage):
         module = self._get_selected_module()
         if module:
             module.set_reverse_axis(switchrow.get_active())
+
+    def _on_axis_position_changed(self, spinrow, _param):
+        if self._is_updating:
+            return
+        module = self._get_selected_module()
+        if module:
+            module.set_axis_position(
+                self.axis_position_x_row.get_value(),
+                self.axis_position_y_row.get_value(),
+                self.axis_position_z_row.get_value(),
+            )
 
     def _on_model_activated(self, row):
         module = self._get_selected_module()

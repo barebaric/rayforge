@@ -1,4 +1,5 @@
 import logging
+import math
 import time
 from pathlib import Path
 from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
@@ -127,6 +128,8 @@ class Canvas3D(Gtk.GLArea):
         self._op_player: Optional[OpPlayer] = None
         self._playback_overlay = None
         self._world_to_cyl_local = np.identity(4, dtype=np.float32)
+        self._cylinder_transform = np.eye(4, dtype=np.float64)
+        self._cyl_base_pos = np.zeros(3, dtype=np.float64)
         self._show_travel_moves = False
         self._show_nogo_zones = True
         self._show_models = True
@@ -720,7 +723,7 @@ class Canvas3D(Gtk.GLArea):
                 self._viewport.model_matrix @ wcs_translation_matrix
             )
 
-            # Final MVP for scene geometry (grid, axes)
+            # Final MVP for scene geometry (grid, axes, rotary)
             mvp_matrix_scene = mvp_matrix_ui @ grid_model_matrix
 
             # Convert to column-major for OpenGL
@@ -757,39 +760,54 @@ class Canvas3D(Gtk.GLArea):
                 zone_mvp_gl = (mvp_matrix_ui @ margin_shift).T
                 self._zone_renderer.render(self._main_shader, zone_mvp_gl)
 
-            # Compute cylinder rotation from assembly.
+            # Compute cylinder rotation from mapped ops.
+            #
+            # Degrees are stored in extra_axes by KinematicMapping and
+            # copied into state.axes by apply_command.  The rotary_axis
+            # property tells us which axis holds the angle.
             cyl_angle = 0.0
             sa = Axis.Y
+            ra = None
             if self._op_player:
                 sa = self._op_player.source_axis
+                ra = self._op_player.rotary_axis
             source_idx = 0 if sa == Axis.X else 1
             cyl_idx = 1 - source_idx
             vis_rot_axis = np.zeros(3, dtype=np.float64)
             vis_rot_axis[cyl_idx] = 1.0
-            if self._op_player and self._had_rotary_layers and machine:
+            if (
+                self._op_player
+                and self._had_rotary_layers
+                and machine
+                and ra is not None
+            ):
                 asm = machine.assembly
                 if asm.has_rotary:
-                    raw_val = self._op_player.state.axes.get(sa, 0.0)
-                    raw_vec = np.array([0.0, 0.0, 0.0, 1.0], dtype=np.float32)
-                    raw_vec[source_idx] = raw_val
-                    cyl_pos = self._world_to_cyl_local @ raw_vec
-                    cyl_local_src = cyl_pos[source_idx]
-                    diameter = asm.rotary_diameter
-                    assert diameter is not None
-                    circumference = diameter * np.pi
-                    theta = (cyl_local_src / circumference) * 2 * np.pi
+                    degrees = self._op_player.state.axes.get(ra, 0.0)
+                    theta = math.radians(degrees)
                     if cyl_idx == 1:
                         theta = -theta
                     cyl_angle = theta
 
-            rot_cyl_gl = mvp_matrix_scene_gl
+            if self._had_rotary_layers and machine:
+                cyl_base_mvp = (
+                    mvp_matrix_ui.astype(np.float64)
+                    @ margin_shift.astype(np.float64)
+                    @ self._cylinder_transform
+                )
+            else:
+                cyl_base_mvp = mvp_matrix_ui.astype(
+                    np.float64
+                ) @ margin_shift.astype(np.float64)
+
+            rot_cyl_gl = cyl_base_mvp.T.astype(np.float32)
             if abs(cyl_angle) > 1e-9:
                 rot_3x3 = rotation_matrix_from_axis_angle(
                     vis_rot_axis, cyl_angle
                 )
                 rot_4x4 = np.eye(4, dtype=np.float64)
                 rot_4x4[:3, :3] = rot_3x3
-                rot_cyl = mvp_matrix_scene @ rot_4x4
+                rot_cyl = cyl_base_mvp @ rot_4x4
                 rot_cyl_gl = rot_cyl.T.astype(np.float32)
 
             # Render each layer group (ops + ring buffer)
@@ -866,10 +884,26 @@ class Canvas3D(Gtk.GLArea):
                 heads = asm.head_positions(
                     self._op_player.state, wcs_offset=wcs
                 )
+                vis_mat = (
+                    self._viewport.model_matrix.astype(np.float32)
+                    @ margin_shift
+                )
                 for name, (hx, hy, hz) in heads.items():
-                    head_pos = margin_shift @ np.array(
-                        [hx, hy, hz, 1.0], dtype=np.float32
-                    )
+                    if ra is not None and asm.has_rotary:
+                        head_pos = vis_mat @ np.array(
+                            [hx, hy, hz, 1.0], dtype=np.float32
+                        )
+                    else:
+                        st = self._op_player.state
+                        head_pos = vis_mat @ np.array(
+                            [
+                                st.axes.get(Axis.X, 0.0),
+                                st.axes.get(Axis.Y, 0.0),
+                                st.axes.get(Axis.Z, 0.0) + wcs[2],
+                                1.0,
+                            ],
+                            dtype=np.float32,
+                        )
                     beam_height = 50.0
                     beam_color = (1.0, 0.3, 0.1, 1.0)
                     if name.startswith("head_"):
@@ -886,11 +920,12 @@ class Canvas3D(Gtk.GLArea):
                         and self._main_shader
                         and self._op_player.state.laser_on
                     ):
-                        if self._had_rotary_layers and asm.has_rotary:
+                        if ra is not None and asm.has_rotary:
                             beam_pos = head_pos.copy()
-                            beam_pos[source_idx] = grid_model_matrix[
-                                source_idx, 3
-                            ]
+                            cyl_flip = float(
+                                self._viewport.model_matrix[cyl_idx, cyl_idx]
+                            )
+                            beam_pos[cyl_idx] *= cyl_flip
                             diameter = asm.rotary_diameter
                             if diameter and diameter > 0:
                                 beam_pos[2] += diameter / 2.0
@@ -909,7 +944,14 @@ class Canvas3D(Gtk.GLArea):
 
             for renderer in self._cylinder_renderers.values():
                 if self._main_shader:
-                    renderer.render(self._main_shader, rot_cyl_gl)
+                    cyl_mesh_mvp = (
+                        mvp_matrix_ui @ margin_shift
+                        @ self._cylinder_transform
+                    ).astype(np.float64)
+                    renderer.render(
+                        self._main_shader,
+                        cyl_mesh_mvp.T.astype(np.float32),
+                    )
 
             if self._show_models and self._model_renderers and machine:
                 asm = machine.assembly
@@ -922,7 +964,7 @@ class Canvas3D(Gtk.GLArea):
                     model_transforms = asm.model_world_transforms(
                         MachineState(), wcs_offset=wcs
                     )
-                is_rotary = self._had_rotary_layers and asm.has_rotary
+                is_rotary = ra is not None and asm.has_rotary
                 for renderer, link_name in self._model_renderers:
                     if self._main_shader:
                         t = model_transforms.get(link_name)
@@ -932,9 +974,14 @@ class Canvas3D(Gtk.GLArea):
                         if is_rotary:
                             link = asm.get_link(link_name)
                             if link and link.role != LinkRole.CHUCK:
-                                module_transform[source_idx, 3] = (
-                                    grid_model_matrix[source_idx, 3]
-                                    - margin_shift[source_idx, 3]
+                                cyl_flip = float(
+                                    self._viewport.model_matrix[
+                                        cyl_idx, cyl_idx
+                                    ]
+                                )
+                                module_transform[cyl_idx, 3] = (
+                                    module_transform[cyl_idx, 3] * cyl_flip
+                                    + margin_shift[cyl_idx, 3] * (cyl_flip - 1)
                                 )
                                 diameter = asm.rotary_diameter
                                 if diameter and diameter > 0:
@@ -963,14 +1010,14 @@ class Canvas3D(Gtk.GLArea):
                     self._texture_shader,
                     reached_count=tex_reached,
                 )
-                rot_cyl_mvp = mvp_matrix_scene
+                rot_cyl_mvp = cyl_base_mvp
                 if abs(cyl_angle) > 1e-9:
                     rot_3x3 = rotation_matrix_from_axis_angle(
                         vis_rot_axis, cyl_angle
                     )
                     rot_4x4 = np.eye(4, dtype=np.float64)
                     rot_4x4[:3, :3] = rot_3x3
-                    rot_cyl_mvp = mvp_matrix_scene @ rot_4x4
+                    rot_cyl_mvp = cyl_base_mvp @ rot_4x4
                 self._texture_renderer.render_cylinder(
                     rot_cyl_mvp,
                     self._texture_shader,
@@ -1435,8 +1482,11 @@ class Canvas3D(Gtk.GLArea):
         handle = self._current_job_handle
         if handle is not None:
             artifact = self._context.artifact_store.get(handle)
-            if isinstance(artifact, JobArtifact) and artifact.ops is not None:
-                return artifact.ops
+            if isinstance(artifact, JobArtifact):
+                if artifact.mapped_ops is not None:
+                    return artifact.mapped_ops
+                if artifact.ops is not None:
+                    return artifact.ops
         return None
 
     def _notify_playback_overlay(
@@ -1536,14 +1586,10 @@ class Canvas3D(Gtk.GLArea):
 
         machine = self._context.machine
 
-        source_axis = Axis.Y
         desired_diameters: Dict[float, bool] = {}
         if machine and self._had_rotary_layers:
             for diameter in machine.assembly.chuck_diameters.values():
                 desired_diameters[diameter] = True
-            default_rm = machine.get_default_rotary_module()
-            if default_rm:
-                source_axis = default_rm.source_axis
 
         max_length = self._viewport.width_mm
         if machine:
@@ -1555,9 +1601,6 @@ class Canvas3D(Gtk.GLArea):
             if diameter not in desired_diameters:
                 renderer.cleanup()
                 del self._cylinder_renderers[diameter]
-            elif renderer._source_axis != source_axis:
-                renderer.cleanup()
-                del self._cylinder_renderers[diameter]
 
         for diameter in desired_diameters:
             if diameter not in self._cylinder_renderers:
@@ -1566,7 +1609,6 @@ class Canvas3D(Gtk.GLArea):
                     length=max_length,
                     rings=24,
                     length_segments=12,
-                    source_axis=source_axis,
                 )
                 renderer.set_color((0.4, 0.6, 0.8, 0.25))
                 renderer.init_gl()
@@ -1696,7 +1738,6 @@ class Canvas3D(Gtk.GLArea):
         self._had_rotary_layers = any_rotary
 
         world_to_visual = np.identity(4, dtype=np.float32)
-        world_to_grid = np.identity(4, dtype=np.float32)
         world_to_cyl_local = np.identity(4, dtype=np.float32)
 
         machine = self._context.machine
@@ -1707,24 +1748,31 @@ class Canvas3D(Gtk.GLArea):
             world_to_visual[1, 3] = ms[1, 3]
             world_to_visual[2, 3] = wcs[2]
 
-            try:
-                visual_to_grid = np.linalg.inv(self._viewport.model_matrix)
-            except np.linalg.LinAlgError:
-                visual_to_grid = np.identity(4, dtype=np.float32)
-
-            world_to_grid = visual_to_grid @ world_to_visual
-
-            cyl_to_grid = np.identity(4, dtype=np.float32)
-            cyl_to_grid[0, 3] = wcs[0]
-            cyl_to_grid[1, 3] = wcs[1]
-            cyl_to_grid[2, 3] = wcs[2]
-
-            try:
-                grid_to_cyl = np.linalg.inv(cyl_to_grid)
-            except np.linalg.LinAlgError:
-                grid_to_cyl = np.identity(4, dtype=np.float32)
-
-            world_to_cyl_local = grid_to_cyl @ world_to_grid
+            asm = machine.assembly
+            if asm.has_rotary:
+                mod = None
+                for layer in self.doc.layers:
+                    if layer.rotary_enabled and layer.rotary_module_uid:
+                        mod = machine.rotary_modules.get(
+                            layer.rotary_module_uid
+                        )
+                        if mod:
+                            break
+                if mod is not None:
+                    mod_pos = mod.transform[:3, 3].astype(np.float64)
+                    rot3 = mod.transform[:3, :3].astype(np.float64)
+                    for col in range(3):
+                        norm = np.linalg.norm(rot3[:, col])
+                        if norm > 1e-12:
+                            rot3[:, col] /= norm
+                    cyl_pos = mod_pos + rot3 @ mod.axis_position
+                    self._cyl_base_pos = cyl_pos
+                    self._cylinder_transform = np.eye(4, dtype=np.float64)
+                    self._cylinder_transform[:3, :3] = rot3
+                    self._cylinder_transform[:3, 3] = cyl_pos
+                else:
+                    self._cyl_base_pos = np.zeros(3, dtype=np.float64)
+                    self._cylinder_transform = np.eye(4, dtype=np.float64)
 
         laser_color_luts: Dict[str, dict] = {}
         for uid, cs in self._laser_color_sets.items():
@@ -1737,6 +1785,10 @@ class Canvas3D(Gtk.GLArea):
         layer_color_luts: Dict[str, dict] = {}
         for layer in self.doc.layers:
             source_axis: Optional[Axis] = None
+            rotary_axis: Optional[Axis] = None
+            axis_position = 0.0
+            gear_ratio = 1.0
+            reverse = False
             if layer.rotary_enabled:
                 source_axis = Axis.Y
                 if machine and layer.rotary_module_uid:
@@ -1745,10 +1797,34 @@ class Canvas3D(Gtk.GLArea):
                     )
                     if module:
                         source_axis = module.source_axis
+                        from ....machine.models.rotary_module import (
+                            RotaryMode,
+                            RotaryType,
+                        )
+                        from ....machine.kinematic_math import KinematicMath
+
+                        if module.mode == RotaryMode.TRUE_4TH_AXIS:
+                            rotary_axis = module.axis
+                        else:
+                            rotary_axis = module.source_axis
+                        si = 0 if source_axis == Axis.X else 1
+                        axis_position = float(
+                            module.transform[si, 3]
+                        ) + float(module.axis_position[si])
+                        gear_ratio = KinematicMath.gear_ratio(
+                            module.rotary_type == RotaryType.ROLLERS,
+                            layer.rotary_diameter,
+                            module.roller_diameter,
+                        )
+                        reverse = module.reverse_axis
             layer_configs[layer.uid] = LayerRenderConfig(
                 rotary_enabled=layer.rotary_enabled,
                 rotary_diameter=layer.rotary_diameter,
                 source_axis=source_axis,
+                rotary_axis=rotary_axis,
+                axis_position=axis_position,
+                gear_ratio=gear_ratio,
+                reverse=reverse,
             )
             cut_rgba = hex_to_rgba(layer.color)
             cut_lut = create_lut_from_color(cut_rgba)

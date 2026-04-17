@@ -10,6 +10,17 @@ if TYPE_CHECKING:
     from ..encoder.base import MachineCodeOpMap
 
 
+class _NumpyEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, np.floating):
+            return float(o)
+        if isinstance(o, np.integer):
+            return int(o)
+        if isinstance(o, np.ndarray):
+            return o.tolist()
+        return super().default(o)
+
+
 class JobArtifactHandle(BaseArtifactHandle):
     """A handle for a JobArtifact."""
 
@@ -50,6 +61,7 @@ class JobArtifact(BaseArtifact):
         machine_code_bytes: Optional[np.ndarray] = None,
         op_map_bytes: Optional[np.ndarray] = None,
         vertex_data: Optional[VertexData] = None,
+        mapped_ops: Optional[Ops] = None,
     ):
         super().__init__()
         self.ops = ops
@@ -59,6 +71,7 @@ class JobArtifact(BaseArtifact):
         self.machine_code_bytes: Optional[np.ndarray] = machine_code_bytes
         self.op_map_bytes: Optional[np.ndarray] = op_map_bytes
         self.vertex_data: Optional[VertexData] = vertex_data
+        self.mapped_ops: Optional[Ops] = mapped_ops
 
         # Caching properties for deserialized data
         self._machine_code_str: Optional[str] = None
@@ -114,6 +127,8 @@ class JobArtifact(BaseArtifact):
             result["machine_code_bytes"] = self.machine_code_bytes.tolist()
         if self.op_map_bytes is not None:
             result["op_map_bytes"] = self.op_map_bytes.tolist()
+        if self.mapped_ops is not None:
+            result["mapped_ops"] = self.mapped_ops.to_dict()
         return result
 
     @classmethod
@@ -138,6 +153,8 @@ class JobArtifact(BaseArtifact):
             common_args["op_map_bytes"] = np.array(
                 data["op_map_bytes"], dtype=np.uint8
             )
+        if "mapped_ops" in data:
+            common_args["mapped_ops"] = Ops.from_dict(data["mapped_ops"])
         return cls(**common_args)
 
     def create_handle(
@@ -167,6 +184,13 @@ class JobArtifact(BaseArtifact):
             arrays["travel_vertices"] = self.vertex_data.travel_vertices
             arrays["zero_power_vertices"] = (
                 self.vertex_data.zero_power_vertices
+            )
+        if self.mapped_ops is not None:
+            mapped_json = json.dumps(
+                self.mapped_ops.to_dict(), cls=_NumpyEncoder
+            )
+            arrays["mapped_ops_bytes"] = np.frombuffer(
+                mapped_json.encode("utf-8"), dtype=np.uint8
             )
         return arrays
 
@@ -204,6 +228,14 @@ class JobArtifact(BaseArtifact):
                 travel_vertices=arrays["travel_vertices"].copy(),
                 zero_power_vertices=arrays["zero_power_vertices"].copy(),
             )
+
+        mapped_ops = None
+        mob = arrays.get("mapped_ops_bytes")
+        if mob is not None and mob.size > 0:
+            mapped_ops = Ops.from_dict(
+                json.loads(mob.tobytes().decode("utf-8"))
+            )
+
         return cls(
             ops=ops,
             time_estimate=handle.time_estimate,
@@ -216,4 +248,5 @@ class JobArtifact(BaseArtifact):
                 "op_map_bytes", np.empty(0, dtype=np.uint8)
             ).copy(),
             vertex_data=vertex_data,
+            mapped_ops=mapped_ops,
         )

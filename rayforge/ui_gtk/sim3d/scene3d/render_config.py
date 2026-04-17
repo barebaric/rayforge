@@ -13,14 +13,23 @@ class LayerRenderConfig:
     rotary_enabled: bool
     rotary_diameter: float
     source_axis: Optional[Axis] = None
+    rotary_axis: Optional[Axis] = None
+    axis_position: float = 0.0
+    gear_ratio: float = 1.0
+    reverse: bool = False
 
     def to_dict(self) -> dict:
         d = {
             "rotary_enabled": self.rotary_enabled,
             "rotary_diameter": self.rotary_diameter,
+            "axis_position": self.axis_position,
+            "gear_ratio": self.gear_ratio,
+            "reverse": self.reverse,
         }
         if self.source_axis is not None and self.source_axis != Axis.Y:
             d["source_axis"] = int(self.source_axis)
+        if self.rotary_axis is not None:
+            d["rotary_axis"] = int(self.rotary_axis)
         return d
 
     @classmethod
@@ -28,10 +37,17 @@ class LayerRenderConfig:
         source_axis = None
         if "source_axis" in data:
             source_axis = Axis(data["source_axis"])
+        rotary_axis = None
+        if "rotary_axis" in data:
+            rotary_axis = Axis(data["rotary_axis"])
         return cls(
             rotary_enabled=data["rotary_enabled"],
             rotary_diameter=data["rotary_diameter"],
             source_axis=source_axis,
+            rotary_axis=rotary_axis,
+            axis_position=data.get("axis_position", 0.0),
+            gear_ratio=data.get("gear_ratio", 1.0),
+            reverse=data.get("reverse", False),
         )
 
 

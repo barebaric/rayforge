@@ -25,6 +25,7 @@ def transform_to_cylinder(
     diameter: float,
     colors: Optional[np.ndarray] = None,
     source_axis: Axis = Axis.Y,
+    degrees_input: bool = False,
 ) -> tuple:
     """
     Transform flat vertices to cylindrical coordinates.
@@ -48,6 +49,11 @@ def transform_to_cylinder(
                 colors.
         source_axis: Which linear axis maps to the rotation angle
                      (Axis.Y or Axis.X). Default Axis.Y.
+        degrees_input: If True, source-axis values are already in
+                       degrees (from kinematic mapping) and are
+                       converted directly to radians. If False (default),
+                       they are treated as raw mu and converted via
+                       mu_to_degrees first.
 
     Returns:
         Tuple of (transformed_vertices, expanded_colors). The expanded
@@ -85,8 +91,12 @@ def transform_to_cylinder(
     src2 = p2[:, source_idx].astype(np.float64)
     z2 = p2[:, 2].astype(np.float64)
 
-    theta1 = np.radians(KinematicMath.mu_to_degrees(src1, diameter))
-    theta2 = np.radians(KinematicMath.mu_to_degrees(src2, diameter))
+    if degrees_input:
+        theta1 = np.radians(src1)
+        theta2 = np.radians(src2)
+    else:
+        theta1 = np.radians(KinematicMath.mu_to_degrees(src1, diameter))
+        theta2 = np.radians(KinematicMath.mu_to_degrees(src2, diameter))
 
     delta_theta = (theta2 - theta1 + np.pi) % (2.0 * np.pi) - np.pi
     abs_delta = np.abs(delta_theta)
@@ -126,8 +136,16 @@ def transform_to_cylinder(
     prev_eff_r = radius + prev_z
     curr_eff_r = radius + curr_z
 
-    theta_prev = np.radians(KinematicMath.mu_to_degrees(prev_src, diameter))
-    theta_curr = np.radians(KinematicMath.mu_to_degrees(curr_src, diameter))
+    if degrees_input:
+        theta_prev = np.radians(prev_src)
+        theta_curr = np.radians(curr_src)
+    else:
+        theta_prev = np.radians(
+            KinematicMath.mu_to_degrees(prev_src, diameter)
+        )
+        theta_curr = np.radians(
+            KinematicMath.mu_to_degrees(curr_src, diameter)
+        )
 
     result_verts = np.empty((total_segments * 2, 3), dtype=np.float32)
     result_verts[0::2, cyl_idx] = prev_cyl.astype(np.float32)

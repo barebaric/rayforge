@@ -17,10 +17,10 @@ from ...core.ops import Axis, Ops
 from ...core.ops.commands import LayerStartCommand
 from ...pipeline.coordspace import MachineSpace
 from ...pipeline.encoder.gcode import MachineCodeOpMap
-from ...pipeline.transformer.axis_mapper import AxisMapper
 from ...shared.tasker import task_mgr
 from ..assembly import Assembly
 from ..driver.driver import DeviceState
+from ..kinematic_mapping import KinematicMapping
 from ..kinematics import HeadSpec, Kinematics, build_assembly
 from ..models.axis import AxisConfig, AxisDirection, AxisSet, AxisType
 from ..transport import TransportStatus
@@ -1206,7 +1206,9 @@ class Machine:
         """Queries the device for its active WCS and updates state."""
         await self.controller.sync_active_wcs_from_device()
 
-    def _prepare_ops_for_encoding(self, ops: "Ops") -> "Ops":
+    def _prepare_ops_for_encoding(
+        self, ops: "Ops", _pre_prepared: bool = False
+    ) -> "Ops":
         """
         Prepares an Ops object for encoding by applying machine-specific
         coordinate transformations.
@@ -1217,11 +1219,21 @@ class Machine:
 
         Args:
             ops: The Ops object to prepare.
+            _pre_prepared: If True, the caller has already copied and
+                linearized the ops. Used internally by encode_ops() when
+                axis mapping runs before this step.
 
         Returns:
             A transformed Ops object ready for encoding.
         """
-        ops_for_encoder = ops.copy()
+        if _pre_prepared:
+            ops_for_encoder = ops
+        else:
+            ops_for_encoder = ops.copy()
+
+            if not self.supports_curves:
+                ops_for_encoder.linearize_curves()
+
         space = self.get_coordinate_space()
 
         # 1. Build combined transform applied in order:
@@ -1252,14 +1264,25 @@ class Machine:
         if not np.allclose(combined, np.identity(4)):
             ops_for_encoder.transform(combined)
 
-        # 3. Linearize curves if the machine does not support them
-        if not self.supports_curves:
-            ops_for_encoder.linearize_curves()
-
         return ops_for_encoder
 
-    def _apply_rotary_axis_mapping(self, ops: "Ops", doc: "Doc") -> None:
-        """Apply rotary axis mapping per-layer on prepared ops."""
+    def _apply_rotary_axis_mapping(
+        self, ops: "Ops", doc: "Doc", downstream: bool = True
+    ) -> None:
+        """Apply rotary axis mapping per-layer on ops.
+
+        This method is used by encode_ops() for the encoding path.
+        The UI path (OpPlayer) consumes pre-mapped ops from the
+        pipeline (mapped_ops on JobArtifact).
+
+        Args:
+            ops: The Ops object to map.
+            doc: The document context.
+            downstream: If True (default), also run the degrees→scaled-mu
+                downstream pass for AXIS_REPLACEMENT layers. Set to False
+                when the downstream pass will be run separately after
+                world→machine encoding.
+        """
         commands = ops._commands
         i = 0
         while i < len(commands):
@@ -1273,7 +1296,10 @@ class Machine:
                 i += 1
                 continue
 
-            if not descendant.rotary_module_uid:
+            if (
+                not descendant.rotary_module_uid
+                or not descendant.rotary_enabled
+            ):
                 i += 1
                 continue
 
@@ -1282,28 +1308,18 @@ class Machine:
                 i += 1
                 continue
 
-            source_axis = module.source_axis
-            mode = module.mode
             diameter = descendant.rotary_diameter
+            mode = module.mode
 
-            if mode == RotaryMode.TRUE_4TH_AXIS:
-                rotary_axis = module.axis
-                mu_per_rotation = 0.0
-            else:
-                rotary_axis = source_axis
-                mu_per_rotation = module.mu_per_rotation
+            if mode == RotaryMode.AXIS_REPLACEMENT:
+                if module.mu_per_rotation <= 0:
+                    i += 1
+                    continue
 
-            mapper = AxisMapper(
-                source_axis=source_axis,
-                rotary_axis=rotary_axis,
-                rotary_diameter=diameter,
-                has_physical_source=(mode == RotaryMode.TRUE_4TH_AXIS),
-                mode=mode,
-                mu_per_rotation=mu_per_rotation,
-                rotary_type=module.rotary_type,
-                roller_diameter=module.roller_diameter,
-                reverse_axis=module.reverse_axis,
-            )
+            mapping = KinematicMapping.from_rotary_module(module, diameter)
+            if mapping is None:
+                i += 1
+                continue
 
             layer_cmds = []
             i += 1
@@ -1316,23 +1332,85 @@ class Machine:
 
             layer_ops = Ops()
             layer_ops._commands = layer_cmds
-            mapper.run(layer_ops)
+            mapping.apply(layer_ops)
 
-            if mode == RotaryMode.AXIS_REPLACEMENT:
-                AxisMapper.degrees_to_scaled_mu_pass(
-                    layer_cmds, source_axis, mu_per_rotation
+            if downstream and mode == RotaryMode.AXIS_REPLACEMENT:
+                KinematicMapping.degrees_to_scaled_mu_pass(
+                    layer_cmds,
+                    module.source_axis,
+                    module.mu_per_rotation,
                 )
 
+    def _apply_replacement_downstream(self, ops: "Ops", doc: "Doc") -> None:
+        """Run degrees→scaled-mu downstream pass for AXIS_REPLACEMENT layers.
+
+        This is called after world→machine + WCS has been applied, so that
+        the scaled-mu values are placed into already-transformed commands.
+        """
+        commands = ops._commands
+        i = 0
+        while i < len(commands):
+            cmd = commands[i]
+            if not isinstance(cmd, LayerStartCommand):
+                i += 1
+                continue
+
+            descendant = doc.find_descendant_by_uid(cmd.layer_uid)
+            if not isinstance(descendant, Layer):
+                i += 1
+                continue
+
+            if (
+                not descendant.rotary_module_uid
+                or not descendant.rotary_enabled
+            ):
+                i += 1
+                continue
+
+            module = self.rotary_modules.get(descendant.rotary_module_uid)
+            if module is None:
+                i += 1
+                continue
+
+            if module.mode != RotaryMode.AXIS_REPLACEMENT:
+                i += 1
+                continue
+
+            source_axis = module.source_axis
+            mu_per_rotation = module.mu_per_rotation
+
+            layer_cmds = []
+            i += 1
+            while i < len(commands) and not isinstance(
+                commands[i], LayerStartCommand
+            ):
+                if not commands[i].is_marker():
+                    layer_cmds.append(commands[i])
+                i += 1
+
+            KinematicMapping.degrees_to_scaled_mu_pass(
+                layer_cmds, source_axis, mu_per_rotation
+            )
+
     def encode_ops(
-        self, ops: "Ops", doc: "Doc"
+        self,
+        ops: "Ops",
+        doc: "Doc",
     ) -> Tuple[str, "MachineCodeOpMap"]:
         """
         Encodes an Ops object into machine code (G-code) and a corresponding
         operation map. This method is safe to run in a worker process as it
         uses static driver instantiation to get the encoder.
 
+        The encoding pipeline applies transforms in this order:
+        1. Copy + linearize curves (if machine doesn't support curves)
+        2. Rotary axis mapping (world-space Y→degrees)
+        3. World→machine + WCS offset + Z-flip
+        4. Degrees→scaled-mu downstream pass (AXIS_REPLACEMENT only)
+        5. G-code encoding via driver
+
         Args:
-            ops: The Ops object to encode.
+            ops: The Ops object to encode (world-space, unmapped).
             doc: The document context for the job.
 
         Returns:
@@ -1340,17 +1418,32 @@ class Machine:
             - A string of machine code (G-code).
             - A MachineCodeOpMap object.
         """
-        # 1. Prepare ops (pure math)
-        ops_for_encoder = self._prepare_ops_for_encoding(ops)
+        # 1. Copy ops and linearize curves if needed (world-space).
+        ops_work = ops.copy()
+        if not self.supports_curves:
+            ops_work.linearize_curves()
 
-        # 2. Apply rotary axis mapping per-layer.
+        # 2. Apply rotary axis mapping per-layer on world-space ops.
         #    The mapper converts Y→degrees on MovingCommands including
         #    bezier control points and arc center offsets, so native
         #    curve support (e.g. G5) is preserved.
+        #    The downstream pass (degrees→scaled-mu) is deferred until
+        #    after world→machine for AXIS_REPLACEMENT layers.
         if doc:
-            self._apply_rotary_axis_mapping(ops_for_encoder, doc)
+            self._apply_rotary_axis_mapping(ops_work, doc, downstream=False)
 
-        # 3. Instantiate the correct encoder via the driver factory
+        # 3. Apply world→machine + WCS + Z-flip (no copy, no linearize).
+        ops_for_encoder = self._prepare_ops_for_encoding(
+            ops_work, _pre_prepared=True
+        )
+
+        # 4. Downstream pass: convert degrees→scaled-mu for
+        #    AXIS_REPLACEMENT layers. This must happen after world→machine
+        #    so the scaled values land in machine-coordinate commands.
+        if doc:
+            self._apply_replacement_downstream(ops_for_encoder, doc)
+
+        # 5. Instantiate the correct encoder via the driver factory
         from ..driver import get_driver_cls
         from ..driver.dummy import NoDeviceDriver
 
@@ -1365,7 +1458,7 @@ class Machine:
 
         encoder = driver_cls.create_encoder(self)
 
-        # 3. Perform encoding
+        # 6. Perform encoding
         return encoder.encode(ops_for_encoder, self, doc)
 
     def refresh_settings(self):
