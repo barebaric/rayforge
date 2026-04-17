@@ -493,6 +493,134 @@ class GrblSerialDriver(Driver):
         if self.grbl_transport:
             self.grbl_transport.reset()
 
+    async def _recover_from_deadlock(self, transport) -> None:
+        """
+        Recover from a detected deadlock by sending a G4 P0.01 dwell.
+        When its 'ok' arrives, the planner buffer is guaranteed empty.
+        Then reset host-side buffer accounting.
+        """
+        if not transport or not transport.is_connected:
+            logger.warning("Cannot recover: transport disconnected.")
+            return
+        logger.info("Deadlock recovery: sending G4 P0.01 to drain planner.")
+        try:
+            async with self._cmd_lock:
+                dwell = b"G4 P0.01\n"
+                await transport.send_gcode(dwell)
+                logger.debug(f"TX: {dwell!r} (deadlock recovery)")
+            try:
+                await asyncio.wait_for(
+                    transport.pending_queue.join(), timeout=30.0
+                )
+                logger.info("Deadlock recovery: all pending acks received.")
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "Deadlock recovery: timed out waiting for acks "
+                    "after G4 P0.01. Resetting host buffers."
+                )
+            transport.reset()
+        except (ConnectionError, OSError) as e:
+            logger.warning(f"Deadlock recovery failed: {e}")
+
+    async def _wait_for_buffer_space(
+        self, transport, command_len: int, timeout: float
+    ) -> None:
+        """Wait for buffer space, recovering from deadlocks if needed."""
+        while transport.needs_space(command_len):
+            if self.state.status == DeviceStatus.ALARM:
+                if not self._job_exception:
+                    self._job_exception = DeviceConnectionError(
+                        "Machine entered ALARM state during job."
+                    )
+                return
+
+            try:
+                await asyncio.wait_for(
+                    transport.wait_for_space(), timeout=timeout
+                )
+            except asyncio.TimeoutError:
+                if self.state.status == DeviceStatus.IDLE:
+                    logger.warning(
+                        "Deadlock detected during streaming. "
+                        "Attempting G4 P0.01 recovery."
+                    )
+                    await self._recover_from_deadlock(transport)
+                    if transport.needs_space(command_len):
+                        logger.error("Recovery failed: buffer still full.")
+                        self._job_exception = DeviceConnectionError(
+                            "Deadlock recovery failed."
+                        )
+                        return
+                else:
+                    logger.warning(
+                        "Timeout waiting for buffer space "
+                        "(machine not IDLE). Retrying."
+                    )
+
+            if self._job_exception:
+                return
+            if self._is_cancelled:
+                raise asyncio.CancelledError("Job cancelled")
+
+    async def _send_gcode_line(
+        self,
+        transport,
+        line: str,
+        command_bytes: bytes,
+        op_index: Optional[int],
+    ) -> None:
+        """Send a single gcode line with buffer accounting."""
+        async with self._cmd_lock:
+            if not self.grbl_transport or not self.grbl_transport.is_connected:
+                raise ConnectionError(
+                    "Serial transport disconnected during job."
+                )
+
+            logger.info(line, extra=self._log_extra("USER_COMMAND"))
+
+            # Add to queue BEFORE sending.
+            # Fast machines can reply with 'ok' before await
+            # send() returns. If we queue after sending, the RX
+            # handler finds an empty queue and drops the 'ok',
+            # causing a deadlock.
+            count = await transport.send_gcode(command_bytes, op_index)
+            buf_info = f"buf: {count}/{GRBL_RX_BUFFER_SIZE}"
+            logger.debug(
+                f"TX: {command_bytes!r} ({buf_info})",
+                extra={
+                    "log_category": "RAW_IO",
+                    "direction": "TX",
+                    "data": command_bytes,
+                },
+            )
+
+    async def _drain_pending_acks(self, transport, timeout: float) -> None:
+        """Wait for all pending acks, recovering from deadlocks."""
+        while not transport.pending_queue.empty():
+            if self._job_exception or self.state.status == DeviceStatus.ALARM:
+                break
+            if self._is_cancelled:
+                break
+
+            try:
+                await asyncio.wait_for(
+                    transport.pending_queue.join(), timeout=timeout
+                )
+                logger.debug("All 'ok' responses received.")
+                break
+            except asyncio.TimeoutError:
+                if self.state.status == DeviceStatus.IDLE:
+                    logger.warning(
+                        "Deadlock detected at end of job. "
+                        "Attempting G4 P0.01 recovery."
+                    )
+                    await self._recover_from_deadlock(transport)
+                else:
+                    logger.warning(
+                        "Timeout waiting for acks "
+                        "(machine not IDLE). Retrying."
+                    )
+
     async def _stream_gcode(
         self,
         gcode_lines: List[str],
@@ -522,8 +650,6 @@ class GrblSerialDriver(Driver):
                         "state. Stopping G-code sending."
                     )
                     if self.state.status == DeviceStatus.ALARM:
-                        # Set the exception but don't raise it yet, let
-                        # the loop terminate naturally.
                         if not self._job_exception:
                             self._job_exception = DeviceConnectionError(
                                 "Machine entered ALARM state during job."
@@ -539,113 +665,27 @@ class GrblSerialDriver(Driver):
                     if machine_code_to_op_map
                     else None
                 )
-                # Command is line + newline character
                 command_bytes = (line + "\n").encode("utf-8")
-                command_len = len(command_bytes)
 
-                # Wait until there is enough space in the buffer
-                while transport.needs_space(command_len):
-                    if self.state.status == DeviceStatus.ALARM:
-                        if not self._job_exception:
-                            self._job_exception = DeviceConnectionError(
-                                "Machine entered ALARM state during job."
-                            )
-                        break
-
-                    try:
-                        await asyncio.wait_for(
-                            transport.wait_for_space(),
-                            timeout=deadlock_timeout,
-                        )
-                    except asyncio.TimeoutError:
-                        if self.state.status == DeviceStatus.IDLE:
-                            logger.error(
-                                "Deadlock detected: "
-                                "machine is IDLE but buffer is full."
-                            )
-                            self._job_exception = DeviceConnectionError(
-                                "Deadlock detected during streaming: "
-                                "lost synchronization with device."
-                            )
-                            break
-
-                    if self._job_exception:
-                        break
-                    if self._is_cancelled:
-                        raise asyncio.CancelledError("Job cancelled")
-
+                await self._wait_for_buffer_space(
+                    transport, len(command_bytes), deadlock_timeout
+                )
                 if (
                     self._job_exception
                     or self.state.status == DeviceStatus.ALARM
                 ):
                     break
 
-                async with self._cmd_lock:
-                    if (
-                        not self.grbl_transport
-                        or not self.grbl_transport.is_connected
-                    ):
-                        raise ConnectionError(
-                            "Serial transport disconnected during job."
-                        )
-
-                    logger.info(line, extra=self._log_extra("USER_COMMAND"))
-
-                    # Add to queue BEFORE sending.
-                    # Fast machines can reply with 'ok' before await
-                    # send() returns. If we queue after sending, the RX
-                    # handler finds an empty queue and drops the 'ok',
-                    # causing a deadlock.
-                    count = await transport.send_gcode(command_bytes, op_index)
-                    buf_info = f"buf: {count}/{GRBL_RX_BUFFER_SIZE}"
-                    logger.debug(
-                        f"TX: {command_bytes!r} ({buf_info})",
-                        extra={
-                            "log_category": "RAW_IO",
-                            "direction": "TX",
-                            "data": command_bytes,
-                        },
-                    )
-
-                # Yield to the event loop to allow status polling (and
-                # other tasks) to run. Without this, the tight loop might
-                # starve the _connection_loop task.
+                await self._send_gcode_line(
+                    transport, line, command_bytes, op_index
+                )
                 await asyncio.sleep(0)
 
-            # Wait for all sent commands to be acknowledged
             if not self._is_cancelled and not self._job_exception:
                 logger.debug(
                     "All G-code sent. Waiting for all 'ok' responses."
                 )
-
-                # Deadlock recovery
-                while not transport.pending_queue.empty():
-                    if (
-                        self._job_exception
-                        or self.state.status == DeviceStatus.ALARM
-                    ):
-                        break
-                    if self._is_cancelled:
-                        break
-
-                    try:
-                        await asyncio.wait_for(
-                            transport.pending_queue.join(),
-                            timeout=deadlock_timeout,
-                        )
-                        logger.debug("All 'ok' responses received.")
-                        break
-                    except asyncio.TimeoutError:
-                        if self.state.status == DeviceStatus.IDLE:
-                            logger.error(
-                                "Deadlock detected: machine is IDLE but "
-                                "commands are unacknowledged."
-                            )
-                            self._job_exception = DeviceConnectionError(
-                                "Deadlock detected at end of job: lost "
-                                "synchronization with device."
-                            )
-                            break
+                await self._drain_pending_acks(transport, deadlock_timeout)
 
             if self._job_exception:
                 raise self._job_exception
