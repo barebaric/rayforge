@@ -509,6 +509,7 @@ class GrblSerialDriver(Driver):
         if not transport:
             raise ConnectionError("Transport not initialized")
         job_completed_successfully = False
+        deadlock_timeout = 10.0 if not self._poll_status_while_running else 2.0
         try:
             for line_idx, line in enumerate(gcode_lines):
                 if (
@@ -553,7 +554,8 @@ class GrblSerialDriver(Driver):
 
                     try:
                         await asyncio.wait_for(
-                            transport.wait_for_space(), timeout=2.0
+                            transport.wait_for_space(),
+                            timeout=deadlock_timeout,
                         )
                     except asyncio.TimeoutError:
                         if self.state.status == DeviceStatus.IDLE:
@@ -628,7 +630,8 @@ class GrblSerialDriver(Driver):
 
                     try:
                         await asyncio.wait_for(
-                            transport.pending_queue.join(), timeout=2.0
+                            transport.pending_queue.join(),
+                            timeout=deadlock_timeout,
                         )
                         logger.debug("All 'ok' responses received.")
                         break
