@@ -354,7 +354,7 @@ class TestTransformToCylinder:
             [[0, 0, 0], [10, 0, 0], [20, 0, 0], [30, 0, 0]],
             dtype=np.float32,
         )
-        result, _ = transform_to_cylinder(verts, diameter)
+        result, _, _ = transform_to_cylinder(verts, diameter)
         assert result.shape == (4, 3)
         np.testing.assert_almost_equal(
             result[:, 1], radius * np.sin(0.0), decimal=3
@@ -375,7 +375,7 @@ class TestTransformToCylinder:
             [[0, 0, z], [10, 0, z]],
             dtype=np.float32,
         )
-        result, _ = transform_to_cylinder(verts, diameter)
+        result, _, _ = transform_to_cylinder(verts, diameter)
         expected_radius = diameter / 2.0 + z
         assert result.shape == (2, 3)
         r_actual = float(np.sqrt(result[0, 1] ** 2 + result[0, 2] ** 2))
@@ -395,7 +395,7 @@ class TestTransformToCylinder:
             [[5, 0, z1], [15, 0, z2]],
             dtype=np.float32,
         )
-        result, _ = transform_to_cylinder(verts, diameter)
+        result, _, _ = transform_to_cylinder(verts, diameter)
         r1 = float(np.sqrt(result[0, 1] ** 2 + result[0, 2] ** 2))
         r2 = float(np.sqrt(result[1, 1] ** 2 + result[1, 2] ** 2))
         assert r1 == pytest.approx(diameter / 2.0 + z1, abs=0.01)
