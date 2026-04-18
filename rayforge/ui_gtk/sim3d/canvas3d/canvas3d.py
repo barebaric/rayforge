@@ -1611,13 +1611,20 @@ class Canvas3D(Gtk.GLArea):
                 renderer.cleanup()
                 del self._cylinder_renderers[diameter]
 
+        grid_size = (
+            self._axis_renderer.grid_size_mm
+            if self._axis_renderer
+            else 10.0
+        )
+        length_segments = max(1, round(max_length / grid_size))
+
         for diameter in desired_diameters:
             if diameter not in self._cylinder_renderers:
                 renderer = CylinderRenderer(
                     diameter=diameter,
                     length=max_length,
                     rings=24,
-                    length_segments=12,
+                    length_segments=length_segments,
                 )
                 renderer.set_color((0.4, 0.6, 0.8, 0.25))
                 renderer.init_gl()
