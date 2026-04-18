@@ -1312,7 +1312,9 @@ class Machine:
             mode = module.mode
 
             if mode == RotaryMode.AXIS_REPLACEMENT:
-                if module.mu_per_rotation <= 0:
+                if module.mu_per_rotation <= 0 and (
+                    module.axis not in KinematicMapping._AXIS_TO_INDEX
+                ):
                     i += 1
                     continue
 
