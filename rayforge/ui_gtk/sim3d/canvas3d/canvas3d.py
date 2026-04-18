@@ -928,10 +928,21 @@ class Canvas3D(Gtk.GLArea):
 
             for renderer in self._cylinder_renderers.values():
                 if self._main_shader:
-                    cyl_mesh_mvp = (
-                        mvp_matrix_ui @ margin_shift
-                        @ self._cylinder_transform
-                    ).astype(np.float64)
+                    if abs(cyl_angle) > 1e-9:
+                        rot_3x3 = rotation_matrix_from_axis_angle(
+                            vis_rot_axis, cyl_angle
+                        )
+                        rot_4x4 = np.eye(4, dtype=np.float64)
+                        rot_4x4[:3, :3] = rot_3x3
+                        cyl_mesh_mvp = (
+                            mvp_matrix_ui @ margin_shift
+                            @ self._cylinder_transform @ rot_4x4
+                        ).astype(np.float64)
+                    else:
+                        cyl_mesh_mvp = (
+                            mvp_matrix_ui @ margin_shift
+                            @ self._cylinder_transform
+                        ).astype(np.float64)
                     renderer.render(
                         self._main_shader,
                         cyl_mesh_mvp.T.astype(np.float32),
