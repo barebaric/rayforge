@@ -1,12 +1,26 @@
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Union
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
 # A fully resolved, render-ready RGBA color.
 ColorRGBA = Tuple[float, float, float, float]
+
+ColorAtom = Union[
+    str, Tuple[float, float, float], Tuple[float, float, float, float]
+]
+ColorSpec = Union[ColorAtom, Tuple[ColorAtom, float]]
+GradientSpec = Tuple[ColorSpec, ColorSpec]
+ColorSpecDict = Dict[str, Union[ColorSpec, GradientSpec]]
+
+OPS_COLOR_SPEC: ColorSpecDict = {
+    "cut": ("#ffeeff", "#ff00ff"),
+    "engrave": ("#FFFFFF", "#000000"),
+    "travel": ("#FF6600", 0.7),
+    "zero_power": ("@accent_color", 0.5),
+}
 
 
 def hex_to_rgba(hex_color: str) -> ColorRGBA:

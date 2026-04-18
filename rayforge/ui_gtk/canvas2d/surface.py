@@ -14,6 +14,7 @@ from typing import (
 from gi.repository import Gdk, GLib, Gtk, Graphene
 from ...camera.controller import CameraController
 from ...context import get_context
+from ...core.color import OPS_COLOR_SPEC
 from ...core.group import Group
 from ...core.item import DocItem
 from ...core.layer import Layer
@@ -919,14 +920,7 @@ class WorkSurface(WorldSurface):
         """
         color_resolver = GtkColorResolver(self)
 
-        spec_dict = {
-            "cut": ("#ffeeff", "#ff00ff"),
-            "engrave": ("#FFFFFF", "#000000"),
-            "travel": ("#FF6600", 0.7),
-            "zero_power": ("@accent_color", 0.5),
-        }
-
-        return color_resolver.resolve(spec_dict)
+        return color_resolver.resolve(OPS_COLOR_SPEC)
 
     def _get_handle_color(self, elem: CanvasElement) -> Optional[ColorRGBA]:
         """Returns the layer color for the element's selection handles."""
@@ -1301,9 +1295,7 @@ class WorkSurface(WorldSurface):
             origin_x, origin_y = space.get_workarea_origin_in_machine()
         else:
             wcs_x, wcs_y, _ = self.machine.get_active_wcs_offset()
-            origin_x, origin_y = self._machine_coords_to_canvas(
-                wcs_x, wcs_y
-            )
+            origin_x, origin_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
 
         bed_width = self.machine.axis_extents[0]
         max_length = bed_width

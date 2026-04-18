@@ -21,11 +21,12 @@ from ....core.color import (
     ColorSet,
     hex_to_rgba,
     create_lut_from_color,
+    OPS_COLOR_SPEC,
 )
 from ....shared.tasker import task_mgr, Task
 from ....simulator.machine_state import MachineState
 from ....simulator.op_player import OpPlayer
-from ...shared.gtk_color import GtkColorResolver, ColorSpecDict
+from ...shared.gtk_color import GtkColorResolver
 from .axis_renderer_3d import AxisRenderer3D
 from .background_renderer import BackgroundRenderer
 from .camera import Camera, ViewDirection, rotation_matrix_from_axis_angle
@@ -137,12 +138,7 @@ class Canvas3D(Gtk.GLArea):
         self._scene_gl_dirty = False
         self._artifact_gl_dirty = False
 
-        self._color_spec: ColorSpecDict = {
-            "cut": ("#ff00ff22", "#ff00ff"),
-            "engrave": ("#00000009", "#000000"),
-            "travel": ("#FF6600", 0.7),
-            "zero_power": ("@accent_color", 0.5),
-        }
+        self._color_spec = OPS_COLOR_SPEC
         self._color_set: Optional[ColorSet] = None
         self._laser_color_sets: Dict[str, ColorSet] = {}
         self._theme_is_dirty = True

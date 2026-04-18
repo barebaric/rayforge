@@ -11,9 +11,9 @@ from ....pipeline.artifact import (
     BaseArtifactHandle,
     WorkPieceViewArtifact,
 )
-from ....core.color import ColorSet
-from ...shared.gtk_color import GtkColorResolver, ColorSpecDict
+from ....core.color import ColorSet, OPS_COLOR_SPEC, ColorSpecDict
 from ...canvas import CanvasElement
+from ...shared.gtk_color import GtkColorResolver
 from ..ops_cache_registry import registry
 from .tab_handle import TabHandleElement
 
@@ -80,12 +80,7 @@ class WorkPieceElement(CanvasElement):
         # Default to False; the correct state will be pulled from the surface.
         self._tabs_visible_override: bool = False
 
-        self._color_spec: ColorSpecDict = {
-            "cut": ("#ffeeff", "#ff00ff"),
-            "engrave": ("#FFFFFF", "#000000"),
-            "travel": ("#FF6600", 0.7),
-            "zero_power": ("@accent_color", 0.5),
-        }
+        self._color_spec: ColorSpecDict = OPS_COLOR_SPEC
         self._color_set: Optional[ColorSet] = None
         self._last_style_context_hash = -1
         self._rendered_ppm: float = 0.0
