@@ -154,7 +154,9 @@ class ArcToCommand(MovingCommand):
         segments = geo_linearize.linearize_arc(self, start_point)
         new_cmds = []
         for _, end in segments:
-            line_cmd = LineToCommand(end)
+            line_cmd = LineToCommand(
+                end, extra_axes=dict(self.extra_axes)
+            )
             line_cmd.state = self.state
             new_cmds.append(line_cmd)
         return new_cmds
@@ -205,7 +207,9 @@ class BezierToCommand(CurveToCommand):
         )
         new_cmds = []
         for pt in polyline[1:]:
-            line_cmd = LineToCommand(pt)
+            line_cmd = LineToCommand(
+                pt, extra_axes=dict(self.extra_axes)
+            )
             line_cmd.state = self.state
             new_cmds.append(line_cmd)
         return new_cmds
@@ -244,7 +248,9 @@ class QuadraticBezierToCommand(CurveToCommand):
         polyline = linearize_bezier_segment(p0, c1, c2, p1)
         new_cmds = []
         for pt in polyline[1:]:
-            line_cmd = LineToCommand(pt)
+            line_cmd = LineToCommand(
+                pt, extra_axes=dict(self.extra_axes)
+            )
             line_cmd.state = self.state
             new_cmds.append(line_cmd)
         return new_cmds
@@ -529,7 +535,12 @@ class ScanLinePowerCommand(MovingCommand):
                 # The geometric end point corresponds to t = i / num_steps.
                 t_end = i / float(num_steps)
                 segment_end_point = p_start_vec + t_end * line_vec
-                commands.append(LineToCommand(tuple(segment_end_point)))
+                commands.append(
+                    LineToCommand(
+                        tuple(segment_end_point),
+                        extra_axes=dict(self.extra_axes),
+                    )
+                )
 
                 # Start the new segment
                 segment_start_power = current_power
@@ -537,7 +548,9 @@ class ScanLinePowerCommand(MovingCommand):
 
         # Add the final LineTo command for the last segment, which always
         # goes to the very end of the scan line.
-        commands.append(LineToCommand(self.end))
+        commands.append(
+            LineToCommand(self.end, extra_axes=dict(self.extra_axes))
+        )
 
         return commands
 

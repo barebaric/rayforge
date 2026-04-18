@@ -226,13 +226,19 @@ class KinematicMapping:
             layer_ops._commands = layer_cmds
             mapping.apply(layer_ops)
 
+    _AXIS_TO_INDEX = {Axis.X: 0, Axis.Y: 1, Axis.Z: 2}
+
     @staticmethod
     def degrees_to_scaled_mu_pass(
         commands: list,
         mu_per_rotation: float,
+        target_axis: Axis = Axis.Y,
     ) -> None:
         if mu_per_rotation <= 0:
             return
+        idx = KinematicMapping._AXIS_TO_INDEX.get(target_axis, 1)
+        cp_idx = 1
+        null_source = target_axis != Axis.Y
         for cmd in commands:
             if not isinstance(cmd, MovingCommand):
                 continue
@@ -243,16 +249,20 @@ class KinematicMapping:
                 degrees, mu_per_rotation
             )
             end = list(cmd.end)
-            end[1] = scaled
+            end[idx] = scaled
+            if null_source:
+                end[1] = 0.0
             cmd.end = (end[0], end[1], end[2])
 
             if isinstance(cmd, ArcToCommand):
-                cp_deg = cmd.center_offset[1]
+                cp_deg = cmd.center_offset[cp_idx]
                 cp_scaled = KinematicMath.degrees_to_scaled_mu(
                     cp_deg, mu_per_rotation
                 )
                 new_offset = list(cmd.center_offset)
-                new_offset[1] = cp_scaled
+                new_offset[cp_idx] = cp_scaled
+                if null_source:
+                    new_offset[1] = 0.0
                 cmd.center_offset = (
                     new_offset[0],
                     new_offset[1],
@@ -261,14 +271,18 @@ class KinematicMapping:
                 for attr in ("control1", "control2"):
                     cp = list(getattr(cmd, attr))
                     cp_scaled = KinematicMath.degrees_to_scaled_mu(
-                        cp[1], mu_per_rotation
+                        cp[cp_idx], mu_per_rotation
                     )
-                    cp[1] = cp_scaled
+                    cp[cp_idx] = cp_scaled
+                    if null_source:
+                        cp[1] = 0.0
                     setattr(cmd, attr, tuple(cp))
             elif isinstance(cmd, QuadraticBezierToCommand):
                 cp = list(cmd.control)
                 cp_scaled = KinematicMath.degrees_to_scaled_mu(
-                    cp[1], mu_per_rotation
+                    cp[cp_idx], mu_per_rotation
                 )
-                cp[1] = cp_scaled
+                cp[cp_idx] = cp_scaled
+                if null_source:
+                    cp[1] = 0.0
                 cmd.control = (cp[0], cp[1], cp[2])

@@ -1338,6 +1338,7 @@ class Machine:
                 KinematicMapping.degrees_to_scaled_mu_pass(
                     layer_cmds,
                     module.mu_per_rotation,
+                    target_axis=module.axis,
                 )
 
     def _apply_replacement_downstream(self, ops: "Ops", doc: "Doc") -> None:
@@ -1387,7 +1388,7 @@ class Machine:
                 i += 1
 
             KinematicMapping.degrees_to_scaled_mu_pass(
-                layer_cmds, mu_per_rotation
+                layer_cmds, mu_per_rotation, target_axis=module.axis
             )
 
     def encode_ops(
