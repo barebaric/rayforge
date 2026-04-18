@@ -436,6 +436,28 @@ class TestGrblSerialDriver:
         assert offsets["G55"] == (4.0, 5.0, 6.0)
 
     @pytest.mark.asyncio
+    async def test_read_wcs_offsets_without_z(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+    ):
+        """Test reading WCS offsets when machine omits Z coordinate."""
+        driver = connected_driver
+
+        response_data = (
+            b"[G54:1.000,2.000]\r\n[G55:4.000,5.000]\r\nok\r\n"
+        )
+
+        cmd_task = asyncio.create_task(driver.read_wcs_offsets())
+        await asyncio.sleep(0.01)
+        mock_serial_transport.send.assert_called_once_with(b"$#\n")
+        driver.on_serial_data_received(mock_serial_transport, response_data)
+
+        offsets = await cmd_task
+        assert offsets["G54"] == (1.0, 2.0, 0.0)
+        assert offsets["G55"] == (4.0, 5.0, 0.0)
+
+    @pytest.mark.asyncio
     async def test_probe_cycle_success(
         self,
         connected_driver: GrblSerialDriver,

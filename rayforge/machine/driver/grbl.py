@@ -741,6 +741,7 @@ class GrblNetworkDriver(Driver):
             match = wcs_re.match(line)
             if match:
                 slot, x_str, y_str, z_str = match.groups()
+                z_str = z_str or "0.000"
                 offsets[slot] = (float(x_str), float(y_str), float(z_str))
         self.wcs_updated.send(self, offsets=offsets)
         return offsets
