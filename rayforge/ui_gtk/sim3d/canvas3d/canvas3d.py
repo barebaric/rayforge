@@ -877,10 +877,7 @@ class Canvas3D(Gtk.GLArea):
                 heads = asm.head_positions(
                     self._op_player.state, wcs_offset=wcs
                 )
-                vis_mat = (
-                    self._viewport.model_matrix.astype(np.float32)
-                    @ margin_shift
-                )
+                vis_mat = margin_shift.astype(np.float32)
                 for name, (hx, hy, hz) in heads.items():
                     head_pos = vis_mat @ np.array(
                         [hx, hy, hz, 1.0], dtype=np.float32

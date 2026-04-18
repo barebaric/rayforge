@@ -42,18 +42,21 @@ def build_assembly(
         Link("base", parent=None, joint_type=JointType.FIXED),
     ]
 
+    _gantry_axes = {Axis.X, Axis.Y}
+
     parent = "base"
-    for axis_config in axis_set.linear_axes:
-        if axis_config.letter == Axis.Z:
+    for axis_letter in _gantry_axes:
+        cfg = axis_set.get(axis_letter)
+        if cfg is None:
             continue
-        name = f"gantry_{axis_config.letter.label}"
+        name = f"gantry_{axis_letter.label}"
         links.append(
             Link(
                 name,
                 parent=parent,
                 joint_type=JointType.PRISMATIC,
-                joint_axis=_axis_direction(axis_config.letter),
-                driver_axis=axis_config.letter,
+                joint_axis=_axis_direction(axis_letter),
+                driver_axis=axis_letter,
             )
         )
         parent = name
