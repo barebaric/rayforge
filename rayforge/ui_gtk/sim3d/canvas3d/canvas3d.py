@@ -10,7 +10,6 @@ from ....context import RayforgeContext
 from ....core.geo import Point
 from ....core.model import Model
 from ....core.ops import Ops
-from ....core.ops.commands import LayerStartCommand
 from ....machine.assembly import LinkRole
 from ....machine.kinematic_mapping import KinematicMapping
 from ....machine.models.colors import OpsColorSet
@@ -137,7 +136,6 @@ class Canvas3D(Gtk.GLArea):
         self._gl_initialized = False
         self._scene_gl_dirty = False
         self._artifact_gl_dirty = False
-        self._current_layer_uid = None
 
         self._color_spec: ColorSpecDict = {
             "cut": ("#ff00ff22", "#ff00ff"),
@@ -656,25 +654,6 @@ class Canvas3D(Gtk.GLArea):
 
         self._process_pending_gl_updates()
 
-        machine = self._context.machine
-        if (
-            machine
-            and self._op_player
-            and self._op_player.state.current_layer_uid
-            != self._current_layer_uid
-        ):
-            uid = self._op_player.state.current_layer_uid
-            self._current_layer_uid = uid
-            layer = None
-            if uid:
-                for lay in self.doc.layers:
-                    if lay.uid == uid:
-                        layer = lay
-                        break
-            machine.configure_for_layer(layer)
-            self._scene_gl_dirty = True
-            self._process_pending_gl_updates()
-
         if self._theme_is_dirty:
             self._update_theme_and_colors()
 
@@ -797,7 +776,9 @@ class Canvas3D(Gtk.GLArea):
             ):
                 asm = machine.assembly
                 if asm.has_rotary:
-                    degrees = self._op_player.state.axes.get(ra, 0.0)
+                    degrees = self._op_player.state.axes.get(
+                        ra, 0.0
+                    )
                     cyl_angle = math.radians(degrees)
 
             if self._had_rotary_layers and machine:
@@ -1431,45 +1412,37 @@ class Canvas3D(Gtk.GLArea):
 
     def _update_op_player(self):
         ops = self._get_ops_for_playback()
+        machine = self._context.machine
+        if machine is None:
+            return
+
         if ops is None or ops.is_empty():
-            logger.debug("[CANVAS3D] _update_op_player: no ops available.")
+            logger.debug(
+                "[CANVAS3D] _update_op_player: no ops available."
+            )
             self._op_player = None
-            self._current_layer_uid = None
             for group in self._layer_groups:
                 group.powered_offsets = []
                 group.travel_offsets = []
                 group.ring_offsets = []
             GLib.idle_add(self._notify_playback_overlay, 0)
             return
-        logger.debug(
-            "[CANVAS3D] _update_op_player: got ops with "
-            "%d commands." % len(ops)
-        )
 
         saved_index = None
         if self._op_player is not None and self._op_player.ops is ops:
             saved_index = self._op_player.current_index
 
-        machine = self._context.machine
-        if machine is None:
-            return
         self._op_player = OpPlayer(ops, machine=machine, doc=self.doc)
-        self._current_layer_uid = None
+        self._op_player.layer_changed.connect(
+            self._on_playback_layer_changed
+        )
         self._extract_playback_offsets_from_artifact()
 
         if saved_index is not None:
             self._op_player.seek(saved_index)
             initial_index = saved_index
         else:
-            # Auto-advance to the first LayerStartCommand so the canvas
-            # shows the first layer's surface (e.g. correct workpiece
-            # diameter) immediately instead of an empty default scene.
-            initial_index = 0
-            for i, cmd in enumerate(self._op_player.ops):
-                if isinstance(cmd, LayerStartCommand):
-                    self._op_player.seek(i)
-                    initial_index = i
-                    break
+            initial_index = self._op_player.seek_to_first_layer()
 
         GLib.idle_add(
             self._notify_playback_overlay,
@@ -1477,6 +1450,50 @@ class Canvas3D(Gtk.GLArea):
             initial_index,
         )
         self._upload_scanline_overlay()
+
+    def _on_playback_layer_changed(self, sender, **kwargs):
+        machine = self._context.machine
+        if not machine or not self._op_player:
+            return
+        layer = self._op_player.get_current_layer(self.doc)
+        machine.configure_for_layer(layer)
+        self._scene_gl_dirty = True
+        self.queue_render()
+
+    def _notify_playback_overlay(
+        self, command_count: int, initial_index: int = 0
+    ):
+        if self._playback_overlay is not None:
+            self._playback_overlay.update_ops_range(
+                command_count, initial_index
+            )
+
+    def seek_playback(self, index: int):
+        if self._op_player:
+            self._op_player.seek(index)
+            self.queue_render()
+
+    @property
+    def playback_command_count(self) -> int:
+        if self._op_player:
+            return len(self._op_player.ops)
+        return 0
+
+    @property
+    def playback_current_index(self) -> int:
+        if self._op_player:
+            return self._op_player.current_index
+        return -1
+
+    def seek_playback_to_fraction(self, fraction: float):
+        if self._op_player:
+            self._op_player.seek_to_fraction(fraction)
+            if self._playback_overlay:
+                self._playback_overlay.update_ops_range(
+                    len(self._op_player.ops),
+                    self._op_player.current_index,
+                )
+            self.queue_render()
 
     def _get_ops_for_playback(self) -> Optional[Ops]:
         handle = self._current_job_handle
@@ -1488,14 +1505,6 @@ class Canvas3D(Gtk.GLArea):
                 if artifact.ops is not None:
                     return artifact.ops
         return None
-
-    def _notify_playback_overlay(
-        self, command_count: int, initial_index: int = 0
-    ):
-        if self._playback_overlay is not None:
-            self._playback_overlay.update_ops_range(
-                command_count, initial_index
-            )
 
     def _upload_scanline_overlay(self):
         """

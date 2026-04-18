@@ -1,17 +1,15 @@
-from __future__ import annotations
+from typing import Optional
 
-from typing import TYPE_CHECKING, Optional
+from blinker import Signal
 
+from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.ops import Ops
 from ..core.ops.axis import Axis
 from ..core.ops.commands import LayerStartCommand, MovingCommand
+from ..machine.models.machine import Machine
 from ..machine.models.rotary_module import RotaryMode
 from .machine_state import MachineState
-
-if TYPE_CHECKING:
-    from ..core.doc import Doc
-    from ..machine.models.machine import Machine
 
 
 class OpPlayer:
@@ -24,7 +22,9 @@ class OpPlayer:
         self._current_index: int = -1
         self._source_axis: Axis = Axis.Y
         self._rotary_axis: Optional[Axis] = None
+        self._prev_layer_uid: Optional[str] = None
         self.state = self._create_home_state()
+        self.layer_changed = Signal()
 
     @property
     def current_index(self) -> int:
@@ -72,7 +72,9 @@ class OpPlayer:
         self._current_index = -1
         self._source_axis = Axis.Y
         self._rotary_axis = None
+        self._prev_layer_uid = None
         self.advance_to(index)
+        self._emit_layer_change()
 
     def advance_to(self, index: int):
         if index < self._current_index:
@@ -101,3 +103,29 @@ class OpPlayer:
         if last is not None:
             self.seek(last)
         return last
+
+    def seek_to_fraction(self, fraction: float):
+        target = int(len(self.ops) * fraction)
+        target = max(0, min(target, len(self.ops) - 1))
+        self.seek(target)
+
+    def seek_to_first_layer(self):
+        for i, cmd in enumerate(self.ops):
+            if isinstance(cmd, LayerStartCommand):
+                self.seek(i)
+                return i
+        return 0
+
+    def get_current_layer(self, doc: Doc) -> Optional[Layer]:
+        uid = self.state.current_layer_uid
+        if uid:
+            item = doc.find_descendant_by_uid(uid)
+            if isinstance(item, Layer):
+                return item
+        return None
+
+    def _emit_layer_change(self):
+        uid = self.state.current_layer_uid
+        if uid != self._prev_layer_uid:
+            self._prev_layer_uid = uid
+            self.layer_changed.send(self, layer_uid=uid)
