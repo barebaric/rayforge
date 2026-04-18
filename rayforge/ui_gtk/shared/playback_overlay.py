@@ -152,6 +152,14 @@ class PlaybackOverlay(Gtk.Box):
         self._slider.set_value(ops_index)
         self._is_syncing = False
 
+    def can_play(self) -> bool:
+        """Returns True if the play button is currently sensitive."""
+        return self._play_button.get_sensitive()
+
+    def toggle_playback(self):
+        """Toggles play/pause state, as if the play button was clicked."""
+        self._on_play_clicked(self._play_button)
+
     def _on_play_clicked(self, button):
         if self._playing:
             self._stop_playback()

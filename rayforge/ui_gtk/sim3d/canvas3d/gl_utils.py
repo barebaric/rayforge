@@ -4,6 +4,7 @@ PyOpenGL tasks, such as shader compilation and buffer management.
 """
 
 import logging
+import math
 from typing import Optional, Protocol, Union, final
 
 import numpy as np
@@ -11,6 +12,31 @@ from OpenGL import GL
 from OpenGL.GL import shaders
 
 logger = logging.getLogger(__name__)
+
+
+def rotation_4x4(axis: np.ndarray, angle: float) -> np.ndarray:
+    """
+    Build a 4x4 rotation matrix from an axis and angle (Rodrigues).
+
+    Returns the identity if *angle* is near zero.
+    """
+    if abs(angle) < 1e-9:
+        return np.eye(4, dtype=np.float64)
+    norm = np.linalg.norm(axis)
+    if norm < 1e-6:
+        return np.eye(4, dtype=np.float64)
+    ax = axis / norm
+    c = math.cos(angle)
+    s = math.sin(angle)
+    t = 1 - c
+    x, y, z = ax
+    rot = np.eye(4, dtype=np.float64)
+    rot[:3, :3] = [
+        [t * x * x + c, t * x * y - s * z, t * x * z + s * y],
+        [t * x * y + s * z, t * y * y + c, t * y * z - s * x],
+        [t * x * z - s * y, t * y * z + s * x, t * z * z + c],
+    ]
+    return rot
 
 
 def set_line_width(requested: float) -> None:
