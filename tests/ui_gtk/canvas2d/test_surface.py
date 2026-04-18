@@ -26,6 +26,7 @@ def surface(mock_work_origin):
     s.queue_draw = MagicMock()
     s.width_mm = 100.0
     s.height_mm = 100.0
+    s._update_extent_frame = MagicMock()
 
     active_layer = MagicMock()
     active_layer.rotary_enabled = False
