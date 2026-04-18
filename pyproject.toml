@@ -19,7 +19,7 @@ classifiers = [
 "Homepage" = "https://github.com/barebaric/rayforge"
 "Bug Tracker" = "https://github.com/barebaric/rayforge/issues"
 
-[project.scripts]
+[project.gui-scripts]
 rayforge = "rayforge.app:main"
 
 [build-system]

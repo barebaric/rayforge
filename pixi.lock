@@ -380,7 +380,6 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0c/82/a2c93e32800940d9573fb28c346772a14778b84ba7524e691b324620ab89/pyright-1.1.408-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/27/24/c820cf15f87f7b164e83710c1852d4f900d9793961579e5ef64189bc0c10/pyserial_asyncio-0.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/1b/19/f76987bad313bb2dabf21914c1ec7441a1e846f05764f9948f1ccc2640a8/pyserial_asyncio_fast-0.16-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/04/93/2fa34714b7a4ae72f2f8dad66ba17dd9a2c793220719e736dda28b7aec27/pytest_asyncio-1.2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ee/49/1377b49de7d0c1ce41292161ea0f721913fa8722c19fb9c1e3aa0367eecb/pytest_cov-7.0.0-py3-none-any.whl
@@ -4890,12 +4889,6 @@ packages:
   sha256: c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0
   requires_dist:
   - hidapi ; extra == 'cp2110'
-- pypi: https://files.pythonhosted.org/packages/27/24/c820cf15f87f7b164e83710c1852d4f900d9793961579e5ef64189bc0c10/pyserial_asyncio-0.6-py3-none-any.whl
-  name: pyserial-asyncio
-  version: '0.6'
-  sha256: de9337922619421b62b9b1a84048634b3ac520e1d690a674ed246a2af7ce1fc5
-  requires_dist:
-  - pyserial
 - pypi: https://files.pythonhosted.org/packages/1b/19/f76987bad313bb2dabf21914c1ec7441a1e846f05764f9948f1ccc2640a8/pyserial_asyncio_fast-0.16-py3-none-any.whl
   name: pyserial-asyncio-fast
   version: '0.16'
@@ -5097,8 +5090,8 @@ packages:
   timestamp: 1746622023242
 - pypi: ./
   name: rayforge
-  version: 1.5.2.post38+git.dbfab6a9.dirty
-  sha256: 566530a8945882fc0cf17ef8603c627d282774e5efd5fe02dc57d7675684fd9a
+  version: 1.5.2.post57+git.985d5932.dirty
+  sha256: c6ebd25f1586d3a8d8fba1f122ce367cf2c8a2a25f613952d3e9d7a4fc2d12f6
   requires_dist:
   - aiohttp==3.13.5
   - asyncudp==0.11.0
@@ -5116,7 +5109,7 @@ packages:
   - pyopengl==3.1.10
   - pyopengl-accelerate==3.1.10
   - pypdf~=6.10.0
-  - pyserial-asyncio==0.6
+  - pyserial-asyncio-fast==0.16
   - pyvips==3.0.0
   - pyyaml==6.0.2
   - scipy==1.16.3
