@@ -108,20 +108,51 @@ def _transform_verts(verts: np.ndarray, transform: np.ndarray) -> np.ndarray:
     return transformed[:, :3].astype(np.float32)
 
 
+def _remap_offsets(
+    offsets: List[int],
+    pair_expansions: List[Tuple[int, "np.ndarray"]],
+) -> List[int]:
+    if not pair_expansions:
+        return offsets
+    result = []
+    for pre_count in offsets:
+        mapped = pre_count
+        for seg_start, cum_subs in pair_expansions:
+            num_input_pairs = len(cum_subs) - 1
+            num_input_verts = num_input_pairs * 2
+            if pre_count <= seg_start:
+                continue
+            if pre_count >= seg_start + num_input_verts:
+                mapped += int(cum_subs[-1]) * 2 - num_input_verts
+            else:
+                vert_offset = pre_count - seg_start
+                pair_idx = min(vert_offset // 2, num_input_pairs)
+                extra_verts = vert_offset % 2
+                mapped = (
+                    seg_start
+                    + int(cum_subs[pair_idx]) * 2
+                    + extra_verts
+                )
+                break
+        result.append(mapped)
+    return result
+
+
 def _apply_cylinder(
     verts: np.ndarray,
     diameter: float,
     colors: Optional[np.ndarray] = None,
     degrees_input: bool = False,
-) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
     if verts.size == 0 or diameter <= 0:
-        return verts, colors
-    return transform_to_cylinder(
+        return verts, colors, np.array([0], dtype=np.int32)
+    result_verts, result_colors, cum_subs = transform_to_cylinder(
         verts.reshape(-1, 3),
         diameter,
         colors,
         degrees_input=degrees_input,
     )
+    return result_verts, result_colors, cum_subs
 
 
 def _to_arr(raw: List[float], cols: int) -> np.ndarray:
@@ -578,6 +609,7 @@ class _LayerAccumulator:
                 zpc_arr,
                 ov_pos_arr,
                 ov_col_arr,
+                pv_expansion,
             ) = _apply_cylinder_wrapping(
                 pv_arr,
                 pc_arr,
@@ -591,6 +623,10 @@ class _LayerAccumulator:
                 self.tv_cum,
                 self.ov_cum,
             )
+            if pv_expansion:
+                self.pv_off = _remap_offsets(
+                    self.pv_off, pv_expansion
+                )
 
         if tv_arr.size > 0:
             tv_arr[:, 2] += Z_OFFSET_NON_POWERED
@@ -628,6 +664,7 @@ def _apply_cylinder_wrapping(
     _exp_zpc: List[np.ndarray] = []
     _exp_ov_pos: List[np.ndarray] = []
     _exp_ov_col: List[np.ndarray] = []
+    pv_expansion: List[Tuple[int, np.ndarray]] = []
 
     for seg in rotary_segments:
         d = seg["diameter"]
@@ -638,7 +675,7 @@ def _apply_cylinder_wrapping(
         pv_s = seg["pv_start"]
         pv_e = seg.get("pv_end", pv_cum)
         if pv_e > pv_s:
-            pv_w, pc_w = _apply_cylinder(
+            pv_w, pc_w, cum_subs = _apply_cylinder(
                 pv_arr[pv_s:pv_e],
                 d,
                 pc_arr[pv_s:pv_e],
@@ -647,11 +684,12 @@ def _apply_cylinder_wrapping(
             assert pc_w is not None
             _exp_pv.append(pv_w)
             _exp_pc.append(pc_w)
+            pv_expansion.append((pv_s, cum_subs))
 
         tv_s = seg["tv_start"]
         tv_e = seg.get("tv_end", tv_cum)
         if tv_e > tv_s:
-            tv_w, _ = _apply_cylinder(
+            tv_w, _, _ = _apply_cylinder(
                 tv_arr[tv_s:tv_e],
                 d,
                 degrees_input=deg_in,
@@ -661,7 +699,7 @@ def _apply_cylinder_wrapping(
         zpv_s = seg["zpv_vtx_start"]
         zpv_e = seg.get("zpv_vtx_end", len(zpv_arr))
         if zpv_e > zpv_s:
-            zpv_w, zpc_w = _apply_cylinder(
+            zpv_w, zpc_w, _ = _apply_cylinder(
                 zpv_arr[zpv_s:zpv_e],
                 d,
                 zpc_arr[zpv_s:zpv_e],
@@ -674,7 +712,7 @@ def _apply_cylinder_wrapping(
         ov_s = seg["ov_start"]
         ov_e = seg.get("ov_end", ov_cum)
         if ov_e > ov_s:
-            ov_pos_w, ov_col_w = _apply_cylinder(
+            ov_pos_w, ov_col_w, _ = _apply_cylinder(
                 ov_pos_arr[ov_s:ov_e],
                 d,
                 ov_col_arr[ov_s:ov_e],
@@ -704,6 +742,7 @@ def _apply_cylinder_wrapping(
         zpc_arr,
         ov_pos_arr,
         ov_col_arr,
+        pv_expansion,
     )
 
 

@@ -167,7 +167,7 @@ def transform_to_cylinder(
     else:
         result_colors = None
 
-    return result_verts, result_colors
+    return result_verts, result_colors, cum_subs
 
 
 class VertexEncoder(OpsEncoder):
