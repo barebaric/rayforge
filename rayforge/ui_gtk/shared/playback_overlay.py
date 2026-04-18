@@ -131,15 +131,10 @@ class PlaybackOverlay(Gtk.Box):
         return int(self._slider.get_value())
 
     def _on_slider_changed(self, slider):
-        if self._canvas and self._canvas._op_player:
+        if self._canvas:
             index = int(slider.get_value())
-            logger.debug(
-                f"[PLAYBACK] slider_changed: value={index}, "
-                f"current_idx={self._canvas._op_player.current_index}"
-            )
-            if self._canvas._op_player.current_index != index:
-                self._canvas._op_player.seek(index)
-                self._canvas.queue_render()
+            if self._canvas.playback_current_index != index:
+                self._canvas.seek_playback(index)
         if not self._is_syncing:
             self.step_changed.send(self, ops_index=int(slider.get_value()))
 
@@ -167,11 +162,10 @@ class PlaybackOverlay(Gtk.Box):
             self._start_playback()
 
     def _start_playback(self):
-        if not self._canvas or not self._canvas._op_player:
+        if not self._canvas or self._canvas.playback_command_count == 0:
             return
-        ops = self._canvas._op_player.ops
+        max_idx = self._canvas.playback_command_count - 1
         current = int(self._slider.get_value())
-        max_idx = len(ops) - 1
         if max_idx >= 0 and current >= max_idx:
             self._slider.set_value(0)
         self._playing = True
@@ -192,16 +186,15 @@ class PlaybackOverlay(Gtk.Box):
     def _on_tick(self) -> bool:
         if not self._playing:
             return False
-        if not self._canvas or not self._canvas._op_player:
+        if not self._canvas or not self._canvas.get_realized():
             self._stop_playback()
             return False
-        if not self._canvas.get_realized():
+        if self._canvas.playback_command_count == 0:
             self._stop_playback()
             return False
 
-        ops = self._canvas._op_player.ops
+        max_idx = self._canvas.playback_command_count - 1
         current = int(self._slider.get_value())
-        max_idx = len(ops) - 1
         speed = SPEED_OPTIONS[self._speed_index]
         next_val = current + speed
 
