@@ -12,6 +12,7 @@ from ....core.model import Model
 from ....core.ops import Ops
 from ....core.ops.commands import LayerStartCommand
 from ....machine.assembly import LinkRole
+from ....machine.kinematic_mapping import KinematicMapping
 from ....machine.models.colors import OpsColorSet
 from ....pipeline.artifact.base import TextureData
 from ....pipeline.artifact.handle import create_handle_from_dict
@@ -121,7 +122,7 @@ class Canvas3D(Gtk.GLArea):
         self._had_rotary_layers = False
         self._scene_preparation_task: Optional[Task] = None
         self._compiled_artifact: Optional[CompiledSceneArtifact] = None
-        self._pending_scene_handle_dict: Optional[dict] = None
+        self._pending_scene_handle_dict: Optional[Dict] = None
         self._current_job_handle: Optional[JobArtifactHandle] = None
         self._op_player: Optional[OpPlayer] = None
         self._playback_overlay = None
@@ -1243,7 +1244,7 @@ class Canvas3D(Gtk.GLArea):
         self._show_models = visible
         self.queue_render()
 
-    def _release_scene_shm(self, handle_dict: dict):
+    def _release_scene_shm(self, handle_dict: Dict):
         """Release a compiled scene SHM block from the artifact store."""
         try:
             handle = create_handle_from_dict(handle_dict)
@@ -1260,7 +1261,7 @@ class Canvas3D(Gtk.GLArea):
             self._pending_scene_handle_dict = None
 
     def _on_scene_compiled_event(
-        self, task: Task, event_name: str, data: dict
+        self, task: Task, event_name: str, data: Dict
     ):
         """
         Handles the scene_compiled event from the subprocess.
@@ -1763,7 +1764,7 @@ class Canvas3D(Gtk.GLArea):
                 self._cyl_base_pos = np.zeros(3, dtype=np.float64)
                 self._cylinder_transform = np.eye(4, dtype=np.float64)
 
-        laser_color_luts: Dict[str, dict] = {}
+        laser_color_luts: Dict[str, Dict] = {}
         for uid, cs in self._laser_color_sets.items():
             laser_color_luts[uid] = {
                 "cut": cs.get_lut("cut").astype(np.float32).tobytes(),
@@ -1771,7 +1772,7 @@ class Canvas3D(Gtk.GLArea):
             }
 
         layer_configs: Dict[str, LayerRenderConfig] = {}
-        layer_color_luts: Dict[str, dict] = {}
+        layer_color_luts: Dict[str, Dict] = {}
         for layer in self.doc.layers:
             axis_position = 0.0
             gear_ratio = 1.0
@@ -1784,36 +1785,21 @@ class Canvas3D(Gtk.GLArea):
                         layer.rotary_module_uid
                     )
                     if module:
-                        from ....machine.models.rotary_module import (
-                            RotaryType,
+                        mapping = (
+                            KinematicMapping.from_rotary_module(
+                                module, layer.rotary_diameter
+                            )
                         )
-                        from ....machine.kinematic_math import KinematicMath
-
-                        rot3 = module.transform[:3, :3].astype(
-                            np.float64
-                        ).copy()
-                        for col in range(3):
-                            norm = np.linalg.norm(rot3[:, col])
-                            if norm > 1e-12:
-                                rot3[:, col] /= norm
-                        mod_pos = module.transform[:3, 3].astype(
-                            np.float64
-                        )
-                        ap3d = mod_pos + rot3 @ module.axis_position
-                        cdir = rot3[:, 0].copy()
-                        norm = np.linalg.norm(cdir)
-                        if norm > 1e-12:
-                            cdir /= norm
-
-                        axis_position = float(ap3d[1])
-                        axis_position_3d = tuple(ap3d.tolist())
-                        cylinder_dir = tuple(cdir.tolist())
-                        gear_ratio = KinematicMath.gear_ratio(
-                            module.rotary_type == RotaryType.ROLLERS,
-                            layer.rotary_diameter,
-                            module.roller_diameter,
-                        )
-                        reverse = module.reverse_axis
+                        if mapping is not None:
+                            axis_position = mapping.axis_position
+                            axis_position_3d = tuple(
+                                mapping.axis_position_3d.tolist()
+                            )
+                            cylinder_dir = tuple(
+                                mapping.cylinder_dir.tolist()
+                            )
+                            gear_ratio = mapping.gear_ratio
+                            reverse = mapping.reverse
             layer_configs[layer.uid] = LayerRenderConfig(
                 rotary_enabled=layer.rotary_enabled,
                 rotary_diameter=layer.rotary_diameter,
@@ -1860,7 +1846,7 @@ class Canvas3D(Gtk.GLArea):
 
     def _schedule_scene_preparation(
         self,
-        render_config_dict: dict,
+        render_config_dict: Dict,
     ):
         task_key = (id(self), "prepare-3d-scene-vertices")
 

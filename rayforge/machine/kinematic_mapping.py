@@ -5,15 +5,18 @@ from typing import Optional, TYPE_CHECKING
 import numpy as np
 
 from ..core.geo.types import Point3D
+from ..core.layer import Layer
 from ..core.ops.axis import Axis
 from ..core.ops.commands import (
     ArcToCommand,
     BezierToCommand,
+    LayerStartCommand,
     MovingCommand,
     QuadraticBezierToCommand,
 )
 from ..core.ops import Ops
 from .kinematic_math import KinematicMath
+from .models.rotary_module import RotaryMode, RotaryType
 
 if TYPE_CHECKING:
     from .models.rotary_module import RotaryModule
@@ -64,16 +67,12 @@ class KinematicMapping:
         module: RotaryModule,
         diameter: float,
     ) -> Optional[KinematicMapping]:
-        from .models.rotary_module import RotaryMode
-
         if module.mode == RotaryMode.TRUE_4TH_AXIS:
             rotary_axis = module.axis
             replaced_axis = None
         else:
             rotary_axis = Axis.Y
             replaced_axis = module.axis
-
-        from .models.rotary_module import RotaryType
 
         ratio = KinematicMath.gear_ratio(
             module.rotary_type == RotaryType.ROLLERS,
@@ -178,9 +177,6 @@ class KinematicMapping:
         doc: Doc,
         machine: Machine,
     ) -> None:
-        from ..core.layer import Layer
-        from ..core.ops.commands import LayerStartCommand
-
         commands = ops._commands
         i = 0
         while i < len(commands):
@@ -225,8 +221,6 @@ class KinematicMapping:
             layer_ops = Ops()
             layer_ops._commands = layer_cmds
             mapping.apply(layer_ops)
-
-    _AXIS_TO_INDEX = {Axis.X: 0, Axis.Y: 1, Axis.Z: 2}
 
     @staticmethod
     def degrees_to_scaled_mu_pass(
