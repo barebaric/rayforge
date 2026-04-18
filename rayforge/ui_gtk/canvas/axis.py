@@ -1,6 +1,6 @@
 import math
 import logging
-from typing import Tuple, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 import cairo
 from ...core.geo import Point3D
 from ...core.matrix import Matrix
@@ -57,6 +57,7 @@ class AxisRenderer:
         self.show_axis: bool = show_axis
         self.label_font_size: float = label_font_size
         self.min_grid_spacing_px = 50.0
+        self.x_axis_y_override: Optional[float] = None
 
     def get_effective_height(self) -> float:
         """Returns the effective height for layout calculations."""
@@ -338,8 +339,12 @@ class AxisRenderer:
         workarea_bottom = self.height_mm - self.margin_top_mm
 
         # Determine axis positions based on Y and X orientation
-        # Axes are drawn at workarea edges
-        if self.y_axis_down:
+        # Axes are drawn at workarea edges, unless overridden
+        if self.x_axis_y_override is not None:
+            x_axis_y = self.x_axis_y_override
+            y_axis_start_mm = (workarea_left, workarea_bottom)
+            y_axis_end_mm = (workarea_left, workarea_top)
+        elif self.y_axis_down:
             x_axis_y = workarea_bottom
             y_axis_start_mm = (workarea_right, workarea_bottom)
             y_axis_end_mm = (workarea_right, workarea_top)
@@ -521,6 +526,9 @@ class AxisRenderer:
 
     def set_label_font_size(self, label_font_size: float):
         self.label_font_size = label_font_size
+
+    def set_x_axis_y_override(self, y: Optional[float]):
+        self.x_axis_y_override = y
 
     def set_coordinate_space(self, space: "CoordinateSpace"):
         """
