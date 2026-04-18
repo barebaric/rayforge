@@ -1321,23 +1321,13 @@ class WorkSurface(WorldSurface):
         rotary_diameter = active_layer.rotary_diameter
         space = self.machine.get_coordinate_space()
 
-        module = (
-            self.machine.rotary_modules.get(active_layer.rotary_module_uid)
-            if active_layer.rotary_module_uid
-            else None
-        )
-        if module:
-            source_axis = module.source_axis
-        else:
-            source_axis = Axis.Y
-
         if self.machine.wcs_origin_is_workarea_origin:
             canvas_x, canvas_y = space.get_workarea_origin_in_machine()
         else:
             wcs_x, wcs_y, _ = self.machine.get_active_wcs_offset()
             canvas_x, canvas_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
 
-        self._rotary_surface_element.set_circumferential_axis(source_axis)
+        self._rotary_surface_element.set_circumferential_axis(Axis.Y)
         self._rotary_surface_element.set_x_axis_right(
             self.machine.x_axis_right
         )

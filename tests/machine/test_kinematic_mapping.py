@@ -1,5 +1,6 @@
 import math
 
+import numpy as np
 import pytest
 
 from rayforge.core.ops.axis import Axis
@@ -26,7 +27,6 @@ class TestKinematicMappingApply:
         ops.line_to(30, 50, 0)
 
         mapping = KinematicMapping(
-            source_axis=Axis.Y,
             rotary_axis=Axis.A,
             diameter=diameter,
         )
@@ -41,43 +41,20 @@ class TestKinematicMappingApply:
         assert cmds[0].extra_axes[Axis.A] == pytest.approx(expected_deg_0)
         assert cmds[1].extra_axes[Axis.A] == pytest.approx(expected_deg_50)
 
-    def test_x_to_b_degrees(self):
-        diameter = 40.0
-        ops = Ops()
-        ops.move_to(0, 10, 0)
-        ops.line_to(100, 10, 0)
-
-        mapping = KinematicMapping(
-            source_axis=Axis.X,
-            rotary_axis=Axis.B,
-            diameter=diameter,
-        )
-        mapping.apply(ops)
-
-        cmds = [c for c in ops if isinstance(c, MovingCommand)]
-        assert cmds[0].end[0] == pytest.approx(0.0)
-        assert cmds[1].end[0] == pytest.approx(0.0)
-
-        circ = diameter * math.pi
-        expected = (100.0 / circ) * 360.0
-        assert cmds[1].extra_axes[Axis.B] == pytest.approx(expected)
-
-    def test_z_affects_effective_diameter(self):
+    def test_z_does_not_affect_degrees(self):
         diameter = 25.0
         ops = Ops()
         ops.move_to(10, 0, 5)
         ops.line_to(10, 50, 5)
 
         mapping = KinematicMapping(
-            source_axis=Axis.Y,
             rotary_axis=Axis.A,
             diameter=diameter,
         )
         mapping.apply(ops)
 
         cmds = [c for c in ops if isinstance(c, MovingCommand)]
-        eff_d = diameter + 2 * 5
-        expected = (50.0 / (eff_d * math.pi)) * 360.0
+        expected = (50.0 / (diameter * math.pi)) * 360.0
         assert cmds[1].extra_axes[Axis.A] == pytest.approx(expected)
 
     def test_gear_ratio(self):
@@ -89,7 +66,6 @@ class TestKinematicMappingApply:
 
         gear_ratio = diameter / roller_diameter
         mapping = KinematicMapping(
-            source_axis=Axis.Y,
             rotary_axis=Axis.A,
             diameter=diameter,
             gear_ratio=gear_ratio,
@@ -108,7 +84,6 @@ class TestKinematicMappingApply:
         ops.line_to(0, 50, 0)
 
         mapping = KinematicMapping(
-            source_axis=Axis.Y,
             rotary_axis=Axis.A,
             diameter=diameter,
             reverse=True,
@@ -127,7 +102,6 @@ class TestKinematicMappingApply:
         ops.arc_to(0, 10, i=-10, j=0, clockwise=False)
 
         mapping = KinematicMapping(
-            source_axis=Axis.Y,
             rotary_axis=Axis.A,
             diameter=diameter,
         )
@@ -145,7 +119,6 @@ class TestKinematicMappingApply:
         ops.bezier_to(c1=(10, 20, 0), c2=(10, 40, 0), end=(0, 50, 0))
 
         mapping = KinematicMapping(
-            source_axis=Axis.Y,
             rotary_axis=Axis.A,
             diameter=diameter,
         )
@@ -164,7 +137,6 @@ class TestKinematicMappingApply:
         ops.add(cmd)
 
         mapping = KinematicMapping(
-            source_axis=Axis.Y,
             rotary_axis=Axis.A,
             diameter=diameter,
         )
@@ -181,7 +153,6 @@ class TestKinematicMappingApply:
         ops.line_to(30, 40, 0)
 
         mapping = KinematicMapping(
-            source_axis=Axis.Y,
             rotary_axis=Axis.A,
             diameter=25.0,
         )
@@ -195,7 +166,6 @@ class TestKinematicMappingApply:
         ops.line_to(30, 150, 0)
 
         mapping = KinematicMapping(
-            source_axis=Axis.Y,
             rotary_axis=Axis.A,
             diameter=diameter,
             axis_position=100.0,
@@ -219,7 +189,6 @@ class TestKinematicMappingApply:
         ops.bezier_to(c1=(10, 120, 0), c2=(10, 140, 0), end=(0, 150, 0))
 
         mapping = KinematicMapping(
-            source_axis=Axis.Y,
             rotary_axis=Axis.A,
             diameter=diameter,
             axis_position=100.0,
@@ -232,55 +201,28 @@ class TestKinematicMappingApply:
         assert cmd.control2[1] == pytest.approx((140.0 / circ) * 360.0)
         assert cmd.end[1] == pytest.approx(100.0)
 
-    def test_axis_position_x_source(self):
-        diameter = 40.0
-        ops = Ops()
-        ops.move_to(50, 10, 0)
-        ops.line_to(150, 10, 0)
-
-        mapping = KinematicMapping(
-            source_axis=Axis.X,
-            rotary_axis=Axis.B,
-            diameter=diameter,
-            axis_position=50.0,
-        )
-        mapping.apply(ops)
-
-        cmds = [c for c in ops if isinstance(c, MovingCommand)]
-        assert cmds[0].end[0] == pytest.approx(50.0)
-        assert cmds[1].end[0] == pytest.approx(50.0)
-
-        circ = diameter * math.pi
-        expected = (150.0 / circ) * 360.0
-        assert cmds[1].extra_axes[Axis.B] == pytest.approx(expected)
-
 
 class TestKinematicMappingFromModule:
     def test_true_4th_axis(self):
         rm = RotaryModule()
         rm.set_axis(Axis.A)
-        rm.set_source_axis(Axis.Y)
 
         mapping = KinematicMapping.from_rotary_module(rm, 25.0)
         assert mapping is not None
-        assert mapping.source_axis == Axis.Y
         assert mapping.rotary_axis == Axis.A
         assert mapping.diameter == 25.0
 
     def test_axis_replacement(self):
         rm = RotaryModule()
         rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
-        rm.set_source_axis(Axis.Y)
 
         mapping = KinematicMapping.from_rotary_module(rm, 30.0)
         assert mapping is not None
-        assert mapping.source_axis == Axis.Y
         assert mapping.rotary_axis == Axis.Y
         assert mapping.diameter == 30.0
 
     def test_rollers_gear_ratio(self):
         rm = RotaryModule()
-        rm.set_source_axis(Axis.Y)
         rm.rotary_type = RotaryType.ROLLERS
         rm.roller_diameter = 10.0
 
@@ -290,7 +232,6 @@ class TestKinematicMappingFromModule:
 
     def test_reverse(self):
         rm = RotaryModule()
-        rm.set_source_axis(Axis.Y)
         rm.reverse_axis = True
 
         mapping = KinematicMapping.from_rotary_module(rm, 25.0)
@@ -299,7 +240,6 @@ class TestKinematicMappingFromModule:
 
     def test_axis_position_from_module_transform(self):
         rm = RotaryModule()
-        rm.set_source_axis(Axis.Y)
         rm.set_position(10, 200, 5)
 
         mapping = KinematicMapping.from_rotary_module(rm, 25.0)
@@ -308,7 +248,6 @@ class TestKinematicMappingFromModule:
 
     def test_axis_position_with_offset(self):
         rm = RotaryModule()
-        rm.set_source_axis(Axis.Y)
         rm.set_position(10, 200, 5)
         rm.set_axis_position(0, 50, 0)
 
@@ -316,11 +255,48 @@ class TestKinematicMappingFromModule:
         assert mapping is not None
         assert mapping.axis_position == pytest.approx(250.0)
 
-    def test_axis_position_x_source(self):
+    def test_tilted_cylinder_tracks_center(self):
+        diameter = 25.0
+        ops = Ops()
+        ops.move_to(0, 0, 0)
+        ops.line_to(50, 100, 0)
+
+        ap3d = np.array([0.0, 200.0, 5.0])
+        cdir = np.array([0.3, 0.0, 0.0])
+        cdir /= np.linalg.norm(cdir)
+
+        mapping = KinematicMapping(
+            rotary_axis=Axis.A,
+            diameter=diameter,
+            axis_position_3d=ap3d,
+            cylinder_dir=cdir,
+        )
+
+        cmds = [c for c in ops if isinstance(c, MovingCommand)]
+        mapping.apply(ops)
+
+        expected_si_0 = 200.0 + 0.0 * cdir[1]
+        expected_si_1 = 200.0 + 100.0 * cdir[1]
+        assert cmds[0].end[1] == pytest.approx(expected_si_0)
+        assert cmds[1].end[1] == pytest.approx(expected_si_1)
+
+    def test_cylinder_dir_from_rotated_module(self):
         rm = RotaryModule()
-        rm.set_source_axis(Axis.X)
-        rm.set_position(100, 50, 0)
+        rm.set_position(10, 200, 5)
+        rm.set_rotation(0, 0, 45)
 
         mapping = KinematicMapping.from_rotary_module(rm, 25.0)
         assert mapping is not None
-        assert mapping.axis_position == pytest.approx(100.0)
+        assert mapping.cylinder_dir is not None
+        norm = np.linalg.norm(mapping.cylinder_dir)
+        assert norm == pytest.approx(1.0, abs=1e-6)
+
+    def test_default_cylinder_dir_no_tilt(self):
+        rm = RotaryModule()
+        rm.set_position(10, 200, 5)
+
+        mapping = KinematicMapping.from_rotary_module(rm, 25.0)
+        assert mapping is not None
+        assert mapping.cylinder_dir[0] == pytest.approx(1.0)
+        assert mapping.cylinder_dir[1] == pytest.approx(0.0)
+        assert mapping.cylinder_dir[2] == pytest.approx(0.0)

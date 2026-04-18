@@ -6,7 +6,6 @@ from ...core.geo import Point3D
 from ...core.geo.arc import linearize_arc
 from ...core.geo.bezier import linearize_bezier_segment
 from ...core.ops import Ops
-from ...core.ops.axis import Axis
 from ...machine.kinematic_math import KinematicMath
 from ...core.ops.commands import (
     MoveToCommand,
@@ -24,19 +23,16 @@ def transform_to_cylinder(
     verts: np.ndarray,
     diameter: float,
     colors: Optional[np.ndarray] = None,
-    source_axis: Axis = Axis.Y,
     degrees_input: bool = False,
 ) -> tuple:
     """
     Transform flat vertices to cylindrical coordinates.
 
-    The cylinder axis is the linear axis that is neither source_axis nor Z.
-    source_axis maps to the rotation angle. Z adjusts the radius.
-
-    When source_axis == Axis.Y (default): X is the cylinder axis,
-    Y -> theta — identical to the original behavior.
-    When source_axis == Axis.X: Y is the cylinder axis,
-    X -> theta.
+    The input flat data has angle values on axis 1 (Y) and linear
+    position on axis 0 (X).  The output is:
+        X = linear position along cylinder
+        Y = r * sin(theta)
+        Z = r * cos(theta)
 
     Line segments are subdivided as needed to follow the cylinder
     surface instead of cutting through the interior.
@@ -47,13 +43,10 @@ def transform_to_cylinder(
         diameter: Cylinder diameter in mm.
         colors: Optional array of shape (N, 4) with per-vertex RGBA
                 colors.
-        source_axis: Which linear axis maps to the rotation angle
-                     (Axis.Y or Axis.X). Default Axis.Y.
-        degrees_input: If True, source-axis values are already in
-                       degrees (from kinematic mapping) and are
-                       converted directly to radians. If False (default),
-                       they are treated as raw mu and converted via
-                       mu_to_degrees first.
+        degrees_input: If True, Y-axis values are already in
+                       degrees and are converted directly to radians.
+                       If False (default), they are treated as raw mu
+                       and converted via mu_to_degrees first.
 
     Returns:
         Tuple of (transformed_vertices, expanded_colors). The expanded
@@ -64,8 +57,8 @@ def transform_to_cylinder(
     if verts.size == 0 or diameter <= 0:
         return verts, colors
 
-    source_idx = 0 if source_axis == Axis.X else 1
-    cyl_idx = 1 - source_idx
+    source_idx = 1
+    cyl_idx = 0
 
     radius = diameter / 2.0
     max_angle_per_segment = math.radians(15)
@@ -148,17 +141,17 @@ def transform_to_cylinder(
         )
 
     result_verts = np.empty((total_segments * 2, 3), dtype=np.float32)
-    result_verts[0::2, cyl_idx] = prev_cyl.astype(np.float32)
-    result_verts[0::2, source_idx] = (prev_eff_r * np.sin(theta_prev)).astype(
-        np.float32
-    )
+    result_verts[0::2, 0] = prev_cyl.astype(np.float32)
+    result_verts[0::2, 1] = (
+        prev_eff_r * np.sin(theta_prev)
+    ).astype(np.float32)
     result_verts[0::2, 2] = (prev_eff_r * np.cos(theta_prev)).astype(
         np.float32
     )
-    result_verts[1::2, cyl_idx] = curr_cyl.astype(np.float32)
-    result_verts[1::2, source_idx] = (curr_eff_r * np.sin(theta_curr)).astype(
-        np.float32
-    )
+    result_verts[1::2, 0] = curr_cyl.astype(np.float32)
+    result_verts[1::2, 1] = (
+        curr_eff_r * np.sin(theta_curr)
+    ).astype(np.float32)
     result_verts[1::2, 2] = (curr_eff_r * np.cos(theta_curr)).astype(
         np.float32
     )

@@ -51,6 +51,18 @@ logger = logging.getLogger(__name__)
 Z_OFFSET_NON_POWERED = 0.01
 
 
+def _degrees_to_mu(
+    degrees: float,
+    diameter: float,
+    gear_ratio: float,
+    reverse: bool,
+) -> float:
+    if diameter <= 0 or gear_ratio <= 0:
+        return degrees
+    sign = -1.0 if reverse else 1.0
+    return degrees * math.pi * diameter / 360.0 / gear_ratio * sign
+
+
 def _get_lut(
     config: RenderConfig3D,
     laser_uid: str,
@@ -100,7 +112,6 @@ def _apply_cylinder(
     verts: np.ndarray,
     diameter: float,
     colors: Optional[np.ndarray] = None,
-    source_axis: Axis = Axis.Y,
     degrees_input: bool = False,
 ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
     if verts.size == 0 or diameter <= 0:
@@ -109,7 +120,6 @@ def _apply_cylinder(
         verts.reshape(-1, 3),
         diameter,
         colors,
-        source_axis=source_axis,
         degrees_input=degrees_input,
     )
 
@@ -309,87 +319,56 @@ def _rasterize_scanlines(
     return buffer, width_px, height_px, px_per_mm
 
 
-_AXIS_INDEX = {Axis.X: 0, Axis.Y: 1, Axis.Z: 2}
+def _find_degrees(cmd: MovingCommand) -> Optional[float]:
+    for ax in (Axis.A, Axis.B, Axis.C, Axis.U, Axis.Y):
+        val = cmd.extra_axes.get(ax)
+        if val is not None:
+            return val
+    return None
 
 
 def _visual_end(
     cmd: MovingCommand,
-    source_axis: Axis,
-    rotary_axis: Optional[Axis],
 ) -> Tuple[float, float, float]:
-    """Return the visual end position for a command.
-
-    For rotary layers with mapped ops (degrees in extra_axes), replaces
-    the source-axis slot with the degree value. Otherwise returns cmd.end
-    as-is.
-    """
-    if rotary_axis is not None:
-        degrees = cmd.extra_axes.get(rotary_axis)
-        if degrees is not None:
-            si = _AXIS_INDEX[source_axis]
-            pos = list(cmd.end)
-            pos[si] = degrees
-            return (pos[0], pos[1], pos[2])
+    degrees = _find_degrees(cmd)
+    if degrees is not None:
+        pos = list(cmd.end)
+        pos[1] = degrees
+        return (pos[0], pos[1], pos[2])
     return cmd.end
-
-
-def _degrees_to_mu(
-    degrees: float, diameter: float, z: float,
-    gear_ratio: float, reverse: bool,
-) -> float:
-    """Inverse of mu_to_degrees for a given z."""
-    eff_d = KinematicMath.effective_diameter(diameter, z)
-    if eff_d <= 0 or gear_ratio <= 0:
-        return degrees
-    sign = -1.0 if reverse else 1.0
-    return degrees * math.pi * eff_d / 360.0 / gear_ratio * sign
 
 
 def _reconstruct_mu_pos(
     cmd: MovingCommand,
-    source_axis: Axis,
-    rotary_axis: Optional[Axis],
     diameter: float,
     gear_ratio: float,
     reverse: bool,
-    axis_position: float,
 ) -> Tuple[float, float, float]:
-    """Reconstruct the original mu-space end position from mapped ops."""
-    if rotary_axis is None:
-        return cmd.end
-    degrees = cmd.extra_axes.get(rotary_axis)
+    degrees = _find_degrees(cmd)
     if degrees is None:
         return cmd.end
-    si = _AXIS_INDEX[source_axis]
-    mu_val = _degrees_to_mu(degrees, diameter, cmd.end[2], gear_ratio, reverse)
+    mu_val = _degrees_to_mu(degrees, diameter, gear_ratio, reverse)
     pos = list(cmd.end)
-    pos[si] = mu_val
+    pos[1] = mu_val
     return (pos[0], pos[1], pos[2])
 
 
 def _reconstruct_mu_arc(
     cmd: ArcToCommand,
-    source_axis: Axis,
-    rotary_axis: Optional[Axis],
     diameter: float,
     gear_ratio: float,
     reverse: bool,
-    axis_position: float,
 ) -> ArcToCommand:
-    """Reconstruct a mu-space ArcToCommand from mapped ops."""
-    if rotary_axis is None:
-        return cmd
-    degrees = cmd.extra_axes.get(rotary_axis)
+    degrees = _find_degrees(cmd)
     if degrees is None:
         return cmd
-    si = _AXIS_INDEX[source_axis]
-    scale = _degrees_to_mu(1.0, diameter, cmd.end[2], gear_ratio, reverse)
+    scale = _degrees_to_mu(1.0, diameter, gear_ratio, reverse)
 
     pos = list(cmd.end)
-    pos[si] = degrees * scale
+    pos[1] = degrees * scale
 
     offset = list(cmd.center_offset)
-    offset[si] = offset[si] * scale
+    offset[1] = offset[1] * scale
 
     return ArcToCommand(
         end=(pos[0], pos[1], pos[2]),
@@ -401,30 +380,23 @@ def _reconstruct_mu_arc(
 
 def _reconstruct_mu_bezier(
     cmd: BezierToCommand,
-    source_axis: Axis,
-    rotary_axis: Optional[Axis],
     diameter: float,
     gear_ratio: float,
     reverse: bool,
-    axis_position: float,
 ) -> BezierToCommand:
-    """Reconstruct a mu-space BezierToCommand from mapped ops."""
-    if rotary_axis is None:
-        return cmd
-    degrees = cmd.extra_axes.get(rotary_axis)
+    degrees = _find_degrees(cmd)
     if degrees is None:
         return cmd
-    si = _AXIS_INDEX[source_axis]
-    scale = _degrees_to_mu(1.0, diameter, cmd.end[2], gear_ratio, reverse)
+    scale = _degrees_to_mu(1.0, diameter, gear_ratio, reverse)
 
     pos = list(cmd.end)
-    pos[si] = degrees * scale
+    pos[1] = degrees * scale
 
     cp1 = list(cmd.control1)
-    cp1[si] = cp1[si] * scale
+    cp1[1] = cp1[1] * scale
 
     cp2 = list(cmd.control2)
-    cp2[si] = cp2[si] * scale
+    cp2[1] = cp2[1] * scale
 
     return BezierToCommand(
         end=(pos[0], pos[1], pos[2]),
@@ -436,58 +408,47 @@ def _reconstruct_mu_bezier(
 
 def _mu_to_visual(
     pos: Tuple[float, float, float],
-    source_axis: Axis,
     diameter: float,
     gear_ratio: float,
     reverse: bool,
-    axis_position: float,
 ) -> Tuple[float, float, float]:
-    """Convert a mu-space position to visual (degree) space."""
-    si = _AXIS_INDEX[source_axis]
-    eff_d = KinematicMath.effective_diameter(diameter, pos[2])
     degrees = KinematicMath.mu_to_degrees(
-        pos[si], eff_d, gear_ratio=gear_ratio, reverse=reverse
+        pos[1], diameter, gear_ratio=gear_ratio, reverse=reverse
     )
     result = list(pos)
-    result[si] = degrees
+    result[1] = degrees
     return (result[0], result[1], result[2])
 
 
 def _bake_visual_positions(
     ops: Ops,
-    source_axis: Axis,
-    rotary_axis: Optional[Axis],
 ) -> Ops:
-    """Create a copy of ops with visual positions baked into cmd.end.
-
-    For rotary mapped ops, replaces source-axis components with degree
-    values from extra_axes so that scanline bbox/rasterization work in
-    the visual (degree) space.
-    """
-    if rotary_axis is None:
-        return ops
     baked = Ops()
-    si = _AXIS_INDEX[source_axis]
     for cmd in ops.commands:
         if isinstance(cmd, MovingCommand):
-            degrees = cmd.extra_axes.get(rotary_axis)
+            degrees = _find_degrees(cmd)
             if degrees is not None:
                 pos = list(cmd.end)
-                pos[si] = degrees
+                pos[1] = degrees
                 new_end = (pos[0], pos[1], pos[2])
                 if isinstance(cmd, ScanLinePowerCommand):
                     new_cmd = ScanLinePowerCommand(
-                        new_end, cmd.power_values,
+                        new_end,
+                        cmd.power_values,
                         extra_axes=dict(cmd.extra_axes),
                     )
                 elif isinstance(cmd, ArcToCommand):
                     new_cmd = ArcToCommand(
-                        new_end, cmd.center_offset, cmd.clockwise,
+                        new_end,
+                        cmd.center_offset,
+                        cmd.clockwise,
                         extra_axes=dict(cmd.extra_axes),
                     )
                 elif isinstance(cmd, BezierToCommand):
                     new_cmd = BezierToCommand(
-                        new_end, cmd.control1, cmd.control2,
+                        new_end,
+                        cmd.control1,
+                        cmd.control2,
                         extra_axes=dict(cmd.extra_axes),
                     )
                 else:
@@ -523,12 +484,12 @@ class _LayerAccumulator:
         "is_rotary",
         "rotary_segments",
         "current_rotary_seg",
-        "source_axis",
-        "rotary_axis",
         "axis_position",
         "gear_ratio",
         "reverse",
         "diameter",
+        "axis_position_3d",
+        "cylinder_dir",
     )
 
     def __init__(self, total_cmds: int, is_rotary: bool):
@@ -547,12 +508,12 @@ class _LayerAccumulator:
         self.is_rotary = is_rotary
         self.rotary_segments: List[dict] = []
         self.current_rotary_seg: Optional[dict] = None
-        self.source_axis: Axis = Axis.Y
-        self.rotary_axis: Optional[Axis] = None
         self.axis_position: float = 0.0
         self.gear_ratio: float = 1.0
         self.reverse: bool = False
         self.diameter: float = 0.0
+        self.axis_position_3d: Optional[Tuple[float, ...]] = None
+        self.cylinder_dir: Optional[Tuple[float, ...]] = None
 
     def record_offset(self, cmd_idx: int):
         self.pv_off[cmd_idx + 1] = self.pv_cum
@@ -567,7 +528,6 @@ class _LayerAccumulator:
             "ov_start": len(self.ov_pos) // 3,
             "cmd_start": cmd_idx + 1,
             "diameter": 0.0,
-            "source_axis": self.source_axis,
             "degrees_input": degrees_input,
         }
 
@@ -671,7 +631,6 @@ def _apply_cylinder_wrapping(
 
     for seg in rotary_segments:
         d = seg["diameter"]
-        sa = seg.get("source_axis", Axis.Y)
         deg_in = seg.get("degrees_input", False)
         if d <= 0:
             continue
@@ -683,7 +642,6 @@ def _apply_cylinder_wrapping(
                 pv_arr[pv_s:pv_e],
                 d,
                 pc_arr[pv_s:pv_e],
-                source_axis=sa,
                 degrees_input=deg_in,
             )
             assert pc_w is not None
@@ -696,7 +654,6 @@ def _apply_cylinder_wrapping(
             tv_w, _ = _apply_cylinder(
                 tv_arr[tv_s:tv_e],
                 d,
-                source_axis=sa,
                 degrees_input=deg_in,
             )
             _exp_tv.append(tv_w)
@@ -708,7 +665,6 @@ def _apply_cylinder_wrapping(
                 zpv_arr[zpv_s:zpv_e],
                 d,
                 zpc_arr[zpv_s:zpv_e],
-                source_axis=sa,
                 degrees_input=deg_in,
             )
             assert zpc_w is not None
@@ -722,7 +678,6 @@ def _apply_cylinder_wrapping(
                 ov_pos_arr[ov_s:ov_e],
                 d,
                 ov_col_arr[ov_s:ov_e],
-                source_axis=sa,
                 degrees_input=deg_in,
             )
             assert ov_col_w is not None
@@ -811,26 +766,18 @@ def compile_scene(
             rotary_diameter = layer_cfg.rotary_diameter if layer_cfg else 0.0
             acc = accumulators[is_rotary]
 
-            source_axis = Axis.Y
-            rotary_axis = None
-            if layer_cfg:
-                if layer_cfg.source_axis is not None:
-                    source_axis = layer_cfg.source_axis
-                rotary_axis = layer_cfg.rotary_axis
-            acc.source_axis = source_axis
-            acc.rotary_axis = rotary_axis
-            acc.axis_position = (
-                layer_cfg.axis_position if layer_cfg else 0.0
-            )
+            acc.axis_position = layer_cfg.axis_position if layer_cfg else 0.0
             acc.gear_ratio = layer_cfg.gear_ratio if layer_cfg else 1.0
             acc.reverse = layer_cfg.reverse if layer_cfg else False
             acc.diameter = rotary_diameter
-            has_mapped_data = rotary_axis is not None and is_rotary
+            acc.axis_position_3d = (
+                layer_cfg.axis_position_3d if layer_cfg else None
+            )
+            acc.cylinder_dir = layer_cfg.cylinder_dir if layer_cfg else None
+            has_mapped_data = is_rotary
 
             if is_rotary and rotary_diameter > 0:
-                acc.begin_rotary_segment(
-                    i, degrees_input=has_mapped_data
-                )
+                acc.begin_rotary_segment(i, degrees_input=has_mapped_data)
 
             current_layer_start = i + 1
             current_layer_has_scanlines = False
@@ -855,8 +802,6 @@ def compile_scene(
                         "has_scanlines": current_layer_has_scanlines,
                         "scanline_laser": current_layer_scanline_laser,
                         "activation_cmd_idx": (current_layer_start - 1),
-                        "source_axis": acc.source_axis,
-                        "rotary_axis": acc.rotary_axis,
                         "axis_position": acc.axis_position,
                         "gear_ratio": acc.gear_ratio,
                         "reverse": acc.reverse,
@@ -886,7 +831,7 @@ def compile_scene(
             current_power = cmd.power
 
         elif isinstance(cmd, MoveToCommand):
-            vis_end = _visual_end(cmd, acc.source_axis, acc.rotary_axis)
+            vis_end = _visual_end(cmd)
             if not is_initial:
                 acc.tv.extend(current_pos_vis)
                 acc.tv.extend(vis_end)
@@ -894,16 +839,17 @@ def compile_scene(
             current_pos_vis = vis_end
             if has_mapped_data and is_rotary:
                 current_pos = _reconstruct_mu_pos(
-                    cmd, acc.source_axis, acc.rotary_axis,
-                    acc.diameter, acc.gear_ratio, acc.reverse,
-                    acc.axis_position,
+                    cmd,
+                    acc.diameter,
+                    acc.gear_ratio,
+                    acc.reverse,
                 )
             else:
                 current_pos = cmd.end
             is_initial = False
 
         elif isinstance(cmd, LineToCommand):
-            vis_end = _visual_end(cmd, acc.source_axis, acc.rotary_axis)
+            vis_end = _visual_end(cmd)
             if current_power > 0.0:
                 power_byte = min(255, int(current_power * 255.0))
                 color = current_cut_lut[power_byte]
@@ -918,9 +864,10 @@ def compile_scene(
             current_pos_vis = vis_end
             if has_mapped_data and is_rotary:
                 current_pos = _reconstruct_mu_pos(
-                    cmd, acc.source_axis, acc.rotary_axis,
-                    acc.diameter, acc.gear_ratio, acc.reverse,
-                    acc.axis_position,
+                    cmd,
+                    acc.diameter,
+                    acc.gear_ratio,
+                    acc.reverse,
                 )
             else:
                 current_pos = cmd.end
@@ -929,22 +876,25 @@ def compile_scene(
         elif isinstance(cmd, ArcToCommand):
             if has_mapped_data and is_rotary:
                 mu_cmd = _reconstruct_mu_arc(
-                    cmd, acc.source_axis, acc.rotary_axis,
-                    acc.diameter, acc.gear_ratio, acc.reverse,
-                    acc.axis_position,
+                    cmd,
+                    acc.diameter,
+                    acc.gear_ratio,
+                    acc.reverse,
                 )
                 segments = linearize_arc(mu_cmd, current_pos)
                 vis_segs = []
                 for seg_start, seg_end in segments:
                     vis_start = _mu_to_visual(
-                        seg_start, acc.source_axis,
-                        acc.diameter, acc.gear_ratio,
-                        acc.reverse, acc.axis_position,
+                        seg_start,
+                        acc.diameter,
+                        acc.gear_ratio,
+                        acc.reverse,
                     )
                     vis_end_pt = _mu_to_visual(
-                        seg_end, acc.source_axis,
-                        acc.diameter, acc.gear_ratio,
-                        acc.reverse, acc.axis_position,
+                        seg_end,
+                        acc.diameter,
+                        acc.gear_ratio,
+                        acc.reverse,
                     )
                     vis_segs.append((vis_start, vis_end_pt))
             else:
@@ -964,13 +914,14 @@ def compile_scene(
                 for seg_start, seg_end in vis_segs:
                     acc.zpv.extend(seg_start)
                     acc.zpv.extend(seg_end)
-            vis_end = _visual_end(cmd, acc.source_axis, acc.rotary_axis)
+            vis_end = _visual_end(cmd)
             current_pos_vis = vis_end
             current_pos = (
                 _reconstruct_mu_pos(
-                    cmd, acc.source_axis, acc.rotary_axis,
-                    acc.diameter, acc.gear_ratio, acc.reverse,
-                    acc.axis_position,
+                    cmd,
+                    acc.diameter,
+                    acc.gear_ratio,
+                    acc.reverse,
                 )
                 if has_mapped_data and is_rotary
                 else cmd.end
@@ -980,9 +931,10 @@ def compile_scene(
         elif isinstance(cmd, BezierToCommand):
             if has_mapped_data and is_rotary:
                 mu_cmd = _reconstruct_mu_bezier(
-                    cmd, acc.source_axis, acc.rotary_axis,
-                    acc.diameter, acc.gear_ratio, acc.reverse,
-                    acc.axis_position,
+                    cmd,
+                    acc.diameter,
+                    acc.gear_ratio,
+                    acc.reverse,
                 )
                 polyline = linearize_bezier_segment(
                     current_pos,
@@ -992,15 +944,18 @@ def compile_scene(
                 )
                 vis_poly = [
                     _mu_to_visual(
-                        pt, acc.source_axis,
-                        acc.diameter, acc.gear_ratio,
-                        acc.reverse, acc.axis_position,
+                        pt,
+                        acc.diameter,
+                        acc.gear_ratio,
+                        acc.reverse,
                     )
                     for pt in polyline
                 ]
             else:
                 polyline = linearize_bezier_segment(
-                    current_pos, cmd.control1, cmd.control2,
+                    current_pos,
+                    cmd.control1,
+                    cmd.control2,
                     cmd.end,
                 )
                 vis_poly = list(polyline)
@@ -1017,13 +972,14 @@ def compile_scene(
                 for j in range(len(vis_poly) - 1):
                     acc.zpv.extend(vis_poly[j])
                     acc.zpv.extend(vis_poly[j + 1])
-            vis_end = _visual_end(cmd, acc.source_axis, acc.rotary_axis)
+            vis_end = _visual_end(cmd)
             current_pos_vis = vis_end
             current_pos = (
                 _reconstruct_mu_pos(
-                    cmd, acc.source_axis, acc.rotary_axis,
-                    acc.diameter, acc.gear_ratio, acc.reverse,
-                    acc.axis_position,
+                    cmd,
+                    acc.diameter,
+                    acc.gear_ratio,
+                    acc.reverse,
                 )
                 if has_mapped_data and is_rotary
                 else cmd.end
@@ -1032,11 +988,11 @@ def compile_scene(
 
         elif isinstance(cmd, ScanLinePowerCommand):
             if cmd.end is not None:
-                vis_end = _visual_end(
-                    cmd, acc.source_axis, acc.rotary_axis
-                )
+                vis_end = _visual_end(cmd)
                 _extract_zero_power_segments(
-                    cmd, current_pos_vis, acc.zpv,
+                    cmd,
+                    current_pos_vis,
+                    acc.zpv,
                     end_pos=vis_end,
                 )
                 if not is_initial:
@@ -1052,9 +1008,10 @@ def compile_scene(
                 current_pos_vis = vis_end
                 current_pos = (
                     _reconstruct_mu_pos(
-                        cmd, acc.source_axis, acc.rotary_axis,
-                        acc.diameter, acc.gear_ratio, acc.reverse,
-                        acc.axis_position,
+                        cmd,
+                        acc.diameter,
+                        acc.gear_ratio,
+                        acc.reverse,
                     )
                     if has_mapped_data and is_rotary
                     else cmd.end
@@ -1076,7 +1033,7 @@ def compile_scene(
     for acc in accumulators.values():
         if not acc.has_content():
             continue
-        if acc.is_rotary and acc.rotary_axis is not None:
+        if acc.is_rotary:
             transform = np.eye(4, dtype=np.float32)
         else:
             transform = flat_transform
@@ -1100,7 +1057,6 @@ def compile_scene(
                 powered_cmd_offsets=acc.pv_off,
                 travel_cmd_offsets=acc.tv_off,
                 is_rotary=acc.is_rotary,
-                source_axis=acc.source_axis,
             )
         )
 
@@ -1110,7 +1066,6 @@ def compile_scene(
                 colors=_to_flat(ov_col_arr),
                 cmd_offsets=acc.ov_off,
                 is_rotary=acc.is_rotary,
-                source_axis=acc.source_axis,
             )
         )
 
@@ -1125,13 +1080,9 @@ def compile_scene(
         )
 
         is_rot = li["is_rotary"]
-        layer_source_axis = li.get("source_axis", Axis.Y)
-        layer_rotary_axis = li.get("rotary_axis")
 
-        if is_rot and layer_rotary_axis is not None:
-            layer_ops = _bake_visual_positions(
-                layer_ops, layer_source_axis, layer_rotary_axis
-            )
+        if is_rot:
+            layer_ops = _bake_visual_positions(layer_ops)
 
         bbox = _scanline_bbox(layer_ops)
         if bbox is None:
@@ -1146,7 +1097,7 @@ def compile_scene(
 
         diameter = li["diameter"]
 
-        if is_rot and layer_rotary_axis is not None:
+        if is_rot and diameter > 0:
             tex_transform = np.eye(4, dtype=np.float32)
         else:
             tex_transform = config.world_to_visual
@@ -1165,7 +1116,6 @@ def compile_scene(
             cyl_verts = generate_cylinder_vertices(
                 grid_matrix=final_model,
                 diameter=diameter,
-                source_axis=layer_source_axis,
             )
 
         texture_layers.append(

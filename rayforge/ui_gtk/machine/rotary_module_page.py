@@ -81,10 +81,9 @@ class RotaryModuleRow(Gtk.Box):
     def _get_subtitle_text(self) -> str:
         if self.module.mode == RotaryMode.AXIS_REPLACEMENT:
             mode_label = _("Axis Replacement")
-            axis = self.module.source_axis.name
         else:
             mode_label = _("True 4th Axis")
-            axis = self.module.axis.name
+        axis = self.module.axis.name
         return _("{mode}, Axis {axis}").format(mode=mode_label, axis=axis)
 
     def _update_selection_state(self):
@@ -298,16 +297,9 @@ class RotaryModulePage(TrackedPreferencesPage):
         self.mode_row.connect("notify::selected", self._on_mode_changed)
         self.general_group.add(self.mode_row)
 
-        excluded = (Axis.X, Axis.Y)
-        valid_axes = sorted(
-            [a for a in Axis if a not in excluded],
-            key=lambda a: str(a.name or ""),
-        )
-        self._valid_axes = valid_axes
+        self._valid_axes: list[Axis] = []
 
         module_axis_store = Gtk.StringList()
-        for a in valid_axes:
-            module_axis_store.append(a.name or "")
         self.module_axis_row = Adw.ComboRow(
             title=_("Axis"),
             subtitle=_("Axis letter for this module"),
@@ -317,20 +309,6 @@ class RotaryModulePage(TrackedPreferencesPage):
             "notify::selected", self._on_module_axis_changed
         )
         self.general_group.add(self.module_axis_row)
-
-        source_axis_store = Gtk.StringList()
-        source_axis_store.append(_("Y Axis"))
-        source_axis_store.append(_("X Axis"))
-        self._source_axis_display = [Axis.Y, Axis.X]
-        self.source_axis_row = Adw.ComboRow(
-            title=_("Connected To"),
-            subtitle=_("Which driver the rotary is plugged into"),
-            model=source_axis_store,
-        )
-        self.source_axis_row.connect(
-            "notify::selected", self._on_source_axis_changed
-        )
-        self.general_group.add(self.source_axis_row)
 
         self.reverse_axis_row = Adw.SwitchRow(
             title=_("Reversed Axis"),
@@ -577,11 +555,6 @@ class RotaryModulePage(TrackedPreferencesPage):
         self._is_updating = True
 
         self.name_row.set_text(module.name)
-        try:
-            selected = self._valid_axes.index(module.axis)
-        except ValueError:
-            selected = 0
-        self.module_axis_row.set_selected(selected)
 
         try:
             mode_idx = self._mode_values.index(module.mode)
@@ -659,14 +632,32 @@ class RotaryModulePage(TrackedPreferencesPage):
         if selected < len(self._valid_axes):
             module.set_axis(self._valid_axes[selected])
 
+    def _get_valid_axes_for_mode(
+        self, mode: RotaryMode
+    ) -> list[Axis]:
+        if mode == RotaryMode.TRUE_4TH_AXIS:
+            return [Axis.A, Axis.B, Axis.C, Axis.U]
+        return [Axis.Y, Axis.Z]
+
+    def _update_axis_dropdown(self, module: RotaryModule):
+        axes = self._get_valid_axes_for_mode(module.mode)
+        self._valid_axes = axes
+        store = Gtk.StringList()
+        for a in axes:
+            store.append(a.name or "")
+        self.module_axis_row.set_model(store)
+        try:
+            selected = axes.index(module.axis)
+        except ValueError:
+            selected = 0
+            if axes:
+                module.set_axis(axes[0])
+        self.module_axis_row.set_selected(selected)
+
     def _update_mode_dependent_rows(self, module: RotaryModule):
         is_replacement = module.mode == RotaryMode.AXIS_REPLACEMENT
         self.mu_per_rotation_row.set_visible(is_replacement)
-        self.module_axis_row.set_visible(not is_replacement)
-        self.source_axis_row.set_visible(is_replacement)
-        if is_replacement:
-            src_idx = self._source_axis_display.index(module.source_axis)
-            self.source_axis_row.set_selected(src_idx)
+        self._update_axis_dropdown(module)
 
     def _update_type_dependent_rows(self, module: RotaryModule):
         is_roller = module.rotary_type == RotaryType.ROLLERS
@@ -693,17 +684,6 @@ class RotaryModulePage(TrackedPreferencesPage):
         if selected < len(self._rotary_type_values):
             module.set_rotary_type(self._rotary_type_values[selected])
             self._update_type_dependent_rows(module)
-
-    def _on_source_axis_changed(self, row, _param):
-        if self._is_updating:
-            return
-        module = self._get_selected_module()
-        if not module:
-            return
-        selected = row.get_selected()
-        if selected >= len(self._source_axis_display):
-            return
-        module.set_source_axis(self._source_axis_display[selected])
 
     def _on_mm_per_rotation_changed(self, spinrow, _param):
         if self._is_updating:

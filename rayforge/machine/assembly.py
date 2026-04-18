@@ -96,6 +96,7 @@ class Assembly:
 
         self._roles: Dict[LinkRole, List[str]] = {}
         self._chuck_diameters: Dict[str, float] = {}
+        self._chuck_axis_offsets: Dict[str, np.ndarray] = {}
         self._index_roles()
 
     def _validate_no_cycles(self) -> None:
@@ -129,6 +130,20 @@ class Assembly:
 
     def set_chuck_diameter(self, chuck_name: str, diameter: float) -> None:
         self._chuck_diameters[chuck_name] = diameter
+
+    def set_chuck_axis_offset(
+        self, chuck_name: str, offset: np.ndarray
+    ) -> None:
+        self._chuck_axis_offsets[chuck_name] = offset.copy()
+
+    @property
+    def chuck_axis_offset(self) -> np.ndarray:
+        chuck_names = self._roles.get(LinkRole.CHUCK, [])
+        if not chuck_names:
+            return np.zeros(3, dtype=np.float64)
+        return self._chuck_axis_offsets.get(
+            chuck_names[0], np.zeros(3, dtype=np.float64)
+        )
 
     def set_rotary_diameter(self, diameter: float) -> None:
         for name in self._roles.get(LinkRole.CHUCK, []):
@@ -209,6 +224,121 @@ class Assembly:
                 t[2, 3] += wcs_offset[2]
             transforms[link.name] = t
         return transforms
+
+    def cylinder_base_transform(self) -> np.ndarray:
+        """Return the static 4x4 cylinder base pose (no spin).
+
+        Derives position and orientation from the rotary_base link's
+        local_transform (= module.transform), with scale stripped and
+        the stored chuck axis_offset applied.  Independent of machine
+        state — the rotary_base is a FIXED child of the root.
+
+        Returns:
+            4x4 affine matrix (float64), rotation-only (no scale).
+        """
+        chuck_names = self._roles.get(LinkRole.CHUCK, [])
+        if not chuck_names:
+            return np.eye(4, dtype=np.float64)
+        link = self._link_map.get(chuck_names[0])
+        if link is None:
+            return np.eye(4, dtype=np.float64)
+        parent = self._link_map.get(link.parent) if link.parent else None
+        if parent is not None:
+            base = parent.local_transform.copy()
+        else:
+            base = link.local_transform.copy()
+
+        rot3 = base[:3, :3].copy()
+        for col in range(3):
+            norm = np.linalg.norm(rot3[:, col])
+            if norm > 1e-12:
+                rot3[:, col] /= norm
+
+        axis_offset = self.chuck_axis_offset
+        result = np.eye(4, dtype=np.float64)
+        result[:3, :3] = rot3
+        result[:3, 3] = base[:3, 3] + rot3 @ axis_offset
+        return result
+
+    @property
+    def cylinder_axis_index(self) -> int:
+        """Index (0=X, 1=Y) of the cylinder axis in world frame.
+
+        Derived from the rotary_base link's rotation matrix: the
+        column corresponding to the chuck's driver axis gives the
+        world-space cylinder direction.
+        """
+        chuck_names = self._roles.get(LinkRole.CHUCK, [])
+        if not chuck_names:
+            return 0
+        chuck = self._link_map[chuck_names[0]]
+        parent = self._link_map.get(chuck.parent) if chuck.parent else None
+        if parent is not None:
+            base = parent.local_transform
+        else:
+            base = chuck.local_transform
+        rot3 = base[:3, :3].copy()
+        for col in range(3):
+            norm = np.linalg.norm(rot3[:, col])
+            if norm > 1e-12:
+                rot3[:, col] /= norm
+        world_dir = rot3[:, 0]
+        if abs(world_dir[1]) > abs(world_dir[0]):
+            return 1
+        return 0
+
+    def head_rotary_positions(
+        self,
+        state: "MachineState",
+        diameter: float,
+        focal_distance: float = 0.0,
+    ) -> Dict[str, np.ndarray]:
+        """Return head positions above the cylinder surface.
+
+        Positions each HEAD link at the top of the cylinder at the
+        correct along-cylinder offset, plus *focal_distance* above
+        the surface.  Uses the static cylinder base pose (no spin).
+
+        Args:
+            state: Machine state (for FK head positions).
+            diameter: Cylinder diameter.
+            focal_distance: Height above the cylinder surface.
+
+        Returns:
+            Dict of {head_name: 3D world position (float64 array)}.
+        """
+        head_names = self._roles.get(LinkRole.HEAD, [])
+        if not head_names:
+            return {}
+
+        chuck_names = self._roles.get(LinkRole.CHUCK, [])
+        if not chuck_names:
+            return {}
+
+        radius = diameter / 2.0 if diameter > 0 else 0.0
+
+        cyl_t = self.cylinder_base_transform()
+
+        fk_heads = self.head_positions(state)
+
+        result: Dict[str, np.ndarray] = {}
+        for name in head_names:
+            if name not in fk_heads:
+                continue
+            hx, hy, hz = fk_heads[name]
+
+            local = np.array(
+                [
+                    hx,
+                    0.0,
+                    radius + focal_distance + hz,
+                    1.0,
+                ],
+                dtype=np.float64,
+            )
+            world = cyl_t @ local
+            result[name] = world[:3].copy()
+        return result
 
     def cylinder_world_transform(
         self,

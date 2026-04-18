@@ -1337,7 +1337,6 @@ class Machine:
             if downstream and mode == RotaryMode.AXIS_REPLACEMENT:
                 KinematicMapping.degrees_to_scaled_mu_pass(
                     layer_cmds,
-                    module.source_axis,
                     module.mu_per_rotation,
                 )
 
@@ -1376,7 +1375,6 @@ class Machine:
                 i += 1
                 continue
 
-            source_axis = module.source_axis
             mu_per_rotation = module.mu_per_rotation
 
             layer_cmds = []
@@ -1389,7 +1387,7 @@ class Machine:
                 i += 1
 
             KinematicMapping.degrees_to_scaled_mu_pass(
-                layer_cmds, source_axis, mu_per_rotation
+                layer_cmds, mu_per_rotation
             )
 
     def encode_ops(
