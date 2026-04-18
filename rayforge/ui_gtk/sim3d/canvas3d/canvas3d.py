@@ -37,7 +37,7 @@ from ..scene3d import (
     compile_scene_in_subprocess,
 )
 from .cylinder_renderer import CylinderRenderer
-from .gl_utils import Shader
+from .gl_utils import Shader, rotation_4x4
 from .laser_beam_renderer import LaserBeamRenderer
 from .model_renderer import ModelRenderer
 from .ops_renderer import OpsRenderer
@@ -343,10 +343,8 @@ class Canvas3D(Gtk.GLArea):
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
         if keyval == Gdk.KEY_space and self._playback_overlay:
-            if self._playback_overlay._play_button.get_sensitive():
-                self._playback_overlay._on_play_clicked(
-                    self._playback_overlay._play_button
-                )
+            if self._playback_overlay.can_play():
+                self._playback_overlay.toggle_playback()
             return True
         return False
 
@@ -793,15 +791,8 @@ class Canvas3D(Gtk.GLArea):
                     np.float64
                 ) @ margin_shift.astype(np.float64)
 
-            rot_cyl_gl = cyl_base_mvp.T.astype(np.float32)
-            if abs(cyl_angle) > 1e-9:
-                rot_3x3 = rotation_matrix_from_axis_angle(
-                    vis_rot_axis, cyl_angle
-                )
-                rot_4x4 = np.eye(4, dtype=np.float64)
-                rot_4x4[:3, :3] = rot_3x3
-                rot_cyl = cyl_base_mvp @ rot_4x4
-                rot_cyl_gl = rot_cyl.T.astype(np.float32)
+            rot_4x4 = rotation_4x4(vis_rot_axis, cyl_angle)
+            rot_cyl_gl = (cyl_base_mvp @ rot_4x4).T.astype(np.float32)
 
             # Render each layer group (ops + ring buffer)
             spot_line_width = self._compute_spot_line_width(mvp_matrix_ui_gl)
@@ -928,21 +919,11 @@ class Canvas3D(Gtk.GLArea):
 
             for renderer in self._cylinder_renderers.values():
                 if self._main_shader:
-                    if abs(cyl_angle) > 1e-9:
-                        rot_3x3 = rotation_matrix_from_axis_angle(
-                            vis_rot_axis, cyl_angle
-                        )
-                        rot_4x4 = np.eye(4, dtype=np.float64)
-                        rot_4x4[:3, :3] = rot_3x3
-                        cyl_mesh_mvp = (
-                            mvp_matrix_ui @ margin_shift
-                            @ self._cylinder_transform @ rot_4x4
-                        ).astype(np.float64)
-                    else:
-                        cyl_mesh_mvp = (
-                            mvp_matrix_ui @ margin_shift
-                            @ self._cylinder_transform
-                        ).astype(np.float64)
+                    rot_cyl = rotation_4x4(vis_rot_axis, cyl_angle)
+                    cyl_mesh_mvp = (
+                        mvp_matrix_ui @ margin_shift
+                        @ self._cylinder_transform @ rot_cyl
+                    ).astype(np.float64)
                     renderer.render(
                         self._main_shader,
                         cyl_mesh_mvp.T.astype(np.float32),
@@ -1019,14 +1000,8 @@ class Canvas3D(Gtk.GLArea):
                     self._texture_shader,
                     reached_count=tex_reached,
                 )
-                rot_cyl_mvp = cyl_base_mvp
-                if abs(cyl_angle) > 1e-9:
-                    rot_3x3 = rotation_matrix_from_axis_angle(
-                        vis_rot_axis, cyl_angle
-                    )
-                    rot_4x4 = np.eye(4, dtype=np.float64)
-                    rot_4x4[:3, :3] = rot_3x3
-                    rot_cyl_mvp = cyl_base_mvp @ rot_4x4
+                rot_cyl = rotation_4x4(vis_rot_axis, cyl_angle)
+                rot_cyl_mvp = cyl_base_mvp @ rot_cyl
                 self._texture_renderer.render_cylinder(
                     rot_cyl_mvp,
                     self._texture_shader,
@@ -1132,9 +1107,7 @@ class Canvas3D(Gtk.GLArea):
                 # Yaw Rotation (around World Z axis)
                 if abs(yaw_angle) > 1e-6:
                     axis_yaw = np.array([0.0, 0.0, 1.0], dtype=np.float64)
-                    rot_yaw = rotation_matrix_from_axis_angle(
-                        axis_yaw, yaw_angle
-                    )
+                    rot_yaw = rotation_4x4(axis_yaw, yaw_angle)[:3, :3]
                     # Apply to position and up vectors
                     self.camera.position = self._rotation_pivot + rot_yaw @ (
                         self.camera.position - self._rotation_pivot

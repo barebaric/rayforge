@@ -13,7 +13,7 @@ from typing import Optional, Tuple
 import numpy as np
 from OpenGL import GL
 from ....core.geo import Point3D
-from .gl_utils import BaseRenderer, Shader
+from .gl_utils import BaseRenderer, Shader, set_line_width
 from .text_renderer_3d import TextRenderer3D
 from .plane_renderer import PlaneRenderer
 
@@ -356,7 +356,7 @@ class AxisRenderer3D(BaseRenderer):
         if self.show_extent_frame and self.extent_frame_vao:
             line_shader.set_mat4("uMVP", grid_mvp)
             line_shader.set_vec4("uColor", self.extent_frame_color)
-            self._set_line_width(2.0)
+            set_line_width(2.0)
             GL.glBindVertexArray(self.extent_frame_vao)
             GL.glDrawArrays(GL.GL_LINES, 0, self.extent_frame_vertex_count)
 
