@@ -4,6 +4,7 @@ from .driver import Driver
 from .dummy import NoDeviceDriver
 from .grbl import GrblNetworkDriver
 from .grbl_serial import GrblSerialDriver
+from .grbl_telnet import GrblTelnetDriver
 from .smoothie import SmoothieDriver
 
 
@@ -34,5 +35,6 @@ __all__ = [
     "NoDeviceDriver",
     "GrblNetworkDriver",
     "GrblSerialDriver",
+    "GrblTelnetDriver",
     "SmoothieDriver",
 ]

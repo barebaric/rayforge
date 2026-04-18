@@ -6,6 +6,7 @@ from enum import Enum, auto
 
 from ...shared.tasker import task_mgr
 from .serial import SerialTransport
+from .transport import Transport
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class GrblSerialTransport:
     the serial receive callback.
     """
 
-    def __init__(self, transport: SerialTransport):
+    def __init__(self, transport: Transport):
         self._transport = transport
         self._rx_buffer_count = 0
         self._lock = threading.Lock()
@@ -61,7 +62,9 @@ class GrblSerialTransport:
 
     @property
     def port(self) -> str:
-        return self._transport.port
+        if isinstance(self._transport, SerialTransport):
+            return self._transport.port
+        return ""
 
     async def connect(self) -> None:
         await self._transport.connect()
