@@ -55,7 +55,9 @@ pos_re = re.compile(r":(-?\d+\.?\d*),(-?\d+\.?\d*)(?:,(-?\d+\.?\d*))?")
 fs_re = re.compile(r"FS:(\d+),(\d+)")
 bf_re = re.compile(r"Bf:(\d+),(\d+)")
 grbl_setting_re = re.compile(r"\$(\d+)=([\d\.-]+)")
-wcs_re = re.compile(r"\[(G5[4-9]):([\d\.-]+),([\d\.-]+),([\d\.-]+)\]")
+wcs_re = re.compile(
+    r"\[(G5[4-9]):([\d\.-]+),([\d\.-]+)(?:,([\d\.-]+))?\]"
+)
 prb_re = re.compile(r"\[PRB:([\d\.-]+),([\d\.-]+),([\d\.-]+):(\d)\]")
 # Regex to find the active WCS (G54-G59) from a $G parser state report
 grbl_parser_state_re = re.compile(r".*(G5[4-9]).*")
