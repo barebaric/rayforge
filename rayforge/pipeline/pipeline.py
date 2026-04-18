@@ -339,6 +339,8 @@ class Pipeline:
         self.doc.job_assembly_invalidated.connect(
             self._on_job_assembly_invalidated
         )
+        if self._machine:
+            self._machine.changed.connect(self._on_machine_changed)
 
     def _disconnect_signals(self) -> None:
         """Disconnects from the document's signals."""
@@ -353,6 +355,8 @@ class Pipeline:
         self.doc.job_assembly_invalidated.disconnect(
             self._on_job_assembly_invalidated
         )
+        if self._machine:
+            self._machine.changed.disconnect(self._on_machine_changed)
 
     def pause(self) -> None:
         """
@@ -840,6 +844,12 @@ class Pipeline:
                         step_key = ArtifactKey.for_step(step.uid)
                         self._invalidate_node(step_key)
         self._schedule_reconciliation()
+
+    def _on_machine_changed(self, sender: Any, **kwargs) -> None:
+        logger.debug(
+            "Machine configuration changed. Invalidating all artifacts."
+        )
+        self.recalculate(force=True)
 
     def _on_workpiece_generation_starting(
         self,
