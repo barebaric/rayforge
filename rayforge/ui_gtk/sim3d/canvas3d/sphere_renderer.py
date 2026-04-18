@@ -7,7 +7,7 @@ import math
 from typing import Union
 import numpy as np
 from OpenGL import GL
-from .gl_utils import BaseRenderer, Shader
+from .gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)
 
@@ -79,9 +79,8 @@ class SphereRenderer(BaseRenderer):
 
     def render(
         self,
+        ctx: RenderContext,
         shader: Shader,
-        proj_matrix: np.ndarray,
-        view_matrix: np.ndarray,
         position: np.ndarray,
         color: Union[list, tuple],
         scale: float = 1.0,
@@ -90,9 +89,8 @@ class SphereRenderer(BaseRenderer):
         Renders the sphere at a given position, color, and scale.
 
         Args:
+            ctx: The current render context.
             shader: The shader program to use for rendering.
-            proj_matrix: The projection matrix.
-            view_matrix: The view matrix.
             position: The world-space position (vec3) of the sphere.
             color: The color of the sphere as a list/tuple (r, g, b, a).
             scale: A uniform scaling factor for the sphere.
@@ -102,12 +100,10 @@ class SphereRenderer(BaseRenderer):
 
         shader.use()
 
-        # Build a model matrix to scale and then translate the sphere.
         model_matrix = np.diag([scale, scale, scale, 1.0]).astype(np.float32)
         model_matrix[:3, 3] = position[:3]
 
-        # Calculate the final Model-View-Projection matrix.
-        mvp_matrix = proj_matrix @ view_matrix @ model_matrix
+        mvp_matrix = ctx.proj_matrix @ ctx.view_matrix @ model_matrix
 
         shader.set_mat4("uMVP", mvp_matrix)
         shader.set_vec4("uColor", color)

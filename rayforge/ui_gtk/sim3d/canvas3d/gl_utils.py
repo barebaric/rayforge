@@ -5,11 +5,13 @@ PyOpenGL tasks, such as shader compilation and buffer management.
 
 import logging
 import math
+from dataclasses import dataclass
 from typing import Optional, Protocol, Union, final
-
 import numpy as np
 from OpenGL import GL
 from OpenGL.GL import shaders
+
+from ....core.color import ColorSet
 
 logger = logging.getLogger(__name__)
 
@@ -194,6 +196,36 @@ class Shader:
     def set_int(self, name: str, value: int) -> None:
         """Sets an integer uniform."""
         GL.glUniform1i(self.get_uniform_location(name), value)
+
+
+@dataclass
+class RenderContext:
+    """
+    Frame-level rendering state shared across all renderers.
+
+    Matrices are row-major (NumPy convention).  Renderers that need
+    column-major for OpenGL should transpose: ``ctx.mvp_ui_gl``.
+    """
+
+    proj_matrix: np.ndarray
+    view_matrix: np.ndarray
+    mvp_ui: np.ndarray
+    mvp_scene: np.ndarray
+    margin_shift: np.ndarray
+    model_matrix: np.ndarray
+    viewport_height: int
+    camera_position: np.ndarray
+    color_set: ColorSet
+    show_travel_moves: bool = False
+    line_width: float = 1.0
+
+    @property
+    def mvp_ui_gl(self) -> np.ndarray:
+        return self.mvp_ui.T
+
+    @property
+    def mvp_scene_gl(self) -> np.ndarray:
+        return self.mvp_scene.T
 
 
 class SceneRenderer(Protocol):

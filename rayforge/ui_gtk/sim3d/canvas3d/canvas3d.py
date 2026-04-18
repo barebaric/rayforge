@@ -37,7 +37,7 @@ from ..scene3d import (
     compile_scene_in_subprocess,
 )
 from .cylinder_renderer import CylinderRenderer
-from .gl_utils import Shader, rotation_4x4
+from .gl_utils import RenderContext, Shader, rotation_4x4
 from .laser_beam_renderer import LaserBeamRenderer
 from .model_renderer import ModelRenderer
 from .ops_renderer import OpsRenderer
@@ -689,7 +689,7 @@ class Canvas3D(Gtk.GLArea):
             )
 
             if self._background_renderer:
-                self._background_renderer.render()
+                pass  # rendered below after ctx is built
 
             proj_matrix = self.camera.get_projection_matrix()
             view_matrix = self.camera.get_view_matrix()
@@ -727,18 +727,38 @@ class Canvas3D(Gtk.GLArea):
             mvp_matrix_ui_gl = mvp_matrix_ui.T
             mvp_matrix_scene_gl = mvp_matrix_scene.T
 
+            # Build the shared render context for this frame
+            spot_line_width = self._compute_spot_line_width(
+                mvp_matrix_ui_gl
+            )
+            ctx = RenderContext(
+                proj_matrix=proj_matrix,
+                view_matrix=view_matrix,
+                mvp_ui=mvp_matrix_ui,
+                mvp_scene=mvp_matrix_scene,
+                margin_shift=self._viewport.margin_shift,
+                model_matrix=self._viewport.model_matrix,
+                viewport_height=self.camera.height,
+                camera_position=self.camera.position,
+                color_set=self._color_set,
+                show_travel_moves=self._show_travel_moves,
+                line_width=spot_line_width,
+            )
+
+            if self._background_renderer:
+                self._background_renderer.render(ctx)
+
             if (
                 self._axis_renderer is not None
                 and self._main_shader is not None
                 and self._text_shader is not None
             ):
                 self._axis_renderer.render(
+                    ctx,
                     self._main_shader,
                     self._text_shader,
                     mvp_matrix_scene_gl,
                     mvp_matrix_ui_gl,
-                    view_matrix,
-                    self._viewport.model_matrix,
                     origin_offset_mm=self._viewport.wcs_offset_mm,
                     x_right=self._viewport.x_right,
                     y_down=self._viewport.y_down,
@@ -755,7 +775,7 @@ class Canvas3D(Gtk.GLArea):
                 and self._show_nogo_zones
             ):
                 zone_mvp_gl = (mvp_matrix_ui @ margin_shift).T
-                self._zone_renderer.render(self._main_shader, zone_mvp_gl)
+                self._zone_renderer.render(ctx, self._main_shader, zone_mvp_gl)
 
             # Compute cylinder rotation from mapped ops.
             #
@@ -795,7 +815,6 @@ class Canvas3D(Gtk.GLArea):
             rot_cyl_gl = (cyl_base_mvp @ rot_4x4).T.astype(np.float32)
 
             # Render each layer group (ops + ring buffer)
-            spot_line_width = self._compute_spot_line_width(mvp_matrix_ui_gl)
             for group in self._layer_groups:
                 mvp = rot_cyl_gl if group.is_rotary else mvp_matrix_ui_gl
 
@@ -831,13 +850,11 @@ class Canvas3D(Gtk.GLArea):
 
                 if self._main_shader:
                     group.ops_renderer.render(
+                        ctx,
                         self._main_shader,
                         mvp,
-                        colors=self._color_set,
-                        show_travel_moves=self._show_travel_moves,
                         executed_vertex_count=exec_powered,
                         executed_travel_vertex_count=exec_travel,
-                        line_width=spot_line_width,
                     )
 
                 if group.ring_renderer.vertex_count > 0 and self._main_shader:
@@ -848,10 +865,10 @@ class Canvas3D(Gtk.GLArea):
                         f"total={group.ring_renderer.vertex_count}"
                     )
                     group.ring_renderer.render(
+                        ctx,
                         self._main_shader,
                         mvp,
                         executed_vertex_count=exec_ring,
-                        line_width=spot_line_width,
                     )
 
             laser_light_pos = None
@@ -907,12 +924,10 @@ class Canvas3D(Gtk.GLArea):
                         else:
                             beam_pos = head_pos.copy()
                         self._laser_beam_renderer.render(
+                            ctx,
                             self._main_shader,
-                            proj_matrix,
-                            view_matrix,
                             beam_pos[:3],
                             beam_height=beam_height,
-                            viewport_height=self.camera.height,
                             color=beam_color,
                         )
                         laser_light_pos = beam_pos[:3].astype(np.float32)
@@ -925,6 +940,7 @@ class Canvas3D(Gtk.GLArea):
                         @ self._cylinder_transform @ rot_cyl
                     ).astype(np.float64)
                     renderer.render(
+                        ctx,
                         self._main_shader,
                         cyl_mesh_mvp.T.astype(np.float32),
                     )
@@ -980,10 +996,10 @@ class Canvas3D(Gtk.GLArea):
                             mvp_matrix_ui @ margin_shift @ module_transform
                         )
                         renderer.render(
+                            ctx,
                             self._main_shader,
                             combined.T,
                             model_matrix=margin_shift @ module_transform,
-                            camera_position=self.camera.position,
                             point_light_pos=laser_light_pos,
                         )
 
@@ -996,6 +1012,7 @@ class Canvas3D(Gtk.GLArea):
                         tex_reached += 1
             if self._texture_renderer and self._texture_shader:
                 self._texture_renderer.render(
+                    ctx,
                     mvp_matrix_ui,
                     self._texture_shader,
                     reached_count=tex_reached,
@@ -1003,6 +1020,7 @@ class Canvas3D(Gtk.GLArea):
                 rot_cyl = rotation_4x4(vis_rot_axis, cyl_angle)
                 rot_cyl_mvp = cyl_base_mvp @ rot_cyl
                 self._texture_renderer.render_cylinder(
+                    ctx,
                     rot_cyl_mvp,
                     self._texture_shader,
                     reached_count=tex_reached,

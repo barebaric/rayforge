@@ -4,8 +4,7 @@ A renderer for visualizing toolpath operations (Ops) in 3D.
 
 import numpy as np
 from OpenGL import GL
-from ....core.color import ColorSet
-from .gl_utils import BaseRenderer, Shader, set_line_width
+from .gl_utils import BaseRenderer, RenderContext, Shader, set_line_width
 
 
 class OpsRenderer(BaseRenderer):
@@ -84,31 +83,32 @@ class OpsRenderer(BaseRenderer):
 
     def render(
         self,
+        ctx: RenderContext,
         shader: Shader,
         mvp_matrix: np.ndarray,
-        colors: ColorSet,
-        show_travel_moves: bool,
         executed_vertex_count: int = -1,
         alpha_pending: float = 0.2,
         executed_travel_vertex_count: int = -1,
-        line_width: float = 1.0,
     ) -> None:
         """
         Renders the toolpaths. The vertices are assumed to be in world space.
 
         Args:
+            ctx: The current render context (carries color set, line width,
+              and travel-move visibility).
             shader: The shader program to use for rendering lines.
             mvp_matrix: The combined Model-View-Projection matrix.
-            colors: The resolved ColorSet containing color data.
-            show_travel_moves: Whether to render the travel move paths.
             executed_vertex_count: Powered vertices drawn at full alpha.
                 -1 means all vertices at full alpha (IDLE mode).
             alpha_pending: Alpha multiplier for pending vertices (0..1).
             executed_travel_vertex_count: Travel vertices drawn at full
-                alpha during simulation. -1 means use show_travel_moves
+                alpha during simulation. -1 means use ctx.show_travel_moves
                 instead.
-            line_width: Width of lines in pixels (clamped to GPU range).
         """
+        colors = ctx.color_set
+        show_travel_moves = ctx.show_travel_moves
+        line_width = ctx.line_width
+
         if executed_vertex_count > self.powered_vertex_count:
             raise ValueError(
                 f"executed_vertex_count ({executed_vertex_count}) "

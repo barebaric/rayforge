@@ -6,7 +6,7 @@ import numpy as np
 from OpenGL import GL
 
 from ....machine.models.zone import Zone, ZoneShape
-from .gl_utils import BaseRenderer, Shader
+from .gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)
 
@@ -344,7 +344,9 @@ class ZoneRenderer(BaseRenderer):
     def init_gl(self) -> None:
         pass
 
-    def render(self, shader: Shader, mvp: np.ndarray) -> None:
+    def render(
+        self, ctx: RenderContext, shader: Shader, mvp: np.ndarray
+    ) -> None:
         if not self._fill_vao and not self._edge_vao:
             return
 

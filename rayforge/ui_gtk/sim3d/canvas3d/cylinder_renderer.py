@@ -7,7 +7,7 @@ import math
 from typing import Tuple
 import numpy as np
 from OpenGL import GL
-from .gl_utils import BaseRenderer, Shader
+from .gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,9 @@ class CylinderRenderer(BaseRenderer):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         GL.glBindVertexArray(0)
 
-    def render(self, shader: Shader, mvp_matrix: np.ndarray) -> None:
+    def render(
+        self, ctx: RenderContext, shader: Shader, mvp_matrix: np.ndarray
+    ) -> None:
         """
         Renders the cylinder wireframe.
 
