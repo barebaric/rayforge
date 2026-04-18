@@ -158,7 +158,7 @@ def test_axis_label_rendering(
     if mock_text_renderer.render_text.called:
         for call_args in mock_text_renderer.render_text.call_args_list:
             # The label text is the second positional argument (index 1)
-            label_text = call_args.args[1]
+            label_text = call_args.args[2]
             if label_text:
                 rendered_labels.append(int(label_text))
 
