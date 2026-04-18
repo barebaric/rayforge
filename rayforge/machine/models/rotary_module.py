@@ -27,7 +27,6 @@ class RotaryModule:
         self.name: str = _("Rotary Module")
         self.axis: Axis = Axis.A
         self.mode: RotaryMode = RotaryMode.TRUE_4TH_AXIS
-        self.source_axis: Axis = Axis.Y
         self.mu_per_rotation: float = 0.0
         self.default_diameter: float = 25.0
         self.max_workpiece_length: float = 300.0
@@ -57,13 +56,6 @@ class RotaryModule:
         if self.mode == mode:
             return
         self.mode = mode
-        self.changed.send(self)
-
-    def set_source_axis(self, axis: Axis):
-        axis.assert_single_axis()
-        if self.source_axis == axis:
-            return
-        self.source_axis = axis
         self.changed.send(self)
 
     def set_mm_per_rotation(self, value: float):
@@ -178,7 +170,6 @@ class RotaryModule:
             "name": self.name,
             "axis": self.axis.name,
             "mode": self.mode.value,
-            "source_axis": self.source_axis.name,
             "default_diameter": self.default_diameter,
             "max_workpiece_length": self.max_workpiece_length,
             "rotary_type": self.rotary_type.value,
@@ -203,7 +194,6 @@ class RotaryModule:
             "name",
             "axis",
             "mode",
-            "source_axis",
             "mm_per_rotation",
             "default_diameter",
             "max_workpiece_length",
@@ -234,7 +224,6 @@ class RotaryModule:
         rm.name = data.get("name", _("Rotary Module"))
         rm.axis = Axis[data.get("axis", "A")]
         rm.mode = RotaryMode(data.get("mode", "true_4th_axis"))
-        rm.source_axis = Axis[data.get("source_axis", "Y")]
         rm.mu_per_rotation = data.get("mm_per_rotation", 0.0)
         rm.default_diameter = data.get("default_diameter", 25.0)
         rm.max_workpiece_length = data.get("max_workpiece_length", 300.0)

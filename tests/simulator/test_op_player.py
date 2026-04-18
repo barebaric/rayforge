@@ -163,7 +163,6 @@ def test_replacement_mode_no_rotary_mapping():
     machine = _make_machine()
     rm = RotaryModule()
     rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
-    rm.set_source_axis(Axis.Y)
     machine.add_rotary_module(rm)
 
     ops = Ops()
@@ -189,7 +188,6 @@ def test_true_4th_axis_copies_to_rotary():
     rm = RotaryModule()
     rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
     rm.set_axis(Axis.A)
-    rm.set_source_axis(Axis.Y)
     machine.add_rotary_module(rm)
 
     ops = Ops()
@@ -198,7 +196,6 @@ def test_true_4th_axis_copies_to_rotary():
     ops.line_to(10, 20, 0)
 
     mapping = KinematicMapping(
-        source_axis=Axis.Y,
         rotary_axis=Axis.A,
         diameter=25.0,
     )

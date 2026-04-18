@@ -492,7 +492,6 @@ def _encode_rotary_line(machine, doc):
         rotary_axis = machine.get_rotary_axis_for_layer(layer)
         if rotary_axis is not None:
             mapping = KinematicMapping(
-                source_axis=Axis.Y,
                 rotary_axis=rotary_axis,
                 diameter=layer.rotary_diameter,
             )
@@ -593,7 +592,6 @@ class TestRotaryAxisGcodeOutput:
         """AXIS_REPLACEMENT with mm_per_rotation=0 emits raw Y values."""
         rm = RotaryModule()
         rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
-        rm.set_source_axis(Axis.Y)
         isolated_machine.add_rotary_module(rm)
 
         doc = Doc()
@@ -622,7 +620,6 @@ class TestRotaryAxisGcodeOutput:
         """AXIS_REPLACEMENT with mm_per_rotation>0 scales Y values."""
         rm = RotaryModule()
         rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
-        rm.set_source_axis(Axis.Y)
         rm.set_mm_per_rotation(100.0)
         isolated_machine.add_rotary_module(rm)
 
@@ -711,7 +708,6 @@ class TestRotaryAxisGcodeOutput:
         """
         rm = RotaryModule()
         rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
-        rm.set_source_axis(Axis.Y)
         rm.set_mm_per_rotation(100.0)
         isolated_machine.add_rotary_module(rm)
         isolated_machine.set_origin(Origin.TOP_LEFT)

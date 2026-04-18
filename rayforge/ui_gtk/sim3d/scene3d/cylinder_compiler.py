@@ -4,13 +4,13 @@ Pure-numpy cylinder mesh generation for texture mapping.
 Generates vertex arrays that map a texture onto a cylinder surface
 by transforming [0,1] texture coordinates through a grid matrix into
 local cylinder space, then wrapping into Z/Y planes.
+
+The cylinder always runs along X in the output vertex data.
 """
 
 import math
 
 import numpy as np
-
-from ....core.ops.axis import Axis
 
 GRID_S = 8
 GRID_T = 64
@@ -21,13 +21,9 @@ def generate_cylinder_vertices(
     diameter: float,
     grid_s: int = GRID_S,
     grid_t: int = GRID_T,
-    source_axis: Axis = Axis.Y,
 ) -> np.ndarray:
     radius = diameter / 2.0
     circumference = diameter * math.pi
-
-    source_idx = 0 if source_axis == Axis.X else 1
-    cyl_idx = 1 - source_idx
 
     i_vals = np.arange(grid_s, dtype=np.float32)
     j_vals = np.arange(grid_t, dtype=np.float32)
@@ -53,15 +49,11 @@ def generate_cylinder_vertices(
             axis=-1,
         )
         p_cyl = pts @ grid_matrix.T
-        theta = (p_cyl[:, source_idx] / circumference) * 2.0 * np.pi
-        col_cyl = p_cyl[:, cyl_idx].reshape(shape)
+        theta = (p_cyl[:, 1] / circumference) * 2.0 * np.pi
+        col_cyl = p_cyl[:, 0].reshape(shape)
         col_sin = (radius * np.sin(theta)).reshape(shape)
         col_cos = (radius * np.cos(theta)).reshape(shape)
-        pos = np.empty(3, dtype=object)
-        pos[cyl_idx] = col_cyl
-        pos[source_idx] = col_sin
-        pos[2] = col_cos
-        return pos[0], pos[1], pos[2]
+        return col_cyl, col_sin, col_cos
 
     x00, y00, z00 = _transform_points(lx_grid, ly0_grid)
     x10, y10, z10 = _transform_points(lx1_grid, ly0_grid)

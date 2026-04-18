@@ -58,11 +58,11 @@ class OpPlayer:
             else None
         )
         if module:
-            self._source_axis = module.source_axis
+            self._source_axis = Axis.Y
             if module.mode == RotaryMode.TRUE_4TH_AXIS:
                 self._rotary_axis = module.axis
             else:
-                self._rotary_axis = module.source_axis
+                self._rotary_axis = Axis.Y
         else:
             self._source_axis = Axis.Y
             self._rotary_axis = self._machine.get_rotary_axis_for_layer(item)

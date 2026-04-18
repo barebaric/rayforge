@@ -5,18 +5,16 @@ from typing import Dict, Optional, Tuple
 
 import numpy as np
 
-from ....core.ops.axis import Axis
-
 
 @dataclass
 class LayerRenderConfig:
     rotary_enabled: bool
     rotary_diameter: float
-    source_axis: Optional[Axis] = None
-    rotary_axis: Optional[Axis] = None
     axis_position: float = 0.0
     gear_ratio: float = 1.0
     reverse: bool = False
+    axis_position_3d: Optional[Tuple[float, ...]] = None
+    cylinder_dir: Optional[Tuple[float, ...]] = None
 
     def to_dict(self) -> dict:
         d = {
@@ -26,28 +24,28 @@ class LayerRenderConfig:
             "gear_ratio": self.gear_ratio,
             "reverse": self.reverse,
         }
-        if self.source_axis is not None and self.source_axis != Axis.Y:
-            d["source_axis"] = int(self.source_axis)
-        if self.rotary_axis is not None:
-            d["rotary_axis"] = int(self.rotary_axis)
+        if self.axis_position_3d is not None:
+            d["axis_position_3d"] = list(self.axis_position_3d)
+        if self.cylinder_dir is not None:
+            d["cylinder_dir"] = list(self.cylinder_dir)
         return d
 
     @classmethod
     def from_dict(cls, data: dict) -> "LayerRenderConfig":
-        source_axis = None
-        if "source_axis" in data:
-            source_axis = Axis(data["source_axis"])
-        rotary_axis = None
-        if "rotary_axis" in data:
-            rotary_axis = Axis(data["rotary_axis"])
+        ap3d = data.get("axis_position_3d")
+        if ap3d is not None:
+            ap3d = tuple(ap3d)
+        cdir = data.get("cylinder_dir")
+        if cdir is not None:
+            cdir = tuple(cdir)
         return cls(
             rotary_enabled=data["rotary_enabled"],
             rotary_diameter=data["rotary_diameter"],
-            source_axis=source_axis,
-            rotary_axis=rotary_axis,
             axis_position=data.get("axis_position", 0.0),
             gear_ratio=data.get("gear_ratio", 1.0),
             reverse=data.get("reverse", False),
+            axis_position_3d=ap3d,
+            cylinder_dir=cdir,
         )
 
 

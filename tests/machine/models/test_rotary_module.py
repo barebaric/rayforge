@@ -19,7 +19,6 @@ class TestRotaryModule:
         assert rm.name == "Rotary Module"
         assert rm.axis == Axis.A
         assert rm.mode == RotaryMode.TRUE_4TH_AXIS
-        assert rm.source_axis == Axis.Y
         assert rm.mu_per_rotation == 0.0
         assert rm.default_diameter == 25.0
         assert rm.rotary_type == RotaryType.JAWS
@@ -62,13 +61,9 @@ class TestRotaryModule:
         assert rm.mode == RotaryMode.AXIS_REPLACEMENT
         assert len(signals) == 6
 
-        rm.set_source_axis(Axis.X)
-        assert rm.source_axis == Axis.X
-        assert len(signals) == 7
-
         rm.set_mm_per_rotation(100.0)
         assert rm.mu_per_rotation == 100.0
-        assert len(signals) == 8
+        assert len(signals) == 7
 
     def test_set_position_no_signal_if_same(self):
         rm = RotaryModule()
@@ -126,17 +121,6 @@ class TestRotaryModule:
         rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
         assert len(signals) == 0
 
-    def test_set_source_axis_no_signal_if_same(self):
-        rm = RotaryModule()
-        signals = []
-
-        def on_changed(sender, **kwargs):
-            signals.append(sender)
-
-        rm.changed.connect(on_changed)
-        rm.set_source_axis(Axis.Y)
-        assert len(signals) == 0
-
     def test_set_mm_per_rotation_no_signal_if_same(self):
         rm = RotaryModule()
         signals = []
@@ -153,7 +137,6 @@ class TestRotaryModule:
         rm.name = "Test Rotary"
         rm.axis = Axis.B
         rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
-        rm.set_source_axis(Axis.X)
         rm.set_mm_per_rotation(100.0)
         rm.set_position(10.0, 20.0, 5.0)
         rm.set_model_id("rotary/standard.glb")
@@ -165,7 +148,6 @@ class TestRotaryModule:
         assert rm2.name == "Test Rotary"
         assert rm2.axis == Axis.B
         assert rm2.mode == RotaryMode.AXIS_REPLACEMENT
-        assert rm2.source_axis == Axis.X
         assert rm2.mu_per_rotation == 100.0
         assert_array_equal(rm2.transform, rm.transform)
         assert rm2.model_id == "rotary/standard.glb"
@@ -176,7 +158,6 @@ class TestRotaryModule:
         assert rm.uid == "test-uid"
         assert rm.axis == Axis.A
         assert rm.mode == RotaryMode.TRUE_4TH_AXIS
-        assert rm.source_axis == Axis.Y
         assert rm.mu_per_rotation == 0.0
         assert rm.model_id is None
         assert_array_equal(rm.transform, np.eye(4))
