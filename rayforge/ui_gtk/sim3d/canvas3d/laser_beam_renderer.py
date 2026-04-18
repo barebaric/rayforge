@@ -9,7 +9,7 @@ import math
 import numpy as np
 from OpenGL import GL
 
-from .gl_utils import BaseRenderer, Shader
+from .gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)
 
@@ -75,16 +75,18 @@ class LaserBeamRenderer(BaseRenderer):
 
     def render(
         self,
+        ctx: RenderContext,
         shader: Shader,
-        proj_matrix: np.ndarray,
-        view_matrix: np.ndarray,
         position: np.ndarray,
         beam_height: float = 50.0,
-        viewport_height: int = 800,
         color: tuple = (1.0, 0.3, 0.1, 1.0),
     ):
         if not self.vao:
             return
+
+        proj_matrix = ctx.proj_matrix
+        view_matrix = ctx.view_matrix
+        viewport_height = ctx.viewport_height
 
         p11 = float(proj_matrix[1, 1])
         if abs(p11) < 1e-6:

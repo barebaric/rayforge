@@ -12,7 +12,7 @@ slots become available for recycling.
 import numpy as np
 from OpenGL import GL
 
-from .gl_utils import BaseRenderer, Shader, set_line_width
+from .gl_utils import BaseRenderer, RenderContext, Shader, set_line_width
 
 
 class RingBufferRenderer(BaseRenderer):
@@ -95,11 +95,11 @@ class RingBufferRenderer(BaseRenderer):
 
     def render(
         self,
+        ctx: RenderContext,
         shader: Shader,
         mvp_matrix: np.ndarray,
         executed_vertex_count: int = -1,
         alpha_pending: float = 0.2,
-        line_width: float = 1.0,
     ):
         if self.vertex_count == 0:
             return
@@ -111,6 +111,7 @@ class RingBufferRenderer(BaseRenderer):
         if draw_count == 0:
             return
 
+        line_width = ctx.line_width
         shader.use()
         shader.set_mat4("uMVP", mvp_matrix)
         shader.set_float("uHasNormals", 0.0)

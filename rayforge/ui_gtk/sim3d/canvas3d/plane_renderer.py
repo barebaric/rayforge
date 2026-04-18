@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 import numpy as np
 from OpenGL import GL
-from .gl_utils import BaseRenderer, Shader
+from .gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,9 @@ class PlaneRenderer(BaseRenderer):
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-    def render(self, shader: Shader, mvp: np.ndarray) -> None:
+    def render(
+        self, ctx: RenderContext, shader: Shader, mvp: np.ndarray
+    ) -> None:
         """Draws the plane."""
         if not self.vao:
             return

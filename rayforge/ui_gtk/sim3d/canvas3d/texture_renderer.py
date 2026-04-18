@@ -7,7 +7,7 @@ import time
 from typing import List, Dict, Any, Optional
 import numpy as np
 from OpenGL import GL
-from .gl_utils import BaseRenderer, Shader
+from .gl_utils import BaseRenderer, RenderContext, Shader
 from ....pipeline.artifact.base import TextureData
 
 
@@ -272,6 +272,7 @@ class TextureArtifactRenderer(BaseRenderer):
 
     def render(
         self,
+        ctx: RenderContext,
         view_proj_scene_matrix: np.ndarray,
         shader: Shader,
         reached_count: Optional[int] = None,
@@ -345,6 +346,7 @@ class TextureArtifactRenderer(BaseRenderer):
 
     def render_cylinder(
         self,
+        ctx: RenderContext,
         view_proj_scene_matrix: np.ndarray,
         shader: Shader,
         reached_count: Optional[int] = None,

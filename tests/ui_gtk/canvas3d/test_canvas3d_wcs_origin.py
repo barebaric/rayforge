@@ -3,6 +3,8 @@ import numpy as np
 from unittest.mock import MagicMock, patch
 from rayforge.machine.models.machine import Origin
 from rayforge.ui_gtk.sim3d.canvas3d.axis_renderer_3d import AxisRenderer3D
+from rayforge.ui_gtk.sim3d.canvas3d.gl_utils import RenderContext
+from rayforge.core.color import ColorSet
 
 
 def create_model_matrix(
@@ -111,13 +113,24 @@ def test_wcs_marker_position(
         scene_mvp = np.identity(4, dtype=np.float32)
         view_matrix = np.identity(4, dtype=np.float32)
 
+        ctx = RenderContext(
+            proj_matrix=np.eye(4, dtype=np.float32),
+            view_matrix=view_matrix,
+            mvp_ui=text_mvp,
+            mvp_scene=scene_mvp,
+            margin_shift=np.eye(4, dtype=np.float32),
+            model_matrix=model_matrix,
+            viewport_height=800,
+            camera_position=np.zeros(3),
+            color_set=ColorSet(),
+        )
+
         renderer.render(
+            ctx=ctx,
             line_shader=mock_line_shader,
             text_shader=mock_text_shader,
             scene_mvp=scene_mvp,
             text_mvp=text_mvp,
-            view_matrix=view_matrix,
-            model_matrix=model_matrix,
             origin_offset_mm=(wcs_x, wcs_y, 0.0),
             x_right=x_right,
             y_down=y_down,
