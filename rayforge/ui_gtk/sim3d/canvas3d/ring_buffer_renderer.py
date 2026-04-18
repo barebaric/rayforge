@@ -9,14 +9,10 @@ instance have been fully executed the texture is un-dimmed and those ring
 slots become available for recycling.
 """
 
-import logging
-
 import numpy as np
 from OpenGL import GL
 
 from .gl_utils import BaseRenderer, Shader, set_line_width
-
-logger = logging.getLogger(__name__)
 
 
 class RingBufferRenderer(BaseRenderer):
@@ -111,11 +107,6 @@ class RingBufferRenderer(BaseRenderer):
         draw_count = self.vertex_count
         if executed_vertex_count >= 0:
             draw_count = min(executed_vertex_count, self.vertex_count)
-
-        logger.debug(
-            f"[RING-RENDER] total={self.vertex_count} "
-            f"exec={executed_vertex_count} draw={draw_count}"
-        )
 
         if draw_count == 0:
             return

@@ -2,13 +2,10 @@
 A renderer for visualizing toolpath operations (Ops) in 3D.
 """
 
-import logging
 import numpy as np
 from OpenGL import GL
 from ....core.color import ColorSet
 from .gl_utils import BaseRenderer, Shader, set_line_width
-
-logger = logging.getLogger(__name__)
 
 
 class OpsRenderer(BaseRenderer):
@@ -118,25 +115,11 @@ class OpsRenderer(BaseRenderer):
                 f"> powered_vertex_count ({self.powered_vertex_count})"
             )
 
-        logger.debug(
-            f"[RENDER] powered={self.powered_vertex_count} "
-            f"travel={self.travel_vertex_count} "
-            f"exec={executed_vertex_count} "
-            f"travel_exec={executed_travel_vertex_count}"
-        )
-
         shader.use()
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         shader.set_mat4("uMVP", mvp_matrix)
         shader.set_float("uHasNormals", 0.0)
-
-        logger.debug(
-            f"[RENDER] powered={self.powered_vertex_count} "
-            f"travel={self.travel_vertex_count} "
-            f"exec={executed_vertex_count} "
-            f"travel_exec={executed_travel_vertex_count}"
-        )
 
         shader.set_int("uExecutedVertexCount", executed_vertex_count)
         shader.set_float("uAlphaPending", alpha_pending)
