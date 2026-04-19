@@ -925,10 +925,12 @@ class Machine:
 
     @staticmethod
     def _manages_axis_config(module: RotaryModule) -> bool:
-        return (
-            module.mode == RotaryMode.TRUE_4TH_AXIS
-            and module.axis in {Axis.A, Axis.B, Axis.C, Axis.U}
-        )
+        return module.mode == RotaryMode.TRUE_4TH_AXIS and module.axis in {
+            Axis.A,
+            Axis.B,
+            Axis.C,
+            Axis.U,
+        }
 
     def _sync_rotary_axis_config(self, module: RotaryModule) -> None:
         if not self._manages_axis_config(module):
@@ -1276,83 +1278,6 @@ class Machine:
 
         return ops_for_encoder
 
-    def _apply_rotary_axis_mapping(
-        self, ops: "Ops", doc: "Doc", downstream: bool = True
-    ) -> None:
-        """Apply rotary axis mapping per-layer on ops.
-
-        This method is used by encode_ops() for the encoding path.
-        The UI path (OpPlayer) consumes pre-mapped ops from the
-        pipeline (mapped_ops on JobArtifact).
-
-        Args:
-            ops: The Ops object to map.
-            doc: The document context.
-            downstream: If True (default), also run the degrees→scaled-mu
-                downstream pass for AXIS_REPLACEMENT layers. Set to False
-                when the downstream pass will be run separately after
-                world→machine encoding.
-        """
-        commands = ops._commands
-        i = 0
-        while i < len(commands):
-            cmd = commands[i]
-            if not isinstance(cmd, LayerStartCommand):
-                i += 1
-                continue
-
-            descendant = doc.find_descendant_by_uid(cmd.layer_uid)
-            if not isinstance(descendant, Layer):
-                i += 1
-                continue
-
-            if (
-                not descendant.rotary_module_uid
-                or not descendant.rotary_enabled
-            ):
-                i += 1
-                continue
-
-            module = self.rotary_modules.get(descendant.rotary_module_uid)
-            if module is None:
-                i += 1
-                continue
-
-            diameter = descendant.rotary_diameter
-            mode = module.mode
-
-            if mode == RotaryMode.AXIS_REPLACEMENT:
-                if module.mu_per_rotation <= 0 and (
-                    module.axis not in KinematicMapping._AXIS_TO_INDEX
-                ):
-                    i += 1
-                    continue
-
-            mapping = KinematicMapping.from_rotary_module(module, diameter)
-            if mapping is None:
-                i += 1
-                continue
-
-            layer_cmds = []
-            i += 1
-            while i < len(commands) and not isinstance(
-                commands[i], LayerStartCommand
-            ):
-                if not commands[i].is_marker():
-                    layer_cmds.append(commands[i])
-                i += 1
-
-            layer_ops = Ops()
-            layer_ops._commands = layer_cmds
-            mapping.apply(layer_ops)
-
-            if downstream and mode == RotaryMode.AXIS_REPLACEMENT:
-                KinematicMapping.degrees_to_scaled_mu_pass(
-                    layer_cmds,
-                    module.mu_per_rotation,
-                    target_axis=module.axis,
-                )
-
     def _apply_replacement_downstream(self, ops: "Ops", doc: "Doc") -> None:
         """Run degrees→scaled-mu downstream pass for AXIS_REPLACEMENT layers.
 
@@ -1438,10 +1363,10 @@ class Machine:
         #    The mapper converts Y→degrees on MovingCommands including
         #    bezier control points and arc center offsets, so native
         #    curve support (e.g. G5) is preserved.
-        #    The downstream pass (degrees→scaled-mu) is deferred until
-        #    after world→machine for AXIS_REPLACEMENT layers.
+        #    The scaled-mu pass is deferred until after world→machine
+        #    for AXIS_REPLACEMENT layers.
         if doc:
-            self._apply_rotary_axis_mapping(ops_work, doc, downstream=False)
+            KinematicMapping.apply_to_job_ops(ops_work, doc, self)
 
         # 3. Apply world→machine + WCS + Z-flip (no copy, no linearize).
         ops_for_encoder = self._prepare_ops_for_encoding(

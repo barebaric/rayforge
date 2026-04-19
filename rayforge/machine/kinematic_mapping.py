@@ -24,6 +24,50 @@ if TYPE_CHECKING:
     from .models.machine import Machine
 
 
+def _resolve_rotary_layer(cmd, doc):
+    """Return the Layer if *cmd* is a LayerStartCommand with rotary enabled."""
+    if not isinstance(cmd, LayerStartCommand):
+        return None
+    descendant = doc.find_descendant_by_uid(cmd.layer_uid)
+    if not isinstance(descendant, Layer):
+        return None
+    if not descendant.rotary_module_uid or not descendant.rotary_enabled:
+        return None
+    return descendant
+
+
+def _is_valid_replacement_module(module):
+    """Check whether an AXIS_REPLACEMENT module is valid for mapping.
+
+    Modules in AXIS_REPLACEMENT mode are only valid when they have a
+    positive ``mu_per_rotation`` *or* their target axis is one of the
+    standard XYZ axes (which can accept degree values directly).
+    """
+    if module.mode != RotaryMode.AXIS_REPLACEMENT:
+        return True
+    if module.mu_per_rotation > 0:
+        return True
+    return module.axis in KinematicMapping._AXIS_TO_INDEX
+
+
+def _collect_layer_commands(commands, start):
+    """Gather non-marker commands until the next LayerStartCommand.
+
+    Returns ``(layer_cmds, new_index)`` where *new_index* points to the
+    next unprocessed command (either a LayerStartCommand or past the
+    end of *commands*).
+    """
+    layer_cmds = []
+    i = start
+    while i < len(commands) and not isinstance(
+        commands[i], LayerStartCommand
+    ):
+        if not commands[i].is_marker():
+            layer_cmds.append(commands[i])
+        i += 1
+    return layer_cmds, i
+
+
 class KinematicMapping:
     """Applies rotary kinematic mapping to world-space ops.
 
@@ -176,7 +220,34 @@ class KinematicMapping:
         ops: Ops,
         doc: Doc,
         machine: Machine,
+        apply_scaled_mu: bool = False,
     ) -> None:
+        """Apply per-layer rotary axis mapping to a full job's ops.
+
+        Walks the command stream looking for ``LayerStartCommand``
+        markers.  For each layer that has rotary enabled, resolves the
+        layer's ``RotaryModule`` and applies a ``KinematicMapping``
+        (Y→degrees) to that layer's movement commands in-place.
+
+        This is the single entry point for both the UI path (3D canvas /
+        OpPlayer via ``job_compute.py``) and the G-code encoding path
+        (via ``Machine.encode_ops()``).
+
+        Args:
+            ops: Assembled ops in world-space coordinates.  Modified
+                in-place.
+            doc: The document that owns the layers (used to look up
+                per-layer rotary configuration).
+            machine: The machine whose ``rotary_modules`` dict is used
+                to resolve module UIDs.
+            apply_scaled_mu: When *True*, also convert degrees to
+                scaled machine units for ``AXIS_REPLACEMENT`` layers.
+                The G-code path passes ``False`` and defers this step
+                until *after* the world→machine coordinate transform
+                (see ``Machine._apply_replacement_downstream()``).
+                The UI path passes ``False`` because the 3D canvas
+                works in world-space degrees.
+        """
         commands = ops._commands
         i = 0
         while i < len(commands):
@@ -185,42 +256,41 @@ class KinematicMapping:
                 i += 1
                 continue
 
-            descendant = doc.find_descendant_by_uid(cmd.layer_uid)
-            if not isinstance(descendant, Layer):
+            layer = _resolve_rotary_layer(cmd, doc)
+            if layer is None:
                 i += 1
                 continue
 
-            if (
-                not descendant.rotary_module_uid
-                or not descendant.rotary_enabled
-            ):
-                i += 1
-                continue
-
-            module = machine.rotary_modules.get(descendant.rotary_module_uid)
+            module = machine.rotary_modules.get(
+                layer.rotary_module_uid or ""
+            )
             if module is None:
                 i += 1
                 continue
 
-            diameter = descendant.rotary_diameter
+            if not _is_valid_replacement_module(module):
+                i += 1
+                continue
 
-            mapping = KinematicMapping.from_rotary_module(module, diameter)
+            mapping = KinematicMapping.from_rotary_module(
+                module, layer.rotary_diameter
+            )
             if mapping is None:
                 i += 1
                 continue
 
-            layer_cmds = []
-            i += 1
-            while i < len(commands) and not isinstance(
-                commands[i], LayerStartCommand
-            ):
-                if not commands[i].is_marker():
-                    layer_cmds.append(commands[i])
-                i += 1
+            layer_cmds, i = _collect_layer_commands(commands, i + 1)
 
             layer_ops = Ops()
             layer_ops._commands = layer_cmds
             mapping.apply(layer_ops)
+
+            if apply_scaled_mu and module.mode == RotaryMode.AXIS_REPLACEMENT:
+                KinematicMapping.degrees_to_scaled_mu_pass(
+                    layer_cmds,
+                    module.mu_per_rotation,
+                    target_axis=module.axis,
+                )
 
     @staticmethod
     def degrees_to_scaled_mu_pass(
