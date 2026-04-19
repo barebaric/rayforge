@@ -905,7 +905,8 @@ class Machine:
     def remove_rotary_module(self, module: RotaryModule):
         module.changed.disconnect(self._on_rotary_module_changed)
         del self.rotary_modules[module.uid]
-        self.axes.remove_config(module.axis)
+        if self._manages_axis_config(module):
+            self.axes.remove_config(module.axis)
         if self.default_rotary_module_uid == module.uid:
             remaining = list(self.rotary_modules.keys())
             self.default_rotary_module_uid = (
@@ -922,7 +923,16 @@ class Machine:
         self.invalidate_assembly()
         self.changed.send(self)
 
+    @staticmethod
+    def _manages_axis_config(module: RotaryModule) -> bool:
+        return (
+            module.mode == RotaryMode.TRUE_4TH_AXIS
+            and module.axis in {Axis.A, Axis.B, Axis.C, Axis.U}
+        )
+
     def _sync_rotary_axis_config(self, module: RotaryModule) -> None:
+        if not self._manages_axis_config(module):
+            return
         existing = self.axes.get(module.axis)
         if existing is None:
             self.axes.add_config(
