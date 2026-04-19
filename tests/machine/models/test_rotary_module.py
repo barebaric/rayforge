@@ -552,6 +552,96 @@ class TestMachineRotaryModules:
         assert rm2.name == "Chuck Module"
         assert rm2.model_id == "rotary/custom.glb"
 
+    def test_axis_replacement_preserves_y_extent(self, lite_context):
+        machine = Machine(lite_context)
+        lite_context.machine_mgr.add_machine(machine)
+        original_y = machine.axis_extents[1]
+
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
+        rm.set_axis(Axis.Y)
+        machine.add_rotary_module(rm)
+
+        assert machine.axis_extents[1] == original_y
+        y_cfg = machine.axes.get(Axis.Y)
+        assert y_cfg is not None
+        assert y_cfg.axis_type.name != "ROTARY"
+
+    def test_axis_replacement_preserves_z_extent(self, lite_context):
+        machine = Machine(lite_context)
+        lite_context.machine_mgr.add_machine(machine)
+
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
+        rm.set_axis(Axis.Z)
+        machine.add_rotary_module(rm)
+
+        z_cfg = machine.axes.get(Axis.Z)
+        assert z_cfg is not None
+        assert z_cfg.axis_type.name != "ROTARY"
+
+    def test_remove_axis_replacement_preserves_y(self, lite_context):
+        machine = Machine(lite_context)
+        lite_context.machine_mgr.add_machine(machine)
+        original_y = machine.axis_extents[1]
+
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
+        rm.set_axis(Axis.Y)
+        machine.add_rotary_module(rm)
+        machine.remove_rotary_module(rm)
+
+        assert machine.axis_extents[1] == original_y
+        y_cfg = machine.axes.get(Axis.Y)
+        assert y_cfg is not None
+
+    def test_true_4th_axis_creates_rotary_config(self, lite_context):
+        machine = Machine(lite_context)
+        lite_context.machine_mgr.add_machine(machine)
+
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+        rm.set_axis(Axis.A)
+        machine.add_rotary_module(rm)
+
+        a_cfg = machine.axes.get(Axis.A)
+        assert a_cfg is not None
+        assert a_cfg.axis_type.name == "ROTARY"
+        assert a_cfg.extents == (0, 360)
+
+    def test_remove_true_4th_axis_removes_config(self, lite_context):
+        machine = Machine(lite_context)
+        lite_context.machine_mgr.add_machine(machine)
+
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+        rm.set_axis(Axis.A)
+        machine.add_rotary_module(rm)
+        assert machine.axes.get(Axis.A) is not None
+
+        machine.remove_rotary_module(rm)
+        assert machine.axes.get(Axis.A) is None
+
+    def test_axis_replacement_serialization_preserves_extents(
+        self, lite_context
+    ):
+        machine = Machine(lite_context)
+        lite_context.machine_mgr.add_machine(machine)
+        original_y = machine.axis_extents[1]
+
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
+        rm.set_axis(Axis.Y)
+        machine.add_rotary_module(rm)
+
+        data = machine.to_dict()
+        machine2 = Machine.from_dict(data, context=lite_context)
+
+        assert machine2.axis_extents[1] == original_y
+        y_cfg = machine2.axes.get(Axis.Y)
+        assert y_cfg is not None
+        assert y_cfg.axis_type.name != "ROTARY"
+
     def test_serialization_model_id_none(self, lite_context):
         machine = Machine(lite_context)
         lite_context.machine_mgr.add_machine(machine)
