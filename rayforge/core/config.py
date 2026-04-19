@@ -73,6 +73,7 @@ class Config:
         self.canvas_view: CanvasViewState = CanvasViewState()
         self.auto_pipeline: bool = True
         self.ops_color_mode: OpsColorMode = OpsColorMode.LASER
+        self.check_for_app_updates: bool = True
         # Usage tracking consent date: None = not asked, "" = declined,
         # ISO date string = consent given on that date
         self.usage_consent_date: Optional[str] = None
@@ -153,6 +154,13 @@ class Config:
         self.auto_pipeline = enabled
         self.changed.send(self)
 
+    def set_check_for_app_updates(self, enabled: bool):
+        """Sets whether to check for application updates on startup."""
+        if self.check_for_app_updates == enabled:
+            return
+        self.check_for_app_updates = enabled
+        self.changed.send(self)
+
     def set_ops_color_mode(self, mode: OpsColorMode):
         """Sets the ops color mode."""
         if self.ops_color_mode == mode:
@@ -208,6 +216,7 @@ class Config:
             "right_panel_visible": self.right_panel_visible,
             "canvas_view": self.canvas_view.to_dict(),
             "auto_pipeline": self.auto_pipeline,
+            "check_for_app_updates": self.check_for_app_updates,
             "ops_color_mode": self.ops_color_mode.value,
             "usage_consent_date": self.usage_consent_date,
             "import_dpi": self.import_dpi,
@@ -259,6 +268,7 @@ class Config:
             data.get("canvas_view", {})
         )
         config.auto_pipeline = data.get("auto_pipeline", True)
+        config.check_for_app_updates = data.get("check_for_app_updates", True)
 
         ops_color_mode_str = data.get(
             "ops_color_mode", OpsColorMode.LASER.value

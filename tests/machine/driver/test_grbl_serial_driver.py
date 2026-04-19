@@ -444,9 +444,7 @@ class TestGrblSerialDriver:
         """Test reading WCS offsets when machine omits Z coordinate."""
         driver = connected_driver
 
-        response_data = (
-            b"[G54:1.000,2.000]\r\n[G55:4.000,5.000]\r\nok\r\n"
-        )
+        response_data = b"[G54:1.000,2.000]\r\n[G55:4.000,5.000]\r\nok\r\n"
 
         cmd_task = asyncio.create_task(driver.read_wcs_offsets())
         await asyncio.sleep(0.01)

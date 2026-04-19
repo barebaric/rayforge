@@ -23,9 +23,7 @@ class GrblTelnetDriver(GrblSerialDriver):
     """
 
     label = _("GRBL (Telnet)")
-    subtitle = _(
-        "GRBL-compatible controller over a raw TCP/telnet connection"
-    )
+    subtitle = _("GRBL-compatible controller over a raw TCP/telnet connection")
 
     def __init__(self, context, machine):
         super().__init__(context, machine)
@@ -43,9 +41,7 @@ class GrblTelnetDriver(GrblSerialDriver):
         host = cast(str, kwargs.get("host", ""))
         if not is_valid_hostname_or_ip(host):
             raise DriverPrecheckError(
-                _("Invalid hostname or IP address: '{host}'").format(
-                    host=host
-                )
+                _("Invalid hostname or IP address: '{host}'").format(host=host)
             )
 
     @classmethod
@@ -55,23 +51,17 @@ class GrblTelnetDriver(GrblSerialDriver):
                 HostnameVar(
                     key="host",
                     label=_("Hostname"),
-                    description=_(
-                        "The IP address or hostname of the device"
-                    ),
+                    description=_("The IP address or hostname of the device"),
                 ),
                 PortVar(
                     key="port",
                     label=_("Port"),
-                    description=_(
-                        "TCP port for the raw/telnet service"
-                    ),
+                    description=_("TCP port for the raw/telnet service"),
                     default=23,
                 ),
                 Var(
                     key="poll_status_while_running",
-                    label=_(
-                        "Enable status polling during running jobs"
-                    ),
+                    label=_("Enable status polling during running jobs"),
                     description=_(
                         "Whether to query status during jobs. "
                         "Disabling can help reduce load on slow "
