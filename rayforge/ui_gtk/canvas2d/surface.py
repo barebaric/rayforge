@@ -436,6 +436,7 @@ class WorkSurface(WorldSurface):
         if doc:
             self._connect_doc_structure_signals(doc)
         self._update_pipeline_view_context()
+        self.reset_view()
 
     def _connect_doc_structure_signals(self, doc):
         doc.descendant_added.connect(self._on_doc_structure_changed)
