@@ -1021,36 +1021,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.machine_selector.machine_selected.connect(
             self.on_machine_selected_by_selector
         )
-        # Connect WCS signal
-        self.toolbar.wcs_selected.connect(self._on_wcs_selected_toolbar)
-
-    def _on_wcs_selected_toolbar(self, sender, *, wcs: str):
-        """Handles WCS selection from the main toolbar."""
-        config = get_context().config
-        if not config.machine:
-            return
-        logger.debug(f"Toolbar WCS selected: {wcs}")
-        machine = config.machine
-        if machine.active_wcs != wcs:
-            task_mgr.add_coroutine(
-                lambda ctx, w=wcs: machine.switch_active_wcs(w)
-            )
-
-    def _update_wcs_dropdown(self, machine: Optional[Machine], **kwargs):
-        """
-        Synchronizes the toolbar WCS dropdown with the machine's active state.
-        Hides WCS controls when wcs_origin_is_workarea_origin is True.
-        """
-        if not machine:
-            return
-
-        # Hide WCS controls if workarea origin is treated as coordinate zero
-        show_wcs = not machine.wcs_origin_is_workarea_origin
-        self.toolbar.set_wcs_controls_visible(show_wcs)
-
-        # We assume the toolbar knows the list of available WCS.
-        # Just update the selected item.
-        self.toolbar.set_active_wcs(machine.active_wcs)
 
     def on_zero_here_clicked(self, action, param):
         """Handler for 'zero-here' action."""
@@ -1477,14 +1447,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.update_from_doc()
         self._update_macros_menu()
 
-        # Configure WCS list in toolbar
-        if config.machine:
-            self.toolbar.configure_wcs_list(config.machine.supported_wcs)
-        else:
-            self.toolbar.configure_wcs_list([])
-
-        self._update_wcs_dropdown(config.machine)
-
         # Check for any pending notifications from the new machine immediately
         if self._current_machine:
             self._on_machine_hours_changed(self._current_machine.machine_hours)
@@ -1511,8 +1473,6 @@ class MainWindow(Adw.ApplicationWindow):
             self._current_machine.machine_hours.changed.disconnect(
                 self._on_machine_hours_changed
             )
-            # Disconnect WCS change signal
-            self._current_machine.changed.disconnect(self._update_wcs_dropdown)
 
         self._current_machine = config.machine
 
@@ -1530,8 +1490,6 @@ class MainWindow(Adw.ApplicationWindow):
             self._current_machine.machine_hours.changed.connect(
                 self._on_machine_hours_changed
             )
-            # Update WCS dropdown when machine active_wcs changes
-            self._current_machine.changed.connect(self._update_wcs_dropdown)
 
     def _update_canvas3d(self, new_machine):
         if self.canvas3d is None:
@@ -1590,8 +1548,6 @@ class MainWindow(Adw.ApplicationWindow):
             am.get_action("machine-cancel").set_enabled(False)
             am.get_action("machine-clear-alarm").set_enabled(False)
             am.get_action("execute-macro").set_enabled(False)
-            # Disable WCS controls
-            self.toolbar.wcs_dropdown.set_sensitive(False)
             am.get_action("zero-here").set_enabled(False)
 
             self.toolbar.export_button.set_tooltip_text(
@@ -1731,7 +1687,6 @@ class MainWindow(Adw.ApplicationWindow):
             am.get_action("execute-macro").set_enabled(can_run_macros)
 
             # WCS UI
-            self.toolbar.wcs_dropdown.set_sensitive(not is_job_or_task_active)
             is_g53 = (
                 active_machine.active_wcs == active_machine.machine_space_wcs
             )

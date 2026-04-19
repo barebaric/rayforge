@@ -30,6 +30,7 @@ def surface(mock_work_origin):
 
     active_layer = MagicMock()
     active_layer.rotary_enabled = False
+    active_layer.wcs = None
     s.editor = MagicMock()
     s.editor.doc.active_layer = active_layer
 

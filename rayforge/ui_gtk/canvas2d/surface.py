@@ -188,6 +188,9 @@ class WorkSurface(WorldSurface):
         self.doc.history_manager.changed.connect(self._on_history_changed)
 
         self.editor.pipeline.data_stale.connect(self._on_pipeline_data_stale)
+        self.doc.active_layer_changed.connect(self._on_active_layer_changed)
+        self._active_layer_wcs_conn = None
+        self._connect_active_layer_wcs()
 
         # Connect to view change signals to update pipeline view context
         self.aspect_ratio_changed.connect(self._on_aspect_ratio_changed)
@@ -684,13 +687,52 @@ class WorkSurface(WorldSurface):
         if machine.wcs_origin_is_workarea_origin:
             canvas_x, canvas_y = space.get_workarea_origin_in_machine()
         else:
-            wcs_x, wcs_y, _ = machine.get_active_wcs_offset()
+            wcs_x, wcs_y, _ = self._get_active_layer_wcs_offset()
             canvas_x, canvas_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
 
         self._work_origin_element.set_pos(canvas_x, canvas_y)
         self._work_origin_element.set_visible(True)
         self._update_extent_frame()
         self.queue_draw()
+
+    def _get_active_layer_wcs_offset(self):
+        """
+        Returns the WCS offset for the active layer.
+
+        If the active layer has a specific WCS, uses that. Otherwise
+        falls back to the machine's active WCS.
+        """
+        if self.machine and self.doc:
+            layer = self.doc.active_layer
+            if layer and layer.wcs:
+                return self.machine.get_wcs_offset(layer.wcs)
+        if self.machine:
+            return self.machine.get_active_wcs_offset()
+        return (0.0, 0.0, 0.0)
+
+    def _connect_active_layer_wcs(self):
+        """Connect to the active layer's updated signal for WCS changes."""
+        if self._active_layer_wcs_conn is not None:
+            old_layer = self.doc.active_layer
+            old_layer.updated.disconnect(self._active_layer_wcs_conn)
+            self._active_layer_wcs_conn = None
+
+        layer = self.doc.active_layer
+        if layer:
+            self._active_layer_wcs_conn = layer.updated.connect(
+                self._on_active_layer_updated
+            )
+
+    def _on_active_layer_changed(self, sender):
+        """Reconnect WCS tracking to the new active layer."""
+        self._connect_active_layer_wcs()
+        if self.machine:
+            self._on_wcs_updated(self.machine)
+
+    def _on_active_layer_updated(self, layer):
+        """Handle property changes on the active layer, including WCS."""
+        if self.machine:
+            self._on_wcs_updated(self.machine)
 
     def _on_machine_state_changed(self, machine: Machine, state):
         """Handles machine state changes including position updates."""
@@ -708,7 +750,7 @@ class WorkSurface(WorldSurface):
         # Get offset for axis labels (where 0,0 should appear)
         if self.machine:
             space = self.machine.get_coordinate_space()
-            wcs_offset = self.machine.get_active_wcs_offset()
+            wcs_offset = self._get_active_layer_wcs_offset()
             wcs_is_workarea = self.machine.wcs_origin_is_workarea_origin
             origin_offset_mm = space.get_axis_label_origin(
                 wcs_offset=wcs_offset,
@@ -1295,7 +1337,7 @@ class WorkSurface(WorldSurface):
         if self.machine.wcs_origin_is_workarea_origin:
             origin_x, origin_y = space.get_workarea_origin_in_machine()
         else:
-            wcs_x, wcs_y, _ = self.machine.get_active_wcs_offset()
+            wcs_x, wcs_y, _ = self._get_active_layer_wcs_offset()
             origin_x, origin_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
 
         bed_width = self.machine.axis_extents[0]
@@ -1346,7 +1388,7 @@ class WorkSurface(WorldSurface):
         if self.machine.wcs_origin_is_workarea_origin:
             _, origin_y = space.get_workarea_origin_in_machine()
         else:
-            wcs_x, wcs_y, _ = self.machine.get_active_wcs_offset()
+            wcs_x, wcs_y, _ = self._get_active_layer_wcs_offset()
             _, origin_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
         self.set_pan(self.pan_x_mm, origin_y - self.height_mm / 2.0)
 

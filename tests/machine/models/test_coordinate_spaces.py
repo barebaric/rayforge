@@ -146,7 +146,7 @@ class TestCoordinateSpaces:
         machine.set_reverse_x_axis(reverse_x)
         machine.set_reverse_y_axis(reverse_y)
         machine.wcs_origin_is_workarea_origin = False
-        machine.wcs_offsets["G54"] = (0.0, 0.0, 0.0)
+        machine.update_wcs_offset("G54", (0.0, 0.0, 0.0))
 
         # Create an ops with a single point
         ops = Ops()
@@ -238,7 +238,7 @@ class TestCoordinateSpaces:
         machine.set_work_margins(10.0, 20.0, 30.0, 40.0)
         machine.wcs_origin_is_workarea_origin = False
         machine.set_active_wcs("G54")
-        machine.wcs_offsets["G54"] = (25.0, 35.0, 0.0)
+        machine.update_wcs_offset("G54", (25.0, 35.0, 0.0))
 
         result = machine.get_reference_offset()
         assert result == pytest.approx((25.0, 35.0, 0.0))
@@ -264,7 +264,7 @@ class TestCoordinateSpaces:
         machine.set_work_margins(10.0, 20.0, 30.0, 40.0)
         machine.set_origin(Origin.BOTTOM_LEFT)
         machine.wcs_origin_is_workarea_origin = True
-        machine.wcs_offsets["G54"] = (999.0, 999.0, 0.0)
+        machine.update_wcs_offset("G54", (999.0, 999.0, 0.0))
 
         result = machine.get_reference_offset()
         assert result == pytest.approx((10.0, 40.0, 0.0))
@@ -690,7 +690,7 @@ class TestCoordinateSpaces:
         machine.set_origin(Origin.BOTTOM_LEFT)
         machine.wcs_origin_is_workarea_origin = False
         machine.active_wcs = "G55"
-        machine.wcs_offsets["G55"] = (30.0, 30.0, 0.0)
+        machine.update_wcs_offset("G55", (30.0, 30.0, 0.0))
 
         ref_offset = machine.get_reference_offset()
         assert ref_offset == pytest.approx((30.0, 30.0, 0.0))
@@ -715,7 +715,7 @@ class TestCoordinateSpaces:
         machine.set_origin(Origin.BOTTOM_LEFT)
         machine.wcs_origin_is_workarea_origin = False
         machine.active_wcs = "G55"
-        machine.wcs_offsets["G55"] = (50.0, 30.0, 0.0)
+        machine.update_wcs_offset("G55", (50.0, 30.0, 0.0))
 
         ref_offset = machine.get_reference_offset()
         assert ref_offset == pytest.approx((50.0, 30.0, 0.0))
@@ -739,7 +739,7 @@ class TestCoordinateSpaces:
         machine.set_origin(Origin.BOTTOM_LEFT)
         machine.wcs_origin_is_workarea_origin = False
         machine.active_wcs = "G54"
-        machine.wcs_offsets["G54"] = (0.0, 0.0, 0.0)
+        machine.update_wcs_offset("G54", (0.0, 0.0, 0.0))
 
         ref_offset = machine.get_reference_offset()
         assert ref_offset == pytest.approx((0.0, 0.0, 0.0))
@@ -766,7 +766,7 @@ class TestCoordinateSpaces:
         machine.set_origin(Origin.TOP_LEFT)
         machine.wcs_origin_is_workarea_origin = False
         machine.active_wcs = "G55"
-        machine.wcs_offsets["G55"] = (20.0, 10.0, 0.0)
+        machine.update_wcs_offset("G55", (20.0, 10.0, 0.0))
 
         ref_offset = machine.get_reference_offset()
         assert ref_offset == pytest.approx((20.0, 10.0, 0.0))
@@ -794,7 +794,7 @@ class TestCoordinateSpaces:
         machine.set_axis_extents(100.0, 100.0)
         machine.set_origin(Origin.BOTTOM_LEFT)
         machine.wcs_origin_is_workarea_origin = False
-        machine.wcs_offsets["G54"] = (10.0, 20.0, 30.0)
+        machine.update_wcs_offset("G54", (10.0, 20.0, 30.0))
 
         space = machine.get_coordinate_space()
         offset = space.get_command_offset(
@@ -813,7 +813,7 @@ class TestCoordinateSpaces:
         machine.set_axis_extents(100.0, 100.0)
         machine.set_origin(Origin.BOTTOM_LEFT)
         machine.wcs_origin_is_workarea_origin = False
-        machine.wcs_offsets["G54"] = (10.0, 20.0, 0.0)
+        machine.update_wcs_offset("G54", (10.0, 20.0, 0.0))
 
         space = machine.get_coordinate_space()
         offset = space.get_command_offset(
