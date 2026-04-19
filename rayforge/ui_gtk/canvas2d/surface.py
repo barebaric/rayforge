@@ -682,8 +682,13 @@ class WorkSurface(WorldSurface):
 
     def _on_wcs_updated(self, machine: Machine):
         """Handles updates to the machine's WCS state."""
-        space = machine.get_coordinate_space()
+        if self._is_rotary_active():
+            self._work_origin_element.set_visible(False)
+            self._update_extent_frame()
+            self.queue_draw()
+            return
 
+        space = machine.get_coordinate_space()
         if machine.wcs_origin_is_workarea_origin:
             canvas_x, canvas_y = space.get_workarea_origin_in_machine()
         else:
@@ -694,6 +699,14 @@ class WorkSurface(WorldSurface):
         self._work_origin_element.set_visible(True)
         self._update_extent_frame()
         self.queue_draw()
+
+    def _is_rotary_active(self):
+        """Returns True if the active layer has rotary mode enabled."""
+        return (
+            self.doc is not None
+            and self.doc.active_layer is not None
+            and self.doc.active_layer.rotary_enabled
+        )
 
     def _get_active_layer_wcs_offset(self):
         """
