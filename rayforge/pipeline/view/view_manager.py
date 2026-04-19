@@ -894,6 +894,8 @@ class ViewManager:
         if entry.handle is not None:
             self._store.release(entry.handle)
 
+        self._cancel_pending_throttled_update(composite_id)
+
         # Store the handle - safe_adoption already gave us ownership
         # with refcount=1, so no retain() needed here
         entry.handle = handle
@@ -1107,8 +1109,21 @@ class ViewManager:
 
         try:
             if task.get_status() == "completed" and task.result():
-                view_id = self._view_generation_id
-                self._schedule_throttled_update(composite_id, view_id)
+                entry = self._view_entries.get(composite_id)
+                if (
+                    entry is None
+                    or entry.handle is None
+                    or entry.handle.shm_name != view_handle.shm_name
+                ):
+                    logger.debug(
+                        f"Stale stitch for {composite_id}, "
+                        "view has been replaced. Skipping update."
+                    )
+                else:
+                    view_id = self._view_generation_id
+                    self._schedule_throttled_update(
+                        composite_id, view_id
+                    )
             else:
                 logger.warning(f"Stitching failed for {composite_id}")
         finally:
@@ -1132,6 +1147,15 @@ class ViewManager:
             return None, None
 
         return entry.handle, render_context
+
+    def _cancel_pending_throttled_update(
+        self, composite_id: Tuple[str, str]
+    ):
+        """Cancels any pending throttled update for the given composite."""
+        self._pending_updates.pop(composite_id, None)
+        timer = self._throttle_timers.pop(composite_id, None)
+        if timer:
+            timer.cancel()
 
     def _schedule_throttled_update(
         self, composite_id: Tuple[str, str], view_id: int
@@ -1227,8 +1251,12 @@ class ViewManager:
                 self._view_entries[composite_id] = entry
             if entry.handle is not None:
                 self._store.release(entry.handle)
+            self._cancel_pending_throttled_update(composite_id)
             entry.handle = view_handle
             entry.render_context = context
+            entry.source_handle = None
+            entry.laser_uid = None
+            entry.layer_uid = None
 
             self._send_view_artifact_created_signals(
                 step_uid, workpiece_uid, view_handle

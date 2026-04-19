@@ -102,17 +102,9 @@ def render_chunk_to_view(
             laser_uid,
             layer_uid,
         )
-        logger.debug(
-            f"[DIAGNOSTIC] Worker finished rendering chunk to live buffer: "
-            f"{view_handle.shm_name}, result={result}"
-        )
         return result
     finally:
         if shm:
-            logger.debug(
-                f"[DIAGNOSTIC] Worker closing live buffer: "
-                f"{view_handle.shm_name}"
-            )
             shm.close()
 
 

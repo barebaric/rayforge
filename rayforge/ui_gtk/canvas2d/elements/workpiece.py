@@ -123,6 +123,9 @@ class WorkPieceElement(CanvasElement):
         self.view_manager.view_artifact_updated.connect(
             self._on_view_artifact_updated
         )
+        self.view_manager.view_artifact_created.connect(
+            self._on_view_artifact_created
+        )
         self.view_manager.generation_finished.connect(
             self._on_view_generation_finished
         )
@@ -598,6 +601,28 @@ class WorkPieceElement(CanvasElement):
         comp_ctx.paint()
         comp_ctx.restore()
 
+    def _on_view_artifact_created(
+        self,
+        sender,
+        *,
+        step_uid: str,
+        workpiece_uid: str,
+        handle: BaseArtifactHandle,
+        **kwargs,
+    ):
+        """
+        Handles the creation of a new view artifact.
+
+        Invalidates the ops surface cache for this step so that
+        ``_rebuild_composited_surface`` will reload from the new
+        handle on the next draw.
+        """
+        if workpiece_uid != self.data.uid or not self.canvas:
+            return
+        self._remove_ops_surface(step_uid)
+        self._composited_dirty = True
+        self.canvas.queue_draw()
+
     def _on_view_artifact_updated(
         self,
         sender,
@@ -737,6 +762,9 @@ class WorkPieceElement(CanvasElement):
         )
         self.view_manager.view_artifact_updated.disconnect(
             self._on_view_artifact_updated
+        )
+        self.view_manager.view_artifact_created.disconnect(
+            self._on_view_artifact_created
         )
         self.view_manager.generation_finished.disconnect(
             self._on_view_generation_finished
