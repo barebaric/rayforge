@@ -142,16 +142,16 @@ def transform_to_cylinder(
 
     result_verts = np.empty((total_segments * 2, 3), dtype=np.float32)
     result_verts[0::2, 0] = prev_cyl.astype(np.float32)
-    result_verts[0::2, 1] = (
-        prev_eff_r * np.sin(theta_prev)
-    ).astype(np.float32)
+    result_verts[0::2, 1] = (prev_eff_r * np.sin(theta_prev)).astype(
+        np.float32
+    )
     result_verts[0::2, 2] = (prev_eff_r * np.cos(theta_prev)).astype(
         np.float32
     )
     result_verts[1::2, 0] = curr_cyl.astype(np.float32)
-    result_verts[1::2, 1] = (
-        curr_eff_r * np.sin(theta_curr)
-    ).astype(np.float32)
+    result_verts[1::2, 1] = (curr_eff_r * np.sin(theta_curr)).astype(
+        np.float32
+    )
     result_verts[1::2, 2] = (curr_eff_r * np.cos(theta_curr)).astype(
         np.float32
     )
