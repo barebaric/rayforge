@@ -5,6 +5,8 @@ from gi.repository import Adw, Gdk, Gtk
 
 from ...context import get_context
 from ...core.layer import Layer
+from ..icons import get_icon
+from ..machine.wcs_dialog import WcsDialog
 from ..shared.adwfix import get_spinrow_float
 from ..shared.patched_dialog_window import PatchedDialogWindow
 
@@ -69,7 +71,15 @@ class LayerSettingsDialog(PatchedDialogWindow):
             ),
             model=self._wcs_store,
         )
+        self.edit_offsets_btn = Gtk.Button(child=get_icon("edit-symbolic"))
+        self.edit_offsets_btn.set_tooltip_text(_("Edit Offsets Manually"))
+        self.edit_offsets_btn.add_css_class("flat")
+        self.edit_offsets_btn.set_valign(Gtk.Align.CENTER)
+        self.edit_offsets_btn.connect("clicked", self._on_edit_offsets_clicked)
+        self.wcs_row.add_suffix(self.edit_offsets_btn)
+
         self._select_current_wcs()
+        self._update_edit_button_sensitivity()
         self.wcs_row.connect("notify::selected", self._on_wcs_changed)
         general_group.add(self.wcs_row)
 
@@ -154,6 +164,27 @@ class LayerSettingsDialog(PatchedDialogWindow):
             return
         wcs = self._get_selected_wcs()
         self.layer.set_wcs(wcs)
+        self._update_edit_button_sensitivity()
+
+    def _update_edit_button_sensitivity(self):
+        wcs = self._get_selected_wcs()
+        self.edit_offsets_btn.set_sensitive(wcs is not None)
+
+    def _on_edit_offsets_clicked(self, button):
+        machine = get_context().machine
+        if not machine:
+            return
+
+        root = self.get_root()
+        self._edit_dialog = WcsDialog(
+            machine=machine,
+            transient_for=root if isinstance(root, Gtk.Window) else None,
+        )
+        self._edit_dialog.connect("destroy", self._on_edit_dialog_destroy)
+        self._edit_dialog.present()
+
+    def _on_edit_dialog_destroy(self, *_):
+        self._edit_dialog = None
 
     def _populate_module_store(self):
         self._module_store = Gtk.StringList()

@@ -54,9 +54,11 @@ class BottomPanel(Gtk.Box):
         self.edit_item_requested = Signal()
         self.machine = machine
         self.machine_cmd = machine_cmd
+        self.doc = None
         self._edit_dialog = None
         self._click_to_zero_mode = False
         self._updating_wcs_ui = False
+        self._active_layer = None
         self._get_bounds_callback: Optional[
             Callable[[], Optional[Tuple[float, float, float, float]]]
         ] = None
@@ -192,11 +194,38 @@ class BottomPanel(Gtk.Box):
         self.tab_changed.send(self, name=name)
 
     def set_doc(self, doc):
+        self._disconnect_layer_signals()
+        self.doc = doc
         self.asset_browser.set_doc(doc)
         self.layers_tab.set_doc(doc)
+        if doc:
+            doc.active_layer_changed.connect(self._on_active_layer_changed)
+            self._connect_layer_signals()
+        if self.machine:
+            self._update_wcs_ui()
 
     def _on_layers_tab_edit_item(self, sender, **kwargs):
         self.edit_item_requested.send(sender, **kwargs)
+
+    def _on_active_layer_changed(self, sender):
+        self._disconnect_layer_signals()
+        self._connect_layer_signals()
+        if self.machine:
+            self._update_wcs_ui()
+
+    def _connect_layer_signals(self):
+        if self.doc and self.doc.active_layer:
+            self._active_layer = self.doc.active_layer
+            self._active_layer.updated.connect(self._on_layer_updated)
+
+    def _disconnect_layer_signals(self):
+        if self._active_layer:
+            self._active_layer.updated.disconnect(self._on_layer_updated)
+            self._active_layer = None
+
+    def _on_layer_updated(self, sender):
+        if self.machine:
+            self._update_wcs_ui()
 
     def _on_command_submitted(self, sender, command: str, machine: Machine):
         async def send_command(ctx):
@@ -236,6 +265,7 @@ class BottomPanel(Gtk.Box):
         self.edit_offsets_btn = Gtk.Button(child=get_icon("edit-symbolic"))
         self.edit_offsets_btn.set_tooltip_text(_("Edit Offsets Manually"))
         self.edit_offsets_btn.add_css_class("flat")
+        self.edit_offsets_btn.set_valign(Gtk.Align.CENTER)
         self.edit_offsets_btn.connect("clicked", self._on_edit_offsets_clicked)
         self.wcs_row.add_suffix(self.edit_offsets_btn)
 
@@ -543,6 +573,20 @@ class BottomPanel(Gtk.Box):
         hide_wcs_controls = self.machine.wcs_origin_is_workarea_origin
         self.wcs_row.set_visible(not hide_wcs_controls)
         self.zero_row.set_visible(not hide_wcs_controls)
+
+        layer_has_wcs = (
+            self.doc and self.doc.active_layer and self.doc.active_layer.wcs
+        )
+        self.wcs_row.set_sensitive(not layer_has_wcs)
+        if layer_has_wcs:
+            self.wcs_row.set_tooltip_text(
+                _(
+                    "Overridden by the current layer. "
+                    "Change it in the layer settings."
+                )
+            )
+        else:
+            self.wcs_row.set_tooltip_text("")
 
         current_wcs = self.machine.active_wcs
         if current_wcs in self.wcs_list:
