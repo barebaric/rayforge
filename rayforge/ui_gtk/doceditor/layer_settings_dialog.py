@@ -1,9 +1,12 @@
 from gettext import gettext as _
+from typing import Optional
 
 from gi.repository import Adw, Gdk, Gtk
 
 from ...context import get_context
 from ...core.layer import Layer
+from ..icons import get_icon
+from ..machine.wcs_dialog import WcsDialog
 from ..shared.adwfix import get_spinrow_float
 from ..shared.patched_dialog_window import PatchedDialogWindow
 
@@ -34,10 +37,14 @@ class LayerSettingsDialog(PatchedDialogWindow):
         content = Adw.PreferencesPage()
         main_box.append(content)
 
-        appearance_group = Adw.PreferencesGroup(
-            title=_("Appearance"),
+        general_group = Adw.PreferencesGroup(
+            title=_("General"),
+            description=_(
+                "Basic layer settings such as appearance and "
+                "coordinate system."
+            ),
         )
-        content.add(appearance_group)
+        content.add(general_group)
 
         color_dialog = Gtk.ColorDialog()
         color_dialog.set_with_alpha(False)
@@ -52,7 +59,29 @@ class LayerSettingsDialog(PatchedDialogWindow):
             subtitle=_("Color used for operations in this layer"),
         )
         color_row.add_suffix(self.color_button)
-        appearance_group.add(color_row)
+        general_group.add(color_row)
+
+        self._populate_wcs_store()
+        self.wcs_row = Adw.ComboRow(
+            title=_("Coordinate System"),
+            subtitle=_(
+                "The work coordinate system origin to use for this layer. "
+                "By default, use the WCS selected in the main "
+                "window"
+            ),
+            model=self._wcs_store,
+        )
+        self.edit_offsets_btn = Gtk.Button(child=get_icon("edit-symbolic"))
+        self.edit_offsets_btn.set_tooltip_text(_("Edit Offsets Manually"))
+        self.edit_offsets_btn.add_css_class("flat")
+        self.edit_offsets_btn.set_valign(Gtk.Align.CENTER)
+        self.edit_offsets_btn.connect("clicked", self._on_edit_offsets_clicked)
+        self.wcs_row.add_suffix(self.edit_offsets_btn)
+
+        self._select_current_wcs()
+        self._update_edit_button_sensitivity()
+        self.wcs_row.connect("notify::selected", self._on_wcs_changed)
+        general_group.add(self.wcs_row)
 
         rotary_group = Adw.PreferencesGroup(
             title=_("Rotary Attachment"),
@@ -103,6 +132,59 @@ class LayerSettingsDialog(PatchedDialogWindow):
         rotary_group.add(self.rotary_diameter_row)
 
         self._is_initializing = False
+
+        if not self.layer.rotary_module_uid and self._module_uids:
+            self.layer.set_rotary_module_uid(self._module_uids[0])
+
+    def _populate_wcs_store(self):
+        self._wcs_store = Gtk.StringList()
+        self._wcs_values: list[Optional[str]] = [None]
+        self._wcs_store.append(_("Default"))
+        machine = get_context().machine
+        if machine:
+            for wcs in machine.supported_wcs:
+                self._wcs_store.append(wcs)
+                self._wcs_values.append(wcs)
+
+    def _select_current_wcs(self):
+        wcs = self.layer.wcs
+        if wcs and wcs in self._wcs_values:
+            self.wcs_row.set_selected(self._wcs_values.index(wcs))
+        else:
+            self.wcs_row.set_selected(0)
+
+    def _get_selected_wcs(self) -> Optional[str]:
+        idx = self.wcs_row.get_selected()
+        if idx < len(self._wcs_values):
+            return self._wcs_values[idx]
+        return None
+
+    def _on_wcs_changed(self, row, _param):
+        if self._is_initializing:
+            return
+        wcs = self._get_selected_wcs()
+        self.layer.set_wcs(wcs)
+        self._update_edit_button_sensitivity()
+
+    def _update_edit_button_sensitivity(self):
+        wcs = self._get_selected_wcs()
+        self.edit_offsets_btn.set_sensitive(wcs is not None)
+
+    def _on_edit_offsets_clicked(self, button):
+        machine = get_context().machine
+        if not machine:
+            return
+
+        root = self.get_root()
+        self._edit_dialog = WcsDialog(
+            machine=machine,
+            transient_for=root if isinstance(root, Gtk.Window) else None,
+        )
+        self._edit_dialog.connect("destroy", self._on_edit_dialog_destroy)
+        self._edit_dialog.present()
+
+    def _on_edit_dialog_destroy(self, *_):
+        self._edit_dialog = None
 
     def _populate_module_store(self):
         self._module_store = Gtk.StringList()

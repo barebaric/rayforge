@@ -300,7 +300,7 @@ class MachineController:
             return
         wco = cast(Tuple[float, float, float], state.wco)
         new_offset = (wco[0], wco[1], wco[2])
-        current = self.machine.wcs_offsets.get(active_wcs)
+        current = self.machine.get_wcs_offset(active_wcs)
         if current != new_offset:
             self.machine.update_wcs_offset(active_wcs, new_offset)
             self._scheduler(self.wcs_updated.send, self.machine)
@@ -440,7 +440,7 @@ class MachineController:
             wcs_slot: The WCS slot to update (e.g. "G54"). Defaults to active.
         """
         slot = wcs_slot or self.machine.active_wcs
-        if slot not in self.machine.wcs_offsets:
+        if slot not in self.machine.coordinate_systems:
             logger.warning(
                 f"Cannot set offset for immutable WCS '{slot}' "
                 "(e.g. Machine Coordinates)."
@@ -471,7 +471,7 @@ class MachineController:
             return
 
         slot = wcs_slot or self.machine.active_wcs
-        if slot not in self.machine.wcs_offsets:
+        if slot not in self.machine.coordinate_systems:
             logger.warning(
                 f"Cannot set offset for immutable WCS '{slot}' "
                 "(e.g. Machine Coordinates)."
@@ -483,7 +483,7 @@ class MachineController:
             logger.warning("Cannot set work origin: Unknown machine position.")
             return
 
-        current_offsets = self.machine.wcs_offsets.get(slot, (0.0, 0.0, 0.0))
+        current_offsets = self.machine.get_wcs_offset(slot)
 
         new_x, new_y, new_z = current_offsets
 

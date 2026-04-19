@@ -167,7 +167,7 @@ class TestLaserDotWithWCSOffset:
         machine.set_origin(Origin.BOTTOM_LEFT)
         machine.wcs_origin_is_workarea_origin = False
         machine.active_wcs = "G55"
-        machine.wcs_offsets["G55"] = (30.0, 30.0, 0.0)
+        machine.update_wcs_offset("G55", (30.0, 30.0, 0.0))
 
         mock_editor = MagicMock()
         mock_editor.doc = MagicMock()
@@ -231,7 +231,7 @@ class TestLaserDotWithWCSOffset:
         machine.set_origin(Origin.BOTTOM_LEFT)
         machine.wcs_origin_is_workarea_origin = False
         machine.active_wcs = "G55"
-        machine.wcs_offsets["G55"] = (50.0, 30.0, 0.0)
+        machine.update_wcs_offset("G55", (50.0, 30.0, 0.0))
 
         mock_editor = MagicMock()
         mock_editor.doc = MagicMock()

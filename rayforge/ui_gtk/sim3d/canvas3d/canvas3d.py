@@ -158,6 +158,11 @@ class Canvas3D(Gtk.GLArea):
             machine.changed.connect(self._on_wcs_updated)
             self._on_wcs_updated(machine)
 
+        # Connect to doc for per-layer WCS updates
+        self.doc.active_layer_changed.connect(self._on_active_layer_changed)
+        self._active_layer_wcs_conn = None
+        self._connect_active_layer_wcs()
+
         self._context.config.changed.connect(self._on_config_changed)
 
     @property
@@ -194,9 +199,50 @@ class Canvas3D(Gtk.GLArea):
     def _on_wcs_updated(self, machine: "Machine", **kwargs):
         """Handler for when the machine's WCS state changes."""
         if machine:
-            self._viewport = ViewportConfig.from_machine(machine)
+            self._viewport = self._build_viewport(machine)
         self._scene_gl_dirty = True
         self.queue_render()
+
+    def _get_active_layer_wcs_offset(self, machine: "Machine"):
+        """Returns the WCS offset for the active layer."""
+        layer = self.doc.active_layer if self.doc else None
+        if layer and layer.wcs:
+            return machine.get_wcs_offset(layer.wcs)
+        return machine.get_active_wcs_offset()
+
+    def _build_viewport(self, machine: "Machine") -> "ViewportConfig":
+        """Build a ViewportConfig using the active layer's WCS."""
+        from .viewport import ViewportConfig
+
+        return ViewportConfig.from_machine_with_wcs(
+            machine, self._get_active_layer_wcs_offset(machine)
+        )
+
+    def _connect_active_layer_wcs(self):
+        """Connect to the active layer's updated signal for WCS changes."""
+        if self._active_layer_wcs_conn is not None:
+            old_layer = self.doc.active_layer
+            old_layer.updated.disconnect(self._active_layer_wcs_conn)
+            self._active_layer_wcs_conn = None
+
+        layer = self.doc.active_layer
+        if layer:
+            self._active_layer_wcs_conn = layer.updated.connect(
+                self._on_active_layer_updated
+            )
+
+    def _on_active_layer_changed(self, sender):
+        """Reconnect WCS tracking to the new active layer."""
+        self._connect_active_layer_wcs()
+        machine = self._context.machine
+        if machine:
+            self._on_wcs_updated(machine)
+
+    def _on_active_layer_updated(self, layer):
+        """Handle property changes on the active layer, including WCS."""
+        machine = self._context.machine
+        if machine:
+            self._on_wcs_updated(machine)
 
     def set_machine(self, viewport: Optional[ViewportConfig] = None):
         old_machine = self._context.machine

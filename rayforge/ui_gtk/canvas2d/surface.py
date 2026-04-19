@@ -182,20 +182,15 @@ class WorkSurface(WorldSurface):
 
         self.set_machine(machine)
 
-        # Connect to the history manager's changed signal to sync the view
-        # globally, which is necessary for undo/redo actions triggered
-        # outside of this widget.
-        self.doc.history_manager.changed.connect(self._on_history_changed)
-
         self.editor.pipeline.data_stale.connect(self._on_pipeline_data_stale)
+
+        self._active_layer_wcs_conn = None
+        self._connected_layer = None
+        self._connected_doc = None
+        self._connect_doc_signals()
 
         # Connect to view change signals to update pipeline view context
         self.aspect_ratio_changed.connect(self._on_aspect_ratio_changed)
-
-        # Refresh render context when doc structure changes (layer
-        # add/remove, workpiece moves between layers) so the view
-        # manager always has current layer color data.
-        self._connect_doc_structure_signals(self.doc)
 
         # Reconnect signals when a new document is loaded.
         self.editor.document_changed.connect(self._on_document_changed)
@@ -431,16 +426,32 @@ class WorkSurface(WorldSurface):
         self._update_pipeline_view_context()
 
     def _on_document_changed(self, sender, **kwargs):
-        """Reconnects doc structure signals when a new doc is loaded."""
-        doc = self.doc
-        if doc:
-            self._connect_doc_structure_signals(doc)
+        """Reconnect all doc signals when a new doc is loaded."""
+        self._disconnect_doc_signals()
+        self._connect_doc_signals()
         self._update_pipeline_view_context()
         self.reset_view()
 
-    def _connect_doc_structure_signals(self, doc):
+    def _connect_doc_signals(self):
+        doc = self.doc
+        if not doc:
+            return
+        doc.history_manager.changed.connect(self._on_history_changed)
+        doc.active_layer_changed.connect(self._on_active_layer_changed)
         doc.descendant_added.connect(self._on_doc_structure_changed)
         doc.descendant_removed.connect(self._on_doc_structure_changed)
+        self._connect_active_layer_wcs()
+        self._connected_doc = doc
+
+    def _disconnect_doc_signals(self):
+        self._disconnect_active_layer_wcs()
+        doc = self._connected_doc
+        if doc:
+            doc.history_manager.changed.disconnect(self._on_history_changed)
+            doc.active_layer_changed.disconnect(self._on_active_layer_changed)
+            doc.descendant_added.disconnect(self._on_doc_structure_changed)
+            doc.descendant_removed.disconnect(self._on_doc_structure_changed)
+            self._connected_doc = None
 
     def _on_any_transform_begin(
         self,
@@ -679,18 +690,75 @@ class WorkSurface(WorldSurface):
 
     def _on_wcs_updated(self, machine: Machine):
         """Handles updates to the machine's WCS state."""
-        space = machine.get_coordinate_space()
+        if self._is_rotary_active():
+            self._work_origin_element.set_visible(False)
+            self._update_extent_frame()
+            self.queue_draw()
+            return
 
+        space = machine.get_coordinate_space()
         if machine.wcs_origin_is_workarea_origin:
             canvas_x, canvas_y = space.get_workarea_origin_in_machine()
         else:
-            wcs_x, wcs_y, _ = machine.get_active_wcs_offset()
+            wcs_x, wcs_y, _ = self._get_active_layer_wcs_offset()
             canvas_x, canvas_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
 
         self._work_origin_element.set_pos(canvas_x, canvas_y)
         self._work_origin_element.set_visible(True)
         self._update_extent_frame()
         self.queue_draw()
+
+    def _is_rotary_active(self):
+        """Returns True if the active layer has rotary mode enabled."""
+        return (
+            self.doc is not None
+            and self.doc.active_layer is not None
+            and self.doc.active_layer.rotary_enabled
+        )
+
+    def _get_active_layer_wcs_offset(self):
+        """
+        Returns the WCS offset for the active layer.
+
+        If the active layer has a specific WCS, uses that. Otherwise
+        falls back to the machine's active WCS.
+        """
+        if self.machine and self.doc:
+            layer = self.doc.active_layer
+            if layer and layer.wcs:
+                return self.machine.get_wcs_offset(layer.wcs)
+        if self.machine:
+            return self.machine.get_active_wcs_offset()
+        return (0.0, 0.0, 0.0)
+
+    def _connect_active_layer_wcs(self):
+        """Connect to the active layer's updated signal for WCS changes."""
+        self._disconnect_active_layer_wcs()
+        layer = self.doc.active_layer if self.doc else None
+        if layer:
+            self._active_layer_wcs_conn = layer.updated.connect(
+                self._on_active_layer_updated
+            )
+            self._connected_layer = layer
+
+    def _disconnect_active_layer_wcs(self):
+        if self._connected_layer and self._active_layer_wcs_conn:
+            self._connected_layer.updated.disconnect(
+                self._active_layer_wcs_conn
+            )
+        self._active_layer_wcs_conn = None
+        self._connected_layer = None
+
+    def _on_active_layer_changed(self, sender):
+        """Reconnect WCS tracking to the new active layer."""
+        self._connect_active_layer_wcs()
+        if self.machine:
+            self._on_wcs_updated(self.machine)
+
+    def _on_active_layer_updated(self, layer):
+        """Handle property changes on the active layer, including WCS."""
+        if self.machine:
+            self._on_wcs_updated(self.machine)
 
     def _on_machine_state_changed(self, machine: Machine, state):
         """Handles machine state changes including position updates."""
@@ -708,7 +776,7 @@ class WorkSurface(WorldSurface):
         # Get offset for axis labels (where 0,0 should appear)
         if self.machine:
             space = self.machine.get_coordinate_space()
-            wcs_offset = self.machine.get_active_wcs_offset()
+            wcs_offset = self._get_active_layer_wcs_offset()
             wcs_is_workarea = self.machine.wcs_origin_is_workarea_origin
             origin_offset_mm = space.get_axis_label_origin(
                 wcs_offset=wcs_offset,
@@ -1290,13 +1358,7 @@ class WorkSurface(WorldSurface):
         circumference = math.pi * diameter
         half_circ = circumference / 2.0
 
-        space = self.machine.get_coordinate_space()
-
-        if self.machine.wcs_origin_is_workarea_origin:
-            origin_x, origin_y = space.get_workarea_origin_in_machine()
-        else:
-            wcs_x, wcs_y, _ = self.machine.get_active_wcs_offset()
-            origin_x, origin_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
+        origin_x, origin_y = self._machine_coords_to_canvas(0.0, 0.0)
 
         bed_width = self.machine.axis_extents[0]
         max_length = bed_width
@@ -1342,12 +1404,7 @@ class WorkSurface(WorldSurface):
     def _center_on_rotary_axis(self):
         """Adjusts pan to vertically center the view on the cylinder X axis."""
         assert self.machine
-        space = self.machine.get_coordinate_space()
-        if self.machine.wcs_origin_is_workarea_origin:
-            _, origin_y = space.get_workarea_origin_in_machine()
-        else:
-            wcs_x, wcs_y, _ = self.machine.get_active_wcs_offset()
-            _, origin_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
+        _, origin_y = self._machine_coords_to_canvas(0.0, 0.0)
         self.set_pan(self.pan_x_mm, origin_y - self.height_mm / 2.0)
 
     def _sync_nogo_zone_elements(self):
