@@ -121,6 +121,8 @@ class AxisRenderer3D(BaseRenderer):
         self.extent_width_mm = float(width)
         self.extent_height_mm = float(height)
         self.show_extent_frame = show
+        if self.extent_frame_vao:
+            self._update_extent_frame_buffer()
 
     def init_gl(self) -> None:
         """Initializes OpenGL resources for all components."""

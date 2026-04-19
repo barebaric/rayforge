@@ -1683,6 +1683,7 @@ class Canvas3D(Gtk.GLArea):
             self._axis_renderer.width_mm == vp.width_mm
             and self._axis_renderer.height_mm == vp.depth_mm
         ):
+            self._apply_extent_frame(vp)
             return
         self.make_current()
         font_family = self._axis_renderer.font_family
