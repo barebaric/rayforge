@@ -303,7 +303,7 @@ class TestMachine:
         doc = Doc()
         machine.set_origin(Origin.BOTTOM_LEFT)
 
-        machine.wcs_offsets["G54"] = (100.0, 100.0, 0.0)
+        machine.update_wcs_offset("G54", (100.0, 100.0, 0.0))
         machine.set_active_wcs("G54")
 
         machine.encode_ops(original_ops, doc)
@@ -347,7 +347,7 @@ class TestMachine:
 
         # Set active WCS to "G53" (which is NOT in default wcs_offsets)
         machine.set_active_wcs("G53")
-        assert "G53" not in machine.wcs_offsets
+        assert "G53" not in machine.coordinate_systems
 
         # Act
         machine.encode_ops(original_ops, doc)
@@ -370,7 +370,7 @@ class TestMachine:
         await machine.connect()
         await wait_for_tasks_to_finish(task_mgr)
         machine.active_wcs = "G54"
-        machine.wcs_offsets["G54"] = (10.0, 20.0, 0.0)
+        machine.update_wcs_offset("G54", (10.0, 20.0, 0.0))
         machine.device_state.machine_pos = (100.0, 200.0, 0.0)
 
         set_wcs_spy = mocker.patch.object(
@@ -416,7 +416,7 @@ class TestMachine:
 
         # Try to set G53 (Machine Coordinates)
         machine.set_active_wcs("G53")
-        assert "G53" not in machine.wcs_offsets
+        assert "G53" not in machine.coordinate_systems
 
         await machine.set_work_origin(10, 10, 10)
 
@@ -469,7 +469,7 @@ class TestMachine:
         await wait_for_tasks_to_finish(task_mgr)
         machine.active_wcs = "G55"
         machine.controller._confirmed_active_wcs = "G55"
-        assert machine.wcs_offsets.get("G55", (0.0, 0.0, 0.0)) == (
+        assert machine.get_wcs_offset("G55") == (
             0.0,
             0.0,
             0.0,
@@ -482,7 +482,7 @@ class TestMachine:
         )
         machine.controller._sync_wcs_offset_from_wco(state)
 
-        assert machine.wcs_offsets["G55"] == (30.0, 30.0, 0.0)
+        assert machine.get_wcs_offset("G55") == (30.0, 30.0, 0.0)
 
     @pytest.mark.asyncio
     async def test_wcs_switch_does_not_corrupt_offsets(
@@ -502,7 +502,7 @@ class TestMachine:
 
         # Start on G56 with WCO (60,60,0)
         machine.active_wcs = "G56"
-        machine.wcs_offsets["G56"] = (60.0, 60.0, 0.0)
+        machine.update_wcs_offset("G56", (60.0, 60.0, 0.0))
         machine.controller._confirmed_active_wcs = "G56"
 
         # Simulate a status report confirming G56's WCO
@@ -512,10 +512,10 @@ class TestMachine:
             wco=(60.0, 60.0, 0.0),
         )
         machine.controller._sync_wcs_offset_from_wco(state_g56)
-        assert machine.wcs_offsets["G56"] == (60.0, 60.0, 0.0)
+        assert machine.get_wcs_offset("G56") == (60.0, 60.0, 0.0)
 
         # G54's offset should be at default (0,0,0)
-        assert machine.wcs_offsets.get("G54", (0.0, 0.0, 0.0)) == (
+        assert machine.get_wcs_offset("G54") == (
             0.0,
             0.0,
             0.0,
@@ -534,8 +534,8 @@ class TestMachine:
         machine.controller._sync_wcs_offset_from_wco(state_stale)
 
         # G54's offset must NOT be corrupted with G56's WCO
-        assert machine.wcs_offsets["G54"] == (0.0, 0.0, 0.0), (
-            f"G54 offset was corrupted to {machine.wcs_offsets['G54']} "
+        assert machine.get_wcs_offset("G54") == (0.0, 0.0, 0.0), (
+            f"G54 offset was corrupted to {machine.get_wcs_offset('G54')} "
             f"after receiving stale WCO from still-active G56"
         )
 
@@ -554,22 +554,22 @@ class TestMachine:
         """
         await wait_for_tasks_to_finish(task_mgr)
 
-        machine.wcs_offsets = {
-            "G54": (10.0, 20.0, 0.0),
-            "G55": (30.0, 40.0, 0.0),
-            "G56": (50.0, 60.0, 0.0),
-        }
-        assert "G56" in machine.wcs_offsets
+        machine.update_wcs_offsets_batch(
+            {
+                "G54": (10.0, 20.0, 0.0),
+                "G55": (30.0, 40.0, 0.0),
+                "G56": (50.0, 60.0, 0.0),
+            }
+        )
+        assert "G56" in machine.coordinate_systems
 
         machine.update_wcs_offsets_batch(
             {"G54": (10.0, 20.0, 0.0), "G55": (30.0, 40.0, 0.0)}
         )
 
-        assert "G56" not in machine.wcs_offsets
-        assert machine.wcs_offsets == {
-            "G54": (10.0, 20.0, 0.0),
-            "G55": (30.0, 40.0, 0.0),
-        }
+        assert "G56" not in machine.coordinate_systems
+        assert machine.get_wcs_offset("G54") == (10.0, 20.0, 0.0)
+        assert machine.get_wcs_offset("G55") == (30.0, 40.0, 0.0)
 
     @pytest.mark.asyncio
     async def test_reverse_axis_setters(
@@ -1675,7 +1675,7 @@ class TestMachine:
         isolated_machine.set_reverse_x_axis(reverse_x)
         isolated_machine.set_reverse_y_axis(reverse_y)
         isolated_machine.set_active_wcs("G54")
-        isolated_machine.wcs_offsets["G54"] = wcs_offset
+        isolated_machine.update_wcs_offset("G54", wcs_offset)
 
         offset = isolated_machine.get_visual_wcs_offset()
         assert offset == pytest.approx(expected_offset)
@@ -2095,7 +2095,7 @@ class TestPrepareOpsForEncoding:
         machine.set_reverse_y_axis(reverse_y)
         machine.wcs_origin_is_workarea_origin = False
         machine.set_active_wcs("G54")
-        machine.wcs_offsets["G54"] = wcs_offset
+        machine.update_wcs_offset("G54", wcs_offset)
 
         ops = Ops()
         ops.move_to(world_point[0], world_point[1], world_point[2])
@@ -2159,7 +2159,7 @@ class TestPrepareOpsForEncoding:
         machine.set_origin(Origin.BOTTOM_LEFT)
         machine.wcs_origin_is_workarea_origin = False
         machine.set_active_wcs("G54")
-        machine.wcs_offsets["G54"] = (10, 20, 30)
+        machine.update_wcs_offset("G54", (10, 20, 30))
 
         ops = Ops()
         ops.move_to(50, 60, 0)
@@ -2217,7 +2217,7 @@ class TestPrepareOpsForEncoding:
         machine.set_origin(Origin.BOTTOM_LEFT)
         machine.wcs_origin_is_workarea_origin = False
         machine.set_active_wcs("G54")
-        machine.wcs_offsets["G54"] = (10, 10, 0)
+        machine.update_wcs_offset("G54", (10, 10, 0))
 
         ops = Ops()
         ops.move_to(20, 20, 0)

@@ -16,7 +16,11 @@ from ...core.geo import Point3D, Rect
 from ...core.layer import Layer
 from ...core.model import Model
 from ...core.ops import Axis, Ops
-from ...core.ops.commands import LayerStartCommand
+from ...core.ops.commands import (
+    LayerEndCommand,
+    LayerStartCommand,
+    MovingCommand,
+)
 from ...pipeline.coordspace import MachineSpace
 from ...pipeline.encoder.gcode import MachineCodeOpMap
 from ...shared.tasker import task_mgr
@@ -39,6 +43,7 @@ if TYPE_CHECKING:
     from ...core.varset import VarSet
     from ..driver.driver import Driver
     from .controller import MachineController
+from .coordinate_system import CoordinateSystem
 
 
 class Origin(Enum):
@@ -157,14 +162,9 @@ class Machine:
         # Any key NOT in wcs_offsets is considered an immutable/absolute system
         # with (0,0,0) offset.
         self.active_wcs: str = "G54"
-        self.wcs_offsets: Dict[str, Point3D] = {
-            "G54": (0.0, 0.0, 0.0),
-            "G55": (0.0, 0.0, 0.0),
-            "G56": (0.0, 0.0, 0.0),
-            "G57": (0.0, 0.0, 0.0),
-            "G58": (0.0, 0.0, 0.0),
-            "G59": (0.0, 0.0, 0.0),
-        }
+        self.coordinate_systems: Dict[str, CoordinateSystem] = (
+            CoordinateSystem.defaults()
+        )
 
         self.machine_hours: MachineHours = MachineHours()
         self.machine_hours.changed.connect(self._on_machine_hours_changed)
@@ -224,17 +224,43 @@ class Machine:
         self.precheck_error = error
 
     def update_wcs_offset(self, slot: str, offset: Point3D):
-        self.wcs_offsets[slot] = offset
+        cs = self.coordinate_systems.get(slot)
+        if cs:
+            cs.offset = offset
 
     def update_wcs_offsets_batch(self, offsets: Dict[str, Point3D]):
-        self.wcs_offsets = dict(offsets)
+        self.coordinate_systems = {
+            name: CoordinateSystem(name=name, label="", offset=offset)
+            for name, offset in offsets.items()
+        }
+
+    def get_wcs_offset(self, name: str) -> Point3D:
+        cs = self.coordinate_systems.get(name)
+        return cs.offset if cs else (0.0, 0.0, 0.0)
 
     @property
     def supported_wcs(self) -> List[str]:
         """
         Returns a sorted list of supported mutable Work Coordinate Systems.
         """
-        return sorted(list(self.wcs_offsets.keys()))
+        return sorted(list(self.coordinate_systems.keys()))
+
+    def get_wcs_list(self) -> List[CoordinateSystem]:
+        """Returns a sorted list of CoordinateSystem objects."""
+        return [self.coordinate_systems[k] for k in self.supported_wcs]
+
+    def get_wcs_label(self, name: str) -> str:
+        cs = self.coordinate_systems.get(name)
+        return cs.label if cs else ""
+
+    def set_wcs_label(self, name: str, label: str):
+        cs = self.coordinate_systems.get(name)
+        if not cs:
+            return
+        if cs.label == label:
+            return
+        cs.label = label
+        self.changed.send(self)
 
     @property
     def kinematics(self) -> Kinematics:
@@ -1065,7 +1091,8 @@ class Machine:
         If the active_wcs is not in the known offsets dictionary, it assumes
         an absolute coordinate system with zero offset.
         """
-        return self.wcs_offsets.get(self.active_wcs, (0.0, 0.0, 0.0))
+        cs = self.coordinate_systems.get(self.active_wcs)
+        return cs.offset if cs else (0.0, 0.0, 0.0)
 
     def get_workarea_origin_offset(self) -> Tuple[float, float]:
         """
@@ -1224,7 +1251,10 @@ class Machine:
         await self.controller.sync_active_wcs_from_device()
 
     def _prepare_ops_for_encoding(
-        self, ops: "Ops", _pre_prepared: bool = False
+        self,
+        ops: "Ops",
+        doc: Optional["Doc"] = None,
+        _pre_prepared: bool = False,
     ) -> "Ops":
         """
         Prepares an Ops object for encoding by applying machine-specific
@@ -1234,8 +1264,13 @@ class Machine:
         them to machine coordinates, and then to command coordinates for the
         G-code output.
 
+        When doc is provided, per-layer WCS offsets are applied by reading
+        the layer's wcs attribute at LayerStartCommand boundaries. When doc
+        is None, the machine's active WCS offset is applied uniformly.
+
         Args:
             ops: The Ops object to prepare.
+            doc: Optional Doc for per-layer WCS lookup.
             _pre_prepared: If True, the caller has already copied and
                 linearized the ops. Used internally by encode_ops() when
                 axis mapping runs before this step.
@@ -1253,26 +1288,26 @@ class Machine:
 
         space = self.get_coordinate_space()
 
-        # 1. Build combined transform applied in order:
-        #    world→machine, then WCS offset, then Z-flip.
         combined = np.identity(4)
 
         transform = space.get_world_to_machine_matrix()
         if not np.allclose(transform, np.identity(4)):
             combined = transform @ combined
 
-        # 2. Convert from MACHINE coords to COMMAND coords
-        wcs_offset = self.get_active_wcs_offset()
-        x_offset, y_offset, z_offset = space.get_command_offset(
-            wcs_offset=wcs_offset,
-            wcs_is_workarea_origin=self.wcs_origin_is_workarea_origin,
-        )
-        if x_offset != 0.0 or y_offset != 0.0 or z_offset != 0.0:
-            offset_matrix = np.identity(4)
-            offset_matrix[0, 3] = -x_offset
-            offset_matrix[1, 3] = -y_offset
-            offset_matrix[2, 3] = -z_offset
-            combined = offset_matrix @ combined
+        if doc is not None:
+            self._apply_per_layer_wcs_offset(ops_for_encoder, space, doc)
+        else:
+            wcs_offset = self.get_active_wcs_offset()
+            x_offset, y_offset, z_offset = space.get_command_offset(
+                wcs_offset=wcs_offset,
+                wcs_is_workarea_origin=self.wcs_origin_is_workarea_origin,
+            )
+            if x_offset != 0.0 or y_offset != 0.0 or z_offset != 0.0:
+                offset_matrix = np.identity(4)
+                offset_matrix[0, 3] = -x_offset
+                offset_matrix[1, 3] = -y_offset
+                offset_matrix[2, 3] = -z_offset
+                combined = offset_matrix @ combined
 
         if self.reverse_z_axis:
             z_flip = np.diag([1.0, 1.0, -1.0, 1.0])
@@ -1282,6 +1317,47 @@ class Machine:
             ops_for_encoder.transform(combined)
 
         return ops_for_encoder
+
+    def _apply_per_layer_wcs_offset(
+        self, ops: "Ops", space: "MachineSpace", doc: "Doc"
+    ) -> None:
+        """Apply per-layer WCS offsets using LayerStartCommand markers."""
+        default_offset = self.get_active_wcs_offset()
+        default_cmd_offset = space.get_command_offset(
+            wcs_offset=default_offset,
+            wcs_is_workarea_origin=self.wcs_origin_is_workarea_origin,
+        )
+
+        current_offset = default_cmd_offset
+
+        for command in ops.commands:
+            if isinstance(command, LayerStartCommand):
+                descendant = doc.find_descendant_by_uid(command.layer_uid)
+                if isinstance(descendant, Layer):
+                    effective_wcs = descendant.get_effective_wcs(self)
+                    wcs_off = self.get_wcs_offset(effective_wcs)
+                    current_offset = space.get_command_offset(
+                        wcs_offset=wcs_off,
+                        wcs_is_workarea_origin=(
+                            self.wcs_origin_is_workarea_origin
+                        ),
+                    )
+                continue
+
+            if isinstance(command, LayerEndCommand):
+                current_offset = default_cmd_offset
+                continue
+
+            if isinstance(command, MovingCommand):
+                x_off, y_off, z_off = current_offset
+                if x_off == 0.0 and y_off == 0.0 and z_off == 0.0:
+                    continue
+                base_end = command.end or (0.0, 0.0, 0.0)
+                command.end = (
+                    base_end[0] - x_off,
+                    base_end[1] - y_off,
+                    base_end[2] - z_off,
+                )
 
     def _apply_replacement_downstream(self, ops: "Ops", doc: "Doc") -> None:
         """Run degrees→scaled-mu downstream pass for AXIS_REPLACEMENT layers.
@@ -1375,7 +1451,7 @@ class Machine:
 
         # 3. Apply world→machine + WCS + Z-flip (no copy, no linearize).
         ops_for_encoder = self._prepare_ops_for_encoding(
-            ops_work, _pre_prepared=True
+            ops_work, doc, _pre_prepared=True
         )
 
         # 4. Downstream pass: convert degrees→scaled-mu for
@@ -1439,7 +1515,9 @@ class Machine:
                 "single_axis_homing_enabled": self.single_axis_homing_enabled,
                 "dialect_uid": self.dialect_uid,
                 "active_wcs": self.active_wcs,
-                "wcs_offsets": self.wcs_offsets,
+                "coordinate_systems": [
+                    cs.to_dict() for cs in self.coordinate_systems.values()
+                ],
                 "supports_arcs": self.supports_arcs,
                 "supports_curves": self.supports_curves,
                 "arc_tolerance": self.arc_tolerance,
@@ -1591,8 +1669,16 @@ class Machine:
         ma.dialect_migrated = migrated
         ma.dialect_uid = dialect_uid
         ma.active_wcs = ma_data.get("active_wcs", ma.active_wcs)
-        if "wcs_offsets" in ma_data:
-            ma.wcs_offsets = ma_data["wcs_offsets"]
+        if "coordinate_systems" in ma_data:
+            ma.coordinate_systems = {}
+            for cs_data in ma_data["coordinate_systems"]:
+                cs = CoordinateSystem.from_dict(cs_data)
+                ma.coordinate_systems[cs.name] = cs
+        elif "wcs_offsets" in ma_data:
+            for name, offset in ma_data["wcs_offsets"].items():
+                cs = ma.coordinate_systems.get(name)
+                if cs:
+                    cs.offset = tuple(offset)
 
         if "axes" in ma_data:
             ma.axes = AxisSet.from_dict(ma_data["axes"])

@@ -74,6 +74,7 @@ class GcodeEncoder(OpsEncoder):
         self._coord_format: str = "{:.3f}"  # Default format
         self._feed_format: str = "{:.3f}"
         self._power_format: str = "{:.3f}"
+        self._active_wcs: Optional[str] = None
 
     @classmethod
     def for_machine(cls, machine: "Machine") -> "GcodeEncoder":
@@ -372,9 +373,8 @@ class GcodeEncoder(OpsEncoder):
                 # active for the job, treating the preamble as a black box
                 # that may have changed state.
                 if self.dialect.inject_wcs_after_preamble:
-                    wcs_cmd = context.machine.active_wcs
-                    if wcs_cmd in ["G54", "G55", "G56", "G57", "G58", "G59"]:
-                        gcode.append(wcs_cmd)
+                    gcode.append(context.machine.active_wcs)
+                    self._active_wcs = context.machine.active_wcs
 
             case JobEndCommand():
                 # This is the single point of truth for job cleanup.
@@ -390,6 +390,13 @@ class GcodeEncoder(OpsEncoder):
                 descendant = context.doc.find_descendant_by_uid(uid)
                 if isinstance(descendant, Layer):
                     context.layer = descendant
+                    layer_wcs = descendant.get_effective_wcs(context.machine)
+                    if (
+                        self.dialect.inject_wcs_after_preamble
+                        and layer_wcs != self._active_wcs
+                    ):
+                        gcode.append(layer_wcs)
+                        self._active_wcs = layer_wcs
                 elif descendant is not None:
                     logger.warning(
                         f"Expected Layer for UID {uid}, but "

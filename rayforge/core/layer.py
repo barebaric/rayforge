@@ -55,6 +55,7 @@ class Layer(DocItem):
         self.rotary_diameter: float = 25.0
         self.rotary_module_uid: Optional[str] = None
         self.color: str = self.DEFAULT_COLOR
+        self.wcs: Optional[str] = None
 
         # Signals for notifying other parts of the application of changes.
         # This one is special and is bubbled manually.
@@ -79,6 +80,7 @@ class Layer(DocItem):
             "rotary_diameter": self.rotary_diameter,
             "rotary_module_uid": self.rotary_module_uid,
             "color": self.color,
+            "wcs": self.wcs,
             "children": [child.to_dict() for child in self.children],
         }
         result.update(self.extra)
@@ -97,6 +99,7 @@ class Layer(DocItem):
             "rotary_diameter",
             "rotary_module_uid",
             "color",
+            "wcs",
             "children",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -109,6 +112,7 @@ class Layer(DocItem):
         layer.rotary_diameter = data.get("rotary_diameter", 25.0)
         layer.rotary_module_uid = data.get("rotary_module_uid")
         layer.color = data.get("color", cls.DEFAULT_COLOR)
+        layer.wcs = data.get("wcs")
         layer.extra = extra
 
         children = []
@@ -286,6 +290,16 @@ class Layer(DocItem):
         if rotary_module_name:
             return _("Rotary · {name}").format(name=rotary_module_name)
         return _("Rotary")
+
+    def set_wcs(self, wcs: Optional[str]):
+        if self.wcs == wcs:
+            return
+        self.wcs = wcs
+        self.updated.send(self)
+
+    def get_effective_wcs(self, machine) -> str:
+        """Return this layer's WCS or the machine's active WCS."""
+        return self.wcs if self.wcs else machine.active_wcs
 
     def mu_to_degrees(self, mu: float) -> float:
         """Convert machine units to degrees for rotary axis."""

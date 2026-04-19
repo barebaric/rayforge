@@ -42,6 +42,14 @@ class ViewportConfig:
 
     @classmethod
     def from_machine(cls, machine: "Machine") -> "ViewportConfig":
+        return cls.from_machine_with_wcs(
+            machine, machine.get_active_wcs_offset()
+        )
+
+    @classmethod
+    def from_machine_with_wcs(
+        cls, machine: "Machine", wcs_offset: tuple
+    ) -> "ViewportConfig":
         area = machine.work_area
         width_mm = float(area[2])
         depth_mm = float(area[3])
@@ -59,7 +67,7 @@ class ViewportConfig:
         if machine.wcs_origin_is_workarea_origin:
             wcs_offset_mm: Point3D = (0.0, 0.0, 0.0)
         else:
-            wcs_x, wcs_y, wcs_z = machine.get_active_wcs_offset()
+            wcs_x, wcs_y, wcs_z = wcs_offset
             ml, mt, mr, mb = machine.work_margins
             machine_x = -mr if machine.x_axis_right else -ml
             machine_y = -mt if machine.y_axis_down else -mb

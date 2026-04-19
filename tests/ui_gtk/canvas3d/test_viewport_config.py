@@ -158,7 +158,7 @@ class TestViewportConfigWcsOffset:
     def test_wcs_origin_is_workarea_origin(self):
         m = _make_machine()
         m.wcs_origin_is_workarea_origin = True
-        m.wcs_offsets["G54"] = (10.0, 20.0, 0.0)
+        m.update_wcs_offset("G54", (10.0, 20.0, 0.0))
         vp = ViewportConfig.from_machine(m)
         assert vp.wcs_offset_mm == (0.0, 0.0, 0.0)
 
@@ -166,7 +166,7 @@ class TestViewportConfigWcsOffset:
         m = _make_machine()
         m.set_axis_extents(200.0, 200.0)
         m.set_work_margins(5.0, 3.0, 7.0, 2.0)
-        m.wcs_offsets["G54"] = (1.0, 2.0, 0.5)
+        m.update_wcs_offset("G54", (1.0, 2.0, 0.5))
         vp = ViewportConfig.from_machine(m)
         expected_x = -5.0 + 1.0
         expected_y = -2.0 + 2.0
@@ -177,7 +177,7 @@ class TestViewportConfigWcsOffset:
         m.set_axis_extents(200.0, 200.0)
         m.set_work_margins(5.0, 3.0, 7.0, 2.0)
         m.set_reverse_x_axis(True)
-        m.wcs_offsets["G54"] = (1.0, 2.0, 0.0)
+        m.update_wcs_offset("G54", (1.0, 2.0, 0.0))
         vp = ViewportConfig.from_machine(m)
         expected_x = -5.0 - 1.0
         expected_y = -2.0 + 2.0
@@ -188,7 +188,7 @@ class TestViewportConfigWcsOffset:
         m.set_axis_extents(200.0, 200.0)
         m.set_work_margins(5.0, 3.0, 7.0, 2.0)
         m.set_reverse_y_axis(True)
-        m.wcs_offsets["G54"] = (1.0, 2.0, 0.0)
+        m.update_wcs_offset("G54", (1.0, 2.0, 0.0))
         vp = ViewportConfig.from_machine(m)
         expected_x = -5.0 + 1.0
         expected_y = -2.0 - 2.0
@@ -199,7 +199,7 @@ class TestViewportConfigWcsOffset:
         m.origin = Origin.TOP_LEFT
         m.set_axis_extents(200.0, 200.0)
         m.set_work_margins(5.0, 3.0, 7.0, 2.0)
-        m.wcs_offsets["G54"] = (1.0, 2.0, 0.0)
+        m.update_wcs_offset("G54", (1.0, 2.0, 0.0))
         vp = ViewportConfig.from_machine(m)
         expected_x = -5.0 + 1.0
         expected_y = -3.0 + 2.0

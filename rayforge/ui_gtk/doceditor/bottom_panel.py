@@ -14,6 +14,7 @@ from ..doceditor.layers_tab import LayersTab
 from ..icons import get_icon
 from ..machine.console import Console
 from ..machine.jog_widget import JogWidget
+from ..machine.wcs_dialog import WcsDialog
 from ..shared.dock_item import DockItem
 from ..shared.dock_layout import DockLayout
 from ..shared.gtk import apply_css
@@ -53,8 +54,11 @@ class BottomPanel(Gtk.Box):
         self.edit_item_requested = Signal()
         self.machine = machine
         self.machine_cmd = machine_cmd
+        self.doc = None
         self._edit_dialog = None
         self._click_to_zero_mode = False
+        self._updating_wcs_ui = False
+        self._active_layer = None
         self._get_bounds_callback: Optional[
             Callable[[], Optional[Tuple[float, float, float, float]]]
         ] = None
@@ -190,11 +194,38 @@ class BottomPanel(Gtk.Box):
         self.tab_changed.send(self, name=name)
 
     def set_doc(self, doc):
+        self._disconnect_layer_signals()
+        self.doc = doc
         self.asset_browser.set_doc(doc)
         self.layers_tab.set_doc(doc)
+        if doc:
+            doc.active_layer_changed.connect(self._on_active_layer_changed)
+            self._connect_layer_signals()
+        if self.machine:
+            self._update_wcs_ui()
 
     def _on_layers_tab_edit_item(self, sender, **kwargs):
         self.edit_item_requested.send(sender, **kwargs)
+
+    def _on_active_layer_changed(self, sender):
+        self._disconnect_layer_signals()
+        self._connect_layer_signals()
+        if self.machine:
+            self._update_wcs_ui()
+
+    def _connect_layer_signals(self):
+        if self.doc and self.doc.active_layer:
+            self._active_layer = self.doc.active_layer
+            self._active_layer.updated.connect(self._on_layer_updated)
+
+    def _disconnect_layer_signals(self):
+        if self._active_layer:
+            self._active_layer.updated.disconnect(self._on_layer_updated)
+            self._active_layer = None
+
+    def _on_layer_updated(self, sender):
+        if self.machine:
+            self._update_wcs_ui()
 
     def _on_command_submitted(self, sender, command: str, machine: Machine):
         async def send_command(ctx):
@@ -215,7 +246,15 @@ class BottomPanel(Gtk.Box):
             self.wcs_list = []
         wcs_model = Gtk.StringList.new(self.wcs_list)
 
-        self.wcs_row = Adw.ComboRow(title=_("Active System"), model=wcs_model)
+        factory = Gtk.SignalListItemFactory()
+        factory.connect("setup", self._on_wcs_factory_setup)
+        factory.connect("bind", self._on_wcs_factory_bind)
+
+        self.wcs_row = Adw.ComboRow(
+            model=wcs_model,
+            factory=factory,
+            use_subtitle=True,
+        )
         self.wcs_row.connect(
             "notify::selected", self._on_wcs_selection_changed
         )
@@ -226,10 +265,11 @@ class BottomPanel(Gtk.Box):
         self.edit_offsets_btn = Gtk.Button(child=get_icon("edit-symbolic"))
         self.edit_offsets_btn.set_tooltip_text(_("Edit Offsets Manually"))
         self.edit_offsets_btn.add_css_class("flat")
+        self.edit_offsets_btn.set_valign(Gtk.Align.CENTER)
         self.edit_offsets_btn.connect("clicked", self._on_edit_offsets_clicked)
-        self.offsets_row.add_suffix(self.edit_offsets_btn)
+        self.wcs_row.add_suffix(self.edit_offsets_btn)
 
-        self.wcs_group.add(self.offsets_row)
+        self.wcs_group.add(self.wcs_row)
 
         self.position_row = Adw.ActionRow(title=_("Current Position"))
         self.wcs_group.add(self.position_row)
@@ -367,6 +407,7 @@ class BottomPanel(Gtk.Box):
         if self.machine:
             self.machine.wcs_updated.connect(self._on_wcs_updated)
             self.machine.state_changed.connect(self._on_machine_state_changed)
+            self.machine.changed.connect(self._on_wcs_updated)
 
     def _disconnect_machine_signals(self):
         if self.machine:
@@ -374,6 +415,7 @@ class BottomPanel(Gtk.Box):
             self.machine.state_changed.disconnect(
                 self._on_machine_state_changed
             )
+            self.machine.changed.disconnect(self._on_wcs_updated)
 
     def set_machine(
         self,
@@ -395,6 +437,8 @@ class BottomPanel(Gtk.Box):
             self.jog_widget.set_machine(self.machine, self.machine_cmd)
 
     def _on_wcs_selection_changed(self, combo_row, _pspec):
+        if self._updating_wcs_ui:
+            return
         if not self.machine:
             return
         idx = combo_row.get_selected()
@@ -405,7 +449,6 @@ class BottomPanel(Gtk.Box):
                 task_mgr.add_coroutine(
                     lambda ctx, w=wcs: machine.switch_active_wcs(w)
                 )
-        self._update_wcs_ui()
 
     def _on_zero_axis_clicked(self, button, axis):
         if not self.machine:
@@ -474,56 +517,14 @@ class BottomPanel(Gtk.Box):
         if not self.machine:
             return
 
-        machine = self.machine
-        off_x, off_y, off_z = machine.get_active_wcs_offset()
-
         root = self.get_root()
-        self._edit_dialog = Adw.MessageDialog(
-            heading=_("Edit Work Offsets"),
-            body=_(
-                "Enter the offset from Machine Zero to Work Zero for "
-                "the active WCS."
-            ),
+        self._edit_dialog = WcsDialog(
+            machine=self.machine,
             transient_for=root if isinstance(root, Gtk.Window) else None,
         )
-        self._edit_dialog.add_response("cancel", _("Cancel"))
-        self._edit_dialog.add_response("save", _("Save"))
-        self._edit_dialog.set_response_appearance(
-            "save", Adw.ResponseAppearance.SUGGESTED
+        self._edit_dialog.connect(
+            "destroy", lambda *_: setattr(self, "_edit_dialog", None)
         )
-        self._edit_dialog.set_default_response("save")
-        self._edit_dialog.set_close_response("cancel")
-
-        group = Adw.PreferencesGroup()
-
-        row_x = Adw.SpinRow.new_with_range(-10000, 10000, 0.1)
-        row_x.set_title("X Offset")
-        row_x.set_value(off_x)
-        group.add(row_x)
-
-        row_y = Adw.SpinRow.new_with_range(-10000, 10000, 0.1)
-        row_y.set_title("Y Offset")
-        row_y.set_value(off_y)
-        group.add(row_y)
-
-        row_z = Adw.SpinRow.new_with_range(-10000, 10000, 0.1)
-        row_z.set_title("Z Offset")
-        row_z.set_value(off_z)
-        group.add(row_z)
-
-        self._edit_dialog.set_extra_child(group)
-
-        def on_response(dlg, response):
-            if response == "save":
-                nx = row_x.get_value()
-                ny = row_y.get_value()
-                nz = row_z.get_value()
-                task_mgr.add_coroutine(
-                    lambda ctx: machine.set_work_origin(nx, ny, nz)
-                )
-            self._edit_dialog = None
-
-        self._edit_dialog.connect("response", on_response)
         self._edit_dialog.present()
 
     def _on_wcs_updated(self, machine):
@@ -533,23 +534,77 @@ class BottomPanel(Gtk.Box):
         self._update_wcs_ui()
         self.console.on_machine_state_changed(machine, state)
 
+    def _on_wcs_factory_setup(self, factory, list_item):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        name_label = Gtk.Label(xalign=0)
+        subtitle_label = Gtk.Label(xalign=0)
+        subtitle_label.add_css_class("dim-label")
+        box.append(name_label)
+        box.append(subtitle_label)
+        list_item.set_child(box)
+
+    def _on_wcs_factory_bind(self, factory, list_item):
+        idx = list_item.get_position()
+        if idx < 0 or idx >= len(self.wcs_list):
+            return
+        wcs_name = self.wcs_list[idx]
+        box = list_item.get_child()
+        name_label = box.get_first_child()
+        subtitle_label = name_label.get_next_sibling()
+        if self.machine:
+            label = self.machine.get_wcs_label(wcs_name)
+            if label:
+                name_label.set_label(f"{wcs_name} ({label})")
+            else:
+                name_label.set_label(wcs_name)
+            off = self.machine.get_wcs_offset(wcs_name)
+            subtitle_label.set_label(
+                f"X: {off[0]:.2f} Y: {off[1]:.2f} Z: {off[2]:.2f}"
+            )
+            subtitle_label.set_visible(True)
+        else:
+            name_label.set_label(wcs_name)
+            subtitle_label.set_visible(False)
+
     def _update_wcs_ui(self):
         if not self.machine:
             return
 
         hide_wcs_controls = self.machine.wcs_origin_is_workarea_origin
         self.wcs_row.set_visible(not hide_wcs_controls)
-        self.offsets_row.set_visible(not hide_wcs_controls)
         self.zero_row.set_visible(not hide_wcs_controls)
+
+        layer_has_wcs = (
+            self.doc and self.doc.active_layer and self.doc.active_layer.wcs
+        )
+        self.wcs_row.set_sensitive(not layer_has_wcs)
+        if layer_has_wcs:
+            self.wcs_row.set_tooltip_text(
+                _(
+                    "Overridden by the current layer. "
+                    "Change it in the layer settings."
+                )
+            )
+        else:
+            self.wcs_row.set_tooltip_text("")
 
         current_wcs = self.machine.active_wcs
         if current_wcs in self.wcs_list:
             idx = self.wcs_list.index(current_wcs)
             if self.wcs_row.get_selected() != idx:
+                self._updating_wcs_ui = True
                 self.wcs_row.set_selected(idx)
+                self._updating_wcs_ui = False
+
+        wcs_label = self.machine.get_wcs_label(current_wcs)
+        if wcs_label:
+            title = f"{current_wcs} ({wcs_label})"
+        else:
+            title = current_wcs
+        self.wcs_row.set_title(title)
 
         off_x, off_y, off_z = self.machine.get_active_wcs_offset()
-        self.offsets_row.set_subtitle(
+        self.wcs_row.set_subtitle(
             f"X: {off_x:.2f}   Y: {off_y:.2f}   Z: {off_z:.2f}"
         )
 
@@ -575,9 +630,7 @@ class BottomPanel(Gtk.Box):
             if selected_wcs_ui == self.machine.machine_space_wcs:
                 pos_x, pos_y, pos_z = m_x, m_y, m_z
             else:
-                offset = self.machine.wcs_offsets.get(
-                    selected_wcs_ui, (0.0, 0.0, 0.0)
-                )
+                offset = self.machine.get_wcs_offset(selected_wcs_ui)
                 pos_x = m_x - offset[0]
                 pos_y = m_y - offset[1]
                 pos_z = m_z - offset[2]
