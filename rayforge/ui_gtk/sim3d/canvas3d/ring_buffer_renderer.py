@@ -29,12 +29,14 @@ class RingBufferRenderer(BaseRenderer):
         self._capacity = capacity_vertices
         self.vao: int = 0
         self.pos_vbo: int = 0
-        self.col_vbo: int = 0
+        self.pow_vbo: int = 0
         self.vertex_count: int = 0
+        self._color_lut_texture: int = 0
 
     def init_gl(self):
         self.pos_vbo = self._create_vbo()
-        self.col_vbo = self._create_vbo()
+        self.pow_vbo = self._create_vbo()
+        self._color_lut_texture = self._create_texture()
 
         zeros = np.zeros(self._capacity * 3, dtype=np.float32)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.pos_vbo)
@@ -42,12 +44,12 @@ class RingBufferRenderer(BaseRenderer):
             GL.GL_ARRAY_BUFFER, zeros.nbytes, zeros, GL.GL_DYNAMIC_DRAW
         )
 
-        zeros_col = np.zeros(self._capacity * 4, dtype=np.float32)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.col_vbo)
+        zeros_pow = np.zeros(self._capacity * 4, dtype=np.float32)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.pow_vbo)
         GL.glBufferData(
             GL.GL_ARRAY_BUFFER,
-            zeros_col.nbytes,
-            zeros_col,
+            zeros_pow.nbytes,
+            zeros_pow,
             GL.GL_DYNAMIC_DRAW,
         )
 
@@ -58,37 +60,65 @@ class RingBufferRenderer(BaseRenderer):
         GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
         GL.glEnableVertexAttribArray(0)
 
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.col_vbo)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.pow_vbo)
         GL.glVertexAttribPointer(1, 4, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
         GL.glEnableVertexAttribArray(1)
 
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-    def upload(self, positions: np.ndarray, colors: np.ndarray):
-        """
-        Upload *all* scanline segment data, replacing any previous contents.
-
-        *positions*: flat float32 array, shape ``(N*3,)`` or ``(N, 3)``.
-        *colors*:    flat float32 array, shape ``(N*4,)`` or ``(N, 4)``.
-        """
+    def upload(self, positions: np.ndarray, power_values: np.ndarray):
         pos = np.ascontiguousarray(positions, dtype=np.float32).ravel()
-        col = np.ascontiguousarray(colors, dtype=np.float32).ravel()
+        pow_flat = np.ascontiguousarray(power_values, dtype=np.float32).ravel()
         n = pos.size // 3
-        assert col.size == n * 4
+        assert pow_flat.size == n
         assert n <= self._capacity, (
             f"Scanline overlay has {n} vertices but ring capacity is "
             f"{self._capacity}"
         )
 
+        pow_vec4 = np.zeros(n * 4, dtype=np.float32)
+        pow_vec4[0::4] = pow_flat
+        pow_vec4[3::4] = 1.0
+
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.pos_vbo)
         GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, pos.nbytes, pos)
 
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.col_vbo)
-        GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, col.nbytes, col)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.pow_vbo)
+        GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, pow_vec4.nbytes, pow_vec4)
 
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         self.vertex_count = n
+
+    def update_color_lut(self, lut_data: np.ndarray):
+        if not self._color_lut_texture:
+            return
+        lut = np.ascontiguousarray(lut_data, dtype=np.float32)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, self._color_lut_texture)
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR
+        )
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR
+        )
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE
+        )
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE
+        )
+        GL.glTexImage2D(
+            GL.GL_TEXTURE_2D,
+            0,
+            GL.GL_RGBA32F,
+            lut.shape[0],
+            1,
+            0,
+            GL.GL_RGBA,
+            GL.GL_FLOAT,
+            lut,
+        )
+        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
     def clear(self):
         self.vertex_count = 0
@@ -115,9 +145,16 @@ class RingBufferRenderer(BaseRenderer):
         shader.use()
         shader.set_mat4("uMVP", mvp_matrix)
         shader.set_float("uHasNormals", 0.0)
-        shader.set_float("uUseVertexColor", 1.0)
+        shader.set_float("uUsePowerLUT", 1.0)
+        shader.set_vec4(
+            "uZeroPowerColor", ctx.color_set.get_rgba("zero_power")
+        )
         shader.set_int("uExecutedVertexCount", -1)
         shader.set_float("uAlphaPending", alpha_pending)
+
+        GL.glActiveTexture(GL.GL_TEXTURE1)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, self._color_lut_texture)
+        shader.set_int("uColorLUT", 1)
 
         GL.glDisable(GL.GL_DEPTH_TEST)
         set_line_width(line_width)
@@ -127,5 +164,10 @@ class RingBufferRenderer(BaseRenderer):
         set_line_width(1.0)
         GL.glEnable(GL.GL_DEPTH_TEST)
 
+        GL.glActiveTexture(GL.GL_TEXTURE1)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+        GL.glActiveTexture(GL.GL_TEXTURE0)
+
+        shader.set_float("uUsePowerLUT", 0.0)
         shader.set_float("uUseVertexColor", 0.0)
         shader.set_int("uExecutedVertexCount", -1)

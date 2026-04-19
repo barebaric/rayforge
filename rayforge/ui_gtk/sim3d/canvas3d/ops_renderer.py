@@ -17,7 +17,7 @@ class OpsRenderer(BaseRenderer):
         self.travel_vao: int = 0
 
         self.powered_vbo: int = 0
-        self.powered_colors_vbo: int = 0
+        self.powered_powers_vbo: int = 0
         self.powered_index_vbo: int = 0
         self.travel_vbo: int = 0
         self.travel_index_vbo: int = 0
@@ -25,19 +25,22 @@ class OpsRenderer(BaseRenderer):
         self.powered_vertex_count: int = 0
         self.travel_vertex_count: int = 0
 
+        self._color_lut_texture: int = 0
+
     def init_gl(self):
         self.powered_vbo = self._create_vbo()
-        self.powered_colors_vbo = self._create_vbo()
+        self.powered_powers_vbo = self._create_vbo()
         self.powered_index_vbo = self._create_vbo()
         self.travel_vbo = self._create_vbo()
         self.travel_index_vbo = self._create_vbo()
+        self._color_lut_texture = self._create_texture()
 
         self.powered_vao = self._create_vao()
         GL.glBindVertexArray(self.powered_vao)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.powered_vbo)
         GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
         GL.glEnableVertexAttribArray(0)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.powered_colors_vbo)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.powered_powers_vbo)
         GL.glVertexAttribPointer(1, 4, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
         GL.glEnableVertexAttribArray(1)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.powered_index_vbo)
@@ -67,19 +70,53 @@ class OpsRenderer(BaseRenderer):
     def update_from_vertex_data(
         self,
         powered_vertices: np.ndarray,
-        powered_colors: np.ndarray,
+        power_values: np.ndarray,
         travel_vertices: np.ndarray,
     ):
-        """Receives pre-processed vertex data and uploads it to the GPU."""
         self.powered_vertex_count = powered_vertices.size // 3
         self._load_buffer_data(self.powered_vbo, powered_vertices)
-        self._load_buffer_data(self.powered_colors_vbo, powered_colors)
+        pv_flat = np.ascontiguousarray(power_values, dtype=np.float32).ravel()
+        n = pv_flat.size
+        power_vec4 = np.zeros(n * 4, dtype=np.float32)
+        power_vec4[0::4] = pv_flat
+        power_vec4[3::4] = 1.0
+        self._load_buffer_data(self.powered_powers_vbo, power_vec4)
         indices = np.arange(self.powered_vertex_count, dtype=np.float32)
         self._load_buffer_data(self.powered_index_vbo, indices)
         self.travel_vertex_count = travel_vertices.size // 3
         self._load_buffer_data(self.travel_vbo, travel_vertices)
         travel_indices = np.arange(self.travel_vertex_count, dtype=np.float32)
         self._load_buffer_data(self.travel_index_vbo, travel_indices)
+
+    def update_color_lut(self, lut_data: np.ndarray):
+        if not self._color_lut_texture:
+            return
+        lut = np.ascontiguousarray(lut_data, dtype=np.float32)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, self._color_lut_texture)
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR
+        )
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR
+        )
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE
+        )
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE
+        )
+        GL.glTexImage2D(
+            GL.GL_TEXTURE_2D,
+            0,
+            GL.GL_RGBA32F,
+            lut.shape[0],
+            1,
+            0,
+            GL.GL_RGBA,
+            GL.GL_FLOAT,
+            lut,
+        )
+        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
     def render(
         self,
@@ -125,12 +162,19 @@ class OpsRenderer(BaseRenderer):
         shader.set_float("uAlphaPending", alpha_pending)
         shader.set_float("uEmissive", 1.0)
 
-        # Draw powered moves (which use vertex colors)
+        # Draw powered moves (using power-LUT for color)
         if self.powered_vertex_count > 0:
             set_line_width(line_width)
-            shader.set_float("uUseVertexColor", 1.0)
+            shader.set_float("uUsePowerLUT", 1.0)
+            shader.set_vec4("uZeroPowerColor", colors.get_rgba("zero_power"))
+            GL.glActiveTexture(GL.GL_TEXTURE1)
+            GL.glBindTexture(GL.GL_TEXTURE_2D, self._color_lut_texture)
+            shader.set_int("uColorLUT", 1)
             GL.glBindVertexArray(self.powered_vao)
             GL.glDrawArrays(GL.GL_LINES, 0, self.powered_vertex_count)
+            GL.glActiveTexture(GL.GL_TEXTURE1)
+            GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+            GL.glActiveTexture(GL.GL_TEXTURE0)
 
         # Draw travel moves
         should_draw_travel = self.travel_vertex_count > 0 and (
@@ -138,6 +182,7 @@ class OpsRenderer(BaseRenderer):
         )
         if should_draw_travel:
             set_line_width(line_width)
+            shader.set_float("uUsePowerLUT", 0.0)
             shader.set_float("uUseVertexColor", 0.0)
             shader.set_int(
                 "uExecutedVertexCount", executed_travel_vertex_count
@@ -147,6 +192,7 @@ class OpsRenderer(BaseRenderer):
             GL.glDrawArrays(GL.GL_LINES, 0, self.travel_vertex_count)
 
         set_line_width(1.0)
+        shader.set_float("uUsePowerLUT", 0.0)
         shader.set_float("uUseVertexColor", 0.0)
         shader.set_int("uExecutedVertexCount", -1)
         shader.set_float("uEmissive", 0.0)

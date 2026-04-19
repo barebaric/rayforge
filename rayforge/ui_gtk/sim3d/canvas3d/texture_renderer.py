@@ -174,7 +174,6 @@ class TextureArtifactRenderer(BaseRenderer):
         self,
         texture_data: TextureData,
         final_model_matrix: np.ndarray,
-        color_lut: Optional[np.ndarray] = None,
         rotary_enabled: bool = False,
         rotary_diameter: float = 25.0,
         cylinder_vertices: Optional[np.ndarray] = None,
@@ -237,7 +236,6 @@ class TextureArtifactRenderer(BaseRenderer):
         instance_data = {
             "texture_id": texture_id,
             "model_matrix": final_model_matrix,
-            "color_lut": color_lut,
             "rotary_enabled": rotary_enabled,
             "rotary_diameter": rotary_diameter,
         }
@@ -312,24 +310,6 @@ class TextureArtifactRenderer(BaseRenderer):
 
             final_mvp = view_proj_scene_matrix @ instance["model_matrix"]
             shader.set_mat4("uMVP", final_mvp.T)
-
-            if instance["color_lut"] is not None:
-                lut_data = np.ascontiguousarray(
-                    instance["color_lut"], dtype=np.float32
-                )
-                GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)
-                GL.glTexImage2D(
-                    GL.GL_TEXTURE_2D,
-                    0,
-                    GL.GL_RGBA32F,
-                    lut_data.shape[0],
-                    1,
-                    0,
-                    GL.GL_RGBA,
-                    GL.GL_FLOAT,
-                    lut_data,
-                )
-                GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
             GL.glActiveTexture(GL.GL_TEXTURE1)
             GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)
@@ -412,24 +392,6 @@ class TextureArtifactRenderer(BaseRenderer):
             )
             GL.glEnableVertexAttribArray(1)
             GL.glBindVertexArray(0)
-
-            if instance["color_lut"] is not None:
-                lut_data = np.ascontiguousarray(
-                    instance["color_lut"], dtype=np.float32
-                )
-                GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)
-                GL.glTexImage2D(
-                    GL.GL_TEXTURE_2D,
-                    0,
-                    GL.GL_RGBA32F,
-                    lut_data.shape[0],
-                    1,
-                    0,
-                    GL.GL_RGBA,
-                    GL.GL_FLOAT,
-                    lut_data,
-                )
-                GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
             # Draw using the full Scene Matrix, so it correctly
             # inherits WCS and _model_matrix.

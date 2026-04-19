@@ -46,9 +46,8 @@ class TestCompileLineTo:
         np.testing.assert_allclose(pv[0], [1.0, 2.0, 0.0])
         np.testing.assert_allclose(pv[1], [4.0, 6.0, 0.0])
 
-        pc = vl.powered_colors.reshape(-1, 4)
-        assert pc.shape[0] == 2
-        assert pc.shape[1] == 4
+        pvv = vl.power_values
+        assert pvv.shape[0] == 2
 
     def test_travel_move(self):
         ops = Ops()
@@ -91,7 +90,7 @@ class TestCompileScanline:
         ov_pos = ol.positions.reshape(-1, 3)
         assert ov_pos.shape[0] == 2
 
-    def test_scanline_overlay_colors_with_lut(self):
+    def test_scanline_overlay_power_values(self):
         ops = Ops()
         ops.move_to(0.0, 0.0, 0.0)
         powers = bytearray([128, 128])
@@ -104,9 +103,9 @@ class TestCompileScanline:
 
         assert len(artifact.overlay_layers) == 1
         ol = artifact.overlay_layers[0]
-        ov_col = ol.colors.reshape(-1, 4)
-        assert ov_col.shape[0] == 2
-        assert ov_col[0, 3] == 1.0
+        ov_pow = ol.power_values
+        assert ov_pow.shape[0] == 2
+        assert all(p > 0 for p in ov_pow)
 
 
 class TestCompileRotary:

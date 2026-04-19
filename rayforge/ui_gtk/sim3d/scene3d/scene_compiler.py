@@ -57,42 +57,6 @@ logger = logging.getLogger(__name__)
 Z_OFFSET_NON_POWERED = 0.01
 
 
-def _get_lut(
-    config: RenderConfig3D,
-    laser_uid: str,
-    lut_type: str,
-) -> Optional[np.ndarray]:
-    laser_luts = config.laser_color_luts.get(laser_uid, {})
-    lut_bytes = laser_luts.get(lut_type)
-    if lut_bytes is None:
-        if lut_type == "cut":
-            lut_bytes = config.default_color_lut_cut
-        elif lut_type == "engrave":
-            lut_bytes = config.default_color_lut_engrave
-    if lut_bytes is None:
-        return None
-    return np.frombuffer(lut_bytes, dtype=np.float32).reshape(256, 4).copy()
-
-
-def _get_layer_lut(
-    config: RenderConfig3D,
-    layer_uid: str,
-    lut_type: str,
-) -> Optional[np.ndarray]:
-    if config.layer_color_luts is None:
-        return None
-    layer_luts = config.layer_color_luts.get(layer_uid, {})
-    lut_bytes = layer_luts.get(lut_type)
-    if lut_bytes is None:
-        if lut_type == "cut":
-            lut_bytes = config.default_color_lut_cut
-        elif lut_type == "engrave":
-            lut_bytes = config.default_color_lut_engrave
-    if lut_bytes is None:
-        return None
-    return np.frombuffer(lut_bytes, dtype=np.float32).reshape(256, 4).copy()
-
-
 def _transform_verts(verts: np.ndarray, transform: np.ndarray) -> np.ndarray:
     if verts.size == 0:
         return verts
@@ -192,9 +156,8 @@ def _extract_zero_power_segments(
 def _encode_overlay_segments(
     cmd: ScanLinePowerCommand,
     start_pos: Tuple[float, float, float],
-    engrave_lut: Optional[np.ndarray],
     ov_pos: List[float],
-    ov_col: List[float],
+    ov_pow: List[float],
     end_pos: Optional[Tuple[float, float, float]] = None,
 ) -> int:
     if cmd.end is None:
@@ -240,30 +203,16 @@ def _encode_overlay_segments(
                     seg_end_z,
                 ]
             )
-            if engrave_lut is not None:
-                idx = min(255, int(seg_power * 255))
-                c = engrave_lut[idx]
-                ov_col.extend(c)
-                ov_col.extend(c)
-            else:
-                v = seg_power
-                ov_col.extend([v, v, v, 1.0])
-                ov_col.extend([v, v, v, 1.0])
+            ov_pow.append(seg_power)
+            ov_pow.append(seg_power)
             vertex_count += 2
 
-        prev_power_on = power_on
+        prev_power_on = power_byte > 0
 
     if prev_power_on:
         ov_pos.extend([seg_start_x, seg_start_y, seg_start_z, ex, ey, ez])
-        if engrave_lut is not None:
-            idx = min(255, int(seg_power * 255))
-            c = engrave_lut[idx]
-            ov_col.extend(c)
-            ov_col.extend(c)
-        else:
-            v = seg_power
-            ov_col.extend([v, v, v, 1.0])
-            ov_col.extend([v, v, v, 1.0])
+        ov_pow.append(seg_power)
+        ov_pow.append(seg_power)
         vertex_count += 2
 
     return vertex_count
@@ -361,12 +310,6 @@ class _WalkState:
     current_layer_start: Optional[int] = None
     current_layer_has_scanlines: bool = False
     current_layer_scanline_laser: str = ""
-    current_cut_lut: np.ndarray = field(
-        default_factory=lambda: np.zeros((256, 4), dtype=np.float32)
-    )
-    current_engrave_lut: np.ndarray = field(
-        default_factory=lambda: np.zeros((256, 4), dtype=np.float32)
-    )
 
 
 class _LayerAccumulator:
@@ -374,11 +317,11 @@ class _LayerAccumulator:
 
     __slots__ = (
         "pv",
-        "pc",
+        "pvv",
         "tv",
         "zpv",
         "ov_pos",
-        "ov_col",
+        "ov_pow",
         "pv_cum",
         "tv_cum",
         "ov_cum",
@@ -398,11 +341,11 @@ class _LayerAccumulator:
 
     def __init__(self, total_cmds: int, is_rotary: bool):
         self.pv: List[float] = []
-        self.pc: List[float] = []
+        self.pvv: List[float] = []
         self.tv: List[float] = []
         self.zpv: List[float] = []
         self.ov_pos: List[float] = []
-        self.ov_col: List[float] = []
+        self.ov_pow: List[float] = []
         self.pv_cum = 0
         self.tv_cum = 0
         self.ov_cum = 0
@@ -452,21 +395,14 @@ class _LayerAccumulator:
 
     def finalize(
         self,
-        zero_rgba: np.ndarray,
         transform: np.ndarray,
     ):
         pv_arr = _to_arr(self.pv, 3)
-        pc_arr = _to_arr(self.pc, 4)
+        pvv_arr = _to_arr(self.pvv, 1)
         tv_arr = _to_arr(self.tv, 3)
         zpv_arr = _to_arr(self.zpv, 3)
-        zpc_count = len(self.zpv) // 3
-        zpc_arr = (
-            np.tile(zero_rgba, (zpc_count, 1))
-            if zpc_count > 0
-            else np.empty((0, 4), dtype=np.float32)
-        )
         ov_pos_arr = _to_arr(self.ov_pos, 3)
-        ov_col_arr = _to_arr(self.ov_col, 4)
+        ov_pow_arr = _to_arr(self.ov_pow, 1)
 
         pv_arr = _transform_verts(pv_arr, transform)
         tv_arr = _transform_verts(tv_arr, transform)
@@ -476,21 +412,19 @@ class _LayerAccumulator:
         if self.is_rotary and self.rotary_segments:
             (
                 pv_arr,
-                pc_arr,
+                pvv_arr,
                 tv_arr,
                 zpv_arr,
-                zpc_arr,
                 ov_pos_arr,
-                ov_col_arr,
+                ov_pow_arr,
                 pv_expansion,
             ) = _apply_cylinder_wrapping(
                 pv_arr,
-                pc_arr,
+                pvv_arr,
                 tv_arr,
                 zpv_arr,
-                zpc_arr,
                 ov_pos_arr,
-                ov_col_arr,
+                ov_pow_arr,
                 self.rotary_segments,
                 self.pv_cum,
                 self.tv_cum,
@@ -506,36 +440,53 @@ class _LayerAccumulator:
 
         return (
             pv_arr,
-            pc_arr,
+            pvv_arr,
             tv_arr,
             zpv_arr,
-            zpc_arr,
             ov_pos_arr,
-            ov_col_arr,
+            ov_pow_arr,
         )
+
+
+def _pad_powers_to_vec4(pvv: np.ndarray) -> np.ndarray:
+    if pvv.size == 0:
+        return np.empty((0, 4), dtype=np.float32)
+    flat = pvv.ravel()
+    n = flat.shape[0]
+    result = np.zeros((n, 4), dtype=np.float32)
+    result[:, 0] = flat
+    result[:, 3] = 1.0
+    return result
+
+
+def _extract_powers_from_vec4(pvv4: np.ndarray) -> np.ndarray:
+    if pvv4.size == 0:
+        return np.empty((0, 1), dtype=np.float32)
+    return pvv4[:, 0:1].copy()
 
 
 def _apply_cylinder_wrapping(
     pv_arr,
-    pc_arr,
+    pvv_arr,
     tv_arr,
     zpv_arr,
-    zpc_arr,
     ov_pos_arr,
-    ov_col_arr,
+    ov_pow_arr,
     rotary_segments,
     pv_cum,
     tv_cum,
     ov_cum,
 ):
     _exp_pv: List[np.ndarray] = []
-    _exp_pc: List[np.ndarray] = []
+    _exp_pvv: List[np.ndarray] = []
     _exp_tv: List[np.ndarray] = []
     _exp_zpv: List[np.ndarray] = []
-    _exp_zpc: List[np.ndarray] = []
     _exp_ov_pos: List[np.ndarray] = []
-    _exp_ov_col: List[np.ndarray] = []
+    _exp_ov_pow: List[np.ndarray] = []
     pv_expansion: List[Tuple[int, np.ndarray]] = []
+
+    pvv4 = _pad_powers_to_vec4(pvv_arr)
+    ov_pow4 = _pad_powers_to_vec4(ov_pow_arr)
 
     for seg in rotary_segments:
         d = seg["diameter"]
@@ -546,15 +497,15 @@ def _apply_cylinder_wrapping(
         pv_s = seg["pv_start"]
         pv_e = seg.get("pv_end", pv_cum)
         if pv_e > pv_s:
-            pv_w, pc_w, cum_subs = _apply_cylinder(
+            pv_w, pvv4_w, cum_subs = _apply_cylinder(
                 pv_arr[pv_s:pv_e],
                 d,
-                pc_arr[pv_s:pv_e],
+                pvv4[pv_s:pv_e],
                 degrees_input=deg_in,
             )
-            assert pc_w is not None
+            assert pvv4_w is not None
             _exp_pv.append(pv_w)
-            _exp_pc.append(pc_w)
+            _exp_pvv.append(pvv4_w)
             pv_expansion.append((pv_s, cum_subs))
 
         tv_s = seg["tv_start"]
@@ -570,49 +521,44 @@ def _apply_cylinder_wrapping(
         zpv_s = seg["zpv_vtx_start"]
         zpv_e = seg.get("zpv_vtx_end", len(zpv_arr))
         if zpv_e > zpv_s:
-            zpv_w, zpc_w, _ = _apply_cylinder(
+            zpv_w, _, _ = _apply_cylinder(
                 zpv_arr[zpv_s:zpv_e],
                 d,
-                zpc_arr[zpv_s:zpv_e],
                 degrees_input=deg_in,
             )
-            assert zpc_w is not None
             _exp_zpv.append(zpv_w)
-            _exp_zpc.append(zpc_w)
 
         ov_s = seg["ov_start"]
         ov_e = seg.get("ov_end", ov_cum)
         if ov_e > ov_s:
-            ov_pos_w, ov_col_w, _ = _apply_cylinder(
+            ov_pos_w, ov_pow4_w, _ = _apply_cylinder(
                 ov_pos_arr[ov_s:ov_e],
                 d,
-                ov_col_arr[ov_s:ov_e],
+                ov_pow4[ov_s:ov_e],
                 degrees_input=deg_in,
             )
-            assert ov_col_w is not None
+            assert ov_pow4_w is not None
             _exp_ov_pos.append(ov_pos_w)
-            _exp_ov_col.append(ov_col_w)
+            _exp_ov_pow.append(ov_pow4_w)
 
     if _exp_pv:
         pv_arr = np.concatenate(_exp_pv, axis=0)
-        pc_arr = np.concatenate(_exp_pc, axis=0)
+        pvv4 = np.concatenate(_exp_pvv, axis=0)
     if _exp_tv:
         tv_arr = np.concatenate(_exp_tv, axis=0)
     if _exp_zpv:
         zpv_arr = np.concatenate(_exp_zpv, axis=0)
-        zpc_arr = np.concatenate(_exp_zpc, axis=0)
     if _exp_ov_pos:
         ov_pos_arr = np.concatenate(_exp_ov_pos, axis=0)
-        ov_col_arr = np.concatenate(_exp_ov_col, axis=0)
+        ov_pow4 = np.concatenate(_exp_ov_pow, axis=0)
 
     return (
         pv_arr,
-        pc_arr,
+        _extract_powers_from_vec4(pvv4),
         tv_arr,
         zpv_arr,
-        zpc_arr,
         ov_pos_arr,
-        ov_col_arr,
+        _extract_powers_from_vec4(ov_pow4),
         pv_expansion,
     )
 
@@ -621,7 +567,6 @@ def _finalize_layers(
     accumulators: dict[bool, _LayerAccumulator],
     config: RenderConfig3D,
 ) -> Tuple[List[VertexLayer], List[ScanlineOverlayLayer]]:
-    zero_rgba = np.array(config.zero_power_rgba, dtype=np.float32)
     flat_transform = config.world_to_visual
 
     vertex_layers: List[VertexLayer] = []
@@ -636,21 +581,19 @@ def _finalize_layers(
             transform = flat_transform
         (
             pv_arr,
-            pc_arr,
+            pvv_arr,
             tv_arr,
             zpv_arr,
-            zpc_arr,
             ov_pos_arr,
-            ov_col_arr,
-        ) = acc.finalize(zero_rgba, transform)
+            ov_pow_arr,
+        ) = acc.finalize(transform)
 
         vertex_layers.append(
             VertexLayer(
                 powered_verts=_to_flat(pv_arr),
-                powered_colors=_to_flat(pc_arr),
+                power_values=_to_flat(pvv_arr),
                 travel_verts=_to_flat(tv_arr),
                 zero_power_verts=_to_flat(zpv_arr),
-                zero_power_colors=_to_flat(zpc_arr),
                 powered_cmd_offsets=acc.pv_off,
                 travel_cmd_offsets=acc.tv_off,
                 is_rotary=acc.is_rotary,
@@ -660,7 +603,7 @@ def _finalize_layers(
         overlay_layers.append(
             ScanlineOverlayLayer(
                 positions=_to_flat(ov_pos_arr),
-                colors=_to_flat(ov_col_arr),
+                power_values=_to_flat(ov_pow_arr),
                 cmd_offsets=acc.ov_off,
                 is_rotary=acc.is_rotary,
             )
@@ -715,8 +658,6 @@ def _generate_texture_layers(
         model[1, 3] = y0
         final_model = (tex_transform @ model).astype(np.float32)
 
-        scan_lut = _get_lut(config, li["scanline_laser"], "engrave")
-
         cyl_verts = None
         if is_rot and diameter > 0:
             cyl_verts = generate_cylinder_vertices(
@@ -730,7 +671,6 @@ def _generate_texture_layers(
                 width_px=w_px,
                 height_px=h_px,
                 model_matrix=final_model,
-                color_lut=(scan_lut.copy() if scan_lut is not None else None),
                 cylinder_vertices=cyl_verts,
                 rotary_diameter=diameter,
                 rotary_enabled=is_rot,
@@ -747,7 +687,6 @@ def _handle_layer_start(
     cmd_idx: int,
     cmd: LayerStartCommand,
     config: RenderConfig3D,
-    use_layer_colors: bool,
     accumulators: dict[bool, _LayerAccumulator],
 ) -> _LayerAccumulator:
     layer_uid = cmd.layer_uid
@@ -755,39 +694,23 @@ def _handle_layer_start(
     if config.layer_configs and layer_uid in config.layer_configs:
         layer_cfg = config.layer_configs[layer_uid]
     st.is_rotary = layer_cfg.rotary_enabled if layer_cfg else False
-    st.rotary_diameter = (
-        layer_cfg.rotary_diameter if layer_cfg else 0.0
-    )
+    st.rotary_diameter = layer_cfg.rotary_diameter if layer_cfg else 0.0
     acc = accumulators[st.is_rotary]
 
     acc.axis_position = layer_cfg.axis_position if layer_cfg else 0.0
     acc.gear_ratio = layer_cfg.gear_ratio if layer_cfg else 1.0
     acc.reverse = layer_cfg.reverse if layer_cfg else False
     acc.diameter = st.rotary_diameter
-    acc.axis_position_3d = (
-        layer_cfg.axis_position_3d if layer_cfg else None
-    )
-    acc.cylinder_dir = (
-        layer_cfg.cylinder_dir if layer_cfg else None
-    )
+    acc.axis_position_3d = layer_cfg.axis_position_3d if layer_cfg else None
+    acc.cylinder_dir = layer_cfg.cylinder_dir if layer_cfg else None
     st.has_mapped_data = st.is_rotary
 
     if st.is_rotary and st.rotary_diameter > 0:
-        acc.begin_rotary_segment(
-            cmd_idx, degrees_input=st.has_mapped_data
-        )
+        acc.begin_rotary_segment(cmd_idx, degrees_input=st.has_mapped_data)
 
     st.current_layer_start = cmd_idx + 1
     st.current_layer_has_scanlines = False
     st.current_layer_scanline_laser = ""
-
-    if use_layer_colors:
-        _cut = _get_layer_lut(config, layer_uid, "cut")
-        if _cut is not None:
-            st.current_cut_lut = _cut
-        _engrave = _get_layer_lut(config, layer_uid, "engrave")
-        if _engrave is not None:
-            st.current_engrave_lut = _engrave
 
     return acc
 
@@ -820,25 +743,8 @@ def _handle_layer_end(
 def _handle_set_laser(
     st: _WalkState,
     cmd: SetLaserCommand,
-    config: RenderConfig3D,
-    use_layer_colors: bool,
 ) -> None:
     st.current_laser_uid = cmd.laser_uid
-    if not use_layer_colors:
-        _cut = _get_lut(config, st.current_laser_uid, "cut")
-        st.current_cut_lut = (
-            _cut
-            if _cut is not None
-            else np.zeros((256, 4), dtype=np.float32)
-        )
-        _engrave = _get_lut(
-            config, st.current_laser_uid, "engrave"
-        )
-        st.current_engrave_lut = (
-            _engrave
-            if _engrave is not None
-            else np.zeros((256, 4), dtype=np.float32)
-        )
 
 
 def _update_positions(
@@ -879,12 +785,10 @@ def _handle_line_to(
 ) -> None:
     vis_end = _visual_end(cmd)
     if st.current_power > 0.0:
-        power_byte = min(255, int(st.current_power * 255.0))
-        color = st.current_cut_lut[power_byte]
         acc.pv.extend(st.current_pos_vis)
         acc.pv.extend(vis_end)
-        acc.pc.extend(color)
-        acc.pc.extend(color)
+        acc.pvv.append(st.current_power)
+        acc.pvv.append(st.current_power)
         acc.pv_cum += 2
     else:
         acc.zpv.extend(st.current_pos_vis)
@@ -924,14 +828,12 @@ def _handle_arc_to(
         segments = linearize_arc(cmd, st.current_pos)
         vis_segs = segments
     if st.current_power > 0.0:
-        power_byte = min(255, int(st.current_power * 255.0))
-        color = st.current_cut_lut[power_byte]
         n_segs = len(vis_segs)
         for seg_start, seg_end in vis_segs:
             acc.pv.extend(seg_start)
             acc.pv.extend(seg_end)
-            acc.pc.extend(color)
-            acc.pc.extend(color)
+            acc.pvv.append(st.current_power)
+            acc.pvv.append(st.current_power)
         acc.pv_cum += n_segs * 2
     else:
         for seg_start, seg_end in vis_segs:
@@ -976,13 +878,11 @@ def _handle_bezier_to(
         )
         vis_poly = list(polyline)
     if st.current_power > 0.0:
-        power_byte = min(255, int(st.current_power * 255.0))
-        color = st.current_cut_lut[power_byte]
         for j in range(len(vis_poly) - 1):
             acc.pv.extend(vis_poly[j])
             acc.pv.extend(vis_poly[j + 1])
-            acc.pc.extend(color)
-            acc.pc.extend(color)
+            acc.pvv.append(st.current_power)
+            acc.pvv.append(st.current_power)
         acc.pv_cum += (len(vis_poly) - 1) * 2
     else:
         for j in range(len(vis_poly) - 1):
@@ -1008,9 +908,8 @@ def _handle_scanline(
             n = _encode_overlay_segments(
                 cmd,
                 st.current_pos_vis,
-                st.current_engrave_lut,
                 acc.ov_pos,
-                acc.ov_col,
+                acc.ov_pow,
                 end_pos=vis_end,
             )
             acc.ov_cum += n
@@ -1032,23 +931,7 @@ def compile_scene(
         True: _LayerAccumulator(total_cmds, is_rotary=True),
     }
 
-    default_cut = _get_lut(config, "", "cut")
-    if default_cut is None:
-        default_cut = np.zeros((256, 4), dtype=np.float32)
-    default_engrave = _get_lut(config, "", "engrave")
-    if default_engrave is None:
-        default_engrave = np.zeros((256, 4), dtype=np.float32)
-
-    st = _WalkState(
-        current_cut_lut=default_cut,
-        current_engrave_lut=default_engrave,
-    )
-
-    use_layer_colors = (
-        config.ops_color_mode == "layer"
-        if isinstance(config.ops_color_mode, str)
-        else config.ops_color_mode.value == "layer"
-    )
+    st = _WalkState()
 
     for i, cmd in enumerate(ops.commands):
         if cancel_check is not None and cancel_check():
@@ -1058,13 +941,17 @@ def compile_scene(
 
         if isinstance(cmd, LayerStartCommand):
             acc = _handle_layer_start(
-                st, acc, i, cmd, config, use_layer_colors,
+                st,
+                acc,
+                i,
+                cmd,
+                config,
                 accumulators,
             )
         elif isinstance(cmd, LayerEndCommand):
             _handle_layer_end(st, acc, i)
         elif isinstance(cmd, SetLaserCommand):
-            _handle_set_laser(st, cmd, config, use_layer_colors)
+            _handle_set_laser(st, cmd)
         elif isinstance(cmd, SetPowerCommand):
             st.current_power = cmd.power
         elif isinstance(cmd, MoveToCommand):
@@ -1081,13 +968,9 @@ def compile_scene(
         for a in accumulators.values():
             a.record_offset(i)
 
-    vertex_layers, overlay_layers = _finalize_layers(
-        accumulators, config
-    )
+    vertex_layers, overlay_layers = _finalize_layers(accumulators, config)
 
-    texture_layers = _generate_texture_layers(
-        ops, st.layer_infos, config
-    )
+    texture_layers = _generate_texture_layers(ops, st.layer_infos, config)
 
     return CompiledSceneArtifact(
         generation_id=0,
