@@ -755,20 +755,141 @@ def _apply_cylinder_wrapping(
     )
 
 
+def _finalize_layers(
+    accumulators: dict[bool, _LayerAccumulator],
+    config: RenderConfig3D,
+) -> Tuple[List[VertexLayer], List[ScanlineOverlayLayer]]:
+    zero_rgba = np.array(config.zero_power_rgba, dtype=np.float32)
+    flat_transform = config.world_to_visual
+
+    vertex_layers: List[VertexLayer] = []
+    overlay_layers: List[ScanlineOverlayLayer] = []
+
+    for acc in accumulators.values():
+        if not acc.has_content():
+            continue
+        if acc.is_rotary:
+            transform = np.eye(4, dtype=np.float32)
+        else:
+            transform = flat_transform
+        (
+            pv_arr,
+            pc_arr,
+            tv_arr,
+            zpv_arr,
+            zpc_arr,
+            ov_pos_arr,
+            ov_col_arr,
+        ) = acc.finalize(zero_rgba, transform)
+
+        vertex_layers.append(
+            VertexLayer(
+                powered_verts=_to_flat(pv_arr),
+                powered_colors=_to_flat(pc_arr),
+                travel_verts=_to_flat(tv_arr),
+                zero_power_verts=_to_flat(zpv_arr),
+                zero_power_colors=_to_flat(zpc_arr),
+                powered_cmd_offsets=acc.pv_off,
+                travel_cmd_offsets=acc.tv_off,
+                is_rotary=acc.is_rotary,
+            )
+        )
+
+        overlay_layers.append(
+            ScanlineOverlayLayer(
+                positions=_to_flat(ov_pos_arr),
+                colors=_to_flat(ov_col_arr),
+                cmd_offsets=acc.ov_off,
+                is_rotary=acc.is_rotary,
+            )
+        )
+
+    return vertex_layers, overlay_layers
+
+
+def _generate_texture_layers(
+    ops: Ops,
+    layer_infos: List[dict],
+    config: RenderConfig3D,
+) -> List[TextureLayer]:
+    texture_layers: List[TextureLayer] = []
+
+    for li in layer_infos:
+        if not li["has_scanlines"]:
+            continue
+
+        layer_ops = Ops()
+        layer_ops.replace_all(
+            list(ops.commands[li["cmd_start"] : li["cmd_end"]])
+        )
+
+        is_rot = li["is_rotary"]
+
+        if is_rot:
+            layer_ops = _bake_visual_positions(layer_ops)
+
+        bbox = _scanline_bbox(layer_ops)
+        if bbox is None:
+            continue
+
+        raster_result = _rasterize_scanlines(layer_ops, bbox)
+        if raster_result is None:
+            continue
+
+        tex_buf, w_px, h_px, actual_ppm = raster_result
+        x0, y0, bw, bh = bbox
+
+        diameter = li["diameter"]
+
+        if is_rot and diameter > 0:
+            tex_transform = np.eye(4, dtype=np.float32)
+        else:
+            tex_transform = config.world_to_visual
+
+        model = np.eye(4, dtype=np.float32)
+        model[0, 0] = bw
+        model[1, 1] = bh
+        model[0, 3] = x0
+        model[1, 3] = y0
+        final_model = (tex_transform @ model).astype(np.float32)
+
+        scan_lut = _get_lut(config, li["scanline_laser"], "engrave")
+
+        cyl_verts = None
+        if is_rot and diameter > 0:
+            cyl_verts = generate_cylinder_vertices(
+                grid_matrix=final_model,
+                diameter=diameter,
+            )
+
+        texture_layers.append(
+            TextureLayer(
+                power_texture=tex_buf,
+                width_px=w_px,
+                height_px=h_px,
+                model_matrix=final_model,
+                color_lut=(scan_lut.copy() if scan_lut is not None else None),
+                cylinder_vertices=cyl_verts,
+                rotary_diameter=diameter,
+                rotary_enabled=is_rot,
+                activation_cmd_idx=li["activation_cmd_idx"],
+            )
+        )
+
+    return texture_layers
+
+
 def compile_scene(
     ops: Ops,
     config: RenderConfig3D,
     cancel_check: Optional[Callable[[], bool]] = None,
 ) -> CompiledSceneArtifact:
     total_cmds = len(ops.commands)
-    zero_rgba = np.array(config.zero_power_rgba, dtype=np.float32)
 
     accumulators: dict[bool, _LayerAccumulator] = {
         False: _LayerAccumulator(total_cmds, is_rotary=False),
         True: _LayerAccumulator(total_cmds, is_rotary=True),
     }
-
-    texture_layers: List[TextureLayer] = []
 
     current_power = 0.0
     current_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
@@ -1072,113 +1193,11 @@ def compile_scene(
         for a in accumulators.values():
             a.record_offset(i)
 
-    # Finalize each accumulator that has content
-    vertex_layers: List[VertexLayer] = []
-    overlay_layers: List[ScanlineOverlayLayer] = []
+    vertex_layers, overlay_layers = _finalize_layers(
+        accumulators, config
+    )
 
-    flat_transform = config.world_to_visual
-
-    for acc in accumulators.values():
-        if not acc.has_content():
-            continue
-        if acc.is_rotary:
-            transform = np.eye(4, dtype=np.float32)
-        else:
-            transform = flat_transform
-        (
-            pv_arr,
-            pc_arr,
-            tv_arr,
-            zpv_arr,
-            zpc_arr,
-            ov_pos_arr,
-            ov_col_arr,
-        ) = acc.finalize(zero_rgba, transform)
-
-        vertex_layers.append(
-            VertexLayer(
-                powered_verts=_to_flat(pv_arr),
-                powered_colors=_to_flat(pc_arr),
-                travel_verts=_to_flat(tv_arr),
-                zero_power_verts=_to_flat(zpv_arr),
-                zero_power_colors=_to_flat(zpc_arr),
-                powered_cmd_offsets=acc.pv_off,
-                travel_cmd_offsets=acc.tv_off,
-                is_rotary=acc.is_rotary,
-            )
-        )
-
-        overlay_layers.append(
-            ScanlineOverlayLayer(
-                positions=_to_flat(ov_pos_arr),
-                colors=_to_flat(ov_col_arr),
-                cmd_offsets=acc.ov_off,
-                is_rotary=acc.is_rotary,
-            )
-        )
-
-    # Texture generation: rasterize scanlines per layer
-    for li in layer_infos:
-        if not li["has_scanlines"]:
-            continue
-
-        layer_ops = Ops()
-        layer_ops.replace_all(
-            list(ops.commands[li["cmd_start"] : li["cmd_end"]])
-        )
-
-        is_rot = li["is_rotary"]
-
-        if is_rot:
-            layer_ops = _bake_visual_positions(layer_ops)
-
-        bbox = _scanline_bbox(layer_ops)
-        if bbox is None:
-            continue
-
-        raster_result = _rasterize_scanlines(layer_ops, bbox)
-        if raster_result is None:
-            continue
-
-        tex_buf, w_px, h_px, actual_ppm = raster_result
-        x0, y0, bw, bh = bbox
-
-        diameter = li["diameter"]
-
-        if is_rot and diameter > 0:
-            tex_transform = np.eye(4, dtype=np.float32)
-        else:
-            tex_transform = config.world_to_visual
-
-        model = np.eye(4, dtype=np.float32)
-        model[0, 0] = bw
-        model[1, 1] = bh
-        model[0, 3] = x0
-        model[1, 3] = y0
-        final_model = (tex_transform @ model).astype(np.float32)
-
-        scan_lut = _get_lut(config, li["scanline_laser"], "engrave")
-
-        cyl_verts = None
-        if is_rot and diameter > 0:
-            cyl_verts = generate_cylinder_vertices(
-                grid_matrix=final_model,
-                diameter=diameter,
-            )
-
-        texture_layers.append(
-            TextureLayer(
-                power_texture=tex_buf,
-                width_px=w_px,
-                height_px=h_px,
-                model_matrix=final_model,
-                color_lut=(scan_lut.copy() if scan_lut is not None else None),
-                cylinder_vertices=cyl_verts,
-                rotary_diameter=diameter,
-                rotary_enabled=is_rot,
-                activation_cmd_idx=li["activation_cmd_idx"],
-            )
-        )
+    texture_layers = _generate_texture_layers(ops, layer_infos, config)
 
     return CompiledSceneArtifact(
         generation_id=0,
