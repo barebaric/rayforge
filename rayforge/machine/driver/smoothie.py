@@ -27,7 +27,7 @@ from .driver import (
     Axis,
     Pos,
 )
-from .grbl_util import parse_state
+from .grbl.grbl_util import parse_state
 
 if TYPE_CHECKING:
     from ...core.doc import Doc

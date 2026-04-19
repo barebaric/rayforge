@@ -14,19 +14,19 @@ from typing import (
     Union,
     Awaitable,
 )
-from ...context import RayforgeContext
-from ...core.varset import Var, VarSet, SerialPortVar, BaudrateVar
-from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
-from ...pipeline.encoder.gcode import GcodeEncoder
-from ...shared.tasker import task_mgr
-from ..transport import TransportStatus, SerialTransport
-from ..transport.grbl import (
+from ....context import RayforgeContext
+from ....core.varset import Var, VarSet, SerialPortVar, BaudrateVar
+from ....pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
+from ....pipeline.encoder.gcode import GcodeEncoder
+from ....shared.tasker import task_mgr
+from ...transport import TransportStatus, SerialTransport
+from ...transport.grbl import (
     GrblSerialTransport,
     GrblResponseType,
     GRBL_RX_BUFFER_SIZE,
 )
-from ..transport.serial import SerialPortPermissionError
-from .driver import (
+from ...transport.serial import SerialPortPermissionError
+from ..driver import (
     Driver,
     DriverSetupError,
     DeviceStatus,
@@ -51,9 +51,9 @@ from .grbl_util import (
 )
 
 if TYPE_CHECKING:
-    from ...core.doc import Doc
-    from ..models.machine import Machine
-    from ..models.laser import Laser
+    from ....core.doc import Doc
+    from ...models.machine import Machine
+    from ...models.laser import Laser
 
 logger = logging.getLogger(__name__)
 

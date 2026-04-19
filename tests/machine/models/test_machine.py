@@ -20,8 +20,8 @@ from rayforge.image import SVG_RENDERER
 from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.driver.driver import DeviceState
 from rayforge.machine.driver.dummy import NoDeviceDriver
-from rayforge.machine.driver.grbl import GrblNetworkDriver
-from rayforge.machine.driver.grbl_serial import GrblSerialDriver
+from rayforge.machine.driver.grbl.grbl_network import GrblNetworkDriver
+from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
 from rayforge.machine.driver.smoothie import SmoothieDriver
 from rayforge.machine.models.dialect import (
     GcodeDialect,

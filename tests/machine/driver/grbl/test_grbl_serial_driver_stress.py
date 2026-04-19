@@ -16,7 +16,7 @@ from unittest.mock import MagicMock, AsyncMock, PropertyMock
 
 from rayforge.machine.transport.grbl import GrblSerialTransport
 from rayforge.machine.transport import SerialTransport, TransportStatus
-from rayforge.machine.driver.grbl_serial import GrblSerialDriver
+from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
 from rayforge.machine.driver.driver import DeviceConnectionError
 
 
@@ -63,7 +63,8 @@ class TestDriverStreamingFuzz:
         self, context_initializer, machine, mock_serial_transport, mocker
     ):
         mocker.patch(
-            "rayforge.machine.driver.grbl_serial.SerialTransport.__init__",
+            "rayforge.machine.driver.grbl.grbl_serial"
+            ".SerialTransport.__init__",
             return_value=None,
         )
         driver_instance = GrblSerialDriver(context_initializer, machine)

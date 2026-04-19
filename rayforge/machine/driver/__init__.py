@@ -2,9 +2,7 @@ import inspect
 from typing import Type, cast
 from .driver import Driver
 from .dummy import NoDeviceDriver
-from .grbl import GrblNetworkDriver
-from .grbl_serial import GrblSerialDriver
-from .grbl_telnet import GrblTelnetDriver
+from .grbl import GrblNetworkDriver, GrblSerialDriver, GrblTelnetDriver
 from .smoothie import SmoothieDriver
 
 
