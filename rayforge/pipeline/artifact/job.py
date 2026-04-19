@@ -3,7 +3,7 @@ import json
 import numpy as np
 from typing import Optional, Dict, Any, Type, TYPE_CHECKING
 from ...core.ops import Ops
-from .base import BaseArtifact, VertexData
+from .base import BaseArtifact
 from .handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
@@ -60,7 +60,6 @@ class JobArtifact(BaseArtifact):
         time_estimate: Optional[float] = None,
         machine_code_bytes: Optional[np.ndarray] = None,
         op_map_bytes: Optional[np.ndarray] = None,
-        vertex_data: Optional[VertexData] = None,
         mapped_ops: Optional[Ops] = None,
     ):
         super().__init__()
@@ -70,7 +69,6 @@ class JobArtifact(BaseArtifact):
         self.time_estimate = time_estimate
         self.machine_code_bytes: Optional[np.ndarray] = machine_code_bytes
         self.op_map_bytes: Optional[np.ndarray] = op_map_bytes
-        self.vertex_data: Optional[VertexData] = vertex_data
         self.mapped_ops: Optional[Ops] = mapped_ops
 
         # Caching properties for deserialized data
@@ -121,8 +119,6 @@ class JobArtifact(BaseArtifact):
             "distance": self.distance,
             "generation_id": self.generation_id,
         }
-        if self.vertex_data is not None:
-            result["vertex_data"] = self.vertex_data.to_dict()
         if self.machine_code_bytes is not None:
             result["machine_code_bytes"] = self.machine_code_bytes.tolist()
         if self.op_map_bytes is not None:
@@ -141,10 +137,6 @@ class JobArtifact(BaseArtifact):
             "distance": data.get("distance", 0.0),
             "generation_id": data["generation_id"],
         }
-        if "vertex_data" in data:
-            common_args["vertex_data"] = VertexData.from_dict(
-                data["vertex_data"]
-            )
         if "machine_code_bytes" in data:
             common_args["machine_code_bytes"] = np.array(
                 data["machine_code_bytes"], dtype=np.uint8
@@ -178,13 +170,6 @@ class JobArtifact(BaseArtifact):
             arrays["machine_code_bytes"] = self.machine_code_bytes
         if self.op_map_bytes is not None:
             arrays["op_map_bytes"] = self.op_map_bytes
-        if self.vertex_data is not None:
-            arrays["powered_vertices"] = self.vertex_data.powered_vertices
-            arrays["powered_colors"] = self.vertex_data.powered_colors
-            arrays["travel_vertices"] = self.vertex_data.travel_vertices
-            arrays["zero_power_vertices"] = (
-                self.vertex_data.zero_power_vertices
-            )
         if self.mapped_ops is not None:
             mapped_json = json.dumps(
                 self.mapped_ops.to_dict(), cls=_NumpyEncoder
@@ -210,25 +195,6 @@ class JobArtifact(BaseArtifact):
         arrays_copy = arrays.copy()
         ops = Ops.from_numpy_arrays(arrays_copy)
 
-        # The actual numpy data must also be copied out of shared memory
-        # to ensure it remains valid after the SHM handle is closed.
-        vertex_data = None
-        if all(
-            key in arrays
-            for key in [
-                "powered_vertices",
-                "powered_colors",
-                "travel_vertices",
-                "zero_power_vertices",
-            ]
-        ):
-            vertex_data = VertexData(
-                powered_vertices=arrays["powered_vertices"].copy(),
-                powered_colors=arrays["powered_colors"].copy(),
-                travel_vertices=arrays["travel_vertices"].copy(),
-                zero_power_vertices=arrays["zero_power_vertices"].copy(),
-            )
-
         mapped_ops = None
         mob = arrays.get("mapped_ops_bytes")
         if mob is not None and mob.size > 0:
@@ -247,6 +213,5 @@ class JobArtifact(BaseArtifact):
             op_map_bytes=arrays.get(
                 "op_map_bytes", np.empty(0, dtype=np.uint8)
             ).copy(),
-            vertex_data=vertex_data,
             mapped_ops=mapped_ops,
         )

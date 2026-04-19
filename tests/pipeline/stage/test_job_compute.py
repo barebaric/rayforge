@@ -13,7 +13,6 @@ from rayforge.pipeline.stage.job_compute import (
     _calculate_time_estimate,
     _calculate_distance,
     _encode_gcode_and_opmap,
-    _encode_vertex_data,
 )
 
 
@@ -66,7 +65,6 @@ def test_job_compute_assembles_step_artifacts_correctly(
     assert line_cmds[0].end == pytest.approx((50.0, 50.0, 0.0))
     assert line_cmds[1].end == pytest.approx((50.0, 50.0, 0.0))
 
-    assert result.vertex_data is not None
     assert result.machine_code_bytes is not None
     assert result.op_map_bytes is not None
 
@@ -331,39 +329,6 @@ def test_job_compute_missing_step_artifact(
     assert isinstance(result, JobArtifact)
     line_cmds = [c for c in result.ops if isinstance(c, LineToCommand)]
     assert len(line_cmds) == 1
-
-
-def test_job_compute_vertex_data_generation(
-    context_initializer, machine, contour_step_class
-):
-    """
-    Test that compute_job_artifact generates vertex data.
-    """
-    doc = Doc()
-    layer = doc.active_layer
-    assert layer.workflow is not None
-
-    step = contour_step_class.create(context_initializer)
-    layer.workflow.add_step(step)
-
-    ops = Ops()
-    ops.set_power(1.0)
-    ops.move_to(10, 10)
-    ops.line_to(20, 20)
-
-    step_artifact = StepOpsArtifact(ops=ops, generation_id=1)
-    step_artifacts_by_uid = {step.uid: step_artifact}
-
-    result = compute_job_artifact(
-        doc,
-        step_artifacts_by_uid,
-        machine,
-        generation_id=0,
-    )
-
-    assert isinstance(result, JobArtifact)
-    assert result.vertex_data is not None
-    assert result.vertex_data.powered_vertices.size > 0
 
 
 def test_job_compute_time_and_distance(
@@ -690,44 +655,3 @@ def test_encode_gcode_and_opmap_without_progress(machine):
 
     assert machine_code is not None
     assert op_map is not None
-
-
-def test_encode_vertex_data(mock_progress_context):
-    """
-    Test _encode_vertex_data.
-    """
-    ops = Ops()
-    ops.set_power(1.0)
-    ops.move_to(10, 10)
-    ops.line_to(20, 20)
-
-    result = _encode_vertex_data(ops, mock_progress_context)
-
-    assert result is not None
-    assert result.powered_vertices.size > 0
-
-
-def test_encode_vertex_data_empty_ops(mock_progress_context):
-    """
-    Test _encode_vertex_data with empty ops.
-    """
-    ops = Ops()
-
-    result = _encode_vertex_data(ops, mock_progress_context)
-
-    assert result is not None
-
-
-def test_encode_vertex_data_without_progress():
-    """
-    Test _encode_vertex_data without progress callback.
-    """
-    ops = Ops()
-    ops.set_power(1.0)
-    ops.move_to(10, 10)
-    ops.line_to(20, 20)
-
-    result = _encode_vertex_data(ops, None)
-
-    assert result is not None
-    assert result.powered_vertices.size > 0
