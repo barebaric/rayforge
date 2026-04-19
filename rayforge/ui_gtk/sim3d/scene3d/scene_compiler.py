@@ -347,6 +347,15 @@ def _rasterize_scanlines(
     if not has_content:
         return None
 
+    dilated = np.zeros_like(buffer)
+    for dy in range(-1, 2):
+        for dx in range(-1, 2):
+            shifted = np.roll(
+                np.roll(buffer, dy, axis=0), dx, axis=1
+            )
+            np.maximum(dilated, shifted, out=dilated)
+    buffer = dilated
+
     return buffer, width_px, height_px, px_per_mm
 
 
@@ -840,7 +849,7 @@ def compile_scene(
                         "diameter": rotary_diameter,
                         "has_scanlines": current_layer_has_scanlines,
                         "scanline_laser": current_layer_scanline_laser,
-                        "activation_cmd_idx": (current_layer_start - 1),
+                        "activation_cmd_idx": i,
                         "axis_position": acc.axis_position,
                         "gear_ratio": acc.gear_ratio,
                         "reverse": acc.reverse,

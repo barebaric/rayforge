@@ -200,9 +200,21 @@ uniform float uAlpha;
 
 void main() {
     // Sample the power value from the texture
-    float power = texture(uTexture, vTexCoord).r;
+    ivec2 texSize = textureSize(uTexture, 0);
+    vec2 tc = vTexCoord * vec2(texSize) - 0.5;
+    ivec2 base = ivec2(floor(tc));
+    float power = 0.0;
+    for (int dy = 0; dy <= 1; dy++) {
+        for (int dx = 0; dx <= 1; dx++) {
+            ivec2 idx = clamp(
+                base + ivec2(dx, dy),
+                ivec2(0),
+                texSize - ivec2(1)
+            );
+            power = max(power, texelFetch(uTexture, idx, 0).r);
+        }
+    }
 
-    // Discard zero-power areas (make them transparent)
     if (power <= 0.0) {
         discard;
     }
