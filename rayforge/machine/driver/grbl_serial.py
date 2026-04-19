@@ -192,7 +192,7 @@ class GrblSerialDriver(Driver):
         self._update_connection_status(status, message)
 
     async def cleanup(self):
-        logger.debug("GrblNextSerialDriver cleanup initiated.")
+        logger.debug("Cleanup initiated.")
         self.keep_running = False
         self._is_cancelled = False
         self._job_running = False
@@ -238,7 +238,7 @@ class GrblSerialDriver(Driver):
                 await self.grbl_transport.disconnect()
 
         await super().cleanup()
-        logger.debug("GrblNextSerialDriver cleanup completed.")
+        logger.debug("Cleanup completed.")
 
     async def _send_command(self, command: str, add_newline: bool = True):
         logger.debug(f"Sending fire-and-forget command: {command}")
@@ -289,7 +289,7 @@ class GrblSerialDriver(Driver):
             )
             return
 
-        logger.debug("GrblNextSerialDriver connect initiated.")
+        logger.debug("Connect initiated.")
         self.keep_running = True
         self._is_cancelled = False
         self._job_running = False
@@ -1213,9 +1213,7 @@ class GrblSerialDriver(Driver):
                 ):
                     try:
                         logger.debug(
-                            "GrblSerialDriver: Firing "
-                            "on_command_done for op_index "
-                            f"{i}"
+                            f"Firing on_command_done for op_index {i}"
                         )
                         result = self._on_command_done(i)
                         if inspect.isawaitable(result):
