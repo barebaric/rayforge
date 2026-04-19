@@ -68,7 +68,7 @@ class TestConfigureForLayer:
         assert asm.rotary_diameter == 40.0
         chucks = asm.get_links_by_role(LinkRole.CHUCK)
         assert len(chucks) == 1
-        assert chucks[0].driver_axis == Axis.Y
+        assert chucks[0].driver_axis == Axis.A
 
     def test_configure_layer_without_rotary(self):
         machine = _make_machine()
@@ -227,7 +227,7 @@ class TestAssemblyRotarySpecs:
         )
         machine.configure_for_layer(layer)
         chucks = machine.assembly.get_links_by_role(LinkRole.CHUCK)
-        assert chucks[0].driver_axis == Axis.Y
+        assert chucks[0].driver_axis == Axis.A
 
     def test_rotary_uses_module_model_id(self):
         machine = _make_machine()
@@ -280,7 +280,7 @@ class TestAssemblyRotarySpecs:
         )
         machine.configure_for_layer(layer)
         state = MachineState()
-        state.axes[Axis.Y] = 42.0 * math.pi
+        state.axes[Axis.A] = 360.0
         angles = machine.assembly.chuck_angles(state)
         chuck_names = list(angles.keys())
         assert len(chuck_names) == 1

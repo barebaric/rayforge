@@ -133,10 +133,8 @@ class TestRotary:
         assert asm.rotary_diameter == 50.0
 
     def test_chuck_angles_quarter_turn(self):
-        diameter = 50.0
-        circumference = diameter * math.pi
-        asm = _rotary_assembly(diameter)
-        state = _make_state(y=circumference / 4)
+        asm = _rotary_assembly(50.0)
+        state = _make_state(y=90.0)
         angles = asm.chuck_angles(state)
         assert abs(angles["rotary_chuck"] - math.pi / 2) < 1e-9
 
@@ -252,7 +250,7 @@ class TestMultipleChucks:
             ]
         )
         asm.set_rotary_diameter(25.0)
-        state = _make_state(y=25.0 * math.pi, a=25.0 * math.pi / 2)
+        state = _make_state(y=360.0, a=180.0)
         angles = asm.chuck_angles(state)
         assert abs(angles["chuck_a"] - 2 * math.pi) < 1e-9
         assert abs(angles["chuck_b"] - math.pi) < 1e-9

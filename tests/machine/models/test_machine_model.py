@@ -28,8 +28,9 @@ from rayforge.core.ops import (
 from rayforge.core.ops.axis import Axis
 from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine, Origin
-from rayforge.machine.models.rotary_module import RotaryModule
+from rayforge.machine.models.rotary_module import RotaryModule, RotaryMode
 from rayforge.machine.transport import TransportStatus
+from rayforge.machine.kinematic_mapping import KinematicMapping
 
 
 @pytest.fixture(autouse=True)
@@ -487,6 +488,14 @@ def _encode_rotary_line(machine, doc):
     ops = Ops()
     ops.add(MoveToCommand((0.0, 0.0, 0.0)))
     ops.add(LineToCommand((10.0, 10.0, 0.0)))
+    for layer in doc.layers:
+        rotary_axis = machine.get_rotary_axis_for_layer(layer)
+        if rotary_axis is not None:
+            mapping = KinematicMapping(
+                rotary_axis=rotary_axis,
+                diameter=layer.rotary_diameter,
+            )
+            mapping.apply(ops)
     gcode, _ = machine.encode_ops(ops, doc)
     return gcode
 
@@ -546,6 +555,96 @@ class TestRotaryAxisGcodeOutput:
         restored = Machine.from_dict(data, context=lite_context)
         assert restored.supports_curves is True
 
+    def test_encode_ops_with_layer_markers_uses_b(self, isolated_machine):
+        """encode_ops maps Y to B when layer has rotary enabled."""
+        rm = RotaryModule()
+        rm.set_axis(Axis.B)
+        isolated_machine.add_rotary_module(rm)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_diameter(25.0)
+        layer.set_rotary_module_uid(rm.uid)
+
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=layer.uid)
+        ops.move_to(0, 0, 0)
+        ops.line_to(10, 10, 0)
+        ops.layer_end(layer_uid=layer.uid)
+        ops.job_end()
+
+        gcode, _ = isolated_machine.encode_ops(ops, doc)
+
+        diameter = 25.0
+        circumference = diameter * math.pi
+        expected_deg = (10.0 / circumference) * 360.0
+        formatted_deg = f"{expected_deg:.3f}".rstrip("0").rstrip(".")
+        assert " B" in gcode
+        assert formatted_deg in gcode
+        assert "G0 X0 Y0" not in gcode.split("M5")[0]
+        assert "G1" in gcode
+        cut_line = [ln for ln in gcode.split("\n") if ln.startswith("G1")][0]
+        assert " Y" not in cut_line
+
+    def test_replacement_raw_y_in_gcode(self, isolated_machine):
+        """AXIS_REPLACEMENT with mm_per_rotation=0 emits raw Y values."""
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
+        isolated_machine.add_rotary_module(rm)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_diameter(25.0)
+        layer.set_rotary_module_uid(rm.uid)
+
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=layer.uid)
+        ops.move_to(0, 0, 0)
+        ops.line_to(10, 10, 0)
+        ops.layer_end(layer_uid=layer.uid)
+        ops.job_end()
+
+        gcode, _ = isolated_machine.encode_ops(ops, doc)
+
+        assert " A" not in gcode
+        assert " B" not in gcode
+        cut_lines = [ln for ln in gcode.split("\n") if ln.startswith("G1")]
+        assert len(cut_lines) >= 1
+        assert " Y10" in cut_lines[0]
+
+    def test_replacement_scaled_y_in_gcode(self, isolated_machine):
+        """AXIS_REPLACEMENT with mm_per_rotation>0 scales Y values."""
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
+        rm.set_mm_per_rotation(100.0)
+        isolated_machine.add_rotary_module(rm)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_diameter(25.0)
+        layer.set_rotary_module_uid(rm.uid)
+
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=layer.uid)
+        ops.move_to(0, 0, 0)
+        ops.line_to(10, 10, 0)
+        ops.layer_end(layer_uid=layer.uid)
+        ops.job_end()
+
+        gcode, _ = isolated_machine.encode_ops(ops, doc)
+
+        assert " A" not in gcode
+        assert " B" not in gcode
+        expected = 10.0 * 100.0 / (math.pi * 25.0)
+        formatted = f"{expected:.3f}".rstrip("0").rstrip(".")
+        assert formatted in gcode
+
     def test_prepare_ops_linearizes_by_default(self, lite_context):
         machine = Machine(lite_context)
         ops = Ops()
@@ -565,3 +664,104 @@ class TestRotaryAxisGcodeOutput:
         ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
         prepared = machine._prepare_ops_for_encoding(ops)
         assert any(isinstance(c, BezierToCommand) for c in prepared.commands)
+
+    def test_true_4th_axis_top_left_origin(self, isolated_machine):
+        """TRUE_4TH_AXIS degrees come from world-space Y regardless of
+        origin.  With TOP_LEFT the world→machine matrix flips Y but the
+        A-axis rotation must still correspond to the world-space distance
+        on the cylinder surface."""
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+        rm.set_axis(Axis.A)
+        isolated_machine.add_rotary_module(rm)
+        isolated_machine.set_origin(Origin.TOP_LEFT)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_diameter(25.0)
+        layer.set_rotary_module_uid(rm.uid)
+
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=layer.uid)
+        ops.move_to(0, 0, 0)
+        ops.line_to(10, 10, 0)
+        ops.layer_end(layer_uid=layer.uid)
+        ops.job_end()
+
+        gcode, _ = isolated_machine.encode_ops(ops, doc)
+
+        diameter = 25.0
+        circumference = diameter * math.pi
+        expected_deg = (10.0 / circumference) * 360.0
+        formatted_deg = f"{expected_deg:.3f}".rstrip("0").rstrip(".")
+        assert formatted_deg in gcode
+        assert " A" in gcode
+
+    def test_replacement_scaled_y_top_left_origin(self, isolated_machine):
+        """AXIS_REPLACEMENT computes degrees from world-space Y.
+
+        After Phase 3 the kinematic mapping runs on world-space ops
+        before world→machine, so the scaled-Y value in the G-code
+        reflects the world-space surface distance (not machine-space).
+        """
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
+        rm.set_mm_per_rotation(100.0)
+        isolated_machine.add_rotary_module(rm)
+        isolated_machine.set_origin(Origin.TOP_LEFT)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_diameter(25.0)
+        layer.set_rotary_module_uid(rm.uid)
+
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=layer.uid)
+        ops.move_to(0, 0, 0)
+        ops.line_to(10, 10, 0)
+        ops.layer_end(layer_uid=layer.uid)
+        ops.job_end()
+
+        gcode, _ = isolated_machine.encode_ops(ops, doc)
+
+        assert " A" not in gcode
+        assert " B" not in gcode
+        expected = 10.0 * 100.0 / (math.pi * 25.0)
+        formatted = f"{expected:.3f}".rstrip("0").rstrip(".")
+        assert formatted in gcode
+
+    def test_true_4th_axis_reversed_y(self, isolated_machine):
+        """TRUE_4TH_AXIS with reversed Y axis: degrees still match
+        world-space surface distance."""
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+        rm.set_axis(Axis.A)
+        isolated_machine.add_rotary_module(rm)
+
+        isolated_machine.set_reverse_y_axis(True)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_diameter(25.0)
+        layer.set_rotary_module_uid(rm.uid)
+
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=layer.uid)
+        ops.move_to(0, 0, 0)
+        ops.line_to(10, 10, 0)
+        ops.layer_end(layer_uid=layer.uid)
+        ops.job_end()
+
+        gcode, _ = isolated_machine.encode_ops(ops, doc)
+
+        diameter = 25.0
+        circumference = diameter * math.pi
+        expected_deg = (10.0 / circumference) * 360.0
+        formatted_deg = f"{expected_deg:.3f}".rstrip("0").rstrip(".")
+        assert formatted_deg in gcode

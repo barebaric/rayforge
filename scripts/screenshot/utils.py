@@ -614,19 +614,12 @@ def seek_3d_playback(win: "MainWindow", fraction: float) -> None:
     """
     Seek the 3D playback to the given fraction (0.0 to 1.0).
     """
-    from rayforge.simulator.op_player import OpPlayer
 
     def _seek() -> None:
         canvas = win.canvas3d
-        if canvas is None or canvas._op_player is None:
+        if canvas is None:
             return
-        player = canvas._op_player
-        target = int(len(player.ops) * fraction)
-        target = max(0, min(target, len(player.ops) - 1))
-        player.seek(target)
-        if canvas._playback_overlay is not None:
-            canvas._playback_overlay.update_ops_range(len(player.ops), target)
-        canvas.queue_render()
+        canvas.seek_playback_to_fraction(fraction)
 
     run_on_main_thread(_seek)
     time.sleep(0.3)

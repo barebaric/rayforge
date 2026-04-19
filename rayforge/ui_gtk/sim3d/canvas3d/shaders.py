@@ -37,9 +37,23 @@ uniform float uAlphaPending;
 uniform float uEmissive;
 uniform vec3 uPointLightPos;
 uniform float uPointLightOn;
+uniform float uUsePowerLUT;
+uniform sampler2D uColorLUT;
+uniform int uNumLaserLUTs;
+uniform vec4 uZeroPowerColor;
 void main() {
     vec4 baseColor;
-    if (uUseVertexColor > 0.5) {
+    if (uUsePowerLUT > 0.5) {
+        float power = clamp(vColor.r, 0.0, 1.0);
+        if (power < 0.001) {
+            baseColor = uZeroPowerColor;
+        } else {
+            int laserIdx = int(vColor.g + 0.5);
+            float lutY = (float(laserIdx) + 0.5)
+                         / float(max(uNumLaserLUTs, 1));
+            baseColor = texture(uColorLUT, vec2(power, lutY));
+        }
+    } else if (uUseVertexColor > 0.5) {
         baseColor = vColor;
     } else {
         baseColor = uColor;
@@ -196,21 +210,33 @@ out vec4 FragColor;
 
 uniform sampler2D uTexture;
 uniform sampler2D uColorLUT;
+uniform int uNumLaserLUTs;
+uniform int uLaserIndex;
 uniform float uAlpha;
 
 void main() {
-    // Sample the power value from the texture
-    float power = texture(uTexture, vTexCoord).r;
+    ivec2 texSize = textureSize(uTexture, 0);
+    vec2 tc = vTexCoord * vec2(texSize) - 0.5;
+    ivec2 base = ivec2(floor(tc));
+    float power = 0.0;
+    for (int dy = 0; dy <= 1; dy++) {
+        for (int dx = 0; dx <= 1; dx++) {
+            ivec2 idx = clamp(
+                base + ivec2(dx, dy),
+                ivec2(0),
+                texSize - ivec2(1)
+            );
+            power = max(power, texelFetch(uTexture, idx, 0).r);
+        }
+    }
 
-    // Discard zero-power areas (make them transparent)
     if (power <= 0.0) {
         discard;
     }
 
-    // Map power value to a color using the lookup table.
-    // The second coordinate (0.5) samples the middle of the 1-pixel-high LUT
-    // texture.
-    vec4 color = texture(uColorLUT, vec2(power, 0.5));
+    float lutY = (float(uLaserIndex) + 0.5)
+                 / float(max(uNumLaserLUTs, 1));
+    vec4 color = texture(uColorLUT, vec2(power, lutY));
 
     FragColor = vec4(color.rgb, color.a * uAlpha);
 }

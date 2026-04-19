@@ -319,7 +319,8 @@ class Ops:
 
             if isinstance(cmd, MovingCommand) and cmd.extra_axes:
                 extra_axes_map[str(i)] = {
-                    axis.name: value for axis, value in cmd.extra_axes.items()
+                    axis.name: float(value)
+                    for axis, value in cmd.extra_axes.items()
                 }
 
         json_str = json.dumps(state_marker_cmds_data)

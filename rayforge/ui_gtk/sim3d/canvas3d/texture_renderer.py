@@ -7,7 +7,7 @@ import time
 from typing import List, Dict, Any, Optional
 import numpy as np
 from OpenGL import GL
-from .gl_utils import BaseRenderer, Shader
+from .gl_utils import BaseRenderer, RenderContext, Shader
 from ....pipeline.artifact.base import TextureData
 
 
@@ -36,6 +36,7 @@ class TextureArtifactRenderer(BaseRenderer):
         self.instances: List[Dict[str, Any]] = []
         self.cylinder_vao: int = 0
         self.cylinder_vbo: int = 0
+        self._num_laser_luts: int = 1
 
     def init_gl(self):
         """
@@ -174,10 +175,10 @@ class TextureArtifactRenderer(BaseRenderer):
         self,
         texture_data: TextureData,
         final_model_matrix: np.ndarray,
-        color_lut: Optional[np.ndarray] = None,
         rotary_enabled: bool = False,
         rotary_diameter: float = 25.0,
         cylinder_vertices: Optional[np.ndarray] = None,
+        laser_index: int = 0,
     ):
         """Adds a texture artifact to be rendered in the next frame."""
         if not self.is_initialized:
@@ -237,9 +238,9 @@ class TextureArtifactRenderer(BaseRenderer):
         instance_data = {
             "texture_id": texture_id,
             "model_matrix": final_model_matrix,
-            "color_lut": color_lut,
             "rotary_enabled": rotary_enabled,
             "rotary_diameter": rotary_diameter,
+            "laser_index": laser_index,
         }
 
         if rotary_enabled and cylinder_vertices is not None:
@@ -247,22 +248,28 @@ class TextureArtifactRenderer(BaseRenderer):
 
         self.instances.append(instance_data)
 
-    def update_color_lut(self, lut_data: np.ndarray):
+    def update_color_lut(self, lut_data: np.ndarray, num_lasers: int = 1):
         """
         Updates the color lookup table texture, now using GL_TEXTURE_2D.
         """
         if not self.is_initialized:
             return
 
+        self._num_laser_luts = num_lasers
         lut_data = np.ascontiguousarray(lut_data, dtype=np.float32)
+
+        if lut_data.ndim == 3:
+            width, height = lut_data.shape[1], lut_data.shape[0]
+        else:
+            width, height = lut_data.shape[0], 1
 
         GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)
         GL.glTexImage2D(
             GL.GL_TEXTURE_2D,
             0,
             GL.GL_RGBA32F,
-            lut_data.shape[0],  # width = 256
-            1,  # height = 1
+            width,
+            height,
             0,
             GL.GL_RGBA,
             GL.GL_FLOAT,
@@ -272,6 +279,7 @@ class TextureArtifactRenderer(BaseRenderer):
 
     def render(
         self,
+        ctx: RenderContext,
         view_proj_scene_matrix: np.ndarray,
         shader: Shader,
         reached_count: Optional[int] = None,
@@ -298,6 +306,7 @@ class TextureArtifactRenderer(BaseRenderer):
         shader.set_int("uTexture", 0)
         GL.glActiveTexture(GL.GL_TEXTURE1)
         shader.set_int("uColorLUT", 1)
+        shader.set_int("uNumLaserLUTs", self._num_laser_luts)
         GL.glBindVertexArray(self.vao)
 
         for i, instance in enumerate(self.instances):
@@ -309,26 +318,10 @@ class TextureArtifactRenderer(BaseRenderer):
             else:
                 shader.set_float("uAlpha", 1.0)
 
+            shader.set_int("uLaserIndex", instance.get("laser_index", 0))
+
             final_mvp = view_proj_scene_matrix @ instance["model_matrix"]
             shader.set_mat4("uMVP", final_mvp.T)
-
-            if instance["color_lut"] is not None:
-                lut_data = np.ascontiguousarray(
-                    instance["color_lut"], dtype=np.float32
-                )
-                GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)
-                GL.glTexImage2D(
-                    GL.GL_TEXTURE_2D,
-                    0,
-                    GL.GL_RGBA32F,
-                    lut_data.shape[0],
-                    1,
-                    0,
-                    GL.GL_RGBA,
-                    GL.GL_FLOAT,
-                    lut_data,
-                )
-                GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
             GL.glActiveTexture(GL.GL_TEXTURE1)
             GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)
@@ -345,6 +338,7 @@ class TextureArtifactRenderer(BaseRenderer):
 
     def render_cylinder(
         self,
+        ctx: RenderContext,
         view_proj_scene_matrix: np.ndarray,
         shader: Shader,
         reached_count: Optional[int] = None,
@@ -373,6 +367,7 @@ class TextureArtifactRenderer(BaseRenderer):
         shader.set_int("uTexture", 0)
         GL.glActiveTexture(GL.GL_TEXTURE1)
         shader.set_int("uColorLUT", 1)
+        shader.set_int("uNumLaserLUTs", self._num_laser_luts)
 
         num_rotary = 0
 
@@ -385,6 +380,8 @@ class TextureArtifactRenderer(BaseRenderer):
                 shader.set_float("uAlpha", pending_alpha)
             else:
                 shader.set_float("uAlpha", 1.0)
+
+            shader.set_int("uLaserIndex", instance.get("laser_index", 0))
 
             vertices = instance.get("cylinder_vertices")
             if vertices is None:
@@ -410,24 +407,6 @@ class TextureArtifactRenderer(BaseRenderer):
             )
             GL.glEnableVertexAttribArray(1)
             GL.glBindVertexArray(0)
-
-            if instance["color_lut"] is not None:
-                lut_data = np.ascontiguousarray(
-                    instance["color_lut"], dtype=np.float32
-                )
-                GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)
-                GL.glTexImage2D(
-                    GL.GL_TEXTURE_2D,
-                    0,
-                    GL.GL_RGBA32F,
-                    lut_data.shape[0],
-                    1,
-                    0,
-                    GL.GL_RGBA,
-                    GL.GL_FLOAT,
-                    lut_data,
-                )
-                GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
             # Draw using the full Scene Matrix, so it correctly
             # inherits WCS and _model_matrix.

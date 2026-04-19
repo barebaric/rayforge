@@ -7,7 +7,7 @@ import math
 from typing import Tuple
 import numpy as np
 from OpenGL import GL
-from .gl_utils import BaseRenderer, Shader
+from .gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)
 
@@ -22,15 +22,6 @@ class CylinderRenderer(BaseRenderer):
         rings: int = 16,
         length_segments: int = 8,
     ):
-        """
-        Initializes the CylinderRenderer.
-
-        Args:
-            diameter: The diameter of the cylinder in mm.
-            length: The length of the cylinder along the X-axis in mm.
-            rings: Number of circular rings around the circumference.
-            length_segments: Number of segments along the length.
-        """
         super().__init__()
         self.diameter = diameter
         self.length = length
@@ -40,7 +31,12 @@ class CylinderRenderer(BaseRenderer):
         self.vao: int = 0
         self.vbo: int = 0
         self.vertex_count = 0
-        self._color: Tuple[float, float, float, float] = (0.5, 0.5, 0.5, 0.3)
+        self._color: Tuple[float, float, float, float] = (
+            0.5,
+            0.5,
+            0.5,
+            0.3,
+        )
 
     def set_color(self, color: Tuple[float, float, float, float]):
         """Sets the wireframe color."""
@@ -52,29 +48,33 @@ class CylinderRenderer(BaseRenderer):
         radius = self.diameter / 2.0
 
         for i in range(self.length_segments + 1):
-            x = (i / self.length_segments) * self.length
+            cyl_pos = (i / self.length_segments) * self.length
             for j in range(self.rings):
                 theta1 = (j / self.rings) * 2.0 * math.pi
                 theta2 = ((j + 1) / self.rings) * 2.0 * math.pi
 
-                y1 = radius * math.sin(theta1)
-                z1 = radius * math.cos(theta1)
-                y2 = radius * math.sin(theta2)
-                z2 = radius * math.cos(theta2)
+                r1a = radius * math.sin(theta1)
+                r1b = radius * math.cos(theta1)
+                r2a = radius * math.sin(theta2)
+                r2b = radius * math.cos(theta2)
 
-                vertices.extend([x, y1, z1])
-                vertices.extend([x, y2, z2])
+                p1 = [cyl_pos, r1a, r1b]
+                p2 = [cyl_pos, r2a, r2b]
+                vertices.extend(p1)
+                vertices.extend(p2)
 
         for j in range(self.rings):
             theta = (j / self.rings) * 2.0 * math.pi
-            y = radius * math.sin(theta)
-            z = radius * math.cos(theta)
+            ra = radius * math.sin(theta)
+            rb = radius * math.cos(theta)
 
             for i in range(self.length_segments):
-                x1 = (i / self.length_segments) * self.length
-                x2 = ((i + 1) / self.length_segments) * self.length
-                vertices.extend([x1, y, z])
-                vertices.extend([x2, y, z])
+                cyl1 = (i / self.length_segments) * self.length
+                cyl2 = ((i + 1) / self.length_segments) * self.length
+                p1 = [cyl1, ra, rb]
+                p2 = [cyl2, ra, rb]
+                vertices.extend(p1)
+                vertices.extend(p2)
 
         self.vertex_count = len(vertices) // 3
         vertex_data = np.array(vertices, dtype=np.float32)
@@ -97,7 +97,9 @@ class CylinderRenderer(BaseRenderer):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         GL.glBindVertexArray(0)
 
-    def render(self, shader: Shader, mvp_matrix: np.ndarray) -> None:
+    def render(
+        self, ctx: RenderContext, shader: Shader, mvp_matrix: np.ndarray
+    ) -> None:
         """
         Renders the cylinder wireframe.
 

@@ -9,6 +9,8 @@ from rayforge.ui_gtk.sim3d.canvas3d.model_renderer import (
     _load_mesh_data,
     _model_cache,
 )
+from rayforge.ui_gtk.sim3d.canvas3d.gl_utils import RenderContext
+from rayforge.core.color import ColorSet
 
 
 def _make_simple_mesh():
@@ -104,7 +106,18 @@ class TestModelRenderer:
         renderer = ModelRenderer(tmp_path / "test.glb")
         mock_shader = MagicMock()
         mvp = np.eye(4, dtype=np.float32)
-        renderer.render(mock_shader, mvp)
+        ctx = RenderContext(
+            proj_matrix=np.eye(4, dtype=np.float32),
+            view_matrix=np.eye(4, dtype=np.float32),
+            mvp_ui=mvp,
+            mvp_scene=mvp,
+            margin_shift=np.eye(4, dtype=np.float32),
+            model_matrix=np.eye(4, dtype=np.float32),
+            viewport_height=800,
+            camera_position=np.zeros(3),
+            color_set=ColorSet(),
+        )
+        renderer.render(ctx, mock_shader, mvp)
         mock_shader.use.assert_not_called()
 
     def test_bounds_property(self, tmp_path):

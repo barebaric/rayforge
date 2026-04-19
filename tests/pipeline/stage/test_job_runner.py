@@ -101,7 +101,6 @@ def test_jobrunner_assembles_step_artifacts_correctly(
     assert line_cmds[1].end == pytest.approx((50.0, 50.0, 0.0))
 
     # Assert comprehensive artifact content
-    assert final_artifact.vertex_data is not None
     assert final_artifact.machine_code_bytes is not None
     assert final_artifact.op_map_bytes is not None
 

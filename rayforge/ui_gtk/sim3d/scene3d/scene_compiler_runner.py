@@ -42,16 +42,17 @@ def compile_scene_in_subprocess(
         logger.error(f"Expected JobArtifact, got {type(artifact).__name__}.")
         return None
 
-    if artifact.ops is None or artifact.ops.is_empty():
+    ops = artifact.mapped_ops if artifact.mapped_ops else artifact.ops
+    if ops is None or ops.is_empty():
         logger.debug("Job artifact ops are empty.")
         return None
 
     t_start = time.perf_counter()
-    compiled = compile_scene(artifact.ops, config)
+    compiled = compile_scene(ops, config)
     elapsed = (time.perf_counter() - t_start) * 1000
     logger.info(
         f"[SCENE_COMPILER] Compilation took {elapsed:.1f}ms "
-        f"(commands={len(artifact.ops.commands)})"
+        f"(commands={len(ops.commands)})"
     )
 
     compiled_handle = artifact_store.put(compiled, creator_tag="scene3d")

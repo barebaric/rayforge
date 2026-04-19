@@ -3,6 +3,8 @@ import numpy as np
 from unittest.mock import MagicMock
 from rayforge.machine.models.machine import Origin
 from rayforge.ui_gtk.sim3d.canvas3d.axis_renderer_3d import AxisRenderer3D
+from rayforge.ui_gtk.sim3d.canvas3d.gl_utils import RenderContext
+from rayforge.core.color import ColorSet
 
 # Test scenarios for axis label expectations, mirrored from the 2D canvas tests
 # (
@@ -129,11 +131,21 @@ def test_axis_label_rendering(
     dummy_view = np.identity(4, dtype=np.float32)
 
     # 4. Call the private method containing the label generation logic
+    ctx = RenderContext(
+        proj_matrix=np.eye(4, dtype=np.float32),
+        view_matrix=dummy_view,
+        mvp_ui=dummy_mvp,
+        mvp_scene=dummy_mvp,
+        margin_shift=np.eye(4, dtype=np.float32),
+        model_matrix=model_matrix,
+        viewport_height=800,
+        camera_position=np.zeros(3),
+        color_set=ColorSet(),
+    )
     axis_renderer._render_axis_labels(
+        ctx=ctx,
         text_shader=MagicMock(),
         text_mvp_matrix=dummy_mvp,
-        view_matrix=dummy_view,
-        model_matrix=model_matrix,
         origin_offset_mm=wcs_offset,
         x_right=x_right,
         y_down=y_down,
@@ -146,7 +158,7 @@ def test_axis_label_rendering(
     if mock_text_renderer.render_text.called:
         for call_args in mock_text_renderer.render_text.call_args_list:
             # The label text is the second positional argument (index 1)
-            label_text = call_args.args[1]
+            label_text = call_args.args[2]
             if label_text:
                 rendered_labels.append(int(label_text))
 

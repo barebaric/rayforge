@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import cast, Optional
+from typing import List, cast, Optional
 from gettext import gettext as _
 
 from gi.repository import Adw, Gtk
@@ -8,7 +8,11 @@ from ...context import get_context
 from ...core.model import Model
 from ...core.ops.axis import Axis
 from ...machine.models.machine import Machine
-from ...machine.models.rotary_module import RotaryModule
+from ...machine.models.rotary_module import (
+    RotaryModule,
+    RotaryMode,
+    RotaryType,
+)
 from ..icons import get_icon
 from ..shared.adwfix import get_spinrow_float
 from ..shared.model_selection_dialog import ModelSelectionDialog
@@ -75,11 +79,12 @@ class RotaryModuleRow(Gtk.Box):
         self._update_selection_state()
 
     def _get_subtitle_text(self) -> str:
-        model_label = self.module.model_id or _("No model")
-        return _("Axis {axis}, {model}").format(
-            axis=self.module.axis.name,
-            model=model_label,
-        )
+        if self.module.mode == RotaryMode.AXIS_REPLACEMENT:
+            mode_label = _("Axis Replacement")
+        else:
+            mode_label = _("True 4th Axis")
+        axis = self.module.axis.name
+        return _("{mode}, Axis {axis}").format(mode=mode_label, axis=axis)
 
     def _update_selection_state(self):
         is_default = (
@@ -275,16 +280,26 @@ class RotaryModulePage(TrackedPreferencesPage):
         self.name_row.add_controller(name_focus_ctrl)
         self.general_group.add(self.name_row)
 
-        excluded = (Axis.X, Axis.Y)
-        valid_axes = sorted(
-            [a for a in Axis if a not in excluded],
-            key=lambda a: str(a.name or ""),
+        mode_store = Gtk.StringList()
+        mode_store.append(_("True 4th Axis"))
+        mode_store.append(_("Axis Replacement"))
+        self._mode_values = [
+            RotaryMode.TRUE_4TH_AXIS,
+            RotaryMode.AXIS_REPLACEMENT,
+        ]
+        self.mode_row = Adw.ComboRow(
+            title=_("Connection Mode"),
+            subtitle=_(
+                "How the rotary is connected to the machine controller"
+            ),
+            model=mode_store,
         )
-        self._valid_axes = valid_axes
+        self.mode_row.connect("notify::selected", self._on_mode_changed)
+        self.general_group.add(self.mode_row)
+
+        self._valid_axes: list[Axis] = []
 
         module_axis_store = Gtk.StringList()
-        for a in valid_axes:
-            module_axis_store.append(a.name or "")
         self.module_axis_row = Adw.ComboRow(
             title=_("Axis"),
             subtitle=_("Axis letter for this module"),
@@ -294,6 +309,102 @@ class RotaryModulePage(TrackedPreferencesPage):
             "notify::selected", self._on_module_axis_changed
         )
         self.general_group.add(self.module_axis_row)
+
+        self.reverse_axis_row = Adw.SwitchRow(
+            title=_("Reversed Axis"),
+            subtitle=_("Reverse the rotation direction of the rotary axis"),
+        )
+        self.reverse_axis_row.connect(
+            "notify::active", self._on_reverse_axis_changed
+        )
+        self.general_group.add(self.reverse_axis_row)
+
+        self.axis_position_x_row = Adw.SpinRow(
+            title=_("Axis Offset X"),
+            subtitle=_("Offset from module position to rotation axis (X)"),
+            adjustment=Gtk.Adjustment(
+                lower=-10000, upper=10000, step_increment=1, page_increment=10
+            ),
+            digits=2,
+        )
+        self.axis_position_x_row.connect(
+            "notify::value", self._on_axis_position_changed
+        )
+        self.general_group.add(self.axis_position_x_row)
+
+        self.axis_position_y_row = Adw.SpinRow(
+            title=_("Axis Offset Y"),
+            subtitle=_("Offset from module position to rotation axis (Y)"),
+            adjustment=Gtk.Adjustment(
+                lower=-10000, upper=10000, step_increment=1, page_increment=10
+            ),
+            digits=2,
+        )
+        self.axis_position_y_row.connect(
+            "notify::value", self._on_axis_position_changed
+        )
+        self.general_group.add(self.axis_position_y_row)
+
+        self.axis_position_z_row = Adw.SpinRow(
+            title=_("Axis Offset Z"),
+            subtitle=_("Offset from module position to rotation axis (Z)"),
+            adjustment=Gtk.Adjustment(
+                lower=-10000, upper=10000, step_increment=1, page_increment=10
+            ),
+            digits=2,
+        )
+        self.axis_position_z_row.connect(
+            "notify::value", self._on_axis_position_changed
+        )
+        self.general_group.add(self.axis_position_z_row)
+
+        rotary_type_store = Gtk.StringList()
+        rotary_type_store.append(_("Jaws / Chuck"))
+        rotary_type_store.append(_("Rollers"))
+        self._rotary_type_values = [
+            RotaryType.JAWS,
+            RotaryType.ROLLERS,
+        ]
+        self.rotary_type_row = Adw.ComboRow(
+            title=_("Drive Type"),
+            subtitle=_("How the rotary module drives the workpiece rotation"),
+            model=rotary_type_store,
+        )
+        self.rotary_type_row.connect(
+            "notify::selected", self._on_rotary_type_changed
+        )
+        self.general_group.add(self.rotary_type_row)
+
+        roller_diam_adj = Gtk.Adjustment(
+            lower=0, upper=10000, step_increment=1, page_increment=10
+        )
+        self.roller_diameter_row = Adw.SpinRow(
+            title=_("Roller Diameter"),
+            subtitle=_("Diameter of the drive roller"),
+            adjustment=roller_diam_adj,
+            digits=1,
+        )
+        self.roller_diameter_row.connect(
+            "notify::value", self._on_roller_diameter_changed
+        )
+        self.general_group.add(self.roller_diameter_row)
+
+        mm_per_rot_adj = Gtk.Adjustment(
+            lower=0, upper=100000, step_increment=1, page_increment=10
+        )
+        self.mu_per_rotation_row = Adw.SpinRow(
+            title=_("Travel per Rotation"),
+            subtitle=_(
+                "Firmware distance for one full 360° rotation. "
+                "0 = raw circumferential output."
+            ),
+            adjustment=mm_per_rot_adj,
+            digits=2,
+        )
+        self.mu_per_rotation_row.connect(
+            "notify::value", self._on_mm_per_rotation_changed
+        )
+        self.general_group.add(self.mu_per_rotation_row)
 
         default_diam_adj = Gtk.Adjustment(
             lower=1, upper=10000, step_increment=1, page_increment=10
@@ -444,13 +555,31 @@ class RotaryModulePage(TrackedPreferencesPage):
         self._is_updating = True
 
         self.name_row.set_text(module.name)
+
         try:
-            selected = self._valid_axes.index(module.axis)
+            mode_idx = self._mode_values.index(module.mode)
         except ValueError:
-            selected = 0
-        self.module_axis_row.set_selected(selected)
+            mode_idx = 0
+        self.mode_row.set_selected(mode_idx)
+
+        self.mu_per_rotation_row.set_value(module.mu_per_rotation)
+        self._update_mode_dependent_rows(module)
+
         self.default_diameter_row.set_value(module.default_diameter)
         self.max_workpiece_length_row.set_value(module.max_workpiece_length)
+
+        try:
+            type_idx = self._rotary_type_values.index(module.rotary_type)
+        except ValueError:
+            type_idx = 0
+        self.rotary_type_row.set_selected(type_idx)
+        self._update_type_dependent_rows(module)
+
+        self.roller_diameter_row.set_value(module.roller_diameter)
+        self.reverse_axis_row.set_active(module.reverse_axis)
+        self.axis_position_x_row.set_value(float(module.axis_position[0]))
+        self.axis_position_y_row.set_value(float(module.axis_position[1]))
+        self.axis_position_z_row.set_value(float(module.axis_position[2]))
         self._update_model_subtitle(module)
         t = module.transform
         self.x_row.set_value(float(t[0, 3]))
@@ -503,6 +632,64 @@ class RotaryModulePage(TrackedPreferencesPage):
         if selected < len(self._valid_axes):
             module.set_axis(self._valid_axes[selected])
 
+    def _get_valid_axes_for_mode(self, mode: RotaryMode) -> List[Axis]:
+        if mode == RotaryMode.TRUE_4TH_AXIS:
+            return [Axis.A, Axis.B, Axis.C, Axis.U]
+        return [Axis.Y, Axis.Z]
+
+    def _update_axis_dropdown(self, module: RotaryModule):
+        axes = self._get_valid_axes_for_mode(module.mode)
+        self._valid_axes = axes
+        store = Gtk.StringList()
+        for a in axes:
+            store.append(a.name or "")
+        self.module_axis_row.set_model(store)
+        try:
+            selected = axes.index(module.axis)
+        except ValueError:
+            selected = 0
+            if axes:
+                module.set_axis(axes[0])
+        self.module_axis_row.set_selected(selected)
+
+    def _update_mode_dependent_rows(self, module: RotaryModule):
+        is_replacement = module.mode == RotaryMode.AXIS_REPLACEMENT
+        self.mu_per_rotation_row.set_visible(is_replacement)
+        self._update_axis_dropdown(module)
+
+    def _update_type_dependent_rows(self, module: RotaryModule):
+        is_roller = module.rotary_type == RotaryType.ROLLERS
+        self.roller_diameter_row.set_visible(is_roller)
+
+    def _on_mode_changed(self, row, _param):
+        if self._is_updating:
+            return
+        module = self._get_selected_module()
+        if not module:
+            return
+        selected = row.get_selected()
+        if selected < len(self._mode_values):
+            module.set_mode(self._mode_values[selected])
+            self._update_mode_dependent_rows(module)
+
+    def _on_rotary_type_changed(self, row, _param):
+        if self._is_updating:
+            return
+        module = self._get_selected_module()
+        if not module:
+            return
+        selected = row.get_selected()
+        if selected < len(self._rotary_type_values):
+            module.set_rotary_type(self._rotary_type_values[selected])
+            self._update_type_dependent_rows(module)
+
+    def _on_mm_per_rotation_changed(self, spinrow, _param):
+        if self._is_updating:
+            return
+        module = self._get_selected_module()
+        if module:
+            module.set_mm_per_rotation(get_spinrow_float(spinrow))
+
     def _on_default_diameter_changed(self, spinrow, _param):
         if self._is_updating:
             return
@@ -516,6 +703,31 @@ class RotaryModulePage(TrackedPreferencesPage):
         module = self._get_selected_module()
         if module:
             module.set_max_workpiece_length(get_spinrow_float(spinrow))
+
+    def _on_roller_diameter_changed(self, spinrow, _param):
+        if self._is_updating:
+            return
+        module = self._get_selected_module()
+        if module:
+            module.set_roller_diameter(get_spinrow_float(spinrow))
+
+    def _on_reverse_axis_changed(self, switchrow, _param):
+        if self._is_updating:
+            return
+        module = self._get_selected_module()
+        if module:
+            module.set_reverse_axis(switchrow.get_active())
+
+    def _on_axis_position_changed(self, spinrow, _param):
+        if self._is_updating:
+            return
+        module = self._get_selected_module()
+        if module:
+            module.set_axis_position(
+                self.axis_position_x_row.get_value(),
+                self.axis_position_y_row.get_value(),
+                self.axis_position_z_row.get_value(),
+            )
 
     def _on_model_activated(self, row):
         module = self._get_selected_module()
