@@ -791,6 +791,25 @@ class Canvas3D(Gtk.GLArea):
             rot_4x4 = rotation_4x4(vis_rot_axis, cyl_angle)
             rot_cyl_gl = (cyl_base_mvp @ rot_4x4).T.astype(np.float32)
 
+            deferred_ring_renders = []
+
+            tex_reached = None
+            if self._op_player and self._compiled_artifact:
+                tex_reached = 0
+                playhead = self._op_player.current_index
+                for tl in self._compiled_artifact.texture_layers:
+                    if playhead >= tl.activation_cmd_idx:
+                        tex_reached += 1
+            else:
+                tex_reached = None
+
+            skip_ring = (
+                self._compiled_artifact is not None
+                and tex_reached is not None
+                and tex_reached
+                >= len(self._compiled_artifact.texture_layers)
+            )
+
             # Render each layer group (ops + ring buffer)
             for group in self._layer_groups:
                 mvp = rot_cyl_gl if group.is_rotary else mvp_matrix_ui_gl
@@ -834,18 +853,19 @@ class Canvas3D(Gtk.GLArea):
                         executed_travel_vertex_count=exec_travel,
                     )
 
-                if group.ring_renderer.vertex_count > 0 and self._main_shader:
+                if (
+                    group.ring_renderer.vertex_count > 0
+                    and self._main_shader
+                    and not skip_ring
+                ):
                     tag = "rot" if group.is_rotary else "flat"
                     logger.debug(
                         f"[RING-PLAYBACK] {tag} "
                         f"exec={exec_ring} "
                         f"total={group.ring_renderer.vertex_count}"
                     )
-                    group.ring_renderer.render(
-                        ctx,
-                        self._main_shader,
-                        mvp,
-                        executed_vertex_count=exec_ring,
+                    deferred_ring_renders.append(
+                        (group.ring_renderer, mvp, exec_ring)
                     )
 
             laser_light_pos = None
@@ -980,13 +1000,6 @@ class Canvas3D(Gtk.GLArea):
                             point_light_pos=laser_light_pos,
                         )
 
-            tex_reached = None
-            if self._op_player and self._compiled_artifact:
-                tex_reached = 0
-                playhead = self._op_player.current_index
-                for tl in self._compiled_artifact.texture_layers:
-                    if playhead >= tl.activation_cmd_idx:
-                        tex_reached += 1
             if self._texture_renderer and self._texture_shader:
                 self._texture_renderer.render(
                     ctx,
@@ -1001,6 +1014,14 @@ class Canvas3D(Gtk.GLArea):
                     rot_cyl_mvp,
                     self._texture_shader,
                     reached_count=tex_reached,
+                )
+
+            for ring_renderer, mvp, exec_ring in deferred_ring_renders:
+                ring_renderer.render(
+                    ctx,
+                    self._main_shader,
+                    mvp,
+                    executed_vertex_count=exec_ring,
                 )
 
         except Exception as e:
