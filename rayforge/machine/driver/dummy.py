@@ -46,7 +46,8 @@ class NoDeviceDriver(Driver):
         # Initialize from machine's persisted state to prevent overwriting
         # loaded configuration with defaults upon connection.
         self._offsets: Dict[str, Pos] = cast(
-            Dict[str, Pos], machine.wcs_offsets.copy()
+            Dict[str, Pos],
+            {k: v.offset for k, v in machine.coordinate_systems.items()},
         )
 
         # Ensure standard keys exist
