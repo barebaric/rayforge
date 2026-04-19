@@ -1,5 +1,5 @@
 import pytest
-from rayforge.machine.driver.grbl_util import (
+from rayforge.machine.driver.grbl.grbl_util import (
     _split_status_line,
     _parse_status_part,
     _parse_position_attribute,

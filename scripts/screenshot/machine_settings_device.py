@@ -4,7 +4,7 @@
 import time
 import logging
 from rayforge.uiscript import app, win
-from rayforge.machine.driver.grbl_util import get_grbl_setting_varsets
+from rayforge.machine.driver.grbl.grbl_util import get_grbl_setting_varsets
 from utils import open_machine_settings, take_screenshot, run_on_main_thread
 
 logger = logging.getLogger(__name__)

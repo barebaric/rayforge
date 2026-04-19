@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, AsyncMock, PropertyMock
 from rayforge.core.doc import Doc
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
 from rayforge.core.varset import VarSet, Var
-from rayforge.machine.driver.grbl_serial import GrblSerialDriver
+from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
 from rayforge.machine.transport.grbl import GrblSerialTransport
 from rayforge.machine.transport import TransportStatus, SerialTransport
 from rayforge.machine.driver.driver import (
@@ -36,7 +36,7 @@ def driver(context_initializer, machine, mock_serial_transport, mocker):
     mocked.
     """
     mocker.patch(
-        "rayforge.machine.driver.grbl_serial.SerialTransport.__init__",
+        "rayforge.machine.driver.grbl.grbl_serial.SerialTransport.__init__",
         return_value=None,
     )
 
@@ -393,7 +393,7 @@ class TestGrblSerialDriver:
         driver = connected_driver
 
         mocker.patch(
-            "rayforge.machine.driver.grbl_serial.gcode_to_p_number",
+            "rayforge.machine.driver.grbl.grbl_serial.gcode_to_p_number",
             return_value=2,
         )
 

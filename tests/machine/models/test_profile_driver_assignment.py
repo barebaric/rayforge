@@ -3,7 +3,7 @@ import pytest_asyncio
 from typing import TYPE_CHECKING
 
 from rayforge.machine.driver.dummy import NoDeviceDriver
-from rayforge.machine.driver.grbl_serial import GrblSerialDriver
+from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
 from rayforge.machine.device.profile import DeviceProfile
 from rayforge.config import BUILTIN_DEVICES_DIR
 from rayforge.shared import tasker

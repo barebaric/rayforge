@@ -14,13 +14,13 @@ from typing import (
     Dict,
 )
 from gettext import gettext as _
-from ...context import RayforgeContext
-from ...core.varset import Var, VarSet, HostnameVar, PortVar
-from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
-from ...pipeline.encoder.gcode import GcodeEncoder
-from ..transport import HttpTransport, WebSocketTransport, TransportStatus
-from ..transport.validators import is_valid_hostname_or_ip
-from .driver import (
+from ....context import RayforgeContext
+from ....core.varset import Var, VarSet, HostnameVar, PortVar
+from ....pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
+from ....pipeline.encoder.gcode import GcodeEncoder
+from ...transport import HttpTransport, WebSocketTransport, TransportStatus
+from ...transport.validators import is_valid_hostname_or_ip
+from ..driver import (
     Driver,
     DriverSetupError,
     DriverPrecheckError,
@@ -47,9 +47,9 @@ from .grbl_util import (
 )
 
 if TYPE_CHECKING:
-    from ...core.doc import Doc
-    from ..models.machine import Machine
-    from ..models.laser import Laser
+    from ....core.doc import Doc
+    from ...models.machine import Machine
+    from ...models.laser import Laser
 
 
 logger = logging.getLogger(__name__)
