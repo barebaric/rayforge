@@ -142,6 +142,7 @@ class Canvas3D(Gtk.GLArea):
         self._color_set: Optional[ColorSet] = None
         self._laser_color_sets: Dict[str, ColorSet] = {}
         self._theme_is_dirty = True
+        self._last_ops_color_mode = context.config.ops_color_mode
 
         # State for interactions
         self._last_pan_offset: Optional[Point] = None
@@ -272,7 +273,10 @@ class Canvas3D(Gtk.GLArea):
     def _on_config_changed(self, sender, **kwargs):
         """Re-compiles the scene when config settings change."""
         if self._gl_initialized:
-            self.update_scene_from_doc()
+            new_mode = self._context.config.ops_color_mode
+            if new_mode != self._last_ops_color_mode:
+                self._last_ops_color_mode = new_mode
+                self.update_scene_from_doc()
 
     def get_world_coords_on_plane(
         self, x: float, y: float, camera: Camera
