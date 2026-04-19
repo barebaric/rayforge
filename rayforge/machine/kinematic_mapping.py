@@ -59,9 +59,7 @@ def _collect_layer_commands(commands, start):
     """
     layer_cmds = []
     i = start
-    while i < len(commands) and not isinstance(
-        commands[i], LayerStartCommand
-    ):
+    while i < len(commands) and not isinstance(commands[i], LayerStartCommand):
         if not commands[i].is_marker():
             layer_cmds.append(commands[i])
         i += 1
@@ -152,15 +150,15 @@ class KinematicMapping:
 
     def _mu_to_degrees(self, mu: float) -> float:
         return KinematicMath.mu_to_degrees(
-            mu, self.diameter,
-            gear_ratio=self.gear_ratio, reverse=self.reverse,
+            mu,
+            self.diameter,
+            gear_ratio=self.gear_ratio,
+            reverse=self.reverse,
         )
 
     def _cylinder_center_y(self, cmd: MovingCommand) -> float:
         d = cmd.end[0]
-        return float(
-            self.axis_position_3d[1] + d * self.cylinder_dir[1]
-        )
+        return float(self.axis_position_3d[1] + d * self.cylinder_dir[1])
 
     _AXIS_TO_INDEX = {Axis.X: 0, Axis.Y: 1, Axis.Z: 2}
 
@@ -183,9 +181,7 @@ class KinematicMapping:
             degrees = self._mu_to_degrees(src_val)
 
             cmd.extra_axes[self.rotary_axis] = degrees
-            cmd.end = self._replace_y(
-                cmd.end, self._cylinder_center_y(cmd)
-            )
+            cmd.end = self._replace_y(cmd.end, self._cylinder_center_y(cmd))
             cmd.end = self._null_replaced_axis(cmd.end)
 
             if isinstance(cmd, ArcToCommand):
@@ -261,9 +257,7 @@ class KinematicMapping:
                 i += 1
                 continue
 
-            module = machine.rotary_modules.get(
-                layer.rotary_module_uid or ""
-            )
+            module = machine.rotary_modules.get(layer.rotary_module_uid or "")
             if module is None:
                 i += 1
                 continue

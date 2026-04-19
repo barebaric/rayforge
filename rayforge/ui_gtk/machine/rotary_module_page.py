@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import cast, Optional
+from typing import List, cast, Optional
 from gettext import gettext as _
 
 from gi.repository import Adw, Gtk
@@ -632,9 +632,7 @@ class RotaryModulePage(TrackedPreferencesPage):
         if selected < len(self._valid_axes):
             module.set_axis(self._valid_axes[selected])
 
-    def _get_valid_axes_for_mode(
-        self, mode: RotaryMode
-    ) -> list[Axis]:
+    def _get_valid_axes_for_mode(self, mode: RotaryMode) -> List[Axis]:
         if mode == RotaryMode.TRUE_4TH_AXIS:
             return [Axis.A, Axis.B, Axis.C, Axis.U]
         return [Axis.Y, Axis.Z]
