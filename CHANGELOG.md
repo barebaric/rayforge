@@ -5,6 +5,78 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.6.0-beta1
+
+### Added
+
+- Device profiles replace machine profiles with declarative packages that bundle
+  machine config and G-code dialect together
+- Export and import UI for sharing device profiles between machines or users
+- Per-layer Work Coordinate System (WCS) assignment with edit button in layer
+  settings
+- Redesigned layer system with visual workflow indicators in each layer column
+- Drag-and-drop layer reordering in the layer list
+- Workpieces are reorderable in the layer list to change z-order
+- Middle-click pan in the layer list
+- Layer columns now show subtitles and have limited default width
+- New documents start with a default of 3 layers
+- Rotary mode now supports true 4th axis and axis replacement (switching X or
+  Y for rotary)
+- Machine settings offer settings for roller-type rotary axis
+- Material test grid supports new parameter combinations with extra speed or
+  power labels in multipass mode
+- GRBL Telnet driver for networked grblHAL and ESP3D controllers (thanks to
+  gyordanov)
+- Update checker notifies when a new Rayforge version is available
+- Right panel is now a floating overlay for more canvas space
+- Values next to sliders are now editable entry fields
+- Setting to choose whether ops use layer color or laser color
+- Double clicking a workpiece in the layer box opens its properties
+- Site search on the Rayforge website
+- Sponsor page on the Rayforge website
+
+### Changed
+
+- Major refactoring of kinematics and 3D simulator for better rotary support
+- Kinematics now build dynamically from AxisSet and AxisMapper
+- Massively decreased memory usage of multi-layer PDFs
+- Reduced memory required for vertex storage by storing power values instead
+  of colors
+- 2D canvas adapts to rotary mode automatically
+- 3D canvas displays rotaries correctly in all configurations
+- GRBL serial driver: improved deadlock recovery, comment stripping before
+  sending G-code, improved buffer handling
+- Air assist state no longer resets between workpieces
+- 2D simulator removed (superseded by the 3D simulator)
+- Layer settings dialog is now non-modal
+
+### Fixed
+
+- WCS marker not updating in 2D canvas when changing WCS in layer settings
+- WCS synchronization fails if device does not report Z coordinates
+- Re-syncing WCS with the machine did not clear stale offsets
+- G0 and G1 feedrate is shared (#210)
+- Air assist disabled after workpiece (#208)
+- Sketcher shortcut shadowed by New Project shortcut
+- 1 key shortcut shadowed dimension input (#207)
+- Canvas not centered when opening a project with rotary layer
+- Opening a layer in rotary replacement mode overwrites machine Y dimensions
+- Textures not drawn with proper opacity in 3D canvas
+- Textures stretched too wide around the cylinder in rotary mode
+- 3D canvas axis extent frame with inverted margins when origin is top-right
+- 3D canvas not updating ops when rotary config changes
+- Laser head not moving in Y in flat mode
+- Cylinder not rotating during playback
+- Drawing trails behind laser in rotary simulation
+- Clipping when zooming in 3D canvas in orthographic view
+- No Z in G-code for rotary in Z replacement mode
+- G-code for rotary missing rotary command
+- Terminal window visible on Windows
+- Debouncing caused material test not to update when switching presets (#187)
+- Deleting the active machine could lead to no machine being active
+- Stale ops in 3D canvas after deleting a layer
+- Multiple GRBL serial driver robustness improvements
+
 ## 1.5.2
 
 ### Fixed
