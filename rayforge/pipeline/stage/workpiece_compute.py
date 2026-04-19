@@ -497,10 +497,21 @@ def _apply_transformers(
 
     for phase in phase_order:
         for transformer in transformers_by_phase[phase]:
+            base = execute_weight + (
+                processed_count / total_to_process
+            ) * transform_weight
+            span = transform_weight / total_to_process
+            if context is not None:
+                transformer_ctx = context.sub_context(
+                    base_progress=base,
+                    progress_range=span,
+                    total=1.0,
+                )
+            else:
+                transformer_ctx = None
             set_progress(
                 context,
-                execute_weight
-                + (processed_count / total_to_process) * transform_weight,
+                base,
                 _("Applying '{transformer}' on '{workpiece}'").format(
                     transformer=transformer.label, workpiece=workpiece.name
                 ),
@@ -508,7 +519,7 @@ def _apply_transformers(
             transformer.run(
                 ops,
                 workpiece=workpiece,
-                context=None,
+                context=transformer_ctx,
                 stock_geometries=stock_geometries,
                 settings=settings,
             )
