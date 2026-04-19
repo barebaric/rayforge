@@ -37,9 +37,19 @@ uniform float uAlphaPending;
 uniform float uEmissive;
 uniform vec3 uPointLightPos;
 uniform float uPointLightOn;
+uniform float uUsePowerLUT;
+uniform sampler2D uColorLUT;
+uniform vec4 uZeroPowerColor;
 void main() {
     vec4 baseColor;
-    if (uUseVertexColor > 0.5) {
+    if (uUsePowerLUT > 0.5) {
+        float power = clamp(vColor.r, 0.0, 1.0);
+        if (power < 0.001) {
+            baseColor = uZeroPowerColor;
+        } else {
+            baseColor = texture(uColorLUT, vec2(power, 0.5));
+        }
+    } else if (uUseVertexColor > 0.5) {
         baseColor = vColor;
     } else {
         baseColor = uColor;

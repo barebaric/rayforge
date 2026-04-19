@@ -17,12 +17,7 @@ from ....pipeline.artifact.base import TextureData
 from ....pipeline.artifact.handle import create_handle_from_dict
 from ....pipeline.artifact.job import JobArtifact, JobArtifactHandle
 from ....pipeline.pipeline import Pipeline
-from ....core.color import (
-    ColorSet,
-    hex_to_rgba,
-    create_lut_from_color,
-    OPS_COLOR_SPEC,
-)
+from ....core.color import ColorSet, hex_to_rgba, OPS_COLOR_SPEC
 from ....shared.tasker import task_mgr, Task
 from ....simulator.machine_state import MachineState
 from ....simulator.op_player import OpPlayer
@@ -142,7 +137,6 @@ class Canvas3D(Gtk.GLArea):
         self._color_set: Optional[ColorSet] = None
         self._laser_color_sets: Dict[str, ColorSet] = {}
         self._theme_is_dirty = True
-        self._last_ops_color_mode = context.config.ops_color_mode
 
         # State for interactions
         self._last_pan_offset: Optional[Point] = None
@@ -271,12 +265,10 @@ class Canvas3D(Gtk.GLArea):
         self.queue_render()
 
     def _on_config_changed(self, sender, **kwargs):
-        """Re-compiles the scene when config settings change."""
+        """Updates renderer color LUTs when config settings change."""
         if self._gl_initialized:
-            new_mode = self._context.config.ops_color_mode
-            if new_mode != self._last_ops_color_mode:
-                self._last_ops_color_mode = new_mode
-                self.update_scene_from_doc()
+            self._update_renderer_color_luts()
+            self.queue_render()
 
     def get_world_coords_on_plane(
         self, x: float, y: float, camera: Camera
@@ -533,11 +525,6 @@ class Canvas3D(Gtk.GLArea):
         resolver = GtkColorResolver(self)
         self._color_set = resolver.resolve(self._color_spec)
 
-        if self._color_set:
-            self._texture_renderer.update_color_lut(
-                self._color_set.get_lut("engrave")
-            )
-
         style_context = self.get_style_context()
         found, bg_rgba = style_context.lookup_color("theme_bg_color")
         if not found:
@@ -589,6 +576,7 @@ class Canvas3D(Gtk.GLArea):
             self._axis_renderer.set_grid_color(grid_color)
 
         self._update_laser_colors()
+        self._update_renderer_color_luts()
         self._theme_is_dirty = False
 
     def _update_laser_colors(self):
@@ -607,6 +595,53 @@ class Canvas3D(Gtk.GLArea):
         for laser in machine.heads:
             laser_color_set = OpsColorSet.from_laser(laser, self._color_set)
             self._laser_color_sets[laser.uid] = laser_color_set.to_color_set()
+
+    @staticmethod
+    def _make_flat_color_lut(color: tuple) -> np.ndarray:
+        lut = np.zeros((256, 4), dtype=np.float32)
+        r, g, b, a = color
+        lut[1:, 0] = r
+        lut[1:, 1] = g
+        lut[1:, 2] = b
+        lut[1:, 3] = a
+        return lut
+
+    def _get_laser_engrave_rgba(self):
+        if self._laser_color_sets:
+            first_cs = next(iter(self._laser_color_sets.values()))
+            engrave_lut = first_cs.get_lut("engrave")
+            return tuple(engrave_lut[255])
+        return (1.0, 1.0, 1.0, 1.0)
+
+    def _update_renderer_color_luts(self):
+        if not self._color_set or not self._gl_initialized:
+            return
+
+        cut_lut = self._color_set.get_lut("cut")
+        engrave_lut = self._color_set.get_lut("engrave")
+
+        if self._laser_color_sets:
+            first_cs = next(iter(self._laser_color_sets.values()))
+            laser_cut_lut = first_cs.get_lut("cut")
+            laser_engrave_lut = first_cs.get_lut("engrave")
+        else:
+            laser_cut_lut = cut_lut
+            laser_engrave_lut = engrave_lut
+
+        for group in self._layer_groups:
+            group.ops_renderer.update_color_lut(laser_cut_lut)
+
+        ring_lut = self._make_flat_color_lut(self._get_laser_engrave_rgba())
+        for group in self._layer_groups:
+            group.ring_renderer.update_color_lut(ring_lut)
+
+        if self._texture_renderer:
+            logger.debug(
+                f"[COLOR_LUT] Using "
+                f"{'laser' if self._laser_color_sets else 'default'} "
+                f"engrave LUT, lut[255]={laser_engrave_lut[255]}"
+            )
+            self._texture_renderer.update_color_lut(laser_engrave_lut)
 
     def _process_pending_gl_updates(self):
         if self._scene_gl_dirty:
@@ -707,9 +742,7 @@ class Canvas3D(Gtk.GLArea):
             mvp_matrix_scene_gl = mvp_matrix_scene.T
 
             # Build the shared render context for this frame
-            spot_line_width = self._compute_spot_line_width(
-                mvp_matrix_ui_gl
-            )
+            spot_line_width = self._compute_spot_line_width(mvp_matrix_ui_gl)
             ctx = RenderContext(
                 proj_matrix=proj_matrix,
                 view_matrix=view_matrix,
@@ -765,9 +798,7 @@ class Canvas3D(Gtk.GLArea):
             ra = None
             if self._op_player:
                 ra = self._op_player.rotary_axis
-            vis_rot_axis = np.array(
-                [1.0, 0.0, 0.0], dtype=np.float64
-            )
+            vis_rot_axis = np.array([1.0, 0.0, 0.0], dtype=np.float64)
             if (
                 self._op_player
                 and self._had_rotary_layers
@@ -776,9 +807,7 @@ class Canvas3D(Gtk.GLArea):
             ):
                 asm = machine.assembly
                 if asm.has_rotary:
-                    degrees = self._op_player.state.axes.get(
-                        ra, 0.0
-                    )
+                    degrees = self._op_player.state.axes.get(ra, 0.0)
                     cyl_angle = math.radians(degrees)
 
             if self._had_rotary_layers and machine:
@@ -810,8 +839,7 @@ class Canvas3D(Gtk.GLArea):
             skip_ring = (
                 self._compiled_artifact is not None
                 and tex_reached is not None
-                and tex_reached
-                >= len(self._compiled_artifact.texture_layers)
+                and tex_reached >= len(self._compiled_artifact.texture_layers)
             )
 
             # Render each layer group (ops + ring buffer)
@@ -937,8 +965,10 @@ class Canvas3D(Gtk.GLArea):
                 if self._main_shader:
                     rot_cyl = rotation_4x4(vis_rot_axis, cyl_angle)
                     cyl_mesh_mvp = (
-                        mvp_matrix_ui @ margin_shift
-                        @ self._cylinder_transform @ rot_cyl
+                        mvp_matrix_ui
+                        @ margin_shift
+                        @ self._cylinder_transform
+                        @ rot_cyl
                     ).astype(np.float64)
                     renderer.render(
                         ctx,
@@ -971,27 +1001,21 @@ class Canvas3D(Gtk.GLArea):
                                 focal = 50.0
                                 if link.name.startswith("head_"):
                                     try:
-                                        idx = int(
-                                            link.name.split("_")[1]
-                                        )
+                                        idx = int(link.name.split("_")[1])
                                         laser = machine.heads[idx]
                                         if laser.focal_distance > 0:
-                                            focal = (
-                                                laser.focal_distance
-                                            )
+                                            focal = laser.focal_distance
                                     except (ValueError, IndexError):
                                         pass
-                                rotary_heads = (
-                                    asm.head_rotary_positions(
-                                        model_state,
-                                        diameter or 0.0,
-                                        focal_distance=focal,
-                                    )
+                                rotary_heads = asm.head_rotary_positions(
+                                    model_state,
+                                    diameter or 0.0,
+                                    focal_distance=focal,
                                 )
                                 if link.name in rotary_heads:
                                     pos = rotary_heads[link.name]
-                                    module_transform[:3, 3] = (
-                                        pos.astype(np.float32)
+                                    module_transform[:3, 3] = pos.astype(
+                                        np.float32
                                     )
                         combined = (
                             mvp_matrix_ui @ margin_shift @ module_transform
@@ -1377,9 +1401,7 @@ class Canvas3D(Gtk.GLArea):
 
         artifact = self._compiled_artifact
         for vl in artifact.vertex_layers:
-            group = _LayerRendererGroup(
-                is_rotary=vl.is_rotary
-            )
+            group = _LayerRendererGroup(is_rotary=vl.is_rotary)
             group.init_gl()
             self._layer_groups.append(group)
 
@@ -1387,13 +1409,18 @@ class Canvas3D(Gtk.GLArea):
                 pv_final = np.concatenate(
                     (vl.powered_verts, vl.zero_power_verts)
                 )
-                pc_final = np.concatenate(
-                    (vl.powered_colors, vl.zero_power_colors)
+                pvv_final = np.concatenate(
+                    (
+                        vl.power_values,
+                        np.zeros(
+                            vl.zero_power_verts.size // 3, dtype=np.float32
+                        ),
+                    )
                 )
                 tv_final = vl.travel_verts
             else:
                 pv_final = vl.powered_verts
-                pc_final = vl.powered_colors
+                pvv_final = vl.power_values
                 tv_final = np.array([], dtype=np.float32)
 
             powered_count = vl.powered_verts.size // 3
@@ -1408,7 +1435,7 @@ class Canvas3D(Gtk.GLArea):
             )
 
             group.ops_renderer.update_from_vertex_data(
-                pv_final, pc_final, tv_final
+                pv_final, pvv_final, tv_final
             )
 
         if self._texture_renderer:
@@ -1423,12 +1450,12 @@ class Canvas3D(Gtk.GLArea):
                 self._texture_renderer.add_instance(
                     tex_data,
                     tl.model_matrix,
-                    color_lut=tl.color_lut,
                     rotary_enabled=rotary_enabled,
                     rotary_diameter=tl.rotary_diameter,
                     cylinder_vertices=tl.cylinder_vertices,
                 )
 
+        self._update_renderer_color_luts()
         self.queue_render()
 
     def _update_op_player(self):
@@ -1438,9 +1465,7 @@ class Canvas3D(Gtk.GLArea):
             return
 
         if ops is None or ops.is_empty():
-            logger.debug(
-                "[CANVAS3D] _update_op_player: no ops available."
-            )
+            logger.debug("[CANVAS3D] _update_op_player: no ops available.")
             self._op_player = None
             for group in self._layer_groups:
                 group.powered_offsets = []
@@ -1454,9 +1479,7 @@ class Canvas3D(Gtk.GLArea):
             saved_index = self._op_player.current_index
 
         self._op_player = OpPlayer(ops, machine=machine, doc=self.doc)
-        self._op_player.layer_changed.connect(
-            self._on_playback_layer_changed
-        )
+        self._op_player.layer_changed.connect(self._on_playback_layer_changed)
         self._extract_playback_offsets_from_artifact()
 
         if saved_index is not None:
@@ -1560,7 +1583,7 @@ class Canvas3D(Gtk.GLArea):
             if ol is not None:
                 group.ring_renderer.upload(
                     ol.positions.ravel(),
-                    ol.colors.ravel(),
+                    ol.power_values.ravel(),
                 )
             else:
                 group.ring_renderer.clear()
@@ -1633,9 +1656,7 @@ class Canvas3D(Gtk.GLArea):
                 del self._cylinder_renderers[diameter]
 
         grid_size = (
-            self._axis_renderer.grid_size_mm
-            if self._axis_renderer
-            else 10.0
+            self._axis_renderer.grid_size_mm if self._axis_renderer else 10.0
         )
         length_segments = max(1, round(max_length / grid_size))
 
@@ -1801,15 +1822,7 @@ class Canvas3D(Gtk.GLArea):
                 self._cyl_base_pos = np.zeros(3, dtype=np.float64)
                 self._cylinder_transform = np.eye(4, dtype=np.float64)
 
-        laser_color_luts: Dict[str, Dict] = {}
-        for uid, cs in self._laser_color_sets.items():
-            laser_color_luts[uid] = {
-                "cut": cs.get_lut("cut").astype(np.float32).tobytes(),
-                "engrave": cs.get_lut("engrave").astype(np.float32).tobytes(),
-            }
-
         layer_configs: Dict[str, LayerRenderConfig] = {}
-        layer_color_luts: Dict[str, Dict] = {}
         for layer in self.doc.layers:
             axis_position = 0.0
             gear_ratio = 1.0
@@ -1822,19 +1835,15 @@ class Canvas3D(Gtk.GLArea):
                         layer.rotary_module_uid
                     )
                     if module:
-                        mapping = (
-                            KinematicMapping.from_rotary_module(
-                                module, layer.rotary_diameter
-                            )
+                        mapping = KinematicMapping.from_rotary_module(
+                            module, layer.rotary_diameter
                         )
                         if mapping is not None:
                             axis_position = mapping.axis_position
                             axis_position_3d = tuple(
                                 mapping.axis_position_3d.tolist()
                             )
-                            cylinder_dir = tuple(
-                                mapping.cylinder_dir.tolist()
-                            )
+                            cylinder_dir = tuple(mapping.cylinder_dir.tolist())
                             gear_ratio = mapping.gear_ratio
                             reverse = mapping.reverse
             layer_configs[layer.uid] = LayerRenderConfig(
@@ -1846,29 +1855,11 @@ class Canvas3D(Gtk.GLArea):
                 axis_position_3d=axis_position_3d,
                 cylinder_dir=cylinder_dir,
             )
-            cut_rgba = hex_to_rgba(layer.color)
-            cut_lut = create_lut_from_color(cut_rgba)
-            layer_color_luts[layer.uid] = {
-                "cut": cut_lut.astype(np.float32).tobytes(),
-                "engrave": cut_lut.astype(np.float32).tobytes(),
-            }
-
-        ops_color_mode = self._context.config.ops_color_mode.value
 
         render_config = RenderConfig3D(
             world_to_visual=world_to_visual,
             world_to_cyl_local=world_to_cyl_local,
-            default_color_lut_cut=self._color_set.get_lut("cut")
-            .astype(np.float32)
-            .tobytes(),
-            default_color_lut_engrave=self._color_set.get_lut("engrave")
-            .astype(np.float32)
-            .tobytes(),
-            laser_color_luts=laser_color_luts,
-            zero_power_rgba=self._color_set.get_rgba("zero_power"),
             layer_configs=layer_configs,
-            layer_color_luts=layer_color_luts,
-            ops_color_mode=ops_color_mode,
         )
 
         self._world_to_cyl_local = world_to_cyl_local

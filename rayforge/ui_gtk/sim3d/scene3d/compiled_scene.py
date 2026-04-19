@@ -12,10 +12,9 @@ from ....pipeline.artifact.handle import BaseArtifactHandle
 @dataclass
 class VertexLayer:
     powered_verts: np.ndarray
-    powered_colors: np.ndarray
+    power_values: np.ndarray
     travel_verts: np.ndarray
     zero_power_verts: np.ndarray
-    zero_power_colors: np.ndarray
     powered_cmd_offsets: list = field(default_factory=list)
     travel_cmd_offsets: list = field(default_factory=list)
     is_rotary: bool = False
@@ -27,7 +26,6 @@ class TextureLayer:
     width_px: int
     height_px: int
     model_matrix: np.ndarray
-    color_lut: Optional[np.ndarray] = None
     cylinder_vertices: Optional[np.ndarray] = None
     rotary_diameter: float = 0.0
     rotary_enabled: bool = False
@@ -37,7 +35,7 @@ class TextureLayer:
 @dataclass
 class ScanlineOverlayLayer:
     positions: np.ndarray
-    colors: np.ndarray
+    power_values: np.ndarray
     cmd_offsets: list
     is_rotary: bool = False
 
@@ -97,10 +95,9 @@ class CompiledSceneArtifact(BaseArtifact):
 
         for i, vl in enumerate(self.vertex_layers):
             arrays[f"vl{i}_pv"] = vl.powered_verts
-            arrays[f"vl{i}_pc"] = vl.powered_colors
+            arrays[f"vl{i}_pvv"] = vl.power_values
             arrays[f"vl{i}_tv"] = vl.travel_verts
             arrays[f"vl{i}_zpv"] = vl.zero_power_verts
-            arrays[f"vl{i}_zpc"] = vl.zero_power_colors
             if vl.powered_cmd_offsets:
                 arrays[f"vl{i}_pco"] = np.array(
                     vl.powered_cmd_offsets, dtype=np.int32
@@ -128,14 +125,12 @@ class CompiledSceneArtifact(BaseArtifact):
                 arrays[f"tl{i}_aci"] = np.array(
                     [tl.activation_cmd_idx], dtype=np.int32
                 )
-            if tl.color_lut is not None:
-                arrays[f"tl{i}_clut"] = tl.color_lut
             if tl.cylinder_vertices is not None:
                 arrays[f"tl{i}_cv"] = tl.cylinder_vertices
 
         for i, ol in enumerate(self.overlay_layers):
             arrays[f"ol{i}_pos"] = ol.positions
-            arrays[f"ol{i}_col"] = ol.colors
+            arrays[f"ol{i}_pow"] = ol.power_values
             arrays[f"ol{i}_co"] = np.array(ol.cmd_offsets, dtype=np.int32)
             if ol.is_rotary:
                 arrays[f"ol{i}_ir"] = np.array([1], dtype=np.int32)
@@ -163,10 +158,9 @@ class CompiledSceneArtifact(BaseArtifact):
                 is_rotary = bool(arrays[f"{prefix}ir"][0])
             vl = VertexLayer(
                 powered_verts=arrays[f"{prefix}pv"].copy(),
-                powered_colors=arrays[f"{prefix}pc"].copy(),
+                power_values=arrays[f"{prefix}pvv"].copy(),
                 travel_verts=arrays[f"{prefix}tv"].copy(),
                 zero_power_verts=arrays[f"{prefix}zpv"].copy(),
-                zero_power_colors=arrays[f"{prefix}zpc"].copy(),
                 powered_cmd_offsets=(
                     pco_arr.tolist() if pco_arr is not None else []
                 ),
@@ -183,9 +177,6 @@ class CompiledSceneArtifact(BaseArtifact):
             tl_meta = arrays[f"{prefix}meta"]
             width_px = int(tl_meta[0])
             height_px = int(tl_meta[1])
-            color_lut = None
-            if f"{prefix}clut" in arrays:
-                color_lut = arrays[f"{prefix}clut"].copy()
             cylinder_vertices = None
             if f"{prefix}cv" in arrays:
                 cylinder_vertices = arrays[f"{prefix}cv"].copy()
@@ -203,7 +194,6 @@ class CompiledSceneArtifact(BaseArtifact):
                 width_px=width_px,
                 height_px=height_px,
                 model_matrix=arrays[f"{prefix}mm"].copy(),
-                color_lut=color_lut,
                 cylinder_vertices=cylinder_vertices,
                 rotary_diameter=rotary_diameter,
                 rotary_enabled=rotary_enabled,
@@ -219,7 +209,7 @@ class CompiledSceneArtifact(BaseArtifact):
                 is_rotary = bool(arrays[f"{prefix}ir"][0])
             ol = ScanlineOverlayLayer(
                 positions=arrays[f"{prefix}pos"].copy(),
-                colors=arrays[f"{prefix}col"].copy(),
+                power_values=arrays[f"{prefix}pow"].copy(),
                 cmd_offsets=arrays[f"{prefix}co"].copy().tolist(),
                 is_rotary=is_rotary,
             )
