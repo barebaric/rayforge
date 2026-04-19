@@ -27,6 +27,9 @@ def surface(mock_work_origin):
     s.width_mm = 100.0
     s.height_mm = 100.0
     s._update_extent_frame = MagicMock()
+    s._connected_doc = None
+    s._connected_layer = None
+    s._active_layer_wcs_conn = None
 
     active_layer = MagicMock()
     active_layer.rotary_enabled = False

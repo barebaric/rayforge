@@ -182,23 +182,15 @@ class WorkSurface(WorldSurface):
 
         self.set_machine(machine)
 
-        # Connect to the history manager's changed signal to sync the view
-        # globally, which is necessary for undo/redo actions triggered
-        # outside of this widget.
-        self.doc.history_manager.changed.connect(self._on_history_changed)
-
         self.editor.pipeline.data_stale.connect(self._on_pipeline_data_stale)
-        self.doc.active_layer_changed.connect(self._on_active_layer_changed)
+
         self._active_layer_wcs_conn = None
-        self._connect_active_layer_wcs()
+        self._connected_layer = None
+        self._connected_doc = None
+        self._connect_doc_signals()
 
         # Connect to view change signals to update pipeline view context
         self.aspect_ratio_changed.connect(self._on_aspect_ratio_changed)
-
-        # Refresh render context when doc structure changes (layer
-        # add/remove, workpiece moves between layers) so the view
-        # manager always has current layer color data.
-        self._connect_doc_structure_signals(self.doc)
 
         # Reconnect signals when a new document is loaded.
         self.editor.document_changed.connect(self._on_document_changed)
@@ -434,16 +426,32 @@ class WorkSurface(WorldSurface):
         self._update_pipeline_view_context()
 
     def _on_document_changed(self, sender, **kwargs):
-        """Reconnects doc structure signals when a new doc is loaded."""
-        doc = self.doc
-        if doc:
-            self._connect_doc_structure_signals(doc)
+        """Reconnect all doc signals when a new doc is loaded."""
+        self._disconnect_doc_signals()
+        self._connect_doc_signals()
         self._update_pipeline_view_context()
         self.reset_view()
 
-    def _connect_doc_structure_signals(self, doc):
+    def _connect_doc_signals(self):
+        doc = self.doc
+        if not doc:
+            return
+        doc.history_manager.changed.connect(self._on_history_changed)
+        doc.active_layer_changed.connect(self._on_active_layer_changed)
         doc.descendant_added.connect(self._on_doc_structure_changed)
         doc.descendant_removed.connect(self._on_doc_structure_changed)
+        self._connect_active_layer_wcs()
+        self._connected_doc = doc
+
+    def _disconnect_doc_signals(self):
+        self._disconnect_active_layer_wcs()
+        doc = self._connected_doc
+        if doc:
+            doc.history_manager.changed.disconnect(self._on_history_changed)
+            doc.active_layer_changed.disconnect(self._on_active_layer_changed)
+            doc.descendant_added.disconnect(self._on_doc_structure_changed)
+            doc.descendant_removed.disconnect(self._on_doc_structure_changed)
+            self._connected_doc = None
 
     def _on_any_transform_begin(
         self,
@@ -725,16 +733,21 @@ class WorkSurface(WorldSurface):
 
     def _connect_active_layer_wcs(self):
         """Connect to the active layer's updated signal for WCS changes."""
-        if self._active_layer_wcs_conn is not None:
-            old_layer = self.doc.active_layer
-            old_layer.updated.disconnect(self._active_layer_wcs_conn)
-            self._active_layer_wcs_conn = None
-
-        layer = self.doc.active_layer
+        self._disconnect_active_layer_wcs()
+        layer = self.doc.active_layer if self.doc else None
         if layer:
             self._active_layer_wcs_conn = layer.updated.connect(
                 self._on_active_layer_updated
             )
+            self._connected_layer = layer
+
+    def _disconnect_active_layer_wcs(self):
+        if self._connected_layer and self._active_layer_wcs_conn:
+            self._connected_layer.updated.disconnect(
+                self._active_layer_wcs_conn
+            )
+        self._active_layer_wcs_conn = None
+        self._connected_layer = None
 
     def _on_active_layer_changed(self, sender):
         """Reconnect WCS tracking to the new active layer."""
