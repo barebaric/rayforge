@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-11 11:22+0200\n"
+"POT-Creation-Date: 2026-04-19 23:05+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -17,14 +17,48 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: rayforge/updater.py
+msgid "Checking for Rayforge updates..."
+msgstr "Buscando actualizaciones de Rayforge..."
+
+#: rayforge/updater.py rayforge/addon_mgr/update_cmd.py
+msgid "Update check failed."
+msgstr "La comprobación de actualizaciones falló."
+
+#: rayforge/updater.py
+#, python-brace-format
+msgid "Rayforge {version} is available."
+msgstr "Rayforge {version} está disponible."
+
+#: rayforge/updater.py
+msgid "Download"
+msgstr "Descargar"
+
+#: rayforge/updater.py
+msgid "New version available."
+msgstr "Nueva versión disponible."
+
+#: rayforge/updater.py
+msgid "Rayforge is up to date."
+msgstr "Rayforge está actualizado."
+
 #: rayforge/core/layer.py
 #, python-brace-format
 msgid "{name} Workflow"
 msgstr "{name} Flujo de trabajo"
 
-#: rayforge/core/doc.py
-msgid "Layer 1"
-msgstr "Capa 1"
+#: rayforge/core/layer.py
+msgid "Flat"
+msgstr "Plano"
+
+#: rayforge/core/layer.py
+#, python-brace-format
+msgid "Rotary · {name}"
+msgstr "Rotativo · {name}"
+
+#: rayforge/core/layer.py
+msgid "Rotary"
+msgstr "Rotatorio"
 
 #: rayforge/core/stock.py
 #, python-brace-format
@@ -156,7 +190,7 @@ msgstr "Cortar"
 msgid "Optionally force a specific laser head"
 msgstr "Opcionalmente, forzar un cabezal láser específico."
 
-#: rayforge/core/capability.py rayforge/ui_gtk/canvas2d/simulation_controls.py
+#: rayforge/core/capability.py
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Power"
 msgstr "Potencia"
@@ -207,37 +241,6 @@ msgid "Score Speed"
 msgstr "Velocidad de marcado"
 
 #: rayforge/core/model_manager.py
-#: rayforge/ui_gtk/settings/machine_settings_page.py
-msgid "Machines"
-msgstr "Máquinas"
-
-#: rayforge/core/model_manager.py
-msgid "Complete machine models."
-msgstr "Modelos de máquina completos."
-
-#: rayforge/core/model_manager.py
-msgid "Rotary"
-msgstr "Rotatorio"
-
-#: rayforge/core/model_manager.py
-msgid "Rotary and workholding models."
-msgstr "Modelos rotatorios y de sujeción."
-
-#: rayforge/core/model_manager.py
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Laser Heads"
-msgstr "Cabezales láser"
-
-#: rayforge/core/model_manager.py
-msgid "Laser head models."
-msgstr "Modelos de cabeza láser."
-
-#: rayforge/core/model_manager.py
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
-msgid "User"
-msgstr "Usuario"
-
-#: rayforge/core/model_manager.py
 msgid "Core"
 msgstr "Núcleo"
 
@@ -246,7 +249,6 @@ msgid "Stock Material"
 msgstr "Material de stock"
 
 #: rayforge/core/source_asset.py
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
 msgid "Source"
 msgstr "Fuente"
 
@@ -265,534 +267,6 @@ msgstr "Variable o función desconocida: '{name}'"
 msgid "Cannot use operator '{op}' between types '{left}' and '{right}'"
 msgstr ""
 "No se puede usar el operador '{op}' entre los tipos '{left}' y '{right}'"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Missing Command Letter"
-msgstr "Letra de comando faltante"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"G-code commands need a letter followed by a value. The command letter was "
-"not found."
-msgstr ""
-"Los comandos G-code necesitan una letra seguida de un valor. La letra de "
-"comando no se encontró."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Invalid Number Format"
-msgstr "Formato de número inválido"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"The value is missing or not in the correct numeric format. Check your G-code "
-"syntax."
-msgstr ""
-"El valor falta o no está en el formato numérico correcto. Verifique la "
-"sintaxis de su G-code."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Unknown Command"
-msgstr "Comando desconocido"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"This Grbl setting command is not recognized or supported. Check the command "
-"syntax."
-msgstr ""
-"Este comando de configuración de Grbl no se reconoce ni se admite. Verifique "
-"la sintaxis del comando."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Negative Value"
-msgstr "Valor negativo"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "A positive number is required here, but a negative value was received."
-msgstr ""
-"Aquí se requiere un número positivo, pero se recibió un valor negativo."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Homing Disabled"
-msgstr "Referenciado desactivado"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Homing is not enabled in settings. Enable homing ($22=1) to use this feature."
-msgstr ""
-"El retorno al origen no está habilitado en la configuración. Habilite el "
-"retorno al origen ($22=1) para usar esta función."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Pulse Time Too Short"
-msgstr "Tiempo de pulso demasiado corto"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Minimum step pulse time must be greater than 3 microseconds. Check setting "
-"$0."
-msgstr ""
-"El tiempo de pulso de paso mínimo debe ser mayor de 3 microsegundos. "
-"Verifique la configuración $0."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Memory Error"
-msgstr "Error de memoria"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Settings reset to defaults due to a memory read failure. Reconfigure your "
-"settings if needed."
-msgstr ""
-"La configuración se restableció a los valores predeterminados debido a un "
-"error de lectura de memoria. Reconfigure su configuración si es necesario."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Machine Busy"
-msgstr "Máquina ocupada"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"This command can only be used when the machine is idle. Wait for the current "
-"job to finish."
-msgstr ""
-"Este comando solo se puede usar cuando la máquina está inactiva. Espere a "
-"que termine el trabajo actual."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Commands Locked"
-msgstr "Comandos bloqueados"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Cannot send commands while in alarm or jog mode. Clear the alarm state first."
-msgstr ""
-"No se pueden enviar comandos mientras está en modo de alarma o de "
-"desplazamiento manual. Borre primero el estado de alarma."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Homing Required"
-msgstr "Retorno al origen requerido"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Soft limits cannot be enabled without homing also enabled. Enable homing "
-"first ($22=1)."
-msgstr ""
-"Los límites suaves no se pueden habilitar sin que el retorno al origen "
-"también esté habilitado. Habilite primero el retorno al origen ($22=1)."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Line Too Long"
-msgstr "Línea demasiado larga"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"The command line has too many characters and was ignored. Check your file "
-"formatting."
-msgstr ""
-"La línea de comando contiene demasiados caracteres y se ignoró. Verifique el "
-"formato de su archivo."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Setting Too High"
-msgstr "Configuración demasiado alta"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"This setting exceeds the maximum step rate supported. Use a lower value."
-msgstr ""
-"Esta configuración excede la velocidad de paso máxima admitida. Utilice un "
-"valor más bajo."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Door Open"
-msgstr "Puerta abierta"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"The safety door was detected as open. Close the door and resume operation."
-msgstr ""
-"Se detectó que la puerta de seguridad está abierta. Cierre la puerta y "
-"reanude la operación."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Build info or startup line exceeds storage limit. Shorten the line."
-msgstr ""
-"La información de compilación o la línea de inicio excede el límite de "
-"almacenamiento. Acorte la línea."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Target Out of Range"
-msgstr "Objetivo fuera de rango"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Jog target is beyond the machine's travel limits. Move to a position within "
-"range."
-msgstr ""
-"El objetivo de desplazamiento manual está fuera de los límites de "
-"desplazamiento de la máquina. Muvase a una posición dentro del rango."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Invalid Jog Command"
-msgstr "Comando de desplazamiento manual inválido"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Jog command is missing '=' or contains prohibited G-code. Check the jog "
-"syntax."
-msgstr ""
-"El comando de desplazamiento manual falta '=' o contiene G-code prohibido. "
-"Verifique la sintaxis de desplazamiento manual."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Laser Mode Error"
-msgstr "Error de modo láser"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Laser mode requires PWM output to work. Check your hardware configuration."
-msgstr ""
-"El modo láser requiere salida PWM para funcionar. Verifique su configuración "
-"de hardware."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Unsupported Command"
-msgstr "Comando no soportado"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"This G-code command is not supported by the machine. Check your post-"
-"processor settings."
-msgstr ""
-"Este comando G-code no es admitido por la máquina. Verifique la "
-"configuración de su postprocesador."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Conflicting Commands"
-msgstr "Comandos en conflicto"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Multiple commands from the same group found on one line. Remove the "
-"duplicate command."
-msgstr ""
-"Se encontraron múltiples comandos del mismo grupo en una línea. Elimine el "
-"comando duplicado."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Feed Rate Missing"
-msgstr "Velocidad de avance faltante"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Set a feed rate before using motion commands. Add an F command to specify "
-"speed."
-msgstr ""
-"Establezca una velocidad de avance antes de usar comandos de movimiento. "
-"Agregue un comando F para especificar la velocidad."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Integer Required"
-msgstr "Entero requerido"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "This command requires a whole number value. Remove any decimal points."
-msgstr ""
-"Este comando requiere un valor de número entero. Elimine todos los puntos "
-"decimales."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Axis Conflict"
-msgstr "Conflicto de eje"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Multiple commands trying to use the same axis. Simplify the command."
-msgstr "Múltiples comandos intentan usar el mismo eje. Simplifique el comando."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Duplicate Word"
-msgstr "Palabra duplicada"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "The same G-code word appears more than once. Remove the duplicate."
-msgstr "La misma palabra G-code aparece más de una vez. Elimine el duplicado."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Missing Axis"
-msgstr "Eje faltante"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"This command requires XYZ axis coordinates. Add the missing axis values."
-msgstr ""
-"Este comando requiere coordenadas de eje XYZ. Agregue los valores de eje "
-"faltantes."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Line Number Out of Range"
-msgstr "Número de línea fuera de rango"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Line number must be between 1 and 9,999,999. Use a valid line number."
-msgstr ""
-"El número de línea debe estar entre 1 y 9 999 999. Utilice un número de "
-"línea válido."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Missing Value"
-msgstr "Valor faltante"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "This command requires a P or L value. Add the missing parameter."
-msgstr "Este comando requiere un valor P o L. Agregue el parámetro faltante."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Unsupported Coordinate"
-msgstr "Coordenada no admitida"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Only G54-G59 coordinate systems are supported. Use one of these instead."
-msgstr ""
-"Solo se admiten los sistemas de coordenadas G54-G59. Utilice uno de estos en "
-"su lugar."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Wrong Motion Mode"
-msgstr "Modo de movimiento incorrecto"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"G53 command requires G0 or G1 motion mode. Set the correct motion mode first."
-msgstr ""
-"El comando G53 requiere el modo de movimiento G0 o G1. Establezca primero el "
-"modo de movimiento correcto."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Unused Axis Words"
-msgstr "Palabras de eje no utilizadas"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Axis words present but G80 cancel is active. Remove the unused axis words."
-msgstr ""
-"Palabras de eje presentes pero la cancelación G80 está activa. Elimine las "
-"palabras de eje no utilizadas."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Missing Arc Data"
-msgstr "Datos de arco faltantes"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"G2/G3 arc command needs XYZ coordinates. Add the axis values for the "
-"selected plane."
-msgstr ""
-"El comando de arco G2/G3 necesita coordenadas XYZ. Agregue los valores de "
-"eje para el plano seleccionado."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Invalid Target"
-msgstr "Objetivo inválido"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Cannot create this arc or probe to current position. Check the target "
-"coordinates."
-msgstr ""
-"No se puede crear este arco o sondear la posición actual. Verifique las "
-"coordenadas del objetivo."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Arc Geometry Error"
-msgstr "Error de geometría de arco"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Arc calculation failed. Try breaking the arc into smaller pieces or use IJK "
-"offset instead."
-msgstr ""
-"El cálculo del arco falló. Intente dividir el arco en piezas más pequeñas o "
-"use el desplazamiento IJK en su lugar."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Missing Arc Offset"
-msgstr "Desplazamiento de arco faltante"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"G2/G3 arc command needs IJK offset values. Add the missing offset for the "
-"selected plane."
-msgstr ""
-"El comando de arco G2/G3 necesita valores de desplazamiento IJK. Agregue el "
-"desplazamiento faltante para el plano seleccionado."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Unused Words"
-msgstr "Palabras no utilizadas"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Some G-code words in this line are not used by any command. Remove the "
-"unused words."
-msgstr ""
-"Algunas palabras G-code en esta línea no son utilizadas por ningún comando. "
-"Elimine las palabras no utilizadas."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Wrong Axis for Offset"
-msgstr "Eje incorrecto para el desplazamiento"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Tool length offset only works on the configured axis (usually Z-axis). Check "
-"your settings."
-msgstr ""
-"El desplazamiento de longitud de herramienta solo funciona en el eje "
-"configurado (generalmente el eje Z). Verifique su configuración."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Tool Number Too High"
-msgstr "Número de herramienta demasiado alto"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Tool number exceeds the maximum supported value. Use a valid tool number."
-msgstr ""
-"El número de herramienta excede el valor máximo admitido. Utilice un número "
-"de herramienta válido."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Unknown Error"
-msgstr "Error desconocido"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Invalid error code reported by machine."
-msgstr "Código de error no válido informado por la máquina."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Stepper Configuration"
-msgstr "Configuración del motor paso a paso"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Settings related to stepper motor timing and signal polarity."
-msgstr ""
-"Ajustes relacionados con la temporización del motor paso a paso y la "
-"polaridad de la señal."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Control & Reporting"
-msgstr "Control e informes"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Settings for GRBL's motion control and status reporting."
-msgstr ""
-"Ajustes para el control de movimiento y los informes de estado de GRBL."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Limits & Homing"
-msgstr "Límites y posicionamiento inicial"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Settings for soft/hard limits and the homing cycle."
-msgstr ""
-"Ajustes para límites de software/hardware y el ciclo de posicionamiento "
-"inicial."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Spindle & Laser"
-msgstr "Husillo y láser"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Settings for controlling the spindle or laser module."
-msgstr "Ajustes para controlar el husillo o el módulo láser."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Axis Calibration"
-msgstr "Calibración de ejes"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Defines the steps-per-millimeter for each axis."
-msgstr "Define los pasos por milímetro para cada eje."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Axis Kinematics"
-msgstr "Cinemática de ejes"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Defines the maximum rate and acceleration for each axis."
-msgstr "Define la velocidad máxima y la aceleración para cada eje."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Axis Travel"
-msgstr "Recorrido del eje"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Defines the maximum travel distance for each axis."
-msgstr "Define la distancia máxima de recorrido para cada eje."
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "GRBL (Serial)"
-msgstr "GRBL (Serial)"
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "GRBL-compatible serial connection"
-msgstr "Conexión serie compatible con GRBL"
-
-#: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/smoothie.py
-#: rayforge/machine/driver/grbl.py
-msgid "Machine Coordinates (G53)"
-msgstr "Coordenadas de máquina (G53)"
-
-#: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/smoothie.py
-msgid "Port"
-msgstr "Puerto"
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "Serial port for the device"
-msgstr "Puerto serie para el dispositivo"
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "Enable status polling during running jobs"
-msgstr "Habilitar sondeo de estado durante los trabajos en ejecución"
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid ""
-"Whether to query status during jobs. Disabling can help reduce load on slow "
-"machines"
-msgstr ""
-"Consultar el estado durante los trabajos. Desactivarlo puede ayudar a "
-"reducir la carga en máquinas lentas"
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "Port must be configured."
-msgstr "El puerto debe estar configurado."
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "Baud rate must be configured."
-msgstr "La tasa de baudios debe estar configurada."
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "Port not configured"
-msgstr "Puerto no configurado"
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "No response from device"
-msgstr "Sin respuesta del dispositivo"
-
-#: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/grbl.py
-msgid "Unknown Settings"
-msgstr "Ajustes desconocidos"
-
-#: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/grbl.py
-msgid "Settings reported by the device not in the standard list."
-msgstr ""
-"Ajustes informados por el dispositivo que no están en la lista estándar."
-
-#: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/grbl.py
-msgid "Unknown setting from device"
-msgstr "Ajuste desconocido del dispositivo"
 
 #: rayforge/machine/driver/dummy.py rayforge/ui_gtk/machine/machine_dropdown.py
 #: rayforge/ui_gtk/machine/status_widget.py
@@ -899,58 +373,615 @@ msgstr "Smoothie"
 msgid "Smoothieware via a Telnet connection"
 msgstr "Smoothieware a través de una conexión Telnet"
 
-#: rayforge/machine/driver/smoothie.py rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Machine Coordinates (G53)"
+msgstr "Coordenadas de máquina (G53)"
+
+#: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 #, python-brace-format
 msgid "Invalid hostname or IP address: '{host}'"
 msgstr "Nombre de host o dirección IP no válido: '{host}'"
 
-#: rayforge/machine/driver/smoothie.py rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Hostname"
 msgstr "Nombre de host"
 
-#: rayforge/machine/driver/smoothie.py rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "The IP address or hostname of the device"
 msgstr "La dirección IP o el nombre de host del dispositivo"
+
+#: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Port"
+msgstr "Puerto"
 
 #: rayforge/machine/driver/smoothie.py
 msgid "The Telnet port number"
 msgstr "El número de puerto Telnet"
 
-#: rayforge/machine/driver/smoothie.py rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Hostname must be configured."
 msgstr "El nombre de host debe estar configurado."
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+msgid "GRBL (Telnet)"
+msgstr "GRBL (Telnet)"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+msgid "GRBL-compatible controller over a raw TCP/telnet connection"
+msgstr "Controlador compatible con GRBL mediante conexiÃ³n TCP/telnet en bruto"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+msgid "TCP port for the raw/telnet service"
+msgstr "Puerto TCP para el servicio raw/telnet"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Enable status polling during running jobs"
+msgstr "Habilitar sondeo de estado durante los trabajos en ejecución"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid ""
+"Whether to query status during jobs. Disabling can help reduce load on slow "
+"machines"
+msgstr ""
+"Consultar el estado durante los trabajos. Desactivarlo puede ayudar a "
+"reducir la carga en máquinas lentas"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Port must be configured."
+msgstr "El puerto debe estar configurado."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Missing Command Letter"
+msgstr "Letra de comando faltante"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"G-code commands need a letter followed by a value. The command letter was "
+"not found."
+msgstr ""
+"Los comandos G-code necesitan una letra seguida de un valor. La letra de "
+"comando no se encontró."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Invalid Number Format"
+msgstr "Formato de número inválido"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The value is missing or not in the correct numeric format. Check your G-code "
+"syntax."
+msgstr ""
+"El valor falta o no está en el formato numérico correcto. Verifique la "
+"sintaxis de su G-code."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Unknown Command"
+msgstr "Comando desconocido"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"This Grbl setting command is not recognized or supported. Check the command "
+"syntax."
+msgstr ""
+"Este comando de configuración de Grbl no se reconoce ni se admite. Verifique "
+"la sintaxis del comando."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Negative Value"
+msgstr "Valor negativo"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "A positive number is required here, but a negative value was received."
+msgstr ""
+"Aquí se requiere un número positivo, pero se recibió un valor negativo."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Disabled"
+msgstr "Referenciado desactivado"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Homing is not enabled in settings. Enable homing ($22=1) to use this feature."
+msgstr ""
+"El retorno al origen no está habilitado en la configuración. Habilite el "
+"retorno al origen ($22=1) para usar esta función."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Pulse Time Too Short"
+msgstr "Tiempo de pulso demasiado corto"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Minimum step pulse time must be greater than 3 microseconds. Check setting "
+"$0."
+msgstr ""
+"El tiempo de pulso de paso mínimo debe ser mayor de 3 microsegundos. "
+"Verifique la configuración $0."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Memory Error"
+msgstr "Error de memoria"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Settings reset to defaults due to a memory read failure. Reconfigure your "
+"settings if needed."
+msgstr ""
+"La configuración se restableció a los valores predeterminados debido a un "
+"error de lectura de memoria. Reconfigure su configuración si es necesario."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Machine Busy"
+msgstr "Máquina ocupada"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"This command can only be used when the machine is idle. Wait for the current "
+"job to finish."
+msgstr ""
+"Este comando solo se puede usar cuando la máquina está inactiva. Espere a "
+"que termine el trabajo actual."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Commands Locked"
+msgstr "Comandos bloqueados"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Cannot send commands while in alarm or jog mode. Clear the alarm state first."
+msgstr ""
+"No se pueden enviar comandos mientras está en modo de alarma o de "
+"desplazamiento manual. Borre primero el estado de alarma."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Required"
+msgstr "Retorno al origen requerido"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Soft limits cannot be enabled without homing also enabled. Enable homing "
+"first ($22=1)."
+msgstr ""
+"Los límites suaves no se pueden habilitar sin que el retorno al origen "
+"también esté habilitado. Habilite primero el retorno al origen ($22=1)."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Line Too Long"
+msgstr "Línea demasiado larga"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The command line has too many characters and was ignored. Check your file "
+"formatting."
+msgstr ""
+"La línea de comando contiene demasiados caracteres y se ignoró. Verifique el "
+"formato de su archivo."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Setting Too High"
+msgstr "Configuración demasiado alta"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"This setting exceeds the maximum step rate supported. Use a lower value."
+msgstr ""
+"Esta configuración excede la velocidad de paso máxima admitida. Utilice un "
+"valor más bajo."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Door Open"
+msgstr "Puerta abierta"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The safety door was detected as open. Close the door and resume operation."
+msgstr ""
+"Se detectó que la puerta de seguridad está abierta. Cierre la puerta y "
+"reanude la operación."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Build info or startup line exceeds storage limit. Shorten the line."
+msgstr ""
+"La información de compilación o la línea de inicio excede el límite de "
+"almacenamiento. Acorte la línea."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Target Out of Range"
+msgstr "Objetivo fuera de rango"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Jog target is beyond the machine's travel limits. Move to a position within "
+"range."
+msgstr ""
+"El objetivo de desplazamiento manual está fuera de los límites de "
+"desplazamiento de la máquina. Muvase a una posición dentro del rango."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Invalid Jog Command"
+msgstr "Comando de desplazamiento manual inválido"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Jog command is missing '=' or contains prohibited G-code. Check the jog "
+"syntax."
+msgstr ""
+"El comando de desplazamiento manual falta '=' o contiene G-code prohibido. "
+"Verifique la sintaxis de desplazamiento manual."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Laser Mode Error"
+msgstr "Error de modo láser"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Laser mode requires PWM output to work. Check your hardware configuration."
+msgstr ""
+"El modo láser requiere salida PWM para funcionar. Verifique su configuración "
+"de hardware."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Unsupported Command"
+msgstr "Comando no soportado"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"This G-code command is not supported by the machine. Check your post-"
+"processor settings."
+msgstr ""
+"Este comando G-code no es admitido por la máquina. Verifique la "
+"configuración de su postprocesador."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Conflicting Commands"
+msgstr "Comandos en conflicto"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Multiple commands from the same group found on one line. Remove the "
+"duplicate command."
+msgstr ""
+"Se encontraron múltiples comandos del mismo grupo en una línea. Elimine el "
+"comando duplicado."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Feed Rate Missing"
+msgstr "Velocidad de avance faltante"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Set a feed rate before using motion commands. Add an F command to specify "
+"speed."
+msgstr ""
+"Establezca una velocidad de avance antes de usar comandos de movimiento. "
+"Agregue un comando F para especificar la velocidad."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Integer Required"
+msgstr "Entero requerido"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "This command requires a whole number value. Remove any decimal points."
+msgstr ""
+"Este comando requiere un valor de número entero. Elimine todos los puntos "
+"decimales."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Axis Conflict"
+msgstr "Conflicto de eje"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Multiple commands trying to use the same axis. Simplify the command."
+msgstr "Múltiples comandos intentan usar el mismo eje. Simplifique el comando."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Duplicate Word"
+msgstr "Palabra duplicada"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "The same G-code word appears more than once. Remove the duplicate."
+msgstr "La misma palabra G-code aparece más de una vez. Elimine el duplicado."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Missing Axis"
+msgstr "Eje faltante"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"This command requires XYZ axis coordinates. Add the missing axis values."
+msgstr ""
+"Este comando requiere coordenadas de eje XYZ. Agregue los valores de eje "
+"faltantes."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Line Number Out of Range"
+msgstr "Número de línea fuera de rango"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Line number must be between 1 and 9,999,999. Use a valid line number."
+msgstr ""
+"El número de línea debe estar entre 1 y 9 999 999. Utilice un número de "
+"línea válido."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Missing Value"
+msgstr "Valor faltante"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "This command requires a P or L value. Add the missing parameter."
+msgstr "Este comando requiere un valor P o L. Agregue el parámetro faltante."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Unsupported Coordinate"
+msgstr "Coordenada no admitida"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Only G54-G59 coordinate systems are supported. Use one of these instead."
+msgstr ""
+"Solo se admiten los sistemas de coordenadas G54-G59. Utilice uno de estos en "
+"su lugar."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Wrong Motion Mode"
+msgstr "Modo de movimiento incorrecto"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"G53 command requires G0 or G1 motion mode. Set the correct motion mode first."
+msgstr ""
+"El comando G53 requiere el modo de movimiento G0 o G1. Establezca primero el "
+"modo de movimiento correcto."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Unused Axis Words"
+msgstr "Palabras de eje no utilizadas"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Axis words present but G80 cancel is active. Remove the unused axis words."
+msgstr ""
+"Palabras de eje presentes pero la cancelación G80 está activa. Elimine las "
+"palabras de eje no utilizadas."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Missing Arc Data"
+msgstr "Datos de arco faltantes"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"G2/G3 arc command needs XYZ coordinates. Add the axis values for the "
+"selected plane."
+msgstr ""
+"El comando de arco G2/G3 necesita coordenadas XYZ. Agregue los valores de "
+"eje para el plano seleccionado."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Invalid Target"
+msgstr "Objetivo inválido"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Cannot create this arc or probe to current position. Check the target "
+"coordinates."
+msgstr ""
+"No se puede crear este arco o sondear la posición actual. Verifique las "
+"coordenadas del objetivo."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Arc Geometry Error"
+msgstr "Error de geometría de arco"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Arc calculation failed. Try breaking the arc into smaller pieces or use IJK "
+"offset instead."
+msgstr ""
+"El cálculo del arco falló. Intente dividir el arco en piezas más pequeñas o "
+"use el desplazamiento IJK en su lugar."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Missing Arc Offset"
+msgstr "Desplazamiento de arco faltante"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"G2/G3 arc command needs IJK offset values. Add the missing offset for the "
+"selected plane."
+msgstr ""
+"El comando de arco G2/G3 necesita valores de desplazamiento IJK. Agregue el "
+"desplazamiento faltante para el plano seleccionado."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Unused Words"
+msgstr "Palabras no utilizadas"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Some G-code words in this line are not used by any command. Remove the "
+"unused words."
+msgstr ""
+"Algunas palabras G-code en esta línea no son utilizadas por ningún comando. "
+"Elimine las palabras no utilizadas."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Wrong Axis for Offset"
+msgstr "Eje incorrecto para el desplazamiento"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Tool length offset only works on the configured axis (usually Z-axis). Check "
+"your settings."
+msgstr ""
+"El desplazamiento de longitud de herramienta solo funciona en el eje "
+"configurado (generalmente el eje Z). Verifique su configuración."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Tool Number Too High"
+msgstr "Número de herramienta demasiado alto"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Tool number exceeds the maximum supported value. Use a valid tool number."
+msgstr ""
+"El número de herramienta excede el valor máximo admitido. Utilice un número "
+"de herramienta válido."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Unknown Error"
+msgstr "Error desconocido"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Invalid error code reported by machine."
+msgstr "Código de error no válido informado por la máquina."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Stepper Configuration"
+msgstr "Configuración del motor paso a paso"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Settings related to stepper motor timing and signal polarity."
+msgstr ""
+"Ajustes relacionados con la temporización del motor paso a paso y la "
+"polaridad de la señal."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Control & Reporting"
+msgstr "Control e informes"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Settings for GRBL's motion control and status reporting."
+msgstr ""
+"Ajustes para el control de movimiento y los informes de estado de GRBL."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Limits & Homing"
+msgstr "Límites y posicionamiento inicial"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Settings for soft/hard limits and the homing cycle."
+msgstr ""
+"Ajustes para límites de software/hardware y el ciclo de posicionamiento "
+"inicial."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Spindle & Laser"
+msgstr "Husillo y láser"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Settings for controlling the spindle or laser module."
+msgstr "Ajustes para controlar el husillo o el módulo láser."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Axis Calibration"
+msgstr "Calibración de ejes"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Defines the steps-per-millimeter for each axis."
+msgstr "Define los pasos por milímetro para cada eje."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Axis Kinematics"
+msgstr "Cinemática de ejes"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Defines the maximum rate and acceleration for each axis."
+msgstr "Define la velocidad máxima y la aceleración para cada eje."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Axis Travel"
+msgstr "Recorrido del eje"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Defines the maximum travel distance for each axis."
+msgstr "Define la distancia máxima de recorrido para cada eje."
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "GRBL (Serial)"
+msgstr "GRBL (Serial)"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "GRBL-compatible serial connection"
+msgstr "Conexión serie compatible con GRBL"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Serial port for the device"
+msgstr "Puerto serie para el dispositivo"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Baud rate must be configured."
+msgstr "La tasa de baudios debe estar configurada."
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Port not configured"
+msgstr "Puerto no configurado"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "No response from device"
+msgstr "Sin respuesta del dispositivo"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Unknown Settings"
+msgstr "Ajustes desconocidos"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Settings reported by the device not in the standard list."
+msgstr ""
+"Ajustes informados por el dispositivo que no están en la lista estándar."
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Unknown setting from device"
+msgstr "Ajuste desconocido del dispositivo"
+
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "GRBL (Network)"
 msgstr "GRBL (Red)"
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Connect to a GRBL-compatible device over the network"
 msgstr "Conectar a un dispositivo compatible con GRBL a través de la red"
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "HTTP Port"
 msgstr "Puerto HTTP"
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "The HTTP port for the device"
 msgstr "El puerto HTTP para el dispositivo"
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "WebSocket Port"
 msgstr "Puerto WebSocket"
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "The WebSocket port for the device"
 msgstr "El puerto WebSocket para el dispositivo"
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Host is not configured. Please set a valid IP address or hostname."
 msgstr ""
 "El host no está configurado. Por favor, establece una dirección IP o un "
 "nombre de host válido."
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 #, python-brace-format
 msgid ""
 "Could not connect to host '{host}'. Check the IP address and network "
@@ -959,8 +990,13 @@ msgstr ""
 "No se pudo conectar al host '{host}'. Comprueba la dirección IP y la "
 "conexión de red."
 
+#: rayforge/machine/device/profile.py
+#, python-brace-format
+msgid "{name} (device dialect)"
+msgstr "{name} (dialecto del dispositivo)"
+
 #: rayforge/machine/models/dialect_manager.py
-#: rayforge/machine/models/machine.py rayforge/machine/models/profile.py
+#: rayforge/machine/models/machine.py
 #, python-brace-format
 msgid "{label} (for {machine_name})"
 msgstr "{label} (para {machine_name})"
@@ -980,18 +1016,6 @@ msgstr "Máquina por defecto"
 #: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Rotary Module"
 msgstr "Módulo rotativo"
-
-#: rayforge/machine/models/profile.py
-msgid "Custom dialect for the Carvera Air machine."
-msgstr "Dialecto personalizado para la máquina Carvera Air."
-
-#: rayforge/machine/models/profile.py
-msgid "Custom preamble for the xTool D1 Pro machine."
-msgstr "Preámbulo personalizado para la máquina xTool D1 Pro."
-
-#: rayforge/machine/models/profile.py
-msgid "Other Device"
-msgstr "Otro dispositivo"
 
 #: rayforge/machine/models/zone.py
 msgid "No-Go Zone"
@@ -1073,6 +1097,7 @@ msgid "General Information"
 msgstr "Información general"
 
 #: rayforge/machine/models/dialect/base.py
+#: rayforge/ui_gtk/machine/wcs_dialog.py
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Label"
 msgstr "Etiqueta"
@@ -1369,6 +1394,10 @@ msgid "Sleeping"
 msgstr "En reposo"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
+msgid "Machines"
+msgstr "Máquinas"
+
+#: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid "Configured Machines"
 msgstr "Máquinas configuradas"
 
@@ -1398,7 +1427,6 @@ msgstr ""
 "Esta acción no se puede deshacer."
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
-#: rayforge/ui_gtk/settings/model_manager_page.py
 #: rayforge/ui_gtk/settings/license_settings_page.py
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/camera/selection_dialog.py
@@ -1406,6 +1434,7 @@ msgstr ""
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/hook_list.py rayforge/ui_gtk/machine/gcode_editor.py
+#: rayforge/ui_gtk/machine/wcs_dialog.py
 #: rayforge/ui_gtk/machine/maintenance_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/profile_selector.py
@@ -1420,7 +1449,6 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
 #: rayforge/ui_gtk/doceditor/recipe_selector_dialog.py
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
 #: rayforge/ui_gtk/doceditor/material_selector.py
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 #: rayforge/ui_gtk/doceditor/material_list.py
@@ -1429,8 +1457,6 @@ msgid "Cancel"
 msgstr "Cancelar"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
-#: rayforge/ui_gtk/settings/model_manager_page.py
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
@@ -1442,78 +1468,6 @@ msgstr "Eliminar"
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid "Add Machine"
 msgstr "Añadir máquina"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "1 model"
-msgstr "1 modelo"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-#, python-brace-format
-msgid "{count} models"
-msgstr "{count} modelos"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "No categories available."
-msgstr "No hay categorías disponibles."
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
-msgid "Bundled"
-msgstr "Incluido"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "Add Model"
-msgstr "Añadir modelo"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "No models in this category."
-msgstr "No hay modelos en esta categoría."
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-#: rayforge/ui_gtk/settings/ai_settings_page.py
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/recipe_list.py
-#: rayforge/ui_gtk/doceditor/material_list.py
-#, python-brace-format
-msgid "Delete '{name}'?"
-msgstr "¿Eliminar '{name}'?"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid ""
-"The model file will be permanently removed. This action cannot be undone."
-msgstr ""
-"El archivo del modelo se eliminará permanentemente. Esta acción no se puede "
-"deshacer."
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "3D Models"
-msgstr "Modelos 3D"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "Models"
-msgstr "Modelos"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "Model Libraries"
-msgstr "Bibliotecas de modelos"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "Select a library to browse its 3D models."
-msgstr "Selecciona una biblioteca para explorar sus modelos 3D."
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-#: rayforge/ui_gtk/settings/settings_dialog.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
-msgid "Categories"
-msgstr "Categorías"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "Select a category to view its models."
-msgstr "Selecciona una categoría para ver sus modelos."
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "3D models in the selected category."
-msgstr "Modelos 3D en la categoría seleccionada."
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
 msgid "Licenses"
@@ -1615,29 +1569,6 @@ msgstr ""
 "Esta clave de licencia será eliminada. Es posible que necesites volver a "
 "introducirla para usar los complementos con licencia."
 
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
-msgid "File"
-msgstr "Archivo"
-
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
-msgid "Size"
-msgstr "Tamaño"
-
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
-#: rayforge/shared/util/size.py
-#, python-brace-format
-msgid "{size:.1f} KB"
-msgstr "{size:.1f} KB"
-
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
-msgid "Open in File Manager"
-msgstr "Abrir en el administrador de archivos"
-
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
-#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
-msgid "Close"
-msgstr "Cerrar"
-
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 msgid "Default provider"
 msgstr "Proveedor predeterminado"
@@ -1662,6 +1593,14 @@ msgstr "No hay proveedores configurados"
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 msgid "New Provider"
 msgstr "Nuevo proveedor"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/recipe_list.py
+#: rayforge/ui_gtk/doceditor/material_list.py
+#, python-brace-format
+msgid "Delete '{name}'?"
+msgstr "¿Eliminar '{name}'?"
 
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 msgid ""
@@ -1778,6 +1717,11 @@ msgstr ""
 msgid "Materials in the selected library."
 msgstr "Materiales en la biblioteca seleccionada."
 
+#: rayforge/ui_gtk/settings/settings_dialog.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Categories"
+msgstr "Categorías"
+
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/about.py
 msgid "System"
@@ -1804,10 +1748,20 @@ msgid "Open specific project"
 msgstr "Abrir proyecto específico"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Laser Color"
+msgstr "Color del lÃ¡ser"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Layer Color"
+msgstr "Color de capa"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "General"
 msgstr "General"
 
@@ -1825,6 +1779,14 @@ msgid "Theme"
 msgstr "Tema"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Operation Colors"
+msgstr "Colores de operaciÃ³n"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Choose whether operation colors represent the laser or the layer"
+msgstr "Elige si los colores de operaciÃ³n representan el lÃ¡ser o la capa"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Units"
 msgstr "Unidades"
 
@@ -1839,7 +1801,6 @@ msgid "Length"
 msgstr "Longitud"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-#: rayforge/ui_gtk/canvas2d/simulation_controls.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Speed"
 msgstr "Velocidad"
@@ -1868,6 +1829,14 @@ msgid ""
 msgstr ""
 "Recalcular operaciones automáticamente tras cada cambio. Desactivar para "
 "recálculo manual mediante el botón de la barra de herramientas."
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Check for updates"
+msgstr "Buscar actualizaciones"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Automatically check for new Rayforge versions on startup."
+msgstr "Buscar automáticamente nuevas versiones de Rayforge al iniciar."
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Startup behavior"
@@ -1942,10 +1911,6 @@ msgstr "Añadir pestaña de sujeción aquí"
 msgid "Remove Tab"
 msgstr "Eliminar pestaña de sujeción"
 
-#: rayforge/ui_gtk/canvas2d/simulation_controls.py
-msgid "Line"
-msgstr "Línea"
-
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid "Drop files to import"
 msgstr "Arrastra archivos para importar"
@@ -1965,6 +1930,11 @@ msgstr "La vista 3D no está disponible debido a dependencias faltantes."
 #: rayforge/ui_gtk/view_mode_cmd.py
 msgid "Select a machine to open the 3D view."
 msgstr "Selecciona una máquina para abrir la vista 3D."
+
+#: rayforge/ui_gtk/actions.py rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/doceditor/stock_cmd.py
+msgid "Add Stock"
+msgstr "Añadir material de base"
 
 #: rayforge/ui_gtk/actions.py
 msgid "Auto Layout (Simple)"
@@ -2166,12 +2136,12 @@ msgstr "Exportar la tarjeta de calibración para imprimir"
 #: rayforge/ui_gtk/camera/calibration_wizard.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/gcode_editor.py
+#: rayforge/ui_gtk/machine/wcs_dialog.py
 #: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
 #: rayforge/ui_gtk/toolbar.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Save"
 msgstr "Guardar"
 
@@ -2233,6 +2203,7 @@ msgstr "Calibración fallida"
 
 #: rayforge/ui_gtk/camera/calibration_wizard.py
 #: rayforge/ui_gtk/machine/dialect_list.py
+#: rayforge/ui_gtk/machine/profile_selector.py
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
@@ -2717,6 +2688,18 @@ msgstr "Restablecer"
 msgid "# Your G-code here"
 msgstr "# Tu G-code aquí"
 
+#: rayforge/ui_gtk/machine/profile_importer.py
+msgid "Device Profile archives"
+msgstr "Archivos de perfil de dispositivo"
+
+#: rayforge/ui_gtk/machine/profile_importer.py
+msgid "All files"
+msgstr "Todos los archivos"
+
+#: rayforge/ui_gtk/machine/profile_importer.py
+msgid "Import Device Profile"
+msgstr "Importar perfil de dispositivo"
+
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Edit Macro"
 msgstr "Editar macro"
@@ -2754,6 +2737,16 @@ msgstr "El nombre contiene caracteres no válidos: {chars}"
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "This name is already used by another macro."
 msgstr "Este nombre ya está en uso por otra macro."
+
+#: rayforge/ui_gtk/machine/wcs_dialog.py
+msgid "Edit Work Offsets"
+msgstr "Editar desplazamientos de trabajo"
+
+#: rayforge/ui_gtk/machine/wcs_dialog.py
+msgid "Enter the offset from Machine Zero to Work Zero for the active WCS."
+msgstr ""
+"Introduzca el desplazamiento del cero máquina al cero trabajo para el WCS "
+"activo."
 
 #: rayforge/ui_gtk/machine/maintenance_page.py
 msgid "Reset Counter"
@@ -3193,6 +3186,14 @@ msgstr "Añadir nueva máquina"
 msgid "Select a machine profile to use as a template."
 msgstr "Selecciona un perfil de máquina para usar como plantilla."
 
+#: rayforge/ui_gtk/machine/profile_selector.py
+msgid "Import from File…"
+msgstr "Importar desde archivo…"
+
+#: rayforge/ui_gtk/machine/profile_selector.py
+msgid "Import Failed"
+msgstr "ImportaciÃ³n fallida"
+
 #: rayforge/ui_gtk/machine/template_selector.py
 msgid "Select a Template"
 msgstr "Seleccionar plantilla"
@@ -3409,6 +3410,10 @@ msgid "New Laser"
 msgstr "Nuevo láser"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Laser Heads"
+msgstr "Cabezales láser"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "You can configure multiple laser heads if your machine supports it."
 msgstr "Puedes configurar múltiples cabezales láser si tu máquina lo admite."
 
@@ -3594,13 +3599,17 @@ msgid "None"
 msgstr "Ninguno"
 
 #: rayforge/ui_gtk/machine/rotary_module_page.py
-msgid "No model"
-msgstr "Sin modelo"
+msgid "Axis Replacement"
+msgstr "Reemplazo de eje"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "True 4th Axis"
+msgstr "4.Âº eje real"
 
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #, python-brace-format
-msgid "Axis {axis}, {model}"
-msgstr "Eje {axis}, {model}"
+msgid "{mode}, Axis {axis}"
+msgstr "{mode}, Eje {axis}"
 
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 msgid "Add Rotary Module"
@@ -3643,12 +3652,87 @@ msgstr ""
 "como predeterminado."
 
 #: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Connection Mode"
+msgstr "Modo de conexiÃ³n"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "How the rotary is connected to the machine controller"
+msgstr "CÃ³mo se conecta el mÃ³dulo rotativo al controlador de la mÃ¡quina"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
 msgid "Axis"
 msgstr "Eje"
 
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 msgid "Axis letter for this module"
 msgstr "Letra de eje para este módulo"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Reversed Axis"
+msgstr "Eje invertido"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Reverse the rotation direction of the rotary axis"
+msgstr "Invertir la direcciÃ³n de rotaciÃ³n del eje rotativo"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Axis Offset X"
+msgstr "Desplazamiento del eje X"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Offset from module position to rotation axis (X)"
+msgstr "Desplazamiento desde la posiciÃ³n del mÃ³dulo al eje de rotaciÃ³n (X)"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Axis Offset Y"
+msgstr "Desplazamiento del eje Y"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Offset from module position to rotation axis (Y)"
+msgstr "Desplazamiento desde la posiciÃ³n del mÃ³dulo al eje de rotaciÃ³n (Y)"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Axis Offset Z"
+msgstr "Desplazamiento del eje Z"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Offset from module position to rotation axis (Z)"
+msgstr "Desplazamiento desde la posiciÃ³n del mÃ³dulo al eje de rotaciÃ³n (Z)"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Jaws / Chuck"
+msgstr "Mordazas / Mandril"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Rollers"
+msgstr "Rodillos"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Drive Type"
+msgstr "Tipo de accionamiento"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "How the rotary module drives the workpiece rotation"
+msgstr "CÃ³mo el mÃ³dulo rotativo acciona la rotaciÃ³n de la pieza"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Roller Diameter"
+msgstr "DiÃ¡metro del rodillo"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Diameter of the drive roller"
+msgstr "DiÃ¡metro del rodillo de accionamiento"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Travel per Rotation"
+msgstr "Recorrido por rotaciÃ³n"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid ""
+"Firmware distance for one full 360° rotation. 0 = raw circumferential output."
+msgstr ""
+"Distancia de firmware para una rotaciÃ³n completa de 360Â°. 0 = salida "
+"circunferencial en bruto."
 
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 msgid "Default Workpiece Diameter"
@@ -3702,8 +3786,22 @@ msgid "Machine Settings"
 msgstr "Ajustes de la máquina"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Export Machine Profile"
+msgstr "Exportar perfil de máquina"
+
+#: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "Laser"
 msgstr "Láser"
+
+#: rayforge/ui_gtk/machine/settings_dialog.py
+#, python-brace-format
+msgid "Exported to {path}"
+msgstr "Exportado a {path}"
+
+#: rayforge/ui_gtk/machine/settings_dialog.py rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid "Export failed: {error}"
+msgstr "Exportación fallida: {error}"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
@@ -4284,10 +4382,6 @@ msgid "Show Bottom Panel"
 msgstr "Mostrar panel inferior"
 
 #: rayforge/ui_gtk/main_menu.py
-msgid "Simulator"
-msgstr "Simulador"
-
-#: rayforge/ui_gtk/main_menu.py
 msgid "3D View"
 msgstr "Vista 3D"
 
@@ -4322,11 +4416,6 @@ msgstr "Alternar perspectiva"
 #: rayforge/ui_gtk/main_menu.py
 msgid "_View"
 msgstr "_Ver"
-
-#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/doceditor/asset_browser.py
-#: rayforge/doceditor/stock_cmd.py
-msgid "Add Stock"
-msgstr "Añadir material de base"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Split"
@@ -4580,10 +4669,6 @@ msgid "Show 3D Preview"
 msgstr "Mostrar vista previa 3D"
 
 #: rayforge/ui_gtk/toolbar.py
-msgid "Toggle execution simulation"
-msgstr "Alternar simulación de ejecución"
-
-#: rayforge/ui_gtk/toolbar.py
 msgid "Recalculate (Shift+Click to force)"
 msgstr "Recalcular (Mayús+Clic para forzar)"
 
@@ -4614,10 +4699,6 @@ msgstr "Desactivar alarma de la máquina (desbloquear)"
 #: rayforge/ui_gtk/toolbar.py
 msgid "Toggle focus laser"
 msgstr "Alternar láser de enfoque"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Work Coordinate System"
-msgstr "Sistema de coordenadas de trabajo"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Machine not fully configured"
@@ -4676,24 +4757,6 @@ msgstr "Nuevo proyecto creado"
 #: rayforge/ui_gtk/project_cmd.py
 msgid "Untitled"
 msgstr "Sin título"
-
-#: rayforge/ui_gtk/doceditor/layer_view.py
-msgid "Layer Settings"
-msgstr "Configuración de capa"
-
-#: rayforge/ui_gtk/doceditor/layer_view.py
-msgid "Delete this layer"
-msgstr "Eliminar esta capa"
-
-#: rayforge/ui_gtk/doceditor/layer_view.py
-#, python-brace-format
-msgid "{count} workpiece"
-msgstr "{count} pieza de trabajo"
-
-#: rayforge/ui_gtk/doceditor/layer_view.py
-#, python-brace-format
-msgid "{count} workpieces"
-msgstr "{count} piezas de trabajo"
 
 #: rayforge/ui_gtk/doceditor/asset_browser.py
 msgid "Add Asset"
@@ -4774,6 +4837,7 @@ msgstr ""
 "96, Inkscape antiguo usa 90, Illustrator usa 72"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Layers"
 msgstr "Capas"
 
@@ -5155,6 +5219,10 @@ msgid "The recipe will be permanently removed. This action cannot be undone."
 msgstr ""
 "La receta se eliminará permanentemente. Esta acción no se puede deshacer."
 
+#: rayforge/ui_gtk/doceditor/layers_tab.py
+msgid "Add New Layer"
+msgstr "Añadir nueva capa"
+
 #: rayforge/ui_gtk/doceditor/recipe_selector_dialog.py
 msgid "Select Recipe"
 msgstr "Seleccionar receta"
@@ -5197,14 +5265,11 @@ msgid "Controls"
 msgstr "Controles"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Active System"
-msgstr "Sistema activo"
-
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Current Offsets"
 msgstr "Desplazamientos actuales"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Edit Offsets Manually"
 msgstr "Editar desplazamientos manualmente"
 
@@ -5266,14 +5331,9 @@ msgid "Distance in machine units"
 msgstr "Distancia en unidades de máquina"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Edit Work Offsets"
-msgstr "Editar desplazamientos de trabajo"
-
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Enter the offset from Machine Zero to Work Zero for the active WCS."
+msgid "Overridden by the current layer. Change it in the layer settings."
 msgstr ""
-"Introduzca el desplazamiento del cero máquina al cero trabajo para el WCS "
-"activo."
+"Sobrescrito por la capa actual. CÃ¡mbialo en la configuraciÃ³n de capa."
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Offline - Position Unknown"
@@ -5321,6 +5381,37 @@ msgstr "Seleccionar material"
 #: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "Choose a material from the available libraries."
 msgstr "Elige un material de las bibliotecas disponibles."
+
+#: rayforge/ui_gtk/doceditor/workflow_row.py
+msgid "No Operations"
+msgstr "Sin operaciones"
+
+#: rayforge/ui_gtk/doceditor/workflow_row.py
+msgid "Add Step"
+msgstr "AÃ±adir paso"
+
+#: rayforge/ui_gtk/doceditor/workflow_row.py
+#: rayforge/ui_gtk/doceditor/workflow_view.py
+msgid "Reorder steps"
+msgstr "Reordenar pasos"
+
+#: rayforge/ui_gtk/doceditor/workflow_row.py
+#: rayforge/ui_gtk/doceditor/workflow_view.py
+#, python-brace-format
+msgid "Add step '{name}'"
+msgstr "Añadir paso '{name}'"
+
+#: rayforge/ui_gtk/doceditor/layer_column.py
+msgid "Layer Settings"
+msgstr "Configuración de capa"
+
+#: rayforge/ui_gtk/doceditor/layer_column.py
+msgid "Delete this layer"
+msgstr "Eliminar esta capa"
+
+#: rayforge/ui_gtk/doceditor/layer_column.py rayforge/doceditor/layer_cmd.py
+msgid "Toggle layer visibility"
+msgstr "Alternar visibilidad de la capa"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 #, python-brace-format
@@ -5557,6 +5648,30 @@ msgid "{name} - Settings"
 msgstr "{name} - Configuración"
 
 #: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Close"
+msgstr "Cerrar"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Basic layer settings such as appearance and coordinate system."
+msgstr "Configuración básica de capa como apariencia y sistema de coordenadas."
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Color used for operations in this layer"
+msgstr "Color usado para operaciones en esta capa"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Coordinate System"
+msgstr "Sistema de coordenadas"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid ""
+"The work coordinate system origin to use for this layer. By default, use the "
+"WCS selected in the main window"
+msgstr ""
+"El origen del sistema de coordenadas de trabajo para esta capa. Por defecto, "
+"usar el WCS seleccionado en la ventana principal"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Rotary Attachment"
 msgstr "Accesorio rotativo"
 
@@ -5589,23 +5704,9 @@ msgstr "Diámetro del objeto"
 msgid "Diameter of the cylindrical object in machine units"
 msgstr "Diámetro del objeto cilíndrico en unidades de máquina"
 
-#: rayforge/ui_gtk/doceditor/layer_list.py
-msgid "Add New Layer"
-msgstr "Añadir nueva capa"
-
-#: rayforge/ui_gtk/doceditor/layer_list.py
-msgid "Workpiece Layers"
-msgstr "Capas de piezas de trabajo"
-
-#: rayforge/ui_gtk/doceditor/layer_list.py
-#, python-brace-format
-msgid "{count} layer"
-msgstr "{count} capa"
-
-#: rayforge/ui_gtk/doceditor/layer_list.py
-#, python-brace-format
-msgid "{count} Layers"
-msgstr "{count} capas"
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Default"
+msgstr "Predeterminado"
 
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "No materials in selected library."
@@ -5679,17 +5780,8 @@ msgstr "{count} pasos"
 
 #: rayforge/ui_gtk/doceditor/workflow_view.py
 #, python-brace-format
-msgid "Add step '{name}'"
-msgstr "Añadir paso '{name}'"
-
-#: rayforge/ui_gtk/doceditor/workflow_view.py
-#, python-brace-format
 msgid "Remove step '{name}'"
 msgstr "Eliminar paso '{name}'"
-
-#: rayforge/ui_gtk/doceditor/workflow_view.py
-msgid "Reorder steps"
-msgstr "Reordenar pasos"
 
 #: rayforge/ui_gtk/about.py
 msgid "Not found"
@@ -5827,6 +5919,11 @@ msgstr "{size} B"
 
 #: rayforge/shared/util/size.py
 #, python-brace-format
+msgid "{size:.1f} KB"
+msgstr "{size:.1f} KB"
+
+#: rayforge/shared/util/size.py
+#, python-brace-format
 msgid "{size:.1f} MB"
 msgstr "{size:.1f} MB"
 
@@ -5880,10 +5977,6 @@ msgstr "Se encontraron actualizaciones de complementos."
 #: rayforge/addon_mgr/update_cmd.py
 msgid "Addons are up to date."
 msgstr "Los complementos están actualizados."
-
-#: rayforge/addon_mgr/update_cmd.py
-msgid "Update check failed."
-msgstr "La comprobación de actualizaciones falló."
 
 #: rayforge/addon_mgr/update_cmd.py
 msgid "Installing addon updates..."
@@ -6051,10 +6144,6 @@ msgstr "Calculando estimaciones finales de tiempo y distancia..."
 #: rayforge/pipeline/stage/job_compute.py
 msgid "Generating G-code..."
 msgstr "Generando G-code..."
-
-#: rayforge/pipeline/stage/job_compute.py
-msgid "Encoding paths for preview..."
-msgstr "Codificando trayectorias para vista previa..."
 
 #: rayforge/pipeline/view/view_compute.py
 msgid "Rendering vertices..."
@@ -6240,11 +6329,6 @@ msgid "Export successful: {name}"
 msgstr "Exportación exitosa: {name}"
 
 #: rayforge/doceditor/file_cmd.py
-#, python-brace-format
-msgid "Export failed: {error}"
-msgstr "Exportación fallida: {error}"
-
-#: rayforge/doceditor/file_cmd.py
 msgid "Object exported successfully."
 msgstr "Objeto exportado correctamente."
 
@@ -6354,10 +6438,6 @@ msgid "Rename layer"
 msgstr "Renombrar capa"
 
 #: rayforge/doceditor/layer_cmd.py
-msgid "Toggle layer visibility"
-msgstr "Alternar visibilidad de la capa"
-
-#: rayforge/doceditor/layer_cmd.py
 msgid "Set active layer"
 msgstr "Establecer capa activa"
 
@@ -6369,6 +6449,10 @@ msgstr "Eliminar capa '{name}'"
 #: rayforge/doceditor/layer_cmd.py
 msgid "Reorder layers"
 msgstr "Reordenar capas"
+
+#: rayforge/doceditor/layer_cmd.py
+msgid "Reorder workpieces"
+msgstr "Reordenar piezas de trabajo"
 
 #: rayforge/doceditor/editor.py
 #, python-brace-format

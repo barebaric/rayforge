@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-09 03:49+0200\n"
+"POT-Creation-Date: 2026-04-14 19:35+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -324,12 +324,36 @@ msgid "Cut: outlines; Engrave: fills with raster lines"
 msgstr "Різання: контури; Гравіювання: заповнення растровими лініями"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Speed &amp; Power"
-msgstr "Швидкість та потужність"
+msgid "Grid Mode"
+msgstr "Режим сітки"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Define the range of speeds and powers for the test grid"
-msgstr "Визначте діапазон швидкостей та потужностей для тестової сітки"
+msgid "Choose which parameters to vary on axes"
+msgstr "Виберіть, які параметри змінювати на осях"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Parameters"
+msgstr "Параметри"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Define the parameter ranges for the test grid"
+msgstr "Визначте діапазони параметрів для тестової сітки"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Fixed Speed"
+msgstr "Фіксована швидкість"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Constant speed for all cells (mm/min)"
+msgstr "Постійна швидкість для всіх клітинок (мм/хв)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Fixed Power (%)"
+msgstr "Фіксована потужність (%)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Constant power for all cells"
+msgstr "Постійна потужність для всіх клітинок"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Minimum Power (%)"
@@ -362,6 +386,22 @@ msgstr "Максимальна швидкість"
 #: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Ending speed (mm/min)"
 msgstr "Кінцева швидкість (мм/хв)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Minimum Passes"
+msgstr "Мінімум проходів"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Starting number of passes"
+msgstr "Початкова кількість проходів"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Maximum Passes"
+msgstr "Максимум проходів"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Ending number of passes"
+msgstr "Кінцева кількість проходів"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Label Engrave Power (%)"
@@ -426,6 +466,18 @@ msgstr "Включити мітки"
 #: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Add speed/power annotations to the grid"
 msgstr "Додати анотації швидкості/потужності до сітки"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Rows (Passes Steps)"
+msgstr "Рядки (Кроки проходів)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Number of passes variations"
+msgstr "Кількість варіацій проходів"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Columns (Speed Steps)"
+msgstr "Стовпці (Кроки швидкості)"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
 #, python-brace-format

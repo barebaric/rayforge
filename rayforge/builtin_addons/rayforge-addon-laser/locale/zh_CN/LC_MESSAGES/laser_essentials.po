@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-09 03:49+0200\n"
+"POT-Creation-Date: 2026-04-14 19:35+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -319,12 +319,36 @@ msgid "Cut: outlines; Engrave: fills with raster lines"
 msgstr "切割：轮廓；雕刻：用光栅线填充"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Speed &amp; Power"
-msgstr "速度和功率"
+msgid "Grid Mode"
+msgstr "网格模式"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Define the range of speeds and powers for the test grid"
-msgstr "定义测试网格的速度和功率范围"
+msgid "Choose which parameters to vary on axes"
+msgstr "选择在轴上变化的参数"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Parameters"
+msgstr "参数"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Define the parameter ranges for the test grid"
+msgstr "定义测试网格的参数范围"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Fixed Speed"
+msgstr "固定速度"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Constant speed for all cells (mm/min)"
+msgstr "所有单元格的恒定速度（毫米/分钟）"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Fixed Power (%)"
+msgstr "固定功率（%）"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Constant power for all cells"
+msgstr "所有单元格的恒定功率"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Minimum Power (%)"
@@ -357,6 +381,22 @@ msgstr "最大速度"
 #: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Ending speed (mm/min)"
 msgstr "结束速度 (毫米/分钟)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Minimum Passes"
+msgstr "最小次数"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Starting number of passes"
+msgstr "起始通过次数"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Maximum Passes"
+msgstr "最大次数"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Ending number of passes"
+msgstr "结束通过次数"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Label Engrave Power (%)"
@@ -419,6 +459,18 @@ msgstr "包含标签"
 #: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Add speed/power annotations to the grid"
 msgstr "向网格添加速度/功率注释"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Rows (Passes Steps)"
+msgstr "行（次数步进）"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Number of passes variations"
+msgstr "通过次数变体数"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Columns (Speed Steps)"
+msgstr "列（速度步进）"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
 #, python-brace-format
