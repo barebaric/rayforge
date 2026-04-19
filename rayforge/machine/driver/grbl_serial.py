@@ -20,7 +20,11 @@ from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ...shared.tasker import task_mgr
 from ..transport import TransportStatus, SerialTransport
-from ..transport.grbl import GrblSerialTransport, GRBL_RX_BUFFER_SIZE
+from ..transport.grbl import (
+    GrblSerialTransport,
+    GrblResponseType,
+    GRBL_RX_BUFFER_SIZE,
+)
 from ..transport.serial import SerialPortPermissionError
 from .driver import (
     Driver,
@@ -42,6 +46,8 @@ from .grbl_util import (
     error_code_to_device_error,
     CommandRequest,
     parse_grbl_parser_state,
+    parse_version,
+    strip_gcode_comments,
 )
 
 if TYPE_CHECKING:
@@ -72,7 +78,6 @@ class GrblSerialDriver(Driver):
         self._cmd_lock = asyncio.Lock()
         self._command_queue: asyncio.Queue[CommandRequest] = asyncio.Queue()
         self._command_task: Optional[asyncio.Task] = None
-        self._status_buffer = bytearray()
         self._is_cancelled = False
         self._job_running = False
         self._on_command_done: Optional[
@@ -187,7 +192,7 @@ class GrblSerialDriver(Driver):
         self._update_connection_status(status, message)
 
     async def cleanup(self):
-        logger.debug("GrblNextSerialDriver cleanup initiated.")
+        logger.debug("Cleanup initiated.")
         self.keep_running = False
         self._is_cancelled = False
         self._job_running = False
@@ -233,7 +238,7 @@ class GrblSerialDriver(Driver):
                 await self.grbl_transport.disconnect()
 
         await super().cleanup()
-        logger.debug("GrblNextSerialDriver cleanup completed.")
+        logger.debug("Cleanup completed.")
 
     async def _send_command(self, command: str, add_newline: bool = True):
         logger.debug(f"Sending fire-and-forget command: {command}")
@@ -284,14 +289,13 @@ class GrblSerialDriver(Driver):
             )
             return
 
-        logger.debug("GrblNextSerialDriver connect initiated.")
+        logger.debug("Connect initiated.")
         self.keep_running = True
         self._is_cancelled = False
         self._job_running = False
         self._on_command_done = None
         self.grbl_transport.reset()
         self._job_exception = None
-        self._status_buffer = bytearray()
         self._connection_task = asyncio.create_task(self._connection_loop())
         self._command_task = asyncio.create_task(self._process_command_queue())
 
@@ -333,6 +337,9 @@ class GrblSerialDriver(Driver):
 
                 logger.info("Connection established successfully.")
                 self._update_connection_status(TransportStatus.CONNECTED)
+
+                await self._send_command("$I")
+
                 logger.debug("Connection verified. Starting status polling.")
                 while transport.is_connected and self.keep_running:
                     # Skip status polling during jobs if configured
@@ -488,6 +495,134 @@ class GrblSerialDriver(Driver):
         if self.grbl_transport:
             self.grbl_transport.reset()
 
+    async def _recover_from_deadlock(self, transport) -> None:
+        """
+        Recover from a detected deadlock by sending a G4 P0.01 dwell.
+        When its 'ok' arrives, the planner buffer is guaranteed empty.
+        Then reset host-side buffer accounting.
+        """
+        if not transport or not transport.is_connected:
+            logger.warning("Cannot recover: transport disconnected.")
+            return
+        logger.info("Deadlock recovery: sending G4 P0.01 to drain planner.")
+        try:
+            async with self._cmd_lock:
+                dwell = b"G4 P0.01\n"
+                await transport.send_gcode(dwell)
+                logger.debug(f"TX: {dwell!r} (deadlock recovery)")
+            try:
+                await asyncio.wait_for(
+                    transport.pending_queue.join(), timeout=30.0
+                )
+                logger.info("Deadlock recovery: all pending acks received.")
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "Deadlock recovery: timed out waiting for acks "
+                    "after G4 P0.01. Resetting host buffers."
+                )
+            transport.reset()
+        except (ConnectionError, OSError) as e:
+            logger.warning(f"Deadlock recovery failed: {e}")
+
+    async def _wait_for_buffer_space(
+        self, transport, command_len: int, timeout: float
+    ) -> None:
+        """Wait for buffer space, recovering from deadlocks if needed."""
+        while transport.needs_space(command_len):
+            if self.state.status == DeviceStatus.ALARM:
+                if not self._job_exception:
+                    self._job_exception = DeviceConnectionError(
+                        "Machine entered ALARM state during job."
+                    )
+                return
+
+            try:
+                await asyncio.wait_for(
+                    transport.wait_for_space(), timeout=timeout
+                )
+            except asyncio.TimeoutError:
+                if self.state.status == DeviceStatus.IDLE:
+                    logger.warning(
+                        "Deadlock detected during streaming. "
+                        "Attempting G4 P0.01 recovery."
+                    )
+                    await self._recover_from_deadlock(transport)
+                    if transport.needs_space(command_len):
+                        logger.error("Recovery failed: buffer still full.")
+                        self._job_exception = DeviceConnectionError(
+                            "Deadlock recovery failed."
+                        )
+                        return
+                else:
+                    logger.warning(
+                        "Timeout waiting for buffer space "
+                        "(machine not IDLE). Retrying."
+                    )
+
+            if self._job_exception:
+                return
+            if self._is_cancelled:
+                raise asyncio.CancelledError("Job cancelled")
+
+    async def _send_gcode_line(
+        self,
+        transport,
+        line: str,
+        command_bytes: bytes,
+        op_index: Optional[int],
+    ) -> None:
+        """Send a single gcode line with buffer accounting."""
+        async with self._cmd_lock:
+            if not self.grbl_transport or not self.grbl_transport.is_connected:
+                raise ConnectionError(
+                    "Serial transport disconnected during job."
+                )
+
+            logger.info(line, extra=self._log_extra("USER_COMMAND"))
+
+            # Add to queue BEFORE sending.
+            # Fast machines can reply with 'ok' before await
+            # send() returns. If we queue after sending, the RX
+            # handler finds an empty queue and drops the 'ok',
+            # causing a deadlock.
+            count = await transport.send_gcode(command_bytes, op_index)
+            buf_info = f"buf: {count}/{GRBL_RX_BUFFER_SIZE}"
+            logger.debug(
+                f"TX: {command_bytes!r} ({buf_info})",
+                extra={
+                    "log_category": "RAW_IO",
+                    "direction": "TX",
+                    "data": command_bytes,
+                },
+            )
+
+    async def _drain_pending_acks(self, transport, timeout: float) -> None:
+        """Wait for all pending acks, recovering from deadlocks."""
+        while not transport.pending_queue.empty():
+            if self._job_exception or self.state.status == DeviceStatus.ALARM:
+                break
+            if self._is_cancelled:
+                break
+
+            try:
+                await asyncio.wait_for(
+                    transport.pending_queue.join(), timeout=timeout
+                )
+                logger.debug("All 'ok' responses received.")
+                break
+            except asyncio.TimeoutError:
+                if self.state.status == DeviceStatus.IDLE:
+                    logger.warning(
+                        "Deadlock detected at end of job. "
+                        "Attempting G4 P0.01 recovery."
+                    )
+                    await self._recover_from_deadlock(transport)
+                else:
+                    logger.warning(
+                        "Timeout waiting for acks "
+                        "(machine not IDLE). Retrying."
+                    )
+
     async def _stream_gcode(
         self,
         gcode_lines: List[str],
@@ -504,6 +639,7 @@ class GrblSerialDriver(Driver):
         if not transport:
             raise ConnectionError("Transport not initialized")
         job_completed_successfully = False
+        deadlock_timeout = 10.0 if not self._poll_status_while_running else 2.0
         try:
             for line_idx, line in enumerate(gcode_lines):
                 if (
@@ -516,15 +652,13 @@ class GrblSerialDriver(Driver):
                         "state. Stopping G-code sending."
                     )
                     if self.state.status == DeviceStatus.ALARM:
-                        # Set the exception but don't raise it yet, let
-                        # the loop terminate naturally.
                         if not self._job_exception:
                             self._job_exception = DeviceConnectionError(
                                 "Machine entered ALARM state during job."
                             )
                     break
 
-                line = line.strip()
+                line = strip_gcode_comments(line)
                 if not line:
                     continue
 
@@ -533,81 +667,27 @@ class GrblSerialDriver(Driver):
                     if machine_code_to_op_map
                     else None
                 )
-                # Command is line + newline character
                 command_bytes = (line + "\n").encode("utf-8")
-                command_len = len(command_bytes)
 
-                # Wait until there is enough space in the buffer
-                while transport.needs_space(command_len):
-                    if self.state.status == DeviceStatus.ALARM:
-                        if not self._job_exception:
-                            self._job_exception = DeviceConnectionError(
-                                "Machine entered ALARM state during job."
-                            )
-                        break
-                    await transport.wait_for_space()
-                    if self._job_exception:
-                        break
-                    if self._is_cancelled:
-                        raise asyncio.CancelledError("Job cancelled")
-
+                await self._wait_for_buffer_space(
+                    transport, len(command_bytes), deadlock_timeout
+                )
                 if (
                     self._job_exception
                     or self.state.status == DeviceStatus.ALARM
                 ):
                     break
 
-                async with self._cmd_lock:
-                    if (
-                        not self.grbl_transport
-                        or not self.grbl_transport.is_connected
-                    ):
-                        raise ConnectionError(
-                            "Serial transport disconnected during job."
-                        )
-
-                    logger.info(line, extra=self._log_extra("USER_COMMAND"))
-
-                    # Add to queue BEFORE sending.
-                    # Fast machines can reply with 'ok' before await
-                    # send() returns. If we queue after sending, the RX
-                    # handler finds an empty queue and drops the 'ok',
-                    # causing a deadlock.
-                    count = await transport.send_gcode(command_bytes, op_index)
-                    buf_info = f"buf: {count}/{GRBL_RX_BUFFER_SIZE}"
-                    logger.debug(
-                        f"TX: {command_bytes!r} ({buf_info})",
-                        extra={
-                            "log_category": "RAW_IO",
-                            "direction": "TX",
-                            "data": command_bytes,
-                        },
-                    )
-
-                # Yield to the event loop to allow status polling (and
-                # other tasks) to run. Without this, the tight loop might
-                # starve the _connection_loop task.
+                await self._send_gcode_line(
+                    transport, line, command_bytes, op_index
+                )
                 await asyncio.sleep(0)
 
-            # Wait for all sent commands to be acknowledged
             if not self._is_cancelled and not self._job_exception:
                 logger.debug(
                     "All G-code sent. Waiting for all 'ok' responses."
                 )
-                try:
-                    await transport.wait_all_pending(timeout=10.0)
-                    logger.debug("All 'ok' responses received.")
-                except asyncio.TimeoutError:
-                    if self._job_exception:
-                        logger.debug(
-                            "Join timed out due to job exception. "
-                            "Raising exception."
-                        )
-                        raise self._job_exception
-                    logger.warning(
-                        "Join timed out without job exception. "
-                        "This may indicate a problem with the device."
-                    )
+                await self._drain_pending_acks(transport, deadlock_timeout)
 
             if self._job_exception:
                 raise self._job_exception
@@ -959,6 +1039,7 @@ class GrblSerialDriver(Driver):
             match = wcs_re.match(line)
             if match:
                 slot, x_str, y_str, z_str = match.groups()
+                z_str = z_str or "0.000"
                 offsets[slot] = (
                     float(x_str),
                     float(y_str),
@@ -1019,8 +1100,8 @@ class GrblSerialDriver(Driver):
 
     def on_serial_data_received(self, sender, data: bytes):
         """
-        Primary handler for incoming serial data. Decodes, buffers, and
-        delegates processing of complete messages.
+        Primary handler for incoming serial data. Delegates parsing
+        to the transport layer and processes structured responses.
         """
         buf_count = (
             self.grbl_transport.buffer_count if self.grbl_transport else 0
@@ -1034,41 +1115,39 @@ class GrblSerialDriver(Driver):
                 "data": data,
             },
         )
-        # Buffer bytes directly to avoid decoding errors on split chars
-        self._status_buffer.extend(data)
 
-        # Process all complete messages (ending with '\r\n') in buffer
-        while b"\r\n" in self._status_buffer:
-            end_idx = self._status_buffer.find(b"\r\n") + 2
-            message_bytes = self._status_buffer[:end_idx]
-            self._status_buffer = self._status_buffer[end_idx:]
-
-            try:
-                message = message_bytes.decode("utf-8")
-                self._process_message(message)
-            except UnicodeDecodeError:
-                logger.warning(
-                    f"Dropped invalid UTF-8 message bytes: {message_bytes!r}"
-                )
-
-    def _process_message(self, message: str):
-        """
-        Routes a complete message to the appropriate handler based on
-        its content.
-        """
-        stripped_message = message.strip()
-        if not stripped_message:
+        if not self.grbl_transport:
             return
 
-        # Status reports are frequent and start with '<'
-        if stripped_message.startswith("<") and stripped_message.endswith(">"):
-            self._handshake_received.set()
-            self._handle_status_report(stripped_message)
+        responses = self.grbl_transport.parse_incoming(data)
+
+        # Process LINE responses before OK/ERROR to ensure
+        # informational lines are collected before the command
+        # is marked as finished. _extract_acks_from_buffer
+        # returns OK/ERROR first, but _handle_ok schedules
+        # request.finished.set() via call_soon_threadsafe on a
+        # separate thread. If that thread executes before
+        # _handle_line runs, the lines would be lost.
+        lines = []
+        acks = []
+        for resp in responses:
+            if resp.type == GrblResponseType.LINE:
+                lines.append(resp)
+            else:
+                acks.append(resp)
+        for resp in lines + acks:
+            self._handle_response(resp)
+
+    def _handle_response(self, resp):
+        """
+        Route a parsed GrblResponse to the appropriate handler.
+        """
+        if resp.type == GrblResponseType.OK:
+            self._handle_ok(resp)
+        elif resp.type == GrblResponseType.ERROR:
+            self._handle_error(resp.text)
         else:
-            # Handle other responses line by line (e.g., 'ok', 'error:')
-            for line in message.strip().splitlines():
-                if line:  # Ensure we don't process empty lines
-                    self._handle_general_response(line)
+            self._handle_line(resp.text)
 
     def _handle_status_report(self, report: str):
         """
@@ -1102,157 +1181,95 @@ class GrblSerialDriver(Driver):
                 )
             self.state_changed.send(self, state=self.state)
 
-    def _handle_general_response(self, line: str):
-        """
-        Handles non-status-report lines like 'ok', 'error:', welcome
-        messages, or settings output.
-        """
-        logger.debug(f"Processing received line: {line}")
+    def _handle_ok(self, resp):
+        """Handle a parsed 'ok' response."""
+        pending = resp.pending
+        logger.info("ok", extra=self._log_extra("MACHINE_RESPONSE"))
 
-        # Basic heuristic to filter out broken/fragmented status reports
-        # that missed the opening '<' due to serial corruption. Treating
-        # them as general responses can confuse command handlers.
-        if "Pos:" in line and "|" in line:
-            logger.debug(f"Ignoring fragmented status report line: {line}")
+        if pending is not None:
+            transport = self.grbl_transport
+            assert transport is not None
+            logger.debug(
+                f"Processed 'ok', freed {pending.length} bytes "
+                f"(buf: {transport.buffer_count}"
+                f"/{GRBL_RX_BUFFER_SIZE}, "
+                f"op_index={pending.op_index})"
+            )
+
+        # Logic for single, interactive commands
+        request = self._current_request
+        if request and not request.finished.is_set():
+            request.response_lines.append("ok")
+            self.command_status_changed.send(self, status=TransportStatus.IDLE)
+            logger.debug(f"Command '{request.command}' completed with 'ok'")
+            task_mgr.loop.call_soon_threadsafe(request.finished.set)
+
+        # Logic for streaming protocol during a job
+        if self._job_running and pending is not None:
+            if self._on_command_done and pending.op_index is not None:
+                for i in range(
+                    self._last_reported_op_index + 1,
+                    pending.op_index + 1,
+                ):
+                    try:
+                        logger.debug(
+                            f"Firing on_command_done for op_index {i}"
+                        )
+                        result = self._on_command_done(i)
+                        if inspect.isawaitable(result):
+                            asyncio.ensure_future(result)
+                    except Exception as e:
+                        logger.error(
+                            "Error in on_command_done callback",
+                            exc_info=e,
+                        )
+                self._last_reported_op_index = pending.op_index
+
+    def _handle_error(self, text: str):
+        """Handle a parsed 'error:...' response."""
+        logger.info(text, extra=self._log_extra("MACHINE_EVENT"))
+        error_code = text.split(":")[1].strip() if ":" in text else ""
+        self.state.error = error_code_to_device_error(error_code)
+        self.state_changed.send(self, state=self.state)
+
+        request = self._current_request
+        if request and not request.finished.is_set():
+            request.response_lines.append(text)
+            self.command_status_changed.send(
+                self, status=TransportStatus.ERROR, message=text
+            )
+            task_mgr.loop.call_soon_threadsafe(request.finished.set)
+
+        if self._job_running:
+            self.command_status_changed.send(
+                self, status=TransportStatus.ERROR, message=text
+            )
+            logger.error(
+                f"GRBL error during job: {text}. Halting stream.",
+                extra={"log_category": "ERROR"},
+            )
+            self._job_exception = DeviceConnectionError(f"GRBL error: {text}")
+            if self.grbl_transport:
+                self.grbl_transport.signal_space_available()
+
+    def _handle_line(self, line: str):
+        """Handle a parsed general line (status report, alarm, info)."""
+        if "Pos:" in line and "|" in line and not line.startswith("<"):
+            logger.debug(f"Ignoring fragmented status report: {line}")
             return
 
-        category = "MACHINE_RESPONSE" if line == "ok" else "MACHINE_EVENT"
-        logger.info(line, extra=self._log_extra(category))
+        if line.startswith("<") and line.endswith(">"):
+            self._handshake_received.set()
+            self._handle_status_report(line.strip())
+            return
 
-        # Logic for single, interactive commands must be checked first
+        logger.info(line, extra=self._log_extra("MACHINE_EVENT"))
+
+        # Collect response lines for pending single commands
         request = self._current_request
         if request and not request.finished.is_set():
             request.response_lines.append(line)
-            if line == "ok":
-                self.command_status_changed.send(
-                    self, status=TransportStatus.IDLE
-                )
-                logger.debug(
-                    f"Command '{request.command}' completed with 'ok'"
-                )
-                if self.grbl_transport:
-                    try:
-                        self.grbl_transport.ack_ok()
-                    except asyncio.QueueEmpty:
-                        pass
-                task_mgr.loop.call_soon_threadsafe(request.finished.set)
-                return  # Line consumed by single command
-            elif line.startswith("error:"):
-                error_code = line.split(":")[1].strip()
-                self.state.error = error_code_to_device_error(error_code)
-                self.state_changed.send(self, state=self.state)
-                self.command_status_changed.send(
-                    self, status=TransportStatus.ERROR, message=line
-                )
-                if self.grbl_transport:
-                    try:
-                        self.grbl_transport.ack_ok()
-                    except asyncio.QueueEmpty:
-                        pass
-                task_mgr.loop.call_soon_threadsafe(request.finished.set)
-                # Fall through to allow job error handling as well
 
-        # Logic for character-counting streaming protocol during a job
-        if self._job_running:
-            # First, perform the strict, correct check.
-            is_ack = line == "ok"
-
-            # If the strict check fails, apply a surgical patch ONLY
-            # for NULL byte corruption. This is a specific workaround
-            # for a known hardware/firmware-level serial fault.
-            if not is_ack:
-                # Remove only NULL bytes and re-check for exact
-                # equality.
-                line_without_nulls = line.replace("\x00", "")
-                if line_without_nulls == "ok":
-                    logger.critical(
-                        "HARDWARE FAULT DETECTED: A corrupted 'ok' "
-                        f"acknowledgement with NULL bytes was received "
-                        f"({repr(line)}). The job is continuing, but "
-                        "this indicates a critical problem with the "
-                        "USB cable, electrical noise (EMI), or power "
-                        "supply. The hardware connection MUST be fixed "
-                        "for reliable operation."
-                    )
-                    is_ack = True
-
-            if is_ack:
-                try:
-                    transport = self.grbl_transport
-                    assert transport is not None
-                    pending = transport.ack_ok()
-                    logger.debug(
-                        f"Processed 'ok', freed {pending.length} bytes "
-                        f"(buf: {transport.buffer_count}"
-                        f"/{GRBL_RX_BUFFER_SIZE})"
-                    )
-
-                    # If this command was part of a job, update progress.
-                    if self._on_command_done and pending.op_index is not None:
-                        # Fire callbacks for all ops from the last
-                        # reported one up to this one. This ensures ops
-                        # with no G-code are also reported.
-                        for i in range(
-                            self._last_reported_op_index + 1,
-                            pending.op_index + 1,
-                        ):
-                            try:
-                                logger.debug(
-                                    "GrblSerialDriver: Firing "
-                                    "on_command_done for op_index "
-                                    f"{i}"
-                                )
-                                result = self._on_command_done(i)
-                                if inspect.isawaitable(result):
-                                    asyncio.ensure_future(result)
-                            except Exception as e:
-                                logger.error(
-                                    "Error in on_command_done callback",
-                                    exc_info=e,
-                                )
-                        self._last_reported_op_index = pending.op_index
-                except asyncio.QueueEmpty:
-                    logger.warning(
-                        "Received 'ok' during job, but sent gcode "
-                        "queue was empty. Ignoring."
-                    )
-            elif line.startswith("error:"):
-                error_code = line.split(":")[1].strip()
-                self.state.error = error_code_to_device_error(error_code)
-                self.state_changed.send(self, state=self.state)
-                self.command_status_changed.send(
-                    self, status=TransportStatus.ERROR, message=line
-                )
-                logger.error(
-                    f"GRBL error during job: {line}. Halting stream.",
-                    extra={"log_category": "ERROR"},
-                )
-                self._job_exception = DeviceConnectionError(
-                    f"GRBL error: {line}"
-                )
-                if self.grbl_transport:
-                    self.grbl_transport.signal_space_available()
-            elif line.startswith("ALARM:"):
-                alarm_code = line.split(":")[1].strip()
-                self.state.error = error_code_to_device_error(alarm_code)
-                self.state_changed.send(self, state=self.state)
-                self.command_status_changed.send(
-                    self, status=TransportStatus.ERROR, message=line
-                )
-                logger.error(
-                    f"GRBL ALARM during job: {line}. Halting stream.",
-                    extra={"log_category": "ERROR"},
-                )
-                self._job_exception = DeviceConnectionError(
-                    f"GRBL ALARM: {line}"
-                )
-                # Unblock the run loop so it can see the exception
-                # and terminate
-                if self.grbl_transport:
-                    self.grbl_transport.signal_space_available()
-            return
-
-        # Handle non-job-related alarms if no single command is active
         if line.startswith("ALARM:"):
             alarm_code = line.split(":")[1].strip()
             self.state.error = error_code_to_device_error(alarm_code)
@@ -1260,6 +1277,21 @@ class GrblSerialDriver(Driver):
             self.command_status_changed.send(
                 self, status=TransportStatus.ERROR, message=line
             )
+            if self._job_running:
+                logger.error(
+                    f"GRBL ALARM during job: {line}. Halting stream.",
+                    extra={"log_category": "ERROR"},
+                )
+                self._job_exception = DeviceConnectionError(
+                    f"GRBL ALARM: {line}"
+                )
+                if self.grbl_transport:
+                    self.grbl_transport.signal_space_available()
+        elif line.startswith("[VER:"):
+            version_info = parse_version([line])
+            if version_info:
+                ver_num, ver_let = version_info
+                logger.info(f"Connected to GRBL version {ver_num}{ver_let}")
         elif line.startswith("Grbl "):
             self._handshake_received.set()
             logger.debug(f"Received Grbl welcome message: {line}")

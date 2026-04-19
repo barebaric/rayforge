@@ -746,9 +746,6 @@ def compute_workpiece_artifact(
         settings,
     )
 
-    if settings["air_assist"]:
-        final_artifact.ops.disable_air_assist()
-
     logger = logging.getLogger(__name__)
     logger.debug(
         "compute_workpiece_artifact: Creating final_artifact_to_store: "

@@ -7,6 +7,23 @@ from gettext import gettext as _
 from ...core.varset import Var, VarSet
 from .driver import DeviceStatus, DeviceState, Pos, DeviceError
 
+_gcode_comment_re = re.compile(r"\([^)]*\)")
+
+
+def strip_gcode_comments(line: str) -> str:
+    """
+    Strip G-code comments from a line.
+
+    Removes:
+    - Everything after ';' (semicolon comments)
+    - Content between '(' and ')' (parenthetical comments)
+    """
+    line = _gcode_comment_re.sub("", line)
+    idx = line.find(";")
+    if idx >= 0:
+        line = line[:idx]
+    return line.strip()
+
 
 # GRBL Next-gen command requests
 @dataclass
@@ -38,7 +55,7 @@ pos_re = re.compile(r":(-?\d+\.?\d*),(-?\d+\.?\d*)(?:,(-?\d+\.?\d*))?")
 fs_re = re.compile(r"FS:(\d+),(\d+)")
 bf_re = re.compile(r"Bf:(\d+),(\d+)")
 grbl_setting_re = re.compile(r"\$(\d+)=([\d\.-]+)")
-wcs_re = re.compile(r"\[(G5[4-9]):([\d\.-]+),([\d\.-]+),([\d\.-]+)\]")
+wcs_re = re.compile(r"\[(G5[4-9]):([\d\.-]+),([\d\.-]+)(?:,([\d\.-]+))?\]")
 prb_re = re.compile(r"\[PRB:([\d\.-]+),([\d\.-]+),([\d\.-]+):(\d)\]")
 # Regex to find the active WCS (G54-G59) from a $G parser state report
 grbl_parser_state_re = re.compile(r".*(G5[4-9]).*")

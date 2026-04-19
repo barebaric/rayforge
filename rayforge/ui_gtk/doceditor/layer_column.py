@@ -2,6 +2,7 @@ import json
 import logging
 from gettext import gettext as _
 from typing import Optional, TYPE_CHECKING, cast
+from blinker import Signal
 from gi.repository import Adw, Gdk, GObject, Gtk, Pango
 from ...context import get_context
 from ...core.doc import Doc
@@ -102,6 +103,8 @@ class LayerColumn(Gtk.Box):
         self.editor = editor
         self._row_workpieces = {}
         self._potential_drop_index = -1
+
+        self.edit_item_requested = Signal()
 
         self._build_header(can_delete)
         self._build_workflow_row()
@@ -377,12 +380,28 @@ class LayerColumn(Gtk.Box):
         if picked is not None:
             widget = picked
             while widget and widget is not self:
-                if isinstance(widget, (Gtk.Button, WorkpieceRow)):
+                if isinstance(widget, WorkpieceRow):
+                    if n_press == 2:
+                        self._on_workpiece_double_clicked(widget.workpiece)
+                    gesture.set_state(Gtk.EventSequenceState.DENIED)
+                    return
+                if isinstance(widget, Gtk.Button):
                     gesture.set_state(Gtk.EventSequenceState.DENIED)
                     return
                 widget = widget.get_parent()
         if self.doc.active_layer is not self.layer:
             self.editor.layer.set_active_layer(self.layer)
+
+    def _on_workpiece_double_clicked(self, wp):
+        if not wp.geometry_provider_uid:
+            return
+        asset = self.doc.get_asset_by_uid(wp.geometry_provider_uid)
+        if not asset:
+            return
+        action_name = type(asset).edit_item_action
+        if not action_name:
+            return
+        self.edit_item_requested.send(self, item=wp, action_name=action_name)
 
     def _on_drop(self, drop_target, value, x, y):
         if not value:

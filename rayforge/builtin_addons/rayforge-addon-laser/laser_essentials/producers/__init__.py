@@ -10,6 +10,7 @@ from .frame_producer import FrameProducer
 from .material_test_grid_producer import (
     MaterialTestGridProducer,
     MaterialTestGridType,
+    GridMode,
     get_material_test_proportional_size,
     draw_material_test_preview,
 )
@@ -23,6 +24,7 @@ __all__ = [
     "FrameProducer",
     "MaterialTestGridProducer",
     "MaterialTestGridType",
+    "GridMode",
     "get_material_test_proportional_size",
     "draw_material_test_preview",
     "ShrinkWrapProducer",

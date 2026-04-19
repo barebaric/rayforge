@@ -47,37 +47,80 @@ class MaterialTestRenderer(Renderer):
         speed_range = params["speed_range"]
         power_range = params["power_range"]
         test_type = params.get("test_type", "Cut")
+        grid_mode = params.get("grid_mode", "Power vs Speed")
+        passes_range = params.get("passes_range", (1, 5))
 
         min_speed, max_speed = speed_range
         min_power, max_power = power_range
+        min_passes, max_passes = int(passes_range[0]), int(passes_range[1])
 
-        # Rows vary speed (Y-axis), columns vary power (X-axis)
-        speed_step = (max_speed - min_speed) / (rows - 1) if rows > 1 else 0
-        power_step = (max_power - min_power) / (cols - 1) if cols > 1 else 0
+        if grid_mode == "Power vs Passes":
+            col_range = (min_power, max_power)
+            row_range = (float(min_passes), float(max_passes))
+        elif grid_mode == "Speed vs Passes":
+            col_range = (min_speed, max_speed)
+            row_range = (float(min_passes), float(max_passes))
+        else:
+            col_range = (min_power, max_power)
+            row_range = (min_speed, max_speed)
+
+        col_step = (
+            (col_range[1] - col_range[0]) / (cols - 1) if cols > 1 else 0
+        )
+        row_step = (
+            (row_range[1] - row_range[0]) / (rows - 1) if rows > 1 else 0
+        )
+
+        col_span = col_range[1] - col_range[0]
+        row_span = row_range[1] - row_range[0]
 
         for r in range(rows):
             for c in range(cols):
-                current_speed = min_speed + r * speed_step
-                current_power = min_power + c * power_step
+                col_val = col_range[0] + c * col_step
+                row_val = row_range[0] + r * row_step
 
-                x = c * (shape_size + spacing)
-                y = r * (shape_size + spacing)
-
-                # Calculate intensity (darker = more aggressive)
-                speed_factor = (
-                    1.0 - (current_speed - min_speed) / (max_speed - min_speed)
-                    if max_speed > min_speed
-                    else 0
-                )
-                power_factor = (
-                    (current_power - min_power) / (max_power - min_power)
-                    if max_power > min_power
-                    else 0
-                )
-                intensity = (speed_factor + power_factor) / 2.0
+                if grid_mode == "Power vs Passes":
+                    power_factor = (
+                        (col_val - col_range[0]) / col_span
+                        if col_span > 0
+                        else 0
+                    )
+                    passes_factor = (
+                        (row_val - row_range[0]) / row_span
+                        if row_span > 0
+                        else 0
+                    )
+                    intensity = (power_factor + passes_factor) / 2.0
+                elif grid_mode == "Speed vs Passes":
+                    speed_factor = (
+                        1.0 - (col_val - col_range[0]) / col_span
+                        if col_span > 0
+                        else 0
+                    )
+                    passes_factor = (
+                        (row_val - row_range[0]) / row_span
+                        if row_span > 0
+                        else 0
+                    )
+                    intensity = (speed_factor + passes_factor) / 2.0
+                else:
+                    speed_factor = (
+                        1.0 - (row_val - row_range[0]) / row_span
+                        if row_span > 0
+                        else 0
+                    )
+                    power_factor = (
+                        (col_val - col_range[0]) / col_span
+                        if col_span > 0
+                        else 0
+                    )
+                    intensity = (speed_factor + power_factor) / 2.0
 
                 # Gradient from light gray (0.9) to dark gray (0.3)
                 gray = 0.9 - (intensity * 0.6)
+
+                x = c * (shape_size + spacing)
+                y = r * (shape_size + spacing)
 
                 if test_type == "Engrave":
                     # Fill cell with horizontal lines for engrave mode

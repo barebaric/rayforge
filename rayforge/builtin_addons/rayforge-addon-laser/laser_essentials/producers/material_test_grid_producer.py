@@ -72,6 +72,14 @@ class MaterialTestGridType(Enum):
     ENGRAVE = "Engrave"
 
 
+class GridMode(Enum):
+    """Defines which parameters vary on grid axes."""
+
+    POWER_VS_SPEED = "Power vs Speed"
+    POWER_VS_PASSES = "Power vs Passes"
+    SPEED_VS_PASSES = "Speed vs Passes"
+
+
 class MaterialTestGridProducer(OpsProducer):
     """
     Generates a material test grid with varying speed and power settings.
@@ -82,8 +90,12 @@ class MaterialTestGridProducer(OpsProducer):
     def __init__(
         self,
         test_type: MaterialTestGridType = MaterialTestGridType.CUT,
+        grid_mode: GridMode = GridMode.POWER_VS_SPEED,
         speed_range: Tuple[float, float] = (100.0, 500.0),
         power_range: Tuple[float, float] = (10.0, 100.0),
+        passes_range: Tuple[int, int] = (1, 5),
+        fixed_speed: float = 1000.0,
+        fixed_power: float = 50.0,
         grid_dimensions: Tuple[int, int] = (5, 5),
         shape_size: float = 10.0,
         spacing: float = 2.0,
@@ -97,8 +109,15 @@ class MaterialTestGridProducer(OpsProducer):
             self.test_type = MaterialTestGridType(test_type)
         else:
             self.test_type = test_type
+        if isinstance(grid_mode, str):
+            self.grid_mode = GridMode(grid_mode)
+        else:
+            self.grid_mode = grid_mode
         self.speed_range = speed_range
         self.power_range = power_range
+        self.passes_range = passes_range
+        self.fixed_speed = fixed_speed
+        self.fixed_power = fixed_power
         self.grid_dimensions = grid_dimensions
         self.shape_size = shape_size
         self.spacing = spacing
@@ -178,7 +197,18 @@ class MaterialTestGridProducer(OpsProducer):
         main_ops.ops_section_start(section_type, workpiece.uid)
 
         # Sort for risk, highest risk first (high speed -> low speed)
-        grid_elements.sort(key=lambda e: (-e["speed"], e["power"]))
+        grid_elements.sort(
+            key=lambda e: (-e["speed"], e["power"], e.get("passes", 1))
+        )
+
+        is_engrave = self.test_type == MaterialTestGridType.ENGRAVE
+        line_spacing = 0.0
+        if is_engrave:
+            line_spacing = (
+                self.line_interval_mm
+                if self.line_interval_mm is not None
+                else laser.spot_size_mm[1]
+            )
 
         for element in grid_elements:
             # Force laser state to OFF before setting new parameters.
@@ -188,15 +218,12 @@ class MaterialTestGridProducer(OpsProducer):
             main_ops.set_power(0.0)
             main_ops.set_power(element["power"] / 100.0)
             main_ops.set_cut_speed(element["speed"])
-            if self.test_type == MaterialTestGridType.ENGRAVE:
-                line_spacing = (
-                    self.line_interval_mm
-                    if self.line_interval_mm is not None
-                    else laser.spot_size_mm[1]
-                )
-                self._draw_filled_box(main_ops, line_spacing, **element)
-            else:
-                self._draw_rectangle(main_ops, **element)
+            passes = element.get("passes", 1)
+            for _ in range(passes):
+                if is_engrave:
+                    self._draw_filled_box(main_ops, line_spacing, **element)
+                else:
+                    self._draw_rectangle(main_ops, **element)
 
         main_ops.ops_section_end(section_type)
 
@@ -235,7 +262,7 @@ class MaterialTestGridProducer(OpsProducer):
 
         for el in elements:
             if el["class"] == "grid-rect":
-                ctx.set_line_width(0.2 * (width_px / 73.0))  # Scale line
+                ctx.set_line_width(0.2 * (width_px / 73.0))  # Scale line width
                 ctx.rectangle(el["x"], el["y"], el["width"], el["height"])
                 if test_type == MaterialTestGridType.ENGRAVE:
                     ctx.set_source_rgb(0.5, 0.5, 0.5)
@@ -265,9 +292,35 @@ class MaterialTestGridProducer(OpsProducer):
         shape_size = params.get("shape_size", 10.0)
         spacing = params.get("spacing", 2.0)
         include_labels = params.get("include_labels", True)
+        grid_mode = params.get("grid_mode", "Power vs Speed")
+        passes_range = params.get("passes_range", (1, 5))
+        fixed_speed = params.get("fixed_speed", 1000.0)
+        fixed_power = params.get("fixed_power", 50.0)
 
-        speed_step = (max_speed - min_speed) / (rows - 1) if rows > 1 else 0
-        power_step = (max_power - min_power) / (cols - 1) if cols > 1 else 0
+        min_passes, max_passes = int(passes_range[0]), int(passes_range[1])
+
+        if grid_mode == "Power vs Passes":
+            col_range = (min_power, max_power)
+            row_range = (float(min_passes), float(max_passes))
+            col_label_text = "Power (%)"
+            row_label_text = "Passes"
+        elif grid_mode == "Speed vs Passes":
+            col_range = (min_speed, max_speed)
+            row_range = (float(min_passes), float(max_passes))
+            col_label_text = "Speed (mm/min)"
+            row_label_text = "Passes"
+        else:
+            col_range = (min_power, max_power)
+            row_range = (min_speed, max_speed)
+            col_label_text = "Power (%)"
+            row_label_text = "Speed (mm/min)"
+
+        col_step = (
+            (col_range[1] - col_range[0]) / (cols - 1) if cols > 1 else 0
+        )
+        row_step = (
+            (row_range[1] - row_range[0]) / (rows - 1) if rows > 1 else 0
+        )
 
         base_margin = min(shape_size * 1.5, 15.0)
         margin_left, margin_top = (
@@ -281,6 +334,22 @@ class MaterialTestGridProducer(OpsProducer):
         elements = []
         for r in range(rows):
             for c in range(cols):
+                col_val = col_range[0] + c * col_step
+                row_val = row_range[0] + r * row_step
+
+                if grid_mode == "Power vs Passes":
+                    speed = fixed_speed
+                    power = col_val
+                    passes = max(1, int(round(row_val)))
+                elif grid_mode == "Speed vs Passes":
+                    speed = col_val
+                    power = fixed_power
+                    passes = max(1, int(round(row_val)))
+                else:
+                    speed = row_val
+                    power = col_val
+                    passes = 1
+
                 elements.append(
                     {
                         "class": "grid-rect",
@@ -288,8 +357,9 @@ class MaterialTestGridProducer(OpsProducer):
                         "y": margin_top + r * (shape_h + spacing_y),
                         "width": shape_w,
                         "height": shape_h,
-                        "speed": min_speed + r * speed_step,
-                        "power": min_power + c * power_step,
+                        "speed": speed,
+                        "power": power,
+                        "passes": passes,
                     }
                 )
 
@@ -309,28 +379,54 @@ class MaterialTestGridProducer(OpsProducer):
             grid_w = target_width - margin_left
             grid_h = target_height - margin_top
 
+            axis_labels = [
+                {
+                    "x": margin_left + grid_w / 2,
+                    "y": margin_top * 0.3,
+                    "text": col_label_text,
+                    "class": "axis-label",
+                    "font_size": font_size_axis,
+                },
+                {
+                    "x": margin_left * 0.3,
+                    "y": margin_top + grid_h / 2,
+                    "text": row_label_text,
+                    "class": "axis-label",
+                    "font_size": font_size_axis,
+                    "transform": "rotate(-90)",
+                },
+            ]
+
+            fixed_label_font_size = font_size_grid * 0.8
+            fixed_label_offset = min(margin_left, margin_top) * 0.15
+            if grid_mode == "Power vs Passes":
+                axis_labels.append(
+                    {
+                        "x": fixed_label_offset,
+                        "y": fixed_label_offset,
+                        "text": f"Speed: {int(fixed_speed)} mm/min",
+                        "class": "grid-label",
+                        "font_size": fixed_label_font_size,
+                        "align_h": "left",
+                    }
+                )
+            elif grid_mode == "Speed vs Passes":
+                axis_labels.append(
+                    {
+                        "x": fixed_label_offset,
+                        "y": fixed_label_offset,
+                        "text": f"Power: {int(fixed_power)}%",
+                        "class": "grid-label",
+                        "font_size": fixed_label_font_size,
+                        "align_h": "left",
+                    }
+                )
+
+            elements.extend(axis_labels)
             # Position labels proportionally within their margin spaces.
-            elements.extend(
-                [
-                    {
-                        "x": margin_left + grid_w / 2,
-                        "y": margin_top * 0.3,
-                        "text": "Power (%)",
-                        "class": "axis-label",
-                        "font_size": font_size_axis,
-                    },
-                    {
-                        "x": margin_left * 0.3,
-                        "y": margin_top + grid_h / 2,
-                        "text": "Speed (mm/min)",
-                        "class": "axis-label",
-                        "font_size": font_size_axis,
-                        "transform": "rotate(-90)",
-                    },
-                ]
-            )
             for c in range(cols):
-                text = f"{int(min_power + c * power_step)}"
+                col_val = col_range[0] + c * col_step
+                text = f"{int(col_val)}"
                 elements.append(
                     {
                         "x": margin_left
@@ -343,7 +439,8 @@ class MaterialTestGridProducer(OpsProducer):
                     }
                 )
             for r in range(rows):
-                text = f"{int(min_speed + r * speed_step)}"
+                row_val = row_range[0] + r * row_step
+                text = f"{int(round(row_val))}"
                 elements.append(
                     {
                         "x": margin_left * 0.9,
@@ -472,8 +569,12 @@ class MaterialTestGridProducer(OpsProducer):
             "type": self.__class__.__name__,
             "params": {
                 "test_type": self.test_type.value,
+                "grid_mode": self.grid_mode.value,
                 "speed_range": list(self.speed_range),
                 "power_range": list(self.power_range),
+                "passes_range": list(self.passes_range),
+                "fixed_speed": self.fixed_speed,
+                "fixed_power": self.fixed_power,
                 "grid_dimensions": list(self.grid_dimensions),
                 "shape_size": self.shape_size,
                 "spacing": self.spacing,

@@ -30,6 +30,7 @@ from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from ..pipeline.encoder.gcode import MachineCodeOpMap
 from ..shared.tasker import task_mgr
 from ..shared.util.time_format import format_hours_to_hm
+from ..updater import AppUpdateChecker
 from ..usage import get_usage_tracker
 from .about import AboutDialog
 from .action_registry import action_registry
@@ -146,6 +147,12 @@ class MainWindow(Adw.ApplicationWindow):
         # Instantiate and connect the UpdateCommand's notification signal
         self.update_cmd = UpdateCommand(task_mgr, context)
         self.update_cmd.notification_requested.connect(
+            self._on_editor_notification
+        )
+
+        # Instantiate the app version update checker
+        self.app_update_checker = AppUpdateChecker(task_mgr, context)
+        self.app_update_checker.notification_requested.connect(
             self._on_editor_notification
         )
 
@@ -436,6 +443,11 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_gcode_line_activated
         )
 
+        # Connect edit item requests from the layers tab
+        self.bottom_panel.edit_item_requested.connect(
+            self._on_edit_item_requested
+        )
+
         config = get_context().config
         if config.bottom_panel:
             self.bottom_panel.from_dict(config.bottom_panel)
@@ -515,6 +527,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Trigger the non-blocking check for addon updates
         self.update_cmd.check_for_updates_on_startup()
+
+        # Trigger the non-blocking check for app version updates
+        self.app_update_checker.check_on_startup()
 
     def _on_click_to_zero_mode_changed(self, sender, *, active: bool):
         """Handle click-to-zero mode toggle from control panel."""
@@ -1763,9 +1778,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update sensitivity for 3D view actions
         is_3d_view_active = self.view_stack.get_visible_child_name() == "3d"
-        can_show_3d = is_3d_view_active or (
-            canvas3d_initialized and not task_mgr.has_tasks()
-        )
+        can_show_3d = is_3d_view_active or canvas3d_initialized
         am.get_action("show_3d_view").set_enabled(can_show_3d)
         am.get_action("view_top").set_enabled(is_3d_view_active)
         am.get_action("view_front").set_enabled(is_3d_view_active)

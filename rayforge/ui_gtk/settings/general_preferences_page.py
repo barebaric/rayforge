@@ -1,13 +1,15 @@
 import logging
-from gi.repository import Adw, Gtk, GLib
 from pathlib import Path
 from gettext import gettext as _
+
+from gi.repository import Adw, Gtk, GLib
+
 from ...context import get_context
+from ...core.config import OpsColorMode, StartupBehavior
 from ...shared.units.definitions import (
     get_units_for_quantity,
     get_base_unit_for_quantity,
 )
-from ...core.config import OpsColorMode, StartupBehavior
 from ...ui_gtk.doceditor import file_dialogs
 from ...usage import get_usage_tracker
 from ..shared.preferences_page import TrackedPreferencesPage
@@ -218,6 +220,18 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         )
         startup_group.add(self.auto_pipeline_row)
 
+        self.check_updates_row = Adw.SwitchRow(
+            title=_("Check for updates"),
+            subtitle=_(
+                "Automatically check for new Rayforge versions on startup."
+            ),
+        )
+        self.check_updates_row.set_active(config.check_for_app_updates)
+        self.check_updates_row.connect(
+            "notify::active", self.on_check_updates_changed
+        )
+        startup_group.add(self.check_updates_row)
+
         # Startup behavior selector
         self.startup_behavior_row = Adw.ComboRow(
             title=_("Startup behavior"),
@@ -399,3 +413,8 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         """Called when the user toggles auto pipeline mode."""
         enabled = switch_row.get_active()
         get_context().config.set_auto_pipeline(enabled)
+
+    def on_check_updates_changed(self, switch_row, _):
+        """Called when the user toggles the update check setting."""
+        enabled = switch_row.get_active()
+        get_context().config.set_check_for_app_updates(enabled)
