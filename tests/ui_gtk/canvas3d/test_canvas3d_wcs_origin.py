@@ -92,7 +92,9 @@ def test_wcs_marker_position(
 
     # Patch GL in axis_renderer_3d to prevent "invalid operation"
     # (missing context) on Windows.
-    with patch("rayforge.ui_gtk.sim3d.canvas3d.axis_renderer_3d.GL"):
+    with patch(
+        "rayforge.ui_gtk.sim3d.canvas3d.axis_renderer_3d.set_line_width"
+    ), patch("rayforge.ui_gtk.sim3d.canvas3d.axis_renderer_3d.GL"):
         renderer = AxisRenderer3D(width, height)
         renderer.grid_vao = 1
         renderer.axes_vao = 2
