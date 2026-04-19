@@ -1,12 +1,18 @@
+import json
+from dataclasses import asdict
+from functools import partial
+from unittest.mock import MagicMock, PropertyMock
+
+import numpy as np
 import pytest
 import pytest_asyncio
 import asyncio
-from unittest.mock import MagicMock, PropertyMock
-from functools import partial
+
+from rayforge.core.config import ConfigManager
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
+from rayforge.core.ops.axis import Axis
 from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.models.machine import Machine
-from rayforge.core.ops.axis import Axis
 from rayforge.pipeline.artifact import JobArtifact
 from rayforge.shared.tasker.manager import TaskManager
 
@@ -40,10 +46,6 @@ async def task_mgr(monkeypatch):
 @pytest.fixture(autouse=True)
 def test_config_manager(tmp_path, monkeypatch):
     """Provides a test-isolated ConfigManager."""
-    from rayforge.core.config import ConfigManager
-
-    # We need to patch get_context to return a mock config manager for the
-    # editor
     mock_config_mgr = MagicMock(spec=ConfigManager)
     yield mock_config_mgr
 
@@ -73,10 +75,18 @@ def simple_ops():
 
 
 @pytest.fixture
-def job_artifact(simple_ops):
-    """Creates a JobArtifact containing simple_ops."""
+def job_artifact(simple_ops, machine):
+    """Creates a JobArtifact containing simple_ops with encoded G-code."""
+    gcode, op_map = machine.encode_ops(simple_ops, None)
+    machine_code_bytes = np.frombuffer(gcode.encode("utf-8"), dtype=np.uint8)
+    op_map_str = json.dumps(asdict(op_map))
+    op_map_bytes = np.frombuffer(op_map_str.encode("utf-8"), dtype=np.uint8)
     return JobArtifact(
-        ops=simple_ops, distance=simple_ops.distance(), generation_id=1
+        ops=simple_ops,
+        distance=simple_ops.distance(),
+        generation_id=1,
+        machine_code_bytes=machine_code_bytes,
+        op_map_bytes=op_map_bytes,
     )
 
 

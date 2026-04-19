@@ -9,11 +9,10 @@ import numpy as np
 
 from ...core.doc import Doc
 from ...core.ops import Ops
+from ...machine.kinematic_mapping import KinematicMapping
 from ...machine.models.machine import Machine
 from ...shared.tasker.progress import ProgressContext, set_progress
 from ..artifact import JobArtifact, StepOpsArtifact
-from ..artifact.base import VertexData
-from ..encoder.vertexencoder import VertexEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +20,7 @@ logger = logging.getLogger(__name__)
 def _assemble_final_ops(
     doc: Doc,
     step_artifacts_by_uid: Dict[str, StepOpsArtifact],
+    machine: Machine,
     context: Optional[ProgressContext] = None,
 ) -> Ops:
     """
@@ -33,7 +33,8 @@ def _assemble_final_ops(
         context: Optional ProgressContext for progress reporting.
 
     Returns:
-        An Ops object containing the assembled operations.
+        An Ops object containing the assembled operations in work
+        coordinates.
     """
     set_progress(context, 0.0, _("Assembling final job..."))
     final_ops = Ops()
@@ -128,16 +129,11 @@ def _encode_gcode_and_opmap(
     """
     Encodes operations to G-code and operation map.
 
-    Args:
-        final_ops: The operations to encode.
-        doc: The document for encoding context.
-        machine: The machine model for encoding.
-        context: Optional ProgressContext for progress reporting.
-
-    Returns:
-        A tuple of (machine_code_bytes, op_map_bytes).
+    encode_ops() handles rotary mapping internally, so callers pass
+    unmapped (world-space) ops.
     """
     set_progress(context, 0.8, _("Generating G-code..."))
+
     gcode_str, op_map_obj = machine.encode_ops(final_ops, doc)
 
     machine_code_bytes = np.frombuffer(
@@ -147,25 +143,6 @@ def _encode_gcode_and_opmap(
     op_map_bytes = np.frombuffer(op_map_str.encode("utf-8"), dtype=np.uint8)
 
     return machine_code_bytes, op_map_bytes
-
-
-def _encode_vertex_data(
-    final_ops: Ops,
-    context: Optional[ProgressContext] = None,
-) -> VertexData:
-    """
-    Encodes operations to vertex data for preview.
-
-    Args:
-        final_ops: The operations to encode.
-        context: Optional ProgressContext for progress reporting.
-
-    Returns:
-        VertexData object containing vertex arrays for preview rendering.
-    """
-    set_progress(context, 0.9, _("Encoding paths for preview..."))
-    vertex_encoder = VertexEncoder()
-    return vertex_encoder.encode(final_ops)
 
 
 def compute_job_artifact(
@@ -194,16 +171,20 @@ def compute_job_artifact(
         A JobArtifact containing the final G-code, vertex data, and
         metadata.
     """
-    final_ops = _assemble_final_ops(doc, step_artifacts_by_uid, context)
+    final_ops = _assemble_final_ops(
+        doc, step_artifacts_by_uid, machine, context
+    )
 
     final_time = _calculate_time_estimate(final_ops, machine, context)
     final_distance = _calculate_distance(final_ops)
 
+    mapped_ops = final_ops.copy()
+    if machine.rotary_modules:
+        KinematicMapping.apply_to_job_ops(mapped_ops, doc, machine)
+
     machine_code_bytes, op_map_bytes = _encode_gcode_and_opmap(
         final_ops, doc, machine, context
     )
-
-    vertex_data = _encode_vertex_data(final_ops, context)
 
     set_progress(context, 1.0, _("Job finalization complete"))
 
@@ -211,8 +192,8 @@ def compute_job_artifact(
         ops=final_ops,
         distance=final_distance,
         generation_id=generation_id,
-        vertex_data=vertex_data,
         machine_code_bytes=machine_code_bytes,
         op_map_bytes=op_map_bytes,
         time_estimate=final_time,
+        mapped_ops=mapped_ops,
     )

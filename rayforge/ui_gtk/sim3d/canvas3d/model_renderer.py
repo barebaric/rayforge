@@ -10,7 +10,7 @@ from typing import Dict, Optional, Tuple
 import numpy as np
 from OpenGL import GL
 
-from .gl_utils import BaseRenderer, Shader
+from .gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)
 
@@ -96,9 +96,16 @@ def _load_mesh_data(path: Path) -> Optional[_CachedModelData]:
 
         positions = np.array(mesh.vertices, dtype=np.float32)
         normals = np.array(mesh.vertex_normals, dtype=np.float32)
+
+        y_up_to_z_up = np.array(
+            [[1, 0, 0], [0, 0, -1], [0, 1, 0]], dtype=np.float32
+        )
+        positions = (y_up_to_z_up @ positions.T).T
+        normals = (y_up_to_z_up @ normals.T).T
+
         bounds = (
-            mesh.bounds[0].copy(),
-            mesh.bounds[1].copy(),
+            positions.min(axis=0),
+            positions.max(axis=0),
         )
 
         faces = np.array(mesh.faces, dtype=np.uint32)
@@ -208,16 +215,17 @@ class ModelRenderer(BaseRenderer):
 
     def render(
         self,
+        ctx: RenderContext,
         shader: Shader,
         mvp_matrix: np.ndarray,
         model_matrix: Optional[np.ndarray] = None,
-        camera_position: Optional[np.ndarray] = None,
         point_light_pos: Optional[np.ndarray] = None,
     ) -> None:
         if not self._vao:
             return
 
         light_dir = np.array([0.5, 0.8, 1.0], dtype=np.float32)
+        camera_position = ctx.camera_position
 
         if model_matrix is not None and camera_position is not None:
             model_inv = np.linalg.inv(model_matrix)

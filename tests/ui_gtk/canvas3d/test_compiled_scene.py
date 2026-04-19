@@ -12,19 +12,17 @@ from rayforge.ui_gtk.sim3d.scene3d.compiled_scene import (
 def _make_vertex_layer(n_powered=10, n_travel=5, n_zero=3):
     return VertexLayer(
         powered_verts=np.random.rand(n_powered, 3).astype(np.float32),
-        powered_colors=np.random.rand(n_powered, 4).astype(np.float32),
+        power_values=np.random.rand(n_powered).astype(np.float32),
+        laser_indices=np.zeros(n_powered, dtype=np.float32),
         travel_verts=np.random.rand(n_travel, 3).astype(np.float32),
         zero_power_verts=np.random.rand(n_zero, 3).astype(np.float32),
-        zero_power_colors=np.random.rand(n_zero, 4).astype(np.float32),
         powered_cmd_offsets=[0, 2, n_powered],
         travel_cmd_offsets=[0, n_travel],
     )
 
 
-def _make_texture_layer(with_clut=True, with_cylinder=True):
+def _make_texture_layer(with_cylinder=True):
     kw = {}
-    if with_clut:
-        kw["color_lut"] = np.random.rand(256, 4).astype(np.float32)
     if with_cylinder:
         kw["cylinder_vertices"] = np.random.rand(64, 3).astype(np.float32)
     return TextureLayer(
@@ -39,7 +37,8 @@ def _make_texture_layer(with_clut=True, with_cylinder=True):
 def _make_overlay_layer(n_cmds=5, n_verts=20):
     return ScanlineOverlayLayer(
         positions=np.random.rand(n_verts, 3).astype(np.float32),
-        colors=np.random.rand(n_verts, 4).astype(np.float32),
+        power_values=np.random.rand(n_verts).astype(np.float32),
+        laser_indices=np.zeros(n_verts, dtype=np.float32),
         cmd_offsets=list(range(0, n_verts + 1, n_verts // n_cmds)),
     )
 
@@ -74,16 +73,16 @@ class TestCompiledSceneArtifactRoundTrip:
                 orig.powered_verts, restored.powered_verts
             )
             np.testing.assert_array_equal(
-                orig.powered_colors, restored.powered_colors
+                orig.power_values, restored.power_values
+            )
+            np.testing.assert_array_equal(
+                orig.laser_indices, restored.laser_indices
             )
             np.testing.assert_array_equal(
                 orig.travel_verts, restored.travel_verts
             )
             np.testing.assert_array_equal(
                 orig.zero_power_verts, restored.zero_power_verts
-            )
-            np.testing.assert_array_equal(
-                orig.zero_power_colors, restored.zero_power_colors
             )
             assert orig.powered_cmd_offsets == restored.powered_cmd_offsets
             assert orig.travel_cmd_offsets == restored.travel_cmd_offsets
@@ -95,8 +94,8 @@ class TestCompiledSceneArtifactRoundTrip:
             generation_id=1,
             vertex_layers=[],
             texture_layers=[
-                _make_texture_layer(with_clut=True, with_cylinder=True),
-                _make_texture_layer(with_clut=False, with_cylinder=False),
+                _make_texture_layer(with_cylinder=True),
+                _make_texture_layer(with_cylinder=False),
             ],
             overlay_layers=[],
         )
@@ -108,14 +107,12 @@ class TestCompiledSceneArtifactRoundTrip:
         tl0 = loaded.texture_layers[0]
         assert tl0.width_px == 48
         assert tl0.height_px == 32
-        assert tl0.color_lut is not None
         assert tl0.cylinder_vertices is not None
         np.testing.assert_array_equal(
             artifact.texture_layers[0].power_texture, tl0.power_texture
         )
 
         tl1 = loaded.texture_layers[1]
-        assert tl1.color_lut is None
         assert tl1.cylinder_vertices is None
 
         store.release(handle)
@@ -134,7 +131,8 @@ class TestCompiledSceneArtifactRoundTrip:
         assert len(loaded.overlay_layers) == 1
         ol = loaded.overlay_layers[0]
         np.testing.assert_array_equal(overlay.positions, ol.positions)
-        np.testing.assert_array_equal(overlay.colors, ol.colors)
+        np.testing.assert_array_equal(overlay.power_values, ol.power_values)
+        np.testing.assert_array_equal(overlay.laser_indices, ol.laser_indices)
         assert overlay.cmd_offsets == ol.cmd_offsets
 
         store.release(handle)
@@ -159,10 +157,10 @@ class TestCompiledSceneArtifactRoundTrip:
     def test_empty_vertex_layer(self):
         vl = VertexLayer(
             powered_verts=np.empty((0, 3), dtype=np.float32),
-            powered_colors=np.empty((0, 4), dtype=np.float32),
+            power_values=np.empty((0,), dtype=np.float32),
+            laser_indices=np.empty((0,), dtype=np.float32),
             travel_verts=np.empty((0, 3), dtype=np.float32),
             zero_power_verts=np.empty((0, 3), dtype=np.float32),
-            zero_power_colors=np.empty((0, 4), dtype=np.float32),
             powered_cmd_offsets=[],
             travel_cmd_offsets=[],
         )
@@ -184,10 +182,10 @@ class TestCompiledSceneArtifactRoundTrip:
     def test_large_arrays(self):
         big_vl = VertexLayer(
             powered_verts=np.random.rand(50000, 3).astype(np.float32),
-            powered_colors=np.random.rand(50000, 4).astype(np.float32),
+            power_values=np.random.rand(50000).astype(np.float32),
+            laser_indices=np.zeros(50000, dtype=np.float32),
             travel_verts=np.random.rand(10000, 3).astype(np.float32),
             zero_power_verts=np.empty((0, 3), dtype=np.float32),
-            zero_power_colors=np.empty((0, 4), dtype=np.float32),
         )
         artifact = CompiledSceneArtifact(
             generation_id=0,

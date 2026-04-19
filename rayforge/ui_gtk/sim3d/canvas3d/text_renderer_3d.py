@@ -13,7 +13,7 @@ import numpy as np
 from OpenGL import GL
 import cairo
 from gi.repository import Pango, PangoCairo
-from .gl_utils import BaseRenderer, Shader
+from .gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)
 
@@ -222,13 +222,13 @@ class TextRenderer3D(BaseRenderer):
 
     def render_text(
         self,
+        ctx: RenderContext,
         shader: Shader,
         text: str,
         position: np.ndarray,
         height_in_world_units: float,
         color: Tuple[float, float, float, float],
         mvp_matrix: np.ndarray,
-        view_matrix: np.ndarray,
         align: str = "center",
     ) -> None:
         """
@@ -236,13 +236,13 @@ class TextRenderer3D(BaseRenderer):
         The entire string billboards as a single unit.
 
         Args:
+            ctx: The current render context.
             shader: The shader program to use for rendering text.
             text: The string to render (must contain characters of the atlas).
             position: A numpy array (vec3) for the text's anchor point.
             height_in_world_units: Desired height of the text in world units.
             color: A tuple (r, g, b, a) for the text color.
             mvp_matrix: The column-major Model-View-Projection matrix.
-            view_matrix: The camera's view matrix (row-major).
             align: Horizontal alignment ('left', 'center', 'right').
         """
         if not self.vao or not text or self.atlas_height < 1:
@@ -263,7 +263,7 @@ class TextRenderer3D(BaseRenderer):
 
         # Get the camera's rotation matrix to billboard the text.
         try:
-            inv_view = np.linalg.inv(view_matrix)
+            inv_view = np.linalg.inv(ctx.view_matrix)
             camera_rotation_matrix_row_major = inv_view[:3, :3]
             u = camera_rotation_matrix_row_major[:, 0]
             u /= np.linalg.norm(u)

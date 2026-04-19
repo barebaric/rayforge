@@ -4,13 +4,41 @@ PyOpenGL tasks, such as shader compilation and buffer management.
 """
 
 import logging
+import math
+from dataclasses import dataclass
 from typing import Optional, Protocol, Union, final
-
 import numpy as np
 from OpenGL import GL
 from OpenGL.GL import shaders
 
+from ....core.color import ColorSet
+
 logger = logging.getLogger(__name__)
+
+
+def rotation_4x4(axis: np.ndarray, angle: float) -> np.ndarray:
+    """
+    Build a 4x4 rotation matrix from an axis and angle (Rodrigues).
+
+    Returns the identity if *angle* is near zero.
+    """
+    if abs(angle) < 1e-9:
+        return np.eye(4, dtype=np.float64)
+    norm = np.linalg.norm(axis)
+    if norm < 1e-6:
+        return np.eye(4, dtype=np.float64)
+    ax = axis / norm
+    c = math.cos(angle)
+    s = math.sin(angle)
+    t = 1 - c
+    x, y, z = ax
+    rot = np.eye(4, dtype=np.float64)
+    rot[:3, :3] = [
+        [t * x * x + c, t * x * y - s * z, t * x * z + s * y],
+        [t * x * y + s * z, t * y * y + c, t * y * z - s * x],
+        [t * x * z - s * y, t * y * z + s * x, t * z * z + c],
+    ]
+    return rot
 
 
 def set_line_width(requested: float) -> None:
@@ -168,6 +196,36 @@ class Shader:
     def set_int(self, name: str, value: int) -> None:
         """Sets an integer uniform."""
         GL.glUniform1i(self.get_uniform_location(name), value)
+
+
+@dataclass
+class RenderContext:
+    """
+    Frame-level rendering state shared across all renderers.
+
+    Matrices are row-major (NumPy convention).  Renderers that need
+    column-major for OpenGL should transpose: ``ctx.mvp_ui_gl``.
+    """
+
+    proj_matrix: np.ndarray
+    view_matrix: np.ndarray
+    mvp_ui: np.ndarray
+    mvp_scene: np.ndarray
+    margin_shift: np.ndarray
+    model_matrix: np.ndarray
+    viewport_height: int
+    camera_position: np.ndarray
+    color_set: ColorSet
+    show_travel_moves: bool = False
+    line_width: float = 1.0
+
+    @property
+    def mvp_ui_gl(self) -> np.ndarray:
+        return self.mvp_ui.T
+
+    @property
+    def mvp_scene_gl(self) -> np.ndarray:
+        return self.mvp_scene.T
 
 
 class SceneRenderer(Protocol):

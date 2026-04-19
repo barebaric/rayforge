@@ -13,7 +13,12 @@ from typing import Optional, Tuple
 import numpy as np
 from OpenGL import GL
 from ....core.geo import Point3D
-from .gl_utils import BaseRenderer, Shader
+from .gl_utils import (
+    BaseRenderer,
+    RenderContext,
+    Shader,
+    set_line_width,
+)
 from .text_renderer_3d import TextRenderer3D
 from .plane_renderer import PlaneRenderer
 
@@ -116,6 +121,8 @@ class AxisRenderer3D(BaseRenderer):
         self.extent_width_mm = float(width)
         self.extent_height_mm = float(height)
         self.show_extent_frame = show
+        if self.extent_frame_vao:
+            self._update_extent_frame_buffer()
 
     def init_gl(self) -> None:
         """Initializes OpenGL resources for all components."""
@@ -265,12 +272,11 @@ class AxisRenderer3D(BaseRenderer):
 
     def render(
         self,
+        ctx: RenderContext,
         line_shader: Shader,
         text_shader: Shader,
         scene_mvp: np.ndarray,
         text_mvp: np.ndarray,
-        view_matrix: np.ndarray,
-        model_matrix: np.ndarray,
         origin_offset_mm: Point3D = (0.0, 0.0, 0.0),
         x_right: bool = False,
         y_down: bool = False,
@@ -310,10 +316,10 @@ class AxisRenderer3D(BaseRenderer):
         off_x, off_y, off_z = origin_offset_mm
 
         offset_vec = np.array([off_x, off_y, off_z, 1.0], dtype=np.float32)
-        world_offset_vec = model_matrix @ offset_vec
+        world_offset_vec = ctx.model_matrix @ offset_vec
 
         # 2. Construct the MVP for the static grid/axes.
-        grid_mvp = model_matrix.T @ text_mvp
+        grid_mvp = ctx.model_matrix.T @ text_mvp
 
         # Enable blending for transparent objects
         GL.glEnable(GL.GL_BLEND)
@@ -325,20 +331,20 @@ class AxisRenderer3D(BaseRenderer):
 
         # Draw background plane
         GL.glDepthMask(GL.GL_FALSE)
-        self.background_renderer.render(line_shader, grid_mvp)
+        self.background_renderer.render(ctx, line_shader, grid_mvp)
         GL.glDepthMask(GL.GL_TRUE)
 
         # Draw grid
         line_shader.set_mat4("uMVP", grid_mvp)
         line_shader.set_vec4("uColor", self.grid_color)
-        self._set_line_width(1.0)
+        set_line_width(1.0)
         GL.glBindVertexArray(self.grid_vao)
         GL.glDrawArrays(GL.GL_LINES, 0, self.grid_vertex_count)
 
         # Draw axes
         line_shader.set_mat4("uMVP", grid_mvp)
         line_shader.set_vec4("uColor", self.axis_color)
-        self._set_line_width(2.0)
+        set_line_width(2.0)
         GL.glBindVertexArray(self.axes_vao)
         GL.glDrawArrays(GL.GL_LINES, 0, self.axes_vertex_count)
 
@@ -356,7 +362,7 @@ class AxisRenderer3D(BaseRenderer):
         if self.show_extent_frame and self.extent_frame_vao:
             line_shader.set_mat4("uMVP", grid_mvp)
             line_shader.set_vec4("uColor", self.extent_frame_color)
-            self._set_line_width(2.0)
+            set_line_width(2.0)
             GL.glBindVertexArray(self.extent_frame_vao)
             GL.glDrawArrays(GL.GL_LINES, 0, self.extent_frame_vertex_count)
 
@@ -364,10 +370,9 @@ class AxisRenderer3D(BaseRenderer):
 
         # 5. Pass the correct world-space offset vector to the label renderer.
         self._render_axis_labels(
+            ctx,
             text_shader,
             text_mvp,
-            view_matrix,
-            model_matrix,
             origin_offset_mm=origin_offset_mm,
             x_right=x_right,
             y_down=y_down,
@@ -376,27 +381,11 @@ class AxisRenderer3D(BaseRenderer):
         )
         GL.glDisable(GL.GL_BLEND)
 
-    def _set_line_width(self, requested: float) -> None:
-        try:
-            width_range = GL.glGetFloatv(GL.GL_ALIASED_LINE_WIDTH_RANGE)
-        except Exception:
-            width_range = None
-
-        if width_range is None or len(width_range) < 2:
-            GL.glLineWidth(requested)
-            return
-
-        min_width = float(width_range[0])
-        max_width = float(width_range[1])
-        clamped = max(min_width, min(requested, max_width))
-        GL.glLineWidth(clamped)
-
     def _render_axis_labels(
         self,
+        ctx: RenderContext,
         text_shader: Shader,
         text_mvp_matrix: np.ndarray,
-        view_matrix: np.ndarray,
-        model_matrix: np.ndarray,
         origin_offset_mm: Point3D,
         x_right: bool = False,
         y_down: bool = False,
@@ -406,6 +395,7 @@ class AxisRenderer3D(BaseRenderer):
         """Helper method to render text labels along the axes."""
         if not self.text_renderer:
             return
+        model_matrix = ctx.model_matrix
         label_height_mm = 2.5
         x_axis_label_y_offset = label_height_mm * 1.2
         y_axis_label_x_offset = label_height_mm * 0.6
@@ -448,13 +438,13 @@ class AxisRenderer3D(BaseRenderer):
             label_text = str(int(round(label_val)))
 
             self.text_renderer.render_text(
+                ctx,
                 text_shader,
                 label_text,
                 pos_final,
                 label_height_mm,
                 self.label_color,
                 text_mvp_matrix,
-                view_matrix,
             )
 
         # Y-axis labels
@@ -484,12 +474,12 @@ class AxisRenderer3D(BaseRenderer):
             label_text = str(int(round(label_val)))
 
             self.text_renderer.render_text(
+                ctx,
                 text_shader,
                 label_text,
                 pos_final,
                 label_height_mm,
                 self.label_color,
                 text_mvp_matrix,
-                view_matrix,
                 align=y_label_align,
             )

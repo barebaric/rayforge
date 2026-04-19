@@ -4,9 +4,9 @@ Pure-numpy cylinder mesh generation for texture mapping.
 Generates vertex arrays that map a texture onto a cylinder surface
 by transforming [0,1] texture coordinates through a grid matrix into
 local cylinder space, then wrapping into Z/Y planes.
-"""
 
-import math
+The cylinder always runs along X in the output vertex data.
+"""
 
 import numpy as np
 
@@ -21,7 +21,6 @@ def generate_cylinder_vertices(
     grid_t: int = GRID_T,
 ) -> np.ndarray:
     radius = diameter / 2.0
-    circumference = diameter * math.pi
 
     i_vals = np.arange(grid_s, dtype=np.float32)
     j_vals = np.arange(grid_t, dtype=np.float32)
@@ -47,11 +46,11 @@ def generate_cylinder_vertices(
             axis=-1,
         )
         p_cyl = pts @ grid_matrix.T
-        theta = (p_cyl[:, 1] / circumference) * 2.0 * np.pi
-        x = p_cyl[:, 0].reshape(shape)
-        y = (radius * np.sin(theta)).reshape(shape)
-        z = (radius * np.cos(theta)).reshape(shape)
-        return x, y, z
+        theta = np.radians(p_cyl[:, 1])
+        col_cyl = p_cyl[:, 0].reshape(shape)
+        col_sin = (radius * np.sin(theta)).reshape(shape)
+        col_cos = (radius * np.cos(theta)).reshape(shape)
+        return col_cyl, col_sin, col_cos
 
     x00, y00, z00 = _transform_points(lx_grid, ly0_grid)
     x10, y10, z10 = _transform_points(lx1_grid, ly0_grid)

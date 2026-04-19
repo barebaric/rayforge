@@ -17,3 +17,10 @@ class Axis(IntFlag):
             raise ValueError(
                 f"{self!r} combines multiple axes, expected a single axis"
             )
+
+    @property
+    def label(self) -> str:
+        name = self.name
+        if name is None:
+            raise ValueError(f"{self!r} is not a single axis")
+        return name.lower()

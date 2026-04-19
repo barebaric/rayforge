@@ -1,4 +1,5 @@
 import logging
+import math
 from blinker import Signal
 from typing import (
     TYPE_CHECKING,
@@ -13,6 +14,7 @@ from typing import (
 from gi.repository import Gdk, GLib, Gtk, Graphene
 from ...camera.controller import CameraController
 from ...context import get_context
+from ...core.color import OPS_COLOR_SPEC
 from ...core.group import Group
 from ...core.item import DocItem
 from ...core.layer import Layer
@@ -40,11 +42,11 @@ from .elements.camera_image import CameraImageElement
 from .elements.dot import DotElement
 from .elements.group import GroupElement
 from .elements.layer import LayerElement
-from .elements.rotary_surface import RotarySurfaceElement
 from .elements.stock import StockElement
 from .elements.tab_handle import TabHandleElement
 from .elements.workpiece import WorkPieceElement
 from .elements.work_origin import WorkOriginElement
+from .projection import CanvasProjection
 from . import context_menu
 
 if TYPE_CHECKING:
@@ -102,6 +104,7 @@ class WorkSurface(WorldSurface):
 
         self._nogo_zone_elements: Dict[str, NogoZoneElement] = {}
         self._nogo_zones_visible = True
+        self._projection = CanvasProjection()
 
         # Initialize the base WorldSurface with machine dimensions
         super().__init__(
@@ -140,11 +143,6 @@ class WorkSurface(WorldSurface):
         self._extent_frame_element = AxisExtentFrameElement()
         self._extent_frame_element.set_visible(False)
         self.root.add(self._extent_frame_element)
-
-        # Add the Rotary Diameter element (dashed rectangle for cylinder)
-        self._rotary_surface_element = RotarySurfaceElement()
-        self._rotary_surface_element.set_visible(False)
-        self.root.add(self._rotary_surface_element)
 
         # Signals for clipboard and duplication operations
         self.cut_requested = Signal()
@@ -220,6 +218,17 @@ class WorkSurface(WorldSurface):
     def doc(self):
         """Returns the current document from the editor."""
         return self.editor.doc
+
+    @property
+    def projection(self) -> CanvasProjection:
+        return self._projection
+
+    @projection.setter
+    def projection(self, value: CanvasProjection):
+        if self._projection != value:
+            self._projection = value
+            self._update_extent_frame()
+            self.queue_draw()
 
     @property
     def show_travel_moves(self) -> bool:
@@ -427,6 +436,7 @@ class WorkSurface(WorldSurface):
         if doc:
             self._connect_doc_structure_signals(doc)
         self._update_pipeline_view_context()
+        self.reset_view()
 
     def _connect_doc_structure_signals(self, doc):
         doc.descendant_added.connect(self._on_doc_structure_changed)
@@ -679,7 +689,7 @@ class WorkSurface(WorldSurface):
 
         self._work_origin_element.set_pos(canvas_x, canvas_y)
         self._work_origin_element.set_visible(True)
-        self._update_rotary_surface_element()
+        self._update_extent_frame()
         self.queue_draw()
 
     def _on_machine_state_changed(self, machine: Machine, state):
@@ -911,14 +921,7 @@ class WorkSurface(WorldSurface):
         """
         color_resolver = GtkColorResolver(self)
 
-        spec_dict = {
-            "cut": ("#ffeeff", "#ff00ff"),
-            "engrave": ("#FFFFFF", "#000000"),
-            "travel": ("#FF6600", 0.7),
-            "zero_power": ("@accent_color", 0.5),
-        }
-
-        return color_resolver.resolve(spec_dict)
+        return color_resolver.resolve(OPS_COLOR_SPEC)
 
     def _get_handle_color(self, elem: CanvasElement) -> Optional[ColorRGBA]:
         """Returns the layer color for the element's selection handles."""
@@ -1020,15 +1023,12 @@ class WorkSurface(WorldSurface):
                 return -1.5
             if isinstance(element, NogoZoneElement):
                 return -1.4
-            if isinstance(element, RotarySurfaceElement):
-                # Rotary surface is above extent frame but below stock
-                return -1.25
             # Other elements are above the camera but below stock and layers.
             return -1
 
         self.root.children.sort(key=sort_key)
 
-        self._update_rotary_surface_element()
+        self._update_extent_frame()
         self.queue_draw()
 
     def remove_all(self):
@@ -1218,6 +1218,9 @@ class WorkSurface(WorldSurface):
 
         super().reset_view()
 
+        if self.doc.active_layer.rotary_enabled and self.machine:
+            self._center_on_rotary_axis()
+
         new_ratio = width_mm / height_mm if height_mm > 0 else 1.0
         self.aspect_ratio_changed.send(self, ratio=new_ratio)
         self._sync_camera_elements()
@@ -1228,20 +1231,38 @@ class WorkSurface(WorldSurface):
     def _update_extent_frame(self):
         """
         Updates the machine extent frame and workarea background.
+
+        In flat mode, the workarea background shows the usable area
+        within the machine bed (margins excluded). In rotary mode,
+        the workarea background represents the unrolled cylinder
+        surface, centered vertically on the WCS origin.
         """
         if not self.machine:
             self._extent_frame_element.set_visible(False)
             self._workarea_bg_element.set_visible(False)
             return
 
+        active_layer = self.doc.active_layer
+
+        if active_layer.rotary_enabled:
+            self._update_extent_frame_rotary()
+        else:
+            self._update_extent_frame_flat()
+
+        self.queue_draw()
+
+    def _update_extent_frame_flat(self):
+        """Updates extent frame and workarea for flat (non-rotary) mode."""
+        assert self.machine
         extent_w, extent_h = self.machine.axis_extents
         ml, mt, mr, mb = self.machine.work_margins
 
         logger.debug(
-            f"_update_extent_frame: extents=({extent_w}, {extent_h}), "
-            f"margins=({ml}, {mt}, {mr}, {mb}), "
-            f"canvas_size=({self.width_mm}, {self.height_mm})"
+            f"_update_extent_frame_flat: extents=({extent_w}, "
+            f"{extent_h}), margins=({ml}, {mt}, {mr}, {mb})"
         )
+
+        self._axis_renderer.set_x_axis_y_override(None)
 
         if (extent_w, extent_h) != (self.width_mm, self.height_mm):
             self.set_size(float(extent_w), float(extent_h))
@@ -1255,17 +1276,79 @@ class WorkSurface(WorldSurface):
 
         workarea_w = extent_w - ml - mr
         workarea_h = extent_h - mt - mb
-        logger.debug(
-            f"_update_extent_frame: setting workarea_bg pos=({ml}, {mb}), "
-            f"size=({workarea_w}, {workarea_h})"
-        )
         self._workarea_bg_element.set_size(
             float(workarea_w), float(workarea_h)
         )
         self._workarea_bg_element.set_pos(float(ml), float(mb))
         self._workarea_bg_element.set_visible(True)
 
-        self.queue_draw()
+    def _update_extent_frame_rotary(self):
+        """Updates extent frame and workarea for rotary mode."""
+        assert self.machine
+        active_layer = self.doc.active_layer
+        diameter = active_layer.rotary_diameter
+        circumference = math.pi * diameter
+        half_circ = circumference / 2.0
+
+        space = self.machine.get_coordinate_space()
+
+        if self.machine.wcs_origin_is_workarea_origin:
+            origin_x, origin_y = space.get_workarea_origin_in_machine()
+        else:
+            wcs_x, wcs_y, _ = self.machine.get_active_wcs_offset()
+            origin_x, origin_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
+
+        bed_width = self.machine.axis_extents[0]
+        max_length = bed_width
+        default_rm = self.machine.get_default_rotary_module()
+        if default_rm:
+            max_length = min(max_length, default_rm.max_workpiece_length)
+
+        if self.machine.x_axis_right:
+            width = min(origin_x, max_length)
+            x = origin_x - width
+        else:
+            x = origin_x
+            width = min(bed_width - origin_x, max_length)
+
+        y = origin_y - half_circ
+        height = circumference
+
+        if width < 0:
+            width = 0.0
+        if height < 0:
+            height = 0.0
+
+        logger.debug(
+            f"_update_extent_frame_rotary: diameter={diameter}, "
+            f"circ={circumference:.2f}, pos=({x:.2f}, {y:.2f}), "
+            f"size=({width:.2f}, {height:.2f})"
+        )
+
+        self._axis_renderer.set_x_axis_y_override(origin_y)
+
+        margin_right = self.width_mm - x - width
+        margin_top = self.height_mm - y - height
+        self._axis_renderer.set_margins_mm(x, margin_top, margin_right, y)
+
+        self._extent_frame_element.set_size(width, height)
+        self._extent_frame_element.set_pos(x, y)
+        self._extent_frame_element.set_visible(width > 0)
+
+        self._workarea_bg_element.set_size(width, height)
+        self._workarea_bg_element.set_pos(x, y)
+        self._workarea_bg_element.set_visible(width > 0)
+
+    def _center_on_rotary_axis(self):
+        """Adjusts pan to vertically center the view on the cylinder X axis."""
+        assert self.machine
+        space = self.machine.get_coordinate_space()
+        if self.machine.wcs_origin_is_workarea_origin:
+            _, origin_y = space.get_workarea_origin_in_machine()
+        else:
+            wcs_x, wcs_y, _ = self.machine.get_active_wcs_offset()
+            _, origin_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
+        self.set_pan(self.pan_x_mm, origin_y - self.height_mm / 2.0)
 
     def _sync_nogo_zone_elements(self):
         if not self.machine:
@@ -1291,41 +1374,6 @@ class WorkSurface(WorldSurface):
                 self.root.add(elem)
 
         self.queue_draw()
-
-    def _update_rotary_surface_element(self):
-        """
-        Updates the rotary diameter indicator element based on the active
-        layer's settings and current WCS origin position.
-        """
-        active_layer = self.doc.active_layer
-        rotary_enabled = active_layer.rotary_enabled
-
-        if not rotary_enabled or not self.machine:
-            self._rotary_surface_element.set_visible(False)
-            return
-
-        rotary_diameter = active_layer.rotary_diameter
-        space = self.machine.get_coordinate_space()
-
-        if self.machine.wcs_origin_is_workarea_origin:
-            canvas_x, canvas_y = space.get_workarea_origin_in_machine()
-        else:
-            wcs_x, wcs_y, _ = self.machine.get_active_wcs_offset()
-            canvas_x, canvas_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
-
-        self._rotary_surface_element.set_x_axis_right(
-            self.machine.x_axis_right
-        )
-        self._rotary_surface_element.set_origin(canvas_x, canvas_y)
-        bed_width = self.machine.axis_extents[0]
-        max_length = bed_width
-        default_rm = self.machine.get_default_rotary_module()
-        if default_rm:
-            max_length = min(max_length, default_rm.max_workpiece_length)
-        self._rotary_surface_element.update_for_diameter(
-            rotary_diameter, bed_width, max_length
-        )
-        self._rotary_surface_element.set_visible(True)
 
     def _on_aspect_ratio_changed(self, sender, **kwargs) -> None:
         """

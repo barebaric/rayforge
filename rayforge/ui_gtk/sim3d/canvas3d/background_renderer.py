@@ -9,7 +9,7 @@ from typing import Optional
 import numpy as np
 from OpenGL import GL
 
-from .gl_utils import BaseRenderer, Shader
+from .gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class BackgroundRenderer(BaseRenderer):
             self._shader.cleanup()
             self._shader = None
 
-    def render(self):
+    def render(self, ctx: RenderContext):
         if not self._shader or not self.vao:
             return
 

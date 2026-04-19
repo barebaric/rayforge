@@ -1,19 +1,17 @@
 import logging
-from typing import Dict, Tuple, Optional, Union, Any, TypeGuard, cast
+from typing import Dict, Optional, Tuple, Any, TypeGuard, cast
 import numpy as np
 from gi.repository import Gdk, Gtk
-from ...core.color import ColorSet, ColorRGBA
+from ...core.color import (
+    ColorSet,
+    ColorRGBA,
+    ColorAtom,
+    ColorSpec,
+    GradientSpec,
+    ColorSpecDict,
+)
 
 logger = logging.getLogger(__name__)
-
-
-# --- Type Definitions for GTK-side Color Specifications ---
-ColorAtom = Union[
-    str, Tuple[float, float, float], Tuple[float, float, float, float]
-]
-ColorSpec = Union[ColorAtom, Tuple[ColorAtom, float]]
-GradientSpec = Tuple[ColorSpec, ColorSpec]
-ColorSpecDict = Dict[str, Union[ColorSpec, GradientSpec]]
 
 
 def _is_gradient_spec(val: Any) -> TypeGuard[GradientSpec]:

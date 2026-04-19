@@ -1,4 +1,5 @@
 import uuid
+from enum import Enum
 from gettext import gettext as _
 from typing import Any, Dict, Optional
 
@@ -10,13 +11,29 @@ from ...core.geo import Rect3D
 from ...core.ops.axis import Axis
 
 
+class RotaryMode(Enum):
+    TRUE_4TH_AXIS = "true_4th_axis"
+    AXIS_REPLACEMENT = "axis_replacement"
+
+
+class RotaryType(Enum):
+    JAWS = "jaws"
+    ROLLERS = "rollers"
+
+
 class RotaryModule:
     def __init__(self):
         self.uid: str = str(uuid.uuid4())
         self.name: str = _("Rotary Module")
         self.axis: Axis = Axis.A
+        self.mode: RotaryMode = RotaryMode.TRUE_4TH_AXIS
+        self.mu_per_rotation: float = 0.0
         self.default_diameter: float = 25.0
         self.max_workpiece_length: float = 300.0
+        self.rotary_type: RotaryType = RotaryType.JAWS
+        self.roller_diameter: float = 0.0
+        self.reverse_axis: bool = False
+        self.axis_position: np.ndarray = np.zeros(3, dtype=np.float64)
         self.model_id: Optional[str] = None
         self.transform: np.ndarray = np.eye(4, dtype=np.float64)
         self.changed = Signal()
@@ -33,6 +50,18 @@ class RotaryModule:
         if self.axis == axis:
             return
         self.axis = axis
+        self.changed.send(self)
+
+    def set_mode(self, mode: RotaryMode):
+        if self.mode == mode:
+            return
+        self.mode = mode
+        self.changed.send(self)
+
+    def set_mm_per_rotation(self, value: float):
+        if self.mu_per_rotation == value:
+            return
+        self.mu_per_rotation = value
         self.changed.send(self)
 
     def set_position(self, x: float, y: float, z: float):
@@ -93,6 +122,39 @@ class RotaryModule:
         self.max_workpiece_length = length
         self.changed.send(self)
 
+    def set_rotary_type(self, rotary_type: RotaryType):
+        if self.rotary_type == rotary_type:
+            return
+        self.rotary_type = rotary_type
+        self.changed.send(self)
+
+    def set_roller_diameter(self, diameter: float):
+        if self.roller_diameter == diameter:
+            return
+        self.roller_diameter = diameter
+        self.changed.send(self)
+
+    def set_reverse_axis(self, reverse: bool):
+        if self.reverse_axis == reverse:
+            return
+        self.reverse_axis = reverse
+        self.changed.send(self)
+
+    def world_axis_position(self) -> np.ndarray:
+        """Return the axis position in world space.
+
+        The axis position is the module's mounting position
+        (transform[:3, 3]) plus the local axis offset (axis_position).
+        """
+        return self.transform[:3, 3] + self.axis_position
+
+    def set_axis_position(self, x: float, y: float, z: float):
+        new = np.array([x, y, z], dtype=np.float64)
+        if np.array_equal(self.axis_position, new):
+            return
+        self.axis_position = new
+        self.changed.send(self)
+
     def set_model_id(self, model_id: Optional[str]):
         if self.model_id == model_id:
             return
@@ -107,11 +169,21 @@ class RotaryModule:
             "uid": self.uid,
             "name": self.name,
             "axis": self.axis.name,
+            "mode": self.mode.value,
             "default_diameter": self.default_diameter,
             "max_workpiece_length": self.max_workpiece_length,
+            "rotary_type": self.rotary_type.value,
             "model_id": self.model_id,
             "transform": self.transform.flatten().tolist(),
         }
+        if self.mu_per_rotation > 0:
+            result["mm_per_rotation"] = self.mu_per_rotation
+        if self.roller_diameter > 0:
+            result["roller_diameter"] = self.roller_diameter
+        if self.reverse_axis:
+            result["reverse_axis"] = self.reverse_axis
+        if not np.allclose(self.axis_position, 0):
+            result["axis_position"] = self.axis_position.tolist()
         result.update(self.extra)
         return result
 
@@ -121,8 +193,14 @@ class RotaryModule:
             "uid",
             "name",
             "axis",
+            "mode",
+            "mm_per_rotation",
             "default_diameter",
             "max_workpiece_length",
+            "rotary_type",
+            "roller_diameter",
+            "reverse_axis",
+            "axis_position",
             "model_id",
             "transform",
             "x",
@@ -145,8 +223,17 @@ class RotaryModule:
         rm.uid = data.get("uid", str(uuid.uuid4()))
         rm.name = data.get("name", _("Rotary Module"))
         rm.axis = Axis[data.get("axis", "A")]
+        rm.mode = RotaryMode(data.get("mode", "true_4th_axis"))
+        rm.mu_per_rotation = data.get("mm_per_rotation", 0.0)
         rm.default_diameter = data.get("default_diameter", 25.0)
         rm.max_workpiece_length = data.get("max_workpiece_length", 300.0)
+        rm.rotary_type = RotaryType(data.get("rotary_type", "jaws"))
+        rm.roller_diameter = data.get("roller_diameter", 0.0)
+        rm.reverse_axis = data.get("reverse_axis", False)
+        raw_ap = data.get("axis_position", [0.0, 0.0, 0.0])
+        if isinstance(raw_ap, (int, float)):
+            raw_ap = [0.0, 0.0, 0.0]
+        rm.axis_position = np.array(raw_ap, dtype=np.float64)
 
         rm.model_id = data.get("model_id")
         if rm.model_id is None and "model_path" in data:

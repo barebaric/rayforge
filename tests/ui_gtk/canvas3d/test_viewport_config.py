@@ -48,7 +48,7 @@ class TestViewportConfigAxisOrientation:
     def test_y_axis_down_flips_y(self):
         m = _make_machine()
         m.origin = Origin.TOP_LEFT
-        m._axis_extents = (200.0, 100.0)
+        m.set_axis_extents(200.0, 100.0)
         vp = ViewportConfig.from_machine(m)
         assert vp.y_down is True
         assert vp.x_right is False
@@ -64,7 +64,7 @@ class TestViewportConfigAxisOrientation:
     def test_x_axis_right_flips_x(self):
         m = _make_machine()
         m.origin = Origin.BOTTOM_RIGHT
-        m._axis_extents = (300.0, 200.0)
+        m.set_axis_extents(300.0, 200.0)
         vp = ViewportConfig.from_machine(m)
         assert vp.x_right is True
         assert vp.y_down is False
@@ -78,7 +78,7 @@ class TestViewportConfigAxisOrientation:
     def test_top_right_flips_both(self):
         m = _make_machine()
         m.origin = Origin.TOP_RIGHT
-        m._axis_extents = (400.0, 300.0)
+        m.set_axis_extents(400.0, 300.0)
         vp = ViewportConfig.from_machine(m)
         assert vp.x_right is True
         assert vp.y_down is True
@@ -109,7 +109,7 @@ class TestViewportConfigMargins:
 
     def test_margins_reduce_work_area(self):
         m = _make_machine()
-        m._axis_extents = (200.0, 200.0)
+        m.set_axis_extents(200.0, 200.0)
         m.set_work_margins(10.0, 5.0, 15.0, 8.0)
         vp = ViewportConfig.from_machine(m)
         assert vp.width_mm == 200.0 - 10.0 - 15.0
@@ -126,7 +126,7 @@ class TestViewportConfigMargins:
 class TestViewportConfigExtentFrame:
     def test_extent_frame_present_with_margins(self):
         m = _make_machine()
-        m._axis_extents = (200.0, 150.0)
+        m.set_axis_extents(200.0, 150.0)
         m.set_work_margins(10.0, 5.0, 15.0, 8.0)
         vp = ViewportConfig.from_machine(m)
         assert vp.extent_frame is not None
@@ -143,7 +143,7 @@ class TestViewportConfigExtentFrame:
 
     def test_extent_frame_symmetric_margins(self):
         m = _make_machine()
-        m._axis_extents = (100.0, 100.0)
+        m.set_axis_extents(100.0, 100.0)
         m.set_work_margins(10.0, 10.0, 10.0, 10.0)
         vp = ViewportConfig.from_machine(m)
         assert vp.extent_frame is not None
@@ -164,7 +164,7 @@ class TestViewportConfigWcsOffset:
 
     def test_wcs_offset_no_reverse(self):
         m = _make_machine()
-        m._axis_extents = (200.0, 200.0)
+        m.set_axis_extents(200.0, 200.0)
         m.set_work_margins(5.0, 3.0, 7.0, 2.0)
         m.wcs_offsets["G54"] = (1.0, 2.0, 0.5)
         vp = ViewportConfig.from_machine(m)
@@ -174,9 +174,9 @@ class TestViewportConfigWcsOffset:
 
     def test_wcs_offset_with_reverse_x(self):
         m = _make_machine()
-        m._axis_extents = (200.0, 200.0)
+        m.set_axis_extents(200.0, 200.0)
         m.set_work_margins(5.0, 3.0, 7.0, 2.0)
-        m.reverse_x_axis = True
+        m.set_reverse_x_axis(True)
         m.wcs_offsets["G54"] = (1.0, 2.0, 0.0)
         vp = ViewportConfig.from_machine(m)
         expected_x = -5.0 - 1.0
@@ -185,9 +185,9 @@ class TestViewportConfigWcsOffset:
 
     def test_wcs_offset_with_reverse_y(self):
         m = _make_machine()
-        m._axis_extents = (200.0, 200.0)
+        m.set_axis_extents(200.0, 200.0)
         m.set_work_margins(5.0, 3.0, 7.0, 2.0)
-        m.reverse_y_axis = True
+        m.set_reverse_y_axis(True)
         m.wcs_offsets["G54"] = (1.0, 2.0, 0.0)
         vp = ViewportConfig.from_machine(m)
         expected_x = -5.0 + 1.0
@@ -197,7 +197,7 @@ class TestViewportConfigWcsOffset:
     def test_wcs_offset_y_down(self):
         m = _make_machine()
         m.origin = Origin.TOP_LEFT
-        m._axis_extents = (200.0, 200.0)
+        m.set_axis_extents(200.0, 200.0)
         m.set_work_margins(5.0, 3.0, 7.0, 2.0)
         m.wcs_offsets["G54"] = (1.0, 2.0, 0.0)
         vp = ViewportConfig.from_machine(m)
@@ -209,22 +209,22 @@ class TestViewportConfigWcsOffset:
 class TestViewportConfigNegativeFlags:
     def test_x_negative_reflects_reverse_x(self):
         m = _make_machine()
-        m.reverse_x_axis = True
+        m.set_reverse_x_axis(True)
         vp = ViewportConfig.from_machine(m)
         assert vp.x_negative is True
         assert vp.y_negative is False
 
     def test_y_negative_reflects_reverse_y(self):
         m = _make_machine()
-        m.reverse_y_axis = True
+        m.set_reverse_y_axis(True)
         vp = ViewportConfig.from_machine(m)
         assert vp.y_negative is True
         assert vp.x_negative is False
 
     def test_both_negative(self):
         m = _make_machine()
-        m.reverse_x_axis = True
-        m.reverse_y_axis = True
+        m.set_reverse_x_axis(True)
+        m.set_reverse_y_axis(True)
         vp = ViewportConfig.from_machine(m)
         assert vp.x_negative is True
         assert vp.y_negative is True
