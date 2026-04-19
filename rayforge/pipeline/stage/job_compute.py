@@ -13,8 +13,6 @@ from ...machine.kinematic_mapping import KinematicMapping
 from ...machine.models.machine import Machine
 from ...shared.tasker.progress import ProgressContext, set_progress
 from ..artifact import JobArtifact, StepOpsArtifact
-from ..artifact.base import VertexData
-from ..encoder.vertexencoder import VertexEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -147,25 +145,6 @@ def _encode_gcode_and_opmap(
     return machine_code_bytes, op_map_bytes
 
 
-def _encode_vertex_data(
-    final_ops: Ops,
-    context: Optional[ProgressContext] = None,
-) -> VertexData:
-    """
-    Encodes operations to vertex data for preview.
-
-    Args:
-        final_ops: The operations to encode.
-        context: Optional ProgressContext for progress reporting.
-
-    Returns:
-        VertexData object containing vertex arrays for preview rendering.
-    """
-    set_progress(context, 0.9, _("Encoding paths for preview..."))
-    vertex_encoder = VertexEncoder()
-    return vertex_encoder.encode(final_ops)
-
-
 def compute_job_artifact(
     doc: Doc,
     step_artifacts_by_uid: Dict[str, StepOpsArtifact],
@@ -203,8 +182,6 @@ def compute_job_artifact(
     if machine.rotary_modules:
         KinematicMapping.apply_to_job_ops(mapped_ops, doc, machine)
 
-    vertex_data = _encode_vertex_data(final_ops, context)
-
     machine_code_bytes, op_map_bytes = _encode_gcode_and_opmap(
         final_ops, doc, machine, context
     )
@@ -215,7 +192,6 @@ def compute_job_artifact(
         ops=final_ops,
         distance=final_distance,
         generation_id=generation_id,
-        vertex_data=vertex_data,
         machine_code_bytes=machine_code_bytes,
         op_map_bytes=op_map_bytes,
         time_estimate=final_time,
