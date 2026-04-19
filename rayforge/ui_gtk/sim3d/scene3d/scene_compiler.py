@@ -10,7 +10,6 @@ are indexed 1:1 with the player's command index.
 from __future__ import annotations
 
 import logging
-import math
 from dataclasses import dataclass, field
 from typing import Callable, List, Optional, Tuple
 
@@ -19,7 +18,6 @@ import numpy as np
 from ....core.geo.arc import linearize_arc
 from ....core.geo.bezier import linearize_bezier_segment
 from ....core.ops import Ops
-from ....core.ops.axis import Axis
 from ....core.ops.commands import (
     ArcToCommand,
     BezierToCommand,
@@ -32,7 +30,6 @@ from ....core.ops.commands import (
     SetLaserCommand,
     SetPowerCommand,
 )
-from ....machine.kinematic_math import KinematicMath
 from ....pipeline.encoder.vertexencoder import transform_to_cylinder
 from .compiled_scene import (
     CompiledSceneArtifact,
@@ -46,22 +43,18 @@ from ....pipeline.encoder.scanline_rasterizer import (
 )
 from .cylinder_compiler import generate_cylinder_vertices
 from .render_config import RenderConfig3D
+from .rotary_coords import (
+    bake_visual_positions as _bake_visual_positions,
+    mu_to_visual as _mu_to_visual,
+    reconstruct_mu_arc as _reconstruct_mu_arc,
+    reconstruct_mu_bezier as _reconstruct_mu_bezier,
+    reconstruct_mu_pos as _reconstruct_mu_pos,
+    visual_end as _visual_end,
+)
 
 logger = logging.getLogger(__name__)
 
 Z_OFFSET_NON_POWERED = 0.01
-
-
-def _degrees_to_mu(
-    degrees: float,
-    diameter: float,
-    gear_ratio: float,
-    reverse: bool,
-) -> float:
-    if diameter <= 0 or gear_ratio <= 0:
-        return degrees
-    sign = -1.0 if reverse else 1.0
-    return degrees * math.pi * diameter / 360.0 / gear_ratio * sign
 
 
 def _get_lut(
@@ -352,152 +345,6 @@ def _rasterize_scanlines(
     buffer = dilated
 
     return buffer, width_px, height_px, px_per_mm
-
-
-def _find_degrees(cmd: MovingCommand) -> Optional[float]:
-    for ax in (Axis.A, Axis.B, Axis.C, Axis.U, Axis.Y):
-        val = cmd.extra_axes.get(ax)
-        if val is not None:
-            return val
-    return None
-
-
-def _visual_end(
-    cmd: MovingCommand,
-) -> Tuple[float, float, float]:
-    degrees = _find_degrees(cmd)
-    if degrees is not None:
-        pos = list(cmd.end)
-        pos[1] = degrees
-        return (pos[0], pos[1], pos[2])
-    return cmd.end
-
-
-def _reconstruct_mu_pos(
-    cmd: MovingCommand,
-    diameter: float,
-    gear_ratio: float,
-    reverse: bool,
-) -> Tuple[float, float, float]:
-    degrees = _find_degrees(cmd)
-    if degrees is None:
-        return cmd.end
-    mu_val = _degrees_to_mu(degrees, diameter, gear_ratio, reverse)
-    pos = list(cmd.end)
-    pos[1] = mu_val
-    return (pos[0], pos[1], pos[2])
-
-
-def _reconstruct_mu_arc(
-    cmd: ArcToCommand,
-    diameter: float,
-    gear_ratio: float,
-    reverse: bool,
-) -> ArcToCommand:
-    degrees = _find_degrees(cmd)
-    if degrees is None:
-        return cmd
-    scale = _degrees_to_mu(1.0, diameter, gear_ratio, reverse)
-
-    pos = list(cmd.end)
-    pos[1] = degrees * scale
-
-    offset = list(cmd.center_offset)
-    offset[1] = offset[1] * scale
-
-    return ArcToCommand(
-        end=(pos[0], pos[1], pos[2]),
-        center_offset=(offset[0], offset[1]),
-        clockwise=cmd.clockwise,
-        extra_axes=dict(cmd.extra_axes),
-    )
-
-
-def _reconstruct_mu_bezier(
-    cmd: BezierToCommand,
-    diameter: float,
-    gear_ratio: float,
-    reverse: bool,
-) -> BezierToCommand:
-    degrees = _find_degrees(cmd)
-    if degrees is None:
-        return cmd
-    scale = _degrees_to_mu(1.0, diameter, gear_ratio, reverse)
-
-    pos = list(cmd.end)
-    pos[1] = degrees * scale
-
-    cp1 = list(cmd.control1)
-    cp1[1] = cp1[1] * scale
-
-    cp2 = list(cmd.control2)
-    cp2[1] = cp2[1] * scale
-
-    return BezierToCommand(
-        end=(pos[0], pos[1], pos[2]),
-        control1=(cp1[0], cp1[1], cp1[2]),
-        control2=(cp2[0], cp2[1], cp2[2]),
-        extra_axes=dict(cmd.extra_axes),
-    )
-
-
-def _mu_to_visual(
-    pos: Tuple[float, float, float],
-    diameter: float,
-    gear_ratio: float,
-    reverse: bool,
-) -> Tuple[float, float, float]:
-    degrees = KinematicMath.mu_to_degrees(
-        pos[1], diameter, gear_ratio=gear_ratio, reverse=reverse
-    )
-    result = list(pos)
-    result[1] = degrees
-    return (result[0], result[1], result[2])
-
-
-def _bake_visual_positions(
-    ops: Ops,
-) -> Ops:
-    baked = Ops()
-    for cmd in ops.commands:
-        if isinstance(cmd, MovingCommand):
-            degrees = _find_degrees(cmd)
-            if degrees is not None:
-                pos = list(cmd.end)
-                pos[1] = degrees
-                new_end = (pos[0], pos[1], pos[2])
-                if isinstance(cmd, ScanLinePowerCommand):
-                    new_cmd = ScanLinePowerCommand(
-                        new_end,
-                        cmd.power_values,
-                        extra_axes=dict(cmd.extra_axes),
-                    )
-                elif isinstance(cmd, ArcToCommand):
-                    new_cmd = ArcToCommand(
-                        new_end,
-                        cmd.center_offset,
-                        cmd.clockwise,
-                        extra_axes=dict(cmd.extra_axes),
-                    )
-                elif isinstance(cmd, BezierToCommand):
-                    new_cmd = BezierToCommand(
-                        new_end,
-                        cmd.control1,
-                        cmd.control2,
-                        extra_axes=dict(cmd.extra_axes),
-                    )
-                else:
-                    new_cmd = cmd.__class__(
-                        new_end,
-                        extra_axes=dict(cmd.extra_axes),
-                    )
-                new_cmd.state = cmd.state
-                baked.add(new_cmd)
-            else:
-                baked.add(cmd)
-        else:
-            baked.add(cmd)
-    return baked
 
 
 @dataclass
