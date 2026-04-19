@@ -46,6 +46,7 @@ def _init_renderer(renderer):
     with (
         patch.object(renderer, "_create_vbo", return_value=1),
         patch.object(renderer, "_create_vao", return_value=1),
+        patch.object(renderer, "_create_texture", return_value=1),
         patch("OpenGL.GL.glBindVertexArray"),
         patch("OpenGL.GL.glBindBuffer"),
         patch("OpenGL.GL.glVertexAttribPointer"),
@@ -60,6 +61,7 @@ def test_init_gl_creates_buffers(renderer):
     with (
         patch.object(renderer, "_create_vbo", return_value=1) as mock_vbo,
         patch.object(renderer, "_create_vao", return_value=1) as mock_vao,
+        patch.object(renderer, "_create_texture", return_value=1),
         patch("OpenGL.GL.glBindVertexArray"),
         patch("OpenGL.GL.glBindBuffer"),
         patch("OpenGL.GL.glVertexAttribPointer"),
