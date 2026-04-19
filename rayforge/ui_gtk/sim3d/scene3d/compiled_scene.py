@@ -13,6 +13,7 @@ from ....pipeline.artifact.handle import BaseArtifactHandle
 class VertexLayer:
     powered_verts: np.ndarray
     power_values: np.ndarray
+    laser_indices: np.ndarray
     travel_verts: np.ndarray
     zero_power_verts: np.ndarray
     powered_cmd_offsets: list = field(default_factory=list)
@@ -30,12 +31,14 @@ class TextureLayer:
     rotary_diameter: float = 0.0
     rotary_enabled: bool = False
     activation_cmd_idx: int = -1
+    laser_uid: str = ""
 
 
 @dataclass
 class ScanlineOverlayLayer:
     positions: np.ndarray
     power_values: np.ndarray
+    laser_indices: np.ndarray
     cmd_offsets: list
     is_rotary: bool = False
 
@@ -66,11 +69,13 @@ class CompiledSceneArtifact(BaseArtifact):
         vertex_layers: List[VertexLayer],
         texture_layers: List[TextureLayer],
         overlay_layers: List[ScanlineOverlayLayer],
+        laser_uid_order: Optional[List[str]] = None,
     ):
         self.generation_id = generation_id
         self.vertex_layers = vertex_layers
         self.texture_layers = texture_layers
         self.overlay_layers = overlay_layers
+        self.laser_uid_order = laser_uid_order or []
 
     def create_handle(self, shm_name, array_metadata):
         return CompiledSceneArtifactHandle(
@@ -93,9 +98,14 @@ class CompiledSceneArtifact(BaseArtifact):
             dtype=np.int32,
         )
 
+        if self.laser_uid_order:
+            encoded = "\0".join(self.laser_uid_order).encode("utf-8")
+            arrays["_luo"] = np.frombuffer(encoded, dtype=np.uint8).copy()
+
         for i, vl in enumerate(self.vertex_layers):
             arrays[f"vl{i}_pv"] = vl.powered_verts
             arrays[f"vl{i}_pvv"] = vl.power_values
+            arrays[f"vl{i}_lid"] = vl.laser_indices
             arrays[f"vl{i}_tv"] = vl.travel_verts
             arrays[f"vl{i}_zpv"] = vl.zero_power_verts
             if vl.powered_cmd_offsets:
@@ -127,10 +137,16 @@ class CompiledSceneArtifact(BaseArtifact):
                 )
             if tl.cylinder_vertices is not None:
                 arrays[f"tl{i}_cv"] = tl.cylinder_vertices
+            if tl.laser_uid:
+                encoded = tl.laser_uid.encode("utf-8")
+                arrays[f"tl{i}_luid"] = np.frombuffer(
+                    encoded, dtype=np.uint8
+                ).copy()
 
         for i, ol in enumerate(self.overlay_layers):
             arrays[f"ol{i}_pos"] = ol.positions
             arrays[f"ol{i}_pow"] = ol.power_values
+            arrays[f"ol{i}_lid"] = ol.laser_indices
             arrays[f"ol{i}_co"] = np.array(ol.cmd_offsets, dtype=np.int32)
             if ol.is_rotary:
                 arrays[f"ol{i}_ir"] = np.array([1], dtype=np.int32)
@@ -148,6 +164,12 @@ class CompiledSceneArtifact(BaseArtifact):
         num_tl = int(meta[1])
         num_ol = int(meta[2])
 
+        laser_uid_order = []
+        if "_luo" in arrays:
+            encoded = arrays["_luo"].tobytes()
+            if encoded:
+                laser_uid_order = encoded.decode("utf-8").split("\0")
+
         vertex_layers: List[VertexLayer] = []
         for i in range(num_vl):
             prefix = f"vl{i}_"
@@ -159,6 +181,7 @@ class CompiledSceneArtifact(BaseArtifact):
             vl = VertexLayer(
                 powered_verts=arrays[f"{prefix}pv"].copy(),
                 power_values=arrays[f"{prefix}pvv"].copy(),
+                laser_indices=arrays[f"{prefix}lid"].copy(),
                 travel_verts=arrays[f"{prefix}tv"].copy(),
                 zero_power_verts=arrays[f"{prefix}zpv"].copy(),
                 powered_cmd_offsets=(
@@ -189,6 +212,9 @@ class CompiledSceneArtifact(BaseArtifact):
             activation_cmd_idx = -1
             if f"{prefix}aci" in arrays:
                 activation_cmd_idx = int(arrays[f"{prefix}aci"][0])
+            laser_uid = ""
+            if f"{prefix}luid" in arrays:
+                laser_uid = arrays[f"{prefix}luid"].tobytes().decode("utf-8")
             tl = TextureLayer(
                 power_texture=arrays[f"{prefix}tex"].copy(),
                 width_px=width_px,
@@ -198,6 +224,7 @@ class CompiledSceneArtifact(BaseArtifact):
                 rotary_diameter=rotary_diameter,
                 rotary_enabled=rotary_enabled,
                 activation_cmd_idx=activation_cmd_idx,
+                laser_uid=laser_uid,
             )
             texture_layers.append(tl)
 
@@ -210,6 +237,7 @@ class CompiledSceneArtifact(BaseArtifact):
             ol = ScanlineOverlayLayer(
                 positions=arrays[f"{prefix}pos"].copy(),
                 power_values=arrays[f"{prefix}pow"].copy(),
+                laser_indices=arrays[f"{prefix}lid"].copy(),
                 cmd_offsets=arrays[f"{prefix}co"].copy().tolist(),
                 is_rotary=is_rotary,
             )
@@ -220,4 +248,5 @@ class CompiledSceneArtifact(BaseArtifact):
             vertex_layers=vertex_layers,
             texture_layers=texture_layers,
             overlay_layers=overlay_layers,
+            laser_uid_order=laser_uid_order,
         )

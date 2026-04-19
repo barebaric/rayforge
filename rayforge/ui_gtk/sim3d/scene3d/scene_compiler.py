@@ -158,6 +158,8 @@ def _encode_overlay_segments(
     start_pos: Tuple[float, float, float],
     ov_pos: List[float],
     ov_pow: List[float],
+    ov_lid: List[int],
+    laser_index: int = 0,
     end_pos: Optional[Tuple[float, float, float]] = None,
 ) -> int:
     if cmd.end is None:
@@ -205,6 +207,8 @@ def _encode_overlay_segments(
             )
             ov_pow.append(seg_power)
             ov_pow.append(seg_power)
+            ov_lid.append(laser_index)
+            ov_lid.append(laser_index)
             vertex_count += 2
 
         prev_power_on = power_byte > 0
@@ -213,6 +217,8 @@ def _encode_overlay_segments(
         ov_pos.extend([seg_start_x, seg_start_y, seg_start_z, ex, ey, ez])
         ov_pow.append(seg_power)
         ov_pow.append(seg_power)
+        ov_lid.append(laser_index)
+        ov_lid.append(laser_index)
         vertex_count += 2
 
     return vertex_count
@@ -303,6 +309,8 @@ class _WalkState:
     current_pos_vis: Tuple[float, float, float] = (0.0, 0.0, 0.0)
     is_initial: bool = True
     current_laser_uid: str = ""
+    current_laser_index: int = 0
+    laser_uid_order: List[str] = field(default_factory=list)
     is_rotary: bool = False
     rotary_diameter: float = 0.0
     has_mapped_data: bool = False
@@ -318,10 +326,12 @@ class _LayerAccumulator:
     __slots__ = (
         "pv",
         "pvv",
+        "pvl",
         "tv",
         "zpv",
         "ov_pos",
         "ov_pow",
+        "ov_lid",
         "pv_cum",
         "tv_cum",
         "ov_cum",
@@ -342,10 +352,12 @@ class _LayerAccumulator:
     def __init__(self, total_cmds: int, is_rotary: bool):
         self.pv: List[float] = []
         self.pvv: List[float] = []
+        self.pvl: List[int] = []
         self.tv: List[float] = []
         self.zpv: List[float] = []
         self.ov_pos: List[float] = []
         self.ov_pow: List[float] = []
+        self.ov_lid: List[int] = []
         self.pv_cum = 0
         self.tv_cum = 0
         self.ov_cum = 0
@@ -399,10 +411,12 @@ class _LayerAccumulator:
     ):
         pv_arr = _to_arr(self.pv, 3)
         pvv_arr = _to_arr(self.pvv, 1)
+        pvl_arr = np.array(self.pvl, dtype=np.float32).reshape(-1, 1)
         tv_arr = _to_arr(self.tv, 3)
         zpv_arr = _to_arr(self.zpv, 3)
         ov_pos_arr = _to_arr(self.ov_pos, 3)
         ov_pow_arr = _to_arr(self.ov_pow, 1)
+        ov_lid_arr = np.array(self.ov_lid, dtype=np.float32).reshape(-1, 1)
 
         pv_arr = _transform_verts(pv_arr, transform)
         tv_arr = _transform_verts(tv_arr, transform)
@@ -413,18 +427,22 @@ class _LayerAccumulator:
             (
                 pv_arr,
                 pvv_arr,
+                pvl_arr,
                 tv_arr,
                 zpv_arr,
                 ov_pos_arr,
                 ov_pow_arr,
+                ov_lid_arr,
                 pv_expansion,
             ) = _apply_cylinder_wrapping(
                 pv_arr,
                 pvv_arr,
+                pvl_arr,
                 tv_arr,
                 zpv_arr,
                 ov_pos_arr,
                 ov_pow_arr,
+                ov_lid_arr,
                 self.rotary_segments,
                 self.pv_cum,
                 self.tv_cum,
@@ -441,10 +459,12 @@ class _LayerAccumulator:
         return (
             pv_arr,
             pvv_arr,
+            pvl_arr,
             tv_arr,
             zpv_arr,
             ov_pos_arr,
             ov_pow_arr,
+            ov_lid_arr,
         )
 
 
@@ -465,13 +485,34 @@ def _extract_powers_from_vec4(pvv4: np.ndarray) -> np.ndarray:
     return pvv4[:, 0:1].copy()
 
 
+def _pad_power_laser_to_vec4(pvv: np.ndarray, pvl: np.ndarray) -> np.ndarray:
+    if pvv.size == 0:
+        return np.empty((0, 4), dtype=np.float32)
+    power = pvv.ravel()
+    laser = pvl.ravel()
+    n = power.shape[0]
+    result = np.zeros((n, 4), dtype=np.float32)
+    result[:, 0] = power
+    result[:, 1] = laser
+    result[:, 3] = 1.0
+    return result
+
+
+def _extract_laser_from_vec4(pvv4: np.ndarray) -> np.ndarray:
+    if pvv4.size == 0:
+        return np.empty((0, 1), dtype=np.float32)
+    return pvv4[:, 1:2].copy()
+
+
 def _apply_cylinder_wrapping(
     pv_arr,
     pvv_arr,
+    pvl_arr,
     tv_arr,
     zpv_arr,
     ov_pos_arr,
     ov_pow_arr,
+    ov_lid_arr,
     rotary_segments,
     pv_cum,
     tv_cum,
@@ -485,8 +526,8 @@ def _apply_cylinder_wrapping(
     _exp_ov_pow: List[np.ndarray] = []
     pv_expansion: List[Tuple[int, np.ndarray]] = []
 
-    pvv4 = _pad_powers_to_vec4(pvv_arr)
-    ov_pow4 = _pad_powers_to_vec4(ov_pow_arr)
+    pvv4 = _pad_power_laser_to_vec4(pvv_arr, pvl_arr)
+    ov_pow4 = _pad_power_laser_to_vec4(ov_pow_arr, ov_lid_arr)
 
     for seg in rotary_segments:
         d = seg["diameter"]
@@ -555,10 +596,12 @@ def _apply_cylinder_wrapping(
     return (
         pv_arr,
         _extract_powers_from_vec4(pvv4),
+        _extract_laser_from_vec4(pvv4),
         tv_arr,
         zpv_arr,
         ov_pos_arr,
         _extract_powers_from_vec4(ov_pow4),
+        _extract_laser_from_vec4(ov_pow4),
         pv_expansion,
     )
 
@@ -582,16 +625,19 @@ def _finalize_layers(
         (
             pv_arr,
             pvv_arr,
+            pvl_arr,
             tv_arr,
             zpv_arr,
             ov_pos_arr,
             ov_pow_arr,
+            ov_lid_arr,
         ) = acc.finalize(transform)
 
         vertex_layers.append(
             VertexLayer(
                 powered_verts=_to_flat(pv_arr),
                 power_values=_to_flat(pvv_arr),
+                laser_indices=_to_flat(pvl_arr),
                 travel_verts=_to_flat(tv_arr),
                 zero_power_verts=_to_flat(zpv_arr),
                 powered_cmd_offsets=acc.pv_off,
@@ -604,6 +650,7 @@ def _finalize_layers(
             ScanlineOverlayLayer(
                 positions=_to_flat(ov_pos_arr),
                 power_values=_to_flat(ov_pow_arr),
+                laser_indices=_to_flat(ov_lid_arr),
                 cmd_offsets=acc.ov_off,
                 is_rotary=acc.is_rotary,
             )
@@ -675,6 +722,7 @@ def _generate_texture_layers(
                 rotary_diameter=diameter,
                 rotary_enabled=is_rot,
                 activation_cmd_idx=li["activation_cmd_idx"],
+                laser_uid=li.get("scanline_laser", ""),
             )
         )
 
@@ -745,6 +793,9 @@ def _handle_set_laser(
     cmd: SetLaserCommand,
 ) -> None:
     st.current_laser_uid = cmd.laser_uid
+    if cmd.laser_uid not in st.laser_uid_order:
+        st.laser_uid_order.append(cmd.laser_uid)
+    st.current_laser_index = st.laser_uid_order.index(cmd.laser_uid)
 
 
 def _update_positions(
@@ -789,6 +840,8 @@ def _handle_line_to(
         acc.pv.extend(vis_end)
         acc.pvv.append(st.current_power)
         acc.pvv.append(st.current_power)
+        acc.pvl.append(st.current_laser_index)
+        acc.pvl.append(st.current_laser_index)
         acc.pv_cum += 2
     else:
         acc.zpv.extend(st.current_pos_vis)
@@ -834,6 +887,8 @@ def _handle_arc_to(
             acc.pv.extend(seg_end)
             acc.pvv.append(st.current_power)
             acc.pvv.append(st.current_power)
+            acc.pvl.append(st.current_laser_index)
+            acc.pvl.append(st.current_laser_index)
         acc.pv_cum += n_segs * 2
     else:
         for seg_start, seg_end in vis_segs:
@@ -883,6 +938,8 @@ def _handle_bezier_to(
             acc.pv.extend(vis_poly[j + 1])
             acc.pvv.append(st.current_power)
             acc.pvv.append(st.current_power)
+            acc.pvl.append(st.current_laser_index)
+            acc.pvl.append(st.current_laser_index)
         acc.pv_cum += (len(vis_poly) - 1) * 2
     else:
         for j in range(len(vis_poly) - 1):
@@ -910,6 +967,8 @@ def _handle_scanline(
                 st.current_pos_vis,
                 acc.ov_pos,
                 acc.ov_pow,
+                acc.ov_lid,
+                laser_index=st.current_laser_index,
                 end_pos=vis_end,
             )
             acc.ov_cum += n
@@ -977,4 +1036,5 @@ def compile_scene(
         vertex_layers=vertex_layers,
         texture_layers=texture_layers,
         overlay_layers=overlay_layers,
+        laser_uid_order=st.laser_uid_order,
     )

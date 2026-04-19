@@ -617,31 +617,46 @@ class Canvas3D(Gtk.GLArea):
         if not self._color_set or not self._gl_initialized:
             return
 
-        cut_lut = self._color_set.get_lut("cut")
-        engrave_lut = self._color_set.get_lut("engrave")
-
         if self._laser_color_sets:
-            first_cs = next(iter(self._laser_color_sets.values()))
-            laser_cut_lut = first_cs.get_lut("cut")
-            laser_engrave_lut = first_cs.get_lut("engrave")
+            uids = list(self._laser_color_sets.keys())
+            num_lasers = len(uids)
+
+            cut_lut_2d = np.zeros((num_lasers, 256, 4), dtype=np.float32)
+            engrave_lut_2d = np.zeros((num_lasers, 256, 4), dtype=np.float32)
+            flat_lut_2d = np.zeros((num_lasers, 256, 4), dtype=np.float32)
+
+            for row_idx, uid in enumerate(uids):
+                cs = self._laser_color_sets[uid]
+                cut_lut_2d[row_idx] = cs.get_lut("cut")
+                engrave_lut_2d[row_idx] = cs.get_lut("engrave")
+                engrave_rgba = tuple(cs.get_lut("engrave")[255])
+                flat_lut_2d[row_idx] = self._make_flat_color_lut(engrave_rgba)
+
+            for group in self._layer_groups:
+                group.ops_renderer.update_color_lut(cut_lut_2d, num_lasers)
+                group.ring_renderer.update_color_lut(flat_lut_2d, num_lasers)
+
+            if self._texture_renderer:
+                logger.debug(
+                    f"[COLOR_LUT] Using multi-laser 2D LUT "
+                    f"({num_lasers} lasers)"
+                )
+                self._texture_renderer.update_color_lut(
+                    engrave_lut_2d, num_lasers
+                )
         else:
-            laser_cut_lut = cut_lut
-            laser_engrave_lut = engrave_lut
+            cut_lut = self._color_set.get_lut("cut")
+            engrave_lut = self._color_set.get_lut("engrave")
 
-        for group in self._layer_groups:
-            group.ops_renderer.update_color_lut(laser_cut_lut)
+            for group in self._layer_groups:
+                group.ops_renderer.update_color_lut(cut_lut)
+                ring_lut = self._make_flat_color_lut(
+                    self._get_laser_engrave_rgba()
+                )
+                group.ring_renderer.update_color_lut(ring_lut)
 
-        ring_lut = self._make_flat_color_lut(self._get_laser_engrave_rgba())
-        for group in self._layer_groups:
-            group.ring_renderer.update_color_lut(ring_lut)
-
-        if self._texture_renderer:
-            logger.debug(
-                f"[COLOR_LUT] Using "
-                f"{'laser' if self._laser_color_sets else 'default'} "
-                f"engrave LUT, lut[255]={laser_engrave_lut[255]}"
-            )
-            self._texture_renderer.update_color_lut(laser_engrave_lut)
+            if self._texture_renderer:
+                self._texture_renderer.update_color_lut(engrave_lut)
 
     def _process_pending_gl_updates(self):
         if self._scene_gl_dirty:
@@ -1417,10 +1432,19 @@ class Canvas3D(Gtk.GLArea):
                         ),
                     )
                 )
+                lid_final = np.concatenate(
+                    (
+                        vl.laser_indices,
+                        np.zeros(
+                            vl.zero_power_verts.size // 3, dtype=np.float32
+                        ),
+                    )
+                )
                 tv_final = vl.travel_verts
             else:
                 pv_final = vl.powered_verts
                 pvv_final = vl.power_values
+                lid_final = vl.laser_indices
                 tv_final = np.array([], dtype=np.float32)
 
             powered_count = vl.powered_verts.size // 3
@@ -1435,11 +1459,15 @@ class Canvas3D(Gtk.GLArea):
             )
 
             group.ops_renderer.update_from_vertex_data(
-                pv_final, pvv_final, tv_final
+                pv_final,
+                pvv_final,
+                tv_final,
+                laser_indices=lid_final,
             )
 
         if self._texture_renderer:
             self._texture_renderer.clear()
+            luo = artifact.laser_uid_order if artifact else []
             for tl in artifact.texture_layers:
                 tex_data = TextureData(
                     power_texture_data=tl.power_texture,
@@ -1447,12 +1475,16 @@ class Canvas3D(Gtk.GLArea):
                     position_mm=(0.0, 0.0),
                 )
                 rotary_enabled = tl.rotary_enabled
+                laser_index = 0
+                if tl.laser_uid and tl.laser_uid in luo:
+                    laser_index = luo.index(tl.laser_uid)
                 self._texture_renderer.add_instance(
                     tex_data,
                     tl.model_matrix,
                     rotary_enabled=rotary_enabled,
                     rotary_diameter=tl.rotary_diameter,
                     cylinder_vertices=tl.cylinder_vertices,
+                    laser_index=laser_index,
                 )
 
         self._update_renderer_color_luts()
@@ -1584,6 +1616,7 @@ class Canvas3D(Gtk.GLArea):
                 group.ring_renderer.upload(
                     ol.positions.ravel(),
                     ol.power_values.ravel(),
+                    laser_indices=ol.laser_indices.ravel(),
                 )
             else:
                 group.ring_renderer.clear()

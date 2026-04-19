@@ -3,6 +3,7 @@ A renderer for visualizing toolpath operations (Ops) in 3D.
 """
 
 import numpy as np
+from typing import Optional
 from OpenGL import GL
 from .gl_utils import BaseRenderer, RenderContext, Shader, set_line_width
 
@@ -26,6 +27,7 @@ class OpsRenderer(BaseRenderer):
         self.travel_vertex_count: int = 0
 
         self._color_lut_texture: int = 0
+        self._num_laser_luts: int = 1
 
     def init_gl(self):
         self.powered_vbo = self._create_vbo()
@@ -72,13 +74,21 @@ class OpsRenderer(BaseRenderer):
         powered_vertices: np.ndarray,
         power_values: np.ndarray,
         travel_vertices: np.ndarray,
+        laser_indices: Optional[np.ndarray] = None,
     ):
         self.powered_vertex_count = powered_vertices.size // 3
         self._load_buffer_data(self.powered_vbo, powered_vertices)
         pv_flat = np.ascontiguousarray(power_values, dtype=np.float32).ravel()
         n = pv_flat.size
+        if laser_indices is not None and laser_indices.size > 0:
+            li_flat = np.ascontiguousarray(
+                laser_indices, dtype=np.float32
+            ).ravel()
+        else:
+            li_flat = np.zeros(n, dtype=np.float32)
         power_vec4 = np.zeros(n * 4, dtype=np.float32)
         power_vec4[0::4] = pv_flat
+        power_vec4[1::4] = li_flat
         power_vec4[3::4] = 1.0
         self._load_buffer_data(self.powered_powers_vbo, power_vec4)
         indices = np.arange(self.powered_vertex_count, dtype=np.float32)
@@ -88,10 +98,15 @@ class OpsRenderer(BaseRenderer):
         travel_indices = np.arange(self.travel_vertex_count, dtype=np.float32)
         self._load_buffer_data(self.travel_index_vbo, travel_indices)
 
-    def update_color_lut(self, lut_data: np.ndarray):
+    def update_color_lut(self, lut_data: np.ndarray, num_lasers: int = 1):
         if not self._color_lut_texture:
             return
+        self._num_laser_luts = num_lasers
         lut = np.ascontiguousarray(lut_data, dtype=np.float32)
+        if lut.ndim == 3:
+            width, height = lut.shape[1], lut.shape[0]
+        else:
+            width, height = lut.shape[0], 1
         GL.glBindTexture(GL.GL_TEXTURE_2D, self._color_lut_texture)
         GL.glTexParameteri(
             GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR
@@ -109,8 +124,8 @@ class OpsRenderer(BaseRenderer):
             GL.GL_TEXTURE_2D,
             0,
             GL.GL_RGBA32F,
-            lut.shape[0],
-            1,
+            width,
+            height,
             0,
             GL.GL_RGBA,
             GL.GL_FLOAT,
@@ -162,10 +177,10 @@ class OpsRenderer(BaseRenderer):
         shader.set_float("uAlphaPending", alpha_pending)
         shader.set_float("uEmissive", 1.0)
 
-        # Draw powered moves (using power-LUT for color)
         if self.powered_vertex_count > 0:
             set_line_width(line_width)
             shader.set_float("uUsePowerLUT", 1.0)
+            shader.set_int("uNumLaserLUTs", self._num_laser_luts)
             shader.set_vec4("uZeroPowerColor", colors.get_rgba("zero_power"))
             GL.glActiveTexture(GL.GL_TEXTURE1)
             GL.glBindTexture(GL.GL_TEXTURE_2D, self._color_lut_texture)
@@ -176,7 +191,6 @@ class OpsRenderer(BaseRenderer):
             GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
             GL.glActiveTexture(GL.GL_TEXTURE0)
 
-        # Draw travel moves
         should_draw_travel = self.travel_vertex_count > 0 and (
             executed_travel_vertex_count >= 0 or show_travel_moves
         )
