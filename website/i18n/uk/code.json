@@ -104,12 +104,7 @@
   "install.cloneRepo": {
     "message": "Клонувати репозиторій"
   },
-  "install.installSystemDependency": {
-    "message": "Встановити системну залежність"
-  },
-  "install.installGtkAdwaita": {
-    "message": "Встановіть необхідний пакет Gtk/Adwaita:"
-  },
+
   "install.installDependencies": {
     "message": "Встановити залежності"
   },
@@ -380,6 +375,309 @@
   "install.needHelpDescription": {
     "message": "Для додаткової допомоги повідомте про проблему на GitHub або приєднайтеся до нашого Discord."
   },
+  "theme.ErrorPageContent.title": {
+    "message": "Ця сторінка не існує.",
+    "description": "The title of the fallback page when the page crashed"
+  },
+  "theme.BackToTopButton.buttonAriaLabel": {
+    "message": "Повернутися нагору",
+    "description": "The ARIA label for the back to top button"
+  },
+  "theme.blog.archive.title": {
+    "message": "Архів",
+    "description": "The page & hero title of the blog archive page"
+  },
+  "theme.blog.archive.description": {
+    "message": "Архів",
+    "description": "The page & hero description of the blog archive page"
+  },
+  "theme.blog.paginator.navAriaLabel": {
+    "message": "Навігація по списку дописів блогу",
+    "description": "The ARIA label for the blog pagination"
+  },
+  "theme.blog.paginator.newerEntries": {
+    "message": "Новіші записи",
+    "description": "The label used to navigate to the newer blog posts page (previous page)"
+  },
+  "theme.blog.paginator.olderEntries": {
+    "message": "Старіші записи",
+    "description": "The label used to navigate to the older blog posts page (next page)"
+  },
+  "theme.blog.post.paginator.navAriaLabel": {
+    "message": "Навігація по дописах блогу",
+    "description": "The ARIA label for the blog posts pagination"
+  },
+  "theme.blog.post.paginator.newerPost": {
+    "message": "Новіший допис",
+    "description": "The blog post button label to navigate to the newer/previous post"
+  },
+  "theme.blog.post.paginator.olderPost": {
+    "message": "Старіший допис",
+    "description": "The blog post button label to navigate to the older/next post"
+  },
+  "theme.tags.tagsPageLink": {
+    "message": "Переглянути всі теги",
+    "description": "The label of the link targeting the tag list page"
+  },
+  "theme.colorToggle.ariaLabel.mode.system": {
+    "message": "Системний режим",
+    "description": "The name for the system color mode"
+  },
+  "theme.colorToggle.ariaLabel.mode.light": {
+    "message": "Світлий режим",
+    "description": "The name for the light color mode"
+  },
+  "theme.colorToggle.ariaLabel.mode.dark": {
+    "message": "Темний режим",
+    "description": "The name for the dark color mode"
+  },
+  "theme.colorToggle.ariaLabel": {
+    "message": "Перемикання між світлим і темним режимом (поточний: {mode})",
+    "description": "The ARIA label for the color mode toggle"
+  },
+  "theme.docs.breadcrumbs.navAriaLabel": {
+    "message": "Навігаційний ланцюжок",
+    "description": "The ARIA label for the breadcrumbs"
+  },
+  "theme.docs.DocCard.categoryDescription.plurals": {
+    "message": "{count} елемент|{count} елементів",
+    "description": "The default description for a category card in the generated index about how many items this category includes"
+  },
+  "theme.docs.paginator.navAriaLabel": {
+    "message": "Навігація по документації",
+    "description": "The ARIA label for the docs pagination"
+  },
+  "theme.docs.paginator.previous": {
+    "message": "Назад",
+    "description": "The label used to navigate to the previous doc"
+  },
+  "theme.docs.paginator.next": {
+    "message": "Далі",
+    "description": "The label used to navigate to the next doc"
+  },
+  "theme.docs.tagDocListPageTitle.nDocsTagged": {
+    "message": "{count} документ з тегом|{count} документів з тегом",
+    "description": "Pluralized label for \"{count} docs tagged\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.docs.tagDocListPageTitle": {
+    "message": "{nDocsTagged} з тегом \"{tagName}\"",
+    "description": "The title of the page for a docs tag"
+  },
+  "theme.docs.versionBadge.label": {
+    "message": "Версія: {versionLabel}"
+  },
+  "theme.docs.versions.unreleasedVersionLabel": {
+    "message": "Це невидана документація для {siteTitle} {versionLabel}.",
+    "description": "The label used to tell the user that he's browsing an unreleased doc version"
+  },
+  "theme.docs.versions.unmaintainedVersionLabel": {
+    "message": "Це документація для {siteTitle} {versionLabel}, яка більше не підтримується.",
+    "description": "The label used to tell the user that he's browsing an unmaintained doc version"
+  },
+  "theme.docs.versions.latestVersionSuggestionLabel": {
+    "message": "Для актуальної документації дивіться {latestVersionLink} ({versionLabel}).",
+    "description": "The label used to tell the user to check the latest version"
+  },
+  "theme.docs.versions.latestVersionLinkLabel": {
+    "message": "остання версія",
+    "description": "The label used for the latest version suggestion link label"
+  },
+  "theme.common.editThisPage": {
+    "message": "Редагувати цю сторінку",
+    "description": "The link label to edit the current page"
+  },
+  "theme.common.headingLinkTitle": {
+    "message": "Пряме посилання на заголовок",
+    "description": "Title for link to heading"
+  },
+  "theme.lastUpdated.atDate": {
+    "message": " {date}",
+    "description": "The words used to describe on which date a page has been last updated"
+  },
+  "theme.lastUpdated.byUser": {
+    "message": " від {user}",
+    "description": "The words used to describe by who the page has been last updated"
+  },
+  "theme.lastUpdated.lastUpdatedAtBy": {
+    "message": "Останнє оновлення{atDate}{byUser}",
+    "description": "The sentence used to display when a page has been last updated, and by who"
+  },
+  "theme.navbar.mobileVersionsDropdown.label": {
+    "message": "Версії",
+    "description": "The label for the navbar versions dropdown on mobile view"
+  },
+  "theme.NotFound.title": {
+    "message": "Сторінку не знайдено",
+    "description": "The title of the 404 page"
+  },
+  "theme.tags.tagsListLabel": {
+    "message": "Теги:",
+    "description": "The label alongside a tag list"
+  },
+  "theme.AnnouncementBar.closeButtonAriaLabel": {
+    "message": "Закрити",
+    "description": "The ARIA label for close button of announcement bar"
+  },
+  "theme.blog.sidebar.navAriaLabel": {
+    "message": "Навігація по останніх дописах блогу",
+    "description": "The ARIA label for recent posts in the blog sidebar"
+  },
+  "theme.DocSidebarItem.expandCategoryAriaLabel": {
+    "message": "Розгорнути категорію '{label}' бічної панелі",
+    "description": "The ARIA label to expand the sidebar category"
+  },
+  "theme.DocSidebarItem.collapseCategoryAriaLabel": {
+    "message": "Згорнути категорію '{label}' бічної панелі",
+    "description": "The ARIA label to collapse the sidebar category"
+  },
+  "theme.IconExternalLink.ariaLabel": {
+    "message": "(відкривається в новій вкладці)",
+    "description": "The ARIA label for the external link icon"
+  },
+  "theme.NavBar.navAriaLabel": {
+    "message": "Основна навігація",
+    "description": "The ARIA label for the main navigation"
+  },
+  "theme.navbar.mobileLanguageDropdown.label": {
+    "message": "Мови",
+    "description": "The label for the mobile language switcher dropdown"
+  },
+  "theme.NotFound.p1": {
+    "message": "Ми не змогли знайти те, що ви шукали.",
+    "description": "The first paragraph of the 404 page"
+  },
+  "theme.NotFound.p2": {
+    "message": "Будь ласка, зв'яжіться з власником сайту, який перенаправив вас сюди, і повідомте йому, що посилання не працює.",
+    "description": "The 2nd paragraph of the 404 page"
+  },
+  "theme.TOCCollapsible.toggleButtonLabel": {
+    "message": "На цій сторінці",
+    "description": "The label used by the button on the collapsible TOC component"
+  },
+  "theme.blog.post.readMore": {
+    "message": "Читати далі",
+    "description": "The label used in blog post item excerpts to link to full blog posts"
+  },
+  "theme.blog.post.readMoreLabel": {
+    "message": "Читати далі про {title}",
+    "description": "The ARIA label for the link to full blog posts from excerpts"
+  },
+  "theme.blog.post.readingTime.plurals": {
+    "message": "Одна хвилина читання|{readingTime} хвилин читання",
+    "description": "Pluralized label for \"{readingTime} min read\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.CodeBlock.copy": {
+    "message": "Копіювати",
+    "description": "The copy button label on code blocks"
+  },
+  "theme.CodeBlock.copied": {
+    "message": "Скопійовано",
+    "description": "The copied button label on code blocks"
+  },
+  "theme.CodeBlock.copyButtonAriaLabel": {
+    "message": "Копіювати в буфер обміну",
+    "description": "The ARIA label for copy code blocks button"
+  },
+  "theme.CodeBlock.wordWrapToggle": {
+    "message": "Перемкнути перенесення рядків",
+    "description": "The title attribute for toggle word wrapping button of code block lines"
+  },
+  "theme.docs.breadcrumbs.home": {
+    "message": "Головна",
+    "description": "The ARIA label for the home page in the breadcrumbs"
+  },
+  "theme.docs.sidebar.collapseButtonTitle": {
+    "message": "Згорнути бічну панель",
+    "description": "The title attribute for collapse button of doc sidebar"
+  },
+  "theme.docs.sidebar.collapseButtonAriaLabel": {
+    "message": "Згорнути бічну панель",
+    "description": "The title attribute for collapse button of doc sidebar"
+  },
+  "theme.docs.sidebar.navAriaLabel": {
+    "message": "Бічна панель документації",
+    "description": "The ARIA label for the sidebar navigation"
+  },
+  "theme.docs.sidebar.closeSidebarButtonAriaLabel": {
+    "message": "Закрити панель навігації",
+    "description": "The ARIA label for close button of mobile sidebar"
+  },
+  "theme.navbar.mobileSidebarSecondaryMenu.backButtonLabel": {
+    "message": "← Назад до головного меню",
+    "description": "The label of the back button to return to main menu, inside the mobile navbar sidebar secondary menu (notably used to display the docs sidebar)"
+  },
+  "theme.docs.sidebar.toggleSidebarButtonAriaLabel": {
+    "message": "Перемкнути панель навігації",
+    "description": "The ARIA label for hamburger menu button of mobile navigation"
+  },
+  "theme.navbar.mobileDropdown.collapseButton.expandAriaLabel": {
+    "message": "Розгорнути випадаюче меню",
+    "description": "The ARIA label of the button to expand the mobile dropdown navbar item"
+  },
+  "theme.navbar.mobileDropdown.collapseButton.collapseAriaLabel": {
+    "message": "Згорнути випадаюче меню",
+    "description": "The ARIA label of the button to collapse the mobile dropdown navbar item"
+  },
+  "theme.docs.sidebar.expandButtonTitle": {
+    "message": "Розгорнути бічну панель",
+    "description": "The ARIA label and title attribute for expand button of doc sidebar"
+  },
+  "theme.docs.sidebar.expandButtonAriaLabel": {
+    "message": "Розгорнути бічну панель",
+    "description": "The ARIA label and title attribute for expand button of doc sidebar"
+  },
+  "theme.blog.post.plurals": {
+    "message": "{count} допис|{count} дописів",
+    "description": "Pluralized label for \"{count} posts\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.blog.tagTitle": {
+    "message": "{nPosts} з тегом \"{tagName}\"",
+    "description": "The title of the page for a blog tag"
+  },
+  "theme.blog.author.pageTitle": {
+    "message": "{authorName} - {nPosts}",
+    "description": "The title of the page for a blog author"
+  },
+  "theme.blog.authorsList.pageTitle": {
+    "message": "Автори",
+    "description": "The title of the authors page"
+  },
+  "theme.blog.authorsList.viewAll": {
+    "message": "Переглянути всіх авторів",
+    "description": "The label of the link targeting the blog authors page"
+  },
+  "theme.blog.author.noPosts": {
+    "message": "Цей автор ще не написав жодного допису.",
+    "description": "The text for authors with 0 blog post"
+  },
+  "theme.contentVisibility.unlistedBanner.title": {
+    "message": "Неlisted сторінка",
+    "description": "The unlisted content banner title"
+  },
+  "theme.contentVisibility.unlistedBanner.message": {
+    "message": "Ця сторінка не є загальнодоступною. Пошукові системи не будуть її індексувати, і доступ до неї мають лише користувачі з прямим посиланням.",
+    "description": "The unlisted content banner message"
+  },
+  "theme.contentVisibility.draftBanner.title": {
+    "message": "Чернетка сторінки",
+    "description": "The draft content banner title"
+  },
+  "theme.contentVisibility.draftBanner.message": {
+    "message": "Ця сторінка є чернеткою. Вона видима лише в розробці і буде виключена з production збірки.",
+    "description": "The draft content banner message"
+  },
+  "theme.ErrorPageContent.tryAgain": {
+    "message": "Спробувати знову",
+    "description": "The label of the button to try again rendering when the React error boundary captures an error"
+  },
+  "theme.common.skipToMainContent": {
+    "message": "Перейти до основного вмісту",
+    "description": "The skip to content label used for accessibility, allowing to rapidly navigate to main content with keyboard tab/enter navigation"
+  },
+  "theme.tags.tagsPageTitle": {
+    "message": "Теги",
+    "description": "The title of the tag list page"
+  },
   "homepage.community.title": {
     "message": "Створено з Rayforge"
   },
@@ -388,5 +686,203 @@
   },
   "homepage.community.cta": {
     "message": "Поділіться своїми творіннями"
+  },
+  "sponsor.title": {
+    "message": "Підтримати Rayforge"
+  },
+  "sponsor.description": {
+    "message": "Додайте свої лазерні апарати до Rayforge — попередньо налаштовані, представлені та з підтримкою відеоконтенту і навчальних матеріалів. Давайте працювати разом!"
+  },
+  "sponsor.hero.gradient": {
+    "message": "Партнерство"
+  },
+  "sponsor.hero.title": {
+    "message": "з Rayforge"
+  },
+  "sponsor.hero.subtitle": {
+    "message": "Покажіть свої апарати ентузіастам лазерного різання та гравіювання скрізь. Ми займемося програмним забезпеченням, навчальними матеріалами та спільнотою — ви робите класне обладнання."
+  },
+  "sponsor.hero.cta": {
+    "message": "Зв'язатися з нами"
+  },
+  "sponsor.stats.downloads": {
+    "message": "Завантажень на місяць"
+  },
+  "sponsor.stats.stars": {
+    "message": "Зірки GitHub"
+  },
+  "sponsor.stats.commits": {
+    "message": "Комітів"
+  },
+  "sponsor.stats.languages": {
+    "message": "Мов"
+  },
+  "sponsor.stats.platforms": {
+    "message": "Платформ"
+  },
+  "sponsor.stats.opensource": {
+    "message": "Безкоштовно та з відкритим кодом"
+  },
+  "sponsor.benefits.title": {
+    "message": "Що ви отримуєте"
+  },
+  "sponsor.benefits.subtitle": {
+    "message": "Ми створюємо реальні інтеграції, а не просто ставимо ваш логотип на сторінці. Ось як виглядає партнерство."
+  },
+  "sponsor.benefit.brandSelector.title": {
+    "message": "Перший запуск"
+  },
+  "sponsor.benefit.brandSelector.description": {
+    "message": "При першому запуску Rayforge користувач обирає свій бренд і модель — і все автоматично працює."
+  },
+  "sponsor.benefit.machineProfile.title": {
+    "message": "Фірмові профілі"
+  },
+  "sponsor.benefit.machineProfile.description": {
+    "message": "Ваші апарати з'являються з логотипом і фото прямо в селекторі. Ваш бренд — на видноті, щодня."
+  },
+  "sponsor.benefit.showcase.title": {
+    "message": "Рекомендована вітрина"
+  },
+  "sponsor.benefit.showcase.description": {
+    "message": "Спеціальне місце в додатку та на сайті з фото, характеристиками та посиланнями для покупки партнерських машин."
+  },
+  "sponsor.benefit.badgeProgram.title": {
+    "message": "\"Працює з Rayforge\""
+  },
+  "sponsor.benefit.badgeProgram.description": {
+    "message": "Отримайте фірмові графічні значки для вашого сайту, упаковки та оголошень на маркетплейсах, які посилаються на Rayforge для підвищення довіри клієнтів."
+  },
+  "sponsor.benefit.materialPresets.title": {
+    "message": "Пресети матеріалів"
+  },
+  "sponsor.benefit.materialPresets.description": {
+    "message": "Ми налаштовуємо потужність, швидкість та кількість проходів під ваші апарати. Менше проблем з підтримкою, щасливіші клієнти."
+  },
+  "sponsor.benefit.coBrandedInstall.title": {
+    "message": "Встановлення в комплекті"
+  },
+  "sponsor.benefit.coBrandedInstall.description": {
+    "message": "Постачайте Rayforge з вашим апаратом через QR-код або спеціальний інсталятор. Заощадьте на розробці власного ПЗ."
+  },
+  "sponsor.benefit.prioritySupport.title": {
+    "message": "Пріоритетна підтримка"
+  },
+  "sponsor.benefit.prioritySupport.description": {
+    "message": "Новий контролер? Ми додамо підтримку швидко — день релізу, а не місяці потому. Ваша дорожня карта під контролем."
+  },
+  "sponsor.benefit.youtubeSpotlights.title": {
+    "message": "Огляди машин"
+  },
+  "sponsor.benefit.youtubeSpotlights.description": {
+    "message": "Туторіали, налаштування, розпакування, тести матеріалів та інше — все на YouTube-каналі Barebaric."
+  },
+  "sponsor.benefit.githubVisibility.title": {
+    "message": "Видимість на GitHub"
+  },
+  "sponsor.benefit.githubVisibility.description": {
+    "message": "Ваш логотип у README Rayforge — його бачать розробники та майстри. Профілі машин комітуються з поміткою \"Надано брендом\"."
+  },
+  "sponsor.benefit.forumPresence.title": {
+    "message": "Присутність у спільноті"
+  },
+  "sponsor.benefit.forumPresence.description": {
+    "message": "Офіційне місце для вашого бренду на GitHub Discussions та Discord — спілкуйтеся з користувачами напряму."
+  },
+  "sponsor.benefit.analytics.title": {
+    "message": "Інсайти користувачів"
+  },
+  "sponsor.benefit.analytics.description": {
+    "message": "Агреговані, анонімні дані про те, які матеріали та функції реально використовують ваші клієнти. (Усе за згодою, звісно.)"
+  },
+  "sponsor.benefit.coMarketing.title": {
+    "message": "Перехресне просування"
+  },
+  "sponsor.benefit.coMarketing.description": {
+    "message": "Публікації в блозі, згадки в соцмережах та огляди на YouTube, GitHub і Discord."
+  },
+  "sponsor.comparison.title": {
+    "message": "Чому Rayforge?"
+  },
+  "sponsor.comparison.subtitle": {
+    "message": "Жодна інша безкоштовна лазерна програма не пропонує виробникам нічого подібного. Ось як ми порівнюємося."
+  },
+  "sponsor.comparison.costToUser": {
+    "message": "Вартість для користувача"
+  },
+  "sponsor.comparison.free": {
+    "message": "Безкоштовно"
+  },
+  "sponsor.comparison.costToBrand": {
+    "message": "Вартість для бренду"
+  },
+  "sponsor.comparison.lb.costToBrand": {
+    "message": "Перепродаж за ліцензією"
+  },
+  "sponsor.comparison.grbl.costToBrand": {
+    "message": "Немає програми"
+  },
+  "sponsor.comparison.rf.costToBrand": {
+    "message": "Необов'язкове партнерство"
+  },
+  "sponsor.comparison.brandVisibility": {
+    "message": "Видимість бренду"
+  },
+  "sponsor.comparison.lb.brandVisibility": {
+    "message": "Список сумісності"
+  },
+  "sponsor.comparison.grbl.brandVisibility": {
+    "message": "Партнерські купони"
+  },
+  "sponsor.comparison.rf.brandVisibility": {
+    "message": "Вбудований вибір бренду при першому запуску + вітрина"
+  },
+  "sponsor.comparison.machineProfiles": {
+    "message": "Профілі машин"
+  },
+  "sponsor.comparison.lb.machineProfiles": {
+    "message": "Загальні (за контролером)"
+  },
+  "sponsor.comparison.grbl.machineProfiles": {
+    "message": "Немає"
+  },
+  "sponsor.comparison.rf.machineProfiles": {
+    "message": "Специфічні для бренду, попередньо налаштовані"
+  },
+  "sponsor.comparison.linuxSupport": {
+    "message": "Підтримка Linux"
+  },
+  "sponsor.comparison.no": {
+    "message": "Ні"
+  },
+  "sponsor.comparison.rf.linuxSupport": {
+    "message": "Нативна (GTK4 / Flatpak / Snap)"
+  },
+  "sponsor.comparison.crossPlatform": {
+    "message": "Кросплатформність"
+  },
+  "sponsor.comparison.grbl.crossPlatform": {
+    "message": "Тільки Windows"
+  },
+  "sponsor.comparison.devPace": {
+    "message": "Темп розробки"
+  },
+  "sponsor.comparison.lb.devPace": {
+    "message": "Помірний"
+  },
+  "sponsor.comparison.grbl.devPace": {
+    "message": "Загальмований"
+  },
+  "sponsor.comparison.rf.devPace": {
+    "message": "Щотижневі релізи"
+  },
+  "sponsor.cta.title": {
+    "message": "Давайте поговоримо"
+  },
+  "sponsor.cta.text": {
+    "message": "Чи хочете ви попередньо налаштувати свої апарати в Rayforge, отримати спеціальний відеоогляд, чи щось зовсім індивідуальне — напишіть мені. Я гнучкий і з радістю домовлюсь про те, що працює для нас обох. Позики обладнання для розробки профілів також завжди вітаються."
+  },
+  "sponsor.cta.button": {
+    "message": "Напишіть мені"
   }
 }

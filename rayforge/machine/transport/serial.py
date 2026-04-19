@@ -3,7 +3,7 @@ import logging
 import asyncio
 import os
 import serial
-import serial_asyncio
+import serial_asyncio_fast as serial_asyncio
 from typing import Optional, List
 from serial.tools import list_ports
 from gettext import gettext as _

@@ -4,19 +4,19 @@
     "description": "The title in the navbar"
   },
   "logo.alt": {
-    "message": "Rayforge Logo",
+    "message": "Logo Rayforge",
     "description": "The alt text of navbar logo"
   },
   "item.label.Documentation": {
-    "message": "Dokumentation",
+    "message": "Documentation",
     "description": "Navbar item with label Documentation"
   },
   "item.label.Developer": {
-    "message": "Entwickler",
+    "message": "Développeur",
     "description": "Navbar item with label Developer"
   },
   "item.label.Contributing": {
-    "message": "Mitwirken",
+    "message": "Contribuer",
     "description": "Navbar item with label Contributing"
   },
   "item.label.Blog": {

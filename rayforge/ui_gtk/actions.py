@@ -336,6 +336,14 @@ class ActionManager:
 
         # Asset Actions
         self._add_action("add-stock", self.on_add_stock)
+        action_registry.register(
+            action_name="add-stock",
+            action=self.actions["add-stock"],
+            addon_name="core",
+            label=_("Add Stock"),
+            icon_name="stock-symbolic",
+            menu=MenuPlacement(menu_id="object", priority=40),
+        )
         self._add_action(
             "activate-stock",
             self.on_activate_stock,

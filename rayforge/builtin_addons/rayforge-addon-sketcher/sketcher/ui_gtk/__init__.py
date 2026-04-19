@@ -187,7 +187,7 @@ def _register_actions(action_manager: "ActionManager"):
         action=action,
         addon_name="sketcher",
         label=_("New Sketch"),
-        shortcut=f"{PRIMARY_ACCEL}n",
+        shortcut=f"{PRIMARY_ACCEL}<Shift>n",
         menu=MenuPlacement(menu_id="object", priority=50),
     )
 

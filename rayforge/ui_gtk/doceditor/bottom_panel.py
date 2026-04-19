@@ -50,6 +50,7 @@ class BottomPanel(Gtk.Box):
         self.click_to_zero_mode_changed = Signal()
         self.tab_changed = Signal()
         self.layout_changed = Signal()
+        self.edit_item_requested = Signal()
         self.machine = machine
         self.machine_cmd = machine_cmd
         self._edit_dialog = None
@@ -68,6 +69,9 @@ class BottomPanel(Gtk.Box):
         ui_log_event_received.connect(self.console.on_log_received)
 
         self.layers_tab = LayersTab(doc_editor)
+        self.layers_tab.edit_item_requested.connect(
+            self._on_layers_tab_edit_item
+        )
 
         self.asset_browser = AssetBrowser(doc_editor)
 
@@ -188,6 +192,9 @@ class BottomPanel(Gtk.Box):
     def set_doc(self, doc):
         self.asset_browser.set_doc(doc)
         self.layers_tab.set_doc(doc)
+
+    def _on_layers_tab_edit_item(self, sender, **kwargs):
+        self.edit_item_requested.send(sender, **kwargs)
 
     def _on_command_submitted(self, sender, command: str, machine: Machine):
         async def send_command(ctx):

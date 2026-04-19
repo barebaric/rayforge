@@ -60,11 +60,18 @@ def get_git_tag_version(path: Path) -> str:
         raise RuntimeError(f"Failed to get git tag version from {path}: {e}")
 
 
+_GIT_DESCRIBE_RE = re.compile(r"-\d+-g[0-9a-f]+$")
+
+
+def _strip_git_describe(version_str: str) -> str:
+    return _GIT_DESCRIBE_RE.sub("", version_str).lstrip("v")
+
+
 def is_newer_version(remote_str: str, local_str: str) -> bool:
     """Compares two version strings using semver."""
     try:
-        remote_v = semver.VersionInfo.parse(remote_str.lstrip("v"))
-        local_v = semver.VersionInfo.parse(local_str.lstrip("v"))
+        remote_v = semver.VersionInfo.parse(_strip_git_describe(remote_str))
+        local_v = semver.VersionInfo.parse(_strip_git_describe(local_str))
         return remote_v > local_v
     except ValueError:
         logger.warning(
