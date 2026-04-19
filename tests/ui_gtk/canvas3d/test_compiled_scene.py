@@ -13,6 +13,7 @@ def _make_vertex_layer(n_powered=10, n_travel=5, n_zero=3):
     return VertexLayer(
         powered_verts=np.random.rand(n_powered, 3).astype(np.float32),
         power_values=np.random.rand(n_powered).astype(np.float32),
+        laser_indices=np.zeros(n_powered, dtype=np.float32),
         travel_verts=np.random.rand(n_travel, 3).astype(np.float32),
         zero_power_verts=np.random.rand(n_zero, 3).astype(np.float32),
         powered_cmd_offsets=[0, 2, n_powered],
@@ -37,6 +38,7 @@ def _make_overlay_layer(n_cmds=5, n_verts=20):
     return ScanlineOverlayLayer(
         positions=np.random.rand(n_verts, 3).astype(np.float32),
         power_values=np.random.rand(n_verts).astype(np.float32),
+        laser_indices=np.zeros(n_verts, dtype=np.float32),
         cmd_offsets=list(range(0, n_verts + 1, n_verts // n_cmds)),
     )
 
@@ -72,6 +74,9 @@ class TestCompiledSceneArtifactRoundTrip:
             )
             np.testing.assert_array_equal(
                 orig.power_values, restored.power_values
+            )
+            np.testing.assert_array_equal(
+                orig.laser_indices, restored.laser_indices
             )
             np.testing.assert_array_equal(
                 orig.travel_verts, restored.travel_verts
@@ -127,6 +132,7 @@ class TestCompiledSceneArtifactRoundTrip:
         ol = loaded.overlay_layers[0]
         np.testing.assert_array_equal(overlay.positions, ol.positions)
         np.testing.assert_array_equal(overlay.power_values, ol.power_values)
+        np.testing.assert_array_equal(overlay.laser_indices, ol.laser_indices)
         assert overlay.cmd_offsets == ol.cmd_offsets
 
         store.release(handle)
@@ -152,6 +158,7 @@ class TestCompiledSceneArtifactRoundTrip:
         vl = VertexLayer(
             powered_verts=np.empty((0, 3), dtype=np.float32),
             power_values=np.empty((0,), dtype=np.float32),
+            laser_indices=np.empty((0,), dtype=np.float32),
             travel_verts=np.empty((0, 3), dtype=np.float32),
             zero_power_verts=np.empty((0, 3), dtype=np.float32),
             powered_cmd_offsets=[],
@@ -176,6 +183,7 @@ class TestCompiledSceneArtifactRoundTrip:
         big_vl = VertexLayer(
             powered_verts=np.random.rand(50000, 3).astype(np.float32),
             power_values=np.random.rand(50000).astype(np.float32),
+            laser_indices=np.zeros(50000, dtype=np.float32),
             travel_verts=np.random.rand(10000, 3).astype(np.float32),
             zero_power_verts=np.empty((0, 3), dtype=np.float32),
         )

@@ -39,6 +39,7 @@ uniform vec3 uPointLightPos;
 uniform float uPointLightOn;
 uniform float uUsePowerLUT;
 uniform sampler2D uColorLUT;
+uniform int uNumLaserLUTs;
 uniform vec4 uZeroPowerColor;
 void main() {
     vec4 baseColor;
@@ -47,7 +48,10 @@ void main() {
         if (power < 0.001) {
             baseColor = uZeroPowerColor;
         } else {
-            baseColor = texture(uColorLUT, vec2(power, 0.5));
+            int laserIdx = int(vColor.g + 0.5);
+            float lutY = (float(laserIdx) + 0.5)
+                         / float(max(uNumLaserLUTs, 1));
+            baseColor = texture(uColorLUT, vec2(power, lutY));
         }
     } else if (uUseVertexColor > 0.5) {
         baseColor = vColor;
@@ -206,10 +210,11 @@ out vec4 FragColor;
 
 uniform sampler2D uTexture;
 uniform sampler2D uColorLUT;
+uniform int uNumLaserLUTs;
+uniform int uLaserIndex;
 uniform float uAlpha;
 
 void main() {
-    // Sample the power value from the texture
     ivec2 texSize = textureSize(uTexture, 0);
     vec2 tc = vTexCoord * vec2(texSize) - 0.5;
     ivec2 base = ivec2(floor(tc));
@@ -229,10 +234,9 @@ void main() {
         discard;
     }
 
-    // Map power value to a color using the lookup table.
-    // The second coordinate (0.5) samples the middle of the 1-pixel-high LUT
-    // texture.
-    vec4 color = texture(uColorLUT, vec2(power, 0.5));
+    float lutY = (float(uLaserIndex) + 0.5)
+                 / float(max(uNumLaserLUTs, 1));
+    vec4 color = texture(uColorLUT, vec2(power, lutY));
 
     FragColor = vec4(color.rgb, color.a * uAlpha);
 }
