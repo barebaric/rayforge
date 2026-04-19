@@ -1,12 +1,74 @@
 machine:
-  active_wcs: G55
+  active_wcs: G54
   arc_tolerance: 0.03
   auto_connect: true
+  axes:
+    configs:
+    - axis_type: linear
+      direction: normal
+      extents:
+      - 0
+      - 140.0
+      letter: X
+      resolution: 0.01
+    - axis_type: linear
+      direction: normal
+      extents:
+      - 0
+      - 140.0
+      letter: Y
+      resolution: 0.01
+    - axis_type: linear
+      direction: normal
+      extents:
+      - -50
+      - 50
+      letter: Z
+      resolution: 0.01
+    - axis_type: rotary
+      direction: normal
+      extents:
+      - 0
+      - 360
+      letter: A
+      resolution: 0.01
+      rotary_diameter: 25.0
   axis_extents:
   - 140.0
   - 140.0
   cameras: []
   clear_alarm_on_connect: false
+  coordinate_systems:
+  - name: G54
+    offset:
+    - 0.0
+    - 0.0
+    - 0.0
+  - name: G55
+    offset:
+    - 34.99999999999996
+    - 66.50000000000003
+    - 34.00000000000006
+  - name: G56
+    offset:
+    - 0.0
+    - 0.0
+    - 0.0
+  - name: G57
+    offset:
+    - 0.0
+    - 0.0
+    - 0.0
+  - name: G58
+    offset:
+    - 0.0
+    - 0.0
+    - 0.0
+  - name: G59
+    offset:
+    - 0.0
+    - 0.0
+    - 0.0
   default_rotary_module_uid: bc50197d-9f95-44c2-be99-18f66026e5b1
   dialect_uid: 9d88d7d1-6853-4e81-a139-cfb4b6abb3cc
   driver: NoDeviceDriver
@@ -35,12 +97,12 @@ machine:
     - 0.0
     - 0.0
     - 0.0
+    - 1.8369701987210297e-14
     - -300.0
-    - -3.6739403974420595e-14
     - 0.0
     - -0.0
-    - 3.6739403974420595e-14
-    - -300.0
+    - 300.0
+    - 1.8369701987210297e-14
     - 0.0
     - 0.0
     - 0.0
@@ -85,22 +147,28 @@ machine:
   rotary_enabled_default: false
   rotary_modules:
   - axis: A
+    axis_position:
+    - -33.0
+    - -4.0
+    - 25.0
     default_diameter: 25.0
     max_workpiece_length: 60.0
+    mode: true_4th_axis
     model_path: creality-roller.glb
     name: Creality Roller
+    rotary_type: jaws
     transform:
     - 410.0
     - 0.0
     - 0.0
     - 72.0
     - 0.0
-    - 2.510525938252074e-14
-    - -410.0
+    - 410.0
+    - 0.0
     - 71.0
     - -0.0
+    - 0.0
     - 410.0
-    - 2.510525938252074e-14
     - 10.0
     - 0.0
     - 0.0
@@ -115,19 +183,6 @@ machine:
     max_travel_speed: 3000
   supports_arcs: true
   supports_curves: false
-  wcs_offsets:
-    G54: &id001
-    - 0.0
-    - 0.0
-    - 0.0
-    G55:
-    - 34.99999999999996
-    - 66.50000000000003
-    - 34.00000000000006
-    G56: *id001
-    G57: *id001
-    G58: *id001
-    G59: *id001
   wcs_origin_is_workarea_origin: false
   work_margins:
   - 10.0

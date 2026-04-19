@@ -6,11 +6,12 @@ bottom_panel:
     - assets
     - gcode
     - console
-    size: 1651
+    - layers
+    size: 1705
   - active: controls
     items:
     - controls
-    size: 743
+    size: 689
   visible: true
 canvas_view:
   perspective_mode: false
@@ -18,11 +19,13 @@ canvas_view:
   show_models: true
   show_nogo_zones: true
   show_tabs: true
-  show_travel_lines: false
+  show_travel_lines: true
   show_workpieces: true
+check_for_app_updates: true
 import_dpi: 96.0
 last_opened_project: tests/assets/rotary.ryp
 machine: 2f8f7281-9982-4473-a9b0-d72ff48630c2
+ops_color_mode: laser
 right_panel_visible: true
 startup_behavior: none
 startup_project_path: null
