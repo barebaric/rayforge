@@ -2,11 +2,65 @@ machine:
   active_wcs: G56
   arc_tolerance: 0.03
   auto_connect: true
+  axes:
+    configs:
+    - axis_type: linear
+      direction: normal
+      extents:
+      - 0
+      - 200
+      letter: X
+      resolution: 0.01
+    - axis_type: linear
+      direction: normal
+      extents:
+      - 0
+      - 200
+      letter: Y
+      resolution: 0.01
+    - axis_type: linear
+      direction: normal
+      extents:
+      - -50
+      - 50
+      letter: Z
+      resolution: 0.01
   axis_extents:
   - 200
   - 200
   cameras: []
   clear_alarm_on_connect: false
+  coordinate_systems:
+  - name: G54
+    offset:
+    - 10.0
+    - 10.0
+    - 0.0
+  - name: G55
+    offset:
+    - 10.0
+    - 10.0
+    - 0.0
+  - name: G56
+    offset:
+    - 0.0
+    - 0.0
+    - 0.0
+  - name: G57
+    offset:
+    - 0.0
+    - 0.0
+    - 0.0
+  - name: G58
+    offset:
+    - 0.0
+    - 0.0
+    - 0.0
+  - name: G59
+    offset:
+    - 0.0
+    - 0.0
+    - 0.0
   default_rotary_module_uid: null
   dialect_uid: 23dc0985-8851-49aa-812d-95692000b81e
   driver: NoDeviceDriver
@@ -75,31 +129,6 @@ machine:
     max_travel_speed: 3000
   supports_arcs: true
   supports_curves: false
-  wcs_offsets:
-    G54:
-    - 10.0
-    - 10.0
-    - 0.0
-    G55:
-    - 10.0
-    - 10.0
-    - 0.0
-    G56:
-    - 0.0
-    - 0.0
-    - 0.0
-    G57:
-    - 0.0
-    - 0.0
-    - 0.0
-    G58:
-    - 0.0
-    - 0.0
-    - 0.0
-    G59:
-    - 0.0
-    - 0.0
-    - 0.0
   wcs_origin_is_workarea_origin: false
   work_margins:
   - 0

@@ -1541,7 +1541,6 @@ class Canvas3D(Gtk.GLArea):
             return
 
         if ops is None or ops.is_empty():
-            logger.debug("[CANVAS3D] _update_op_player: no ops available.")
             self._op_player = None
             for group in self._layer_groups:
                 group.powered_offsets = []
@@ -1577,8 +1576,6 @@ class Canvas3D(Gtk.GLArea):
             return
         layer = self._op_player.get_current_layer(self.doc)
         machine.configure_for_layer(layer)
-        self._scene_gl_dirty = True
-        self.queue_render()
 
     def _notify_playback_overlay(
         self, command_count: int, initial_index: int = 0

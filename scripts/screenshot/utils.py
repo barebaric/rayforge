@@ -272,7 +272,6 @@ def wait_for_3d_rendered(win: "MainWindow", timeout: float = 15.0) -> bool:
             lambda: canvas._gl_initialized
             and canvas._compiled_artifact is not None
             and not canvas._artifact_gl_dirty
-            and not canvas._scene_gl_dirty
             and (
                 canvas._scene_preparation_task is None
                 or canvas._scene_preparation_task.is_final()
