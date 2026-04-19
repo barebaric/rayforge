@@ -22,7 +22,7 @@ machine:
     frame_repeat_count: 20
     frame_speed: 0
     max_power: 1000
-    model_id: heads/head.glb
+    model_path: head.glb
     name: Laser Head
     raster_color: '#000000'
     spot_size_mm:
@@ -87,7 +87,7 @@ machine:
   - axis: A
     default_diameter: 25.0
     max_workpiece_length: 60.0
-    model_id: rotary/creality-roller.glb
+    model_path: creality-roller.glb
     name: Creality Roller
     transform:
     - 410.0

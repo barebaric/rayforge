@@ -740,9 +740,9 @@ class LaserPreferencesPage(TrackedPreferencesPage):
         selected_laser.set_frame_corner_pause(get_spinrow_float(spinrow))
 
     def _update_model_subtitle(self, laser: Laser):
-        if laser.model_id:
+        if laser.model_path:
             model_mgr = get_context().model_mgr
-            model = Model(name="", path=Path(laser.model_id))
+            model = Model.from_path(Path(laser.model_path))
             resolved = model_mgr.resolve(model)
             if resolved:
                 self.model_row.set_subtitle(resolved.stem)
@@ -754,20 +754,9 @@ class LaserPreferencesPage(TrackedPreferencesPage):
         if not laser:
             return
 
-        model_mgr = get_context().model_mgr
-        categories = model_mgr.get_categories()
-        category = None
-        for cat in categories:
-            if cat.id == "heads":
-                category = cat
-                break
-        if category is None and categories:
-            category = categories[0]
-
         root = self.get_root()
         dialog = ModelSelectionDialog(
-            category=category,
-            current_model_id=laser.model_id,
+            current_model_path=laser.model_path,
             transient_for=cast(Gtk.Window, root) if root else None,
         )
 
@@ -775,11 +764,11 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             if response_id != "select":
                 d.destroy()
                 return
-            selected_id = d.get_selected_model_id()
-            if selected_id != laser.model_id:
-                laser.set_model_id(selected_id)
-                if selected_id is not None:
-                    self._apply_model_scale(laser, selected_id)
+            selected_path = d.get_selected_model_path()
+            if selected_path != laser.model_path:
+                laser.set_model_path(selected_path)
+                if selected_path is not None:
+                    self._apply_model_scale(laser, selected_path)
             self._update_model_subtitle(laser)
             self.laser_list_editor._on_machine_changed(self.machine)
             d.destroy()
@@ -787,9 +776,9 @@ class LaserPreferencesPage(TrackedPreferencesPage):
         dialog.connect("response", on_response)
         dialog.present()
 
-    def _apply_model_scale(self, laser: Laser, model_id: str):
+    def _apply_model_scale(self, laser: Laser, model_path: str):
         resolved = get_context().model_mgr.resolve(
-            Model(name="", path=Path(model_id))
+            Model.from_path(Path(model_path))
         )
         if resolved is None:
             return

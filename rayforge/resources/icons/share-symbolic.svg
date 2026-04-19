@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="24px"
+   viewBox="0 0 24 24"
+   width="24px"
+   fill="#000000"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="share-symbolic.svg"
+   inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="36.916667"
+     inkscape:cx="12"
+     inkscape:cy="12"
+     inkscape:window-width="3840"
+     inkscape:window-height="2020"
+     inkscape:window-x="0"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <path
+     d="M 18,22 Q 16.75,22 15.875,21.125 15,20.25 15,19 15,18.85 15.075,18.3 L 8.05,14.2 Q 7.65,14.575 7.125,14.7875 6.6,15 6,15 4.75,15 3.875,14.125 3,13.25 3,12 3,10.75 3.875,9.875 4.75,9 6,9 6.6,9 7.125,9.2125 7.65,9.425 8.05,9.8 L 15.075,5.7 Q 15.025,5.525 15.0125,5.3625 15,5.2 15,5 15,3.75 15.875,2.875 16.75,2 18,2 19.25,2 20.125,2.875 21,3.75 21,5 21,6.25 20.125,7.125 19.25,8 18,8 17.4,8 16.875,7.7875 16.35,7.575 15.95,7.2 l -7.025,4.1 q 0.05,0.175 0.0625,0.3375 Q 9,11.8 9,12 9,12.2 8.9875,12.3625 8.975,12.525 8.925,12.7 l 7.025,4.1 q 0.4,-0.375 0.925,-0.5875 Q 17.4,16 18,16 19.25,16 20.125,16.875 21,17.75 21,19 21,20.25 20.125,21.125 19.25,22 18,22 Z m 0,-2 q 0.425,0 0.7125,-0.2875 Q 19,19.425 19,19 19,18.575 18.7125,18.2875 18.425,18 18,18 17.575,18 17.2875,18.2875 17,18.575 17,19 17,19.425 17.2875,19.7125 17.575,20 18,20 Z M 6,13 Q 6.425,13 6.7125,12.7125 7,12.425 7,12 7,11.575 6.7125,11.2875 6.425,11 6,11 5.575,11 5.2875,11.2875 5,11.575 5,12 5,12.425 5.2875,12.7125 5.575,13 6,13 Z M 18.7125,5.7125 Q 19,5.425 19,5 19,4.575 18.7125,4.2875 18.425,4 18,4 17.575,4 17.2875,4.2875 17,4.575 17,5 17,5.425 17.2875,5.7125 17.575,6 18,6 18.425,6 18.7125,5.7125 Z M 18,19 Z M 6,12 Z M 18,5 Z"
+     id="path1"
+     style="stroke-width:0.025" />
+</svg>

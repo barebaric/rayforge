@@ -4,7 +4,8 @@ from typing import TYPE_CHECKING
 
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.driver.grbl_serial import GrblSerialDriver
-from rayforge.machine.models.profile import PROFILES
+from rayforge.machine.device.profile import DeviceProfile
+from rayforge.config import BUILTIN_DEVICES_DIR
 from rayforge.shared import tasker
 
 if TYPE_CHECKING:
@@ -16,13 +17,9 @@ if TYPE_CHECKING:
 async def sculpfun_icube_machine(
     context_initializer: "RayforgeContext",
 ) -> "Machine":
-    """Provides a Machine instance from the Sculpfun iCube profile."""
-    profile = next((p for p in PROFILES if p.name == "Sculpfun iCube"), None)
-    assert profile is not None, (
-        "Sculpfun iCube profile not found in PROFILES list."
-    )
-
-    machine = profile.create_machine(context_initializer)
+    """Provides a Machine instance from the Sculpfun iCube device."""
+    pkg = DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube")
+    machine = pkg.create_machine(context_initializer)
     context_initializer.machine_mgr.add_machine(machine)
 
     tasker.task_mgr.wait_until_settled(5000)
@@ -35,7 +32,7 @@ async def test_sculpfun_icube_driver_assignment(
     sculpfun_icube_machine: "Machine",
 ):
     """
-    Tests that creating a machine from the Sculpfun iCube profile
+    Tests that creating a machine from the Sculpfun iCube device
     correctly assigns the GrblSerialDriver instead of NoDeviceDriver.
     """
     machine = sculpfun_icube_machine
@@ -49,7 +46,7 @@ async def test_sculpfun_icube_driver_assignment(
     tasker.task_mgr.wait_until_settled(5000)
 
     assert not isinstance(controller.driver, NoDeviceDriver), (
-        "Driver should not be NoDeviceDriver after profile creation"
+        "Driver should not be NoDeviceDriver after device creation"
     )
 
     assert isinstance(controller.driver, GrblSerialDriver), (

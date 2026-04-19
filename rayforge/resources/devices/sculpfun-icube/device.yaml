@@ -1,0 +1,20 @@
+api_version: 1
+device:
+  name: Sculpfun iCube
+machine:
+  driver: GrblSerialDriver
+  gcode_precision: 3
+  axis_extents:
+  - 120.0
+  - 120.0
+  origin: bottom_left
+  max_travel_speed: 3000
+  max_cut_speed: 1000
+  home_on_start: true
+  heads:
+  - max_power: 1000
+    frame_power_percent: 1.0
+    focus_power_percent: 1.0
+    spot_size_mm:
+    - 0.1
+    - 0.1

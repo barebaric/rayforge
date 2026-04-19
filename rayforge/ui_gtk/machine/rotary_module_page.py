@@ -594,9 +594,9 @@ class RotaryModulePage(TrackedPreferencesPage):
         self._is_updating = False
 
     def _update_model_subtitle(self, module: RotaryModule):
-        if module.model_id:
+        if module.model_path:
             model_mgr = get_context().model_mgr
-            model = Model(name="", path=Path(module.model_id))
+            model = Model.from_path(Path(module.model_path))
             resolved = model_mgr.resolve(model)
             if resolved:
                 self.model_row.set_subtitle(resolved.stem)
@@ -734,20 +734,9 @@ class RotaryModulePage(TrackedPreferencesPage):
         if not module:
             return
 
-        model_mgr = get_context().model_mgr
-        categories = model_mgr.get_categories()
-        category = None
-        for cat in categories:
-            if cat.id == "rotary":
-                category = cat
-                break
-        if category is None and categories:
-            category = categories[0]
-
         root = self.get_root()
         dialog = ModelSelectionDialog(
-            category=category,
-            current_model_id=module.model_id,
+            current_model_path=module.model_path,
             transient_for=cast(Gtk.Window, root) if root else None,
         )
 
@@ -755,11 +744,11 @@ class RotaryModulePage(TrackedPreferencesPage):
             if response_id != "select":
                 d.destroy()
                 return
-            selected_id = d.get_selected_model_id()
-            if selected_id != module.model_id:
-                module.set_model_id(selected_id)
-                if selected_id is not None:
-                    self._apply_model_scale(module, selected_id)
+            selected_path = d.get_selected_model_path()
+            if selected_path != module.model_path:
+                module.set_model_path(selected_path)
+                if selected_path is not None:
+                    self._apply_model_scale(module, selected_path)
             self._update_model_subtitle(module)
             self.module_list_editor._rebuild()
             d.destroy()
@@ -767,9 +756,9 @@ class RotaryModulePage(TrackedPreferencesPage):
         dialog.connect("response", on_response)
         dialog.present()
 
-    def _apply_model_scale(self, module, model_id):
+    def _apply_model_scale(self, module, model_path):
         resolved = get_context().model_mgr.resolve(
-            Model(name="", path=Path(model_id))
+            Model.from_path(Path(model_path))
         )
         if resolved is None:
             return

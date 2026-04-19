@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from .core.recipe_manager import RecipeManager
     from .debug import DebugDumpManager
     from .license import LicenseValidator
+    from .machine.device.manager import DeviceProfileManager
     from .machine.models.machine import Machine
     from .machine.models.manager import MachineManager
     from .machine.models.dialect_manager import DialectManager
@@ -63,6 +64,7 @@ class RayforgeContext:
         self._material_mgr: Optional["LibraryManager"] = None
         self._model_mgr: Optional["ModelManager"] = None
         self._recipe_mgr: Optional["RecipeManager"] = None
+        self._device_profile_mgr: Optional["DeviceProfileManager"] = None
 
     @property
     def machine(self) -> Optional["Machine"]:
@@ -325,11 +327,10 @@ class RayforgeContext:
     def model_mgr(self) -> "ModelManager":
         """Returns the model manager."""
         if self._model_mgr is None:
-            from .config import USER_MODELS_DIR
             from .core.model_manager import ModelManager
 
             logger.info("Lazy loading model manager")
-            self._model_mgr = ModelManager(USER_MODELS_DIR)
+            self._model_mgr = ModelManager()
             self._model_mgr.register_bundled_library()
 
             if not self._headless:
@@ -349,6 +350,21 @@ class RayforgeContext:
             logger.info("Lazy loading recipe manager")
             self._recipe_mgr = RecipeManager(USER_RECIPES_DIR)
         return self._recipe_mgr
+
+    @property
+    def device_profile_mgr(self) -> "DeviceProfileManager":
+        """Returns the device profile manager."""
+        if self._device_profile_mgr is None:
+            from .config import BUILTIN_DEVICES_DIR, USER_DEVICES_DIR
+            from .machine.device.manager import DeviceProfileManager
+
+            logger.info("Lazy loading device profile manager")
+            self._device_profile_mgr = DeviceProfileManager(
+                [BUILTIN_DEVICES_DIR, USER_DEVICES_DIR],
+                install_dir=USER_DEVICES_DIR,
+            )
+            self._device_profile_mgr.discover(context=self)
+        return self._device_profile_mgr
 
     @property
     def debug_dump_manager(self) -> "DebugDumpManager":
