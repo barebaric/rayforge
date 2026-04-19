@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-11 11:22+0200\n"
+"POT-Creation-Date: 2026-04-19 23:05+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -17,14 +17,48 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
+#: rayforge/updater.py
+msgid "Checking for Rayforge updates..."
+msgstr "正在检查 Rayforge 更新..."
+
+#: rayforge/updater.py rayforge/addon_mgr/update_cmd.py
+msgid "Update check failed."
+msgstr "更新检查失败。"
+
+#: rayforge/updater.py
+#, python-brace-format
+msgid "Rayforge {version} is available."
+msgstr "Rayforge {version} 可用。"
+
+#: rayforge/updater.py
+msgid "Download"
+msgstr "下载"
+
+#: rayforge/updater.py
+msgid "New version available."
+msgstr "有新版本可用。"
+
+#: rayforge/updater.py
+msgid "Rayforge is up to date."
+msgstr "Rayforge 已是最新版本。"
+
 #: rayforge/core/layer.py
 #, python-brace-format
 msgid "{name} Workflow"
 msgstr "{name} 工作流"
 
-#: rayforge/core/doc.py
-msgid "Layer 1"
-msgstr "图层 1"
+#: rayforge/core/layer.py
+msgid "Flat"
+msgstr "平面"
+
+#: rayforge/core/layer.py
+#, python-brace-format
+msgid "Rotary · {name}"
+msgstr "旋转 · {name}"
+
+#: rayforge/core/layer.py
+msgid "Rotary"
+msgstr "旋转轴"
 
 #: rayforge/core/stock.py
 #, python-brace-format
@@ -155,7 +189,7 @@ msgstr "切割"
 msgid "Optionally force a specific laser head"
 msgstr "可选地强制使用特定的激光头"
 
-#: rayforge/core/capability.py rayforge/ui_gtk/canvas2d/simulation_controls.py
+#: rayforge/core/capability.py
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Power"
 msgstr "功率"
@@ -206,37 +240,6 @@ msgid "Score Speed"
 msgstr "划线速度"
 
 #: rayforge/core/model_manager.py
-#: rayforge/ui_gtk/settings/machine_settings_page.py
-msgid "Machines"
-msgstr "机器"
-
-#: rayforge/core/model_manager.py
-msgid "Complete machine models."
-msgstr "完整机器模型。"
-
-#: rayforge/core/model_manager.py
-msgid "Rotary"
-msgstr "旋转轴"
-
-#: rayforge/core/model_manager.py
-msgid "Rotary and workholding models."
-msgstr "旋转轴和夹具模型。"
-
-#: rayforge/core/model_manager.py
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Laser Heads"
-msgstr "激光头"
-
-#: rayforge/core/model_manager.py
-msgid "Laser head models."
-msgstr "激光头模型。"
-
-#: rayforge/core/model_manager.py
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
-msgid "User"
-msgstr "用户"
-
-#: rayforge/core/model_manager.py
 msgid "Core"
 msgstr "核心"
 
@@ -245,7 +248,6 @@ msgid "Stock Material"
 msgstr "原材料"
 
 #: rayforge/core/source_asset.py
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
 msgid "Source"
 msgstr "来源"
 
@@ -263,461 +265,6 @@ msgstr "未知的变量或函数：'{name}'"
 #, python-brace-format
 msgid "Cannot use operator '{op}' between types '{left}' and '{right}'"
 msgstr "不能在类型 '{left}' 和 '{right}' 之间使用运算符 '{op}'"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Missing Command Letter"
-msgstr "缺少命令字母"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"G-code commands need a letter followed by a value. The command letter was "
-"not found."
-msgstr "G代码命令需要一个字母后跟一个值。未找到命令字母。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Invalid Number Format"
-msgstr "无效的数字格式"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"The value is missing or not in the correct numeric format. Check your G-code "
-"syntax."
-msgstr "值缺失或格式不正确。请检查您的G代码语法。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Unknown Command"
-msgstr "未知命令"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"This Grbl setting command is not recognized or supported. Check the command "
-"syntax."
-msgstr "此Grbl设置命令未被识别或支持。请检查命令语法。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Negative Value"
-msgstr "负值"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "A positive number is required here, but a negative value was received."
-msgstr "此处需要正数，但接收到负值。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Homing Disabled"
-msgstr "回原点已禁用"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Homing is not enabled in settings. Enable homing ($22=1) to use this feature."
-msgstr "设置中未启用回原点。启用回原点（$22=1）以使用此功能。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Pulse Time Too Short"
-msgstr "脉冲时间太短"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Minimum step pulse time must be greater than 3 microseconds. Check setting "
-"$0."
-msgstr "最小步进脉冲时间必须大于3微秒。请检查设置$0。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Memory Error"
-msgstr "内存错误"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Settings reset to defaults due to a memory read failure. Reconfigure your "
-"settings if needed."
-msgstr "由于内存读取失败，设置已重置为默认值。如需要，请重新配置您的设置。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Machine Busy"
-msgstr "机器忙碌"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"This command can only be used when the machine is idle. Wait for the current "
-"job to finish."
-msgstr "此命令只能在机器空闲时使用。请等待当前作业完成。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Commands Locked"
-msgstr "命令已锁定"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Cannot send commands while in alarm or jog mode. Clear the alarm state first."
-msgstr "在报警或点动模式下无法发送命令。请先清除报警状态。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Homing Required"
-msgstr "需要回原点"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Soft limits cannot be enabled without homing also enabled. Enable homing "
-"first ($22=1)."
-msgstr "不启用回原点就无法启用软限位。请先启用回原点（$22=1）。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Line Too Long"
-msgstr "行太长"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"The command line has too many characters and was ignored. Check your file "
-"formatting."
-msgstr "命令行字符太多，已被忽略。请检查您的文件格式。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Setting Too High"
-msgstr "设置值过高"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"This setting exceeds the maximum step rate supported. Use a lower value."
-msgstr "此设置超过了支持的最大步进速率。请使用较低的值。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Door Open"
-msgstr "门已打开"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"The safety door was detected as open. Close the door and resume operation."
-msgstr "检测到安全门已打开。请关闭门并恢复操作。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Build info or startup line exceeds storage limit. Shorten the line."
-msgstr "构建信息或启动行超出存储限制。请缩短该行。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Target Out of Range"
-msgstr "目标超出范围"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Jog target is beyond the machine's travel limits. Move to a position within "
-"range."
-msgstr "点动目标超出了机器的行程限制。请移动到范围内的位置。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Invalid Jog Command"
-msgstr "无效的点动命令"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Jog command is missing '=' or contains prohibited G-code. Check the jog "
-"syntax."
-msgstr "点动命令缺少'='或包含禁止的G代码。请检查点动语法。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Laser Mode Error"
-msgstr "激光模式错误"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Laser mode requires PWM output to work. Check your hardware configuration."
-msgstr "激光模式需要PWM输出才能工作。请检查您的硬件配置。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Unsupported Command"
-msgstr "不支持的命令"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"This G-code command is not supported by the machine. Check your post-"
-"processor settings."
-msgstr "此G代码命令不被机器支持。请检查您的后处理器设置。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Conflicting Commands"
-msgstr "冲突的命令"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Multiple commands from the same group found on one line. Remove the "
-"duplicate command."
-msgstr "在一行中发现了来自同一组的多个命令。请删除重复的命令。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Feed Rate Missing"
-msgstr "缺少进给速率"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Set a feed rate before using motion commands. Add an F command to specify "
-"speed."
-msgstr "在使用运动命令之前设置进给速率。添加F命令以指定速度。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Integer Required"
-msgstr "需要整数"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "This command requires a whole number value. Remove any decimal points."
-msgstr "此命令需要整数值。请删除任何小数点。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Axis Conflict"
-msgstr "轴冲突"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Multiple commands trying to use the same axis. Simplify the command."
-msgstr "多个命令试图使用同一轴。请简化命令。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Duplicate Word"
-msgstr "重复的字"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "The same G-code word appears more than once. Remove the duplicate."
-msgstr "相同的G代码字出现多次。请删除重复项。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Missing Axis"
-msgstr "缺少轴"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"This command requires XYZ axis coordinates. Add the missing axis values."
-msgstr "此命令需要XYZ轴坐标。请添加缺失的轴值。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Line Number Out of Range"
-msgstr "行号超出范围"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Line number must be between 1 and 9,999,999. Use a valid line number."
-msgstr "行号必须在1到9,999,999之间。请使用有效的行号。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Missing Value"
-msgstr "缺少值"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "This command requires a P or L value. Add the missing parameter."
-msgstr "此命令需要P或L值。请添加缺失的参数。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Unsupported Coordinate"
-msgstr "不支持的坐标系"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Only G54-G59 coordinate systems are supported. Use one of these instead."
-msgstr "仅支持G54-G59坐标系。请使用其中之一。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Wrong Motion Mode"
-msgstr "错误的运动模式"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"G53 command requires G0 or G1 motion mode. Set the correct motion mode first."
-msgstr "G53命令需要G0或G1运动模式。请先设置正确的运动模式。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Unused Axis Words"
-msgstr "未使用的轴字"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Axis words present but G80 cancel is active. Remove the unused axis words."
-msgstr "存在轴字但G80取消处于活动状态。请删除未使用的轴字。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Missing Arc Data"
-msgstr "缺少圆弧数据"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"G2/G3 arc command needs XYZ coordinates. Add the axis values for the "
-"selected plane."
-msgstr "G2/G3圆弧命令需要XYZ坐标。请为所选平面添加轴值。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Invalid Target"
-msgstr "无效的目标"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Cannot create this arc or probe to current position. Check the target "
-"coordinates."
-msgstr "无法创建此圆弧或探测到当前位置。请检查目标坐标。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Arc Geometry Error"
-msgstr "圆弧几何错误"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Arc calculation failed. Try breaking the arc into smaller pieces or use IJK "
-"offset instead."
-msgstr "圆弧计算失败。尝试将圆弧分解为较小的部分或使用IJK偏移。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Missing Arc Offset"
-msgstr "缺少圆弧偏移"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"G2/G3 arc command needs IJK offset values. Add the missing offset for the "
-"selected plane."
-msgstr "G2/G3圆弧命令需要IJK偏移值。请为所选平面添加缺失的偏移。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Unused Words"
-msgstr "未使用的字"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Some G-code words in this line are not used by any command. Remove the "
-"unused words."
-msgstr "此行中的某些G代码字未被任何命令使用。请删除未使用的字。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Wrong Axis for Offset"
-msgstr "偏移的轴错误"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Tool length offset only works on the configured axis (usually Z-axis). Check "
-"your settings."
-msgstr "刀具长度偏移仅适用于配置的轴（通常是Z轴）。请检查您的设置。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Tool Number Too High"
-msgstr "刀具号过高"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"Tool number exceeds the maximum supported value. Use a valid tool number."
-msgstr "刀具号超过了支持的最大值。请使用有效的刀具号。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Unknown Error"
-msgstr "未知错误"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Invalid error code reported by machine."
-msgstr "机器报告了无效的错误代码。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Stepper Configuration"
-msgstr "步进配置"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Settings related to stepper motor timing and signal polarity."
-msgstr "与步进电机时序和信号极性相关的设置。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Control & Reporting"
-msgstr "控制与报告"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Settings for GRBL's motion control and status reporting."
-msgstr "GRBL的运动控制和状态报告设置。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Limits & Homing"
-msgstr "限位与回原点"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Settings for soft/hard limits and the homing cycle."
-msgstr "软/硬限位和回原点循环的设置。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Spindle & Laser"
-msgstr "主轴与激光"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Settings for controlling the spindle or laser module."
-msgstr "控制主轴或激光模块的设置。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Axis Calibration"
-msgstr "轴校准"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Defines the steps-per-millimeter for each axis."
-msgstr "定义每个轴的每毫米步数。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Axis Kinematics"
-msgstr "轴运动学"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Defines the maximum rate and acceleration for each axis."
-msgstr "定义每个轴的最大速率和加速度。"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Axis Travel"
-msgstr "轴行程"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Defines the maximum travel distance for each axis."
-msgstr "定义每个轴的最大行程距离。"
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "GRBL (Serial)"
-msgstr "GRBL（串口）"
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "GRBL-compatible serial connection"
-msgstr "GRBL兼容的串口连接"
-
-#: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/smoothie.py
-#: rayforge/machine/driver/grbl.py
-msgid "Machine Coordinates (G53)"
-msgstr "机器坐标（G53）"
-
-#: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/smoothie.py
-msgid "Port"
-msgstr "端口"
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "Serial port for the device"
-msgstr "设备的串口"
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "Enable status polling during running jobs"
-msgstr "在运行作业期间启用状态轮询"
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid ""
-"Whether to query status during jobs. Disabling can help reduce load on slow "
-"machines"
-msgstr "是否在作业期间查询状态。禁用可以帮助减少慢速机器上的负载。"
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "Port must be configured."
-msgstr "必须配置端口。"
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "Baud rate must be configured."
-msgstr "必须配置波特率。"
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "Port not configured"
-msgstr "端口未配置"
-
-#: rayforge/machine/driver/grbl_serial.py
-msgid "No response from device"
-msgstr "设备无响应"
-
-#: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/grbl.py
-msgid "Unknown Settings"
-msgstr "未知设置"
-
-#: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/grbl.py
-msgid "Settings reported by the device not in the standard list."
-msgstr "设备报告的设置不在标准列表中。"
-
-#: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/grbl.py
-msgid "Unknown setting from device"
-msgstr "来自设备的未知设置"
 
 #: rayforge/machine/driver/dummy.py rayforge/ui_gtk/machine/machine_dropdown.py
 #: rayforge/ui_gtk/machine/status_widget.py
@@ -822,64 +369,553 @@ msgstr "Smoothie"
 msgid "Smoothieware via a Telnet connection"
 msgstr "通过Telnet连接的Smoothieware"
 
-#: rayforge/machine/driver/smoothie.py rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Machine Coordinates (G53)"
+msgstr "机器坐标（G53）"
+
+#: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 #, python-brace-format
 msgid "Invalid hostname or IP address: '{host}'"
 msgstr "无效的主机名或IP地址：'{host}'"
 
-#: rayforge/machine/driver/smoothie.py rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Hostname"
 msgstr "主机名"
 
-#: rayforge/machine/driver/smoothie.py rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "The IP address or hostname of the device"
 msgstr "设备的IP地址或主机名"
+
+#: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Port"
+msgstr "端口"
 
 #: rayforge/machine/driver/smoothie.py
 msgid "The Telnet port number"
 msgstr "Telnet端口号"
 
-#: rayforge/machine/driver/smoothie.py rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Hostname must be configured."
 msgstr "必须配置主机名。"
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+msgid "GRBL (Telnet)"
+msgstr "GRBL (Telnet)"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+msgid "GRBL-compatible controller over a raw TCP/telnet connection"
+msgstr "通过原始TCP/telnet连接的GRBL兼容控制器"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+msgid "TCP port for the raw/telnet service"
+msgstr "raw/telnet服务的TCP端口"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Enable status polling during running jobs"
+msgstr "在运行作业期间启用状态轮询"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid ""
+"Whether to query status during jobs. Disabling can help reduce load on slow "
+"machines"
+msgstr "是否在作业期间查询状态。禁用可以帮助减少慢速机器上的负载。"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Port must be configured."
+msgstr "必须配置端口。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Missing Command Letter"
+msgstr "缺少命令字母"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"G-code commands need a letter followed by a value. The command letter was "
+"not found."
+msgstr "G代码命令需要一个字母后跟一个值。未找到命令字母。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Invalid Number Format"
+msgstr "无效的数字格式"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The value is missing or not in the correct numeric format. Check your G-code "
+"syntax."
+msgstr "值缺失或格式不正确。请检查您的G代码语法。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Unknown Command"
+msgstr "未知命令"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"This Grbl setting command is not recognized or supported. Check the command "
+"syntax."
+msgstr "此Grbl设置命令未被识别或支持。请检查命令语法。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Negative Value"
+msgstr "负值"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "A positive number is required here, but a negative value was received."
+msgstr "此处需要正数，但接收到负值。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Disabled"
+msgstr "回原点已禁用"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Homing is not enabled in settings. Enable homing ($22=1) to use this feature."
+msgstr "设置中未启用回原点。启用回原点（$22=1）以使用此功能。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Pulse Time Too Short"
+msgstr "脉冲时间太短"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Minimum step pulse time must be greater than 3 microseconds. Check setting "
+"$0."
+msgstr "最小步进脉冲时间必须大于3微秒。请检查设置$0。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Memory Error"
+msgstr "内存错误"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Settings reset to defaults due to a memory read failure. Reconfigure your "
+"settings if needed."
+msgstr "由于内存读取失败，设置已重置为默认值。如需要，请重新配置您的设置。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Machine Busy"
+msgstr "机器忙碌"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"This command can only be used when the machine is idle. Wait for the current "
+"job to finish."
+msgstr "此命令只能在机器空闲时使用。请等待当前作业完成。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Commands Locked"
+msgstr "命令已锁定"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Cannot send commands while in alarm or jog mode. Clear the alarm state first."
+msgstr "在报警或点动模式下无法发送命令。请先清除报警状态。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Required"
+msgstr "需要回原点"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Soft limits cannot be enabled without homing also enabled. Enable homing "
+"first ($22=1)."
+msgstr "不启用回原点就无法启用软限位。请先启用回原点（$22=1）。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Line Too Long"
+msgstr "行太长"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The command line has too many characters and was ignored. Check your file "
+"formatting."
+msgstr "命令行字符太多，已被忽略。请检查您的文件格式。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Setting Too High"
+msgstr "设置值过高"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"This setting exceeds the maximum step rate supported. Use a lower value."
+msgstr "此设置超过了支持的最大步进速率。请使用较低的值。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Door Open"
+msgstr "门已打开"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The safety door was detected as open. Close the door and resume operation."
+msgstr "检测到安全门已打开。请关闭门并恢复操作。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Build info or startup line exceeds storage limit. Shorten the line."
+msgstr "构建信息或启动行超出存储限制。请缩短该行。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Target Out of Range"
+msgstr "目标超出范围"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Jog target is beyond the machine's travel limits. Move to a position within "
+"range."
+msgstr "点动目标超出了机器的行程限制。请移动到范围内的位置。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Invalid Jog Command"
+msgstr "无效的点动命令"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Jog command is missing '=' or contains prohibited G-code. Check the jog "
+"syntax."
+msgstr "点动命令缺少'='或包含禁止的G代码。请检查点动语法。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Laser Mode Error"
+msgstr "激光模式错误"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Laser mode requires PWM output to work. Check your hardware configuration."
+msgstr "激光模式需要PWM输出才能工作。请检查您的硬件配置。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Unsupported Command"
+msgstr "不支持的命令"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"This G-code command is not supported by the machine. Check your post-"
+"processor settings."
+msgstr "此G代码命令不被机器支持。请检查您的后处理器设置。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Conflicting Commands"
+msgstr "冲突的命令"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Multiple commands from the same group found on one line. Remove the "
+"duplicate command."
+msgstr "在一行中发现了来自同一组的多个命令。请删除重复的命令。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Feed Rate Missing"
+msgstr "缺少进给速率"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Set a feed rate before using motion commands. Add an F command to specify "
+"speed."
+msgstr "在使用运动命令之前设置进给速率。添加F命令以指定速度。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Integer Required"
+msgstr "需要整数"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "This command requires a whole number value. Remove any decimal points."
+msgstr "此命令需要整数值。请删除任何小数点。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Axis Conflict"
+msgstr "轴冲突"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Multiple commands trying to use the same axis. Simplify the command."
+msgstr "多个命令试图使用同一轴。请简化命令。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Duplicate Word"
+msgstr "重复的字"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "The same G-code word appears more than once. Remove the duplicate."
+msgstr "相同的G代码字出现多次。请删除重复项。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Missing Axis"
+msgstr "缺少轴"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"This command requires XYZ axis coordinates. Add the missing axis values."
+msgstr "此命令需要XYZ轴坐标。请添加缺失的轴值。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Line Number Out of Range"
+msgstr "行号超出范围"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Line number must be between 1 and 9,999,999. Use a valid line number."
+msgstr "行号必须在1到9,999,999之间。请使用有效的行号。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Missing Value"
+msgstr "缺少值"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "This command requires a P or L value. Add the missing parameter."
+msgstr "此命令需要P或L值。请添加缺失的参数。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Unsupported Coordinate"
+msgstr "不支持的坐标系"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Only G54-G59 coordinate systems are supported. Use one of these instead."
+msgstr "仅支持G54-G59坐标系。请使用其中之一。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Wrong Motion Mode"
+msgstr "错误的运动模式"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"G53 command requires G0 or G1 motion mode. Set the correct motion mode first."
+msgstr "G53命令需要G0或G1运动模式。请先设置正确的运动模式。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Unused Axis Words"
+msgstr "未使用的轴字"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Axis words present but G80 cancel is active. Remove the unused axis words."
+msgstr "存在轴字但G80取消处于活动状态。请删除未使用的轴字。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Missing Arc Data"
+msgstr "缺少圆弧数据"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"G2/G3 arc command needs XYZ coordinates. Add the axis values for the "
+"selected plane."
+msgstr "G2/G3圆弧命令需要XYZ坐标。请为所选平面添加轴值。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Invalid Target"
+msgstr "无效的目标"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Cannot create this arc or probe to current position. Check the target "
+"coordinates."
+msgstr "无法创建此圆弧或探测到当前位置。请检查目标坐标。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Arc Geometry Error"
+msgstr "圆弧几何错误"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Arc calculation failed. Try breaking the arc into smaller pieces or use IJK "
+"offset instead."
+msgstr "圆弧计算失败。尝试将圆弧分解为较小的部分或使用IJK偏移。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Missing Arc Offset"
+msgstr "缺少圆弧偏移"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"G2/G3 arc command needs IJK offset values. Add the missing offset for the "
+"selected plane."
+msgstr "G2/G3圆弧命令需要IJK偏移值。请为所选平面添加缺失的偏移。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Unused Words"
+msgstr "未使用的字"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Some G-code words in this line are not used by any command. Remove the "
+"unused words."
+msgstr "此行中的某些G代码字未被任何命令使用。请删除未使用的字。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Wrong Axis for Offset"
+msgstr "偏移的轴错误"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Tool length offset only works on the configured axis (usually Z-axis). Check "
+"your settings."
+msgstr "刀具长度偏移仅适用于配置的轴（通常是Z轴）。请检查您的设置。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Tool Number Too High"
+msgstr "刀具号过高"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Tool number exceeds the maximum supported value. Use a valid tool number."
+msgstr "刀具号超过了支持的最大值。请使用有效的刀具号。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Unknown Error"
+msgstr "未知错误"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Invalid error code reported by machine."
+msgstr "机器报告了无效的错误代码。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Stepper Configuration"
+msgstr "步进配置"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Settings related to stepper motor timing and signal polarity."
+msgstr "与步进电机时序和信号极性相关的设置。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Control & Reporting"
+msgstr "控制与报告"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Settings for GRBL's motion control and status reporting."
+msgstr "GRBL的运动控制和状态报告设置。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Limits & Homing"
+msgstr "限位与回原点"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Settings for soft/hard limits and the homing cycle."
+msgstr "软/硬限位和回原点循环的设置。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Spindle & Laser"
+msgstr "主轴与激光"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Settings for controlling the spindle or laser module."
+msgstr "控制主轴或激光模块的设置。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Axis Calibration"
+msgstr "轴校准"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Defines the steps-per-millimeter for each axis."
+msgstr "定义每个轴的每毫米步数。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Axis Kinematics"
+msgstr "轴运动学"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Defines the maximum rate and acceleration for each axis."
+msgstr "定义每个轴的最大速率和加速度。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Axis Travel"
+msgstr "轴行程"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Defines the maximum travel distance for each axis."
+msgstr "定义每个轴的最大行程距离。"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "GRBL (Serial)"
+msgstr "GRBL（串口）"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "GRBL-compatible serial connection"
+msgstr "GRBL兼容的串口连接"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Serial port for the device"
+msgstr "设备的串口"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Baud rate must be configured."
+msgstr "必须配置波特率。"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Port not configured"
+msgstr "端口未配置"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "No response from device"
+msgstr "设备无响应"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Unknown Settings"
+msgstr "未知设置"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Settings reported by the device not in the standard list."
+msgstr "设备报告的设置不在标准列表中。"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Unknown setting from device"
+msgstr "来自设备的未知设置"
+
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "GRBL (Network)"
 msgstr "GRBL（网络）"
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Connect to a GRBL-compatible device over the network"
 msgstr "通过网络连接到GRBL兼容设备"
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "HTTP Port"
 msgstr "HTTP端口"
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "The HTTP port for the device"
 msgstr "设备的HTTP端口"
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "WebSocket Port"
 msgstr "WebSocket端口"
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "The WebSocket port for the device"
 msgstr "设备的WebSocket端口"
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Host is not configured. Please set a valid IP address or hostname."
 msgstr "主机未配置。请设置有效的IP地址或主机名。"
 
-#: rayforge/machine/driver/grbl.py
+#: rayforge/machine/driver/grbl/grbl_network.py
 #, python-brace-format
 msgid ""
 "Could not connect to host '{host}'. Check the IP address and network "
 "connection."
 msgstr "无法连接到主机'{host}'。请检查IP地址和网络连接。"
 
+#: rayforge/machine/device/profile.py
+#, python-brace-format
+msgid "{name} (device dialect)"
+msgstr "{name}（设备方言）"
+
 #: rayforge/machine/models/dialect_manager.py
-#: rayforge/machine/models/machine.py rayforge/machine/models/profile.py
+#: rayforge/machine/models/machine.py
 #, python-brace-format
 msgid "{label} (for {machine_name})"
 msgstr "{label}（用于{machine_name}）"
@@ -899,18 +935,6 @@ msgstr "默认机器"
 #: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Rotary Module"
 msgstr "旋转模块"
-
-#: rayforge/machine/models/profile.py
-msgid "Custom dialect for the Carvera Air machine."
-msgstr "Carvera Air机器的自定义方言。"
-
-#: rayforge/machine/models/profile.py
-msgid "Custom preamble for the xTool D1 Pro machine."
-msgstr "xTool D1 Pro机器的自定义前言。"
-
-#: rayforge/machine/models/profile.py
-msgid "Other Device"
-msgstr "其他设备"
 
 #: rayforge/machine/models/zone.py
 msgid "No-Go Zone"
@@ -987,6 +1011,7 @@ msgid "General Information"
 msgstr "常规信息"
 
 #: rayforge/machine/models/dialect/base.py
+#: rayforge/ui_gtk/machine/wcs_dialog.py
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Label"
 msgstr "标签"
@@ -1271,6 +1296,10 @@ msgid "Sleeping"
 msgstr "休眠中"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
+msgid "Machines"
+msgstr "机器"
+
+#: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid "Configured Machines"
 msgstr "已配置的机器"
 
@@ -1298,7 +1327,6 @@ msgid ""
 msgstr "此机器配置文件及其所有设置将被永久删除。此操作无法撤销。"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
-#: rayforge/ui_gtk/settings/model_manager_page.py
 #: rayforge/ui_gtk/settings/license_settings_page.py
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/camera/selection_dialog.py
@@ -1306,6 +1334,7 @@ msgstr "此机器配置文件及其所有设置将被永久删除。此操作无
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/hook_list.py rayforge/ui_gtk/machine/gcode_editor.py
+#: rayforge/ui_gtk/machine/wcs_dialog.py
 #: rayforge/ui_gtk/machine/maintenance_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/profile_selector.py
@@ -1320,7 +1349,6 @@ msgstr "此机器配置文件及其所有设置将被永久删除。此操作无
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
 #: rayforge/ui_gtk/doceditor/recipe_selector_dialog.py
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
 #: rayforge/ui_gtk/doceditor/material_selector.py
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 #: rayforge/ui_gtk/doceditor/material_list.py
@@ -1329,8 +1357,6 @@ msgid "Cancel"
 msgstr "取消"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
-#: rayforge/ui_gtk/settings/model_manager_page.py
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
@@ -1342,76 +1368,6 @@ msgstr "删除"
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid "Add Machine"
 msgstr "添加机器"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "1 model"
-msgstr "1 个模型"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-#, python-brace-format
-msgid "{count} models"
-msgstr "{count} 个模型"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "No categories available."
-msgstr "没有可用的类别。"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
-msgid "Bundled"
-msgstr "捆绑"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "Add Model"
-msgstr "添加模型"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "No models in this category."
-msgstr "此类别中没有模型。"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-#: rayforge/ui_gtk/settings/ai_settings_page.py
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/recipe_list.py
-#: rayforge/ui_gtk/doceditor/material_list.py
-#, python-brace-format
-msgid "Delete '{name}'?"
-msgstr "删除 '{name}'？"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid ""
-"The model file will be permanently removed. This action cannot be undone."
-msgstr "模型文件将被永久删除。此操作无法撤销。"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "3D Models"
-msgstr "3D 模型"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "Models"
-msgstr "模型"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "Model Libraries"
-msgstr "模型库"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "Select a library to browse its 3D models."
-msgstr "选择库以浏览其 3D 模型。"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-#: rayforge/ui_gtk/settings/settings_dialog.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
-msgid "Categories"
-msgstr "类别"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "Select a category to view its models."
-msgstr "选择类别以查看其模型。"
-
-#: rayforge/ui_gtk/settings/model_manager_page.py
-msgid "3D models in the selected category."
-msgstr "所选类别中的 3D 模型。"
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
 msgid "Licenses"
@@ -1508,29 +1464,6 @@ msgid ""
 "licensed addons."
 msgstr "此许可证密钥将被删除。您可能需要重新输入它才能使用许可插件。"
 
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
-msgid "File"
-msgstr "文件"
-
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
-msgid "Size"
-msgstr "大小"
-
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
-#: rayforge/shared/util/size.py
-#, python-brace-format
-msgid "{size:.1f} KB"
-msgstr "{size:.1f} KB"
-
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
-msgid "Open in File Manager"
-msgstr "在文件管理器中打开"
-
-#: rayforge/ui_gtk/settings/model_preview_dialog.py
-#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
-msgid "Close"
-msgstr "关闭"
-
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 msgid "Default provider"
 msgstr "默认提供商"
@@ -1555,6 +1488,14 @@ msgstr "未配置提供商"
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 msgid "New Provider"
 msgstr "新建提供商"
+
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/recipe_list.py
+#: rayforge/ui_gtk/doceditor/material_list.py
+#, python-brace-format
+msgid "Delete '{name}'?"
+msgstr "删除 '{name}'？"
 
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 msgid ""
@@ -1665,6 +1606,11 @@ msgstr "管理您的材料库。选择一个库以查看其材料。"
 msgid "Materials in the selected library."
 msgstr "所选库中的材料。"
 
+#: rayforge/ui_gtk/settings/settings_dialog.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Categories"
+msgstr "类别"
+
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/about.py
 msgid "System"
@@ -1691,10 +1637,20 @@ msgid "Open specific project"
 msgstr "打开指定项目"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Laser Color"
+msgstr "激光颜色"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Layer Color"
+msgstr "图层颜色"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "General"
 msgstr "常规"
 
@@ -1711,6 +1667,14 @@ msgid "Theme"
 msgstr "主题"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Operation Colors"
+msgstr "操作颜色"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Choose whether operation colors represent the laser or the layer"
+msgstr "选择操作颜色代表激光还是图层"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Units"
 msgstr "单位"
 
@@ -1723,7 +1687,6 @@ msgid "Length"
 msgstr "长度"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-#: rayforge/ui_gtk/canvas2d/simulation_controls.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Speed"
 msgstr "速度"
@@ -1750,6 +1713,14 @@ msgid ""
 "Recalculate operations automatically after each change. Disable for manual "
 "recalculation via the toolbar button."
 msgstr "每次更改后自动重新计算操作。禁用后可通过工具栏按钮手动重新计算。"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Check for updates"
+msgstr "检查更新"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Automatically check for new Rayforge versions on startup."
+msgstr "启动时自动检查新的Rayforge版本。"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Startup behavior"
@@ -1822,10 +1793,6 @@ msgstr "在此添加标签"
 msgid "Remove Tab"
 msgstr "移除标签"
 
-#: rayforge/ui_gtk/canvas2d/simulation_controls.py
-msgid "Line"
-msgstr "直线"
-
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid "Drop files to import"
 msgstr "拖放文件以导入"
@@ -1845,6 +1812,11 @@ msgstr "由于缺少依赖项，3D视图不可用。"
 #: rayforge/ui_gtk/view_mode_cmd.py
 msgid "Select a machine to open the 3D view."
 msgstr "选择一台机器以打开3D视图。"
+
+#: rayforge/ui_gtk/actions.py rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/doceditor/stock_cmd.py
+msgid "Add Stock"
+msgstr "添加毛坯"
 
 #: rayforge/ui_gtk/actions.py
 msgid "Auto Layout (Simple)"
@@ -2044,12 +2016,12 @@ msgstr "导出校准卡以供打印"
 #: rayforge/ui_gtk/camera/calibration_wizard.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/gcode_editor.py
+#: rayforge/ui_gtk/machine/wcs_dialog.py
 #: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
 #: rayforge/ui_gtk/toolbar.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Save"
 msgstr "保存"
 
@@ -2110,6 +2082,7 @@ msgstr "校准失败"
 
 #: rayforge/ui_gtk/camera/calibration_wizard.py
 #: rayforge/ui_gtk/machine/dialect_list.py
+#: rayforge/ui_gtk/machine/profile_selector.py
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
@@ -2580,6 +2553,18 @@ msgstr "重置"
 msgid "# Your G-code here"
 msgstr "# 您的G代码在此"
 
+#: rayforge/ui_gtk/machine/profile_importer.py
+msgid "Device Profile archives"
+msgstr "设备配置文件归档"
+
+#: rayforge/ui_gtk/machine/profile_importer.py
+msgid "All files"
+msgstr "所有文件"
+
+#: rayforge/ui_gtk/machine/profile_importer.py
+msgid "Import Device Profile"
+msgstr "导入设备配置文件"
+
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Edit Macro"
 msgstr "编辑宏"
@@ -2617,6 +2602,14 @@ msgstr "名称包含无效字符：{chars}"
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "This name is already used by another macro."
 msgstr "此名称已被另一个宏使用。"
+
+#: rayforge/ui_gtk/machine/wcs_dialog.py
+msgid "Edit Work Offsets"
+msgstr "编辑工件偏移"
+
+#: rayforge/ui_gtk/machine/wcs_dialog.py
+msgid "Enter the offset from Machine Zero to Work Zero for the active WCS."
+msgstr "输入从机器零点到工件零点的偏移，用于活动WCS。"
 
 #: rayforge/ui_gtk/machine/maintenance_page.py
 msgid "Reset Counter"
@@ -3027,6 +3020,14 @@ msgstr "添加新机器"
 msgid "Select a machine profile to use as a template."
 msgstr "选择一个机器配置文件作为模板。"
 
+#: rayforge/ui_gtk/machine/profile_selector.py
+msgid "Import from File…"
+msgstr "从文件导入…"
+
+#: rayforge/ui_gtk/machine/profile_selector.py
+msgid "Import Failed"
+msgstr "导入失败"
+
 #: rayforge/ui_gtk/machine/template_selector.py
 msgid "Select a Template"
 msgstr "选择模板"
@@ -3230,6 +3231,10 @@ msgid "New Laser"
 msgstr "新激光"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Laser Heads"
+msgstr "激光头"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "You can configure multiple laser heads if your machine supports it."
 msgstr "如果您的机器支持，可以配置多个激光头。"
 
@@ -3408,13 +3413,17 @@ msgid "None"
 msgstr "无"
 
 #: rayforge/ui_gtk/machine/rotary_module_page.py
-msgid "No model"
-msgstr "无模型"
+msgid "Axis Replacement"
+msgstr "轴替换"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "True 4th Axis"
+msgstr "真正的第四轴"
 
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #, python-brace-format
-msgid "Axis {axis}, {model}"
-msgstr "轴 {axis}, {model}"
+msgid "{mode}, Axis {axis}"
+msgstr "{mode}，轴 {axis}"
 
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 msgid "Add Rotary Module"
@@ -3455,12 +3464,85 @@ msgid ""
 msgstr "定义连接到您的机器的物理旋转模块。选择一个作为默认值。"
 
 #: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Connection Mode"
+msgstr "连接模式"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "How the rotary is connected to the machine controller"
+msgstr "旋转模块如何连接到机器控制器"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
 msgid "Axis"
 msgstr "轴"
 
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 msgid "Axis letter for this module"
 msgstr "此模块的轴字母"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Reversed Axis"
+msgstr "反转轴"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Reverse the rotation direction of the rotary axis"
+msgstr "反转旋转轴的旋转方向"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Axis Offset X"
+msgstr "轴偏移 X"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Offset from module position to rotation axis (X)"
+msgstr "从模块位置到旋转轴的偏移量（X）"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Axis Offset Y"
+msgstr "轴偏移 Y"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Offset from module position to rotation axis (Y)"
+msgstr "从模块位置到旋转轴的偏移量（Y）"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Axis Offset Z"
+msgstr "轴偏移 Z"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Offset from module position to rotation axis (Z)"
+msgstr "从模块位置到旋转轴的偏移量（Z）"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Jaws / Chuck"
+msgstr "卡爪 / 卡盘"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Rollers"
+msgstr "滚轮"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Drive Type"
+msgstr "驱动类型"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "How the rotary module drives the workpiece rotation"
+msgstr "旋转模块如何驱动工件旋转"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Roller Diameter"
+msgstr "滚轮直径"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Diameter of the drive roller"
+msgstr "驱动滚轮的直径"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Travel per Rotation"
+msgstr "每转行程"
+
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid ""
+"Firmware distance for one full 360° rotation. 0 = raw circumferential output."
+msgstr "固件完成一次完整360°旋转的距离。0 = 原始周向输出。"
 
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 msgid "Default Workpiece Diameter"
@@ -3514,8 +3596,22 @@ msgid "Machine Settings"
 msgstr "机器设置"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Export Machine Profile"
+msgstr "导出机器配置文件"
+
+#: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "Laser"
 msgstr "激光"
+
+#: rayforge/ui_gtk/machine/settings_dialog.py
+#, python-brace-format
+msgid "Exported to {path}"
+msgstr "已导出到 {path}"
+
+#: rayforge/ui_gtk/machine/settings_dialog.py rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid "Export failed: {error}"
+msgstr "导出失败：{error}"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
@@ -4087,10 +4183,6 @@ msgid "Show Bottom Panel"
 msgstr "显示底部面板"
 
 #: rayforge/ui_gtk/main_menu.py
-msgid "Simulator"
-msgstr "模拟器"
-
-#: rayforge/ui_gtk/main_menu.py
 msgid "3D View"
 msgstr "3D视图"
 
@@ -4125,11 +4217,6 @@ msgstr "切换透视"
 #: rayforge/ui_gtk/main_menu.py
 msgid "_View"
 msgstr "视图(_V)"
-
-#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/doceditor/asset_browser.py
-#: rayforge/doceditor/stock_cmd.py
-msgid "Add Stock"
-msgstr "添加毛坯"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Split"
@@ -4380,10 +4467,6 @@ msgid "Show 3D Preview"
 msgstr "显示3D预览"
 
 #: rayforge/ui_gtk/toolbar.py
-msgid "Toggle execution simulation"
-msgstr "切换执行模拟"
-
-#: rayforge/ui_gtk/toolbar.py
 msgid "Recalculate (Shift+Click to force)"
 msgstr "重新计算（Shift+点击强制执行）"
 
@@ -4414,10 +4497,6 @@ msgstr "清除机器报警 (解锁)"
 #: rayforge/ui_gtk/toolbar.py
 msgid "Toggle focus laser"
 msgstr "切换聚焦激光"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Work Coordinate System"
-msgstr "工件坐标系"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Machine not fully configured"
@@ -4474,24 +4553,6 @@ msgstr "新项目已创建"
 #: rayforge/ui_gtk/project_cmd.py
 msgid "Untitled"
 msgstr "未命名"
-
-#: rayforge/ui_gtk/doceditor/layer_view.py
-msgid "Layer Settings"
-msgstr "图层设置"
-
-#: rayforge/ui_gtk/doceditor/layer_view.py
-msgid "Delete this layer"
-msgstr "删除此图层"
-
-#: rayforge/ui_gtk/doceditor/layer_view.py
-#, python-brace-format
-msgid "{count} workpiece"
-msgstr "{count} 个工件"
-
-#: rayforge/ui_gtk/doceditor/layer_view.py
-#, python-brace-format
-msgid "{count} workpieces"
-msgstr "{count} 个工件"
 
 #: rayforge/ui_gtk/doceditor/asset_browser.py
 msgid "Add Asset"
@@ -4571,6 +4632,7 @@ msgstr ""
 "90，Illustrator 使用 72"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Layers"
 msgstr "图层"
 
@@ -4942,6 +5004,10 @@ msgstr "未找到配方。"
 msgid "The recipe will be permanently removed. This action cannot be undone."
 msgstr "配方将被永久删除。此操作无法撤销。"
 
+#: rayforge/ui_gtk/doceditor/layers_tab.py
+msgid "Add New Layer"
+msgstr "添加新图层"
+
 #: rayforge/ui_gtk/doceditor/recipe_selector_dialog.py
 msgid "Select Recipe"
 msgstr "选择配方"
@@ -4984,14 +5050,11 @@ msgid "Controls"
 msgstr "控件"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Active System"
-msgstr "活动系统"
-
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Current Offsets"
 msgstr "当前偏移"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Edit Offsets Manually"
 msgstr "手动编辑偏移"
 
@@ -5052,12 +5115,8 @@ msgid "Distance in machine units"
 msgstr "以机器单位表示的距离"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Edit Work Offsets"
-msgstr "编辑工件偏移"
-
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Enter the offset from Machine Zero to Work Zero for the active WCS."
-msgstr "输入从机器零点到工件零点的偏移，用于活动WCS。"
+msgid "Overridden by the current layer. Change it in the layer settings."
+msgstr "已被当前图层覆盖。请在图层设置中更改。"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Offline - Position Unknown"
@@ -5103,6 +5162,37 @@ msgstr "选择材料"
 #: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "Choose a material from the available libraries."
 msgstr "从可用库中选择材料。"
+
+#: rayforge/ui_gtk/doceditor/workflow_row.py
+msgid "No Operations"
+msgstr "无操作"
+
+#: rayforge/ui_gtk/doceditor/workflow_row.py
+msgid "Add Step"
+msgstr "添加步骤"
+
+#: rayforge/ui_gtk/doceditor/workflow_row.py
+#: rayforge/ui_gtk/doceditor/workflow_view.py
+msgid "Reorder steps"
+msgstr "重新排序步骤"
+
+#: rayforge/ui_gtk/doceditor/workflow_row.py
+#: rayforge/ui_gtk/doceditor/workflow_view.py
+#, python-brace-format
+msgid "Add step '{name}'"
+msgstr "添加步骤 '{name}'"
+
+#: rayforge/ui_gtk/doceditor/layer_column.py
+msgid "Layer Settings"
+msgstr "图层设置"
+
+#: rayforge/ui_gtk/doceditor/layer_column.py
+msgid "Delete this layer"
+msgstr "删除此图层"
+
+#: rayforge/ui_gtk/doceditor/layer_column.py rayforge/doceditor/layer_cmd.py
+msgid "Toggle layer visibility"
+msgstr "切换图层可见性"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 #, python-brace-format
@@ -5337,6 +5427,28 @@ msgid "{name} - Settings"
 msgstr "{name} - 设置"
 
 #: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Close"
+msgstr "关闭"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Basic layer settings such as appearance and coordinate system."
+msgstr "基本图层设置，如外观和坐标系。"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Color used for operations in this layer"
+msgstr "此图层中操作使用的颜色"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Coordinate System"
+msgstr "坐标系"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid ""
+"The work coordinate system origin to use for this layer. By default, use the "
+"WCS selected in the main window"
+msgstr "此图层使用的工作坐标系原点。默认使用主窗口中选择的WCS"
+
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Rotary Attachment"
 msgstr "旋转附件"
 
@@ -5367,23 +5479,9 @@ msgstr "物体直径"
 msgid "Diameter of the cylindrical object in machine units"
 msgstr "圆柱形物体的直径（机器单位）"
 
-#: rayforge/ui_gtk/doceditor/layer_list.py
-msgid "Add New Layer"
-msgstr "添加新图层"
-
-#: rayforge/ui_gtk/doceditor/layer_list.py
-msgid "Workpiece Layers"
-msgstr "工件图层"
-
-#: rayforge/ui_gtk/doceditor/layer_list.py
-#, python-brace-format
-msgid "{count} layer"
-msgstr "{count} 个图层"
-
-#: rayforge/ui_gtk/doceditor/layer_list.py
-#, python-brace-format
-msgid "{count} Layers"
-msgstr "{count} 个图层"
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Default"
+msgstr "默认"
 
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "No materials in selected library."
@@ -5452,17 +5550,8 @@ msgstr "{count} 个步骤"
 
 #: rayforge/ui_gtk/doceditor/workflow_view.py
 #, python-brace-format
-msgid "Add step '{name}'"
-msgstr "添加步骤 '{name}'"
-
-#: rayforge/ui_gtk/doceditor/workflow_view.py
-#, python-brace-format
 msgid "Remove step '{name}'"
 msgstr "移除步骤 '{name}'"
-
-#: rayforge/ui_gtk/doceditor/workflow_view.py
-msgid "Reorder steps"
-msgstr "重新排序步骤"
 
 #: rayforge/ui_gtk/about.py
 msgid "Not found"
@@ -5598,6 +5687,11 @@ msgstr "{size} 字节"
 
 #: rayforge/shared/util/size.py
 #, python-brace-format
+msgid "{size:.1f} KB"
+msgstr "{size:.1f} KB"
+
+#: rayforge/shared/util/size.py
+#, python-brace-format
 msgid "{size:.1f} MB"
 msgstr "{size:.1f} MB"
 
@@ -5651,10 +5745,6 @@ msgstr "发现插件更新。"
 #: rayforge/addon_mgr/update_cmd.py
 msgid "Addons are up to date."
 msgstr "插件已是最新。"
-
-#: rayforge/addon_mgr/update_cmd.py
-msgid "Update check failed."
-msgstr "更新检查失败。"
 
 #: rayforge/addon_mgr/update_cmd.py
 msgid "Installing addon updates..."
@@ -5809,10 +5899,6 @@ msgstr "正在计算最终时间和距离估算..."
 #: rayforge/pipeline/stage/job_compute.py
 msgid "Generating G-code..."
 msgstr "正在生成G代码..."
-
-#: rayforge/pipeline/stage/job_compute.py
-msgid "Encoding paths for preview..."
-msgstr "正在为预览编码路径..."
 
 #: rayforge/pipeline/view/view_compute.py
 msgid "Rendering vertices..."
@@ -5993,11 +6079,6 @@ msgid "Export successful: {name}"
 msgstr "导出成功：{name}"
 
 #: rayforge/doceditor/file_cmd.py
-#, python-brace-format
-msgid "Export failed: {error}"
-msgstr "导出失败：{error}"
-
-#: rayforge/doceditor/file_cmd.py
 msgid "Object exported successfully."
 msgstr "对象导出成功。"
 
@@ -6107,10 +6188,6 @@ msgid "Rename layer"
 msgstr "重命名图层"
 
 #: rayforge/doceditor/layer_cmd.py
-msgid "Toggle layer visibility"
-msgstr "切换图层可见性"
-
-#: rayforge/doceditor/layer_cmd.py
 msgid "Set active layer"
 msgstr "设置活动图层"
 
@@ -6122,6 +6199,10 @@ msgstr "移除图层 '{name}'"
 #: rayforge/doceditor/layer_cmd.py
 msgid "Reorder layers"
 msgstr "重新排序图层"
+
+#: rayforge/doceditor/layer_cmd.py
+msgid "Reorder workpieces"
+msgstr "重新排列工件"
 
 #: rayforge/doceditor/editor.py
 #, python-brace-format
