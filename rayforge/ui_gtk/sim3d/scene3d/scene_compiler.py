@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import math
+from dataclasses import dataclass, field
 from typing import Callable, List, Optional, Tuple
 
 import numpy as np
@@ -128,11 +129,7 @@ def _remap_offsets(
                 vert_offset = pre_count - seg_start
                 pair_idx = min(vert_offset // 2, num_input_pairs)
                 extra_verts = vert_offset % 2
-                mapped = (
-                    seg_start
-                    + int(cum_subs[pair_idx]) * 2
-                    + extra_verts
-                )
+                mapped = seg_start + int(cum_subs[pair_idx]) * 2 + extra_verts
                 break
         result.append(mapped)
     return result
@@ -350,9 +347,7 @@ def _rasterize_scanlines(
     dilated = np.zeros_like(buffer)
     for dy in range(-1, 2):
         for dx in range(-1, 2):
-            shifted = np.roll(
-                np.roll(buffer, dy, axis=0), dx, axis=1
-            )
+            shifted = np.roll(np.roll(buffer, dy, axis=0), dx, axis=1)
             np.maximum(dilated, shifted, out=dilated)
     buffer = dilated
 
@@ -505,6 +500,28 @@ def _bake_visual_positions(
     return baked
 
 
+@dataclass
+class _WalkState:
+    current_power: float = 0.0
+    current_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    current_pos_vis: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    is_initial: bool = True
+    current_laser_uid: str = ""
+    is_rotary: bool = False
+    rotary_diameter: float = 0.0
+    has_mapped_data: bool = False
+    layer_infos: List[dict] = field(default_factory=list)
+    current_layer_start: Optional[int] = None
+    current_layer_has_scanlines: bool = False
+    current_layer_scanline_laser: str = ""
+    current_cut_lut: np.ndarray = field(
+        default_factory=lambda: np.zeros((256, 4), dtype=np.float32)
+    )
+    current_engrave_lut: np.ndarray = field(
+        default_factory=lambda: np.zeros((256, 4), dtype=np.float32)
+    )
+
+
 class _LayerAccumulator:
     """Accumulates vertex data for one rendering treatment group."""
 
@@ -633,9 +650,7 @@ class _LayerAccumulator:
                 self.ov_cum,
             )
             if pv_expansion:
-                self.pv_off = _remap_offsets(
-                    self.pv_off, pv_expansion
-                )
+                self.pv_off = _remap_offsets(self.pv_off, pv_expansion)
 
         if tv_arr.size > 0:
             tv_arr[:, 2] += Z_OFFSET_NON_POWERED
@@ -879,6 +894,285 @@ def _generate_texture_layers(
     return texture_layers
 
 
+def _handle_layer_start(
+    st: _WalkState,
+    acc: _LayerAccumulator,
+    cmd_idx: int,
+    cmd: LayerStartCommand,
+    config: RenderConfig3D,
+    use_layer_colors: bool,
+    accumulators: dict[bool, _LayerAccumulator],
+) -> _LayerAccumulator:
+    layer_uid = cmd.layer_uid
+    layer_cfg = None
+    if config.layer_configs and layer_uid in config.layer_configs:
+        layer_cfg = config.layer_configs[layer_uid]
+    st.is_rotary = layer_cfg.rotary_enabled if layer_cfg else False
+    st.rotary_diameter = (
+        layer_cfg.rotary_diameter if layer_cfg else 0.0
+    )
+    acc = accumulators[st.is_rotary]
+
+    acc.axis_position = layer_cfg.axis_position if layer_cfg else 0.0
+    acc.gear_ratio = layer_cfg.gear_ratio if layer_cfg else 1.0
+    acc.reverse = layer_cfg.reverse if layer_cfg else False
+    acc.diameter = st.rotary_diameter
+    acc.axis_position_3d = (
+        layer_cfg.axis_position_3d if layer_cfg else None
+    )
+    acc.cylinder_dir = (
+        layer_cfg.cylinder_dir if layer_cfg else None
+    )
+    st.has_mapped_data = st.is_rotary
+
+    if st.is_rotary and st.rotary_diameter > 0:
+        acc.begin_rotary_segment(
+            cmd_idx, degrees_input=st.has_mapped_data
+        )
+
+    st.current_layer_start = cmd_idx + 1
+    st.current_layer_has_scanlines = False
+    st.current_layer_scanline_laser = ""
+
+    if use_layer_colors:
+        _cut = _get_layer_lut(config, layer_uid, "cut")
+        if _cut is not None:
+            st.current_cut_lut = _cut
+        _engrave = _get_layer_lut(config, layer_uid, "engrave")
+        if _engrave is not None:
+            st.current_engrave_lut = _engrave
+
+    return acc
+
+
+def _handle_layer_end(
+    st: _WalkState,
+    acc: _LayerAccumulator,
+    cmd_idx: int,
+) -> None:
+    if st.current_layer_start is not None:
+        st.layer_infos.append(
+            {
+                "cmd_start": st.current_layer_start,
+                "cmd_end": cmd_idx,
+                "is_rotary": st.is_rotary,
+                "diameter": st.rotary_diameter,
+                "has_scanlines": st.current_layer_has_scanlines,
+                "scanline_laser": st.current_layer_scanline_laser,
+                "activation_cmd_idx": cmd_idx,
+                "axis_position": acc.axis_position,
+                "gear_ratio": acc.gear_ratio,
+                "reverse": acc.reverse,
+            }
+        )
+    if acc.current_rotary_seg is not None:
+        acc.end_rotary_segment(st.rotary_diameter, cmd_idx)
+    st.current_layer_start = None
+
+
+def _handle_set_laser(
+    st: _WalkState,
+    cmd: SetLaserCommand,
+    config: RenderConfig3D,
+    use_layer_colors: bool,
+) -> None:
+    st.current_laser_uid = cmd.laser_uid
+    if not use_layer_colors:
+        _cut = _get_lut(config, st.current_laser_uid, "cut")
+        st.current_cut_lut = (
+            _cut
+            if _cut is not None
+            else np.zeros((256, 4), dtype=np.float32)
+        )
+        _engrave = _get_lut(
+            config, st.current_laser_uid, "engrave"
+        )
+        st.current_engrave_lut = (
+            _engrave
+            if _engrave is not None
+            else np.zeros((256, 4), dtype=np.float32)
+        )
+
+
+def _update_positions(
+    st: _WalkState,
+    acc: _LayerAccumulator,
+    cmd: MovingCommand,
+) -> None:
+    st.current_pos_vis = _visual_end(cmd)
+    if st.has_mapped_data and st.is_rotary:
+        st.current_pos = _reconstruct_mu_pos(
+            cmd,
+            acc.diameter,
+            acc.gear_ratio,
+            acc.reverse,
+        )
+    else:
+        st.current_pos = cmd.end
+    st.is_initial = False
+
+
+def _handle_move_to(
+    st: _WalkState,
+    acc: _LayerAccumulator,
+    cmd: MoveToCommand,
+) -> None:
+    vis_end = _visual_end(cmd)
+    if not st.is_initial:
+        acc.tv.extend(st.current_pos_vis)
+        acc.tv.extend(vis_end)
+        acc.tv_cum += 2
+    _update_positions(st, acc, cmd)
+
+
+def _handle_line_to(
+    st: _WalkState,
+    acc: _LayerAccumulator,
+    cmd: LineToCommand,
+) -> None:
+    vis_end = _visual_end(cmd)
+    if st.current_power > 0.0:
+        power_byte = min(255, int(st.current_power * 255.0))
+        color = st.current_cut_lut[power_byte]
+        acc.pv.extend(st.current_pos_vis)
+        acc.pv.extend(vis_end)
+        acc.pc.extend(color)
+        acc.pc.extend(color)
+        acc.pv_cum += 2
+    else:
+        acc.zpv.extend(st.current_pos_vis)
+        acc.zpv.extend(vis_end)
+    _update_positions(st, acc, cmd)
+
+
+def _handle_arc_to(
+    st: _WalkState,
+    acc: _LayerAccumulator,
+    cmd: ArcToCommand,
+) -> None:
+    if st.has_mapped_data and st.is_rotary:
+        mu_cmd = _reconstruct_mu_arc(
+            cmd,
+            acc.diameter,
+            acc.gear_ratio,
+            acc.reverse,
+        )
+        segments = linearize_arc(mu_cmd, st.current_pos)
+        vis_segs = []
+        for seg_start, seg_end in segments:
+            vis_start = _mu_to_visual(
+                seg_start,
+                acc.diameter,
+                acc.gear_ratio,
+                acc.reverse,
+            )
+            vis_end_pt = _mu_to_visual(
+                seg_end,
+                acc.diameter,
+                acc.gear_ratio,
+                acc.reverse,
+            )
+            vis_segs.append((vis_start, vis_end_pt))
+    else:
+        segments = linearize_arc(cmd, st.current_pos)
+        vis_segs = segments
+    if st.current_power > 0.0:
+        power_byte = min(255, int(st.current_power * 255.0))
+        color = st.current_cut_lut[power_byte]
+        n_segs = len(vis_segs)
+        for seg_start, seg_end in vis_segs:
+            acc.pv.extend(seg_start)
+            acc.pv.extend(seg_end)
+            acc.pc.extend(color)
+            acc.pc.extend(color)
+        acc.pv_cum += n_segs * 2
+    else:
+        for seg_start, seg_end in vis_segs:
+            acc.zpv.extend(seg_start)
+            acc.zpv.extend(seg_end)
+    _update_positions(st, acc, cmd)
+
+
+def _handle_bezier_to(
+    st: _WalkState,
+    acc: _LayerAccumulator,
+    cmd: BezierToCommand,
+) -> None:
+    if st.has_mapped_data and st.is_rotary:
+        mu_cmd = _reconstruct_mu_bezier(
+            cmd,
+            acc.diameter,
+            acc.gear_ratio,
+            acc.reverse,
+        )
+        polyline = linearize_bezier_segment(
+            st.current_pos,
+            mu_cmd.control1,
+            mu_cmd.control2,
+            mu_cmd.end,
+        )
+        vis_poly = [
+            _mu_to_visual(
+                pt,
+                acc.diameter,
+                acc.gear_ratio,
+                acc.reverse,
+            )
+            for pt in polyline
+        ]
+    else:
+        polyline = linearize_bezier_segment(
+            st.current_pos,
+            cmd.control1,
+            cmd.control2,
+            cmd.end,
+        )
+        vis_poly = list(polyline)
+    if st.current_power > 0.0:
+        power_byte = min(255, int(st.current_power * 255.0))
+        color = st.current_cut_lut[power_byte]
+        for j in range(len(vis_poly) - 1):
+            acc.pv.extend(vis_poly[j])
+            acc.pv.extend(vis_poly[j + 1])
+            acc.pc.extend(color)
+            acc.pc.extend(color)
+        acc.pv_cum += (len(vis_poly) - 1) * 2
+    else:
+        for j in range(len(vis_poly) - 1):
+            acc.zpv.extend(vis_poly[j])
+            acc.zpv.extend(vis_poly[j + 1])
+    _update_positions(st, acc, cmd)
+
+
+def _handle_scanline(
+    st: _WalkState,
+    acc: _LayerAccumulator,
+    cmd: ScanLinePowerCommand,
+) -> None:
+    if cmd.end is not None:
+        vis_end = _visual_end(cmd)
+        _extract_zero_power_segments(
+            cmd,
+            st.current_pos_vis,
+            acc.zpv,
+            end_pos=vis_end,
+        )
+        if not st.is_initial:
+            n = _encode_overlay_segments(
+                cmd,
+                st.current_pos_vis,
+                st.current_engrave_lut,
+                acc.ov_pos,
+                acc.ov_col,
+                end_pos=vis_end,
+            )
+            acc.ov_cum += n
+        _update_positions(st, acc, cmd)
+    st.current_layer_has_scanlines = True
+    if not st.current_layer_scanline_laser:
+        st.current_layer_scanline_laser = st.current_laser_uid
+
+
 def compile_scene(
     ops: Ops,
     config: RenderConfig3D,
@@ -891,28 +1185,17 @@ def compile_scene(
         True: _LayerAccumulator(total_cmds, is_rotary=True),
     }
 
-    current_power = 0.0
-    current_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    current_pos_vis: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    is_initial = True
-    current_laser_uid = ""
-    is_rotary = False
-    rotary_diameter = 0.0
-    has_mapped_data = False
+    default_cut = _get_lut(config, "", "cut")
+    if default_cut is None:
+        default_cut = np.zeros((256, 4), dtype=np.float32)
+    default_engrave = _get_lut(config, "", "engrave")
+    if default_engrave is None:
+        default_engrave = np.zeros((256, 4), dtype=np.float32)
 
-    layer_infos: List[dict] = []
-    current_layer_start = None
-    current_layer_has_scanlines = False
-    current_layer_scanline_laser = ""
-    _default_cut = _get_lut(config, "", "cut")
-    if _default_cut is None:
-        _default_cut = np.zeros((256, 4), dtype=np.float32)
-    current_cut_lut: np.ndarray = _default_cut
-
-    _default_engrave = _get_lut(config, "", "engrave")
-    if _default_engrave is None:
-        _default_engrave = np.zeros((256, 4), dtype=np.float32)
-    current_engrave_lut: np.ndarray = _default_engrave
+    st = _WalkState(
+        current_cut_lut=default_cut,
+        current_engrave_lut=default_engrave,
+    )
 
     use_layer_colors = (
         config.ops_color_mode == "layer"
@@ -924,271 +1207,29 @@ def compile_scene(
         if cancel_check is not None and cancel_check():
             raise RuntimeError("Cancelled")
 
-        acc = accumulators[is_rotary]
+        acc = accumulators[st.is_rotary]
 
         if isinstance(cmd, LayerStartCommand):
-            layer_uid = cmd.layer_uid
-            layer_cfg = None
-            if config.layer_configs and layer_uid in config.layer_configs:
-                layer_cfg = config.layer_configs[layer_uid]
-            is_rotary = layer_cfg.rotary_enabled if layer_cfg else False
-            rotary_diameter = layer_cfg.rotary_diameter if layer_cfg else 0.0
-            acc = accumulators[is_rotary]
-
-            acc.axis_position = layer_cfg.axis_position if layer_cfg else 0.0
-            acc.gear_ratio = layer_cfg.gear_ratio if layer_cfg else 1.0
-            acc.reverse = layer_cfg.reverse if layer_cfg else False
-            acc.diameter = rotary_diameter
-            acc.axis_position_3d = (
-                layer_cfg.axis_position_3d if layer_cfg else None
+            acc = _handle_layer_start(
+                st, acc, i, cmd, config, use_layer_colors,
+                accumulators,
             )
-            acc.cylinder_dir = layer_cfg.cylinder_dir if layer_cfg else None
-            has_mapped_data = is_rotary
-
-            if is_rotary and rotary_diameter > 0:
-                acc.begin_rotary_segment(i, degrees_input=has_mapped_data)
-
-            current_layer_start = i + 1
-            current_layer_has_scanlines = False
-            current_layer_scanline_laser = ""
-
-            if use_layer_colors:
-                _cut = _get_layer_lut(config, layer_uid, "cut")
-                if _cut is not None:
-                    current_cut_lut = _cut
-                _engrave = _get_layer_lut(config, layer_uid, "engrave")
-                if _engrave is not None:
-                    current_engrave_lut = _engrave
-
         elif isinstance(cmd, LayerEndCommand):
-            if current_layer_start is not None:
-                layer_infos.append(
-                    {
-                        "cmd_start": current_layer_start,
-                        "cmd_end": i,
-                        "is_rotary": is_rotary,
-                        "diameter": rotary_diameter,
-                        "has_scanlines": current_layer_has_scanlines,
-                        "scanline_laser": current_layer_scanline_laser,
-                        "activation_cmd_idx": i,
-                        "axis_position": acc.axis_position,
-                        "gear_ratio": acc.gear_ratio,
-                        "reverse": acc.reverse,
-                    }
-                )
-            if acc.current_rotary_seg is not None:
-                acc.end_rotary_segment(rotary_diameter, i)
-            current_layer_start = None
-
+            _handle_layer_end(st, acc, i)
         elif isinstance(cmd, SetLaserCommand):
-            current_laser_uid = cmd.laser_uid
-            if not use_layer_colors:
-                _cut = _get_lut(config, current_laser_uid, "cut")
-                current_cut_lut = (
-                    _cut
-                    if _cut is not None
-                    else np.zeros((256, 4), dtype=np.float32)
-                )
-                _engrave = _get_lut(config, current_laser_uid, "engrave")
-                current_engrave_lut = (
-                    _engrave
-                    if _engrave is not None
-                    else np.zeros((256, 4), dtype=np.float32)
-                )
-
+            _handle_set_laser(st, cmd, config, use_layer_colors)
         elif isinstance(cmd, SetPowerCommand):
-            current_power = cmd.power
-
+            st.current_power = cmd.power
         elif isinstance(cmd, MoveToCommand):
-            vis_end = _visual_end(cmd)
-            if not is_initial:
-                acc.tv.extend(current_pos_vis)
-                acc.tv.extend(vis_end)
-                acc.tv_cum += 2
-            current_pos_vis = vis_end
-            if has_mapped_data and is_rotary:
-                current_pos = _reconstruct_mu_pos(
-                    cmd,
-                    acc.diameter,
-                    acc.gear_ratio,
-                    acc.reverse,
-                )
-            else:
-                current_pos = cmd.end
-            is_initial = False
-
+            _handle_move_to(st, acc, cmd)
         elif isinstance(cmd, LineToCommand):
-            vis_end = _visual_end(cmd)
-            if current_power > 0.0:
-                power_byte = min(255, int(current_power * 255.0))
-                color = current_cut_lut[power_byte]
-                acc.pv.extend(current_pos_vis)
-                acc.pv.extend(vis_end)
-                acc.pc.extend(color)
-                acc.pc.extend(color)
-                acc.pv_cum += 2
-            else:
-                acc.zpv.extend(current_pos_vis)
-                acc.zpv.extend(vis_end)
-            current_pos_vis = vis_end
-            if has_mapped_data and is_rotary:
-                current_pos = _reconstruct_mu_pos(
-                    cmd,
-                    acc.diameter,
-                    acc.gear_ratio,
-                    acc.reverse,
-                )
-            else:
-                current_pos = cmd.end
-            is_initial = False
-
+            _handle_line_to(st, acc, cmd)
         elif isinstance(cmd, ArcToCommand):
-            if has_mapped_data and is_rotary:
-                mu_cmd = _reconstruct_mu_arc(
-                    cmd,
-                    acc.diameter,
-                    acc.gear_ratio,
-                    acc.reverse,
-                )
-                segments = linearize_arc(mu_cmd, current_pos)
-                vis_segs = []
-                for seg_start, seg_end in segments:
-                    vis_start = _mu_to_visual(
-                        seg_start,
-                        acc.diameter,
-                        acc.gear_ratio,
-                        acc.reverse,
-                    )
-                    vis_end_pt = _mu_to_visual(
-                        seg_end,
-                        acc.diameter,
-                        acc.gear_ratio,
-                        acc.reverse,
-                    )
-                    vis_segs.append((vis_start, vis_end_pt))
-            else:
-                segments = linearize_arc(cmd, current_pos)
-                vis_segs = segments
-            if current_power > 0.0:
-                power_byte = min(255, int(current_power * 255.0))
-                color = current_cut_lut[power_byte]
-                n_segs = len(vis_segs)
-                for seg_start, seg_end in vis_segs:
-                    acc.pv.extend(seg_start)
-                    acc.pv.extend(seg_end)
-                    acc.pc.extend(color)
-                    acc.pc.extend(color)
-                acc.pv_cum += n_segs * 2
-            else:
-                for seg_start, seg_end in vis_segs:
-                    acc.zpv.extend(seg_start)
-                    acc.zpv.extend(seg_end)
-            vis_end = _visual_end(cmd)
-            current_pos_vis = vis_end
-            current_pos = (
-                _reconstruct_mu_pos(
-                    cmd,
-                    acc.diameter,
-                    acc.gear_ratio,
-                    acc.reverse,
-                )
-                if has_mapped_data and is_rotary
-                else cmd.end
-            )
-            is_initial = False
-
+            _handle_arc_to(st, acc, cmd)
         elif isinstance(cmd, BezierToCommand):
-            if has_mapped_data and is_rotary:
-                mu_cmd = _reconstruct_mu_bezier(
-                    cmd,
-                    acc.diameter,
-                    acc.gear_ratio,
-                    acc.reverse,
-                )
-                polyline = linearize_bezier_segment(
-                    current_pos,
-                    mu_cmd.control1,
-                    mu_cmd.control2,
-                    mu_cmd.end,
-                )
-                vis_poly = [
-                    _mu_to_visual(
-                        pt,
-                        acc.diameter,
-                        acc.gear_ratio,
-                        acc.reverse,
-                    )
-                    for pt in polyline
-                ]
-            else:
-                polyline = linearize_bezier_segment(
-                    current_pos,
-                    cmd.control1,
-                    cmd.control2,
-                    cmd.end,
-                )
-                vis_poly = list(polyline)
-            if current_power > 0.0:
-                power_byte = min(255, int(current_power * 255.0))
-                color = current_cut_lut[power_byte]
-                for j in range(len(vis_poly) - 1):
-                    acc.pv.extend(vis_poly[j])
-                    acc.pv.extend(vis_poly[j + 1])
-                    acc.pc.extend(color)
-                    acc.pc.extend(color)
-                acc.pv_cum += (len(vis_poly) - 1) * 2
-            else:
-                for j in range(len(vis_poly) - 1):
-                    acc.zpv.extend(vis_poly[j])
-                    acc.zpv.extend(vis_poly[j + 1])
-            vis_end = _visual_end(cmd)
-            current_pos_vis = vis_end
-            current_pos = (
-                _reconstruct_mu_pos(
-                    cmd,
-                    acc.diameter,
-                    acc.gear_ratio,
-                    acc.reverse,
-                )
-                if has_mapped_data and is_rotary
-                else cmd.end
-            )
-            is_initial = False
-
+            _handle_bezier_to(st, acc, cmd)
         elif isinstance(cmd, ScanLinePowerCommand):
-            if cmd.end is not None:
-                vis_end = _visual_end(cmd)
-                _extract_zero_power_segments(
-                    cmd,
-                    current_pos_vis,
-                    acc.zpv,
-                    end_pos=vis_end,
-                )
-                if not is_initial:
-                    n = _encode_overlay_segments(
-                        cmd,
-                        current_pos_vis,
-                        current_engrave_lut,
-                        acc.ov_pos,
-                        acc.ov_col,
-                        end_pos=vis_end,
-                    )
-                    acc.ov_cum += n
-                current_pos_vis = vis_end
-                current_pos = (
-                    _reconstruct_mu_pos(
-                        cmd,
-                        acc.diameter,
-                        acc.gear_ratio,
-                        acc.reverse,
-                    )
-                    if has_mapped_data and is_rotary
-                    else cmd.end
-                )
-                is_initial = False
-            current_layer_has_scanlines = True
-            if not current_layer_scanline_laser:
-                current_layer_scanline_laser = current_laser_uid
+            _handle_scanline(st, acc, cmd)
 
         for a in accumulators.values():
             a.record_offset(i)
@@ -1197,7 +1238,9 @@ def compile_scene(
         accumulators, config
     )
 
-    texture_layers = _generate_texture_layers(ops, layer_infos, config)
+    texture_layers = _generate_texture_layers(
+        ops, st.layer_infos, config
+    )
 
     return CompiledSceneArtifact(
         generation_id=0,
