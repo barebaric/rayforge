@@ -436,6 +436,11 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_gcode_line_activated
         )
 
+        # Connect edit item requests from the layers tab
+        self.bottom_panel.edit_item_requested.connect(
+            self._on_edit_item_requested
+        )
+
         config = get_context().config
         if config.bottom_panel:
             self.bottom_panel.from_dict(config.bottom_panel)

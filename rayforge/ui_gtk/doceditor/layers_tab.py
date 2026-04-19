@@ -1,6 +1,7 @@
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
+from blinker import Signal
 from gi.repository import Gdk, GObject, Gtk
 from ...core.doc import Doc
 from ...core.layer import Layer
@@ -21,6 +22,8 @@ class LayersTab(Gtk.Box):
         self._columns = []
         self._layer_drop_index = -1
         self._pan_offset_x = 0.0
+
+        self.edit_item_requested = Signal()
 
         self.scrolled = Gtk.ScrolledWindow()
         self.scrolled.set_policy(
@@ -108,8 +111,12 @@ class LayersTab(Gtk.Box):
             col = LayerColumn(
                 self.doc, child, self.editor, can_delete=can_delete
             )
+            col.edit_item_requested.connect(self._on_column_edit_item)
             self._columns.append(col)
             self.columns_box.append(col)
+
+    def _on_column_edit_item(self, sender, **kwargs):
+        self.edit_item_requested.send(sender, **kwargs)
 
     def _on_add_clicked(self, button):
         self.editor.layer.add_layer_and_set_active()
