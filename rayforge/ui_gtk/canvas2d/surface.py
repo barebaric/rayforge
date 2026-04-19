@@ -1332,13 +1332,7 @@ class WorkSurface(WorldSurface):
         circumference = math.pi * diameter
         half_circ = circumference / 2.0
 
-        space = self.machine.get_coordinate_space()
-
-        if self.machine.wcs_origin_is_workarea_origin:
-            origin_x, origin_y = space.get_workarea_origin_in_machine()
-        else:
-            wcs_x, wcs_y, _ = self._get_active_layer_wcs_offset()
-            origin_x, origin_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
+        origin_x, origin_y = self._machine_coords_to_canvas(0.0, 0.0)
 
         bed_width = self.machine.axis_extents[0]
         max_length = bed_width
@@ -1384,12 +1378,7 @@ class WorkSurface(WorldSurface):
     def _center_on_rotary_axis(self):
         """Adjusts pan to vertically center the view on the cylinder X axis."""
         assert self.machine
-        space = self.machine.get_coordinate_space()
-        if self.machine.wcs_origin_is_workarea_origin:
-            _, origin_y = space.get_workarea_origin_in_machine()
-        else:
-            wcs_x, wcs_y, _ = self._get_active_layer_wcs_offset()
-            _, origin_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
+        _, origin_y = self._machine_coords_to_canvas(0.0, 0.0)
         self.set_pan(self.pan_x_mm, origin_y - self.height_mm / 2.0)
 
     def _sync_nogo_zone_elements(self):
