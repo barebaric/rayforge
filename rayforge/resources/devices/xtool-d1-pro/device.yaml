@@ -1,0 +1,24 @@
+api_version: 1
+device:
+  name: xTool D1 Pro
+machine:
+  driver: GrblNetworkDriver
+  gcode_precision: 3
+  axis_extents:
+  - 430.0
+  - 390.0
+  origin: bottom_left
+  max_travel_speed: 3000
+  max_cut_speed: 1000
+  home_on_start: true
+  driver_args:
+    host: ''
+    port: 8080
+    ws_port: 8081
+  heads:
+  - max_power: 1000
+    frame_power_percent: 1.0
+    focus_power_percent: 1.0
+    spot_size_mm:
+    - 0.05
+    - 0.05

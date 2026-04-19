@@ -22,7 +22,7 @@ machine:
     frame_repeat_count: 20
     frame_speed: 0
     max_power: 1000
-    model_id: null
+    model_path: null
     name: Laser Head
     raster_color: '#000000'
     spot_size_mm:

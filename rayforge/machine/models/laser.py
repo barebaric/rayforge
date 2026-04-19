@@ -21,7 +21,7 @@ class Laser:
         self.spot_size_mm: Tuple[float, float] = 0.1, 0.1  # millimeters
         self.cut_color: str = "#ff00ff"  # Magenta for cut
         self.raster_color: str = "#000000"  # Black for raster
-        self.model_id: Optional[str] = None
+        self.model_path: Optional[str] = None
         self.transform: np.ndarray = np.eye(4, dtype=np.float64)
         self.focal_distance: float = 0.0
         self.changed = Signal()
@@ -83,10 +83,10 @@ class Laser:
         self.raster_color = color
         self.changed.send(self)
 
-    def set_model_id(self, model_id: Optional[str]):
-        if self.model_id == model_id:
+    def set_model_path(self, model_path: Optional[str]):
+        if self.model_path == model_path:
             return
-        self.model_id = model_id
+        self.model_path = model_path
         self.changed.send(self)
 
     def get_rotation(self):
@@ -143,7 +143,7 @@ class Laser:
             "spot_size_mm": self.spot_size_mm,
             "cut_color": self.cut_color,
             "raster_color": self.raster_color,
-            "model_id": self.model_id,
+            "model_path": self.model_path,
             "transform": self.transform.flatten().tolist(),
             "focal_distance": self.focal_distance,
         }
@@ -167,7 +167,7 @@ class Laser:
             "spot_size_mm",
             "cut_color",
             "raster_color",
-            "model_id",
+            "model_path",
             "transform",
             "focal_distance",
         }
@@ -205,7 +205,7 @@ class Laser:
         lh.frame_corner_pause = data.get(
             "frame_corner_pause", lh.frame_corner_pause
         )
-        lh.model_id = data.get("model_id")
+        lh.model_path = data.get("model_path")
         raw_transform = data.get("transform")
         if raw_transform is not None:
             lh.transform = np.array(raw_transform, dtype=np.float64).reshape(

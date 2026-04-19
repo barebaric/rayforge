@@ -1,14 +1,12 @@
 import logging
 import math
 import time
-from pathlib import Path
 from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
 import numpy as np
 from gi.repository import GLib, Gdk, Gtk, Pango
 from OpenGL import GL
 from ....context import RayforgeContext
 from ....core.geo import Point
-from ....core.model import Model
 from ....core.ops import Ops
 from ....machine.assembly import LinkRole
 from ....machine.kinematic_mapping import KinematicMapping
@@ -1776,19 +1774,17 @@ class Canvas3D(Gtk.GLArea):
         logger.debug("Model renderers: %d links with models", len(model_links))
 
         for link in model_links:
-            assert link.model_id is not None
+            assert link.model is not None
             logger.debug(
-                "Model renderers: resolving model_id=%s for link %s",
-                link.model_id,
+                "Model renderers: resolving model %s for link %s",
+                link.model,
                 link.name,
             )
-            resolved = self._context.model_mgr.resolve(
-                Model(name="", path=Path(link.model_id))
-            )
+            resolved = self._context.model_mgr.resolve(link.model)
             if resolved is None:
                 logger.warning(
                     "Model file not found: %s, skipping.",
-                    link.model_id,
+                    link.model.path,
                 )
                 continue
 

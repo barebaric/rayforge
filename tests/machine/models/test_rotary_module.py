@@ -22,7 +22,7 @@ class TestRotaryModule:
         assert rm.mu_per_rotation == 0.0
         assert rm.default_diameter == 25.0
         assert rm.rotary_type == RotaryType.JAWS
-        assert rm.model_id is None
+        assert rm.model_path is None
         assert_array_equal(rm.transform, np.eye(4))
         assert rm.extra == {}
 
@@ -49,8 +49,8 @@ class TestRotaryModule:
         assert rm.transform[2, 3] == 30.0
         assert len(signals) == 3
 
-        rm.set_model_id("rotary/test.glb")
-        assert rm.model_id == "rotary/test.glb"
+        rm.set_model_path("test.glb")
+        assert rm.model_path == "test.glb"
         assert len(signals) == 4
 
         rm.set_default_diameter(50.0)
@@ -87,19 +87,19 @@ class TestRotaryModule:
         rm.set_axis(Axis.A)
         assert len(signals) == 0
 
-    def test_set_model_id_no_signal_if_same(self):
+    def test_set_model_path_no_signal_if_same(self):
         rm = RotaryModule()
-        rm.model_id = "rotary/test.glb"
+        rm.model_path = "test.glb"
         signals = []
 
         def on_changed(sender, **kwargs):
             signals.append(sender)
 
         rm.changed.connect(on_changed)
-        rm.set_model_id("rotary/test.glb")
+        rm.set_model_path("test.glb")
         assert len(signals) == 0
 
-    def test_set_model_id_to_none_no_signal_if_already_none(self):
+    def test_set_model_path_to_none_no_signal_if_already_none(self):
         rm = RotaryModule()
         signals = []
 
@@ -107,7 +107,7 @@ class TestRotaryModule:
             signals.append(sender)
 
         rm.changed.connect(on_changed)
-        rm.set_model_id(None)
+        rm.set_model_path(None)
         assert len(signals) == 0
 
     def test_set_mode_no_signal_if_same(self):
@@ -139,7 +139,7 @@ class TestRotaryModule:
         rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
         rm.set_mm_per_rotation(100.0)
         rm.set_position(10.0, 20.0, 5.0)
-        rm.set_model_id("rotary/standard.glb")
+        rm.set_model_path("standard.glb")
 
         data = rm.to_dict()
         rm2 = RotaryModule.from_dict(data)
@@ -150,7 +150,7 @@ class TestRotaryModule:
         assert rm2.mode == RotaryMode.AXIS_REPLACEMENT
         assert rm2.mu_per_rotation == 100.0
         assert_array_equal(rm2.transform, rm.transform)
-        assert rm2.model_id == "rotary/standard.glb"
+        assert rm2.model_path == "standard.glb"
 
     def test_deserialization_defaults(self):
         data = {"uid": "test-uid"}
@@ -159,7 +159,7 @@ class TestRotaryModule:
         assert rm.axis == Axis.A
         assert rm.mode == RotaryMode.TRUE_4TH_AXIS
         assert rm.mu_per_rotation == 0.0
-        assert rm.model_id is None
+        assert rm.model_path is None
         assert_array_equal(rm.transform, np.eye(4))
 
     def test_mm_per_rotation_omitted_when_zero(self):
@@ -304,10 +304,10 @@ class TestRotaryModule:
         assert rm.transform[1, 3] == 20.0
         assert rm.transform[2, 3] == 5.0
 
-    def test_deserialization_legacy_model_path(self):
+    def test_deserialization_reads_model_path(self):
         data = {"uid": "test", "model_path": "rotary/old.glb"}
         rm = RotaryModule.from_dict(data)
-        assert rm.model_id == "rotary/old.glb"
+        assert rm.model_path == "rotary/old.glb"
 
     def test_deserialization_legacy_keys_not_in_extra(self):
         data = {
@@ -359,7 +359,7 @@ class TestRotaryModule:
 
     def test_collision_bbox_returns_none_with_model(self):
         rm = RotaryModule()
-        rm.set_model_id("rotary/test.glb")
+        rm.set_model_path("test.glb")
         assert rm.get_collision_bbox() is None
 
 
@@ -536,12 +536,12 @@ class TestMachineRotaryModules:
         assert machine2.rotary_modules[rm1.uid].name == "Module A"
         assert machine2.rotary_modules[rm2.uid].name == "Module B"
 
-    def test_serialization_roundtrip_with_model_id(self, lite_context):
+    def test_serialization_roundtrip_with_model_path(self, lite_context):
         machine = Machine(lite_context)
         lite_context.machine_mgr.add_machine(machine)
         rm = RotaryModule()
         rm.name = "Chuck Module"
-        rm.set_model_id("rotary/custom.glb")
+        rm.set_model_path("custom.glb")
         machine.add_rotary_module(rm)
 
         data = machine.to_dict()
@@ -550,7 +550,7 @@ class TestMachineRotaryModules:
         assert len(machine2.rotary_modules) == 1
         rm2 = machine2.rotary_modules[rm.uid]
         assert rm2.name == "Chuck Module"
-        assert rm2.model_id == "rotary/custom.glb"
+        assert rm2.model_path == "custom.glb"
 
     def test_axis_replacement_preserves_y_extent(self, lite_context):
         machine = Machine(lite_context)
@@ -642,16 +642,16 @@ class TestMachineRotaryModules:
         assert y_cfg is not None
         assert y_cfg.axis_type.name != "ROTARY"
 
-    def test_serialization_model_id_none(self, lite_context):
+    def test_serialization_model_path_none(self, lite_context):
         machine = Machine(lite_context)
         lite_context.machine_mgr.add_machine(machine)
         rm = RotaryModule()
-        rm.model_id = None
+        rm.model_path = None
         machine.add_rotary_module(rm)
 
         data = machine.to_dict()
-        assert data["machine"]["rotary_modules"][0]["model_id"] is None
+        assert data["machine"]["rotary_modules"][0]["model_path"] is None
 
         machine2 = Machine.from_dict(data, context=lite_context)
         rm2 = list(machine2.rotary_modules.values())[0]
-        assert rm2.model_id is None
+        assert rm2.model_path is None

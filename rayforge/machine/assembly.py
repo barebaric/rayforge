@@ -14,6 +14,7 @@ from typing import (
 import numpy as np
 
 from ..core.geo import Point3D
+from ..core.model import Model
 from ..core.ops.axis import Axis
 
 if TYPE_CHECKING:
@@ -41,7 +42,7 @@ class Link:
     local_transform: np.ndarray = field(
         default_factory=lambda: np.eye(4, dtype=np.float64)
     )
-    model_id: Optional[str] = None
+    model: Optional[Model] = None
     model_transform: np.ndarray = field(
         default_factory=lambda: np.eye(4, dtype=np.float64)
     )
@@ -173,7 +174,7 @@ class Assembly:
 
     def get_model_links(self) -> List[Link]:
         """Return all links that have a 3D model assigned."""
-        return [link for link in self._links if link.model_id is not None]
+        return [link for link in self._links if link.model is not None]
 
     def model_world_transforms(
         self,
@@ -198,7 +199,7 @@ class Assembly:
         chuck_names = set(self._roles.get(LinkRole.CHUCK, []))
         transforms: Dict[str, np.ndarray] = {}
         for link in self._links:
-            if link.model_id is None:
+            if link.model is None:
                 continue
             if link.joint_type == JointType.REVOLUTE:
                 parent = self._link_map[link.parent] if link.parent else None

@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING
 from rayforge.core.doc import Doc
 from rayforge.core.ops import Ops
 from rayforge.machine.models.machine import Machine
-from rayforge.machine.models.profile import MachineProfile, PROFILES
+from rayforge.machine.device.profile import DeviceProfile
+from rayforge.config import BUILTIN_DEVICES_DIR
 from rayforge.shared import tasker
 
 if TYPE_CHECKING:
@@ -16,21 +17,10 @@ if TYPE_CHECKING:
 async def carvera_air_machine(
     context_initializer: "RayforgeContext",
 ) -> "Machine":
-    """Provides a Machine instance configured from the Carvera Air profile."""
-    # Find the Carvera Air profile from the list of built-in profiles.
-    profile = next((p for p in PROFILES if p.name == "Carvera Air"), None)
-    assert profile is not None, (
-        "Carvera Air profile not found in PROFILES list."
-    )
-
-    # Create the machine instance from the profile.
-    # This also creates and registers the custom dialect defined in the
-    # profile.
-    machine = profile.create_machine(context_initializer)
-
-    # Wait for any pending tasks (like rebuild-driver) to complete
+    """Provides a Machine instance configured from the Carvera Air device."""
+    pkg = DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "carvera-air")
+    machine = pkg.create_machine(context_initializer)
     tasker.task_mgr.wait_until_settled(5000)
-
     return machine
 
 
@@ -149,86 +139,20 @@ async def test_inject_wcs_after_preamble_flag(carvera_air_machine: "Machine"):
 
 
 @pytest.mark.asyncio
-async def test_profile_without_rotary_modules(
+async def test_builtin_devices_all_load():
+    """All bundled device profiles can be loaded."""
+    for d in sorted(BUILTIN_DEVICES_DIR.iterdir()):
+        if d.is_dir():
+            pkg = DeviceProfile.from_path(d)
+            assert pkg.name
+            assert pkg.dialect_config
+
+
+@pytest.mark.asyncio
+async def test_device_without_rotary_modules(
     context_initializer: "RayforgeContext",
 ):
-    """Profiles without rotary_modules create machines with none."""
-    profile = MachineProfile(name="No Rotary Test")
-    machine = profile.create_machine(context_initializer)
+    """Devices without rotary_modules create machines with none."""
+    pkg = DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube")
+    machine = pkg.create_machine(context_initializer)
     assert machine.rotary_modules == {}
-
-
-@pytest.mark.asyncio
-async def test_profile_with_rotary_modules(
-    context_initializer: "RayforgeContext",
-):
-    """Profile with rotary_modules creates machine with those modules."""
-    profile = MachineProfile(
-        name="Rotary Test",
-        rotary_modules=[
-            {
-                "name": "Chuck A",
-                "model_id": "rotary/standard.glb",
-            },
-            {
-                "name": "Chuck B",
-            },
-        ],
-    )
-    machine = profile.create_machine(context_initializer)
-    assert len(machine.rotary_modules) == 2
-
-    modules = list(machine.rotary_modules.values())
-    names = {m.name for m in modules}
-    assert names == {"Chuck A", "Chuck B"}
-
-    chuck_a = next(m for m in modules if m.name == "Chuck A")
-    assert chuck_a.model_id == "rotary/standard.glb"
-
-    chuck_b = next(m for m in modules if m.name == "Chuck B")
-    assert chuck_b.model_id is None
-
-
-@pytest.mark.asyncio
-async def test_profile_rotary_modules_have_unique_uids(
-    context_initializer: "RayforgeContext",
-):
-    """Each rotary module from a profile gets a unique UID."""
-    profile = MachineProfile(
-        name="UID Test",
-        rotary_modules=[
-            {"name": "Module 1"},
-            {"name": "Module 2"},
-        ],
-    )
-    machine = profile.create_machine(context_initializer)
-    uids = list(machine.rotary_modules.keys())
-    assert len(uids) == 2
-    assert uids[0] != uids[1]
-
-
-@pytest.mark.asyncio
-async def test_builtin_profiles_have_no_rotary_modules():
-    """Built-in profiles do not define rotary_modules yet."""
-    for profile in PROFILES:
-        assert profile.rotary_modules is None
-
-
-@pytest.mark.asyncio
-async def test_profile_with_rotary_and_model_id(
-    context_initializer: "RayforgeContext",
-):
-    """Verify model_id flows through profile → machine → serialization."""
-    profile = MachineProfile(
-        name="Model ID Test",
-        rotary_modules=[
-            {
-                "name": "Rotary Axis",
-                "model_id": "rotary/carvera_standard.glb",
-            },
-        ],
-    )
-    machine = profile.create_machine(context_initializer)
-    assert len(machine.rotary_modules) == 1
-    rm = list(machine.rotary_modules.values())[0]
-    assert rm.model_id == "rotary/carvera_standard.glb"

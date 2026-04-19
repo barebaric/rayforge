@@ -1,9 +1,17 @@
+import logging
 from gettext import gettext as _
+from typing import Optional
+
 from blinker import Signal
 from gi.repository import Adw, Gtk
-from ..shared.gtk import apply_css
-from ...machine.models.profile import MachineProfile, PROFILES
 
+from ..icons import get_icon
+from ..shared.gtk import apply_css
+from ...context import get_context
+from ...machine.device.profile import DeviceProfile
+from .profile_importer import open_profile_zip
+
+logger = logging.getLogger(__name__)
 
 css = """
 .profile-selector-list {
@@ -17,16 +25,17 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
     A dialog for selecting a machine profile from a list.
 
     The dialog is confirmed by activating a row (double-click or Enter).
+    An "Import from File" button allows installing a profile from a zip.
     """
 
     profile_selected = Signal()
 
     class _ProfileRow(Adw.ActionRow):
-        """A custom row to hold a reference to its machine profile."""
+        """A custom row to hold a reference to its device profile."""
 
-        def __init__(self, profile: MachineProfile, **kwargs):
+        def __init__(self, profile: DeviceProfile, **kwargs):
             super().__init__(**kwargs)
-            self.profile: MachineProfile = profile
+            self.profile: DeviceProfile = profile
 
     def __init__(self, **kwargs):
         """Initializes the Machine Profile Selector dialog."""
@@ -37,7 +46,6 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
 
         apply_css(css)
 
-        # Build the custom content area
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         content.set_margin_top(12)
 
@@ -51,36 +59,62 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
         content.append(scrolled_window)
 
         self.profile_list_box = Gtk.ListBox()
-        # A single click now selects the row, making it ready for activation.
         self.profile_list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
         self.profile_list_box.add_css_class("profile-selector-list")
         self.profile_list_box.connect("row-activated", self._on_row_activated)
         scrolled_window.set_child(self.profile_list_box)
 
+        import_button = Gtk.Button()
+        import_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        import_box.append(get_icon("open-symbolic"))
+        import_box.append(Gtk.Label(label=_("Import from File…")))
+        import_button.set_child(import_box)
+        import_button.connect("clicked", self._on_import_clicked)
+        content.append(import_button)
+
         self._populate_profile_list()
 
         self.set_extra_child(content)
 
-        # Add only a "Cancel" response. The dialog closes on any response.
         self.add_response("cancel", _("Cancel"))
         self.set_default_response("cancel")
 
     def _populate_profile_list(self):
-        """Fills the list box with available machine profiles."""
-        sorted_profiles = sorted(PROFILES, key=lambda p: p.name.lower())
+        """Fills the list box with available device profiles."""
+        profiles = get_context().device_profile_mgr.get_all()
 
-        for profile in sorted_profiles:
+        for pkg in profiles:
             row = self._ProfileRow(
-                profile=profile,
-                title=profile.name,
-                subtitle=getattr(profile, "description", ""),
+                profile=pkg,
+                title=pkg.name,
+                subtitle=pkg.meta.description,
                 activatable=True,
             )
             self.profile_list_box.append(row)
 
     def _on_row_activated(self, listbox: Gtk.ListBox, row: _ProfileRow):
-        """
-        Handles row activation, emits the signal, and closes the dialog.
-        """
         self.profile_selected.send(self, profile=row.profile)
         self.close()
+
+    def _on_import_clicked(self, button):
+        open_profile_zip(self, self._on_import_result)
+
+    def _on_import_result(
+        self, profile: Optional[DeviceProfile], error: Optional[str]
+    ):
+        if error is not None:
+            self._show_import_error(error)
+            return
+        self.profile_selected.send(self, profile=profile)
+        self.close()
+
+    def _show_import_error(self, message: str):
+        error_dialog = Adw.MessageDialog(
+            transient_for=self,
+            modal=True,
+            heading=_("Import Failed"),
+            body=message,
+        )
+        error_dialog.add_response("ok", _("OK"))
+        error_dialog.set_default_response("ok")
+        error_dialog.present()

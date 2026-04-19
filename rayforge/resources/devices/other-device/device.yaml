@@ -1,0 +1,6 @@
+api_version: 1
+device:
+  name: Other Device
+machine:
+  driver: GrblSerialDriver
+  origin: bottom_left
