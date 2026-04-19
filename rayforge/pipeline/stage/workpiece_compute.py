@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from ...core.geo import Geometry
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
+MAX_RASTER_RENDER_PIXELS = 16 * 1024 * 1024
 
 
 def _run_producer_on_surface(
@@ -275,13 +276,23 @@ def _process_raster_full_render(
 
     target_width = int(size[0] * px_per_mm_x)
     target_height = int(size[1] * px_per_mm_y)
+
+    num_pixels = target_width * target_height
+    if num_pixels > MAX_RASTER_RENDER_PIXELS:
+        scale_factor = (MAX_RASTER_RENDER_PIXELS / num_pixels) ** 0.5
+        target_width = max(1, int(target_width * scale_factor))
+        target_height = max(1, int(target_height * scale_factor))
+
+    effective_ppm_x = target_width / size[0] if size[0] > 0 else 0.0
+    effective_ppm_y = target_height / size[1] if size[1] > 0 else 0.0
+
     surface = workpiece.render_to_pixels(target_width, target_height)
     if not surface:
         return None
 
     artifact = _run_producer_on_surface(
         surface,
-        (px_per_mm_x, px_per_mm_y),
+        (effective_ppm_x, effective_ppm_y),
         opsproducer,
         laser,
         workpiece,
@@ -392,12 +403,22 @@ def _execute_raster(
 
     px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
 
+    total_pixels = size[0] * px_per_mm_x * size[1] * px_per_mm_y
+    if total_pixels > MAX_RASTER_RENDER_PIXELS:
+        scale_factor = (MAX_RASTER_RENDER_PIXELS / total_pixels) ** 0.5
+        px_per_mm_x *= scale_factor
+        px_per_mm_y *= scale_factor
+        raster_settings = dict(settings)
+        raster_settings["pixels_per_mm"] = (px_per_mm_x, px_per_mm_y)
+    else:
+        raster_settings = settings
+
     if opsproducer.requires_full_render:
         artifact = _process_raster_full_render(
             workpiece,
             opsproducer,
             laser,
-            settings,
+            raster_settings,
             generation_id,
             generation_size,
             context,
@@ -406,7 +427,7 @@ def _execute_raster(
             yield artifact, 1.0
         return
 
-    opsproducer.prepare(workpiece, settings)
+    opsproducer.prepare(workpiece, raster_settings)
 
     total_height_px = size[1] * px_per_mm_y
 
@@ -424,7 +445,7 @@ def _execute_raster(
             workpiece,
             opsproducer,
             laser,
-            settings,
+            raster_settings,
             generation_id,
             total_height_px,
             generation_size,

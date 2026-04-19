@@ -3,6 +3,7 @@ import warnings
 import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 from pypdf import PdfReader
+from pypdf.errors import PdfReadError
 from ..base_renderer import RasterRenderer, RenderSpecification
 
 with warnings.catch_warnings():
@@ -107,6 +108,30 @@ class PdfRenderer(RasterRenderer):
             import_result, target_width, target_height
         )
 
+    def _get_page_points(self, data: bytes) -> Optional[Tuple[float, float]]:
+        try:
+            reader = PdfReader(io.BytesIO(data))
+            mb = reader.pages[0].mediabox
+            w, h = float(mb.width), float(mb.height)
+            if w > 0 and h > 0:
+                return w, h
+        except (PdfReadError, IndexError, AttributeError, ValueError) as e:
+            logger.warning(
+                "Failed to read PDF page dimensions via pypdf: %s", e
+            )
+
+        try:
+            probe = pyvips.Image.pdfload_buffer(data, dpi=72)
+            w, h = float(probe.width), float(probe.height)
+            if w > 0 and h > 0:
+                return w, h
+        except pyvips.Error as e:
+            logger.warning(
+                "Failed to read PDF page dimensions via pyvips: %s", e
+            )
+
+        return None
+
     def render_base_image(
         self,
         data: bytes,
@@ -128,20 +153,11 @@ class PdfRenderer(RasterRenderer):
 
         # For PDFs, we must determine a DPI to request from the loader
         # to achieve the target pixel dimensions.
-        try:
-            reader = PdfReader(io.BytesIO(data))
-            media_box = reader.pages[0].mediabox
-            w_pt = float(media_box.width)
-            h_pt = float(media_box.height)
-
-            if w_pt > 0 and h_pt > 0 and width > 0 and height > 0:
-                # Target DPI = (pixels / points) * 72
-                dpi_x = (width / w_pt) * 72.0
-                dpi_y = (height / h_pt) * 72.0
-                dpi = max(dpi_x, dpi_y)
-            else:
-                dpi = 300.0
-        except Exception:
+        page_pts = self._get_page_points(data)
+        if page_pts and width > 0 and height > 0:
+            w_pt, h_pt = page_pts
+            dpi = max((width / w_pt) * 72.0, (height / h_pt) * 72.0)
+        else:
             dpi = 300.0
 
         try:
@@ -149,7 +165,7 @@ class PdfRenderer(RasterRenderer):
             if not isinstance(image, pyvips.Image) or image.width == 0:
                 return None
             return image
-        except Exception:
+        except pyvips.Error:
             logger.warning(
                 "Failed to render PDF data to vips image.", exc_info=True
             )
