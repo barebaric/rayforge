@@ -344,6 +344,7 @@ class WorkSurface(WorldSurface):
         hit_elem = self.root.get_elem_hit(world_x, world_y, selectable=True)
 
         if not hit_elem or hit_elem is self.root:
+            context_menu.show_background_context_menu(self, gesture)
             self.context_changed.send(self)
             return
 
