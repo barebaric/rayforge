@@ -75,6 +75,7 @@ class GrblSerialDriver(Driver):
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
         self._current_request: Optional[CommandRequest] = None
+        self._interactive_request: Optional[CommandRequest] = None
         self._cmd_lock = asyncio.Lock()
         self._command_queue: asyncio.Queue[CommandRequest] = asyncio.Queue()
         self._command_task: Optional[asyncio.Task] = None
@@ -338,18 +339,17 @@ class GrblSerialDriver(Driver):
                     continue
 
                 logger.info("Connection established successfully.")
-                self._update_connection_status(TransportStatus.CONNECTED)
 
-                payload = b"$I\n"
-                logger.debug(
-                    f"TX: {payload!r}",
-                    extra={
-                        "log_category": "RAW_IO",
-                        "direction": "TX",
-                        "data": payload,
-                    },
+                try:
+                    await self._execute_interactive_command("$I")
+                except (ConnectionError, asyncio.TimeoutError) as e:
+                    logger.warning(
+                        f"Failed to retrieve build info: {e}"
+                    )
+
+                self._update_connection_status(
+                    TransportStatus.CONNECTED
                 )
-                await transport.send_command(payload)
 
                 logger.debug("Connection verified. Starting status polling.")
                 while transport.is_connected and self.keep_running:
@@ -839,6 +839,70 @@ class GrblSerialDriver(Driver):
             raise
         return request.response_lines
 
+    async def _execute_interactive_command(
+        self, command: str
+    ) -> List[str]:
+        """
+        Send a command and synchronously await its full response.
+
+        Unlike ``_execute_command`` (which queues commands for
+        asynchronous processing by ``_process_command_queue``), this
+        method holds the command lock for the entire send-and-wait
+        cycle so that no other command can be interleaved:
+
+        1. Acquire ``_cmd_lock`` (blocks ``_process_command_queue``
+           and status polling from sending anything).
+        2. Drain the transport's pending-ack queue so that no stale
+           ``ok``/``error`` is in flight.
+        3. Set ``_interactive_request``, send the command, and wait
+           for its response.
+        4. Release the lock.
+
+        ``_interactive_request`` is checked *before*
+        ``_current_request`` in ``_handle_ok`` / ``_handle_error``,
+        so an interactive command always claims the next
+        acknowledgement even if ``_process_command_queue`` has a
+        pending ``_current_request`` from before it blocked on the
+        lock.
+        """
+        transport = self.grbl_transport
+        if not transport or not transport.is_connected:
+            raise ConnectionError("Serial transport not connected")
+
+        request = CommandRequest(command)
+
+        async with self._cmd_lock:
+            await transport.pending_queue.join()
+
+            self._interactive_request = request
+            try:
+                logger.info(
+                    command.strip(),
+                    extra=self._log_extra("USER_COMMAND"),
+                )
+                logger.debug(
+                    f"TX: {request.payload!r}",
+                    extra={
+                        "log_category": "RAW_IO",
+                        "direction": "TX",
+                        "data": request.payload,
+                    },
+                )
+                await transport.send_command(request.payload)
+                await asyncio.wait_for(
+                    request.finished.wait(), timeout=10.0
+                )
+            except asyncio.TimeoutError:
+                logger.error(
+                    f"Interactive command '{command}' timed out "
+                    "after 10 seconds."
+                )
+                raise
+            finally:
+                self._interactive_request = None
+
+        return request.response_lines
+
     async def set_hold(self, hold: bool = True) -> None:
         self._is_cancelled = False
         await self._send_realtime("!" if hold else "~", add_newline=False)
@@ -975,7 +1039,7 @@ class GrblSerialDriver(Driver):
         return get_grbl_setting_varsets()
 
     async def read_settings(self) -> None:
-        response_lines = await self._execute_command("$$")
+        response_lines = await self._execute_interactive_command("$$")
         # Get the list of VarSets, which serve as our template
         known_varsets = self.get_setting_vars()
 
@@ -1044,7 +1108,7 @@ class GrblSerialDriver(Driver):
         await self._execute_command(cmd)
 
     async def read_wcs_offsets(self) -> Dict[str, Pos]:
-        response_lines = await self._execute_command("$#")
+        response_lines = await self._execute_interactive_command("$#")
         offsets = {}
         for line in response_lines:
             match = wcs_re.match(line)
@@ -1062,7 +1126,7 @@ class GrblSerialDriver(Driver):
     async def read_parser_state(self) -> Optional[str]:
         """Reads the $G parser state to determine the active WCS."""
         try:
-            response_lines = await self._execute_command("$G")
+            response_lines = await self._execute_interactive_command("$G")
             return parse_grbl_parser_state(response_lines)
         except DeviceConnectionError as e:
             logger.warning(f"Could not read parser state: {e}")
@@ -1084,7 +1148,7 @@ class GrblSerialDriver(Driver):
             self, message=f"Probing {axis_letter}..."
         )
         try:
-            response_lines = await self._execute_command(cmd)
+            response_lines = await self._execute_interactive_command(cmd)
         except DeviceConnectionError:
             self.probe_status_changed.send(
                 self, message="Probe failed: Timed out"
@@ -1208,7 +1272,7 @@ class GrblSerialDriver(Driver):
             )
 
         # Logic for single, interactive commands
-        request = self._current_request
+        request = self._interactive_request or self._current_request
         if request and not request.finished.is_set():
             request.response_lines.append("ok")
             self.command_status_changed.send(self, status=TransportStatus.IDLE)
@@ -1243,7 +1307,7 @@ class GrblSerialDriver(Driver):
         self.state.error = error_code_to_device_error(error_code)
         self.state_changed.send(self, state=self.state)
 
-        request = self._current_request
+        request = self._interactive_request or self._current_request
         if request and not request.finished.is_set():
             request.response_lines.append(text)
             self.command_status_changed.send(
@@ -1277,7 +1341,7 @@ class GrblSerialDriver(Driver):
         logger.info(line, extra=self._log_extra("MACHINE_EVENT"))
 
         # Collect response lines for pending single commands
-        request = self._current_request
+        request = self._interactive_request or self._current_request
         if request and not request.finished.is_set():
             request.response_lines.append(line)
 
