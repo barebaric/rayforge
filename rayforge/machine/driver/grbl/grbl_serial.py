@@ -85,7 +85,7 @@ class GrblSerialDriver(Driver):
         ] = None
         self._last_reported_op_index = -1
         self._job_exception: Optional[Exception] = None
-        self._poll_status_while_running: bool = True
+        self._poll_status_while_running: bool = False
         self._handshake_received = asyncio.Event()
 
     @property
@@ -123,13 +123,15 @@ class GrblSerialDriver(Driver):
                 BaudrateVar("baudrate"),
                 Var(
                     key="poll_status_while_running",
-                    label=_("Enable status polling during running jobs"),
+                    label=_("Poll device status during jobs"),
                     description=_(
-                        "Whether to query status during jobs. "
-                        "Disabling can help reduce load on slow machines"
+                        "Periodically query the device for position and "
+                        "status while a job is running. Warning: Some "
+                        "devices have trouble maintaining a stable "
+                        "connection if this is used!"
                     ),
                     var_type=bool,
-                    default=True,
+                    default=False,
                 ),
             ]
         )
@@ -143,7 +145,7 @@ class GrblSerialDriver(Driver):
         port = cast(str, kwargs.get("port", ""))
         baudrate = kwargs.get("baudrate", 115200)
         self._poll_status_while_running = bool(
-            kwargs.get("poll_status_while_running", True)
+            kwargs.get("poll_status_while_running", False)
         )
 
         if not port:
@@ -240,9 +242,7 @@ class GrblSerialDriver(Driver):
         await super().cleanup()
         logger.debug("Cleanup completed.")
 
-    async def _send_realtime(
-        self, command: str, add_newline: bool = True
-    ):
+    async def _send_realtime(self, command: str, add_newline: bool = True):
         logger.debug(f"Sending realtime command: {command}")
         if not self.grbl_transport or not self.grbl_transport.is_connected:
             raise ConnectionError("Serial transport not initialized")

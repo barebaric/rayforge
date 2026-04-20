@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-07 01:01+0200\n"
+"POT-Creation-Date: 2026-04-20 14:52+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -175,6 +175,10 @@ msgstr "Додати заливку"
 #: sketcher/core/commands/fill.py
 msgid "Remove Fill"
 msgstr "Видалити заливку"
+
+#: sketcher/core/commands/fill.py
+msgid "Set Text Fill"
+msgstr "Встановити заливку тексту"
 
 #: sketcher/core/commands/constraint.py sketcher/ui_gtk/sketchcanvas.py
 msgid "Edit Constraint"

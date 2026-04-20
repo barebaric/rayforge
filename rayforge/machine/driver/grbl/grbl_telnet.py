@@ -61,14 +61,15 @@ class GrblTelnetDriver(GrblSerialDriver):
                 ),
                 Var(
                     key="poll_status_while_running",
-                    label=_("Enable status polling during running jobs"),
+                    label=_("Poll device status during jobs"),
                     description=_(
-                        "Whether to query status during jobs. "
-                        "Disabling can help reduce load on slow "
-                        "machines"
+                        "Periodically query the device for position and "
+                        "status while a job is running. Warning: Some "
+                        "devices have trouble maintaining a stable "
+                        "connection if this is used!"
                     ),
                     var_type=bool,
-                    default=True,
+                    default=False,
                 ),
             ]
         )
@@ -77,7 +78,7 @@ class GrblTelnetDriver(GrblSerialDriver):
         host = cast(str, kwargs.get("host", ""))
         port = cast(int, kwargs.get("port", 23))
         self._poll_status_while_running = bool(
-            kwargs.get("poll_status_while_running", True)
+            kwargs.get("poll_status_while_running", False)
         )
 
         if not host:

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 23:05+0200\n"
+"POT-Creation-Date: 2026-04-20 14:58+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -424,15 +424,18 @@ msgstr "raw/telnet服务的TCP端口"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Enable status polling during running jobs"
-msgstr "在运行作业期间启用状态轮询"
+msgid "Poll device status during jobs"
+msgstr "轮询设备作业状态"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 msgid ""
-"Whether to query status during jobs. Disabling can help reduce load on slow "
-"machines"
-msgstr "是否在作业期间查询状态。禁用可以帮助减少慢速机器上的负载。"
+"Periodically query the device for position and status while a job is "
+"running. Warning: Some devices have trouble maintaining a stable connection "
+"if this is used!"
+msgstr ""
+"在作业运行时定期查询设备的位置和状态。警告：某些设备在使用此功能时可能无法保"
+"持稳定连接！"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
@@ -1792,6 +1795,18 @@ msgstr "在此添加标签"
 #: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/doceditor/tab_cmd.py
 msgid "Remove Tab"
 msgstr "移除标签"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "New Sketch"
+msgstr "新建草图"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "New Stock"
+msgstr "新建材料"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "Import File…"
+msgstr "导入文件…"
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid "Drop files to import"

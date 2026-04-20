@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-14 19:35+0200\n"
+"POT-Creation-Date: 2026-04-20 14:52+0200\n"
 "PO-Revision-Date: 2026-03-01 19:25+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -483,6 +483,10 @@ msgstr "Change {param_name}"
 msgid "Change Grid Dimensions"
 msgstr "Change Grid Dimensions"
 
+#: laser_essentials/worker.py
+msgid "Create Material Test Grid"
+msgstr "Create Material Test Grid"
+
 #: laser_essentials/steps/shrinkwrap_step.py
 msgid "Shrink Wrap"
 msgstr "Shrink Wrap"
@@ -503,10 +507,6 @@ msgstr "Contour"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Material Test Grid"
 msgstr "Material Test Grid"
-
-#: laser_essentials/backend.py
-msgid "Create Material Test Grid"
-msgstr "Create Material Test Grid"
 
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"

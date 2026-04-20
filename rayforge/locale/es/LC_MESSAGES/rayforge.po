@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 23:05+0200\n"
+"POT-Creation-Date: 2026-04-20 14:58+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -428,17 +428,19 @@ msgstr "Puerto TCP para el servicio raw/telnet"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Enable status polling during running jobs"
-msgstr "Habilitar sondeo de estado durante los trabajos en ejecución"
+msgid "Poll device status during jobs"
+msgstr "Consultar estado del dispositivo durante los trabajos"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 msgid ""
-"Whether to query status during jobs. Disabling can help reduce load on slow "
-"machines"
+"Periodically query the device for position and status while a job is "
+"running. Warning: Some devices have trouble maintaining a stable connection "
+"if this is used!"
 msgstr ""
-"Consultar el estado durante los trabajos. Desactivarlo puede ayudar a "
-"reducir la carga en máquinas lentas"
+"Consultar periódicamente al dispositivo su posición y estado mientras se "
+"ejecuta un trabajo. ¡Advertencia: Algunos dispositivos tienen problemas para "
+"mantener una conexión estable si se usa esto!"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
@@ -1910,6 +1912,18 @@ msgstr "Añadir pestaña de sujeción aquí"
 #: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/doceditor/tab_cmd.py
 msgid "Remove Tab"
 msgstr "Eliminar pestaña de sujeción"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "New Sketch"
+msgstr "Nuevo boceto"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "New Stock"
+msgstr "Nuevo material"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "Import File…"
+msgstr "Importar archivo…"
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid "Drop files to import"
