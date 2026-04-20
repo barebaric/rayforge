@@ -98,6 +98,16 @@ class TestDriverStreamingFuzz:
         await asyncio.sleep(0)
         welcome = b"Grbl 1.1h ['$' for help]\r\n"
         driver.on_serial_data_received(mock_serial_transport, welcome)
+        await asyncio.sleep(0)
+
+        status = b"<Idle|MPos:0.000,0.000,0.000|FS:0,0>\r\n"
+        driver.on_serial_data_received(mock_serial_transport, status)
+        await asyncio.sleep(0)
+
+        version_response = b"[VER:1.1h:]\r\nok\r\n"
+        driver.on_serial_data_received(
+            mock_serial_transport, version_response
+        )
         await asyncio.sleep(0.01)
         mock_serial_transport.send.reset_mock()
 
