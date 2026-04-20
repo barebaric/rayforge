@@ -18,7 +18,6 @@ from typing import (
     Optional,
 )
 from blinker import Signal
-from ..util.glib import idle_add
 from .context import ExecutionContext
 from .task import Task
 from .pool import WorkerPoolManager
@@ -30,7 +29,7 @@ logger = logging.getLogger(__name__)
 class TaskManager:
     def __init__(
         self,
-        main_thread_scheduler: Optional[Callable] = None,
+        main_thread_scheduler: Callable,
         worker_initializer: Optional[Callable[..., None]] = None,
         worker_initargs: tuple = (),
         shared_state: Optional[DictProxy[str, Any]] = None,
@@ -52,7 +51,7 @@ class TaskManager:
         self._thread: threading.Thread = threading.Thread(
             target=self._run_event_loop, args=(self.loop,), daemon=True
         )
-        self._main_thread_scheduler = main_thread_scheduler or idle_add
+        self._main_thread_scheduler = main_thread_scheduler
         self._thread.start()
 
         # TaskManager owns the persistent Manager and shared state
@@ -939,6 +938,10 @@ class TaskManagerProxy:
                         "First use of TaskManager detected. "
                         "Initializing the real instance."
                     )
+                    if "main_thread_scheduler" not in self._init_kwargs:
+                        self._init_kwargs["main_thread_scheduler"] = (
+                            lambda f, *a, **kw: f(*a, **kw)
+                        )
                     self._instance = TaskManager(**self._init_kwargs)
         return self._instance
 

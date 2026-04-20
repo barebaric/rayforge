@@ -2,7 +2,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, List, Tuple
 from gettext import gettext as _
-from ..shared.util.glib import idle_add
 from ..core.item import DocItem
 from ..core.undo import ChangePropertyCommand
 from ..usage import get_usage_tracker
@@ -66,7 +65,7 @@ class LayoutCmd:
             """
             # Wrap the call in a lambda to ensure the keyword argument is
             # passed correctly by GLib.idle_add.
-            idle_add(
+            self._task_manager.schedule_on_main_thread(
                 self._editor.notification_requested.send, self, message=message
             )
 

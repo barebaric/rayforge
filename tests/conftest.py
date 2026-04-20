@@ -484,7 +484,7 @@ def ui_context_initializer(tmp_path, monkeypatch, ui_task_mgr):
     monkeypatch.setattr(config, "DIALECT_DIR", temp_dialect_dir)
     monkeypatch.setattr(config, "MACHINE_DIR", temp_machine_dir)
     monkeypatch.setattr(config, "ADDONS_DIR", temp_addons_dir)
-    monkeypatch.setattr(tasker, "task_mgr", ui_task_mgr)
+    monkeypatch.setattr(tasker.task_mgr, "_instance", ui_task_mgr)
 
     context = get_context()
 

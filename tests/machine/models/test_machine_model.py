@@ -500,6 +500,7 @@ def _encode_rotary_line(machine, doc):
     return gcode
 
 
+@pytest.mark.usefixtures("lite_context")
 class TestRotaryAxisGcodeOutput:
     def test_default_axis_uses_a(self, isolated_machine, rotary_doc):
         gcode = _encode_rotary_line(isolated_machine, rotary_doc)
