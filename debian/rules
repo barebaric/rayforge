@@ -7,7 +7,7 @@ override_dh_auto_build:
 	python3 -m pip show setuptools
 	pip3 --version
 	ls -l
-	export VERSION="$$(dpkg-parsechangelog -S Version | sed -e 's/-[0-9~a-z].*$$//' -e 's/~dev/.dev/' -e 's/~/\+/')"; \
+	export VERSION="$$(dpkg-parsechangelog -S Version | sed -e 's/-[0-9~a-z].*$$//' -e 's/~alpha/a/g' -e 's/~beta/b/g' -e 's/~rc/rc/g' -e 's/~dev/.dev/g' -e 's/~/\+/g')"; \
 	\
 	echo "Patching pyproject.toml with static version: $$VERSION"; \
 	sed -i '/^dynamic = .*"version".*/d' pyproject.toml; \
