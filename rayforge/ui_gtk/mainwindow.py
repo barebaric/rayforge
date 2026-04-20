@@ -437,7 +437,7 @@ class MainWindow(Adw.ApplicationWindow):
             config.machine, self.doc_editor, self.machine_cmd
         )
         self.bottom_panel.set_size_request(-1, self._last_bottom_panel_height)
-        self.bottom_panel.set_visible(False)
+        self.bottom_panel.set_visible(True)
         self.vertical_paned.set_end_child(self.bottom_panel)
 
         self.bottom_panel.gcode_viewer.line_activated.connect(
