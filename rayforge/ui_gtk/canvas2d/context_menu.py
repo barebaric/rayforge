@@ -204,19 +204,11 @@ def show_tab_context_menu(surface: "WorkSurface", gesture: Gtk.Gesture):
     _show_popover(surface, gesture, _MENU_MODELS["tab"])
 
 
-def show_background_context_menu(
-    surface: "WorkSurface", gesture: Gtk.Gesture
-):
+def show_background_context_menu(surface: "WorkSurface", gesture: Gtk.Gesture):
     """Displays the context menu for empty canvas space."""
     menu = Gio.Menu.new()
-    menu.append_item(
-        Gio.MenuItem.new(_("New Sketch"), "win.new_sketch")
-    )
-    menu.append_item(
-        Gio.MenuItem.new(_("New Stock"), "win.add-stock")
-    )
+    menu.append_item(Gio.MenuItem.new(_("New Sketch"), "win.new_sketch"))
+    menu.append_item(Gio.MenuItem.new(_("New Stock"), "win.add-stock"))
     menu.append_section(None, Gio.Menu.new())
-    menu.append_item(
-        Gio.MenuItem.new(_("Import File\u2026"), "win.import")
-    )
+    menu.append_item(Gio.MenuItem.new(_("Import File\u2026"), "win.import"))
     _show_popover(surface, gesture, menu)

@@ -288,14 +288,14 @@ class AddonManager:
                         f"{addon_ns}.{'.'.join(mod_parts[:i])}"
                     )
 
-        # Populate enabled backend entry points using the namespaced structure
+        # Populate enabled worker entry points using the namespaced structure
         for addon in self.loaded_addons.values():
-            if addon.metadata.provides.backend:
-                backend_module = (
+            if addon.metadata.provides.worker:
+                worker_module = (
                     f"rayforge_addons.{addon.metadata.name}."
-                    f"{addon.metadata.provides.backend}"
+                    f"{addon.metadata.provides.worker}"
                 )
-                manifest.enabled_backend_modules.append(backend_module)
+                manifest.enabled_worker_modules.append(worker_module)
 
         # Prefer the shared state from the active task manager, as it may have
         # changed after a pool restart. Fall back to the stored shared state.
@@ -310,7 +310,7 @@ class AddonManager:
             logger.debug(
                 f"Updating addon manifest in shared state. "
                 f"{len(manifest.module_paths)} modules, "
-                f"{len(manifest.enabled_backend_modules)} enabled backends."
+                f"{len(manifest.enabled_worker_modules)} enabled workers."
             )
             target_state["addon_manifest"] = manifest
         else:
@@ -512,7 +512,7 @@ class AddonManager:
         return updates_available
 
     def load_addon_by_name(
-        self, addon_name: str, backend_only: bool = False
+        self, addon_name: str, worker_only: bool = False
     ) -> bool:
         """
         Load an addon by its canonical name.
@@ -522,7 +522,7 @@ class AddonManager:
 
         Args:
             addon_name: The canonical name of the addon to load.
-            backend_only: If True, only load backend entry points.
+            worker_only: If True, only load worker entry points.
 
         Returns:
             True if the addon was loaded successfully, False otherwise.
@@ -542,7 +542,7 @@ class AddonManager:
                     )
                     if addon.metadata.name == addon_name:
                         self.load_addon(
-                            child.resolve(), backend_only=backend_only
+                            child.resolve(), worker_only=worker_only
                         )
                         self._call_registration_hooks()
                         return addon_name in self.loaded_addons
@@ -551,12 +551,12 @@ class AddonManager:
         logger.warning(f"Addon '{addon_name}' not found in addon directories")
         return False
 
-    def load_installed_addons(self, backend_only: bool = False):
+    def load_installed_addons(self, worker_only: bool = False):
         """
         Scans the addon directories and loads valid addons.
 
         Args:
-            backend_only: If True, only load backend entry points (skip
+            worker_only: If True, only load worker entry points (skip
                 frontend/widgets to avoid pulling in GTK dependencies).
                 Used by worker processes.
         """
@@ -569,7 +569,7 @@ class AddonManager:
             logger.info(f"Scanning for addons in {addon_dir}...")
             for child in addon_dir.iterdir():
                 if child.is_dir():
-                    self.load_addon(child.resolve(), backend_only=backend_only)
+                    self.load_addon(child.resolve(), worker_only=worker_only)
 
         # Build manifest at the end of the batch load
         self._build_and_update_manifest()
@@ -577,7 +577,7 @@ class AddonManager:
     def load_addon(
         self,
         addon_path: Path,
-        backend_only: bool = False,
+        worker_only: bool = False,
         version: Optional[VersionType] = None,
     ):
         """
@@ -585,7 +585,7 @@ class AddonManager:
 
         Args:
             addon_path: Path to the addon directory.
-            backend_only: If True, only load backend entry points (skip
+            worker_only: If True, only load worker entry points (skip
                 frontend/widgets to avoid pulling in GTK dependencies).
                 Used by worker processes.
             version: If provided, skip version resolution and use
@@ -636,10 +636,10 @@ class AddonManager:
             # 3. Now completely validate the populated addon
             addon.validate()
 
-            has_backend = addon.metadata.provides.backend is not None
+            has_worker = addon.metadata.provides.worker is not None
             has_frontend = addon.metadata.provides.frontend is not None
 
-            if not has_backend and not has_frontend:
+            if not has_worker and not has_frontend:
                 self.loaded_addons[addon_name] = addon
                 logger.info(f"Loaded asset addon: {addon_name}")
                 return
@@ -676,8 +676,8 @@ class AddonManager:
 
             self.compile_translations(addon_path)
 
-            self._import_and_register(addon, addon.metadata.provides.backend)
-            if not backend_only:
+            self._import_and_register(addon, addon.metadata.provides.worker)
+            if not worker_only:
                 self._import_and_register(
                     addon, addon.metadata.provides.frontend
                 )
@@ -750,7 +750,7 @@ class AddonManager:
         # Example:
         # 1. rayforge_addons
         # 2. laser_essentials (addon name)
-        # 3. laser_essentials.backend (inner python structure)
+        # 3. laser_essentials.worker (inner python structure)
         module_name = f"rayforge_addons.{name}.{entry_point}"
 
         module_path = self._resolve_entry_point_path(
@@ -1343,7 +1343,7 @@ class AddonManager:
             self.incompatible_addons[addon_name] = addon
             logger.info(f"Addon '{addon_name}' enabled but is incompatible")
         else:
-            self._import_and_register(addon, addon.metadata.provides.backend)
+            self._import_and_register(addon, addon.metadata.provides.worker)
             self._import_and_register(addon, addon.metadata.provides.frontend)
             self._call_registration_hooks()
             logger.info(f"Addon '{addon_name}' enabled and loaded")
@@ -1595,7 +1595,7 @@ class AddonManager:
             logger.info(f"Addon '{addon_name}' reloaded but is incompatible")
             return False
 
-        self._import_and_register(addon, addon.metadata.provides.backend)
+        self._import_and_register(addon, addon.metadata.provides.worker)
         self._import_and_register(addon, addon.metadata.provides.frontend)
         self._call_registration_hooks()
         if addon_name in self.loaded_addons:
@@ -1732,7 +1732,7 @@ class AddonManager:
 
         del self.license_required_addons[addon_name]
 
-        self._import_and_register(addon, addon.metadata.provides.backend)
+        self._import_and_register(addon, addon.metadata.provides.worker)
         self._import_and_register(addon, addon.metadata.provides.frontend)
 
         if addon_name in self.loaded_addons:

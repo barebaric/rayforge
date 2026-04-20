@@ -82,7 +82,7 @@ def register_laser_essentials():
 
     mgr = AddonManager([BUILTIN_ADDONS_DIR], BUILTIN_ADDONS_DIR, plugin_mgr)
     mgr.set_registries({"transformer_registry": transformer_registry})
-    mgr.load_addon_by_name("post_processors", backend_only=True)
+    mgr.load_addon_by_name("post_processors", worker_only=True)
 
     _register_producers()
     _register_steps()

@@ -1,12 +1,12 @@
 name: sketcher
 display_name: "Sketcher"
 description: "Vector sketch editing functionality for creating and editing vector graphics"
-api_version: 9
+api_version: 12
 author:
   name: "Rayforge Team"
   email: "noreply@rayforge.org"
 provides:
-  backend: "sketcher.backend"
+  worker: "sketcher.worker"
   frontend: "sketcher.frontend"
 license:
   name: "MIT"

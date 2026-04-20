@@ -31,8 +31,8 @@ def create_addon_files(
     version: str = "1.0.0",
     author_name: str = "Test Author",
     author_email: str = "test@example.com",
-    backend: Optional[str] = "test_plugin.backend",
-    api_version: int = 9,
+    worker: Optional[str] = "test_plugin.worker",
+    api_version: int = 12,
 ) -> Path:
     """Create a minimal valid addon directory on disk."""
     addon_dir = dest / name
@@ -45,16 +45,16 @@ def create_addon_files(
         "api_version": api_version,
         "author": {"name": author_name, "email": author_email},
     }
-    if backend:
-        manifest["provides"] = {"backend": backend}
+    if worker:
+        manifest["provides"] = {"worker": worker}
 
     (addon_dir / "rayforge-addon.yaml").write_text(yaml_safe_dump(manifest))
 
-    if backend:
-        pkg_dir = addon_dir / backend.rsplit(".", 1)[0]
+    if worker:
+        pkg_dir = addon_dir / worker.rsplit(".", 1)[0]
         pkg_dir.mkdir(exist_ok=True)
         (pkg_dir / "__init__.py").write_text("")
-        (pkg_dir / "backend.py").write_text("")
+        (pkg_dir / "worker.py").write_text("")
 
     return addon_dir
 
@@ -86,7 +86,7 @@ def manager():
 def create_mock_addon(
     name: str = "test_plugin",
     version: str = "1.0.0",
-    backend: Optional[str] = "plugin",
+    worker: Optional[str] = "plugin",
     depends: Optional[List] = None,
     requires: Optional[List] = None,
 ) -> MagicMock:
@@ -100,7 +100,7 @@ def create_mock_addon(
     mock_addon.metadata.depends = depends
     mock_addon.metadata.requires = requires or []
     mock_addon.metadata.provides = MagicMock()
-    mock_addon.metadata.provides.backend = backend
+    mock_addon.metadata.provides.worker = worker
     mock_addon.metadata.provides.frontend = None
     mock_addon.root_path = MagicMock(spec=Path)
     return mock_addon
@@ -124,8 +124,8 @@ class TestAddonManagerLoading:
             assert mock_load.call_count == 2
             pkg1_path = (manager.install_dir / "pkg1").resolve()
             pkg2_path = (manager.install_dir / "pkg2").resolve()
-            mock_load.assert_any_call(pkg1_path, backend_only=False)
-            mock_load.assert_any_call(pkg2_path, backend_only=False)
+            mock_load.assert_any_call(pkg1_path, worker_only=False)
+            mock_load.assert_any_call(pkg2_path, worker_only=False)
 
     def test_load_installed_addons_scans_builtin_and_external(self):
         """Test that both builtin and external directories are scanned."""
@@ -149,8 +149,8 @@ class TestAddonManagerLoading:
                 assert mock_load.call_count == 2
                 external_path = (addons_dir / "external_pkg").resolve()
                 builtin_path = (builtin_dir / "builtin_pkg").resolve()
-                mock_load.assert_any_call(builtin_path, backend_only=False)
-                mock_load.assert_any_call(external_path, backend_only=False)
+                mock_load.assert_any_call(builtin_path, worker_only=False)
+                mock_load.assert_any_call(external_path, worker_only=False)
 
     def test_load_installed_addons_missing_dir(self, manager):
         """Test that missing dirs are handled gracefully."""
@@ -174,7 +174,7 @@ class TestAddonManagerLoading:
     def test_load_addon_success(self, mock_load, manager):
         addon_dir = manager.install_dir / "test_pkg"
 
-        mock_addon = create_mock_addon(name="test_plugin", backend="plugin")
+        mock_addon = create_mock_addon(name="test_plugin", worker="plugin")
         mock_load.return_value = mock_addon
 
         with (
@@ -202,7 +202,7 @@ class TestAddonManagerLoading:
     def test_load_addon_incompatible_version(self, mock_load, manager):
         mock_addon = create_mock_addon(
             name="test_plugin",
-            backend="plugin",
+            worker="plugin",
             depends=["rayforge>=99.99.99,~99.99"],
         )
         mock_load.return_value = mock_addon
@@ -236,7 +236,7 @@ version: "1.0.0"
 author: Test Author
 description: A test addon
 provides:
-  backend: backend
+  worker: backend
 """
         (addon_dir / "rayforge-addon.yaml").write_text(manifest_content)
         (addon_dir / "backend.py").write_text("")
@@ -255,8 +255,8 @@ provides:
         assert result is True
         assert "test_plugin" in manager.loaded_addons
 
-    def test_load_addon_by_name_backend_only(self, manager):
-        """Test load_addon_by_name respects backend_only flag."""
+    def test_load_addon_by_name_worker_only(self, manager):
+        """Test load_addon_by_name respects worker_only flag."""
         addon_dir = manager.install_dir / "test_pkg"
         addon_dir.mkdir(parents=True)
 
@@ -266,7 +266,7 @@ version: "1.0.0"
 author: Test Author
 description: A test addon
 provides:
-  backend: backend
+  worker: backend
   frontend: frontend
 """
         (addon_dir / "rayforge-addon.yaml").write_text(manifest_content)
@@ -283,7 +283,7 @@ provides:
             patch.object(manager, "_call_registration_hooks"),
         ):
             result = manager.load_addon_by_name(
-                "test_plugin", backend_only=True
+                "test_plugin", worker_only=True
             )
 
         assert result is True
@@ -921,9 +921,7 @@ class TestAddonManagerDisabledAddons:
     ):
         """Test that a disabled addon is not loaded."""
         addon_dir = manager_with_config.install_dir / "test_pkg"
-        mock_addon = create_mock_addon(
-            name="disabled_plugin", backend="plugin"
-        )
+        mock_addon = create_mock_addon(name="disabled_plugin", worker="plugin")
         mock_load.return_value = mock_addon
 
         manager_with_config.addon_config.set_state(
@@ -947,7 +945,7 @@ class TestAddonManagerDisabledAddons:
     ):
         """Test that an enabled addon is loaded."""
         addon_dir = manager_with_config.install_dir / "test_pkg"
-        mock_addon = create_mock_addon(name="enabled_plugin", backend="plugin")
+        mock_addon = create_mock_addon(name="enabled_plugin", worker="plugin")
         mock_load.return_value = mock_addon
 
         with (
@@ -967,7 +965,7 @@ class TestAddonManagerDisabledAddons:
     def test_disable_addon(self, mock_load, manager_with_config):
         """Test disabling a loaded addon."""
         addon_dir = manager_with_config.install_dir / "test_pkg"
-        mock_addon = create_mock_addon(name="to_disable", backend="plugin")
+        mock_addon = create_mock_addon(name="to_disable", worker="plugin")
         mock_load.return_value = mock_addon
 
         with (
@@ -1001,7 +999,7 @@ class TestAddonManagerDisabledAddons:
     def test_enable_addon(self, mock_load, manager_with_config):
         """Test enabling a disabled addon."""
         addon_dir = manager_with_config.install_dir / "test_pkg"
-        mock_addon = create_mock_addon(name="to_enable", backend="plugin")
+        mock_addon = create_mock_addon(name="to_enable", worker="plugin")
         mock_load.return_value = mock_addon
 
         manager_with_config.addon_config.set_state(
