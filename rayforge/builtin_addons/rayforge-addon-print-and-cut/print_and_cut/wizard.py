@@ -309,8 +309,18 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._record1_btn.add_css_class("suggested-action")
         self._record1_btn.connect("clicked", self._on_record_clicked, 0)
 
+        self._goto1_btn = Gtk.Button(
+            child=get_icon("zero-here-symbolic"),
+            valign=Gtk.Align.CENTER,
+            tooltip_text=_("Go to recorded position"),
+        )
+        self._goto1_btn.add_css_class("flat")
+        self._goto1_btn.connect("clicked", self._on_goto_clicked, 0)
+        self._goto1_btn.set_sensitive(False)
+
         self._pos1_row = Adw.ActionRow(title=_("Position 1"))
         self._pos1_row.set_subtitle(_("Not recorded"))
+        self._pos1_row.add_suffix(self._goto1_btn)
         self._pos1_row.add_suffix(self._record1_btn)
         positions_group.add(self._pos1_row)
 
@@ -320,8 +330,18 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._record2_btn.add_css_class("suggested-action")
         self._record2_btn.connect("clicked", self._on_record_clicked, 1)
 
+        self._goto2_btn = Gtk.Button(
+            child=get_icon("zero-here-symbolic"),
+            valign=Gtk.Align.CENTER,
+            tooltip_text=_("Go to recorded position"),
+        )
+        self._goto2_btn.add_css_class("flat")
+        self._goto2_btn.connect("clicked", self._on_goto_clicked, 1)
+        self._goto2_btn.set_sensitive(False)
+
         self._pos2_row = Adw.ActionRow(title=_("Position 2"))
         self._pos2_row.set_subtitle(_("Not recorded"))
+        self._pos2_row.add_suffix(self._goto2_btn)
         self._pos2_row.add_suffix(self._record2_btn)
         positions_group.add(self._pos2_row)
 
@@ -432,6 +452,8 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._point2_row.set_subtitle(_("No point picked"))
         self._pos1_row.set_subtitle(_("Not recorded"))
         self._pos2_row.set_subtitle(_("Not recorded"))
+        self._goto1_btn.set_sensitive(False)
+        self._goto2_btn.set_sensitive(False)
         self._pick_status_row.set_subtitle(
             _("Click on the first alignment point on the design.")
         )
@@ -486,6 +508,12 @@ class PrintAndCutWizard(PatchedDialogWindow):
             self._physical_point2 = pp2
             self._pos2_row.set_subtitle(f"({pp2[0]:.2f}, {pp2[1]:.2f})")
 
+        connected = self._machine and self._machine.is_connected()
+        if pp1 is not None:
+            self._goto1_btn.set_sensitive(connected)
+        if pp2 is not None:
+            self._goto2_btn.set_sensitive(connected)
+
         self._update_pick_next_btn()
 
     def _save_session_state(self):
@@ -513,12 +541,25 @@ class PrintAndCutWizard(PatchedDialogWindow):
         if pos_index == 0:
             self._physical_point1 = (x_val, y_val)
             self._pos1_row.set_subtitle(subtitle)
+            self._goto1_btn.set_sensitive(True)
         else:
             self._physical_point2 = (x_val, y_val)
             self._pos2_row.set_subtitle(subtitle)
+            self._goto2_btn.set_sensitive(True)
 
         self._update_jog_next_btn()
         self._save_session_state()
+
+    def _on_goto_clicked(self, button, pos_index):
+        if not self._machine or not self._machine.is_connected():
+            return
+        if pos_index == 0:
+            point = self._physical_point1
+        else:
+            point = self._physical_point2
+        if point is None:
+            return
+        self._machine_cmd.move_to(self._machine, point[0], point[1])
 
     def _update_jog_next_btn(self):
         p1 = self._physical_point1
@@ -539,6 +580,12 @@ class PrintAndCutWizard(PatchedDialogWindow):
         connected = self._machine and self._machine.is_connected()
         self._record1_btn.set_sensitive(connected)
         self._record2_btn.set_sensitive(connected)
+        self._goto1_btn.set_sensitive(
+            connected and self._physical_point1 is not None
+        )
+        self._goto2_btn.set_sensitive(
+            connected and self._physical_point2 is not None
+        )
         self._update_focus_sensitivity()
         if connected:
             self._update_laser_position()
