@@ -4,8 +4,10 @@
 import argparse
 import fnmatch
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 SCRIPTS_DIR = Path(__file__).parent
@@ -23,7 +25,8 @@ TARGETS = {
     "app-settings:addons": "app_settings_addons",
     "app-settings:ai": "app_settings_ai",
     "ai-workpiece-generator": "ai_workpiece_generator",
-    "bottom-panel": "bottom_panel",
+    "bottom-panel:console": "bottom_panel",
+    "bottom-panel:layers": "bottom_panel",
     "import-dialog": "import_dialog",
     "machine-settings:general": "machine_settings_general",
     "machine-settings:hardware": "machine_settings_hardware",
@@ -84,19 +87,21 @@ def get_matching_targets(target: str) -> list[str]:
 
 
 def run_script(script_name: str, target: str) -> int:
-    cmd = [
-        "pixi",
-        "run",
-        "rayforge",
-        "--config",
-        str(TEST_CONFIG_DIR),
-        "--uiscript",
-        str(SCRIPTS_DIR / f"{script_name}.py"),
-    ]
-    print(f"Running: {' '.join(cmd)} (TARGET={target})")
-    env = os.environ.copy()
-    env["TARGET"] = target
-    return subprocess.run(cmd, env=env).returncode
+    with tempfile.TemporaryDirectory(prefix="rayforge-screenshot-") as tmpdir:
+        shutil.copytree(TEST_CONFIG_DIR, tmpdir, dirs_exist_ok=True)
+        cmd = [
+            "pixi",
+            "run",
+            "rayforge",
+            "--config",
+            tmpdir,
+            "--uiscript",
+            str(SCRIPTS_DIR / f"{script_name}.py"),
+        ]
+        print(f"Running: {' '.join(cmd)} (TARGET={target})")
+        env = os.environ.copy()
+        env["TARGET"] = target
+        return subprocess.run(cmd, env=env).returncode
 
 
 def generate_help_text() -> str:
@@ -105,7 +110,9 @@ def generate_help_text() -> str:
         lines.append(f"  {target}")
     lines.append("")
     lines.append("Useful prefixes (match all leaves under):")
-    lines.append("  main, app-settings, machine-settings, step-settings")
+    lines.append(
+        "  main, app-settings, machine-settings, step-settings, bottom-panel"
+    )
     lines.append("  step-settings:engrave, step-settings:engrave:general")
     lines.append("  recipe-editor, etc.")
     lines.append("")

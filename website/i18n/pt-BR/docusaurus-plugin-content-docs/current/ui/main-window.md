@@ -59,31 +59,38 @@ A área de trabalho principal onde você:
 - **Zoom**: Roda do mouse ou <kbd>ctrl+"+"</kbd> / <kbd>ctrl+"-"</kbd>
 - **Resetar Visualização**: <kbd>ctrl+0</kbd> ou Visualizar → Resetar Zoom
 
-### 4. Painel de Camadas
+### 4. Painel Lateral
 
-Gerencia operações e atribuições de camadas:
+O painel lateral é um overlay flutuante no lado direito da tela. Ele mostra o fluxo
+de trabalho da camada ativa como uma lista vertical de etapas. Cada etapa exibe seu
+nome, um resumo (ex: potência e velocidade), e botões para visibilidade,
+configurações e exclusão. Use o botão **+** para adicionar novas etapas. As etapas
+podem ser reordenadas arrastando e soltando.
 
-- Ver todas as operações no seu projeto
-- Atribuir operações a elementos de design
-- Reordenar execução de operações
-- Habilitar/desabilitar operações individuais
-- Configurar parâmetros de operação
+Clicar no botão de configurações de uma etapa abre um diálogo onde você configura o
+tipo de operação, potência do laser, velocidade de corte, assistência de ar, largura
+do feixe e opções de pós-processamento. Valores dos controles deslizantes são
+editáveis — clique em um valor ao lado de um controle deslizante e digite o número
+exato que deseja.
 
-### 5. Painel de Propriedades
+O painel pode ser movido quando não é necessário.
 
-Configura definições para objetos selecionados ou operações:
+### 5. Painel Inferior
 
-- Tipo de operação (Contorno, Raster, etc.)
-- Configurações de potência e velocidade
-- Número de passagens
-- Opções avançadas (overscan, kerf, abas)
+O Painel Inferior fornece abas acopláveis que podem ser reorganizadas arrastando e
+divididas em múltiplas colunas. As abas disponíveis incluem:
 
-### 6. Painel Inferior
+- **Camadas**: Mostra todas as camadas como colunas lado a lado. Cada coluna tem um
+  cabeçalho com o nome da camada e controles, um pipeline horizontal compacto de
+  ícones de etapas representando o fluxo de trabalho, e uma lista de peças de
+  trabalho. Camadas e peças podem ser reordenadas arrastando e soltando.
+- **Ativos**: Lista itens de estoque e esboços no seu documento.
+- **Console**: Terminal interativo para enviar G-code e monitorar a comunicação da
+  máquina.
+- **Visualizador G-code**: Exibe o G-code gerado com destaque de sintaxe.
+- **Controles**: Controles de jog para posicionamento manual e gerenciamento de WCS.
 
-O Painel Inferior fornece abas para o Console, Visualizador G-code e seus
-ativos do documento (estoque e esboços). Os controles de jog e gerenciamento
-WCS estão sempre visíveis no lado direito. O tempo estimado do trabalho é
-mostrado no cabeçalho da lista de camadas acima do painel de camadas.
+O tempo estimado do trabalho é mostrado no cabeçalho da lista de camadas.
 
 Veja [Painel Inferior](bottom-panel) para informação detalhada.
 

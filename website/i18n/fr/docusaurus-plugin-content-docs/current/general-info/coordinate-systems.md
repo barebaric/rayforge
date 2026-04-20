@@ -160,6 +160,24 @@ Lorsque vous exécutez un travail, Rayforge utilise le WCS actif pour positionne
 
 Le même travail peut être exécuté à différentes positions simplement en changeant le WCS actif.
 
+### WCS par calque
+
+Chaque calque peut se voir attribuer son propre système de coordonnées de travail indépendamment.
+Lorsqu'un calque a un WCS attribué, les opérations de ce calque sont positionnées
+relativement au WCS du calque plutôt qu'au WCS global. Cela signifie que vous pouvez :
+
+- Exécuter différents calques à différentes positions sur le lit en un seul travail
+- Configurer plusieurs fixations et les attribuer à des calques spécifiques
+- Combiner travail plan et rotatif dans le même projet, chacun avec sa
+  propre origine de coordonnées
+
+Pour attribuer un WCS à un calque, ouvrez les paramètres du calque et utilisez le
+sélecteur de WCS. Un bouton d'édition rapide à côté du sélecteur vous permet
+d'ajuster les décalages sans quitter la boîte de dialogue.
+
+Les calques sans attribution explicite de WCS utilisent le WCS global actif
+du menu déroulant de la barre d'outils.
+
 ## Flux de Travail Pratiques
 
 ### Flux de Travail 1 : Plusieurs Positions de Fixation

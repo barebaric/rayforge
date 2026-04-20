@@ -1,51 +1,87 @@
-# Paramètres Généraux
+---
+description: "Configurez les paramètres généraux de la machine dans Rayforge — définissez le nom, sélectionnez un pilote et configurez les vitesses et l'accélération."
+---
 
-La page Général dans les Paramètres Machine contient les informations de base de la machine et les paramètres de vitesse.
+# Paramètres généraux
 
-![Paramètres Généraux](/screenshots/machine-general.png)
+La page Général des Paramètres de la machine contient le nom de la machine,
+la sélection du pilote et les paramètres de connexion, ainsi que les
+paramètres de vitesse.
 
-## Nom de la Machine
+![Paramètres généraux](/screenshots/machine-general.png)
 
-Donnez un nom descriptif à votre machine. Cela aide à identifier la machine dans le menu déroulant de sélection de machine lorsque vous avez plusieurs machines configurées.
+## Nom de la machine
 
-Exemples :
-- "K40 Atelier"
-- "Laser Diode Garage"
-- "Ortur LM2 Pro"
+Donnez un nom descriptif à votre machine. Cela permet de l'identifier dans
+le menu déroulant de sélection lorsque vous avez plusieurs machines
+configurées.
 
-## Vitesses & Accélération
+## Pilote
 
-Ces paramètres contrôlent les vitesses maximums et l'accélération pour la planification de mouvement et l'estimation du temps.
+Sélectionnez le pilote correspondant au contrôleur de votre machine. Le
+pilote gère la communication entre Rayforge et le matériel.
 
-### Vitesse de Déplacement Max
+Après avoir sélectionné un pilote, des paramètres de connexion spécifiques
+apparaissent sous le sélecteur (ex. : port série, baud rate). Ils varient
+selon le pilote choisi.
 
-La vitesse maximum pour les mouvements rapides (non-coupe). C'est utilisé lorsque le laser est éteint et que la tête se déplace vers une nouvelle position.
+:::tip
+Une bannière d'erreur en haut de la page vous avertit si le pilote n'est
+pas configuré ou rencontre un problème.
+:::
 
-- **Plage typique** : 2000-5000 mm/min
-- **Objectif** : Planification de mouvement et estimation du temps
-- **Note** : La vitesse réelle est aussi limitée par vos paramètres de firmware
+## Vitesses et accélération
 
-### Vitesse de Coupe Max
+Ces paramètres contrôlent les vitesses maximales et l'accélération. Ils sont
+utilisés pour l'estimation du temps de travail et l'optimisation des
+trajectoires.
 
-La vitesse maximum autorisée pendant les opérations de coupe ou de gravure.
+### Vitesse maximale de déplacement
 
-- **Plage typique** : 500-2000 mm/min
-- **Objectif** : Limite les vitesses d'opération pour la sécurité
-- **Note** : Les opérations individuelles peuvent utiliser des vitesses plus basses
+La vitesse maximale pour les mouvements rapides (sans coupe) lorsque le
+laser est éteint et que la tête se déplace vers une nouvelle position.
+
+- **Plage typique** : 2000–5000 mm/min
+- **Remarque** : La vitesse réelle est également limitée par les paramètres
+  de votre firmware. Ce champ est désactivé si le dialecte G-code
+  sélectionné ne prend pas en charge la spécification d'une vitesse de
+  déplacement.
+
+### Vitesse maximale de coupe
+
+La vitesse maximale autorisée pendant les opérations de coupe ou de
+gravure.
+
+- **Plage typique** : 500–2000 mm/min
+- **Remarque** : Certaines opérations peuvent utiliser des vitesses
+  inférieures
 
 ### Accélération
 
-Le taux auquel la machine accélère et décélère.
+Le taux d'accélération et de décélération de la machine, utilisé pour les
+estimations de temps et le calcul de la distance d'overscan par défaut.
 
-- **Plage typique** : 500-2000 mm/s²
-- **Objectif** : Estimation du temps et planification de mouvement
-- **Note** : Doit correspondre ou être inférieur aux paramètres d'accélération du firmware
+- **Plage typique** : 500–2000 mm/s²
+- **Remarque** : Doit correspondre ou être inférieure aux paramètres
+  d'accélération du firmware
 
 :::tip
-Commencez avec des valeurs de vitesse conservatrices et augmentez progressivement. Observez votre machine pour les sauts de courroie, les calages de moteur ou la perte de précision de positionnement.
+Commencez avec des valeurs de vitesse conservatrices et augmentez-les
+progressivement. Observez votre machine pour détecter tout saut de courroie,
+calage de moteur ou perte de précision de positionnement.
 :::
 
-## Voir Aussi
+## Exporter un profil de machine
 
-- [Paramètres Matériels](hardware) - Dimensions de machine et configuration des axes
-- [Paramètres de l'Appareil](device) - Connexion et paramètres GRBL
+Cliquez sur l'icône de partage dans la barre d'en-tête de la boîte de
+dialogue des paramètres pour exporter la configuration actuelle de la
+machine. Choisissez un dossier de destination. Un fichier ZIP est créé,
+contenant les paramètres de la machine et son dialecte G-code, qui peut être
+partagé avec d'autres utilisateurs ou importé sur un autre système.
+
+## Voir aussi
+
+- [Paramètres matériel](hardware) - Dimensions de la zone de travail et
+  configuration des axes
+- [Paramètres du périphérique](device) - Lire et écrire les paramètres du
+  firmware sur le contrôleur

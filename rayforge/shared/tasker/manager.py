@@ -240,9 +240,7 @@ class TaskManager:
                 self._main_thread_scheduler(callback, *args, **kwargs)
 
         def _schedule():
-            timer_handle[0] = loop.call_later(
-                delay_ms / 1000.0, _execute
-            )
+            timer_handle[0] = loop.call_later(delay_ms / 1000.0, _execute)
 
         loop.call_soon_threadsafe(_schedule)
 

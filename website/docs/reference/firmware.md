@@ -12,20 +12,21 @@ Rayforge is designed primarily for **GRBL-based controllers** but has experiment
 
 ### Compatibility Matrix
 
-| Firmware         | Version | Status          | Driver                 | Notes                  |
-| ---------------- | ------- | --------------- | ---------------------- | ---------------------- |
-| **GRBL**         | 1.1+    | Fully supported | GRBL Serial            | Recommended            |
-| **grblHAL**      | 2023+   | Compatible      | GRBL Serial            | Modern GRBL fork       |
-| **GRBL**         | 0.9     | Limited         | GRBL Serial            | Older, may have issues |
-| **Smoothieware** | All     | Experimental    | SmoothieDriver (Telnet) | Network-based       |
-| **Marlin**       | 2.0+    | Experimental    | None (use GRBL driver) | Laser mode required    |
-| **Other**        | -       | Not supported   | -                      | Request support        |
+| Firmware         | Version | Status        | Driver                    | Notes                  |
+| ---------------- | ------- | ------------- | ------------------------- | ---------------------- |
+| **GRBL**         | 1.1+    | Compatible    | GRBL Serial               | Recommended            |
+| **grblHAL**      | 2023+   | Compatible    | GRBL Serial / GRBL Telnet | Modern GRBL fork       |
+| **GRBL**         | 0.9     | Limited       | GRBL Serial               | Older, may have issues |
+| **Smoothieware** | All     | Compatible    | SmoothieDriver (Telnet)   | Network-based          |
+| **Marlin**       | 2.0+    | Compatible    | use GRBL driver           | Laser mode required    |
+| **ESP3D**        | All     | Compatible    | GRBL Telnet               | Network-based          |
+| **Other**        | -       | Not supported | -                         | Request support        |
 
 ---
 
 ## GRBL Firmware
 
-**Status:**  Fully Supported
+**Status:** Fully Supported
 **Versions:** 1.1+
 **Driver:** GRBL Serial
 
@@ -127,6 +128,39 @@ grblHAL is a modern fork of GRBL with enhanced features:
 3. All features work as documented for GRBL
 
 **Future:** Rayforge may add support for grblHAL-specific features (networking, etc.)
+
+---
+
+## GRBL Telnet Driver
+
+**Status:** Supported
+**Firmware:** grblHAL, ESP3D, and other networked GRBL controllers
+**Driver:** GRBL Telnet
+
+### About the GRBL Telnet Driver
+
+The GRBL Telnet driver connects to GRBL-based controllers over the network
+via a Telnet interface. This is ideal for boards with built-in WiFi or
+Ethernet — no USB cable required.
+
+**Features:**
+
+- Network connectivity (Ethernet/WiFi)
+- Compatible with grblHAL and ESP3D-based boards
+- Same GRBL protocol as the serial driver
+
+**Using the GRBL Telnet driver:**
+
+1. **Configure networking** on your controller (WiFi or Ethernet)
+2. **Select "GRBL Telnet"** driver in machine settings
+3. **Enter the IP address** and port of your controller
+4. **Connect** — the driver communicates over Telnet
+
+**Requirements:**
+
+- Networked GRBL-compatible controller (grblHAL, ESP3D, etc.)
+- Controller and computer on the same network
+- Telnet interface enabled on the controller
 
 ---
 

@@ -1,51 +1,84 @@
+---
+description: "Allgemeine Maschineneinstellungen in Rayforge konfigurieren — Maschinennamen festlegen, Treiber auswählen und Geschwindigkeiten sowie Beschleunigung einstellen."
+---
+
 # Allgemeine Einstellungen
 
-Die Allgemeine Seite in den Maschineneinstellungen enthält grundlegende Maschineninformationen und Geschwindigkeitseinstellungen.
+Die Seite „Allgemein" in den Maschineneinstellungen enthält den Maschinennamen,
+die Treiberauswahl und Verbindungseinstellungen sowie die Geschwindigkeitsparameter.
 
 ![Allgemeine Einstellungen](/screenshots/machine-general.png)
 
 ## Maschinenname
 
-Gib deiner Maschine einen beschreibenden Namen. Dies hilft, die Maschine im Maschinenwähler-Dropdown zu identifizieren, wenn du mehrere Maschinen konfiguriert hast.
+Gib deiner Maschine einen beschreibenden Namen. Das hilft, die Maschine im
+Auswahldropdown zu erkennen, wenn du mehrere Maschinen konfiguriert hast.
 
-Beispiele:
-- "Werkstatt K40"
-- "Garagen-Diodenlaser"
-- "Ortur LM2 Pro"
+## Treiber
+
+Wähle den Treiber aus, der zum Controller deiner Maschine passt. Der Treiber
+übernimmt die Kommunikation zwischen Rayforge und der Hardware.
+
+Nach der Auswahl eines Treibers werden verbindungsspezifische Einstellungen
+unter der Auswahl angezeigt (z. B. serieller Port, Baudrate). Diese variieren
+je nach gewähltem Treiber.
+
+:::tip
+Ein Fehlerbanner oben auf der Seite warnt dich, wenn der Treiber nicht
+konfiguriert ist oder ein Problem auftritt.
+:::
 
 ## Geschwindigkeiten & Beschleunigung
 
-Diese Einstellungen steuern die maximalen Geschwindigkeiten und Beschleunigung für Bewegungsplanung und Zeitschätzung.
+Diese Einstellungen steuern die maximalen Geschwindigkeiten und die
+Beschleunigung. Sie werden für die Arbeitszeit­schätzung und die
+Pfadoptimierung verwendet.
 
-### Max. Verfahrgeschwindigkeit
+### Maximale Eilganggeschwindigkeit
 
-Die maximale Geschwindigkeit für schnelle (nicht schneidende) Bewegungen. Dies wird verwendet, wenn der Laser aus ist und der Kopf sich an eine neue Position bewegt.
+Die maximale Geschwindigkeit für schnelle (nicht schneidende) Bewegungen,
+wenn der Laser aus ist und der Kopf zu einer neuen Position fährt.
 
-- **Typischer Bereich**: 2000-5000 mm/min
-- **Zweck**: Bewegungsplanung und Zeitschätzung
-- **Hinweis**: Tatsächliche Geschwindigkeit wird auch durch deine Firmware-Einstellungen begrenzt
+- **Typischer Bereich**: 2000–5000 mm/min
+- **Hinweis**: Die tatsächliche Geschwindigkeit wird auch durch deine
+  Firmware-Einstellungen begrenzt. Dieses Feld ist deaktiviert, wenn der
+  gewählte G-Code-Dialekt keine Angabe der Eilganggeschwindigkeit
+  unterstützt.
 
-### Max. Schnittgeschwindigkeit
+### Maximale Schnittgeschwindigkeit
 
-Die maximal erlaubte Geschwindigkeit während Schneid- oder Gravur-Operationen.
+Die maximale Geschwindigkeit, die beim Schneiden oder Gravieren erlaubt ist.
 
-- **Typischer Bereich**: 500-2000 mm/min
-- **Zweck**: Begrenzt Operationsgeschwindigkeiten zur Sicherheit
-- **Hinweis**: Einzelne Operationen können niedrigere Geschwindigkeiten verwenden
+- **Typischer Bereich**: 500–2000 mm/min
+- **Hinweis**: Einzelne Operationen können niedrigere Geschwindigkeiten
+  verwenden
 
 ### Beschleunigung
 
-Die Rate, mit der die Maschine beschleunigt und verzögert.
+Die Rate, mit der die Maschine beschleunigt und abbremst. Wird für
+Zeitschätzungen und zur Berechnung des Standard-Overscan-Abstands verwendet.
 
-- **Typischer Bereich**: 500-2000 mm/s²
-- **Zweck**: Zeitschätzung und Bewegungsplanung
-- **Hinweis**: Muss mit den Firmware-Beschleunigungseinstellungen übereinstimmen oder niedriger sein
+- **Typischer Bereich**: 500–2000 mm/s²
+- **Hinweis**: Muss mit den Firmware-Beschleunigungseinstellungen
+  übereinstimmen oder niedriger sein
 
 :::tip
-Beginne mit konservativen Geschwindigkeitswerten und erhöhe diese schrittweise. Beobachte deine Maschine auf Riemenrutschen, Motorblockaden oder Verlust der Positionierungsgenauigkeit.
+Beginne mit konservativen Geschwindigkeitswerten und steigere sie schrittweise.
+Beobachte deine Maschine auf Zahnriemensprünge, Motorblockaden oder
+Positionsverlust.
 :::
+
+## Maschinenprofil exportieren
+
+Klicke auf das Teilen-Symbol in der Kopfzeile des Einstellungsdialogs, um die
+aktuelle Maschinenkonfiguration zu exportieren. Wähle einen Ordner zum Speichern.
+Es wird eine ZIP-Datei erstellt, die die Maschineneinstellungen und den
+G-Code-Dialekt enthält. Diese kann mit anderen Nutzern geteilt oder auf einem
+anderen System importiert werden.
 
 ## Siehe auch
 
-- [Hardware-Einstellungen](hardware) - Maschinenabmessungen und Achsenkonfiguration
-- [Geräteeinstellungen](device) - Verbindung und GRBL-Einstellungen
+- [Hardware-Einstellungen](hardware) – Arbeitsflächenabmessungen und
+  Achsenkonfiguration
+- [Geräte-Einstellungen](device) – Firmware-Einstellungen auf dem Controller
+  lesen und schreiben

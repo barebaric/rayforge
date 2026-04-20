@@ -159,6 +159,24 @@ Quando você executa um trabalho, o Rayforge usa o WCS ativo para posicionar seu
 
 O mesmo trabalho pode ser executado em diferentes posições simplesmente alterando o WCS ativo.
 
+### WCS por Camada
+
+Cada camada pode ter seu próprio Sistema de Coordenadas de Trabalho atribuído independentemente.
+Quando uma camada tem um WCS atribuído, as operações dessa camada são posicionadas
+relativas ao WCS da camada em vez do global. Isso significa que você pode:
+
+- Executar diferentes camadas em diferentes posições da mesa em um único trabalho
+- Configurar múltiplas fixações e atribuí-las a camadas específicas
+- Combinar trabalho plano e rotativo no mesmo projeto, cada um com sua
+  própria origem de coordenadas
+
+Para atribuir um WCS a uma camada, abra as configurações da camada e use o
+seletor de WCS. Um botão de edição rápida ao lado do seletor permite ajustar
+os deslocamentos sem sair do diálogo.
+
+Camadas sem uma atribuição explícita de WCS usam o WCS ativo global
+do menu suspenso da barra de ferramentas.
+
 ## Fluxos de Trabalho Práticos
 
 ### Fluxo de Trabalho 1: Múltiplas Posições de Fixação

@@ -56,31 +56,38 @@ El espacio de trabajo principal donde:
 - **Zoom**: Rueda del ratón o <kbd>ctrl+"+"</kbd> / <kbd>ctrl+"-"</kbd>
 - **Restablecer Vista**: <kbd>ctrl+0</kbd> o Ver → Restablecer Zoom
 
-### 4. Panel de Capas
+### 4. Panel Lateral
 
-Gestiona operaciones y asignaciones de capa:
+El panel lateral es un overlay flotante en el lado derecho del lienzo. Muestra
+el flujo de trabajo de la capa activa como una lista vertical de pasos. Cada paso
+muestra su nombre, un resumen (ej. potencia y velocidad), y botones para visibilidad,
+ajustes y eliminación. Usa el botón **+** para añadir nuevos pasos. Los pasos se
+pueden reordenar arrastrando y soltando.
 
-- Ver todas las operaciones en tu proyecto
-- Asignar operaciones a elementos de diseño
-- Reordenar la ejecución de operaciones
-- Habilitar/deshabilitar operaciones individuales
-- Configurar parámetros de operación
+Al hacer clic en el botón de ajustes de un paso, se abre un diálogo donde configuras
+el tipo de operación, potencia del láser, velocidad de corte, asistencia de aire,
+ancho del haz y opciones de postprocesamiento. Los valores de los controles deslizantes
+son editables — haz clic en un valor junto a un control deslizante y escribe el
+número exacto que deseas.
 
-### 5. Panel de Propiedades
+El panel se puede mover cuando no se necesita.
 
-Configura ajustes para objetos u operaciones seleccionados:
+### 5. Panel Inferior
 
-- Tipo de operación (Contorno, Rasterizado, etc.)
-- Ajustes de potencia y velocidad
-- Número de pasadas
-- Opciones avanzadas (overscan, kerf, pestañas)
+El Panel Inferior proporciona pestañas acoplables que se pueden reorganizar arrastrando
+y dividir en múltiples columnas. Las pestañas disponibles son:
 
-### 6. Panel Inferior
+- **Capas**: Muestra todas las capas como columnas lado a lado. Cada columna tiene un
+  encabezado con el nombre de la capa y controles, una canalización horizontal compacta
+  de iconos de pasos que representan el flujo de trabajo, y una lista de piezas de
+  trabajo. Las capas y piezas de trabajo se pueden reordenar arrastrando y soltando.
+- **Activos**: Lista elementos de material y bosquejos en tu documento.
+- **Consola**: Terminal interactiva para enviar G-code y monitorear la comunicación
+  de la máquina.
+- **Visor de G-code**: Muestra el G-code generado con resaltado de sintaxis.
+- **Controles**: Controles de desplazamiento para posicionamiento manual y gestión de WCS.
 
-El Panel Inferior proporciona pestañas para la Consola, el Visor de Código G y los
-activos de tu documento (material y bosquejos). Los controles de desplazamiento y la
-gestión de WCS siempre están visibles en el lado derecho. El tiempo estimado del trabajo
-se muestra en el encabezado de la lista de capas sobre el panel de capas.
+El tiempo estimado del trabajo se muestra en el encabezado de la lista de capas.
 
 Ver [Panel Inferior](bottom-panel) para información detallada.
 

@@ -119,9 +119,7 @@ def mu_to_visual(
     diameter: float,
     reverse: bool,
 ) -> Tuple[float, float, float]:
-    degrees = KinematicMath.mu_to_degrees(
-        pos[1], diameter, reverse=reverse
-    )
+    degrees = KinematicMath.mu_to_degrees(pos[1], diameter, reverse=reverse)
     result = list(pos)
     result[1] = degrees
     return (result[0], result[1], result[2])

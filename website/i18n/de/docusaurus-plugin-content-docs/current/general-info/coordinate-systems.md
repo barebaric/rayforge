@@ -159,6 +159,23 @@ Wenn du einen Job ausführst, verwendet Rayforge das aktive WCS zur Positionieru
 
 Derselbe Job kann an verschiedenen Positionen ausgeführt werden, indem einfach das aktive WCS geändert wird.
 
+### WCS pro Ebene
+
+Jede Ebene kann ihr eigenes Arbeitskoordinatensystem unabhängig zugewiesen bekommen.
+Wenn einer Ebene ein WCS zugewiesen ist, werden die Operationen dieser Ebene relativ
+zum WCS der Ebene statt zum globalen positioniert. Das bedeutet, du kannst:
+
+- Verschiedene Ebenen an verschiedenen Positionen auf dem Bett in einem Auftrag ausführen
+- Mehrere Vorrichtungen einrichten und sie bestimmten Ebenen zuweisen
+- Flachbett- und Dreharbeit im selben Projekt kombinieren, jedes mit seinem eigenen Koordinatenursprung
+
+Um einer Ebene ein WCS zuzuweisen, öffne die Ebeneneinstellungen und verwende den
+WCS-Wähler. Eine Schnellbearbeitungs-Schaltfläche neben dem Wähler ermöglicht dir,
+Offsets anzupassen, ohne den Dialog zu verlassen.
+
+Ebenen ohne explizite WCS-Zuweisung verwenden das global aktive WCS aus dem
+Dropdown in der Symbolleiste.
+
 ## Praktische Workflows
 
 ### Workflow 1: Mehrere Vorrichtungs-Positionen

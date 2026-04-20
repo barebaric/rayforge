@@ -60,31 +60,37 @@ The main workspace where you:
 - **Zoom**: Mouse wheel or <kbd>ctrl+"+"</kbd> / <kbd>ctrl+"-"</kbd>
 - **Reset View**: <kbd>ctrl+0</kbd> or View → Reset Zoom
 
-### 4. Layers Panel
+### 4. Side Panel
 
-Manage operations and layer assignments:
+The side panel is a floating overlay on the right side of the canvas. It
+shows the workflow of the active layer as a vertical list of steps. Each
+step displays its name, a summary (e.g. power and speed), and buttons for
+visibility, settings, and deletion. Use the **+** button to add new steps.
+Steps can be reordered by drag-and-drop.
 
-- View all operations in your project
-- Assign operations to design elements
-- Reorder operation execution
-- Enable/disable individual operations
-- Configure operation parameters
+Clicking the settings button on a step opens a dialog where you configure
+the operation type, laser power, cut speed, air assist, beam width, and
+post-processing options. Slider values are editable — click on a value
+next to a slider and type the exact number you want.
 
-### 5. Properties Panel
+The panel can be moved out of the way when not needed.
 
-Configure settings for selected objects or operations:
+### 5. Bottom Panel
 
-- Operation type (Contour, Raster, etc.)
-- Power and speed settings
-- Number of passes
-- Advanced options (overscan, kerf, tabs)
+The Bottom Panel provides dockable tabs that can be rearranged by dragging
+and split into multiple columns. The available tabs include:
 
-### 6. Bottom Panel
+- **Layers**: Shows all layers as side-by-side columns. Each column has a
+  header with the layer name and controls, a compact horizontal pipeline
+  of step icons representing the workflow, and a list of workpieces. Layers
+  and workpieces can be reordered by drag-and-drop.
+- **Assets**: Lists stock items and sketches in your document.
+- **Console**: Interactive terminal for sending G-code and monitoring
+  machine communication.
+- **G-code Viewer**: Displays the generated G-code with syntax highlighting.
+- **Controls**: Jog controls for manual positioning and WCS management.
 
-The Bottom Panel provides tabs for the Console, G-code Viewer, and your
-document assets (stock and sketches). Jog controls and WCS management are
-always visible on the right side. The estimated job time is shown in the
-layer list header above the layers panel.
+The estimated job time is shown in the layer list header.
 
 See [Bottom Panel](bottom-panel) for detailed information.
 

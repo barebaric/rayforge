@@ -23,7 +23,7 @@ dentro de su tira, y puedes arrastrar pestañas entre áreas del panel o sobre l
 divisores para reorganizar el diseño en múltiples columnas. Las columnas vacías se
 eliminan automáticamente.
 
-![Panel Inferior](/screenshots/bottom-panel.png)
+![Panel Inferior](/screenshots/bottom-panel-console.png)
 
 ## Accediendo al Panel Inferior
 

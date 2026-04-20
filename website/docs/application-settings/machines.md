@@ -1,56 +1,42 @@
 ---
-description: "Manage machines in Rayforge - add, configure, and switch between different laser cutters and engravers for your projects."
+description: "Manage machines in Rayforge - add, configure, export, import, and switch between different laser cutters and engravers for your projects."
 ---
 
 # Machines
 
 ![Machines Settings](/screenshots/application-machines.png)
 
-The Machines page in Application Settings allows you to manage machine
-profiles. Each profile contains all the configuration for a specific
-laser machine.
+The Machines page in Application Settings shows a list of all configured
+machines. Each entry shows the machine name and has buttons to edit or
+delete it. The currently active machine is marked with a check icon.
 
-## Machine Profiles
+## Adding a Machine
 
-Machine profiles store complete configuration for a laser cutter or
-engraver, including:
+1. Click the **Add Machine** button at the bottom of the list
+2. Select a device profile from the list to use as a template — each
+   profile pre-configures the machine settings and G-code dialect
+3. The [machine settings dialog](../machine/general) opens where you can
+   adjust the configuration
 
-- **General settings**: Name, speeds, acceleration
-- **Hardware settings**: Work area dimensions, axis configuration
-- **Laser settings**: Power range, PWM frequency
-- **Device settings**: Serial port, baud rate, firmware type
-- **G-code settings**: Custom G-code dialect options
-- **Camera settings**: Camera calibration and alignment
+Alternatively, click **Import from File...** in the profile selector to
+add a machine from a previously exported profile.
 
-## Managing Machines
+## Editing a Machine
 
-### Adding a New Machine
+Click the edit icon next to a machine to open the
+[machine settings dialog](../machine/general).
 
-1. Click the **Add New Machine** button
-2. Enter a descriptive name for your machine
-3. Configure the machine settings (see
-   [Machine Setup](../machine/general) for details)
-4. Click **Save** to create the profile
+## Switching the Active Machine
 
-### Switching Between Machines
+Use the machine dropdown in the main window header to switch between
+configured machines. The selection is remembered between sessions.
 
-Use the machine selector dropdown in the main window to switch between
-configured machines. All settings, including the selected machine, are
-remembered between sessions.
+## Deleting a Machine
 
-### Deleting a Machine
-
-1. Select the machine to delete
-2. Click the **Delete** button
-3. Confirm the deletion
+1. Click the delete icon next to the machine
+2. Confirm the deletion
 
 :::warning
-Deleting a machine profile cannot be undone. Make sure you have
-noted any important settings before deleting.
+Deleting a machine cannot be undone. Export the profile first
+if you want to preserve the configuration.
 :::
-
-## Related Topics
-
-- [Machine Setup](../machine/general) - Detailed machine configuration
-- [First Time Setup](../getting-started/first-time-setup) - Initial
-  configuration guide

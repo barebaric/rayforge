@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """
-Screenshot: Control panel (cropped to just the panel).
+Screenshot: Bottom panel dock tabs (cropped to just the panel).
 
-Usage: pixi run screenshot control-panel
+Usage: pixi run screenshot bottom-panel
+       pixi run screenshot bottom-panel:console
+       pixi run screenshot bottom-panel:layers
 """
 
+import os
 import time
 import logging
 from rayforge.uiscript import app, win
@@ -27,11 +30,33 @@ MARGIN = 10
 STATUS_BAR_HEIGHT = 60
 PANELS = ["toggle_bottom_panel"]
 
+TAB_CONFIG = {
+    "console": {
+        "project": "contour.ryp",
+        "output": "bottom-panel-console.png",
+    },
+    "layers": {
+        "project": "twolayer.ryp",
+        "output": "bottom-panel-layers.png",
+    },
+}
+
+
+def get_tab_name():
+    target = os.environ.get("TARGET", "bottom-panel")
+    parts = target.split(":")
+    if len(parts) > 1:
+        return parts[1]
+    return "console"
+
 
 def main():
-    set_window_size(win, 1000, 900)
+    tab_name = get_tab_name()
+    config = TAB_CONFIG.get(tab_name, TAB_CONFIG["console"])
 
-    load_project(win, "contour.ryp")
+    set_window_size(win, 1400, 900)
+
+    load_project(win, config["project"])
     logger.info("Waiting for document to settle...")
     if not wait_for_settled(win, timeout=10):
         logger.error("Document did not settle in time")
@@ -42,7 +67,7 @@ def main():
 
     saved_states = save_panel_states(win, PANELS)
     show_panel(win, "toggle_bottom_panel", True)
-    show_bottom_tab(win, "console")
+    show_bottom_tab(win, tab_name)
 
     time.sleep(0.5)
 
@@ -50,11 +75,11 @@ def main():
     crop_from_top = window_height - PANEL_HEIGHT - MARGIN - STATUS_BAR_HEIGHT
 
     logger.info(
-        f"Taking cropped screenshot (window height={window_height}, "
-        f"crop_top={crop_from_top})"
+        f"Taking cropped screenshot of '{tab_name}' tab "
+        f"(window height={window_height}, crop_top={crop_from_top})"
     )
     take_cropped_screenshot(
-        "bottom-panel.png",
+        config["output"],
         from_top=crop_from_top,
     )
 
