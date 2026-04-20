@@ -56,31 +56,39 @@ L'espace de travail principal où tu peux :
 - **Zoom** : Molette de souris ou <kbd>ctrl+"+"</kbd> / <kbd>ctrl+"-"</kbd>
 - **Réinitialiser la vue** : <kbd>ctrl+0</kbd> ou Affichage → Réinitialiser le zoom
 
-### 4. Panneau Calques
+### 4. Panneau latéral
 
-Gère les opérations et les affectations de calques :
+Le panneau latéral est un panneau flottant sur le côté droit du canevas. Il affiche
+le flux de travail du calque actif sous forme de liste verticale d'étapes. Chaque
+étape affiche son nom, un résumé (p. ex. puissance et vitesse), et des boutons pour
+la visibilité, les paramètres et la suppression. Utilisez le bouton **+** pour ajouter
+de nouvelles étapes. Les étapes peuvent être réorganisées par glisser-déposer.
 
-- Visualise toutes les opérations dans ton projet
-- Affecte des opérations aux éléments de conception
-- Réorganise l'exécution des opérations
-- Active/désactive des opérations individuelles
-- Configure les paramètres des opérations
+En cliquant sur le bouton des paramètres d'une étape, une boîte de dialogue s'ouvre
+vous permettant de configurer le type d'opération, la puissance du laser, la vitesse
+de coupe, l'assistance par air, la largeur du faisceau et les options de
+post-traitement. Les valeurs des curseurs sont modifiables — cliquez sur une valeur à
+côté d'un curseur et tapez le nombre exact que vous souhaitez.
 
-### 5. Panneau Propriétés
+Le panneau peut être déplacé lorsqu'il n'est pas nécessaire.
 
-Configure les paramètres pour les objets ou opérations sélectionnés :
+### 5. Panneau inférieur
 
-- Type d'opération (Contour, Raster, etc.)
-- Paramètres de puissance et de vitesse
-- Nombre de passes
-- Options avancées (overscan, kerf, onglets)
+Le panneau inférieur fournit des onglets ancrables qui peuvent être réorganisés par
+glisser-déposer et divisés en plusieurs colonnes. Les onglets disponibles sont :
 
-### 6. Panneau inférieur
+- **Calques** : Affiche tous les calques sous forme de colonnes côte à côte. Chaque
+  colonne possède un en-tête avec le nom du calque et des contrôles, un pipeline
+  horizontal compact d'icônes d'étapes représentant le flux de travail, et une liste
+  de pièces. Les calques et les pièces peuvent être réorganisés par glisser-déposer.
+- **Actifs** : Liste les éléments de stock et les croquis de votre document.
+- **Console** : Terminal interactif pour envoyer du G-code et surveiller la
+  communication de la machine.
+- **Visualiseur G-code** : Affiche le G-code généré avec coloration syntaxique.
+- **Contrôles** : Contrôles de déplacement pour le positionnement manuel et la gestion
+  du WCS.
 
-Le panneau inférieur fournit des onglets pour la Console, le Visualiseur G-code et
-les actifs de ton document (stock et croquis). Les contrôles de déplacement et la gestion
-du WCS sont toujours visibles sur le côté droit. Le temps estimé du travail est affiché
-dans l'en-tête de la liste des calques au-dessus du panneau des calques.
+Le temps estimé du travail est affiché dans l'en-tête de la liste des calques.
 
 Voir [Panneau inférieur](bottom-panel) pour des informations détaillées.
 
@@ -94,14 +102,14 @@ Afficher/masquer les panneaux selon les besoins :
 
 ### Mode plein écran
 
-Concentre-toi sur ton travail en plein écran :
+Concentrez-vous sur votre travail en plein écran :
 
 - Entrer : <kbd>f11</kbd> ou Affichage → Plein écran
 - Quitter : <kbd>f11</kbd> ou <kbd>échappe</kbd>
 
 ## Personnalisation
 
-Personnalise l'interface dans **Édition → Paramètres** :
+Personnalisez l'interface dans **Édition → Paramètres** :
 
 - **Thème** : Clair, sombre ou système
 - **Unités** : Millimètres ou pouces

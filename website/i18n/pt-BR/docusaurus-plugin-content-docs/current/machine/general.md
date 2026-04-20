@@ -1,51 +1,81 @@
-# Configurações Gerais
+---
+description: "Configure as definições gerais da máquina no Rayforge — defina o nome, selecione um driver e configure velocidades e aceleração."
+---
 
-A página Geral nas Configurações da Máquina contém informações básicas da máquina e configurações de velocidade.
+# Definições gerais
 
-![Configurações Gerais](/screenshots/machine-general.png)
+A página Geral nas Definições da máquina contém o nome da máquina, a seleção
+do driver e as definições de conexão, além dos parâmetros de velocidade.
 
-## Nome da Máquina
+![Definições gerais](/screenshots/machine-general.png)
 
-Dê à sua máquina um nome descritivo. Isso ajuda a identificar a máquina no menu suspenso seletor de máquina quando você tem múltiplas máquinas configuradas.
+## Nome da máquina
 
-Exemplos:
-- "K40 da Oficina"
-- "Laser de Diodo da Garagem"
-- "Ortur LM2 Pro"
+Dê à sua máquina um nome descritivo. Isso ajuda a identificá-la no menu
+suspenso de seleção quando você tem várias máquinas configuradas.
 
-## Velocidades e Aceleração
+## Driver
 
-Estas configurações controlam as velocidades máximas e aceleração para planejamento de movimento e estimativa de tempo.
+Selecione o driver correspondente ao controlador da sua máquina. O driver
+gerencia a comunicação entre o Rayforge e o hardware.
 
-### Velocidade Máxima de Deslocamento
+Após selecionar um driver, as definições específicas de conexão aparecem
+abaixo do seletor (ex.: porta serial, baud rate). Elas variam conforme o
+driver escolhido.
 
-A velocidade máxima para movimentos rápidos (sem corte). Isso é usado quando o laser está desligado e a cabeça está se movendo para uma nova posição.
+:::tip
+Um banner de erro no topo da página avisa você se o driver não estiver
+configurado ou encontrar um problema.
+:::
 
-- **Faixa típica**: 2000-5000 mm/min
-- **Propósito**: Planejamento de movimento e estimativa de tempo
-- **Nota**: A velocidade real também é limitada pelas configurações do seu firmware
+## Velocidades e aceleração
 
-### Velocidade Máxima de Corte
+Essas definições controlam as velocidades máximas e a aceleração. Elas são
+usadas para a estimativa de tempo de trabalho e otimização de trajetórias.
+
+### Velocidade máxima de deslocamento
+
+A velocidade máxima para movimentos rápidos (sem corte) quando o laser está
+desligado e o cabeçote se move para uma nova posição.
+
+- **Faixa típica**: 2000–5000 mm/min
+- **Nota**: A velocidade real também é limitada pelas definições do seu
+  firmware. Este campo está desativado se o dialeto de G-code selecionado
+  não suportar a especificação de uma velocidade de deslocamento.
+
+### Velocidade máxima de corte
 
 A velocidade máxima permitida durante operações de corte ou gravação.
 
-- **Faixa típica**: 500-2000 mm/min
-- **Propósito**: Limita velocidades de operação para segurança
+- **Faixa típica**: 500–2000 mm/min
 - **Nota**: Operações individuais podem usar velocidades menores
 
 ### Aceleração
 
-A taxa na qual a máquina acelera e desacelera.
+A taxa na qual a máquina acelera e desacelera, usada para estimativas de
+tempo e cálculo da distância de overscan padrão.
 
-- **Faixa típica**: 500-2000 mm/s²
-- **Propósito**: Estimativa de tempo e planejamento de movimento
-- **Nota**: Deve corresponder ou ser menor que as configurações de aceleração do firmware
+- **Faixa típica**: 500–2000 mm/s²
+- **Nota**: Deve corresponder ou ser inferior às definições de aceleração
+  do firmware
 
 :::tip
-Comece com valores de velocidade conservadores e aumente gradualmente. Observe sua máquina para pular correias, travamento de motores ou perda de precisão de posicionamento.
+Comece com valores de velocidade conservadores e aumente gradualmente.
+Observe sua máquina quanto a saltos de correia, travamento do motor ou
+perda de precisão de posicionamento.
 :::
 
-## Veja Também
+## Exportar um perfil de máquina
 
-- [Configurações de Hardware](hardware) - Dimensões da máquina e configuração de eixos
-- [Configurações do Dispositivo](device) - Conexão e configurações GRBL
+Clique no ícone de compartilhamento na barra de cabeçalho do diálogo de
+definições para exportar a configuração atual da máquina. Escolha uma pasta
+para salvar. Um arquivo ZIP é criado contendo as definições da máquina e seu
+dialeto de G-code, que pode ser compartilhado com outros usuários ou
+importado em outro sistema.
+
+## Veja também
+
+- [Definições de hardware](hardware) - Dimensões da área de trabalho e
+  configuração dos eixos
+- [Definições do dispositivo](device) - Ler e escrever definições do
+  firmware no controlador

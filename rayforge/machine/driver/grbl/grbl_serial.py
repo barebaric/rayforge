@@ -343,13 +343,9 @@ class GrblSerialDriver(Driver):
                 try:
                     await self._execute_interactive_command("$I")
                 except (ConnectionError, asyncio.TimeoutError) as e:
-                    logger.warning(
-                        f"Failed to retrieve build info: {e}"
-                    )
+                    logger.warning(f"Failed to retrieve build info: {e}")
 
-                self._update_connection_status(
-                    TransportStatus.CONNECTED
-                )
+                self._update_connection_status(TransportStatus.CONNECTED)
 
                 logger.debug("Connection verified. Starting status polling.")
                 while transport.is_connected and self.keep_running:
@@ -839,9 +835,7 @@ class GrblSerialDriver(Driver):
             raise
         return request.response_lines
 
-    async def _execute_interactive_command(
-        self, command: str
-    ) -> List[str]:
+    async def _execute_interactive_command(self, command: str) -> List[str]:
         """
         Send a command and synchronously await its full response.
 
@@ -889,9 +883,7 @@ class GrblSerialDriver(Driver):
                     },
                 )
                 await transport.send_command(request.payload)
-                await asyncio.wait_for(
-                    request.finished.wait(), timeout=10.0
-                )
+                await asyncio.wait_for(request.finished.wait(), timeout=10.0)
             except asyncio.TimeoutError:
                 logger.error(
                     f"Interactive command '{command}' timed out "

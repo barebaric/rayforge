@@ -277,7 +277,8 @@ class KinematicMapping:
                 continue
 
             mapping = KinematicMapping.from_rotary_module(
-                module, layer.rotary_diameter,
+                module,
+                layer.rotary_diameter,
                 apply_gear_ratio=apply_gear_ratio,
             )
             if mapping is None:

@@ -24,7 +24,7 @@ Ziehen innerhalb ihrer Leiste neu angeordnet werden, und du kannst Tabs
 zwischen Panelbereichen oder auf Trennlinien ziehen, um das Layout in mehrere
 Spalten umzuordnen. Leere Spalten werden automatisch entfernt.
 
-![Unteres Panel](/screenshots/bottom-panel.png)
+![Unteres Panel](/screenshots/bottom-panel-console.png)
 
 ## Zugriff auf das untere Panel
 

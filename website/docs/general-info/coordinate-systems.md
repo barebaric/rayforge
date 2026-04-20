@@ -180,6 +180,24 @@ When you run a job, Rayforge uses the active WCS to position your work:
 The same job can be run at different positions simply by changing the
 active WCS.
 
+### Per-Layer WCS
+
+Each layer can be assigned its own Work Coordinate System independently.
+When a layer has a WCS assigned, that layer's operations are positioned
+relative to the layer's WCS rather than the global one. This means you can:
+
+- Run different layers at different positions on the bed in one job
+- Set up multiple fixtures and assign them to specific layers
+- Combine flat-bed and rotary work in the same project, each with its
+  own coordinate origin
+
+To assign a WCS to a layer, open the layer settings and use the WCS
+selector. A quick edit button next to the selector lets you adjust offsets
+without leaving the dialog.
+
+Layers without an explicit WCS assignment use the globally active WCS
+from the toolbar dropdown.
+
 ## Practical Workflows
 
 ### Workflow 1: Multiple Fixture Positions

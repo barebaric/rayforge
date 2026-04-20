@@ -1,52 +1,43 @@
+---
+description: "Gerencie máquinas no Rayforge — adicione, configure, exporte, importe e alterne entre diferentes cortadores e gravadores a laser para seus projetos."
+---
+
 # Máquinas
 
 ![Configurações de Máquinas](/screenshots/application-machines.png)
 
-A página Máquinas nas Configurações da Aplicação permite gerenciar perfis
-de máquina. Cada perfil contém toda a configuração para uma máquina
-a laser específica.
+A página Máquinas nas Configurações da Aplicação mostra uma lista de todas
+as máquinas configuradas. Cada entrada mostra o nome da máquina e possui
+botões para editá-la ou excluí-la. A máquina ativa no momento é marcada com
+um ícone de verificação.
 
-## Perfis de Máquina
+## Adicionar uma Máquina
 
-Perfis de máquina armazenam configuração completa para um cortador ou
-gravador a laser, incluindo:
+1. Clique no botão **Add Machine** na parte inferior da lista
+2. Selecione um perfil de dispositivo da lista para usar como modelo — cada
+   perfil pré-configura as definições da máquina e o dialeto de G-code
+3. O [diálogo de configurações da máquina](../machine/general) abre onde
+   você pode ajustar a configuração
 
-- **Configurações gerais**: Nome, velocidades, aceleração
-- **Configurações de hardware**: Dimensões da área de trabalho, configuração de eixos
-- **Configurações do laser**: Intervalo de potência, frequência PWM
-- **Configurações do dispositivo**: Porta serial, taxa de transmissão, tipo de firmware
-- **Configurações de G-code**: Opções de dialeto G-code personalizado
-- **Configurações de câmera**: Calibração e alinhamento da câmera
+Alternativamente, clique em **Import from File...** no seletor de perfil
+para adicionar uma máquina de um perfil exportado anteriormente.
 
-## Gerenciando Máquinas
+## Editar uma Máquina
 
-### Adicionando uma Nova Máquina
+Clique no ícone de edição ao lado de uma máquina para abrir o
+[diálogo de configurações da máquina](../machine/general).
 
-1. Clique no botão **Adicionar Nova Máquina**
-2. Digite um nome descritivo para sua máquina
-3. Configure as definições da máquina (veja
-   [Configuração de Máquina](../machine/general) para detalhes)
-4. Clique em **Salvar** para criar o perfil
+## Alternar a Máquina Ativa
 
-### Alternando Entre Máquinas
+Use o menu suspenso de máquinas no cabeçalho da janela principal para
+alternar entre as máquinas configuradas. A seleção é lembrada entre sessões.
 
-Use o menu suspenso seletor de máquina na janela principal para alternar entre
-máquinas configuradas. Todas as configurações, incluindo a máquina selecionada, são
-lembradas entre sessões.
+## Excluir uma Máquina
 
-### Excluindo uma Máquina
-
-1. Selecione a máquina a excluir
-2. Clique no botão **Excluir**
-3. Confirme a exclusão
+1. Clique no ícone de exclusão ao lado da máquina
+2. Confirme a exclusão
 
 :::warning
-Excluir um perfil de máquina não pode ser desfeito. Certifique-se de ter
-anotado quaisquer configurações importantes antes de excluir.
+Excluir uma máquina não pode ser desfeito. Exporte o perfil primeiro se
+desejar preservar a configuração.
 :::
-
-## Tópicos Relacionados
-
-- [Configuração de Máquina](../machine/general) - Configuração detalhada da máquina
-- [Configuração Inicial](../getting-started/first-time-setup) - Guia de
-  configuração inicial

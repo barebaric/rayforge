@@ -37,6 +37,25 @@ para configurar seu módulo:
   precisa para uma rotação completa. Consulte a documentação do seu módulo
   rotativo para encontrar este valor.
 
+### Modos Rotativos
+
+O Rayforge suporta dois modos rotativos:
+
+- **4º eixo verdadeiro**: O rotativo opera como um quarto eixo independente junto com
+  X, Y e Z. Este é o modo preferido quando seu controlador o suporta.
+- **Substituição de eixo**: O rotativo assume o eixo Y ou Z. Este é o modo tradicional
+  usado pela maioria dos controladores de hobby onde o rotativo é conectado a uma porta
+  existente do driver de passo.
+
+Você pode selecionar o modo na página de configurações do Rotativo.
+
+### Acessórios Rotativos Tipo Rolamento
+
+Acessórios rotativos tipo rolamento (onde o objeto repousa sobre rolos em vez de
+preso em um mandril) têm sua própria página de configurações. Se seu rotativo usa
+rolos em vez de um mandril, selecione o tipo de rolo na configuração rotativa e
+insira os parâmetros do rolo.
+
 ## Modo Rotativo por Camada
 
 Se o seu documento tiver várias camadas, você pode ativar ou desativar o modo
@@ -52,7 +71,9 @@ rapidamente quais camadas serão executadas no modo rotativo.
 
 Quando o modo rotativo está ativo, a [visualização 3D](../ui/3d-preview) mostra
 seu caminho de ferramenta envolvido ao redor de um cilindro em vez de uma
-superfície plana.
+superfície plana. A tela 2D também se adapta automaticamente ao modo rotativo,
+e a tela 3D renderiza os caminhos de ferramenta rotativos com precisão em todas
+as configurações — incluindo durante a reprodução da simulação.
 
 ![Pré-visualização 3D no modo rotativo](/screenshots/main-3d-rotary.png)
 

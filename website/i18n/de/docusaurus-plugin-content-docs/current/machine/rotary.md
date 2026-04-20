@@ -37,6 +37,24 @@ um dein Modul zu konfigurieren:
   Rotationsmotor für eine volle Umdrehung benötigt. Lies in der Dokumentation deines
   Rotationsmoduls nach, um diesen Wert zu finden.
 
+### Rotationsmodi
+
+Rayforge unterstützt zwei Rotationsmodi:
+
+- **Echte 4. Achse**: Die Rotation arbeitet als unabhängige vierte Achse neben X, Y
+  und Z. Dies ist der bevorzugte Modus, wenn dein Controller ihn unterstützt.
+- **Achsenersetzung**: Die Rotation übernimmt die Y- oder Z-Achse. Dies ist der
+  traditionelle Modus, der von den meisten Hobby-Controllern verwendet wird, bei denen
+  das Rotationsmodul an einen vorhandenen Stepper-Treiber-Anschluss angeschlossen wird.
+
+Du kannst den Modus auf der Einstellungsseite Rotation auswählen.
+
+### Rollen-Rotationsvorsätze
+
+Rollen-Rotationsvorsätze (bei denen das Objekt auf Rollen anstatt eingespannt ruht)
+haben ihre eigene Einstellungsseite. Wenn deine Rotation Rollen anstelle eines Futters
+verwendet, wähle den Rollentyp in der Rotationskonfiguration und gib die Rollenparameter ein.
+
 ## Rotationsmodus pro Ebene
 
 Wenn dein Dokument mehrere Ebenen hat, kannst du den Rotationsmodus für jede Ebene
@@ -51,7 +69,7 @@ welche Ebenen im Rotationsmodus ausgeführt werden.
 ## 3D-Vorschau im Rotationsmodus
 
 Wenn der Rotationsmodus aktiv ist, zeigt die [3D-Ansicht](../ui/3d-preview) deinen
-Werkzeugpfad um einen Zylinder gewickelt statt auf einer flachen Oberfläche.
+Werkzeugpfad um einen Zylinder gewickelt statt auf einer flachen Oberfläche. Die 2D-Arbeitsfläche passt sich ebenfalls automatisch dem Rotationsmodus an, und die 3D-Ansicht gibt Rotationswerkzeugpfade in jeder Konfiguration genau wieder — einschließlich während der Simulationswiedergabe.
 
 ![3D-Vorschau im Rotationsmodus](/screenshots/main-3d-rotary.png)
 

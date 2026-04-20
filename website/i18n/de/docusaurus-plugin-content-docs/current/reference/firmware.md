@@ -8,14 +8,15 @@ Rayforge ist primär für **GRBL-basierte Controller** konzipiert, bietet aber e
 
 ### Kompatibilitätsmatrix
 
-| Firmware         | Version | Status           | Treiber                 | Hinweise                    |
-| ---------------- | ------- | ---------------- | ----------------------- | --------------------------- |
-| **GRBL**         | 1.1+    | Vollständig unterstützt | GRBL Serial       | Empfohlen                   |
-| **grblHAL**      | 2023+   | Kompatibel       | GRBL Serial             | Moderner GRBL-Fork          |
-| **GRBL**         | 0.9     | Eingeschränkt    | GRBL Serial             | Älter, kann Probleme haben  |
-| **Smoothieware** | Alle    | Experimentell    | Keiner (GRBL-Treiber verwenden) | Ungetestet        |
-| **Marlin**       | 2.0+    | Experimentell    | Keiner (GRBL-Treiber verwenden) | Laser-Modus erforderlich |
-| **Andere**       | -       | Nicht unterstützt| -                       | Support anfordern           |
+| Firmware         | Version | Status                    | Treiber                    | Hinweise                    |
+| ---------------- | ------- | ------------------------- | -------------------------- | --------------------------- |
+| **GRBL**         | 1.1+    | Vollständig unterstützt   | GRBL Serial               | Empfohlen                   |
+| **grblHAL**      | 2023+   | Kompatibel                | GRBL Serial / GRBL Telnet | Moderner GRBL-Fork          |
+| **GRBL**         | 0.9     | Eingeschränkt             | GRBL Serial               | Älter, kann Probleme haben  |
+| **Smoothieware** | Alle    | Kompatibel                | SmoothieDriver (Telnet)   | Netzwerkbasiert             |
+| **Marlin**       | 2.0+    | Kompatibel                | GRBL-Treiber verwenden    | Laser-Modus erforderlich    |
+| **ESP3D**        | Alle    | Kompatibel                | GRBL Telnet               | Netzwerkbasiert             |
+| **Andere**       | -       | Nicht unterstützt         | -                          | Support anfordern           |
 
 ---
 
@@ -126,9 +127,40 @@ grblHAL ist ein moderner Fork von GRBL mit erweiterten Funktionen:
 
 ---
 
-## Smoothieware
+## GRBL-Telnet-Treiber
 
-**Versionen:** Alle
+**Status:** Unterstützt
+**Firmware:** grblHAL, ESP3D und andere GRBL-Netzwerk-Controller
+**Treiber:** GRBL Telnet
+
+### Über den GRBL-Telnet-Treiber
+
+Der GRBL-Telnet-Treiber verbindet sich über eine Telnet-Schnittstelle über das Netzwerk
+mit GRBL-basierten Controllern. Ideal für Platinen mit integriertem WiFi oder
+Ethernet — kein USB-Kabel erforderlich.
+
+**Funktionen:**
+
+- Netzwerkverbindung (Ethernet/WiFi)
+- Kompatibel mit grblHAL- und ESP3D-basierten Platinen
+- Gleiches GRBL-Protokoll wie der serielle Treiber
+
+**Verwendung des GRBL-Telnet-Treibers:**
+
+1. **Netzwerk konfigurieren** auf deinem Controller (WiFi oder Ethernet)
+2. **"GRBL Telnet"-Treiber auswählen** in den Maschineneinstellungen
+3. **IP-Adresse und Port** deines Controllers eingeben
+4. **Verbinden** — der Treiber kommuniziert über Telnet
+
+**Voraussetzungen:**
+
+- Netzwerkfähiger GRBL-kompatibler Controller (grblHAL, ESP3D usw.)
+- Controller und Computer im selben Netzwerk
+- Telnet-Schnittstelle auf dem Controller aktiviert
+
+---
+
+## Smoothieware
 **Treiber:** GRBL Serial (Kompatibilitätsmodus)
 
 ### Kompatibilitätshinweise

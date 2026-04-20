@@ -57,31 +57,39 @@ Der Hauptarbeitsbereich, in dem du:
 - **Zoom**: Mausrad oder <kbd>Strg+"+"</kbd> / <kbd>Strg+"-"</kbd>
 - **Ansicht zurücksetzen**: <kbd>Strg+0</kbd> oder Ansicht → Zoom zurücksetzen
 
-### 4. Ebenen-Panel
+### 4. Seitenpanel
 
-Operationen und Ebenenzuweisungen verwalten:
+Das Seitenpanel ist ein schwebendes Overlay auf der rechten Seite der Canvas. Es
+zeigt den Workflow der aktiven Ebene als vertikale Liste von Schritten an. Jeder
+Schritt zeigt seinen Namen, eine Zusammenfassung (z.B. Leistung und Geschwindigkeit)
+und Schaltflächen für Sichtbarkeit, Einstellungen und Löschung. Verwende die **+**-
+Schaltfläche, um neue Schritte hinzuzufügen. Schritte können per Drag-and-Drop
+neu angeordnet werden.
 
-- Alle Operationen in deinem Projekt anzeigen
-- Operationen zu Design-Elementen zuweisen
-- Reihenfolge der Operationsausführung ändern
-- Einzelne Operationen aktivieren/deaktivieren
-- Operationsparameter konfigurieren
+Ein Klick auf die Einstellungen-Schaltfläche eines Schritts öffnet einen Dialog, in dem
+du den Operationstyp, Laserleistung, Schnittgeschwindigkeit, Air Assist, Strahlbreite
+und Nachbearbeitungsoptionen konfigurierst. Schieberegler-Werte sind bearbeitbar —
+klicke auf einen Wert neben einem Schieberegler und gib die genaue Zahl ein, die du
+möchtest.
 
-### 5. Eigenschaften-Panel
+Das Panel kann beiseitegeschoben werden, wenn es nicht benötigt wird.
 
-Einstellungen für ausgewählte Objekte oder Operationen konfigurieren:
+### 5. Unteres Panel
 
-- Operationstyp (Kontur, Raster usw.)
-- Leistungs- und Geschwindigkeitseinstellungen
-- Anzahl der Durchgänge
-- Erweiterte Optionen (Overscan, Schnittfuge, Halterungen)
+Das untere Panel bietet andockbare Tabs, die durch Ziehen neu angeordnet und in
+mehrere Spalten aufgeteilt werden können. Die verfügbaren Tabs sind:
 
-### 6. Unteres Panel
+- **Ebenen**: Zeigt alle Ebenen als nebeneinanderliegende Spalten an. Jede Spalte hat
+  eine Kopfzeile mit dem Ebenennamen und Steuerungen, eine kompakte horizontale
+  Pipeline von Schritt-Symbolen, die den Workflow darstellen, und eine Liste von
+  Werkstücken. Ebenen und Werkstücke können per Drag-and-Drop neu angeordnet werden.
+- **Assets**: Listet Rohmaterial und Skizzen in deinem Dokument auf.
+- **Konsole**: Interaktives Terminal zum Senden von G-code und Überwachen der
+  Maschinenkommunikation.
+- **G-code-Viewer**: Zeigt den generierten G-code mit Syntaxhervorhebung an.
+- **Steuerungen**: Jog-Steuerungen zur manuellen Positionierung und WCS-Verwaltung.
 
-Das untere Panel bietet Tabs für die Konsole, den G-Code-Viewer und deine
-Dokument-Assets (Rohmaterial und Skizzen). Jog-Steuerung und WCS-Verwaltung
-sind auf der rechten Seite immer sichtbar. Die geschätzte Auftragszeit wird
-in der Ebenenlistenüberschrift über dem Ebenen-Panel angezeigt.
+Die geschätzte Auftragszeit wird in der Kopfzeile der Ebenenliste angezeigt.
 
 Siehe [Unteres Panel](bottom-panel) für detaillierte Informationen.
 

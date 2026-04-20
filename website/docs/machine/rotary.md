@@ -37,6 +37,24 @@ your module:
 - **Microsteps per rotation**: This is the number of steps the rotary motor needs for one
   full rotation. Check your rotary module's documentation for this value.
 
+### Rotary Modes
+
+Rayforge supports two rotary modes:
+
+- **True 4th axis**: The rotary operates as an independent fourth axis alongside X, Y,
+  and Z. This is the preferred mode when your controller supports it.
+- **Axis replacement**: The rotary takes over the Y or Z axis. This is the traditional
+  mode used by most hobby controllers where the rotary plugs into an existing stepper
+  driver port.
+
+You can select the mode in the Rotary settings page.
+
+### Roller-Type Rotary Attachments
+
+Roller-type rotary attachments (where the object rests on rollers rather than being
+chucked) have their own settings page. If your rotary uses rollers instead of a chuck,
+select the roller type in the rotary configuration and enter the roller parameters.
+
 ## Per-Layer Rotary Mode
 
 If your document has multiple layers, you can enable or disable rotary mode independently
@@ -49,7 +67,9 @@ the layer list so you can tell at a glance which layers will run in rotary mode.
 ## 3D Preview in Rotary Mode
 
 When rotary mode is active, the [3D view](../ui/3d-preview) shows your toolpath wrapped
-around a cylinder instead of on a flat surface.
+around a cylinder instead of on a flat surface. The 2D canvas also adapts to rotary mode
+automatically, and the 3D canvas renders rotary toolpaths accurately in every
+configuration — including during simulation playback.
 
 ![3D Preview in Rotary Mode](/screenshots/main-3d-rotary.png)
 

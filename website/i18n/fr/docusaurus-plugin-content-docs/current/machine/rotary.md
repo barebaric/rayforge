@@ -37,6 +37,25 @@ pour configurer ton module :
   rotatif pour une rotation complète. Consulte la documentation de ton module
   rotatif pour trouver cette valeur.
 
+### Modes rotatifs
+
+Rayforge prend en charge deux modes rotatifs :
+
+- **Vrai 4e axe** : Le rotatif fonctionne comme un quatrième axe indépendant aux côtés
+  de X, Y et Z. C'est le mode préféré lorsque ton contrôleur le prend en charge.
+- **Remplacement d'axe** : Le rotatif prend en charge l'axe Y ou Z. C'est le mode
+  traditionnel utilisé par la plupart des contrôleurs de loisir où le rotatif se branche
+  sur un port de driver de moteur pas à pas existant.
+
+Tu peux sélectionner le mode dans la page de paramètres Rotatif.
+
+### Accessoires rotatifs à rouleaux
+
+Les accessoires rotatifs à rouleaux (où l'objet repose sur des rouleaux plutôt que
+d'être serré dans un mandrin) ont leur propre page de paramètres. Si ton rotatif
+utilise des rouleaux au lieu d'un mandrin, sélectionne le type de rouleau dans la
+configuration rotative et entre les paramètres du rouleau.
+
 ## Mode rotatif par couche
 
 Si ton document comporte plusieurs couches, tu peux activer ou désactiver
@@ -51,7 +70,10 @@ voir d'un coup d'œil quelles couches s'exécuteront en mode rotatif.
 ## Aperçu 3D en mode rotatif
 
 Lorsque le mode rotatif est actif, la [vue 3D](../ui/3d-preview) affiche ton
-parcours d'outil enroulé autour d'un cylindre au lieu d'une surface plane.
+parcours d'outil enroulé autour d'un cylindre au lieu d'une surface plane. Le canevas
+2D s'adapte également automatiquement au mode rotatif, et le canevas 3D restitue les
+parcours d'outil rotatifs avec précision dans chaque configuration — y compris pendant
+la lecture de simulation.
 
 ![Aperçu 3D en mode rotatif](/screenshots/main-3d-rotary.png)
 

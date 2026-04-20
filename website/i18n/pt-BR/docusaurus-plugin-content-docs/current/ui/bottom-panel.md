@@ -23,7 +23,7 @@ qual aba está ativa. As abas podem ser reordenadas arrastando dentro de sua fai
 e você pode arrastar abas entre áreas do painel ou sobre os divisores para
 reorganizar o layout em múltiplas colunas. Colunas vazias são removidas automaticamente.
 
-![Painel Inferior](/screenshots/bottom-panel.png)
+![Painel Inferior](/screenshots/bottom-panel-console.png)
 
 ## Acessando o Painel Inferior
 

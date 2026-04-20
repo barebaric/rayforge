@@ -1919,7 +1919,8 @@ class Canvas3D(Gtk.GLArea):
                     )
                     if module:
                         mapping = KinematicMapping.from_rotary_module(
-                            module, layer.rotary_diameter,
+                            module,
+                            layer.rotary_diameter,
                             apply_gear_ratio=False,
                         )
                         if mapping is not None:
@@ -1927,9 +1928,7 @@ class Canvas3D(Gtk.GLArea):
                             axis_position_3d = tuple(
                                 mapping.axis_position_3d.tolist()
                             )
-                            cylinder_dir = tuple(
-                                mapping.cylinder_dir.tolist()
-                            )
+                            cylinder_dir = tuple(mapping.cylinder_dir.tolist())
                             reverse = mapping.reverse
             layer_configs[layer.uid] = LayerRenderConfig(
                 rotary_enabled=layer.rotary_enabled,

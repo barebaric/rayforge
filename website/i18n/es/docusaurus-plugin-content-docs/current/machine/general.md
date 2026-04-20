@@ -1,51 +1,82 @@
-# Ajustes Generales
+---
+description: "Configura los ajustes generales de la máquina en Rayforge: establece el nombre, selecciona un controlador y configura velocidades y aceleración."
+---
 
-La página General en Configuración de Máquina contiene información básica de la máquina y ajustes de velocidad.
+# Ajustes generales
 
-![Ajustes Generales](/screenshots/machine-general.png)
+La página General en los Ajustes de máquina contiene el nombre de la
+máquina, la selección del controlador y los ajustes de conexión, así como
+los parámetros de velocidad.
 
-## Nombre de Máquina
+![Ajustes generales](/screenshots/machine-general.png)
 
-Dale a tu máquina un nombre descriptivo. Esto ayuda a identificar la máquina en el menú desplegable de selección de máquina cuando tienes múltiples máquinas configuradas.
+## Nombre de la máquina
 
-Ejemplos:
-- "K40 del Taller"
-- "Láser de Diodo del Garaje"
-- "Ortur LM2 Pro"
+Dale a tu máquina un nombre descriptivo. Esto ayuda a identificarla en el
+desplegable de selección cuando tienes varias máquinas configuradas.
 
-## Velocidades y Aceleración
+## Controlador
 
-Estos ajustes controlan las velocidades máximas y aceleración para la planificación de movimiento y estimación de tiempo.
+Selecciona el controlador que corresponda al control de tu máquina. El
+controlador gestiona la comunicación entre Rayforge y el hardware.
 
-### Velocidad Máxima de Desplazamiento
+Tras seleccionar un controlador, aparecerán debajo del selector los ajustes
+específicos de conexión (p. ej., puerto serie, baud rate). Estos varían según
+el controlador elegido.
 
-La velocidad máxima para movimientos rápidos (sin corte). Esto se usa cuando el láser está apagado y la cabeza se está moviendo a una nueva posición.
+:::tip
+Un banner de error en la parte superior de la página te avisa si el
+controlador no está configurado o si encuentra un problema.
+:::
 
-- **Rango típico**: 2000-5000 mm/min
-- **Propósito**: Planificación de movimiento y estimación de tiempo
-- **Nota**: La velocidad real también está limitada por los ajustes de tu firmware
+## Velocidades y aceleración
 
-### Velocidad Máxima de Corte
+Estos ajustes controlan las velocidades máximas y la aceleración. Se usan
+para la estimación del tiempo de trabajo y la optimización de trayectorias.
 
-La velocidad máxima permitida durante operaciones de corte o grabado.
+### Velocidad máxima de desplazamiento
 
-- **Rango típico**: 500-2000 mm/min
-- **Propósito**: Limita las velocidades de operación por seguridad
-- **Nota**: Las operaciones individuales pueden usar velocidades más bajas
+La velocidad máxima para movimientos rápidos (sin corte) cuando el láser
+está apagado y el cabezal se mueve a una nueva posición.
+
+- **Rango típico**: 2000–5000 mm/min
+- **Nota**: La velocidad real también está limitada por los ajustes de tu
+  firmware. Este campo está deshabilitado si el dialecto de G-code
+  seleccionado no permite especificar una velocidad de desplazamiento.
+
+### Velocidad máxima de corte
+
+La velocidad máxima permitida durante las operaciones de corte o grabado.
+
+- **Rango típico**: 500–2000 mm/min
+- **Nota**: Operaciones individuales pueden usar velocidades inferiores
 
 ### Aceleración
 
-La tasa a la que la máquina acelera y desacelera.
+La tasa a la que la máquina acelera y desacelera, usada para estimaciones
+de tiempo y para calcular la distancia de overscan predeterminada.
 
-- **Rango típico**: 500-2000 mm/s²
-- **Propósito**: Estimación de tiempo y planificación de movimiento
-- **Nota**: Debe coincidir o ser menor que los ajustes de aceleración del firmware
+- **Rango típico**: 500–2000 mm/s²
+- **Nota**: Debe coincidir o ser inferior a los ajustes de aceleración del
+  firmware
 
 :::tip
-Comienza con valores de velocidad conservadores y aumenta gradualmente. Observa tu máquina en busca de saltos de correa, bloqueo de motores o pérdida de precisión de posicionamiento.
+Comienza con valores de velocidad conservadores y auméntalos gradualmente.
+Observa tu máquina para detectar saltos de correa, bloqueos de motor o
+pérdida de precisión de posicionamiento.
 :::
 
-## Ver También
+## Exportar un perfil de máquina
 
-- [Ajustes de Hardware](hardware) - Dimensiones de máquina y configuración de ejes
-- [Ajustes de Dispositivo](device) - Conexión y ajustes de GRBL
+Haz clic en el icono de compartir en la barra de encabezado del diálogo de
+ajustes para exportar la configuración actual de la máquina. Elige una carpeta
+para guardar. Se creará un archivo ZIP con los ajustes de la máquina y su
+dialecto de G-code, que puedes compartir con otros usuarios o importar en otro
+sistema.
+
+## Ver también
+
+- [Ajustes de hardware](hardware) - Dimensiones del área de trabajo y
+  configuración de ejes
+- [Ajustes de dispositivo](device) - Leer y escribir ajustes del firmware en
+  el controlador

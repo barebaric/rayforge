@@ -159,6 +159,24 @@ Cuando ejecutas un trabajo, Rayforge usa el WCS activo para posicionar tu trabaj
 
 El mismo trabajo puede ejecutarse en diferentes posiciones simplemente cambiando el WCS activo.
 
+### WCS por capa
+
+Cada capa puede tener asignado su propio Sistema de Coordenadas de Trabajo de forma independiente.
+Cuando una capa tiene un WCS asignado, las operaciones de esa capa se posicionan
+relativas al WCS de la capa en lugar del global. Esto significa que puedes:
+
+- Ejecutar diferentes capas en diferentes posiciones de la cama en un solo trabajo
+- Configurar múltiples fijaciones y asignarlas a capas específicas
+- Combinar trabajo plano y rotativo en el mismo proyecto, cada uno con su
+  propio origen de coordenadas
+
+Para asignar un WCS a una capa, abre la configuración de la capa y usa el selector
+de WCS. Un botón de edición rápida junto al selector te permite ajustar los
+desplazamientos sin salir del diálogo.
+
+Las capas sin una asignación explícita de WCS usan el WCS activo global
+del menú desplegable de la barra de herramientas.
+
 ## Flujos de Trabajo Prácticos
 
 ### Flujo de Trabajo 1: Múltiples Posiciones de Fijación

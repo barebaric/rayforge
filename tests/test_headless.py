@@ -144,9 +144,7 @@ class TestHeadlessLayout:
         layer = editor.doc.active_layer
         layer.add_workpiece(wp)
 
-        editor.layout.center_horizontally(
-            [wp], surface_width_mm=100.0
-        )
+        editor.layout.center_horizontally([wp], surface_width_mm=100.0)
 
 
 class TestHeadlessTaskManager:

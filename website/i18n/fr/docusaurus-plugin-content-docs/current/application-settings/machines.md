@@ -1,47 +1,44 @@
+---
+description: "Gérez les machines dans Rayforge — ajoutez, configurez, exportez, importez et basculez entre différentes découpeuses et graveuses laser pour vos projets."
+---
+
 # Machines
 
 ![Paramètres des Machines](/screenshots/application-machines.png)
 
-La page Machines dans les Paramètres de l'Application vous permet de gérer les profils de machine. Chaque profil contient toute la configuration pour une machine laser spécifique.
+La page Machines dans les Paramètres de l'Application affiche une liste de
+toutes les machines configurées. Chaque entrée affiche le nom de la machine
+et dispose de boutons pour la modifier ou la supprimer. La machine
+actuellement active est marquée d'une icône de coche.
 
-## Profils de Machine
+## Ajouter une Machine
 
-Les profils de machine stockent la configuration complète pour une découpeuse ou graveuse laser, incluant :
+1. Cliquez sur le bouton **Add Machine** en bas de la liste
+2. Sélectionnez un profil d'appareil dans la liste comme modèle — chaque
+   profil préconfigure les paramètres de la machine et le dialecte G-code
+3. Le [dialogue de paramètres de machine](../machine/general) s'ouvre pour
+   vous permettre d'ajuster la configuration
 
-- **Paramètres généraux** : Nom, vitesses, accélération
-- **Paramètres matériels** : Dimensions de la zone de travail, configuration des axes
-- **Paramètres laser** : Plage de puissance, fréquence PWM
-- **Paramètres de l'appareil** : Port série, débit, type de firmware
-- **Paramètres G-code** : Options de dialecte G-code personnalisé
-- **Paramètres caméra** : Calibration et alignement de la caméra
+Alternativement, cliquez sur **Import from File...** dans le sélecteur de
+profil pour ajouter une machine à partir d'un profil précédemment exporté.
 
-## Gérer les Machines
+## Modifier une Machine
 
-### Ajouter une Nouvelle Machine
+Cliquez sur l'icône de modification à côté d'une machine pour ouvrir le
+[dialogue de paramètres de machine](../machine/general).
 
-1. Cliquez sur le bouton **Ajouter une Nouvelle Machine**
-2. Entrez un nom descriptif pour votre machine
-3. Configurez les paramètres de la machine (voir
-   [Configuration Machine](../machine/general) pour plus de détails)
-4. Cliquez sur **Sauvegarder** pour créer le profil
+## Changer la Machine Active
 
-### Basculer Entre les Machines
+Utilisez le menu déroulant des machines dans l'en-tête de la fenêtre
+principale pour basculer entre les machines configurées. La sélection est
+mémorisée entre les sessions.
 
-Utilisez le menu déroulant de sélection de machine dans la fenêtre principale pour basculer entre les machines configurées. Tous les paramètres, incluant la machine sélectionnée, sont mémorisés entre les sessions.
+## Supprimer une Machine
 
-### Supprimer une Machine
-
-1. Sélectionnez la machine à supprimer
-2. Cliquez sur le bouton **Supprimer**
-3. Confirmez la suppression
+1. Cliquez sur l'icône de suppression à côté de la machine
+2. Confirmez la suppression
 
 :::warning
-La suppression d'un profil de machine ne peut pas être annulée. Assurez-vous d'avoir
-noté tous les paramètres importants avant de supprimer.
+La suppression d'une machine ne peut pas être annulée. Exportez le profil
+au préalable si vous souhaitez conserver la configuration.
 :::
-
-## Sujets Connexes
-
-- [Configuration Machine](../machine/general) - Configuration détaillée de la machine
-- [Configuration Initiale](../getting-started/first-time-setup) - Guide de
-  configuration initiale
