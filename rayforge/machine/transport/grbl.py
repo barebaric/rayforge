@@ -276,19 +276,10 @@ class GrblSerialTransport:
     async def send_control(self, data: bytes) -> None:
         """
         Send a realtime control character (\\x18, !, ~) without
-        buffer accounting.  Makes a best-effort attempt to wait for
-        buffer space (up to 1 s), but sends regardless if space does
-        not become available.
+        buffer accounting.  Realtime commands are intercepted by
+        GRBL before entering the RX buffer, so no space check is
+        needed.
         """
-        data_len = len(data)
-        if self.needs_space(data_len):
-            try:
-                await asyncio.wait_for(self.wait_for_space(), timeout=1.0)
-            except asyncio.TimeoutError:
-                logger.warning(
-                    "Timed out waiting for buffer space for "
-                    "control. Sending anyway."
-                )
         await self._transport.send(data)
 
     @property
