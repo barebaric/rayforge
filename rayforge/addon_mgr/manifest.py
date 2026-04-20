@@ -12,7 +12,7 @@ class AddonManifest:
     """
 
     # Maps fully qualified module name to its absolute file path.
-    # E.g. "rayforge_addons.my_addon.backend" -> "/path/to/my_addon/backend.py"
+    # E.g. "rayforge_addons.my_addon.worker" -> "/path/to/my_addon/worker.py"
     module_paths: Dict[str, str] = field(default_factory=dict)
 
     # A set of all namespace packages that need to be created in sys.modules
@@ -20,8 +20,8 @@ class AddonManifest:
     # E.g., {"rayforge_addons", "rayforge_addons.my_addon"}
     namespaces: Set[str] = field(default_factory=set)
 
-    # A list of fully qualified module names for all ENABLED backend entry
+    # A list of fully qualified module names for all ENABLED worker entry
     # points.
     # This tells the worker's lazy loader exactly which modules to import.
-    # E.g., ["rayforge_addons.my_addon.backend"]
-    enabled_backend_modules: List[str] = field(default_factory=list)
+    # E.g., ["rayforge_addons.my_addon.worker"]
+    enabled_worker_modules: List[str] = field(default_factory=list)

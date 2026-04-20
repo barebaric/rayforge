@@ -106,14 +106,14 @@ class AddonProvides:
     Defines what the addon provides to the system.
 
     Attributes:
-        backend (Optional[str]): Module path loaded in worker and main
-                                 processes (e.g., 'my_addon.plugin').
+        worker (Optional[str]): Module path loaded in worker and main
+                                processes (e.g., 'my_addon.plugin').
         frontend (Optional[str]): Module path loaded only in main process
-                                  (e.g., 'my_addon.ui').
+                                   (e.g., 'my_addon.ui').
         assets (List[Dict[str, str]]): A list of asset definitions.
     """
 
-    backend: Optional[str] = None
+    worker: Optional[str] = None
     frontend: Optional[str] = None
     assets: List[Dict[str, str]] = field(default_factory=list)
 
@@ -314,8 +314,11 @@ class Addon:
 
             provides_data = data.get("provides", {})
 
+            worker = provides_data.get("worker") or provides_data.get(
+                "backend"
+            )
             provides = AddonProvides(
-                backend=provides_data.get("backend"),
+                worker=worker,
                 frontend=provides_data.get("frontend"),
                 assets=provides_data.get("assets", []),
             )
@@ -473,8 +476,8 @@ class Addon:
             if not full_path.exists():
                 raise AddonValidationError(f"Asset path not found: {path_str}")
 
-        if self.metadata.provides.backend:
-            self._validate_entry_point(self.metadata.provides.backend)
+        if self.metadata.provides.worker:
+            self._validate_entry_point(self.metadata.provides.worker)
 
         if self.metadata.provides.frontend:
             self._validate_entry_point(self.metadata.provides.frontend)

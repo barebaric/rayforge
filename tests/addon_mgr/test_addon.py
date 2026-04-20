@@ -150,7 +150,7 @@ class TestAddon:
             data = {
                 "name": "test_pkg",
                 "author": {"name": "Me", "email": "me@me.com"},
-                "provides": {"backend": "main.py"},
+                "provides": {"worker": "main.py"},
             }
             with open(path / "rayforge-addon.yaml", "w") as f:
                 yaml.dump(data, f)
@@ -159,7 +159,7 @@ class TestAddon:
             assert addon.metadata.name == data["name"]
             assert addon.root_path == path
             assert addon.metadata.version == TEST_VERSION
-            assert addon.metadata.provides.backend == "main.py"
+            assert addon.metadata.provides.worker == "main.py"
 
     def test_load_missing_metadata(self):
         """Test error when metadata file is missing."""
@@ -177,7 +177,7 @@ class TestAddon:
                 "name": "test_pkg",
                 "depends": ["rayforge>=0.27.0,~0.27"],
                 "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"backend": "main"},
+                "provides": {"worker": "main"},
             }
             with open(path / "rayforge-addon.yaml", "w") as f:
                 yaml.dump(data, f)
@@ -195,7 +195,7 @@ class TestAddon:
                 "name": "test_pkg",
                 "depends": ["rayforge>=0.27.0,~0.27"],
                 "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"backend": "main:my_plugin"},
+                "provides": {"worker": "main:my_plugin"},
             }
             with open(path / "rayforge-addon.yaml", "w") as f:
                 yaml.dump(data, f)
@@ -213,7 +213,7 @@ class TestAddon:
                 "name": "test_pkg",
                 "depends": ["rayforge>=0.27.0,~0.27"],
                 "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"backend": "nonexistent"},
+                "provides": {"worker": "nonexistent"},
             }
             with open(path / "rayforge-addon.yaml", "w") as f:
                 yaml.dump(data, f)
@@ -250,7 +250,7 @@ class TestAddon:
                 "name": "test_pkg",
                 "depends": ["rayforge>=0.27.0,", ",test"],
                 "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"backend": "main"},
+                "provides": {"worker": "main"},
             }
             with open(path / "rayforge-addon.yaml", "w") as f:
                 yaml.dump(data, f)
@@ -268,7 +268,7 @@ class TestAddon:
                 "name": "test_pkg",
                 "depends": ["rayforge>=0.27.0,~0.27"],
                 "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"backend": "main"},
+                "provides": {"worker": "main"},
                 "api_version": 0,
             }
             with open(path / "rayforge-addon.yaml", "w") as f:
@@ -288,7 +288,7 @@ class TestAddon:
                 "name": "test_pkg",
                 "depends": ["rayforge>=0.27.0,~0.27"],
                 "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"backend": "main"},
+                "provides": {"worker": "main"},
                 "api_version": "1",
             }
             with open(path / "rayforge-addon.yaml", "w") as f:
@@ -308,7 +308,7 @@ class TestAddon:
                 "name": "test_pkg",
                 "depends": ["rayforge>=0.27.0,~0.27"],
                 "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"backend": "main"},
+                "provides": {"worker": "main"},
                 "api_version": 999,
             }
             with open(path / "rayforge-addon.yaml", "w") as f:
@@ -328,7 +328,7 @@ class TestAddon:
                 "name": "test_pkg",
                 "depends": ["rayforge>=0.27.0,~0.27"],
                 "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"backend": "main"},
+                "provides": {"worker": "main"},
             }
             with open(path / "rayforge-addon.yaml", "w") as f:
                 yaml.dump(data, f)
@@ -336,6 +336,21 @@ class TestAddon:
             addon = Addon.load_from_directory(path, version=UnknownVersion)
             assert addon.validate() is True
             assert addon.metadata.version is UnknownVersion
+
+    def test_load_from_directory_backward_compat_backend_key(self):
+        """Test that legacy 'backend' key in manifest is still accepted."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            data = {
+                "name": "test_pkg",
+                "author": {"name": "Me", "email": "me@me.com"},
+                "provides": {"backend": "main.py"},
+            }
+            with open(path / "rayforge-addon.yaml", "w") as f:
+                yaml.dump(data, f)
+
+            addon = Addon.load_from_directory(path, version=TEST_VERSION)
+            assert addon.metadata.provides.worker == "main.py"
 
 
 class TestGetGitTagVersion:

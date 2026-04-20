@@ -29,7 +29,7 @@ class TestAddonRoundTrip:
             "author:\n"
             "  name: Test Author\n"
             "provides:\n"
-            "  backend: addon\n"
+            "  worker: addon\n"
         )
 
         (addon_dir / "addon.py").write_text(
@@ -99,7 +99,7 @@ class TestAddonRoundTrip:
             "author:\n"
             "  name: Test Author\n"
             "provides:\n"
-            "  backend: addon\n"
+            "  worker: addon\n"
         )
 
         (addon_dir / "addon.py").write_text(
@@ -156,7 +156,7 @@ class TestAddonRoundTrip:
             "depends:\n"
             "  - rayforge>=0.27.0,~0.27\n"
             "provides:\n"
-            "  backend: addon\n"
+            "  worker: addon\n"
         )
 
         context = RayforgeContext()

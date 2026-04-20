@@ -4,12 +4,23 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 1
-PLUGIN_API_VERSION = 11
+PLUGIN_API_VERSION = 12
 
 
 """
 API Changelog
 ============
+
+Version 12
+----------
+Renamed ``provides.backend`` key to ``provides.worker`` in addon manifests.
+The old ``backend`` key is still accepted for backward compatibility.
+Corresponding ``backend.py`` files should be renamed to ``worker.py``.
+Removed ``backend_only`` parameter in favor of ``worker_only``.
+
+Version 11
+----------
+(No manifest changes.)
 
 Version 10
 ----------

@@ -1,7 +1,7 @@
 name: laser_essentials
 display_name: "Laser Essentials"
 description: "Core laser cutting functionality"
-api_version: 6
+api_version: 12
 depends:
   - rayforge>=0.27.0
 requires:
@@ -10,7 +10,7 @@ author:
   name: "Rayforge Team"
   email: "noreply@rayforge.org"
 provides:
-  backend: "laser_essentials.backend"
+  worker: "laser_essentials.worker"
   frontend: "laser_essentials.frontend"
 license:
   name: "MIT"

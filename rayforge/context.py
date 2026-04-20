@@ -144,7 +144,7 @@ class RayforgeContext:
         Loads addons and calls registration hooks.
 
         This is called automatically when addon_mgr is first accessed.
-        In headless mode, only backend entry points are loaded.
+        In headless mode, only worker entry points are loaded.
         """
         if self._addon_mgr is None:
             return
@@ -198,7 +198,7 @@ class RayforgeContext:
             registries["renderer_registry"] = renderer_registry
 
         self._addon_mgr.set_registries(registries)
-        self._addon_mgr.load_installed_addons(backend_only=self._headless)
+        self._addon_mgr.load_installed_addons(worker_only=self._headless)
 
         self.plugin_mgr.hook.register_producers(
             producer_registry=producer_registry

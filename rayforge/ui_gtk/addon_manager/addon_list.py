@@ -43,7 +43,7 @@ class AddonRow(Gtk.Box):
         self.set_margin_start(12)
         self.set_margin_end(6)
 
-        is_asset_only = not addon.metadata.provides.backend
+        is_asset_only = not addon.metadata.provides.worker
 
         if state == AddonState.LICENSE_REQUIRED.value:
             icon = get_icon("lock-symbolic")

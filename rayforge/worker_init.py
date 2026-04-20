@@ -57,13 +57,13 @@ def ensure_addons_loaded():
         install_addon_finder(shared_dict=_shared_state_cache)
     ensure_addon_namespaces(manifest)
 
-    for module_name in manifest.enabled_backend_modules:
+    for module_name in manifest.enabled_worker_modules:
         try:
             module = importlib.import_module(module_name)
             context.plugin_mgr.register(module)
         except Exception as e:
             logger.error(
-                f"Failed to load enabled backend module '{module_name}': {e}"
+                f"Failed to load enabled worker module '{module_name}': {e}"
             )
 
     context.plugin_mgr.hook.register_steps(step_registry=step_registry)

@@ -257,7 +257,7 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
     context = get_context()
     context._headless = True
 
-    # 4. Access addon_mgr to trigger lazy loading (backend_only=True)
+    # 4. Access addon_mgr to trigger lazy loading (worker_only=True)
     # This happens before setting shared state, so we'll get a warning
     # about missing shared state, but set_shared_state will rebuild it.
     shared_state = task_mgr.get_shared_state()
