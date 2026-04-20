@@ -32,6 +32,7 @@ from .item import DocItem
 from .matrix import Matrix
 from .source_asset_segment import SourceAssetSegment
 from .tab import Tab
+from .vectorization_spec import TraceSpec
 
 if TYPE_CHECKING:
     from ..image.base_renderer import Renderer, RenderSpecification
@@ -743,7 +744,20 @@ class WorkPiece(DocItem):
                 if not processed_image:
                     return None
 
-        # 3. Final Resize Check
+        # 3. Apply Inversion for traced imports
+        if self.source_segment and self.source_segment.vectorization_spec:
+            vspec = self.source_segment.vectorization_spec
+            if isinstance(vspec, TraceSpec) and vspec.invert:
+                bands = processed_image.bands
+                if bands == 2:
+                    background = [255]
+                else:
+                    background = [255, 255, 255]
+                processed_image = processed_image.flatten(
+                    background=background
+                ).invert()
+
+        # 4. Final Resize Check
         if (
             processed_image.width != target_w
             or processed_image.height != target_h
