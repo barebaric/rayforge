@@ -1,5 +1,4 @@
 from __future__ import annotations
-import concurrent.futures
 import logging
 import asyncio
 from typing import (
@@ -23,6 +22,7 @@ from ..core.matrix import Matrix
 from ..core.ops import Ops
 from ..core.step import Step
 from ..core.stock import StockItem
+from ..shared.tasker.manager import CancelHandle
 from ..core.workflow import Workflow
 from ..core.workpiece import WorkPiece
 from .artifact import (
@@ -108,8 +108,8 @@ class Pipeline:
         self._docitem_to_artifact_key: Dict[DocItem, ArtifactKey] = {}
         self._pause_count = 0
         self._last_known_busy_state = False
-        self._reconciliation_timer: Optional[concurrent.futures.Future] = None
-        self._removal_timer: Optional[concurrent.futures.Future] = None
+        self._reconciliation_timer: Optional[CancelHandle] = None
+        self._removal_timer: Optional[CancelHandle] = None
         self._pending_workpiece_removals: List[tuple] = []
         self._pending_step_removals: List[Step] = []
         self._is_shutting_down = False
