@@ -296,7 +296,11 @@ class SketchRenderer:
         for entity in self.element.sketch.registry.entities:
             if entity.id in exclude_ids:
                 continue
-            if not entity.construction:
+            if (
+                not entity.construction
+                and isinstance(entity, TextBoxEntity)
+                and entity.fill_color is not None
+            ):
                 text_geo = entity.create_text_fill_geometry(
                     self.element.sketch.registry
                 )
@@ -305,7 +309,7 @@ class SketchRenderer:
                     text_geo.to_cairo(ctx)
                     ctx.close_path()
                     ctx.save()
-                    ctx.set_source_rgba(0.85, 0.85, 0.85, 0.7)
+                    ctx.set_source_rgba(*entity.fill_color)
                     ctx.fill()
                     ctx.restore()
 
@@ -390,14 +394,15 @@ class SketchRenderer:
 
             # 3. Draw Actual Entity
             if isinstance(entity, TextBoxEntity):
-                # The selection glow is a stroke. To make the text readable,
-                # we fill it with its standard color, not the selection color.
-                self._set_standard_color(
-                    ctx,
-                    False,  # Selection handled by the glow underlay
-                    entity.constrained,
-                    is_sketch_fully_constrained,
-                )
+                if entity.fill_color is not None:
+                    ctx.set_source_rgba(*entity.fill_color)
+                else:
+                    self._set_standard_color(
+                        ctx,
+                        False,
+                        entity.constrained,
+                        is_sketch_fully_constrained,
+                    )
                 ctx.fill()
             elif entity.construction:
                 scale = self.element.line_width / base_line_width

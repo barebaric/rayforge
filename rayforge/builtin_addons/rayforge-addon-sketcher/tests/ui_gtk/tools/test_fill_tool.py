@@ -10,6 +10,7 @@ def mock_element():
     element = Mock()
     element.sketch = Mock()
     element.sketch.registry = Mock()
+    element.sketch.registry.entities = []
     element.sketch.fills = []
     element.sketch.get_loop_at_point = Mock(return_value=None)
     element.sketch._calculate_loop_signed_area = Mock(return_value=100.0)

@@ -248,7 +248,7 @@ def test_text_box_get_set_state(registry):
 
     # Verify initial state (Inherited from Entity)
     state = tb.get_state()
-    assert state == {"construction": False}
+    assert state == {"construction": False, "fill_color": None}
 
     # Modify state
     tb.construction = True

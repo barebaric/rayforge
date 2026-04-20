@@ -3,7 +3,7 @@ from typing import Optional, TYPE_CHECKING
 from gettext import gettext as _
 from gi.repository import Adw, Gtk
 from rayforge.ui_gtk.icons import get_icon
-from ..core.commands import RemoveItemsCommand
+from ..core.commands.items import RemoveItemsCommand
 
 if TYPE_CHECKING:
     from .sketchelement import SketchElement

@@ -1,7 +1,12 @@
 from gettext import gettext as _
+from typing import Optional
+
+import cairo
 
 from rayforge.core.color import ColorRGBA
 from ...core.commands import AddFillCommand, RemoveFillCommand
+from ...core.commands.fill import SetTextFillCommand
+from ...core.entities.text_box import TextBoxEntity
 from ...core.sketch import FillStyle, DEFAULT_FILL_COLOR
 from .base import SketchTool
 
@@ -46,6 +51,27 @@ class FillTool(SketchTool):
     def shortcut_is_active(self) -> bool:
         return True
 
+    def _find_text_entity_at_point(
+        self, mx: float, my: float
+    ) -> Optional[TextBoxEntity]:
+        """Check if a model-space point falls inside any text glyph."""
+        registry = self.element.sketch.registry
+        surface = cairo.RecordingSurface(cairo.CONTENT_COLOR_ALPHA, None)
+        ctx = cairo.Context(surface)
+        for entity in registry.entities:
+            if not isinstance(entity, TextBoxEntity):
+                continue
+            if entity.construction or not entity.content:
+                continue
+            text_geo = entity.create_text_fill_geometry(registry)
+            if text_geo is None or text_geo.is_empty():
+                continue
+            ctx.new_path()
+            text_geo.to_cairo(ctx)
+            if ctx.in_fill(mx, my):
+                return entity
+        return None
+
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         if n_press != 1:
             return False
@@ -53,6 +79,23 @@ class FillTool(SketchTool):
         mx, my = self.element.hittester.screen_to_model(
             world_x, world_y, self.element
         )
+
+        text_entity = self._find_text_entity_at_point(mx, my)
+        if text_entity is not None:
+            if text_entity.fill_color is not None:
+                cmd = SetTextFillCommand(
+                    self.element.sketch, text_entity.id, None
+                )
+            else:
+                cmd = SetTextFillCommand(
+                    self.element.sketch,
+                    text_entity.id,
+                    self._current_color,
+                )
+            self.element.execute_command(cmd)
+            self.element.mark_dirty()
+            return True
+
         target_loop = self.element.sketch.get_loop_at_point(mx, my)
         if not target_loop:
             return False

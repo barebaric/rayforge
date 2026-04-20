@@ -2,10 +2,8 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional, Union
 
-from ...core.commands import (
-    RemoveItemsCommand,
-    UnstickJunctionCommand,
-)
+from ...core.commands import UnstickJunctionCommand
+from ...core.commands.items import RemoveItemsCommand
 from ...core.entities import Entity, Point
 from .base import SketchTool
 

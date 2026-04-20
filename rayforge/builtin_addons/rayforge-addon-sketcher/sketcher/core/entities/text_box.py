@@ -1,4 +1,5 @@
 from typing import List, Tuple, Dict, Any, Sequence, Optional, TYPE_CHECKING
+from rayforge.core.color import ColorRGBA
 from rayforge.core.geo import primitives, Rect
 from rayforge.core.geo.geometry import Geometry
 from rayforge.core.geo.font_config import FontConfig
@@ -32,6 +33,7 @@ class TextBoxEntity(Entity):
         self.construction_line_ids: List[EntityID] = (
             construction_line_ids or []
         )
+        self.fill_color: Optional[ColorRGBA] = None
         self.type = "text_box"
 
     def get_point_ids(self) -> List[EntityID]:
@@ -99,6 +101,19 @@ class TextBoxEntity(Entity):
                 ):
                     return entity.p1_idx
         return None
+
+    def get_state(self) -> Dict[str, Any]:
+        state = super().get_state()
+        if state is not None:
+            state["fill_color"] = self.fill_color
+        else:
+            state = {"fill_color": self.fill_color}
+        return state
+
+    def set_state(self, state: Dict[str, Any]) -> None:
+        super().set_state(state)
+        if "fill_color" in state:
+            self.fill_color = state["fill_color"]
 
     def update_constrained_status(
         self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
@@ -217,11 +232,17 @@ class TextBoxEntity(Entity):
                 "construction_line_ids": self.construction_line_ids,
             }
         )
+        if self.fill_color is not None:
+            data["fill_color"] = list(self.fill_color)
         return data
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TextBoxEntity":
-        return cls(
+        fill_color_raw = data.get("fill_color")
+        fill_color = (
+            tuple(fill_color_raw) if fill_color_raw is not None else None
+        )
+        entity = cls(
             id=data["id"],
             origin_id=data["origin_id"],
             width_id=data["width_id"],
@@ -231,6 +252,8 @@ class TextBoxEntity(Entity):
             construction=data.get("construction", False),
             construction_line_ids=data.get("construction_line_ids"),
         )
+        entity.fill_color = fill_color
+        return entity
 
     def __repr__(self) -> str:
         return (
