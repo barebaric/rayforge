@@ -995,7 +995,14 @@ class Canvas3D(Gtk.GLArea):
                         and self._op_player.state.laser_on
                     ):
                         if ra is not None and asm.has_rotary:
-                            diameter = asm.rotary_diameter or 0.0
+                            current_layer = self._op_player.get_current_layer(
+                                self.doc
+                            )
+                            diameter = (
+                                current_layer.rotary_diameter
+                                if current_layer
+                                else 0.0
+                            )
                             rotary_heads = asm.head_rotary_positions(
                                 self._op_player.state, diameter
                             )
@@ -1047,6 +1054,11 @@ class Canvas3D(Gtk.GLArea):
                     model_state, wcs_offset=wcs
                 )
                 is_rotary = ra is not None and asm.has_rotary
+                layer_rotary_diameter = 0.0
+                if is_rotary and self._op_player:
+                    current_layer = self._op_player.get_current_layer(self.doc)
+                    if current_layer:
+                        layer_rotary_diameter = current_layer.rotary_diameter
                 for renderer, link_name in self._model_renderers:
                     if self._main_shader:
                         t = model_transforms.get(link_name)
@@ -1056,7 +1068,6 @@ class Canvas3D(Gtk.GLArea):
                         if is_rotary:
                             link = asm.get_link(link_name)
                             if link and link.role != LinkRole.CHUCK:
-                                diameter = asm.rotary_diameter
                                 focal = 50.0
                                 if link.name.startswith("head_"):
                                     try:
@@ -1068,7 +1079,7 @@ class Canvas3D(Gtk.GLArea):
                                         pass
                                 rotary_heads = asm.head_rotary_positions(
                                     model_state,
-                                    diameter or 0.0,
+                                    layer_rotary_diameter,
                                     focal_distance=focal,
                                 )
                                 if link.name in rotary_heads:
@@ -1715,8 +1726,9 @@ class Canvas3D(Gtk.GLArea):
 
         desired_diameters: Dict[float, bool] = {}
         if machine and self._had_rotary_layers:
-            for diameter in machine.assembly.chuck_diameters.values():
-                desired_diameters[diameter] = True
+            for layer in self.doc.layers:
+                if layer.rotary_enabled and layer.rotary_diameter > 0:
+                    desired_diameters[layer.rotary_diameter] = True
 
         max_length = self._viewport.width_mm
         if machine:

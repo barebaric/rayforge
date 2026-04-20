@@ -183,7 +183,6 @@ class Machine:
         self._assembly_dirty: bool = True
         self._mounted_rotaries: List[RotaryModule] = []
         self._layer_configured: bool = False
-        self._pending_diameter: Optional[float] = None
 
     @property
     def controller(self) -> "MachineController":
@@ -278,22 +277,18 @@ class Machine:
 
     def configure_for_layer(self, layer: Optional["Layer"]) -> None:
         required_rotaries: List[RotaryModule] = []
-        diameter: Optional[float] = None
         if layer and layer.rotary_enabled and layer.rotary_module_uid:
             module = self.rotary_modules.get(layer.rotary_module_uid)
             if module:
                 required_rotaries.append(module)
-                diameter = layer.rotary_diameter
-        if self._assembly_needs_rebuild(required_rotaries, diameter):
+        if self._assembly_needs_rebuild(required_rotaries):
             self._mounted_rotaries = required_rotaries
-            self._pending_diameter = diameter
             self._layer_configured = True
             self._assembly_dirty = True
 
     def _assembly_needs_rebuild(
         self,
         rotaries: List[RotaryModule],
-        diameter: Optional[float],
     ) -> bool:
         if self._assembly_dirty:
             return True
@@ -303,10 +298,6 @@ class Machine:
         new_uids = {r.uid for r in rotaries}
         if current_uids != new_uids:
             return True
-        if self._assembly is not None and self._assembly.has_rotary:
-            current = self._assembly.rotary_diameter
-            if current != diameter:
-                return True
         return False
 
     def _build_assembly(self) -> Assembly:
@@ -326,9 +317,6 @@ class Machine:
         if rotaries:
             for r in rotaries:
                 rotary_modules_for_build[r.uid] = r
-                cfg = self.axes.get(r.axis)
-                if cfg is not None and self._pending_diameter is not None:
-                    cfg.rotary_diameter = self._pending_diameter
         return build_assembly(
             axis_set=self.axes,
             head_specs=head_specs,

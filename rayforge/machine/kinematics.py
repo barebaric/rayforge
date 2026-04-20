@@ -165,20 +165,13 @@ def build_assembly(
         rotary_modules_list.append(module)
 
     asm = Assembly(links)
-    for i, axis_config in enumerate(rotary_list):
-        mod = rotary_modules_list[i]
-        if axis_config.rotary_diameter:
-            asm.set_chuck_diameter(
-                f"rotary_chuck_{i}", axis_config.rotary_diameter
-            )
+    for i, mod in enumerate(rotary_modules_list):
         if mod is not None:
             asm.set_chuck_axis_offset(
                 f"rotary_chuck_{i}", mod.axis_position.copy()
             )
     for i, mod in enumerate(replacement_modules):
         idx = len(rotary_list) + i
-        if mod.default_diameter > 0:
-            asm.set_chuck_diameter(f"rotary_chuck_{idx}", mod.default_diameter)
         asm.set_chuck_axis_offset(
             f"rotary_chuck_{idx}", mod.axis_position.copy()
         )
