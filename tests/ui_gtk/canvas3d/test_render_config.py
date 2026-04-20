@@ -26,14 +26,12 @@ class TestLayerRenderConfig:
             rotary_enabled=False,
             rotary_diameter=25.0,
             axis_position=10.0,
-            gear_ratio=2.0,
             reverse=True,
             axis_position_3d=(1.0, 2.0, 3.0),
             cylinder_dir=(0.0, 1.0, 0.0),
         )
         restored = LayerRenderConfig.from_dict(cfg.to_dict())
         assert restored.axis_position == 10.0
-        assert restored.gear_ratio == 2.0
         assert restored.reverse is True
         assert restored.axis_position_3d == (1.0, 2.0, 3.0)
         assert restored.cylinder_dir == (0.0, 1.0, 0.0)

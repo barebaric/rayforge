@@ -1909,7 +1909,6 @@ class Canvas3D(Gtk.GLArea):
         layer_configs: Dict[str, LayerRenderConfig] = {}
         for layer in self.doc.layers:
             axis_position = 0.0
-            gear_ratio = 1.0
             reverse = False
             axis_position_3d = None
             cylinder_dir = None
@@ -1927,14 +1926,14 @@ class Canvas3D(Gtk.GLArea):
                             axis_position_3d = tuple(
                                 mapping.axis_position_3d.tolist()
                             )
-                            cylinder_dir = tuple(mapping.cylinder_dir.tolist())
-                            gear_ratio = mapping.gear_ratio
+                            cylinder_dir = tuple(
+                                mapping.cylinder_dir.tolist()
+                            )
                             reverse = mapping.reverse
             layer_configs[layer.uid] = LayerRenderConfig(
                 rotary_enabled=layer.rotary_enabled,
                 rotary_diameter=layer.rotary_diameter,
                 axis_position=axis_position,
-                gear_ratio=gear_ratio,
                 reverse=reverse,
                 axis_position_3d=axis_position_3d,
                 cylinder_dir=cylinder_dir,

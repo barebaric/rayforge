@@ -342,7 +342,6 @@ class _LayerAccumulator:
         "rotary_segments",
         "current_rotary_seg",
         "axis_position",
-        "gear_ratio",
         "reverse",
         "diameter",
         "axis_position_3d",
@@ -368,7 +367,6 @@ class _LayerAccumulator:
         self.rotary_segments: List[dict] = []
         self.current_rotary_seg: Optional[dict] = None
         self.axis_position: float = 0.0
-        self.gear_ratio: float = 1.0
         self.reverse: bool = False
         self.diameter: float = 0.0
         self.axis_position_3d: Optional[Tuple[float, ...]] = None
@@ -746,7 +744,6 @@ def _handle_layer_start(
     acc = accumulators[st.is_rotary]
 
     acc.axis_position = layer_cfg.axis_position if layer_cfg else 0.0
-    acc.gear_ratio = layer_cfg.gear_ratio if layer_cfg else 1.0
     acc.reverse = layer_cfg.reverse if layer_cfg else False
     acc.diameter = st.rotary_diameter
     acc.axis_position_3d = layer_cfg.axis_position_3d if layer_cfg else None
@@ -779,7 +776,6 @@ def _handle_layer_end(
                 "scanline_laser": st.current_layer_scanline_laser,
                 "activation_cmd_idx": cmd_idx,
                 "axis_position": acc.axis_position,
-                "gear_ratio": acc.gear_ratio,
                 "reverse": acc.reverse,
             }
         )
@@ -808,7 +804,6 @@ def _update_positions(
         st.current_pos = _reconstruct_mu_pos(
             cmd,
             acc.diameter,
-            acc.gear_ratio,
             acc.reverse,
         )
     else:
@@ -858,7 +853,6 @@ def _handle_arc_to(
         mu_cmd = _reconstruct_mu_arc(
             cmd,
             acc.diameter,
-            acc.gear_ratio,
             acc.reverse,
         )
         segments = linearize_arc(mu_cmd, st.current_pos)
@@ -867,13 +861,11 @@ def _handle_arc_to(
             vis_start = _mu_to_visual(
                 seg_start,
                 acc.diameter,
-                acc.gear_ratio,
                 acc.reverse,
             )
             vis_end_pt = _mu_to_visual(
                 seg_end,
                 acc.diameter,
-                acc.gear_ratio,
                 acc.reverse,
             )
             vis_segs.append((vis_start, vis_end_pt))
@@ -906,7 +898,6 @@ def _handle_bezier_to(
         mu_cmd = _reconstruct_mu_bezier(
             cmd,
             acc.diameter,
-            acc.gear_ratio,
             acc.reverse,
         )
         polyline = linearize_bezier_segment(
@@ -919,7 +910,6 @@ def _handle_bezier_to(
             _mu_to_visual(
                 pt,
                 acc.diameter,
-                acc.gear_ratio,
                 acc.reverse,
             )
             for pt in polyline
