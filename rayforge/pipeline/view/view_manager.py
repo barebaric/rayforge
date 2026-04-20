@@ -1121,9 +1121,7 @@ class ViewManager:
                     )
                 else:
                     view_id = self._view_generation_id
-                    self._schedule_throttled_update(
-                        composite_id, view_id
-                    )
+                    self._schedule_throttled_update(composite_id, view_id)
             else:
                 logger.warning(f"Stitching failed for {composite_id}")
         finally:
@@ -1148,9 +1146,7 @@ class ViewManager:
 
         return entry.handle, render_context
 
-    def _cancel_pending_throttled_update(
-        self, composite_id: Tuple[str, str]
-    ):
+    def _cancel_pending_throttled_update(self, composite_id: Tuple[str, str]):
         """Cancels any pending throttled update for the given composite."""
         self._pending_updates.pop(composite_id, None)
         timer = self._throttle_timers.pop(composite_id, None)

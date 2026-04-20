@@ -497,9 +497,10 @@ def _apply_transformers(
 
     for phase in phase_order:
         for transformer in transformers_by_phase[phase]:
-            base = execute_weight + (
-                processed_count / total_to_process
-            ) * transform_weight
+            base = (
+                execute_weight
+                + (processed_count / total_to_process) * transform_weight
+            )
             span = transform_weight / total_to_process
             if context is not None:
                 transformer_ctx = context.sub_context(
