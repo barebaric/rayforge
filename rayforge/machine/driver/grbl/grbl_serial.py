@@ -44,6 +44,7 @@ from .grbl_util import (
     prb_re,
     gcode_to_p_number,
     error_code_to_device_error,
+    alarm_code_to_device_error,
     CommandRequest,
     parse_grbl_parser_state,
     parse_version,
@@ -1339,7 +1340,7 @@ class GrblSerialDriver(Driver):
 
         if line.startswith("ALARM:"):
             alarm_code = line.split(":")[1].strip()
-            self.state.error = error_code_to_device_error(alarm_code)
+            self.state.error = alarm_code_to_device_error(alarm_code)
             self.state_changed.send(self, state=self.state)
             self.command_status_changed.send(
                 self, status=TransportStatus.ERROR, message=line

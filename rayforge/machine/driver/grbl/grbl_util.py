@@ -353,6 +353,96 @@ GRBL_ERROR_CODES = {
     ),
 }
 
+GRBL_ALARM_CODES = {
+    1: DeviceError(
+        1,
+        _("Hard Limit"),
+        _(
+            "A hard limit switch was triggered. "
+            "The machine has stopped and needs to be reset. "
+            "Check for obstructions and verify your limit switches."
+        ),
+    ),
+    2: DeviceError(
+        2,
+        _("Soft Limit"),
+        _(
+            "The machine would move beyond its configured travel limits. "
+            "Check that your work area and coordinate offsets are correct."
+        ),
+    ),
+    3: DeviceError(
+        3,
+        _("Abort Cycle"),
+        _(
+            "The currently running job was cancelled while in motion. "
+            "Reset the machine to continue."
+        ),
+    ),
+    4: DeviceError(
+        4,
+        _("Probe Fail — Initial"),
+        _(
+            "The probe did not make contact before the maximum travel "
+            "distance was reached. Check the probe wiring and positioning."
+        ),
+    ),
+    5: DeviceError(
+        5,
+        _("Probe Fail — Final"),
+        _(
+            "The probe failed to retract to the target position after "
+            "contact. Check the probe configuration."
+        ),
+    ),
+    6: DeviceError(
+        6,
+        _("Homing Fail — Reset"),
+        _(
+            "Homing was not able to complete because the machine is "
+            "in an alarm state. Clear the alarm and try again."
+        ),
+    ),
+    7: DeviceError(
+        7,
+        _("Homing Fail — Approach"),
+        _(
+            "The homing cycle failed to find the switch within the "
+            "configured travel distance. Check your switch wiring and "
+            "pull-off settings."
+        ),
+    ),
+    8: DeviceError(
+        8,
+        _("Homing Fail — Pulloff"),
+        _(
+            "The homing cycle failed to successfully pull off the "
+            "switch after contact. Increase the pull-off distance "
+            "or check the switch."
+        ),
+    ),
+    9: DeviceError(
+        9,
+        _("Home Without Limits"),
+        _(
+            "Homing was commanded but limit switches are not "
+            "configured. Enable limit switches first."
+        ),
+    ),
+}
+
+
+def alarm_code_to_device_error(alarm_code: str) -> DeviceError:
+    try:
+        code = int(alarm_code)
+        return GRBL_ALARM_CODES[code]
+    except (ValueError, TypeError, KeyError):
+        return DeviceError(
+            -1,
+            _("Unknown Alarm"),
+            _("Invalid alarm code reported by machine."),
+        )
+
 
 # GRBL WCS Helper
 def gcode_to_p_number(wcs_slot: str) -> Optional[int]:
@@ -649,7 +739,10 @@ def parse_state(
             if logger:
                 logger(message=f"Parsed status: {status.name}")
             if error_code is not None:
-                state.error = error_code_to_device_error(error_code)
+                if status == DeviceStatus.ALARM:
+                    state.error = alarm_code_to_device_error(error_code)
+                else:
+                    state.error = error_code_to_device_error(error_code)
                 if logger:
                     logger(message=f"Parsed error code: {error_code}")
 
