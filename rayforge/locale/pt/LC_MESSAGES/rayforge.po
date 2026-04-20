@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 23:05+0200\n"
+"POT-Creation-Date: 2026-04-20 14:58+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -427,17 +427,19 @@ msgstr "Porta TCP para o serviço raw/telnet"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Enable status polling during running jobs"
-msgstr "Ativar a consulta de estado durante trabalhos em execução"
+msgid "Poll device status during jobs"
+msgstr "Consultar status do dispositivo durante os trabalhos"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 msgid ""
-"Whether to query status during jobs. Disabling can help reduce load on slow "
-"machines"
+"Periodically query the device for position and status while a job is "
+"running. Warning: Some devices have trouble maintaining a stable connection "
+"if this is used!"
 msgstr ""
-"Se deve consultar o estado durante os trabalhos. Desativar pode ajudar a "
-"reduzir a carga em máquinas lentas"
+"Consultar periodicamente o dispositivo quanto à posição e ao status durante "
+"a execução de um trabalho. Aviso: Alguns dispositivos têm dificuldade em "
+"manter uma conexão estável se isso for usado!"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
@@ -1901,6 +1903,18 @@ msgstr "Adicionar Aba de Fixação Aqui"
 #: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/doceditor/tab_cmd.py
 msgid "Remove Tab"
 msgstr "Remover Aba de Fixação"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "New Sketch"
+msgstr "Novo esboço"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "New Stock"
+msgstr "Novo material"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "Import File…"
+msgstr "Importar arquivo…"
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid "Drop files to import"

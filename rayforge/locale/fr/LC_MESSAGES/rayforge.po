@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 23:05+0200\n"
+"POT-Creation-Date: 2026-04-20 14:58+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -430,17 +430,19 @@ msgstr "Port TCP pour le service raw/telnet"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Enable status polling during running jobs"
-msgstr "Activer l'interrogation de l'état pendant les tâches en cours"
+msgid "Poll device status during jobs"
+msgstr "Interroger l'état de l'appareil pendant les tâches"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 msgid ""
-"Whether to query status during jobs. Disabling can help reduce load on slow "
-"machines"
+"Periodically query the device for position and status while a job is "
+"running. Warning: Some devices have trouble maintaining a stable connection "
+"if this is used!"
 msgstr ""
-"Interroger l'état pendant les tâches. La désactivation peut aider à réduire "
-"la charge sur les machines lentes."
+"Interroger périodiquement l'appareil pour obtenir sa position et son état "
+"pendant l'exécution d'une tâche. Attention : certains appareils ont des "
+"difficultés à maintenir une connexion stable si cette option est utilisée !"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
@@ -1917,6 +1919,18 @@ msgstr "Ajouter une languette ici"
 #: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/doceditor/tab_cmd.py
 msgid "Remove Tab"
 msgstr "Supprimer la languette"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "New Sketch"
+msgstr "Nouvelle esquisse"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "New Stock"
+msgstr "Nouveau matériau"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "Import File…"
+msgstr "Importer un fichier…"
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid "Drop files to import"

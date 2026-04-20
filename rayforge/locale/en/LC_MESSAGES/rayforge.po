@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 23:05+0200\n"
+"POT-Creation-Date: 2026-04-20 14:58+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -424,14 +424,15 @@ msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Enable status polling during running jobs"
+msgid "Poll device status during jobs"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 msgid ""
-"Whether to query status during jobs. Disabling can help reduce load on slow "
-"machines"
+"Periodically query the device for position and status while a job is "
+"running. Warning: Some devices have trouble maintaining a stable connection "
+"if this is used!"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
@@ -1774,6 +1775,18 @@ msgstr ""
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/doceditor/tab_cmd.py
 msgid "Remove Tab"
+msgstr ""
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "New Sketch"
+msgstr ""
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "New Stock"
+msgstr ""
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "Import File…"
 msgstr ""
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py

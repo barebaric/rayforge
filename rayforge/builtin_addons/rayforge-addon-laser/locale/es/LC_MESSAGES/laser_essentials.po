@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-14 19:35+0200\n"
+"POT-Creation-Date: 2026-04-20 14:52+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -494,6 +494,10 @@ msgstr "Cambiar {param_name}"
 msgid "Change Grid Dimensions"
 msgstr "Cambiar dimensiones de la cuadrícula"
 
+#: laser_essentials/worker.py
+msgid "Create Material Test Grid"
+msgstr "Crear cuadrícula de prueba de material"
+
 #: laser_essentials/steps/shrinkwrap_step.py
 msgid "Shrink Wrap"
 msgstr "Envoltura"
@@ -514,10 +518,6 @@ msgstr "Contorno"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Material Test Grid"
 msgstr "Cuadrícula de prueba de material"
-
-#: laser_essentials/backend.py
-msgid "Create Material Test Grid"
-msgstr "Crear cuadrícula de prueba de material"
 
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
