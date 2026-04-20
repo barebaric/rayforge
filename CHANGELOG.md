@@ -5,6 +5,31 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.6.0-beta2
+
+### Added
+
+- Print and cut addon for aligning laser cuts with printed material (#180)
+- Device profile for the Creality Falcon A1
+- Right-click context menu for empty canvas space
+- Sketcher: support changing text color using the fill tool
+
+### Changed
+
+- Bottom panel is now visible by default
+- Status polling is disabled during job execution by default
+
+### Fixed
+
+- GRBL alarm codes were mapped to wrong error descriptions
+- Snap fails to launch with gpu-2404 slot not connected error (#196)
+- Pipeline applied gear ratio even for visual representation (#195)
+- Delayed main thread callbacks not cancellable via handle.cancel()
+- GRBL sending initial $I as realtime command though it is not one
+- Base image of inverted SVG not inverted after import
+- Rotary cylinder rendered with diameter of chuck instead of workpiece (#195)
+- Beta version string parsing for debian releases
+
 ## 1.6.0-beta1
 
 ### Added
