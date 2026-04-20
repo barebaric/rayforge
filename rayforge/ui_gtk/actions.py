@@ -287,7 +287,7 @@ class ActionManager:
             GLib.Variant.new_boolean(
                 config.bottom_panel.get("visible", False)
                 if config.bottom_panel
-                else False
+                else True
             ),
         )
         self._add_stateful_action(
