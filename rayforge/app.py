@@ -489,6 +489,7 @@ def main():
     # Import modules that depend on GTK or manage global state
     import rayforge.shared.tasker
     from rayforge.shared.tasker.manager import TaskManagerProxy
+    from rayforge.shared.util.glib import idle_add
     from rayforge.worker_init import initialize_worker
 
     # Get the context first to ensure the ArtifactStore is created
@@ -501,7 +502,10 @@ def main():
     # MachineManager creates machines which import task_mgr, which
     # would trigger the creation of the TaskManager.
     task_mgr_proxy = cast(TaskManagerProxy, rayforge.shared.tasker.task_mgr)
-    task_mgr_proxy.initialize(worker_initializer=initialize_worker)
+    task_mgr_proxy.initialize(
+        worker_initializer=initialize_worker,
+        main_thread_scheduler=idle_add,
+    )
 
     # Wire up addon module paths from WorkerPoolManager to AddonManager.
     # This allows workers to resolve rayforge_addons.* modules during

@@ -107,28 +107,11 @@ def manager():
     Provides a completely isolated TaskManager instance for each test and
     ensures it is properly shut down. This prevents state leakage.
     """
-    tm = TaskManager()
+    tm = TaskManager(main_thread_scheduler=lambda f, *a, **kw: f(*a, **kw))
     yield tm
     # Shutdown ensures all background threads and worker processes are
     # properly terminated.
     tm.shutdown()
-
-
-@pytest.fixture(autouse=True)
-def patch_idle_add(monkeypatch):
-    """
-    Replaces glib.idle_add with an immediate-execution mock.
-    This is necessary because the tests don't run a GLib main loop.
-    It allows us to test that callbacks are called with the correct arguments.
-    """
-
-    def mock_idle_add(callback, *args, **kwargs):
-        return callback(*args, **kwargs)
-
-    # Patch in the manager module where it is used as the default scheduler
-    monkeypatch.setattr(
-        "rayforge.shared.tasker.manager.idle_add", mock_idle_add
-    )
 
 
 class ControllableTimer:
@@ -396,7 +379,9 @@ class TestProcessTasks:
 
         # 1. Configure the proxy BEFORE it is used for the first time.
         proxy.initialize(
-            worker_initializer=worker_init, worker_initargs=(init_file,)
+            worker_initializer=worker_init,
+            worker_initargs=(init_file,),
+            main_thread_scheduler=lambda f, *a, **kw: f(*a, **kw),
         )
 
         # 2. Run a task, which will create the real manager and pool.
