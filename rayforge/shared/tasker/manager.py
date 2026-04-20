@@ -4,7 +4,6 @@ TaskManager module for managing task execution.
 
 from __future__ import annotations
 import asyncio
-import concurrent.futures
 import logging
 from multiprocessing import Manager
 from multiprocessing.managers import DictProxy
@@ -15,7 +14,10 @@ from typing import (
     Coroutine,
     Dict,
     Iterator,
+    List,
     Optional,
+    Protocol,
+    runtime_checkable,
 )
 from blinker import Signal
 from .context import ExecutionContext
@@ -24,6 +26,11 @@ from .pool import WorkerPoolManager
 
 
 logger = logging.getLogger(__name__)
+
+
+@runtime_checkable
+class CancelHandle(Protocol):
+    def cancel(self) -> None: ...
 
 
 class TaskManager:
@@ -207,7 +214,7 @@ class TaskManager:
         callback: Callable[..., Any],
         *args: Any,
         **kwargs: Any,
-    ) -> concurrent.futures.Future:
+    ):
         """
         Schedules a callback to run on the main thread after a delay.
 
@@ -221,21 +228,33 @@ class TaskManager:
             **kwargs: Keyword arguments to pass to the callback.
 
         Returns:
-            A concurrent.futures.Future that can be cancelled via its
-            cancel() method. The future completes when the callback has
-            been scheduled (not when it finishes executing).
+            A handle with a cancel() method to prevent the callback from
+            being executed.
         """
+        loop = self.loop
+        cancelled = False
+        timer_handle: List[Optional[asyncio.TimerHandle]] = [None]
 
-        async def delayed_execution():
-            try:
-                await asyncio.sleep(delay_ms / 1000.0)
+        def _execute():
+            if not cancelled:
                 self._main_thread_scheduler(callback, *args, **kwargs)
-            except asyncio.CancelledError:
-                pass
 
-        coro = delayed_execution()
-        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
-        return future
+        def _schedule():
+            timer_handle[0] = loop.call_later(
+                delay_ms / 1000.0, _execute
+            )
+
+        loop.call_soon_threadsafe(_schedule)
+
+        class _CancelHandle:
+            def cancel(self):
+                nonlocal cancelled
+                cancelled = True
+                h = timer_handle[0]
+                if h is not None:
+                    loop.call_soon_threadsafe(h.cancel)
+
+        return _CancelHandle()
 
     async def run_in_executor(
         self, func: Callable[..., Any], *args: Any
