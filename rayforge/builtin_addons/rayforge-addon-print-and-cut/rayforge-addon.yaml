@@ -1,0 +1,12 @@
+name: print_and_cut
+display_name: "Print & Cut"
+description: "Align workpieces to physical objects using registration marks"
+api_version: 9
+author:
+  name: "Rayforge Team"
+  email: "noreply@rayforge.org"
+provides:
+  backend: "print_and_cut.backend"
+  frontend: "print_and_cut.frontend"
+license:
+  name: "MIT"
