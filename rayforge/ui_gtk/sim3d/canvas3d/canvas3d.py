@@ -1919,7 +1919,8 @@ class Canvas3D(Gtk.GLArea):
                     )
                     if module:
                         mapping = KinematicMapping.from_rotary_module(
-                            module, layer.rotary_diameter
+                            module, layer.rotary_diameter,
+                            apply_gear_ratio=False,
                         )
                         if mapping is not None:
                             axis_position = mapping.axis_position

@@ -108,6 +108,7 @@ class KinematicMapping:
         cls,
         module: RotaryModule,
         diameter: float,
+        apply_gear_ratio: bool = True,
     ) -> Optional[KinematicMapping]:
         if module.mode == RotaryMode.TRUE_4TH_AXIS:
             rotary_axis = module.axis
@@ -116,11 +117,14 @@ class KinematicMapping:
             rotary_axis = Axis.Y
             replaced_axis = module.axis
 
-        ratio = KinematicMath.gear_ratio(
-            module.rotary_type == RotaryType.ROLLERS,
-            diameter,
-            module.roller_diameter,
-        )
+        if apply_gear_ratio:
+            ratio = KinematicMath.gear_ratio(
+                module.rotary_type == RotaryType.ROLLERS,
+                diameter,
+                module.roller_diameter,
+            )
+        else:
+            ratio = 1.0
 
         rot3 = module.transform[:3, :3].astype(np.float64).copy()
         for col in range(3):
@@ -217,6 +221,7 @@ class KinematicMapping:
         doc: Doc,
         machine: Machine,
         apply_scaled_mu: bool = False,
+        apply_gear_ratio: bool = True,
     ) -> None:
         """Apply per-layer rotary axis mapping to a full job's ops.
 
@@ -243,6 +248,11 @@ class KinematicMapping:
                 (see ``Machine._apply_replacement_downstream()``).
                 The UI path passes ``False`` because the 3D canvas
                 works in world-space degrees.
+            apply_gear_ratio: When *True*, the roller gear ratio is
+                included in the degrees-to-mu conversion.  Pass
+                ``False`` for visualisation paths that should represent
+                the object geometry directly, without the roller
+                encoding.
         """
         commands = ops._commands
         i = 0
@@ -267,7 +277,8 @@ class KinematicMapping:
                 continue
 
             mapping = KinematicMapping.from_rotary_module(
-                module, layer.rotary_diameter
+                module, layer.rotary_diameter,
+                apply_gear_ratio=apply_gear_ratio,
             )
             if mapping is None:
                 i += 1
