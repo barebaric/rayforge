@@ -14,7 +14,7 @@ _MAX_HEIGHT = 4 * 60 + 3 * _SPACING
 class JogWidget(Gtk.Widget):
     """Widget for manually jogging the machine."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, show_actions: bool = True, **kwargs):
         super().__init__(**kwargs)
 
         self._jog_grid = Gtk.Grid()
@@ -24,10 +24,13 @@ class JogWidget(Gtk.Widget):
         self._jog_grid.set_row_homogeneous(True)
         self._jog_grid.set_column_homogeneous(True)
 
+        self._show_actions = show_actions
+
         self._action_grid = Gtk.Grid()
         self._action_grid.set_parent(self)
         self._action_grid.set_row_spacing(_SPACING)
         self._action_grid.set_row_homogeneous(True)
+        self._action_grid.set_visible(show_actions)
 
         self.machine: Optional[Machine] = None
         self.machine_cmd: Optional[MachineCmd] = None
@@ -159,7 +162,9 @@ class JogWidget(Gtk.Widget):
         if orientation == Gtk.Orientation.HORIZONTAL:
             h = for_size if for_size > 0 else _MAX_HEIGHT
             jog_w, act_w = self._calc_grid_widths(h)
-            total = int(jog_w) + _GAP + int(act_w)
+            total = int(jog_w)
+            if self._show_actions:
+                total += _GAP + int(act_w)
             return (total, total, -1, -1)
         m = self._jog_grid.measure(orientation, for_size)
         return (m[0], min(m[1], _MAX_HEIGHT), -1, -1)
@@ -167,21 +172,27 @@ class JogWidget(Gtk.Widget):
     def do_size_allocate(self, width, height, baseline):
         jog_w, act_w = self._calc_grid_widths(height)
 
-        total_needed = jog_w + _GAP + act_w
-        if width > total_needed:
-            extra = width - total_needed
-            jog_w += extra * 3 / 4
-            act_w += extra / 4
+        if self._show_actions:
+            total_needed = jog_w + _GAP + act_w
+            if width > total_needed:
+                extra = width - total_needed
+                jog_w += extra * 3 / 4
+                act_w += extra / 4
+            act_w = int(act_w)
+        else:
+            jog_w = width
 
         jog_w = int(jog_w)
-        act_w = int(act_w)
 
         self._jog_grid.allocate(jog_w, height, baseline, None)
 
-        transform = Gsk.Transform().translate(
-            Graphene.Point().init(jog_w + _GAP, 0)
-        )
-        self._action_grid.allocate(act_w, height, baseline, transform)
+        if self._show_actions:
+            transform = Gsk.Transform().translate(
+                Graphene.Point().init(jog_w + _GAP, 0)
+            )
+            self._action_grid.allocate(act_w, height, baseline, transform)
+        else:
+            self._action_grid.allocate(0, 0, -1, None)
 
     def set_machine(
         self, machine: Optional[Machine], machine_cmd: Optional[MachineCmd]
