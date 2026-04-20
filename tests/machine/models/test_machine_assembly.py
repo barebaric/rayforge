@@ -66,7 +66,6 @@ class TestConfigureForLayer:
         machine.configure_for_layer(layer)
         asm = machine.assembly
         assert asm.has_rotary
-        assert asm.rotary_diameter == 40.0
         chucks = asm.get_links_by_role(LinkRole.CHUCK)
         assert len(chucks) == 1
         assert chucks[0].driver_axis == Axis.A
@@ -173,13 +172,12 @@ class TestAssemblyInvalidation:
         )
         machine.configure_for_layer(layer)
         asm_before = machine.assembly
-        assert asm_before.rotary_diameter == 30.0
+        assert asm_before.has_rotary
 
         layer.rotary_diameter = 50.0
         machine.configure_for_layer(layer)
         asm_after = machine.assembly
-        assert asm_after.rotary_diameter == 50.0
-        assert asm_after is not asm_before
+        assert asm_after is asm_before
 
     def test_rotary_module_change_invalidates(self):
         machine = _make_machine()
@@ -299,10 +297,9 @@ class TestAssemblyRotarySpecs:
             rotary_diameter=50.0,
         )
         machine.configure_for_layer(layer)
-        assert machine.assembly.rotary_diameter == 50.0
-        assert machine.assembly.chuck_diameters == {"rotary_chuck_0": 50.0}
+        assert machine.assembly.has_rotary
 
-    def test_diameter_change_triggers_rebuild(self):
+    def test_diameter_change_does_not_rebuild(self):
         machine = _make_machine()
         module = RotaryModule()
         module.default_diameter = 30.0
@@ -314,10 +311,9 @@ class TestAssemblyRotarySpecs:
         )
         machine.configure_for_layer(layer)
         asm1 = machine.assembly
-        assert asm1.rotary_diameter == 30.0
+        assert asm1.has_rotary
 
         layer.rotary_diameter = 40.0
         machine.configure_for_layer(layer)
         asm2 = machine.assembly
-        assert asm2.rotary_diameter == 40.0
-        assert asm2 is not asm1
+        assert asm2 is asm1
