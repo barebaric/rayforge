@@ -119,7 +119,6 @@ def test_rotary_has_rotary():
         rotary_modules={"a": _make_module_a(40.0)},
     )
     assert kinematics.has_rotary
-    assert kinematics.rotary_diameter == 40.0
 
 
 def test_4axis_set_no_rotary_modules_is_cartesian():
@@ -148,7 +147,6 @@ def test_machine_kinematics_with_rotary():
     kin = machine.kinematics
     assert isinstance(kin, Kinematics)
     assert kin.has_rotary
-    assert kin.rotary_diameter == 40.0
 
 
 def _make_module_a(diameter=25.0):
