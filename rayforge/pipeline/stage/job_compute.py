@@ -180,7 +180,9 @@ def compute_job_artifact(
 
     mapped_ops = final_ops.copy()
     if machine.rotary_modules:
-        KinematicMapping.apply_to_job_ops(mapped_ops, doc, machine)
+        KinematicMapping.apply_to_job_ops(
+            mapped_ops, doc, machine, apply_gear_ratio=False
+        )
 
     machine_code_bytes, op_map_bytes = _encode_gcode_and_opmap(
         final_ops, doc, machine, context
