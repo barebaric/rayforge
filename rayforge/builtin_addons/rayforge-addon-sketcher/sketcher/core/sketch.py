@@ -51,7 +51,15 @@ from .constraints import (
     VerticalConstraint,
 )
 from .constraints.drag import DragConstraint
-from .entities import Line, Arc, Circle, Bezier, Entity, Ellipse
+from .entities import (
+    Line,
+    Arc,
+    Circle,
+    Bezier,
+    Entity,
+    Ellipse,
+    TextBoxEntity,
+)
 from .entities.point import WaypointType
 from .params import ParameterContext
 from .registry import EntityRegistry
@@ -1449,11 +1457,17 @@ class Sketch(IAsset, IGeometryProvider):
             if not entity.construction:
                 text_geo = entity.create_text_fill_geometry(self.registry)
                 if text_geo:
+                    color = (
+                        entity.fill_color
+                        if isinstance(entity, TextBoxEntity)
+                        and entity.fill_color is not None
+                        else DEFAULT_FILL_COLOR
+                    )
                     render_data.append(
                         FillRenderData(
                             geometry=text_geo,
                             style=FillStyle.SOLID,
-                            color=DEFAULT_FILL_COLOR,
+                            color=color,
                         )
                     )
 

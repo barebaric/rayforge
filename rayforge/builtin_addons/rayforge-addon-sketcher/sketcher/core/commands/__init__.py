@@ -18,9 +18,9 @@ from .equal_constraint import (
     EqualConstraintMergeResult,
 )
 from .fillet import FilletCommand
-from .fill import AddFillCommand, RemoveFillCommand
+from .fill import AddFillCommand, RemoveFillCommand, SetTextFillCommand
 from .grid import GridCommand
-from .items import AddItemsCommand, RemoveItemsCommand
+from .items import AddItemsCommand
 from .line import LineCommand, LinePreviewState
 from .live_text_edit import LiveTextEditCommand
 from .point import (
@@ -77,9 +77,9 @@ __all__ = [
     "RectangleCommand",
     "RectanglePreviewState",
     "RemoveFillCommand",
-    "RemoveItemsCommand",
     "RoundedRectCommand",
     "RoundedRectPreviewState",
+    "SetTextFillCommand",
     "SetWaypointTypeCommand",
     "SketchChangeCommand",
     "StraightenBezierCommand",

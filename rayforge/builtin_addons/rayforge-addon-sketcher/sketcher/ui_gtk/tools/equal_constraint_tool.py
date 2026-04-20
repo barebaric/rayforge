@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING, Optional, Union
 from ...core.commands import (
     AddItemsCommand,
     EqualConstraintCommand,
-    RemoveItemsCommand,
 )
+from ...core.commands.items import RemoveItemsCommand
 from ...core.constraints import EqualLengthConstraint
 from ...core.entities import Entity, Point
 from .base import SketchTool

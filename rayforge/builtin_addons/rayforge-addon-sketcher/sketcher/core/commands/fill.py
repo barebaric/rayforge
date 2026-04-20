@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, List, Tuple, Optional
 from gettext import gettext as _
 from rayforge.image.structures import FillStyle
 from rayforge.core.color import ColorRGBA
+from ..entities.text_box import TextBoxEntity
 from ..sketch import Fill, DEFAULT_FILL_COLOR
 from .base import SketchChangeCommand
 
@@ -70,3 +71,26 @@ class RemoveFillCommand(SketchChangeCommand):
 
     def _do_undo(self) -> None:
         self.sketch.fills.append(self.fill)
+
+
+class SetTextFillCommand(SketchChangeCommand):
+    """Command to set or toggle the fill color on a TextBoxEntity."""
+
+    def __init__(
+        self,
+        sketch: "Sketch",
+        entity_id: int,
+        fill_color: Optional[ColorRGBA],
+        name: str = _("Set Text Fill"),
+    ):
+        super().__init__(sketch, name)
+        self.entity_id = entity_id
+        self.fill_color = fill_color
+
+    def _do_execute(self) -> None:
+        entity = self.sketch.registry.get_entity(self.entity_id)
+        if isinstance(entity, TextBoxEntity):
+            entity.fill_color = self.fill_color
+
+    def _do_undo(self) -> None:
+        pass
