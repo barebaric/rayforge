@@ -11,7 +11,6 @@ class LayerRenderConfig:
     rotary_enabled: bool
     rotary_diameter: float
     axis_position: float = 0.0
-    gear_ratio: float = 1.0
     reverse: bool = False
     axis_position_3d: Optional[Tuple[float, ...]] = None
     cylinder_dir: Optional[Tuple[float, ...]] = None
@@ -21,7 +20,6 @@ class LayerRenderConfig:
             "rotary_enabled": self.rotary_enabled,
             "rotary_diameter": self.rotary_diameter,
             "axis_position": self.axis_position,
-            "gear_ratio": self.gear_ratio,
             "reverse": self.reverse,
         }
         if self.axis_position_3d is not None:
@@ -42,7 +40,6 @@ class LayerRenderConfig:
             rotary_enabled=data["rotary_enabled"],
             rotary_diameter=data["rotary_diameter"],
             axis_position=data.get("axis_position", 0.0),
-            gear_ratio=data.get("gear_ratio", 1.0),
             reverse=data.get("reverse", False),
             axis_position_3d=ap3d,
             cylinder_dir=cdir,

@@ -22,13 +22,12 @@ from ....machine.kinematic_math import KinematicMath
 def degrees_to_mu(
     degrees: float,
     diameter: float,
-    gear_ratio: float,
     reverse: bool,
 ) -> float:
-    if diameter <= 0 or gear_ratio <= 0:
+    if diameter <= 0:
         return degrees
     sign = -1.0 if reverse else 1.0
-    return degrees * math.pi * diameter / 360.0 / gear_ratio * sign
+    return degrees * math.pi * diameter / 360.0 * sign
 
 
 def find_degrees(cmd: MovingCommand) -> Optional[float]:
@@ -53,13 +52,12 @@ def visual_end(
 def reconstruct_mu_pos(
     cmd: MovingCommand,
     diameter: float,
-    gear_ratio: float,
     reverse: bool,
 ) -> Tuple[float, float, float]:
     degrees = find_degrees(cmd)
     if degrees is None:
         return cmd.end
-    mu_val = degrees_to_mu(degrees, diameter, gear_ratio, reverse)
+    mu_val = degrees_to_mu(degrees, diameter, reverse=reverse)
     pos = list(cmd.end)
     pos[1] = mu_val
     return (pos[0], pos[1], pos[2])
@@ -68,13 +66,12 @@ def reconstruct_mu_pos(
 def reconstruct_mu_arc(
     cmd: ArcToCommand,
     diameter: float,
-    gear_ratio: float,
     reverse: bool,
 ) -> ArcToCommand:
     degrees = find_degrees(cmd)
     if degrees is None:
         return cmd
-    scale = degrees_to_mu(1.0, diameter, gear_ratio, reverse)
+    scale = degrees_to_mu(1.0, diameter, reverse=reverse)
 
     pos = list(cmd.end)
     pos[1] = degrees * scale
@@ -93,13 +90,12 @@ def reconstruct_mu_arc(
 def reconstruct_mu_bezier(
     cmd: BezierToCommand,
     diameter: float,
-    gear_ratio: float,
     reverse: bool,
 ) -> BezierToCommand:
     degrees = find_degrees(cmd)
     if degrees is None:
         return cmd
-    scale = degrees_to_mu(1.0, diameter, gear_ratio, reverse)
+    scale = degrees_to_mu(1.0, diameter, reverse=reverse)
 
     pos = list(cmd.end)
     pos[1] = degrees * scale
@@ -121,11 +117,10 @@ def reconstruct_mu_bezier(
 def mu_to_visual(
     pos: Tuple[float, float, float],
     diameter: float,
-    gear_ratio: float,
     reverse: bool,
 ) -> Tuple[float, float, float]:
     degrees = KinematicMath.mu_to_degrees(
-        pos[1], diameter, gear_ratio=gear_ratio, reverse=reverse
+        pos[1], diameter, reverse=reverse
     )
     result = list(pos)
     result[1] = degrees
