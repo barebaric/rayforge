@@ -240,8 +240,10 @@ class GrblSerialDriver(Driver):
         await super().cleanup()
         logger.debug("Cleanup completed.")
 
-    async def _send_command(self, command: str, add_newline: bool = True):
-        logger.debug(f"Sending fire-and-forget command: {command}")
+    async def _send_realtime(
+        self, command: str, add_newline: bool = True
+    ):
+        logger.debug(f"Sending realtime command: {command}")
         if not self.grbl_transport or not self.grbl_transport.is_connected:
             raise ConnectionError("Serial transport not initialized")
         payload = (command + ("\n" if add_newline else "")).encode("utf-8")
@@ -315,7 +317,7 @@ class GrblSerialDriver(Driver):
                 )
 
                 self._handshake_received.clear()
-                await self._send_command("?", add_newline=False)
+                await self._send_realtime("?", add_newline=False)
 
                 try:
                     await asyncio.wait_for(
@@ -338,7 +340,16 @@ class GrblSerialDriver(Driver):
                 logger.info("Connection established successfully.")
                 self._update_connection_status(TransportStatus.CONNECTED)
 
-                await self._send_command("$I")
+                payload = b"$I\n"
+                logger.debug(
+                    f"TX: {payload!r}",
+                    extra={
+                        "log_category": "RAW_IO",
+                        "direction": "TX",
+                        "data": payload,
+                    },
+                )
+                await transport.send_command(payload)
 
                 logger.debug("Connection verified. Starting status polling.")
                 while transport.is_connected and self.keep_running:
@@ -830,7 +841,7 @@ class GrblSerialDriver(Driver):
 
     async def set_hold(self, hold: bool = True) -> None:
         self._is_cancelled = False
-        await self._send_command("!" if hold else "~", add_newline=False)
+        await self._send_realtime("!" if hold else "~", add_newline=False)
 
     def can_home(self, axis: Optional[Axis] = None) -> bool:
         """GRBL supports homing for all axes."""
