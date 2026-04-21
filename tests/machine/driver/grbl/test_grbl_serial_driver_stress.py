@@ -105,9 +105,7 @@ class TestDriverStreamingFuzz:
         await asyncio.sleep(0)
 
         version_response = b"[VER:1.1h:]\r\nok\r\n"
-        driver.on_serial_data_received(
-            mock_serial_transport, version_response
-        )
+        driver.on_serial_data_received(mock_serial_transport, version_response)
         await asyncio.sleep(0.01)
         mock_serial_transport.send.reset_mock()
 

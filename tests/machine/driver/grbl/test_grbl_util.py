@@ -376,7 +376,7 @@ class TestParseState:
         result = parse_state("<Alarm:999|MPos:0,0,0>", default)
         assert result.status == DeviceStatus.ALARM
         assert result.error is not None
-        assert result.error.code == -1
+        assert result.error.code == 999
 
     def test_parse_state_with_buffer_state(self):
         """Test parsing state with buffer state."""
@@ -437,7 +437,7 @@ class TestErrorCodeToDeviceError:
     def test_parse_unknown_error_code(self):
         """Test parsing unknown error code."""
         result = error_code_to_device_error("999")
-        assert result.code == -1
+        assert result.code == 999
         assert "Unknown Error" in result.title
 
     def test_parse_invalid_error_code_string(self):

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 14:58+0200\n"
+"POT-Creation-Date: 2026-04-21 09:32+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -634,6 +634,30 @@ msgstr ""
 "обладнання."
 
 #: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Spindle Not Running"
+msgstr "Шпіндель не працює"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"A motion command was issued but the spindle is not running. Start the "
+"spindle before motion."
+msgstr ""
+"Надіслано команду руху, але шпиндель не працює. Запустіть шпиндель перед "
+"початком руху."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Spindle Speed Mismatch"
+msgstr "Невідповідність швидкості шпинделя"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The current spindle speed does not match the speed required by the command. "
+"Wait for the spindle to reach the target speed."
+msgstr ""
+"Поточна швидкість шпінделя не відповідає швидкості, необхідній для команди. "
+"Дечекайтесь, поки шпіндель досягне цільової швидкості."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Unsupported Command"
 msgstr "Непідтримувана команда"
 
@@ -838,12 +862,156 @@ msgstr ""
 "Використовуйте дійсний номер інструменту."
 
 #: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Hard Limit"
+msgstr "Жорстке обмеження"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"A hard limit switch was triggered. The machine has stopped and needs to be "
+"reset. Check for obstructions and verify your limit switches."
+msgstr ""
+"Спрацював кінцевий вимикач жорсткого обмеження. Машина зупинилася і потребує "
+"скидання. Перевірте наявність перешкод та перевірте кінцеві вимикачі."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Soft Limit"
+msgstr "Програмне обмеження"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The machine would move beyond its configured travel limits. Check that your "
+"work area and coordinate offsets are correct."
+msgstr ""
+"Машина вийшла б за налаштовані межі переміщення. Перевірте правильність "
+"вашої робочої зони та зміщень координат."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Abort Cycle"
+msgstr "Перервати цикл"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The currently running job was cancelled while in motion. Reset the machine "
+"to continue."
+msgstr ""
+"Поточне завдання було скасовано під час руху. Скиньте машину, щоб продовжити."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Probe Fail — Initial"
+msgstr "Помилка зонда — Початковий"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The probe did not make contact before the maximum travel distance was "
+"reached. Check the probe wiring and positioning."
+msgstr ""
+"Зонд не встановив контакт до досягнення максимальної відстані переміщення. "
+"Перевірте підключення та позиціонування зонда."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Probe Fail — Final"
+msgstr "Помилка зонда — Кінцевий"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The probe failed to retract to the target position after contact. Check the "
+"probe configuration."
+msgstr ""
+"Зонд не зміг повернутися до цільової позиції після контакту. Перевірте "
+"конфігурацію зонда."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Fail — Reset"
+msgstr "Помилка пошуку дому — Скидання"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Homing was not able to complete because the machine is in an alarm state. "
+"Clear the alarm and try again."
+msgstr ""
+"Пошук дому не зміг завершитися, оскільки машина знаходиться в стані тривоги. "
+"Скиньте тривогу і спробуйте знову."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Fail — Approach"
+msgstr "Помилка пошуку дому — Наближення"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The homing cycle failed to find the switch within the configured travel "
+"distance. Check your switch wiring and pull-off settings."
+msgstr ""
+"Цикл пошуку дому не знайшов вимикач у межах налаштованої відстані "
+"переміщення. Перевірте підключення вимикача та налаштування відведення."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Fail — Pulloff"
+msgstr "Помилка пошуку дому — Відведення"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The homing cycle failed to successfully pull off the switch after contact. "
+"Increase the pull-off distance or check the switch."
+msgstr ""
+"Цикл пошуку дому не зміг успішно відійти від вимикача після контакту. "
+"Збільште відстань відведення або перевірте вимикач."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Home Without Limits"
+msgstr "Пошук дому без обмежень"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Homing was commanded but limit switches are not configured. Enable limit "
+"switches first."
+msgstr ""
+"Подано команду пошуку дому, але кінцеві вимикачі не налаштовані. Спочатку "
+"увімкніть кінцеві вимикачі."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Fail — Dual Axis"
+msgstr "Збій пошуку дому — Подвійна вісь"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Homing failed on a dual-axis configuration. One or both axes did not reach "
+"their limit switches. Check your limit switch wiring and configuration."
+msgstr ""
+"Помилка пошуку дому в конфігурації з подвійною віссю. Одна або обидві осі не "
+"досягли своїх кінцевих вимикачів. Перевірте підключення та налаштування "
+"кінцевих вимикачів."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Unknown Alarm"
+msgstr "Невідома тривога"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Invalid alarm code reported by machine."
+msgstr "Машина повідомила невірний код тривоги."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The machine reported an unrecognized alarm code. Check your machine and "
+"firmware documentation."
+msgstr ""
+"Машина повідомила нерозпізнаний код тривоги. Перевірте документацію вашої "
+"машини та прошивки."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Unknown Error"
 msgstr "Невідома помилка"
 
 #: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Invalid error code reported by machine."
 msgstr "Неправильний код помилки, повідомлений машиною."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The machine reported an unrecognized error code. Check your machine and "
+"firmware documentation."
+msgstr ""
+"Машина повідомила нерозпізнаний код помилки. Перевірте документацію вашої "
+"машини та прошивки."
 
 #: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Stepper Configuration"

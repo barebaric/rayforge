@@ -530,7 +530,11 @@ class GrblNetworkDriver(Driver):
 
     async def clear_alarm(self) -> None:
         dialect = self._machine.dialect
-        await self._execute_command(dialect.clear_alarm)
+        response = await self._execute_command(dialect.clear_alarm)
+        has_error = any(line.startswith("error:") for line in response)
+        if not has_error:
+            self.state.error = None
+            self.state_changed.send(self, state=self.state)
 
     async def set_power(self, head: "Laser", percent: float) -> None:
         """

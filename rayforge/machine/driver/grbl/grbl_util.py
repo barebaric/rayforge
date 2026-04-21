@@ -202,6 +202,23 @@ GRBL_ERROR_CODES = {
             "Check your hardware configuration."
         ),
     ),
+    18: DeviceError(
+        18,
+        _("Spindle Not Running"),
+        _(
+            "A motion command was issued but the spindle is not "
+            "running. Start the spindle before motion."
+        ),
+    ),
+    19: DeviceError(
+        19,
+        _("Spindle Speed Mismatch"),
+        _(
+            "The current spindle speed does not match the speed "
+            "required by the command. Wait for the spindle to "
+            "reach the target speed."
+        ),
+    ),
     20: DeviceError(
         20,
         _("Unsupported Command"),
@@ -429,18 +446,37 @@ GRBL_ALARM_CODES = {
             "configured. Enable limit switches first."
         ),
     ),
+    10: DeviceError(
+        10,
+        _("Homing Fail — Dual Axis"),
+        _(
+            "Homing failed on a dual-axis configuration. "
+            "One or both axes did not reach their limit switches. "
+            "Check your limit switch wiring and configuration."
+        ),
+    ),
 }
 
 
 def alarm_code_to_device_error(alarm_code: str) -> DeviceError:
     try:
         code = int(alarm_code)
-        return GRBL_ALARM_CODES[code]
-    except (ValueError, TypeError, KeyError):
+    except (ValueError, TypeError):
         return DeviceError(
             -1,
             _("Unknown Alarm"),
             _("Invalid alarm code reported by machine."),
+        )
+    try:
+        return GRBL_ALARM_CODES[code]
+    except KeyError:
+        return DeviceError(
+            code,
+            _("Unknown Alarm"),
+            _(
+                "The machine reported an unrecognized alarm code. "
+                "Check your machine and firmware documentation."
+            ),
         )
 
 
@@ -517,12 +553,22 @@ def _parse_pos_triplet(pos: str) -> Optional[Pos]:
 def error_code_to_device_error(error_code: str) -> DeviceError:
     try:
         code = int(error_code)
-        return GRBL_ERROR_CODES[code]
-    except (ValueError, TypeError, KeyError):
+    except (ValueError, TypeError):
         return DeviceError(
             -1,
             _("Unknown Error"),
             _("Invalid error code reported by machine."),
+        )
+    try:
+        return GRBL_ERROR_CODES[code]
+    except KeyError:
+        return DeviceError(
+            code,
+            _("Unknown Error"),
+            _(
+                "The machine reported an unrecognized error code. "
+                "Check your machine and firmware documentation."
+            ),
         )
 
 
