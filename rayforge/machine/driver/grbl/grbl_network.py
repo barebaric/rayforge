@@ -252,7 +252,7 @@ class GrblNetworkDriver(Driver):
                 )
             )
 
-        encoded = quote(command, safe='')
+        encoded = quote(command, safe="")
         url = f"{self.http_base}{command_url.format(command=encoded)}"
         logger.debug(
             f"GET {url}",

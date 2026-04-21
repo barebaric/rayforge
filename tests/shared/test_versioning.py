@@ -332,3 +332,15 @@ class TestIsNewerVersion:
 
     def test_invalid_versions_fallback(self):
         assert is_newer_version("2.0.0", "1.0.0") is True
+
+    def test_pep440_post_git_not_newer_than_older_stable(self):
+        assert is_newer_version("1.5.2", "1.6.0b2.post6+git.7f927a18") is False
+
+    def test_pep440_beta_newer_than_older_stable(self):
+        assert is_newer_version("1.6.0", "1.5.2") is True
+
+    def test_git_describe_not_newer(self):
+        assert is_newer_version("1.5.2", "1.5.2-3-gabcdef1") is False
+
+    def test_pep440_beta_is_prerelease(self):
+        assert is_newer_version("1.6.0", "1.6.0b2.post6+git.7f927a18") is True
