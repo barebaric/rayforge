@@ -8,6 +8,7 @@ from ...logging_setup import ui_log_event_received
 from ...machine.models.machine import Machine
 from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.cmd import MachineCmd
+from ..shared.adwfix import get_spinrow_float
 from ...shared.gcodeedit.viewer import GcodeViewer
 from ...shared.tasker import task_mgr
 from ..doceditor.layers_tab import LayersTab
@@ -401,7 +402,7 @@ class BottomPanel(Gtk.Box):
         self.jog_widget.jog_speed = speed_mm_min
 
     def _on_distance_changed(self, spin_row):
-        self.jog_widget.jog_distance = float(spin_row.get_value())
+        self.jog_widget.jog_distance = get_spinrow_float(spin_row)
 
     def _connect_machine_signals(self):
         if self.machine:
