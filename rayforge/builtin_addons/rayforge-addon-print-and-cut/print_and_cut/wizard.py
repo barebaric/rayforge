@@ -15,6 +15,7 @@ from rayforge.ui_gtk.shared.patched_dialog_window import (
 )
 from rayforge.ui_gtk.icons import get_icon
 from rayforge.ui_gtk.machine.jog_widget import JogWidget
+from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
 from .pick_surface import PickSurface
 
 logger = logging.getLogger(__name__)
@@ -600,7 +601,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
                 self._laser_row.set_subtitle(f"X: {x_val:.2f}  Y: {y_val:.2f}")
 
     def _on_distance_changed(self, spin_row):
-        self._jog_widget.jog_distance = float(spin_row.get_value())
+        self._jog_widget.jog_distance = get_spinrow_float(spin_row)
 
     def _on_focus_toggled(self, button):
         if not self._machine or not self._machine_cmd:
