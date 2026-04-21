@@ -61,10 +61,17 @@ def get_git_tag_version(path: Path) -> str:
 
 
 _GIT_DESCRIBE_RE = re.compile(r"-\d+-g[0-9a-f]+$")
+_PEP440_POST_RE = re.compile(r"\.post\d+")
+_PEP440_LOCAL_RE = re.compile(r"\+git\.[0-9a-f]+$")
+_PEP440_PRE_RE = re.compile(r"b(\d+)")
 
 
 def _strip_git_describe(version_str: str) -> str:
-    return _GIT_DESCRIBE_RE.sub("", version_str).lstrip("v")
+    s = _GIT_DESCRIBE_RE.sub("", version_str)
+    s = _PEP440_LOCAL_RE.sub("", s)
+    s = _PEP440_POST_RE.sub("", s)
+    s = _PEP440_PRE_RE.sub(r"-b.\1", s)
+    return s.lstrip("v")
 
 
 def is_newer_version(remote_str: str, local_str: str) -> bool:
