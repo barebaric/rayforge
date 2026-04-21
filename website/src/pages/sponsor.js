@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@theme/Layout';
 import Icon from '@mdi/react';
 import { translate } from '@docusaurus/Translate';
@@ -182,6 +182,19 @@ const benefits = [
 ];
 
 export default function Sponsor() {
+  const [githubStars, setGithubStars] = useState(null);
+
+  useEffect(() => {
+    fetch('https://api.github.com/repos/barebaric/rayforge')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.stargazers_count) {
+          setGithubStars(data.stargazers_count);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <Layout
       title={translate({
@@ -234,7 +247,16 @@ export default function Sponsor() {
         <section className={styles.statsSection}>
           <div className={styles.statsGrid}>
             <div className={styles.statItem}>
-              <div className={styles.statNumber}>750+</div>
+              <div className={styles.statNumber}>12,000+</div>
+              <div className={styles.statLabel}>
+                {translate({
+                  id: 'sponsor.stats.views',
+                  message: 'Monthly Website Views',
+                })}
+              </div>
+            </div>
+            <div className={styles.statItem}>
+              <div className={styles.statNumber}>3,200+</div>
               <div className={styles.statLabel}>
                 {translate({
                   id: 'sponsor.stats.downloads',
@@ -243,7 +265,9 @@ export default function Sponsor() {
               </div>
             </div>
             <div className={styles.statItem}>
-              <div className={styles.statNumber}>179</div>
+              <div className={styles.statNumber}>
+                {githubStars !== null ? githubStars : '—'}
+              </div>
               <div className={styles.statLabel}>
                 {translate({
                   id: 'sponsor.stats.stars',
@@ -252,16 +276,7 @@ export default function Sponsor() {
               </div>
             </div>
             <div className={styles.statItem}>
-              <div className={styles.statNumber}>3,000</div>
-              <div className={styles.statLabel}>
-                {translate({
-                  id: 'sponsor.stats.commits',
-                  message: 'Commits',
-                })}
-              </div>
-            </div>
-            <div className={styles.statItem}>
-              <div className={styles.statNumber}>6</div>
+              <div className={styles.statNumber}>7</div>
               <div className={styles.statLabel}>
                 {translate({
                   id: 'sponsor.stats.languages',

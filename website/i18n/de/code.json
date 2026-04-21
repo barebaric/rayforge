@@ -704,14 +704,14 @@
   "sponsor.hero.cta": {
     "message": "Kontakt aufnehmen"
   },
+  "sponsor.stats.views": {
+    "message": "Monatliche Website-Aufrufe"
+  },
   "sponsor.stats.downloads": {
     "message": "Monatliche Downloads"
   },
   "sponsor.stats.stars": {
     "message": "GitHub-Sterne"
-  },
-  "sponsor.stats.commits": {
-    "message": "Commits"
   },
   "sponsor.stats.languages": {
     "message": "Sprachen"

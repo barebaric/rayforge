@@ -705,14 +705,14 @@
   "sponsor.hero.cta": {
     "message": "Зв'язатися з нами"
   },
+  "sponsor.stats.views": {
+    "message": "Переглядів сайту на місяць"
+  },
   "sponsor.stats.downloads": {
     "message": "Завантажень на місяць"
   },
   "sponsor.stats.stars": {
     "message": "Зірки GitHub"
-  },
-  "sponsor.stats.commits": {
-    "message": "Комітів"
   },
   "sponsor.stats.languages": {
     "message": "Мов"

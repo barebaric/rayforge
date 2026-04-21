@@ -705,14 +705,14 @@
   "sponsor.hero.cta": {
     "message": "Contáctenos"
   },
+  "sponsor.stats.views": {
+    "message": "Visitas Mensuales al Sitio"
+  },
   "sponsor.stats.downloads": {
     "message": "Descargas Mensuales"
   },
   "sponsor.stats.stars": {
     "message": "Estrellas en GitHub"
-  },
-  "sponsor.stats.commits": {
-    "message": "Commits"
   },
   "sponsor.stats.languages": {
     "message": "Idiomas"
