@@ -39,12 +39,35 @@ class ResponsiveBox(Gtk.Widget):
 
         if orientation == Gtk.Orientation.VERTICAL:
             h1, h2 = self._get_vertical_height()
-            return (
-                max(h1[0], h2[0]),
-                h1[1] + self._SPACING + h2[1],
-                -1,
-                -1,
-            )
+            stacked_nat = h1[1] + self._SPACING + h2[1]
+
+            if for_size > 0:
+                h1c = self._first.measure(
+                    Gtk.Orientation.VERTICAL, for_size
+                )
+                h2c = self._second.measure(
+                    Gtk.Orientation.VERTICAL, for_size
+                )
+                side_min = max(h1c[0], h2c[0])
+
+                w1 = self._first.measure(
+                    Gtk.Orientation.HORIZONTAL, side_min
+                )
+                w2 = self._second.measure(
+                    Gtk.Orientation.HORIZONTAL, side_min
+                )
+
+                if for_size >= w1[0] + self._SPACING + w2[0]:
+                    return (side_min, stacked_nat, -1, -1)
+
+                return (
+                    h1[0] + self._SPACING + h2[0],
+                    stacked_nat,
+                    -1,
+                    -1,
+                )
+
+            return (max(h1[0], h2[0]), stacked_nat, -1, -1)
 
         if for_size > 0:
             h1, h2 = self._get_vertical_height()
