@@ -472,9 +472,13 @@ class GrblNetworkDriver(Driver):
         await self._send_command("!" if hold else "~")
 
     async def cancel(self) -> None:
-        # Cancel is a fire-and-forget soft reset, doesn't always
-        # respond with 'ok'
-        await self._send_command("%18")
+        # Soft reset: send Ctrl-X (0x18) as a raw byte.  _send_command
+        # URL-encodes the argument, so '\x18' becomes '%18' on the wire —
+        # which is what the ESP3D/FluidNC web interface interprets as the
+        # GRBL soft-reset byte.  (Do NOT pass the literal string '%18',
+        # because quote() would double-encode the '%' to '%2518'.)
+        await self._send_command("\x18")
+        self.job_finished.send(self)
 
     def can_home(self, axis: Optional[Axis] = None) -> bool:
         """GRBL supports homing for all axes."""
