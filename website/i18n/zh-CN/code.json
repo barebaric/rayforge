@@ -705,14 +705,14 @@
   "sponsor.hero.cta": {
     "message": "联系我们"
   },
+  "sponsor.stats.views": {
+    "message": "月网站访问量"
+  },
   "sponsor.stats.downloads": {
     "message": "月下载量"
   },
   "sponsor.stats.stars": {
     "message": "GitHub 星标"
-  },
-  "sponsor.stats.commits": {
-    "message": "提交数"
   },
   "sponsor.stats.languages": {
     "message": "语言"
