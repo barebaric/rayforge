@@ -104,3 +104,20 @@ class TestCheckWorker:
             await checker._check_worker(ctx)
 
         checker._task_mgr.schedule_on_main_thread.assert_called_once()
+
+    async def test_pep440_post_git_not_newer_than_older_release(self, checker):
+        ctx = MagicMock()
+        with (
+            patch.object(
+                checker,
+                "_fetch_latest_release",
+                return_value={"tag_name": "1.5.2"},
+            ),
+            patch(
+                "rayforge.updater.__version__",
+                "1.6.0b2.post6+git.7f927a18",
+            ),
+        ):
+            await checker._check_worker(ctx)
+
+        checker._task_mgr.schedule_on_main_thread.assert_not_called()
