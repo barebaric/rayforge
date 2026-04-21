@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 14:58+0200\n"
+"POT-Creation-Date: 2026-04-21 09:32+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -640,6 +640,31 @@ msgstr ""
 "Hardwarekonfiguration."
 
 #: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Spindle Not Running"
+msgstr "Spindel läuft nicht"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"A motion command was issued but the spindle is not running. Start the "
+"spindle before motion."
+msgstr ""
+"Ein Bewegungsbefehl wurde gesendet, aber die Spindel läuft nicht. Starte die "
+"Spindel vor der Bewegung."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Spindle Speed Mismatch"
+msgstr "Spindelgeschwindigkeit stimmt nicht überein"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The current spindle speed does not match the speed required by the command. "
+"Wait for the spindle to reach the target speed."
+msgstr ""
+"Die aktuelle Spindelgeschwindigkeit stimmt nicht mit der vom Befehl "
+"geforderten Geschwindigkeit überein. Warte, bis die Spindel die "
+"Zielgeschwindigkeit erreicht hat."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Unsupported Command"
 msgstr "Nicht unterstützter Befehl"
 
@@ -851,12 +876,160 @@ msgstr ""
 "gültige Werkzeugnummer."
 
 #: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Hard Limit"
+msgstr "Hartes Limit"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"A hard limit switch was triggered. The machine has stopped and needs to be "
+"reset. Check for obstructions and verify your limit switches."
+msgstr ""
+"Ein harter Endschalter wurde ausgelöst. Die Maschine wurde gestoppt und muss "
+"zurückgesetzt werden. Überprüfe auf Hindernisse und kontrolliere die "
+"Endschalter."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Soft Limit"
+msgstr "Weiches Limit"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The machine would move beyond its configured travel limits. Check that your "
+"work area and coordinate offsets are correct."
+msgstr ""
+"Die Maschine würde sich über ihre konfigurierten Verfahrgrenzen hinaus "
+"bewegen. Überprüfe, ob dein Arbeitsbereich und deine Koordinatenversätze "
+"korrekt sind."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Abort Cycle"
+msgstr "Zyklus abbrechen"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The currently running job was cancelled while in motion. Reset the machine "
+"to continue."
+msgstr ""
+"Der aktuell laufende Auftrag wurde während der Bewegung abgebrochen. Setze "
+"die Maschine zurück, um fortzufahren."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Probe Fail — Initial"
+msgstr "Tastfehler — Initial"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The probe did not make contact before the maximum travel distance was "
+"reached. Check the probe wiring and positioning."
+msgstr ""
+"Die Taste hat vor dem Erreichen der maximalen Verfahrstrecke keinen Kontakt "
+"hergestellt. Überprüfe die Tastverkabelung und Positionierung."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Probe Fail — Final"
+msgstr "Tastfehler — Final"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The probe failed to retract to the target position after contact. Check the "
+"probe configuration."
+msgstr ""
+"Die Taste konnte nach dem Kontakt nicht zur Zielposition zurückfahren. "
+"Überprüfe die Tastkonfiguration."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Fail — Reset"
+msgstr "Referenzfahrt fehlgeschlagen — Zurücksetzen"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Homing was not able to complete because the machine is in an alarm state. "
+"Clear the alarm and try again."
+msgstr ""
+"Die Referenzfahrt konnte nicht abgeschlossen werden, da sich die Maschine "
+"imAlarmzustand befindet. Lösche den Alarm und versuche es erneut."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Fail — Approach"
+msgstr "Referenzfahrt fehlgeschlagen — Annäherung"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The homing cycle failed to find the switch within the configured travel "
+"distance. Check your switch wiring and pull-off settings."
+msgstr ""
+"Der Referenzfahrtzyklus hat den Schalter nicht innerhalb der konfigurierten "
+"Verfahrstrecke gefunden. Überprüfe die Schalterverkabelung und dieAbzugs-"
+"Einstellungen."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Fail — Pulloff"
+msgstr "Referenzfahrt fehlgeschlagen — Abzug"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The homing cycle failed to successfully pull off the switch after contact. "
+"Increase the pull-off distance or check the switch."
+msgstr ""
+"Der Referenzfahrtzyklus konnte sich nach dem Kontakt nicht erfolgreich vom "
+"Schalter lösen. Erhöhe die Abzugsdistanz oder überprüfe den Schalter."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Home Without Limits"
+msgstr "Referenzfahrt ohne Limits"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Homing was commanded but limit switches are not configured. Enable limit "
+"switches first."
+msgstr ""
+"Referenzfahrt wurde angefordert, aber Endschalter sind nicht konfiguriert. "
+"Aktiviere zuerst die Endschalter."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Fail — Dual Axis"
+msgstr "Referenzfahrt fehlgeschlagen — Doppelachse"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Homing failed on a dual-axis configuration. One or both axes did not reach "
+"their limit switches. Check your limit switch wiring and configuration."
+msgstr ""
+"Die Referenzfahrt ist in einer Doppelachsen-Konfiguration fehlgeschlagen. "
+"Eine oder beide Achsen haben ihre Endschalter nicht erreicht. Überprüfe die "
+"Verkabelung und Konfiguration der Endschalter."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Unknown Alarm"
+msgstr "Unbekannter Alarm"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Invalid alarm code reported by machine."
+msgstr "Ungültiger Alarmcode von der Maschine gemeldet."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The machine reported an unrecognized alarm code. Check your machine and "
+"firmware documentation."
+msgstr ""
+"Die Maschine hat einen unbekannten Alarmcode gemeldet. Überprüfe die "
+"Dokumentation deiner Maschine und Firmware."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Unknown Error"
 msgstr "Unbekannter Fehler"
 
 #: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Invalid error code reported by machine."
 msgstr "Ungültiger Fehlercode von Maschine gemeldet."
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The machine reported an unrecognized error code. Check your machine and "
+"firmware documentation."
+msgstr ""
+"Die Maschine hat einen unbekannten Fehlercode gemeldet. Überprüfe die "
+"Dokumentation deiner Maschine und Firmware."
 
 #: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Stepper Configuration"

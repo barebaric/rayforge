@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 14:58+0200\n"
+"POT-Creation-Date: 2026-04-21 09:32+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -600,6 +600,26 @@ msgid ""
 msgstr "激光模式需要PWM输出才能工作。请检查您的硬件配置。"
 
 #: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Spindle Not Running"
+msgstr "主轴未运行"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"A motion command was issued but the spindle is not running. Start the "
+"spindle before motion."
+msgstr "已发出运动命令，但主轴未运行。请在运动前启动主轴。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Spindle Speed Mismatch"
+msgstr "主轴速度不匹配"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The current spindle speed does not match the speed required by the command. "
+"Wait for the spindle to reach the target speed."
+msgstr "当前主轴速度与命令要求的速度不匹配。请等待主轴达到目标速度。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Unsupported Command"
 msgstr "不支持的命令"
 
@@ -775,12 +795,135 @@ msgid ""
 msgstr "刀具号超过了支持的最大值。请使用有效的刀具号。"
 
 #: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Hard Limit"
+msgstr "硬件限位"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"A hard limit switch was triggered. The machine has stopped and needs to be "
+"reset. Check for obstructions and verify your limit switches."
+msgstr ""
+"触发了硬件限位开关。机器已停止并需要复位。请检查是否有障碍物并验证限位开关。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Soft Limit"
+msgstr "软件限位"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The machine would move beyond its configured travel limits. Check that your "
+"work area and coordinate offsets are correct."
+msgstr "机器将超出其配置的行程限制。请检查工作区域和坐标偏移是否正确。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Abort Cycle"
+msgstr "中止循环"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The currently running job was cancelled while in motion. Reset the machine "
+"to continue."
+msgstr "当前运行的作业在运动中被取消。请复位机器以继续。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Probe Fail — Initial"
+msgstr "探测失败 — 初始"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The probe did not make contact before the maximum travel distance was "
+"reached. Check the probe wiring and positioning."
+msgstr "探测头在达到最大行程距离之前未接触。请检查探测头的接线和定位。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Probe Fail — Final"
+msgstr "探测失败 — 最终"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The probe failed to retract to the target position after contact. Check the "
+"probe configuration."
+msgstr "探测头在接触后未能缩回到目标位置。请检查探测头配置。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Fail — Reset"
+msgstr "回原点失败 — 复位"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Homing was not able to complete because the machine is in an alarm state. "
+"Clear the alarm and try again."
+msgstr "由于机器处于报警状态，回原点无法完成。请清除报警后重试。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Fail — Approach"
+msgstr "回原点失败 — 接近"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The homing cycle failed to find the switch within the configured travel "
+"distance. Check your switch wiring and pull-off settings."
+msgstr "回原点循环未能在配置的行程距离内找到开关。请检查开关接线和回退设置。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Fail — Pulloff"
+msgstr "回原点失败 — 回退"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The homing cycle failed to successfully pull off the switch after contact. "
+"Increase the pull-off distance or check the switch."
+msgstr "回原点循环在接触后未能成功从开关回退。请增加回退距离或检查开关。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Home Without Limits"
+msgstr "无限制回原点"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Homing was commanded but limit switches are not configured. Enable limit "
+"switches first."
+msgstr "已发出回原点命令但限位开关未配置。请先启用限位开关。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Homing Fail — Dual Axis"
+msgstr "回原点失败 — 双轴"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"Homing failed on a dual-axis configuration. One or both axes did not reach "
+"their limit switches. Check your limit switch wiring and configuration."
+msgstr ""
+"双轴配置下回原点失败。一个或两个轴未到达其限位开关。请检查限位开关的接线和配"
+"置。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Unknown Alarm"
+msgstr "未知报警"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid "Invalid alarm code reported by machine."
+msgstr "机器报告了无效的报警代码。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The machine reported an unrecognized alarm code. Check your machine and "
+"firmware documentation."
+msgstr "机器报告了无法识别的报警代码。请查阅您的机器和固件文档。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Unknown Error"
 msgstr "未知错误"
 
 #: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Invalid error code reported by machine."
 msgstr "机器报告了无效的错误代码。"
+
+#: rayforge/machine/driver/grbl/grbl_util.py
+msgid ""
+"The machine reported an unrecognized error code. Check your machine and "
+"firmware documentation."
+msgstr "机器报告了无法识别的错误代码。请检查您的机器和固件文档。"
 
 #: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Stepper Configuration"
