@@ -327,6 +327,12 @@ class MachineController:
         self, driver: Driver, offsets: Dict[str, Point3D]
     ):
         """Updates internal WCS state from driver updates."""
+        if not offsets:
+            logger.warning(
+                "Driver reported empty WCS offsets. "
+                "Skipping update to avoid clearing coordinate systems."
+            )
+            return
         self.machine.update_wcs_offsets_batch(offsets)
         logger.debug(
             f"MachineController: Emitting wcs_updated for machine "

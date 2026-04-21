@@ -2,6 +2,7 @@ import aiohttp
 import asyncio
 import inspect
 import logging
+from urllib.parse import quote
 from typing import (
     Optional,
     cast,
@@ -251,7 +252,8 @@ class GrblNetworkDriver(Driver):
                 )
             )
 
-        url = f"{self.http_base}{command_url.format(command=command)}"
+        encoded = quote(command, safe='')
+        url = f"{self.http_base}{command_url.format(command=encoded)}"
         logger.debug(
             f"GET {url}",
             extra={
