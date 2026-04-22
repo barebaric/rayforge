@@ -8,6 +8,7 @@ import gettext
 from pathlib import Path
 
 from rayforge.core.hooks import hookimpl
+from rayforge.ui_gtk.icons import register_icon_path
 from .widgets import PRODUCER_WIDGETS
 
 _localedir = Path(__file__).parent.parent / "locale"
@@ -17,6 +18,9 @@ _t = gettext.translation(
 _ = _t.gettext
 
 ADDON_NAME = "laser_essentials"
+_ICONS_DIR = Path(__file__).parent / "resources" / "icons"
+
+register_icon_path(_ICONS_DIR)
 
 
 @hookimpl
