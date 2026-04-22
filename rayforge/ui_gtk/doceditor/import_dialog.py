@@ -22,6 +22,7 @@ from ...doceditor.file_cmd import PreviewResult
 from ...image.base_importer import ImporterFeature
 from ...image.structures import ImportManifest
 from ...core.matrix import Matrix
+from ..shared.adwfix import get_spinrow_float
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.slider import create_slider
 
@@ -308,7 +309,9 @@ class ImportDialog(PatchedDialogWindow):
         self._schedule_preview_update()
 
     def _on_dpi_changed(self, spin_row):
-        get_context().config.set_import_dpi(spin_row.get_value())
+        if self._in_update:
+            return
+        get_context().config.set_import_dpi(get_spinrow_float(spin_row))
         self._schedule_preview_update()
 
     def _load_initial_data(self):
