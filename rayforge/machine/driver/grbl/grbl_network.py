@@ -17,7 +17,7 @@ from typing import (
 from gettext import gettext as _
 from ....context import RayforgeContext
 from ....core.varset import Var, VarSet, HostnameVar, PortVar
-from ....pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
+from ....pipeline.encoder.base import OpsEncoder, EncodedOutput
 from ....pipeline.encoder.gcode import GcodeEncoder
 from ...transport import HttpTransport, WebSocketTransport, TransportStatus
 from ...transport.validators import is_valid_hostname_or_ip
@@ -387,8 +387,7 @@ class GrblNetworkDriver(Driver):
 
     async def run(
         self,
-        machine_code: Any,
-        op_map: "MachineCodeOpMap",
+        encoded: EncodedOutput,
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
@@ -397,7 +396,8 @@ class GrblNetworkDriver(Driver):
         if not self.host:
             raise ConnectionError("Driver not configured with a host.")
 
-        gcode = cast(str, machine_code)
+        gcode = encoded.text
+        op_map = encoded.op_map
 
         try:
             # For GRBL driver, we don't track individual commands
@@ -421,7 +421,7 @@ class GrblNetworkDriver(Driver):
         finally:
             self.job_finished.send(self)
 
-    async def run_raw(self, gcode: str) -> None:
+    async def run_raw(self, machine_code: str) -> None:
         """
         Executes a raw G-code string by uploading it as a file to the device
         and then starting the job.
@@ -429,14 +429,16 @@ class GrblNetworkDriver(Driver):
         if not self.host:
             raise ConnectionError("Driver not configured with a host.")
 
-        lines = [line.strip() for line in gcode.splitlines() if line.strip()]
+        lines = [
+            line.strip() for line in machine_code.splitlines() if line.strip()
+        ]
         if not lines:
             return
         for line in lines:
             logger.info(line, extra=self._log_extra("USER_COMMAND"))
 
         try:
-            await self._upload(gcode, "rayforge_raw.gcode")
+            await self._upload(machine_code, "rayforge_raw.gcode")
             await self._execute("rayforge_raw.gcode")
         except Exception as e:
             self._update_connection_status(TransportStatus.ERROR, str(e))

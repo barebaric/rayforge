@@ -7,7 +7,7 @@ from .base import BaseArtifact
 from .handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
-    from ..encoder.base import MachineCodeOpMap
+    from ..encoder.base import MachineCodeOpMap, EncodedOutput
 
 
 class _NumpyEncoder(json.JSONEncoder):
@@ -68,8 +68,7 @@ class JobArtifact(BaseArtifact):
         distance: float,
         generation_id: int,
         time_estimate: Optional[float] = None,
-        machine_code_bytes: Optional[np.ndarray] = None,
-        op_map_bytes: Optional[np.ndarray] = None,
+        encoded_output_bytes: Optional[np.ndarray] = None,
         mapped_ops: Optional[Ops] = None,
     ):
         super().__init__()
@@ -77,49 +76,42 @@ class JobArtifact(BaseArtifact):
         self.distance = distance
         self.generation_id = generation_id
         self.time_estimate = time_estimate
-        self.machine_code_bytes: Optional[np.ndarray] = machine_code_bytes
-        self.op_map_bytes: Optional[np.ndarray] = op_map_bytes
+        self.encoded_output_bytes: Optional[np.ndarray] = encoded_output_bytes
         self.mapped_ops: Optional[Ops] = mapped_ops
 
-        # Caching properties for deserialized data
-        self._machine_code_str: Optional[str] = None
-        self._op_map_obj: Optional["MachineCodeOpMap"] = None
+        self._encoded_output: Optional["EncodedOutput"] = None
 
     @property
     def machine_code(self) -> Optional[str]:
         """
-        Lazily decodes and caches the G-code string from its byte array.
+        Lazily decodes and caches the G-code string from encoded_output.
         """
-        if (
-            self._machine_code_str is None
-            and self.machine_code_bytes is not None
-        ):
-            self._machine_code_str = self.machine_code_bytes.tobytes().decode(
-                "utf-8"
-            )
-        return self._machine_code_str
+        encoded = self.encoded_output
+        return encoded.text if encoded else None
 
     @property
     def op_map(self) -> Optional["MachineCodeOpMap"]:
         """
-        Lazily decodes and caches the MachineCodeOpMap from its byte array.
+        Lazily decodes and caches the MachineCodeOpMap from encoded_output.
         """
-        from ..encoder.base import MachineCodeOpMap
+        encoded = self.encoded_output
+        return encoded.op_map if encoded else None
 
-        if self._op_map_obj is None and self.op_map_bytes is not None:
-            map_str = self.op_map_bytes.tobytes().decode("utf-8")
-            map_dict = json.loads(map_str)
-            self._op_map_obj = MachineCodeOpMap(
-                op_to_machine_code={
-                    int(k): v
-                    for k, v in map_dict["op_to_machine_code"].items()
-                },
-                machine_code_to_op={
-                    int(k): v
-                    for k, v in map_dict["machine_code_to_op"].items()
-                },
-            )
-        return self._op_map_obj
+    @property
+    def encoded_output(self) -> Optional["EncodedOutput"]:
+        """
+        Lazily decodes and caches the full EncodedOutput from its byte array.
+        This includes text, op_map, and driver_data (e.g., binary for Ruida).
+        """
+        from ..encoder.base import EncodedOutput
+
+        if (
+            self._encoded_output is None
+            and self.encoded_output_bytes is not None
+        ):
+            json_str = self.encoded_output_bytes.tobytes().decode("utf-8")
+            self._encoded_output = EncodedOutput.from_json(json_str)
+        return self._encoded_output
 
     def to_dict(self) -> Dict[str, Any]:
         """Converts the artifact to a dictionary for serialization."""
@@ -129,10 +121,8 @@ class JobArtifact(BaseArtifact):
             "distance": self.distance,
             "generation_id": self.generation_id,
         }
-        if self.machine_code_bytes is not None:
-            result["machine_code_bytes"] = self.machine_code_bytes.tolist()
-        if self.op_map_bytes is not None:
-            result["op_map_bytes"] = self.op_map_bytes.tolist()
+        if self.encoded_output_bytes is not None:
+            result["encoded_output_bytes"] = self.encoded_output_bytes.tolist()
         if self.mapped_ops is not None:
             result["mapped_ops"] = self.mapped_ops.to_dict()
         return result
@@ -147,13 +137,9 @@ class JobArtifact(BaseArtifact):
             "distance": data.get("distance", 0.0),
             "generation_id": data["generation_id"],
         }
-        if "machine_code_bytes" in data:
-            common_args["machine_code_bytes"] = np.array(
-                data["machine_code_bytes"], dtype=np.uint8
-            )
-        if "op_map_bytes" in data:
-            common_args["op_map_bytes"] = np.array(
-                data["op_map_bytes"], dtype=np.uint8
+        if "encoded_output_bytes" in data:
+            common_args["encoded_output_bytes"] = np.array(
+                data["encoded_output_bytes"], dtype=np.uint8
             )
         if "mapped_ops" in data:
             common_args["mapped_ops"] = Ops.from_dict(data["mapped_ops"])
@@ -176,10 +162,8 @@ class JobArtifact(BaseArtifact):
 
     def get_arrays_for_storage(self) -> Dict[str, np.ndarray]:
         arrays = self.ops.to_numpy_arrays()
-        if self.machine_code_bytes is not None:
-            arrays["machine_code_bytes"] = self.machine_code_bytes
-        if self.op_map_bytes is not None:
-            arrays["op_map_bytes"] = self.op_map_bytes
+        if self.encoded_output_bytes is not None:
+            arrays["encoded_output_bytes"] = self.encoded_output_bytes
         if self.mapped_ops is not None:
             mapped_json = json.dumps(
                 self.mapped_ops.to_dict(), cls=_NumpyEncoder
@@ -217,11 +201,8 @@ class JobArtifact(BaseArtifact):
             time_estimate=handle.time_estimate,
             distance=handle.distance,
             generation_id=handle.generation_id,
-            machine_code_bytes=arrays.get(
-                "machine_code_bytes", np.empty(0, dtype=np.uint8)
-            ).copy(),
-            op_map_bytes=arrays.get(
-                "op_map_bytes", np.empty(0, dtype=np.uint8)
+            encoded_output_bytes=arrays.get(
+                "encoded_output_bytes", np.empty(0, dtype=np.uint8)
             ).copy(),
             mapped_ops=mapped_ops,
         )

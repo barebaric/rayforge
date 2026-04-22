@@ -496,8 +496,8 @@ def _encode_rotary_line(machine, doc):
                 diameter=layer.rotary_diameter,
             )
             mapping.apply(ops)
-    gcode, _ = machine.encode_ops(ops, doc)
-    return gcode
+    encoded = machine.encode_ops(ops, doc)
+    return encoded.text
 
 
 @pytest.mark.usefixtures("lite_context")
@@ -576,7 +576,7 @@ class TestRotaryAxisGcodeOutput:
         ops.layer_end(layer_uid=layer.uid)
         ops.job_end()
 
-        gcode, _ = isolated_machine.encode_ops(ops, doc)
+        gcode = isolated_machine.encode_ops(ops, doc).text
 
         diameter = 25.0
         circumference = diameter * math.pi
@@ -609,7 +609,7 @@ class TestRotaryAxisGcodeOutput:
         ops.layer_end(layer_uid=layer.uid)
         ops.job_end()
 
-        gcode, _ = isolated_machine.encode_ops(ops, doc)
+        gcode = isolated_machine.encode_ops(ops, doc).text
 
         assert " A" not in gcode
         assert " B" not in gcode
@@ -638,7 +638,7 @@ class TestRotaryAxisGcodeOutput:
         ops.layer_end(layer_uid=layer.uid)
         ops.job_end()
 
-        gcode, _ = isolated_machine.encode_ops(ops, doc)
+        gcode = isolated_machine.encode_ops(ops, doc).text
 
         assert " A" not in gcode
         assert " B" not in gcode
@@ -691,7 +691,7 @@ class TestRotaryAxisGcodeOutput:
         ops.layer_end(layer_uid=layer.uid)
         ops.job_end()
 
-        gcode, _ = isolated_machine.encode_ops(ops, doc)
+        gcode = isolated_machine.encode_ops(ops, doc).text
 
         diameter = 25.0
         circumference = diameter * math.pi
@@ -727,7 +727,7 @@ class TestRotaryAxisGcodeOutput:
         ops.layer_end(layer_uid=layer.uid)
         ops.job_end()
 
-        gcode, _ = isolated_machine.encode_ops(ops, doc)
+        gcode = isolated_machine.encode_ops(ops, doc).text
 
         assert " A" not in gcode
         assert " B" not in gcode
@@ -759,7 +759,7 @@ class TestRotaryAxisGcodeOutput:
         ops.layer_end(layer_uid=layer.uid)
         ops.job_end()
 
-        gcode, _ = isolated_machine.encode_ops(ops, doc)
+        gcode = isolated_machine.encode_ops(ops, doc).text
 
         diameter = 25.0
         circumference = diameter * math.pi

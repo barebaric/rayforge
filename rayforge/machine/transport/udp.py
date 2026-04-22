@@ -92,8 +92,6 @@ class UdpTransport(Transport):
     async def send(self, data: bytes) -> None:
         if not self.writer:
             raise ConnectionError("Not connected")
-        # Since the socket was created with remote_addr, it is "connected".
-        # We must not specify the destination address in sendto().
         self.writer.sendto(data)
 
     async def purge(self) -> None:
