@@ -5,8 +5,8 @@ from typing import Dict, List, Optional, Any, Type
 
 import numpy as np
 
-from ....pipeline.artifact.base import BaseArtifact
-from ....pipeline.artifact.handle import BaseArtifactHandle
+from ...pipeline.artifact.base import BaseArtifact
+from ...pipeline.artifact.handle import BaseArtifactHandle
 
 
 @dataclass

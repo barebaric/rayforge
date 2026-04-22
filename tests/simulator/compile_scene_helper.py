@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from rayforge.ui_gtk.sim3d.scene3d.render_config import (
+from rayforge.simulator.scene3d.render_config import (
     LayerRenderConfig,
     RenderConfig3D,
 )

@@ -19,16 +19,16 @@ from ....core.color import ColorSet, hex_to_rgba, OPS_COLOR_SPEC
 from ....shared.tasker import task_mgr, Task
 from ....simulator.machine_state import MachineState
 from ....simulator.op_player import OpPlayer
-from ...shared.gtk_color import GtkColorResolver
-from .axis_renderer_3d import AxisRenderer3D
-from .background_renderer import BackgroundRenderer
-from .camera import Camera, ViewDirection, rotation_matrix_from_axis_angle
-from ..scene3d import (
+from ....simulator.scene3d import (
     CompiledSceneArtifact,
     LayerRenderConfig,
     RenderConfig3D,
     compile_scene_in_subprocess,
 )
+from ...shared.gtk_color import GtkColorResolver
+from .axis_renderer_3d import AxisRenderer3D
+from .background_renderer import BackgroundRenderer
+from .camera import Camera, ViewDirection, rotation_matrix_from_axis_angle
 from .cylinder_renderer import CylinderRenderer
 from .gl_utils import RenderContext, Shader, rotation_4x4
 from .laser_beam_renderer import LaserBeamRenderer

@@ -8,15 +8,15 @@ when rendering rotary axis data onto a cylinder surface.
 import math
 from typing import Optional, Tuple
 
-from ....core.ops import Ops
-from ....core.ops.axis import Axis
-from ....core.ops.commands import (
+from ...core.ops import Ops
+from ...core.ops.axis import Axis
+from ...core.ops.commands import (
     ArcToCommand,
     BezierToCommand,
     MovingCommand,
     ScanLinePowerCommand,
 )
-from ....machine.kinematic_math import KinematicMath
+from ...machine.kinematic_math import KinematicMath
 
 
 def degrees_to_mu(

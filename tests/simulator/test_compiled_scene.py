@@ -1,7 +1,7 @@
 import numpy as np
 
 from rayforge.pipeline.artifact.store import ArtifactStore
-from rayforge.ui_gtk.sim3d.scene3d.compiled_scene import (
+from rayforge.simulator.scene3d.compiled_scene import (
     CompiledSceneArtifact,
     ScanlineOverlayLayer,
     TextureLayer,
