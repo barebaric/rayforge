@@ -4,7 +4,6 @@ import logging
 from typing import Optional, NamedTuple, List
 from enum import Enum, auto
 
-from ...shared.tasker import task_mgr
 from .serial import SerialTransport
 from .transport import Transport
 
@@ -55,6 +54,7 @@ class GrblSerialTransport:
         self._space_available = asyncio.Event()
         self._space_available.set()
         self._status_buffer = bytearray()
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
 
     @property
     def is_connected(self) -> bool:
@@ -67,6 +67,7 @@ class GrblSerialTransport:
         return ""
 
     async def connect(self) -> None:
+        self._loop = asyncio.get_running_loop()
         await self._transport.connect()
 
     async def disconnect(self) -> None:
@@ -315,7 +316,7 @@ class GrblSerialTransport:
         )
         self._sub(pending.length)
         self._pending.task_done()
-        task_mgr.loop.call_soon_threadsafe(self._space_available.set)
+        self.signal_space_available()
         return pending
 
     def ack_status_report(self) -> int:
@@ -337,7 +338,10 @@ class GrblSerialTransport:
 
     def signal_space_available(self) -> None:
         """Unblock any waiters (e.g. on cancel)."""
-        task_mgr.loop.call_soon_threadsafe(self._space_available.set)
+        if self._loop is not None:
+            self._loop.call_soon_threadsafe(self._space_available.set)
+        else:
+            self._space_available.set()
 
     @property
     def pending_queue(self) -> asyncio.Queue[PendingCommand]:
