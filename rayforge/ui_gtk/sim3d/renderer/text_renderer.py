@@ -13,12 +13,12 @@ import numpy as np
 from OpenGL import GL
 import cairo
 from gi.repository import Pango, PangoCairo
-from .gl_utils import BaseRenderer, RenderContext, Shader
+from ..gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)
 
 
-class TextRenderer3D(BaseRenderer):
+class TextRenderer(BaseRenderer):
     """Renders billboarded text in a 3D scene."""
 
     def __init__(

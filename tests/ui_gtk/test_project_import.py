@@ -57,10 +57,10 @@ def workpieces_project_path(assets_path: Path) -> Path:
 @pytest.fixture
 def app_and_window(ui_context_initializer, request):
     """Sets up Adw.Application and MainWindow without blocking."""
-    from rayforge.ui_gtk.sim3d import canvas3d
+    from rayforge.ui_gtk import sim3d
 
-    canvas3d.initialize()
-    assert canvas3d.initialized, "Canvas3D failed to initialize"
+    sim3d.initialize()
+    assert sim3d.initialized, "Canvas3D failed to initialize"
 
     win = None
 

@@ -2,8 +2,8 @@ import pytest
 import numpy as np
 from unittest.mock import MagicMock
 from rayforge.machine.models.machine import Origin
-from rayforge.ui_gtk.sim3d.canvas3d.axis_renderer_3d import AxisRenderer3D
-from rayforge.ui_gtk.sim3d.canvas3d.gl_utils import RenderContext
+from rayforge.ui_gtk.sim3d.renderer.axis_renderer_3d import AxisRenderer3D
+from rayforge.ui_gtk.sim3d.gl_utils import RenderContext
 from rayforge.core.color import ColorSet
 
 # Test scenarios for axis label expectations, mirrored from the 2D canvas tests

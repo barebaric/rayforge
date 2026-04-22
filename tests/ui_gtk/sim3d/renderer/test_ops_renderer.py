@@ -5,9 +5,9 @@ Tests for the OpsRenderer class.
 import pytest
 import numpy as np
 from unittest.mock import MagicMock, patch
-from rayforge.ui_gtk.sim3d.canvas3d.ops_renderer import OpsRenderer
-from rayforge.ui_gtk.sim3d.canvas3d.gl_utils import RenderContext
 from rayforge.core.color import ColorSet
+from rayforge.ui_gtk.sim3d.gl_utils import RenderContext
+from rayforge.ui_gtk.sim3d.renderer.ops_renderer import OpsRenderer
 
 
 @pytest.fixture
@@ -144,7 +144,7 @@ def test_render_raises_on_invalid_executed_count(renderer, colors):
         patch("OpenGL.GL.glEnable"),
         patch("OpenGL.GL.glBlendFunc"),
         patch("OpenGL.GL.glDrawArrays"),
-        patch("rayforge.ui_gtk.sim3d.canvas3d.ops_renderer.set_line_width"),
+        patch("rayforge.ui_gtk.sim3d.renderer.ops_renderer.set_line_width"),
     ):
         with pytest.raises(ValueError, match="executed_vertex_count"):
             renderer.render(
@@ -182,7 +182,7 @@ def test_render_draws_powered_and_travel(renderer, colors):
         patch("OpenGL.GL.glActiveTexture"),
         patch("OpenGL.GL.glBindTexture"),
         patch("OpenGL.GL.glDrawArrays") as mock_draw,
-        patch("rayforge.ui_gtk.sim3d.canvas3d.ops_renderer.set_line_width"),
+        patch("rayforge.ui_gtk.sim3d.renderer.ops_renderer.set_line_width"),
     ):
         renderer.render(ctx, shader, mvp)
 
@@ -218,7 +218,7 @@ def test_render_hides_travel_when_disabled(renderer, colors):
         patch("OpenGL.GL.glActiveTexture"),
         patch("OpenGL.GL.glBindTexture"),
         patch("OpenGL.GL.glDrawArrays") as mock_draw,
-        patch("rayforge.ui_gtk.sim3d.canvas3d.ops_renderer.set_line_width"),
+        patch("rayforge.ui_gtk.sim3d.renderer.ops_renderer.set_line_width"),
     ):
         renderer.render(ctx, shader, mvp)
 
@@ -238,7 +238,7 @@ def test_render_noop_when_empty(renderer, colors):
         patch("OpenGL.GL.glEnable"),
         patch("OpenGL.GL.glBlendFunc"),
         patch("OpenGL.GL.glDrawArrays") as mock_draw,
-        patch("rayforge.ui_gtk.sim3d.canvas3d.ops_renderer.set_line_width"),
+        patch("rayforge.ui_gtk.sim3d.renderer.ops_renderer.set_line_width"),
     ):
         renderer.render(ctx, shader, mvp)
 

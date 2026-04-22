@@ -13,13 +13,13 @@ from typing import Optional, Tuple
 import numpy as np
 from OpenGL import GL
 from ....core.geo import Point3D
-from .gl_utils import (
+from ..gl_utils import (
     BaseRenderer,
     RenderContext,
     Shader,
     set_line_width,
 )
-from .text_renderer_3d import TextRenderer3D
+from .text_renderer import TextRenderer
 from .plane_renderer import PlaneRenderer
 
 logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ class AxisRenderer3D(BaseRenderer):
         )
         self._add_child_renderer(self.background_renderer)
 
-        self.text_renderer: Optional[TextRenderer3D] = None
+        self.text_renderer: Optional[TextRenderer] = None
 
         # Grid and Axes resources
         self.grid_vao, self.grid_vbo, self.grid_vertex_count = 0, 0, 0
@@ -129,7 +129,7 @@ class AxisRenderer3D(BaseRenderer):
         # Delegate initialization to child renderers
         self.background_renderer.init_gl()
 
-        self.text_renderer = TextRenderer3D(font_family=self.font_family)
+        self.text_renderer = TextRenderer(font_family=self.font_family)
         self.text_renderer.init_gl()
         self._add_child_renderer(self.text_renderer)
 

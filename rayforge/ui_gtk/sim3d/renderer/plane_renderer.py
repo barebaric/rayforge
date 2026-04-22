@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 import numpy as np
 from OpenGL import GL
-from .gl_utils import BaseRenderer, RenderContext, Shader
+from ..gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)
 

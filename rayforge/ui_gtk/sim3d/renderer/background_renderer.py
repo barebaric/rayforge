@@ -9,7 +9,7 @@ from typing import Optional
 import numpy as np
 from OpenGL import GL
 
-from .gl_utils import BaseRenderer, RenderContext, Shader
+from ..gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class BackgroundRenderer(BaseRenderer):
         self._bg_color_light = bg_color_light
 
     def init_gl(self):
-        from .shaders import (
+        from ..shaders import (
             BACKGROUND_VERTEX_SHADER,
             BACKGROUND_FRAGMENT_SHADER,
         )

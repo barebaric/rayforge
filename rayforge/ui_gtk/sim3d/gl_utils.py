@@ -11,7 +11,7 @@ import numpy as np
 from OpenGL import GL
 from OpenGL.GL import shaders
 
-from ....core.color import ColorSet
+from ...core.color import ColorSet
 
 logger = logging.getLogger(__name__)
 

@@ -43,9 +43,6 @@ from .canvas import CanvasElement
 from .canvas2d.drag_drop_cmd import DragDropCmd
 from .canvas2d.elements.stock import StockElement
 from .canvas2d.surface import WorkSurface
-from .sim3d.canvas3d import Canvas3D, initialized as canvas3d_initialized
-from .sim3d.canvas3d.camera import ViewDirection
-from .sim3d.canvas3d.viewport import ViewportConfig
 from .doceditor import file_dialogs
 from .doceditor.bottom_panel import BottomPanel
 from .doceditor.import_handler import start_interactive_import
@@ -64,6 +61,9 @@ from .shared.progress_bar import ProgressBar
 from .shared.usage_consent_dialog import UsageConsentDialog
 from .shared.time_estimate_overlay import TimeEstimateOverlay
 from .shared.visibility_overlay import VisibilityOverlay
+from .sim3d import Canvas3D, initialized as canvas3d_initialized
+from .sim3d.camera import ViewDirection
+from .sim3d.viewport import ViewportConfig
 from .toolbar import MainToolbar
 from .view_mode_cmd import ViewModeCmd
 
