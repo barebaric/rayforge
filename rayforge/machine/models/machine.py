@@ -22,7 +22,7 @@ from ...core.ops.commands import (
     MovingCommand,
 )
 from ...pipeline.coordspace import MachineSpace
-from ...pipeline.encoder.gcode import MachineCodeOpMap
+from ...pipeline.encoder.base import EncodedOutput
 from ...shared.tasker import task_mgr
 from ..assembly import Assembly
 from ..driver.driver import DeviceState
@@ -240,7 +240,7 @@ class Machine:
     @property
     def supported_wcs(self) -> List[str]:
         """
-        Returns a sorted list of supported mutable Work Coordinate Systems.
+        Returns the list of supported Work Coordinate Systems from the driver.
         """
         return sorted(list(self.coordinate_systems.keys()))
 
@@ -1401,9 +1401,9 @@ class Machine:
         self,
         ops: "Ops",
         doc: "Doc",
-    ) -> Tuple[str, "MachineCodeOpMap"]:
+    ) -> EncodedOutput:
         """
-        Encodes an Ops object into machine code (G-code) and a corresponding
+        Encodes an Ops object into machine code and a corresponding
         operation map. This method is safe to run in a worker process as it
         uses static driver instantiation to get the encoder.
 
@@ -1419,9 +1419,8 @@ class Machine:
             doc: The document context for the job.
 
         Returns:
-            A tuple containing:
-            - A string of machine code (G-code).
-            - A MachineCodeOpMap object.
+            An EncodedOutput object containing the machine code text,
+            operation map, and any driver-specific data.
         """
         # 1. Copy ops and linearize curves if needed (world-space).
         ops_work = ops.copy()
@@ -1449,6 +1448,7 @@ class Machine:
             self._apply_replacement_downstream(ops_for_encoder, doc)
 
         # 5. Instantiate the correct encoder via the driver factory
+        from ...pipeline.encoder.base import EncodedOutput
         from ..driver import get_driver_cls
         from ..driver.dummy import NoDeviceDriver
 
@@ -1456,7 +1456,6 @@ class Machine:
             try:
                 driver_cls = get_driver_cls(self.driver_name)
             except (ValueError, ImportError):
-                # Fallback if driver class is missing
                 driver_cls = NoDeviceDriver
         else:
             driver_cls = NoDeviceDriver
@@ -1464,7 +1463,12 @@ class Machine:
         encoder = driver_cls.create_encoder(self)
 
         # 6. Perform encoding
-        return encoder.encode(ops_for_encoder, self, doc)
+        result = encoder.encode(ops_for_encoder, self, doc)
+        if not isinstance(result, EncodedOutput):
+            raise TypeError(
+                f"Encoder must return EncodedOutput, got {type(result)}"
+            )
+        return result
 
     def refresh_settings(self):
         """Public API for the UI to request a settings refresh."""

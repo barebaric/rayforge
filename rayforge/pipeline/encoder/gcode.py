@@ -30,7 +30,7 @@ from ...core.workpiece import WorkPiece
 from ...machine.models.dialect import GcodeDialect
 from ...machine.models.macro import MacroTrigger
 from ...shared.util.template import TemplateFormatter
-from .base import OpsEncoder, MachineCodeOpMap
+from .base import OpsEncoder, MachineCodeOpMap, EncodedOutput
 from .context import GcodeContext, JobInfo
 
 if TYPE_CHECKING:
@@ -216,7 +216,7 @@ class GcodeEncoder(OpsEncoder):
 
     def encode(
         self, ops: Ops, machine: "Machine", doc: "Doc"
-    ) -> Tuple[str, MachineCodeOpMap]:
+    ) -> EncodedOutput:
         """Main encoding workflow"""
         # Set coordinate and feedrate format based on the machine's precision
         self._coord_format = f"{{:.{machine.gcode_precision}f}}"
@@ -250,7 +250,7 @@ class GcodeEncoder(OpsEncoder):
                 op_map.op_to_machine_code[i] = []
 
         self._finalize(gcode)
-        return "\n".join(gcode), op_map
+        return EncodedOutput(text="\n".join(gcode), op_map=op_map)
 
     def _emit_macros(
         self, context: GcodeContext, gcode: List[str], trigger: MacroTrigger

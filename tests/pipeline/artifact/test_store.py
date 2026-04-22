@@ -1,5 +1,4 @@
 from typing import cast
-import json
 import numpy as np
 import multiprocessing as mp
 from multiprocessing import shared_memory
@@ -14,6 +13,10 @@ from rayforge.pipeline.artifact.workpiece import (
     WorkPieceArtifactHandle,
 )
 from rayforge.pipeline.artifact.job import JobArtifact, JobArtifactHandle
+from rayforge.pipeline.encoder.base import (
+    EncodedOutput,
+    MachineCodeOpMap,
+)
 
 
 @pytest.fixture
@@ -58,19 +61,18 @@ def _create_sample_hybrid_artifact() -> WorkPieceArtifact:
 
 def _create_sample_final_job_artifact() -> JobArtifact:
     """Helper to generate a final job artifact for tests."""
-    machine_code_bytes = np.frombuffer(b"G1 X10 Y20", dtype=np.uint8)
-    op_map = {
-        "op_to_machine_code": {0: [0, 1]},
-        "machine_code_to_op": {0: 0, 1: 0},
-    }
-    op_map_bytes = np.frombuffer(
-        json.dumps(op_map).encode("utf-8"), dtype=np.uint8
+    op_map = MachineCodeOpMap(
+        op_to_machine_code={0: [0, 1]},
+        machine_code_to_op={0: 0, 1: 0},
+    )
+    encoded = EncodedOutput(text="G1 X10 Y20", op_map=op_map)
+    encoded_output_bytes = np.frombuffer(
+        encoded.to_json().encode("utf-8"), dtype=np.uint8
     )
     return JobArtifact(
         ops=Ops(),
         distance=15.0,
-        machine_code_bytes=machine_code_bytes,
-        op_map_bytes=op_map_bytes,
+        encoded_output_bytes=encoded_output_bytes,
         generation_id=1,
     )
 
@@ -143,18 +145,16 @@ def test_put_get_release_final_job_artifact(handles_to_release):
 
     assert isinstance(retrieved_artifact, JobArtifact)
     assert retrieved_artifact.artifact_type == "JobArtifact"
-    assert retrieved_artifact.machine_code_bytes is not None
-    assert retrieved_artifact.op_map_bytes is not None
+    assert retrieved_artifact.encoded_output_bytes is not None
 
-    assert retrieved_artifact.machine_code_bytes is not None
-    gcode_str = retrieved_artifact.machine_code_bytes.tobytes().decode("utf-8")
+    gcode_str = retrieved_artifact.machine_code
     op_map = retrieved_artifact.op_map
+    assert gcode_str is not None
     assert op_map is not None
 
     assert gcode_str == "G1 X10 Y20"
-    if op_map:
-        assert op_map.op_to_machine_code == {0: [0, 1]}
-        assert op_map.machine_code_to_op == {0: 0, 1: 0}
+    assert op_map.op_to_machine_code == {0: [0, 1]}
+    assert op_map.machine_code_to_op == {0: 0, 1: 0}
 
     get_context().artifact_store.release(handle)
 

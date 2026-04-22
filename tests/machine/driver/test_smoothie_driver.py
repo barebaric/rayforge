@@ -312,8 +312,8 @@ class TestSmoothieDriver:
         driver.job_finished.send = job_finished_mock
         callback_mock = MagicMock()
 
-        machine_code, op_map = driver._machine.encode_ops(ops, doc)
-        await driver.run(machine_code, op_map, doc, callback_mock)
+        encoded = driver._machine.encode_ops(ops, doc)
+        await driver.run(encoded, doc, callback_mock)
 
         # Check that the server received the correct G-code
         received_str = smoothie_server.received_data.decode()
