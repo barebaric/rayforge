@@ -5,36 +5,39 @@ from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
 import numpy as np
 from gi.repository import GLib, Gdk, Gtk, Pango
 from OpenGL import GL
-from ....context import RayforgeContext
-from ....core.geo import Point
-from ....core.ops import Ops
-from ....machine.assembly import LinkRole
-from ....machine.kinematic_mapping import KinematicMapping
-from ....machine.models.colors import OpsColorSet
-from ....pipeline.artifact.base import TextureData
-from ....pipeline.artifact.handle import create_handle_from_dict
-from ....pipeline.artifact.job import JobArtifact, JobArtifactHandle
-from ....pipeline.pipeline import Pipeline
-from ....core.color import ColorSet, hex_to_rgba, OPS_COLOR_SPEC
-from ....shared.tasker import task_mgr, Task
-from ....simulator.machine_state import MachineState
-from ....simulator.op_player import OpPlayer
-from ....simulator.scene3d import (
+from ...context import RayforgeContext
+from ...core.geo import Point
+from ...core.ops import Ops
+from ...machine.assembly import LinkRole
+from ...machine.kinematic_mapping import KinematicMapping
+from ...machine.models.colors import OpsColorSet
+from ...pipeline.artifact.base import TextureData
+from ...pipeline.artifact.handle import create_handle_from_dict
+from ...pipeline.artifact.job import JobArtifact, JobArtifactHandle
+from ...pipeline.pipeline import Pipeline
+from ...core.color import ColorSet, hex_to_rgba, OPS_COLOR_SPEC
+from ...shared.tasker import task_mgr, Task
+from ...simulator.machine_state import MachineState
+from ...simulator.op_player import OpPlayer
+from ...simulator.scene3d import (
     CompiledSceneArtifact,
     LayerRenderConfig,
     RenderConfig3D,
     compile_scene_in_subprocess,
 )
-from ...shared.gtk_color import GtkColorResolver
-from .axis_renderer_3d import AxisRenderer3D
-from .background_renderer import BackgroundRenderer
+from ..shared.gtk_color import GtkColorResolver
 from .camera import Camera, ViewDirection, rotation_matrix_from_axis_angle
-from .cylinder_renderer import CylinderRenderer
 from .gl_utils import RenderContext, Shader, rotation_4x4
-from .laser_beam_renderer import LaserBeamRenderer
-from .model_renderer import ModelRenderer
-from .ops_renderer import OpsRenderer
-from .ring_buffer_renderer import RingBufferRenderer
+from .renderer.axis_renderer_3d import AxisRenderer3D
+from .renderer.background_renderer import BackgroundRenderer
+from .renderer.cylinder_renderer import CylinderRenderer
+from .renderer.laser_beam_renderer import LaserBeamRenderer
+from .renderer.model_renderer import ModelRenderer
+from .renderer.ops_renderer import OpsRenderer
+from .renderer.ring_buffer_renderer import RingBufferRenderer
+from .renderer.sphere_renderer import SphereRenderer
+from .renderer.texture_renderer import TextureArtifactRenderer
+from .renderer.zone_renderer import ZoneRenderer
 from .shaders import (
     SIMPLE_FRAGMENT_SHADER,
     SIMPLE_VERTEX_SHADER,
@@ -43,15 +46,12 @@ from .shaders import (
     TEXTURE_FRAGMENT_SHADER,
     TEXTURE_VERTEX_SHADER,
 )
-from .sphere_renderer import SphereRenderer
-from .texture_renderer import TextureArtifactRenderer
 from .viewport import ViewportConfig
-from .zone_renderer import ZoneRenderer
 
 if TYPE_CHECKING:
-    from ....core.doc import Doc
-    from ....doceditor.editor import DocEditor
-    from ....machine.models.machine import Machine
+    from ...core.doc import Doc
+    from ...doceditor.editor import DocEditor
+    from ...machine.models.machine import Machine
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -2,8 +2,8 @@ import pytest
 import numpy as np
 from unittest.mock import MagicMock, patch
 from rayforge.machine.models.machine import Origin
-from rayforge.ui_gtk.sim3d.canvas3d.axis_renderer_3d import AxisRenderer3D
-from rayforge.ui_gtk.sim3d.canvas3d.gl_utils import RenderContext
+from rayforge.ui_gtk.sim3d.renderer.axis_renderer_3d import AxisRenderer3D
+from rayforge.ui_gtk.sim3d.gl_utils import RenderContext
 from rayforge.core.color import ColorSet
 
 
@@ -94,9 +94,9 @@ def test_wcs_marker_position(
     # (missing context) on Windows.
     with (
         patch(
-            "rayforge.ui_gtk.sim3d.canvas3d.axis_renderer_3d.set_line_width"
+            "rayforge.ui_gtk.sim3d.renderer.axis_renderer_3d.set_line_width"
         ),
-        patch("rayforge.ui_gtk.sim3d.canvas3d.axis_renderer_3d.GL"),
+        patch("rayforge.ui_gtk.sim3d.renderer.axis_renderer_3d.GL"),
     ):
         renderer = AxisRenderer3D(width, height)
         renderer.grid_vao = 1

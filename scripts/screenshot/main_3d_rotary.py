@@ -8,7 +8,7 @@ Usage: pixi run screenshot main:3d-rotary
 import time
 import logging
 from rayforge.uiscript import app, win
-from rayforge.ui_gtk.sim3d.canvas3d.camera import ViewDirection
+from rayforge.ui_gtk.sim3d.camera import ViewDirection
 from utils import (
     load_project,
     wait_for_settled,

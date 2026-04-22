@@ -18,7 +18,7 @@ from ..shared.adwfix import get_spinrow_float
 from ..shared.model_selection_dialog import ModelSelectionDialog
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
-from ..sim3d.canvas3d.model_renderer import get_model_extent
+from ..sim3d.renderer.model_renderer import get_model_extent
 
 
 class RotaryModuleRow(Gtk.Box):

@@ -4,13 +4,13 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import trimesh
 
-from rayforge.ui_gtk.sim3d.canvas3d.model_renderer import (
+from rayforge.core.color import ColorSet
+from rayforge.ui_gtk.sim3d.gl_utils import RenderContext
+from rayforge.ui_gtk.sim3d.renderer.model_renderer import (
     ModelRenderer,
     _load_mesh_data,
     _model_cache,
 )
-from rayforge.ui_gtk.sim3d.canvas3d.gl_utils import RenderContext
-from rayforge.core.color import ColorSet
 
 
 def _make_simple_mesh():

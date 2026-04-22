@@ -5,7 +5,7 @@ A renderer for visualizing toolpath operations (Ops) in 3D.
 import numpy as np
 from typing import Optional
 from OpenGL import GL
-from .gl_utils import BaseRenderer, RenderContext, Shader, set_line_width
+from ..gl_utils import BaseRenderer, RenderContext, Shader, set_line_width
 
 
 class OpsRenderer(BaseRenderer):

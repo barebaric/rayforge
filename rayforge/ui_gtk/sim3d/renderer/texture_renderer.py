@@ -7,7 +7,7 @@ import time
 from typing import List, Dict, Any, Optional
 import numpy as np
 from OpenGL import GL
-from .gl_utils import BaseRenderer, RenderContext, Shader
+from ..gl_utils import BaseRenderer, RenderContext, Shader
 from ....pipeline.artifact.base import TextureData
 
 

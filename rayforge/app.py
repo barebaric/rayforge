@@ -480,11 +480,11 @@ def main():
     # This must be done after setting the platform env var and after
     # making Gtk available in gi, as the canvas uses Gtk.
     # The rest of the app can now check
-    # `rayforge.ui_gtk.sim3d.canvas3d.initialized`.
+    # `rayforge.ui_gtk.sim3d.initialized`.
     # It is safe to import other modules that depend on canvas3d after this.
-    from rayforge.ui_gtk.sim3d import canvas3d
+    from rayforge.ui_gtk.sim3d import initialize
 
-    canvas3d.initialize()
+    initialize()
 
     # Import modules that depend on GTK or manage global state
     import rayforge.shared.tasker

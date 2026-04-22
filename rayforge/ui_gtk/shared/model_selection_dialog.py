@@ -10,7 +10,7 @@ from gi.repository import Gtk, Adw
 from ...context import get_context
 from ...core.model import Model
 from ..icons import get_icon
-from ..sim3d.canvas3d import initialized as canvas3d_initialized
+from ..sim3d import initialized as canvas3d_initialized
 
 logger = logging.getLogger(__name__)
 
