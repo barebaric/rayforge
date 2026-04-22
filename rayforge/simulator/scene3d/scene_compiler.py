@@ -15,10 +15,10 @@ from typing import Callable, List, Optional, Tuple
 
 import numpy as np
 
-from ....core.geo.arc import linearize_arc
-from ....core.geo.bezier import linearize_bezier_segment
-from ....core.ops import Ops
-from ....core.ops.commands import (
+from ...core.geo.arc import linearize_arc
+from ...core.geo.bezier import linearize_bezier_segment
+from ...core.ops import Ops
+from ...core.ops.commands import (
     ArcToCommand,
     BezierToCommand,
     LayerEndCommand,
@@ -30,14 +30,14 @@ from ....core.ops.commands import (
     SetLaserCommand,
     SetPowerCommand,
 )
-from ....pipeline.encoder.vertexencoder import transform_to_cylinder
+from ...pipeline.encoder.vertexencoder import transform_to_cylinder
 from .compiled_scene import (
     CompiledSceneArtifact,
     ScanlineOverlayLayer,
     TextureLayer,
     VertexLayer,
 )
-from ....pipeline.encoder.scanline_rasterizer import (
+from ...pipeline.encoder.scanline_rasterizer import (
     MAX_TEXTURE_DIMENSION,
     rasterize_scanlines as _rasterize_scanlines_shared,
 )
