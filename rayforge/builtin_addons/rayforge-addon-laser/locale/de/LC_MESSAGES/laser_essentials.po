@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 14:52+0200\n"
+"POT-Creation-Date: 2026-04-22 13:19+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -490,10 +490,6 @@ msgstr "Ändere {param_name}"
 msgid "Change Grid Dimensions"
 msgstr "Gitterabmessungen ändern"
 
-#: laser_essentials/worker.py
-msgid "Create Material Test Grid"
-msgstr "Materialtestgitter erstellen"
-
 #: laser_essentials/steps/shrinkwrap_step.py
 msgid "Shrink Wrap"
 msgstr "Umhüllung"
@@ -514,6 +510,10 @@ msgstr "Kontur"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Material Test Grid"
 msgstr "Materialtestgitter"
+
+#: laser_essentials/frontend.py
+msgid "Create Material Test Grid"
+msgstr "Materialtestgitter erstellen"
 
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"

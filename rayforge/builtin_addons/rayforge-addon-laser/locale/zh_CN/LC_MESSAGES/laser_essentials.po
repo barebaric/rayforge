@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 14:52+0200\n"
+"POT-Creation-Date: 2026-04-22 13:19+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -481,10 +481,6 @@ msgstr "更改 {param_name}"
 msgid "Change Grid Dimensions"
 msgstr "更改网格尺寸"
 
-#: laser_essentials/worker.py
-msgid "Create Material Test Grid"
-msgstr "创建材料测试网格"
-
 #: laser_essentials/steps/shrinkwrap_step.py
 msgid "Shrink Wrap"
 msgstr "收缩包裹"
@@ -505,6 +501,10 @@ msgstr "轮廓"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Material Test Grid"
 msgstr "材料测试网格"
+
+#: laser_essentials/frontend.py
+msgid "Create Material Test Grid"
+msgstr "创建材料测试网格"
 
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
