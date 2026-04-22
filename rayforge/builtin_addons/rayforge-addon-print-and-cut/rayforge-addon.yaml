@@ -6,7 +6,6 @@ author:
   name: "Rayforge Team"
   email: "noreply@rayforge.org"
 provides:
-  backend: "print_and_cut.backend"
   frontend: "print_and_cut.frontend"
 license:
   name: "MIT"
