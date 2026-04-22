@@ -18,7 +18,6 @@ from ....context import RayforgeContext
 from ....core.varset import Var, VarSet, SerialPortVar, BaudrateVar
 from ....pipeline.encoder.base import OpsEncoder, EncodedOutput
 from ....pipeline.encoder.gcode import GcodeEncoder
-from ....shared.tasker import task_mgr
 from ...transport import TransportStatus, SerialTransport
 from ...transport.grbl import (
     GrblSerialTransport,
@@ -89,6 +88,7 @@ class GrblSerialDriver(Driver):
         self._job_exception: Optional[Exception] = None
         self._poll_status_while_running: bool = False
         self._handshake_received = asyncio.Event()
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
 
     @property
     def machine_space_wcs(self) -> str:
@@ -294,6 +294,7 @@ class GrblSerialDriver(Driver):
             return
 
         logger.debug("Connect initiated.")
+        self._loop = asyncio.get_running_loop()
         self.keep_running = True
         self._is_cancelled = False
         self._job_running = False
@@ -302,6 +303,13 @@ class GrblSerialDriver(Driver):
         self._job_exception = None
         self._connection_task = asyncio.create_task(self._connection_loop())
         self._command_task = asyncio.create_task(self._process_command_queue())
+
+    def _set_request_finished(self, request: "CommandRequest") -> None:
+        if not request.finished.is_set():
+            if self._loop is not None:
+                self._loop.call_soon_threadsafe(request.finished.set)
+            else:
+                request.finished.set()
 
     async def _connection_loop(self) -> None:
         logger.debug("Entering _connection_loop.")
@@ -424,10 +432,7 @@ class GrblSerialDriver(Driver):
                         "Cannot process command: Serial transport not "
                         "connected or job is cancelled. Dropping command."
                     )
-                    if not request.finished.is_set():
-                        task_mgr.loop.call_soon_threadsafe(
-                            request.finished.set
-                        )
+                    self._set_request_finished(request)
                     self._command_queue.task_done()
                     continue
 
@@ -797,8 +802,7 @@ class GrblSerialDriver(Driver):
             while not self._command_queue.empty():
                 try:
                     request = self._command_queue.get_nowait()
-                    # Mark as finished to avoid hanging awaits
-                    task_mgr.loop.call_soon_threadsafe(request.finished.set)
+                    self._set_request_finished(request)
                     self._command_queue.task_done()
                 except asyncio.QueueEmpty:
                     break
@@ -824,15 +828,13 @@ class GrblSerialDriver(Driver):
                 f"Command '{command}' timed out after 10 seconds. "
                 "Unblocking command queue."
             )
-            if not request.finished.is_set():
-                task_mgr.loop.call_soon_threadsafe(request.finished.set)
+            self._set_request_finished(request)
             raise
         except asyncio.CancelledError:
             logger.debug(
                 f"Command '{command}' was cancelled. Unblocking queue."
             )
-            if not request.finished.is_set():
-                task_mgr.loop.call_soon_threadsafe(request.finished.set)
+            self._set_request_finished(request)
             raise
         return request.response_lines
 
@@ -1272,7 +1274,7 @@ class GrblSerialDriver(Driver):
             request.response_lines.append("ok")
             self.command_status_changed.send(self, status=TransportStatus.IDLE)
             logger.debug(f"Command '{request.command}' completed with 'ok'")
-            task_mgr.loop.call_soon_threadsafe(request.finished.set)
+            self._set_request_finished(request)
 
         # Logic for streaming protocol during a job
         if self._job_running and pending is not None:
@@ -1308,7 +1310,7 @@ class GrblSerialDriver(Driver):
             self.command_status_changed.send(
                 self, status=TransportStatus.ERROR, message=text
             )
-            task_mgr.loop.call_soon_threadsafe(request.finished.set)
+            self._set_request_finished(request)
 
         if self._job_running:
             self.command_status_changed.send(
