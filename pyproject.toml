@@ -53,7 +53,7 @@ stubPath = "typings"
 reportMissingModuleSource = false
 include = [
     "rayforge",
-    "tests/**/test_*.py",
+    "tests/**/*.py",
     "rayforge/builtin_addons/*",
     "rayforge/private_addons/*",
 ]

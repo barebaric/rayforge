@@ -6,7 +6,7 @@ from blinker import Signal
 from ..context import get_context
 from ..core.ops import Ops
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
-from ..pipeline.encoder.base import MachineCodeOpMap
+from ..pipeline.encoder.base import EncodedOutput
 from ..pipeline.encoder.context import GcodeContext, JobInfo
 from ..shared.util.template import TemplateFormatter
 from .job_monitor import JobMonitor
@@ -60,20 +60,12 @@ class MachineCmd:
         self,
         ops: "Ops",
         machine: "Machine",
-        machine_code: str,
-        op_map: MachineCodeOpMap,
         on_progress: Optional[Callable[[dict], None]] = None,
+        encoded: Optional[EncodedOutput] = None,
     ):
         """
         Internal helper to execute a job on a driver while managing
         a JobMonitor for progress reporting.
-
-        Args:
-            ops: The operations for progress tracking.
-            machine: The machine to run the job on.
-            machine_code: Pre-encoded G-code string.
-            op_map: Pre-built operation-to-G-code-line mapping.
-            on_progress: Optional callback for progress updates.
         """
         if self._current_monitor:
             msg = "Tried to start a job while another is running."
@@ -115,17 +107,19 @@ class MachineCmd:
             # Signal that the job has started.
             self._scheduler(self.job_started.send, self)
 
+            # If machine code or op map are missing, generate them now
+            if encoded is None:
+                encoded = machine.encode_ops(ops, self._editor.doc)
+
             if machine.reports_granular_progress:
                 await machine.driver.run(
-                    machine_code,
-                    op_map,
+                    encoded,
                     self._editor.doc,
                     on_command_done=self._current_monitor.update_progress,
                 )
             else:
                 await machine.driver.run(
-                    machine_code,
-                    op_map,
+                    encoded,
                     self._editor.doc,
                     on_command_done=None,
                 )
@@ -193,16 +187,13 @@ class MachineCmd:
         frame_with_laser = frame_ops * head.frame_repeat_count
         frame_with_laser.job_end()
 
-        machine_code, op_map = machine.encode_ops(
-            frame_with_laser, self._editor.doc
-        )
+        encoded = machine.encode_ops(frame_with_laser, self._editor.doc)
 
         await self._execute_monitored_job(
             frame_with_laser,
             machine,
-            machine_code,
-            op_map,
             on_progress=on_progress,
+            encoded=encoded,
         )
 
     async def _run_send_action(
@@ -215,19 +206,11 @@ class MachineCmd:
         if not isinstance(artifact, JobArtifact):
             raise ValueError("_run_send_action received a non-JobArtifact")
 
-        machine_code = artifact.machine_code
-        op_map = artifact.op_map
-        if machine_code is None or op_map is None:
-            raise RuntimeError(
-                "Pipeline failed to produce machine_code or op_map."
-            )
-
         await self._execute_monitored_job(
             artifact.ops,
             machine,
-            machine_code,
-            op_map,
             on_progress=on_progress,
+            encoded=artifact.encoded_output,
         )
 
     async def _start_job(

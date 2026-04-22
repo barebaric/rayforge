@@ -15,7 +15,7 @@ from typing import (
 from gettext import gettext as _
 from ...context import RayforgeContext
 from ...core.varset import VarSet, HostnameVar, PortVar
-from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
+from ...pipeline.encoder.base import OpsEncoder, EncodedOutput
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TelnetTransport, TransportStatus
 from ..transport.validators import is_valid_hostname_or_ip
@@ -209,15 +209,14 @@ class SmoothieDriver(Driver):
 
     async def run(
         self,
-        machine_code: Any,
-        op_map: "MachineCodeOpMap",
+        encoded: EncodedOutput,
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
     ) -> None:
-        gcode = cast(str, machine_code)
-        gcode_lines = gcode.splitlines()
+        gcode_lines = encoded.text.splitlines()
+        op_map = encoded.op_map
 
         # We assume ops are indexed 0..N-1.
         num_ops = 0
@@ -257,12 +256,14 @@ class SmoothieDriver(Driver):
         finally:
             self.job_finished.send(self)
 
-    async def run_raw(self, gcode: str) -> None:
+    async def run_raw(self, machine_code: str) -> None:
         """
         Executes a raw G-code string by sending it line-by-line to the
         device and waiting for an 'ok' after each line.
         """
-        lines = [line.strip() for line in gcode.splitlines() if line.strip()]
+        lines = [
+            line.strip() for line in machine_code.splitlines() if line.strip()
+        ]
         if not lines:
             return
         try:
