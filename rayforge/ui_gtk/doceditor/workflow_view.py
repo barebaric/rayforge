@@ -105,10 +105,9 @@ class WorkflowView(ExpanderWithButton):
             # update its summary.
             for i, row in enumerate(self.draglist):
                 row = cast(Gtk.ListBoxRow, row)
-                stepbox = row.get_child()
-                if isinstance(stepbox, StepBox):
-                    stepbox.set_step_number(i + 1)
-                    stepbox.on_step_changed(stepbox.step)
+                stepbox = row.stepbox  # type: ignore
+                stepbox.set_step_number(i + 1)
+                stepbox.on_step_changed(stepbox.step)
             return
 
         # If the list structure has changed, rebuild it completely.
@@ -122,6 +121,7 @@ class WorkflowView(ExpanderWithButton):
                 step_number=seq,
             )
             stepbox.delete_clicked.connect(self.on_button_delete_clicked)
+            row.stepbox = stepbox  # type: ignore
             row.set_child(stepbox)
             self.draglist.add_row(row)
 
