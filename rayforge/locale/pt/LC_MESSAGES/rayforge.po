@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-21 09:32+0200\n"
+"POT-Creation-Date: 2026-04-22 19:19+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -6298,8 +6298,8 @@ msgid "Calculating final time and distance estimates..."
 msgstr "Calculando estimativas finais de tempo e distância..."
 
 #: rayforge/pipeline/stage/job_compute.py
-msgid "Generating G-code..."
-msgstr "Gerando G-code..."
+msgid "Generating machine code..."
+msgstr "Gerando código de máquina..."
 
 #: rayforge/pipeline/view/view_compute.py
 msgid "Rendering vertices..."

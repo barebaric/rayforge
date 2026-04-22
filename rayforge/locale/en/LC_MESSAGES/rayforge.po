@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-21 09:32+0200\n"
+"POT-Creation-Date: 2026-04-22 19:19+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -6000,7 +6000,7 @@ msgid "Calculating final time and distance estimates..."
 msgstr ""
 
 #: rayforge/pipeline/stage/job_compute.py
-msgid "Generating G-code..."
+msgid "Generating machine code..."
 msgstr ""
 
 #: rayforge/pipeline/view/view_compute.py
