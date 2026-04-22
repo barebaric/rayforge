@@ -48,9 +48,7 @@ class DragDropCmd:
         self.surface = surface
         self._drop_overlay_label: Optional[Gtk.Label] = None
 
-        # Keep references to controllers
-        self._asset_drop_target: Optional[Gtk.DropTarget] = None
-        self._file_target: Optional[Gtk.DropTarget] = None
+        self._drop_target: Optional[Gtk.DropTarget] = None
 
         self._apply_drop_overlay_css()
 
@@ -83,43 +81,57 @@ class DragDropCmd:
         Configure the canvas to accept file drops for importing.
         Supports local files and file lists, as well as internal asset
         UIDs (Strings) for generic asset drops.
+
+        Uses a single DropTarget with multiple GTypes. Gio.File is
+        listed first so that external file drags (which may offer both
+        text/uri-list and Gio.File) are always received as file objects
+        rather than strings.
         """
-        # We use separate drop targets for Asset UIDs (Strings) and Files.
-        # This avoids issues with mixed types in a single controller.
-
-        # --- 1. Asset UID Target (Strings) ---
-        self._asset_drop_target = Gtk.DropTarget.new(
-            GObject.TYPE_STRING, Gdk.DragAction.COPY
+        self._drop_target = Gtk.DropTarget.new(Gio.File, Gdk.DragAction.COPY)
+        self._drop_target.set_gtypes(
+            [Gio.File, Gdk.FileList, GObject.TYPE_STRING]
         )
-        self._asset_drop_target.connect("drop", self._on_asset_drop)
-        self._asset_drop_target.connect("enter", self._on_asset_drag_enter)
-        self.surface.add_controller(self._asset_drop_target)
+        self._drop_target.connect("drop", self._on_drop)
+        self._drop_target.connect("enter", self._on_drag_enter)
+        self._drop_target.connect("leave", self._on_drag_leave)
+        self.surface.add_controller(self._drop_target)
 
-        # --- 2. File Target (Files & FileLists) ---
-        # Initialize with a valid type (Gio.File) then extend to FileList
-        self._file_target = Gtk.DropTarget.new(Gio.File, Gdk.DragAction.COPY)
-        self._file_target.set_gtypes([Gio.File, Gdk.FileList])
-        self._file_target.connect("drop", self._on_file_drop)
-        self._file_target.connect("enter", self._on_file_drag_enter)
-        self._file_target.connect("leave", self._on_drag_leave)
-        self.surface.add_controller(self._file_target)
+        logger.debug("Unified drop target configured for WorkSurface")
 
-        logger.debug(
-            "Split drop targets (Asset/File) configured for WorkSurface"
-        )
+    # --- Drop Handlers ---
 
-    # --- Asset Drop Handlers ---
-
-    def _on_asset_drag_enter(self, drop_target, x, y):
-        # We accept copy for asset UIDs. No overlay needed.
-        logger.debug("Asset drag entered surface")
+    def _on_drag_enter(self, drop_target, x, y):
+        drop = drop_target.get_current_drop()
+        if drop:
+            formats = drop.get_formats()
+            if formats.contain_gtype(Gio.File) or formats.contain_gtype(
+                Gdk.FileList
+            ):
+                self._show_drop_overlay()
+            else:
+                logger.debug("Asset drag entered surface")
         return Gdk.DragAction.COPY
 
-    def _on_asset_drop(self, drop_target, value, x, y):
-        logger.debug(f"Asset drop event: value={value}")
+    def _on_drop(self, drop_target, value, x, y):
+        self._hide_drop_overlay()
+
+        world_x_mm, world_y_mm = self.surface._get_world_coords(x, y)
+
         if isinstance(value, str):
-            world_x_mm, world_y_mm = self.surface._get_world_coords(x, y)
+            logger.debug(f"Asset drop event: value={value}")
             return self._handle_asset_drop(value, (world_x_mm, world_y_mm))
+
+        logger.debug(f"File drop event: type={type(value)}")
+        files = self._extract_files_from_drop_value(value)
+        if files:
+            logger.info(
+                f"Processing file drop at world coords "
+                f"({world_x_mm:.2f}, {world_y_mm:.2f}) mm"
+            )
+            file_infos = self._get_file_infos(files)
+            self._import_dropped_files(file_infos, (world_x_mm, world_y_mm))
+            return bool(file_infos)
+
         return False
 
     def _handle_asset_drop(
@@ -279,40 +291,12 @@ class DragDropCmd:
                     return result
         return None
 
-    # --- File Handlers ---
-
-    def _on_file_drag_enter(self, drop_target, x, y):
-        # Show overlay for files
-        self._show_drop_overlay()
-        return Gdk.DragAction.COPY
+    # --- Overlay & Helper Methods ---
 
     def _on_drag_leave(self, drop_target):
-        # Hide overlay
         if self._drop_overlay_label:
             logger.debug("Drag leave signal received, scheduling delayed hide")
             GLib.timeout_add(100, self._delayed_hide_overlay)
-
-    def _on_file_drop(self, drop_target, value, x, y):
-        self._hide_drop_overlay()
-
-        logger.debug(f"File drop event: type={type(value)}")
-
-        # Convert widget coordinates to world coordinates (mm)
-        world_x_mm, world_y_mm = self.surface._get_world_coords(x, y)
-
-        files = self._extract_files_from_drop_value(value)
-        if files:
-            logger.info(
-                f"Processing file drop at world coords "
-                f"({world_x_mm:.2f}, {world_y_mm:.2f}) mm"
-            )
-            file_infos = self._get_file_infos(files)
-            self._import_dropped_files(file_infos, (world_x_mm, world_y_mm))
-            return True
-
-        return False
-
-    # --- Overlay & Helper Methods ---
 
     def _show_drop_overlay(self):
         """Display 'Drop files to import' overlay on canvas."""
@@ -327,6 +311,7 @@ class DragDropCmd:
 
         # Make it semi-transparent
         self._drop_overlay_label.set_opacity(0.9)
+        self._drop_overlay_label.set_can_target(False)
 
         # Find the parent overlay (surface_overlay from MainWindow)
         overlay_parent = self._find_parent_overlay()
