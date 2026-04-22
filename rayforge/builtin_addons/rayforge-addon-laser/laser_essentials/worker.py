@@ -1,17 +1,13 @@
 """
 Backend entry point for laser-essentials addon.
 
-Registers producers and actions with the main application.
+Registers producers and steps with the main application.
 """
 
 import gettext
 from pathlib import Path
 
-from gi.repository import Gio
-
 from rayforge.core.hooks import hookimpl
-from rayforge.ui_gtk.action_registry import MenuPlacement
-from rayforge.ui_gtk.icons import register_icon_path
 from .producers import (
     ContourProducer,
     FrameProducer,
@@ -26,7 +22,6 @@ from .steps import (
     MaterialTestStep,
     ShrinkWrapStep,
 )
-from .commands import MaterialTestCmd
 
 _localedir = Path(__file__).parent.parent / "locale"
 _t = gettext.translation(
@@ -35,9 +30,6 @@ _t = gettext.translation(
 _ = _t.gettext
 
 ADDON_NAME = "laser_essentials"
-_ICONS_DIR = Path(__file__).parent / "resources" / "icons"
-
-register_icon_path(_ICONS_DIR)
 
 
 @hookimpl
@@ -65,29 +57,3 @@ def register_steps(step_registry):
     step_registry.register(FrameStep, addon_name=ADDON_NAME)
     step_registry.register(MaterialTestStep, addon_name=ADDON_NAME)
     step_registry.register(ShrinkWrapStep, addon_name=ADDON_NAME)
-
-
-@hookimpl
-def register_commands(command_registry):
-    """Register editor command handlers."""
-    command_registry.register("material_test", MaterialTestCmd, ADDON_NAME)
-
-
-@hookimpl
-def register_actions(action_registry):
-    """Register actions with menu placement."""
-    action = Gio.SimpleAction.new("material_test", None)
-
-    def on_activate(action, param):
-        window = action_registry.window
-        editor = window.doc_editor
-        editor.material_test.create_test_grid()
-
-    action.connect("activate", on_activate)
-    action_registry.register(
-        action_name="material_test",
-        action=action,
-        addon_name=ADDON_NAME,
-        label=_("Create Material Test Grid"),
-        menu=MenuPlacement(menu_id="tools", priority=100),
-    )

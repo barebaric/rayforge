@@ -1,7 +1,7 @@
 """
 Backend entry point for sketcher addon.
 
-Registers producers, actions, and commands with the main application.
+Registers producers and renderers with the main application.
 """
 
 import gettext
@@ -28,14 +28,6 @@ def register_asset_types(asset_type_registry):
     from .core.sketch import Sketch
 
     asset_type_registry.register(Sketch, "sketch", ADDON_NAME)
-
-
-@hookimpl
-def register_commands(command_registry):
-    """Register SketchCmd with the command registry."""
-    from .ui_gtk.sketch_cmd import SketchCmd
-
-    command_registry.register("sketch", SketchCmd, ADDON_NAME)
 
 
 @hookimpl
