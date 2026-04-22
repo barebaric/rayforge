@@ -442,13 +442,14 @@ class BottomPanel(Gtk.Box):
             return
         if not self.machine:
             return
+        machine = self.machine
         idx = combo_row.get_selected()
         if 0 <= idx < len(self.wcs_list):
             wcs = self.wcs_list[idx]
-            machine = self.machine
             if machine.active_wcs != wcs:
                 task_mgr.add_coroutine(
-                    lambda ctx, w=wcs: machine.switch_active_wcs(w)
+                    lambda ctx, w=wcs: machine.switch_active_wcs(w),
+                    key=(machine.id, "select-wcs"),
                 )
 
     def _on_zero_axis_clicked(self, button, axis):

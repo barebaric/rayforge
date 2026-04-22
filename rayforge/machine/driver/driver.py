@@ -21,8 +21,7 @@ from ...core.ops.axis import Axis
 if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...core.varset import VarSet
-    from ...pipeline.encoder.base import OpsEncoder
-    from ...pipeline.encoder.gcode import MachineCodeOpMap
+    from ...pipeline.encoder.base import OpsEncoder, EncodedOutput
     from ..models.machine import Machine
     from ..models.laser import Laser
 
@@ -175,6 +174,16 @@ class Driver(ABC):
         """
         pass
 
+    @property
+    def supported_wcs(self) -> List[str]:
+        """
+        Returns the list of supported mutable Work Coordinate Systems.
+
+        The first item should be the default WCS for this driver.
+        Drivers may override this to provide driver-specific WCS names.
+        """
+        return ["G54", "G55", "G56", "G57", "G58", "G59"]
+
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         self._context = context
         self._machine = machine
@@ -315,19 +324,17 @@ class Driver(ABC):
     @abstractmethod
     async def run(
         self,
-        machine_code: Any,
-        op_map: "MachineCodeOpMap",
+        encoded: "EncodedOutput",
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
     ) -> None:
         """
-        Executes the given machine code.
+        Executes the given encoded output.
 
         Args:
-            machine_code: The machine code to execute (e.g. G-code string)
-            op_map: Mapping between index of ops and machine code
+            encoded: The encoded output containing machine code and op map
             doc: The document context
             on_command_done: Optional sync or async callback called when each
                            command is done. Called with the op_index.
@@ -335,12 +342,13 @@ class Driver(ABC):
         pass
 
     @abstractmethod
-    async def run_raw(self, gcode: str) -> None:
+    async def run_raw(self, machine_code: str) -> None:
         """
-        Executes a raw G-code string on the machine.
+        Executes a raw command (e.g. G-code if that is what the machine
+        supports).
 
         Args:
-            gcode: The raw G-code to execute.
+            machine_code: The raw machine code to execute.
         """
         pass
 
@@ -503,6 +511,19 @@ class Driver(ABC):
             The active WCS string if found, otherwise None.
         """
         return None
+
+    async def select_wcs(self, wcs: str) -> None:
+        """
+        Selects the active Work Coordinate System on the controller.
+
+        For G-code based controllers (GRBL, Smoothie), this is typically
+        done via G-code commands during job execution. Drivers that require
+        immediate selection should override this method.
+
+        Args:
+            wcs: The WCS slot to select (e.g., "G54", "REF0", "MACHINE")
+        """
+        pass
 
     @abstractmethod
     async def run_probe_cycle(

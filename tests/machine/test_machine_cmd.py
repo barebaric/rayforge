@@ -1,5 +1,3 @@
-import json
-from dataclasses import asdict
 from functools import partial
 from unittest.mock import MagicMock, PropertyMock
 
@@ -77,16 +75,15 @@ def simple_ops():
 @pytest.fixture
 def job_artifact(simple_ops, machine):
     """Creates a JobArtifact containing simple_ops with encoded G-code."""
-    gcode, op_map = machine.encode_ops(simple_ops, None)
-    machine_code_bytes = np.frombuffer(gcode.encode("utf-8"), dtype=np.uint8)
-    op_map_str = json.dumps(asdict(op_map))
-    op_map_bytes = np.frombuffer(op_map_str.encode("utf-8"), dtype=np.uint8)
+    encoded = machine.encode_ops(simple_ops, None)
+    encoded_output_bytes = np.frombuffer(
+        encoded.to_json().encode("utf-8"), dtype=np.uint8
+    )
     return JobArtifact(
         ops=simple_ops,
         distance=simple_ops.distance(),
         generation_id=1,
-        machine_code_bytes=machine_code_bytes,
-        op_map_bytes=op_map_bytes,
+        encoded_output_bytes=encoded_output_bytes,
     )
 
 
