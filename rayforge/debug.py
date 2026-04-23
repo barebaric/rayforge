@@ -1,76 +1,13 @@
-import dataclasses
-import json
-import base64
 import yaml
 import logging
 import tempfile
 import shutil
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
 from typing import Any, Optional, Dict
 from . import const
 
 logger = logging.getLogger(__name__)
-
-
-class DebugLogEncoder(json.JSONEncoder):
-    """
-    Custom JSON encoder to handle types used in LogEntry, such as bytes,
-    datetimes, enums, dataclasses, and logging.LogRecord.
-    """
-
-    def default(self, o):
-        # Local import to avoid circular dependency at module load time.
-        from .machine.driver.driver import DeviceState
-
-        if isinstance(o, logging.LogRecord):
-            # Sanitize the 'extra' dictionary in the LogRecord to prevent
-            # serialization errors from non-JSON-compliant types attached by
-            # third-party libraries (like pyvips' FFILibrary object).
-
-            # Get keys that are in the instance's dict but not in the base
-            # class. These are the keys that were added via the `extra` kwarg.
-            extra_keys = set(o.__dict__.keys()) - set(
-                logging.LogRecord.__dict__.keys()
-            )
-            safe_extra = {}
-            for key in extra_keys:
-                value = o.__dict__[key]
-                # If the value is not a basic serializable type, convert it to
-                # a string representation to ensure the dump doesn't fail.
-                if not isinstance(
-                    value, (str, int, float, bool, type(None), list, dict)
-                ):
-                    safe_extra[key] = repr(value)
-                else:
-                    safe_extra[key] = value
-
-            # Format LogRecord into a serializable dictionary
-            return {
-                "created": o.created,
-                "name": o.name,
-                "levelname": o.levelname,
-                "message": o.getMessage(),
-                "exc_text": o.exc_text,
-                "extra": safe_extra,  # Use the sanitized dictionary
-            }
-        if isinstance(o, DeviceState):
-            return dataclasses.asdict(o)
-        if isinstance(o, datetime):
-            return o.isoformat()
-        if isinstance(o, Enum):
-            return o.name
-        if isinstance(o, bytes):
-            # Try to decode as UTF-8 for readability,
-            # otherwise fall back to Base64
-            try:
-                return f"utf-8: '{o.decode('utf-8')}'"
-            except UnicodeDecodeError:
-                return f"b64: '{base64.b64encode(o).decode('ascii')}'"
-        if isinstance(o, Exception):
-            return repr(o)
-        return super().default(o)
 
 
 class DebugDumpManager:
@@ -84,10 +21,8 @@ class DebugDumpManager:
         Gathers all debug information, writes it to a temporary directory,
         and creates a ZIP archive.
         """
-        # Perform imports locally to avoid circular dependencies at startup
         from .config import LOG_DIR
         from .context import get_context
-        from .logging_setup import get_memory_handler
         from .ui_gtk.about import get_dependency_info
         from . import __version__
 
@@ -96,24 +31,11 @@ class DebugDumpManager:
             context = get_context()
             config = context.config
             machine_mgr = context.machine_mgr
-            memory_handler = get_memory_handler()
 
             with tempfile.TemporaryDirectory() as tmpdir:
                 tmp_path = Path(tmpdir)
 
-                # 1. Write in-memory log records to log_records.json
-                if memory_handler:
-                    log_snapshot = memory_handler.buffer
-                    with open(tmp_path / "log_records.json", "w") as f:
-                        json.dump(
-                            log_snapshot, f, cls=DebugLogEncoder, indent=2
-                        )
-                else:
-                    logger.warning(
-                        "MemoryHandler not found, skipping record dump."
-                    )
-
-                # 2. Copy the latest session log file
+                # 1. Copy the latest session log file
                 session_logs = sorted(
                     LOG_DIR.glob("session-*.log"),
                     key=lambda p: p.stat().st_mtime,
@@ -127,7 +49,7 @@ class DebugDumpManager:
                         "No session log file found to include in dump."
                     )
 
-                # 3. Write system info to system_info.txt
+                # 2. Write system info to system_info.txt
                 dep_info = get_dependency_info()
                 with open(tmp_path / "system_info.txt", "w") as f:
                     f.write(
@@ -139,7 +61,7 @@ class DebugDumpManager:
                             f.write(f"{name}: {ver}\n")
                         f.write("\n")
 
-                # 4. Write configs to YAML files
+                # 3. Write configs to YAML files
                 if config and config.machine:
                     with open(tmp_path / "active_machine.yaml", "w") as f:
                         yaml.safe_dump(config.machine.to_dict(), f)
@@ -153,7 +75,7 @@ class DebugDumpManager:
                 with open(tmp_path / "all_machines.yaml", "w") as f:
                     yaml.safe_dump(all_machines_dict, f)
 
-                # 5. Write custom dialects
+                # 4. Write custom dialects
                 custom_dialects = [
                     d.to_dict()
                     for d in context.dialect_mgr.get_all()
@@ -163,12 +85,12 @@ class DebugDumpManager:
                     with open(tmp_path / "custom_dialects.yaml", "w") as f:
                         yaml.safe_dump(custom_dialects, f)
 
-                # 6. Copy addons.yaml if it exists
+                # 5. Copy addons.yaml if it exists
                 addon_config_file = context.addon_config.config_file
                 if addon_config_file.exists():
                     shutil.copy(addon_config_file, tmp_path / "addons.yaml")
 
-                # 7. Create ZIP archive
+                # 6. Create ZIP archive
                 timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 archive_name = f"rayforge_debug_{timestamp_str}"
                 # Use a system-wide temp dir for the final archive to ensure
