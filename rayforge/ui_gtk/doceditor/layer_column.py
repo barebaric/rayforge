@@ -214,7 +214,7 @@ class LayerColumn(Gtk.Box):
         drop_target.connect("drop", self._on_drop)
         drop_target.connect("motion", self._on_drop_motion)
         drop_target.connect("leave", self._on_drop_leave)
-        self.listbox.add_controller(drop_target)
+        self.add_controller(drop_target)
 
         scrolled.set_child(self.listbox)
         self.append(scrolled)
@@ -431,9 +431,9 @@ class LayerColumn(Gtk.Box):
         return True
 
     def _handle_reorder_drop(self, wp, drop_index):
-        if drop_index == -1:
-            return False
         current_workpieces = list(self.layer.workpieces)
+        if drop_index == -1:
+            drop_index = len(current_workpieces)
         source_index = current_workpieces.index(wp)
 
         target_index = drop_index
@@ -525,6 +525,9 @@ class LayerColumn(Gtk.Box):
         return (50.0, 50.0)
 
     def _on_drop_motion(self, drop_target, x, y):
+        if LayerColumn.dragging:
+            return 0
+
         drop = drop_target.get_drop()
         if drop and drop.get_actions() & Gdk.DragAction.COPY:
             self._remove_drop_markers()
@@ -532,14 +535,22 @@ class LayerColumn(Gtk.Box):
 
         self._remove_drop_markers()
 
-        target_row = self._find_row_at(x, y)
+        fallback_index = len(self.layer.workpieces)
+        coords = self.translate_coordinates(self.listbox, x, y)
+        if not coords:
+            self._potential_drop_index = fallback_index
+            return Gdk.DragAction.MOVE
+
+        lb_x, lb_y = coords
+        target_row = self._find_row_at(lb_x, lb_y)
         if not target_row:
+            self._potential_drop_index = fallback_index
             return Gdk.DragAction.MOVE
 
         row_alloc = target_row.get_allocation()
         row_center = row_alloc.y + row_alloc.height / 2
 
-        if y < row_center:
+        if lb_y < row_center:
             target_row.add_css_class("drop-above")
             self._potential_drop_index = target_row.get_index()
         else:
