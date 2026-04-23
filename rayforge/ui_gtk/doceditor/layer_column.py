@@ -405,6 +405,7 @@ class LayerColumn(Gtk.Box):
 
     def _on_drop(self, drop_target, value, x, y):
         if not value:
+            logger.debug("Drop: rejected, empty value")
             return False
 
         asset_uids = self._parse_asset_uids(value)
@@ -415,18 +416,26 @@ class LayerColumn(Gtk.Box):
         wp = self._find_workpiece_by_uid(value)
         if not wp:
             self._remove_drop_markers()
+            logger.debug("Drop: rejected, wp not found uid=%r", value[:8])
             return False
 
         if not wp.layer:
             self._remove_drop_markers()
+            logger.debug("Drop: rejected, wp has no layer uid=%r", value[:8])
             return False
 
         drop_index = self._potential_drop_index
         self._remove_drop_markers()
 
         if wp.layer is self.layer:
+            logger.debug(
+                "Drop: reorder in %s, idx=%d",
+                self.layer.name,
+                drop_index,
+            )
             return self._handle_reorder_drop(wp, drop_index)
 
+        logger.debug("Drop: move %s -> %s", wp.layer.name, self.layer.name)
         self.editor.layer.move_workpieces_to_layer([wp], self.layer)
         return True
 
@@ -538,12 +547,27 @@ class LayerColumn(Gtk.Box):
         fallback_index = len(self.layer.workpieces)
         coords = self.translate_coordinates(self.listbox, x, y)
         if not coords:
+            logger.debug(
+                "Motion(%s): translate_coordinates returned None, "
+                "x=%d y=%d fallback=%d",
+                self.layer.name,
+                x,
+                y,
+                fallback_index,
+            )
             self._potential_drop_index = fallback_index
             return Gdk.DragAction.MOVE
 
         lb_x, lb_y = coords
         target_row = self._find_row_at(lb_x, lb_y)
         if not target_row:
+            logger.debug(
+                "Motion(%s): no row at (%d, %d), fallback=%d",
+                self.layer.name,
+                lb_x,
+                lb_y,
+                fallback_index,
+            )
             self._potential_drop_index = fallback_index
             return Gdk.DragAction.MOVE
 
@@ -560,6 +584,7 @@ class LayerColumn(Gtk.Box):
         return Gdk.DragAction.MOVE
 
     def _on_drop_leave(self, drop_target):
+        logger.debug("Leave(%s)", self.layer.name)
         self._remove_drop_markers()
 
     def _find_row_at(self, x, y):
