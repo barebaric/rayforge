@@ -177,6 +177,7 @@ class LayersTab(Gtk.Box):
 
     def _on_layer_drop_motion(self, drop_target, x, y):
         if not LayerColumn.dragging:
+            logger.debug("Motion(columns_box): rejected, not layer drag")
             return 0
 
         self._remove_layer_drop_markers()

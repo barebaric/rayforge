@@ -42,20 +42,12 @@ class ResponsiveBox(Gtk.Widget):
             stacked_nat = h1[1] + self._SPACING + h2[1]
 
             if for_size > 0:
-                h1c = self._first.measure(
-                    Gtk.Orientation.VERTICAL, for_size
-                )
-                h2c = self._second.measure(
-                    Gtk.Orientation.VERTICAL, for_size
-                )
+                h1c = self._first.measure(Gtk.Orientation.VERTICAL, for_size)
+                h2c = self._second.measure(Gtk.Orientation.VERTICAL, for_size)
                 side_min = max(h1c[0], h2c[0])
 
-                w1 = self._first.measure(
-                    Gtk.Orientation.HORIZONTAL, side_min
-                )
-                w2 = self._second.measure(
-                    Gtk.Orientation.HORIZONTAL, side_min
-                )
+                w1 = self._first.measure(Gtk.Orientation.HORIZONTAL, side_min)
+                w2 = self._second.measure(Gtk.Orientation.HORIZONTAL, side_min)
 
                 if for_size >= w1[0] + self._SPACING + w2[0]:
                     return (side_min, stacked_nat, -1, -1)
