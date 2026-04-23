@@ -1,5 +1,4 @@
 import logging
-import logging.handlers
 import sys
 from datetime import datetime
 from typing import Optional, List
@@ -7,8 +6,8 @@ from pathlib import Path
 from blinker import Signal
 from .config import LOG_DIR
 
-_memory_handler_instance: Optional[logging.handlers.MemoryHandler] = None
 _ui_formatter_instance: Optional[logging.Formatter] = None
+_ui_log_records: List[logging.LogRecord] = []
 
 LOG_FILES_TO_KEEP = 5
 
@@ -93,15 +92,38 @@ class ConsoleLogFilter(logging.Filter):
         return record.__dict__.get("log_category") != "RAW_IO"
 
 
+class SessionFileFormatter(logging.Formatter):
+    """
+    Formatter for the session log file that enriches each line with extra
+    attributes (log_category, machine_id) when present on the LogRecord.
+    """
+
+    def format(self, record: logging.LogRecord) -> str:
+        category = record.__dict__.get("log_category")
+        machine_id = record.__dict__.get("machine_id")
+        parts = []
+        if category:
+            parts.append(category)
+        if machine_id:
+            parts.append(machine_id)
+        tag = f" [{' | '.join(parts)}]" if parts else ""
+        original = super().format(record)
+        if tag:
+            level = record.levelname
+            original = original.replace(
+                f" {level} - ", f" {level}{tag} - ", 1
+            )
+        return original
+
+
 class UILogHandler(logging.Handler):
     """
     A custom logging handler that forwards filtered log records to the UI
-    via a blinker signal.
+    via a blinker signal and stores them in a buffer for console history.
     """
 
     def emit(self, record: logging.LogRecord):
-        # We don't need to format the message here, as the dialog will add its
-        # own timestamp. We just pass the core message.
+        _ui_log_records.append(record)
         log_entry = self.format(record)
         category = record.__dict__.get("log_category")
         machine_id = record.__dict__.get("machine_id")
@@ -139,12 +161,12 @@ def _cleanup_old_logs(log_dir: Path, keep_count: int):
         logging.error(f"An unexpected error occurred during log cleanup: {e}")
 
 
-def get_memory_handler() -> Optional[logging.handlers.MemoryHandler]:
+def get_ui_log_records() -> List[logging.LogRecord]:
     """
-    Returns the global instance of the MemoryHandler.
-    This is used by the DebugDumpManager to retrieve the log buffer.
+    Returns the buffered UI log records.
+    Used by the Console widget to populate history.
     """
-    return _memory_handler_instance
+    return _ui_log_records
 
 
 def get_ui_formatter() -> Optional[logging.Formatter]:
@@ -163,7 +185,7 @@ def setup_logging(loglevel_str: str):
         loglevel_str: The desired logging level for the console as a string
                       (e.g., "INFO", "DEBUG").
     """
-    global _memory_handler_instance, _ui_formatter_instance
+    global _ui_formatter_instance
 
     log_level = getattr(logging, loglevel_str.upper(), logging.INFO)
     root_logger = logging.getLogger()
@@ -195,24 +217,16 @@ def setup_logging(loglevel_str: str):
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     log_file = LOG_DIR / f"session-{timestamp}.log"
     file_handler = logging.FileHandler(log_file, encoding="utf-8")
-    file_handler.setLevel(logging.DEBUG)  # Always capture max detail in file
-    file_formatter = logging.Formatter(
-        "%(asctime)s - %(process)d - %(threadName)s - %(name)s - "
-        "%(levelname)s - %(message)s"
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(
+        SessionFileFormatter(
+            "%(asctime)s - %(process)d - %(threadName)s - %(name)s - "
+            "%(levelname)s - %(message)s"
+        )
     )
-    file_handler.setFormatter(file_formatter)
     root_logger.addHandler(file_handler)
 
-    # 3. In-Memory Handler (for the debug dump feature)
-    # We set a high flushLevel so it effectively never flushes on its own.
-    # We will access its buffer directly when creating a debug dump.
-    _memory_handler_instance = logging.handlers.MemoryHandler(
-        capacity=5000, flushLevel=logging.CRITICAL + 1
-    )
-    _memory_handler_instance.setLevel(logging.DEBUG)
-    root_logger.addHandler(_memory_handler_instance)
-
-    # 4. UI Log Handler (for the MachineLogDialog)
+    # 3. UI Log Handler (for the MachineLogDialog)
     ui_handler = UILogHandler()
     ui_handler.setLevel(logging.INFO)  # Don't show DEBUG messages in UI log
     ui_handler.addFilter(UILogFilter())

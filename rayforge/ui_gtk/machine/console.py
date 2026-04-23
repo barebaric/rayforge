@@ -4,7 +4,7 @@ from gettext import gettext as _
 from gi.repository import Gtk, GLib, Gdk
 from blinker import Signal
 from ...logging_setup import (
-    get_memory_handler,
+    get_ui_log_records,
     get_ui_formatter,
     UILogFilter,
 )
@@ -224,16 +224,15 @@ class Console(Gtk.Box):
         self._update_sensitivity()
 
     def _populate_history(self):
-        memory_handler = get_memory_handler()
         ui_formatter = get_ui_formatter()
-        if not memory_handler or not ui_formatter:
+        if not ui_formatter:
             return
 
         ui_filter = UILogFilter()
         machine_id = self._machine.id if self._machine else None
         log_records = [
             record
-            for record in memory_handler.buffer
+            for record in get_ui_log_records()
             if ui_filter.filter(record)
             and (
                 self._show_verbose
