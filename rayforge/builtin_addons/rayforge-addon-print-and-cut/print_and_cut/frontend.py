@@ -4,7 +4,9 @@ from pathlib import Path
 
 from gi.repository import Gio
 
+from rayforge.core.group import Group
 from rayforge.core.hooks import hookimpl
+from rayforge.core.workpiece import WorkPiece
 from rayforge.ui_gtk.action_registry import (
     MenuPlacement,
     action_registry,
@@ -25,8 +27,11 @@ def _register_actions(action_manager):
     def on_activate(action, param):
         window = action_manager.win
         surface = window.surface
-        selected = surface.get_selected_workpieces()
+        selected = surface.get_selected_top_level_items()
         if len(selected) != 1:
+            return
+        item = selected[0]
+        if not isinstance(item, (WorkPiece, Group)):
             return
         from rayforge.context import get_context
         from .wizard import PrintAndCutWizard
@@ -37,7 +42,7 @@ def _register_actions(action_manager):
             return
         wizard = PrintAndCutWizard(
             parent=window,
-            workpiece=selected[0],
+            item=item,
             machine=machine,
             machine_cmd=window.machine_cmd,
             editor=window.doc_editor,
@@ -57,10 +62,13 @@ def _register_actions(action_manager):
 
 
 def _update_action_states(action_manager):
-    selected_wps = action_manager.win.surface.get_selected_workpieces()
+    selected = action_manager.win.surface.get_selected_top_level_items()
     action = action_manager.actions.get("align-workpiece")
     if action:
-        action.set_enabled(len(selected_wps) == 1)
+        enabled = len(selected) == 1 and isinstance(
+            selected[0], (WorkPiece, Group)
+        )
+        action.set_enabled(enabled)
 
 
 @hookimpl

@@ -1,11 +1,12 @@
 import math
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import cairo
 from gi.repository import Gdk, Graphene, Gtk
 from blinker import Signal
 
+from rayforge.core.group import Group
 from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
 from rayforge.ui_gtk.canvas import Canvas
@@ -23,17 +24,18 @@ MAX_PIXELS_PER_MM = 100.0
 
 
 class PickSurface(Canvas):
-    """A canvas for picking alignment points on a workpiece image.
+    """A canvas for picking alignment points on a workpiece or group image.
 
-    Displays the workpiece at its natural size fitted to view and reports
-    click coordinates in normalized workpiece-local space (0-1, origin at
+    Displays the item at its natural size fitted to view and reports
+    click coordinates in normalized item-local space (0-1, origin at
     bottom-left, Y-up). Supports scroll-to-zoom and middle-button panning.
     """
 
-    def __init__(self, workpiece: WorkPiece, **kwargs):
+    def __init__(self, item: Union[WorkPiece, Group], **kwargs):
         super().__init__(**kwargs)
-        self._workpiece = workpiece
-        nw, nh = workpiece.natural_size
+        self._item = item
+        self._is_group = isinstance(item, Group)
+        nw, nh = item.natural_size
         self._width_mm = max(nw, 1e-9)
         self._height_mm = max(nh, 1e-9)
 
@@ -135,7 +137,7 @@ class PickSurface(Canvas):
             return None
         w = max(int(self._width_mm * ppmm), 1)
         h = max(int(self._height_mm * ppmm), 1)
-        self._cached_surface = self._workpiece.render_to_pixels(w, h)
+        self._cached_surface = self._item.render_to_pixels(w, h)
         return self._cached_surface
 
     def do_size_allocate(self, width, height, baseline):
