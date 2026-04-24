@@ -214,8 +214,10 @@ class LayerColumn(Gtk.Box):
             GObject.TYPE_STRING,
             Gdk.DragAction.MOVE | Gdk.DragAction.COPY,
         )
-        drop_target.connect("drop", self._on_drop)
+        drop_target.connect("accept", self._on_drop_accept)
+        drop_target.connect("enter", self._on_drop_enter)
         drop_target.connect("motion", self._on_drop_motion)
+        drop_target.connect("drop", self._on_drop)
         drop_target.connect("leave", self._on_drop_leave)
         self.add_controller(drop_target)
 
@@ -545,6 +547,19 @@ class LayerColumn(Gtk.Box):
             )
             return (bl_x + wa_w / 2, bl_y + wa_h / 2)
         return (50.0, 50.0)
+
+    def _on_drop_accept(self, drop_target, drop):
+        formats = drop.get_formats() if drop else None
+        logger.debug(
+            "Accept(%s): formats=%s",
+            self.layer.name,
+            formats.to_string() if formats else None,
+        )
+        return True
+
+    def _on_drop_enter(self, drop_target, x, y):
+        logger.debug("Enter(%s): x=%d y=%d", self.layer.name, x, y)
+        return Gdk.DragAction.MOVE
 
     def _on_drop_motion(self, drop_target, x, y):
         if LayerColumn.dragging:

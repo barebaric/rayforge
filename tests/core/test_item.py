@@ -610,9 +610,9 @@ def test_natural_size_behavior(mocker):
     c2.natural_size = (20.0, 5.0)
     c2.get_local_bbox.return_value = (0.0, 0.0, 20.0, 5.0)
     # c2 spans (15,0)-(35,5) in world space
-    c2.get_world_transform.return_value = (
-        Matrix.translation(15.0, 0.0) @ Matrix.scale(20.0, 5.0)
-    )
+    c2.get_world_transform.return_value = Matrix.translation(
+        15.0, 0.0
+    ) @ Matrix.scale(20.0, 5.0)
     c2.matrix = Matrix.translation(15, 0)  # Shifted to right
     c2.parent = None
 

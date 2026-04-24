@@ -70,6 +70,11 @@ class WorkpieceRow(Gtk.Box):
         self._update_ui()
 
     def _on_drag_prepare(self, drag_source, x, y):
+        logger.debug(
+            "DragPrepare(%s): uid=%s",
+            self.workpiece.name,
+            self.workpiece.uid[:8],
+        )
         snapshot = Gtk.Snapshot()
         WorkpieceRow.do_snapshot(self, snapshot)
         paintable = snapshot.to_paintable()
