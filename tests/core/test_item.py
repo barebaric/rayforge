@@ -596,6 +596,7 @@ def test_natural_size_behavior(mocker):
     c1.descendant_transform_changed = mocker.Mock()
     c1.natural_size = (10.0, 10.0)
     c1.get_local_bbox.return_value = (0.0, 0.0, 10.0, 10.0)
+    c1.get_world_transform.return_value = Matrix.scale(10.0, 10.0)
     c1.matrix = Matrix.identity()
     c1.parent = None
 
@@ -608,6 +609,10 @@ def test_natural_size_behavior(mocker):
     c2.descendant_transform_changed = mocker.Mock()
     c2.natural_size = (20.0, 5.0)
     c2.get_local_bbox.return_value = (0.0, 0.0, 20.0, 5.0)
+    # c2 spans (15,0)-(35,5) in world space
+    c2.get_world_transform.return_value = (
+        Matrix.translation(15.0, 0.0) @ Matrix.scale(20.0, 5.0)
+    )
     c2.matrix = Matrix.translation(15, 0)  # Shifted to right
     c2.parent = None
 
@@ -624,8 +629,9 @@ def test_natural_size_behavior(mocker):
     group.add_child(c2)
     assert group.natural_size == pytest.approx((35.0, 10.0))
 
-    # Test "freeze" behavior: modifying a child's transform should NOT
-    # update the parent's natural_size automatically.
+    # Test "freeze" behavior: modifying a child's transform does not
+    # update the parent's natural_size automatically because
+    # get_world_transform is cached at the time the mock was set up.
     c2.matrix = Matrix.translation(100, 100)
     # natural_size should remain the calculated value at add_child time
     assert group.natural_size == pytest.approx((35.0, 10.0))

@@ -56,7 +56,15 @@ class Group(DocItem):
 
     @property
     def natural_size(self) -> Tuple[float, float]:
-        return self.matrix.get_abs_scale()
+        if not self.children:
+            return (0.0, 0.0)
+        bbox = self._calculate_world_bbox(self.children)
+        if bbox is None:
+            return (0.0, 0.0)
+        return (bbox[2], bbox[3])
+
+    def get_local_bbox(self) -> Optional[Rect]:
+        return (0.0, 0.0, 1.0, 1.0)
 
     def render_to_pixels(
         self, width: int, height: int
