@@ -8,6 +8,7 @@ from rayforge.pipeline.artifact.key import ArtifactKey
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.workpiece import WorkPiece
+from rayforge.core.group import Group
 from rayforge.core.step import Step
 
 
@@ -191,3 +192,32 @@ class TestPipelineGraph:
 
         assert len(graph.get_all_nodes()) == 1
         assert graph.get_node(key) is None
+
+    def test_build_from_doc_with_grouped_workpieces(self):
+        """Test that workpieces inside a Group get DAG nodes."""
+        doc = Doc()
+        layer = doc.active_layer
+
+        group = Group(name="Test Group")
+        wp1 = WorkPiece(name="wp1.svg")
+        wp2 = WorkPiece(name="wp2.svg")
+        group.add_child(wp1)
+        group.add_child(wp2)
+
+        layer.add_child(group)
+
+        step = Step(typelabel="contour")
+        assert layer.workflow is not None
+        layer.workflow.add_step(step)
+
+        graph = PipelineGraph()
+        graph.build_from_doc(doc, generation_id=1)
+
+        wp_nodes = graph.get_nodes_by_group("workpiece")
+        step_nodes = graph.get_nodes_by_group("step")
+
+        assert len(wp_nodes) == 2
+        assert len(step_nodes) == 1
+
+        step_node = step_nodes[0]
+        assert len(step_node.dependencies) == 2

@@ -7,7 +7,6 @@ import logging
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 from ...core.doc import Doc
 from ...core.layer import Layer
-from ...core.workpiece import WorkPiece
 from ..artifact.key import ArtifactKey
 from .node import ArtifactNode
 
@@ -91,11 +90,7 @@ class PipelineGraph:
             if not isinstance(layer, Layer):
                 continue
 
-            workpieces = [
-                child
-                for child in layer.children
-                if isinstance(child, WorkPiece)
-            ]
+            workpieces = layer.all_workpieces
 
             if layer.workflow is not None:
                 for step in layer.workflow.steps:
