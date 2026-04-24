@@ -801,10 +801,8 @@ class Pipeline:
 
         for wp in workpieces_to_check:
             size_changed = False
-            if (
-                wp is origin
-                and isinstance(origin, WorkPiece)
-                and old_matrix is not None
+            if old_matrix is not None and isinstance(
+                origin, (WorkPiece, Group)
             ):
                 _, _, _, old_sx, old_sy, _ = old_matrix.decompose()
                 _, _, _, new_sx, new_sy, _ = origin.matrix.decompose()
