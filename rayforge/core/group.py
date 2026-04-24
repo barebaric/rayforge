@@ -1,6 +1,8 @@
 from __future__ import annotations
-from typing import List, Dict, Optional, Sequence, TYPE_CHECKING, Any
+import logging
+from typing import List, Dict, Optional, Sequence, TYPE_CHECKING, Any, Tuple
 from dataclasses import dataclass
+import cairo
 from .item import DocItem
 from .matrix import Matrix
 from .workpiece import WorkPiece
@@ -8,6 +10,8 @@ from .geo import Rect
 
 if TYPE_CHECKING:
     from .layer import Layer
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -49,6 +53,68 @@ class Group(DocItem):
         objects contained within this layer, including those inside groups.
         """
         return self.get_descendants(of_type=WorkPiece)
+
+    @property
+    def natural_size(self) -> Tuple[float, float]:
+        return self.matrix.get_abs_scale()
+
+    def render_to_pixels(
+        self, width: int, height: int
+    ) -> Optional[cairo.ImageSurface]:
+        """
+        Render all children into a single composite surface.
+
+        Delegates to each child's own render_to_pixels, so nested
+        groups are handled recursively.
+        """
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgba(0, 0, 0, 0)
+        ctx.set_operator(cairo.OPERATOR_SOURCE)
+        ctx.paint()
+        ctx.set_operator(cairo.OPERATOR_OVER)
+
+        for child in self.children:
+            T = child.matrix
+
+            corners = [
+                T.transform_point(c) for c in [(0, 0), (1, 0), (1, 1), (0, 1)]
+            ]
+            xs = [c[0] for c in corners]
+            ys = [c[1] for c in corners]
+            apparent_w = max(xs) - min(xs)
+            apparent_h = max(ys) - min(ys)
+
+            child_pixel_w = max(int(apparent_w * width), 1)
+            child_pixel_h = max(int(apparent_h * height), 1)
+
+            if not isinstance(child, (Group, WorkPiece)):
+                continue
+
+            child_surface = child.render_to_pixels(
+                child_pixel_w, child_pixel_h
+            )
+            if child_surface is None:
+                continue
+
+            ctx.save()
+            # Map group (0-1) Y-up to surface pixels Y-down.
+            ctx.translate(0, height)
+            ctx.scale(width, -height)
+            # Apply child-to-group transform.
+            ctx.transform(cairo.Matrix(*T.for_cairo()))
+            # Flip Y for the image: image (0,0) is top-left in
+            # Y-down, but T expects Y-up child coordinates.
+            ctx.translate(0, 1)
+            ctx.scale(
+                1.0 / child_surface.get_width(),
+                -1.0 / child_surface.get_height(),
+            )
+            ctx.set_source_surface(child_surface, 0, 0)
+            ctx.paint()
+            ctx.restore()
+
+        return surface
 
     def to_dict(self) -> Dict:
         """Serializes the Group and its children to a dictionary."""

@@ -1,10 +1,11 @@
 import math
 import logging
 from gettext import gettext as _
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 from gi.repository import Adw, Gtk
 
+from rayforge.core.group import Group
 from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.machine import Machine
@@ -52,7 +53,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
     def __init__(
         self,
         parent,
-        workpiece: WorkPiece,
+        item: Union[WorkPiece, Group],
         machine: Machine,
         machine_cmd: MachineCmd,
         editor: DocEditor,
@@ -66,7 +67,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
             **kwargs,
         )
 
-        self._workpiece = workpiece
+        self._item = item
         self._machine = machine
         self._machine_cmd = machine_cmd
         self._editor = editor
@@ -161,7 +162,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
 
     def _setup_left_panel(self):
         self._pick_surface = PickSurface(
-            workpiece=self._workpiece,
+            item=self._item,
         )
         self._pick_surface.set_hexpand(True)
         self._pick_surface.set_vexpand(True)
@@ -475,8 +476,8 @@ class PrintAndCutWizard(PatchedDialogWindow):
             self._next_btn.set_sensitive(False)
 
     def _restore_session_state(self):
-        wp_id = self._workpiece.uid
-        state = _session_state.get(wp_id)
+        item_id = self._item.uid
+        state = _session_state.get(item_id)
         if state is None:
             return
 
@@ -518,8 +519,8 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._update_pick_next_btn()
 
     def _save_session_state(self):
-        wp_id = self._workpiece.uid
-        _session_state[wp_id] = {
+        item_id = self._item.uid
+        _session_state[item_id] = {
             "design_point1": self._design_point1,
             "design_point2": self._design_point2,
             "physical_point1": self._physical_point1,
@@ -651,7 +652,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
     def _local_to_world(
         self, norm_x: float, norm_y: float
     ) -> Tuple[float, float]:
-        return self._workpiece.get_world_transform().transform_point(
+        return self._item.get_world_transform().transform_point(
             (norm_x, norm_y)
         )
 
@@ -783,11 +784,11 @@ class PrintAndCutWizard(PatchedDialogWindow):
             d1, d2, p1, p2, allow_scale=self._allow_scale
         )
 
-        old_matrix = self._workpiece.matrix.copy()
+        old_matrix = self._item.matrix.copy()
         new_matrix = T @ old_matrix
 
         self._editor.transform.create_transform_transaction(
-            [(self._workpiece, old_matrix, new_matrix)]
+            [(self._item, old_matrix, new_matrix)]
         )
 
         toast = Adw.Toast(title=_("Alignment applied"))
