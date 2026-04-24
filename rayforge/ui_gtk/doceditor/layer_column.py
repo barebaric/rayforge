@@ -6,6 +6,8 @@ from blinker import Signal
 from gi.repository import Adw, Gdk, GObject, Gtk, Pango
 from ...context import get_context
 from ...core.doc import Doc
+from ...core.group import Group
+from ...core.item import DocItem
 from ...core.layer import Layer
 from ...core.source_asset import SourceAsset
 from ...core.stock_asset import StockAsset
@@ -13,6 +15,7 @@ from ...core.workpiece import WorkPiece
 from ..icons import get_icon
 from ..shared.gtk import apply_css
 from . import import_handler
+from .group_row import GroupRow
 from .layer_settings_dialog import LayerSettingsDialog
 from .workflow_row import WorkflowRow
 from .workpiece_row import WorkpieceRow
@@ -101,7 +104,7 @@ class LayerColumn(Gtk.Box):
         self.doc = doc
         self.layer = layer
         self.editor = editor
-        self._row_workpieces = {}
+        self._row_items = {}
         self._potential_drop_index = -1
 
         self.edit_item_requested = Signal()
@@ -272,13 +275,18 @@ class LayerColumn(Gtk.Box):
             next_child = child.get_next_sibling()
             self.listbox.remove(child)
             child = next_child
-        self._row_workpieces.clear()
+        self._row_items.clear()
 
-        for wp in self.layer.workpieces:
+        for item in self.layer.get_content_items():
             row = Gtk.ListBoxRow()
-            wp_row = WorkpieceRow(wp)
-            row.set_child(wp_row)
-            self._row_workpieces[row] = wp
+            if isinstance(item, Group):
+                item_row = GroupRow(item)
+            elif isinstance(item, WorkPiece):
+                item_row = WorkpieceRow(item)
+            else:
+                continue
+            row.set_child(item_row)
+            self._row_items[row] = item
             self.listbox.append(row)
 
     def _update_icon(self):
@@ -380,8 +388,8 @@ class LayerColumn(Gtk.Box):
         if picked is not None:
             widget = picked
             while widget and widget is not self:
-                if isinstance(widget, WorkpieceRow):
-                    if n_press == 2:
+                if isinstance(widget, (WorkpieceRow, GroupRow)):
+                    if n_press == 2 and isinstance(widget, WorkpieceRow):
                         self._on_workpiece_double_clicked(widget.workpiece)
                     gesture.set_state(Gtk.EventSequenceState.DENIED)
                     return
@@ -413,21 +421,26 @@ class LayerColumn(Gtk.Box):
             self._remove_drop_markers()
             return self._handle_asset_drop(asset_uids)
 
-        wp = self._find_workpiece_by_uid(value)
+        wp = self._find_item_by_uid(value)
         if not wp:
             self._remove_drop_markers()
-            logger.debug("Drop: rejected, wp not found uid=%r", value[:8])
+            logger.debug("Drop: rejected, item not found uid=%r", value[:8])
             return False
 
-        if not wp.layer:
+        item_layer = (
+            wp.layer
+            if isinstance(wp, WorkPiece)
+            else (wp.layer if isinstance(wp, Group) else None)
+        )
+        if not item_layer:
             self._remove_drop_markers()
-            logger.debug("Drop: rejected, wp has no layer uid=%r", value[:8])
+            logger.debug("Drop: rejected, item has no layer uid=%r", value[:8])
             return False
 
         drop_index = self._potential_drop_index
         self._remove_drop_markers()
 
-        if wp.layer is self.layer:
+        if item_layer is self.layer:
             logger.debug(
                 "Drop: reorder in %s, idx=%d",
                 self.layer.name,
@@ -435,15 +448,15 @@ class LayerColumn(Gtk.Box):
             )
             return self._handle_reorder_drop(wp, drop_index)
 
-        logger.debug("Drop: move %s -> %s", wp.layer.name, self.layer.name)
-        self.editor.layer.move_workpieces_to_layer([wp], self.layer)
+        logger.debug("Drop: move %s -> %s", item_layer.name, self.layer.name)
+        self.editor.layer.move_items_to_layer([wp], self.layer)
         return True
 
-    def _handle_reorder_drop(self, wp, drop_index):
-        current_workpieces = list(self.layer.workpieces)
+    def _handle_reorder_drop(self, item, drop_index):
+        current_items = list(self.layer.get_content_items())
         if drop_index == -1:
-            drop_index = len(current_workpieces)
-        source_index = current_workpieces.index(wp)
+            drop_index = len(current_items)
+        source_index = current_items.index(item)
 
         target_index = drop_index
         if source_index < target_index:
@@ -452,10 +465,10 @@ class LayerColumn(Gtk.Box):
         if source_index == target_index:
             return True
 
-        new_order = list(current_workpieces)
+        new_order = list(current_items)
         new_order.pop(source_index)
-        new_order.insert(target_index, wp)
-        self.editor.layer.reorder_workpieces(self.layer, new_order)
+        new_order.insert(target_index, item)
+        self.editor.layer.reorder_content_items(self.layer, new_order)
         return True
 
     def _remove_drop_markers(self):
@@ -544,7 +557,7 @@ class LayerColumn(Gtk.Box):
 
         self._remove_drop_markers()
 
-        fallback_index = len(self.layer.workpieces)
+        fallback_index = len(self.layer.get_content_items())
         coords = self.translate_coordinates(self.listbox, x, y)
         if not coords:
             logger.debug(
@@ -595,8 +608,11 @@ class LayerColumn(Gtk.Box):
             picked = picked.get_parent()
         return None
 
-    def _find_workpiece_by_uid(self, uid: str) -> Optional[WorkPiece]:
+    def _find_item_by_uid(self, uid: str) -> Optional[DocItem]:
         for layer in self.doc.layers:
+            for item in layer.get_content_items():
+                if item.uid == uid:
+                    return item
             for wp in layer.all_workpieces:
                 if wp.uid == uid:
                     return wp

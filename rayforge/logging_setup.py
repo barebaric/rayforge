@@ -110,9 +110,7 @@ class SessionFileFormatter(logging.Formatter):
         original = super().format(record)
         if tag:
             level = record.levelname
-            original = original.replace(
-                f" {level} - ", f" {level}{tag} - ", 1
-            )
+            original = original.replace(f" {level} - ", f" {level}{tag} - ", 1)
         return original
 
 

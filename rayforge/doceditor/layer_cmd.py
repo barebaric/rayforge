@@ -3,6 +3,7 @@ import logging
 from typing import TYPE_CHECKING, Optional, List
 from gettext import gettext as _
 from ..core.layer import Layer
+from ..core.item import DocItem
 from ..core.undo import (
     Command,
     ChangePropertyCommand,
@@ -52,6 +53,37 @@ class MoveWorkpiecesLayerCommand(Command):
 
     def undo(self):
         """Undoes the command, moving workpieces back to the old layer."""
+        self._move(self.new_layer, self.old_layer)
+
+
+class MoveItemsLayerCommand(Command):
+    """
+    An undoable command to move one or more DocItems (workpieces or groups)
+    to a different layer.
+    """
+
+    def __init__(
+        self,
+        items: List[DocItem],
+        new_layer: Layer,
+        old_layer: Layer,
+        name: Optional[str] = None,
+    ):
+        super().__init__(name)
+        self.items = items
+        self.new_layer = new_layer
+        self.old_layer = old_layer
+        if not name:
+            self.name = _("Move to another layer")
+
+    def _move(self, from_layer: Layer, to_layer: Layer):
+        for item in self.items:
+            to_layer.add_child(item)
+
+    def execute(self):
+        self._move(self.old_layer, self.new_layer)
+
+    def undo(self):
         self._move(self.new_layer, self.old_layer)
 
 
@@ -300,5 +332,35 @@ class LayerCmd:
             new_list=new_order,
             setter_method_name="reorder_workpieces",
             name=_("Reorder workpieces"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def move_items_to_layer(self, items: List[DocItem], target_layer: Layer):
+        """Creates an undoable command to move items to a specific layer."""
+        if not items:
+            return
+        item = items[0]
+        from ..core.group import Group
+        from ..core.workpiece import WorkPiece
+
+        if isinstance(item, WorkPiece):
+            source_layer = item.layer
+        elif isinstance(item, Group):
+            source_layer = item.layer
+        else:
+            return
+        if not source_layer or source_layer is target_layer:
+            return
+        cmd = MoveItemsLayerCommand(items, target_layer, source_layer)
+        self._editor.history_manager.execute(cmd)
+
+    def reorder_content_items(self, layer: Layer, new_order: List[DocItem]):
+        """Reorders content items within a layer with an undoable command."""
+        cmd = ReorderListCommand(
+            target_obj=layer,
+            list_property_name="content_items",
+            new_list=new_order,
+            setter_method_name="reorder_content_items",
+            name=_("Reorder items"),
         )
         self._editor.history_manager.execute(cmd)
