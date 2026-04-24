@@ -52,6 +52,8 @@ class LayersTab(Gtk.Box):
         drop_target = Gtk.DropTarget.new(
             GObject.TYPE_STRING, Gdk.DragAction.MOVE
         )
+        drop_target.connect("accept", self._on_layer_drop_accept)
+        drop_target.connect("enter", self._on_layer_drop_enter)
         drop_target.connect("drop", self._on_layer_drop)
         drop_target.connect("motion", self._on_layer_drop_motion)
         drop_target.connect("leave", self._on_layer_drop_leave)
@@ -174,6 +176,18 @@ class LayersTab(Gtk.Box):
         new_order.insert(insert_index, source)
         self.editor.layer.reorder_layers(new_order)
         return True
+
+    def _on_layer_drop_accept(self, drop_target, drop):
+        formats = drop.get_formats() if drop else None
+        logger.debug(
+            "Accept(columns_box): formats=%s",
+            formats.to_string() if formats else None,
+        )
+        return True
+
+    def _on_layer_drop_enter(self, drop_target, x, y):
+        logger.debug("Enter(columns_box): x=%d y=%d", x, y)
+        return Gdk.DragAction.MOVE
 
     def _on_layer_drop_motion(self, drop_target, x, y):
         if not LayerColumn.dragging:
