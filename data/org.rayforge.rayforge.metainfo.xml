@@ -66,48 +66,37 @@
   </screenshots>
 
   <releases>
-    <release version="1.6.0-beta2" date="2026-04-21" type="development">
+    <release version="1.6" date="2026-04-24">
       <description>
-        <p>Print and Cut, Creality Falcon A1, and Bug Fixes</p>
-        <p>New Features:</p>
-        <ul>
-          <li>Print and cut addon for aligning laser cuts with printed
-          material</li>
-          <li>Device profile for the Creality Falcon A1</li>
-          <li>Right-click context menu for empty canvas space</li>
-          <li>Sketcher: support changing text color using the fill tool</li>
-        </ul>
-        <p>Improvements:</p>
-        <ul>
-          <li>Bottom panel is now visible by default</li>
-          <li>Status polling is disabled during job execution by default</li>
-        </ul>
-        <p>Fixed:</p>
-        <ul>
-          <li>GRBL alarm codes were mapped to wrong error descriptions</li>
-          <li>Snap fails to launch with gpu-2404 slot not connected error</li>
-          <li>Pipeline applied gear ratio even for visual representation</li>
-          <li>Race condition between $I and $# commands during connection</li>
-          <li>Rotary cylinder rendered with diameter of chuck instead of
-          workpiece</li>
-          <li>Base image of inverted SVG not inverted after import</li>
-          <li>Beta version string parsing for debian releases</li>
-        </ul>
-      </description>
-    </release>
-    <release version="1.6.0-beta1" date="2026-04-20" type="development">
-      <description>
-        <p>Device Profiles, Per-Layer WCS, and Rotary Overhaul</p>
+        <p>Device Profiles, Rotary Overhaul, Print &amp; Cut, Redesigned
+        Layers</p>
         <p>Major Changes:</p>
         <ul>
           <li>Machine profiles replaced by device profiles that bundle config
           and G-code dialect together</li>
-          <li>Each layer can be assigned its own Work Coordinate System</li>
+          <li>Complete rotary overhaul with true 4th axis and axis replacement
+          support</li>
+          <li>Print and cut addon for aligning laser cuts with printed
+          material</li>
           <li>Redesigned layer system with visual workflow and drag-and-drop
           reordering</li>
-          <li>Rotary mode now supports true 4th axis and axis replacement</li>
+          <li>Per-layer Work Coordinate System assignment</li>
           <li>GRBL Telnet driver for networked grblHAL and ESP3D controllers</li>
           <li>Update checker for new version notifications</li>
+        </ul>
+        <p>Device Profiles:</p>
+        <ul>
+          <li>Declarative packages bundling machine config and G-code
+          dialect</li>
+          <li>Export and import UI for sharing profiles between machines</li>
+        </ul>
+        <p>Rotary Improvements:</p>
+        <ul>
+          <li>True 4th axis support alongside X/Y/Z</li>
+          <li>Axis replacement mode (swap Y or Z for rotary)</li>
+          <li>Roller-type rotary axis settings</li>
+          <li>Major kinematics refactoring for correct rotary rendering</li>
+          <li>2D canvas adapts to rotary mode automatically</li>
         </ul>
         <p>Layer System:</p>
         <ul>
@@ -117,33 +106,40 @@
           <li>Per-layer WCS assignment with quick edit button</li>
           <li>Layer settings dialog is now non-modal</li>
         </ul>
-        <p>Rotary Improvements:</p>
-        <ul>
-          <li>True 4th axis support alongside X/Y/Z</li>
-          <li>Axis replacement mode (swap X or Y for rotary)</li>
-          <li>Roller-type rotary axis settings</li>
-          <li>Major kinematics refactoring for correct rotary rendering</li>
-          <li>2D canvas adapts to rotary mode automatically</li>
-        </ul>
-        <p>Material Test Grid:</p>
-        <ul>
-          <li>New parameter combinations</li>
-          <li>Extra speed or power labels in multipass mode</li>
-        </ul>
-        <p>Performance:</p>
-        <ul>
-          <li>Massively reduced memory usage for multi-layer PDFs</li>
-          <li>Vertex storage uses power values instead of colors</li>
-          <li>Improved GRBL serial robustness with deadlock recovery</li>
-        </ul>
-        <p>UI Improvements:</p>
-        <ul>
-          <li>Right panel is now a floating overlay</li>
-          <li>Slider values are now editable entry fields</li>
-          <li>Setting for ops color: layer color or laser color</li>
-          <li>Export and import device profiles for sharing</li>
-          <li>Terminal window no longer visible on Windows</li>
-        </ul>
+         <p>Material Test Grid:</p>
+         <ul>
+           <li>New parameter combinations</li>
+           <li>Extra speed or power labels in multipass mode</li>
+         </ul>
+         <p>Performance:</p>
+         <ul>
+           <li>Massively reduced memory usage for multi-layer PDFs</li>
+           <li>Vertex storage uses power values instead of colors</li>
+           <li>Improved GRBL serial robustness with deadlock recovery</li>
+         </ul>
+         <p>UI Improvements:</p>
+         <ul>
+           <li>Right panel is now a floating overlay</li>
+           <li>Slider values are now editable entry fields</li>
+           <li>Setting for ops color: layer color or laser color</li>
+           <li>Right-click context menu for empty canvas space</li>
+           <li>Sketcher: support changing text color using the fill tool</li>
+           <li>Device profile for the Creality Falcon A1</li>
+           <li>Bottom panel visible by default</li>
+           <li>Terminal window no longer visible on Windows</li>
+           <li>Improved error messages for Grbl alarms</li>
+         </ul>
+         <p>Bug Fixes:</p>
+         <ul>
+           <li>Fixed zero axis not working over GRBL network connection
+           (#220)</li>
+           <li>Fixed jog distance not applying when entered via keyboard
+           (#221)</li>
+           <li>Fixed Gtk imported in worker subprocesses (#224)</li>
+           <li>Fixed PEP 440 version strings causing false update
+           notifications</li>
+           <li>Fixed various Gtk warnings</li>
+         </ul>
       </description>
     </release>
     <release version="1.5.2" date="2026-04-11">

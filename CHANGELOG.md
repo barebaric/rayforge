@@ -5,32 +5,7 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 1.6.0-beta2
-
-### Added
-
-- Print and cut addon for aligning laser cuts with printed material (#180)
-- Device profile for the Creality Falcon A1
-- Right-click context menu for empty canvas space
-- Sketcher: support changing text color using the fill tool
-
-### Changed
-
-- Bottom panel is now visible by default
-- Status polling is disabled during job execution by default
-
-### Fixed
-
-- GRBL alarm codes were mapped to wrong error descriptions
-- Snap fails to launch with gpu-2404 slot not connected error (#196)
-- Pipeline applied gear ratio even for visual representation (#195)
-- Delayed main thread callbacks not cancellable via handle.cancel()
-- GRBL sending initial $I as realtime command though it is not one
-- Base image of inverted SVG not inverted after import
-- Rotary cylinder rendered with diameter of chuck instead of workpiece (#195)
-- Beta version string parsing for debian releases
-
-## 1.6.0-beta1
+## 1.6
 
 ### Added
 
@@ -57,12 +32,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Values next to sliders are now editable entry fields
 - Setting to choose whether ops use layer color or laser color
 - Double clicking a workpiece in the layer box opens its properties
+- Print and cut addon for aligning laser cuts with printed material (#180)
+- Device profile for the Creality Falcon A1
+- Right-click context menu for empty canvas space
+- Sketcher: support changing text color using the fill tool
 - Site search on the Rayforge website
 - Sponsor page on the Rayforge website
 
 ### Changed
 
 - Major refactoring of kinematics and 3D simulator for better rotary support
+- Improved error messages for Grbl alarms
 - Kinematics now build dynamically from AxisSet and AxisMapper
 - Massively decreased memory usage of multi-layer PDFs
 - Reduced memory required for vertex storage by storing power values instead
@@ -74,6 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Air assist state no longer resets between workpieces
 - 2D simulator removed (superseded by the 3D simulator)
 - Layer settings dialog is now non-modal
+- Bottom panel is now visible by default
+- Status polling is disabled during job execution by default
 
 ### Fixed
 
@@ -101,6 +83,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deleting the active machine could lead to no machine being active
 - Stale ops in 3D canvas after deleting a layer
 - Multiple GRBL serial driver robustness improvements
+- GRBL alarm codes were mapped to wrong error descriptions
+- Snap fails to launch with gpu-2404 slot not connected error (#196)
+- Pipeline applied gear ratio even for visual representation (#195)
+- Delayed main thread callbacks not cancellable via handle.cancel()
+- GRBL sending initial $I as realtime command though it is not one
+- Base image of inverted SVG not inverted after import
+- Rotary cylinder rendered with diameter of chuck instead of workpiece (#195)
+- Beta version string parsing for debian releases
+- Zero axis not working over GRBL network connection (#220)
+- Jog distance not applying when entered via keyboard (#221)
+- Gtk imported in worker subprocesses (#224)
+- Various Gtk warnings
 
 ## 1.5.2
 

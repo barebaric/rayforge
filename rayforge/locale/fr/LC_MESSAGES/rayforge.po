@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-22 19:19+0200\n"
+"POT-Creation-Date: 2026-04-24 23:14+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -6664,6 +6664,10 @@ msgstr "Réorganiser les calques"
 #: rayforge/doceditor/layer_cmd.py
 msgid "Reorder workpieces"
 msgstr "Réorganiser les pièces"
+
+#: rayforge/doceditor/layer_cmd.py
+msgid "Reorder items"
+msgstr "Réorganiser les éléments"
 
 #: rayforge/doceditor/editor.py
 #, python-brace-format
