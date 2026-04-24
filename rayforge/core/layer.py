@@ -165,6 +165,11 @@ class Layer(DocItem):
         ]
 
     @property
+    def content_items(self) -> List["DocItem"]:
+        """Property alias for get_content_items()."""
+        return self.get_content_items()
+
+    @property
     def workflow(self) -> Optional[Workflow]:
         """Returns the layer's workflow. A layer must have one workflow."""
         for child in self.children:
@@ -342,6 +347,20 @@ class Layer(DocItem):
                 new_children.append(next(wp_iter))
             else:
                 new_children.append(child)
+        self.set_children(new_children)
+
+    def reorder_content_items(self, new_content_order: List[DocItem]):
+        """
+        Reorders all content items (WorkPieces and Groups) while
+        preserving the workflow's position.
+        """
+        item_iter = iter(new_content_order)
+        new_children = []
+        for child in self.children:
+            if isinstance(child, Workflow):
+                new_children.append(child)
+            else:
+                new_children.append(next(item_iter))
         self.set_children(new_children)
 
     def get_renderable_items(self) -> List[Tuple[Step, WorkPiece]]:
