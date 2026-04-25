@@ -155,6 +155,7 @@ depends-on = ["compile-translations"]
 [dependencies]
 libglvnd = ">=1.7.0,<2"
 libadwaita = ">=1.8.4,<2"
+pyright = ">=1.1.409,<2"
 
 # Tasks for developing and generating the website
 [feature.website.tasks]
