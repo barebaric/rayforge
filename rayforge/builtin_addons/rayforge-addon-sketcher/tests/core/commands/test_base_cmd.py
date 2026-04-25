@@ -48,8 +48,9 @@ def test_capture_snapshot(sketch, command):
 
     command.capture_snapshot()
 
-    assert command._snapshot is not None
-    points, entities = command._snapshot
+    snapshot = command._snapshot
+    assert snapshot is not None
+    points, entities = snapshot
     # Origin point (created by Sketch init) + 2 added points = 3
     assert len(points) == 3
     assert points[p1_id] == (10.0, 20.0)
@@ -92,12 +93,11 @@ def test_execute_captures_snapshot_if_empty(sketch, command):
     """Test that execute captures snapshot if not already done."""
     p1_id = sketch.add_point(10.0, 20.0)
 
-    assert command._snapshot is None
-
     command.execute()
 
-    assert command._snapshot is not None
-    points, entities = command._snapshot
+    snapshot = command._snapshot
+    assert snapshot is not None
+    points, entities = snapshot
     assert points[p1_id] == (10.0, 20.0)
     assert command.executed
 
@@ -112,8 +112,9 @@ def test_execute_uses_existing_snapshot(sketch):
 
     cmd.execute()
 
-    assert cmd._snapshot is not None
-    points, entities = cmd._snapshot
+    snapshot = cmd._snapshot
+    assert snapshot is not None
+    points, entities = snapshot
     assert points[p1_id] == (10.0, 20.0)
     assert cmd.executed
 
