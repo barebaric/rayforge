@@ -25,7 +25,7 @@ from ...pipeline.coordspace import MachineSpace
 from ...pipeline.encoder.base import EncodedOutput
 from ...shared.tasker import task_mgr
 from ..assembly import Assembly
-from ..driver.driver import DeviceState
+from ..driver.driver import DeviceState, Pos
 from ..kinematic_mapping import KinematicMapping
 from ..kinematics import HeadSpec, Kinematics, build_assembly
 from ..models.axis import AxisConfig, AxisDirection, AxisSet, AxisType
@@ -733,9 +733,7 @@ class Machine:
         self.soft_limits_enabled = enabled
         self.changed.send(self)
 
-    def get_current_position(
-        self,
-    ) -> Tuple[Optional[float], Optional[float], Optional[float]]:
+    def get_current_position(self) -> Pos:
         """Get the current work position of the machine."""
         return self.device_state.work_pos
 
@@ -769,7 +767,7 @@ class Machine:
             return False
 
         current_pos = self.device_state.machine_pos
-        x_pos, y_pos, z_pos = current_pos
+        x_pos, y_pos = current_pos[0], current_pos[1]
         x_min, y_min, x_max, y_max = self.get_soft_limits()
 
         # Check X axis
@@ -800,7 +798,7 @@ class Machine:
             return distance
 
         current_pos = self.device_state.machine_pos
-        x_pos, y_pos, z_pos = current_pos
+        x_pos, y_pos = current_pos[0], current_pos[1]
         x_min, y_min, x_max, y_max = self.get_soft_limits()
         adjusted_distance = distance
 

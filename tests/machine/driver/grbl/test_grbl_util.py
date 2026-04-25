@@ -10,7 +10,7 @@ from rayforge.machine.driver.grbl.grbl_util import (
     error_code_to_device_error,
     parse_grbl_parser_state,
     gcode_to_p_number,
-    _parse_pos_triplet,
+    _parse_pos,
     parse_version,
     version_supports_single_axis_homing,
     strip_gcode_comments,
@@ -256,8 +256,41 @@ class TestRecalculatePositions:
         assert result_wpos == wpos
         assert result_wco == wco
 
+    def test_recalculate_wpos_from_4axis_mpos_and_wco(self):
+        """Test recalculating 4-axis WPos from MPos and WCO."""
+        mpos = (100.0, 200.0, 50.0, 45.0)
+        wpos = (None, None, None, None)
+        wco = (10.0, 20.0, 5.0, 0.0)
+        result_mpos, result_wpos, result_wco = _recalculate_positions(
+            mpos, wpos, wco, mpos_found=True, wpos_found=False, wco_found=True
+        )
+        assert result_mpos == mpos
+        assert result_wpos == (90.0, 180.0, 45.0, 45.0)
+        assert result_wco == wco
 
-class TestParseState:
+    def test_recalculate_mpos_from_4axis_wpos_and_wco(self):
+        """Test recalculating 4-axis MPos from WPos and WCO."""
+        mpos = (None, None, None, None)
+        wpos = (90.0, 180.0, 45.0, 45.0)
+        wco = (10.0, 20.0, 5.0, 0.0)
+        result_mpos, result_wpos, result_wco = _recalculate_positions(
+            mpos, wpos, wco, mpos_found=False, wpos_found=True, wco_found=True
+        )
+        assert result_mpos == (100.0, 200.0, 50.0, 45.0)
+        assert result_wpos == wpos
+        assert result_wco == wco
+
+    def test_infer_4axis_wco_from_mpos_and_wpos(self):
+        """Test inferring 4-axis WCO from MPos and WPos."""
+        mpos = (100.0, 200.0, 50.0, 45.0)
+        wpos = (90.0, 180.0, 45.0, 45.0)
+        wco = (0.0, 0.0, 0.0, 0.0)
+        result_mpos, result_wpos, result_wco = _recalculate_positions(
+            mpos, wpos, wco, mpos_found=True, wpos_found=True, wco_found=False
+        )
+        assert result_mpos == mpos
+        assert result_wpos == wpos
+        assert result_wco == (10.0, 20.0, 5.0, 0.0)
     """Tests for parse_state function."""
 
     def test_parse_basic_idle_state(self):
@@ -390,39 +423,86 @@ class TestParseState:
         assert result.buffer_available == 62
         assert result.buffer_rx_available == 0
 
+    def test_parse_state_with_4axis_mpos(self):
+        """Test parsing state with 4-axis MPos."""
+        default = DeviceState()
+        result = parse_state(
+            "<Idle|MPos:10,20,30,45|WCO:0,0,0,0>", default
+        )
+        assert result.machine_pos == (10.0, 20.0, 30.0, 45.0)
+        assert result.work_pos == (10.0, 20.0, 30.0, 45.0)
+        assert result.wco == (0.0, 0.0, 0.0, 0.0)
 
-class TestParsePosTriplet:
-    """Tests for _parse_pos_triplet function."""
+    def test_parse_state_with_4axis_mpos_and_wco(self):
+        """Test parsing 4-axis MPos with non-zero WCO."""
+        default = DeviceState()
+        result = parse_state(
+            "<Idle|MPos:100,200,50,45|WCO:10,20,5,0>", default
+        )
+        assert result.machine_pos == (100.0, 200.0, 50.0, 45.0)
+        assert result.work_pos == (90.0, 180.0, 45.0, 45.0)
+        assert result.wco == (10.0, 20.0, 5.0, 0.0)
+
+    def test_parse_state_3axis_still_works(self):
+        """Test that 3-axis machines still work unchanged."""
+        default = DeviceState()
+        result = parse_state("<Idle|MPos:10,20,30>", default)
+        assert result.machine_pos == (10.0, 20.0, 30.0)
+        assert len(result.machine_pos) == 3
+
+
+class TestParsePos:
+    """Tests for _parse_pos function."""
 
     def test_parse_valid_position(self):
         """Test parsing valid position triplet."""
-        result = _parse_pos_triplet("MPos:10.5,20.3,-1.0")
+        result = _parse_pos("MPos:10.5,20.3,-1.0")
         assert result == (10.5, 20.3, -1.0)
 
     def test_parse_position_with_negative_values(self):
         """Test parsing position with negative values."""
-        result = _parse_pos_triplet("WPos:-10.5,-20.3,-1.0")
+        result = _parse_pos("WPos:-10.5,-20.3,-1.0")
         assert result == (-10.5, -20.3, -1.0)
 
     def test_parse_position_with_zero(self):
         """Test parsing position with zero values."""
-        result = _parse_pos_triplet("WCO:0.0,0.0,0.0")
+        result = _parse_pos("WCO:0.0,0.0,0.0")
         assert result == (0.0, 0.0, 0.0)
 
     def test_parse_invalid_position_returns_none(self):
         """Test that invalid position returns None."""
-        result = _parse_pos_triplet("Invalid")
+        result = _parse_pos("Invalid")
         assert result is None
 
     def test_parse_two_axis_position_pads_z(self):
         """Test that 2-axis position gets Z padded with 0.0."""
-        result = _parse_pos_triplet("MPos:10,20")
+        result = _parse_pos("MPos:10,20")
         assert result == (10.0, 20.0, 0.0)
 
     def test_parse_single_axis_position_pads_y_z(self):
         """Test that 1-axis position gets Y,Z padded with 0.0."""
-        result = _parse_pos_triplet("MPos:10")
+        result = _parse_pos("MPos:10")
         assert result is None
+
+    def test_parse_four_axis_position(self):
+        """Test parsing 4-axis position retains A axis."""
+        result = _parse_pos("MPos:0.000,0.000,0.000,0.000")
+        assert result == (0.0, 0.0, 0.0, 0.0)
+
+    def test_parse_four_axis_position_with_values(self):
+        """Test parsing 4-axis position with non-zero A."""
+        result = _parse_pos("MPos:10.5,20.3,-1.0,45.0")
+        assert result == (10.5, 20.3, -1.0, 45.0)
+
+    def test_parse_four_axis_wpos(self):
+        """Test parsing 4-axis WPos."""
+        result = _parse_pos("WPos:1.0,2.0,3.0,90.0")
+        assert result == (1.0, 2.0, 3.0, 90.0)
+
+    def test_parse_four_axis_wco(self):
+        """Test parsing 4-axis WCO."""
+        result = _parse_pos("WCO:0.0,0.0,0.0,0.0")
+        assert result == (0.0, 0.0, 0.0, 0.0)
 
 
 class TestErrorCodeToDeviceError:

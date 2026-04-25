@@ -112,7 +112,7 @@ class DeviceError:
     description: str
 
 
-Pos = Tuple[Optional[float], Optional[float], Optional[float]]  # x, y, z in mm
+Pos = Tuple[Optional[float], ...]  # x, y, z[, a] in mm
 
 
 @dataclass

@@ -616,7 +616,7 @@ class BottomPanel(Gtk.Box):
 
         m_pos = self.machine.device_state.machine_pos
         m_x, m_y, m_z = (
-            m_pos
+            (m_pos[0], m_pos[1], m_pos[2])
             if m_pos and all(p is not None for p in m_pos)
             else (None, None, None)
         )

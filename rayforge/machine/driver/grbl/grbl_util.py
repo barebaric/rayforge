@@ -1,7 +1,7 @@
 import re
 import asyncio
 from copy import copy, deepcopy
-from typing import Callable, Optional, List, cast
+from typing import Callable, Optional, List, Tuple, cast
 from dataclasses import dataclass, field
 from gettext import gettext as _
 from ....core.varset import Var, VarSet
@@ -51,7 +51,9 @@ status_url = command_url.format(command="?")
 
 
 # GRBL Regex Parsers
-pos_re = re.compile(r":(-?\d+\.?\d*),(-?\d+\.?\d*)(?:,(-?\d+\.?\d*))?")
+pos_re = re.compile(
+    r":(-?\d+\.?\d*),(-?\d+\.?\d*)(?:,(-?\d+\.?\d*))?(?:,(-?\d+\.?\d*))?"
+)
 fs_re = re.compile(r"FS:(\d+),(\d+)")
 bf_re = re.compile(r"Bf:(\d+),(\d+)")
 grbl_setting_re = re.compile(r"\$(\d+)=([\d\.-]+)")
@@ -540,14 +542,16 @@ def version_supports_single_axis_homing(
     return False
 
 
-def _parse_pos_triplet(pos: str) -> Optional[Pos]:
+def _parse_pos(pos: str) -> Optional[Pos]:
     match = pos_re.search(pos)
     if not match:
         return None
     values = [float(g) if g else 0.0 for g in match.groups()]
     while len(values) < 3:
         values.append(0.0)
-    return (values[0], values[1], values[2])
+    if match.group(4) is None:
+        values = values[:3]
+    return tuple(values)
 
 
 def error_code_to_device_error(error_code: str) -> DeviceError:
@@ -639,7 +643,7 @@ def _parse_position_attribute(attrib: str, pos_type: str) -> Optional[Pos]:
     """
     if not attrib.startswith(f"{pos_type}:"):
         return None
-    return _parse_pos_triplet(attrib)
+    return _parse_pos(attrib)
 
 
 def _parse_feed_rate(attrib: str) -> Optional[int]:
@@ -711,47 +715,47 @@ def _recalculate_positions(
         Tuple of (recalculated_machine_pos, recalculated_work_pos,
         recalculated_wco)
     """
+    n = max(len(machine_pos), len(work_pos), len(wco))
+
+    def _pad(pos: Pos, default: float = 0.0) -> Pos:
+        result = list(pos)
+        while len(result) < n:
+            result.append(default)
+        return tuple(result)
+
+    machine_pos = _pad(machine_pos)
+    work_pos = _pad(work_pos)
+    wco = _pad(wco)
+
     # 1. Infer WCO if explicitly missing but both MPos and WPos exist.
     # WCO = MPos - WPos
     if mpos_found and wpos_found and not wco_found:
-        mx, my, mz = machine_pos
-        wx, wy, wz = work_pos
-        if all(v is not None for v in [mx, my, mz, wx, wy, wz]):
-            m_float = cast(tuple[float, float, float], machine_pos)
-            w_float = cast(tuple[float, float, float], work_pos)
-            wco = (
-                m_float[0] - w_float[0],
-                m_float[1] - w_float[1],
-                m_float[2] - w_float[2],
-            )
+        if all(v is not None for v in machine_pos) and all(
+            v is not None for v in work_pos
+        ):
+            m_float = cast(Tuple[float, ...], machine_pos)
+            w_float = cast(Tuple[float, ...], work_pos)
+            wco = tuple(m_float[i] - w_float[i] for i in range(n))
 
     # 2. Recalculate missing positions based on what we have.
     # If MPos is known, calculate WPos.
     if mpos_found and all(v is not None for v in machine_pos):
         if all(v is not None for v in wco):
-            m_float = cast(tuple[float, float, float], machine_pos)
-            wco_float = cast(tuple[float, float, float], wco)
+            m_float = cast(Tuple[float, ...], machine_pos)
+            wco_float = cast(Tuple[float, ...], wco)
             return (
                 machine_pos,
-                (
-                    m_float[0] - wco_float[0],
-                    m_float[1] - wco_float[1],
-                    m_float[2] - wco_float[2],
-                ),
+                tuple(m_float[i] - wco_float[i] for i in range(n)),
                 wco,
             )
 
     # If WPos is known (and MPos isn't), calculate MPos.
     elif wpos_found and all(v is not None for v in work_pos):
         if all(v is not None for v in wco):
-            w_float = cast(tuple[float, float, float], work_pos)
-            wco_float = cast(tuple[float, float, float], wco)
+            w_float = cast(Tuple[float, ...], work_pos)
+            wco_float = cast(Tuple[float, ...], wco)
             return (
-                (
-                    w_float[0] + wco_float[0],
-                    w_float[1] + wco_float[1],
-                    w_float[2] + wco_float[2],
-                ),
+                tuple(w_float[i] + wco_float[i] for i in range(n)),
                 work_pos,
                 wco,
             )
