@@ -1159,6 +1159,22 @@ class WorkPieceElement(CanvasElement):
 
         return False
 
+    def handle_edit_select_all(self) -> bool:
+        if not self._edit_state:
+            return False
+        data = self._edit_state.geometry.data
+        if data is not None:
+            self._edit_state.selected_segments = {
+                i
+                for i in range(len(data))
+                if data[i, COL_TYPE] != CMD_TYPE_MOVE
+            }
+        else:
+            self._edit_state.selected_segments = set()
+        if self.canvas:
+            self.canvas.queue_draw()
+        return True
+
     def remove(self):
         """Disconnects signals and removes the element from the canvas."""
         logger.debug(f"Removing WorkPieceElement for '{self.data.name}'")
