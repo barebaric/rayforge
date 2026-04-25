@@ -1143,6 +1143,31 @@ class CanvasElement:
         """
         pass
 
+    def handle_edit_motion(self, world_x: float, world_y: float) -> bool:
+        """
+        Handles a mouse motion event while in edit mode.
+
+        Args:
+            world_x: The x-coordinate in world space.
+            world_y: The y-coordinate in world space.
+
+        Returns:
+            True if the event was handled.
+        """
+        return False
+
+    def handle_edit_key(self, keyval: int) -> bool:
+        """
+        Handles a key press event while in edit mode.
+
+        Args:
+            keyval: The GDK key value.
+
+        Returns:
+            True if the event was handled.
+        """
+        return False
+
     def handle_drag_move(self, world_dx: float, world_dy: float) -> Point:
         """
         Intercepts a drag move to apply constraints. Subclasses can

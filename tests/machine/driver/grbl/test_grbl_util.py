@@ -291,7 +291,6 @@ class TestRecalculatePositions:
         assert result_mpos == mpos
         assert result_wpos == wpos
         assert result_wco == (10.0, 20.0, 5.0, 0.0)
-    """Tests for parse_state function."""
 
     def test_parse_basic_idle_state(self):
         """Test parsing basic idle state."""
@@ -426,9 +425,7 @@ class TestRecalculatePositions:
     def test_parse_state_with_4axis_mpos(self):
         """Test parsing state with 4-axis MPos."""
         default = DeviceState()
-        result = parse_state(
-            "<Idle|MPos:10,20,30,45|WCO:0,0,0,0>", default
-        )
+        result = parse_state("<Idle|MPos:10,20,30,45|WCO:0,0,0,0>", default)
         assert result.machine_pos == (10.0, 20.0, 30.0, 45.0)
         assert result.work_pos == (10.0, 20.0, 30.0, 45.0)
         assert result.wco == (0.0, 0.0, 0.0, 0.0)

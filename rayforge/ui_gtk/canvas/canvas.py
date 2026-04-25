@@ -460,8 +460,8 @@ class Canvas(Gtk.DrawingArea):
             handled = self.edit_context.handle_edit_press(
                 world_x, world_y, n_press
             )
-            # If press was not handled by element, check for background
-            if not handled and self._hovered_elem is None:
+            # If press was not handled by element, leave edit mode
+            if not handled:
                 self.leave_edit_mode()
             self.queue_draw()
             return  # Stop further processing in edit mode
@@ -560,9 +560,10 @@ class Canvas(Gtk.DrawingArea):
             self._moving or self._resizing or self._rotating or self._shearing
         )
 
-        # If in edit mode, cursor logic is up to the element.
-        # For now, we do nothing and let it be default.
+        # If in edit mode, forward motion to the element for hover tracking.
         if self.edit_context:
+            world_x, world_y = self._get_world_coords(x, y)
+            self.edit_context.handle_edit_motion(world_x, world_y)
             return
 
         # Only update hover state when not dragging.
@@ -1289,7 +1290,10 @@ class Canvas(Gtk.DrawingArea):
         elif is_primary_keyval(keyval):
             self._ctrl_pressed = True
             # Allow propagation for accelerators
-        elif keyval == Gdk.KEY_Delete:
+        elif keyval in (Gdk.KEY_Delete, Gdk.KEY_BackSpace):
+            if self.edit_context:
+                if self.edit_context.handle_edit_key(keyval):
+                    return True
             selected_elements = list(self.root.get_selected())
             if selected_elements:
                 self.elements_deleted.send(self, elements=selected_elements)

@@ -1,10 +1,26 @@
 import uuid
 import logging
-from typing import TYPE_CHECKING, List, Dict, Tuple, Sequence, Optional, cast
+import numpy as np
+from typing import (
+    TYPE_CHECKING,
+    List,
+    Dict,
+    Set,
+    Tuple,
+    Sequence,
+    Optional,
+    cast,
+)
 from gettext import gettext as _
+from ..core.geo import Geometry
+from ..core.geo.constants import CMD_TYPE_MOVE, COL_TYPE
 from ..core.item import DocItem
 from ..core.stock import StockItem
-from ..core.undo import ListItemCommand, ReorderListCommand
+from ..core.undo import (
+    ChangePropertyCommand,
+    ListItemCommand,
+    ReorderListCommand,
+)
 from ..core.workpiece import WorkPiece
 from ..core.workflow import Workflow
 
@@ -285,6 +301,117 @@ class EditCmd:
         if self._paste_counter != 0:
             logger.debug("Paste counter reset to 0 due to context change.")
             self._paste_counter = 0
+
+    def delete_contours(
+        self,
+        workpiece: WorkPiece,
+        indices_to_remove: Set[int],
+    ):
+        """Removes selected contours from a workpiece's boundaries.
+
+        This sets the ``_edited_boundaries`` on the workpiece to a geometry
+        that excludes the contours at the given indices, in an undoable
+        transaction.
+
+        Args:
+            workpiece: The workpiece to modify.
+            indices_to_remove: Set of contour indices to remove.
+        """
+        if not indices_to_remove:
+            return
+
+        boundaries = workpiece.boundaries
+        if boundaries is None or boundaries.is_empty():
+            return
+
+        contours = boundaries.split_into_contours()
+        if not contours:
+            return
+
+        remaining = [
+            c for i, c in enumerate(contours) if i not in indices_to_remove
+        ]
+
+        new_geo = Geometry()
+        for contour in remaining:
+            new_geo.extend(contour)
+
+        old_value = workpiece._edited_boundaries
+
+        def _on_changed():
+            workpiece.clear_render_cache()
+            workpiece.updated.send(workpiece)
+
+        history = self._editor.history_manager
+        with history.transaction(_("Delete contour(s)")) as t:
+            cmd = ChangePropertyCommand(
+                target=workpiece,
+                property_name="_edited_boundaries",
+                new_value=new_geo,
+                old_value=old_value,
+                on_change_callback=_on_changed,
+                name=_("Delete contour(s)"),
+            )
+            t.execute(cmd)
+
+    def delete_segments(
+        self,
+        workpiece: WorkPiece,
+        segment_indices: Set[int],
+    ):
+        """Removes selected segments from a workpiece's boundaries.
+
+        Each segment index refers to a row in the geometry's internal
+        numpy data array. The MOVE commands that precede removed segments
+        are also removed to keep the path well-formed.
+
+        Args:
+            workpiece: The workpiece to modify.
+            segment_indices: Set of row indices to remove.
+        """
+        if not segment_indices:
+            return
+
+        boundaries = workpiece.boundaries
+        if boundaries is None or boundaries.is_empty():
+            return
+
+        data = boundaries.data
+        if data is None:
+            return
+
+        to_remove = set(segment_indices)
+        for idx in segment_indices:
+            if idx > 0 and data[idx - 1, COL_TYPE] == CMD_TYPE_MOVE:
+                to_remove.add(idx - 1)
+
+        remaining_rows = [
+            data[i] for i in range(len(data)) if i not in to_remove
+        ]
+
+        if not remaining_rows:
+            new_geo = Geometry()
+        else:
+            new_geo = Geometry()
+            new_geo._data = np.array(remaining_rows, dtype=np.float64)
+
+        old_value = workpiece._edited_boundaries
+
+        def _on_changed():
+            workpiece.clear_render_cache()
+            workpiece.updated.send(workpiece)
+
+        history = self._editor.history_manager
+        with history.transaction(_("Delete segment(s)")) as t:
+            cmd = ChangePropertyCommand(
+                target=workpiece,
+                property_name="_edited_boundaries",
+                new_value=new_geo,
+                old_value=old_value,
+                on_change_callback=_on_changed,
+                name=_("Delete segment(s)"),
+            )
+            t.execute(cmd)
 
     def add_geometry_provider_instance(
         self,

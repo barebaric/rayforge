@@ -552,7 +552,7 @@ class WorkPiece(DocItem):
         world_wp.source_asset_uid = self.source_asset_uid
 
         # Ensure any edited boundaries are carried over.
-        if self._edited_boundaries:
+        if self._edited_boundaries is not None:
             world_wp._edited_boundaries = self._edited_boundaries.copy()
 
         # Hydrate with data and renderer for use in isolated contexts
@@ -853,7 +853,7 @@ class WorkPiece(DocItem):
             ),
             "edited_boundaries": (
                 self._edited_boundaries.to_dict()
-                if self._edited_boundaries
+                if self._edited_boundaries is not None
                 else None
             ),
             "geometry_provider_uid": self.geometry_provider_uid,
