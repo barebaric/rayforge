@@ -321,6 +321,8 @@ class Pipeline:
         )
 
         if self._last_known_busy_state != current_busy_state:
+            if not current_busy_state:
+                self._update_and_emit_preview_time()
             self.processing_state_changed.send(
                 self, is_processing=current_busy_state
             )
@@ -1010,7 +1012,7 @@ class Pipeline:
                 elif estimate > 0:  # -1 indicates an error, 0 is valid
                     total_time += estimate
 
-        if is_calculating:
+        if is_calculating and self.is_busy:
             # Send a special signal to indicate calculation is in progress
             self.job_time_updated.send(self, total_seconds=None)
         else:
