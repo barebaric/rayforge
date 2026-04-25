@@ -394,16 +394,14 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._rotation_row.set_subtitle("---")
         transform_group.add(self._rotation_row)
 
+        self._scale_check = Adw.SwitchRow(title=_("Allow scaling"))
+        self._scale_check.set_active(False)
+        self._scale_check.connect("notify::active", self._on_scale_toggled)
+        transform_group.add(self._scale_check)
+
         self._scale_row = Adw.ActionRow(title=_("Scale"))
         self._scale_row.set_subtitle("---")
         transform_group.add(self._scale_row)
-
-        self._scale_check = Gtk.CheckButton(
-            label=_("Allow scaling"),
-        )
-        self._scale_check.set_active(False)
-        self._scale_check.connect("toggled", self._on_scale_toggled)
-        box.append(self._scale_check)
 
         self._warning_label = Gtk.Label(label="")
         self._warning_label.add_css_class("warning-label")
@@ -645,8 +643,8 @@ class PrintAndCutWizard(PatchedDialogWindow):
             if self._focus_active:
                 self._disable_focus()
 
-    def _on_scale_toggled(self, check_btn):
-        self._allow_scale = check_btn.get_active()
+    def _on_scale_toggled(self, switch_row, _param):
+        self._allow_scale = switch_row.get_active()
         self._update_apply_preview()
 
     def _local_to_world(
