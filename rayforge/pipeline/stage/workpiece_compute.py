@@ -218,6 +218,23 @@ def _execute_vector(
     if not _validate_workpiece_size(size_mm):
         return
 
+    if workpiece._edited_boundaries is not None:
+        if not workpiece._edited_boundaries.is_empty():
+            artifact = _run_producer_on_surface(
+                surface=None,
+                render_pixels_per_mm=None,
+                opsproducer=opsproducer,
+                laser=laser,
+                workpiece=workpiece,
+                settings=settings,
+                generation_id=generation_id,
+                generation_size=generation_size,
+                context=context,
+            )
+            if artifact:
+                yield artifact, 1.0
+        return
+
     if workpiece.boundaries and not opsproducer.requires_full_render:
         artifact = _run_producer_on_surface(
             surface=None,

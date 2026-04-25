@@ -1,8 +1,25 @@
 import logging
-from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List
+from typing import Optional, TYPE_CHECKING, Dict, Set, Tuple, cast, List
 import cairo
 import numpy as np
-from gi.repository import GLib
+from gi.repository import Gdk, GLib
+from ....core.geo import Geometry
+from ....core.geo.constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    CMD_TYPE_BEZIER,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_C1X,
+    COL_C1Y,
+    COL_C2X,
+    COL_C2Y,
+    COL_I,
+    COL_J,
+    COL_CW,
+)
 from ....core.workpiece import WorkPiece
 from ....core.step import Step
 from ....core.matrix import Matrix
@@ -27,6 +44,98 @@ logger = logging.getLogger(__name__)
 CAIRO_MAX_DIMENSION = 8192
 OPS_MARGIN_PX = 5
 REC_MARGIN_MM = 0.1  # A small "safe area" margin in mm for recordings
+CONTOUR_HIT_THRESHOLD_PX = 8.0
+
+
+def _segment_bbox(data: np.ndarray, idx: int) -> Optional[Tuple]:
+    """Returns (min_x, min_y, max_x, max_y) for one segment row."""
+    row = data[idx]
+    cmd = row[COL_TYPE]
+    if cmd == CMD_TYPE_MOVE:
+        return None
+    ex, ey = row[COL_X], row[COL_Y]
+    if idx > 0:
+        sx, sy = data[idx - 1, COL_X], data[idx - 1, COL_Y]
+    else:
+        sx, sy = 0.0, 0.0
+    if cmd == CMD_TYPE_LINE:
+        return (
+            min(sx, ex),
+            min(sy, ey),
+            max(sx, ex),
+            max(sy, ey),
+        )
+    if cmd == CMD_TYPE_BEZIER:
+        c1x, c1y = row[COL_C1X], row[COL_C1Y]
+        c2x, c2y = row[COL_C2X], row[COL_C2Y]
+        pts_x = [sx, ex, c1x, c2x]
+        pts_y = [sy, ey, c1y, c2y]
+        return (min(pts_x), min(pts_y), max(pts_x), max(pts_y))
+    if cmd == CMD_TYPE_ARC:
+        import math
+
+        ci, cj = row[COL_I], row[COL_J]
+        r = math.hypot(ci, cj)
+        cx, cy = sx + ci, sy + cj
+        return (
+            cx - r,
+            cy - r,
+            cx + r,
+            cy + r,
+        )
+    return (min(sx, ex), min(sy, ey), max(sx, ex), max(sy, ey))
+
+
+def _draw_segment(ctx: cairo.Context, data: np.ndarray, idx: int):
+    """Draws a single segment (LINE/ARC/BEZIER) to a cairo context."""
+    row = data[idx]
+    cmd = row[COL_TYPE]
+    if cmd == CMD_TYPE_MOVE:
+        return
+    ex, ey = row[COL_X], row[COL_Y]
+    if idx > 0:
+        sx, sy = data[idx - 1, COL_X], data[idx - 1, COL_Y]
+    else:
+        sx, sy = 0.0, 0.0
+    if cmd == CMD_TYPE_LINE:
+        ctx.move_to(sx, sy)
+        ctx.line_to(ex, ey)
+    elif cmd == CMD_TYPE_BEZIER:
+        ctx.move_to(sx, sy)
+        ctx.curve_to(
+            row[COL_C1X],
+            row[COL_C1Y],
+            row[COL_C2X],
+            row[COL_C2Y],
+            ex,
+            ey,
+        )
+    elif cmd == CMD_TYPE_ARC:
+        import math
+
+        ci, cj = row[COL_I], row[COL_J]
+        r = math.hypot(ci, cj)
+        cx, cy = sx + ci, sy + cj
+        start_angle = math.atan2(-cj, -ci)
+        end_angle = math.atan2(ey - cy, ex - cx)
+        cw = bool(row[COL_CW])
+        ctx.move_to(sx, sy)
+        if cw:
+            ctx.arc_negative(cx, cy, r, start_angle, end_angle)
+        else:
+            ctx.arc(cx, cy, r, start_angle, end_angle)
+
+
+class VectorEditState:
+    """Tracks the state of an in-progress vector segment edit session."""
+
+    def __init__(self, geometry: Geometry):
+        self.geometry = geometry
+        self.selected_segments: Set[int] = set()
+        self.hovered_segment: Optional[int] = None
+        self.frame_start: Optional[Tuple[float, float]] = None
+        self.frame_end: Optional[Tuple[float, float]] = None
+        self.frame_drag_start_world: Optional[Tuple[float, float]] = None
 
 
 class WorkPieceElement(CanvasElement):
@@ -99,7 +208,7 @@ class WorkPieceElement(CanvasElement):
             buffered=True,
             pixel_perfect_hit=True,
             hit_distance=5,
-            is_editable=False,
+            is_editable=True,
             **kwargs,
         )
 
@@ -112,6 +221,8 @@ class WorkPieceElement(CanvasElement):
             )
 
         self.content_transform = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
+
+        self._edit_state: Optional[VectorEditState] = None
 
         self.data.updated.connect(self._on_model_content_changed)
         self.data.transform_changed.connect(self._on_transform_changed)
@@ -146,6 +257,8 @@ class WorkPieceElement(CanvasElement):
         else:
             # We recovered state, but verify if a repaint is needed
             super().trigger_update()
+
+        self._update_editable_state()
 
     def _hydrate_from_cache(self) -> bool:
         """
@@ -362,6 +475,12 @@ class WorkPieceElement(CanvasElement):
         Called from ``draw()`` when ``_composited_dirty`` is True.
         """
         if not self.data.layer or not self.data.layer.workflow:
+            self._dispose_composited()
+            self._composited_dirty = False
+            return
+
+        edited = self.data._edited_boundaries
+        if edited is not None and edited.is_empty():
             self._dispose_composited()
             self._composited_dirty = False
             return
@@ -667,6 +786,11 @@ class WorkPieceElement(CanvasElement):
         """
         if workpiece_uid != self.data.uid:
             return
+        edited = self.data._edited_boundaries
+        if edited is not None and edited.is_empty():
+            self._remove_ops_surface(step_uid)
+            self._invalidate_composited()
+            return
         self._update_ops_cache_from_handle(step_uid)
         self._composited_dirty = True
         if self.canvas:
@@ -751,6 +875,289 @@ class WorkPieceElement(CanvasElement):
 
         # 6. Return location info if within threshold
         return {"segment_index": segment_index, "t": t}
+
+    def _update_editable_state(self):
+        if self.data.geometry_provider_uid:
+            self.is_editable = False
+            return
+        boundaries = self.data.boundaries
+        self.is_editable = boundaries is not None and not boundaries.is_empty()
+
+    def on_edit_mode_enter(self):
+        boundaries = self.data.boundaries
+        if boundaries is None or boundaries.is_empty():
+            return
+        self._edit_state = VectorEditState(boundaries)
+        self.invalidate_and_rerender()
+
+    def on_edit_mode_leave(self):
+        self._edit_state = None
+        if self.canvas:
+            self.canvas.queue_draw()
+
+    def draw_edit_overlay(self, ctx: cairo.Context):
+        if not self._edit_state or not self.canvas:
+            return
+        data = self._edit_state.geometry.data
+        if data is None:
+            return
+
+        screen_transform = (
+            self.canvas.view_transform @ self.get_world_transform()
+        )
+        sx, sy = screen_transform.get_scale()
+        screen_scale = max(abs(sx), abs(sy))
+        if screen_scale < 1e-9:
+            return
+
+        ctx.save()
+        cairo_matrix = cairo.Matrix(*screen_transform.for_cairo())
+        ctx.transform(cairo_matrix)
+
+        default_color = (0.5, 0.5, 0.5, 0.6)
+        default_width = 1.5 / screen_scale
+        selected_color = (1.0, 0.3, 0.3, 0.9)
+        selected_width = 2.5 / screen_scale
+        hovered_color = (0.4, 0.6, 1.0, 0.8)
+        hovered_width = 2.0 / screen_scale
+
+        prev_color = None
+        prev_width = None
+
+        for idx in range(len(data)):
+            cmd = data[idx, COL_TYPE]
+            if cmd == CMD_TYPE_MOVE:
+                continue
+
+            is_sel = idx in self._edit_state.selected_segments
+            is_hov = idx == self._edit_state.hovered_segment
+
+            if is_sel:
+                color, width = selected_color, selected_width
+            elif is_hov:
+                color, width = hovered_color, hovered_width
+            else:
+                color, width = default_color, default_width
+
+            if color != prev_color or width != prev_width:
+                ctx.set_source_rgba(*color)
+                ctx.set_line_width(width)
+                prev_color = color
+                prev_width = width
+
+            _draw_segment(ctx, data, idx)
+            ctx.stroke()
+
+        ctx.restore()
+
+        if self._edit_state.frame_start and self._edit_state.frame_end:
+            self._draw_selection_frame(ctx, screen_transform)
+
+    def _draw_selection_frame(self, ctx, screen_transform):
+        if not self._edit_state:
+            return
+        fs = self._edit_state.frame_start
+        fe = self._edit_state.frame_end
+        if fs is None or fe is None:
+            return
+        s1 = screen_transform.transform_point(fs)
+        s2 = screen_transform.transform_point(fe)
+        ctx.save()
+        ctx.set_source_rgba(0.2, 0.5, 0.8, 0.3)
+        fx, fy = min(s1[0], s2[0]), min(s1[1], s2[1])
+        fw, fh = abs(s2[0] - s1[0]), abs(s2[1] - s1[1])
+        ctx.rectangle(fx, fy, fw, fh)
+        ctx.fill_preserve()
+        ctx.set_source_rgb(0.2, 0.5, 0.8)
+        ctx.set_line_width(1.0)
+        ctx.set_dash((4, 4))
+        ctx.stroke()
+        ctx.restore()
+
+    def _hit_test_segment(
+        self, world_x: float, world_y: float
+    ) -> Optional[int]:
+        if not self._edit_state or not self.canvas:
+            return None
+
+        work_surface = cast("WorkSurface", self.canvas)
+        ppm_x, _ = work_surface.get_view_scale()
+        if ppm_x < 1e-9:
+            return None
+
+        try:
+            inv_world = self.get_world_transform().invert()
+            local_x, local_y = inv_world.transform_point((world_x, world_y))
+        except Exception:
+            return None
+
+        world_w, world_h = self.data.size
+        if world_w < 1e-9 or world_h < 1e-9:
+            return None
+
+        threshold_01 = CONTOUR_HIT_THRESHOLD_PX / (ppm_x * world_w)
+        threshold_sq = threshold_01 * threshold_01
+
+        result = self._edit_state.geometry.find_closest_point(local_x, local_y)
+        if result is None:
+            return None
+
+        seg_idx, _, closest_pt = result
+        dx = local_x - closest_pt[0]
+        dy = local_y - closest_pt[1]
+        if dx * dx + dy * dy <= threshold_sq:
+            return seg_idx
+        return None
+
+    def _segments_in_frame(
+        self, x1: float, y1: float, x2: float, y2: float
+    ) -> Set[int]:
+        if not self._edit_state:
+            return set()
+        data = self._edit_state.geometry.data
+        if data is None:
+            return set()
+        fmin_x, fmin_y = min(x1, x2), min(y1, y2)
+        fmax_x, fmax_y = max(x1, x2), max(y1, y2)
+        result = set()
+        for idx in range(len(data)):
+            bbox = _segment_bbox(data, idx)
+            if bbox is None:
+                continue
+            smin_x, smin_y, smax_x, smax_y = bbox
+            if (
+                smax_x >= fmin_x
+                and smin_x <= fmax_x
+                and smax_y >= fmin_y
+                and smin_y <= fmax_y
+            ):
+                result.add(idx)
+        return result
+
+    def _world_to_local(
+        self, wx: float, wy: float
+    ) -> Optional[Tuple[float, float]]:
+        try:
+            inv = self.get_world_transform().invert()
+            return inv.transform_point((wx, wy))
+        except Exception:
+            return None
+
+    def handle_edit_press(
+        self, world_x: float, world_y: float, n_press: int = 1
+    ) -> bool:
+        if not self._edit_state:
+            return False
+
+        if n_press >= 2:
+            return False
+
+        hit = self._hit_test_segment(world_x, world_y)
+
+        if hit is None:
+            local = self._world_to_local(world_x, world_y)
+            if local is not None:
+                self._edit_state.frame_start = local
+                self._edit_state.frame_end = local
+                self._edit_state.frame_drag_start_world = (
+                    world_x,
+                    world_y,
+                )
+            return True
+
+        shift_pressed = self.canvas._shift_pressed if self.canvas else False
+
+        if shift_pressed:
+            if hit in self._edit_state.selected_segments:
+                self._edit_state.selected_segments.discard(hit)
+            else:
+                self._edit_state.selected_segments.add(hit)
+        else:
+            self._edit_state.selected_segments = {hit}
+
+        if self.canvas:
+            self.canvas.queue_draw()
+        return True
+
+    def handle_edit_drag(self, world_dx: float, world_dy: float):
+        if not self._edit_state or not self.canvas:
+            return
+        if self._edit_state.frame_drag_start_world is None:
+            return
+
+        swx, swy = self._edit_state.frame_drag_start_world
+        cur_wx = swx + world_dx
+        cur_wy = swy + world_dy
+
+        cur_local = self._world_to_local(cur_wx, cur_wy)
+        if cur_local is None:
+            return
+
+        start_local = self._world_to_local(swx, swy)
+        if start_local is None:
+            return
+
+        self._edit_state.frame_start = start_local
+        self._edit_state.frame_end = cur_local
+        self.canvas.queue_draw()
+
+    def handle_edit_release(self, world_x: float, world_y: float):
+        if not self._edit_state:
+            return
+        if self._edit_state.frame_start and self._edit_state.frame_end:
+            x1, y1 = self._edit_state.frame_start
+            x2, y2 = self._edit_state.frame_end
+            if abs(x2 - x1) > 1e-9 or abs(y2 - y1) > 1e-9:
+                in_frame = self._segments_in_frame(x1, y1, x2, y2)
+                shift = self.canvas._shift_pressed if self.canvas else False
+                if shift:
+                    self._edit_state.selected_segments ^= in_frame
+                else:
+                    self._edit_state.selected_segments = in_frame
+            else:
+                if not (self.canvas._shift_pressed if self.canvas else False):
+                    self._edit_state.selected_segments.clear()
+        self._edit_state.frame_start = None
+        self._edit_state.frame_end = None
+        self._edit_state.frame_drag_start_world = None
+        if self.canvas:
+            self.canvas.queue_draw()
+
+    def handle_edit_motion(self, world_x: float, world_y: float) -> bool:
+        if not self._edit_state:
+            return False
+
+        hit = self._hit_test_segment(world_x, world_y)
+
+        if hit != self._edit_state.hovered_segment:
+            self._edit_state.hovered_segment = hit
+            if self.canvas:
+                self.canvas.queue_draw()
+        return True
+
+    def handle_edit_key(self, keyval: int) -> bool:
+        if not self._edit_state:
+            return False
+
+        if keyval in (Gdk.KEY_Delete, Gdk.KEY_BackSpace):
+            if not self._edit_state.selected_segments:
+                return True
+            work_surface = cast("WorkSurface", self.canvas)
+            work_surface.editor.edit.delete_segments(
+                self.data, self._edit_state.selected_segments
+            )
+            boundaries = self.data.boundaries
+            if boundaries is None or boundaries.is_empty():
+                self.clear_all_ops_caches()
+                if self.canvas:
+                    self.canvas.leave_edit_mode()
+                return True
+            self._edit_state = VectorEditState(boundaries)
+            if self.canvas:
+                self.canvas.queue_draw()
+            return True
+
+        return False
 
     def remove(self):
         """Disconnects signals and removes the element from the canvas."""
@@ -843,6 +1250,7 @@ class WorkPieceElement(CanvasElement):
             f"Model content changed for '{workpiece.name}', triggering update."
         )
         self._create_or_update_tab_handles()
+        self._update_editable_state()
         self.invalidate_and_rerender()
 
     def _on_transform_changed(
