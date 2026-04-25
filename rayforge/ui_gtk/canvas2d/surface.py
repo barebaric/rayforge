@@ -765,7 +765,7 @@ class WorkSurface(WorldSurface):
         """Handles machine state changes including position updates."""
         m_pos = state.machine_pos
         if m_pos and all(p is not None for p in m_pos):
-            m_x, m_y, _ = m_pos
+            m_x, m_y = m_pos[0], m_pos[1]
             self.set_laser_dot_position(m_x, m_y)
 
     def do_snapshot(self, snapshot: Gtk.Snapshot) -> None:
