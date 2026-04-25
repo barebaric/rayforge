@@ -122,6 +122,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._saved_bottom_panel_visible = False
         self._old_doc = None  # Track previous document for signal reconnection
         self.canvas3d: Optional[Canvas3D] = None
+        self._canvas3d_time_overlay: Optional[TimeEstimateOverlay] = None
         self._is_syncing_3d = False
 
         # The ToastOverlay will wrap the main content box
@@ -1387,6 +1388,8 @@ class MainWindow(Adw.ApplicationWindow):
         self._canvas3d_playback.step_changed.connect(
             self._on_3d_playback_step_changed
         )
+        self._canvas3d_time_overlay = TimeEstimateOverlay()
+        self._canvas3d_overlay.add_overlay(self._canvas3d_time_overlay)
         self.view_stack.add_named(self._canvas3d_overlay, "3d")
 
     def _on_document_settled(self, sender):
@@ -2269,3 +2272,5 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_job_time_updated(self, sender, *, total_seconds):
         self._time_estimate_overlay.set_estimated_time(total_seconds)
+        if self._canvas3d_time_overlay is not None:
+            self._canvas3d_time_overlay.set_estimated_time(total_seconds)
