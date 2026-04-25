@@ -1168,6 +1168,15 @@ class CanvasElement:
         """
         return False
 
+    def handle_edit_select_all(self) -> bool:
+        """
+        Handles a select-all request while in edit mode.
+
+        Returns:
+            True if the event was handled.
+        """
+        return False
+
     def handle_drag_move(self, world_dx: float, world_dy: float) -> Point:
         """
         Intercepts a drag move to apply constraints. Subclasses can

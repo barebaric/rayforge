@@ -2161,10 +2161,7 @@ class MainWindow(Adw.ApplicationWindow):
         """
         Selects all top-level items (workpieces and groups) in the document.
         """
-        doc = self.doc_editor.doc
-        items_to_select = doc.get_top_level_items()
-        if items_to_select:
-            self.surface.select_items(items_to_select)
+        self.surface.select_all()
 
     def on_duplicate_requested(self, sender, items: List[DocItem]):
         """

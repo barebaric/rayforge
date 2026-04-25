@@ -1614,7 +1614,10 @@ class WorkSurface(WorldSurface):
     def select_all(self):
         """
         Selects all workpieces on all layers.
+        In edit mode, selects all segments instead.
         """
+        if self.edit_context and self.edit_context.handle_edit_select_all():
+            return
         for elem in self.root.get_all_children_recursive():
             if isinstance(elem.data, DocItem) and elem.selectable:
                 elem.selected = True
