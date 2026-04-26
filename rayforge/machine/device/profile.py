@@ -345,9 +345,7 @@ class DeviceProfile:
                 dialect_config, str(dialect_path)
             )
         elif driver_uses_gcode:
-            raise FileNotFoundError(
-                f"Dialect file not found: {dialect_path}"
-            )
+            raise FileNotFoundError(f"Dialect file not found: {dialect_path}")
 
         return cls(
             meta=meta,
@@ -361,24 +359,22 @@ class DeviceProfile:
         m.name = self.meta.name
         cfg = self.machine_config
 
-        driver_uses_gcode = True
-        if cfg.driver:
-            try:
-                driver_cls = get_driver_cls(cfg.driver)
-                driver_uses_gcode = driver_cls.uses_gcode
-                m.set_driver(driver_cls, cfg.driver_args)
-            except (ValueError, ImportError):
-                logger.error(
-                    f"Failed to create driver {cfg.driver} "
-                    f"for device '{self.name}'"
-                )
-
         context.machine_mgr.add_machine(m)
 
+        driver_uses_gcode = True
+        if cfg.driver:
+            driver_cls = get_driver_cls(cfg.driver)
+            driver_uses_gcode = driver_cls.uses_gcode
+            try:
+                m.set_driver(driver_cls, cfg.driver_args)
+            except Exception as exc:
+                logger.error(
+                    f"Failed to create driver {cfg.driver} "
+                    f"for device '{self.name}': {exc}"
+                )
+
         if driver_uses_gcode and self.dialect_config:
-            new_label = _("{name} (device dialect)").format(
-                name=self.name
-            )
+            new_label = _("{name} (device dialect)").format(name=self.name)
             dialect = GcodeDialect.from_template_dict(
                 self.dialect_config,
                 label=new_label,
@@ -387,6 +383,8 @@ class DeviceProfile:
             )
             context.dialect_mgr.add_dialect(dialect)
             m.dialect_uid = dialect.uid
+        elif not driver_uses_gcode:
+            m.dialect_uid = None
 
         if cfg.gcode_precision is not None:
             m.gcode_precision = cfg.gcode_precision

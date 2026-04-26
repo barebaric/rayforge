@@ -228,9 +228,7 @@ class Machine:
         if cs:
             cs.offset = offset
 
-    def update_wcs_offsets_batch(
-        self, offsets: Dict[str, Point3D]
-    ) -> bool:
+    def update_wcs_offsets_batch(self, offsets: Dict[str, Point3D]) -> bool:
         new_systems = {
             name: CoordinateSystem(name=name, label="", offset=offset)
             for name, offset in offsets.items()
