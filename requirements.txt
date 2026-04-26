@@ -2,7 +2,7 @@ aiohttp==3.13.5
 asyncudp==0.11.0
 blinker==1.9.0
 ezdxf==1.4.2
-GitPython==3.1.44
+GitPython==3.1.47
 numpy==2.3.4
 opencv_python
 platformdirs==4.3.6
