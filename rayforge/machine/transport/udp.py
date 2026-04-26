@@ -9,9 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class UdpTransport(Transport):
-    def __init__(
-        self, host: str, port: int, local_port: Optional[int] = None
-    ):
+    def __init__(self, host: str, port: int, local_port: Optional[int] = None):
         super().__init__()
         self.host = host
         self.host_ip = socket.gethostbyname(host)

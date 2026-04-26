@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 import zipfile
 from pathlib import Path
@@ -13,6 +14,13 @@ from rayforge.machine.device.profile import (
 )
 from rayforge.machine.models.machine import Origin
 from rayforge.machine.device.manager import DeviceProfileManager
+from rayforge.shared.tasker.manager import TaskManager
+
+
+async def _wait_for_tasks(task_mgr: TaskManager):
+    if await asyncio.to_thread(task_mgr.wait_until_settled, 2000):
+        return
+    pytest.fail("Task manager did not become idle in time.")
 
 
 def _write_yaml(path: Path, data: dict):
@@ -178,6 +186,33 @@ class TestDeviceProfileLoad:
                 "api_version": 1,
                 "device": {"name": "No Dialect"},
                 "machine": {"driver": "GrblSerialDriver"},
+            },
+        )
+        with pytest.raises(FileNotFoundError, match="not found"):
+            DeviceProfile.from_path(device_dir)
+
+    def test_missing_dialect_ok_for_non_gcode_driver(self, tmp_path):
+        device_dir = tmp_path / "ruida-no-dialect"
+        _write_yaml(
+            device_dir / "device.yaml",
+            {
+                "api_version": 1,
+                "device": {"name": "Ruida Device"},
+                "machine": {"driver": "RuidaDriver"},
+            },
+        )
+        pkg = DeviceProfile.from_path(device_dir)
+        assert pkg.machine_config.driver == "RuidaDriver"
+        assert pkg.dialect_config == {}
+
+    def test_dialect_optional_when_driver_absent(self, tmp_path):
+        device_dir = tmp_path / "no-driver-no-dialect"
+        _write_yaml(
+            device_dir / "device.yaml",
+            {
+                "api_version": 1,
+                "device": {"name": "No Driver"},
+                "machine": {},
             },
         )
         with pytest.raises(FileNotFoundError, match="not found"):
@@ -594,6 +629,13 @@ class TestExportMachine:
             setattr(machine, k, v)
         return machine
 
+    def _make_mock_ruida_machine(self, name):
+        return self._make_mock_machine(
+            name,
+            driver_name="RuidaDriver",
+            dialect=None,
+        )
+
     def test_export_machine_basic(self, tmp_path):
         machine = self._make_mock_machine("Test Export")
 
@@ -619,3 +661,48 @@ class TestExportMachine:
         assert pkg.meta.name == "Dir Export"
         assert (dest_dir / MANIFEST_FILENAME).exists()
         assert (dest_dir / DIALECT_FILENAME).exists()
+
+    def test_export_ruida_machine_no_dialect(self, tmp_path):
+        machine = self._make_mock_ruida_machine("Ruida Export")
+
+        dest_dir = tmp_path / "pkg"
+        pkg = export_machine_to_dir(machine, dest_dir)
+
+        assert pkg.meta.name == "Ruida Export"
+        assert (dest_dir / MANIFEST_FILENAME).exists()
+        assert not (dest_dir / DIALECT_FILENAME).exists()
+
+
+class TestCreateMachine:
+    @pytest.mark.asyncio
+    async def test_create_machine_gcode_has_dialect(
+        self, tmp_path, lite_context, task_mgr
+    ):
+        device_dir = _make_device(tmp_path, name="GRBL Test")
+        pkg = DeviceProfile.from_path(device_dir)
+        m = pkg.create_machine(lite_context)
+        await _wait_for_tasks(task_mgr)
+
+        assert m.dialect_uid is not None
+        assert m.dialect is not None
+
+    @pytest.mark.asyncio
+    async def test_create_machine_ruida_no_dialect(
+        self, tmp_path, lite_context, task_mgr
+    ):
+        device_dir = tmp_path / "ruida-device"
+        _write_yaml(
+            device_dir / "device.yaml",
+            {
+                "api_version": 1,
+                "device": {"name": "Ruida Test"},
+                "machine": {"driver": "RuidaDriver"},
+            },
+        )
+        pkg = DeviceProfile.from_path(device_dir)
+        m = pkg.create_machine(lite_context)
+        await _wait_for_tasks(task_mgr)
+
+        assert m.dialect_uid is None
+        assert m.dialect is None
+        assert m.driver_name == "RuidaDriver"

@@ -1,0 +1,11 @@
+api_version: 1
+device:
+  name: Generic Ruida
+  description: A generic Ruida laser controller connected via UDP.
+machine:
+  driver: RuidaDriver
+  origin: bottom_left
+  driver_args:
+    host: ''
+    main_port: 50200
+    jog_port: 50210
