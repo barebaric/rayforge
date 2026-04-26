@@ -3,12 +3,12 @@ name: Build and Publish Wheel
 on:
   push:
     branches:
-      - "*"
+      - main
     tags:
       - "*"
   pull_request:
     branches:
-      - "*"
+      - "**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}

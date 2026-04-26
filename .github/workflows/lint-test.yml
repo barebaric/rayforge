@@ -2,10 +2,13 @@ name: Lint and Test
 on:
   push:
     branches:
-      - "**" # Run on all branches
+      - main
     tags:
-      - "*" # Include tags to trigger builds
-  workflow_call: # Allow this workflow to be called by other workflows
+      - "*"
+  pull_request:
+    branches:
+      - "**"
+  workflow_call:
 
 jobs:
   lint:
