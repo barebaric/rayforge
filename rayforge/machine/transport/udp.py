@@ -37,10 +37,13 @@ class UdpTransport(Transport):
             local_addr = None
             if self.local_port is not None:
                 local_addr = ("0.0.0.0", self.local_port)
+            reuse_port = (
+                hasattr(socket, "SO_REUSEPORT") if local_addr else None
+            )
             self.reader = await asyncudp.create_socket(
                 local_addr=local_addr,
                 remote_addr=(self.host_ip, self.port),
-                reuse_port=True if local_addr else None,
+                reuse_port=reuse_port,
             )
             self.writer = self.reader
 
