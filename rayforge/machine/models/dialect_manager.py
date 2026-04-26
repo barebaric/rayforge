@@ -1,6 +1,6 @@
 import logging
 from dataclasses import replace
-from typing import List, Dict, Tuple, TYPE_CHECKING
+from typing import List, Dict, Optional, Tuple, TYPE_CHECKING
 import yaml
 from pathlib import Path
 from blinker import Signal
@@ -55,8 +55,8 @@ class DialectManager:
         self._registry[uid_key] = dialect
 
     def migrate_builtin_dialect_to_copy(
-        self, dialect_uid: str, machine_name: str
-    ) -> Tuple[str, bool]:
+        self, dialect_uid: Optional[str], machine_name: str
+    ) -> Tuple[Optional[str], bool]:
         """
         If dialect_uid references a built-in dialect, creates an isolated
         copy and returns the new UID with migrated=True. Otherwise returns
@@ -65,6 +65,8 @@ class DialectManager:
         This ensures user configurations are isolated from built-in dialect
         changes during app upgrades.
         """
+        if dialect_uid is None:
+            return None, False
         try:
             dialect = self.get(dialect_uid)
         except ValueError:

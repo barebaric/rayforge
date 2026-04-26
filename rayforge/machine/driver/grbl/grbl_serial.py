@@ -141,6 +141,7 @@ class GrblSerialDriver(Driver):
     @classmethod
     def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
         """Returns a GcodeEncoder configured for the machine's dialect."""
+        assert machine.dialect is not None
         return GcodeEncoder(machine.dialect)
 
     def _setup_implementation(self, **kwargs: Any) -> None:
@@ -915,7 +916,7 @@ class GrblSerialDriver(Driver):
                  homes all axes. Can be a single Axis or multiple axes
                  using binary operators (e.g. Axis.X|Axis.Y)
         """
-        dialect = self._machine.dialect
+        dialect = self.dialect
 
         # Execute the homing command(s)
         if axes is None:
@@ -947,7 +948,7 @@ class GrblSerialDriver(Driver):
         self.state_changed.send(self, state=self.state)
 
     async def move_to(self, pos_x, pos_y) -> None:
-        dialect = self._machine.dialect
+        dialect = self.dialect
         cmd = dialect.move_to.format(
             speed=1500, x=float(pos_x), y=float(pos_y)
         )
@@ -955,12 +956,12 @@ class GrblSerialDriver(Driver):
 
     async def select_tool(self, tool_number: int) -> None:
         """Sends a tool change command for the given tool number."""
-        dialect = self._machine.dialect
+        dialect = self.dialect
         cmd = dialect.tool_change.format(tool_number=tool_number)
         await self._execute_command(cmd)
 
     async def clear_alarm(self) -> None:
-        dialect = self._machine.dialect
+        dialect = self.dialect
         response = await self._execute_command(dialect.clear_alarm)
         has_error = any(line.startswith("error:") for line in response)
         if not has_error:
@@ -976,7 +977,7 @@ class GrblSerialDriver(Driver):
             percent: Power percentage (0.0-1.0). 0 disables power.
         """
         # Get the dialect for power control commands
-        dialect = self._machine.dialect
+        dialect = self.dialect
 
         if percent <= 0:
             # Disable power
@@ -997,7 +998,7 @@ class GrblSerialDriver(Driver):
             head: The laser head to control.
             percent: Power percentage (0.0-1.0). 0 disables power.
         """
-        dialect = self._machine.dialect
+        dialect = self.dialect
 
         if percent <= 0:
             cmd = dialect.laser_off
@@ -1020,7 +1021,7 @@ class GrblSerialDriver(Driver):
             **deltas: Axis names and distances (e.g. x=10.0, y=5.0)
         """
         # Build the command with all specified axes
-        dialect = self._machine.dialect
+        dialect = self.dialect
         cmd_parts = [dialect.jog.format(speed=speed)]
 
         for axis_name, distance in deltas.items():
@@ -1100,7 +1101,7 @@ class GrblSerialDriver(Driver):
         p_num = gcode_to_p_number(wcs_slot)
         if p_num is None:
             raise ValueError(f"Invalid WCS slot: {wcs_slot}")
-        dialect = self._machine.dialect
+        dialect = self.dialect
         cmd = dialect.set_wcs_offset.format(p_num=p_num, x=x, y=y, z=z)
         await self._execute_command(cmd)
 
@@ -1134,7 +1135,7 @@ class GrblSerialDriver(Driver):
     ) -> Optional[Pos]:
         assert axis.name, "Probing requires a single, named axis."
         axis_letter = axis.name.upper()
-        dialect = self._machine.dialect
+        dialect = self.dialect
         cmd = dialect.probe_cycle.format(
             axis_letter=axis_letter,
             max_travel=max_travel,

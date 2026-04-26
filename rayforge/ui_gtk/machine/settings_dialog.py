@@ -1,16 +1,24 @@
 import logging
+import webbrowser
 from pathlib import Path
 from typing import Optional
 from gettext import gettext as _
 
-from gi.repository import Adw, GLib, Gtk
+from gi.repository import Adw, Gdk, GLib, Gtk
 
 from ...camera.models import Camera
 from ...context import get_context
+from ... import const
+from ...machine.driver import (
+    get_driver_cls,
+    DriverMaturity,
+    DRIVER_MATURITY_LABELS,
+)
 from ...machine.models.machine import Machine
 from ..camera.camera_preferences_page import CameraPreferencesPage
 from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
+from ..shared.gtk import apply_css
 from .advanced_preferences_page import AdvancedPreferencesPage
 from .device_settings_page import DeviceSettingsPage
 from .general_preferences_page import GeneralPreferencesPage
@@ -23,6 +31,16 @@ from .rotary_module_page import RotaryModulePage
 from .nogo_zones_page import NogoZonesPage
 
 logger = logging.getLogger(__name__)
+
+apply_css("""
+.maturity-warning {
+    background-color: alpha(@warning_color, 0.15);
+    padding: 10px 28px;
+}
+.maturity-link {
+    text-decoration: underline;
+}
+""")
 
 
 class MachineSettingsDialog(PatchedDialogWindow):
@@ -40,6 +58,8 @@ class MachineSettingsDialog(PatchedDialogWindow):
         self.machine = machine
         self._row_to_page_name = {}
         self._initial_page = initial_page
+        self._gcode_row: Optional[Gtk.ListBoxRow] = None
+        self._gcode_stack_page: Optional[Gtk.StackPage] = None
         if machine.name:
             self.set_title(
                 _("{machine_name} - Machine Settings").format(
@@ -66,6 +86,51 @@ class MachineSettingsDialog(PatchedDialogWindow):
         export_button.connect("clicked", self._on_export_clicked)
         header_bar.pack_end(export_button)
         main_box.append(header_bar)
+
+        # Maturity warning banner
+        self.maturity_banner = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=12,
+            hexpand=True,
+        )
+        self.maturity_banner.add_css_class("maturity-warning")
+        self._maturity_icon = get_icon("warning-symbolic")
+        self._maturity_icon.add_css_class("warning")
+        self._maturity_label = Gtk.Label(wrap=True, xalign=0, hexpand=True)
+        self._maturity_label.add_css_class("warning-label")
+
+        self._maturity_link = Gtk.Label(
+            label=_("Report an issue"),
+            wrap=False,
+            xalign=0,
+            hexpand=False,
+        )
+        self._maturity_link.add_css_class("warning-label")
+        self._maturity_link.add_css_class("maturity-link")
+        link_click = Gtk.GestureClick.new()
+        link_click.connect(
+            "pressed",
+            lambda *_: webbrowser.open(const.ISSUES_URL),
+        )
+        self._maturity_link.add_controller(link_click)
+        link_motion = Gtk.EventControllerMotion()
+        link_motion.connect(
+            "enter",
+            lambda *_: self._maturity_link.set_cursor(
+                Gdk.Cursor.new_from_name("pointer")
+            ),
+        )
+        link_motion.connect(
+            "leave",
+            lambda *_: self._maturity_link.set_cursor(None),
+        )
+        self._maturity_link.add_controller(link_motion)
+
+        self.maturity_banner.append(self._maturity_icon)
+        self.maturity_banner.append(self._maturity_label)
+        self.maturity_banner.append(self._maturity_link)
+        self.maturity_banner.set_visible(False)
+        main_box.append(self.maturity_banner)
 
         # Navigation Split View for sidebar and content
         split_view = Adw.NavigationSplitView(vexpand=True)
@@ -99,6 +164,7 @@ class MachineSettingsDialog(PatchedDialogWindow):
         # --- Page 4: G-code ---
         gcode_page = GcodeSettingsPage(machine=self.machine)
         self.content_stack.add_titled(gcode_page, "gcode", _("G-code"))
+        self._gcode_stack_page = self.content_stack.get_page(gcode_page)
 
         # --- Page 5: Hooks & Macros ---
         hooks_macros_page = HooksMacrosPage(machine=self.machine)
@@ -161,6 +227,7 @@ class MachineSettingsDialog(PatchedDialogWindow):
             _("Advanced"), "machine-settings-advanced-symbolic", "advanced"
         )
         self._add_sidebar_row(_("G-code"), "gcode-symbolic", "gcode")
+        self._gcode_row = self.sidebar_list.get_row_at_index(3)
         self._add_sidebar_row(
             _("Hooks & Macros"), "code-symbolic", "hooks-macros"
         )
@@ -186,8 +253,13 @@ class MachineSettingsDialog(PatchedDialogWindow):
         camera_mgr.controller_removed.connect(self._sync_camera_page)
         self.connect("destroy", self._on_destroy)
 
+        # React to driver changes (e.g. show/hide G-code page)
+        self.machine.changed.connect(self._on_machine_changed)
+
         # Initial population of all dependent pages
         self._sync_camera_page()
+        self._update_gcode_page_visibility()
+        self._update_maturity_banner()
 
         # Select the specified page or first row by default
         if self._initial_page:
@@ -197,6 +269,40 @@ class MachineSettingsDialog(PatchedDialogWindow):
                     break
         else:
             self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
+
+    def _on_machine_changed(self, sender=None, **kwargs):
+        self._update_gcode_page_visibility()
+        self._update_maturity_banner()
+
+    def _update_maturity_banner(self):
+        maturity = DriverMaturity.STABLE
+        if self.machine.driver_name:
+            driver_cls = get_driver_cls(self.machine.driver_name)
+            maturity = driver_cls.maturity
+        label = DRIVER_MATURITY_LABELS.get(maturity, "")
+        if label:
+            self._maturity_label.set_text(label)
+            self.maturity_banner.set_visible(True)
+        else:
+            self.maturity_banner.set_visible(False)
+
+    def _update_gcode_page_visibility(self):
+        uses_gcode = True
+        if self.machine.driver_name:
+            driver_cls = get_driver_cls(self.machine.driver_name)
+            uses_gcode = driver_cls.uses_gcode
+
+        if self._gcode_stack_page:
+            self._gcode_stack_page.set_visible(uses_gcode)
+        if self._gcode_row:
+            self._gcode_row.set_visible(uses_gcode)
+
+        if not uses_gcode:
+            selected = self.sidebar_list.get_selected_row()
+            if selected is self._gcode_row:
+                self.sidebar_list.select_row(
+                    self.sidebar_list.get_row_at_index(0)
+                )
 
     def _on_export_clicked(self, button):
         """Opens a folder chooser to export the machine as a zip."""
@@ -307,3 +413,4 @@ class MachineSettingsDialog(PatchedDialogWindow):
         camera_mgr = get_context().camera_mgr
         camera_mgr.controller_added.disconnect(self._sync_camera_page)
         camera_mgr.controller_removed.disconnect(self._sync_camera_page)
+        self.machine.changed.disconnect(self._on_machine_changed)

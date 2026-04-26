@@ -9,11 +9,12 @@ logger = logging.getLogger(__name__)
 
 
 class UdpTransport(Transport):
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, local_port: Optional[int] = None):
         super().__init__()
         self.host = host
         self.host_ip = socket.gethostbyname(host)
         self.port = port
+        self.local_port = local_port
         self.reader: Optional[asyncudp.Socket] = None
         self.writer: Optional[asyncudp.Socket] = None
         self._running = False
@@ -33,8 +34,16 @@ class UdpTransport(Transport):
         self.status_changed.send(self, status=TransportStatus.CONNECTING)
         logger.info(f"Connecting to server at {self.host}:{self.port}...")
         try:
+            local_addr = None
+            if self.local_port is not None:
+                local_addr = ("0.0.0.0", self.local_port)
+            reuse_port = (
+                hasattr(socket, "SO_REUSEPORT") if local_addr else None
+            )
             self.reader = await asyncudp.create_socket(
-                remote_addr=(self.host_ip, self.port)
+                local_addr=local_addr,
+                remote_addr=(self.host_ip, self.port),
+                reuse_port=reuse_port,
             )
             self.writer = self.reader
 
