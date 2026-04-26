@@ -413,7 +413,7 @@ class RuidaServer:
                 encoded = value
             else:
                 encoded = encode35(value)
-            response = b"\xda\x01" + data[2:4] + encoded + encoded
+            response = b"\xda\x01" + data[2:4] + encoded
             return response, 4
 
         if subcmd == 0x01:

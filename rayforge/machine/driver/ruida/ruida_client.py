@@ -74,7 +74,7 @@ class RuidaClient:
         """
         pending = list(self._pending_mem_reads.keys())
         logger.debug(f"handle_response: {data.hex()} (pending: {pending})")
-        if len(data) >= 14 and data[0] == 0xDA and data[1] == 0x01:
+        if len(data) >= 9 and data[0] == 0xDA and data[1] == 0x01:
             mem_address = (data[2] << 8) | data[3]
             value = decode35(data[4:9])
 
