@@ -3,7 +3,7 @@ asyncudp==0.11.0
 blinker==1.9.0
 ezdxf==1.4.2
 GitPython==3.1.47
-numpy==2.3.4
+numpy==2.4.3
 opencv_python
 platformdirs==4.3.6
 pluggy==1.6.0
@@ -17,7 +17,7 @@ pypdf~=6.10.0
 pyserial_asyncio_fast==0.16
 pyvips==3.0.0
 PyYAML==6.0.2
-scipy==1.16.3
+scipy==1.17.1
 semver==3.0.2
 svgelements==1.9.6
 trimesh==4.6.8
