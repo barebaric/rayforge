@@ -340,16 +340,19 @@ class RuidaServer:
             return b"", 8
 
         if subcmd == 0x10:
-            if len(data) < 8:
+            if len(data) < 13:
                 return b"", 1
             opts = data[2]
-            coord = decode35(data[3:8])
+            x = decode35(data[3:8])
+            y = decode35(data[8:13])
             opt_desc = get_opt_desc(opts)
             self._log_command(
-                f"Rapid move {opt_desc} X: {coord:+d}um (rel)", data[:8]
+                f"Rapid move {opt_desc} XY: ({x:+d}um, {y:+d}um) (rel)",
+                data[:13],
             )
-            s.x += coord
-            return b"", 8
+            s.x += x
+            s.y += y
+            return b"", 13
 
         if subcmd == 0x11:
             if len(data) < 8:
@@ -371,10 +374,11 @@ class RuidaServer:
             y = decode35(data[8:13])
             opt_desc = get_opt_desc(opts)
             self._log_command(
-                f"Rapid move {opt_desc} XY: ({x}um, {y}um)", data[:13]
+                f"Rapid move {opt_desc} XY: ({x:+d}um, {y:+d}um) (rel)",
+                data[:13],
             )
-            s.x = x
-            s.y = y
+            s.x += x
+            s.y += y
             return b"", 13
 
         if subcmd in (0x30, 0x70):
