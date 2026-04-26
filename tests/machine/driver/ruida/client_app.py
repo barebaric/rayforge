@@ -45,6 +45,8 @@ class RuidaUdpClient:
         self._loop_ready = threading.Event()
         self._udp: Optional[UdpTransport] = None
         self._transport: Optional[RuidaTransport] = None
+        self._jog_udp: Optional[UdpTransport] = None
+        self._jog_transport: Optional[RuidaTransport] = None
         self.client: Optional[RuidaClient] = None
 
     @property
@@ -108,7 +110,11 @@ class RuidaUdpClient:
         logger.debug("connect: creating transports")
         self._udp = UdpTransport(self.host, self.port)
         self._transport = RuidaTransport(self._udp, self.magic)
-        self.client = RuidaClient(self._transport)
+        self._jog_udp = UdpTransport(self.host, 50207)
+        self._jog_transport = RuidaTransport(self._jog_udp, self.magic)
+        self.client = RuidaClient(
+            self._transport, jog_transport=self._jog_transport
+        )
         logger.debug("connect: calling async connect")
         self._run_async(self.client.connect())
         logger.debug("connect: async connect completed")
@@ -119,6 +125,8 @@ class RuidaUdpClient:
         self.client = None
         self._transport = None
         self._udp = None
+        self._jog_transport = None
+        self._jog_udp = None
 
     def send_command(self, cmd: bytes) -> bool:
         if not self.client:
@@ -363,25 +371,16 @@ class ClientWindow(Gtk.ApplicationWindow):
         assert self.client.client
 
         step_um = int(self.step_size * UM_PER_MM)
-        MAX_REL_MOVE = 8000
 
-        if step_um <= MAX_REL_MOVE:
-            if axis == "x":
-                self._pos_x_um += direction * step_um
-                dx, dy = direction * step_um, 0
-            else:
-                self._pos_y_um += -direction * step_um
-                dx, dy = 0, -direction * step_um
-            self.client._run_async(self.client.client.move_rel(dx, dy))
-        else:
-            if axis == "x":
-                self._pos_x_um += direction * step_um
-            else:
-                self._pos_y_um += -direction * step_um
+        if axis == "x":
+            self._pos_x_um += direction * step_um
             self.client._run_async(
-                self.client.client.rapid_move_xy(
-                    self._pos_x_um, self._pos_y_um
-                )
+                self.client.client.rapid_move_axis(0x00, direction * step_um)
+            )
+        else:
+            self._pos_y_um += -direction * step_um
+            self.client._run_async(
+                self.client.client.rapid_move_axis(0x01, -direction * step_um)
             )
 
         logger.info(f"Jog {axis} direction={direction} step_um={step_um}")
@@ -444,7 +443,8 @@ if __name__ == "__main__":
         description="Ruida laser controller client"
     )
     parser.add_argument(
-        "--host",
+        "host",
+        nargs="?",
         default="localhost",
         help="Host to connect to (default: localhost)",
     )

@@ -253,81 +253,7 @@ class TestRuidaClientSendRaw:
 
 
 class TestRuidaClientJogCommands:
-    """Tests for jog commands with jog transport."""
-
-    def setup_method(self):
-        self.mock_transport = MagicMock(
-            spec=[
-                "connect",
-                "disconnect",
-                "send",
-                "send_command",
-                "is_connected",
-                "received",
-                "decoded_received",
-                "status_changed",
-            ]
-        )
-        self.mock_transport.connect = AsyncMock()
-        self.mock_transport.disconnect = AsyncMock()
-        self.mock_transport.send = AsyncMock()
-        self.mock_transport.send_command = AsyncMock()
-        self.mock_transport.is_connected = False
-        self.mock_transport.received = MagicMock()
-        self.mock_transport.received.connect = MagicMock()
-        self.mock_transport.decoded_received = MagicMock()
-        self.mock_transport.decoded_received.connect = MagicMock()
-        self.mock_transport.status_changed = MagicMock()
-        self.mock_transport.status_changed.connect = MagicMock()
-
-        self.mock_jog_transport = MagicMock(
-            spec=[
-                "connect",
-                "disconnect",
-                "send",
-                "is_connected",
-            ]
-        )
-        self.mock_jog_transport.connect = AsyncMock()
-        self.mock_jog_transport.disconnect = AsyncMock()
-        self.mock_jog_transport.send = AsyncMock()
-        self.mock_jog_transport.is_connected = False
-
-        self.client = RuidaClient(
-            self.mock_transport, jog_transport=self.mock_jog_transport
-        )
-
-    @pytest.mark.asyncio
-    async def test_connect_both_transports(self):
-        """Test connect connects both main and jog transports."""
-        await self.client.connect()
-        self.mock_transport.connect.assert_called_once()
-        self.mock_jog_transport.connect.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_disconnect_both_transports(self):
-        """Test disconnect disconnects both transports."""
-        await self.client.disconnect()
-        self.mock_jog_transport.disconnect.assert_called_once()
-        self.mock_transport.disconnect.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_jog_rel_x_uses_jog_transport(self):
-        """Test jog_rel_x uses jog transport."""
-        await self.client.jog_rel_x(1000)
-        self.mock_jog_transport.send.assert_called_once()
-        self.mock_transport.send.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_jog_rel_y_uses_jog_transport(self):
-        """Test jog_rel_y uses jog transport."""
-        await self.client.jog_rel_y(1000)
-        self.mock_jog_transport.send.assert_called_once()
-        self.mock_transport.send.assert_not_called()
-
-
-class TestRuidaClientJogWithoutJogTransport:
-    """Tests for jog commands without dedicated jog transport."""
+    """Tests for jog commands via main transport."""
 
     def setup_method(self):
         self.mock_transport = MagicMock(
@@ -357,20 +283,24 @@ class TestRuidaClientJogWithoutJogTransport:
         self.client = RuidaClient(self.mock_transport)
 
     @pytest.mark.asyncio
-    async def test_jog_rel_x_falls_back_to_main_transport(self):
-        """
-        Test jog_rel_x falls back to main transport when no jog transport.
-        """
-        await self.client.jog_rel_x(1000)
-        self.mock_transport.send.assert_called_once()
+    async def test_jog_move_x(self):
+        """Test jog_move_x sends rapid move X via main transport."""
+        await self.client.jog_move_x(10000)
+        self.mock_transport.send_command.assert_called_once()
+        sent = self.mock_transport.send_command.call_args[0][0]
+        assert sent[0] == 0xD9
+        assert sent[1] == 0x00
+        assert sent[2] == 0x02
 
     @pytest.mark.asyncio
-    async def test_jog_rel_y_falls_back_to_main_transport(self):
-        """
-        Test jog_rel_y falls back to main transport when no jog transport.
-        """
-        await self.client.jog_rel_y(1000)
-        self.mock_transport.send.assert_called_once()
+    async def test_jog_move_y(self):
+        """Test jog_move_y sends rapid move Y via main transport."""
+        await self.client.jog_move_y(20000)
+        self.mock_transport.send_command.assert_called_once()
+        sent = self.mock_transport.send_command.call_args[0][0]
+        assert sent[0] == 0xD9
+        assert sent[1] == 0x01
+        assert sent[2] == 0x02
 
 
 class TestRuidaClientPowerCommands:

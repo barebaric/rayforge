@@ -11,7 +11,6 @@ from typing import Dict, Optional, TYPE_CHECKING
 
 from blinker import Signal
 
-from ...transport.transport import Transport
 from .ruida_maps import (
     CARD_ID_ADDRESS,
     CARD_ID_TO_MODEL,
@@ -47,7 +46,7 @@ class RuidaClient:
         self,
         transport: "RuidaTransport",
         state: Optional[RuidaState] = None,
-        jog_transport: Optional[Transport] = None,
+        jog_transport: Optional["RuidaTransport"] = None,
     ):
         self._transport = transport
         self._jog_transport = jog_transport
@@ -130,17 +129,15 @@ class RuidaClient:
 
     async def send_jog_command(self, command: bytes) -> None:
         """
-        Send a raw jog command to the controller.
+        Send a jog command to the controller via the main channel.
 
-        Jog commands are sent without swizzling or framing.
+        Jog commands are swizzled and framed with checksum, sent on
+        the main command channel (port 50200).
 
         Args:
             command: Raw command bytes
         """
-        if self._jog_transport:
-            await self._jog_transport.send(command)
-        else:
-            await self._transport.send(command)
+        await self._transport.send_command(command)
 
     async def move_abs(self, x: int, y: int) -> None:
         """
@@ -319,23 +316,23 @@ class RuidaClient:
         """
         await self.send_command(self._build_jog_keyup(axis))
 
-    async def jog_rel_x(self, dx: int) -> None:
+    async def jog_move_x(self, target_x: int) -> None:
         """
-        Jog X axis by relative offset using D8 command.
+        Rapid move X axis to absolute target position.
 
         Args:
-            dx: X offset in micrometers
+            target_x: Absolute X target in micrometers
         """
-        await self.send_jog_command(self._build_jog_rel_x(dx))
+        await self.send_command(self._build_rapid_move_axis(0x00, target_x))
 
-    async def jog_rel_y(self, dy: int) -> None:
+    async def jog_move_y(self, target_y: int) -> None:
         """
-        Jog Y axis by relative offset using D8 command.
+        Rapid move Y axis to absolute target position.
 
         Args:
-            dy: Y offset in micrometers
+            target_y: Absolute Y target in micrometers
         """
-        await self.send_jog_command(self._build_jog_rel_y(dy))
+        await self.send_command(self._build_rapid_move_axis(0x01, target_y))
 
     async def set_power_immediate(
         self, laser: int, power_percent: float
@@ -492,14 +489,6 @@ class RuidaClient:
         if axis.lower() not in axis_map:
             raise ValueError(f"Invalid axis: {axis}")
         return b"\xd8" + bytes([axis_map[axis.lower()]])
-
-    def _build_jog_rel_x(self, dx: int) -> bytes:
-        """Build D8 command for relative X jog."""
-        return b"\xd9\x10\x02" + encode35(dx)
-
-    def _build_jog_rel_y(self, dy: int) -> bytes:
-        """Build D8 command for relative Y jog."""
-        return b"\xd9\x11\x02" + encode35(dy)
 
     def _build_power_immediate(
         self, laser: int, power_percent: float

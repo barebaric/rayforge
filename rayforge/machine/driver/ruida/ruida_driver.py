@@ -148,8 +148,10 @@ class RuidaDriver(Driver):
         self._udp_transport = UdpTransport(host, port)
         self._ruida_transport = RuidaTransport(self._udp_transport)
         self._jog_udp_transport = UdpTransport(host, jog_port)
+        self._jog_ruida_transport = RuidaTransport(self._jog_udp_transport)
         self._client = RuidaClient(
-            self._ruida_transport, jog_transport=self._jog_udp_transport
+            self._ruida_transport,
+            jog_transport=self._jog_ruida_transport,
         )
 
         self._client.state_changed.connect(self._on_state_changed)
@@ -471,10 +473,11 @@ class RuidaDriver(Driver):
         assert self._client
         for axis_name, delta in deltas.items():
             axis_lower = axis_name.lower()
+            delta_um = int(delta * 1000)
             if axis_lower == "x":
-                await self._client.jog_rel_x(int(delta * 1000))
+                await self._client.rapid_move_axis(0x00, delta_um)
             elif axis_lower == "y":
-                await self._client.jog_rel_y(int(delta * 1000))
+                await self._client.rapid_move_axis(0x01, delta_um)
 
     async def set_wcs_offset(
         self, wcs_slot: str, x: float, y: float, z: float
