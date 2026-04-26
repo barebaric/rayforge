@@ -317,7 +317,7 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         if self._is_initializing:
             return
 
-        if self.machine.dialect.can_g0_with_speed:
+        if self.machine.dialect and self.machine.dialect.can_g0_with_speed:
             self.travel_speed_row.set_sensitive(True)
             self.travel_speed_row.set_subtitle(
                 _("Maximum rapid movement speed")

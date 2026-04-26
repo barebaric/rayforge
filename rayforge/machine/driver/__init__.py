@@ -1,8 +1,9 @@
 import inspect
 from typing import Type, cast
-from .driver import Driver
+from .driver import Driver, DriverMaturity, DRIVER_MATURITY_LABELS
 from .dummy import NoDeviceDriver
 from .grbl import GrblNetworkDriver, GrblSerialDriver, GrblTelnetDriver
+from .ruida import RuidaDriver
 from .smoothie import SmoothieDriver
 
 
@@ -30,9 +31,12 @@ def register_driver(driver: Type[Driver]):
 
 __all__ = [
     "Driver",
+    "DriverMaturity",
+    "DRIVER_MATURITY_LABELS",
     "NoDeviceDriver",
     "GrblNetworkDriver",
     "GrblSerialDriver",
     "GrblTelnetDriver",
+    "RuidaDriver",
     "SmoothieDriver",
 ]

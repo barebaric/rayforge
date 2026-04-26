@@ -299,7 +299,8 @@ class DeviceProfile:
     def from_path(cls, path: Path) -> "DeviceProfile":
         """
         Load a device profile from a directory containing a
-        ``device.yaml`` manifest and a ``dialect.yaml`` file.
+        ``device.yaml`` manifest. A ``dialect.yaml`` file is required
+        for G-code drivers but optional for non-G-code drivers.
 
         Args:
             path: Path to the directory containing device.yaml.
@@ -308,8 +309,9 @@ class DeviceProfile:
             A DeviceProfile instance.
 
         Raises:
-            FileNotFoundError: If device.yaml or dialect.yaml is
-                not found.
+            FileNotFoundError: If device.yaml is not found.
+            FileNotFoundError: If dialect.yaml is not found and the
+                driver uses G-code.
             ValueError: If the manifest or dialect is invalid.
         """
         manifest_path = path / MANIFEST_FILENAME
@@ -329,14 +331,21 @@ class DeviceProfile:
         meta = parse_meta(data, manifest_path)
         machine_config = parse_machine_config(data, manifest_path)
 
+        driver_uses_gcode = True
+        if machine_config.driver:
+            driver_cls = get_driver_cls(machine_config.driver)
+            driver_uses_gcode = driver_cls.uses_gcode
+
+        dialect_config: Dict[str, Any] = {}
         dialect_path = path / DIALECT_FILENAME
-        if not dialect_path.exists():
+        if dialect_path.exists():
+            with open(dialect_path, "r") as f:
+                dialect_config = yaml.safe_load(f)
+            GcodeDialect.validate_template_dict(
+                dialect_config, str(dialect_path)
+            )
+        elif driver_uses_gcode:
             raise FileNotFoundError(f"Dialect file not found: {dialect_path}")
-
-        with open(dialect_path, "r") as f:
-            dialect_config = yaml.safe_load(f)
-
-        GcodeDialect.validate_template_dict(dialect_config, str(dialect_path))
 
         return cls(
             meta=meta,
@@ -350,27 +359,32 @@ class DeviceProfile:
         m.name = self.meta.name
         cfg = self.machine_config
 
-        if cfg.driver:
-            try:
-                driver_cls = get_driver_cls(cfg.driver)
-                m.set_driver(driver_cls, cfg.driver_args)
-            except (ValueError, ImportError):
-                logger.error(
-                    f"Failed to create driver {cfg.driver} "
-                    f"for device '{self.name}'"
-                )
-
         context.machine_mgr.add_machine(m)
 
-        new_label = _("{name} (device dialect)").format(name=self.name)
-        dialect = GcodeDialect.from_template_dict(
-            self.dialect_config,
-            label=new_label,
-            description="",
-            is_custom=True,
-        )
-        context.dialect_mgr.add_dialect(dialect)
-        m.dialect_uid = dialect.uid
+        driver_uses_gcode = True
+        if cfg.driver:
+            driver_cls = get_driver_cls(cfg.driver)
+            driver_uses_gcode = driver_cls.uses_gcode
+            try:
+                m.set_driver(driver_cls, cfg.driver_args)
+            except Exception as exc:
+                logger.error(
+                    f"Failed to create driver {cfg.driver} "
+                    f"for device '{self.name}': {exc}"
+                )
+
+        if driver_uses_gcode and self.dialect_config:
+            new_label = _("{name} (device dialect)").format(name=self.name)
+            dialect = GcodeDialect.from_template_dict(
+                self.dialect_config,
+                label=new_label,
+                description="",
+                is_custom=True,
+            )
+            context.dialect_mgr.add_dialect(dialect)
+            m.dialect_uid = dialect.uid
+        elif not driver_uses_gcode:
+            m.dialect_uid = None
 
         if cfg.gcode_precision is not None:
             m.gcode_precision = cfg.gcode_precision
@@ -442,7 +456,10 @@ def export_machine_to_dir(
     with open(dest_dir / MANIFEST_FILENAME, "w") as f:
         yaml.safe_dump(device_data, f, sort_keys=False)
 
-    with open(dest_dir / DIALECT_FILENAME, "w") as f:
-        yaml.safe_dump(machine.dialect.to_template_dict(), f, sort_keys=False)
+    if machine.dialect is not None:
+        with open(dest_dir / DIALECT_FILENAME, "w") as f:
+            yaml.safe_dump(
+                machine.dialect.to_template_dict(), f, sort_keys=False
+            )
 
     return DeviceProfile.from_path(dest_dir)

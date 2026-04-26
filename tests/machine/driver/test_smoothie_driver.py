@@ -238,6 +238,7 @@ class TestSmoothieDriver:
         encoder = driver.get_encoder()
         assert isinstance(encoder, GcodeEncoder)
         # Verify it's configured with the machine's dialect
+        assert driver._machine.dialect is not None
         assert encoder.dialect.uid == driver._machine.dialect.uid
 
     @pytest.mark.asyncio

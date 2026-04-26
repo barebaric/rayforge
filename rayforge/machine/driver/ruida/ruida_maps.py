@@ -70,6 +70,7 @@ INTERFACE_COMMANDS: Dict[int, str] = {
     0x0F: "Trace",
     0x11: "Speed",
     0x12: "Laser Gate",
+    0x30: "Frame",
     0x5A: "Reset",
 }
 
@@ -125,6 +126,10 @@ C6_PART_POWER_COMMANDS: Dict[int, str] = {
     0x38: "Power 4 Max",
     0x41: "Power 2 Min",
     0x42: "Power 2 Max",
+}
+
+C6_FREQUENCY_COMMANDS: Dict[int, str] = {
+    0x60: "Part, Frequency",
 }
 
 # 0xCA - Layer/mode commands
@@ -258,7 +263,7 @@ DEFAULT_MEMORY_MAP: Dict[int, Tuple[str, int]] = {
     0x001D: ("Laser Standby Pulse 2", 0),
     0x001E: ("Auto Type Space", 0),
     0x001F: ("TriColor", 0),
-    0x0020: ("Axis Control Para 1", 0x4000),
+    0x0020: ("Axis Control Para 1", 0x0),
     0x0021: ("Axis Precision 1", 0),
     0x0023: ("Axis Max Velocity 1", 0),
     0x0024: ("Axis Start Velocity 1", 0),
@@ -544,15 +549,15 @@ DYNAMIC_MEMORY_KEYS: Dict[int, Tuple[str, str]] = {
     0x0036: ("Axis Range 2, Get Frame Y", "bed_y"),
     0x0046: ("Axis Range 3, Get Frame Z", "z_range"),
     0x0056: ("Axis Range 4, Get Frame U", "u_range"),
-    0x0200: ("Machine Status", "machine_status"),
-    0x0420: ("Current X", "x"),
-    0x0430: ("Current Y", "y"),
-    0x0440: ("Current Z", "z"),
-    0x0450: ("Current U", "u"),
-    0x0460: ("Current A", "a"),
-    0x0470: ("Current B", "b"),
-    0x0480: ("Current C", "c"),
-    0x0490: ("Current D", "d"),
+    0x0400: ("Machine Status", "machine_status"),
+    0x0421: ("Current X", "x"),
+    0x0431: ("Current Y", "y"),
+    0x0441: ("Current Z", "z"),
+    0x0451: ("Current U", "u"),
+    0x0461: ("Current A", "a"),
+    0x0471: ("Current B", "b"),
+    0x0481: ("Current C", "c"),
+    0x0491: ("Current D", "d"),
 }
 
 # =============================================================================
@@ -647,4 +652,31 @@ DA_VARIABLE_4_BYTE_SUBCOMMANDS: set = {
     0x7A,
     0x7B,
     0x7C,
+}
+
+REF_POINT_OFFSET_ADDRESSES: Dict[str, tuple[int, int]] = {
+    "REF0": (0x0224, 0x0234),
+    "REF1": (0x0228, 0x0238),
+}
+
+REF_POINT_COMMANDS: Dict[str, bytes] = {
+    "MACHINE": b"\xd8\x10",
+    "REF0": b"\xd8\x12",
+    "REF1": b"\xd8\x11",
+}
+
+REF_POINT_MODE_TO_NAME: Dict[int, str] = {
+    0: "REF0",
+    1: "REF1",
+    2: "MACHINE",
+}
+
+REF_POINT_NAME_TO_MODE: Dict[str, int] = {
+    v: k for k, v in REF_POINT_MODE_TO_NAME.items()
+}
+
+CARD_ID_ADDRESS = 0x057E
+
+CARD_ID_TO_MODEL: Dict[int, str] = {
+    0x65106510: "RDC6442S",
 }

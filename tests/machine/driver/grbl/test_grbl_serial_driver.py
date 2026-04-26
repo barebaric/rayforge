@@ -102,6 +102,7 @@ class TestGrblSerialDriver:
         """Test that get_encoder returns a GcodeEncoder instance."""
         encoder = driver.get_encoder()
         assert isinstance(encoder, GcodeEncoder)
+        assert driver._machine.dialect is not None
         assert encoder.dialect.uid == driver._machine.dialect.uid
 
     @pytest.mark.asyncio

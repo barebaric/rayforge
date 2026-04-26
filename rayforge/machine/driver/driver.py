@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...core.varset import VarSet
     from ...pipeline.encoder.base import OpsEncoder, EncodedOutput
+    from ..models.dialect import GcodeDialect
     from ..models.machine import Machine
     from ..models.laser import Laser
 
@@ -61,6 +62,25 @@ class ResourceBusyError(DeviceConnectionError):
                 "Resource '{resource}' is currently in use by '{owner}'."
             ).format(resource=resource, owner=owner_name)
         )
+
+
+class DriverMaturity(Enum):
+    STABLE = auto()
+    EXPERIMENTAL = auto()
+    KNOWN_BUGGY = auto()
+
+
+DRIVER_MATURITY_LABELS = {
+    DriverMaturity.STABLE: "",
+    DriverMaturity.EXPERIMENTAL: _(
+        "This driver is experimental and may have "
+        "unresolved issues. Use it with caution."
+    ),
+    DriverMaturity.KNOWN_BUGGY: _(
+        "This driver is experimental and almost certainly buggy. It may not "
+        "work reliably. Use it at your own risk."
+    ),
+}
 
 
 class DeviceStatus(Enum):
@@ -155,6 +175,8 @@ class Driver(ABC):
     # Drivers that send files via the network may not be able to
     # report granular progress updates during the execution of a job.
     reports_granular_progress: bool = False
+    uses_gcode: bool = True
+    maturity: DriverMaturity = DriverMaturity.STABLE
 
     @property
     @abstractmethod
@@ -196,6 +218,11 @@ class Driver(ABC):
         self.wcs_updated = Signal()
         self.did_setup = False
         self.state: DeviceState = DeviceState()
+
+    @property
+    def dialect(self) -> "GcodeDialect":
+        assert self._machine.dialect is not None
+        return self._machine.dialect
 
     def _log_extra(self, category: str) -> Dict[str, Optional[str]]:
         """Helper to create log extra dict with machine_id and category."""

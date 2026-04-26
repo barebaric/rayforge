@@ -112,6 +112,7 @@ class SmoothieDriver(Driver):
     @classmethod
     def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
         """Returns a GcodeEncoder configured for the machine's dialect."""
+        assert machine.dialect is not None
         return GcodeEncoder(machine.dialect)
 
     def get_setting_vars(self) -> List["VarSet"]:
@@ -298,7 +299,7 @@ class SmoothieDriver(Driver):
                  homes all axes. Can be a single Axis or multiple axes
                  using binary operators (e.g. Axis.X|Axis.Y)
         """
-        dialect = self._machine.dialect
+        dialect = self.dialect
         if axes is None:
             await self._send_and_wait(dialect.home_all.encode())
             return
@@ -312,7 +313,7 @@ class SmoothieDriver(Driver):
                 await self._send_and_wait(cmd.encode())
 
     async def move_to(self, pos_x, pos_y) -> None:
-        dialect = self._machine.dialect
+        dialect = self.dialect
         cmd = dialect.move_to.format(x=float(pos_x), y=float(pos_y))
         await self._send_and_wait(cmd.encode())
 
@@ -328,7 +329,7 @@ class SmoothieDriver(Driver):
             speed: The jog speed in mm/min
             **deltas: Axis names and distances (e.g. x=10.0, y=5.0)
         """
-        dialect = self._machine.dialect
+        dialect = self.dialect
         parts = [dialect.jog.format(speed=speed)]
 
         for axis_name, distance in deltas.items():
@@ -342,12 +343,12 @@ class SmoothieDriver(Driver):
 
     async def select_tool(self, tool_number: int) -> None:
         """Sends a tool change command for the given tool number."""
-        dialect = self._machine.dialect
+        dialect = self.dialect
         cmd = dialect.tool_change.format(tool_number=tool_number)
         await self._send_and_wait(cmd.encode())
 
     async def clear_alarm(self) -> None:
-        dialect = self._machine.dialect
+        dialect = self.dialect
         await self._send_and_wait(dialect.clear_alarm.encode())
 
     async def set_power(self, head: "Laser", percent: float) -> None:
@@ -359,7 +360,7 @@ class SmoothieDriver(Driver):
             percent: Power percentage (0.0-1.0). 0 disables power.
         """
         # Get the dialect for power control commands
-        dialect = self._machine.dialect
+        dialect = self.dialect
 
         if percent <= 0:
             # Disable power
@@ -379,7 +380,7 @@ class SmoothieDriver(Driver):
             head: The laser head to control.
             percent: Power percentage (0.0-1.0). 0 disables power.
         """
-        dialect = self._machine.dialect
+        dialect = self.dialect
 
         if percent <= 0:
             cmd = dialect.laser_off
@@ -457,7 +458,7 @@ class SmoothieDriver(Driver):
             raise ValueError(f"Invalid WCS slot: {wcs_slot}")
 
         p_num = _wcs_to_p_map[wcs_slot]
-        dialect = self._machine.dialect
+        dialect = self.dialect
         cmd = dialect.set_wcs_offset.format(p_num=p_num, x=x, y=y, z=z)
         await self._send_and_wait(cmd.encode("utf-8"))
 
