@@ -227,11 +227,21 @@ class Machine:
         if cs:
             cs.offset = offset
 
-    def update_wcs_offsets_batch(self, offsets: Dict[str, Point3D]):
-        self.coordinate_systems = {
+    def update_wcs_offsets_batch(
+        self, offsets: Dict[str, Point3D]
+    ) -> bool:
+        new_systems = {
             name: CoordinateSystem(name=name, label="", offset=offset)
             for name, offset in offsets.items()
         }
+        changed = False
+        for name, cs in new_systems.items():
+            old = self.coordinate_systems.get(name)
+            if old is None or old.offset != cs.offset:
+                changed = True
+                break
+        self.coordinate_systems = new_systems
+        return changed
 
     def get_wcs_offset(self, name: str) -> Point3D:
         cs = self.coordinate_systems.get(name)
