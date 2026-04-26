@@ -164,7 +164,7 @@ export default function Home() {
           <FeatureSection
             blobClass={styles.blobCyan}
             title="Suas Criações em 3D"
-            description="Transite perfeitamente de designs 2D para trajetórias 3D. O Rayforge gera G-code para cortadoras e gravadoras a laser de 2 e 3 eixos, conectando designs planos a objetos físicos."
+            description="Transite perfeitamente de designs 2D para trajetórias 3D. O Rayforge gera G-code para cortadoras e gravadoras a laser de 2, 3 e 4 eixos, conectando designs planos a objetos físicos."
             compatibilityHeading="Compatível com: Grbl, Smoothieware"
             features={[
               'Simule seu trabalho em 3D',

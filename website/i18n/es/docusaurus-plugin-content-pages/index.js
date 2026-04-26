@@ -171,7 +171,7 @@ export default function Home() {
           <FeatureSection
             blobClass={styles.blobCyan}
             title="Tus Creaciones en 3D"
-            description="Transición fluida de diseños 2D a trayectorias 3D. Rayforge genera G-code para cortadores y grabadores láser de 2 y 3 ejes, cerrando la brecha entre diseños planos y objetos físicos."
+            description="Transición fluida de diseños 2D a trayectorias 3D. Rayforge genera G-code para cortadores y grabadores láser de 2, 3 y 4 ejes, cerrando la brecha entre diseños planos y objetos físicos."
             compatibilityHeading="Compatible con: Grbl, Smoothieware"
             features={[
               'Simula tu trabajo en 3D',
