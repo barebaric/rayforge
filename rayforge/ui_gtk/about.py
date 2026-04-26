@@ -113,7 +113,7 @@ def get_dependency_info() -> dict:
         "ezdxf",
         "pypdf",
         "PyYAML",
-        "pyserial-asyncio",
+        "pyserial",
         "aiohttp",
         "websockets",
     ]:

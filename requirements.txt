@@ -14,7 +14,7 @@ PyMuPDF==1.27.2.2
 PyOpenGL==3.1.10
 PyOpenGL_accelerate==3.1.10
 pypdf~=6.10.0
-pyserial_asyncio_fast==0.16
+pyserial>=3.5
 pyvips==3.0.0
 PyYAML==6.0.2
 scipy==1.17.1

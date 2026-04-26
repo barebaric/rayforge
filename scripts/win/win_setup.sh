@@ -168,7 +168,7 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
     $PYTHON_BIN_PATH -m pip install --no-cache-dir pyclipper==1.3.0.post6 --break-system-packages
     $PYTHON_BIN_PATH -m pip install --no-cache-dir pygobject-stubs --break-system-packages
     $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation --no-deps pyvips==3.0.0 --break-system-packages
-    $PYTHON_BIN_PATH -m pip install --no-cache-dir pyserial_asyncio_fast==0.16 --break-system-packages
+    $PYTHON_BIN_PATH -m pip install --no-cache-dir pyserial --break-system-packages
     $PYTHON_BIN_PATH -m pip install --no-cache-dir ezdxf==1.4.2 pypdf~=6.10.0 trimesh==4.6.8 --break-system-packages
 
     echo "✅ Windows MSYS2 dependency setup complete."
