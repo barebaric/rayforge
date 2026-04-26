@@ -58,6 +58,7 @@ class RuidaDriver(Driver):
     RECONNECT_INTERVAL = 5.0
     KEEPALIVE_INTERVAL = 1.0
     POSITION_POLL_INTERVAL = 0.5
+    RESPONSE_PORT = 40200
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
@@ -146,7 +147,9 @@ class RuidaDriver(Driver):
         self.port = port
         self.jog_port = jog_port
 
-        self._udp_transport = UdpTransport(host, port)
+        self._udp_transport = UdpTransport(
+            host, port, local_port=self.RESPONSE_PORT
+        )
         self._ruida_transport = RuidaTransport(self._udp_transport)
         self._jog_udp_transport = UdpTransport(host, jog_port)
         self._jog_ruida_transport = RuidaTransport(self._jog_udp_transport)
@@ -261,49 +264,45 @@ class RuidaDriver(Driver):
                 self.state.status = DeviceStatus.IDLE
                 self.state_changed.send(self, state=self.state)
 
-                card_info = await self._client.get_card_info()
-                if card_info:
-                    card_id, model_name = card_info
-                    device = (
-                        f"{model_name or 'Ruida controller'} "
-                        f"(Card ID: 0x{card_id:08X})"
-                    )
-                else:
-                    device = "Ruida controller"
-
                 logger.info(
-                    f"Connected to {device} at {self.host}:{self.port}",
+                    f"Connected to Ruida controller "
+                    f"at {self.host}:{self.port}",
                     extra=self._log_extra("MACHINE_EVENT"),
+                )
+
+                asyncio.create_task(
+                    self._fetch_card_info(),
+                    name="ruida-fetch-card-info",
                 )
 
                 last_poll_time = 0.0
                 last_ref_poll_time = 0.0
 
                 while self._keep_running and self._is_connected:
-                    self._response_received.clear()
-                    await self._client.keep_alive()
-
-                    try:
-                        await asyncio.wait_for(
-                            self._response_received.wait(),
-                            timeout=self.CONNECTION_TIMEOUT,
-                        )
-                    except asyncio.TimeoutError:
-                        logger.warning(
-                            "Controller stopped responding, reconnecting",
-                            extra=self._log_extra("MACHINE_EVENT"),
-                        )
-                        self._is_connected = False
-                        await self._disconnect_transports()
-                        break
-
                     current_time = asyncio.get_event_loop().time()
+
                     if (
                         current_time - last_poll_time
                         >= self.POSITION_POLL_INTERVAL
                     ):
+                        self._response_received.clear()
                         await self._poll_position()
                         last_poll_time = current_time
+
+                        try:
+                            await asyncio.wait_for(
+                                self._response_received.wait(),
+                                timeout=self.CONNECTION_TIMEOUT,
+                            )
+                        except asyncio.TimeoutError:
+                            logger.warning(
+                                "Controller stopped responding,"
+                                " reconnecting",
+                                extra=self._log_extra("MACHINE_EVENT"),
+                            )
+                            self._is_connected = False
+                            await self._disconnect_transports()
+                            break
 
                     if current_time - last_ref_poll_time >= 2.0:
                         await self._poll_ref_point_mode()
@@ -572,6 +571,26 @@ class RuidaDriver(Driver):
     ) -> Optional[Pos]:
         self.probe_status_changed.send(self, message="Probe not supported")
         return None
+
+    async def _fetch_card_info(self) -> None:
+        if not self._client:
+            return
+        try:
+            card_info = await self._client.get_card_info()
+            if card_info:
+                card_id, model_name = card_info
+                device = (
+                    f"{model_name or 'Ruida controller'} "
+                    f"(Card ID: 0x{card_id:08X})"
+                )
+            else:
+                device = "Ruida controller"
+            logger.info(
+                f"Identified: {device}",
+                extra=self._log_extra("MACHINE_EVENT"),
+            )
+        except Exception as e:
+            logger.debug(f"Could not fetch card info: {e}")
 
     def _on_state_changed(self, sender) -> None:
         self._response_received.set()
