@@ -1088,6 +1088,7 @@ class TestMachine:
         assert isinstance(dialect, GcodeDialect)
 
         # Verify it matches what dialect_mgr would return
+        assert machine.dialect_uid is not None
         expected_dialect = machine.context.dialect_mgr.get(machine.dialect_uid)
         assert dialect == expected_dialect
 
@@ -1128,6 +1129,7 @@ class TestMachine:
         # Get the dialect manager and update the current dialect
         dialect_mgr = machine.context.dialect_mgr
         current_dialect = machine.dialect
+        assert current_dialect is not None
 
         # Update the dialect (simulating what happens when user edits dialect)
         updated_dialect = GcodeDialect(
@@ -1209,6 +1211,7 @@ class TestMachine:
     ):
         await wait_for_tasks_to_finish(task_mgr)
         # Default machine uses grbl dialect which doesn't support G0 with speed
+        assert machine.dialect is not None
         assert not machine.dialect.can_g0_with_speed
 
     @pytest.mark.asyncio
@@ -1222,6 +1225,7 @@ class TestMachine:
         await wait_for_tasks_to_finish(task_mgr)
 
         # Test G0 with speed support
+        assert machine.dialect is not None
         assert machine.dialect.can_g0_with_speed
 
         # Test homing support
@@ -1246,6 +1250,7 @@ class TestMachine:
         await wait_for_tasks_to_finish(task_mgr)
 
         # Test G0 with speed support (GRBL doesn't support this)
+        assert machine.dialect is not None
         assert not machine.dialect.can_g0_with_speed
 
         # Test homing support
@@ -1272,6 +1277,7 @@ class TestMachine:
         await wait_for_tasks_to_finish(task_mgr)
 
         # Test G0 with speed support (GRBL doesn't support this)
+        assert machine.dialect is not None
         assert not machine.dialect.can_g0_with_speed
 
         # Test homing support

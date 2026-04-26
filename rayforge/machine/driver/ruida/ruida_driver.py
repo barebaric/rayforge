@@ -54,6 +54,7 @@ class RuidaDriver(Driver):
     subtitle = _("Connect to a Ruida laser controller over UDP")
     supports_settings = False
     reports_granular_progress = False
+    uses_gcode = False
     CONNECTION_TIMEOUT = 2.0
     RECONNECT_INTERVAL = 5.0
     KEEPALIVE_INTERVAL = 1.0
