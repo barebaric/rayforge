@@ -71,6 +71,14 @@ class RuidaTransport(Transport):
 
         Use send_command() for normal Ruida communication.
         """
+        logger.debug(
+            f"TX (raw): {data!r}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "TX",
+                "data": data,
+            },
+        )
         await self._transport.send(data)
 
     async def send_command(self, command: bytes) -> None:
@@ -80,6 +88,14 @@ class RuidaTransport(Transport):
         Args:
             command: Unswizzled command bytes
         """
+        logger.debug(
+            f"TX: {command!r}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "TX",
+                "data": command,
+            },
+        )
         swizzled = self._codec.swizzle(command)
         framed = frame_packet(swizzled)
         await self._transport.send(framed)
@@ -91,6 +107,14 @@ class RuidaTransport(Transport):
         For UDP responses to MeerK40t, responses are sent raw swizzled
         without the checksum prefix.
         """
+        logger.debug(
+            f"TX (response): {response!r}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "TX",
+                "data": response,
+            },
+        )
         swizzled = self._codec.swizzle(response)
         await self._transport.send(swizzled)
 
@@ -104,6 +128,15 @@ class RuidaTransport(Transport):
         just swizzled bytes. Only client->server packets have checksums.
         """
         unswizzled = self._codec.unswizzle(data)
+
+        logger.debug(
+            f"RX: {unswizzled!r}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "RX",
+                "data": unswizzled,
+            },
+        )
 
         if len(data) == 1 and unswizzled[0] in (0xCC, 0xCD, 0xCE):
             self.decoded_received.send(self, data=unswizzled)
@@ -185,6 +218,14 @@ class RuidaServerTransport:
             response: Unswizzled response bytes
             addr: Client address (host, port)
         """
+        logger.debug(
+            f"TX (response -> {addr}): {response!r}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "TX",
+                "data": response,
+            },
+        )
         swizzled = self._codec.swizzle(response)
         await self._transport.send_to(swizzled, addr)
 
@@ -198,6 +239,14 @@ class RuidaServerTransport:
             command: Unswizzled command bytes
             addr: Client address (host, port)
         """
+        logger.debug(
+            f"TX (command -> {addr}): {command!r}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "TX",
+                "data": command,
+            },
+        )
         swizzled = self._codec.swizzle(command)
         framed = frame_packet(swizzled)
         await self._transport.send_to(framed, addr)
@@ -223,6 +272,15 @@ class RuidaServerTransport:
                 magic_detected = detected
 
         unswizzled = self._codec.unswizzle(payload)
+
+        logger.debug(
+            f"RX (from {addr}): {unswizzled!r}",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "RX",
+                "data": unswizzled,
+            },
+        )
 
         if magic_detected is None:
             detected = self._codec.detect_magic_from_mem_request(unswizzled)
