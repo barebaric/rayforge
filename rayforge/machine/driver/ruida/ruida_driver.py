@@ -25,6 +25,7 @@ from ..driver import (
     Driver,
     DriverSetupError,
     DriverPrecheckError,
+    DriverMaturity,
     Axis,
     Pos,
     DeviceStatus,
@@ -55,6 +56,7 @@ class RuidaDriver(Driver):
     supports_settings = False
     reports_granular_progress = False
     uses_gcode = False
+    maturity = DriverMaturity.KNOWN_BUGGY
     CONNECTION_TIMEOUT = 2.0
     RECONNECT_INTERVAL = 5.0
     KEEPALIVE_INTERVAL = 1.0

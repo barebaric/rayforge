@@ -1,17 +1,24 @@
 import logging
+import webbrowser
 from pathlib import Path
 from typing import Optional
 from gettext import gettext as _
 
-from gi.repository import Adw, GLib, Gtk
+from gi.repository import Adw, Gdk, GLib, Gtk
 
 from ...camera.models import Camera
 from ...context import get_context
-from ...machine.driver import get_driver_cls
+from ... import const
+from ...machine.driver import (
+    get_driver_cls,
+    DriverMaturity,
+    DRIVER_MATURITY_LABELS,
+)
 from ...machine.models.machine import Machine
 from ..camera.camera_preferences_page import CameraPreferencesPage
 from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
+from ..shared.gtk import apply_css
 from .advanced_preferences_page import AdvancedPreferencesPage
 from .device_settings_page import DeviceSettingsPage
 from .general_preferences_page import GeneralPreferencesPage
@@ -24,6 +31,16 @@ from .rotary_module_page import RotaryModulePage
 from .nogo_zones_page import NogoZonesPage
 
 logger = logging.getLogger(__name__)
+
+apply_css("""
+.maturity-warning {
+    background-color: alpha(@warning_color, 0.15);
+    padding: 10px 28px;
+}
+.maturity-link {
+    text-decoration: underline;
+}
+""")
 
 
 class MachineSettingsDialog(PatchedDialogWindow):
@@ -69,6 +86,51 @@ class MachineSettingsDialog(PatchedDialogWindow):
         export_button.connect("clicked", self._on_export_clicked)
         header_bar.pack_end(export_button)
         main_box.append(header_bar)
+
+        # Maturity warning banner
+        self.maturity_banner = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=12,
+            hexpand=True,
+        )
+        self.maturity_banner.add_css_class("maturity-warning")
+        self._maturity_icon = get_icon("warning-symbolic")
+        self._maturity_icon.add_css_class("warning")
+        self._maturity_label = Gtk.Label(wrap=True, xalign=0, hexpand=True)
+        self._maturity_label.add_css_class("warning-label")
+
+        self._maturity_link = Gtk.Label(
+            label=_("Report an issue"),
+            wrap=False,
+            xalign=0,
+            hexpand=False,
+        )
+        self._maturity_link.add_css_class("warning-label")
+        self._maturity_link.add_css_class("maturity-link")
+        link_click = Gtk.GestureClick.new()
+        link_click.connect(
+            "pressed",
+            lambda *_: webbrowser.open(const.ISSUES_URL),
+        )
+        self._maturity_link.add_controller(link_click)
+        link_motion = Gtk.EventControllerMotion()
+        link_motion.connect(
+            "enter",
+            lambda *_: self._maturity_link.set_cursor(
+                Gdk.Cursor.new_from_name("pointer")
+            ),
+        )
+        link_motion.connect(
+            "leave",
+            lambda *_: self._maturity_link.set_cursor(None),
+        )
+        self._maturity_link.add_controller(link_motion)
+
+        self.maturity_banner.append(self._maturity_icon)
+        self.maturity_banner.append(self._maturity_label)
+        self.maturity_banner.append(self._maturity_link)
+        self.maturity_banner.set_visible(False)
+        main_box.append(self.maturity_banner)
 
         # Navigation Split View for sidebar and content
         split_view = Adw.NavigationSplitView(vexpand=True)
@@ -197,6 +259,7 @@ class MachineSettingsDialog(PatchedDialogWindow):
         # Initial population of all dependent pages
         self._sync_camera_page()
         self._update_gcode_page_visibility()
+        self._update_maturity_banner()
 
         # Select the specified page or first row by default
         if self._initial_page:
@@ -209,6 +272,19 @@ class MachineSettingsDialog(PatchedDialogWindow):
 
     def _on_machine_changed(self, sender=None, **kwargs):
         self._update_gcode_page_visibility()
+        self._update_maturity_banner()
+
+    def _update_maturity_banner(self):
+        maturity = DriverMaturity.STABLE
+        if self.machine.driver_name:
+            driver_cls = get_driver_cls(self.machine.driver_name)
+            maturity = driver_cls.maturity
+        label = DRIVER_MATURITY_LABELS.get(maturity, "")
+        if label:
+            self._maturity_label.set_text(label)
+            self.maturity_banner.set_visible(True)
+        else:
+            self.maturity_banner.set_visible(False)
 
     def _update_gcode_page_visibility(self):
         uses_gcode = True
