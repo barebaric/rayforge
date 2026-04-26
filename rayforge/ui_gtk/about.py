@@ -223,16 +223,14 @@ class AboutDialog(PatchedDialogWindow):
         website_button = Gtk.Button.new_with_label(_("Website"))
         website_button.connect(
             "clicked",
-            lambda _: webbrowser.open("https://github.com/barebaric/rayforge"),
+            lambda _: webbrowser.open(const.GITHUB_URL),
         )
         links_box.append(website_button)
 
         issues_button = Gtk.Button.new_with_label(_("Report an Issue"))
         issues_button.connect(
             "clicked",
-            lambda _: webbrowser.open(
-                "https://github.com/barebaric/rayforge/issues"
-            ),
+            lambda _: webbrowser.open(const.ISSUES_URL),
         )
         links_box.append(issues_button)
 

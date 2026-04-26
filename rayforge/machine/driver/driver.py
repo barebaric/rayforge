@@ -64,6 +64,25 @@ class ResourceBusyError(DeviceConnectionError):
         )
 
 
+class DriverMaturity(Enum):
+    STABLE = auto()
+    EXPERIMENTAL = auto()
+    KNOWN_BUGGY = auto()
+
+
+DRIVER_MATURITY_LABELS = {
+    DriverMaturity.STABLE: "",
+    DriverMaturity.EXPERIMENTAL: _(
+        "This driver is experimental and may have "
+        "unresolved issues. Use it with caution."
+    ),
+    DriverMaturity.KNOWN_BUGGY: _(
+        "This driver is experimental and almost certainly buggy. It may not "
+        "work reliably. Use it at your own risk."
+    ),
+}
+
+
 class DeviceStatus(Enum):
     UNKNOWN = auto()
     IDLE = auto()
@@ -157,6 +176,7 @@ class Driver(ABC):
     # report granular progress updates during the execution of a job.
     reports_granular_progress: bool = False
     uses_gcode: bool = True
+    maturity: DriverMaturity = DriverMaturity.STABLE
 
     @property
     @abstractmethod
