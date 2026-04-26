@@ -170,7 +170,7 @@ export default function Home() {
           <FeatureSection
             blobClass={styles.blobCyan}
             title="您的 3D 创作"
-            description="无缝地从 2D 设计过渡到 3D 刀具路径。Rayforge 为 2 轴和 3 轴激光切割机和雕刻机生成 G-code，在平面设计和实体对象之间架起桥梁。"
+            description="无缝地从 2D 设计过渡到 3D 刀具路径。Rayforge 为 2 轴、3 轴和 4 轴激光切割机和雕刻机生成 G-code，在平面设计和实体对象之间架起桥梁。"
             compatibilityHeading="兼容：Grbl、Smoothieware"
             features={[
               '完整 3D 模拟您的工作',

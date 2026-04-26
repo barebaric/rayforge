@@ -173,7 +173,7 @@ export default function Home() {
           <FeatureSection
             blobClass={styles.blobCyan}
             title="Vos Créations en 3D"
-            description="Passez facilement des conceptions 2D aux parcours d'outil 3D. Rayforge génère du G-code pour les découpeuses et graveuses laser 2 axes et 3 axes, comblant le fossé entre les conceptions plates et les objets physiques."
+            description="Passez facilement des conceptions 2D aux parcours d'outil 3D. Rayforge génère du G-code pour les découpeuses et graveuses laser 2 axes, 3 axes et 4 axes, comblant le fossé entre les conceptions plates et les objets physiques."
             compatibilityHeading="Compatible avec : Grbl, Smoothieware"
             features={[
               'Simulez votre travail en 3D',

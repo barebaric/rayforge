@@ -164,7 +164,7 @@ export default function Home() {
           <FeatureSection
             blobClass={styles.blobCyan}
             title="Deine Kreationen in 3D"
-            description="Nahtloser Übergang von 2D-Designs zu 3D-Werkzeugpfaden. Rayforge generiert G-Code für 2-Achsen- und 3-Achsen-Lasercutter und -gravierer und überbrückt die Lücke zwischen flachen Designs und physischen Objekten."
+            description="Nahtloser Übergang von 2D-Designs zu 3D-Werkzeugpfaden. Rayforge generiert G-Code für 2-Achsen-, 3-Achsen- und 4-Achsen-Lasercutter und -gravierer und überbrückt die Lücke zwischen flachen Designs und physischen Objekten."
             compatibilityHeading="Kompatibel mit: Grbl, Smoothieware"
             features={[
               'Simulieren Sie Ihre Arbeit in 3D',

@@ -205,7 +205,7 @@ export default function Home() {
           <FeatureSection
             blobClass={styles.blobCyan}
             title="Your Creations in 3D"
-            description="Seamlessly transition from 2D designs to 3D toolpaths. Rayforge generates G-code for both 2-axis and 3-axis laser cutters and engravers, bridging the gap between flat designs and physical objects."
+            description="Seamlessly transition from 2D designs to 3D toolpaths. Rayforge generates G-code for 2-axis, 3-axis, and 4-axis laser cutters and engravers, bridging the gap between flat designs and physical objects."
             compatibilityHeading="Compatible with: Grbl, Smoothieware"
             features={[
               'Simulate your work in full 3D',
