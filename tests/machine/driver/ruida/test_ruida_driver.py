@@ -190,7 +190,7 @@ async def test_home_xy_resets_position(driver, ruida_simulator):
 
 @pytest.mark.asyncio
 async def test_home_z_axis(driver, ruida_simulator):
-    """Test that home command works for Z axis."""
+    """Test that home command with Z only does not move axes."""
     sim, host, port, jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
@@ -200,14 +200,14 @@ async def test_home_z_axis(driver, ruida_simulator):
     await driver.home(Axis.Z)
     await asyncio.sleep(0.2)
 
-    assert sim.z == 0
+    assert sim.z == 30000
 
     await driver.cleanup()
 
 
 @pytest.mark.asyncio
 async def test_home_all_axes(driver, ruida_simulator):
-    """Test that home with None homes all axes."""
+    """Test that home with None moves to origin (soft home)."""
     sim, host, port, jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
@@ -221,7 +221,7 @@ async def test_home_all_axes(driver, ruida_simulator):
 
     assert sim.x == 0
     assert sim.y == 0
-    assert sim.z == 0
+    assert sim.z == 50000
 
     await driver.cleanup()
 

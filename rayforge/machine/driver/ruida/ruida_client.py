@@ -219,11 +219,11 @@ class RuidaClient:
         self, x: int, y: int, origin: bool = False, light: bool = False
     ) -> None:
         """
-        Rapid move to absolute XY position.
+        Rapid move XY by relative offset.
 
         Args:
-            x: X coordinate in micrometers
-            y: Y coordinate in micrometers
+            x: X delta in micrometers
+            y: Y delta in micrometers
             origin: Move relative to stored origin point
             light: Enable laser pointer during move
         """
@@ -412,7 +412,7 @@ class RuidaClient:
         self, x: int, y: int, origin: bool = False, light: bool = False
     ) -> bytes:
         opts = self._build_move_opts(origin, light)
-        return b"\xd9\x60" + bytes([opts]) + encode35(x) + encode35(y)
+        return b"\xd9\x10" + bytes([opts]) + encode35(x) + encode35(y)
 
     def _build_rapid_move_axis(
         self,
