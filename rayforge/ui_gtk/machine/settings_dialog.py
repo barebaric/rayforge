@@ -7,6 +7,7 @@ from gi.repository import Adw, GLib, Gtk
 
 from ...camera.models import Camera
 from ...context import get_context
+from ...machine.driver import get_driver_cls
 from ...machine.models.machine import Machine
 from ..camera.camera_preferences_page import CameraPreferencesPage
 from ..icons import get_icon
@@ -40,6 +41,8 @@ class MachineSettingsDialog(PatchedDialogWindow):
         self.machine = machine
         self._row_to_page_name = {}
         self._initial_page = initial_page
+        self._gcode_row: Optional[Gtk.ListBoxRow] = None
+        self._gcode_stack_page: Optional[Gtk.StackPage] = None
         if machine.name:
             self.set_title(
                 _("{machine_name} - Machine Settings").format(
@@ -99,6 +102,7 @@ class MachineSettingsDialog(PatchedDialogWindow):
         # --- Page 4: G-code ---
         gcode_page = GcodeSettingsPage(machine=self.machine)
         self.content_stack.add_titled(gcode_page, "gcode", _("G-code"))
+        self._gcode_stack_page = self.content_stack.get_page(gcode_page)
 
         # --- Page 5: Hooks & Macros ---
         hooks_macros_page = HooksMacrosPage(machine=self.machine)
@@ -161,6 +165,7 @@ class MachineSettingsDialog(PatchedDialogWindow):
             _("Advanced"), "machine-settings-advanced-symbolic", "advanced"
         )
         self._add_sidebar_row(_("G-code"), "gcode-symbolic", "gcode")
+        self._gcode_row = self.sidebar_list.get_row_at_index(3)
         self._add_sidebar_row(
             _("Hooks & Macros"), "code-symbolic", "hooks-macros"
         )
@@ -186,8 +191,12 @@ class MachineSettingsDialog(PatchedDialogWindow):
         camera_mgr.controller_removed.connect(self._sync_camera_page)
         self.connect("destroy", self._on_destroy)
 
+        # React to driver changes (e.g. show/hide G-code page)
+        self.machine.changed.connect(self._on_machine_changed)
+
         # Initial population of all dependent pages
         self._sync_camera_page()
+        self._update_gcode_page_visibility()
 
         # Select the specified page or first row by default
         if self._initial_page:
@@ -197,6 +206,27 @@ class MachineSettingsDialog(PatchedDialogWindow):
                     break
         else:
             self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
+
+    def _on_machine_changed(self, sender=None, **kwargs):
+        self._update_gcode_page_visibility()
+
+    def _update_gcode_page_visibility(self):
+        uses_gcode = True
+        if self.machine.driver_name:
+            driver_cls = get_driver_cls(self.machine.driver_name)
+            uses_gcode = driver_cls.uses_gcode
+
+        if self._gcode_stack_page:
+            self._gcode_stack_page.set_visible(uses_gcode)
+        if self._gcode_row:
+            self._gcode_row.set_visible(uses_gcode)
+
+        if not uses_gcode:
+            selected = self.sidebar_list.get_selected_row()
+            if selected is self._gcode_row:
+                self.sidebar_list.select_row(
+                    self.sidebar_list.get_row_at_index(0)
+                )
 
     def _on_export_clicked(self, button):
         """Opens a folder chooser to export the machine as a zip."""
@@ -307,3 +337,4 @@ class MachineSettingsDialog(PatchedDialogWindow):
         camera_mgr = get_context().camera_mgr
         camera_mgr.controller_added.disconnect(self._sync_camera_page)
         camera_mgr.controller_removed.disconnect(self._sync_camera_page)
+        self.machine.changed.disconnect(self._on_machine_changed)
