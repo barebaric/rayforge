@@ -379,7 +379,7 @@ class Step(DocItem, ABC):
         return None
 
     def get_summary(self) -> str:
-        power_percent = int(self.power * 100)
+        power_percent = round(self.power * 100)
         speed_str = format_value(self.cut_speed, "speed")
         return _("{power_percent}% power, {speed_str}").format(
             power_percent=power_percent, speed_str=speed_str
