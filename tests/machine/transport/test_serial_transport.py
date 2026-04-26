@@ -1,6 +1,7 @@
 import asyncio
+import queue
+
 import pytest
-from unittest.mock import AsyncMock
 
 from rayforge.machine.transport.serial import (
     SerialPort,
@@ -30,6 +31,46 @@ class SignalTracker:
         if not self.calls:
             return b""
         return self.calls[-1]["kwargs"].get("data", b"")
+
+
+class MockSerial:
+    """A mock pyserial Serial object for testing the threaded reader."""
+
+    def __init__(self, *args, **kwargs):
+        self.port = kwargs.get("port", "")
+        self.baudrate = kwargs.get("baudrate", 9600)
+        self.timeout = kwargs.get("timeout", 0.5)
+        self._read_queue = queue.Queue()
+        self._closed = False
+        self._written = []
+
+    def read(self, size=1024):
+        if self._closed:
+            raise OSError("Port is closed")
+        try:
+            return self._read_queue.get(timeout=self.timeout)
+        except queue.Empty:
+            return b""
+
+    def write(self, data):
+        if self._closed:
+            raise OSError("Port is closed")
+        self._written.append(data)
+        return len(data)
+
+    def close(self):
+        self._closed = True
+
+    def reset_input_buffer(self):
+        while True:
+            try:
+                self._read_queue.get_nowait()
+            except queue.Empty:
+                break
+
+    def feed_data(self, data: bytes):
+        """Simulate incoming data from the device."""
+        self._read_queue.put(data)
 
 
 def test_serial_port_subclass():
@@ -178,53 +219,26 @@ class TestSerialPermissions:
 
 
 @pytest.fixture
-def mock_serial_connection(mocker):
-    """Mocks serial_asyncio.open_serial_connection."""
-    mock_reader = AsyncMock(spec=asyncio.StreamReader)
-    mock_writer = AsyncMock(spec=asyncio.StreamWriter)
-
-    # Configure the reader to be pausable
-    read_event = asyncio.Event()
-    read_data = b""
-
-    async def mock_read(n):
-        nonlocal read_data
-        await read_event.wait()
-        data_to_return = read_data
-        read_data = b""
-        read_event.clear()
-        return data_to_return
-
-    mock_reader.read.side_effect = mock_read
-
-    def feed_data(data: bytes):
-        nonlocal read_data
-        read_data = data
-        read_event.set()
-
-    mock_reader.feed_data = feed_data
-
-    # Configure writer's drain to be awaitable
-    mock_writer.drain = AsyncMock()
-
-    mock_open = mocker.patch(
-        "rayforge.machine.transport"
-        ".serial.serial_asyncio.open_serial_connection",
-        return_value=(mock_reader, mock_writer),
+def mock_serial(mocker):
+    """Mocks serial.Serial and returns the mock instance for inspection."""
+    mock_instance = MockSerial()
+    mock_cls = mocker.patch(
+        "rayforge.machine.transport.serial.serial.Serial",
+        return_value=mock_instance,
     )
-    return mock_open, mock_reader, mock_writer
+    return mock_cls, mock_instance
 
 
 class TestSerialTransportIntegration:
     """
-    Tests the logic of SerialTransport by mocking the serial_asyncio boundary.
+    Tests the logic of SerialTransport by mocking pyserial.Serial.
     This provides fast, deterministic, and platform-independent testing.
     """
 
     @pytest.mark.asyncio
-    async def test_connect_disconnect_cycle(self, mock_serial_connection):
+    async def test_connect_disconnect_cycle(self, mock_serial):
         """Test the connection and disconnection lifecycle and signals."""
-        mock_open, _, mock_writer = mock_serial_connection
+        mock_cls, mock_ser = mock_serial
         transport = SerialTransport(port="/dev/mock", baudrate=9600)
         status_tracker = SignalTracker(transport.status_changed)
 
@@ -232,11 +246,13 @@ class TestSerialTransportIntegration:
 
         await transport.connect()
         assert transport.is_connected
-        mock_open.assert_called_once_with(url="/dev/mock", baudrate=9600)
+        mock_cls.assert_called_once_with(
+            port="/dev/mock", baudrate=9600, timeout=0.5
+        )
 
         await transport.disconnect()
         assert not transport.is_connected
-        mock_writer.close.assert_called_once()
+        assert mock_ser._closed
 
         statuses = [call["kwargs"]["status"] for call in status_tracker.calls]
         assert statuses == [
@@ -250,8 +266,7 @@ class TestSerialTransportIntegration:
     async def test_connection_failure(self, mocker):
         """Test that connection failures are handled gracefully."""
         mocker.patch(
-            "rayforge.machine.transport"
-            ".serial.serial_asyncio.open_serial_connection",
+            "rayforge.machine.transport.serial.serial.Serial",
             side_effect=IOError("Connection failed"),
         )
         transport = SerialTransport(port="/dev/fail", baudrate=9600)
@@ -262,15 +277,18 @@ class TestSerialTransportIntegration:
 
         assert not transport.is_connected
         statuses = [call["kwargs"]["status"] for call in status_tracker.calls]
-        assert statuses == [TransportStatus.CONNECTING, TransportStatus.ERROR]
+        assert statuses == [
+            TransportStatus.CONNECTING,
+            TransportStatus.ERROR,
+        ]
         error_call = status_tracker.calls[1]
         assert "message" in error_call["kwargs"]
         assert "Connection failed" in error_call["kwargs"]["message"]
 
     @pytest.mark.asyncio
-    async def test_send_and_receive(self, mock_serial_connection):
+    async def test_send_and_receive(self, mock_serial):
         """Test sending data and simulating a reception."""
-        _, mock_reader, mock_writer = mock_serial_connection
+        _, mock_ser = mock_serial
         transport = SerialTransport(port="/dev/mock", baudrate=115200)
         received_tracker = SignalTracker(transport.received)
 
@@ -281,13 +299,16 @@ class TestSerialTransportIntegration:
             # Test sending
             test_message_send = b"hello from transport"
             await transport.send(test_message_send)
-            mock_writer.write.assert_called_once_with(test_message_send)
-            mock_writer.drain.assert_awaited_once()
+            assert mock_ser._written == [test_message_send]
 
             # Test receiving
             test_message_recv = b"hello from device"
-            mock_reader.feed_data(test_message_recv)
-            await asyncio.sleep(0)  # Yield to the event loop
+            mock_ser.feed_data(test_message_recv)
+
+            for _ in range(20):
+                await asyncio.sleep(0.05)
+                if received_tracker.calls:
+                    break
 
             assert len(received_tracker.calls) == 1
             assert received_tracker.last_data == test_message_recv
@@ -305,11 +326,11 @@ class TestSerialTransportIntegration:
             await transport.send(b"test")
 
     @pytest.mark.asyncio
-    async def test_purge_on_connected_transport(self, mock_serial_connection):
+    async def test_purge_on_connected_transport(self, mock_serial):
         """
         Test that purge clears buffered data from the reader.
         """
-        _, mock_reader, _ = mock_serial_connection
+        _, mock_ser = mock_serial
         transport = SerialTransport(port="/dev/mock", baudrate=115200)
 
         try:
@@ -317,14 +338,12 @@ class TestSerialTransportIntegration:
             assert transport.is_connected
 
             # Feed some data to the reader
-            mock_reader.feed_data(b"buffered data")
-            await asyncio.sleep(0)  # Yield to event loop
-
+            mock_ser.feed_data(b"buffered data")
             # Purge should read and discard the buffered data
             await transport.purge()
 
             # Verify that read was called to consume data
-            assert mock_reader.read.call_count > 0
+            assert mock_ser._read_queue.empty()
         finally:
             await transport.disconnect()
 

@@ -3,7 +3,7 @@ import logging
 import asyncio
 import os
 import serial
-import serial_asyncio_fast as serial_asyncio
+import threading
 from typing import Optional, List
 from serial.tools import list_ports
 from gettext import gettext as _
@@ -155,6 +155,8 @@ class SerialTransport(Transport):
             1843200,
         ]
 
+    _READ_TIMEOUT = 0.5
+
     def __init__(self, port: str, baudrate: int):
         """
         Initialize serial transport.
@@ -166,31 +168,41 @@ class SerialTransport(Transport):
         super().__init__()
         self.port = port
         self.baudrate = baudrate
-        self._reader: Optional[asyncio.StreamReader] = None
-        self._writer: Optional[asyncio.StreamWriter] = None
+        self._serial: Optional[serial.Serial] = None
         self._running = False
-        self._receive_task: Optional[asyncio.Task] = None
+        self._stop_event = threading.Event()
+        self._reader_thread: Optional[threading.Thread] = None
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
 
     @property
     def is_connected(self) -> bool:
         """Check if the transport is actively connected."""
-        return self._writer is not None and self._running
+        return self._serial is not None and self._running
 
     async def connect(self) -> None:
         logger.debug("Attempting to connect serial port...")
         self.status_changed.send(self, status=TransportStatus.CONNECTING)
         try:
-            result = await serial_asyncio.open_serial_connection(
-                url=self.port, baudrate=self.baudrate
+            self._serial = serial.Serial(
+                port=self.port,
+                baudrate=self.baudrate,
+                timeout=self._READ_TIMEOUT,
             )
-            self._reader, self._writer = result
-            logger.debug("serial_asyncio.open_serial_connection returned.")
+            logger.debug("serial.Serial opened successfully.")
             self._running = True
+            self._loop = asyncio.get_running_loop()
+            self._stop_event.clear()
             self.status_changed.send(self, status=TransportStatus.CONNECTED)
-            self._receive_task = asyncio.create_task(self._receive_loop())
+            self._reader_thread = threading.Thread(
+                target=self._reader_thread_func,
+                name="serial-reader",
+                daemon=True,
+            )
+            self._reader_thread.start()
             logger.debug("Serial port connected successfully.")
         except Exception as e:
             logger.error(f"Failed to connect serial port: {e}")
+            self._serial = None
             self.status_changed.send(
                 self, status=TransportStatus.ERROR, message=str(e)
             )
@@ -204,35 +216,26 @@ class SerialTransport(Transport):
         self.status_changed.send(self, status=TransportStatus.CLOSING)
         self._running = False
 
-        # Cancel the receive task if it exists
-        if self._receive_task:
-            logger.debug("Cancelling receive task...")
-            self._receive_task.cancel()
+        self._stop_event.set()
+
+        # Close the serial port; this will cause the blocking read()
+        # in the reader thread to raise SerialException or return b"".
+        if self._serial:
             try:
-                await asyncio.wait_for(self._receive_task, timeout=2.0)
-                logger.debug("Receive task awaited successfully.")
-            except asyncio.CancelledError:
-                logger.debug("Receive task cancelled successfully.")
-            except asyncio.TimeoutError:
-                logger.warning("Timeout waiting for receive task to cancel.")
+                self._serial.close()
             except Exception as e:
-                logger.error(f"Error cancelling receive task: {e}")
-            self._receive_task = None
-        else:
-            logger.debug("No receive task to cancel.")
+                logger.warning(f"Error closing serial port: {e}")
 
-        # Close the writer without waiting
-        if self._writer:
-            logger.debug("Closing writer...")
-            self._writer.close()
-            self._writer = None
+        # Wait for the reader thread to finish.
+        if self._reader_thread and self._reader_thread.is_alive():
+            logger.debug("Waiting for reader thread to finish...")
+            self._reader_thread.join(timeout=2.0)
+            if self._reader_thread.is_alive():
+                logger.warning("Reader thread did not stop in time.")
+        self._reader_thread = None
+        self._serial = None
+        self._loop = None
 
-        # Clear reader reference (optional, for safety)
-        if self._reader:
-            logger.debug("Clearing reader reference.")
-            self._reader = None
-
-        # Signal disconnection and log completion
         self.status_changed.send(self, status=TransportStatus.DISCONNECTED)
         logger.debug("Serial port disconnected.")
 
@@ -240,15 +243,14 @@ class SerialTransport(Transport):
         """
         Write data to serial port.
         """
-        if not self._writer:
+        if not self._serial:
             raise ConnectionError("Serial port not open")
         logger.debug(f"Sending data: {data!r}")
         try:
-            self._writer.write(data)
-            await self._writer.drain()
+            self._serial.write(data)
         except (serial.SerialException, OSError) as e:
             # Wrap low-level serial errors as ConnectionError so drivers
-            # can handle them gracefully (e.g., breaking a poll loop).
+            # can handle them gracefully
             raise ConnectionError(
                 f"Failed to write to serial port: {e}"
             ) from e
@@ -260,41 +262,44 @@ class SerialTransport(Transport):
         Discards any pending data in the receive buffer to resync
         communications. Does not affect the connection state.
         """
-        if not self._reader:
+        if not self._serial:
             return
 
         try:
-            while True:
-                data = await asyncio.wait_for(
-                    self._reader.read(1024), timeout=0.1
-                )
-                if not data:
-                    break
-                logger.debug(f"Purged data: {data!r}")
-        except asyncio.TimeoutError:
-            pass
+            self._serial.reset_input_buffer()
+            logger.debug("Input buffer purged.")
         except Exception as e:
             logger.warning(f"Error during purge: {e}")
 
-    async def _receive_loop(self) -> None:
+    def _dispatch_received(self, data: bytes) -> None:
+        """Emit received signal on the event loop thread."""
+        self.received.send(self, data=data)
+
+    def _dispatch_error(self, message: str) -> None:
+        """Emit error status on the event loop thread."""
+        self.status_changed.send(
+            self, status=TransportStatus.ERROR, message=message
+        )
+
+    def _reader_thread_func(self) -> None:
         """
-        Continuous data reception loop.
+        Dedicated reader thread that continuously reads from the serial
+        port and dispatches received data to the event loop.
+
+        Uses a blocking read with timeout so the thread can check the
+        stop event periodically. This ensures the OS-level serial buffer
+        is always being drained, preventing data loss on platforms (like
+        Windows) where the default COM input buffer is small (4096 bytes).
         """
-        logger.debug("Entering _receive_loop.")
-        while self._running and self._reader:
+        assert self._serial is not None
+        ser = self._serial
+        logger.debug("Reader thread started.")
+        while not self._stop_event.is_set():
             try:
-                data = await self._reader.read(100)
-                if data:
-                    logger.debug(f"Received data: {data!r}")
-                    self.received.send(self, data=data)
-                else:
-                    logger.error("Received empty data, connection closed.")
-                    break  # Exit loop if connection is closed
-            except asyncio.CancelledError:
-                logger.debug("_receive_loop cancelled.")
-                break
+                data = ser.read(1024)
             except serial.SerialException as e:
-                # Handle common Linux disconnect error gracefully
+                if self._stop_event.is_set():
+                    break
                 msg = str(e)
                 if (
                     "device reports readiness to read but returned no data"
@@ -304,16 +309,34 @@ class SerialTransport(Transport):
                         f"Serial connection lost (device disconnected?): {e}"
                     )
                 else:
-                    logger.error(f"Serial error in _receive_loop: {e}")
-
-                self.status_changed.send(
-                    self, status=TransportStatus.ERROR, message=msg
-                )
+                    logger.error(f"Serial error in reader thread: {e}")
+                if self._loop and not self._loop.is_closed():
+                    self._loop.call_soon_threadsafe(self._dispatch_error, msg)
+                break
+            except OSError as e:
+                if self._stop_event.is_set():
+                    break
+                logger.error(f"OS error in reader thread: {e}")
+                if self._loop and not self._loop.is_closed():
+                    self._loop.call_soon_threadsafe(
+                        self._dispatch_error, str(e)
+                    )
                 break
             except Exception as e:
-                logger.error(f"Error in _receive_loop: {e}")
-                self.status_changed.send(
-                    self, status=TransportStatus.ERROR, message=str(e)
-                )
+                if self._stop_event.is_set():
+                    break
+                logger.error(f"Unexpected error in reader thread: {e}")
+                if self._loop and not self._loop.is_closed():
+                    self._loop.call_soon_threadsafe(
+                        self._dispatch_error, str(e)
+                    )
                 break
-        logger.debug("Exiting _receive_loop.")
+
+            if not data:
+                continue
+
+            logger.debug(f"Received data: {data!r}")
+            if self._loop and not self._loop.is_closed():
+                self._loop.call_soon_threadsafe(self._dispatch_received, data)
+
+        logger.debug("Reader thread exiting.")

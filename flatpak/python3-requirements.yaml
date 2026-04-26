@@ -96,18 +96,15 @@ modules:
       - type: file
         url: https://files.pythonhosted.org/packages/22/8e/85e9d9f11dbf34036eb1df283805ef6b885f2005a56d6533bb58ab0b8a11/pymupdf-1.27.2.2-cp310-abi3-manylinux_2_28_x86_64.whl
         sha256: 892698c9768457eb0991c102c96a856c0a7062539371df5e6bee0816f3ef498e
-  - name: python3-pyserial_asyncio
+  - name: python3-pyserial
     buildsystem: simple
     build-commands:
       - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
-        --prefix=${FLATPAK_DEST} "pyserial_asyncio==0.6" --no-build-isolation
+        --prefix=${FLATPAK_DEST} "pyserial>=3.5" --no-build-isolation
     sources:
       - type: file
         url: https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl
         sha256: c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0
-      - type: file
-        url: https://files.pythonhosted.org/packages/27/24/c820cf15f87f7b164e83710c1852d4f900d9793961579e5ef64189bc0c10/pyserial_asyncio-0.6-py3-none-any.whl
-        sha256: de9337922619421b62b9b1a84048634b3ac520e1d690a674ed246a2af7ce1fc5
   - name: python3-pyvips
     buildsystem: simple
     build-commands:
