@@ -189,6 +189,16 @@ class DocEditor:
         config = self.context.config
         self.pipeline.auto_pipeline = config.auto_pipeline
 
+        new_machine = config.machine
+        if new_machine and new_machine is not self.pipeline.machine:
+            if self.context.machine:
+                self.context.machine.changed.disconnect(
+                    self._on_machine_changed
+                )
+            self.pipeline.set_machine(new_machine)
+            new_machine.changed.connect(self._on_machine_changed)
+            self._on_machine_changed(self)
+
     def add_tab_from_context(self, context: Dict[str, Any]):
         """
         Public handler for the 'add_tab' action, using context from the UI.

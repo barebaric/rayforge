@@ -69,6 +69,10 @@ class DagScheduler:
         """Set the document reference for the scheduler."""
         self._doc = doc
 
+    def set_machine(self, machine: Optional["Machine"]) -> None:
+        """Update the machine reference used by the scheduler."""
+        self._machine = machine
+
     def set_generation_id(self, generation_id: int) -> None:
         """Set the current generation ID and propagate to all nodes."""
         self._generation_id = generation_id

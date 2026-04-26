@@ -200,6 +200,24 @@ class Pipeline:
             self._on_job_generation_failed
         )
 
+    def set_machine(self, machine: "Machine") -> None:
+        """
+        Replace the machine reference across the pipeline.
+
+        Disconnects from the old machine's signals, updates all stages
+        and the scheduler, and connects to the new machine's signals.
+        """
+        if self._machine is machine:
+            return
+        self._machine.changed.disconnect(self._on_machine_changed)
+        self._machine = machine
+        self._workpiece_stage.set_machine(machine)
+        self._step_stage.set_machine(machine)
+        self._job_stage.set_machine(machine)
+        self._scheduler.set_machine(machine)
+        machine.changed.connect(self._on_machine_changed)
+        self.recalculate(force=True)
+
     def shutdown(self) -> None:
         """
         Releases all shared memory resources held in the cache. This must be
@@ -252,6 +270,11 @@ class Pipeline:
     def doc(self) -> Optional[Doc]:
         """The document model this pipeline is observing."""
         return self._doc
+
+    @property
+    def machine(self) -> Optional["Machine"]:
+        """The machine this pipeline uses for generation."""
+        return self._machine
 
     @doc.setter
     def doc(self, new_doc: Optional[Doc]):
