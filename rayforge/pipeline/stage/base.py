@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from blinker import Signal
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
+    from ...machine.models.machine import Machine
     from ...shared.tasker.manager import TaskManager
     from ..artifact.manager import ArtifactManager
     from ..artifact.key import ArtifactKey
@@ -48,6 +49,9 @@ class PipelineStage:
     def shutdown(self):
         """Clean up any resources held by this stage."""
         pass
+
+    def set_machine(self, machine: Optional["Machine"]) -> None:
+        self._machine = machine
 
     def _emit_node_state(self, key: "ArtifactKey", state: "NodeState") -> None:
         """Helper to emit node state changes."""
