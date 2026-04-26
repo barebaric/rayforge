@@ -558,7 +558,6 @@ DYNAMIC_MEMORY_KEYS: Dict[int, Tuple[str, str]] = {
     0x0471: ("Current B", "b"),
     0x0481: ("Current C", "c"),
     0x0491: ("Current D", "d"),
-    0x04F0: ("Ref Point Mode", "ref_point_mode"),
 }
 
 # =============================================================================

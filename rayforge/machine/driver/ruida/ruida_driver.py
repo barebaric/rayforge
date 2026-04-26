@@ -17,6 +17,7 @@ from gettext import gettext as _
 from ....context import RayforgeContext
 from ....core.varset import VarSet, HostnameVar, PortVar
 from ....pipeline.encoder.base import OpsEncoder, EncodedOutput
+from ...models.coordinate_system import CoordinateSystem
 from ...transport import TransportStatus
 from ...transport.validators import is_valid_hostname_or_ip
 from ...transport.udp import UdpTransport
@@ -157,6 +158,28 @@ class RuidaDriver(Driver):
         self._client.state_changed.connect(self._on_state_changed)
         self._ruida_transport.status_changed.connect(self._on_status_changed)
         self._client.position_updated.connect(self._on_position_updated)
+
+        self._init_coordinate_systems()
+
+    def _init_coordinate_systems(self) -> None:
+        """
+        Initialize the machine's coordinate systems to match the
+        Ruida controller's ref point model (MACHINE, REF0, REF1).
+        """
+        m = self._machine
+        supported = self.supported_wcs
+        existing = m.coordinate_systems
+
+        new_systems = {}
+        for name in supported:
+            if name in existing:
+                new_systems[name] = existing[name]
+            else:
+                new_systems[name] = CoordinateSystem(name=name)
+
+        m.coordinate_systems = new_systems
+        if m.active_wcs not in new_systems:
+            m.active_wcs = supported[0]
 
     async def cleanup(self):
         self._keep_running = False
@@ -513,7 +536,7 @@ class RuidaDriver(Driver):
         """
         offsets: Dict[str, Pos] = {"MACHINE": (0.0, 0.0, 0.0)}
 
-        if not self._client:
+        if not self._client or not self._is_connected:
             self.wcs_updated.send(self, offsets=offsets)
             return offsets
 

@@ -15,7 +15,6 @@ from .ruida_maps import (
     CARD_ID_ADDRESS,
     CARD_ID_TO_MODEL,
     REF_POINT_COMMANDS,
-    REF_POINT_MODE_TO_NAME,
     REF_POINT_OFFSET_ADDRESSES,
 )
 from .ruida_protocol import RuidaResponse, RuidaState
@@ -52,6 +51,7 @@ class RuidaClient:
         self._jog_transport = jog_transport
         self.state = state or RuidaState()
         self._pending_mem_reads: Dict[int, asyncio.Future] = {}
+        self._ref_point_mode: Optional[str] = "MACHINE"
         self.position_updated = Signal()
         self.state_changed = Signal()
 
@@ -705,19 +705,20 @@ class RuidaClient:
         if ref_point not in REF_POINT_COMMANDS:
             raise ValueError(f"Unknown reference point: {ref_point}")
         await self.send_command(REF_POINT_COMMANDS[ref_point])
+        self._ref_point_mode = ref_point
 
     async def get_ref_point_mode(self) -> Optional[str]:
         """
-        Get the current reference point mode from the controller.
+        Get the current reference point mode.
+
+        The ref point mode cannot be read back from the controller
+        (no valid DA memory address exists for it), so this returns
+        the locally tracked mode set via select_ref_point.
 
         Returns:
-            "MACHINE", "REF0", "REF1", or None if read failed
+            "MACHINE", "REF0", "REF1", or None if not yet set
         """
-        mode = await self._read_memory_wait(0x04F0)
-        if mode is None:
-            return None
-
-        return REF_POINT_MODE_TO_NAME.get(mode, "UNKNOWN")
+        return self._ref_point_mode
 
     async def get_card_id(self) -> Optional[int]:
         """
