@@ -333,13 +333,14 @@ class MachineController:
                 "Skipping update to avoid clearing coordinate systems."
             )
             return
-        self.machine.update_wcs_offsets_batch(offsets)
+        changed = self.machine.update_wcs_offsets_batch(offsets)
         logger.debug(
             f"MachineController: Emitting wcs_updated for machine "
             f"{self.machine.id}. Sender: {self.machine}"
         )
         self._scheduler(self.wcs_updated.send, self.machine)
-        self._scheduler(self.machine.changed.send, self.machine)
+        if changed:
+            self._scheduler(self.machine.changed.send, self.machine)
 
     async def home(self, axes=None):
         """Homes the specified axes or all axes if none specified."""
