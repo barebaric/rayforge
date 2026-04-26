@@ -108,7 +108,7 @@ class RuidaUdpClient:
 
     def connect(self):
         logger.debug("connect: creating transports")
-        self._udp = UdpTransport(self.host, self.port)
+        self._udp = UdpTransport(self.host, self.port, local_port=40200)
         self._transport = RuidaTransport(self._udp, self.magic)
         self._jog_udp = UdpTransport(self.host, 50207)
         self._jog_transport = RuidaTransport(self._jog_udp, self.magic)
