@@ -86,6 +86,7 @@ class NoDeviceDriver(Driver):
     @classmethod
     def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
         """Returns a GcodeEncoder configured for the machine's dialect."""
+        assert machine.dialect is not None
         return GcodeEncoder(machine.dialect)
 
     def get_setting_vars(self) -> List["VarSet"]:

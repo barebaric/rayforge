@@ -84,6 +84,7 @@ class GcodeEncoder(OpsEncoder):
         Note: Precision is set in the `encode` method, which receives the
         machine instance.
         """
+        assert machine.dialect is not None
         return cls(machine.dialect)
 
     def _get_current_laser_head(self, context: GcodeContext):

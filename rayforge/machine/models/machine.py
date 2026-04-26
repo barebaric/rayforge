@@ -25,6 +25,7 @@ from ...pipeline.coordspace import MachineSpace
 from ...pipeline.encoder.base import EncodedOutput
 from ...shared.tasker import task_mgr
 from ..assembly import Assembly
+from ..driver import get_driver_cls
 from ..driver.driver import DeviceState, Pos
 from ..kinematic_mapping import KinematicMapping
 from ..kinematics import HeadSpec, Kinematics, build_assembly
@@ -109,7 +110,7 @@ class Machine:
         self.home_on_start: bool = False
         self.clear_alarm_on_connect: bool = False
         self.single_axis_homing_enabled: bool = True
-        self.dialect_uid: str = "grbl"
+        self.dialect_uid: Optional[str] = "grbl"
         self.dialect_migrated: bool = False
         self._hydrated_dialect: Optional[GcodeDialect] = None
         self.gcode_precision: int = 3
@@ -430,10 +431,12 @@ class Machine:
         )
 
     @property
-    def dialect(self) -> "GcodeDialect":
+    def dialect(self) -> Optional["GcodeDialect"]:
         """Get the current dialect instance for this machine."""
         if self._hydrated_dialect:
             return self._hydrated_dialect
+        if self.dialect_uid is None:
+            return None
         try:
             return self.context.dialect_mgr.get(self.dialect_uid)
         except ValueError:
@@ -450,6 +453,8 @@ class Machine:
         This ensures that when serialized, the machine carries the full
         dialect definition.
         """
+        if self.dialect_uid is None:
+            return
         try:
             self._hydrated_dialect = self.context.dialect_mgr.get(
                 self.dialect_uid
@@ -462,7 +467,7 @@ class Machine:
             self.dialect_uid = "grbl"
             self._hydrated_dialect = self.context.dialect_mgr.get("grbl")
 
-    def set_dialect_uid(self, dialect_uid: str):
+    def set_dialect_uid(self, dialect_uid: Optional[str]):
         if self.dialect_uid == dialect_uid:
             return
         self.dialect_uid = dialect_uid
@@ -1569,10 +1574,10 @@ class Machine:
     @staticmethod
     def _migrate_legacy_hooks_to_dialect(
         hook_data: Dict[str, Any],
-        current_dialect_uid: str,
+        current_dialect_uid: Optional[str],
         machine_name: str,
         context: RayforgeContext,
-    ) -> Tuple[str, Dict[str, Any]]:
+    ) -> Tuple[Optional[str], Dict[str, Any]]:
         """
         Checks for legacy JOB_START/JOB_END hooks and migrates them to a
         new custom dialect.
@@ -1581,6 +1586,9 @@ class Machine:
             A tuple containing the (potentially new) dialect UID and the
             cleaned hook_data dictionary.
         """
+        if current_dialect_uid is None:
+            return None, hook_data
+
         job_start_hook_data = hook_data.get("JOB_START")
         job_end_hook_data = hook_data.get("JOB_END")
 
@@ -1650,8 +1658,14 @@ class Machine:
         )
 
         dialect_uid = ma_data.get("dialect_uid")
-        if not dialect_uid:  # backward compatibility
-            dialect_uid = ma_data.get("dialect", "grbl").lower()
+        if dialect_uid is None:
+            driver_cls = get_driver_cls(
+                ma.driver_name if ma.driver_name else ""
+            )
+            if not driver_cls.uses_gcode:
+                dialect_uid = None
+            else:
+                dialect_uid = ma_data.get("dialect", "grbl").lower()
 
         hook_data = ma_data.get("hookmacros", {})
 

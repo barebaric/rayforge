@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...core.varset import VarSet
     from ...pipeline.encoder.base import OpsEncoder, EncodedOutput
+    from ..models.dialect import GcodeDialect
     from ..models.machine import Machine
     from ..models.laser import Laser
 
@@ -155,6 +156,7 @@ class Driver(ABC):
     # Drivers that send files via the network may not be able to
     # report granular progress updates during the execution of a job.
     reports_granular_progress: bool = False
+    uses_gcode: bool = True
 
     @property
     @abstractmethod
@@ -196,6 +198,11 @@ class Driver(ABC):
         self.wcs_updated = Signal()
         self.did_setup = False
         self.state: DeviceState = DeviceState()
+
+    @property
+    def dialect(self) -> "GcodeDialect":
+        assert self._machine.dialect is not None
+        return self._machine.dialect
 
     def _log_extra(self, category: str) -> Dict[str, Optional[str]]:
         """Helper to create log extra dict with machine_id and category."""

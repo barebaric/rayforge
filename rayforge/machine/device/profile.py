@@ -442,7 +442,10 @@ def export_machine_to_dir(
     with open(dest_dir / MANIFEST_FILENAME, "w") as f:
         yaml.safe_dump(device_data, f, sort_keys=False)
 
-    with open(dest_dir / DIALECT_FILENAME, "w") as f:
-        yaml.safe_dump(machine.dialect.to_template_dict(), f, sort_keys=False)
+    if machine.dialect is not None:
+        with open(dest_dir / DIALECT_FILENAME, "w") as f:
+            yaml.safe_dump(
+                machine.dialect.to_template_dict(), f, sort_keys=False
+            )
 
     return DeviceProfile.from_path(dest_dir)
