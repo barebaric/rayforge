@@ -92,7 +92,9 @@ module.exports = {
       label: 'Addons',
       items: [
         'addons/ai-workpiece-generator',
+        'addons/deepnest',
         'addons/print-and-cut',
+        'addons/projector-mode',
       ],
     },
     {
