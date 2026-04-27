@@ -246,19 +246,61 @@ html[data-theme='dark'] .comparisonSection {
   margin: 0 auto;
 }
 
-.comparisonTable {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+.comparisonTableWrapper {
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid var(--ifm-color-emphasis-100);
+}
+
+html[data-theme='dark'] .comparisonTableWrapper {
+  border-color: #2a2a2c;
+}
+
+.comparisonTable {
+  display: table;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 0;
+  overflow: visible;
   background: var(--ifm-card-background-color, #fff);
 }
 
 html[data-theme='dark'] .comparisonTable {
   background: #1e1e20;
-  border-color: #2a2a2c;
+}
+
+.comparisonTable thead {
+  background-color: transparent;
+}
+
+.comparisonTable thead tr {
+  border-bottom: none;
+}
+
+.comparisonTable tr {
+  background-color: transparent;
+  border-top: none;
+}
+
+.comparisonTable tr:nth-child(2n) {
+  background-color: transparent;
+}
+
+.comparisonTable th:first-child {
+  border-top-left-radius: 15px;
+}
+
+.comparisonTable th:last-child {
+  border-top-right-radius: 15px;
+}
+
+.comparisonTable tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 15px;
+}
+
+.comparisonTable tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 15px;
 }
 
 .comparisonTable th {

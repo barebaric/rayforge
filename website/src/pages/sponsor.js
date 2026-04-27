@@ -353,6 +353,7 @@ export default function Sponsor() {
                   "No other free laser software offers manufacturers anything like this. Here's how we compare.",
               })}
             </p>
+            <div className={styles.comparisonTableWrapper}>
             <table className={styles.comparisonTable}>
               <thead>
                 <tr>
@@ -537,6 +538,7 @@ export default function Sponsor() {
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
         </section>
 
