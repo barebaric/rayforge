@@ -163,18 +163,22 @@ class AboutDialog(PatchedDialogWindow):
         button.set_child(get_icon("check-symbolic"))
         GLib.timeout_add(
             2000,
-            lambda: button.set_child(get_icon("copy-symbolic"))
-            and GLib.SOURCE_REMOVE,
+            lambda: (
+                button.set_child(get_icon("copy-symbolic"))
+                and GLib.SOURCE_REMOVE
+            ),
         )
         # Also give feedback on the headerbar copy button if it exists
         if hasattr(self, "header_copy_button"):
             self.header_copy_button.set_child(get_icon("check-symbolic"))
             GLib.timeout_add(
                 2000,
-                lambda: self.header_copy_button.set_child(
-                    get_icon("copy-symbolic")
-                )
-                and GLib.SOURCE_REMOVE,
+                lambda: (
+                    self.header_copy_button.set_child(
+                        get_icon("copy-symbolic")
+                    )
+                    and GLib.SOURCE_REMOVE
+                ),
             )
 
     def _on_copy_version_clicked(self, button: Gtk.Button):
@@ -184,8 +188,10 @@ class AboutDialog(PatchedDialogWindow):
         button.set_child(get_icon("check-symbolic"))
         GLib.timeout_add(
             2000,
-            lambda: button.set_child(get_icon("copy-symbolic"))
-            and GLib.SOURCE_REMOVE,
+            lambda: (
+                button.set_child(get_icon("copy-symbolic"))
+                and GLib.SOURCE_REMOVE
+            ),
         )
 
     def _build_main_page(self):

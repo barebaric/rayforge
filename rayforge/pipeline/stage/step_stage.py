@@ -240,8 +240,8 @@ class StepPipelineStage(PipelineStage):
             when_done=lambda t: self.on_task_complete(
                 t, task_key, step, generation_id, context
             ),
-            when_event=lambda task, event_name, data: (
-                self.handle_task_event(task, event_name, data, step)
+            when_event=lambda task, event_name, data: self.handle_task_event(
+                task, event_name, data, step
             ),
         )
         self._retained_handles_by_task[task.id] = retained_handles

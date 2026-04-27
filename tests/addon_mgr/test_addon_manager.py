@@ -394,8 +394,8 @@ class TestAddonManagerInstallation:
             patch.object(manager, "_fetch_addon_source") as mock_fetch,
             patch.object(manager, "_restart_workers"),
         ):
-            mock_fetch.side_effect = (
-                lambda url, dest: manager._download_addon_zip(url, dest)
+            mock_fetch.side_effect = lambda url, dest: (
+                manager._download_addon_zip(url, dest)
             )
             with patch("urllib.request.urlopen", return_value=mock_resp):
                 result = manager.install_addon(
@@ -427,8 +427,8 @@ class TestAddonManagerInstallation:
             patch.object(manager, "_fetch_addon_source") as mock_fetch,
             patch.object(manager, "_restart_workers"),
         ):
-            mock_fetch.side_effect = (
-                lambda url, dest: manager._download_addon_zip(url, dest)
+            mock_fetch.side_effect = lambda url, dest: (
+                manager._download_addon_zip(url, dest)
             )
             with patch("urllib.request.urlopen", return_value=mock_resp):
                 result = manager.install_addon(
@@ -514,8 +514,8 @@ class TestAddonManagerInstallation:
             patch.object(manager, "_fetch_addon_source") as mock_fetch,
             patch.object(manager, "_restart_workers"),
         ):
-            mock_fetch.side_effect = (
-                lambda url, dest: manager._download_addon_zip(url, dest)
+            mock_fetch.side_effect = lambda url, dest: (
+                manager._download_addon_zip(url, dest)
             )
             with patch("urllib.request.urlopen", return_value=mock_resp):
                 result1 = manager.install_addon(git_url)
@@ -531,8 +531,8 @@ class TestAddonManagerInstallation:
             patch.object(manager, "_fetch_addon_source") as mock_fetch,
             patch.object(manager, "_restart_workers"),
         ):
-            mock_fetch.side_effect = (
-                lambda url, dest: manager._download_addon_zip(url, dest)
+            mock_fetch.side_effect = lambda url, dest: (
+                manager._download_addon_zip(url, dest)
             )
             with patch("urllib.request.urlopen", return_value=mock_resp):
                 result2 = manager.install_addon(git_url)
