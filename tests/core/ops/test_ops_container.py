@@ -17,6 +17,8 @@ from rayforge.core.ops import (
     CurveToCommand,
     SetPowerCommand,
     SetCutSpeedCommand,
+    SetFrequencyCommand,
+    SetPulseWidthCommand,
     SetTravelSpeedCommand,
     EnableAirAssistCommand,
     DisableAirAssistCommand,
@@ -235,6 +237,22 @@ def test_set_laser():
     last_cmd = ops.commands[-1]
     assert isinstance(last_cmd, SetLaserCommand)
     assert last_cmd.laser_uid == "laser-abc"
+
+
+def test_set_frequency():
+    ops = Ops()
+    ops.set_frequency(20000)
+    last_cmd = ops.commands[-1]
+    assert isinstance(last_cmd, SetFrequencyCommand)
+    assert last_cmd.frequency == 20000
+
+
+def test_set_pulse_width():
+    ops = Ops()
+    ops.set_pulse_width(5.0)
+    last_cmd = ops.commands[-1]
+    assert isinstance(last_cmd, SetPulseWidthCommand)
+    assert last_cmd.pulse_width == 5.0
 
 
 def test_enable_disable_air_assist(empty_ops):

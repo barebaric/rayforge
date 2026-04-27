@@ -18,6 +18,8 @@ class State:
     cut_speed: Optional[int] = None
     travel_speed: Optional[int] = None
     active_laser_uid: Optional[str] = None
+    frequency: Optional[int] = None
+    pulse_width: Optional[float] = None
 
     def allow_rapid_change(self, target_state: State) -> bool:
         """
@@ -321,6 +323,67 @@ class SetTravelSpeedCommand(Command):
         return d
 
 
+class SetFrequencyCommand(Command):
+    def __init__(self, frequency: int) -> None:
+        """
+        Initializes a command to set the laser PWM frequency.
+
+        Args:
+            frequency: The PWM frequency in Hz. Must be a positive integer.
+
+        Raises:
+            ValueError: If frequency is not positive.
+        """
+        super().__init__()
+        if frequency <= 0:
+            raise ValueError(
+                f"Frequency must be a positive integer, but got "
+                f"{frequency}"
+            )
+        self.frequency: int = frequency
+
+    def is_state_command(self) -> bool:
+        return True
+
+    def apply_to_state(self, state: "State") -> None:
+        state.frequency = self.frequency
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["frequency"] = self.frequency
+        return d
+
+
+class SetPulseWidthCommand(Command):
+    def __init__(self, pulse_width: float) -> None:
+        """
+        Initializes a command to set the laser pulse width.
+
+        Args:
+            pulse_width: The pulse width in microseconds. Must be > 0.
+
+        Raises:
+            ValueError: If pulse_width is not positive.
+        """
+        super().__init__()
+        if pulse_width <= 0:
+            raise ValueError(
+                f"Pulse width must be positive, but got {pulse_width}"
+            )
+        self.pulse_width: float = pulse_width
+
+    def is_state_command(self) -> bool:
+        return True
+
+    def apply_to_state(self, state: "State") -> None:
+        state.pulse_width = self.pulse_width
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["pulse_width"] = self.pulse_width
+        return d
+
+
 class EnableAirAssistCommand(Command):
     def is_state_command(self) -> bool:
         return True
@@ -616,6 +679,8 @@ COMMAND_TYPE_MAP = {
     SetPowerCommand: 10,
     SetCutSpeedCommand: 11,
     SetTravelSpeedCommand: 12,
+    SetFrequencyCommand: 16,
+    SetPulseWidthCommand: 17,
     EnableAirAssistCommand: 13,
     DisableAirAssistCommand: 14,
     SetLaserCommand: 15,
