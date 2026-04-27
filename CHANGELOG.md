@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   read buffer overflows when the asyncio loop is congested (#208)
 - Print and cut: replace scale checkbox by an adw toggle button
 - Project files are now zipped internally
+- Creality Falcon A1 profile now uses Grbl Raster dialect
 
 ### Fixed
 

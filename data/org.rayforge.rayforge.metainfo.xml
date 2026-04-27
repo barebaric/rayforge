@@ -86,6 +86,7 @@
           buffer overflows (#208)</li>
           <li>G-code settings page hidden for non-G-code drivers</li>
           <li>Project files are now zipped internally</li>
+          <li>Creality Falcon A1 profile now uses Grbl Raster dialect</li>
         </ul>
         <p>Bug Fixes:</p>
         <ul>
