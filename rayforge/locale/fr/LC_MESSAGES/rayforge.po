@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-24 23:14+0200\n"
+"POT-Creation-Date: 2026-04-27 00:51+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -280,10 +280,12 @@ msgid "No connection"
 msgstr "Aucune connexion"
 
 #: rayforge/machine/driver/dummy.py
+#: rayforge/machine/driver/ruida/ruida_driver.py
 msgid "Machine Coordinates"
 msgstr "Coordonnées machine"
 
 #: rayforge/machine/driver/dummy.py
+#: rayforge/machine/driver/ruida/ruida_driver.py
 msgid "No settings"
 msgstr "Aucun paramètre"
 
@@ -291,6 +293,22 @@ msgstr "Aucun paramètre"
 #, python-brace-format
 msgid "Resource '{resource}' is currently in use by '{owner}'."
 msgstr "La ressource « {resource} » est actuellement utilisée par « {owner} »."
+
+#: rayforge/machine/driver/driver.py
+msgid ""
+"This driver is experimental and may have unresolved issues. Use it with "
+"caution."
+msgstr ""
+"Ce pilote est expérimental et peut contenir des problèmes non résolus. "
+"Utilisez-le avec précaution."
+
+#: rayforge/machine/driver/driver.py
+msgid ""
+"This driver is experimental and almost certainly buggy. It may not work "
+"reliably. Use it at your own risk."
+msgstr ""
+"Ce pilote est expérimental et presque certainement buggé. Il peut ne pas "
+"fonctionner de manière fiable. Utilisez-le à vos propres risques."
 
 #: rayforge/machine/driver/driver.py rayforge/machine/transport/transport.py
 #: rayforge/ui_gtk/machine/machine_dropdown.py
@@ -382,6 +400,7 @@ msgid "Machine Coordinates (G53)"
 msgstr "Coordonnées machine (G53)"
 
 #: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/ruida/ruida_driver.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 #, python-brace-format
@@ -389,6 +408,7 @@ msgid "Invalid hostname or IP address: '{host}'"
 msgstr "Nom d’hôte ou adresse IP non valide : « {host} »"
 
 #: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/ruida/ruida_driver.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Hostname"
@@ -411,10 +431,44 @@ msgid "The Telnet port number"
 msgstr "Le numéro de port Telnet"
 
 #: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/ruida/ruida_driver.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Hostname must be configured."
 msgstr "Le nom d’hôte doit être configuré."
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "Ruida (UDP)"
+msgstr "Ruida (UDP)"
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "Connect to a Ruida laser controller over UDP"
+msgstr "Se connecter à un contrôleur laser Ruida via UDP"
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "The IP address or hostname of the Ruida controller"
+msgstr "L'adresse IP ou le nom d'hôte du contrôleur Ruida"
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "Main Port"
+msgstr "Port principal"
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "The UDP port for main commands (default: 50200)"
+msgstr "Le port UDP pour les commandes principales (par défaut : 50200)"
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "Jog Port"
+msgstr "Port de déplacement manuel"
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "The UDP port for jog commands (default: 50207)"
+msgstr ""
+"Le port UDP pour les commandes de déplacement manuel (par défaut : 50207)"
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "No response from controller"
+msgstr "Pas de réponse du contrôleur"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "GRBL (Telnet)"
@@ -3982,6 +4036,10 @@ msgid "Export Machine Profile"
 msgstr "Exporter le profil de machine"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Report an issue"
+msgstr "Signaler un problème"
+
+#: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "Laser"
 msgstr "Laser"
 
@@ -6725,6 +6783,14 @@ msgstr "Supprimer toutes les pièces"
 #: rayforge/doceditor/edit_cmd.py
 msgid "Clear Layer Items"
 msgstr "Vider les éléments du calque"
+
+#: rayforge/doceditor/edit_cmd.py
+msgid "Delete contour(s)"
+msgstr "Supprimer le(s) contour(s)"
+
+#: rayforge/doceditor/edit_cmd.py
+msgid "Delete segment(s)"
+msgstr "Supprimer le(s) segment(s)"
 
 #: rayforge/doceditor/layout_cmd.py
 msgid "Position at Point"
