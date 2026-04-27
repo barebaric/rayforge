@@ -8,6 +8,7 @@ strategies — all without importing anything from gi.repository.
 
 import json
 import threading
+import zipfile
 from pathlib import Path
 from typing import Any, Callable
 
@@ -76,7 +77,9 @@ class TestHeadlessDocEditor:
         assert saved
         assert project_path.exists()
 
-        data = json.loads(project_path.read_text())
+        data = json.loads(
+            zipfile.ZipFile(project_path).read("project.json")
+        )
         assert "uid" in data
 
         loaded = editor.file.load_project_from_path(project_path)
@@ -90,7 +93,9 @@ class TestHeadlessDocEditor:
         project_path = tmp_path / "with_workpiece.ryp"
         editor.file.save_project_to_path(project_path)
 
-        data = json.loads(project_path.read_text())
+        data = json.loads(
+            zipfile.ZipFile(project_path).read("project.json")
+        )
         assert "uid" in data
         assert len(data["children"]) > 0
 
@@ -102,7 +107,11 @@ class TestHeadlessDocEditor:
         path = tmp_path / "roundtrip.ryp"
         editor.file.save_project_to_path(path)
 
-        new_doc = Doc.from_dict(json.loads(path.read_text()))
+        new_doc = Doc.from_dict(
+            json.loads(
+                zipfile.ZipFile(path).read("project.json")
+            )
+        )
         wps = new_doc.all_workpieces
         assert len(wps) == 1
         assert wps[0].name == "roundtrip.svg"
