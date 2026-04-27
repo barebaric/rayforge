@@ -303,11 +303,7 @@ Marlin 2.0+ peut contrôler des lasers lorsqu'il est correctement configuré.
 | ---------------------- | ------------------ | ---------------- |
 | **Arduino CNC Shield** | GRBL 1.1           | Excellent        |
 | **MKS DLC32**          | grblHAL            | Excellent        |
-| **Cohesion3D**         | Smoothieware       | Limité           |
-| **Cartes SKR**         | Marlin/grblHAL     | Variable         |
-| **Ruida**              | Propriétaire       | Non pris en charge |
-| **Trocen**             | Propriétaire       | Non pris en charge |
-| **TopWisdom**          | Propriétaire       | Non pris en charge |
+| **Ruida**              | Propriétaire       | Expérimental     |
 
 ### Contrôleurs recommandés
 
@@ -474,11 +470,33 @@ $22=1       ; Mise à l'origine activée
 
 ## Support futur des firmwares
 
-### Fonctionnalités demandées
+### Contrôleurs Ruida
+
+Rayforge inclut un support expérimental pour les contrôleurs basés sur Ruida (p.ex.
+RDC6442, RDC6445, Ruida R5). Le pilote Ruida se connecte via le réseau et prend en
+charge le jogging, le rapport de position, le contrôle de l'air assisté, la sélection
+de couche, la connexion automatique et l'interrogation de statut.
+
+**Fonctionnalités :**
+
+- Connectivité réseau (Ethernet/WiFi)
+- Rapport de position
+- Commandes de jogging
+- Air assisté et sélection de couche
+- Prise en charge des points de référence
+
+**Limitations :**
+
+- Expérimental — pas encore totalement stable
+- Pas de génération de G-code ; Ruida utilise son propre protocole propriétaire
+- L'envoi de travaux n'est pas encore pris en charge
+
+---
+
+### Autres fonctionnalités demandées
 
 Les utilisateurs ont demandé le support pour :
 
-- **Contrôleurs Ruida** - Contrôleurs laser chinois
 - **Trocen/AWC** - Contrôleurs laser commerciaux
 - **ESP32 WiFi** - Connectivité réseau pour grblHAL
 - **API Laser** - API machine directe (pas de G-code)

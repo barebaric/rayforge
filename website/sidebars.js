@@ -92,6 +92,7 @@ module.exports = {
       label: 'Addons',
       items: [
         'addons/ai-workpiece-generator',
+        'addons/print-and-cut',
       ],
     },
     {

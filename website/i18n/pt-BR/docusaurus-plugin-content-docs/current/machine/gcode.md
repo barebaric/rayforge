@@ -4,6 +4,13 @@ A página de G-code nas Configurações da Máquina configura como o Rayforge ge
 
 ![Configurações de G-code](/screenshots/machine-gcode.png)
 
+:::info
+Esta página é exibida apenas para máquinas que usam drivers baseados em
+G-code (ex. GRBL, Smoothieware, Marlin). Se sua máquina usa um driver não
+baseado em G-code (ex. Ruida), esta página de configurações fica completamente
+oculta.
+:::
+
 ## Dialeto de G-code
 
 Selecione o dialeto de G-code que corresponde ao firmware do seu controlador. Diferentes controladores usam comandos e formatos ligeiramente diferentes.

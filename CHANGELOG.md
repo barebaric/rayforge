@@ -5,6 +5,30 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.6.1
+
+### Added
+
+- Ruida driver with jogging, position reporting, air assist, layer selection,
+  auto-connect, status polling, and ref points support
+- Driver maturity enum with warning banner for non-stable drivers
+- Generic GRBL, Smoothieware, and Ruida device profiles
+- Allow editing workpiece vectors directly (vector deletion) by double clicking
+  a workpiece
+- Job time estimate shown in 3D canvas
+
+### Changed
+
+- Replace asyncio-serial by threading in serial transport reader loop to reduce
+  read buffer overflows when the asyncio loop is congested (#208)
+- Print and cut: replace scale checkbox by an adw toggle button
+
+### Fixed
+
+- Pipeline held reference to old machine after switching to a new machine
+- Pipeline recalculation loop
+- Power percentage rounding in step summary
+
 ## 1.6
 
 ### Added

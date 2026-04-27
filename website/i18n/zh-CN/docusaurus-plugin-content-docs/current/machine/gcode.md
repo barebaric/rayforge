@@ -4,6 +4,12 @@
 
 ![G 代码设置](/screenshots/machine-gcode.png)
 
+:::info
+此页面仅在使用基于 G 代码的驱动程序的机器上显示（例如 GRBL、
+Smoothieware、Marlin）。如果您的机器使用非 G 代码驱动程序（例如
+Ruida），此设置页面将完全隐藏。
+:::
+
 ## G 代码方言
 
 选择与您的控制器固件匹配的 G 代码方言。不同的控制器使用略有不同的命令和格式。

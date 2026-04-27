@@ -8,6 +8,12 @@ The G-code page in Machine Settings configures how Rayforge generates G-code for
 
 ![G-code Settings](/screenshots/machine-gcode.png)
 
+:::info
+This page is only shown for machines that use G-code-based drivers (e.g.
+GRBL, Smoothieware, Marlin). If your machine uses a non-G-code driver (e.g.
+Ruida), this settings page is hidden entirely.
+:::
+
 ## G-code Dialect
 
 Select the G-code dialect that matches your controller firmware. Different controllers use slightly different commands and formats.

@@ -4,6 +4,13 @@ Die G-Code-Seite in den Maschineneinstellungen konfiguriert, wie Rayforge G-Code
 
 ![G-Code-Einstellungen](/screenshots/machine-gcode.png)
 
+:::info
+Diese Seite wird nur für Maschinen angezeigt, die G-Code-basierte Treiber
+verwenden (z.B. GRBL, Smoothieware, Marlin). Wenn deine Maschine einen
+Nicht-G-Code-Treiber verwendet (z.B. Ruida), wird diese Einstellungsseite
+vollständig ausgeblendet.
+:::
+
 ## G-Code-Dialekt
 
 Wähle den G-Code-Dialekt, der mit deiner Controller-Firmware übereinstimmt. Verschiedene Controller verwenden leicht unterschiedliche Befehle und Formate.

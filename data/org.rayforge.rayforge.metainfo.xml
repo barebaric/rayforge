@@ -66,6 +66,34 @@
   </screenshots>
 
   <releases>
+    <release version="1.6.1" date="2026-04-27">
+      <description>
+        <p>Ruida Driver, Vector Editing, and Bug Fixes</p>
+        <p>New Features:</p>
+        <ul>
+          <li>New Ruida driver with jogging, position reporting, air assist,
+          layer selection, auto-connect, and status polling</li>
+          <li>Driver maturity indicator with warning banner for non-stable
+          drivers</li>
+          <li>Generic GRBL, Smoothieware, and Ruida device profiles</li>
+          <li>Edit workpiece vectors directly by double-clicking (vector
+          deletion)</li>
+          <li>Job time estimate shown in 3D canvas</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Serial transport uses threading instead of asyncio for fewer
+          buffer overflows (#208)</li>
+          <li>G-code settings page hidden for non-G-code drivers</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Fixed pipeline holding stale reference after switching machines</li>
+          <li>Fixed pipeline recalculation loop</li>
+          <li>Fixed power percentage rounding in step summary</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.6" date="2026-04-24">
       <description>
         <p>Device Profiles, Rotary Overhaul, Print &amp; Cut, Redesigned

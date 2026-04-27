@@ -13,7 +13,7 @@ describing what you want. Type a description like "a simple star shape"
 or "a gear with 8 teeth" and the AI will generate a workpiece ready for
 your laser cutter.
 
-![AI Workpiece Generator Dialog](/screenshots/ai-workpiece-generator.png)
+![AI Workpiece Generator Dialog](/screenshots/addon-ai-workpiece-generator.png)
 
 ## Requirements
 

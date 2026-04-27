@@ -10,7 +10,7 @@ indem du einfach beschreibst, was du möchtest. Gib eine Beschreibung
 wie "eine einfache Sternform" oder "ein Zahnrad mit 8 Zähnen" ein, und die
 KI generiert ein Werkstück, das für deinen Lasercutter bereit ist.
 
-![KI-Werkstückgenerator Dialog](/screenshots/ai-workpiece-generator.png)
+![KI-Werkstückgenerator Dialog](/screenshots/addon-ai-workpiece-generator.png)
 
 ## Voraussetzungen
 

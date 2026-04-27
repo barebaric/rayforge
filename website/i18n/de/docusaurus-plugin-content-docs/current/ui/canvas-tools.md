@@ -153,6 +153,15 @@ Formen kombinieren oder subtrahieren:
 4. **Zuerst messen**: Abmessungen verifizieren vor G-Code-Generierung
 5. **Verwandte Objekte gruppieren**: Leichter zu bewegen und organisieren (<kbd>Strg+g</kbd> zum Gruppieren)
 
+## Vektorbearbeitung
+
+Doppelklicke auf ein Werkstück auf der Arbeitsfläche, um in den
+Vektorbearbeitungsmodus zu wechseln. In diesem Modus kannst du einzelne
+Vektorsegmente des Werkstücks auswählen und löschen.
+
+Um den Vektorbearbeitungsmodus zu verlassen, klicke außerhalb des Werkstücks
+oder drücke <kbd>Escape</kbd>.
+
 ---
 
 **Weiter**: [3D-Vorschau →](3d-preview)

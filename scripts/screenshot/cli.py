@@ -24,7 +24,10 @@ TARGETS = {
     "app-settings:recipes": "app_settings_recipes",
     "app-settings:addons": "app_settings_addons",
     "app-settings:ai": "app_settings_ai",
-    "ai-workpiece-generator": "ai_workpiece_generator",
+    "addon:ai-workpiece-generator": "ai_workpiece_generator",
+    "addon:print-and-cut:pick": "print_and_cut",
+    "addon:print-and-cut:jog": "print_and_cut",
+    "addon:print-and-cut:apply": "print_and_cut",
     "bottom-panel:console": "bottom_panel",
     "bottom-panel:layers": "bottom_panel",
     "import-dialog": "import_dialog",
@@ -113,7 +116,9 @@ def generate_help_text() -> str:
     lines.append(
         "  main, app-settings, machine-settings, step-settings, bottom-panel"
     )
-    lines.append("  step-settings:engrave, step-settings:engrave:general")
+    lines.append(
+        "  addon, step-settings:engrave, step-settings:engrave:general"
+    )
     lines.append("  recipe-editor, etc.")
     lines.append("")
     lines.append("Use 'all' to run everything")

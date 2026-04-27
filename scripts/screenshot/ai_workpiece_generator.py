@@ -65,8 +65,8 @@ def main():
     run_on_main_thread(set_example_text)
     time.sleep(0.5)
 
-    logger.info("Taking screenshot: ai-workpiece-generator.png")
-    take_screenshot("ai-workpiece-generator.png")
+    logger.info("Taking screenshot: addon-ai-workpiece-generator.png")
+    take_screenshot("addon-ai-workpiece-generator.png")
 
     app.quit_idle()
 
