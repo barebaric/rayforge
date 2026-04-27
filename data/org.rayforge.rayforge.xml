@@ -2,6 +2,7 @@
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
   <mime-type type="application/x-rayforge-project">
     <comment>Rayforge project file</comment>
+    <sub-class-of type="application/zip"/>
     <glob pattern="*.ryp"/>
   </mime-type>
   <mime-type type="application/x-rayforge-sketch">
