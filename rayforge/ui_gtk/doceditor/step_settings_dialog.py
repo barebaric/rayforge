@@ -5,6 +5,7 @@ from blinker import Signal
 from gi.repository import Adw, GLib, Gtk
 
 from ...context import get_context
+from ...core.capability import CUT
 from ...core.step import Step
 from ...core.undo import ChangePropertyCommand, HistoryManager
 from ...pipeline.producer import OpsProducer
@@ -143,9 +144,10 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
             ),
         )
         general_group.add(tab_power_row)
-        # Set tab power row visibility based on producer capability
+        # Set tab power row visibility: only for steps with CutCapability
         tab_power_row.set_visible(
-            producer.supports_power if producer else False
+            CUT in self.step.capabilities
+            and (producer.supports_power if producer else False)
         )
         self.tab_power_row = tab_power_row
 
