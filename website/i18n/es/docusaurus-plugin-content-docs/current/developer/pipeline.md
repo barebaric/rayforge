@@ -1,6 +1,13 @@
+---
+description: "El pipeline de procesamiento de Rayforge - cómo los diseños se mueven desde la importación a través de operaciones hasta la generación de G-code."
+---
+
 # Arquitectura del Pipeline
 
-Este documento describe la arquitectura del pipeline, que usa un Grafo Acíclico Dirigido (DAG) para orquestar la generación de artefactos. El pipeline transforma datos de diseño crudos en salidas finales para visualización y manufactura, con programación consciente de dependencias y caché eficiente de artefactos.
+Este documento describe la arquitectura del pipeline, que usa un Grafo Acíclico
+Dirigido (DAG) para orquestar la generación de artefactos. El pipeline transforma
+datos de diseño crudos en salidas finales para visualización y manufactura, con
+programación consciente de dependencias y caché eficiente de artefactos.
 
 ```mermaid
 graph TD
@@ -10,36 +17,41 @@ graph TD
 
     subgraph PipelineCore["2. Core del Pipeline"]
         Pipeline["Pipeline<br/>(Orquestador)"]
-        DAG["DagScheduler<br/>(Grafo y Lanzamiento de Tareas)"]
+        DAG["DagScheduler<br/>(Grafo y Programación)"]
         Graph["PipelineGraph<br/>(Grafo de Dependencias)"]
-        AM["ArtifactManager<br/>(Caché)"]
+        AM["ArtifactManager<br/>(Registro + Caché)"]
+        GC["GenerationContext<br/>(Seguimiento de Tareas)"]
     end
 
     subgraph ArtifactGen["3. Generación de Artefactos"]
         subgraph WorkPieceNodes["3a. Nodos WorkPiece"]
-            WP["WorkPieceArtifact<br/><i>Ops Locales, Vértices, Texturas</i>"]
+            WP["WorkPieceArtifact<br/><i>Ops + Metadatos</i>"]
         end
 
         subgraph StepNodes["3b. Nodos Step"]
-            SR["StepRenderArtifact<br/><i>Vértices y Texturas en espacio-mundo</i>"]
             SO["StepOpsArtifact<br/><i>Ops en espacio-mundo</i>"]
         end
 
         subgraph JobNode["3c. Nodo Job"]
-            JA["JobArtifact<br/><i>G-code Final, Tiempo</i>"]
+            JA["JobArtifact<br/><i>G-code, Tiempo, Distancia</i>"]
         end
     end
 
-    subgraph ViewMgr["4. View Manager (Separado)"]
+    subgraph View2D["4. Capa de Vista 2D (Separada)"]
         VM["ViewManager"]
-        VC["RenderContext<br/>(Zoom, Pan, etc.)"]
+        RC["RenderContext<br/>(Zoom, Pan, etc.)"]
         WV["WorkPieceViewArtifact<br/><i>Rasterizado para Lienzo 2D</i>"]
     end
 
-    subgraph Consumers["5. Consumidores"]
+    subgraph View3D["5. Capa 3D / Simulador (Separada)"]
+        SC["Compilador de Escena<br/>(Subproceso)"]
+        CS["CompiledSceneArtifact<br/><i>Datos de Vértices GPU</i>"]
+        OP["OpPlayer<br/>(Backend del Simulador)"]
+    end
+
+    subgraph Consumers["6. Consumidores"]
         Vis2D("Lienzo 2D (UI)")
         Vis3D("Lienzo 3D (UI)")
-        Simulator("Simulador (UI)")
         File("Archivo G-code (para Máquina)")
     end
 
@@ -47,28 +59,29 @@ graph TD
     Pipeline --> DAG
     DAG --> Graph
     DAG --> AM
+    DAG --> GC
 
     Graph -->|"Nodos Sucios"| DAG
     DAG -->|"Lanzar Tareas"| WP
-    DAG -->|"Lanzar Tareas"| SR
     DAG -->|"Lanzar Tareas"| SO
     DAG -->|"Lanzar Tareas"| JA
 
-    AM -.->|"Caché"| WP
-    AM -.->|"Caché"| SR
-    AM -.->|"Caché"| SO
-    AM -.->|"Caché"| JA
+    AM -.->|"Caché + Estado"| WP
+    AM -.->|"Caché + Estado"| SO
+    AM -.->|"Caché + Estado"| JA
 
-    WP --> Vis2D
     WP --> VM
-    SR --> Vis3D
-    SO --> DAG
-    JA --> Simulator
+    JA --> SC
+    JA --> OP
     JA --> File
 
-    VC --> VM
+    RC --> VM
     VM --> WV
     WV --> Vis2D
+
+    SC --> CS
+    CS --> Vis3D
+    OP --> Vis3D
 
     classDef clusterBox fill:#fff3e080,stroke:#ffb74d80,stroke-width:1px,color:#1a1a1a
     classDef inputNode fill:#e1f5fe80,stroke:#03a9f480,color:#0d47a1
@@ -76,41 +89,49 @@ graph TD
     classDef artifactNode fill:#e8f5e980,stroke:#4caf5080,color:#1b5e20
     classDef viewNode fill:#fff8e180,stroke:#ffc10780,color:#e65100
     classDef consumerNode fill:#fce4ec80,stroke:#e91e6380,color:#880e4f
-    class Input,PipelineCore,ArtifactGen,WorkPieceNodes,StepNodes,JobNode,ViewMgr,Consumers clusterBox
+    class Input,PipelineCore,ArtifactGen,WorkPieceNodes,StepNodes,JobNode,View2D,View3D,Consumers clusterBox
     class InputNode inputNode
-    class Pipeline,DAG,Graph,AM coreNode
-    class WP,SR,SO,JA artifactNode
-    class VM,VC,WV viewNode
-    class Vis2D,Vis3D,Simulator,File consumerNode
+    class Pipeline,DAG,Graph,AM,GC coreNode
+    class WP,SO,JA artifactNode
+    class VM,RC,WV,SC,CS,OP viewNode
+    class Vis2D,Vis3D,File consumerNode
 ```
 
 # Conceptos Core
 
 ## Nodos de Artefacto y el Grafo de Dependencias
 
-El pipeline usa un **Grafo Acíclico Dirigido (DAG)** para modelar artefactos y sus dependencias. Cada artefacto se representa como un `ArtifactNode` en el grafo.
+El pipeline usa un **Grafo Acíclico Dirigido (DAG)** para modelar artefactos y
+sus dependencias. Cada artefacto se representa como un `ArtifactNode` en el
+grafo.
 
 ### ArtifactNode
 
 Cada nodo contiene:
 
-- **ArtifactKey**: Un identificador único que consiste en un ID y un tipo de grupo (`workpiece`, `step`, `job`, o `view`)
-- **Estado**: El estado actual del ciclo de vida del nodo
+- **ArtifactKey**: Un identificador único que consiste en un ID y un tipo de
+  grupo (`workpiece`, `step`, `job`, o `view`)
 - **Dependencias**: Lista de nodos de los que este nodo depende (hijos)
 - **Dependientes**: Lista de nodos que dependen de este nodo (padres)
 
+Los nodos no almacenan estado directamente. En su lugar, delegan lecturas y
+escrituras de estado al `ArtifactManager`, que mantiene un registro de todos
+los artefactos y sus estados.
+
 ### Estados de Nodo
 
-Los nodos progresan a través de cuatro estados:
+Los nodos progresan a través de cinco estados:
 
-| Estado        | Descripción                                 |
-| ------------- | ------------------------------------------- |
-| `DIRTY`       | El artefacto necesita ser regenerado        |
-| `PROCESSING`  | Una tarea está generando actualmente el artefacto |
-| `VALID`       | El artefacto está listo y actualizado       |
-| `ERROR`       | La generación falló                         |
+| Estado        | Descripción                                                        |
+| ------------- | ------------------------------------------------------------------ |
+| `DIRTY`       | El artefacto necesita ser (re)generado                             |
+| `PROCESSING`  | Una tarea está generando actualmente el artefacto                  |
+| `VALID`       | El artefacto está listo y actualizado                              |
+| `ERROR`       | La generación falló                                                |
+| `CANCELLED`   | La generación fue cancelada; se reintentará si aún se necesita     |
 
-Cuando un nodo se marca como sucio, todos sus dependientes también se marcan como sucios, propagando la invalidación hacia arriba en el grafo.
+Cuando un nodo se marca como sucio, todos sus dependientes también se marcan
+como sucios, propagando la invalidación hacia arriba en el grafo.
 
 ### PipelineGraph
 
@@ -127,63 +148,107 @@ Las dependencias se establecen:
 
 ## DagScheduler
 
-El `DagScheduler` es el orquestador central del pipeline. Es dueño del `PipelineGraph` y es responsable de:
+El `DagScheduler` es el orquestador central del pipeline. Es dueño del
+`PipelineGraph` y es responsable de:
 
 1. **Construir el grafo** desde el modelo Doc
 2. **Identificar nodos listos** (DIRTY con todas las dependencias VALID)
-3. **Lanzar tareas** para generar artefactos
+3. **Disparar lanzamiento de tareas** a través de las etapas apropiadas del
+   pipeline
 4. **Rastrear estado** a través del proceso de generación
 5. **Notificar consumidores** cuando los artefactos están listos
 
-El scheduler trabaja con IDs de generación para rastrear qué artefactos pertenecen a qué versión del documento, permitiendo reuso de artefactos válidos a través de generaciones.
+El scheduler trabaja con IDs de generación para rastrear qué artefactos
+pertenecen a qué versión del documento, permitiendo reuso de artefactos
+válidos a través de generaciones.
 
 Comportamientos clave:
 
-- Cuando el grafo se construye, el scheduler sincroniza estados de nodo con el artifact manager para identificar artefactos cacheados que pueden reusarse
-- Los artefactos de la generación anterior pueden reusarse si permanecen válidos
-- El scheduler rastrea qué IDs de generación tienen tareas ejecutándose para preservar artefactos durante transiciones de generación
-- Las invalidaciones se rastrean incluso antes de reconstruir el grafo y se vuelven a aplicar después
+- Cuando el grafo se construye, el scheduler sincroniza estados de nodo con
+  el artifact manager para identificar artefactos cacheados que pueden
+  reusarse
+- Los artefactos de la generación anterior pueden reusarse si permanecen
+  válidos
+- Las invalidaciones se rastrean incluso antes de reconstruir el grafo y se
+  vuelven a aplicar después
+- El scheduler delega la creación real de tareas a las etapas pero controla
+  **cuándo** se lanzan las tareas basándose en la disponibilidad de
+  dependencias
 
 ## ArtifactManager
 
-El `ArtifactManager` es un gestor de caché puro para handles de artefactos. Este:
+El `ArtifactManager` sirve tanto como caché como fuente única de verdad para
+el estado de los artefactos. Este:
 
-- Almacena y recupera handles de artefactos
-- Gestiona conteo de referencias para limpieza
-- Maneja ciclo de vida (creación, retención, liberación)
-- NO rastrea estado (el estado es gestionado por el scheduler DAG)
+- Almacena y recupera handles de artefactos mediante un **registro** (indexado
+  por `ArtifactKey` + ID de generación)
+- Rastrea estado (`DIRTY`, `VALID`, `ERROR`, etc.) en entradas del registro
+- Gestiona conteo de referencias para limpieza de memoria compartida
+- Maneja ciclo de vida (creación, retención, liberación, poda)
+- Proporciona gestores de contexto para adopción segura de artefactos,
+  reporte de finalización, fallo y cancelación
+
+## GenerationContext
+
+Cada ciclo de reconciliación crea un `GenerationContext` que rastrea todas
+las tareas activas para esa generación. Asegura que los recursos de memoria
+compartida permanezcan válidos hasta que todas las tareas en vuelo de una
+generación hayan completado, incluso si una generación más nueva ya ha
+comenzado. Cuando un contexto es reemplazado y todas sus tareas finalizan,
+libera automáticamente sus recursos.
 
 ## Ciclo de Vida de Memoria Compartida
 
-Los artefactos se almacenan en memoria compartida (`multiprocessing.shared_memory`) para comunicación eficiente entre procesos entre procesos worker y el proceso principal. El `ArtifactStore` gestiona el ciclo de vida de estos bloques de memoria.
+Los artefactos se almacenan en memoria compartida
+(`multiprocessing.shared_memory`) para comunicación eficiente entre procesos
+worker y el proceso principal. El `ArtifactStore` gestiona el ciclo de vida
+de estos bloques de memoria.
 
 ### Patrones de Propiedad
 
-**Propiedad Local:** El proceso creador es dueño del handle y lo libera cuando termina. Este es el patrón más simple.
+**Propiedad Local:** El proceso creador es dueño del handle y lo libera cuando
+termina. Este es el patrón más simple.
 
-**Entrega Entre Procesos:** Un worker crea un artefacto, lo envía al proceso principal via IPC, y transfiere propiedad. El worker "olvida" el handle (cierra su descriptor de archivo sin desvincular la memoria), mientras el proceso principal lo "adopta" y se hace responsable de su eventual liberación.
+**Entrega Entre Procesos:** Un worker crea un artefacto, lo envía al proceso
+principal via IPC, y transfiere propiedad. El worker "olvida" el handle
+(cierra su descriptor de archivo sin desvincular la memoria), mientras el
+proceso principal lo "adopta" y se hace responsable de su eventual liberación.
 
-### Conteo de Referencias
+### Detección de Artefactos Obsoletos
 
-El `ArtifactStore` mantiene conteos de referencias para cada bloque de memoria compartida. Múltiples callers pueden hacer `retain()` a un handle, y el bloque solo se desvincula cuando el conteo llega a cero. Esto es usado por el `ViewManager` para renderizado progresivo donde múltiples callbacks pueden acceder al mismo artefacto.
+El mecanismo `StaleGenerationError` previene que artefactos de generaciones
+reemplazadas sean adoptados. Cuando una generación más nueva ha comenzado, el
+manager detecta artefactos obsoletos durante la adopción y los descarta
+silenciosamente.
 
 ## Etapas del Pipeline
 
-Las etapas del pipeline (`WorkPiecePipelineStage`, `StepPipelineStage`, `JobPipelineStage`) ahora sirven como interfaces en lugar de lanzadores de tareas:
+Las etapas del pipeline (`WorkPiecePipelineStage`, `StepPipelineStage`,
+`JobPipelineStage`) son responsables de la **mecánica** de ejecución de tareas:
 
-- Manejan solicitudes de invalidación desde la UI
-- Delegan lanzamiento de tareas al DagScheduler
-- Proporcionan acceso a artefactos cacheados
-- Reenvían señales desde el scheduler a la UI
+- Crean y registran tareas de subproceso mediante el `TaskManager`
+- Manejan eventos de tareas (fragmentos progresivos, resultados intermedios)
+- Gestionan adopción de artefactos y caché al completar tareas
+- Emiten señales para notificar al pipeline de cambios de estado
 
-## InvalidationScope
+El **DagScheduler** decide **cuándo** activar cada etapa, pero las etapas
+manejan el lanzamiento real de subprocesos, manejo de eventos y adopción de
+resultados.
 
-El enum `InvalidationScope` define el alcance de invalidación para artefactos downstream:
+## Estrategia de Invalidación
 
-| Alcance               | Descripción                                                                                                                                                    |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FULL_REPRODUCTION`   | Invalida workpieces, que se propaga a steps y luego al job. Usado para cambios que requieren regeneración de artefactos (geometría, parámetros, cambios de tamaño). |
-| `STEP_ONLY`           | Invalida steps directamente, que se propaga al job. Usado para cambios de transformación solo de posición/rotación donde la geometría del workpiece permanece sin cambios.           |
+La invalidación es provocada por cambios al modelo Doc, con diferentes
+estrategias dependiendo de qué cambió:
+
+| Tipo de Cambio              | Comportamiento                                                                                                  |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Geometría/parámetros        | Pares workpiece-step invalidados, en cascada a steps y job                                                      |
+| Posición/rotación           | Steps invalidados directamente (en cascada a job); workpieces omitidos a menos que sean sensibles a posición    |
+| Cambio de tamaño            | Igual que geometría: cascada completa desde pares workpiece-step hacia arriba                                   |
+| Configuración de máquina    | Todos los artefactos forzados a invalidación en todas las generaciones                                          |
+
+Los steps sensibles a posición (ej., aquellos con recorte-a-stock habilitado)
+provocan invalidación de workpiece incluso para cambios puros de posición.
 
 # Desglose Detallado
 
@@ -191,8 +256,11 @@ El enum `InvalidationScope` define el alcance de invalidación para artefactos d
 
 El proceso comienza con el **Modelo Doc**, que contiene:
 
-- **WorkPieces:** Elementos de diseño individuales (SVGs, imágenes) colocados en el lienzo
-- **Steps:** Instrucciones de procesamiento (Contour, Raster) con ajustes
+- **WorkPieces:** Elementos de diseño individuales (SVGs, imágenes) colocados
+  en el lienzo
+- **Steps:** Instrucciones de procesamiento (Contour, Raster, etc.) con
+  ajustes
+- **Layers:** Agrupación de workpieces, cada uno con su propio flujo de trabajo
 
 ## Core del Pipeline
 
@@ -200,10 +268,15 @@ El proceso comienza con el **Modelo Doc**, que contiene:
 
 La clase `Pipeline` es el director de alto nivel que:
 
-- Escucha al modelo Doc para cambios
+- Escucha al modelo Doc para cambios mediante señales
+- **Agrupa cambios** (200ms de retardo de reconciliación, 50ms de retardo de
+  eliminación)
 - Coordina con el DagScheduler para disparar regeneración
-- Gestiona el estado de procesamiento general
-- Conecta señales entre componentes
+- Gestiona el estado de procesamiento general y detección de ocupado
+- Soporta **pausar/reanudar** para operaciones por lotes
+- Soporta **modo manual** (`auto_pipeline=False`) donde el recálculo se
+  activa explícitamente en lugar de automáticamente
+- Conecta señales entre componentes y las retransmite a los consumidores
 
 ### DagScheduler
 
@@ -211,62 +284,74 @@ El `DagScheduler`:
 
 - Construye y mantiene el `PipelineGraph`
 - Identifica nodos listos para procesamiento
-- Lanza tareas via el TaskManager
-- Rastrea transiciones de estado de nodo
+- Dispara lanzamiento de tareas mediante los métodos `launch_task()` de las
+  etapas
+- Rastrea transiciones de estado de nodo a través del registro
 - Emite señales cuando los artefactos están listos
 
 ### ArtifactManager
 
 El `ArtifactManager`:
 
+- Mantiene un **registro** de objetos `LedgerEntry`, cada uno rastreando un
+  handle, ID de generación y estado de nodo
 - Cachea handles de artefactos en memoria compartida
 - Gestiona conteo de referencias para limpieza
 - Proporciona búsqueda por ArtifactKey e ID de generación
+- Poda generaciones obsoletas para mantener el registro limpio
+
+### GenerationContext
+
+Cada reconciliación crea un nuevo `GenerationContext` que:
+
+- Rastrea tareas activas mediante keys con conteo de referencias
+- Es dueño de recursos de memoria compartida para su generación
+- Se apaga automáticamente cuando es reemplazado y todas las tareas
+  completan
 
 ## Generación de Artefactos
 
 ### WorkPieceArtifacts
 
-Generados para cada combinación `(WorkPiece, Step)`, conteniendo:
+Generados para cada combinación `(WorkPiece, Step)`. Contiene:
 
-- Toolpaths (`Ops`) en sistema de coordenadas local
-- Datos de vértices para líneas
-- Datos de textura para rellenos raster
+- Toolpaths (`Ops`) en el sistema de coordenadas local del workpiece
+- Flag de escalabilidad y dimensiones fuente para ops independientes de
+  resolución
+- Sistema de coordenadas y metadatos de generación
 
 Secuencia de procesamiento:
 
-1. **Modificadores:** (Opcional) Acondicionamiento de imagen (escala de grises, etc.)
-2. **Productor:** Crea toolpaths crudos (`Ops`)
-3. **Transformadores:** Modificaciones por workpiece (Tabs, Smooth)
-4. **Codificador de Vértices:** Crea datos amigables para GPU
+1. **Productor:** Crea toolpaths crudos (`Ops`) desde los datos del workpiece
+2. **Transformadores:** Modificaciones por workpiece aplicadas en fases
+   ordenadas (Refinamiento de Geometría → Interrupción de Trayectoria →
+   Post Procesamiento)
 
-### StepArtifacts
+Los workpieces raster grandes se procesan incrementalmente en fragmentos,
+permitiendo retroalimentación visual progresiva durante la generación.
 
-Generados para cada Step, consumiendo todos los WorkPieceArtifacts relacionados:
+### StepOpsArtifacts
 
-**StepRenderArtifact:**
+Generados para cada Step, consumiendo todos los WorkPieceArtifacts
+relacionados:
 
-- Datos combinados de vértices y textura para todos los workpieces
-- Transformados a coordenadas de espacio-mundo
-- Optimizados para renderizado de lienzo 3D
-
-**StepOpsArtifact:**
-
-- Ops combinadas para todos los workpieces
-- Transformadas a coordenadas de espacio-mundo
-- Incluye transformadores por-step (Optimize, Multi-Pass)
+- Ops combinadas para todos los workpieces en coordenadas de espacio-mundo
+- Transformadores por-step aplicados (Optimize, Multi-Pass, etc.)
 
 ### JobArtifact
 
-Generado bajo demanda cuando se necesita G-code, consumiendo todos los StepOpsArtifacts:
+Generado bajo demanda cuando se necesita G-code, consumiendo todos los
+StepOpsArtifacts:
 
-- G-code final para el trabajo completo
-- Datos de vértices completos para simulación
-- Estimación de tiempo de alta fidelidad
+- Código de máquina final (G-code o formato específico del controlador)
+- Ops completas para simulación y reproducción
+- Estimación de tiempo de alta fidelidad y distancia total
+- Ops mapeadas rotacionalmente para vista previa 3D
 
-## ViewManager (Separado)
+## Capa de Vista 2D (Separada)
 
-El `ViewManager` está **desacoplado** del pipeline de datos. Maneja el renderizado para el lienzo 2D basándose en el estado de la UI:
+El `ViewManager` está **desacoplado** del pipeline de datos. Maneja el
+renderizado para el lienzo 2D basándose en el estado de la UI:
 
 ### RenderContext
 
@@ -287,35 +372,101 @@ El ViewManager crea `WorkPieceViewArtifacts` que:
 ### Ciclo de Vida
 
 1. ViewManager rastrea handles de `WorkPieceArtifact` fuente
-2. Cuando el contexto de renderizado cambia, ViewManager dispara re-renderizado
+2. Cuando el contexto de renderizado cambia, ViewManager dispara
+   re-renderizado
 3. Cuando el artefacto fuente cambia, ViewManager dispara re-renderizado
-4. El throttling previene actualizaciones excesivas durante cambios continuos
+4. El re-renderizado está limitado por throttling (intervalo de 33ms) y
+   concurrencia limitada
+5. La composición progresiva de fragmentos proporciona actualizaciones
+   visuales incrementales
 
-El ViewManager indexa vistas por `(workpiece_uid, step_uid)` para soportar visualización de estados intermedios de un workpiece a través de múltiples steps.
+El ViewManager indexa vistas por `(workpiece_uid, step_uid)` para soportar
+visualización de estados intermedios de un workpiece a través de múltiples
+steps.
+
+## Capa 3D / Simulador (Separada)
+
+El sistema de visualización 3D y simulación está **desacoplado** del pipeline
+de datos, siguiendo un patrón similar al ViewManager. Consiste en:
+
+- Un **Compilador de Escena** que se ejecuta en un subproceso para convertir
+  las ops del `JobArtifact` en datos de vértices listos para GPU
+- Un **OpPlayer** que reproduce las ops del trabajo para simulación en tiempo
+  real de la máquina con controles de reproducción
+
+Ambos consumen el `JobArtifact` producido por la etapa de job del pipeline.
+
+### CompiledSceneArtifact
+
+El Compilador de Escena produce un `CompiledSceneArtifact` que contiene:
+
+- **Capas de vértices:** Buffers de vértices powered/travel/zero-power con
+  offsets por comando para revelado progresivo
+- **Capas de textura:** Mapas de potencia de líneas de escaneo rasterizados
+  para vista previa de grabado
+- **Capas de superposición:** Segmentos de potencia de líneas de escaneo para
+  resaltado en tiempo real
+- Soporte para geometría rotacional (envuelta en cilindro)
+
+### Pipeline de Compilación
+
+1. Canvas3D escucha señales de `job_generation_finished`
+2. Cuando un nuevo job está listo, programa la compilación de escena en un
+   subproceso
+3. El subproceso lee el `JobArtifact` desde memoria compartida y compila las
+   ops en datos de vértices GPU
+4. La escena compilada se adopta de vuelta en memoria compartida y se sube a
+   los renderizadores GPU
+
+### OpPlayer (Backend del Simulador)
+
+El `OpPlayer` recorre las ops del trabajo comando por comando, manteniendo un
+`MachineState` que rastrea posición, estado del láser y ejes auxiliares. Esto
+impulsa:
+
+- La reproducción del lienzo 3D (revelado progresivo de la trayectoria)
+- Posición de la cabeza de la máquina y visualización del haz láser
+- Avance por comando para el control deslizante de reproducción
 
 ## Consumidores
 
-| Consumidor   | Usa                      | Propósito                             |
-| ------------ | ------------------------ | ------------------------------------- |
-| Lienzo 2D    | WorkPieceViewArtifacts   | Renderiza workpieces en espacio de pantalla |
-| Lienzo 3D    | StepRenderArtifacts      | Renderiza step completo en espacio mundo |
-| Simulador    | JobArtifact              | Simulación precisa de ruta de máquina |
-| Máquina      | JobArtifact G-code       | Salida de manufactura                 |
+| Consumidor   | Usa                            | Propósito                                        |
+| ------------ | ------------------------------ | ------------------------------------------------ |
+| Lienzo 2D    | WorkPieceViewArtifacts         | Renderiza workpieces en espacio de pantalla       |
+| Lienzo 3D    | CompiledSceneArtifact          | Renderiza trabajo completo en 3D con reproducción |
+| Máquina      | JobArtifact (código de máquina)| Salida de manufactura                             |
 
-# Diferencias Clave de la Arquitectura Anterior
+# Decisiones Arquitectónicas Clave
 
-1. **Programación basada en DAG:** En lugar de etapas secuenciales, los artefactos se generan a medida que sus dependencias se vuelven disponibles.
+1. **Programación basada en DAG:** En lugar de etapas secuenciales, los
+   artefactos se generan a medida que sus dependencias se vuelven
+   disponibles, permitiendo paralelismo.
 
-2. **Gestión de Estado:** El estado del nodo se rastrea en el grafo DAG, no en componentes individuales.
+2. **Estado basado en registro:** El estado del nodo se rastrea en las
+   entradas del registro del ArtifactManager en lugar de en los nodos del
+   grafo, proporcionando una fuente única de verdad tanto para estado como
+   para almacenamiento de handles.
 
-3. **Separación de ViewManager:** El renderizado para el lienzo 2D ahora es manejado por un ViewManager separado, no como parte del pipeline de datos.
+3. **Separación de Capa de Vista:** Tanto el lienzo 2D (ViewManager) como el
+   lienzo 3D (Compilador de Escena) están desacoplados del pipeline de datos.
+   Cada uno ejecuta su propio renderizado basado en subprocesos y es impulsado
+   por señales del pipeline en lugar de ser parte del DAG.
 
-4. **IDs de Generación:** Los artefactos se rastrean con IDs de generación, permitiendo reuso eficiente a través de versiones de documento.
+4. **IDs de Generación:** Los artefactos se rastrean con IDs de generación,
+   permitiendo reuso eficiente a través de versiones de documento y detección
+   de artefactos obsoletos.
 
-5. **Orquestación Centralizada:** El DagScheduler es el punto único de control para lanzamiento de tareas y rastreo de estado.
+5. **Orquestación Centralizada:** El DagScheduler es el punto único de control
+   para programación de tareas; las etapas manejan la mecánica de ejecución.
 
-6. **Gestor de Caché Puro:** El ArtifactManager es ahora un caché simple, delegando toda gestión de estado al scheduler DAG.
+6. **Aislamiento de GenerationContext:** Cada generación tiene su propio
+   contexto, asegurando que los recursos permanezcan vivos hasta que todas las
+   tareas en vuelo completen.
 
-7. **Rastreo de Invalidación:** Las keys marcadas como sucias antes de reconstruir el grafo se preservan y se vuelven a aplicar después de la reconstrucción.
+7. **Rastreo de Invalidación:** Las keys marcadas como sucias antes de
+   reconstruir el grafo se preservan y se vuelven a aplicar después de la
+   reconstrucción.
 
-8. **Detección de Trabajo Pendiente:** Solo los nodos `PROCESSING` cuentan como trabajo pendiente; los nodos `DIRTY` pueden tener dependencias no satisfechas (ej., sin contexto de vista).
+8. **Reconciliación con Debounce:** Los cambios se agrupan con retardos
+   configurables para evitar ciclos excesivos del pipeline durante ediciones
+   rápidas.
