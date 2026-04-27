@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-24 23:14+0200\n"
+"POT-Creation-Date: 2026-04-27 00:51+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -277,16 +277,30 @@ msgid "No connection"
 msgstr ""
 
 #: rayforge/machine/driver/dummy.py
+#: rayforge/machine/driver/ruida/ruida_driver.py
 msgid "Machine Coordinates"
 msgstr ""
 
 #: rayforge/machine/driver/dummy.py
+#: rayforge/machine/driver/ruida/ruida_driver.py
 msgid "No settings"
 msgstr ""
 
 #: rayforge/machine/driver/driver.py
 #, python-brace-format
 msgid "Resource '{resource}' is currently in use by '{owner}'."
+msgstr ""
+
+#: rayforge/machine/driver/driver.py
+msgid ""
+"This driver is experimental and may have unresolved issues. Use it with "
+"caution."
+msgstr ""
+
+#: rayforge/machine/driver/driver.py
+msgid ""
+"This driver is experimental and almost certainly buggy. It may not work "
+"reliably. Use it at your own risk."
 msgstr ""
 
 #: rayforge/machine/driver/driver.py rayforge/machine/transport/transport.py
@@ -377,6 +391,7 @@ msgid "Machine Coordinates (G53)"
 msgstr ""
 
 #: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/ruida/ruida_driver.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 #, python-brace-format
@@ -384,6 +399,7 @@ msgid "Invalid hostname or IP address: '{host}'"
 msgstr ""
 
 #: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/ruida/ruida_driver.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Hostname"
@@ -406,9 +422,42 @@ msgid "The Telnet port number"
 msgstr ""
 
 #: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/ruida/ruida_driver.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Hostname must be configured."
+msgstr ""
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "Ruida (UDP)"
+msgstr ""
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "Connect to a Ruida laser controller over UDP"
+msgstr ""
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "The IP address or hostname of the Ruida controller"
+msgstr ""
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "Main Port"
+msgstr ""
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "The UDP port for main commands (default: 50200)"
+msgstr ""
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "Jog Port"
+msgstr ""
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "The UDP port for jog commands (default: 50207)"
+msgstr ""
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "No response from controller"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
@@ -3722,6 +3771,10 @@ msgid "Export Machine Profile"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Report an issue"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "Laser"
 msgstr ""
 
@@ -6367,6 +6420,14 @@ msgstr ""
 
 #: rayforge/doceditor/edit_cmd.py
 msgid "Clear Layer Items"
+msgstr ""
+
+#: rayforge/doceditor/edit_cmd.py
+msgid "Delete contour(s)"
+msgstr ""
+
+#: rayforge/doceditor/edit_cmd.py
+msgid "Delete segment(s)"
 msgstr ""
 
 #: rayforge/doceditor/layout_cmd.py

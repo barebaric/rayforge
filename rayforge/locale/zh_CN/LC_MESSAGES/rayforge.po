@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-24 23:14+0200\n"
+"POT-Creation-Date: 2026-04-27 00:51+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -276,10 +276,12 @@ msgid "No connection"
 msgstr "无连接"
 
 #: rayforge/machine/driver/dummy.py
+#: rayforge/machine/driver/ruida/ruida_driver.py
 msgid "Machine Coordinates"
 msgstr "机器坐标"
 
 #: rayforge/machine/driver/dummy.py
+#: rayforge/machine/driver/ruida/ruida_driver.py
 msgid "No settings"
 msgstr "无设置"
 
@@ -287,6 +289,19 @@ msgstr "无设置"
 #, python-brace-format
 msgid "Resource '{resource}' is currently in use by '{owner}'."
 msgstr "资源'{resource}'当前正被'{owner}'使用。"
+
+#: rayforge/machine/driver/driver.py
+msgid ""
+"This driver is experimental and may have unresolved issues. Use it with "
+"caution."
+msgstr "此驱动程序为实验性质，可能存在未解决的问题。请谨慎使用。"
+
+#: rayforge/machine/driver/driver.py
+msgid ""
+"This driver is experimental and almost certainly buggy. It may not work "
+"reliably. Use it at your own risk."
+msgstr ""
+"此驱动程序为实验性质，几乎可以确定存在错误。可能无法可靠运行。使用风险自负。"
 
 #: rayforge/machine/driver/driver.py rayforge/machine/transport/transport.py
 #: rayforge/ui_gtk/machine/machine_dropdown.py
@@ -376,6 +391,7 @@ msgid "Machine Coordinates (G53)"
 msgstr "机器坐标（G53）"
 
 #: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/ruida/ruida_driver.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 #, python-brace-format
@@ -383,6 +399,7 @@ msgid "Invalid hostname or IP address: '{host}'"
 msgstr "无效的主机名或IP地址：'{host}'"
 
 #: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/ruida/ruida_driver.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Hostname"
@@ -405,10 +422,43 @@ msgid "The Telnet port number"
 msgstr "Telnet端口号"
 
 #: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/ruida/ruida_driver.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Hostname must be configured."
 msgstr "必须配置主机名。"
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "Ruida (UDP)"
+msgstr "Ruida (UDP)"
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "Connect to a Ruida laser controller over UDP"
+msgstr "通过UDP连接到Ruida激光控制器"
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "The IP address or hostname of the Ruida controller"
+msgstr "Ruida控制器的IP地址或主机名"
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "Main Port"
+msgstr "主端口"
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "The UDP port for main commands (default: 50200)"
+msgstr "主命令的UDP端口（默认：50200）"
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "Jog Port"
+msgstr "点动端口"
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "The UDP port for jog commands (default: 50207)"
+msgstr "点动命令的UDP端口（默认：50207）"
+
+#: rayforge/machine/driver/ruida/ruida_driver.py
+msgid "No response from controller"
+msgstr "控制器无响应"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "GRBL (Telnet)"
@@ -3758,6 +3808,10 @@ msgid "Export Machine Profile"
 msgstr "导出机器配置文件"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Report an issue"
+msgstr "报告问题"
+
+#: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "Laser"
 msgstr "激光"
 
@@ -6422,6 +6476,14 @@ msgstr "移除所有工件"
 #: rayforge/doceditor/edit_cmd.py
 msgid "Clear Layer Items"
 msgstr "清除图层项目"
+
+#: rayforge/doceditor/edit_cmd.py
+msgid "Delete contour(s)"
+msgstr "删除轮廓"
+
+#: rayforge/doceditor/edit_cmd.py
+msgid "Delete segment(s)"
+msgstr "删除线段"
 
 #: rayforge/doceditor/layout_cmd.py
 msgid "Position at Point"
