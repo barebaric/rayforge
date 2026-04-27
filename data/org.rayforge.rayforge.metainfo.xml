@@ -85,6 +85,7 @@
           <li>Serial transport uses threading instead of asyncio for fewer
           buffer overflows (#208)</li>
           <li>G-code settings page hidden for non-G-code drivers</li>
+          <li>Project files are now zipped internally</li>
         </ul>
         <p>Bug Fixes:</p>
         <ul>

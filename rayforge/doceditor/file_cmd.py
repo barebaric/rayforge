@@ -3,6 +3,7 @@ import json
 import logging
 import mimetypes
 import warnings
+import zipfile
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from gettext import gettext as _
@@ -1107,9 +1108,11 @@ class FileCmd:
         """
         try:
             doc_dict = self._editor.doc.to_dict()
-            file_path.write_text(
-                json.dumps(doc_dict, indent=2), encoding="utf-8"
-            )
+            json_bytes = json.dumps(doc_dict, indent=2).encode("utf-8")
+            with zipfile.ZipFile(
+                file_path, "w", compression=zipfile.ZIP_DEFLATED
+            ) as zf:
+                zf.writestr("project.json", json_bytes)
             self._editor.set_file_path(file_path)
             self._editor.mark_as_saved()
             logger.info(f"Successfully saved project to {file_path}")
@@ -1123,6 +1126,13 @@ class FileCmd:
             )
             return False
 
+    @staticmethod
+    def _read_project_content(file_path: Path) -> str:
+        if zipfile.is_zipfile(file_path):
+            with zipfile.ZipFile(file_path, "r") as zf:
+                return zf.read("project.json").decode("utf-8")
+        return file_path.read_text(encoding="utf-8")
+
     def load_project_from_path(self, file_path: Path):
         """
         Loads a .ryp project file and replaces the current document.
@@ -1134,7 +1144,7 @@ class FileCmd:
                 self._editor.notification_requested.send(self, message=msg)
                 return False
 
-            file_content = file_path.read_text(encoding="utf-8")
+            file_content = self._read_project_content(file_path)
             doc_dict = json.loads(file_content)
 
             from ..core.doc import Doc
