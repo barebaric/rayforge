@@ -95,6 +95,7 @@ module.exports = {
         'addons/deepnest',
         'addons/print-and-cut',
         'addons/projector-mode',
+        'addons/smart-stock',
       ],
     },
     {
