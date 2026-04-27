@@ -303,11 +303,7 @@ Marlin 2.0+ kann Laser steuern, wenn richtig konfiguriert.
 | ---------------------- | ----------------- | ---------------- |
 | **Arduino CNC Shield** | GRBL 1.1          | Ausgezeichnet    |
 | **MKS DLC32**          | grblHAL           | Ausgezeichnet    |
-| **Cohesion3D**         | Smoothieware      | Eingeschränkt    |
-| **SKR-Boards**         | Marlin/grblHAL    | Variiert         |
-| **Ruida**              | Proprietär        | Nicht unterstützt|
-| **Trocen**             | Proprietär        | Nicht unterstützt|
-| **TopWisdom**          | Proprietär        | Nicht unterstützt|
+| **Ruida**              | Proprietär        | Experimentell    |
 
 ### Empfohlene Controller
 
@@ -474,11 +470,33 @@ $22=1       ; Referenzfahrt aktiviert
 
 ## Zukünftige Firmware-Unterstützung
 
-### Angeforderte Funktionen
+### Ruida-Controller
+
+Rayforge bietet experimentelle Unterstützung für Ruida-basierte Controller (z.B.
+RDC6442, RDC6445, Ruida R5). Der Ruida-Treiber verbindet sich über das Netzwerk und
+unterstützt Jogging, Positionsreporting, Luftdrucksteuerung, Ebenenauswahl,
+Auto-Connect und Status-Polling.
+
+**Funktionen:**
+
+- Netzwerkverbindung (Ethernet/WiFi)
+- Positionsreporting
+- Jogging-Steuerung
+- Luftdruck und Ebenenauswahl
+- Referenzpunkt-Unterstützung
+
+**Einschränkungen:**
+
+- Experimentell — noch nicht vollständig stabil
+- Keine G-Code-Generierung; Ruida verwendet ein eigenes proprietäres Protokoll
+- Auftragsversand wird noch nicht unterstützt
+
+---
+
+### Weitere angeforderte Funktionen
 
 Benutzer haben Unterstützung angefordert für:
 
-- **Ruida-Controller** – Chinesische Laser-Controller
 - **Trocen/AWC** – Kommerzielle Laser-Controller
 - **ESP32 WiFi** – Netzwerkverbindung für grblHAL
 - **Laser-API** – Direkte Maschinen-API (kein G-Code)

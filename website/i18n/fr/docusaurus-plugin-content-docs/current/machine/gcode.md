@@ -4,6 +4,13 @@ La page G-code dans les Paramètres Machine configure comment Rayforge génère 
 
 ![Paramètres G-code](/screenshots/machine-gcode.png)
 
+:::info
+Cette page n'est affichée que pour les machines utilisant des pilotes basés
+sur G-code (p.ex. GRBL, Smoothieware, Marlin). Si votre machine utilise un
+pilote non G-code (p.ex. Ruida), cette page de paramètres est entièrement
+masquée.
+:::
+
 ## Dialecte G-code
 
 Sélectionnez le dialecte G-code qui correspond au firmware de votre contrôleur. Différents contrôleurs utilisent des commandes et des formats légèrement différents.

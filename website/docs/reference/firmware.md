@@ -309,11 +309,7 @@ Marlin 2.0+ can control lasers when properly configured.
 | ---------------------- | ---------------- | ---------------- |
 | **Arduino CNC Shield** | GRBL 1.1         | Excellent        |
 | **MKS DLC32**          | grblHAL          | Excellent        |
-| **Cohesion3D**         | Smoothieware     | Limited          |
-| **SKR boards**         | Marlin/grblHAL   | Varies           |
-| **Ruida**              | Proprietary      | Not supported    |
-| **Trocen**             | Proprietary      | Not supported    |
-| **TopWisdom**          | Proprietary      | Not supported    |
+| **Ruida**              | Proprietary      | Experimental     |
 
 ### Recommended Controllers
 
@@ -440,56 +436,32 @@ $22=1       ; Homing enabled
    - Use screen, minicom, or PuTTY
    - Send `?` and see if you get response
 
-### Firmware Crashes
-
-**Symptoms:**
-
-- Controller locks up during job
-- Random disconnections
-- Inconsistent behavior
-
-**Possible causes:**
-
-1. **Buffer overflow** - G-code file too complex
-2. **Electrical noise** - Poor grounding or EMI
-3. **Firmware bug** - Upgrade to latest version
-4. **Hardware issue** - Faulty controller
-
-**Solutions:**
-
-- Upgrade firmware to latest stable version
-- Simplify G-code (reduce precision, fewer segments)
-- Add ferrite beads to USB cable
-- Improve grounding and cable routing
-
-### Wrong Firmware
-
-**Symptoms:**
-
-- Commands rejected
-- Unexpected behavior
-- Error messages
-
-**Solution:**
-
-1. Query firmware version: `$I`
-2. Compare with Rayforge expectations
-3. Upgrade or select correct dialect
-
 ---
 
 ## Future Firmware Support
 
-### Requested Features
+### Ruida Controllers
 
-Users have requested support for:
+Rayforge includes experimental support for Ruida-based controllers (e.g.
+RDC6442, RDC6445, Ruida R5). The Ruida driver connects over the network and
+supports jogging, position reporting, air assist control, layer selection,
+auto-connect, and status polling.
 
-- **Ruida controllers** - Chinese laser controllers
-- **Trocen/AWC** - Commercial laser controllers
-- **ESP32 WiFi** - Network connectivity for grblHAL
-- **Laser API** - Direct machine API (no G-code)
+**Features:**
 
-**Status:** Not currently supported. Feature requests welcome on GitHub.
+- Network connectivity (Ethernet/WiFi)
+- Position reporting
+- Jogging controls
+- Air assist and layer selection
+- Reference point support
+
+**Limitations:**
+
+- Experimental — not yet fully stable
+- No G-code generation; Ruida uses its own proprietary protocol
+- Job sending is not yet supported
+
+---
 
 ### Contributing
 

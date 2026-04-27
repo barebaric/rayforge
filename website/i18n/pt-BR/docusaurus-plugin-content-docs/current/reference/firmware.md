@@ -303,11 +303,7 @@ Marlin 2.0+ pode controlar lasers quando configurado corretamente.
 | ---------------------- | ---------------- | ---------------- |
 | **Arduino CNC Shield** | GRBL 1.1         | Excelente        |
 | **MKS DLC32**          | grblHAL          | Excelente        |
-| **Cohesion3D**         | Smoothieware     | Limitado          |
-| **Placas SKR**         | Marlin/grblHAL   | Varia           |
-| **Ruida**              | Proprietário      | Não suportado    |
-| **Trocen**             | Proprietário      | Não suportado    |
-| **TopWisdom**          | Proprietário      | Não suportado    |
+| **Ruida**              | Proprietário      | Experimental     |
 
 ### Controladores Recomendados
 
@@ -474,11 +470,33 @@ $22=1       ; Homing ativado
 
 ## Suporte Futuro de Firmware
 
-### Recursos Solicitados
+### Controladores Ruida
+
+O Rayforge inclui suporte experimental para controladores baseados em Ruida (ex.
+RDC6442, RDC6445, Ruida R5). O driver Ruida conecta via rede e suporta jogging,
+relatório de posição, controle de ar assistido, seleção de camada, auto-conexão e
+sondagem de status.
+
+**Funcionalidades:**
+
+- Conectividade de rede (Ethernet/WiFi)
+- Relatório de posição
+- Controles de jogging
+- Ar assistido e seleção de camada
+- Suporte a pontos de referência
+
+**Limitações:**
+
+- Experimental — ainda não totalmente estável
+- Sem geração de G-code; Ruida usa seu próprio protocolo proprietário
+- Envio de trabalhos ainda não suportado
+
+---
+
+### Outros Recursos Solicitados
 
 Usuários solicitaram suporte para:
 
-- **Controladores Ruida** - Controladores de laser chineses
 - **Trocen/AWC** - Controladores de laser comerciais
 - **ESP32 WiFi** - Conectividade de rede para grblHAL
 - **API Laser** - API direta da máquina (sem G-code)

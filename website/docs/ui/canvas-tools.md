@@ -96,6 +96,14 @@ Transform objects numerically for precision.
 2. **Master pan and zoom**: Essential for large or detailed designs
 3. **Group related objects**: Easier to move and organize (<kbd>ctrl+g</kbd> to group)
 
+## Vector Editing
+
+Double-click a workpiece on the canvas to enter vector editing mode. In this
+mode, you can select and delete individual vector segments of the workpiece.
+
+To exit vector editing mode, click outside the workpiece or press
+<kbd>Escape</kbd>.
+
 ---
 
 **Next**: [3D View →](3d-preview)

@@ -153,6 +153,15 @@ Combina o sustrae formas:
 4. **Mide primero**: Verifica dimensiones antes de generar código G
 5. **Agrupa objetos relacionados**: Más fácil de mover y organizar (<kbd>ctrl+g</kbd> para agrupar)
 
+## Edición de Vectores
+
+Haz doble clic en una pieza de trabajo en el lienzo para entrar al modo de
+edición de vectores. En este modo, puedes seleccionar y eliminar segmentos de
+vector individuales de la pieza de trabajo.
+
+Para salir del modo de edición de vectores, haz clic fuera de la pieza de
+trabajo o presiona <kbd>Escape</kbd>.
+
 ---
 
 **Siguiente**: [Vista Previa 3D →](3d-preview)

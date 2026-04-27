@@ -10,7 +10,7 @@ décrivant simplement ce que vous voulez. Tapez une description comme "une
 forme d'étoile simple" ou "un engrenage à 8 dents" et l'IA générera une
 pièce prête pour votre découpeuse laser.
 
-![Dialogue du Générateur de Pièces IA](/screenshots/ai-workpiece-generator.png)
+![Dialogue du Générateur de Pièces IA](/screenshots/addon-ai-workpiece-generator.png)
 
 ## Prérequis
 

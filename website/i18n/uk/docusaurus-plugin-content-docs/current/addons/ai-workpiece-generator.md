@@ -10,7 +10,7 @@
 "шестерня з 8 зубами", і ШІ згенерує деталь, готову для вашого лазерного
 різака.
 
-![Діалог генератора деталей ШІ](/screenshots/ai-workpiece-generator.png)
+![Діалог генератора деталей ШІ](/screenshots/addon-ai-workpiece-generator.png)
 
 ## Вимоги
 

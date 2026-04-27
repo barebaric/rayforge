@@ -10,7 +10,7 @@ describiendo lo que quieres. Escribe una descripción como "una forma de
 estrella simple" o "un engranaje con 8 dientes" y la IA generará una pieza
 lista para tu cortadora láser.
 
-![Diálogo del Generador de Piezas por IA](/screenshots/ai-workpiece-generator.png)
+![Diálogo del Generador de Piezas por IA](/screenshots/addon-ai-workpiece-generator.png)
 
 ## Requisitos
 

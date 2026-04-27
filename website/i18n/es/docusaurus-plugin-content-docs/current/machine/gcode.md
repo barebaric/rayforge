@@ -4,6 +4,13 @@ La página de Código G en Configuración de Máquina configura cómo Rayforge g
 
 ![Ajustes de Código G](/screenshots/machine-gcode.png)
 
+:::info
+Esta página solo se muestra para máquinas que usan controladores basados en
+G-code (p.ej. GRBL, Smoothieware, Marlin). Si tu máquina usa un controlador
+no basado en G-code (p.ej. Ruida), esta página de ajustes está completamente
+oculta.
+:::
+
 ## Dialecto de Código G
 
 Selecciona el dialecto de código G que coincide con el firmware de tu controlador. Diferentes controladores usan comandos y formatos ligeramente diferentes.

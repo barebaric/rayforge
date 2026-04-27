@@ -153,6 +153,15 @@ Combine ou subtraia formas:
 4. **Meça primeiro**: Verifique dimensões antes de gerar G-code
 5. **Agrupe objetos relacionados**: Mais fácil de mover e organizar (<kbd>ctrl+g</kbd> para agrupar)
 
+## Edição de Vetores
+
+Clique duas vezes em uma peça de trabalho na tela para entrar no modo de
+edição de vetores. Neste modo, você pode selecionar e excluir segmentos de
+vetor individuais da peça de trabalho.
+
+Para sair do modo de edição de vetores, clique fora da peça de trabalho ou
+pressione <kbd>Escape</kbd>.
+
 ---
 
 **Próximo**: [Visualização 3D →](3d-preview)

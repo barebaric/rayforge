@@ -153,6 +153,15 @@ Combinez ou soustrayez des formes :
 4. **Mesurez d'abord** : Vérifiez les dimensions avant de générer le G-code
 5. **Groupez les objets connexes** : Plus facile à déplacer et organiser (<kbd>ctrl+g</kbd> pour grouper)
 
+## Édition vectorielle
+
+Double-cliquez sur une pièce sur le canevas pour entrer en mode d'édition
+vectorielle. Dans ce mode, vous pouvez sélectionner et supprimer des segments
+vectoriels individuels de la pièce.
+
+Pour quitter le mode d'édition vectorielle, cliquez en dehors de la pièce ou
+appuyez sur <kbd>Échap</kbd>.
+
 ---
 
 **Suivant** : [Prévisualisation 3D →](3d-preview)
