@@ -269,12 +269,14 @@ def wait_for_3d_rendered(win: "MainWindow", timeout: float = 15.0) -> bool:
             continue
 
         ready = run_on_main_thread(
-            lambda: canvas._gl_initialized
-            and canvas._compiled_artifact is not None
-            and not canvas._artifact_gl_dirty
-            and (
-                canvas._scene_preparation_task is None
-                or canvas._scene_preparation_task.is_final()
+            lambda: (
+                canvas._gl_initialized
+                and canvas._compiled_artifact is not None
+                and not canvas._artifact_gl_dirty
+                and (
+                    canvas._scene_preparation_task is None
+                    or canvas._scene_preparation_task.is_final()
+                )
             )
         )
         if ready:

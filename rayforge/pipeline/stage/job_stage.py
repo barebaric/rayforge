@@ -327,10 +327,8 @@ class JobPipelineStage(PipelineStage):
             when_done=lambda t: self.on_task_complete(
                 t, job_key, generation_id, on_done, context
             ),
-            when_event=lambda task, event_name, data: (
-                self.handle_task_event(
-                    task, event_name, data, job_key, generation_id
-                )
+            when_event=lambda task, event_name, data: self.handle_task_event(
+                task, event_name, data, job_key, generation_id
             ),
         )
         self._retained_handles_by_task[task.id] = retained_handles

@@ -211,8 +211,9 @@ HANDLE_DRAW_INFO.update(
     {
         region: {
             "draw": _draw_arc_handle,
-            "get_angle": lambda t, r: t.get_rotation()
-            + _ARC_HANDLE_BASE_ANGLES_DEG[r],
+            "get_angle": lambda t, r: (
+                t.get_rotation() + _ARC_HANDLE_BASE_ANGLES_DEG[r]
+            ),
         }
         for region in ROTATE_HANDLES
     }

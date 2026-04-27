@@ -107,10 +107,12 @@ class StressTestController:
     _workpiece_counter: int = 0
     _view_manager: Optional["ViewManager"] = None
     _svg_data: bytes = field(
-        default_factory=lambda: b"""
+        default_factory=lambda: (
+            b"""
         <svg width="50mm" height="30mm" xmlns="http://www.w3.org/2000/svg">
         <rect width="50" height="30" />
         </svg>"""
+        )
     )
 
     def capture_metrics(self) -> MetricsSnapshot:
