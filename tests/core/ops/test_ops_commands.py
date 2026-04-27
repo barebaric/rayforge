@@ -15,6 +15,8 @@ from rayforge.core.ops.commands import (
     SetPowerCommand,
     SetCutSpeedCommand,
     SetTravelSpeedCommand,
+    SetFrequencyCommand,
+    SetPulseWidthCommand,
     EnableAirAssistCommand,
     DisableAirAssistCommand,
     JobStartCommand,
@@ -24,6 +26,8 @@ from rayforge.core.ops.commands import (
     WorkpieceStartCommand,
     WorkpieceEndCommand,
     SetLaserCommand,
+    COMMAND_TYPE_MAP,
+    COMMAND_CLASS_MAP,
 )
 
 
@@ -698,3 +702,80 @@ def test_scan_line_with_extra_axes():
         extra_axes={Axis.A: 45.0},
     )
     assert cmd.extra_axes == {Axis.A: 45.0}
+
+
+# --- SetFrequencyCommand Tests ---
+
+
+def test_set_frequency_command():
+    cmd = SetFrequencyCommand(frequency=20000)
+    state = State(frequency=None)
+    cmd.apply_to_state(state)
+    assert state.frequency == 20000
+    assert cmd.is_state_command()
+    data = cmd.to_dict()
+    assert data["type"] == "SetFrequencyCommand"
+    assert data["frequency"] == 20000
+
+
+def test_set_frequency_command_rejects_zero():
+    with pytest.raises(ValueError, match="positive integer"):
+        SetFrequencyCommand(frequency=0)
+
+
+def test_set_frequency_command_rejects_negative():
+    with pytest.raises(ValueError, match="positive integer"):
+        SetFrequencyCommand(frequency=-100)
+
+
+def test_set_frequency_command_in_type_map():
+    assert SetFrequencyCommand in COMMAND_TYPE_MAP
+    assert COMMAND_TYPE_MAP[SetFrequencyCommand] == 16
+    assert 16 in COMMAND_CLASS_MAP
+    assert COMMAND_CLASS_MAP[16] is SetFrequencyCommand
+
+
+# --- SetPulseWidthCommand Tests ---
+
+
+def test_set_pulse_width_command():
+    cmd = SetPulseWidthCommand(pulse_width=5.0)
+    state = State(pulse_width=None)
+    cmd.apply_to_state(state)
+    assert state.pulse_width == 5.0
+    assert cmd.is_state_command()
+    data = cmd.to_dict()
+    assert data["type"] == "SetPulseWidthCommand"
+    assert data["pulse_width"] == 5.0
+
+
+def test_set_pulse_width_command_rejects_zero():
+    with pytest.raises(ValueError, match="must be positive"):
+        SetPulseWidthCommand(pulse_width=0.0)
+
+
+def test_set_pulse_width_command_rejects_negative():
+    with pytest.raises(ValueError, match="must be positive"):
+        SetPulseWidthCommand(pulse_width=-1.0)
+
+
+def test_set_pulse_width_command_in_type_map():
+    assert SetPulseWidthCommand in COMMAND_TYPE_MAP
+    assert COMMAND_TYPE_MAP[SetPulseWidthCommand] == 17
+    assert 17 in COMMAND_CLASS_MAP
+    assert COMMAND_CLASS_MAP[17] is SetPulseWidthCommand
+
+
+# --- Extended State Tests ---
+
+
+def test_state_default_frequency_and_pulse_width():
+    state = State()
+    assert state.frequency is None
+    assert state.pulse_width is None
+
+
+def test_state_frequency_and_pulse_width():
+    state = State(frequency=50000, pulse_width=2.5)
+    assert state.frequency == 50000
+    assert state.pulse_width == 2.5

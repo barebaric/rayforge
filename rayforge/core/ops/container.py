@@ -20,32 +20,34 @@ from ..geo.arc import get_arc_bounding_box, linearize_arc
 from ..geo.types import Point3D, Rect, Polygon
 from .axis import Axis
 from .commands import (
-    State,
-    Command,
-    CurveToCommand,
-    MovingCommand,
-    MoveToCommand,
-    LineToCommand,
     ArcToCommand,
     BezierToCommand,
-    QuadraticBezierToCommand,
-    DwellCommand,
-    SetPowerCommand,
-    SetCutSpeedCommand,
-    SetTravelSpeedCommand,
-    EnableAirAssistCommand,
+    Command,
+    CurveToCommand,
     DisableAirAssistCommand,
-    SetLaserCommand,
-    JobStartCommand,
+    DwellCommand,
+    EnableAirAssistCommand,
     JobEndCommand,
-    LayerStartCommand,
+    JobStartCommand,
     LayerEndCommand,
-    WorkpieceStartCommand,
-    WorkpieceEndCommand,
-    SectionType,
-    OpsSectionStartCommand,
+    LayerStartCommand,
+    LineToCommand,
+    MovingCommand,
+    MoveToCommand,
     OpsSectionEndCommand,
+    OpsSectionStartCommand,
+    QuadraticBezierToCommand,
     ScanLinePowerCommand,
+    SectionType,
+    SetCutSpeedCommand,
+    SetFrequencyCommand,
+    SetLaserCommand,
+    SetPowerCommand,
+    SetPulseWidthCommand,
+    SetTravelSpeedCommand,
+    State,
+    WorkpieceEndCommand,
+    WorkpieceStartCommand,
     COMMAND_TYPE_MAP,
     COMMAND_CLASS_MAP,
 )
@@ -162,6 +164,12 @@ class Ops:
             return DisableAirAssistCommand()
         elif cmd_type == "SetLaserCommand":
             return SetLaserCommand(laser_uid=cmd_data["laser_uid"])
+        elif cmd_type == "SetFrequencyCommand":
+            return SetFrequencyCommand(frequency=cmd_data["frequency"])
+        elif cmd_type == "SetPulseWidthCommand":
+            return SetPulseWidthCommand(
+                pulse_width=cmd_data["pulse_width"]
+            )
         elif cmd_type == "JobStartCommand":
             return JobStartCommand()
         elif cmd_type == "JobEndCommand":
@@ -789,6 +797,30 @@ class Ops:
         This is a state declaration.
         """
         cmd = SetLaserCommand(laser_uid)
+        self._commands.append(cmd)
+        self._invalidate_time_cache()
+
+    def set_frequency(self, frequency: int) -> None:
+        """
+        Sets the laser PWM frequency for subsequent cutting commands.
+        This is a state declaration.
+
+        Args:
+            frequency: The PWM frequency in Hz.
+        """
+        cmd = SetFrequencyCommand(frequency)
+        self._commands.append(cmd)
+        self._invalidate_time_cache()
+
+    def set_pulse_width(self, pulse_width: float) -> None:
+        """
+        Sets the laser pulse width for subsequent cutting commands.
+        This is a state declaration.
+
+        Args:
+            pulse_width: The pulse width in microseconds.
+        """
+        cmd = SetPulseWidthCommand(pulse_width)
         self._commands.append(cmd)
         self._invalidate_time_cache()
 
