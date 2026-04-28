@@ -345,14 +345,16 @@ class PWMCapability(Capability):
             vars=[
                 IntVar(
                     key="frequency",
-                    label=_("Frequency (Hz)"),
+                    label=_("Frequency"),
+                    description=_("PWM frequency in Hz"),
                     default=self._frequency,
                     min_val=1,
                     max_val=self._max_frequency,
                 ),
                 IntVar(
                     key="pulse_width",
-                    label=_("Pulse Width (µs)"),
+                    label=_("Pulse Width"),
+                    description=_("Pulse width in microseconds"),
                     default=self._pulse_width,
                     min_val=self._min_pulse_width,
                     max_val=self._max_pulse_width,

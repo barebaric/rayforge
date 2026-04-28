@@ -15,9 +15,11 @@ from typing import (
 from gettext import gettext as _
 
 from ....context import RayforgeContext
+from ....core.capability import PWMCapability
 from ....core.varset import VarSet, HostnameVar, PortVar
 from ....pipeline.encoder.base import OpsEncoder, EncodedOutput
 from ...models.coordinate_system import CoordinateSystem
+from ...models.laser import LaserType
 from ...transport import TransportStatus
 from ...transport.validators import is_valid_hostname_or_ip
 from ...transport.udp import UdpTransport
@@ -134,6 +136,19 @@ class RuidaDriver(Driver):
                 ),
             ]
         )
+
+    def get_laser_capabilities(self, laser: "Laser"):
+        if laser.laser_type != LaserType.DIODE:
+            return (
+                PWMCapability(
+                    frequency=laser.pwm_frequency,
+                    max_frequency=laser.max_pwm_frequency,
+                    pulse_width=laser.pulse_width,
+                    min_pulse_width=laser.min_pulse_width,
+                    max_pulse_width=laser.max_pulse_width,
+                ),
+            )
+        return ()
 
     @classmethod
     def create_encoder(cls, machine: "Machine") -> "OpsEncoder":

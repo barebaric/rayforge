@@ -11,6 +11,8 @@ from ...core.ops import (
     SetPowerCommand,
     SetCutSpeedCommand,
     SetTravelSpeedCommand,
+    SetFrequencyCommand,
+    SetPulseWidthCommand,
     EnableAirAssistCommand,
     DisableAirAssistCommand,
     SetLaserCommand,
@@ -66,6 +68,8 @@ class GcodeEncoder(OpsEncoder):
         self.air_assist: bool = False  # Air assist state
         self.laser_active: bool = False  # Laser on/off state
         self.active_laser_uid: Optional[str] = None
+        self.frequency: Optional[int] = None
+        self.pulse_width: Optional[float] = None
         self.current_pos: Dict[Axis, float] = {
             Axis.X: 0.0,
             Axis.Y: 0.0,
@@ -227,6 +231,8 @@ class GcodeEncoder(OpsEncoder):
         self.active_laser_uid = None
         self.emitted_power = None
         self._emitted_cut_feed = None
+        self.frequency = None
+        self.pulse_width = None
 
         context = GcodeContext(
             machine=machine, doc=doc, job=JobInfo(extents=ops.rect())
@@ -312,6 +318,10 @@ class GcodeEncoder(OpsEncoder):
                 self.travel_speed = min(
                     cmd.speed, context.machine.max_travel_speed
                 )
+            case SetFrequencyCommand():
+                self.frequency = cmd.frequency
+            case SetPulseWidthCommand():
+                self.pulse_width = cmd.pulse_width
             case EnableAirAssistCommand():
                 self._set_air_assist(context, gcode, True)
             case DisableAirAssistCommand():
