@@ -5,6 +5,7 @@ from gettext import gettext as _
 from ..context import get_context
 from .varset import (
     ChoiceVar,
+    IntVar,
     VarSet,
     SpeedVar,
     SliderFloatVar,
@@ -313,6 +314,51 @@ class MaterialTestCapability(Capability):
     @property
     def varset(self) -> VarSet:
         return VarSet(vars=[])
+
+
+class PWMCapability(Capability):
+    def __init__(
+        self,
+        frequency: int,
+        max_frequency: int,
+        pulse_width: int,
+        min_pulse_width: int,
+        max_pulse_width: int,
+    ):
+        self._frequency = frequency
+        self._max_frequency = max_frequency
+        self._pulse_width = pulse_width
+        self._min_pulse_width = min_pulse_width
+        self._max_pulse_width = max_pulse_width
+
+    @property
+    def name(self) -> str:
+        return "PWM"
+
+    @property
+    def label(self) -> str:
+        return _("PWM")
+
+    @property
+    def varset(self) -> VarSet:
+        return VarSet(
+            vars=[
+                IntVar(
+                    key="frequency",
+                    label=_("Frequency (Hz)"),
+                    default=self._frequency,
+                    min_val=1,
+                    max_val=self._max_frequency,
+                ),
+                IntVar(
+                    key="pulse_width",
+                    label=_("Pulse Width (µs)"),
+                    default=self._pulse_width,
+                    min_val=self._min_pulse_width,
+                    max_val=self._max_pulse_width,
+                ),
+            ]
+        )
 
 
 class _CombinedCapability(Capability):

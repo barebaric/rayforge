@@ -24,6 +24,11 @@ class Laser:
         self.model_path: Optional[str] = None
         self.transform: np.ndarray = np.eye(4, dtype=np.float64)
         self.focal_distance: float = 0.0
+        self.pwm_frequency: int = 0
+        self.max_pwm_frequency: int = 0
+        self.pulse_width: int = 0
+        self.min_pulse_width: int = 0
+        self.max_pulse_width: int = 0
         self.changed = Signal()
         self.extra: Dict[str, Any] = {}
 
@@ -129,6 +134,36 @@ class Laser:
         self.focal_distance = distance
         self.changed.send(self)
 
+    def set_pwm_frequency(self, frequency: int):
+        if self.pwm_frequency == frequency:
+            return
+        self.pwm_frequency = frequency
+        self.changed.send(self)
+
+    def set_max_pwm_frequency(self, max_frequency: int):
+        if self.max_pwm_frequency == max_frequency:
+            return
+        self.max_pwm_frequency = max_frequency
+        self.changed.send(self)
+
+    def set_pulse_width(self, width: int):
+        if self.pulse_width == width:
+            return
+        self.pulse_width = width
+        self.changed.send(self)
+
+    def set_min_pulse_width(self, min_width: int):
+        if self.min_pulse_width == min_width:
+            return
+        self.min_pulse_width = min_width
+        self.changed.send(self)
+
+    def set_max_pulse_width(self, max_width: int):
+        if self.max_pulse_width == max_width:
+            return
+        self.max_pulse_width = max_width
+        self.changed.send(self)
+
     def to_dict(self) -> Dict[str, Any]:
         result = {
             "uid": self.uid,
@@ -146,6 +181,11 @@ class Laser:
             "model_path": self.model_path,
             "transform": self.transform.flatten().tolist(),
             "focal_distance": self.focal_distance,
+            "pwm_frequency": self.pwm_frequency,
+            "max_pwm_frequency": self.max_pwm_frequency,
+            "pulse_width": self.pulse_width,
+            "min_pulse_width": self.min_pulse_width,
+            "max_pulse_width": self.max_pulse_width,
         }
         result.update(self.extra)
         return result
@@ -170,6 +210,11 @@ class Laser:
             "model_path",
             "transform",
             "focal_distance",
+            "pwm_frequency",
+            "max_pwm_frequency",
+            "pulse_width",
+            "min_pulse_width",
+            "max_pulse_width",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -212,6 +257,11 @@ class Laser:
                 4, 4
             )
         lh.focal_distance = data.get("focal_distance", 0.0)
+        lh.pwm_frequency = data.get("pwm_frequency", 0)
+        lh.max_pwm_frequency = data.get("max_pwm_frequency", 0)
+        lh.pulse_width = data.get("pulse_width", 0)
+        lh.min_pulse_width = data.get("min_pulse_width", 0)
+        lh.max_pulse_width = data.get("max_pulse_width", 0)
         lh.extra = extra
         return lh
 

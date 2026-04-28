@@ -20,6 +20,7 @@ from ...core.ops.axis import Axis
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
+    from ...core.capability import Capability
     from ...core.varset import VarSet
     from ...pipeline.encoder.base import OpsEncoder, EncodedOutput
     from ..models.dialect import GcodeDialect
@@ -308,6 +309,18 @@ class Driver(ABC):
         machine. Delegates to the static factory method.
         """
         return self.create_encoder(self._machine)
+
+    def get_laser_capabilities(
+        self, laser: "Laser"
+    ) -> "Tuple[Capability, ...]":
+        """
+        Returns driver-specific capabilities for the given laser head.
+
+        Subclasses may override this to provide capabilities that depend
+        on the driver type (e.g., PWM support on Ruida but not GRBL).
+        The base implementation returns an empty tuple.
+        """
+        return ()
 
     @abstractmethod
     def get_setting_vars(self) -> List["VarSet"]:
