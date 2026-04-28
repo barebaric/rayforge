@@ -6,6 +6,8 @@ from .var import Var, ValidationError
 class IntVar(Var[int]):
     """A Var subclass for integer values with optional bounds."""
 
+    display_name = _("Integer")
+
     def __init__(
         self,
         key: str,

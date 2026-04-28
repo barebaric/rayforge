@@ -1,3 +1,4 @@
+from gettext import gettext as _
 from typing import Optional
 from .var import Var
 
@@ -8,6 +9,8 @@ class TextAreaVar(Var[str]):
     that it should be represented by a text area (Gtk.TextView) rather than
     a single-line entry.
     """
+
+    display_name = _("Text (Multi-Line)")
 
     def __init__(
         self,

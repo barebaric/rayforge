@@ -2,10 +2,11 @@ from typing import Any, Optional, Tuple
 
 from gi.repository import Adw, Gtk
 
-from ....core.varset import Var
-from .base import RowAdapter, escape_title
+from ....core.varset import TextAreaVar, Var
+from .base import RowAdapter, escape_title, register_adapter
 
 
+@register_adapter(TextAreaVar)
 class TextAreaAdapter(RowAdapter):
     def __init__(self, text_view: Gtk.TextView) -> None:
         self._text_view = text_view

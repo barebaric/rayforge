@@ -3,7 +3,9 @@ from typing import Any, List, Optional, Tuple
 from gi.repository import Adw, Gtk
 
 from ....core.varset import (
+    BaudrateVar,
     ChoiceVar,
+    SerialPortVar,
     Var,
 )
 from ....machine.transport.serial import SerialTransport
@@ -12,9 +14,11 @@ from .base import (
     escape_title,
     natural_sort_key,
     NULL_CHOICE_LABEL,
+    register_adapter,
 )
 
 
+@register_adapter(ChoiceVar)
 class ComboAdapter(RowAdapter):
     def __init__(self, row: Adw.ComboRow, var: Var) -> None:
         self._row = row
@@ -71,6 +75,7 @@ class ComboAdapter(RowAdapter):
                 break
 
 
+@register_adapter(BaudrateVar)
 class BaudRateAdapter(ComboAdapter):
     @classmethod
     def create(
@@ -87,6 +92,7 @@ class BaudRateAdapter(ComboAdapter):
         return row, cls(row, var)
 
 
+@register_adapter(SerialPortVar)
 class SerialPortAdapter(ComboAdapter):
     @classmethod
     def create(

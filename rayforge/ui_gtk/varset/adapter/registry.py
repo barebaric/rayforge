@@ -4,44 +4,26 @@ from typing import Dict, Optional, Tuple, Type
 
 from gi.repository import Adw
 
-from ....core.varset import (
-    BaudrateVar,
-    BoolVar,
-    ChoiceVar,
-    FloatVar,
-    HostnameVar,
-    IntVar,
-    PortVar,
-    SerialPortVar,
-    SliderFloatVar,
-    SpeedVar,
-    TextAreaVar,
-    Var,
-)
-from .base import RowAdapter, escape_title
-from .combo import BaudRateAdapter, ComboAdapter, SerialPortAdapter
-from .entry import EntryAdapter, HostnameAdapter
-from .slider import SliderAdapter
-from .speed import SpeedRowAdapter
+from ....core.varset import Var
+from .base import RowAdapter, _ADAPTER_REGISTRY, escape_title
+from .entry import EntryAdapter
 from .spin_row import SpinRowAdapter
 from .switch import SwitchAdapter
+
+# Trigger @register_adapter decorators. Every adapter module must be
+# imported here so that its class registers itself in _ADAPTER_REGISTRY.
+from .combo import BaudRateAdapter, ComboAdapter, SerialPortAdapter
+from .entry import HostnameAdapter
+from .slider import SliderAdapter
+from .speed import SpeedRowAdapter
 from .textarea import TextAreaAdapter
 
-logger = logging.getLogger(__name__)
+_ALL_ADAPTERS = (
+    BaudRateAdapter, ComboAdapter, SerialPortAdapter,
+    HostnameAdapter, SliderAdapter, SpeedRowAdapter, TextAreaAdapter,
+)
 
-_ADAPTER_MAP: Dict[Type[Var], Type[RowAdapter]] = {
-    TextAreaVar: TextAreaAdapter,
-    SliderFloatVar: SliderAdapter,
-    SpeedVar: SpeedRowAdapter,
-    BaudrateVar: BaudRateAdapter,
-    PortVar: SpinRowAdapter,
-    SerialPortVar: SerialPortAdapter,
-    HostnameVar: HostnameAdapter,
-    ChoiceVar: ComboAdapter,
-    FloatVar: SpinRowAdapter,
-    IntVar: SpinRowAdapter,
-    BoolVar: SwitchAdapter,
-}
+logger = logging.getLogger(__name__)
 
 _FALLBACK_MAP: Dict[type, Type[RowAdapter]] = {
     int: SpinRowAdapter,
@@ -57,14 +39,15 @@ def create_row_for_var(
     """
     Creates a PreferencesRow and RowAdapter for the given Var.
 
-    Dispatches to the adapter class registered in _ADAPTER_MAP,
-    falling back to var.var_type if no specific adapter is found.
+    Walks the Var's MRO to find the most specific registered adapter.
+    Falls back to var.var_type if no adapter is registered for any
+    class in the hierarchy.
     """
     adapter_cls: Optional[Type[RowAdapter]] = None
 
-    for var_class, cls in _ADAPTER_MAP.items():
-        if isinstance(var, var_class):
-            adapter_cls = cls
+    for cls in type(var).__mro__:
+        if cls in _ADAPTER_REGISTRY:
+            adapter_cls = _ADAPTER_REGISTRY[cls]
             break
 
     if adapter_cls is None:

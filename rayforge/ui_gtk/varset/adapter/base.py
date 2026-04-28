@@ -1,13 +1,32 @@
 import re
 from abc import ABC, abstractmethod
 from gettext import gettext as _
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 from gi.repository import Adw
 
 from ....core.varset import Var
 
 NULL_CHOICE_LABEL = _("None Selected")
+
+_ADAPTER_REGISTRY: Dict[Type[Var], Type["RowAdapter"]] = {}
+
+_A = TypeVar("_A", bound="RowAdapter")
+
+
+def register_adapter(*var_classes: Type[Var]):
+    """
+    Decorator to register a RowAdapter for one or more Var subclasses.
+    Lookup uses MRO, so only the most-specific Var class needs
+    registration — subclasses inherit the adapter automatically.
+    """
+
+    def decorator(adapter_cls: Type[_A]) -> Type[_A]:
+        for var_cls in var_classes:
+            _ADAPTER_REGISTRY[var_cls] = adapter_cls
+        return adapter_cls
+
+    return decorator
 
 
 def escape_title(text: str) -> str:
@@ -29,8 +48,7 @@ class RowAdapter(ABC):
     it never dispatches on row/var type itself.
 
     Subclasses must implement create(), get_value(), and set_value().
-    Register the subclass in _ADAPTER_MAP to associate it with a Var
-    subclass.
+    Use the @register_adapter decorator to associate with Var subclasses.
     """
 
     @classmethod

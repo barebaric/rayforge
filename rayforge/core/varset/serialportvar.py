@@ -1,5 +1,5 @@
-from typing import Optional
 from gettext import gettext as _
+from typing import Optional
 from .var import Var, ValidationError
 
 
@@ -11,6 +11,8 @@ def serial_port_validator(port: Optional[str]):
 
 class SerialPortVar(Var[str]):
     """A Var subclass for serial port names."""
+
+    display_name = _("Serial Port")
 
     def __init__(
         self,

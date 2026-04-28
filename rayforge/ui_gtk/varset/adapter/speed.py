@@ -4,11 +4,12 @@ from typing import Any, Optional, Tuple
 from gi.repository import Adw, Gtk
 
 from ....context import get_context
-from ....core.varset import Var
+from ....core.varset import SpeedVar, Var
 from ...shared.unit_spin_row import UnitSpinRowHelper
-from .base import RowAdapter, escape_title
+from .base import RowAdapter, escape_title, register_adapter
 
 
+@register_adapter(SpeedVar)
 class SpeedRowAdapter(RowAdapter):
     """
     Adapts an Adw.SpinRow for speed values with unit conversion.
