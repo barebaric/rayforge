@@ -1,7 +1,7 @@
 import logging
 import yaml
 from pathlib import Path
-from typing import Dict, List, Optional, TYPE_CHECKING, Set
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 from .recipe import Recipe
 from .capability import Capability
 
@@ -95,7 +95,7 @@ class RecipeManager:
     def find_recipes(
         self,
         stock_items: List["StockItem"],
-        capabilities: Optional[Set[Capability]] = None,
+        capabilities: Optional[Tuple[Capability, ...]] = None,
         machine: Optional["Machine"] = None,
     ) -> List[Recipe]:
         """

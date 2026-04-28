@@ -26,7 +26,7 @@ class TestEngraveStep:
     def test_instantiation(self):
         step = EngraveStep(name="Test")
         assert step.typelabel == "Engrave"
-        assert step.capabilities == {ENGRAVE}
+        assert step.capabilities == (ENGRAVE,)
 
     def test_create(self, mock_context):
         step = EngraveStep.create(mock_context, name="Created")

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from rayforge.core.capability import CUT, SCORE
+from rayforge.core.capability import CUT, SCORE, WITH_KERF
 from laser_essentials.steps import ShrinkWrapStep
 
 
@@ -25,7 +25,7 @@ class TestShrinkWrapStep:
     def test_instantiation(self):
         step = ShrinkWrapStep(name="Test")
         assert step.typelabel == "Shrink Wrap"
-        assert step.capabilities == {CUT, SCORE}
+        assert step.capabilities == (CUT, SCORE, WITH_KERF)
 
     def test_create(self, mock_context):
         step = ShrinkWrapStep.create(mock_context)

@@ -3,7 +3,8 @@ from unittest.mock import MagicMock
 from rayforge.core.step import Step
 from rayforge.core.matrix import Matrix
 from rayforge.core.doc import Doc
-from rayforge.core.capability import CUT, ENGRAVE
+from rayforge.core.capability import CUT, WITH_KERF, Capability
+from rayforge.core.varset import VarSet, FloatVar
 
 
 @pytest.fixture
@@ -32,7 +33,6 @@ def test_step_initialization(step):
     assert step.selected_laser_uid is None
     assert step.generated_workpiece_uid is None
     assert step.applied_recipe_uid is None
-    assert step.capabilities == set()
     assert step.opsproducer_dict is None
     assert step.per_workpiece_transformers_dicts == []
     assert step.per_step_transformers_dicts == []
@@ -156,7 +156,6 @@ def test_serialization_to_dict_all_properties(step):
     step.selected_laser_uid = "laser-abc"
     step.generated_workpiece_uid = "wp-xyz"
     step.applied_recipe_uid = "recipe-123"
-    step.capabilities = {ENGRAVE, CUT}
     step.opsproducer_dict = {"type": "EngraveProducer", "dpi": 300}
     step.per_step_transformers_dicts = [{"type": "CoolingPause"}]
     step.pixels_per_mm = (100, 100)
@@ -177,7 +176,6 @@ def test_serialization_to_dict_all_properties(step):
     assert data["selected_laser_uid"] == "laser-abc"
     assert data["generated_workpiece_uid"] == "wp-xyz"
     assert data["applied_recipe_uid"] == "recipe-123"
-    assert set(data["capabilities"]) == {"CUT", "ENGRAVE"}
     assert data["opsproducer_dict"] == {"type": "EngraveProducer", "dpi": 300}
     assert data["per_step_transformers_dicts"] == [{"type": "CoolingPause"}]
     assert data["pixels_per_mm"] == (100, 100)
@@ -200,7 +198,6 @@ def test_deserialization_from_dict(step):
         "selected_laser_uid": "laser-def",
         "generated_workpiece_uid": "wp-123",
         "applied_recipe_uid": "recipe-456",
-        "capabilities": ["CUT"],
         "opsproducer_dict": {"type": "OutlineProducer"},
         "per_workpiece_transformers_dicts": [],
         "per_step_transformers_dicts": [],
@@ -226,7 +223,6 @@ def test_deserialization_from_dict(step):
     assert restored.selected_laser_uid == "laser-def"
     assert restored.generated_workpiece_uid == "wp-123"
     assert restored.applied_recipe_uid == "recipe-456"
-    assert restored.capabilities == {CUT}
     assert restored.opsproducer_dict == {"type": "OutlineProducer"}
     assert restored.pixels_per_mm == (20, 20)
     assert restored.power == 0.5
@@ -257,11 +253,10 @@ def test_deserialization_with_missing_keys(step):
     assert restored.name == "MinimalType"  # Falls back to typelabel
     assert restored.selected_laser_uid is None
     assert restored.applied_recipe_uid is None
-    assert restored.capabilities == set()
-    assert restored.power == 1.0  # Default value
-    assert restored.cut_speed == 500  # Default value
-    assert restored.kerf_mm == 0.0  # Default value
-    assert restored.pixels_per_mm == (100, 100)  # Default value
+    assert restored.power == 1.0
+    assert restored.cut_speed == 500
+    assert restored.kerf_mm == 0.0
+    assert restored.pixels_per_mm == (100, 100)
 
 
 def test_step_roundtrip_serialization():
@@ -278,7 +273,6 @@ def test_step_roundtrip_serialization():
     original.set_kerf_mm(0.18)
     original.selected_laser_uid = "the-best-laser"
     original.applied_recipe_uid = "recipe-abc"
-    original.capabilities = {CUT}
     original.opsproducer_dict = {"type": "TestProducer", "value": 42}
     original.matrix = Matrix.translation(50, 50)
 
@@ -298,7 +292,6 @@ def test_step_roundtrip_serialization():
     assert restored.kerf_mm == original.kerf_mm
     assert restored.selected_laser_uid == original.selected_laser_uid
     assert restored.applied_recipe_uid == original.applied_recipe_uid
-    assert restored.capabilities == original.capabilities
     assert restored.opsproducer_dict == original.opsproducer_dict
     assert restored.matrix == original.matrix
 
@@ -318,7 +311,6 @@ def test_step_forward_compatibility_with_extra_fields():
         "selected_laser_uid": None,
         "generated_workpiece_uid": None,
         "applied_recipe_uid": None,
-        "capabilities": [],
         "opsproducer_dict": None,
         "per_workpiece_transformers_dicts": [],
         "per_step_transformers_dicts": [],
@@ -372,7 +364,6 @@ def test_step_backward_compatibility_with_missing_optional_fields():
     assert step.selected_laser_uid is None
     assert step.generated_workpiece_uid is None
     assert step.applied_recipe_uid is None
-    assert step.capabilities == set()
     assert step.pixels_per_mm == (100, 100)
     assert step.power == 1.0
     assert step.max_power == 1000
@@ -382,6 +373,70 @@ def test_step_backward_compatibility_with_missing_optional_fields():
     assert step.max_travel_speed == 10000
     assert step.air_assist is False
     assert step.kerf_mm == 0.0
+
+
+def test_capability_defaults_applied_in_constructor():
+    """
+    Tests that _apply_capability_defaults sets instance attributes
+    to their capability VarSet defaults during construction.
+    """
+
+    class CutStep(Step):
+        CAPABILITIES = (CUT,)
+
+    step = CutStep(typelabel="Test")
+
+    assert step.power == 0.8
+    assert step.cut_speed == 500
+    assert step.travel_speed == 5000
+    assert step.air_assist is False
+    assert step.tab_power == 0.0
+
+    step.set_power(0.5)
+    assert step.power == 0.5
+
+
+def test_capability_defaults_with_combined_capabilities():
+
+    class CutKerfStep(Step):
+        CAPABILITIES = (CUT, WITH_KERF)
+
+    step = CutKerfStep(typelabel="Test")
+
+    assert step.power == 0.8
+    assert step.kerf_mm == 0.1
+    assert step.tab_power == 0.0
+
+
+def test_capability_raises_on_unknown_key():
+    """
+    Tests that _apply_capability_defaults raises if a capability
+    defines a key that does not exist as an instance attribute.
+    """
+
+    class BadCapability(Capability):
+
+        @property
+        def name(self):
+            return "BAD"
+
+        @property
+        def label(self):
+            return "Bad"
+
+        @property
+        def varset(self):
+            return VarSet(
+                vars=[FloatVar(key="nonexistent", label="X", default=1.0)],
+            )
+
+    BAD = BadCapability()
+
+    class BadStep(Step):
+        CAPABILITIES = (BAD,)
+
+    with pytest.raises(AttributeError, match="nonexistent"):
+        BadStep(typelabel="Test")
 
 
 def test_deserialization_with_missing_step_class():

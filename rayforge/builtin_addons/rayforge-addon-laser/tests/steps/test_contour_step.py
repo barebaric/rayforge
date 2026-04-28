@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from rayforge.core.capability import CUT, SCORE
+from rayforge.core.capability import CUT, SCORE, WITH_KERF
 from rayforge.core.matrix import Matrix
 from rayforge.core.step import Step
 from rayforge.core.step_registry import step_registry
@@ -29,7 +29,7 @@ class TestContourStep:
         step = ContourStep(name="Test")
         assert step.typelabel == "Contour"
         assert step.name == "Test"
-        assert step.capabilities == {CUT, SCORE}
+        assert step.capabilities == (CUT, SCORE, WITH_KERF)
 
     def test_create(self, mock_context):
         step = ContourStep.create(mock_context, name="Created")

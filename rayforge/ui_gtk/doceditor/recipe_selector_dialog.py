@@ -1,5 +1,5 @@
 import logging
-from typing import List, Callable, TYPE_CHECKING, Set
+from typing import List, Callable, Tuple, TYPE_CHECKING
 from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from ...context import get_context
@@ -44,7 +44,7 @@ class RecipeSelectorDialog(Adw.MessageDialog):
         self,
         parent: Gtk.Window,
         editor: "DocEditor",
-        capabilities: Set[Capability],
+        capabilities: Tuple[Capability, ...],
         on_select_callback: Callable[[Recipe], None],
     ):
         super().__init__(transient_for=parent)

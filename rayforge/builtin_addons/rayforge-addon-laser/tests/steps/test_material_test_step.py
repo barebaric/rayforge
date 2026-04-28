@@ -2,6 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from rayforge.core.capability import MATERIAL_TEST
 from laser_essentials.steps import MaterialTestStep
 
 
@@ -24,7 +25,7 @@ class TestMaterialTestStep:
     def test_instantiation(self):
         step = MaterialTestStep(name="Test")
         assert step.typelabel == "Material Test Grid"
-        assert step.capabilities == set()
+        assert step.capabilities == (MATERIAL_TEST,)
 
     def test_create(self, mock_context):
         step = MaterialTestStep.create(mock_context)

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Optional, Protocol, Set, TYPE_CHECKING, cast
+from typing import List, Optional, Protocol, Tuple, TYPE_CHECKING, cast
 from gettext import gettext as _
 
-from rayforge.core.capability import Capability
+from rayforge.core.capability import Capability, MATERIAL_TEST
 from rayforge.core.step import Step
 from rayforge.pipeline.transformer.registry import transformer_registry
 from ..producers import MaterialTestGridProducer
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 class MaterialTestStep(Step):
     TYPELABEL = _("Material Test Grid")
     ICON = "test-symbolic"
-    DEFAULT_CAPABILITIES: Set[Capability] = set()
+    CAPABILITIES: Tuple[Capability, ...] = (MATERIAL_TEST,)
     PRODUCER_CLASS = MaterialTestGridProducer
     HIDDEN = True
 
@@ -30,10 +30,9 @@ class MaterialTestStep(Step):
         self, name: Optional[str] = None, typelabel: Optional[str] = None
     ):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)
-        self.capabilities = self.DEFAULT_CAPABILITIES.copy()
 
     @classmethod
-    def get_default_transformers_dicts(cls) -> tuple[list, list]:
+    def get_default_transformers_dicts(cls) -> Tuple[List, List]:
         OverscanTransformer = transformer_registry.get("OverscanTransformer")
         Optimize = transformer_registry.get("Optimize")
         assert OverscanTransformer is not None

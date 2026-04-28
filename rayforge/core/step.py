@@ -1,12 +1,12 @@
 from __future__ import annotations
 import logging
 from abc import ABC
-from typing import List, Optional, TYPE_CHECKING, Dict, Any, cast, Set
+from typing import List, Optional, TYPE_CHECKING, Dict, Any, cast, Tuple
 from gettext import gettext as _
 from blinker import Signal
 from ..pipeline.transformer.registry import transformer_registry
 from ..shared.units.formatter import format_value
-from .capability import Capability, CAPABILITIES_BY_NAME
+from .capability import Capability
 from .item import DocItem
 from .matrix import Matrix
 from .step_registry import step_registry
@@ -33,6 +33,7 @@ class Step(DocItem, ABC):
 
     HIDDEN: bool = False
     ICON: str = ""
+    CAPABILITIES: Tuple[Capability, ...] = ()
 
     def __init__(
         self,
@@ -45,7 +46,6 @@ class Step(DocItem, ABC):
         self.selected_laser_uid: Optional[str] = None
         self.generated_workpiece_uid: Optional[str] = None
         self.applied_recipe_uid: Optional[str] = None
-        self.capabilities: Set[Capability] = set()
 
         self.opsproducer_dict: Optional[Dict[str, Any]] = None
         self.per_workpiece_transformers_dicts: List[Dict[str, Any]] = []
@@ -58,18 +58,44 @@ class Step(DocItem, ABC):
         self.visibility_changed = Signal()
 
         # Default machine-dependent values.
-        self.power = 1.0
+        self.power: float = 1.0
         self.max_power = 1000
-        self.cut_speed = 500
+        self.cut_speed: int = 500
         self.max_cut_speed = 10000
-        self.travel_speed = 5000
+        self.travel_speed: int = 5000
         self.max_travel_speed = 10000
-        self.air_assist = False
+        self.air_assist: bool = False
         self.kerf_mm: float = 0.0
         self.tab_power: float = 0.0
 
         # Forward compatibility: store unknown attributes
         self.extra: Dict[str, Any] = {}
+
+        self._apply_capability_defaults()
+
+    @property
+    def capabilities(self) -> Tuple[Capability, ...]:
+        return type(self).CAPABILITIES
+
+    def _apply_capability_defaults(self):
+        """
+        Overwrites instance attributes with capability VarSet defaults.
+
+        Iterates all capabilities defined on this step's class. For each
+        Var in each capability's VarSet, validates that the attribute
+        exists on the instance, then overwrites it with the Var's
+        default. Raises AttributeError if a capability defines a key
+        that does not exist as an instance attribute.
+        """
+        for cap in self.capabilities:
+            for var in cap.varset:
+                if not hasattr(self, var.key):
+                    raise AttributeError(
+                        f"{type(self).__name__} has no attribute "
+                        f"'{var.key}' required by capability "
+                        f"'{cap.name}'"
+                    )
+                setattr(self, var.key, var.default)
 
     @classmethod
     def create(
@@ -101,7 +127,6 @@ class Step(DocItem, ABC):
             "selected_laser_uid": self.selected_laser_uid,
             "generated_workpiece_uid": self.generated_workpiece_uid,
             "applied_recipe_uid": self.applied_recipe_uid,
-            "capabilities": sorted(c.name for c in self.capabilities),
             "opsproducer_dict": self.opsproducer_dict,
             "per_workpiece_transformers_dicts": (
                 self.per_workpiece_transformers_dicts
@@ -123,7 +148,7 @@ class Step(DocItem, ABC):
         return result
 
     @classmethod
-    def get_default_transformers_dicts(cls) -> tuple[list, list]:
+    def get_default_transformers_dicts(cls) -> Tuple[List, List]:
         """
         Returns default transformer configurations for this step type.
 
@@ -148,7 +173,6 @@ class Step(DocItem, ABC):
             "selected_laser_uid",
             "generated_workpiece_uid",
             "applied_recipe_uid",
-            "capabilities",
             "modifiers_dicts",
             "opsproducer_dict",
             "per_workpiece_transformers_dicts",
@@ -189,13 +213,6 @@ class Step(DocItem, ABC):
         step.generated_workpiece_uid = data.get("generated_workpiece_uid")
         step.applied_recipe_uid = data.get("applied_recipe_uid")
 
-        cap_names = data.get("capabilities", [])
-        step.capabilities = {
-            CAPABILITIES_BY_NAME[name]
-            for name in cap_names
-            if name in CAPABILITIES_BY_NAME
-        }
-
         step.opsproducer_dict = data["opsproducer_dict"]
         loaded_per_wp = data["per_workpiece_transformers_dicts"]
         loaded_per_step = data["per_step_transformers_dicts"]
@@ -214,15 +231,17 @@ class Step(DocItem, ABC):
         step._unify_shared_transformers()
 
         step.pixels_per_mm = data.get("pixels_per_mm", (100, 100))
-        step.power = data.get("power", 1.0)
-        step.max_power = data.get("max_power", 1000)
-        step.cut_speed = data.get("cut_speed", 500)
-        step.max_cut_speed = data.get("max_cut_speed", 10000)
-        step.travel_speed = data.get("travel_speed", 5000)
-        step.max_travel_speed = data.get("max_travel_speed", 10000)
-        step.air_assist = data.get("air_assist", False)
-        step.kerf_mm = data.get("kerf_mm", 0.0)
-        step.tab_power = data.get("tab_power", 0.0)
+        step.max_power = data.get("max_power", step.max_power)
+        step.max_cut_speed = data.get("max_cut_speed", step.max_cut_speed)
+        step.max_travel_speed = data.get(
+            "max_travel_speed", step.max_travel_speed
+        )
+        step.power = data.get("power", step.power)
+        step.cut_speed = data.get("cut_speed", step.cut_speed)
+        step.travel_speed = data.get("travel_speed", step.travel_speed)
+        step.air_assist = data.get("air_assist", step.air_assist)
+        step.kerf_mm = data.get("kerf_mm", step.kerf_mm)
+        step.tab_power = data.get("tab_power", step.tab_power)
         step.extra = extra
         return step
 
