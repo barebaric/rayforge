@@ -14,6 +14,8 @@ from ....core.ops import (
     SetPowerCommand,
     SetCutSpeedCommand,
     SetTravelSpeedCommand,
+    SetFrequencyCommand,
+    SetPulseWidthCommand,
     EnableAirAssistCommand,
     DisableAirAssistCommand,
     SetLaserCommand,
@@ -145,6 +147,10 @@ class RuidaEncoder(OpsEncoder):
                 self._handle_set_cut_speed(cmd, binary, text)
             case SetTravelSpeedCommand():
                 self._handle_set_travel_speed(cmd, binary, text)
+            case SetFrequencyCommand():
+                self._handle_set_frequency(cmd, binary, text)
+            case SetPulseWidthCommand():
+                self._handle_set_pulse_width(cmd, binary, text)
             case EnableAirAssistCommand():
                 self._handle_enable_air_assist(binary, text)
             case DisableAirAssistCommand():
@@ -216,6 +222,33 @@ class RuidaEncoder(OpsEncoder):
             speed_um = self._mm_to_um(cmd.speed)
             binary.append(b"\xc9\x02" + encode35(speed_um))
         text.append(f"TRAVEL_SPEED {cmd.speed:.1f}")
+
+    def _handle_set_frequency(
+        self,
+        cmd: SetFrequencyCommand,
+        binary: List[bytes],
+        text: List[str],
+    ) -> None:
+        """Handle SetFrequencyCommand - emit 0xC6 0x60 frequency."""
+        binary.append(
+            b"\xc6\x60"
+            + bytes([self.active_laser, 0])
+            + encode35(cmd.frequency)
+        )
+        text.append(f"FREQUENCY {cmd.frequency}")
+
+    def _handle_set_pulse_width(
+        self,
+        cmd: SetPulseWidthCommand,
+        binary: List[bytes],
+        text: List[str],
+    ) -> None:
+        """Handle SetPulseWidthCommand - emit 0xC6 0x10 interval."""
+        pulse_us = int(cmd.pulse_width)
+        binary.append(
+            b"\xc6\x10" + bytes([self.active_laser, 0]) + encode35(pulse_us)
+        )
+        text.append(f"PULSE_WIDTH {cmd.pulse_width:.1f}")
 
     def _handle_enable_air_assist(
         self,

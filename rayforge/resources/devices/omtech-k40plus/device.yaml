@@ -23,3 +23,9 @@ machine:
     spot_size_mm:
     - 0.1
     - 0.1
+    laser_type: co2
+    pwm_frequency: 1000
+    max_pwm_frequency: 5000
+    pulse_width: 50
+    min_pulse_width: 5
+    max_pulse_width: 500

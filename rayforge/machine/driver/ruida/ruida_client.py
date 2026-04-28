@@ -510,6 +510,12 @@ class RuidaClient:
         speed_val = int(speed_mm_s * 1000)
         return b"\xc9\x02" + encode35(speed_val)
 
+    def _build_frequency(self, laser: int, frequency: int) -> bytes:
+        return b"\xc6\x60" + bytes([laser, 0]) + encode35(frequency)
+
+    def _build_pulse_width(self, laser: int, pulse_width_us: int) -> bytes:
+        return b"\xc6\x10" + bytes([laser, 0]) + encode35(pulse_width_us)
+
     def _build_axis_speed(self, speed_mm_s: float) -> bytes:
         speed_val = int(speed_mm_s * 1000)
         return b"\xc9\x03" + encode35(speed_val)

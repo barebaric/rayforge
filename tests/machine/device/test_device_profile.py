@@ -5,6 +5,7 @@ from pathlib import Path
 
 import yaml
 
+from rayforge.machine.device.manager import DeviceProfileManager
 from rayforge.machine.device.profile import (
     DeviceProfile,
     export_machine_to_dir,
@@ -12,8 +13,8 @@ from rayforge.machine.device.profile import (
     DIALECT_FILENAME,
     MANIFEST_FILENAME,
 )
+from rayforge.machine.models.laser import LaserType
 from rayforge.machine.models.machine import Origin
-from rayforge.machine.device.manager import DeviceProfileManager
 from rayforge.shared.tasker.manager import TaskManager
 
 
@@ -706,3 +707,61 @@ class TestCreateMachine:
         assert m.dialect_uid is None
         assert m.dialect is None
         assert m.driver_name == "RuidaDriver"
+
+    @pytest.mark.asyncio
+    async def test_co2_profile_loads_pwm_fields(
+        self, tmp_path, lite_context, task_mgr
+    ):
+        device_dir = _make_device(
+            tmp_path,
+            name="CO2 PWM Test",
+            subdir="co2-pwm",
+            machine_extra={
+                "heads": [
+                    {
+                        "max_power": 1000,
+                        "laser_type": "co2",
+                        "pwm_frequency": 1000,
+                        "max_pwm_frequency": 5000,
+                        "pulse_width": 50,
+                        "min_pulse_width": 5,
+                        "max_pulse_width": 500,
+                    }
+                ],
+            },
+        )
+        pkg = DeviceProfile.from_path(device_dir)
+        m = pkg.create_machine(lite_context)
+        await _wait_for_tasks(task_mgr)
+
+        assert len(m.heads) == 1
+        head = m.heads[0]
+        assert head.laser_type == LaserType.CO2
+        assert head.pwm_frequency == 1000
+        assert head.max_pwm_frequency == 5000
+        assert head.pulse_width == 50
+        assert head.min_pulse_width == 5
+        assert head.max_pulse_width == 500
+
+    @pytest.mark.asyncio
+    async def test_diode_profile_defaults_zero_pwm(
+        self, tmp_path, lite_context, task_mgr
+    ):
+        device_dir = _make_device(
+            tmp_path,
+            name="Diode Test",
+            subdir="diode-test",
+            machine_extra={
+                "heads": [
+                    {
+                        "max_power": 1000,
+                    }
+                ],
+            },
+        )
+        pkg = DeviceProfile.from_path(device_dir)
+        m = pkg.create_machine(lite_context)
+        await _wait_for_tasks(task_mgr)
+
+        head = m.heads[0]
+        assert head.laser_type == LaserType.DIODE

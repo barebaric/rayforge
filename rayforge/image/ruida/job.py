@@ -16,6 +16,7 @@ class RuidaLayer:
     speed: float  # in mm/s
     power: float  # as a percentage (0-100)
     air_assist: bool = False
+    frequency: int = 0
     # Ruida has min/max power for cornering, but we'll start simple.
 
 
