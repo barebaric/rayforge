@@ -10,6 +10,8 @@ from rayforge.core.ops import (
     SetPowerCommand,
     SetCutSpeedCommand,
     SetTravelSpeedCommand,
+    SetFrequencyCommand,
+    SetPulseWidthCommand,
     JobStartCommand,
     JobEndCommand,
 )
@@ -243,3 +245,69 @@ class TestG0G1FeedrateSharing:
         assert len(g1_lines) == 2
         assert "F3000" in g1_lines[0]
         assert "F3000" in g1_lines[1]
+
+
+def test_frequency_command_no_gcode_output():
+    encoder = _make_encoder(GRBL_DIALECT)
+    context = _make_context()
+    gcode = []
+
+    encoder._handle_command(gcode, SetFrequencyCommand(1000), context)
+
+    assert len(gcode) == 0
+    assert encoder.frequency == 1000
+
+
+def test_pulse_width_command_no_gcode_output():
+    encoder = _make_encoder(GRBL_DIALECT)
+    context = _make_context()
+    gcode = []
+
+    encoder._handle_command(gcode, SetPulseWidthCommand(50), context)
+
+    assert len(gcode) == 0
+    assert encoder.pulse_width == 50
+
+
+def test_frequency_and_pulse_width_sets_state():
+    encoder = _make_encoder(GRBL_DIALECT)
+    context = _make_context()
+    gcode = []
+
+    encoder._handle_command(gcode, JobStartCommand(), context)
+    encoder._handle_command(gcode, SetPowerCommand(1.0), context)
+    encoder._handle_command(gcode, SetCutSpeedCommand(1000), context)
+    encoder._handle_command(gcode, SetFrequencyCommand(2000), context)
+    encoder._handle_command(gcode, SetPulseWidthCommand(100), context)
+    encoder._handle_command(gcode, MoveToCommand((0.0, 0.0, 0.0)), context)
+    encoder._handle_command(gcode, LineToCommand((10.0, 10.0, 0.0)), context)
+    encoder._handle_command(gcode, JobEndCommand(), context)
+
+    assert encoder.frequency == 2000
+    assert encoder.pulse_width == 100
+
+
+def test_encode_resets_frequency_and_pulse_width():
+    encoder = _make_encoder(GRBL_DIALECT)
+    encoder.frequency = 5000
+    encoder.pulse_width = 200
+
+    machine = MagicMock()
+    machine.dialect = GRBL_DIALECT
+    machine.gcode_precision = 3
+    machine.max_travel_speed = 5000.0
+    machine.active_wcs = "G54"
+    machine.get_active_wcs_offset.return_value = (0.0, 0.0, 0.0)
+    machine.hookmacros = {}
+    machine.heads = []
+    doc = MagicMock()
+    doc.find_descendant_by_uid.return_value = None
+
+    ops = Ops()
+    ops.add(JobStartCommand())
+    ops.add(JobEndCommand())
+
+    encoder.encode(ops, machine, doc)
+
+    assert encoder.frequency is None
+    assert encoder.pulse_width is None
