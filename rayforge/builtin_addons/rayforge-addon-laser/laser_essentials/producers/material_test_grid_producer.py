@@ -127,14 +127,6 @@ class MaterialTestGridProducer(OpsProducer):
         self.line_interval_mm = line_interval_mm
 
     @property
-    def supports_power(self) -> bool:
-        return False
-
-    @property
-    def supports_cut_speed(self) -> bool:
-        return False
-
-    @property
     def show_recipe_settings(self) -> bool:
         return False
 

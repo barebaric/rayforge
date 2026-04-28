@@ -280,10 +280,6 @@ class ContourProducer(OpsProducer):
             generation_id=generation_id,
         )
 
-    @property
-    def supports_kerf(self) -> bool:
-        return True
-
     def to_dict(self) -> dict:
         """Serializes the producer configuration."""
         return {

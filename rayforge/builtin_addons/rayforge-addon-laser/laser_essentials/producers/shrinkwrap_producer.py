@@ -169,10 +169,6 @@ class ShrinkWrapProducer(OpsProducer):
         )
 
     @property
-    def supports_kerf(self) -> bool:
-        return True
-
-    @property
     def requires_full_render(self) -> bool:
         """
         Overrides the base property to signal that this producer must receive
