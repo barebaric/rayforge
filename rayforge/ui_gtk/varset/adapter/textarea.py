@@ -8,7 +8,9 @@ from .base import RowAdapter, escape_title, register_adapter
 
 @register_adapter(TextAreaVar)
 class TextAreaAdapter(RowAdapter):
-    def __init__(self, text_view: Gtk.TextView) -> None:
+    def __init__(self, row: Adw.ExpanderRow, text_view: Gtk.TextView) -> None:
+        super().__init__()
+        self._row = row
         self._text_view = text_view
 
     @classmethod
@@ -31,7 +33,7 @@ class TextAreaAdapter(RowAdapter):
         if initial_val is not None:
             text_view.get_buffer().set_text(str(initial_val))
         row.core_widget = text_view  # type: ignore
-        return row, cls(text_view)
+        return row, cls(row, text_view)
 
     def get_value(self) -> Optional[Any]:
         buf = self._text_view.get_buffer()
@@ -40,3 +42,9 @@ class TextAreaAdapter(RowAdapter):
 
     def set_value(self, value: Any) -> None:
         self._text_view.get_buffer().set_text(str(value))
+
+    def update_from_var(self, var: Var):
+        if var.label:
+            self._row.set_title(escape_title(var.label))
+        if var.description:
+            self._row.set_subtitle(var.description)

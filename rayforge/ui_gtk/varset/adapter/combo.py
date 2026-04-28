@@ -21,8 +21,13 @@ from .base import (
 @register_adapter(ChoiceVar)
 class ComboAdapter(RowAdapter):
     def __init__(self, row: Adw.ComboRow, var: Var) -> None:
+        super().__init__()
         self._row = row
         self._var = var
+        self._row.connect(
+            "notify::selected-item",
+            lambda r, p: self.changed.send(self),
+        )
 
     @classmethod
     def create(
@@ -73,6 +78,19 @@ class ComboAdapter(RowAdapter):
             if model.get_string(i) == display_str:
                 self._row.set_selected(i)
                 break
+
+    def needs_rebuild(self, old_var: Var, new_var: Var) -> bool:
+        if super().needs_rebuild(old_var, new_var):
+            return True
+        if isinstance(old_var, ChoiceVar) and isinstance(new_var, ChoiceVar):
+            return old_var.choices != new_var.choices
+        return False
+
+    def update_from_var(self, var: Var):
+        if var.label:
+            self._row.set_title(escape_title(var.label))
+        if var.description:
+            self._row.set_subtitle(var.description)
 
 
 @register_adapter(BaudrateVar)

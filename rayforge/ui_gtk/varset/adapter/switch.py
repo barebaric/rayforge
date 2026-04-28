@@ -8,8 +8,11 @@ from .base import RowAdapter, escape_title, register_adapter
 
 @register_adapter(BoolVar)
 class SwitchAdapter(RowAdapter):
-    def __init__(self, switch: Gtk.Switch) -> None:
+    def __init__(self, row: Adw.ActionRow, switch: Gtk.Switch) -> None:
+        super().__init__()
+        self._row = row
         self._switch = switch
+        self._switch.connect("state-set", lambda s, a: self.changed.send(self))
 
     @classmethod
     def create(
@@ -25,10 +28,16 @@ class SwitchAdapter(RowAdapter):
         )
         row.add_suffix(switch)
         row.set_activatable_widget(switch)
-        return row, cls(switch)
+        return row, cls(row, switch)
 
     def get_value(self) -> Optional[Any]:
         return self._switch.get_active()
 
     def set_value(self, value: Any) -> None:
         self._switch.set_active(bool(value))
+
+    def update_from_var(self, var: Var):
+        if var.label:
+            self._row.set_title(escape_title(var.label))
+        if var.description:
+            self._row.set_subtitle(var.description)

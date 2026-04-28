@@ -10,11 +10,18 @@ from .base import RowAdapter, escape_title, register_adapter
 @register_adapter(SliderFloatVar)
 class SliderAdapter(RowAdapter):
     def __init__(
-        self, scale: Gtk.Scale, min_val: float, max_val: float
+        self,
+        row: Adw.PreferencesRow,
+        scale: Gtk.Scale,
+        min_val: float,
+        max_val: float,
     ) -> None:
+        super().__init__()
+        self._row = row
         self._scale = scale
         self._min_val = min_val
         self._max_val = max_val
+        self._scale.connect("value-changed", lambda s: self.changed.send(self))
 
     @classmethod
     def create(
@@ -47,7 +54,7 @@ class SliderAdapter(RowAdapter):
             draw_value=var.show_value,
         )
         row.set_activatable_widget(scale)
-        return row, cls(scale, min_val, max_val)
+        return row, cls(row, scale, min_val, max_val)
 
     def get_value(self) -> Optional[Any]:
         percent = self._scale.get_value() / 100.0
@@ -59,3 +66,16 @@ class SliderAdapter(RowAdapter):
         if range_size > 1e-9:
             percent = ((float(value) - self._min_val) / range_size) * 100.0
         self._scale.set_value(percent)
+
+    def update_from_var(self, var: Var):
+        if var.label:
+            self._row.set_title(escape_title(var.label))
+        if var.description:
+            self._row.set_tooltip_text(var.description)
+        adj = self._scale.get_adjustment()
+        min_val = getattr(var, "min_val", None)
+        max_val = getattr(var, "max_val", None)
+        if min_val is not None:
+            adj.set_lower(float(min_val))
+        if max_val is not None:
+            adj.set_upper(float(max_val))

@@ -19,8 +19,13 @@ from .speed import SpeedRowAdapter
 from .textarea import TextAreaAdapter
 
 _ALL_ADAPTERS = (
-    BaudRateAdapter, ComboAdapter, SerialPortAdapter,
-    HostnameAdapter, SliderAdapter, SpeedRowAdapter, TextAreaAdapter,
+    BaudRateAdapter,
+    ComboAdapter,
+    SerialPortAdapter,
+    HostnameAdapter,
+    SliderAdapter,
+    SpeedRowAdapter,
+    TextAreaAdapter,
 )
 
 logger = logging.getLogger(__name__)
