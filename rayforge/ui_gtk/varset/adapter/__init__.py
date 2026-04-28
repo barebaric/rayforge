@@ -3,6 +3,7 @@ from .base import (
     RowAdapter,
     escape_title,
     natural_sort_key,
+    register_adapter,
 )
 from .registry import create_row_for_var
 
@@ -12,4 +13,5 @@ __all__ = [
     "create_row_for_var",
     "escape_title",
     "natural_sort_key",
+    "register_adapter",
 ]

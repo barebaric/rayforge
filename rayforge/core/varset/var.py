@@ -1,3 +1,4 @@
+from gettext import gettext as _
 from typing import Optional, Type, Callable, Generic, TypeVar, Dict, Any
 from blinker import Signal
 
@@ -16,6 +17,14 @@ class Var(Generic[T]):
     Represents a single typed variable with metadata for UI generation,
     validation, and data handling.
     """
+
+    _registry: Dict[str, Type["Var"]] = {}
+
+    display_name: Optional[str] = None
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        Var._registry[cls.__name__] = cls
 
     def __init__(
         self,
@@ -227,3 +236,18 @@ class Var(Generic[T]):
             f"Var(key='{self.key}', value={self.value}, "
             f"type={self.var_type.__name__})"
         )
+
+
+Var.display_name = _("Text (Single Line)")
+Var._registry["Var"] = Var
+
+
+def get_editable_var_types() -> list:
+    return sorted(
+        [
+            (cls.display_name, cls)
+            for cls in Var._registry.values()
+            if cls.display_name is not None
+        ],
+        key=lambda t: t[0],
+    )

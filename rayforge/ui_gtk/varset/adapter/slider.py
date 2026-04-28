@@ -4,9 +4,10 @@ from gi.repository import Adw, Gtk
 
 from ....core.varset import SliderFloatVar, Var
 from ...shared.slider import create_slider_row
-from .base import RowAdapter, escape_title
+from .base import RowAdapter, escape_title, register_adapter
 
 
+@register_adapter(SliderFloatVar)
 class SliderAdapter(RowAdapter):
     def __init__(
         self, scale: Gtk.Scale, min_val: float, max_val: float

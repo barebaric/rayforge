@@ -2,11 +2,12 @@ from typing import Any, Optional, Tuple
 
 from gi.repository import Adw, Gtk
 
-from ....core.varset import Var
+from ....core.varset import FloatVar, IntVar, Var
 from ...shared.adwfix import get_spinrow_int
-from .base import RowAdapter, escape_title
+from .base import RowAdapter, escape_title, register_adapter
 
 
+@register_adapter(IntVar, FloatVar)
 class SpinRowAdapter(RowAdapter):
     def __init__(self, row: Adw.SpinRow, is_int: bool) -> None:
         self._row = row

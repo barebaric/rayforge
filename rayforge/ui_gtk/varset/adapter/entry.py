@@ -2,8 +2,8 @@ from typing import Any, Optional, Tuple
 
 from gi.repository import Adw
 
-from ....core.varset import Var
-from .base import RowAdapter, escape_title
+from ....core.varset import HostnameVar, Var
+from .base import RowAdapter, escape_title, register_adapter
 
 
 class EntryAdapter(RowAdapter):
@@ -29,6 +29,7 @@ class EntryAdapter(RowAdapter):
         self._row.set_text(str(value))
 
 
+@register_adapter(HostnameVar)
 class HostnameAdapter(EntryAdapter):
     @classmethod
     def create(

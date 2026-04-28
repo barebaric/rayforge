@@ -1,5 +1,5 @@
-from typing import Optional
 from gettext import gettext as _
+from typing import Optional
 from .var import Var, ValidationError
 from ...machine.transport.validators import is_valid_hostname_or_ip
 
@@ -14,6 +14,8 @@ def hostname_validator(hostname: Optional[str]):
 
 class HostnameVar(Var[str]):
     """A Var subclass for hostnames or IP addresses."""
+
+    display_name = _("Hostname / IP")
 
     def __init__(
         self,

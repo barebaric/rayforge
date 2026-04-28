@@ -1,4 +1,4 @@
-from __future__ import annotations
+from gettext import gettext as _
 from typing import Optional, List, Dict, Any
 from .var import Var
 
@@ -7,6 +7,8 @@ class ChoiceVar(Var[str]):
     """
     A variable that represents a choice from a predefined list of strings.
     """
+
+    display_name = _("Choice")
 
     def __init__(
         self,

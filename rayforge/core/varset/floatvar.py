@@ -6,6 +6,8 @@ from .var import Var, ValidationError
 class FloatVar(Var[float]):
     """A Var subclass for float values with optional bounds."""
 
+    display_name = _("Floating Point")
+
     def __init__(
         self,
         key: str,
@@ -63,6 +65,8 @@ class SliderFloatVar(FloatVar):
     The value is typically expected to be in a normalized 0.0-1.0 range,
     which the UI will display as 0-100.
     """
+
+    display_name = _("Slider (0-100%)")
 
     def __init__(
         self,

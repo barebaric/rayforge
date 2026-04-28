@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Optional, Iterator, Any, List, KeysView, Type
+from typing import Dict, Optional, Iterator, Any, List, KeysView
 from blinker import Signal
 from .var import Var
 
@@ -88,44 +88,17 @@ class VarSet:
         Internal factory to instantiate a Var subclass from its serialized
         definition.
         """
-        from .baudratevar import BaudrateVar
-        from .boolvar import BoolVar
-        from .choicevar import ChoiceVar
-        from .floatvar import FloatVar, SliderFloatVar
-        from .hostnamevar import HostnameVar
-        from .intvar import IntVar
-        from .portvar import PortVar
-        from .serialportvar import SerialPortVar
-        from .speedvar import SpeedVar
-        from .textareavar import TextAreaVar
-
-        _CLASS_MAP: Dict[str, Type[Var]] = {
-            "BaudrateVar": BaudrateVar,
-            "BoolVar": BoolVar,
-            "ChoiceVar": ChoiceVar,
-            "FloatVar": FloatVar,
-            "HostnameVar": HostnameVar,
-            "IntVar": IntVar,
-            "PortVar": PortVar,
-            "SerialPortVar": SerialPortVar,
-            "SliderFloatVar": SliderFloatVar,
-            "SpeedVar": SpeedVar,
-            "TextAreaVar": TextAreaVar,
-            "Var": Var,
-        }
-
         data_copy = data.copy()
         class_name = data_copy.pop("class", None)
         if not class_name:
             raise ValueError(
                 "Var definition dictionary is missing 'class' key."
             )
-        if class_name not in _CLASS_MAP:
+        VarClass = Var._registry.get(class_name)
+        if VarClass is None:
             raise ValueError(
                 f"Unknown Var class '{class_name}' in definition."
             )
-        VarClass = _CLASS_MAP[class_name]
-        # Allow 'value' to be passed to constructor if present in dict
         return VarClass(**data_copy)
 
     @property
@@ -229,7 +202,7 @@ class VarSet:
                 new_var = cls._create_var_from_dict(var_data)
                 new_set.add(new_var)
             except Exception as e:
-                print(f"Warning: Could not deserialize var: {e}")
+                logger.warning("Could not deserialize var: %s", e)
         new_set.extra = extra
         return new_set
 

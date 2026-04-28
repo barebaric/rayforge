@@ -2,10 +2,11 @@ from typing import Any, Optional, Tuple
 
 from gi.repository import Adw, Gtk
 
-from ....core.varset import Var
-from .base import RowAdapter, escape_title
+from ....core.varset import BoolVar, Var
+from .base import RowAdapter, escape_title, register_adapter
 
 
+@register_adapter(BoolVar)
 class SwitchAdapter(RowAdapter):
     def __init__(self, switch: Gtk.Switch) -> None:
         self._switch = switch

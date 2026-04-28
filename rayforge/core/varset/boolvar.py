@@ -1,10 +1,12 @@
-from __future__ import annotations
+from gettext import gettext as _
 from typing import Optional
 from .var import Var
 
 
 class BoolVar(Var[bool]):
     """A variable that represents a boolean value."""
+
+    display_name = _("Boolean (Switch)")
 
     def __init__(
         self,

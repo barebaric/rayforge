@@ -17,14 +17,11 @@ from ...core.undo.property_cmd import ChangePropertyCommand
 from ...core.varset import (
     Var,
     VarSet,
-    IntVar,
-    BoolVar,
-    FloatVar,
-    SliderFloatVar,
     ChoiceVar,
-    HostnameVar,
-    SerialPortVar,
-    TextAreaVar,
+    FloatVar,
+    IntVar,
+    SliderFloatVar,
+    get_editable_var_types,
 )
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
@@ -643,19 +640,6 @@ class VarSetEditorWidget(PreferencesGroupWithButton):
     seamlessly with an 'Add' button at the bottom.
     """
 
-    # Define available types and their labels
-    _ALL_VAR_TYPES = [
-        (_("Integer"), IntVar),
-        (_("Boolean (Switch)"), BoolVar),
-        (_("Floating Point"), FloatVar),
-        (_("Slider (0-100%)"), SliderFloatVar),
-        (_("Text (Single Line)"), Var),
-        (_("Text (Multi-Line)"), TextAreaVar),
-        (_("Choice"), ChoiceVar),
-        (_("Hostname / IP"), HostnameVar),
-        (_("Serial Port"), SerialPortVar),
-    ]
-
     def __init__(
         self,
         vartypes: Optional[Iterable[Type[Var]]] = None,
@@ -711,7 +695,7 @@ class VarSetEditorWidget(PreferencesGroupWithButton):
         menu_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         menu.set_child(menu_box)
 
-        for label, var_class in self._ALL_VAR_TYPES:
+        for label, var_class in get_editable_var_types():
             # Filter types if a restriction list is provided
             if self._allowed_types and var_class not in self._allowed_types:
                 continue
