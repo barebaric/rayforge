@@ -87,6 +87,10 @@ def _create_initial_ops(settings: dict) -> Ops:
     initial_ops.set_cut_speed(settings["cut_speed"])
     initial_ops.set_travel_speed(settings["travel_speed"])
     initial_ops.enable_air_assist(settings["air_assist"])
+    if settings.get("frequency"):
+        initial_ops.set_frequency(settings["frequency"])
+    if settings.get("pulse_width"):
+        initial_ops.set_pulse_width(settings["pulse_width"])
     return initial_ops
 
 

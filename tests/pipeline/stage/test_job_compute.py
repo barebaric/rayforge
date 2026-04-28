@@ -21,6 +21,7 @@ def machine(context_initializer):
     m = Machine(context_initializer)
     m.set_axis_extents(200, 150)
     m.add_head(Laser())
+    context_initializer.machine_mgr.add_machine(m)
     context_initializer.config.set_machine(m)
     return m
 

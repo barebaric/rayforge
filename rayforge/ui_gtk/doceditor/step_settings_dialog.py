@@ -165,6 +165,23 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
                 if isinstance(kerf_row, Adw.SpinRow):
                     kerf_row.set_value(new_kerf)
 
+            for cap in machine.get_laser_capabilities(selected_laser):
+                for var in cap.varset:
+                    t.execute(
+                        ChangePropertyCommand(
+                            target=self.step,
+                            property_name=var.key,
+                            new_value=var.default,
+                            setter_method_name=f"set_{var.key}",
+                        )
+                    )
+
+        new_varset = _merged_varset(
+            self.step.get_effective_capabilities(machine)
+        )
+        self.varset_widget.populate(new_varset)
+        self._sync_widgets_to_model()
+
         self.changed.send(self)
 
     def _on_data_changed(self, sender, **kwargs):

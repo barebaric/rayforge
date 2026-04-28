@@ -295,11 +295,13 @@ class Laser:
         lh.laser_type = LaserType(
             data.get("laser_type", LaserType.DIODE.value)
         )
-        lh.pwm_frequency = data.get("pwm_frequency", 0)
-        lh.max_pwm_frequency = data.get("max_pwm_frequency", 0)
-        lh.pulse_width = data.get("pulse_width", 0)
-        lh.min_pulse_width = data.get("min_pulse_width", 0)
-        lh.max_pulse_width = data.get("max_pulse_width", 0)
+        lh.pwm_frequency = data.get("pwm_frequency", lh.pwm_frequency)
+        lh.max_pwm_frequency = data.get(
+            "max_pwm_frequency", lh.max_pwm_frequency
+        )
+        lh.pulse_width = data.get("pulse_width", lh.pulse_width)
+        lh.min_pulse_width = data.get("min_pulse_width", lh.min_pulse_width)
+        lh.max_pulse_width = data.get("max_pulse_width", lh.max_pulse_width)
         lh.extra = extra
         return lh
 

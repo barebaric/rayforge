@@ -391,7 +391,7 @@ def test_pwm_serialization_roundtrip():
     assert restored.max_pulse_width == 100
 
 
-def test_pwm_missing_fields_default_to_zero():
+def test_pwm_missing_fields_use_init_defaults():
     data = {
         "uid": "test-uid",
         "name": "Test Laser",
@@ -399,11 +399,11 @@ def test_pwm_missing_fields_default_to_zero():
         "max_power": 1000,
     }
     laser = Laser.from_dict(data)
-    assert laser.pwm_frequency == 0
-    assert laser.max_pwm_frequency == 0
-    assert laser.pulse_width == 0
-    assert laser.min_pulse_width == 0
-    assert laser.max_pulse_width == 0
+    assert laser.pwm_frequency == 500
+    assert laser.max_pwm_frequency == 5000
+    assert laser.pulse_width == 50
+    assert laser.min_pulse_width == 5
+    assert laser.max_pulse_width == 500
 
 
 def test_base_driver_returns_empty_tuple(isolated_machine):
