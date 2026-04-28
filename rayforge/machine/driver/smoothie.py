@@ -15,10 +15,10 @@ from typing import (
 from gettext import gettext as _
 from ...context import RayforgeContext
 from ...core.varset import VarSet, HostnameVar, PortVar
+from ...core.varset.hostnamevar import is_valid_hostname_or_ip
 from ...pipeline.encoder.base import OpsEncoder, EncodedOutput
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TelnetTransport, TransportStatus
-from ..transport.validators import is_valid_hostname_or_ip
 from .driver import (
     Driver,
     DeviceStatus,

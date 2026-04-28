@@ -1,20 +1,28 @@
 import pytest
-from unittest.mock import patch
 from rayforge.core.varset.baudratevar import BaudrateVar, ValidationError
 from rayforge.core.varset.varset import VarSet
 
 
 class TestBaudrateVar:
-    @patch("rayforge.machine.transport.serial.SerialTransport.list_baud_rates")
-    def test_validation(self, mock_list_rates):
-        """Test BaudrateVar against a mocked list of standard rates."""
-        mock_list_rates.return_value = [9600, 19200, 115200]
+    def test_validation_default_choices(self):
+        """Test BaudrateVar validation with default standard rates."""
         v = BaudrateVar(key="baud", label="Baud Rate")
 
         v.value = 115200
         v.validate()
 
         v.value = 9601
+        with pytest.raises(ValidationError, match="not a standard baud rate"):
+            v.validate()
+
+    def test_validation_custom_choices(self):
+        """Test BaudrateVar with custom choices list."""
+        v = BaudrateVar(key="baud", label="Baud Rate", choices=[9600, 115200])
+
+        v.value = 9600
+        v.validate()
+
+        v.value = 19200
         with pytest.raises(ValidationError, match="not a standard baud rate"):
             v.validate()
 
@@ -39,6 +47,18 @@ class TestBaudrateVar:
             "default": 115200,
             "min_val": 300,
             "max_val": 4000000,
+            "choices": [
+                9600,
+                19200,
+                38400,
+                57600,
+                115200,
+                230400,
+                460800,
+                921600,
+                1000000,
+                1843200,
+            ],
         }
 
         # Test serialization of state (include_value=True)
@@ -52,6 +72,14 @@ class TestBaudrateVar:
         assert rehydrated_var.label == original_var.label
         assert rehydrated_var.description == original_var.description
         assert rehydrated_var.default == original_var.default
-        assert (
-            rehydrated_var.value == original_var.default
-        )  # Rehydrated value is the default
+        assert rehydrated_var.value == original_var.default
+
+    def test_rehydration_preserves_custom_choices(self):
+        """Test that custom choices survive serialization round-trip."""
+        original = BaudrateVar(
+            key="baud", label="Baud", choices=[9600, 115200]
+        )
+        data = original.to_dict()
+        rehydrated = VarSet._create_var_from_dict(data)
+        assert isinstance(rehydrated, BaudrateVar)
+        assert rehydrated.choices == [9600, 115200]

@@ -17,11 +17,11 @@ from gettext import gettext as _
 from ....context import RayforgeContext
 from ....core.capability import PWMCapability
 from ....core.varset import VarSet, HostnameVar, PortVar
+from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....pipeline.encoder.base import OpsEncoder, EncodedOutput
 from ...models.coordinate_system import CoordinateSystem
 from ...models.laser import LaserType
 from ...transport import TransportStatus
-from ...transport.validators import is_valid_hostname_or_ip
 from ...transport.udp import UdpTransport
 from ..driver import (
     Driver,

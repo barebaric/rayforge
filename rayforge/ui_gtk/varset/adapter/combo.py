@@ -99,7 +99,8 @@ class BaudRateAdapter(ComboAdapter):
     def create(
         cls, var: Var, target_property: str
     ) -> Tuple[Adw.PreferencesRow, "BaudRateAdapter"]:
-        choices_str = [str(rate) for rate in SerialTransport.list_baud_rates()]
+        assert isinstance(var, BaudrateVar)
+        choices_str = [str(rate) for rate in var.choices]
         store = Gtk.StringList.new(choices_str)
         row = Adw.ComboRow(model=store, title=escape_title(var.label))
         if var.description:
