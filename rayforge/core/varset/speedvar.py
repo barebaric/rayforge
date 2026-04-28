@@ -18,8 +18,10 @@ class SpeedVar(IntVar):
         value: Optional[int] = None,
         min_val: Optional[int] = None,
         max_val: Optional[int] = None,
+        role: str = "cut",
         validator: Optional[Callable[[Optional[int]], None]] = None,
     ):
+        self.role = role
         super().__init__(
             key=key,
             label=label,

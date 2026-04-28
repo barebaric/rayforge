@@ -8,6 +8,19 @@ from ....core.varset import SpeedVar, Var
 from ...shared.unit_spin_row import UnitSpinRowHelper
 from .base import RowAdapter, escape_title, register_adapter
 
+_DEFAULT_MAX_SPEED = 3000
+
+
+def _resolve_max_speed(var: SpeedVar) -> int:
+    if var.max_val is not None:
+        return var.max_val
+    machine = get_context().machine if get_context() else None
+    if machine is None:
+        return _DEFAULT_MAX_SPEED
+    if var.role == "travel":
+        return machine.max_travel_speed
+    return machine.max_cut_speed
+
 
 @register_adapter(SpeedVar)
 class SpeedRowAdapter(RowAdapter):
@@ -29,11 +42,10 @@ class SpeedRowAdapter(RowAdapter):
     def create(
         cls, var: Var, target_property: str
     ) -> Tuple[Adw.PreferencesRow, "SpeedRowAdapter"]:
-        machine = get_context().machine
-        max_speed = machine.max_cut_speed if machine else 3000
-
+        assert isinstance(var, SpeedVar)
+        max_speed = _resolve_max_speed(var)
         initial_val = getattr(var, target_property)
-        min_val = getattr(var, "min_val", None) or 0
+        min_val = var.min_val or 0
 
         adj = Gtk.Adjustment(
             value=int(initial_val) if initial_val is not None else 0,
