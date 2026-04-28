@@ -1,14 +1,14 @@
-from typing import TYPE_CHECKING, Dict, Optional, Tuple
+from functools import reduce
+from typing import TYPE_CHECKING, Dict, Optional
 from gettext import gettext as _
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
 
 from ...context import get_context
+from ...core.capability import Capability, LaserHeadVar
 from ...core.step import Step
 from ...core.undo import ChangePropertyCommand, HistoryManager
-from ...core.varset import Var, VarSet
-from ...core.capability import LaserHeadVar
 from ...pipeline.producer import OpsProducer
 from ...pipeline.producer.placeholder import PlaceholderProducer
 from ...pipeline.transformer import OpsTransformer
@@ -22,14 +22,6 @@ from .step_settings.placeholder import PlaceholderSettingsWidget
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
-
-
-def _merged_varset(caps: Tuple) -> VarSet:
-    merged: Dict[str, Var] = {}
-    for cap in caps:
-        for var in cap.varset:
-            merged[var.key] = var
-    return VarSet(vars=list(merged.values()))
 
 
 class GeneralStepSettingsView(TrackedPreferencesPage):
@@ -79,9 +71,10 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
 
         # Build settings UI from capability VarSet.
         # VarSetWidget IS the general group — no visual split.
-        varset = _merged_varset(
-            step.get_effective_capabilities(get_context().machine)
-        )
+        varset = reduce(
+            Capability.__or__,
+            step.get_effective_capabilities(get_context().machine),
+        ).varset
         self.varset_widget = VarSetWidget(
             title=_("General Settings"),
             description=_(
@@ -176,9 +169,10 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
                         )
                     )
 
-        new_varset = _merged_varset(
-            self.step.get_effective_capabilities(machine)
-        )
+        new_varset = reduce(
+            Capability.__or__,
+            self.step.get_effective_capabilities(machine),
+        ).varset
         self.varset_widget.populate(new_varset)
         self._sync_widgets_to_model()
 
