@@ -114,6 +114,7 @@ class VarSet:
             )
         self._vars[var.key] = var
         self._order.append(var.key)
+        var._varset = self
 
         # Connect directly to the var's instance signal.
         # weak=False ensures the bound method is not garbage collected
@@ -131,6 +132,7 @@ class VarSet:
         if var:
             if key in self._order:
                 self._order.remove(key)
+            var._varset = None
             # Disconnect from the specific instance signal.
             var.value_changed.disconnect(self._on_child_var_changed)
             var.definition_changed.disconnect(
@@ -252,6 +254,7 @@ class VarSet:
             var.definition_changed.disconnect(
                 self._on_child_var_definition_changed
             )
+            var._varset = None
         self._vars.clear()
         self._order.clear()
         logger.debug("Emitting signal: cleared")
