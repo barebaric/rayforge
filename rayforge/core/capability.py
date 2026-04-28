@@ -171,12 +171,14 @@ class CutCapability(Capability):
                     label=_("Cut Speed"),
                     default=500,
                     min_val=1,
+                    role="cut",
                 ),
                 SpeedVar(
                     key="travel_speed",
                     label=_("Travel Speed"),
                     default=5000,
                     min_val=1,
+                    role="travel",
                 ),
                 BoolVar(
                     key="air_assist",
@@ -216,12 +218,14 @@ class EngraveCapability(Capability):
                     label=_("Engrave Speed"),
                     default=4000,
                     min_val=1,
+                    role="cut",
                 ),
                 SpeedVar(
                     key="travel_speed",
                     label=_("Travel Speed"),
                     default=5000,
                     min_val=1,
+                    role="travel",
                 ),
                 BoolVar(
                     key="air_assist",
@@ -261,12 +265,14 @@ class ScoreCapability(Capability):
                     label=_("Score Speed"),
                     default=5000,
                     min_val=1,
+                    role="cut",
                 ),
                 SpeedVar(
                     key="travel_speed",
                     label=_("Travel Speed"),
                     default=5000,
                     min_val=1,
+                    role="travel",
                 ),
                 BoolVar(
                     key="air_assist",
