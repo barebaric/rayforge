@@ -124,10 +124,6 @@ class FrameProducer(OpsProducer):
         )
 
     @property
-    def supports_kerf(self) -> bool:
-        return True
-
-    @property
     def requires_full_render(self) -> bool:
         """
         This producer only needs the workpiece's metadata, not its

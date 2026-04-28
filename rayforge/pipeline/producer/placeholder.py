@@ -40,18 +40,6 @@ class PlaceholderProducer(OpsProducer):
         """Returns the preserved original configuration."""
         return self._config.copy()
 
-    @property
-    def supports_kerf(self) -> bool:
-        return False
-
-    @property
-    def supports_cut_speed(self) -> bool:
-        return False
-
-    @property
-    def supports_power(self) -> bool:
-        return False
-
     def run(
         self,
         laser: "Laser",

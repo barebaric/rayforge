@@ -101,30 +101,6 @@ class OpsProducer(ABC):
         return False
 
     @property
-    def supports_kerf(self) -> bool:
-        """
-        Returns True if this producer's logic can apply kerf compensation.
-        This is typically True for vector-based producers.
-        """
-        return False
-
-    @property
-    def supports_cut_speed(self) -> bool:
-        """
-        Returns True if this producer's logic supports a fixed cut speed.
-        Producers that have variable speed logic may not.
-        """
-        return True
-
-    @property
-    def supports_power(self) -> bool:
-        """
-        Returns True if this producer's logic supports a fixed power setting.
-        Producers that have variable power logic may not.
-        """
-        return True
-
-    @property
     def show_recipe_settings(self) -> bool:
         """
         Returns True if the recipe control widget should be shown in the
