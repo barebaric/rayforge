@@ -2,8 +2,6 @@ name: post_processors
 display_name: "Post Processors"
 description: "Core Post-processing transformers for toolpath optimization"
 api_version: 12
-depends:
-  - rayforge>=0.27.0
 author:
   name: "Rayforge Team"
   email: "noreply@rayforge.org"
