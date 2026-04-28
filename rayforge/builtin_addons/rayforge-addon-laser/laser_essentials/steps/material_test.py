@@ -75,7 +75,11 @@ class MaterialTestStep(Step):
 
         step.per_workpiece_transformers_dicts = per_wp
         step.per_step_transformers_dicts = per_step
-        step.selected_laser_uid = machine.get_default_head().uid
+        default_head = machine.get_default_head()
+        step.selected_laser_uid = default_head.uid
         step.max_cut_speed = machine.max_cut_speed
         step.max_travel_speed = machine.max_travel_speed
+        for cap in machine.get_laser_capabilities(default_head):
+            for var in cap.varset:
+                setattr(step, var.key, var.default)
         return step

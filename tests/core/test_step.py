@@ -564,3 +564,56 @@ def test_get_effective_capabilities_no_laser_selected(step):
     caps = step.get_effective_capabilities(mock_machine)
 
     assert caps == type(step).CAPABILITIES
+
+
+def test_factory_applies_laser_capability_defaults():
+    """Step factories set attributes from driver-provided capabilities."""
+    pwm_cap = PWMCapability(1000, 5000, 50, 1, 100)
+    mock_laser = MagicMock()
+    mock_laser.uid = "test-laser"
+    mock_laser.spot_size_mm = (0.1, 0.1)
+
+    mock_machine = MagicMock()
+    mock_machine.heads = [mock_laser]
+    mock_machine.get_default_head.return_value = mock_laser
+    mock_machine.max_cut_speed = 5000
+    mock_machine.max_travel_speed = 10000
+    mock_machine.acceleration = 1000
+    mock_machine.get_laser_capabilities.return_value = (pwm_cap,)
+
+    mock_context = MagicMock()
+    mock_context.machine = mock_machine
+
+    class TestCutStep(Step):
+        CAPABILITIES = (CUT,)
+
+    step = TestCutStep(typelabel="Test")
+    step.selected_laser_uid = mock_laser.uid
+    for cap in mock_machine.get_laser_capabilities(mock_laser):
+        for var in cap.varset:
+            setattr(step, var.key, var.default)
+
+    assert step.frequency == 1000
+    assert step.pulse_width == 50
+
+
+def test_factory_no_defaults_when_driver_returns_empty():
+    """Step factories leave defaults when driver returns no capabilities."""
+    mock_laser = MagicMock()
+    mock_laser.uid = "test-laser"
+    mock_laser.spot_size_mm = (0.1, 0.1)
+
+    mock_machine = MagicMock()
+    mock_machine.heads = [mock_laser]
+    mock_machine.get_default_head.return_value = mock_laser
+    mock_machine.get_laser_capabilities.return_value = ()
+
+    step = Step(typelabel="Test")
+    step.frequency = 0
+    step.pulse_width = 0
+    for cap in mock_machine.get_laser_capabilities(mock_laser):
+        for var in cap.varset:
+            setattr(step, var.key, var.default)
+
+    assert step.frequency == 0
+    assert step.pulse_width == 0

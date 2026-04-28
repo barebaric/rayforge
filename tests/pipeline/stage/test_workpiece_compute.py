@@ -198,6 +198,75 @@ def test_create_initial_ops():
     assert not ops.is_empty()
 
 
+def test_create_initial_ops_with_frequency_and_pulse_width():
+    """Test _create_initial_ops injects frequency/pulse_width commands."""
+    from rayforge.core.ops.commands import (
+        SetFrequencyCommand,
+        SetPulseWidthCommand,
+    )
+
+    settings = {
+        "power": 0.8,
+        "cut_speed": 15,
+        "travel_speed": 30,
+        "air_assist": True,
+        "frequency": 1000,
+        "pulse_width": 50,
+    }
+
+    ops = _create_initial_ops(settings)
+
+    freq_cmds = [
+        c for c in ops._commands if isinstance(c, SetFrequencyCommand)
+    ]
+    pw_cmds = [
+        c for c in ops._commands if isinstance(c, SetPulseWidthCommand)
+    ]
+    assert len(freq_cmds) == 1
+    assert freq_cmds[0].frequency == 1000
+    assert len(pw_cmds) == 1
+    assert pw_cmds[0].pulse_width == 50
+
+
+def test_create_initial_ops_zero_frequency_no_command():
+    """Test _create_initial_ops skips frequency when value is 0."""
+    from rayforge.core.ops.commands import SetFrequencyCommand
+
+    settings = {
+        "power": 0.8,
+        "cut_speed": 15,
+        "travel_speed": 30,
+        "air_assist": True,
+        "frequency": 0,
+    }
+
+    ops = _create_initial_ops(settings)
+
+    freq_cmds = [
+        c for c in ops._commands if isinstance(c, SetFrequencyCommand)
+    ]
+    assert len(freq_cmds) == 0
+
+
+def test_create_initial_ops_missing_frequency_no_error():
+    """Test _create_initial_ops handles missing frequency key."""
+    from rayforge.core.ops.commands import SetFrequencyCommand
+
+    settings = {
+        "power": 0.8,
+        "cut_speed": 15,
+        "travel_speed": 30,
+        "air_assist": True,
+    }
+
+    ops = _create_initial_ops(settings)
+
+    freq_cmds = [
+        c for c in ops._commands if isinstance(c, SetFrequencyCommand)
+    ]
+    assert len(freq_cmds) == 0
+
+
 def test_validate_workpiece_size_valid():
     """Test _validate_workpiece_size returns True for valid size."""
     assert _validate_workpiece_size((10.0, 20.0)) is True
