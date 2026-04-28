@@ -40,6 +40,7 @@ from .zone import Zone
 
 
 if TYPE_CHECKING:
+    from ...core.capability import Capability
     from ...core.doc import Doc
     from ...core.varset import VarSet
     from ..driver.driver import Driver
@@ -197,6 +198,15 @@ class Machine:
     def driver(self) -> "Driver":
         """Property to access the driver through the controller."""
         return self.controller.driver
+
+    def get_laser_capabilities(
+        self, laser: Laser
+    ) -> Tuple["Capability", ...]:
+        """
+        Returns the capabilities contributed by the driver for the given
+        laser head. Delegates to the driver's get_laser_capabilities().
+        """
+        return self.driver.get_laser_capabilities(laser)
 
     def _connect_controller_signals(self, controller: "MachineController"):
         """

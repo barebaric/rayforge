@@ -6,6 +6,7 @@ from rayforge.core.capability import (
     KerfCapability,
     MaterialTestCapability,
     LaserHeadVar,
+    PWMCapability,
     ScoreCapability,
     _CombinedCapability,
     CUT,
@@ -132,3 +133,54 @@ def test_capability_or_right_overrides():
     combined = CUT | ENGRAVE
     power_var = combined.varset["power"]
     assert power_var.default == 0.2  # ENGRAVE default, not CUT's 0.8
+
+
+class TestPWMCapability:
+    def test_construction(self):
+        cap = PWMCapability(
+            frequency=1000,
+            max_frequency=5000,
+            pulse_width=50,
+            min_pulse_width=1,
+            max_pulse_width=100,
+        )
+        assert cap.name == "PWM"
+        assert cap.label == "PWM"
+        assert isinstance(cap, Capability)
+
+    def test_varset_keys(self):
+        cap = PWMCapability(1000, 5000, 50, 1, 100)
+        varset = cap.varset
+        assert isinstance(varset, VarSet)
+        keys = [v.key for v in varset]
+        assert "frequency" in keys
+        assert "pulse_width" in keys
+
+    def test_varset_defaults(self):
+        cap = PWMCapability(1000, 5000, 50, 1, 100)
+        varset = cap.varset
+        freq_var = varset["frequency"]
+        assert isinstance(freq_var, IntVar)
+        assert freq_var.default == 1000
+        pw_var = varset["pulse_width"]
+        assert isinstance(pw_var, IntVar)
+        assert pw_var.default == 50
+
+    def test_varset_bounds(self):
+        cap = PWMCapability(1000, 5000, 50, 1, 100)
+        varset = cap.varset
+        freq_var = varset["frequency"]
+        assert isinstance(freq_var, IntVar)
+        assert freq_var.min_val == 1
+        assert freq_var.max_val == 5000
+        pw_var = varset["pulse_width"]
+        assert isinstance(pw_var, IntVar)
+        assert pw_var.min_val == 1
+        assert pw_var.max_val == 100
+
+    def test_not_singleton(self):
+        cap1 = PWMCapability(100, 1000, 10, 1, 50)
+        cap2 = PWMCapability(2000, 5000, 50, 1, 100)
+        assert cap1 is not cap2
+        assert cap1.varset["frequency"].default == 100
+        assert cap2.varset["frequency"].default == 2000
