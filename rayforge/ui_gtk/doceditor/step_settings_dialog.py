@@ -2,27 +2,34 @@ from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from gettext import gettext as _
 
 from blinker import Signal
-from gi.repository import Adw, GLib, Gtk
+from gi.repository import Adw, Gtk
 
 from ...context import get_context
-from ...core.capability import CUT
 from ...core.step import Step
 from ...core.undo import ChangePropertyCommand, HistoryManager
+from ...core.varset import Var, VarSet
+from ...core.capability import LaserHeadVar
 from ...pipeline.producer import OpsProducer
 from ...pipeline.producer.placeholder import PlaceholderProducer
 from ...pipeline.transformer import OpsTransformer
 from ...pipeline.transformer.placeholder import PlaceholderTransformer
 from ..icons import get_icon
-from ..shared.adwfix import get_spinrow_float
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.preferences_page import TrackedPreferencesPage
-from ..shared.slider import create_slider_row
-from ..shared.unit_spin_row import UnitSpinRowHelper
+from ..varset.varsetwidget import VarSetWidget
 from .recipe_control_widget import RecipeControlWidget
 from .step_settings.placeholder import PlaceholderSettingsWidget
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
+
+
+def _merged_varset(caps: Tuple) -> VarSet:
+    merged: Dict[str, Var] = {}
+    for cap in caps:
+        for var in cap.varset:
+            merged[var.key] = var
+    return VarSet(vars=list(merged.values()))
 
 
 class GeneralStepSettingsView(TrackedPreferencesPage):
@@ -43,22 +50,6 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         self.key = producer_type.lower().replace("producer", "")
         self.path_prefix = "/step-settings/"
         self.history_manager: HistoryManager = self.doc.history_manager
-
-        # Used to delay updates from continuous-change widgets like sliders
-        # to avoid excessive updates.
-        self._debounce_timer = 0
-        self._debounced_callback = None
-        self._debounced_args: Tuple = ()
-
-        # Safely get machine properties with sensible fallbacks
-        machine = get_context().machine
-        if machine:
-            max_cut_speed = machine.max_cut_speed
-            max_travel_speed = machine.max_travel_speed
-        else:
-            # Provide sensible defaults if no machine is configured
-            max_cut_speed = 3000  # mm/min
-            max_travel_speed = 3000  # mm/min
 
         # 1. Producer Settings
         producer_dict = self.step.opsproducer_dict
@@ -86,199 +77,58 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
                 )
             )
 
-        general_group = Adw.PreferencesGroup(
+        # Build settings UI from capability VarSet.
+        # VarSetWidget IS the general group — no visual split.
+        varset = _merged_varset(step.capabilities)
+        self.varset_widget = VarSetWidget(
             title=_("General Settings"),
             description=_(
                 "Power, speed, and laser head selection for this operation."
             ),
+            debounce_ms=300,
         )
-        self.add(general_group)
 
-        # Recipe Control Widget
         self.recipe_control = RecipeControlWidget(self.editor, self.step)
         self.recipe_control.recipe_applied.connect(self._sync_widgets_to_model)
-        general_group.add(self.recipe_control)
+        self.varset_widget.add(self.recipe_control)
         self.recipe_control.set_visible(
             producer.show_recipe_settings if producer else False
         )
 
-        # Laser Head Selector
-        if machine and machine.heads:
-            laser_names = [head.name for head in machine.heads]
-            string_list = Gtk.StringList.new(laser_names)
-            self.laser_row = Adw.ComboRow(
-                title=_("Laser Head"), model=string_list
-            )
-            self.laser_row.connect("notify::selected", self.on_laser_selected)
-            general_group.add(self.laser_row)
+        self.varset_widget.populate(varset)
+        self.varset_widget.data_changed.connect(self._on_data_changed)
+        self.add(self.varset_widget)
 
-        # Power Slider
-        self.power_adjustment = Gtk.Adjustment(
-            upper=100, step_increment=0.1, page_increment=10
-        )
-        power_row, power_scale = create_slider_row(
-            title=_("Power"),
-            adjustment=self.power_adjustment,
-            digits=1,
-            format_suffix="%",
-            on_value_changed=lambda s: self._debounce(
-                self.on_power_changed, s
-            ),
-        )
-        general_group.add(power_row)
-        # Set power row visibility based on producer capability
-        power_row.set_visible(producer.supports_power if producer else False)
+        # Post-process: connect laser head selector for kerf transaction
+        if "selected_laser_uid" in self.varset_widget.widget_map:
+            row, var = self.varset_widget.widget_map["selected_laser_uid"]
+            if isinstance(row, Adw.ComboRow):
+                row.connect("notify::selected", self._on_laser_selected)
 
-        # Tab Power Slider
-        self.tab_power_adjustment = Gtk.Adjustment(
-            upper=100, step_increment=0.1, page_increment=10
-        )
-        tab_power_row, tab_power_scale = create_slider_row(
-            title=_("Tab Power"),
-            subtitle=_("Laser power at tab positions (% of cut power)"),
-            adjustment=self.tab_power_adjustment,
-            digits=1,
-            format_suffix="%",
-            on_value_changed=lambda s: self._debounce(
-                self.on_tab_power_changed, s
-            ),
-        )
-        general_group.add(tab_power_row)
-        # Set tab power row visibility: only for steps with CutCapability
-        tab_power_row.set_visible(
-            CUT in self.step.capabilities
-            and (producer.supports_power if producer else False)
-        )
-        self.tab_power_row = tab_power_row
-
-        # Add a spin row for cut speed
-        cut_speed_adjustment = Gtk.Adjustment(
-            lower=0,
-            upper=max_cut_speed,
-            step_increment=10,
-            page_increment=100,
-        )
-        cut_speed_row = Adw.SpinRow(
-            title=_("Cut Speed"),
-            subtitle=_("Max: {max_speed}"),
-            adjustment=cut_speed_adjustment,
-        )
-        self.cut_speed_helper = UnitSpinRowHelper(
-            spin_row=cut_speed_row,
-            quantity="speed",
-            max_value_in_base=max_cut_speed,
-        )
-        self.cut_speed_helper.changed.connect(
-            self._on_cut_speed_changed_wrapper
-        )
-        general_group.add(cut_speed_row)
-
-        # Set cut speed row visibility based on producer capability
-        cut_speed_row.set_visible(
-            producer.supports_cut_speed if producer else False
-        )
-
-        # Add a spin row for travel speed
-        travel_speed_adjustment = Gtk.Adjustment(
-            lower=0,
-            upper=max_travel_speed,
-            step_increment=10,
-            page_increment=100,
-        )
-        travel_speed_row = Adw.SpinRow(
-            title=_("Travel Speed"),
-            subtitle=_("Max: {max_speed}"),
-            adjustment=travel_speed_adjustment,
-        )
-        self.travel_speed_helper = UnitSpinRowHelper(
-            spin_row=travel_speed_row,
-            quantity="speed",
-            max_value_in_base=max_travel_speed,
-        )
-        self.travel_speed_helper.changed.connect(
-            self._on_travel_speed_changed_wrapper
-        )
-        general_group.add(travel_speed_row)
-
-        # Add a switch for air assist
-        self.air_assist_row = Adw.SwitchRow()
-        self.air_assist_row.set_title(_("Air Assist"))
-        self.air_assist_row.connect(
-            "notify::active", self.on_air_assist_changed
-        )
-        general_group.add(self.air_assist_row)
-
-        # Kerf Setting (conditionally visible)
-        kerf_adj = Gtk.Adjustment(
-            lower=0.0,
-            upper=2.0,
-            step_increment=0.01,
-            page_increment=0.1,
-        )
-        self.kerf_row = Adw.SpinRow(
-            title=_("Beam Width (Kerf)"),
-            subtitle=_("Effective laser cut width in machine units"),
-            adjustment=kerf_adj,
-            digits=3,
-        )
-        self.kerf_row.connect(
-            "changed", lambda r: self._debounce(self._on_kerf_changed, r)
-        )
-        general_group.add(self.kerf_row)
-
-        # Set kerf row visibility based on producer capability
-        self.kerf_row.set_visible(
-            producer.supports_kerf if producer else False
-        )
+        self._sync_widgets_to_model()
 
     def _cleanup(self):
-        """Clean up resources like the debounce timer."""
-        if self._debounce_timer > 0:
-            GLib.source_remove(self._debounce_timer)
-            self._debounce_timer = 0
+        pass
 
     def _sync_widgets_to_model(self, sender=None, **kwargs):
-        """
-        Updates all widgets to reflect the current state of the Step model.
-        """
-        machine = get_context().machine
+        """Updates all widgets to reflect the current state of the Step."""
+        values = {}
+        for key in self.varset_widget.widget_map:
+            if key == "selected_laser_uid":
+                continue
+            values[key] = getattr(self.step, key, None)
+        self.varset_widget.set_values(values)
 
-        # Sync Laser Head
-        if machine and machine.heads:
-            initial_index = 0
-            if self.step.selected_laser_uid:
-                try:
-                    initial_index = next(
-                        i
-                        for i, head in enumerate(machine.heads)
-                        if head.uid == self.step.selected_laser_uid
-                    )
-                except StopIteration:
-                    pass  # Fallback to index 0
-            self.laser_row.set_selected(initial_index)
+        # Sync laser head selector using UID-to-name mapping
+        if "selected_laser_uid" in self.varset_widget.widget_map:
+            __, var = self.varset_widget.widget_map["selected_laser_uid"]
+            if isinstance(var, LaserHeadVar):
+                self.varset_widget.set_values(
+                    {"selected_laser_uid": self.step.selected_laser_uid}
+                )
 
-        # Sync Power
-        power_percent = self.step.power * 100.0
-        self.power_adjustment.set_value(power_percent)
-
-        # Sync Speeds
-        self.cut_speed_helper.set_value_in_base_units(self.step.cut_speed)
-        self.travel_speed_helper.set_value_in_base_units(
-            self.step.travel_speed
-        )
-
-        # Sync Air Assist
-        self.air_assist_row.set_active(self.step.air_assist)
-
-        # Sync Kerf
-        self.kerf_row.get_adjustment().set_value(self.step.kerf_mm)
-
-        # Sync Tab Power
-        tab_power_percent = self.step.tab_power * 100.0
-        self.tab_power_adjustment.set_value(tab_power_percent)
-
-    def on_laser_selected(self, combo_row, pspec):
-        """Handles changes in the laser head selection."""
+    def _on_laser_selected(self, combo_row, pspec):
+        """Handles laser head changes with kerf transaction."""
         machine = get_context().machine
         if not machine or not machine.heads:
             return
@@ -290,10 +140,7 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         if self.step.selected_laser_uid == new_uid:
             return
 
-        # Use a transaction to group laser and kerf changes into one
-        # undoable action.
         with self.history_manager.transaction(_("Change Laser")) as t:
-            # Command for the laser UID
             t.execute(
                 ChangePropertyCommand(
                     target=self.step,
@@ -302,8 +149,6 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
                     setter_method_name="set_selected_laser_uid",
                 )
             )
-
-            # Command for the kerf, using the new laser's spot size
             new_kerf = selected_laser.spot_size_mm[0]
             t.execute(
                 ChangePropertyCommand(
@@ -313,120 +158,39 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
                     setter_method_name="set_kerf_mm",
                 )
             )
-            # Update the UI to reflect the new model state
-            self.kerf_row.set_value(new_kerf)
+            if "kerf_mm" in self.varset_widget.widget_map:
+                kerf_row, __ = self.varset_widget.widget_map["kerf_mm"]
+                if isinstance(kerf_row, Adw.SpinRow):
+                    kerf_row.set_value(new_kerf)
 
         self.changed.send(self)
 
-    def _debounce(self, callback, *args):
-        """
-        Schedules a callback to be executed after a short delay, canceling any
-        previously scheduled callback. This prevents excessive updates from
-        widgets like sliders.
-        """
-        if self._debounce_timer > 0:
-            GLib.source_remove(self._debounce_timer)
-
-        self._debounced_callback = callback
-        self._debounced_args = args
-        # Debounce requests by 150ms
-        self._debounce_timer = GLib.timeout_add(
-            150, self._commit_debounced_change
-        )
-
-    def _commit_debounced_change(self):
-        """Executes the debounced callback."""
-        if self._debounced_callback:
-            self._debounced_callback(*self._debounced_args)
-
-        self._debounce_timer = 0
-        self._debounced_callback = None
-        self._debounced_args = ()
-        return GLib.SOURCE_REMOVE
-
-    def _on_kerf_changed(self, spin_row):
-        new_value = get_spinrow_float(spin_row)
-        if abs(new_value - self.step.kerf_mm) > 1e-6:
-            command = ChangePropertyCommand(
-                target=self.step,
-                property_name="kerf_mm",
-                new_value=new_value,
-                setter_method_name="set_kerf_mm",
-                name=_("Change Kerf"),
-            )
-            self.history_manager.execute(command)
-            self.changed.send(self)
-
-    def on_power_changed(self, scale):
-        new_value = scale.get_value() / 100.0
-        command = ChangePropertyCommand(
-            target=self.step,
-            property_name="power",
-            new_value=new_value,
-            setter_method_name="set_power",
-            name=_("Change laser power"),
-        )
-        self.history_manager.execute(command)
-        self.changed.send(self)
-
-    def on_tab_power_changed(self, scale):
-        new_value = scale.get_value() / 100.0
-        command = ChangePropertyCommand(
-            target=self.step,
-            property_name="tab_power",
-            new_value=new_value,
-            setter_method_name="set_tab_power",
-            name=_("Change tab power"),
-        )
-        self.history_manager.execute(command)
-        self.changed.send(self)
-
-    def _on_cut_speed_changed_wrapper(self, helper: UnitSpinRowHelper):
-        """Wrapper method that debounces the cut speed change."""
-        self._debounce(self.on_cut_speed_changed, helper)
-
-    def _on_travel_speed_changed_wrapper(self, helper: UnitSpinRowHelper):
-        """Wrapper method that debounces the travel speed change."""
-        self._debounce(self.on_travel_speed_changed, helper)
-
-    def on_cut_speed_changed(self, helper: UnitSpinRowHelper):
-        new_value = helper.get_value_in_base_units()
-        if new_value == self.step.cut_speed:
+    def _on_data_changed(self, sender, **kwargs):
+        key = kwargs.get("key")
+        if not key or key == "selected_laser_uid":
             return
-        command = ChangePropertyCommand(
-            target=self.step,
-            property_name="cut_speed",
-            new_value=new_value,
-            setter_method_name="set_cut_speed",
-            name=_("Change cut speed"),
-        )
-        self.history_manager.execute(command)
-        self.changed.send(self)
+        self._commit_change(key)
 
-    def on_travel_speed_changed(self, helper: UnitSpinRowHelper):
-        new_value = helper.get_value_in_base_units()
-        if new_value == self.step.travel_speed:
+    def _commit_change(self, key: str):
+        values = self.varset_widget.get_values()
+        new_value = values.get(key)
+        if new_value is None:
             return
-        command = ChangePropertyCommand(
-            target=self.step,
-            property_name="travel_speed",
-            new_value=new_value,
-            setter_method_name="set_travel_speed",
-            name=_("Change Travel Speed"),
-        )
-        self.history_manager.execute(command)
-        self.changed.send(self)
 
-    def on_air_assist_changed(self, row, pspec):
-        new_value = row.get_active()
-        if new_value == self.step.air_assist:
+        current_value = getattr(self.step, key, None)
+        if current_value is not None and new_value == current_value:
             return
+
+        setter = getattr(self.step, f"set_{key}", None)
+        if not setter:
+            return
+
         command = ChangePropertyCommand(
             target=self.step,
-            property_name="air_assist",
+            property_name=key,
             new_value=new_value,
-            setter_method_name="set_air_assist",
-            name=_("Toggle air assist"),
+            setter_method_name=f"set_{key}",
+            name=_("Change {key}").format(key=key.replace("_", " ")),
         )
         self.history_manager.execute(command)
         self.changed.send(self)
@@ -646,7 +410,7 @@ class StepSettingsDialog(PatchedDialogWindow):
         return dialog
 
     @classmethod
-    def _on_dialog_closed(cls, dialog: "StepSettingsDialog", *_) -> bool:
+    def _on_dialog_closed(cls, dialog: "StepSettingsDialog", *args) -> bool:
         cls._open_dialogs.pop(id(dialog.step), None)
         return False
 

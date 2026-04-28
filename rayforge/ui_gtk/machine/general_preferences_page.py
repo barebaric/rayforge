@@ -319,11 +319,11 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
 
         if self.machine.dialect and self.machine.dialect.can_g0_with_speed:
             self.travel_speed_row.set_sensitive(True)
-            self.travel_speed_row.set_subtitle(
+            self.travel_speed_helper.set_subtitle_format(
                 _("Maximum rapid movement speed")
             )
         else:
             self.travel_speed_row.set_sensitive(False)
-            self.travel_speed_row.set_subtitle(
+            self.travel_speed_helper.set_subtitle_format(
                 _("Not supported by the driver")
             )

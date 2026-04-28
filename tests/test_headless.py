@@ -77,9 +77,7 @@ class TestHeadlessDocEditor:
         assert saved
         assert project_path.exists()
 
-        data = json.loads(
-            zipfile.ZipFile(project_path).read("project.json")
-        )
+        data = json.loads(zipfile.ZipFile(project_path).read("project.json"))
         assert "uid" in data
 
         loaded = editor.file.load_project_from_path(project_path)
@@ -93,9 +91,7 @@ class TestHeadlessDocEditor:
         project_path = tmp_path / "with_workpiece.ryp"
         editor.file.save_project_to_path(project_path)
 
-        data = json.loads(
-            zipfile.ZipFile(project_path).read("project.json")
-        )
+        data = json.loads(zipfile.ZipFile(project_path).read("project.json"))
         assert "uid" in data
         assert len(data["children"]) > 0
 
@@ -108,9 +104,7 @@ class TestHeadlessDocEditor:
         editor.file.save_project_to_path(path)
 
         new_doc = Doc.from_dict(
-            json.loads(
-                zipfile.ZipFile(path).read("project.json")
-            )
+            json.loads(zipfile.ZipFile(path).read("project.json"))
         )
         wps = new_doc.all_workpieces
         assert len(wps) == 1

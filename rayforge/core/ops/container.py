@@ -167,9 +167,7 @@ class Ops:
         elif cmd_type == "SetFrequencyCommand":
             return SetFrequencyCommand(frequency=cmd_data["frequency"])
         elif cmd_type == "SetPulseWidthCommand":
-            return SetPulseWidthCommand(
-                pulse_width=cmd_data["pulse_width"]
-            )
+            return SetPulseWidthCommand(pulse_width=cmd_data["pulse_width"])
         elif cmd_type == "JobStartCommand":
             return JobStartCommand()
         elif cmd_type == "JobEndCommand":

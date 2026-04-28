@@ -96,6 +96,7 @@ class VarSet:
         from .intvar import IntVar
         from .portvar import PortVar
         from .serialportvar import SerialPortVar
+        from .speedvar import SpeedVar
         from .textareavar import TextAreaVar
 
         _CLASS_MAP: Dict[str, Type[Var]] = {
@@ -108,6 +109,7 @@ class VarSet:
             "PortVar": PortVar,
             "SerialPortVar": SerialPortVar,
             "SliderFloatVar": SliderFloatVar,
+            "SpeedVar": SpeedVar,
             "TextAreaVar": TextAreaVar,
             "Var": Var,
         }

@@ -6,6 +6,7 @@ from .hostnamevar import HostnameVar
 from .intvar import IntVar
 from .portvar import PortVar
 from .serialportvar import SerialPortVar
+from .speedvar import SpeedVar
 from .textareavar import TextAreaVar
 from .urlvar import UrlVar, WebsocketUrlVar
 from .var import Var, ValidationError
@@ -21,6 +22,7 @@ __all__ = [
     "PortVar",
     "SerialPortVar",
     "SliderFloatVar",
+    "SpeedVar",
     "TextAreaVar",
     "UrlVar",
     "ValidationError",

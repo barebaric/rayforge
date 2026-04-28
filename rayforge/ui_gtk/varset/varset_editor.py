@@ -28,7 +28,7 @@ from ...core.varset import (
 )
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
-from .var_row_factory import VarRowFactory, NULL_CHOICE_LABEL
+from .adapter import NULL_CHOICE_LABEL, create_row_for_var
 
 if TYPE_CHECKING:
     from ...core.undo import HistoryManager
@@ -75,13 +75,11 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
     def __init__(
         self,
         var: Var,
-        factory: VarRowFactory,
         undo_manager: Optional["HistoryManager"] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.var = var
-        self._factory = factory
         self.undo_manager = undo_manager
         self._in_update = False
         self._updating_key_from_label = False
@@ -185,7 +183,7 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
         self.desc_row.connect("changed", self._on_description_changed)
         self.add_row(self.desc_row)
 
-        self.default_row = self._factory.create_row_for_var(
+        self.default_row, __ = create_row_for_var(
             self.var, target_property="default"
         )
         self.default_row.set_title(_("Default Value"))
@@ -204,7 +202,7 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
             )
 
             # --- Minimum / Start Value Row ---
-            self.min_val_row = self._factory.create_row_for_var(
+            self.min_val_row, __ = create_row_for_var(
                 bound_var_instance, "min_val"
             )
             if isinstance(self.min_val_row, Adw.SpinRow):
@@ -236,7 +234,7 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
                 self.add_row(self.min_val_row)
 
             # --- Maximum / End Value Row ---
-            self.max_val_row = self._factory.create_row_for_var(
+            self.max_val_row, __ = create_row_for_var(
                 bound_var_instance, "max_val"
             )
             if isinstance(self.max_val_row, Adw.SpinRow):
@@ -675,7 +673,6 @@ class VarSetEditorWidget(PreferencesGroupWithButton):
         # Pass a dummy label; we override the button creation entirely.
         super().__init__(button_label="", **kwargs)
         self._var_set = VarSet()
-        self._factory = VarRowFactory()
         self._add_counter = 0
 
     @property
@@ -731,7 +728,7 @@ class VarSetEditorWidget(PreferencesGroupWithButton):
 
     def create_row_widget(self, item: Var) -> Gtk.Widget:
         row_widget = VarDefinitionRowWidget(
-            item, self._factory, undo_manager=self._undo_manager
+            item, undo_manager=self._undo_manager
         )
         row_widget.delete_clicked.connect(self._on_delete_var_clicked)
         row_widget.reorder_requested.connect(self._on_reorder_requested)

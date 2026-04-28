@@ -337,8 +337,7 @@ class SetFrequencyCommand(Command):
         super().__init__()
         if frequency <= 0:
             raise ValueError(
-                f"Frequency must be a positive integer, but got "
-                f"{frequency}"
+                f"Frequency must be a positive integer, but got {frequency}"
             )
         self.frequency: int = frequency
 

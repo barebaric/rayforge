@@ -4,7 +4,6 @@ from gi.repository import Adw, Gtk
 from blinker import Signal
 from ...context import get_context
 from ...shared.units.definitions import Unit, get_unit, get_units_for_quantity
-from ...shared.units.formatter import format_value
 from .adwfix import get_spinrow_float
 
 logger = logging.getLogger(__name__)
@@ -54,6 +53,15 @@ class UnitSpinRowHelper:
             "destroy", self._on_destroy
         )
 
+        self.update_format_and_bounds()
+
+    def set_subtitle_format(self, subtitle_format: str) -> None:
+        """
+        Update the subtitle format string and re-render.
+
+        The format string may contain ``{max_speed}`` as a placeholder.
+        """
+        self._original_subtitle_format = subtitle_format
         self.update_format_and_bounds()
 
     def _on_destroy(self, _widget):
@@ -109,9 +117,8 @@ class UnitSpinRowHelper:
             return
 
         if self._max_value_in_base is not None:
-            formatted_max = format_value(
-                self._max_value_in_base, self.quantity
-            )
+            display_max = self._unit.from_base(self._max_value_in_base)
+            formatted_max = f"{display_max:.{self._unit.precision}f}"
             self.spin_row.set_subtitle(
                 self._original_subtitle_format.format(max_speed=formatted_max)
                 + f" ({self._unit.label})"
