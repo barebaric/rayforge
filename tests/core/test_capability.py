@@ -3,11 +3,16 @@ from rayforge.core.capability import (
     Capability,
     CutCapability,
     EngraveCapability,
+    KerfCapability,
+    MaterialTestCapability,
     LaserHeadVar,
     ScoreCapability,
+    _CombinedCapability,
     CUT,
     ENGRAVE,
     SCORE,
+    WITH_KERF,
+    MATERIAL_TEST,
     ALL_CAPABILITIES,
     CAPABILITIES_BY_NAME,
 )
@@ -36,7 +41,7 @@ def test_cut_capability(mocker):
 
     air_var = varset["air_assist"]
     assert isinstance(air_var, BoolVar)
-    assert air_var.default is True
+    assert air_var.default is False
 
     laser_var = varset["selected_laser_uid"]
     assert isinstance(laser_var, LaserHeadVar)
@@ -77,12 +82,53 @@ def test_score_capability(mocker):
 
 def test_collections():
     """Tests the global collections of capabilities."""
-    assert len(ALL_CAPABILITIES) == 3
+    assert len(ALL_CAPABILITIES) == 5
     assert CUT in ALL_CAPABILITIES
     assert ENGRAVE in ALL_CAPABILITIES
     assert SCORE in ALL_CAPABILITIES
+    assert WITH_KERF in ALL_CAPABILITIES
+    assert MATERIAL_TEST in ALL_CAPABILITIES
 
-    assert len(CAPABILITIES_BY_NAME) == 3
+    assert len(CAPABILITIES_BY_NAME) == 5
     assert CAPABILITIES_BY_NAME["CUT"] is CUT
     assert CAPABILITIES_BY_NAME["ENGRAVE"] is ENGRAVE
     assert CAPABILITIES_BY_NAME["SCORE"] is SCORE
+    assert CAPABILITIES_BY_NAME["WITH_KERF"] is WITH_KERF
+    assert CAPABILITIES_BY_NAME["MATERIAL_TEST"] is MATERIAL_TEST
+
+
+def test_kerf_capability():
+    varset = WITH_KERF.varset
+    assert isinstance(WITH_KERF, KerfCapability)
+    var_keys = [v.key for v in varset]
+    assert "kerf_mm" in var_keys
+    assert "power" not in var_keys
+    assert "cut_speed" not in var_keys
+
+
+def test_material_test_capability():
+    assert isinstance(MATERIAL_TEST, MaterialTestCapability)
+    assert MATERIAL_TEST.name == "MATERIAL_TEST"
+    assert list(MATERIAL_TEST.varset.vars) == []
+
+
+def test_capability_or_operator():
+    combined = CUT | WITH_KERF
+    assert isinstance(combined, _CombinedCapability)
+    var_keys = [v.key for v in combined.varset]
+    assert "power" in var_keys
+    assert "kerf_mm" in var_keys
+    assert "selected_laser_uid" in var_keys
+
+    triple = CUT | SCORE | WITH_KERF
+    triple_keys = [v.key for v in triple.varset]
+    assert "power" in triple_keys
+    assert "kerf_mm" in triple_keys
+    assert "tab_power" in triple_keys
+
+
+def test_capability_or_right_overrides():
+    """Right operand's vars override left for shared keys."""
+    combined = CUT | ENGRAVE
+    power_var = combined.varset["power"]
+    assert power_var.default == 0.2  # ENGRAVE default, not CUT's 0.8

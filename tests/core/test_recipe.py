@@ -158,23 +158,23 @@ class TestRecipe:
     ):
         """Test a perfect match for a specific recipe."""
         stock = stock_item_factory("plywood-6mm", 6.0)
-        assert sample_recipe.matches([stock], {CUT}, mock_machine_a) is True
+        assert sample_recipe.matches([stock], (CUT,), mock_machine_a) is True
 
     def test_matches_generic(
         self, generic_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
     ):
         """Test that a generic recipe matches any context."""
         stock = stock_item_factory("any-material", 10.0)
-        assert generic_recipe.matches([stock], {CUT}, mock_machine_a) is True
-        assert generic_recipe.matches([], {CUT}, mock_machine_a) is True
-        assert generic_recipe.matches([stock], {CUT}, None) is True
+        assert generic_recipe.matches([stock], (CUT,), mock_machine_a) is True
+        assert generic_recipe.matches([], (CUT,), mock_machine_a) is True
+        assert generic_recipe.matches([stock], (CUT,), None) is True
 
     def test_matches_machine_fail(
         self, sample_recipe: Recipe, mock_machine_b: Mock, stock_item_factory
     ):
         """Test match failure due to incorrect machine."""
         stock = stock_item_factory("plywood-6mm", 6.0)
-        assert sample_recipe.matches([stock], {CUT}, mock_machine_b) is False
+        assert sample_recipe.matches([stock], (CUT,), mock_machine_b) is False
 
     def test_matches_laser_head_fail(
         self, sample_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
@@ -182,7 +182,7 @@ class TestRecipe:
         """Test match failure due to laser head not on machine."""
         sample_recipe.settings["selected_laser_uid"] = "non-existent-laser"
         stock = stock_item_factory("plywood-6mm", 6.0)
-        assert sample_recipe.matches([stock], {CUT}, mock_machine_a) is False
+        assert sample_recipe.matches([stock], (CUT,), mock_machine_a) is False
 
     def test_matches_no_machine_provided_fail(
         self, sample_recipe: Recipe, stock_item_factory
@@ -191,7 +191,7 @@ class TestRecipe:
         Test match failure when recipe requires machine but none is given.
         """
         stock = stock_item_factory("plywood-6mm", 6.0)
-        assert sample_recipe.matches([stock], {CUT}, None) is False
+        assert sample_recipe.matches([stock], (CUT,), None) is False
 
     def test_matches_capability_fail(
         self, sample_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
@@ -199,7 +199,7 @@ class TestRecipe:
         """Test match failure due to incorrect capability."""
         stock = stock_item_factory("plywood-6mm", 6.0)
         assert (
-            sample_recipe.matches([stock], {ENGRAVE}, mock_machine_a) is False
+            sample_recipe.matches([stock], (ENGRAVE,), mock_machine_a) is False
         )
 
     def test_matches_material_fail(
@@ -207,21 +207,21 @@ class TestRecipe:
     ):
         """Test match failure due to material mismatch."""
         stock = stock_item_factory("wrong-material", 6.0)
-        assert sample_recipe.matches([stock], {CUT}, mock_machine_a) is False
+        assert sample_recipe.matches([stock], (CUT,), mock_machine_a) is False
 
     def test_matches_thickness_fail_too_thin(
         self, sample_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
     ):
         """Test match failure due to thickness being too low."""
         stock = stock_item_factory("plywood-6mm", 3.0)
-        assert sample_recipe.matches([stock], {CUT}, mock_machine_a) is False
+        assert sample_recipe.matches([stock], (CUT,), mock_machine_a) is False
 
     def test_matches_thickness_fail_too_thick(
         self, sample_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
     ):
         """Test match failure due to thickness being too high."""
         stock = stock_item_factory("plywood-6mm", 10.0)
-        assert sample_recipe.matches([stock], {CUT}, mock_machine_a) is False
+        assert sample_recipe.matches([stock], (CUT,), mock_machine_a) is False
 
     def test_matches_no_stock_fail(
         self, sample_recipe: Recipe, mock_machine_a: Mock
@@ -229,7 +229,7 @@ class TestRecipe:
         """
         Test that a specific recipe fails to match when no stock is provided.
         """
-        assert sample_recipe.matches([], {CUT}, mock_machine_a) is False
+        assert sample_recipe.matches([], (CUT,), mock_machine_a) is False
 
     def test_matches_no_thickness_fail(
         self, sample_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
@@ -239,7 +239,7 @@ class TestRecipe:
         thickness.
         """
         stock = stock_item_factory("plywood-6mm", None)
-        assert sample_recipe.matches([stock], {CUT}, mock_machine_a) is False
+        assert sample_recipe.matches([stock], (CUT,), mock_machine_a) is False
 
     def test_matches_material_only_recipe(self, stock_item_factory):
         """Test a recipe that only specifies material."""
@@ -377,15 +377,15 @@ class TestRecipe:
         stock3 = stock_item_factory("plywood-6mm", 5.0)  # Different thickness
 
         # Should match with list containing matching stock
-        assert sample_recipe.matches([stock1], {CUT}, mock_machine_a) is True
+        assert sample_recipe.matches([stock1], (CUT,), mock_machine_a) is True
         assert (
-            sample_recipe.matches([stock2, stock1], {CUT}, mock_machine_a)
+            sample_recipe.matches([stock2, stock1], (CUT,), mock_machine_a)
             is True
         )
         # Should not match with list containing no matching stock
-        assert sample_recipe.matches([stock2], {CUT}, mock_machine_a) is False
+        assert sample_recipe.matches([stock2], (CUT,), mock_machine_a) is False
         assert (
-            sample_recipe.matches([stock2, stock3], {CUT}, mock_machine_a)
+            sample_recipe.matches([stock2, stock3], (CUT,), mock_machine_a)
             is False
         )
 
@@ -394,7 +394,7 @@ class TestRecipe:
     ):
         """Test that recipe with constraints doesn't match empty stock list."""
         # Recipe with material/thickness constraints shouldn't match empty list
-        assert sample_recipe.matches([], {CUT}, mock_machine_a) is False
+        assert sample_recipe.matches([], (CUT,), mock_machine_a) is False
 
     def test_matches_generic_with_multiple_stocks(
         self, generic_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
@@ -402,6 +402,6 @@ class TestRecipe:
         """Test that generic recipe matches even with empty stock list."""
         stock = stock_item_factory("any-material", 10.0)
         # Generic recipe should match any context
-        assert generic_recipe.matches([], {CUT}, mock_machine_a) is True
-        assert generic_recipe.matches([stock], {CUT}, mock_machine_a) is True
-        assert generic_recipe.matches([stock], {CUT}, mock_machine_a) is True
+        assert generic_recipe.matches([], (CUT,), mock_machine_a) is True
+        assert generic_recipe.matches([stock], (CUT,), mock_machine_a) is True
+        assert generic_recipe.matches([stock], (CUT,), mock_machine_a) is True

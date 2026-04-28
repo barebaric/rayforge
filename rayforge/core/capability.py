@@ -90,6 +90,9 @@ class Capability(ABC):
     - A unique name for serialization.
     - A user-facing label.
     - A VarSet that serves as the template for its settings.
+
+    Capabilities can be combined with the | operator to produce a
+    merged VarSet containing all settings from both operands.
     """
 
     @property
@@ -120,6 +123,11 @@ class Capability(ABC):
 
     def __str__(self) -> str:
         return self.label
+
+    def __or__(self, other: "Capability") -> "Capability":
+        if not isinstance(other, Capability):
+            return NotImplemented
+        return _CombinedCapability(self, other)
 
 
 class CutCapability(Capability):
@@ -163,18 +171,16 @@ class CutCapability(Capability):
                     default=500,
                     min_val=1,
                 ),
+                IntVar(
+                    key="travel_speed",
+                    label=_("Travel Speed"),
+                    default=5000,
+                    min_val=1,
+                ),
                 BoolVar(
                     key="air_assist",
                     label=_("Air Assist"),
-                    default=True,
-                ),
-                FloatVar(
-                    key="kerf_mm",
-                    label=_("Kerf"),
-                    description=_("The effective width of the laser beam"),
-                    default=0.1,
-                    min_val=0.0,
-                    max_val=2.0,
+                    default=False,
                 ),
             ]
         )
@@ -210,18 +216,16 @@ class EngraveCapability(Capability):
                     default=4000,
                     min_val=1,
                 ),
+                IntVar(
+                    key="travel_speed",
+                    label=_("Travel Speed"),
+                    default=5000,
+                    min_val=1,
+                ),
                 BoolVar(
                     key="air_assist",
                     label=_("Air Assist"),
-                    default=True,
-                ),
-                FloatVar(
-                    key="kerf_mm",
-                    label=_("Kerf"),
-                    description=_("The effective width of the laser beam"),
-                    default=0.1,
-                    min_val=0.0,
-                    max_val=2.0,
+                    default=False,
                 ),
             ]
         )
@@ -257,11 +261,34 @@ class ScoreCapability(Capability):
                     default=5000,
                     min_val=1,
                 ),
+                IntVar(
+                    key="travel_speed",
+                    label=_("Travel Speed"),
+                    default=5000,
+                    min_val=1,
+                ),
                 BoolVar(
                     key="air_assist",
                     label=_("Air Assist"),
-                    default=True,
+                    default=False,
                 ),
+            ]
+        )
+
+
+class KerfCapability(Capability):
+    @property
+    def name(self) -> str:
+        return "WITH_KERF"
+
+    @property
+    def label(self) -> str:
+        return _("Kerf")
+
+    @property
+    def varset(self) -> VarSet:
+        return VarSet(
+            vars=[
                 FloatVar(
                     key="kerf_mm",
                     label=_("Kerf"),
@@ -274,16 +301,75 @@ class ScoreCapability(Capability):
         )
 
 
+class MaterialTestCapability(Capability):
+    @property
+    def name(self) -> str:
+        return "MATERIAL_TEST"
+
+    @property
+    def label(self) -> str:
+        return _("Material Test")
+
+    @property
+    def varset(self) -> VarSet:
+        return VarSet(vars=[])
+
+
+class _CombinedCapability(Capability):
+    """
+    A capability produced by combining two others with the | operator.
+    Merges VarSets, with the right operand overriding shared keys.
+    """
+
+    def __init__(self, left: Capability, right: Capability):
+        self._left = left
+        self._right = right
+        self._merged_varset: Optional[VarSet] = None
+
+    @property
+    def name(self) -> str:
+        return f"{self._left.name}|{self._right.name}"
+
+    @property
+    def label(self) -> str:
+        return f"{self._left.label} + {self._right.label}"
+
+    @property
+    def varset(self) -> VarSet:
+        if self._merged_varset is None:
+            from .varset import Var as VarType
+
+            merged: Dict[str, VarType] = {}
+            for cap in self._flatten():
+                for var in cap.varset:
+                    merged[var.key] = var
+            self._merged_varset = VarSet(vars=list(merged.values()))
+        return self._merged_varset
+
+    def _flatten(self) -> List[Capability]:
+        caps: List[Capability] = []
+        for part in (self._left, self._right):
+            if isinstance(part, _CombinedCapability):
+                caps.extend(part._flatten())
+            else:
+                caps.append(part)
+        return caps
+
+
 # Instantiate singletons of each capability
 CUT = CutCapability()
 ENGRAVE = EngraveCapability()
 SCORE = ScoreCapability()
+WITH_KERF = KerfCapability()
+MATERIAL_TEST = MaterialTestCapability()
 
 # A list of all available capability instances, for populating UI dropdowns
 ALL_CAPABILITIES: List[Capability] = [
     CUT,
     ENGRAVE,
     SCORE,
+    WITH_KERF,
+    MATERIAL_TEST,
 ]
 
 # A map for deserializing from a name string back to a capability instance

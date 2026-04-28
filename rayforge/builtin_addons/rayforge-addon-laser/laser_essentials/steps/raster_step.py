@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Protocol, Set, TYPE_CHECKING, cast
+from typing import List, Optional, Protocol, Tuple, TYPE_CHECKING, cast
 from gettext import gettext as _
 
 from rayforge.core.capability import ENGRAVE, Capability
@@ -22,14 +22,13 @@ if TYPE_CHECKING:
 class EngraveStep(Step):
     TYPELABEL = _("Engrave")
     ICON = "step-raster-symbolic"
-    DEFAULT_CAPABILITIES: Set[Capability] = {ENGRAVE}
+    CAPABILITIES: Tuple[Capability, ...] = (ENGRAVE,)
     PRODUCER_CLASS = Rasterizer
 
     def __init__(
         self, name: Optional[str] = None, typelabel: Optional[str] = None
     ):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)
-        self.capabilities = self.DEFAULT_CAPABILITIES.copy()
 
     def get_operation_mode_short(self):
         if not self.opsproducer_dict:
@@ -44,7 +43,7 @@ class EngraveStep(Step):
             return None
 
     @classmethod
-    def get_default_transformers_dicts(cls) -> tuple[list, list]:
+    def get_default_transformers_dicts(cls) -> Tuple[List, List]:
         OverscanTransformer = transformer_registry.get("OverscanTransformer")
         Optimize = transformer_registry.get("Optimize")
         MultiPassTransformer = transformer_registry.get("MultiPassTransformer")

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Optional, Set, TYPE_CHECKING
+from typing import List, Optional, Tuple, TYPE_CHECKING
 from gettext import gettext as _
 
-from rayforge.core.capability import CUT, SCORE, Capability
+from rayforge.core.capability import CUT, SCORE, WITH_KERF, Capability
 from rayforge.core.step import Step
 from rayforge.pipeline.transformer.registry import transformer_registry
 from rayforge.pipeline.producer.base import CutSide
@@ -17,14 +17,13 @@ if TYPE_CHECKING:
 class ContourStep(Step):
     TYPELABEL = _("Contour")
     ICON = "step-contour-symbolic"
-    DEFAULT_CAPABILITIES: Set[Capability] = {CUT, SCORE}
+    CAPABILITIES: Tuple[Capability, ...] = (CUT, SCORE, WITH_KERF)
     PRODUCER_CLASS = ContourProducer
 
     def __init__(
         self, name: Optional[str] = None, typelabel: Optional[str] = None
     ):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)
-        self.capabilities = self.DEFAULT_CAPABILITIES.copy()
 
     def get_operation_mode_short(self):
         if not self.opsproducer_dict:
@@ -39,7 +38,7 @@ class ContourStep(Step):
             return None
 
     @classmethod
-    def get_default_transformers_dicts(cls) -> tuple[list, list]:
+    def get_default_transformers_dicts(cls) -> Tuple[List, List]:
         Smooth = transformer_registry.get("Smooth")
         LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")
         TabOpsTransformer = transformer_registry.get("TabOpsTransformer")

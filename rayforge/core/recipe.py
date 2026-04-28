@@ -1,6 +1,6 @@
 import uuid
 import math
-from typing import Dict, Any, Optional, Set, Tuple, List, TYPE_CHECKING
+from typing import Dict, Any, Optional, Tuple, List, TYPE_CHECKING
 from dataclasses import dataclass, field, asdict
 from .capability import Capability, CAPABILITIES_BY_NAME, CUT
 
@@ -67,7 +67,7 @@ class Recipe:
     def matches(
         self,
         stock_items: List["StockItem"],
-        capabilities: Optional[Set[Capability]] = None,
+        capabilities: Optional[Tuple[Capability, ...]] = None,
         machine: Optional["Machine"] = None,
     ) -> bool:
         """
