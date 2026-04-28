@@ -37,8 +37,6 @@ css = """
 
 
 class Console(Gtk.Box):
-    command_submitted = Signal()
-
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
 
@@ -58,6 +56,7 @@ class Console(Gtk.Box):
 
         self._setup_ui()
         self._setup_tags()
+        self.command_submitted = Signal()
         self._populate_history()
 
     def _setup_ui(self):

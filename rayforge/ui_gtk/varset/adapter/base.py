@@ -1,8 +1,18 @@
 import re
 from abc import ABC, abstractmethod
 from gettext import gettext as _
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
+from blinker import Signal
 from gi.repository import Adw
 
 from ....core.varset import Var
@@ -49,7 +59,16 @@ class RowAdapter(ABC):
 
     Subclasses must implement create(), get_value(), and set_value().
     Use the @register_adapter decorator to associate with Var subclasses.
+
+    Convention: adapters store their row as self._row so that
+    update_from_var can operate on it.
     """
+
+    changed: Signal
+    has_natural_commit = False
+
+    def __init__(self):
+        self.changed = Signal()
 
     @classmethod
     def create(
@@ -64,3 +83,10 @@ class RowAdapter(ABC):
     @abstractmethod
     def set_value(self, value: Any) -> None:
         raise NotImplementedError
+
+    def needs_rebuild(self, old_var: Var, new_var: Var) -> bool:
+        """Return True if the row must be recreated for the new var."""
+        return type(old_var) is not type(new_var)
+
+    def update_from_var(self, var: Var):
+        pass

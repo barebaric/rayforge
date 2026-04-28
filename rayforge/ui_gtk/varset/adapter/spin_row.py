@@ -10,8 +10,12 @@ from .base import RowAdapter, escape_title, register_adapter
 @register_adapter(IntVar, FloatVar)
 class SpinRowAdapter(RowAdapter):
     def __init__(self, row: Adw.SpinRow, is_int: bool) -> None:
+        super().__init__()
         self._row = row
         self._is_int = is_int
+        self._row.connect(
+            "notify::value", lambda r, p: self.changed.send(self)
+        )
 
     @classmethod
     def create(
@@ -48,3 +52,16 @@ class SpinRowAdapter(RowAdapter):
 
     def set_value(self, value: Any) -> None:
         self._row.set_value(float(value))
+
+    def update_from_var(self, var: Var):
+        if var.label:
+            self._row.set_title(escape_title(var.label))
+        if var.description:
+            self._row.set_subtitle(var.description)
+        adj = self._row.get_adjustment()
+        min_val = getattr(var, "min_val", None)
+        max_val = getattr(var, "max_val", None)
+        if min_val is not None:
+            adj.set_lower(float(min_val))
+        if max_val is not None:
+            adj.set_upper(float(max_val))
