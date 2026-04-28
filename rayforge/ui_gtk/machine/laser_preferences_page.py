@@ -4,8 +4,9 @@ from gettext import gettext as _
 from gi.repository import Adw, Gtk, Gdk
 from ...context import get_context
 from ...core.model import Model
-from ...machine.models.laser import Laser
+from ...machine.models.laser import Laser, LaserType
 from ...machine.models.machine import Machine
+from ...shared.util.glib import DebounceMixin
 from ..icons import get_icon
 from ..shared.adwfix import get_spinrow_int, get_spinrow_float
 from ..shared.unit_spin_row import UnitSpinRowHelper
@@ -199,7 +200,7 @@ class LaserListEditor(PreferencesGroupWithButton):
             self.list_box.select_row(row)
 
 
-class LaserPreferencesPage(TrackedPreferencesPage):
+class LaserPreferencesPage(DebounceMixin, TrackedPreferencesPage):
     key = "laser"
     path_prefix = "/machine-settings/"
 
@@ -249,6 +250,25 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             "changed", self.on_tool_number_changed
         )
         self.laserhead_config_group.add(self.tool_number_row)
+
+        self._laser_type_values = [
+            LaserType.DIODE,
+            LaserType.CO2,
+            LaserType.FIBER,
+        ]
+        laser_type_store = Gtk.StringList()
+        laser_type_store.append(_("Diode"))
+        laser_type_store.append(_("CO₂"))
+        laser_type_store.append(_("Fiber"))
+        self.laser_type_row = Adw.ComboRow(
+            title=_("Laser Type"),
+            subtitle=_("Type of laser tube or diode"),
+            model=laser_type_store,
+        )
+        self.handler_ids["laser_type"] = self.laser_type_row.connect(
+            "notify::selected", self._on_laser_type_changed
+        )
+        self.laserhead_config_group.add(self.laser_type_row)
 
         max_power_adjustment = Gtk.Adjustment(
             lower=0, upper=100000, step_increment=1, page_increment=10
@@ -342,6 +362,83 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             "color-set", self.on_raster_color_changed
         )
         self.laserhead_config_group.add(self.raster_color_row)
+
+        # PWM preferences group
+        self.pwm_group = Adw.PreferencesGroup(
+            title=_("PWM"),
+            description=_(
+                "Pulse Width Modulation settings for frequency "
+                "and pulse width control."
+            ),
+        )
+        self.add(self.pwm_group)
+
+        self.pwm_freq_adj = Gtk.Adjustment(
+            lower=1, upper=100000, step_increment=100, page_increment=1000
+        )
+        self.pwm_frequency_row = Adw.SpinRow(
+            title=_("PWM Frequency"),
+            subtitle=_("Default PWM frequency in Hz"),
+            adjustment=self.pwm_freq_adj,
+        )
+        self.handler_ids["pwm_frequency"] = self.pwm_frequency_row.connect(
+            "changed", self._on_pwm_frequency_changed
+        )
+        self.pwm_group.add(self.pwm_frequency_row)
+
+        self.max_pwm_freq_adj = Gtk.Adjustment(
+            lower=1, upper=100000, step_increment=100, page_increment=1000
+        )
+        self.max_pwm_frequency_row = Adw.SpinRow(
+            title=_("Max PWM Frequency"),
+            subtitle=_("Maximum supported PWM frequency in Hz"),
+            adjustment=self.max_pwm_freq_adj,
+        )
+        self.handler_ids["max_pwm_frequency"] = (
+            self.max_pwm_frequency_row.connect(
+                "changed", self._on_max_pwm_frequency_changed
+            )
+        )
+        self.pwm_group.add(self.max_pwm_frequency_row)
+
+        self.pulse_width_adj = Gtk.Adjustment(
+            lower=1, upper=100000, step_increment=1, page_increment=10
+        )
+        self.pulse_width_row = Adw.SpinRow(
+            title=_("Pulse Width"),
+            subtitle=_("Default pulse width in µs"),
+            adjustment=self.pulse_width_adj,
+        )
+        self.handler_ids["pulse_width"] = self.pulse_width_row.connect(
+            "changed", self._on_pulse_width_changed
+        )
+        self.pwm_group.add(self.pulse_width_row)
+
+        self.min_pulse_width_adj = Gtk.Adjustment(
+            lower=1, upper=100000, step_increment=1, page_increment=10
+        )
+        self.min_pulse_width_row = Adw.SpinRow(
+            title=_("Min Pulse Width"),
+            subtitle=_("Minimum pulse width in µs"),
+            adjustment=self.min_pulse_width_adj,
+        )
+        self.handler_ids["min_pulse_width"] = self.min_pulse_width_row.connect(
+            "changed", self._on_min_pulse_width_changed
+        )
+        self.pwm_group.add(self.min_pulse_width_row)
+
+        self.max_pulse_width_adj = Gtk.Adjustment(
+            lower=1, upper=100000, step_increment=1, page_increment=10
+        )
+        self.max_pulse_width_row = Adw.SpinRow(
+            title=_("Max Pulse Width"),
+            subtitle=_("Maximum pulse width in µs"),
+            adjustment=self.max_pulse_width_adj,
+        )
+        self.handler_ids["max_pulse_width"] = self.max_pulse_width_row.connect(
+            "changed", self._on_max_pulse_width_changed
+        )
+        self.pwm_group.add(self.max_pulse_width_row)
 
         # Framing preferences group
         self.frame_group = Adw.PreferencesGroup(
@@ -561,6 +658,20 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             self.frame_corner_pause_row.handler_block(
                 self.handler_ids["frame_corner_pause"]
             )
+            self.laser_type_row.handler_block(self.handler_ids["laser_type"])
+            self.pwm_frequency_row.handler_block(
+                self.handler_ids["pwm_frequency"]
+            )
+            self.max_pwm_frequency_row.handler_block(
+                self.handler_ids["max_pwm_frequency"]
+            )
+            self.pulse_width_row.handler_block(self.handler_ids["pulse_width"])
+            self.min_pulse_width_row.handler_block(
+                self.handler_ids["min_pulse_width"]
+            )
+            self.max_pulse_width_row.handler_block(
+                self.handler_ids["max_pulse_width"]
+            )
 
             selected_head = self._get_selected_laser()
             if not selected_head:
@@ -599,6 +710,23 @@ class LaserPreferencesPage(TrackedPreferencesPage):
                 selected_head.frame_corner_pause
             )
 
+            try:
+                type_idx = self._laser_type_values.index(
+                    selected_head.laser_type
+                )
+            except ValueError:
+                type_idx = 0
+            self.laser_type_row.set_selected(type_idx)
+
+            self.pwm_frequency_row.set_value(selected_head.pwm_frequency)
+            self.max_pwm_frequency_row.set_value(
+                selected_head.max_pwm_frequency
+            )
+            self.pulse_width_row.set_value(selected_head.pulse_width)
+            self.min_pulse_width_row.set_value(selected_head.min_pulse_width)
+            self.max_pulse_width_row.set_value(selected_head.max_pulse_width)
+            self._update_pwm_visibility(selected_head)
+
             # Unblock handlers
             self.name_row.handler_unblock(self.handler_ids["name"])
             self.tool_number_row.handler_unblock(
@@ -634,6 +762,22 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             )
             self.frame_corner_pause_row.handler_unblock(
                 self.handler_ids["frame_corner_pause"]
+            )
+            self.laser_type_row.handler_unblock(self.handler_ids["laser_type"])
+            self.pwm_frequency_row.handler_unblock(
+                self.handler_ids["pwm_frequency"]
+            )
+            self.max_pwm_frequency_row.handler_unblock(
+                self.handler_ids["max_pwm_frequency"]
+            )
+            self.pulse_width_row.handler_unblock(
+                self.handler_ids["pulse_width"]
+            )
+            self.min_pulse_width_row.handler_unblock(
+                self.handler_ids["min_pulse_width"]
+            )
+            self.max_pulse_width_row.handler_unblock(
+                self.handler_ids["max_pulse_width"]
             )
 
     def _get_selected_laser(self):
@@ -807,3 +951,128 @@ class LaserPreferencesPage(TrackedPreferencesPage):
             selected_laser.set_focal_distance(
                 get_spinrow_float(self.focal_distance_row)
             )
+
+    def _update_pwm_visibility(self, laser: Laser):
+        show_pwm = laser.laser_type.supports_pwm
+        self.pwm_group.set_visible(show_pwm)
+
+    def _apply_pwm_fields(self, laser):
+        laser.set_max_pwm_frequency(
+            get_spinrow_int(self.max_pwm_frequency_row)
+        )
+        laser.set_pwm_frequency(get_spinrow_int(self.pwm_frequency_row))
+        laser.set_max_pulse_width(get_spinrow_int(self.max_pulse_width_row))
+        laser.set_min_pulse_width(get_spinrow_int(self.min_pulse_width_row))
+        laser.set_pulse_width(get_spinrow_int(self.pulse_width_row))
+
+    def _on_laser_type_changed(self, row, _param):
+        selected_laser = self._get_selected_laser()
+        if not selected_laser:
+            return
+        selected = row.get_selected()
+        if selected < len(self._laser_type_values):
+            selected_laser.set_laser_type(self._laser_type_values[selected])
+            self._update_pwm_visibility(selected_laser)
+
+    def _on_pwm_frequency_changed(self, spinrow):
+        selected_laser = self._get_selected_laser()
+        if not selected_laser:
+            return
+        value = get_spinrow_int(spinrow)
+        max_val = get_spinrow_int(self.max_pwm_frequency_row)
+        if value > max_val:
+            self.max_pwm_frequency_row.handler_block(
+                self.handler_ids["max_pwm_frequency"]
+            )
+            self.max_pwm_frequency_row.set_value(value)
+            self.max_pwm_frequency_row.handler_unblock(
+                self.handler_ids["max_pwm_frequency"]
+            )
+        self._debounce(self._apply_pwm_fields, selected_laser)
+
+    def _on_max_pwm_frequency_changed(self, spinrow):
+        selected_laser = self._get_selected_laser()
+        if not selected_laser:
+            return
+        max_val = get_spinrow_int(spinrow)
+        freq_val = get_spinrow_int(self.pwm_frequency_row)
+        if freq_val > max_val:
+            self.pwm_frequency_row.handler_block(
+                self.handler_ids["pwm_frequency"]
+            )
+            self.pwm_frequency_row.set_value(max_val)
+            self.pwm_frequency_row.handler_unblock(
+                self.handler_ids["pwm_frequency"]
+            )
+        self._debounce(self._apply_pwm_fields, selected_laser)
+
+    def _on_pulse_width_changed(self, spinrow):
+        selected_laser = self._get_selected_laser()
+        if not selected_laser:
+            return
+        value = get_spinrow_int(spinrow)
+        min_val = get_spinrow_int(self.min_pulse_width_row)
+        max_val = get_spinrow_int(self.max_pulse_width_row)
+        if value < min_val:
+            self.min_pulse_width_row.handler_block(
+                self.handler_ids["min_pulse_width"]
+            )
+            self.min_pulse_width_row.set_value(value)
+            self.min_pulse_width_row.handler_unblock(
+                self.handler_ids["min_pulse_width"]
+            )
+        if value > max_val:
+            self.max_pulse_width_row.handler_block(
+                self.handler_ids["max_pulse_width"]
+            )
+            self.max_pulse_width_row.set_value(value)
+            self.max_pulse_width_row.handler_unblock(
+                self.handler_ids["max_pulse_width"]
+            )
+        self._debounce(self._apply_pwm_fields, selected_laser)
+
+    def _on_min_pulse_width_changed(self, spinrow):
+        selected_laser = self._get_selected_laser()
+        if not selected_laser:
+            return
+        min_val = get_spinrow_int(spinrow)
+        max_val = get_spinrow_int(self.max_pulse_width_row)
+        if min_val > max_val:
+            self.max_pulse_width_row.handler_block(
+                self.handler_ids["max_pulse_width"]
+            )
+            self.max_pulse_width_row.set_value(min_val)
+            self.max_pulse_width_row.handler_unblock(
+                self.handler_ids["max_pulse_width"]
+            )
+        pw_val = get_spinrow_int(self.pulse_width_row)
+        if pw_val < min_val:
+            self.pulse_width_row.handler_block(self.handler_ids["pulse_width"])
+            self.pulse_width_row.set_value(min_val)
+            self.pulse_width_row.handler_unblock(
+                self.handler_ids["pulse_width"]
+            )
+        self._debounce(self._apply_pwm_fields, selected_laser)
+
+    def _on_max_pulse_width_changed(self, spinrow):
+        selected_laser = self._get_selected_laser()
+        if not selected_laser:
+            return
+        max_val = get_spinrow_int(spinrow)
+        min_val = get_spinrow_int(self.min_pulse_width_row)
+        if max_val < min_val:
+            self.min_pulse_width_row.handler_block(
+                self.handler_ids["min_pulse_width"]
+            )
+            self.min_pulse_width_row.set_value(max_val)
+            self.min_pulse_width_row.handler_unblock(
+                self.handler_ids["min_pulse_width"]
+            )
+        pw_val = get_spinrow_int(self.pulse_width_row)
+        if pw_val > max_val:
+            self.pulse_width_row.handler_block(self.handler_ids["pulse_width"])
+            self.pulse_width_row.set_value(max_val)
+            self.pulse_width_row.handler_unblock(
+                self.handler_ids["pulse_width"]
+            )
+        self._debounce(self._apply_pwm_fields, selected_laser)

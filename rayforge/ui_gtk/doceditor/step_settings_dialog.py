@@ -79,7 +79,9 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
 
         # Build settings UI from capability VarSet.
         # VarSetWidget IS the general group — no visual split.
-        varset = _merged_varset(step.capabilities)
+        varset = _merged_varset(
+            step.get_effective_capabilities(get_context().machine)
+        )
         self.varset_widget = VarSetWidget(
             title=_("General Settings"),
             description=_(

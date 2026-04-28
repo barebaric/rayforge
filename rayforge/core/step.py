@@ -1,4 +1,3 @@
-from __future__ import annotations
 import logging
 from abc import ABC
 from typing import List, Optional, TYPE_CHECKING, Dict, Any, cast, Tuple
@@ -67,6 +66,8 @@ class Step(DocItem, ABC):
         self.air_assist: bool = False
         self.kerf_mm: float = 0.0
         self.tab_power: float = 0.0
+        self.frequency: int = 0
+        self.pulse_width: int = 0
 
         # Forward compatibility: store unknown attributes
         self.extra: Dict[str, Any] = {}
@@ -76,6 +77,14 @@ class Step(DocItem, ABC):
     @property
     def capabilities(self) -> Tuple[Capability, ...]:
         return type(self).CAPABILITIES
+
+    def get_effective_capabilities(self, machine) -> Tuple[Capability, ...]:
+        """Class-level capabilities merged with driver-provided ones."""
+        caps = list(type(self).CAPABILITIES)
+        laser = self.get_selected_laser(machine)
+        if laser:
+            caps.extend(machine.get_laser_capabilities(laser))
+        return tuple(caps)
 
     def _apply_capability_defaults(self):
         """
@@ -142,6 +151,8 @@ class Step(DocItem, ABC):
             "air_assist": self.air_assist,
             "kerf_mm": self.kerf_mm,
             "tab_power": self.tab_power,
+            "frequency": self.frequency,
+            "pulse_width": self.pulse_width,
             "children": [child.to_dict() for child in self.children],
         }
         result.update(self.extra)
@@ -187,6 +198,8 @@ class Step(DocItem, ABC):
             "air_assist",
             "kerf_mm",
             "tab_power",
+            "frequency",
+            "pulse_width",
             "children",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -242,6 +255,8 @@ class Step(DocItem, ABC):
         step.air_assist = data.get("air_assist", step.air_assist)
         step.kerf_mm = data.get("kerf_mm", step.kerf_mm)
         step.tab_power = data.get("tab_power", step.tab_power)
+        step.frequency = data.get("frequency", step.frequency)
+        step.pulse_width = data.get("pulse_width", step.pulse_width)
         step.extra = extra
         return step
 
@@ -295,6 +310,8 @@ class Step(DocItem, ABC):
             "pixels_per_mm": self.pixels_per_mm,
             "kerf_mm": self.kerf_mm,
             "tab_power": self.tab_power,
+            "frequency": self.frequency,
+            "pulse_width": self.pulse_width,
             "generated_workpiece_uid": self.generated_workpiece_uid,
         }
 
@@ -392,6 +409,16 @@ class Step(DocItem, ABC):
             raise ValueError("Tab power must be between 0.0 and 1.0")
         if self.tab_power != power:
             self.tab_power = power
+            self.updated.send(self)
+
+    def set_frequency(self, frequency: int):
+        if self.frequency != frequency:
+            self.frequency = int(frequency)
+            self.updated.send(self)
+
+    def set_pulse_width(self, width: int):
+        if self.pulse_width != width:
+            self.pulse_width = int(width)
             self.updated.send(self)
 
     def get_operation_mode_short(self) -> Optional[str]:

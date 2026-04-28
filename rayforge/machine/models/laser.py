@@ -2,9 +2,20 @@ from typing import Dict, Any, Optional, Tuple
 from blinker import Signal
 import uuid
 from gettext import gettext as _
+from enum import Enum
 import numpy as np
 
 from ...core.matrix import euler_rotation_matrix
+
+
+class LaserType(Enum):
+    DIODE = "diode"
+    CO2 = "co2"
+    FIBER = "fiber"
+
+    @property
+    def supports_pwm(self) -> bool:
+        return self in (LaserType.CO2, LaserType.FIBER)
 
 
 class Laser:
@@ -24,11 +35,12 @@ class Laser:
         self.model_path: Optional[str] = None
         self.transform: np.ndarray = np.eye(4, dtype=np.float64)
         self.focal_distance: float = 0.0
-        self.pwm_frequency: int = 0
-        self.max_pwm_frequency: int = 0
-        self.pulse_width: int = 0
-        self.min_pulse_width: int = 0
-        self.max_pulse_width: int = 0
+        self.laser_type: LaserType = LaserType.DIODE
+        self.pwm_frequency: int = 500
+        self.max_pwm_frequency: int = 5000
+        self.pulse_width: int = 50
+        self.min_pulse_width: int = 5
+        self.max_pulse_width: int = 500
         self.changed = Signal()
         self.extra: Dict[str, Any] = {}
 
@@ -134,34 +146,55 @@ class Laser:
         self.focal_distance = distance
         self.changed.send(self)
 
+    def set_laser_type(self, laser_type: LaserType):
+        if self.laser_type == laser_type:
+            return
+        self.laser_type = laser_type
+        self.changed.send(self)
+
     def set_pwm_frequency(self, frequency: int):
+        frequency = max(1, min(frequency, self.max_pwm_frequency))
         if self.pwm_frequency == frequency:
             return
         self.pwm_frequency = frequency
         self.changed.send(self)
 
     def set_max_pwm_frequency(self, max_frequency: int):
+        max_frequency = max(1, max_frequency)
         if self.max_pwm_frequency == max_frequency:
             return
         self.max_pwm_frequency = max_frequency
+        if self.pwm_frequency > max_frequency:
+            self.pwm_frequency = max_frequency
         self.changed.send(self)
 
     def set_pulse_width(self, width: int):
+        width = max(self.min_pulse_width, min(width, self.max_pulse_width))
         if self.pulse_width == width:
             return
         self.pulse_width = width
         self.changed.send(self)
 
     def set_min_pulse_width(self, min_width: int):
+        min_width = max(1, min_width)
         if self.min_pulse_width == min_width:
             return
         self.min_pulse_width = min_width
+        if min_width > self.max_pulse_width:
+            self.max_pulse_width = min_width
+        if self.pulse_width < min_width:
+            self.pulse_width = min_width
         self.changed.send(self)
 
     def set_max_pulse_width(self, max_width: int):
+        max_width = max(1, max_width)
         if self.max_pulse_width == max_width:
             return
         self.max_pulse_width = max_width
+        if max_width < self.min_pulse_width:
+            self.min_pulse_width = max_width
+        if self.pulse_width > max_width:
+            self.pulse_width = max_width
         self.changed.send(self)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -181,6 +214,7 @@ class Laser:
             "model_path": self.model_path,
             "transform": self.transform.flatten().tolist(),
             "focal_distance": self.focal_distance,
+            "laser_type": self.laser_type.value,
             "pwm_frequency": self.pwm_frequency,
             "max_pwm_frequency": self.max_pwm_frequency,
             "pulse_width": self.pulse_width,
@@ -210,6 +244,7 @@ class Laser:
             "model_path",
             "transform",
             "focal_distance",
+            "laser_type",
             "pwm_frequency",
             "max_pwm_frequency",
             "pulse_width",
@@ -257,6 +292,9 @@ class Laser:
                 4, 4
             )
         lh.focal_distance = data.get("focal_distance", 0.0)
+        lh.laser_type = LaserType(
+            data.get("laser_type", LaserType.DIODE.value)
+        )
         lh.pwm_frequency = data.get("pwm_frequency", 0)
         lh.max_pwm_frequency = data.get("max_pwm_frequency", 0)
         lh.pulse_width = data.get("pulse_width", 0)

@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
 from rayforge.core.capability import PWMCapability
-from rayforge.machine.models.laser import Laser
+from rayforge.machine.models.laser import Laser, LaserType
 
 
 def test_laser_initialization():
@@ -120,9 +120,7 @@ def test_laser_roundtrip_serialization():
 
     new_laser = Laser.from_dict(data)
 
-    assert (
-        new_laser.focus_power_percent == original_laser.focus_power_percent
-    )
+    assert new_laser.focus_power_percent == original_laser.focus_power_percent
     assert new_laser.name == original_laser.name
     assert new_laser.uid == original_laser.uid
 
@@ -238,13 +236,13 @@ def test_laser_backward_compat_missing_optional_fields():
 
 
 def test_pwm_defaults():
-    """PWM attributes default to 0 (not PWM-capable)."""
+    """PWM attributes have reasonable defaults."""
     laser = Laser()
-    assert laser.pwm_frequency == 0
-    assert laser.max_pwm_frequency == 0
-    assert laser.pulse_width == 0
-    assert laser.min_pulse_width == 0
-    assert laser.max_pulse_width == 0
+    assert laser.pwm_frequency == 500
+    assert laser.max_pwm_frequency == 5000
+    assert laser.pulse_width == 50
+    assert laser.min_pulse_width == 5
+    assert laser.max_pulse_width == 500
 
 
 def test_set_pwm_frequency():
@@ -260,6 +258,20 @@ def test_set_pwm_frequency():
     assert len(signal_calls) == 1
 
 
+def test_set_pwm_frequency_clamped_by_max():
+    laser = Laser()
+    laser.set_max_pwm_frequency(2000)
+    laser.set_pwm_frequency(5000)
+    assert laser.pwm_frequency == 2000
+
+
+def test_set_max_pwm_frequency_clamps_frequency():
+    laser = Laser()
+    laser.set_pwm_frequency(4000)
+    laser.set_max_pwm_frequency(2000)
+    assert laser.pwm_frequency == 2000
+
+
 def test_set_max_pwm_frequency():
     laser = Laser()
     signal_calls = []
@@ -268,8 +280,8 @@ def test_set_max_pwm_frequency():
         signal_calls.append(sender)
 
     laser.changed.connect(handler)
-    laser.set_max_pwm_frequency(5000)
-    assert laser.max_pwm_frequency == 5000
+    laser.set_max_pwm_frequency(10000)
+    assert laser.max_pwm_frequency == 10000
     assert len(signal_calls) == 1
 
 
@@ -281,9 +293,19 @@ def test_set_pulse_width():
         signal_calls.append(sender)
 
     laser.changed.connect(handler)
-    laser.set_pulse_width(50)
-    assert laser.pulse_width == 50
+    laser.set_pulse_width(100)
+    assert laser.pulse_width == 100
     assert len(signal_calls) == 1
+
+
+def test_set_pulse_width_clamped_to_bounds():
+    laser = Laser()
+    laser.set_min_pulse_width(10)
+    laser.set_max_pulse_width(200)
+    laser.set_pulse_width(5)
+    assert laser.pulse_width == 10
+    laser.set_pulse_width(500)
+    assert laser.pulse_width == 200
 
 
 def test_set_min_pulse_width():
@@ -294,9 +316,18 @@ def test_set_min_pulse_width():
         signal_calls.append(sender)
 
     laser.changed.connect(handler)
-    laser.set_min_pulse_width(1)
-    assert laser.min_pulse_width == 1
+    laser.set_min_pulse_width(10)
+    assert laser.min_pulse_width == 10
     assert len(signal_calls) == 1
+
+
+def test_set_min_pulse_width_pushes_max_and_pulse_width():
+    laser = Laser()
+    laser.set_max_pulse_width(100)
+    laser.set_pulse_width(50)
+    laser.set_min_pulse_width(200)
+    assert laser.max_pulse_width == 200
+    assert laser.pulse_width == 200
 
 
 def test_set_max_pulse_width():
@@ -312,6 +343,15 @@ def test_set_max_pulse_width():
     assert len(signal_calls) == 1
 
 
+def test_set_max_pulse_width_pushes_min_and_pulse_width():
+    laser = Laser()
+    laser.set_min_pulse_width(10)
+    laser.set_pulse_width(50)
+    laser.set_max_pulse_width(5)
+    assert laser.min_pulse_width == 5
+    assert laser.pulse_width == 5
+
+
 def test_setters_no_signal_on_same_value():
     laser = Laser()
     signal_calls = []
@@ -320,11 +360,11 @@ def test_setters_no_signal_on_same_value():
         signal_calls.append(sender)
 
     laser.changed.connect(handler)
-    laser.set_pwm_frequency(0)
-    laser.set_max_pwm_frequency(0)
-    laser.set_pulse_width(0)
-    laser.set_min_pulse_width(0)
-    laser.set_max_pulse_width(0)
+    laser.set_pwm_frequency(500)
+    laser.set_max_pwm_frequency(5000)
+    laser.set_pulse_width(50)
+    laser.set_min_pulse_width(5)
+    laser.set_max_pulse_width(500)
     assert len(signal_calls) == 0
 
 
@@ -392,11 +432,66 @@ def test_machine_returns_driver_capabilities(isolated_machine):
     laser = Laser()
     pwm_cap = PWMCapability(1000, 5000, 50, 1, 100)
     mock_driver = isolated_machine.driver
-    mock_driver.get_laser_capabilities = MagicMock(
-        return_value=(pwm_cap,)
-    )
+    mock_driver.get_laser_capabilities = MagicMock(return_value=(pwm_cap,))
 
     result = isolated_machine.get_laser_capabilities(laser)
 
     assert len(result) == 1
     assert result[0] is pwm_cap
+
+
+def test_laser_type_default():
+    laser = Laser()
+    assert laser.laser_type == LaserType.DIODE
+
+
+def test_laser_type_supports_pwm():
+    assert not LaserType.DIODE.supports_pwm
+    assert LaserType.CO2.supports_pwm
+    assert LaserType.FIBER.supports_pwm
+
+
+def test_set_laser_type():
+    laser = Laser()
+    signal_calls = []
+
+    def handler(sender):
+        signal_calls.append(sender)
+
+    laser.changed.connect(handler)
+    laser.set_laser_type(LaserType.CO2)
+    assert laser.laser_type == LaserType.CO2
+    assert len(signal_calls) == 1
+
+
+def test_set_laser_type_no_signal_on_same():
+    laser = Laser()
+    signal_calls = []
+
+    def handler(sender):
+        signal_calls.append(sender)
+
+    laser.changed.connect(handler)
+    laser.set_laser_type(LaserType.DIODE)
+    assert len(signal_calls) == 0
+
+
+def test_laser_type_serialization_roundtrip():
+    laser = Laser()
+    laser.set_laser_type(LaserType.CO2)
+    data = laser.to_dict()
+    assert data["laser_type"] == "co2"
+
+    restored = Laser.from_dict(data)
+    assert restored.laser_type == LaserType.CO2
+
+
+def test_laser_type_missing_defaults_to_diode():
+    data = {
+        "uid": "test-uid",
+        "name": "Test Laser",
+        "tool_number": 0,
+        "max_power": 1000,
+    }
+    laser = Laser.from_dict(data)
+    assert laser.laser_type == LaserType.DIODE

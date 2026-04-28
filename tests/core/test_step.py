@@ -3,7 +3,12 @@ from unittest.mock import MagicMock
 from rayforge.core.step import Step
 from rayforge.core.matrix import Matrix
 from rayforge.core.doc import Doc
-from rayforge.core.capability import CUT, WITH_KERF, Capability
+from rayforge.core.capability import (
+    CUT,
+    WITH_KERF,
+    Capability,
+    PWMCapability,
+)
 from rayforge.core.varset import VarSet, FloatVar
 
 
@@ -465,3 +470,97 @@ def test_deserialization_with_missing_step_class():
     assert step.typelabel == "UnknownType"
     assert step.opsproducer_dict == {"type": "NonExistentProducer"}
     assert step.extra == {}
+
+
+def test_frequency_and_pulse_width_defaults(step):
+    assert step.frequency == 0
+    assert step.pulse_width == 0
+
+
+def test_set_frequency(step):
+    handler = MagicMock()
+    step.updated.connect(handler)
+    step.set_frequency(1000)
+    assert step.frequency == 1000
+    handler.assert_called_once_with(step)
+
+
+def test_set_pulse_width(step):
+    handler = MagicMock()
+    step.updated.connect(handler)
+    step.set_pulse_width(50)
+    assert step.pulse_width == 50
+    handler.assert_called_once_with(step)
+
+
+def test_setters_no_signal_on_same_value(step):
+    handler = MagicMock()
+    step.updated.connect(handler)
+    step.set_frequency(0)
+    step.set_pulse_width(0)
+    handler.assert_not_called()
+
+
+def test_frequency_pulse_width_serialization_roundtrip(step):
+    step.set_frequency(2000)
+    step.set_pulse_width(100)
+    data = step.to_dict()
+    assert data["frequency"] == 2000
+    assert data["pulse_width"] == 100
+
+    restored = Step.from_dict(data)
+    assert restored.frequency == 2000
+    assert restored.pulse_width == 100
+
+
+def test_frequency_pulse_width_missing_defaults(step):
+    data = {
+        "uid": "step-min",
+        "type": "step",
+        "typelabel": "MinimalType",
+        "visible": True,
+        "matrix": Matrix.identity().to_list(),
+        "opsproducer_dict": None,
+        "per_workpiece_transformers_dicts": [],
+        "per_step_transformers_dicts": [],
+    }
+    restored = Step.from_dict(data)
+    assert restored.frequency == 0
+    assert restored.pulse_width == 0
+
+
+def test_get_settings_includes_frequency_and_pulse_width(step):
+    step.set_frequency(1000)
+    step.set_pulse_width(50)
+    settings = step.get_settings()
+    assert settings["frequency"] == 1000
+    assert settings["pulse_width"] == 50
+
+
+def test_get_effective_capabilities_with_mock_machine():
+    """get_effective_capabilities merges class-level + machine caps."""
+    pwm_cap = PWMCapability(1000, 5000, 50, 1, 100)
+    mock_laser = MagicMock()
+
+    mock_machine = MagicMock()
+    mock_machine.heads = [mock_laser]
+    mock_machine.get_laser_capabilities.return_value = (pwm_cap,)
+
+    class CutStep(Step):
+        CAPABILITIES = (CUT,)
+
+    cs = CutStep(typelabel="Test")
+    caps = cs.get_effective_capabilities(mock_machine)
+
+    assert CUT in caps
+    assert pwm_cap in caps
+    assert len(caps) == 2
+
+
+def test_get_effective_capabilities_no_laser_selected(step):
+    """get_effective_capabilities returns class caps when no laser."""
+    mock_machine = MagicMock()
+    mock_machine.get_laser_capabilities.return_value = ()
+    caps = step.get_effective_capabilities(mock_machine)
+
+    assert caps == type(step).CAPABILITIES
