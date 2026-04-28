@@ -1,6 +1,18 @@
 from gettext import gettext as _
-from typing import Optional, Type, Callable, Generic, TypeVar, Dict, Any
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Optional,
+    Type,
+    TypeVar,
+)
 from blinker import Signal
+
+if TYPE_CHECKING:
+    from .varset import VarSet
 
 
 T = TypeVar("T")
@@ -56,6 +68,7 @@ class Var(Generic[T]):
         self._default = default
         self.validator = validator
         self._value: Optional[T] = None
+        self._varset: Optional["VarSet"] = None
 
         # Signal sent when the Var's value or default value changes.
         self.value_changed = Signal()

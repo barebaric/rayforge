@@ -14,6 +14,7 @@ from .switch import SwitchAdapter
 # imported here so that its class registers itself in _ADAPTER_REGISTRY.
 from .combo import BaudRateAdapter, ComboAdapter, SerialPortAdapter
 from .entry import HostnameAdapter
+from .oauth import OAuthFlowAdapter
 from .slider import SliderAdapter
 from .speed import SpeedRowAdapter
 from .textarea import TextAreaAdapter
@@ -23,6 +24,7 @@ _ALL_ADAPTERS = (
     ComboAdapter,
     SerialPortAdapter,
     HostnameAdapter,
+    OAuthFlowAdapter,
     SliderAdapter,
     SpeedRowAdapter,
     TextAreaAdapter,
