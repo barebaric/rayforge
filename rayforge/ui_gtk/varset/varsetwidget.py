@@ -1,48 +1,53 @@
 import logging
-from typing import Any
+from typing import Any, Dict, Optional, Tuple
 from gettext import gettext as _
-from gi.repository import Gtk, Adw
+from gi.repository import GLib, Gtk, Adw
 from blinker import Signal
 from ...core.varset import (
     ChoiceVar,
     HostnameVar,
-    SliderFloatVar,
-    TextAreaVar,
     Var,
     VarSet,
 )
 from ..icons import get_icon
 from ...machine.transport.validators import is_valid_hostname_or_ip
-from ..shared.adwfix import get_spinrow_int
-from .var_row_factory import VarRowFactory, escape_title
+from .adapter import RowAdapter, create_row_for_var, escape_title
 
 logger = logging.getLogger(__name__)
-NULL_CHOICE_LABEL = _("None Selected")
+
+_DEBOUNCE_DELAY_MS = 300
 
 
 class VarSetWidget(Adw.PreferencesGroup):
     """
     A self-contained Adwaita Preferences Group that populates itself with
-    rows based on a VarSet. It uses a VarRowFactory to generate the UI
-    and supports both immediate updates and explicit "Apply" buttons.
+    rows based on a VarSet. Supports both immediate updates and explicit
+    "Apply" buttons, with built-in debouncing for rapid value changes.
     """
 
-    def __init__(self, explicit_apply=False, **kwargs):
+    def __init__(
+        self, explicit_apply=False, debounce_ms=0, **kwargs
+    ):
         super().__init__(**kwargs)
         self.explicit_apply = explicit_apply
-        self.widget_map: dict[str, tuple[Adw.PreferencesRow, Var]] = {}
+        self.debounce_ms = debounce_ms
+        self.widget_map: Dict[str, Tuple[Adw.PreferencesRow, Var]] = {}
+        self._adapters: Dict[str, RowAdapter] = {}
         self._created_rows = []
-        self._apply_buttons: list[Gtk.Button] = []
-        self._factory = VarRowFactory()
+        self._apply_buttons = []
         self.data_changed = Signal()
+        self._debounce_timer_id: Optional[int] = None
+        self._pending_keys: set = set()
 
     def clear_dynamic_rows(self):
         """Removes only the rows dynamically created by populate()."""
+        self._cancel_debounce()
         for row in self._created_rows:
             self.remove(row)
         self._created_rows.clear()
         self._apply_buttons.clear()
         self.widget_map.clear()
+        self._adapters.clear()
 
     def populate(self, var_set: VarSet):
         """
@@ -93,12 +98,14 @@ class VarSetWidget(Adw.PreferencesGroup):
                     continue
 
             # Create new row
-            row = self._factory.create_row_for_var(var, "value")
+            row, adapter = create_row_for_var(var, "value")
             if row:
                 self._wire_up_row(row, var)
                 self.add(row)
                 self._created_rows.append(row)
                 self.widget_map[var.key] = (row, var)
+                if adapter is not None:
+                    self._adapters[var.key] = adapter
 
     def _update_row_attributes(self, row: Adw.PreferencesRow, var: Var):
         """
@@ -137,96 +144,52 @@ class VarSetWidget(Adw.PreferencesGroup):
         if max_val is not None:
             adj.set_upper(float(max_val))
 
-    def get_values(self) -> dict[str, Any]:
+    def get_values(self) -> Dict[str, Any]:
         """Reads all current values from the UI widgets."""
         values = {}
-        for key, (row, var) in self.widget_map.items():
-            value = None
-            widget = getattr(row, "get_activatable_widget", lambda: None)()
-            if isinstance(var, TextAreaVar):
-                text_view = getattr(row, "core_widget", None)
-                if isinstance(text_view, Gtk.TextView):
-                    buffer = text_view.get_buffer()
-                    start, end = buffer.get_start_iter(), buffer.get_end_iter()
-                    value = buffer.get_text(start, end, True)
-            elif isinstance(var, SliderFloatVar) and isinstance(
-                widget, Gtk.Scale
-            ):
-                min_val = var.min_val if var.min_val is not None else 0.0
-                max_val = var.max_val if var.max_val is not None else 1.0
-                percent = widget.get_value() / 100.0
-                value = min_val + percent * (max_val - min_val)
-            elif isinstance(widget, Gtk.Switch):
-                value = widget.get_active()
-            elif isinstance(row, Adw.EntryRow):
-                value = row.get_text()
-            elif isinstance(row, Adw.SpinRow):
-                value = (
-                    get_spinrow_int(row)
-                    if var.var_type is int
-                    else row.get_value()
-                )
-            elif isinstance(row, Adw.ComboRow):
-                selected = row.get_selected_item()
-                display_str = ""
-                if selected:
-                    display_str = selected.get_string()  # type: ignore
-
-                if display_str == NULL_CHOICE_LABEL:
-                    value = None
-                elif isinstance(var, ChoiceVar):
-                    value = var.get_value_for_display(display_str)
-                else:  # For BaudrateVar, SerialPortVar
-                    value = display_str
-
-            values[key] = value
+        for key in self.widget_map:
+            adapter = self._adapters.get(key)
+            if adapter is not None:
+                values[key] = adapter.get_value()
+            else:
+                values[key] = None
         return values
 
-    def set_values(self, values: dict[str, Any]):
+    def set_values(self, values: Dict[str, Any]):
         """Sets the UI widgets from a dictionary of values."""
         for key, value in values.items():
             if key not in self.widget_map or value is None:
                 continue
-
-            row, var = self.widget_map[key]
-            widget = getattr(row, "get_activatable_widget", lambda: None)()
-            if isinstance(var, TextAreaVar):
-                text_view = getattr(row, "core_widget", None)
-                if isinstance(text_view, Gtk.TextView):
-                    text_view.get_buffer().set_text(str(value))
-            elif isinstance(var, SliderFloatVar) and isinstance(
-                widget, Gtk.Scale
-            ):
-                min_val = var.min_val if var.min_val is not None else 0.0
-                max_val = var.max_val if var.max_val is not None else 1.0
-                range_size = max_val - min_val
-                percent = 0.0
-                if range_size > 1e-9:
-                    percent = ((float(value) - min_val) / range_size) * 100.0
-                widget.set_value(percent)
-            elif isinstance(widget, Gtk.Switch):
-                widget.set_active(bool(value))
-            elif isinstance(row, Adw.EntryRow):
-                row.set_text(str(value))
-            elif isinstance(row, Adw.SpinRow):
-                row.set_value(float(value))
-            elif isinstance(row, Adw.ComboRow):
-                model = row.get_model()
-                if isinstance(model, Gtk.StringList):
-                    display_str = NULL_CHOICE_LABEL
-                    if value is not None:
-                        display_str = (
-                            var.get_display_for_value(str(value)) or str(value)
-                            if isinstance(var, ChoiceVar)
-                            else str(value)
-                        )
-                    for i in range(model.get_n_items()):
-                        if model.get_string(i) == display_str:
-                            row.set_selected(i)
-                            break
+            adapter = self._adapters.get(key)
+            if adapter is not None:
+                adapter.set_value(value)
 
     def _on_data_changed(self, key: str):
-        self.data_changed.send(self, key=key)
+        if self.debounce_ms > 0:
+            self._pending_keys.add(key)
+            self._schedule_debounce()
+        else:
+            self.data_changed.send(self, key=key)
+
+    def _schedule_debounce(self):
+        if self._debounce_timer_id is not None:
+            GLib.source_remove(self._debounce_timer_id)
+        self._debounce_timer_id = GLib.timeout_add(
+            self.debounce_ms, self._flush_debounce
+        )
+
+    def _cancel_debounce(self):
+        if self._debounce_timer_id is not None:
+            GLib.source_remove(self._debounce_timer_id)
+            self._debounce_timer_id = None
+        self._pending_keys.clear()
+
+    def _flush_debounce(self):
+        self._debounce_timer_id = None
+        keys = set(self._pending_keys)
+        self._pending_keys.clear()
+        for key in keys:
+            self.data_changed.send(self, key=key)
 
     def _add_apply_button_if_needed(self, row, key):
         if not self.explicit_apply:

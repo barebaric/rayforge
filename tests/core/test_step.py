@@ -415,7 +415,6 @@ def test_capability_raises_on_unknown_key():
     """
 
     class BadCapability(Capability):
-
         @property
         def name(self):
             return "BAD"

@@ -6,7 +6,7 @@ from ..context import get_context
 from .varset import (
     ChoiceVar,
     VarSet,
-    IntVar,
+    SpeedVar,
     SliderFloatVar,
     BoolVar,
     FloatVar,
@@ -165,13 +165,13 @@ class CutCapability(Capability):
                     max_val=1.0,
                     show_value=True,
                 ),
-                IntVar(
+                SpeedVar(
                     key="cut_speed",
                     label=_("Cut Speed"),
                     default=500,
                     min_val=1,
                 ),
-                IntVar(
+                SpeedVar(
                     key="travel_speed",
                     label=_("Travel Speed"),
                     default=5000,
@@ -210,13 +210,13 @@ class EngraveCapability(Capability):
                     max_val=1.0,
                     show_value=True,
                 ),
-                IntVar(
+                SpeedVar(
                     key="cut_speed",
                     label=_("Engrave Speed"),
                     default=4000,
                     min_val=1,
                 ),
-                IntVar(
+                SpeedVar(
                     key="travel_speed",
                     label=_("Travel Speed"),
                     default=5000,
@@ -255,13 +255,13 @@ class ScoreCapability(Capability):
                     max_val=1.0,
                     show_value=True,
                 ),
-                IntVar(
+                SpeedVar(
                     key="cut_speed",
                     label=_("Score Speed"),
                     default=5000,
                     min_val=1,
                 ),
-                IntVar(
+                SpeedVar(
                     key="travel_speed",
                     label=_("Travel Speed"),
                     default=5000,
