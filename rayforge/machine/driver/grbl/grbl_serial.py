@@ -122,7 +122,10 @@ class GrblSerialDriver(Driver):
                     label=_("Port"),
                     description=_("Serial port for the device"),
                 ),
-                BaudrateVar("baudrate"),
+                BaudrateVar(
+                    "baudrate",
+                    choices=SerialTransport.list_baud_rates(),
+                ),
                 Var(
                     key="poll_status_while_running",
                     label=_("Poll device status during jobs"),

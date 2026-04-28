@@ -1,20 +1,20 @@
 import pytest
-from unittest.mock import patch
 from rayforge.core.varset.hostnamevar import HostnameVar, ValidationError
 from rayforge.core.varset.varset import VarSet
 
 
 class TestHostnameVar:
-    @patch("rayforge.core.varset.hostnamevar.is_valid_hostname_or_ip")
-    def test_validation(self, mock_is_valid):
+    def test_validation(self):
         """Test HostnameVar validation logic."""
-        mock_is_valid.side_effect = lambda h: h in ["valid.com", "1.2.3.4"]
         v = HostnameVar(key="host", label="Host")
 
         v.value = "valid.com"
         v.validate()
 
-        v.value = "invalid-hostname"
+        v.value = "1.2.3.4"
+        v.validate()
+
+        v.value = "invalid!!"
         with pytest.raises(
             ValidationError, match="Invalid hostname or IP address format"
         ):
@@ -23,6 +23,30 @@ class TestHostnameVar:
         v.value = None
         with pytest.raises(ValidationError, match="cannot be empty"):
             v.validate()
+
+    def test_custom_validator(self):
+        """Test that a custom validator can be injected."""
+        calls = []
+
+        def my_validator(val):
+            calls.append(val)
+            if val == "bad":
+                raise ValidationError("nope")
+
+        v = HostnameVar(key="h", label="H", validator=my_validator)
+        v.value = "ok"
+        v.validate()
+        assert calls == ["ok"]
+
+        v.value = "bad"
+        with pytest.raises(ValidationError, match="nope"):
+            v.validate()
+
+    def test_no_validator(self):
+        """Test that None validator skips validation."""
+        v = HostnameVar(key="h", label="H", validator=None)
+        v.value = "literally anything"
+        v.validate()
 
     def test_serialization_and_rehydration(self):
         """Test serializing (with and without value) and deserializing."""

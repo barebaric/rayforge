@@ -3,7 +3,7 @@ from typing import Any, Optional, Tuple
 from gi.repository import Adw
 
 from ....core.varset import HostnameVar, Var
-from ....machine.transport.validators import is_valid_hostname_or_ip
+from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from .base import RowAdapter, escape_title, register_adapter
 
 
