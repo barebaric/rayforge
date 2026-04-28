@@ -20,6 +20,7 @@
 
 ## Other rules
 
+- Do not run the full test suite prematurely. Fix all linter errors first. Run targeted tests.
 - Never use "head" to filter CLI commands! This would hide useful error messages.
 - Use proper markdown to put each file into a separate code block.
 - File start markers do not belong INTO code blocks. Putting them OUTSIDE is ok.
