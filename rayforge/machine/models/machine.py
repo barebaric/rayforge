@@ -199,9 +199,7 @@ class Machine:
         """Property to access the driver through the controller."""
         return self.controller.driver
 
-    def get_laser_capabilities(
-        self, laser: Laser
-    ) -> Tuple["Capability", ...]:
+    def get_laser_capabilities(self, laser: Laser) -> Tuple["Capability", ...]:
         """
         Returns the capabilities contributed by the driver for the given
         laser head. Delegates to the driver's get_laser_capabilities().

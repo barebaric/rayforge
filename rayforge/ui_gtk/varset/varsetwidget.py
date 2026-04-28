@@ -25,9 +25,7 @@ class VarSetWidget(Adw.PreferencesGroup):
     "Apply" buttons, with built-in debouncing for rapid value changes.
     """
 
-    def __init__(
-        self, explicit_apply=False, debounce_ms=0, **kwargs
-    ):
+    def __init__(self, explicit_apply=False, debounce_ms=0, **kwargs):
         super().__init__(**kwargs)
         self.explicit_apply = explicit_apply
         self.debounce_ms = debounce_ms
