@@ -1,5 +1,3 @@
-# rayforge/importer/ruida/parser.py
-
 import struct
 from typing import Dict, Tuple, Callable, Union
 
@@ -7,6 +5,7 @@ from ...machine.driver.ruida.ruida_util import (
     UM_PER_MM,
     unswizzle_byte,
     decode14,
+    decode35,
     decode_abs_coords,
     decode_rel_coords,
 )
@@ -118,6 +117,11 @@ class RuidaParser:
         power = struct.unpack("<H", payload[1:3])[0] / 10.0
         self._ensure_layer(job, color_index).power = power
 
+    def _handle_set_frequency(self, job: RuidaJob, payload: bytes) -> None:
+        color_index = payload[0]
+        frequency = decode35(payload[2:7])
+        self._ensure_layer(job, color_index).frequency = frequency
+
     def _handle_move_abs(self, job: RuidaJob, payload: bytes) -> None:
         self.x, self.y = decode_abs_coords(payload)
         cmd = RuidaGeoCommand("Move_Abs", [self.x, self.y], self.current_color)
@@ -184,7 +188,10 @@ class RuidaParser:
             # Nested commands
             0xCA: {0x06: (5, self._handle_set_color)},
             0xC9: {0x04: (5, self._handle_set_speed)},
-            0xC6: {0x32: (3, self._handle_set_power)},
+            0xC6: {
+                0x32: (3, self._handle_set_power),
+                0x60: (7, self._handle_set_frequency),
+            },
         }
 
     def _ensure_layer(self, job: RuidaJob, color: int) -> RuidaLayer:

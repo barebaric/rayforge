@@ -1,9 +1,10 @@
 import pytest
 import struct
 from pathlib import Path
-from pytest_mock import MockerFixture  # Import the mocker fixture type
+from pytest_mock import MockerFixture
 
 from rayforge.image.ruida.parser import RuidaParser
+from rayforge.machine.driver.ruida.ruida_util import encode35
 
 
 def _scramble(byte_val: int) -> int:
@@ -118,6 +119,43 @@ def test_parser_on_simple_square(
 
     # Call 6: End
     assert calls[5].args[0] == "End"
+
+
+def test_parser_extracts_frequency(tmp_path: Path):
+    content = bytearray()
+    content += b"\xc9\x04" + (b"\x00" + struct.pack("<f", 20.0))
+    content += b"\xc6\x32" + (b"\x00" + struct.pack("<H", 500))
+    content += b"\xc6\x60" + b"\x00\x00" + encode35(1000)
+    content += b"\xca\x06" + (b"\x00\x00\x00\x00\x00")
+    content += b"\x88" + _encode_abs_coords(0, 0)
+    content += b"\xa8" + _encode_abs_coords(10, 0)
+    content += b"\xd7"
+    scrambled = b"RDWORKV8.01" + bytes([_scramble(b) for b in content])
+    filepath = tmp_path / "freq_test.rd"
+    filepath.write_bytes(scrambled)
+
+    parser = RuidaParser(filepath.read_bytes())
+    job = parser.parse()
+
+    assert 0 in job.layers
+    assert job.layers[0].frequency == 1000
+
+
+def test_parser_no_frequency_defaults_zero(tmp_path: Path):
+    content = bytearray()
+    content += b"\xc9\x04" + (b"\x00" + struct.pack("<f", 20.0))
+    content += b"\xc6\x32" + (b"\x00" + struct.pack("<H", 500))
+    content += b"\xca\x06" + (b"\x00\x00\x00\x00\x00")
+    content += b"\x88" + _encode_abs_coords(0, 0)
+    content += b"\xd7"
+    scrambled = b"RDWORKV8.01" + bytes([_scramble(b) for b in content])
+    filepath = tmp_path / "no_freq_test.rd"
+    filepath.write_bytes(scrambled)
+
+    parser = RuidaParser(filepath.read_bytes())
+    job = parser.parse()
+
+    assert job.layers[0].frequency == 0
 
 
 TEST_FILES_DIR = Path(__file__).parent

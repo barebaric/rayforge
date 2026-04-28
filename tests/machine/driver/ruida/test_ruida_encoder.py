@@ -13,7 +13,7 @@ Tests cover:
 import pytest
 import base64
 
-from rayforge.core.ops import Ops
+from rayforge.core.ops import Ops, SetFrequencyCommand, SetPulseWidthCommand
 from rayforge.core.doc import Doc
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.driver.ruida.ruida_encoder import RuidaEncoder
@@ -781,3 +781,99 @@ class TestBinaryCommandStructure:
         binary = result.driver_data["binary"]
         assert binary[0] == 0xC8
         assert len(binary) == 3
+
+
+class TestSetFrequencyCommand:
+    """Tests for SetFrequencyCommand encoding."""
+
+    def test_frequency_encoding(self, encoder, mock_machine, doc):
+        ops = Ops()
+        ops.add(SetFrequencyCommand(1000))
+        result = encoder.encode(ops, mock_machine, doc)
+
+        binary = result.driver_data["binary"]
+        assert binary[:2] == b"\xc6\x60"
+        assert binary[2] == 1  # laser 1
+        assert binary[3] == 0  # part 0
+        assert binary[4:] == encode35(1000)
+        assert "FREQUENCY 1000" in result.text
+
+    def test_frequency_with_laser_2(self, encoder, mock_machine, doc):
+        ops = Ops()
+        ops.set_laser("laser-2")
+        ops.add(SetFrequencyCommand(5000))
+        result = encoder.encode(ops, mock_machine, doc)
+
+        binary = result.driver_data["binary"]
+        freq_cmd = binary[binary.index(0xC6) + 1 :]
+        assert freq_cmd[1] == 2  # laser 2
+        assert "FREQUENCY 5000" in result.text
+
+    def test_frequency_command_structure(self, encoder, mock_machine, doc):
+        ops = Ops()
+        ops.add(SetFrequencyCommand(2000))
+        result = encoder.encode(ops, mock_machine, doc)
+
+        binary = result.driver_data["binary"]
+        assert binary[0] == 0xC6
+        assert binary[1] == 0x60
+        assert len(binary) == 9
+
+
+class TestSetPulseWidthCommand:
+    """Tests for SetPulseWidthCommand encoding."""
+
+    def test_pulse_width_encoding(self, encoder, mock_machine, doc):
+        ops = Ops()
+        ops.add(SetPulseWidthCommand(50))
+        result = encoder.encode(ops, mock_machine, doc)
+
+        binary = result.driver_data["binary"]
+        assert binary[:2] == b"\xc6\x10"
+        assert binary[2] == 1  # laser 1
+        assert binary[3] == 0  # part 0
+        assert binary[4:] == encode35(50)
+        assert "PULSE_WIDTH 50.0" in result.text
+
+    def test_pulse_width_with_laser_2(self, encoder, mock_machine, doc):
+        ops = Ops()
+        ops.set_laser("laser-2")
+        ops.add(SetPulseWidthCommand(100))
+        result = encoder.encode(ops, mock_machine, doc)
+
+        binary = result.driver_data["binary"]
+        pulse_cmd = binary[binary.index(bytes([0xC6, 0x10])) + 2 :]
+        assert pulse_cmd[0] == 2  # laser 2
+
+    def test_pulse_width_command_structure(self, encoder, mock_machine, doc):
+        ops = Ops()
+        ops.add(SetPulseWidthCommand(25))
+        result = encoder.encode(ops, mock_machine, doc)
+
+        binary = result.driver_data["binary"]
+        assert binary[0] == 0xC6
+        assert binary[1] == 0x10
+        assert len(binary) == 9
+
+
+class TestFrequencyAndPulseWidthInJob:
+    """Tests for frequency/pulse_width within a full job."""
+
+    def test_full_job_with_pwm(self, encoder, mock_machine, doc):
+        ops = Ops()
+        ops.job_start()
+        ops.set_power(0.8)
+        ops.set_cut_speed(200)
+        ops.add(SetFrequencyCommand(1000))
+        ops.add(SetPulseWidthCommand(50))
+        ops.move_to(0.0, 0.0, 0.0)
+        ops.line_to(10.0, 10.0, 0.0)
+        ops.job_end()
+        result = encoder.encode(ops, mock_machine, doc)
+
+        binary = result.driver_data["binary"]
+        assert b"\xc6\x60" in binary
+        assert b"\xc6\x10" in binary
+        text = result.text
+        assert "FREQUENCY 1000" in text
+        assert "PULSE_WIDTH 50.0" in text

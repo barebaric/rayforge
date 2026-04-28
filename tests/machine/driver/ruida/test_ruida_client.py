@@ -6,6 +6,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 
 from rayforge.machine.driver.ruida.ruida_client import RuidaClient
+from rayforge.machine.driver.ruida.ruida_util import encode35
 
 
 class TestRuidaClient:
@@ -452,3 +453,27 @@ class TestRuidaClientEndOfFile:
         self.mock_transport.send_command.assert_called_once()
         sent = self.mock_transport.send_command.call_args[0][0]
         assert sent == b"\xce"
+
+    def test_build_frequency(self):
+        result = self.client._build_frequency(1, 1000)
+        assert result[:2] == b"\xc6\x60"
+        assert result[2] == 1
+        assert result[3] == 0
+        assert result[4:] == encode35(1000)
+
+    def test_build_frequency_laser_2(self):
+        result = self.client._build_frequency(2, 5000)
+        assert result[2] == 2
+        assert result[4:] == encode35(5000)
+
+    def test_build_pulse_width(self):
+        result = self.client._build_pulse_width(1, 50)
+        assert result[:2] == b"\xc6\x10"
+        assert result[2] == 1
+        assert result[3] == 0
+        assert result[4:] == encode35(50)
+
+    def test_build_pulse_width_laser_3(self):
+        result = self.client._build_pulse_width(3, 200)
+        assert result[2] == 3
+        assert result[4:] == encode35(200)

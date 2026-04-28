@@ -219,9 +219,7 @@ def test_create_initial_ops_with_frequency_and_pulse_width():
     freq_cmds = [
         c for c in ops._commands if isinstance(c, SetFrequencyCommand)
     ]
-    pw_cmds = [
-        c for c in ops._commands if isinstance(c, SetPulseWidthCommand)
-    ]
+    pw_cmds = [c for c in ops._commands if isinstance(c, SetPulseWidthCommand)]
     assert len(freq_cmds) == 1
     assert freq_cmds[0].frequency == 1000
     assert len(pw_cmds) == 1
