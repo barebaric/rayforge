@@ -94,12 +94,8 @@ class TestOAuthFlowStart:
             blocker.server_close()
 
     @patch("rayforge.shared.oauth.flow.webbrowser.open")
-    @patch(
-        "rayforge.shared.oauth.flow.urllib.request.urlopen"
-    )
-    def test_successful_flow(
-        self, mock_urlopen, mock_webbrowser
-    ):
+    @patch("rayforge.shared.oauth.flow.urllib.request.urlopen")
+    def test_successful_flow(self, mock_urlopen, mock_webbrowser):
         mock_response = MagicMock()
         mock_response.read.return_value = json.dumps(
             {"access_token": "tok123", "refresh_token": "ref456"}

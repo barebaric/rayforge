@@ -58,8 +58,7 @@ class OAuthFlowAdapter(RowAdapter):
         assert isinstance(oauth_var, OAuthFlowVar)
 
         needs_entries = any(
-            getattr(oauth_var, key, None) is None
-            for key, _ in cls._FIELD_DEFS
+            getattr(oauth_var, key, None) is None for key, _ in cls._FIELD_DEFS
         )
 
         dynamic_entries: Dict[str, Adw.EntryRow] = {}
@@ -85,16 +84,17 @@ class OAuthFlowAdapter(RowAdapter):
         row.add_suffix(sign_out_btn)
 
         adapter = cls(
-            row, sign_in_btn, sign_out_btn, oauth_var,
+            row,
+            sign_in_btn,
+            sign_out_btn,
+            oauth_var,
             dynamic_entries=dynamic_entries,
         )
         adapter._update_status()
         return row, adapter
 
     @classmethod
-    def _create_action_row(
-        cls, oauth_var: OAuthFlowVar
-    ) -> Adw.ActionRow:
+    def _create_action_row(cls, oauth_var: OAuthFlowVar) -> Adw.ActionRow:
         row = Adw.ActionRow(title=escape_title(oauth_var.label))
         if oauth_var.description:
             row.set_subtitle(oauth_var.description)
@@ -155,14 +155,17 @@ class OAuthFlowAdapter(RowAdapter):
     def _update_status(self) -> None:
         tokens = self._get_token_data()
         if tokens and tokens.get("access_token"):
-            self._row.set_subtitle(_("Authenticated"))
-            self._sign_in_btn.set_label(_("Re-authorize"))
-            self._sign_out_btn.set_visible(True)
+            if self._var._is_expired(tokens):
+                self._row.set_subtitle(_("Token expired"))
+                self._sign_in_btn.set_label(_("Refresh"))
+                self._sign_out_btn.set_visible(True)
+            else:
+                self._row.set_subtitle(_("Authenticated"))
+                self._sign_in_btn.set_label(_("Re-authorize"))
+                self._sign_out_btn.set_visible(True)
         else:
             desc = self._var.description
-            self._row.set_subtitle(
-                desc if desc else _("Not connected")
-            )
+            self._row.set_subtitle(desc if desc else _("Not connected"))
             self._sign_in_btn.set_label(_("Sign In"))
             self._sign_out_btn.set_visible(False)
 
@@ -175,6 +178,48 @@ class OAuthFlowAdapter(RowAdapter):
         return overrides
 
     def _on_sign_in(self, _btn) -> None:
+        refresh_token = self._var.get_refresh_token()
+        if refresh_token:
+            self._try_refresh(refresh_token)
+        else:
+            self._start_full_flow()
+
+    def _try_refresh(self, refresh_token: str) -> None:
+        config_dict = self._var.resolve_config(self._collect_overrides())
+        token_url = config_dict.get("token_url")
+        client_id = config_dict.get("client_id")
+        if not token_url or not client_id:
+            self._start_full_flow()
+            return
+
+        config = OAuthFlowConfig(
+            authorize_url=config_dict.get("authorize_url", ""),
+            token_url=token_url,
+            client_id=client_id,
+            client_secret=config_dict.get("client_secret"),
+            redirect_port=config_dict.get("redirect_port", 8765),
+        )
+        flow = OAuthFlow(config)
+        self._sign_in_btn.set_sensitive(False)
+        self._sign_in_btn.set_label(_("Refreshing…"))
+
+        def on_refresh_complete(result):
+            GLib.idle_add(self._on_flow_complete, result)
+
+        def on_refresh_error(error):
+            logger.debug(
+                "Token refresh failed, starting full flow: %s",
+                error,
+            )
+            GLib.idle_add(self._start_full_flow)
+
+        try:
+            result = flow.refresh(refresh_token)
+            self._on_flow_complete(result)
+        except Exception:
+            self._start_full_flow()
+
+    def _start_full_flow(self) -> None:
         config_dict = self._var.resolve_config(self._collect_overrides())
 
         authorize_url = config_dict.get("authorize_url")
