@@ -1,5 +1,6 @@
 import React from 'react';
 import DefaultNavbarItem from '@theme-original/NavbarItem/DefaultNavbarItem';
+import {translate} from '@docusaurus/Translate';
 import styles from './styles.module.css';
 
 export default function NavbarItemWrapper(props) {
@@ -7,6 +8,24 @@ export default function NavbarItemWrapper(props) {
     return <DefaultNavbarItem {...props} />;
   }
   if (props.label === 'GitHub') {
+    if (props.mobile) {
+      return (
+        <li className="menu__list-item">
+          <a
+            href="https://www.patreon.com/c/knipknap"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="menu__link"
+          >
+            {translate({
+              id: 'navbar.patreon.link',
+              message: 'Become a Patron',
+              description: 'Patreon link in mobile navbar',
+            })}
+          </a>
+        </li>
+      );
+    }
     return (
       <>
         <a
@@ -28,6 +47,9 @@ export default function NavbarItemWrapper(props) {
     );
   }
   if (props.label === 'Discord') {
+    if (props.mobile) {
+      return <DefaultNavbarItem {...props} />;
+    }
     return (
       <span className={styles.discordWrapper}>
         <DefaultNavbarItem {...props} />
