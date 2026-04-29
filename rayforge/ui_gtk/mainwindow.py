@@ -15,6 +15,7 @@ from ..core.asset_registry import asset_type_registry
 from ..core.group import Group
 from ..core.item import DocItem
 from ..core.ops.axis import Axis
+from ..core.registration import call_registration_hooks
 from ..core.step_registry import step_registry
 from ..core.undo import Command, HistoryManager
 from ..core.workpiece import WorkPiece
@@ -276,8 +277,8 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Let addons register action extension handlers before
         # ActionManager.register_actions() invokes setup handlers.
-        context.plugin_mgr.hook.register_actions(
-            action_registry=action_registry
+        call_registration_hooks(
+            context.plugin_mgr, window_required=True
         )
 
         # Setup keyboard actions using the new ActionManager.

@@ -248,7 +248,10 @@ provides:
                 "_check_version_compatibility",
                 return_value=UpdateStatus.UP_TO_DATE,
             ),
-            patch.object(manager, "_call_registration_hooks"),
+            patch(
+                "rayforge.addon_mgr.addon_manager"
+                ".call_registration_hooks"
+            ),
         ):
             result = manager.load_addon_by_name("test_plugin")
 
@@ -280,7 +283,10 @@ provides:
                 "_check_version_compatibility",
                 return_value=UpdateStatus.UP_TO_DATE,
             ),
-            patch.object(manager, "_call_registration_hooks"),
+            patch(
+                "rayforge.addon_mgr.addon_manager"
+                ".call_registration_hooks"
+            ),
         ):
             result = manager.load_addon_by_name(
                 "test_plugin", worker_only=True

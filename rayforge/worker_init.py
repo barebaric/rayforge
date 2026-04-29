@@ -39,14 +39,7 @@ def ensure_addons_loaded():
     _worker_addons_loaded = True
 
     from rayforge.context import get_context
-    from rayforge.core.asset_registry import asset_type_registry
-    from rayforge.core.step_registry import step_registry
-    from rayforge.doceditor.layout.registry import layout_registry
-    from rayforge.image import (
-        renderer_registry,
-    )
-    from rayforge.pipeline.producer.registry import producer_registry
-    from rayforge.pipeline.transformer.registry import transformer_registry
+    from rayforge.core.registration import call_registration_hooks
 
     logger = logging.getLogger(__name__)
 
@@ -66,22 +59,7 @@ def ensure_addons_loaded():
                 f"Failed to load enabled worker module '{module_name}': {e}"
             )
 
-    context.plugin_mgr.hook.register_steps(step_registry=step_registry)
-    context.plugin_mgr.hook.register_producers(
-        producer_registry=producer_registry
-    )
-    context.plugin_mgr.hook.register_transformers(
-        transformer_registry=transformer_registry
-    )
-    context.plugin_mgr.hook.register_layout_strategies(
-        layout_registry=layout_registry
-    )
-    context.plugin_mgr.hook.register_asset_types(
-        asset_type_registry=asset_type_registry
-    )
-    context.plugin_mgr.hook.register_renderers(
-        renderer_registry=renderer_registry
-    )
+    call_registration_hooks(context.plugin_mgr, headless=True)
 
     logger.debug("Worker addons loaded from manifest.")
 
