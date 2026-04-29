@@ -32,6 +32,7 @@ from .. import __version__
 from ..config import ADDON_REGISTRY_URL
 from ..core.addon_config import AddonConfig, AddonState as ConfigAddonState
 from ..core.hooks import PLUGIN_API_VERSION
+from ..core.registration import call_registration_hooks
 from ..license import LicenseValidator
 from ..shared.util.po_compiler import compile_po_to_mo, needs_compilation
 from ..shared.util.versioning import (
@@ -544,7 +545,9 @@ class AddonManager:
                         self.load_addon(
                             child.resolve(), worker_only=worker_only
                         )
-                        self._call_registration_hooks()
+                        call_registration_hooks(
+                            self.plugin_mgr, registries=self.registries
+                        )
                         return addon_name in self.loaded_addons
                 except Exception:
                     continue
@@ -1014,7 +1017,9 @@ class AddonManager:
 
         logger.info(f"Successfully installed addon to {final_path}")
         self.load_addon(final_path, version=version)
-        self._call_registration_hooks()
+        call_registration_hooks(
+            self.plugin_mgr, registries=self.registries
+        )
         self._build_and_update_manifest()
         self._restart_workers()
         logger.info(f"Addon '{addon_name}' fully loaded and registered")
@@ -1345,7 +1350,9 @@ class AddonManager:
         else:
             self._import_and_register(addon, addon.metadata.provides.worker)
             self._import_and_register(addon, addon.metadata.provides.frontend)
-            self._call_registration_hooks()
+            call_registration_hooks(
+                self.plugin_mgr, registries=self.registries
+            )
             logger.info(f"Addon '{addon_name}' enabled and loaded")
 
         self._build_and_update_manifest()
@@ -1434,70 +1441,6 @@ class AddonManager:
                 logger.debug(
                     f"Unregistered {count} items from {name} for {addon_name}"
                 )
-
-    def _call_registration_hooks(self):
-        """Call registration hooks for newly loaded addons."""
-        step_registry = self.registries.get("step_registry")
-        producer_registry = self.registries.get("producer_registry")
-        transformer_registry = self.registries.get("transformer_registry")
-        action_registry = self.registries.get("action_registry")
-        layout_registry = self.registries.get("layout_registry")
-        library_manager = self.registries.get("library_manager")
-        model_manager = self.registries.get("model_manager")
-        asset_type_registry = self.registries.get("asset_type_registry")
-        command_registry = self.registries.get("command_registry")
-        renderer_registry = self.registries.get("renderer_registry")
-        exporter_registry = self.registries.get("exporter_registry")
-        importer_registry = self.registries.get("importer_registry")
-
-        if step_registry:
-            self.plugin_mgr.hook.register_steps(step_registry=step_registry)
-        if producer_registry is not None:
-            self.plugin_mgr.hook.register_producers(
-                producer_registry=producer_registry
-            )
-        if transformer_registry is not None:
-            self.plugin_mgr.hook.register_transformers(
-                transformer_registry=transformer_registry
-            )
-        if layout_registry is not None:
-            self.plugin_mgr.hook.register_layout_strategies(
-                layout_registry=layout_registry
-            )
-        if action_registry is not None:
-            self.plugin_mgr.hook.register_actions(
-                action_registry=action_registry
-            )
-        if library_manager is not None:
-            logger.debug("Calling register_material_libraries hook")
-            self.plugin_mgr.hook.register_material_libraries(
-                library_manager=library_manager
-            )
-        if model_manager is not None:
-            logger.debug("Calling register_model_libraries hook")
-            self.plugin_mgr.hook.register_model_libraries(
-                model_manager=model_manager
-            )
-        if asset_type_registry is not None:
-            self.plugin_mgr.hook.register_asset_types(
-                asset_type_registry=asset_type_registry
-            )
-        if command_registry is not None:
-            self.plugin_mgr.hook.register_commands(
-                command_registry=command_registry
-            )
-        if renderer_registry is not None:
-            self.plugin_mgr.hook.register_renderers(
-                renderer_registry=renderer_registry
-            )
-        if exporter_registry is not None:
-            self.plugin_mgr.hook.register_exporters(
-                exporter_registry=exporter_registry
-            )
-        if importer_registry is not None:
-            self.plugin_mgr.hook.register_importers(
-                importer_registry=importer_registry
-            )
 
     def complete_pending_unloads(self) -> List[str]:
         """
@@ -1597,7 +1540,9 @@ class AddonManager:
 
         self._import_and_register(addon, addon.metadata.provides.worker)
         self._import_and_register(addon, addon.metadata.provides.frontend)
-        self._call_registration_hooks()
+        call_registration_hooks(
+            self.plugin_mgr, registries=self.registries
+        )
         if addon_name in self.loaded_addons:
             logger.info(f"Addon '{addon_name}' reloaded successfully")
             self._build_and_update_manifest()
@@ -1736,7 +1681,9 @@ class AddonManager:
         self._import_and_register(addon, addon.metadata.provides.frontend)
 
         if addon_name in self.loaded_addons:
-            self._call_registration_hooks()
+            call_registration_hooks(
+                self.plugin_mgr, registries=self.registries
+            )
             self._build_and_update_manifest()
             self._restart_workers()
             return True, "License validated, addon loaded successfully"
