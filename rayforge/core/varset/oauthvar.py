@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from .var import Var
@@ -62,7 +63,34 @@ class OAuthFlowVar(Var[str]):
         tokens = self.get_tokens()
         if not tokens:
             return False
-        return bool(tokens.get("access_token"))
+        if not tokens.get("access_token"):
+            return False
+        if self._is_expired(tokens):
+            return False
+        return True
+
+    def is_expired(self) -> bool:
+        tokens = self.get_tokens()
+        if not tokens:
+            return False
+        return self._is_expired(tokens)
+
+    def get_refresh_token(self) -> Optional[str]:
+        tokens = self.get_tokens()
+        if tokens:
+            return tokens.get("refresh_token")
+        return None
+
+    @staticmethod
+    def _is_expired(tokens: Dict[str, Any]) -> bool:
+        expires_at_str = tokens.get("expires_at")
+        if not expires_at_str:
+            return False
+        try:
+            expires_at = datetime.fromisoformat(expires_at_str)
+            return datetime.now() >= expires_at
+        except (ValueError, TypeError):
+            return False
 
     def resolve_config(
         self,

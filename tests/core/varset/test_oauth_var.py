@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta
 
 from rayforge.core.varset import VarSet, Var
 from rayforge.core.varset.oauthvar import OAuthFlowVar
@@ -61,6 +62,71 @@ class TestOAuthFlowVar:
         var = OAuthFlowVar(key="auth", label="Login", value=token_data)
         assert not var.is_authenticated()
 
+    def test_is_authenticated_with_valid_token(self):
+        token_data = json.dumps(
+            {
+                "access_token": "abc",
+                "expires_at": (
+                    datetime.now() + timedelta(hours=1)
+                ).isoformat(),
+            }
+        )
+        var = OAuthFlowVar(key="auth", label="Login", value=token_data)
+        assert var.is_authenticated()
+        assert not var.is_expired()
+
+    def test_is_authenticated_with_expired_token(self):
+        token_data = json.dumps(
+            {
+                "access_token": "abc",
+                "expires_at": (
+                    datetime.now() - timedelta(hours=1)
+                ).isoformat(),
+            }
+        )
+        var = OAuthFlowVar(key="auth", label="Login", value=token_data)
+        assert not var.is_authenticated()
+        assert var.is_expired()
+
+    def test_is_authenticated_no_expiry_always_valid(self):
+        token_data = json.dumps({"access_token": "abc"})
+        var = OAuthFlowVar(key="auth", label="Login", value=token_data)
+        assert var.is_authenticated()
+        assert not var.is_expired()
+
+    def test_is_expired_no_tokens(self):
+        var = OAuthFlowVar(key="auth", label="Login")
+        assert not var.is_expired()
+
+    def test_is_expired_invalid_iso(self):
+        token_data = json.dumps(
+            {
+                "access_token": "abc",
+                "expires_at": "not-a-date",
+            }
+        )
+        var = OAuthFlowVar(key="auth", label="Login", value=token_data)
+        assert not var.is_expired()
+
+    def test_get_refresh_token(self):
+        token_data = json.dumps(
+            {
+                "access_token": "abc",
+                "refresh_token": "ref123",
+            }
+        )
+        var = OAuthFlowVar(key="auth", label="Login", value=token_data)
+        assert var.get_refresh_token() == "ref123"
+
+    def test_get_refresh_token_none(self):
+        token_data = json.dumps({"access_token": "abc"})
+        var = OAuthFlowVar(key="auth", label="Login", value=token_data)
+        assert var.get_refresh_token() is None
+
+    def test_get_refresh_token_empty(self):
+        var = OAuthFlowVar(key="auth", label="Login")
+        assert var.get_refresh_token() is None
+
     def test_to_dict(self):
         var = OAuthFlowVar(
             key="auth",
@@ -82,9 +148,7 @@ class TestOAuthFlowVar:
 
     def test_to_dict_with_value(self):
         token_data = json.dumps({"access_token": "abc"})
-        var = OAuthFlowVar(
-            key="auth", label="Login", value=token_data
-        )
+        var = OAuthFlowVar(key="auth", label="Login", value=token_data)
         d = var.to_dict(include_value=True)
         assert d["value"] == token_data
 
@@ -134,7 +198,9 @@ class TestOAuthFlowVarTemplates:
             client_id="my-app",
         )
         server_var = Var(
-            key="server", label="Server", var_type=str,
+            key="server",
+            label="Server",
+            var_type=str,
             value="https://cloud.example.com",
         )
         VarSet(vars=[server_var, var])
@@ -143,10 +209,7 @@ class TestOAuthFlowVarTemplates:
             config["authorize_url"]
             == "https://cloud.example.com/oauth/authorize"
         )
-        assert (
-            config["token_url"]
-            == "https://cloud.example.com/oauth/token"
-        )
+        assert config["token_url"] == "https://cloud.example.com/oauth/token"
 
     def test_resolve_config_with_overrides(self):
         var = OAuthFlowVar(
