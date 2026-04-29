@@ -12,6 +12,7 @@ from .switch import SwitchAdapter
 
 # Trigger @register_adapter decorators. Every adapter module must be
 # imported here so that its class registers itself in _ADAPTER_REGISTRY.
+from .appkey import AppKeyAdapter
 from .combo import BaudRateAdapter, ComboAdapter, SerialPortAdapter
 from .entry import HostnameAdapter
 from .oauth import OAuthFlowAdapter
@@ -20,6 +21,7 @@ from .speed import SpeedRowAdapter
 from .textarea import TextAreaAdapter
 
 _ALL_ADAPTERS = (
+    AppKeyAdapter,
     BaudRateAdapter,
     ComboAdapter,
     SerialPortAdapter,
