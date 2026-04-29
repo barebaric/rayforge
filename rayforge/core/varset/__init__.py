@@ -1,3 +1,4 @@
+from .appkeyvar import AppKeyVar
 from .baudratevar import BaudrateVar
 from .boolvar import BoolVar
 from .choicevar import ChoiceVar
@@ -14,6 +15,7 @@ from .var import Var, ValidationError, get_editable_var_types
 from .varset import VarSet
 
 __all__ = [
+    "AppKeyVar",
     "BaudrateVar",
     "BoolVar",
     "ChoiceVar",
