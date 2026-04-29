@@ -37,11 +37,15 @@
   --ifm-font-color-base: #e0e0e0;
 }
 
-/* Navbar: Glassmorphism effect */
 .navbar {
-  backdrop-filter: blur(10px);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
   border-bottom: 1px solid var(--ifm-color-emphasis-100);
+}
+
+@media (min-width: 997px) {
+  .navbar {
+    backdrop-filter: blur(10px);
+  }
 }
 
 .button {
