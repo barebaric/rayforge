@@ -1,5 +1,6 @@
 import json
 import logging
+import socket as _socket
 import urllib.parse
 import urllib.request
 import webbrowser
@@ -126,6 +127,15 @@ class OAuthFlow:
 
         def handler_factory(*args, **kwargs):
             return _OAuthCallbackHandler(callback, *args, **kwargs)
+
+        probe = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+        try:
+            probe.bind(("127.0.0.1", self._config.redirect_port))
+        except OSError as e:
+            on_error(e)
+            return
+        finally:
+            probe.close()
 
         try:
             server = HTTPServer(
