@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 import logging
 from blinker import Signal
+from ..image.util.srgb import resize_linear_nd
 from ..shared.util.glib import idle_add
 from .models.camera import Camera, Pos
 
@@ -413,12 +414,9 @@ class CameraController:
 
         out_width, out_height = output_size
         try:
-            resized = cv2.resize(
-                self._image_data,
-                (out_width, out_height),
-                interpolation=cv2.INTER_AREA,
+            return resize_linear_nd(
+                self._image_data, (out_width, out_height)
             )
-            return resized
         except cv2.error as e:
             logger.error(f"Failed to resize image: {e}")
             return None

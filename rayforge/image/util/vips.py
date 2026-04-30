@@ -15,6 +15,24 @@ from .cairo_util import rgba_to_cairo_surface
 logger = logging.getLogger(__name__)
 
 
+def resize_linear(
+    image: pyvips.Image, h_scale: float, vscale: Optional[float] = None
+) -> pyvips.Image:
+    """
+    Resize a pyvips image in linear light for correct interpolation.
+
+    Converts to scRGB (linear float) before resizing, then back to
+    sRGB.  pyvips streams the pipeline tile-by-tile so the float32
+    intermediate is never fully resident in memory.
+    """
+    linear = image.colourspace("scrgb")
+    if vscale is not None:
+        resized = linear.resize(h_scale, vscale=vscale)
+    else:
+        resized = linear.resize(h_scale)
+    return resized.colourspace("srgb")
+
+
 def resize_and_crop_from_full_image(
     full_image: pyvips.Image,
     target_w: int,
@@ -55,7 +73,7 @@ def resize_and_crop_from_full_image(
         except pyvips.Error:
             logger.warning("Failed to apply autorotate to image.")
 
-    scaled_full_image = full_image.resize(scale_x, vscale=scale_y)
+    scaled_full_image = resize_linear(full_image, scale_x, vscale=scale_y)
 
     scaled_crop_x = int(crop_x * scale_x)
     scaled_crop_y = int(crop_y * scale_y)

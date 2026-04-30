@@ -775,8 +775,8 @@ class WorkPiece(DocItem):
             if processed_image.width > 0 and processed_image.height > 0:
                 h_scale = target_w / processed_image.width
                 v_scale = target_h / processed_image.height
-                processed_image = processed_image.resize(
-                    h_scale, vscale=v_scale
+                processed_image = util.resize_linear(
+                    processed_image, h_scale, vscale=v_scale
                 )
 
         return processed_image
