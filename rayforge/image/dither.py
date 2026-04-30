@@ -3,6 +3,8 @@
 import numpy as np
 from enum import Enum
 
+from .util.srgb import linear_to_srgb, srgb_to_linear
+
 
 class DitherAlgorithm(Enum):
     FLOYD_STEINBERG = "floyd_steinberg"
@@ -47,12 +49,13 @@ def apply_floyd_steinberg_dither(
         Binary image where 1 represents areas to engrave.
     """
     height, width = grayscale.shape
-    dithered = grayscale.astype(np.float32).copy()
+    linear = srgb_to_linear(np.clip(grayscale, 0, 255).astype(np.uint8))
+    dithered = linear.astype(np.float32).copy()
 
     for y in range(height):
         for x in range(width):
             old_pixel = dithered[y, x]
-            new_pixel = 0.0 if old_pixel < 128.0 else 255.0
+            new_pixel = 0.0 if old_pixel < 0.5 else 1.0
             dithered[y, x] = new_pixel
             quant_error = old_pixel - new_pixel
 
@@ -66,9 +69,9 @@ def apply_floyd_steinberg_dither(
                     dithered[y + 1, x + 1] += quant_error * 1.0 / 16.0
 
     if invert:
-        return (dithered > 128).astype(np.uint8)
+        return (dithered >= 0.5).astype(np.uint8)
     else:
-        return (dithered < 128).astype(np.uint8)
+        return (dithered < 0.5).astype(np.uint8)
 
 
 def apply_minimum_run_length(
@@ -190,14 +193,20 @@ def surface_to_dithered_array(
     green_unpremult = np.clip(green * 255.0 / alpha_safe, 0, 255)
     blue_unpremult = np.clip(blue * 255.0 / alpha_safe, 0, 255)
 
-    alpha_normalized = alpha / 255.0
-    red_blended = 255.0 - (255.0 - red_unpremult) * alpha_normalized
-    green_blended = 255.0 - (255.0 - green_unpremult) * alpha_normalized
-    blue_blended = 255.0 - (255.0 - blue_unpremult) * alpha_normalized
+    red_linear = srgb_to_linear(red_unpremult.astype(np.uint8))
+    green_linear = srgb_to_linear(green_unpremult.astype(np.uint8))
+    blue_linear = srgb_to_linear(blue_unpremult.astype(np.uint8))
 
-    grayscale = (
+    alpha_normalized = alpha / 255.0
+    red_blended = 1.0 - (1.0 - red_linear) * alpha_normalized
+    green_blended = 1.0 - (1.0 - green_linear) * alpha_normalized
+    blue_blended = 1.0 - (1.0 - blue_linear) * alpha_normalized
+
+    gray_linear = (
         0.2989 * red_blended + 0.5870 * green_blended + 0.1140 * blue_blended
-    ).astype(np.float32)
+    )
+
+    grayscale = linear_to_srgb(gray_linear).astype(np.float32)
 
     if dither_algorithm == DitherAlgorithm.FLOYD_STEINBERG:
         bw_image = apply_floyd_steinberg_dither(grayscale, invert)
