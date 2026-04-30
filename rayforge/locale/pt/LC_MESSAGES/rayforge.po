@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-27 00:51+0200\n"
+"POT-Creation-Date: 2026-04-30 23:39+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -112,6 +112,14 @@ msgstr "Modelo '{model}' não encontrado. Disponíveis: {available}"
 msgid "{power_percent}% power, {speed_str}"
 msgstr "{power_percent}% potência, {speed_str}"
 
+#: rayforge/core/varset/choicevar.py
+msgid "Choice"
+msgstr "Escolha"
+
+#: rayforge/core/varset/var.py
+msgid "Text (Single Line)"
+msgstr "Texto (Linha Única)"
+
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
 msgstr "A taxa de transmissão não pode estar vazia."
@@ -137,6 +145,14 @@ msgstr "O nome do host ou endereço IP não pode estar vazio."
 msgid "Invalid hostname or IP address format."
 msgstr "Formato de nome de host ou endereço IP inválido."
 
+#: rayforge/core/varset/hostnamevar.py
+msgid "Hostname / IP"
+msgstr "Nome do Host / IP"
+
+#: rayforge/core/varset/intvar.py
+msgid "Integer"
+msgstr "Inteiro"
+
 #: rayforge/core/varset/intvar.py rayforge/core/varset/floatvar.py
 #, python-brace-format
 msgid "Value must be at least {min_val}."
@@ -154,6 +170,22 @@ msgstr "A porta não pode estar vazia."
 #: rayforge/core/varset/portvar.py
 msgid "Port must be a number."
 msgstr "A porta deve ser um número."
+
+#: rayforge/core/varset/floatvar.py
+msgid "Floating Point"
+msgstr "Ponto Flutuante"
+
+#: rayforge/core/varset/floatvar.py
+msgid "Slider (0-100%)"
+msgstr "Deslizador (0-100%)"
+
+#: rayforge/core/varset/textareavar.py
+msgid "Text (Multi-Line)"
+msgstr "Texto (Múltiplas Linhas)"
+
+#: rayforge/core/varset/boolvar.py
+msgid "Boolean (Switch)"
+msgstr "Booleano (Interruptor)"
 
 #: rayforge/core/varset/urlvar.py
 msgid "URL cannot be empty."
@@ -181,6 +213,10 @@ msgstr "URL inválida: {error}"
 msgid "Serial port cannot be empty."
 msgstr "A porta serial não pode estar vazia."
 
+#: rayforge/core/varset/serialportvar.py
+msgid "Serial Port"
+msgstr "Porta Serial"
+
 #: rayforge/core/capability.py rayforge/ui_gtk/main_menu.py
 msgid "Cut"
 msgstr "Cortar"
@@ -190,38 +226,29 @@ msgid "Optionally force a specific laser head"
 msgstr "Opcionalmente, forçar uma cabeça de laser específica."
 
 #: rayforge/core/capability.py
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Power"
 msgstr "Potência"
 
 #: rayforge/core/capability.py
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Tab Power"
 msgstr "Potência da aba"
 
 #: rayforge/core/capability.py
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 #, python-format
 msgid "Laser power at tab positions (% of cut power)"
 msgstr "Potência do laser nas posições de aba (% da potência de corte)"
 
 #: rayforge/core/capability.py
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Cut Speed"
 msgstr "Velocidade de Corte"
 
 #: rayforge/core/capability.py
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
+msgid "Travel Speed"
+msgstr "Velocidade de Deslocamento"
+
+#: rayforge/core/capability.py
 msgid "Air Assist"
 msgstr "Assistência de Ar"
-
-#: rayforge/core/capability.py
-msgid "Kerf"
-msgstr "Largura do corte"
-
-#: rayforge/core/capability.py
-msgid "The effective width of the laser beam"
-msgstr "A largura efetiva do feixe de laser"
 
 #: rayforge/core/capability.py
 msgid "Engrave"
@@ -238,6 +265,40 @@ msgstr "Marcar"
 #: rayforge/core/capability.py
 msgid "Score Speed"
 msgstr "Velocidade de Marcação"
+
+#: rayforge/core/capability.py
+msgid "Kerf"
+msgstr "Largura do corte"
+
+#: rayforge/core/capability.py
+msgid "The effective width of the laser beam"
+msgstr "A largura efetiva do feixe de laser"
+
+#: rayforge/core/capability.py
+msgid "Material Test"
+msgstr "Teste de material"
+
+#: rayforge/core/capability.py
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "PWM"
+msgstr "PWM"
+
+#: rayforge/core/capability.py
+msgid "Frequency"
+msgstr "Frequência"
+
+#: rayforge/core/capability.py
+msgid "PWM frequency in Hz"
+msgstr "Frequência PWM em Hz"
+
+#: rayforge/core/capability.py
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Pulse Width"
+msgstr "Largura de pulso"
+
+#: rayforge/core/capability.py
+msgid "Pulse width in microseconds"
+msgstr "Largura de pulso em microssegundos"
 
 #: rayforge/core/model_manager.py
 msgid "Core"
@@ -290,6 +351,14 @@ msgstr "Nenhuma configuração"
 #, python-brace-format
 msgid "Resource '{resource}' is currently in use by '{owner}'."
 msgstr "O recurso '{resource}' está atualmente em uso por '{owner}'."
+
+#: rayforge/machine/driver/driver.py
+msgid ""
+"This driver has not been tested. It may or may not work. Use it at your own "
+"risk."
+msgstr ""
+"Este driver não foi testado. Pode ou não funcionar. Use por sua conta e "
+"risco."
 
 #: rayforge/machine/driver/driver.py
 msgid ""
@@ -391,6 +460,7 @@ msgid "Smoothieware via a Telnet connection"
 msgstr "Smoothieware através de uma conexão Telnet"
 
 #: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Machine Coordinates (G53)"
@@ -398,6 +468,7 @@ msgstr "Coordenadas de máquina (G53)"
 
 #: rayforge/machine/driver/smoothie.py
 #: rayforge/machine/driver/ruida/ruida_driver.py
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 #, python-brace-format
@@ -406,6 +477,7 @@ msgstr "Nome de host ou endereço IP inválido: '{host}'"
 
 #: rayforge/machine/driver/smoothie.py
 #: rayforge/machine/driver/ruida/ruida_driver.py
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Hostname"
@@ -418,6 +490,7 @@ msgid "The IP address or hostname of the device"
 msgstr "O endereço IP ou nome do host do dispositivo"
 
 #: rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "Port"
@@ -429,6 +502,7 @@ msgstr "O número da porta Telnet"
 
 #: rayforge/machine/driver/smoothie.py
 #: rayforge/machine/driver/ruida/ruida_driver.py
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Hostname must be configured."
@@ -465,6 +539,133 @@ msgstr "A porta UDP para comandos de jog (padrão: 50207)"
 #: rayforge/machine/driver/ruida/ruida_driver.py
 msgid "No response from controller"
 msgstr "Sem resposta do controlador"
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid "OctoPrint"
+msgstr "OctoPrint"
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid "Submit G-code to an OctoPrint server"
+msgstr "Enviar G-code para um servidor OctoPrint"
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid "IP address or hostname of the OctoPrint server"
+msgstr "Endereço IP ou nome do host do servidor OctoPrint"
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid "HTTP port of the OctoPrint server"
+msgstr "Porta HTTP do servidor OctoPrint"
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+msgid "API Key"
+msgstr "Chave API"
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid ""
+"Enter an API key manually or click 'Request Access' to obtain one via "
+"OctoPrint's Application Keys plugin."
+msgstr ""
+"Insira uma chave API manualmente ou clique em 'Solicitar acesso' para obter "
+"uma através do plugin Application Keys do OctoPrint."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid ""
+"API key must be configured. Use the 'Request Access' button or enter an API "
+"key manually."
+msgstr ""
+"A chave API deve estar configurada. Use o botão 'Solicitar acesso' ou insira "
+"uma chave API manualmente."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid "Authentication failed. API key may be invalid or expired."
+msgstr "Autenticação falhou. A chave API pode ser inválida ou expirada."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+#, python-brace-format
+msgid ""
+"Could not connect to OctoPrint at '{host}:{port}'. Check the address and "
+"network connection."
+msgstr ""
+"Não foi possível conectar ao OctoPrint em '{host}:{port}'. Verifique o "
+"endereço e a conexão de rede."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid "Authentication Failed"
+msgstr "Autenticação falhou"
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid ""
+"The API key is invalid or has expired. Please re-authenticate in device "
+"settings."
+msgstr ""
+"A chave API é inválida ou expirou. Por favor, reautentique nas configurações "
+"do dispositivo."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid "OctoPrint returned no login data."
+msgstr "OctoPrint não retornou dados de login."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid "Unexpected WebSocket frame."
+msgstr "Frame WebSocket inesperado."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid "Server closed WebSocket connection."
+msgstr "O servidor fechou a conexão WebSocket."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid "Print Failed"
+msgstr "Impressão falhou"
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid ""
+"OctoPrint reported that the print job failed. Check OctoPrint for details."
+msgstr ""
+"OctoPrint relatou que o trabalho de impressão falhou. Verifique o OctoPrint "
+"para detalhes."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid "Driver not configured with a host."
+msgstr "Driver não configurado com um host."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid "Authentication failed during upload."
+msgstr "Autenticação falhou durante o envio."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid "Printer is busy or not operational. Cannot start a new job."
+msgstr ""
+"A impressora está ocupada ou não operacional. Não é possível iniciar um novo "
+"trabalho."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid ""
+"OctoPrint accepted the file but could not start printing. The printer may "
+"not be operational or is already busy."
+msgstr ""
+"OctoPrint aceitou o arquivo mas não conseguiu iniciar a impressão. A "
+"impressora pode não estar operacional ou já estar ocupada."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+#, python-brace-format
+msgid "Could not upload file to OctoPrint at '{host}:{port}'."
+msgstr "Não foi possível enviar o arquivo para o OctoPrint em '{host}:{port}'."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid ""
+"OctoPrint does not support writing device firmware settings through its API."
+msgstr ""
+"OctoPrint não suporta a escrita de configurações de firmware do dispositivo "
+"através de sua API."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+msgid ""
+"Probe command sent. OctoPrint does not report probe results via its API."
+msgstr ""
+"Comando de sonda enviado. OctoPrint não relata resultados de sonda via sua "
+"API."
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "GRBL (Telnet)"
@@ -1225,7 +1426,6 @@ msgid "{label} (for {machine_name})"
 msgstr "{label} (para {machine_name})"
 
 #: rayforge/machine/models/laser.py
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Laser Head"
 msgstr "Cabeça de Laser"
 
@@ -1662,6 +1862,7 @@ msgstr ""
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
+#: rayforge/ui_gtk/debug_log_dialog.py
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
@@ -1851,10 +2052,6 @@ msgstr "Compatível com OpenAI"
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 msgid "Base URL"
 msgstr "URL base"
-
-#: rayforge/ui_gtk/settings/ai_settings_page.py
-msgid "API Key"
-msgstr "Chave API"
 
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 msgid "Default Model"
@@ -2286,6 +2483,7 @@ msgid "Capture Frame"
 msgstr "Capturar imagem"
 
 #: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/varset/adapter/appkey.py
 msgid "Clear"
 msgstr "Limpar"
 
@@ -3652,6 +3850,26 @@ msgid "G-code tool number (e.g., T0, T1)"
 msgstr "Número da ferramenta do G-code (ex: T0, T1)"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Diode"
+msgstr "Diodo"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "CO₂"
+msgstr "CO₂"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Fiber"
+msgstr "Fibra"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Laser Type"
+msgstr "Tipo de laser"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Type of laser tube or diode"
+msgstr "Tipo de tubo laser ou diodo"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Max Power"
 msgstr "Potência Máxima"
 
@@ -3698,6 +3916,48 @@ msgstr "Cor de rasterização"
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Color for engraving/raster operations"
 msgstr "Cor para operações de gravação/rasterização"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Pulse Width Modulation settings for frequency and pulse width control."
+msgstr ""
+"Configurações de modulação por largura de pulso para controle de frequência "
+"e largura de pulso."
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "PWM Frequency"
+msgstr "Frequência PWM"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Default PWM frequency in Hz"
+msgstr "Frequência PWM padrão em Hz"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Max PWM Frequency"
+msgstr "Frequência PWM máxima"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Maximum supported PWM frequency in Hz"
+msgstr "Frequência PWM máxima suportada em Hz"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Default pulse width in µs"
+msgstr "Largura de pulso padrão em µs"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Min Pulse Width"
+msgstr "Largura de pulso mínima"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Minimum pulse width in µs"
+msgstr "Largura de pulso mínima em µs"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Max Pulse Width"
+msgstr "Largura de pulso máxima"
+
+#: rayforge/ui_gtk/machine/laser_preferences_page.py
+msgid "Maximum pulse width in µs"
+msgstr "Largura de pulso máxima em µs"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Framing"
@@ -4129,42 +4389,6 @@ msgid "Adjust Slider Range"
 msgstr "Ajustar Intervalo do Deslizador"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
-msgid "Integer"
-msgstr "Inteiro"
-
-#: rayforge/ui_gtk/varset/varset_editor.py
-msgid "Boolean (Switch)"
-msgstr "Booleano (Interruptor)"
-
-#: rayforge/ui_gtk/varset/varset_editor.py
-msgid "Floating Point"
-msgstr "Ponto Flutuante"
-
-#: rayforge/ui_gtk/varset/varset_editor.py
-msgid "Slider (0-100%)"
-msgstr "Deslizador (0-100%)"
-
-#: rayforge/ui_gtk/varset/varset_editor.py
-msgid "Text (Single Line)"
-msgstr "Texto (Linha Única)"
-
-#: rayforge/ui_gtk/varset/varset_editor.py
-msgid "Text (Multi-Line)"
-msgstr "Texto (Múltiplas Linhas)"
-
-#: rayforge/ui_gtk/varset/varset_editor.py
-msgid "Choice"
-msgstr "Escolha"
-
-#: rayforge/ui_gtk/varset/varset_editor.py
-msgid "Hostname / IP"
-msgstr "Nome do Host / IP"
-
-#: rayforge/ui_gtk/varset/varset_editor.py
-msgid "Serial Port"
-msgstr "Porta Serial"
-
-#: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Add Parameter"
 msgstr "Adicionar Parâmetro"
 
@@ -4172,12 +4396,120 @@ msgstr "Adicionar Parâmetro"
 msgid "New Parameter"
 msgstr "Novo parâmetro"
 
-#: rayforge/ui_gtk/varset/var_row_factory.py
-#: rayforge/ui_gtk/varset/varsetwidget.py
+#: rayforge/ui_gtk/varset/adapter/speed.py
+#, python-brace-format
+msgid "Max: {max_speed}"
+msgstr "Máx: {max_speed}"
+
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+msgid "Request Access"
+msgstr "Solicitar acesso"
+
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+msgid "API key configured"
+msgstr "Chave API configurada"
+
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+msgid "Request New Key"
+msgstr "Solicitar nova chave"
+
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+msgid "No API key configured"
+msgstr "Nenhuma chave API configurada"
+
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+msgid "Hostname and port must be configured first"
+msgstr "O nome do host e a porta devem ser configurados primeiro"
+
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+msgid "Device not reachable or does not support automatic key requests"
+msgstr ""
+"Dispositivo inacessível ou não suporta solicitações automáticas de chaves"
+
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+msgid "Unexpected response from device"
+msgstr "Resposta inesperada do dispositivo"
+
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+msgid "Too many requests. Try again later."
+msgstr "Muitas solicitações. Tente novamente mais tarde."
+
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+#, python-brace-format
+msgid "Request failed: {code}"
+msgstr "Solicitação falhou: {code}"
+
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+#, python-brace-format
+msgid "Connection failed: {err}"
+msgstr "Conexão falhou: {err}"
+
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+msgid "Waiting for approval on device…"
+msgstr "Aguardando aprovação no dispositivo…"
+
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+#: rayforge/ui_gtk/varset/adapter/oauth.py
+msgid "Waiting…"
+msgstr "Aguardando…"
+
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+msgid "Approval timed out. Please try again."
+msgstr "Tempo de aprovação esgotado. Por favor, tente novamente."
+
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+msgid "Request denied or expired."
+msgstr "Solicitação negada ou expirada."
+
+#: rayforge/ui_gtk/varset/adapter/oauth.py
+msgid "Authorize URL"
+msgstr "URL de autorização"
+
+#: rayforge/ui_gtk/varset/adapter/oauth.py
+msgid "Token URL"
+msgstr "URL do token"
+
+#: rayforge/ui_gtk/varset/adapter/oauth.py
+msgid "Client ID"
+msgstr "ID do cliente"
+
+#: rayforge/ui_gtk/varset/adapter/oauth.py
+msgid "Sign In"
+msgstr "Entrar"
+
+#: rayforge/ui_gtk/varset/adapter/oauth.py
+msgid "Sign Out"
+msgstr "Sair"
+
+#: rayforge/ui_gtk/varset/adapter/oauth.py
+msgid "Token expired"
+msgstr "Token expirado"
+
+#: rayforge/ui_gtk/varset/adapter/oauth.py
+msgid "Refresh"
+msgstr "Atualizar"
+
+#: rayforge/ui_gtk/varset/adapter/oauth.py
+msgid "Authenticated"
+msgstr "Autenticado"
+
+#: rayforge/ui_gtk/varset/adapter/oauth.py
+msgid "Re-authorize"
+msgstr "Reautorizar"
+
+#: rayforge/ui_gtk/varset/adapter/oauth.py
+msgid "Not connected"
+msgstr "Não conectado"
+
+#: rayforge/ui_gtk/varset/adapter/oauth.py
+msgid "Refreshing…"
+msgstr "Atualizando…"
+
+#: rayforge/ui_gtk/varset/adapter/base.py
 msgid "None Selected"
 msgstr "Nenhum Selecionado"
 
-#: rayforge/ui_gtk/varset/var_row_factory.py
+#: rayforge/ui_gtk/varset/adapter/registry.py
 #, python-brace-format
 msgid "Unsupported type: {t}"
 msgstr "Tipo não suportado: {t}"
@@ -4758,7 +5090,7 @@ msgstr "Sobre"
 msgid "Donate"
 msgstr "Doar"
 
-#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/mainwindow.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/debug_log_dialog.py
 msgid "Save Debug Log"
 msgstr "Salvar Log de Depuração"
 
@@ -4851,23 +5183,9 @@ msgid "Please select a single object to export."
 msgstr "Por favor, selecione um único objeto para exportar."
 
 #: rayforge/ui_gtk/mainwindow.py
-msgid "Failed to create debug archive."
-msgstr "Falha ao criar o arquivo de depuração."
-
-#: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
 msgid "Debug log saved to {path}"
 msgstr "Log de depuração salvo em {path}"
-
-#: rayforge/ui_gtk/mainwindow.py
-#, python-brace-format
-msgid "Error saving file: {msg}"
-msgstr "Erro ao salvar o arquivo: {msg}"
-
-#: rayforge/ui_gtk/mainwindow.py
-#, python-brace-format
-msgid "An unexpected error occurred: {error}"
-msgstr "Ocorreu um erro inesperado: {error}"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Open Project"
@@ -4950,6 +5268,40 @@ msgstr "Alinhar ao Topo"
 msgid "Align Bottom"
 msgstr "Alinhar à Base"
 
+#: rayforge/ui_gtk/debug_log_dialog.py
+msgid ""
+"Create a ZIP archive with log files and system information for "
+"troubleshooting."
+msgstr ""
+"Criar um arquivo ZIP com logs e informações do sistema para resolução de "
+"problemas."
+
+#: rayforge/ui_gtk/debug_log_dialog.py
+msgid "Include current project"
+msgstr "Incluir projeto atual"
+
+#: rayforge/ui_gtk/debug_log_dialog.py
+msgid "Add the current project file to the debug archive"
+msgstr "Adicionar o arquivo do projeto atual ao arquivo de depuração"
+
+#: rayforge/ui_gtk/debug_log_dialog.py rayforge/ui_gtk/project_cmd.py
+msgid "_Save"
+msgstr "_Guardar"
+
+#: rayforge/ui_gtk/debug_log_dialog.py
+msgid "Failed to create debug archive."
+msgstr "Falha ao criar o arquivo de depuração."
+
+#: rayforge/ui_gtk/debug_log_dialog.py
+#, python-brace-format
+msgid "Error saving file: {msg}"
+msgstr "Erro ao salvar o arquivo: {msg}"
+
+#: rayforge/ui_gtk/debug_log_dialog.py
+#, python-brace-format
+msgid "An unexpected error occurred: {error}"
+msgstr "Ocorreu um erro inesperado: {error}"
+
 #: rayforge/ui_gtk/project_cmd.py
 msgid "Unsaved Changes"
 msgstr "Alterações Não Guardadas"
@@ -4961,10 +5313,6 @@ msgstr "O projeto atual tem alterações não guardadas. Deseja guardá-las?"
 #: rayforge/ui_gtk/project_cmd.py
 msgid "_Don't Save"
 msgstr "_Não Guardar"
-
-#: rayforge/ui_gtk/project_cmd.py
-msgid "_Save"
-msgstr "_Guardar"
 
 #: rayforge/ui_gtk/project_cmd.py
 msgid "New project created"
@@ -5199,49 +5547,13 @@ msgid "Power, speed, and laser head selection for this operation."
 msgstr "Seleção de potência, velocidade e cabeça de laser para esta operação."
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-#, python-brace-format
-msgid "Max: {max_speed}"
-msgstr "Máx: {max_speed}"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Travel Speed"
-msgstr "Velocidade de Deslocamento"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Beam Width (Kerf)"
-msgstr "Largura do Feixe (Largura do corte)"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Effective laser cut width in machine units"
-msgstr "Largura efetiva do corte a laser em unidades da máquina"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Change Laser"
 msgstr "Alterar Laser"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Change Kerf"
-msgstr "Alterar Largura do Corte"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Change laser power"
-msgstr "Alterar potência do laser"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Change tab power"
-msgstr "Alterar potência da aba"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Change cut speed"
-msgstr "Alterar velocidade de corte"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Change Travel Speed"
-msgstr "Alterar Velocidade de Deslocamento"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Toggle air assist"
-msgstr "Alternar assistência de ar"
+#, python-brace-format
+msgid "Change {key}"
+msgstr "Alterar {key}"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "No post-processing options available for this step."
