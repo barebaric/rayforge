@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 
 
 class ParameterContext:
@@ -10,7 +10,7 @@ class ParameterContext:
 
     def __init__(self) -> None:
         self._expressions: Dict[str, str] = {}
-        self._cache: Dict[str, float] = {}
+        self._cache: Dict[str, Any] = {}
         self._dirty: bool = False
 
         # Safe math context
@@ -30,24 +30,24 @@ class ParameterContext:
         new_context._dirty = True  # Force re-evaluation on next get
         return new_context
 
-    def set(self, name: str, value: float | str) -> None:
+    def set(self, name: str, value: Union[float, str]) -> None:
         """Sets a parameter. Can be a float or a math string."""
         self._expressions[name] = str(value)
         self._dirty = True
 
-    def get(self, name: str, default: float = 0.0) -> float:
+    def get(self, name: str, default: Any = 0.0) -> Any:
         """Gets the evaluated value of a parameter."""
         if self._dirty:
             self.evaluate_all()
         return self._cache.get(name, default)
 
-    def get_all_values(self) -> Dict[str, float]:
+    def get_all_values(self) -> Dict[str, Any]:
         """Evaluates all expressions and returns a dictionary of all values."""
         if self._dirty:
             self.evaluate_all()
         return self._cache.copy()
 
-    def evaluate(self, expression: str | float) -> float:
+    def evaluate(self, expression: Union[str, float]) -> Any:
         """Evaluates an arbitrary expression string using current context."""
         if isinstance(expression, (int, float)):
             return float(expression)
@@ -65,12 +65,12 @@ class ParameterContext:
             ctx.update(self._cache)
 
         try:
-            return float(eval(str(expression), {"__builtins__": None}, ctx))
+            return eval(str(expression), {"__builtins__": None}, ctx)
         except Exception:
             return 0.0
 
     def evaluate_all(
-        self, initial_values: Optional[Dict[str, float]] = None
+        self, initial_values: Optional[Dict[str, Any]] = None
     ) -> None:
         """
         Iteratively resolves dependencies.
@@ -104,7 +104,7 @@ class ParameterContext:
                     # The context for eval needs math and solved variables
                     eval_ctx = self._math_context.copy()
                     eval_ctx.update(self._cache)
-                    val = float(eval(expr, {"__builtins__": None}, eval_ctx))
+                    val = eval(expr, {"__builtins__": None}, eval_ctx)
                     self._cache[name] = val
                     progress = True
                 except (NameError, TypeError, SyntaxError):

@@ -2,6 +2,7 @@ import pytest
 from typing import cast
 from unittest.mock import Mock
 from rayforge.core.varset.var import Var, ValidationError
+from rayforge.core.varset.varset import VarSet
 
 
 class TestVar:
@@ -194,12 +195,34 @@ class TestVar:
             "label": "Test",
             "description": "A test var",
             "default": "abc",
+            "var_type": "builtins.str",
         }
         assert "value" not in data
 
         # Test with value
         data_with_val = v.to_dict(include_value=True)
         assert data_with_val["value"] == "xyz"
+
+    def test_string_var_round_trip(self):
+        """Base Var with var_type=str survives serialization."""
+        v = Var(
+            key="name",
+            label="Name",
+            var_type=str,
+            default="hello",
+            value="world",
+        )
+        vs = VarSet()
+        vs.add(v)
+
+        data = vs.to_dict(include_value=True)
+        restored = VarSet.from_dict(data)
+
+        assert "name" in restored.keys()
+        restored_var = restored.get("name")
+        assert restored_var is not None
+        assert restored_var.value == "world"
+        assert restored_var.var_type is str
 
     def test_repr(self):
         """Test the __repr__ for completeness."""

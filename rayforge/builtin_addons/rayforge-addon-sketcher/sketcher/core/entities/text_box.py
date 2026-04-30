@@ -1,3 +1,5 @@
+import logging
+import math
 from typing import List, Tuple, Dict, Any, Sequence, Optional, TYPE_CHECKING
 from rayforge.core.color import ColorRGBA
 from rayforge.core.geo import primitives, Rect
@@ -10,6 +12,8 @@ from .line import Line
 if TYPE_CHECKING:
     from ..constraints import Constraint
     from ..registry import EntityRegistry
+
+logger = logging.getLogger(__name__)
 
 
 class TextBoxEntity(Entity):
@@ -82,6 +86,26 @@ class TextBoxEntity(Entity):
 
     def get_font_metrics(self) -> Tuple[float, float, float]:
         return self.font_config.get_font_metrics()
+
+    def get_natural_size(
+        self, content: Optional[str] = None
+    ) -> Tuple[float, float]:
+        """
+        Returns the natural (width, height) of the text content.
+
+        If *content* is omitted, uses ``self.content``. An empty or
+        None content yields a minimum width of 10.
+        """
+        text = content if content is not None else self.content
+        _, _, font_height = self.get_font_metrics()
+
+        if not text:
+            return 10.0, font_height
+
+        geo = Geometry.from_text(text, self.font_config)
+        geo.flip_y()
+        min_x, _, max_x, _ = geo.rect()
+        return max(max_x - min_x, 1.0), font_height
 
     def get_fourth_corner_id(
         self, registry: "EntityRegistry"
@@ -181,43 +205,128 @@ class TextBoxEntity(Entity):
             for px, py in points
         )
 
-    def to_geometry(self, registry: "EntityRegistry") -> Geometry:
-        """Converts the text box to a Geometry object."""
+    def _build_frame_for_content(
+        self,
+        registry: "EntityRegistry",
+        content: str,
+    ) -> Tuple[
+        Tuple[float, float],
+        Tuple[float, float],
+        Tuple[float, float],
+        float,
+        float,
+    ]:
+        """
+        Builds a frame (origin, p_width, p_height) whose width matches
+        *content*'s natural size, preserving direction vectors from the
+        current frame.
+
+        Returns (origin, p_width, p_height, descent, font_height).
+        """
         p_origin = registry.get_point(self.origin_id)
         p_width = registry.get_point(self.width_id)
         p_height = registry.get_point(self.height_id)
-        txt_geo = Geometry.from_text(self.content, self.font_config)
-        txt_geo.flip_y()
-
         _, descent, font_height = self.get_font_metrics()
 
-        return txt_geo.map_to_frame(
+        if content == self.content or not self.content:
+            logger.debug(
+                f"_build_frame: no scaling, content == self.content "
+                f"({content!r} == {self.content!r}) or empty"
+            )
+            return (
+                (p_origin.x, p_origin.y),
+                (p_width.x, p_width.y),
+                (p_height.x, p_height.y),
+                descent,
+                font_height,
+            )
+
+        nat_w, _ = self.get_natural_size(content)
+
+        dx = p_width.x - p_origin.x
+        dy = p_width.y - p_origin.y
+        frame_w = math.hypot(dx, dy)
+
+        if frame_w < 1e-9:
+            w_scale = 1.0
+        else:
+            w_scale = nat_w / frame_w
+
+        logger.debug(
+            f"_build_frame: scaling content={content!r} "
+            f"nat_w={nat_w:.2f} frame_w={frame_w:.2f} "
+            f"w_scale={w_scale:.4f}"
+        )
+
+        scaled_width = (
+            p_origin.x + dx * w_scale,
+            p_origin.y + dy * w_scale,
+        )
+
+        hx = p_height.x - p_origin.x
+        hy = p_height.y - p_origin.y
+        frame_h = math.hypot(hx, hy)
+
+        if frame_h < 1e-9:
+            h_scale = 1.0
+        else:
+            h_scale = font_height / frame_h
+
+        scaled_height = (
+            p_origin.x + hx * h_scale,
+            p_origin.y + hy * h_scale,
+        )
+
+        return (
             (p_origin.x, p_origin.y),
-            (p_width.x, p_width.y),
-            (p_height.x, p_height.y),
+            scaled_width,
+            scaled_height,
+            descent,
+            font_height,
+        )
+
+    def to_geometry(
+        self,
+        registry: "EntityRegistry",
+        resolved_content: Optional[str] = None,
+    ) -> Geometry:
+        """Converts the text box to a Geometry object."""
+        text = (
+            resolved_content if resolved_content is not None
+            else self.content
+        )
+        origin, pw, ph, descent, fh = self._build_frame_for_content(
+            registry, text
+        )
+        txt_geo = Geometry.from_text(text, self.font_config)
+        txt_geo.flip_y()
+
+        return txt_geo.map_to_frame(
+            origin, pw, ph,
             anchor_y=-descent,
-            stable_src_height=font_height,
+            stable_src_height=fh,
         )
 
     def create_text_fill_geometry(
-        self, registry: "EntityRegistry"
+        self,
+        registry: "EntityRegistry",
+        resolved_content: Optional[str] = None,
     ) -> Optional[Geometry]:
         """Creates a fill geometry for text entities."""
-        p_origin = registry.get_point(self.origin_id)
-        p_width = registry.get_point(self.width_id)
-        p_height = registry.get_point(self.height_id)
-
-        txt_geo = Geometry.from_text(self.content, self.font_config)
+        text = (
+            resolved_content if resolved_content is not None
+            else self.content
+        )
+        origin, pw, ph, descent, fh = self._build_frame_for_content(
+            registry, text
+        )
+        txt_geo = Geometry.from_text(text, self.font_config)
         txt_geo.flip_y()
 
-        _, descent, font_height = self.get_font_metrics()
-
         return txt_geo.map_to_frame(
-            (p_origin.x, p_origin.y),
-            (p_width.x, p_width.y),
-            (p_height.x, p_height.y),
+            origin, pw, ph,
             anchor_y=-descent,
-            stable_src_height=font_height,
+            stable_src_height=fh,
         )
 
     def to_dict(self) -> Dict[str, Any]:

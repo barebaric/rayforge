@@ -1,5 +1,6 @@
 import json
 import uuid
+from datetime import date, datetime
 from pathlib import Path
 from typing import ClassVar, Union, List, Optional, Set, Dict, Any, Tuple
 from blinker import Signal
@@ -8,6 +9,7 @@ import logging
 import math
 from gettext import gettext as _
 from rayforge.core.asset import IAsset
+from rayforge.core.expression import ExpressionMap
 from rayforge.core.geo import Geometry
 from rayforge.core.geo import primitives
 from rayforge.core.geo.constants import (
@@ -181,6 +183,7 @@ class Sketch(IAsset, IGeometryProvider):
         )
         self._updated = Signal()
         self._hidden: bool = False
+        self._last_solve_values: Dict[str, Any] = {}
 
         # Initialize the Origin Point (Fixed Anchor)
         self.origin_id: EntityID = self.registry.add_point(
@@ -1184,9 +1187,13 @@ class Sketch(IAsset, IGeometryProvider):
             # the VarSet, then applying instance-specific overrides.
             initial_values = {}
             if self.input_parameters:
-                initial_values.update(self.input_parameters.get_values())
+                initial_values.update(
+                    self.input_parameters.get_values()
+                )
             if variable_overrides:
                 initial_values.update(variable_overrides)
+
+            self._last_solve_values = dict(initial_values)
 
             # Step 3: Evaluate all expressions from scratch using the temporary
             # context, seeded with the combined values.
@@ -1259,6 +1266,46 @@ class Sketch(IAsset, IGeometryProvider):
             elif constraint.status == ConstraintStatus.CONFLICTING:
                 constraint.status = ConstraintStatus.VALID
 
+    def _resolve_text_content(
+        self, entity: TextBoxEntity
+    ) -> Optional[str]:
+        """
+        Resolves template expressions in a text box's content using
+        the sketch's current parameter values. Returns None if the
+        content has no templates or resolution fails.
+        """
+        if not entity.content:
+            return None
+
+        try:
+            solve_params = ParameterContext.from_dict(
+                self.params.to_dict()
+            )
+            initial_values = dict(self._last_solve_values)
+            if not initial_values and self.input_parameters:
+                initial_values.update(
+                    self.input_parameters.get_values()
+                )
+            solve_params.evaluate_all(initial_values=initial_values)
+            ctx = solve_params.get_all_values()
+            ctx["today"] = lambda: date.today()
+            ctx["now"] = lambda: datetime.now()
+            ctx["uuid4"] = lambda: str(uuid.uuid4())[:8]
+            expr_map = ExpressionMap(ctx)
+            resolved = expr_map.format(entity.content)
+            logger.debug(
+                f"_resolve_text_content: content="
+                f"{entity.content!r} -> {resolved!r} "
+                f"values={list(ctx.keys())[:5]}"
+            )
+            return resolved
+        except (KeyError, IndexError, ValueError) as e:
+            logger.debug(
+                f"Template resolution failed for "
+                f"'{entity.content}': {e}"
+            )
+            return None
+
     def to_geometry(self) -> Geometry:
         """
         Converts the solved sketch into a Geometry object.
@@ -1282,7 +1329,13 @@ class Sketch(IAsset, IGeometryProvider):
 
         # 2. Add standalone geometry (Circles, Text)
         for e in standalone:
-            geo.extend(e.to_geometry(self.registry))
+            if isinstance(e, TextBoxEntity):
+                resolved = self._resolve_text_content(e)
+                geo.extend(
+                    e.to_geometry(self.registry, resolved_content=resolved)
+                )
+            else:
+                geo.extend(e.to_geometry(self.registry))
 
         if not chainable:
             return geo
@@ -1454,8 +1507,13 @@ class Sketch(IAsset, IGeometryProvider):
         for entity in self.registry.entities:
             if entity.id in exclude_ids:
                 continue
-            if not entity.construction:
-                text_geo = entity.create_text_fill_geometry(self.registry)
+            if not entity.construction and isinstance(
+                entity, TextBoxEntity
+            ):
+                resolved = self._resolve_text_content(entity)
+                text_geo = entity.create_text_fill_geometry(
+                    self.registry, resolved_content=resolved
+                )
                 if text_geo:
                     color = (
                         entity.fill_color

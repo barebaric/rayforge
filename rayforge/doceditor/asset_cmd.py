@@ -73,31 +73,34 @@ class UpdateAssetCommand(Command):
         self, provider: "IGeometryProvider"
     ) -> None:
         """Update all workpieces that depend on this geometry provider."""
-        geometry, _ = provider.get_geometry()
-
-        if geometry.is_empty():
-            new_width = 0.0
-            new_height = 0.0
-        else:
-            min_x, min_y, max_x, max_y = geometry.rect()
-            new_width = max(max_x - min_x, 1e-9)
-            new_height = max(max_y - min_y, 1e-9)
-
         for workpiece in self.doc.all_workpieces:
-            if workpiece.geometry_provider_uid == self.asset_uid:
-                # Update the workpiece's own dimension attributes
-                workpiece.natural_width_mm = new_width
-                workpiece.natural_height_mm = new_height
+            if workpiece.geometry_provider_uid != self.asset_uid:
+                continue
 
-                # This resizes the workpiece's matrix while preserving its
-                # center
-                workpiece.set_size(new_width, new_height)
+            params = workpiece.geometry_provider_params or {}
+            geometry, _ = provider.get_geometry(params=params)
 
-                # This clears _boundaries_cache and _render_cache
-                workpiece.clear_render_cache()
+            if geometry.is_empty():
+                new_width = 0.0
+                new_height = 0.0
+            else:
+                min_x, min_y, max_x, max_y = geometry.rect()
+                new_width = max(max_x - min_x, 1e-9)
+                new_height = max(max_y - min_y, 1e-9)
 
-                # Signal for UI to redraw this specific workpiece
-                workpiece.updated.send(workpiece)
+            # Update the workpiece's own dimension attributes
+            workpiece.natural_width_mm = new_width
+            workpiece.natural_height_mm = new_height
+
+            # This resizes the workpiece's matrix while preserving its
+            # center
+            workpiece.set_size(new_width, new_height)
+
+            # This clears _boundaries_cache and _render_cache
+            workpiece.clear_render_cache()
+
+            # Signal for UI to redraw this specific workpiece
+            workpiece.updated.send(workpiece)
 
     def execute(self):
         logger.debug(
