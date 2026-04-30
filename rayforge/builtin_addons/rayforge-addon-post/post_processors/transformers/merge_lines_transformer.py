@@ -438,7 +438,11 @@ class MergeLinesTransformer(OpsTransformer):
 
                     # If it's a non-LineTo cut (like an arc) and we are out
                     # of sync due to skipping prior lines
-                    if is_cut and dist3d(machine_pos, expected_pos) > 1e-5:
+                    if (
+                        is_cut
+                        and expected_pos is not None
+                        and dist3d(machine_pos, expected_pos) > 1e-5
+                    ):
                         new_move = MoveToCommand(expected_pos)
                         if hasattr(cmd, "state") and cmd.state:
                             new_move.state = copy.copy(cmd.state)
