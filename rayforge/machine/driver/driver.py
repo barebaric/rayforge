@@ -67,12 +67,17 @@ class ResourceBusyError(DeviceConnectionError):
 
 class DriverMaturity(Enum):
     STABLE = auto()
+    UNTESTED = auto()
     EXPERIMENTAL = auto()
     KNOWN_BUGGY = auto()
 
 
 DRIVER_MATURITY_LABELS = {
     DriverMaturity.STABLE: "",
+    DriverMaturity.UNTESTED: _(
+        "This driver has not been tested. It may or may not "
+        "work. Use it at your own risk."
+    ),
     DriverMaturity.EXPERIMENTAL: _(
         "This driver is experimental and may have "
         "unresolved issues. Use it with caution."
