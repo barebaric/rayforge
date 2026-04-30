@@ -132,11 +132,15 @@ class TestGrblSerialDriver:
         driver.connection_status_changed.send = status_mock
 
         await driver.connect()
-        await asyncio.sleep(2.5)
-
-        sent_statuses = [
-            call[1].get("status") for call in status_mock.call_args_list
-        ]
+        sent_statuses = []
+        for _ in range(50):
+            await asyncio.sleep(0.1)
+            sent_statuses = [
+                call[1].get("status")
+                for call in status_mock.call_args_list
+            ]
+            if TransportStatus.ERROR in sent_statuses:
+                break
         assert TransportStatus.ERROR in sent_statuses
 
         await driver.cleanup()
