@@ -63,6 +63,9 @@ prb_re = re.compile(r"\[PRB:([\d\.-]+),([\d\.-]+),([\d\.-]+):(\d)\]")
 grbl_parser_state_re = re.compile(r".*(G5[4-9]).*")
 # Regex to find the firmware version from a $I build info report
 grbl_version_re = re.compile(r"\[VER:(\d+\.\d+)([a-zA-Z]?)")
+# Regex to extract compile options and buffer sizes from OPT line
+# Format: [OPT:<flags>,<rx_buffer>,<tx_buffer>]
+grbl_opt_re = re.compile(r"\[OPT:([A-Z]+),(\d+),(\d+)\]")
 
 
 # GRBL Error Codes
@@ -574,6 +577,26 @@ def error_code_to_device_error(error_code: str) -> DeviceError:
                 "Check your machine and firmware documentation."
             ),
         )
+
+
+def parse_opt_info(line: str) -> Optional[int]:
+    """
+    Extract the RX buffer size from an OPT response line.
+
+    Args:
+        line: A single ``[OPT:<flags>,<rx>,<tx>]`` line.
+
+    Returns:
+        The RX buffer size as an integer, or None if the line does
+        not match.
+    """
+    match = grbl_opt_re.search(line)
+    if match:
+        try:
+            return int(match.group(2))
+        except (ValueError, IndexError):
+            pass
+    return None
 
 
 def parse_grbl_parser_state(response_lines: List[str]) -> Optional[str]:

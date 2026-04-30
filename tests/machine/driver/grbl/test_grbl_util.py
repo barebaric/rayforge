@@ -14,6 +14,7 @@ from rayforge.machine.driver.grbl.grbl_util import (
     parse_version,
     version_supports_single_axis_homing,
     strip_gcode_comments,
+    parse_opt_info,
 )
 from rayforge.machine.driver.driver import DeviceStatus, DeviceState
 
@@ -660,3 +661,21 @@ class TestStripGcodeComments:
     )
     def test_strip_comments(self, input_line, expected):
         assert strip_gcode_comments(input_line) == expected
+
+
+class TestParseOptInfo:
+    """Tests for parse_opt_info function."""
+
+    @pytest.mark.parametrize(
+        "line, expected",
+        [
+            ("[OPT:VMPH,63,511]", 63),
+            ("[OPT:VLPH,127,128]", 127),
+            ("[OPT:S,255,1024]", 255),
+            ("[VER:1.1h.2023062602:]", None),
+            ("", None),
+            ("[Some other info]", None),
+        ],
+    )
+    def test_opt_parsing(self, line, expected):
+        assert parse_opt_info(line) == expected

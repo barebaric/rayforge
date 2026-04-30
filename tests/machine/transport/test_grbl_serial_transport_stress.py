@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, AsyncMock
 
 from rayforge.machine.transport.grbl import (
     GrblSerialTransport,
-    GRBL_RX_BUFFER_SIZE,
+    DEFAULT_GRBL_RX_BUFFER_SIZE,
 )
 from rayforge.machine.transport import SerialTransport
 
@@ -131,7 +131,7 @@ class TestBufferTrackingFuzz:
         for cycle in range(200):
             sent: list[int] = []
             total = 0
-            while total < GRBL_RX_BUFFER_SIZE - 2:
+            while total < DEFAULT_GRBL_RX_BUFFER_SIZE - 2:
                 line_len = rng.randint(5, 20)
                 line = b"G0 " + b"A" * (line_len - 5) + b"\n"
                 await transport.send_gcode(line, op_index=None)
@@ -158,7 +158,7 @@ class TestBufferTrackingFuzz:
 
         for i in range(500):
             line = f"G1 X{i} Y{i}\n".encode()
-            if total + len(line) > GRBL_RX_BUFFER_SIZE:
+            if total + len(line) > DEFAULT_GRBL_RX_BUFFER_SIZE:
                 num_acks = rng.randint(1, 4)
                 num_acks = min(num_acks, len(all_sent))
                 ack_data = b"ok\r\n" * num_acks
@@ -192,7 +192,7 @@ class TestBufferTrackingFuzz:
             for j in range(num_cmds):
                 line_len = rng.randint(5, 40)
                 line = b"G0 " + b"X" * (line_len - 5) + b"\n"
-                if total + len(line) > GRBL_RX_BUFFER_SIZE:
+                if total + len(line) > DEFAULT_GRBL_RX_BUFFER_SIZE:
                     ack_data = b"ok\r\n" * len(sent)
                     for chunk in _fragment(ack_data, rng):
                         transport.parse_incoming(chunk)
@@ -258,7 +258,7 @@ class TestBufferTrackingFuzz:
 
             await transport.send_gcode(line, op_index=i)
 
-            overflow = GRBL_RX_BUFFER_SIZE - transport.buffer_count + 1
+            overflow = DEFAULT_GRBL_RX_BUFFER_SIZE - transport.buffer_count + 1
             assert transport.needs_space(overflow)
 
             for chunk in _fragment(b"ok\r\n", rng):
