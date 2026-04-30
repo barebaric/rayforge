@@ -130,9 +130,10 @@ class SourceAsset(IAsset):
         else:
             new_height = size
             new_width = int(size * aspect)
-        image = image.resize(
-            min(new_width / image.width, new_height / image.height)
-        )
+        scale = min(new_width / image.width, new_height / image.height)
+        linear = image.colourspace("scrgb")
+        resized = linear.resize(scale)
+        image = resized.colourspace("srgb")
         return image.pngsave_buffer()
 
     def to_dict(self) -> Dict[str, Any]:

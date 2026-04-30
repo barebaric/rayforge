@@ -5,6 +5,7 @@ Implements the sRGB transfer function defined in IEC 61966-2-1 using
 precomputed lookup tables for fast vectorized conversion with NumPy.
 """
 
+import cv2
 import numpy as np
 
 _SRGB_TO_LINEAR = np.empty(256, dtype=np.float32)
@@ -77,3 +78,45 @@ def linear_to_srgb(
 
     indices = np.round(fixed).astype(np.intp)
     return _LINEAR_TO_SRGB[indices]
+
+
+def resize_linear_nd(
+    image: np.ndarray,
+    size: tuple[int, int],
+    interpolation: int = -1,
+) -> np.ndarray:
+    """
+    Resize a uint8 image in linear light, channel by channel.
+
+    Converts each channel to linear float, resizes, and converts
+    back to sRGB uint8.  Channels are processed one at a time to
+    minimise peak memory.
+
+    Requires OpenCV (cv2) for the actual resize.
+
+    Args:
+        image: HxW or HxWxC uint8 numpy array (sRGB).
+        size: Target (width, height) in pixels.
+        interpolation: OpenCV interpolation flag.  Defaults to
+            cv2.INTER_AREA.
+
+    Returns:
+        Resized uint8 numpy array with the same number of channels.
+    """
+    if interpolation < 0:
+        interpolation = cv2.INTER_AREA
+
+    ndim = image.ndim
+    if ndim == 2:
+        image = image[:, :, np.newaxis]
+
+    n_channels = image.shape[2]
+    out_h, out_w = size[1], size[0]
+    result = np.empty((out_h, out_w, n_channels), dtype=np.uint8)
+
+    for c in range(n_channels):
+        ch_linear = srgb_to_linear(image[:, :, c]).astype(np.float32)
+        ch_resized = cv2.resize(ch_linear, size, interpolation=interpolation)
+        result[:, :, c] = linear_to_srgb(np.clip(ch_resized, 0, 1))
+
+    return result[:, :, 0] if ndim == 2 else result

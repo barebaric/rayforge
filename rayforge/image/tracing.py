@@ -12,8 +12,9 @@ import sys
 from ..core.geo import Geometry, Point
 from ..core.vectorization_spec import VectorizationSpec, TraceSpec
 from ..core.matrix import Matrix
-from .hull import get_enclosing_hull, get_hulls_from_image
 from .denoise import denoise_boolean_image
+from .hull import get_enclosing_hull, get_hulls_from_image
+from .util.srgb import resize_linear_nd
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -695,10 +696,7 @@ def _handle_oversized_image(
     )
 
     img_uint8 = image.astype(np.uint8) * 255
-    # Use INTER_AREA to prevent loss of thin features during downscaling
-    resized_img = cv2.resize(
-        img_uint8, (new_w, new_h), interpolation=cv2.INTER_AREA
-    )
+    resized_img = resize_linear_nd(img_uint8, (new_w, new_h))
     image_to_trace = resized_img > 127
 
     upscale_x, upscale_y = 1.0, 1.0
@@ -875,9 +873,7 @@ def trace_color_image(
             f"Color image too large ({width}x{height}). "
             f"Downscaling to {new_w}x{new_h}."
         )
-        color_image = cv2.resize(
-            color_image, (new_w, new_h), interpolation=cv2.INTER_AREA
-        )
+        color_image = resize_linear_nd(color_image, (new_w, new_h))
         upscale_x = width / new_w
         upscale_y = height / new_h
         content_height = new_h

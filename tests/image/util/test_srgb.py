@@ -2,8 +2,9 @@ import numpy as np
 import pytest
 
 from rayforge.image.util.srgb import (
-    srgb_to_linear,
     linear_to_srgb,
+    resize_linear_nd,
+    srgb_to_linear,
     _SRGB_TO_LINEAR,
     _LINEAR_TO_SRGB,
 )
@@ -130,3 +131,37 @@ class TestLutProperties:
     def test_inverse_lut_bounds(self):
         assert _LINEAR_TO_SRGB[0] == 0
         assert _LINEAR_TO_SRGB[-1] == 255
+
+
+class TestResizeLinearNd:
+    def test_identity_resize_grayscale(self):
+        img = np.full((10, 20), 128, dtype=np.uint8)
+        result = resize_linear_nd(img, (20, 10))
+        assert result.shape == (10, 20)
+        assert result.dtype == np.uint8
+
+    def test_identity_resize_color(self):
+        img = np.full((10, 20, 3), 128, dtype=np.uint8)
+        result = resize_linear_nd(img, (20, 10))
+        assert result.shape == (10, 20, 3)
+        assert result.dtype == np.uint8
+
+    def test_downscale_preserves_color(self):
+        img = np.full((100, 100, 3), 200, dtype=np.uint8)
+        result = resize_linear_nd(img, (50, 50))
+        assert result.shape == (50, 50, 3)
+        np.testing.assert_array_equal(result, 200)
+
+    def test_downscale_checkerboard(self):
+        img = np.zeros((8, 8), dtype=np.uint8)
+        img[::2, ::2] = 255
+        img[1::2, 1::2] = 255
+        result = resize_linear_nd(img, (4, 4))
+        assert result.shape == (4, 4)
+        assert result.dtype == np.uint8
+        assert np.all(result > 100)
+
+    def test_downscale_2d_returns_2d(self):
+        img = np.full((20, 20), 100, dtype=np.uint8)
+        result = resize_linear_nd(img, (10, 10))
+        assert result.ndim == 2

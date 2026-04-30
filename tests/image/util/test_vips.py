@@ -1,4 +1,5 @@
 import cairo
+import numpy as np
 import pytest
 from pathlib import Path
 from typing import Tuple
@@ -211,3 +212,47 @@ def test_conversion_shuffles_channels_to_bgra(color_png_data: bytes):
     b, g, r, a = get_pixel_bgra(surface, x=150, y=50)
 
     assert (r, g, b, a) == expected_rgba
+
+
+# Tests for resize_linear
+
+
+def test_resize_linear_returns_srgb_uchar():
+    img = pyvips.Image.black(100, 100, bands=3).copy(interpretation="srgb")
+    result = vips.resize_linear(img, 0.5)
+    assert result.interpretation == "srgb"
+    assert result.format == "uchar"
+    assert result.width == 50
+    assert result.height == 50
+
+
+def test_resize_linear_preserves_alpha():
+    img = pyvips.Image.black(100, 100, bands=4).copy(interpretation="srgb")
+    result = vips.resize_linear(img, 0.5)
+    assert result.bands == 4
+    assert result.hasalpha()
+
+
+def test_resize_linear_with_vscale():
+    img = pyvips.Image.black(100, 200, bands=3).copy(interpretation="srgb")
+    result = vips.resize_linear(img, 0.5, vscale=0.25)
+    assert result.width == 50
+    assert result.height == 50
+
+
+def test_resize_linear_checkerboard_averages_correctly():
+    bw = 2
+    pattern = np.zeros((100, 100, 3), dtype=np.uint8)
+    for y in range(100):
+        for x in range(100):
+            if (x // bw + y // bw) % 2 == 0:
+                pattern[y, x] = 255
+    img = pyvips.Image.new_from_memory(
+        pattern.tobytes(), 100, 100, 3, "uchar"
+    ).copy(interpretation="srgb")
+
+    result = vips.resize_linear(img, 0.1)
+    data = np.frombuffer(result.write_to_memory(), dtype=np.uint8).reshape(
+        result.height, result.width, 3
+    )
+    assert np.mean(data) == pytest.approx(187.5, abs=5.0)
