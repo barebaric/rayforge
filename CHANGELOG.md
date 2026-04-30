@@ -5,6 +5,32 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.7.0-beta1
+
+### Added
+
+- CO2 laser settings: PWM frequency and pulse width support for compatible
+  machines
+- Experimental OctoPrint driver (untested)
+- Parametric text template support in the sketcher
+- Device profile for the Sculpfun iCube Ultra
+- Grid toggle button in the 3D canvas visibility overlay
+- Project inclusion toggle in the Save Debug Log dialog
+
+### Changed
+
+- Image processing (resize, grayscale, dithering, color LUT) now operates in
+  linear light for more accurate results
+- Visual improvements to the device profile selector
+- Tab power slider is now hidden for non-cut steps
+
+### Fixed
+
+- GRBL buffer overflow on devices with smaller RX buffers
+- Parametric text not updating correctly with volatile expressions
+- Crash in MergeLinesTransformer when a cutting command appeared before any
+  positioning command
+
 ## 1.6.1
 
 ### Added

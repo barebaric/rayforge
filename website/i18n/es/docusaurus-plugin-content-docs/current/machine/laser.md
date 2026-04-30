@@ -120,6 +120,34 @@ rojo para tu láser de corte principal y azul para un láser de grabado
 secundario.
 :::
 
+#### Tipo de Láser
+
+Elige el tipo de cabezal láser en el menú desplegable:
+
+- **Diodo**: Láseres de diodo estándar (los más comunes en máquinas de afición)
+- **CO2**: Láseres de tubo CO2
+- **Fibra**: Láseres de fibra
+
+Al seleccionar CO2 o Fibra, aparecen **ajustes PWM** adicionales (ver más
+abajo). Para láseres de diodo, la sección PWM se oculta ya que no aplica.
+
+#### Ajustes PWM
+
+Cuando se selecciona un tipo de láser CO2 o Fibra, aparecen los siguientes
+controles PWM:
+
+- **Frecuencia PWM**: La frecuencia PWM predeterminada en Hz para este cabezal
+  láser. Los valores típicos van de 500 Hz a varios kHz dependiendo de tu
+  controlador y fuente de alimentación.
+- **Frecuencia PWM máxima**: El límite superior para el ajuste de frecuencia.
+  Esto evita introducir valores que tu hardware no puede manejar.
+- **Ancho de pulso**: El ancho de pulso predeterminado en microsegundos. Controla
+  cuánto tiempo permanece encendido cada pulso durante un ciclo.
+- **Ancho de pulso mín/máx**: Límites para el ajuste del ancho de pulso.
+
+Estos valores predeterminados se transfieren a tus pasos de operación, donde
+pueden sobreescribirse por paso si es necesario.
+
 #### Modelo 3D
 
 Cada cabezal láser puede tener un modelo 3D asignado. Este modelo se renderiza

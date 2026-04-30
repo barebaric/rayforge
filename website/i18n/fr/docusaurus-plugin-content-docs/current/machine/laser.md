@@ -121,6 +121,36 @@ par chaque laser. Par exemple, utilise le rouge pour ton laser de coupe
 principal et le bleu pour un laser de gravure secondaire.
 :::
 
+#### Type de Laser
+
+Choisis le type de tête laser dans le menu déroulant :
+
+- **Diode** : Lasers diode standards (les plus courants pour les machines de loisir)
+- **CO2** : Lasers à tube CO2
+- **Fiber** : Lasers fibrés
+
+Lorsque CO2 ou Fiber est sélectionné, des **paramètres PWM** supplémentaires
+apparaissent (voir ci-dessous). Pour les lasers diode, la section PWM est
+masquée car elle ne s'applique pas.
+
+#### Paramètres PWM
+
+Lorsqu'un type de laser CO2 ou Fiber est sélectionné, les contrôles PWM
+suivants apparaissent :
+
+- **Fréquence PWM** : La fréquence PWM par défaut en Hz pour cette tête laser.
+  Les valeurs typiques vont de 500 Hz à plusieurs kHz selon ton contrôleur
+  et ton alimentation.
+- **Fréquence PWM max** : La limite supérieure du réglage de fréquence. Cela
+  empêche d'entrer des valeurs que ton matériel ne peut pas gérer.
+- **Largeur d'impulsion** : La largeur d'impulsion par défaut en microsecondes.
+  Cela contrôle la durée d'activation de chaque impulsion pendant un cycle.
+- **Largeur d'impulsion min/max** : Les limites pour le réglage de la largeur
+  d'impulsion.
+
+Ces valeurs par défaut sont transmises à tes étapes d'opération, où elles
+peuvent être remplacées par étape si nécessaire.
+
 #### Modèle 3D
 
 Chaque tête laser peut avoir un modèle 3D attribué. Ce modèle est affiché dans

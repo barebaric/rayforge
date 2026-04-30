@@ -118,6 +118,35 @@ durchgeführt werden. Verwende beispielsweise Rot für deinen Hauptschneidelaser
 und Blau für einen sekundären Gravurlaser.
 :::
 
+#### Lasertyp
+
+Wähle den Typ des Laserkopfs aus dem Dropdown-Menü:
+
+- **Diode**: Standard-Diodenlaser (am häufigsten bei Hobby-Maschinen)
+- **CO2**: CO2-Röhrenlaser
+- **Faser**: Faserlaser
+
+Wenn CO2 oder Faser ausgewählt ist, werden zusätzliche **PWM-Einstellungen**
+sichtbar (siehe unten). Für Diodenlaser ist der PWM-Bereich ausgeblendet, da
+er nicht zutreffend ist.
+
+#### PWM-Einstellungen
+
+Wenn ein CO2- oder Faserlaser-Typ ausgewählt ist, erscheinen folgende
+PWM-Steuerelemente:
+
+- **PWM-Frequenz**: Die Standard-PWM-Frequenz in Hz für diesen Laserkopf.
+  Typische Werte reichen von 500 Hz bis mehrere kHz, je nach Controller und
+  Netzteil.
+- **Max. PWM-Frequenz**: Die Obergrenze für die Frequenzeinstellung. Dies
+  verhindert die Eingabe von Werten, die deine Hardware nicht verarbeiten kann.
+- **Pulsbreite**: Die Standard-Pulsbreite in Mikrosekunden. Steuert, wie lange
+  jeder Puls während eines Zyklus eingeschaltet ist.
+- **Min/Max Pulsbreite**: Grenzen für die Pulsbreiteneinstellung.
+
+Diese Standardwerte werden an deine Operationsschritte übergeben, wo sie bei
+Bedarf pro Schritt überschrieben werden können.
+
 #### 3D-Modell
 
 Jedem Laserkopf kann ein 3D-Modell zugewiesen werden. Dieses Modell wird in

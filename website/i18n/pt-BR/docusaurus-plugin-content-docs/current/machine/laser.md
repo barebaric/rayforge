@@ -119,6 +119,35 @@ vermelho para seu laser de corte principal e azul para um laser de gravação
 secundário.
 :::
 
+#### Tipo de Laser
+
+Escolha o tipo de cabeça de laser no menu suspenso:
+
+- **Diodo**: Lasers de diodo padrão (mais comuns em máquinas de hobby)
+- **CO2**: Lasers de tubo CO2
+- **Fibra**: Lasers de fibra
+
+Quando CO2 ou Fibra é selecionado, **configurações PWM** adicionais ficam
+disponíveis (veja abaixo). Para lasers de diodo, a seção PWM fica oculta,
+pois não se aplica.
+
+#### Configurações PWM
+
+Quando um tipo de laser CO2 ou Fibra é selecionado, os seguintes controles
+PWM aparecem:
+
+- **Frequência PWM**: A frequência PWM padrão em Hz para esta cabeça de laser.
+  Valores típicos variam de 500 Hz a vários kHz, dependendo do seu controlador
+  e fonte de alimentação.
+- **Frequência PWM máxima**: O limite superior para a configuração de frequência.
+  Isso evita inserir valores que seu hardware não suporta.
+- **Largura de pulso**: A largura de pulso padrão em microssegundos. Controla
+  quanto tempo cada pulso fica ligado durante um ciclo.
+- **Largura de pulso mín/máx**: Limites para a configuração de largura de pulso.
+
+Esses padrões são repassados para suas etapas de operação, onde podem ser
+substituídos por etapa, se necessário.
+
 #### Modelo 3D
 
 Cada cabeça de laser pode ter um modelo 3D atribuído a ela. Este modelo é

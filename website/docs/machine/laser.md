@@ -117,6 +117,34 @@ it easy to see which operations will be performed by which laser. For example,
 use red for your main cutting laser and blue for a secondary engraving laser.
 :::
 
+#### Laser Type
+
+Choose the type of laser head from the dropdown:
+
+- **Diode**: Standard diode lasers (most common for hobbyist machines)
+- **CO2**: CO2 tube lasers
+- **Fiber**: Fiber lasers
+
+When CO2 or Fiber is selected, additional **PWM settings** become available
+(see below). For diode lasers, the PWM section is hidden since it does not
+apply.
+
+#### PWM Settings
+
+When a CO2 or Fiber laser type is selected, the following PWM controls appear:
+
+- **PWM Frequency**: The default PWM frequency in Hz for this laser head.
+  Typical values range from 500 Hz to several kHz depending on your
+  controller and power supply.
+- **Max PWM Frequency**: The upper limit for the frequency setting. This
+  prevents entering values that your hardware cannot handle.
+- **Pulse Width**: The default pulse width in microseconds. This controls
+  how long each pulse is on during a cycle.
+- **Min/Max Pulse Width**: Bounds for the pulse width setting.
+
+These defaults carry through to your operation steps, where they can be
+overridden per step if needed.
+
 #### 3D Model
 
 Each laser head can have a 3D model assigned to it. This model is rendered in

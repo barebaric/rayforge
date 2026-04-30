@@ -20,6 +20,7 @@ Rayforge is designed primarily for **GRBL-based controllers** but has experiment
 | **Smoothieware** | All     | Compatible    | SmoothieDriver (Telnet)   | Network-based          |
 | **Marlin**       | 2.0+    | Compatible    | use GRBL driver           | Laser mode required    |
 | **ESP3D**        | All     | Compatible    | GRBL Telnet               | Network-based          |
+| **OctoPrint**    | All     | Experimental  | OctoPrint                 | See notes below        |
 | **Other**        | -       | Not supported | -                         | Request support        |
 
 ---
@@ -310,6 +311,7 @@ Marlin 2.0+ can control lasers when properly configured.
 | **Arduino CNC Shield** | GRBL 1.1         | Excellent        |
 | **MKS DLC32**          | grblHAL          | Excellent        |
 | **Ruida**              | Proprietary      | Experimental     |
+| **OctoPrint (Pi)**     | Various          | Experimental     |
 
 ### Recommended Controllers
 
@@ -460,6 +462,39 @@ auto-connect, and status polling.
 - Experimental — not yet fully stable
 - No G-code generation; Ruida uses its own proprietary protocol
 - Job sending is not yet supported
+
+---
+
+### OctoPrint
+
+Rayforge includes an experimental OctoPrint driver that submits G-code directly
+to an OctoPrint server over the network. This is useful if your laser is
+connected to a Raspberry Pi or other machine running OctoPrint.
+
+**Features:**
+
+- WebSocket connection for real-time status updates
+- REST polling fallback when WebSocket is unavailable
+- Auto-reconnect on connection loss
+- Job submission with automatic print start
+- Jogging, homing, and pause/resume controls
+- "Request Access" flow for OctoPrint application keys
+
+**Using the OctoPrint driver:**
+
+1. Select "OctoPrint" driver in machine settings
+2. Enter the hostname or IP address of your OctoPrint server
+3. Set the port (default: 80)
+4. Click "Request Access" to obtain an API key through OctoPrint's
+   application key flow
+5. Connect -- Rayforge will establish a WebSocket connection
+
+**Limitations:**
+
+- Experimental and untested on real hardware -- feedback welcome
+- Cannot read or write firmware settings through OctoPrint
+- Probe results are not reported by OctoPrint
+- WCS offset reads are not supported
 
 ---
 

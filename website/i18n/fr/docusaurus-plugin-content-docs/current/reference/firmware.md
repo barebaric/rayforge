@@ -8,15 +8,16 @@ Rayforge est conçu principalement pour les **contrôleurs basés sur GRBL** mai
 
 ### Matrice de compatibilité
 
-| Firmware          | Version | Statut                   | Pilote                     | Notes                              |
-| ----------------- | ------- | ------------------------ | -------------------------- | ---------------------------------- |
-| **GRBL**          | 1.1+    | Entièrement pris en charge | GRBL Serial              | Recommandé                         |
-| **grblHAL**       | 2023+   | Compatible               | GRBL Serial / GRBL Telnet | Fork GRBL moderne                  |
-| **GRBL**          | 0.9     | Limité                   | GRBL Serial               | Ancien, peut avoir des problèmes   |
-| **Smoothieware**  | Tous    | Compatible               | SmoothieDriver (Telnet)   | Basé sur le réseau                 |
-| **Marlin**        | 2.0+    | Compatible               | Utiliser pilote GRBL      | Mode laser requis                  |
-| **ESP3D**         | Tous    | Compatible               | GRBL Telnet               | Basé sur le réseau                 |
-| **Autre**         | -       | Non pris en charge       | -                          | Demander le support                |
+| Firmware         | Version | Statut                     | Pilote                    | Notes                            |
+| ---------------- | ------- | -------------------------- | ------------------------- | -------------------------------- |
+| **GRBL**         | 1.1+    | Entièrement pris en charge | GRBL Serial               | Recommandé                       |
+| **grblHAL**      | 2023+   | Compatible                 | GRBL Serial / GRBL Telnet | Fork GRBL moderne                |
+| **GRBL**         | 0.9     | Limité                     | GRBL Serial               | Ancien, peut avoir des problèmes |
+| **Smoothieware** | Tous    | Compatible                 | SmoothieDriver (Telnet)   | Basé sur le réseau               |
+| **Marlin**       | 2.0+    | Compatible                 | Utiliser pilote GRBL      | Mode laser requis                |
+| **ESP3D**        | Tous    | Compatible                 | GRBL Telnet               | Basé sur le réseau               |
+| **OctoPrint**    | Tous    | Expérimental               | OctoPrint                 | Voir notes ci-dessous            |
+| **Autre**        | -       | Non pris en charge         | -                         | Demander le support              |
 
 ---
 
@@ -161,6 +162,7 @@ pas de câble USB nécessaire.
 ---
 
 ## Smoothieware
+
 **Pilote :** GRBL Serial (mode compatibilité)
 
 ### Notes de compatibilité
@@ -169,11 +171,11 @@ Smoothieware utilise une syntaxe G-code différente :
 
 **Différences clés :**
 
-| Fonctionnalité  | GRBL           | Smoothieware     |
-| --------------- | -------------- | ---------------- |
-| **Laser allumé**| `M4 S<valeur>` | `M3 S<valeur>`   |
-| **Plage puissance** | 0-1000      | 0.0-1.0 (flottant) |
-| **État**        | format `<...>` | Format différent |
+| Fonctionnalité      | GRBL           | Smoothieware       |
+| ------------------- | -------------- | ------------------ |
+| **Laser allumé**    | `M4 S<valeur>` | `M3 S<valeur>`     |
+| **Plage puissance** | 0-1000         | 0.0-1.0 (flottant) |
+| **État**            | format `<...>` | Format différent   |
 
 **Utiliser Smoothieware avec Rayforge :**
 
@@ -299,11 +301,12 @@ Marlin 2.0+ peut contrôler des lasers lorsqu'il est correctement configuré.
 
 ### Contrôleurs courants
 
-| Carte                  | Firmware typique   | Support Rayforge |
-| ---------------------- | ------------------ | ---------------- |
-| **Arduino CNC Shield** | GRBL 1.1           | Excellent        |
-| **MKS DLC32**          | grblHAL            | Excellent        |
-| **Ruida**              | Propriétaire       | Expérimental     |
+| Carte                  | Firmware typique | Support Rayforge |
+| ---------------------- | ---------------- | ---------------- |
+| **Arduino CNC Shield** | GRBL 1.1         | Excellent        |
+| **MKS DLC32**          | grblHAL          | Excellent        |
+| **Ruida**              | Propriétaire     | Expérimental     |
+| **OctoPrint (Pi)**     | Divers           | Expérimental     |
 
 ### Contrôleurs recommandés
 
@@ -490,6 +493,39 @@ de couche, la connexion automatique et l'interrogation de statut.
 - Expérimental — pas encore totalement stable
 - Pas de génération de G-code ; Ruida utilise son propre protocole propriétaire
 - L'envoi de travaux n'est pas encore pris en charge
+
+---
+
+### OctoPrint
+
+Rayforge inclut un pilote OctoPrint expérimental qui soumet le G-code
+directement à un serveur OctoPrint via le réseau. Ceci est utile si ton laser
+est connecté à un Raspberry Pi ou une autre machine exécutant OctoPrint.
+
+**Fonctionnalités :**
+
+- Connexion WebSocket pour les mises à jour d'état en temps réel
+- Repli sur l'interrogation REST lorsque WebSocket n'est pas disponible
+- Reconnexion automatique en cas de perte de connexion
+- Soumission de travaux avec démarrage automatique de l'impression
+- Jogging, mise à l'origine et contrôles pause/reprise
+- Flux « Demander l'accès » pour les clés d'application OctoPrint
+
+**Utilisation du pilote OctoPrint :**
+
+1. Sélectionne le pilote « OctoPrint » dans les paramètres machine
+2. Entre le nom d'hôte ou l'adresse IP de ton serveur OctoPrint
+3. Définis le port (par défaut : 80)
+4. Clique sur « Demander l'accès » pour obtenir une clé API via le système
+   de clés d'application d'OctoPrint
+5. Connecte — Rayforge établira une connexion WebSocket
+
+**Limitations :**
+
+- Expérimental et non testé sur du matériel réel — retours bienvenus
+- Impossible de lire ou écrire les paramètres du firmware via OctoPrint
+- Les résultats de palpage ne sont pas rapportés par OctoPrint
+- La lecture des décalages WCS n'est pas prise en charge
 
 ---
 

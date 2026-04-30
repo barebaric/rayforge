@@ -53,7 +53,9 @@ suivants :
   Maintenez `Ctrl` en glissant pour contraindre à un cercle parfait.
 - **Rectangles** : Dessinez des rectangles en spécifiant deux coins opposés
 - **Rectangles arrondis** : Dessinez des rectangles avec des coins arrondis
-- **Zones de texte** : Ajoutez des éléments textuels à votre esquisse
+- **Zones de texte** : Ajoutez des éléments textuels à votre esquisse. Le
+  contenu du texte prend en charge les expressions de modèle paramétriques
+  (voir [Modèles de texte](#modèles-de-texte) ci-dessous).
 - **Remplissages** : Remplissez des régions fermées pour créer des zones
   solides
 
@@ -277,6 +279,48 @@ Pour utiliser le chanfrein ou le congé :
 2. Appuyez sur `C+H` pour le chanfrein ou `C+F` pour le congé
 3. Utilisez le menu radial ou les raccourcis clavier pour appliquer la
    modification
+
+## Modèles de texte
+
+Les zones de texte prennent en charge les expressions de modèle entre accolades.
+Celles-ci sont résolues lors de la résolution en utilisant les valeurs de
+paramètres actuelles, le texte se met donc à jour automatiquement lorsque tu
+modifies une dimension ou une variable d'entrée.
+
+### Substitution de variables
+
+Référence n'importe quel paramètre d'esquisse ou variable d'entrée par nom :
+
+- `{width}` — la valeur actuelle du paramètre « width »
+- `{name}` — la valeur d'un paramètre d'entrée de type chaîne
+- `{count:.0f}` — formaté avec un spécificateur de format Python (sans décimales)
+
+### Expressions mathématiques
+
+Tu peux utiliser des fonctions mathématiques dans les modèles :
+
+- `{sqrt(area):.2f}` — racine carrée de « area », formatée à 2 décimales
+- `{width * 2}` — expressions arithmétiques
+
+Les fonctions mathématiques standard (`sqrt`, `sin`, `cos`, `tan`, `pi`, etc.)
+sont disponibles.
+
+### Fonctions intégrées
+
+- `{today()}` — la date d'aujourd'hui (ex : `2026-05-01`)
+- `{now()}` — la date et l'heure actuelles
+- `{uuid4()}` — une chaîne hexadécimale unique de 8 caractères,
+  régénérée à chaque résolution
+
+Ceci est utile pour dater les pièces ou générer des numéros de série uniques
+pour l'étiquetage de production.
+
+### Exemples d'utilisation
+
+- `Part #{uuid4()}` — numéro de série unique à chaque résolution
+- `W={width:.1f} H={height:.1f}` — étiquettes de dimensions dynamiques
+- `Date : {today()}` — dater chaque pièce
+- `{name} - {count:.0f}pcs` — combiner paramètres chaîne et numérique
 
 ## Importation et exportation
 

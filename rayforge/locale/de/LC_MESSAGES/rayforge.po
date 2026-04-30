@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-30 23:39+0200\n"
+"POT-Creation-Date: 2026-05-01 00:35+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -4839,6 +4839,10 @@ msgstr "Sichtbarkeit des Kamerabilds umschalten"
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle 3D model visibility"
 msgstr "3D-Modellsichtbarkeit umschalten"
+
+#: rayforge/ui_gtk/shared/visibility_overlay.py
+msgid "Toggle grid visibility"
+msgstr "Gitter-Sichtbarkeit umschalten"
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle travel move visibility"
