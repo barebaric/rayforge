@@ -292,8 +292,7 @@ class TextBoxEntity(Entity):
     ) -> Geometry:
         """Converts the text box to a Geometry object."""
         text = (
-            resolved_content if resolved_content is not None
-            else self.content
+            resolved_content if resolved_content is not None else self.content
         )
         origin, pw, ph, descent, fh = self._build_frame_for_content(
             registry, text
@@ -302,7 +301,9 @@ class TextBoxEntity(Entity):
         txt_geo.flip_y()
 
         return txt_geo.map_to_frame(
-            origin, pw, ph,
+            origin,
+            pw,
+            ph,
             anchor_y=-descent,
             stable_src_height=fh,
         )
@@ -314,8 +315,7 @@ class TextBoxEntity(Entity):
     ) -> Optional[Geometry]:
         """Creates a fill geometry for text entities."""
         text = (
-            resolved_content if resolved_content is not None
-            else self.content
+            resolved_content if resolved_content is not None else self.content
         )
         origin, pw, ph, descent, fh = self._build_frame_for_content(
             registry, text
@@ -324,7 +324,9 @@ class TextBoxEntity(Entity):
         txt_geo.flip_y()
 
         return txt_geo.map_to_frame(
-            origin, pw, ph,
+            origin,
+            pw,
+            ph,
             anchor_y=-descent,
             stable_src_height=fh,
         )

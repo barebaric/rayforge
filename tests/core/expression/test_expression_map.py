@@ -18,9 +18,7 @@ def test_empty_string():
 
 def test_numeric_variable_substitution():
     """Numeric values are substituted and stringified."""
-    result = _fmt(
-        "{width}x{height}", {"width": 50.0, "height": 30.0}
-    )
+    result = _fmt("{width}x{height}", {"width": 50.0, "height": 30.0})
     assert result == "50.0x30.0"
 
 
@@ -37,17 +35,18 @@ def test_math_expression_evaluated():
 
 def test_arithmetic_in_placeholder():
     """Arithmetic expressions work inside placeholders."""
-    assert _fmt(
-        "{width + height}", {"width": 50.0, "height": 30.0}
-    ) == "80.0"
+    assert _fmt("{width + height}", {"width": 50.0, "height": 30.0}) == "80.0"
 
 
 def test_mixed_text_and_expressions():
     """Template mixing literal text with expressions."""
-    assert _fmt(
-        "Part {width:.1f}x{height:.1f}mm",
-        {"width": 50.0, "height": 30.0},
-    ) == "Part 50.0x30.0mm"
+    assert (
+        _fmt(
+            "Part {width:.1f}x{height:.1f}mm",
+            {"width": 50.0, "height": 30.0},
+        )
+        == "Part 50.0x30.0mm"
+    )
 
 
 def test_unknown_expression_left_as_is():

@@ -46,7 +46,10 @@ class IGeometryProvider(Protocol):
         ...
 
     def get_geometry(
-        self, params: Optional[Dict[str, Any]] = None
+        self,
+        params: Optional[Dict[str, Any]] = None,
+        *,
+        resolved_text_cache: Optional[Dict] = None,
     ) -> Tuple["Geometry", List["FillRenderData"]]:
         """
         Generate geometry with optional parameter overrides.
@@ -54,6 +57,9 @@ class IGeometryProvider(Protocol):
         Args:
             params: Optional dictionary of parameter values to override
                     the provider's default values.
+            resolved_text_cache: Optional mutable dict that carries
+                    resolved template text across calls so volatile
+                    expressions like ``uuid4()`` stay consistent.
 
         Returns:
             A tuple of (stroke_geometry, fill_render_data).

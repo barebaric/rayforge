@@ -100,6 +100,8 @@ class WorkPiece(DocItem):
         self._transient_geometry_provider: Optional["IGeometryProvider"] = None
         self._geometry_provider_connection: Optional[Any] = None
 
+        self._resolved_text_cache: Dict = {}
+
         self.source_asset_uid: Optional[str] = None
 
         self._tabs: List[Tab] = []
@@ -145,8 +147,12 @@ class WorkPiece(DocItem):
         fill_data = []
         min_x, min_y = 0.0, 0.0
 
+        instance_cache: Dict = {}
+
         try:
-            geometry, fill_data = provider.get_geometry()
+            geometry, fill_data = provider.get_geometry(
+                resolved_text_cache=instance_cache
+            )
 
             geometry.upgrade_to_scalable()
             for fd in fill_data:
@@ -194,6 +200,7 @@ class WorkPiece(DocItem):
         # Cache the results (even if empty) to ensure fast rendering
         instance._boundaries_cache = geometry
         instance._fills_cache = fill_data
+        instance._resolved_text_cache = instance_cache
 
         return instance
 
@@ -370,7 +377,8 @@ class WorkPiece(DocItem):
                 f"params: {self._geometry_provider_params}"
             )
             unnormalized_geo, unnormalized_fills = provider.get_geometry(
-                self._geometry_provider_params
+                self._geometry_provider_params,
+                resolved_text_cache=self._resolved_text_cache,
             )
 
             # Upgrade all generated geometry to be fully scalable
@@ -550,6 +558,7 @@ class WorkPiece(DocItem):
             self._geometry_provider_params
         )
         world_wp.source_asset_uid = self.source_asset_uid
+        world_wp._resolved_text_cache = dict(self._resolved_text_cache)
 
         # Ensure any edited boundaries are carried over.
         if self._edited_boundaries is not None:
@@ -617,6 +626,7 @@ class WorkPiece(DocItem):
         self.clear_render_cache()
         self._boundaries_cache = None
         self._fills_cache = None
+        self._resolved_text_cache = {}
         self.updated.send(self)
 
     def _resolve_render_context(self) -> Optional[RenderContext]:
@@ -860,6 +870,14 @@ class WorkPiece(DocItem):
             "geometry_provider_params": self._geometry_provider_params,
             "source_asset_uid": self.source_asset_uid,
         }
+        if self._resolved_text_cache:
+            cache = {
+                str(k): v
+                for k, v in self._resolved_text_cache.items()
+                if v is not None
+            }
+            if cache:
+                state["resolved_text_cache"] = cache
         if self._data is not None:
             state["data"] = self._data
         if self._original_data is not None:
@@ -895,6 +913,7 @@ class WorkPiece(DocItem):
             "geometry_provider_uid",
             "geometry_provider_params",
             "source_asset_uid",
+            "resolved_text_cache",
             "data",
             "original_data",
             "source_px_dims",
@@ -939,6 +958,9 @@ class WorkPiece(DocItem):
             "geometry_provider_params", {}
         ) or data.get("sketch_params", {})
         wp.source_asset_uid = data.get("source_asset_uid")
+        raw_cache = data.get("resolved_text_cache")
+        if raw_cache:
+            wp._resolved_text_cache = {int(k): v for k, v in raw_cache.items()}
 
         # Hydrate with transient data if provided for subprocesses
         if "data" in data:
@@ -1499,7 +1521,11 @@ class WorkPiece(DocItem):
             f"WP {self.uid[:8]}: Getting geometry with params: "
             f"{variable_overrides}"
         )
-        geometry, _ = provider.get_geometry(params=variable_overrides)
+        self._resolved_text_cache = {}
+        geometry, _ = provider.get_geometry(
+            params=variable_overrides,
+            resolved_text_cache=self._resolved_text_cache,
+        )
 
         if geometry.is_empty():
             logger.warning(

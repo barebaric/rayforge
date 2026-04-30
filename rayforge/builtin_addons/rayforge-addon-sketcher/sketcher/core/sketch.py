@@ -184,6 +184,7 @@ class Sketch(IAsset, IGeometryProvider):
         self._updated = Signal()
         self._hidden: bool = False
         self._last_solve_values: Dict[str, Any] = {}
+        self._resolved_text_cache: Dict[EntityID, Optional[str]] = {}
 
         # Initialize the Origin Point (Fixed Anchor)
         self.origin_id: EntityID = self.registry.add_point(
@@ -252,7 +253,10 @@ class Sketch(IAsset, IGeometryProvider):
         return SKETCH_RENDERER
 
     def get_geometry(
-        self, params: Optional[Dict[str, Any]] = None
+        self,
+        params: Optional[Dict[str, Any]] = None,
+        *,
+        resolved_text_cache: Optional[Dict] = None,
     ) -> Tuple[Geometry, List[FillRenderData]]:
         """
         Generate geometry with optional parameter overrides.
@@ -260,15 +264,33 @@ class Sketch(IAsset, IGeometryProvider):
         Creates a clone, solves it with the given parameters, and returns
         the stroke and fill geometries.
 
+        When *resolved_text_cache* is supplied the clone is seeded with
+        those values so that volatile template expressions (e.g.
+        ``uuid4()``) produce the same value across calls.  The dict is
+        updated in-place with any newly resolved values so callers can
+        persist the cache.
+
         Args:
             params: Optional dictionary of parameter values to override.
+            resolved_text_cache: Optional mutable dict (entity_id → text)
+                that carries resolved text across calls.
 
         Returns:
             A tuple of (stroke_geometry, fill_render_data).
         """
         clone = Sketch.from_dict(self.to_dict())
+        if resolved_text_cache is not None:
+            clone._resolved_text_cache = dict(resolved_text_cache)
         clone.solve(variable_overrides=params)
-        return clone.to_geometry(), clone.get_fill_render_data()
+        if resolved_text_cache is not None:
+            for k, v in resolved_text_cache.items():
+                if k not in clone._resolved_text_cache:
+                    clone._resolved_text_cache[k] = v
+        geo = clone.to_geometry()
+        fills = clone.get_fill_render_data()
+        if resolved_text_cache is not None:
+            resolved_text_cache.update(clone._resolved_text_cache)
+        return geo, fills
 
     @property
     def hidden(self) -> bool:
@@ -1187,13 +1209,12 @@ class Sketch(IAsset, IGeometryProvider):
             # the VarSet, then applying instance-specific overrides.
             initial_values = {}
             if self.input_parameters:
-                initial_values.update(
-                    self.input_parameters.get_values()
-                )
+                initial_values.update(self.input_parameters.get_values())
             if variable_overrides:
                 initial_values.update(variable_overrides)
 
             self._last_solve_values = dict(initial_values)
+            self._resolved_text_cache = {}
 
             # Step 3: Evaluate all expressions from scratch using the temporary
             # context, seeded with the combined values.
@@ -1266,26 +1287,28 @@ class Sketch(IAsset, IGeometryProvider):
             elif constraint.status == ConstraintStatus.CONFLICTING:
                 constraint.status = ConstraintStatus.VALID
 
-    def _resolve_text_content(
-        self, entity: TextBoxEntity
-    ) -> Optional[str]:
+    def _resolve_text_content(self, entity: TextBoxEntity) -> Optional[str]:
         """
         Resolves template expressions in a text box's content using
         the sketch's current parameter values. Returns None if the
         content has no templates or resolution fails.
+
+        Results are cached per entity so that volatile expressions
+        (e.g. uuid4()) produce the same value across multiple calls
+        within a single solve cycle.
         """
+        if entity.id in self._resolved_text_cache:
+            return self._resolved_text_cache[entity.id]
+
         if not entity.content:
+            self._resolved_text_cache[entity.id] = None
             return None
 
         try:
-            solve_params = ParameterContext.from_dict(
-                self.params.to_dict()
-            )
+            solve_params = ParameterContext.from_dict(self.params.to_dict())
             initial_values = dict(self._last_solve_values)
             if not initial_values and self.input_parameters:
-                initial_values.update(
-                    self.input_parameters.get_values()
-                )
+                initial_values.update(self.input_parameters.get_values())
             solve_params.evaluate_all(initial_values=initial_values)
             ctx = solve_params.get_all_values()
             ctx["today"] = lambda: date.today()
@@ -1298,12 +1321,13 @@ class Sketch(IAsset, IGeometryProvider):
                 f"{entity.content!r} -> {resolved!r} "
                 f"values={list(ctx.keys())[:5]}"
             )
+            self._resolved_text_cache[entity.id] = resolved
             return resolved
         except (KeyError, IndexError, ValueError) as e:
             logger.debug(
-                f"Template resolution failed for "
-                f"'{entity.content}': {e}"
+                f"Template resolution failed for '{entity.content}': {e}"
             )
+            self._resolved_text_cache[entity.id] = None
             return None
 
     def to_geometry(self) -> Geometry:
@@ -1507,9 +1531,7 @@ class Sketch(IAsset, IGeometryProvider):
         for entity in self.registry.entities:
             if entity.id in exclude_ids:
                 continue
-            if not entity.construction and isinstance(
-                entity, TextBoxEntity
-            ):
+            if not entity.construction and isinstance(entity, TextBoxEntity):
                 resolved = self._resolve_text_content(entity)
                 text_geo = entity.create_text_fill_geometry(
                     self.registry, resolved_content=resolved

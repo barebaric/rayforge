@@ -164,3 +164,69 @@ def test_get_geometry_resolves_templates():
 
     geo, _ = s.get_geometry()
     assert len(geo) > 0
+
+
+def test_uuid4_consistent_within_solve_cycle():
+    """uuid4() returns the same value within one solve cycle."""
+    s = Sketch()
+    box = _add_text_box(s, "{uuid4()}")
+    s.solve()
+
+    r1 = s._resolve_text_content(box)
+    r2 = s._resolve_text_content(box)
+    assert r1 == r2
+
+
+def test_uuid4_consistent_across_stroke_and_fill():
+    """to_geometry and get_fill_render_data see the same uuid4."""
+    s = Sketch()
+    _add_text_box(s, "{uuid4()}")
+    s.solve()
+
+    stroke_resolved = s._resolve_text_content(
+        next(e for e in s.registry.entities if isinstance(e, TextBoxEntity))
+    )
+    fill_resolved = s._resolve_text_content(
+        next(e for e in s.registry.entities if isinstance(e, TextBoxEntity))
+    )
+    assert stroke_resolved == fill_resolved
+
+
+def test_uuid4_changes_on_re_solve():
+    """uuid4() produces a new value after a fresh solve."""
+    s = Sketch()
+    box = _add_text_box(s, "{uuid4()}")
+    s.solve()
+    first = s._resolve_text_content(box)
+
+    s.solve()
+    second = s._resolve_text_content(box)
+    assert second != first
+
+
+def test_uuid4_stable_with_external_cache():
+    """get_geometry with a cache dict preserves uuid4 across calls."""
+    s = Sketch()
+    _add_text_box(s, "{uuid4()}")
+    s.solve()
+
+    cache_a: dict = {}
+    geo1, _ = s.get_geometry(resolved_text_cache=cache_a)
+    assert len(cache_a) == 1
+
+    cache_a_copy = dict(cache_a)
+    geo2, _ = s.get_geometry(resolved_text_cache=cache_a)
+    assert cache_a == cache_a_copy
+
+
+def test_uuid4_external_cache_gives_fresh_per_caller():
+    """Two callers get different uuid4 values with separate caches."""
+    s = Sketch()
+    _add_text_box(s, "{uuid4()}")
+    s.solve()
+
+    cache_a: dict = {}
+    cache_b: dict = {}
+    s.get_geometry(resolved_text_cache=cache_a)
+    s.get_geometry(resolved_text_cache=cache_b)
+    assert cache_a != cache_b
