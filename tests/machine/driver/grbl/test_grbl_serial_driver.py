@@ -136,8 +136,7 @@ class TestGrblSerialDriver:
         for _ in range(50):
             await asyncio.sleep(0.1)
             sent_statuses = [
-                call[1].get("status")
-                for call in status_mock.call_args_list
+                call[1].get("status") for call in status_mock.call_args_list
             ]
             if TransportStatus.ERROR in sent_statuses:
                 break
