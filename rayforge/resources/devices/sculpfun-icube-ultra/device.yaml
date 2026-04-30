@@ -1,0 +1,28 @@
+api_version: 1
+device:
+  name: Sculpfun iCube Ultra
+  vendor: Sculpfun
+  model: iCube Ultra
+  description: Diode laser engraver with Bluetooth, 150x150mm work area
+machine:
+  driver: GrblSerialDriver
+  driver_args:
+    baudrate: '115200'
+    poll_status_while_running: false
+  gcode_precision: 3
+  axis_extents:
+  - 150.0
+  - 150.0
+  origin: bottom_left
+  max_travel_speed: 3000
+  max_cut_speed: 6000
+  supports_arcs: true
+  supports_curves: false
+  home_on_start: false
+  heads:
+  - max_power: 1000
+    frame_power_percent: 2.0
+    focus_power_percent: 1.0
+    spot_size_mm:
+    - 0.08
+    - 0.08
