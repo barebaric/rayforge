@@ -18,7 +18,12 @@ from .grayscale import (
     surface_to_binary,
     surface_to_grayscale,
 )
-from .srgb import linear_to_srgb, resize_linear_nd, srgb_to_linear
+from .srgb import (
+    create_lut_from_color,
+    linear_to_srgb,
+    resize_linear_nd,
+    srgb_to_linear,
+)
 
 from .transparency import (
     make_surface_transparent,
@@ -48,6 +53,7 @@ __all__ = [
     "calculate_chunk_layout",
     "compute_auto_levels",
     "convert_surface_to_grayscale_inplace",
+    "create_lut_from_color",
     "extract_vips_metadata",
     "get_mm_per_pixel",
     "get_physical_size_mm",

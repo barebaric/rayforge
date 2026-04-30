@@ -7,6 +7,7 @@ precomputed lookup tables for fast vectorized conversion with NumPy.
 
 import cv2
 import numpy as np
+from typing import Tuple
 
 _SRGB_TO_LINEAR = np.empty(256, dtype=np.float32)
 for _i in range(256):
@@ -78,6 +79,32 @@ def linear_to_srgb(
 
     indices = np.round(fixed).astype(np.intp)
     return _LINEAR_TO_SRGB[indices]
+
+
+def create_lut_from_color(
+    color: Tuple[float, float, float, float],
+) -> np.ndarray:
+    """
+    Create a 256x4 LUT from a single color (grayscale to color gradient).
+
+    Interpolation is performed in linear light so the gradient ramp is
+    perceptually uniform.  The output values are float32 in [0, 1] sRGB
+    space, matching existing consumers.
+    """
+    r, g, b, a = color
+    rgb_uint8 = np.clip([r * 255, g * 255, b * 255], 0, 255).astype(np.uint8)
+    lin = srgb_to_linear(rgb_uint8)
+
+    t = np.linspace(0, 1, 256, dtype=np.float32)
+    lut = np.zeros((256, 4), dtype=np.float32)
+
+    for c in range(3):
+        ch_linear = np.clip(lin[c] * t, 0, 1)
+        ch_uint8 = linear_to_srgb(ch_linear)
+        lut[:, c] = ch_uint8.astype(np.float32) / 255.0
+
+    lut[:, 3] = a * t
+    return lut
 
 
 def resize_linear_nd(

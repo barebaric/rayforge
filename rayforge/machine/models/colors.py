@@ -6,8 +6,8 @@ from ...core.color import (
     ColorSet,
     ColorRGBA,
     hex_to_rgba,
-    create_lut_from_color,
 )
+from ...image.util.srgb import create_lut_from_color
 
 if TYPE_CHECKING:
     from .laser import Laser

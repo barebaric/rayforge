@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from rayforge.image.util.srgb import (
+    create_lut_from_color,
     linear_to_srgb,
     resize_linear_nd,
     srgb_to_linear,
@@ -165,3 +166,43 @@ class TestResizeLinearNd:
         img = np.full((20, 20), 100, dtype=np.uint8)
         result = resize_linear_nd(img, (10, 10))
         assert result.ndim == 2
+
+
+class TestCreateLutFromColor:
+    def test_shape_and_dtype(self):
+        lut = create_lut_from_color((1.0, 0.0, 0.0, 1.0))
+        assert lut.shape == (256, 4)
+        assert lut.dtype == np.float32
+
+    def test_black_at_zero(self):
+        lut = create_lut_from_color((1.0, 0.5, 0.0, 1.0))
+        np.testing.assert_array_equal(lut[0], [0.0, 0.0, 0.0, 0.0])
+
+    def test_full_color_at_255(self):
+        lut = create_lut_from_color((1.0, 0.0, 0.0, 1.0))
+        assert lut[255, 0] == pytest.approx(1.0, abs=1 / 255)
+        assert lut[255, 1] == pytest.approx(0.0, abs=1 / 255)
+        assert lut[255, 2] == pytest.approx(0.0, abs=1 / 255)
+        assert lut[255, 3] == pytest.approx(1.0, abs=1 / 255)
+
+    def test_midpoint_not_0_5(self):
+        lut = create_lut_from_color((1.0, 1.0, 1.0, 1.0))
+        assert lut[128, 0] != pytest.approx(0.5, abs=0.01)
+
+    def test_midpoint_matches_srgb_roundtrip(self):
+        lut = create_lut_from_color((1.0, 1.0, 1.0, 1.0))
+        linear_mid = _SRGB_TO_LINEAR[255] * 0.5
+        expected_srgb = linear_to_srgb(np.array([linear_mid]))[0] / 255.0
+        assert lut[128, 0] == pytest.approx(expected_srgb, abs=1 / 255)
+
+    def test_alpha_ramp_is_linear(self):
+        lut = create_lut_from_color((1.0, 0.0, 0.0, 0.8))
+        assert lut[0, 3] == pytest.approx(0.0)
+        assert lut[128, 3] == pytest.approx(0.8 * 128 / 255, abs=1e-5)
+        assert lut[255, 3] == pytest.approx(0.8, abs=1e-5)
+
+    def test_monotonicity(self):
+        lut = create_lut_from_color((0.8, 0.3, 0.9, 1.0))
+        for c in range(4):
+            diffs = np.diff(lut[:, c])
+            assert np.all(diffs >= 0)

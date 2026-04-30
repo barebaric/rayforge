@@ -39,10 +39,10 @@ def make_surface_transparent(
     b = argb & 0xFF
 
     brightness = (
-        r.astype(numpy.uint16)
-        + g.astype(numpy.uint16)
-        + b.astype(numpy.uint16)
-    ) // 3
+        77 * r.astype(numpy.uint16)
+        + 150 * g.astype(numpy.uint16)
+        + 29 * b.astype(numpy.uint16)
+    ) >> 8
     mask = brightness >= threshold
 
     argb[mask] = (0x00 << 24) | (r[mask] << 16) | (g[mask] << 8) | b[mask]
