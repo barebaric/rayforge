@@ -59,6 +59,10 @@ class UdpServerTransport(Transport):
             )
             self._transport = transport
 
+            sock = transport.get_extra_info("socket")
+            if sock:
+                self.port = sock.getsockname()[1]
+
             self.status_changed.send(self, status=TransportStatus.CONNECTED)
             logger.info(f"UDP server listening on {self.host}:{self.port}")
         except Exception as e:

@@ -50,12 +50,10 @@ async def ruida_simulator():
     """
     sim = RuidaSimulator()
     host = "127.0.0.1"
-    port = 50201
-    jog_port = 50208
 
-    main_udp = UdpServerTransport(host, port)
+    main_udp = UdpServerTransport(host, 0)
     main_transport = RuidaServerTransport(main_udp, magic=0x88)
-    jog_transport = UdpServerTransport(host, jog_port)
+    jog_transport = UdpServerTransport(host, 0)
 
     async def handle_main_decoded(sender, data: bytes, addr):
         response = sim.process_commands(data)
@@ -82,6 +80,9 @@ async def ruida_simulator():
 
     await main_transport.connect()
     await jog_transport.connect()
+
+    port = main_udp.port
+    jog_port = jog_transport.port
 
     yield sim, host, port, jog_port
 
@@ -760,9 +761,10 @@ async def test_disconnect_when_not_connected(driver):
 
 
 @pytest.mark.asyncio
-async def test_cleanup_resets_transport(driver):
+async def test_cleanup_resets_transport(driver, ruida_simulator):
     """Test that cleanup properly resets transport objects."""
-    driver._setup_implementation(host="127.0.0.1", port=50201)
+    _, host, port, jog_port = ruida_simulator
+    driver._setup_implementation(host=host, port=port)
 
     await driver.cleanup()
 
@@ -774,6 +776,7 @@ async def test_cleanup_resets_transport(driver):
 @pytest.mark.asyncio
 async def test_reconnect_after_disconnect(driver, ruida_simulator):
     """Test that driver can reconnect after disconnect."""
+    _, host, port, jog_port = ruida_simulator
     assert await wait_for_connection(driver)
 
     assert driver.is_connected
@@ -782,7 +785,7 @@ async def test_reconnect_after_disconnect(driver, ruida_simulator):
 
     assert not driver.is_connected
 
-    driver._setup_implementation(host="127.0.0.1", port=50201, jog_port=50208)
+    driver._setup_implementation(host=host, port=port, jog_port=jog_port)
     assert await wait_for_connection(driver)
 
     assert driver.is_connected
