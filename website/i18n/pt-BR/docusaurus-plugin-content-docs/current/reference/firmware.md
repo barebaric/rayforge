@@ -16,6 +16,7 @@ O Rayforge é projetado principalmente para **controladores baseados em GRBL** m
 | **Smoothieware** | Todos   | Compatível             | SmoothieDriver (Telnet)   | Baseado em rede             |
 | **Marlin**       | 2.0+    | Compatível             | Use driver GRBL           | Modo laser necessário       |
 | **ESP3D**        | Todos   | Compatível             | GRBL Telnet               | Baseado em rede             |
+| **OctoPrint**    | Todos   | Experimental           | OctoPrint                 | Veja notas abaixo           |
 | **Outro**        | -       | Não suportado          | -                          | Solicite suporte            |
 
 ---
@@ -304,6 +305,7 @@ Marlin 2.0+ pode controlar lasers quando configurado corretamente.
 | **Arduino CNC Shield** | GRBL 1.1         | Excelente        |
 | **MKS DLC32**          | grblHAL          | Excelente        |
 | **Ruida**              | Proprietário      | Experimental     |
+| **OctoPrint (Pi)**     | Diversos          | Experimental     |
 
 ### Controladores Recomendados
 
@@ -490,6 +492,39 @@ sondagem de status.
 - Experimental — ainda não totalmente estável
 - Sem geração de G-code; Ruida usa seu próprio protocolo proprietário
 - Envio de trabalhos ainda não suportado
+
+---
+
+### OctoPrint
+
+O Rayforge inclui um driver OctoPrint experimental que envia G-code
+diretamente para um servidor OctoPrint pela rede. Isso é útil se o seu laser
+está conectado a um Raspberry Pi ou outra máquina executando OctoPrint.
+
+**Funcionalidades:**
+
+- Conexão WebSocket para atualizações de status em tempo real
+- Fallback para polling REST quando o WebSocket não está disponível
+- Reconexão automática em caso de perda de conexão
+- Envio de trabalhos com início automático de impressão
+- Jogging, homing e controles de pausa/retomada
+- Fluxo "Solicitar Acesso" para chaves de aplicativo do OctoPrint
+
+**Usando o driver OctoPrint:**
+
+1. Selecione o driver "OctoPrint" nas configurações da máquina
+2. Insira o nome do host ou endereço IP do seu servidor OctoPrint
+3. Defina a porta (padrão: 80)
+4. Clique em "Solicitar Acesso" para obter uma chave API através do sistema
+   de chaves de aplicativo do OctoPrint
+5. Conecte — o Rayforge estabelecerá uma conexão WebSocket
+
+**Limitações:**
+
+- Experimental e não testado em hardware real — feedback é bem-vindo
+- Não é possível ler ou gravar configurações de firmware através do OctoPrint
+- Resultados de sondagem não são relatados pelo OctoPrint
+- Leitura de deslocamentos WCS não é suportada
 
 ---
 

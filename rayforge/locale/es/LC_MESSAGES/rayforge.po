@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-30 23:39+0200\n"
+"POT-Creation-Date: 2026-05-01 00:35+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -4834,6 +4834,10 @@ msgstr "Alternar visibilidad de la imagen de la cámara"
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle 3D model visibility"
 msgstr "Alternar visibilidad del modelo 3D"
+
+#: rayforge/ui_gtk/shared/visibility_overlay.py
+msgid "Toggle grid visibility"
+msgstr "Alternar visibilidad de la cuadrícula"
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle travel move visibility"

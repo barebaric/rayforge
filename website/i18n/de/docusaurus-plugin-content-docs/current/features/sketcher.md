@@ -34,7 +34,9 @@ Der Sketcher unterstützt das Erstellen der folgenden grundlegenden geometrische
   des Ziehens gedrückt, um auf einen perfekten Kreis zu beschränken.
 - **Rechtecke**: Rechtecke durch Angeben von zwei gegenüberliegenden Ecken zeichnen
 - **Abgerundete Rechtecke**: Rechtecke mit abgerundeten Ecken zeichnen
-- **Textfelder**: Textelemente zu deiner Skizze hinzufügen
+- **Textfelder**: Textelemente zu deiner Skizze hinzufügen. Der Textinhalt
+  unterstützt parametrische Vorlagenausdrücke (siehe
+  [Textvorlagen](#textvorlagen) unten).
 - **Füllungen**: Geschlossene Bereiche füllen, um feste Bereiche zu erstellen
 
 Diese Elemente bilden die Grundlage deiner 2D-Designs und können kombiniert werden, um komplexe Formen zu erstellen. Füllungen sind besonders nützlich, um feste Bereiche zu erstellen, die als ein Stück graviert oder geschnitten werden.
@@ -208,6 +210,48 @@ Fase oder Verrundung verwenden:
 1. Einen Verbindungspunkt auswählen, wo sich zwei Linien treffen
 2. `C+H` für Fase oder `C+F` für Verrundung drücken
 3. Das Kreismenü oder Tastatur-Kurzbefehle verwenden, um die Modifikation anzuwenden
+
+## Textvorlagen
+
+Textfelder unterstützen Vorlagenausdrücke in geschweiften Klammern. Diese
+werden zum Lösungszeitpunkt mit den aktuellen Parameterwerten aufgelöst,
+sodass sich der Text automatisch aktualisiert, wenn du eine Dimension oder
+Eingabevariable änderst.
+
+### Variablensubstitution
+
+Referenziere beliebige Skizzenparameter oder Eingabevariablen namentlich:
+
+- `{width}` — der aktuelle Wert des Parameters „width"
+- `{name}` — der Wert eines String-Eingabeparameters
+- `{count:.0f}` — formatiert mit einem Python-Formatbezeichner (keine Dezimalen)
+
+### Mathematische Ausdrücke
+
+Du kannst mathematische Funktionen in Vorlagen verwenden:
+
+- `{sqrt(area):.2f}` — Quadratwurzel von „area", formatiert auf 2 Dezimalen
+- `{width * 2}` — arithmetische Ausdrücke
+
+Die Standard-Mathematikfunktionen (`sqrt`, `sin`, `cos`, `tan`, `pi` usw.)
+sind verfügbar.
+
+### Eingebaute Funktionen
+
+- `{today()}` — das heutige Datum (z.B. `2026-05-01`)
+- `{now()}` — aktuelles Datum und Uhrzeit
+- `{uuid4()}` — eine eindeutige 8-stellige hexadezimale Zeichenkette, bei
+  jeder Lösung neu generiert
+
+Dies ist nützlich zum Datumstempeln von Teilen oder zum Erzeugen eindeutiger
+Seriennummern für die Produktionskennzeichnung.
+
+### Anwendungsbeispiele
+
+- `Part #{uuid4()}` — eindeutige Seriennummer bei jeder Lösung
+- `W={width:.1f} H={height:.1f}` — live Maßbeschriftungen
+- `Datum: {today()}` — jedes Teil datumsstempeln
+- `{name} - {count:.0f}Stk` — String- und numerische Parameter kombinieren
 
 ## Import und Export
 

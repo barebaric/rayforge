@@ -47,7 +47,9 @@ The sketcher supports creating the following basic geometric elements:
   constrain to a perfect circle.
 - **Rectangles**: Draw rectangles by specifying two opposite corners
 - **Rounded Rectangles**: Draw rectangles with rounded corners
-- **Text Boxes**: Add text elements to your sketch
+- **Text Boxes**: Add text elements to your sketch. Text content supports
+  parametric template expressions (see [Text Templates](#text-templates)
+  below).
 - **Fills**: Fill closed regions to create solid areas
 
 These elements form the foundation of your 2D designs and can be combined to
@@ -236,6 +238,46 @@ To use chamfer or fillet:
 1. Select a junction point where two lines meet
 2. Press `C+H` for chamfer or `C+F` for fillet
 3. Use the pie menu or keyboard shortcuts to apply the modification
+
+## Text Templates
+
+Text boxes support template expressions enclosed in curly braces. These are
+resolved at solve time using the current parameter values, so the text updates
+automatically when you change a dimension or input variable.
+
+### Variable Substitution
+
+Reference any sketch parameter or input variable by name:
+
+- `{width}` -- the current value of the "width" parameter
+- `{name}` -- the value of a string-type input parameter
+- `{count:.0f}` -- formatted with a Python format specifier (no decimals)
+
+### Math Expressions
+
+You can use math functions inside templates:
+
+- `{sqrt(area):.2f}` -- square root of "area", formatted to 2 decimals
+- `{width * 2}` -- arithmetic expressions
+
+The standard math functions (`sqrt`, `sin`, `cos`, `tan`, `pi`, etc.) are
+available.
+
+### Built-in Functions
+
+- `{today()}` -- today's date (e.g., `2026-05-01`)
+- `{now()}` -- current date and time
+- `{uuid4()}` -- a unique 8-character hex string, regenerated on each solve
+
+These are useful for date-stamping parts or generating unique serial numbers
+for production labeling.
+
+### Example Use Cases
+
+- `Part #{uuid4()}` -- unique serial number on each solve
+- `W={width:.1f} H={height:.1f}` -- live dimension labels
+- `Date: {today()}` -- date-stamp each piece
+- `{name} - {count:.0f}pcs` -- combine string and numeric parameters
 
 ## Import and Export
 

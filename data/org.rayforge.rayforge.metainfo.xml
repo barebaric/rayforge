@@ -66,6 +66,37 @@
   </screenshots>
 
   <releases>
+    <release version="1.7.0-beta1" date="2026-05-01">
+      <description>
+        <p>CO2 Laser Support, OctoPrint Driver, Parametric Text</p>
+        <p>New Features:</p>
+        <ul>
+          <li>CO2 laser settings: PWM frequency and pulse width support for
+          compatible machines</li>
+          <li>Experimental OctoPrint driver</li>
+          <li>Parametric text template support in the sketcher</li>
+          <li>Device profile for the Sculpfun iCube Ultra</li>
+          <li>Grid toggle button in the 3D canvas visibility overlay</li>
+          <li>Project inclusion toggle in the Save Debug Log dialog</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Image processing (resize, grayscale, dithering, color LUT) now
+          operates in linear light for more accurate results</li>
+          <li>Visual improvements to the device profile selector</li>
+          <li>Tab power slider is now hidden for non-cut steps</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Fixed GRBL buffer overflow on devices with smaller RX
+          buffers</li>
+          <li>Fixed parametric text not updating correctly with volatile
+          expressions</li>
+          <li>Fixed crash in MergeLinesTransformer when a cutting command
+          appeared before any positioning command</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.6.1" date="2026-04-27">
       <description>
         <p>Ruida Driver, Vector Editing, and Bug Fixes</p>

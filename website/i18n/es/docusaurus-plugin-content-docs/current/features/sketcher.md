@@ -50,7 +50,9 @@ El diseñador permite crear los siguientes elementos geométricos básicos:
   mientras arrastra para restringir a un círculo perfecto.
 - **Rectángulos**: Dibuje rectángulos especificando dos esquinas opuestas
 - **Rectángulos redondeados**: Dibuje rectángulos con esquinas redondeadas
-- **Cuadros de texto**: Añada elementos de texto a su boceto
+- **Cuadros de texto**: Añada elementos de texto a su boceto. El contenido del
+  texto soporta expresiones de plantilla paramétricas (vea
+  [Plantillas de texto](#plantillas-de-texto) más abajo).
 - **Rellenos**: Rellene regiones cerradas para crear áreas sólidas
 
 Estos elementos forman la base de sus diseños 2D y pueden combinarse para crear
@@ -258,6 +260,48 @@ Para usar chaflán o redondeo:
 1. Seleccione un punto de unión donde dos líneas se encuentran
 2. Pulse `C+H` para chaflán o `C+F` para redondeo
 3. Use el menú circular o los atajos de teclado para aplicar la modificación
+
+## Plantillas de texto
+
+Los cuadros de texto soportan expresiones de plantilla entre llaves. Estas se
+resuelven en el momento de la resolución usando los valores actuales de los
+parámetros, por lo que el texto se actualiza automáticamente al cambiar una
+dimensión o variable de entrada.
+
+### Sustitución de variables
+
+Referencia cualquier parámetro del boceto o variable de entrada por nombre:
+
+- `{width}` — el valor actual del parámetro "width"
+- `{name}` — el valor de un parámetro de entrada de tipo cadena
+- `{count:.0f}` — formateado con un especificador de formato Python (sin decimales)
+
+### Expresiones matemáticas
+
+Puedes usar funciones matemáticas en las plantillas:
+
+- `{sqrt(area):.2f}` — raíz cuadrada de "area", formateada a 2 decimales
+- `{width * 2}` — expresiones aritméticas
+
+Las funciones matemáticas estándar (`sqrt`, `sin`, `cos`, `tan`, `pi`, etc.)
+están disponibles.
+
+### Funciones integradas
+
+- `{today()}` — la fecha de hoy (ej.: `2026-05-01`)
+- `{now()}` — fecha y hora actuales
+- `{uuid4()}` — una cadena hexadecimal única de 8 caracteres, regenerada en
+  cada resolución
+
+Esto es útil para fechar piezas o generar números de serie únicos para
+etiquetado de producción.
+
+### Ejemplos de uso
+
+- `Part #{uuid4()}` — número de serie único en cada resolución
+- `W={width:.1f} H={height:.1f}` — etiquetas de dimensiones en vivo
+- `Fecha: {today()}` — fechar cada pieza
+- `{name} - {count:.0f}uds` — combinar parámetros de cadena y numéricos
 
 ## Importación y exportación
 

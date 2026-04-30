@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-30 23:39+0200\n"
+"POT-Creation-Date: 2026-05-01 00:35+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -4581,6 +4581,10 @@ msgstr "切换摄像头图像可见性"
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle 3D model visibility"
 msgstr "切换 3D 模型可见性"
+
+#: rayforge/ui_gtk/shared/visibility_overlay.py
+msgid "Toggle grid visibility"
+msgstr "切换网格可见性"
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle travel move visibility"

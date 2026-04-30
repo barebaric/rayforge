@@ -50,7 +50,9 @@ O esboçador suporta a criação dos seguintes elementos geométricos básicos:
   arrasta para restringir a um círculo perfeito.
 - **Retângulos**: Desenhe retângulos especificando dois cantos opostos
 - **Retângulos arredondados**: Desenhe retângulos com cantos arredondados
-- **Caixas de texto**: Adicione elementos de texto ao seu esboço
+- **Caixas de texto**: Adicione elementos de texto ao seu esboço. O conteúdo
+  do texto suporta expressões de modelo paramétricas (veja
+  [Modelos de Texto](#modelos-de-texto) abaixo).
 - **Preenchimentos**: Preencha regiões fechadas para criar áreas sólidas
 
 Esses elementos formam a base dos seus designs 2D e podem ser combinados para
@@ -264,6 +266,48 @@ Para usar chanfro ou arredondamento:
 1. Selecione um ponto de junção onde duas linhas se encontram
 2. Pressione `C+H` para chanfro ou `C+F` para arredondamento
 3. Use o menu circular ou os atalhos de teclado para aplicar a modificação
+
+## Modelos de Texto
+
+As caixas de texto suportam expressões de modelo entre chaves. Elas são
+resolvidas no momento da resolução usando os valores atuais dos parâmetros,
+então o texto é atualizado automaticamente quando você altera uma dimensão ou
+variável de entrada.
+
+### Substituição de Variáveis
+
+Referencie qualquer parâmetro do esboço ou variável de entrada pelo nome:
+
+- `{width}` — o valor atual do parâmetro "width"
+- `{name}` — o valor de um parâmetro de entrada do tipo string
+- `{count:.0f}` — formatado com um especificador de formato Python (sem decimais)
+
+### Expressões Matemáticas
+
+Você pode usar funções matemáticas nos modelos:
+
+- `{sqrt(area):.2f}` — raiz quadrada de "area", formatada com 2 casas decimais
+- `{width * 2}` — expressões aritméticas
+
+As funções matemáticas padrão (`sqrt`, `sin`, `cos`, `tan`, `pi`, etc.) estão
+disponíveis.
+
+### Funções Integradas
+
+- `{today()}` — a data de hoje (ex.: `2026-05-01`)
+- `{now()}` — data e hora atuais
+- `{uuid4()}` — uma string hexadecimal única de 8 caracteres, regenerada a
+  cada resolução
+
+Isso é útil para datar peças ou gerar números de série únicos para etiquetagem
+de produção.
+
+### Exemplos de Uso
+
+- `Part #{uuid4()}` — número de série único a cada resolução
+- `W={width:.1f} H={height:.1f}` — rótulos de dimensões em tempo real
+- `Data: {today()}` — datar cada peça
+- `{name} - {count:.0f}un` — combinar parâmetros de string e numéricos
 
 ## Importação e exportação
 
