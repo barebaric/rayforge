@@ -1,7 +1,7 @@
 api_version: 1
 device:
   name: Generic Smoothieware
-  description: A generic Smoothieware-based laser controller.
+  description: A generic Smoothieware-based laser controller
 machine:
   driver: SmoothieDriver
   origin: bottom_left

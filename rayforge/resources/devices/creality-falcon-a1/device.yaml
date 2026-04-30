@@ -1,6 +1,7 @@
 api_version: 1
 device:
   name: Creality Falcon A1
+  description: Diode laser engraver with 381x305mm work area and rotary support
 machine:
   driver: GrblSerialDriver
   driver_args:

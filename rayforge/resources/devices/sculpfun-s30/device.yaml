@@ -1,6 +1,7 @@
 api_version: 1
 device:
   name: Sculpfun S30
+  description: Budget diode laser engraver with 400x400mm work area
 machine:
   driver: GrblSerialDriver
   gcode_precision: 3

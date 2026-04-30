@@ -5,7 +5,6 @@ from typing import Optional
 from blinker import Signal
 from gi.repository import Adw, Gtk
 
-from ..icons import get_icon
 from ..shared.gtk import apply_css
 from ...context import get_context
 from ...machine.device.profile import DeviceProfile
@@ -16,6 +15,18 @@ logger = logging.getLogger(__name__)
 css = """
 .profile-selector-list {
     background: none;
+}
+
+.profile-selector-list row:first-child {
+    border-radius: 12px 12px 0 0;
+}
+
+.profile-selector-list row:last-child {
+    border-radius: 0 0 12px 12px;
+}
+
+.profile-selector-list row:only-child {
+    border-radius: 12px;
 }
 """
 
@@ -43,6 +54,7 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
         self.set_heading(_("Add a New Machine"))
         self.set_body(_("Select a machine profile to use as a template."))
         self.set_transient_for(kwargs.get("transient_for"))
+        self.set_size_request(580, -1)
 
         apply_css(css)
 
@@ -64,12 +76,10 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
         self.profile_list_box.connect("row-activated", self._on_row_activated)
         scrolled_window.set_child(self.profile_list_box)
 
-        import_button = Gtk.Button()
-        import_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        import_box.append(get_icon("open-symbolic"))
-        import_box.append(Gtk.Label(label=_("Import from File…")))
-        import_button.set_child(import_box)
+        import_button = Gtk.Button(label=_("Import from File…"))
+        import_button.add_css_class("suggested-action")
         import_button.connect("clicked", self._on_import_clicked)
+        import_button.set_halign(Gtk.Align.END)
         content.append(import_button)
 
         self._populate_profile_list()
