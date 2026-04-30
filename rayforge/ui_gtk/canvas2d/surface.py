@@ -14,22 +14,17 @@ from typing import (
 from gi.repository import Gdk, GLib, Gtk, Graphene
 from ...camera.controller import CameraController
 from ...context import get_context
-from ...core.color import OPS_COLOR_SPEC
+from ...core.color import ColorRGBA, ColorSet, hex_to_rgba, OPS_COLOR_SPEC
 from ...core.group import Group
 from ...core.item import DocItem
 from ...core.layer import Layer
 from ...core.stock import StockItem
 from ...core.stock_asset import StockAsset
 from ...core.workpiece import WorkPiece
+from ...image.util.srgb import create_lut_from_color
 from ...machine.models.colors import OpsColorSet
 from ...machine.models.machine import Machine
 from ...pipeline.artifact import RenderContext
-from ...core.color import (
-    ColorRGBA,
-    ColorSet,
-    hex_to_rgba,
-    create_lut_from_color,
-)
 from ..canvas import WorldSurface, Canvas, CanvasElement
 from ..shared.gtk_color import GtkColorResolver
 from ..shared.keyboard import is_primary_modifier

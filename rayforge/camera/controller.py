@@ -414,9 +414,7 @@ class CameraController:
 
         out_width, out_height = output_size
         try:
-            return resize_linear_nd(
-                self._image_data, (out_width, out_height)
-            )
+            return resize_linear_nd(self._image_data, (out_width, out_height))
         except cv2.error as e:
             logger.error(f"Failed to resize image: {e}")
             return None
