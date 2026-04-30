@@ -6,6 +6,8 @@ from typing import Tuple
 import cairo
 import numpy
 
+from .srgb import srgb_to_linear, linear_to_srgb
+
 
 def compute_auto_levels(
     gray_image: numpy.ndarray,
@@ -125,13 +127,17 @@ def surface_to_grayscale(
     g_unpremult = numpy.clip(g_unpremult, 0, 255)
     b_unpremult = numpy.clip(b_unpremult, 0, 255)
 
-    r_blended = 255.0 - (255.0 - r_unpremult) * alpha
-    g_blended = 255.0 - (255.0 - g_unpremult) * alpha
-    b_blended = 255.0 - (255.0 - b_unpremult) * alpha
+    r_linear = srgb_to_linear(r_unpremult.astype(numpy.uint8))
+    g_linear = srgb_to_linear(g_unpremult.astype(numpy.uint8))
+    b_linear = srgb_to_linear(b_unpremult.astype(numpy.uint8))
 
-    gray_image = (
-        0.2989 * r_blended + 0.5870 * g_blended + 0.1140 * b_blended
-    ).astype(numpy.uint8)
+    r_blended = 1.0 - (1.0 - r_linear) * alpha
+    g_blended = 1.0 - (1.0 - g_linear) * alpha
+    b_blended = 1.0 - (1.0 - b_linear) * alpha
+
+    gray_linear = 0.2989 * r_blended + 0.5870 * g_blended + 0.1140 * b_blended
+
+    gray_image = linear_to_srgb(gray_linear)
 
     return gray_image, alpha
 
@@ -198,7 +204,15 @@ def surface_to_binary(
     red = data[:, :, 2]
     alpha = data[:, :, 3]
 
-    grayscale = 0.2989 * red + 0.5870 * green + 0.1140 * blue
+    red_linear = srgb_to_linear(red)
+    green_linear = srgb_to_linear(green)
+    blue_linear = srgb_to_linear(blue)
+
+    gray_linear = (
+        0.2989 * red_linear + 0.5870 * green_linear + 0.1140 * blue_linear
+    )
+
+    grayscale = linear_to_srgb(gray_linear).astype(numpy.float32)
 
     if invert:
         binary = (grayscale > threshold).astype(numpy.uint8)
@@ -233,10 +247,18 @@ def convert_surface_to_grayscale_inplace(
         (height, width, 4)
     )
 
-    gray = (
-        0.299 * data_array[:, :, 2]
-        + 0.587 * data_array[:, :, 1]
-        + 0.114 * data_array[:, :, 0]
-    ).astype(numpy.uint8)
+    red = data_array[:, :, 2]
+    green = data_array[:, :, 1]
+    blue = data_array[:, :, 0]
+
+    red_linear = srgb_to_linear(red)
+    green_linear = srgb_to_linear(green)
+    blue_linear = srgb_to_linear(blue)
+
+    gray_linear = (
+        0.2989 * red_linear + 0.5870 * green_linear + 0.1140 * blue_linear
+    )
+
+    gray = linear_to_srgb(gray_linear)
 
     data_array[:, :, :3] = gray[:, :, None]
