@@ -1017,9 +1017,7 @@ class AddonManager:
 
         logger.info(f"Successfully installed addon to {final_path}")
         self.load_addon(final_path, version=version)
-        call_registration_hooks(
-            self.plugin_mgr, registries=self.registries
-        )
+        call_registration_hooks(self.plugin_mgr, registries=self.registries)
         self._build_and_update_manifest()
         self._restart_workers()
         logger.info(f"Addon '{addon_name}' fully loaded and registered")
@@ -1540,9 +1538,7 @@ class AddonManager:
 
         self._import_and_register(addon, addon.metadata.provides.worker)
         self._import_and_register(addon, addon.metadata.provides.frontend)
-        call_registration_hooks(
-            self.plugin_mgr, registries=self.registries
-        )
+        call_registration_hooks(self.plugin_mgr, registries=self.registries)
         if addon_name in self.loaded_addons:
             logger.info(f"Addon '{addon_name}' reloaded successfully")
             self._build_and_update_manifest()

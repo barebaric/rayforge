@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import shutil
 import webbrowser
 from concurrent.futures import Future
 from pathlib import Path
@@ -44,6 +43,7 @@ from .canvas import CanvasElement
 from .canvas2d.drag_drop_cmd import DragDropCmd
 from .canvas2d.elements.stock import StockElement
 from .canvas2d.surface import WorkSurface
+from .debug_log_dialog import DebugLogDialog
 from .doceditor import file_dialogs
 from .doceditor.bottom_panel import BottomPanel
 from .doceditor.import_handler import start_interactive_import
@@ -277,9 +277,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Let addons register action extension handlers before
         # ActionManager.register_actions() invokes setup handlers.
-        call_registration_hooks(
-            context.plugin_mgr, window_required=True
-        )
+        call_registration_hooks(context.plugin_mgr, window_required=True)
 
         # Setup keyboard actions using the new ActionManager.
         self.action_manager = ActionManager(self)
@@ -2205,48 +2203,15 @@ class MainWindow(Adw.ApplicationWindow):
         webbrowser.open("https://www.patreon.com/c/knipknap")
 
     def on_save_debug_log(self, action, param):
-        archive_path = get_context().debug_dump_manager.create_dump_archive()
-
-        if not archive_path:
-            self._on_editor_notification(
-                self, _("Failed to create debug archive.")
-            )
-            return
-
-        dialog = Gtk.FileDialog.new()
-        dialog.set_title(_("Save Debug Log"))
-        dialog.set_initial_name(archive_path.name)
-
-        def save_callback(dialog, result):
-            try:
-                destination_file = dialog.save_finish(result)
-                if destination_file:
-                    destination_path = Path(destination_file.get_path())
-                    shutil.move(archive_path, destination_path)
-                    self._on_editor_notification(
-                        self,
-                        _("Debug log saved to {path}").format(
-                            path=destination_path.name
-                        ),
-                    )
-            except GLib.Error as e:
-                if not e.matches(
-                    Gio.io_error_quark(), Gio.IOErrorEnum.CANCELLED
-                ):
-                    self._on_editor_notification(
-                        self,
-                        _("Error saving file: {msg}").format(msg=e.message),
-                    )
-            except Exception as e:
-                self._on_editor_notification(
-                    self,
-                    _("An unexpected error occurred: {error}").format(error=e),
-                )
-            finally:
-                if archive_path.exists():
-                    archive_path.unlink()
-
-        dialog.save(self, None, save_callback)
+        DebugLogDialog(
+            parent=self,
+            editor=self.doc_editor,
+            on_saved=lambda name: self._on_editor_notification(
+                self,
+                _("Debug log saved to {path}").format(path=name),
+            ),
+            on_error=lambda msg: self._on_editor_notification(self, msg),
+        ).present()
 
     def show_settings(self, action, param):
         dialog = SettingsWindow(transient_for=self)

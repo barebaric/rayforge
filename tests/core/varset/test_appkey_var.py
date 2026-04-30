@@ -112,12 +112,8 @@ class TestResolveConfig:
         )
         VarSet(vars=[host_var, port_var, var])
         config = var.resolve_config()
-        assert config["probe_url"] == (
-            "http://octoprint.local:80/probe"
-        )
-        assert config["request_url"] == (
-            "http://octoprint.local:80/request"
-        )
+        assert config["probe_url"] == ("http://octoprint.local:80/probe")
+        assert config["request_url"] == ("http://octoprint.local:80/request")
         assert config["poll_url"] == (
             "http://octoprint.local:80/poll/{app_token}"
         )
@@ -147,9 +143,7 @@ class TestResolveConfig:
             request_url="http://fixed.host/request",
         )
         config = var.resolve_config()
-        assert config["request_url"] == (
-            "http://fixed.host/request"
-        )
+        assert config["request_url"] == ("http://fixed.host/request")
 
     def test_resolve_none_urls(self):
         var = AppKeyVar(
