@@ -1,6 +1,7 @@
 api_version: 1
 device:
   name: Carvera Air
+  description: Desktop laser engraver with Smoothieware controller and 300x200mm work area
 machine:
   driver: SmoothieDriver
   gcode_precision: 4

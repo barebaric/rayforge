@@ -3,7 +3,7 @@ device:
   name: Sculpfun iCube Ultra
   vendor: Sculpfun
   model: iCube Ultra
-  description: Diode laser engraver with Bluetooth, 150x150mm work area
+  description: Diode laser engraver with Bluetooth and 150x150mm work area
 machine:
   driver: GrblSerialDriver
   driver_args:

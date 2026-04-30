@@ -1,6 +1,7 @@
 api_version: 1
 device:
   name: xTool D1 Pro
+  description: Diode laser engraver with 430x390mm work area, connected via Wi-Fi
 machine:
   driver: GrblNetworkDriver
   gcode_precision: 3

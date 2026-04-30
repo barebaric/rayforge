@@ -1,6 +1,7 @@
 api_version: 1
 device:
   name: OMTech K40+
+  description: CO2 laser cutter with 300x200mm work area
 machine:
   driver: GrblSerialDriver
   gcode_precision: 3

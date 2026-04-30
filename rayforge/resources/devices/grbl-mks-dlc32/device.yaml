@@ -1,6 +1,7 @@
 api_version: 1
 device:
   name: Grbl MKS DLC32
+  description: GRBL-based controller board for custom laser builds
 machine:
   driver: GrblSerialDriver
   origin: bottom_left

@@ -1,7 +1,7 @@
 api_version: 1
 device:
   name: Generic GRBL
-  description: A generic GRBL-compatible laser controller connected via serial.
+  description: A generic GRBL-compatible laser controller connected via serial
 machine:
   driver: GrblSerialDriver
   origin: bottom_left
