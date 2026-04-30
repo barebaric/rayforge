@@ -31,6 +31,7 @@ class VisibilityOverlay(Gtk.Box):
         show_workpiece=True,
         show_camera=False,
         show_models=False,
+        show_grid=False,
         show_tabs=False,
         shortcuts=None,
         **kwargs,
@@ -105,6 +106,18 @@ class VisibilityOverlay(Gtk.Box):
             )
             self.models_button.set_action_name("win.show_models")
             self.append(self.models_button)
+
+        if show_grid:
+            self.grid_button = Gtk.ToggleButton()
+            self.grid_button.set_child(get_icon("sketch-grid-symbolic"))
+            self.grid_button.set_active(True)
+            self.grid_button.set_tooltip_text(
+                self._format_tooltip(
+                    _("Toggle grid visibility"), "win.show_grid"
+                )
+            )
+            self.grid_button.set_action_name("win.show_grid")
+            self.append(self.grid_button)
 
         self.travel_button = Gtk.ToggleButton()
         self.travel_button.set_child(get_icon("travel-path-symbolic"))

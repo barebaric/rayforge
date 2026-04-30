@@ -276,6 +276,11 @@ class ActionManager:
             GLib.Variant.new_boolean(cv.show_nogo_zones),
         )
         self._add_stateful_action(
+            "show_grid",
+            self.win.on_show_grid_state_change,
+            GLib.Variant.new_boolean(cv.show_grid),
+        )
+        self._add_stateful_action(
             "show_models",
             self.win.on_show_models_state_change,
             GLib.Variant.new_boolean(cv.show_models),
