@@ -1,11 +1,17 @@
+import json
 import yaml
 import logging
 import tempfile
 import shutil
+import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, Dict
+from typing import Any, Optional, Dict, TYPE_CHECKING
+
 from . import const
+
+if TYPE_CHECKING:
+    from .doceditor.editor import DocEditor
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +22,15 @@ class DebugDumpManager:
     new logging system.
     """
 
-    def create_dump_archive(self) -> Optional[Path]:
+    def create_dump_archive(
+        self, editor: Optional["DocEditor"] = None
+    ) -> Optional[Path]:
         """
         Gathers all debug information, writes it to a temporary directory,
         and creates a ZIP archive.
+
+        If editor is given, the current project is serialized and included
+        in the archive (regardless of whether it has been saved to disk).
         """
         from .config import LOG_DIR
         from .context import get_context
@@ -90,7 +101,19 @@ class DebugDumpManager:
                 if addon_config_file.exists():
                     shutil.copy(addon_config_file, tmp_path / "addons.yaml")
 
-                # 6. Create ZIP archive
+                # 6. Serialize and include project if requested
+                if editor is not None:
+                    doc_dict = editor.doc.to_dict()
+                    json_bytes = json.dumps(doc_dict, indent=2).encode("utf-8")
+                    project_file = tmp_path / "project.ryp"
+                    with zipfile.ZipFile(
+                        project_file,
+                        "w",
+                        compression=zipfile.ZIP_DEFLATED,
+                    ) as zf:
+                        zf.writestr("project.json", json_bytes)
+
+                # 7. Create ZIP archive
                 timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 archive_name = f"rayforge_debug_{timestamp_str}"
                 # Use a system-wide temp dir for the final archive to ensure
@@ -107,3 +130,15 @@ class DebugDumpManager:
         except Exception:
             logger.error("Failed to create debug dump archive", exc_info=True)
             return None
+
+    @staticmethod
+    def save_archive_to(archive_path: Path, destination: Path):
+        """
+        Moves a previously created dump archive to the given destination.
+        Cleans up the temporary archive regardless of success.
+        """
+        try:
+            shutil.move(str(archive_path), str(destination))
+        finally:
+            if archive_path.exists():
+                archive_path.unlink()

@@ -190,6 +190,4 @@ def call_registration_hooks(
             registry = registries.get(key)
             if registry is not None:
                 logger.debug(f"Calling {hook_name} hook")
-                getattr(plugin_mgr.hook, hook_name)(
-                    **{param_name: registry}
-                )
+                getattr(plugin_mgr.hook, hook_name)(**{param_name: registry})

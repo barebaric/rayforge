@@ -56,9 +56,7 @@ class AppKeyAdapter(RowAdapter):
         app_var = var
         assert isinstance(app_var, AppKeyVar)
 
-        row = Adw.ExpanderRow(
-            title=escape_title(app_var.label)
-        )
+        row = Adw.ExpanderRow(title=escape_title(app_var.label))
         if app_var.description:
             row.set_subtitle(app_var.description)
 
@@ -92,9 +90,7 @@ class AppKeyAdapter(RowAdapter):
 
         row.add_row(btn_box)
 
-        adapter = cls(
-            row, entry_row, request_btn, clear_btn, app_var
-        )
+        adapter = cls(row, entry_row, request_btn, clear_btn, app_var)
         adapter._update_status()
         return row, adapter
 
@@ -163,6 +159,7 @@ class AppKeyAdapter(RowAdapter):
             return None
         try:
             from urllib.parse import urlparse
+
             parsed = urlparse(request_url)
             scheme = parsed.scheme or "http"
             return f"{scheme}://{parsed.netloc}"
@@ -183,12 +180,8 @@ class AppKeyAdapter(RowAdapter):
 
         if probe_url:
             try:
-                req = urllib.request.Request(
-                    probe_url, method="GET"
-                )
-                with urllib.request.urlopen(
-                    req, timeout=_REQUEST_TIMEOUT
-                ):
+                req = urllib.request.Request(probe_url, method="GET")
+                with urllib.request.urlopen(req, timeout=_REQUEST_TIMEOUT):
                     pass
             except Exception:
                 self._row.set_subtitle(
@@ -207,15 +200,11 @@ class AppKeyAdapter(RowAdapter):
                 method="POST",
                 headers={"Content-Type": "application/json"},
             )
-            with urllib.request.urlopen(
-                req, timeout=_REQUEST_TIMEOUT
-            ) as resp:
+            with urllib.request.urlopen(req, timeout=_REQUEST_TIMEOUT) as resp:
                 result = json.loads(resp.read().decode())
             app_token = result.get("app_token")
             if not app_token:
-                self._row.set_subtitle(
-                    _("Unexpected response from device")
-                )
+                self._row.set_subtitle(_("Unexpected response from device"))
                 return
         except urllib.error.HTTPError as e:
             if e.code == 429:
@@ -238,9 +227,7 @@ class AppKeyAdapter(RowAdapter):
             return
         resolved_poll = poll_url.replace("{app_token}", app_token)
 
-        self._row.set_subtitle(
-            _("Waiting for approval on device…")
-        )
+        self._row.set_subtitle(_("Waiting for approval on device…"))
         self._request_btn.set_sensitive(False)
         self._request_btn.set_label(_("Waiting…"))
         self._start_polling(resolved_poll)
@@ -263,25 +250,17 @@ class AppKeyAdapter(RowAdapter):
     def _poll_tick(self) -> bool:
         self._poll_count += 1
         if self._poll_count > 150:
-            self._row.set_subtitle(
-                _("Approval timed out. Please try again.")
-            )
+            self._row.set_subtitle(_("Approval timed out. Please try again."))
             self._stop_polling()
             return False
 
         try:
-            req = urllib.request.Request(
-                self._poll_url, method="GET"
-            )
-            with urllib.request.urlopen(
-                req, timeout=_REQUEST_TIMEOUT
-            ) as resp:
+            req = urllib.request.Request(self._poll_url, method="GET")
+            with urllib.request.urlopen(req, timeout=_REQUEST_TIMEOUT) as resp:
                 result = json.loads(resp.read().decode())
         except urllib.error.HTTPError as e:
             if e.code == 404:
-                self._row.set_subtitle(
-                    _("Request denied or expired.")
-                )
+                self._row.set_subtitle(_("Request denied or expired."))
                 self._stop_polling()
                 return False
             return True
