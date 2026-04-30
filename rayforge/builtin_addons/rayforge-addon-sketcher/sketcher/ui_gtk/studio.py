@@ -3,7 +3,7 @@ from gettext import gettext as _
 from gi.repository import Gtk, Gio, Adw, GLib, Gdk
 from blinker import Signal
 from rayforge.core.undo.property_cmd import ChangePropertyCommand
-from rayforge.core.varset import FloatVar, IntVar, SliderFloatVar
+from rayforge.core.varset import FloatVar, IntVar, SliderFloatVar, Var
 from rayforge.ui_gtk.icons import get_icon
 from rayforge.ui_gtk.shared.keyboard import PRIMARY_ACCEL
 from rayforge.ui_gtk.shared.status_bar import StatusBar
@@ -204,9 +204,9 @@ class SketchStudio(Gtk.Box):
         side_panel_box.append(properties_group)
 
         # VarSet Editor Group
-        # Limit that types of variables that user can add to the sketch
+        # Limit the types of variables that user can add to the sketch
         self.varset_editor = VarSetEditorWidget(
-            vartypes={IntVar, FloatVar, SliderFloatVar}
+            vartypes={IntVar, FloatVar, SliderFloatVar, Var}
         )
         side_panel_box.append(self.varset_editor)
 

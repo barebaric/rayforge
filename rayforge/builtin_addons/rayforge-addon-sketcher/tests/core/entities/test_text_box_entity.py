@@ -373,3 +373,21 @@ def test_text_box_get_fourth_corner_id_ignores_origin_and_height(registry):
     result = box.get_fourth_corner_id(registry)
 
     assert result is None
+
+
+def _make_text_box(registry, content="Hello"):
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(0, 10)
+    box_id = registry.add_text_box(p1, p2, p3, content, FontConfig())
+    return registry.get_entity(box_id)
+
+
+def test_serialization_preserves_template(registry):
+    """Template content is preserved through serialization."""
+    box = _make_text_box(registry, "Part {width:.1f}x{height:.1f}")
+    data = box.to_dict()
+    assert data["content"] == "Part {width:.1f}x{height:.1f}"
+
+    restored = TextBoxEntity.from_dict(data)
+    assert restored.content == "Part {width:.1f}x{height:.1f}"

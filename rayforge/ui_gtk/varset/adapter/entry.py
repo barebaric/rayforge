@@ -22,6 +22,7 @@ class EntryAdapter(RowAdapter):
         row = Adw.EntryRow(title=escape_title(var.label))
         if var.description:
             row.set_tooltip_text(var.description)
+        row.set_show_apply_button(True)
         initial_val = getattr(var, target_property)
         if initial_val is not None:
             row.set_text(str(initial_val))

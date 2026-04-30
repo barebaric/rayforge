@@ -1,9 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Any, Optional, List, Tuple
 from gettext import gettext as _
-from rayforge.core.geo.geometry import Geometry
-from rayforge.core.geo.font_config import FontConfig
 from rayforge.core.geo import Point as GeoPoint
+from rayforge.core.geo.font_config import FontConfig
 from ..constraints import (
     AspectRatioConstraint,
     EqualLengthConstraint,
@@ -47,22 +46,6 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         self._modified_equal_length_constraints: List[
             Tuple[EntityID, List[EntityID]]
         ] = []
-
-    def _calculate_natural_metrics(
-        self, content: str, font_config: FontConfig
-    ) -> GeoPoint:
-        """Calculates the natural width and height from font properties."""
-        _, _, font_height = font_config.get_font_metrics()
-
-        if not content:
-            natural_width = 10.0
-        else:
-            natural_geo = Geometry.from_text(content, font_config)
-            natural_geo.flip_y()
-            min_x, _, max_x, _ = natural_geo.rect()
-            natural_width = max(max_x - min_x, 1.0)
-
-        return natural_width, font_height
 
     def _shed_size_constraints(self, text_entity: TextBoxEntity) -> None:
         """
@@ -157,8 +140,8 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         self._shed_size_constraints(text_entity)
 
         # Get natural dimensions of the new text.
-        natural_width, natural_height = self._calculate_natural_metrics(
-            self.new_content, self.new_font_config
+        natural_width, natural_height = text_entity.get_natural_size(
+            self.new_content
         )
 
         # Always add a hidden constraint for the width. This is authoritative.

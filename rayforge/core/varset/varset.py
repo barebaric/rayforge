@@ -1,3 +1,4 @@
+import importlib
 import logging
 from typing import Dict, Optional, Iterator, Any, List, KeysView
 from blinker import Signal
@@ -99,6 +100,11 @@ class VarSet:
             raise ValueError(
                 f"Unknown Var class '{class_name}' in definition."
             )
+        if VarClass is Var:
+            type_path = data_copy.pop("var_type", "builtins.str")
+            module_name, qualname = type_path.rsplit(".", 1)
+            module = importlib.import_module(module_name)
+            data_copy["var_type"] = getattr(module, qualname)
         return VarClass(**data_copy)
 
     @property

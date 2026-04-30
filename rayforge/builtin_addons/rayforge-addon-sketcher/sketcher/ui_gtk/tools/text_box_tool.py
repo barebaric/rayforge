@@ -664,19 +664,9 @@ class TextBoxTool(SketchTool):
         if not isinstance(entity, TextBoxEntity):
             return
 
-        _, _, font_height = entity.get_font_metrics()
-
-        if not self.text_buffer:
-            natural_width = 10.0
-        else:
-            natural_geo = Geometry.from_text(
-                self.text_buffer, entity.font_config
-            )
-            natural_geo.flip_y()
-            min_x, _, max_x, _ = natural_geo.rect()
-            natural_width = max(max_x - min_x, 1.0)
-
-        natural_height = font_height
+        natural_width, natural_height = entity.get_natural_size(
+            self.text_buffer
+        )
 
         p_origin = self.element.sketch.registry.get_point(entity.origin_id)
         p_width = self.element.sketch.registry.get_point(entity.width_id)
