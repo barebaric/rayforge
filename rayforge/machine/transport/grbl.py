@@ -9,8 +9,10 @@ from .transport import Transport
 
 logger = logging.getLogger(__name__)
 
-# Older Grbl versions support a maximum RX buffer size of 127.
-GRBL_RX_BUFFER_SIZE = 127
+# Default RX buffer size for standard Grbl 1.1 (128-byte buffer,
+# safe limit 127). Custom firmwares may report a smaller size via
+# the $I OPT line.
+DEFAULT_GRBL_RX_BUFFER_SIZE = 127
 
 
 class PendingCommand(NamedTuple):
@@ -35,9 +37,13 @@ class GrblSerialTransport:
     Wraps a SerialTransport with GRBL's character-counting flow control
     protocol.
 
-    GRBL devices have a 128-byte serial receive buffer (safe limit 127).
+    GRBL devices have a serial receive buffer whose size is reported
+    in the $I OPT line (e.g. ``[OPT:VMPH,63,511]``).  Standard Grbl
+    1.1 uses 127 bytes (128-byte hardware buffer minus one).  Custom
+    firmwares may use smaller buffers.
+
     This transport tracks how many bytes are outstanding and provides
-    backpressure so callers never overflow it.
+    backpressure so callers never overflow the device's RX buffer.
 
     Also handles low-level GRBL response parsing: extracts 'ok' and
     'error:' from the raw byte stream for buffer accounting, even when
@@ -49,6 +55,7 @@ class GrblSerialTransport:
     def __init__(self, transport: Transport):
         self._transport = transport
         self._rx_buffer_count = 0
+        self._rx_buffer_size = DEFAULT_GRBL_RX_BUFFER_SIZE
         self._lock = threading.Lock()
         self._pending: asyncio.Queue[PendingCommand] = asyncio.Queue()
         self._space_available = asyncio.Event()
@@ -289,7 +296,20 @@ class GrblSerialTransport:
 
     def needs_space(self, needed: int) -> bool:
         """Return True if *needed* bytes would overflow the RX buffer."""
-        return self._get() + needed > GRBL_RX_BUFFER_SIZE
+        return self._get() + needed > self._rx_buffer_size
+
+    def set_rx_buffer_size(self, size: int) -> None:
+        """
+        Update the device's RX buffer size (as reported by the $I OPT
+        line).  Must be called before streaming begins.
+        """
+        if size > 0:
+            old_size = self._rx_buffer_size
+            with self._lock:
+                self._rx_buffer_size = size
+            logger.info(
+                f"GRBL RX buffer size set to {size} bytes (was {old_size})"
+            )
 
     async def wait_for_space(self) -> None:
         """Clear and wait for one space-available signal."""

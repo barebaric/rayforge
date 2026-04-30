@@ -22,7 +22,7 @@ from ...transport import TransportStatus, SerialTransport
 from ...transport.grbl import (
     GrblSerialTransport,
     GrblResponseType,
-    GRBL_RX_BUFFER_SIZE,
+    DEFAULT_GRBL_RX_BUFFER_SIZE,
 )
 from ...transport.serial import SerialPortPermissionError
 from ..driver import (
@@ -46,6 +46,7 @@ from .grbl_util import (
     alarm_code_to_device_error,
     CommandRequest,
     parse_grbl_parser_state,
+    parse_opt_info,
     parse_version,
     strip_gcode_comments,
 )
@@ -374,7 +375,9 @@ class GrblSerialDriver(Driver):
                         try:
                             payload = b"?"
                             count = await transport.send_poll(payload)
-                            buf_info = f"buf: {count}/{GRBL_RX_BUFFER_SIZE}"
+                            buf_info = (
+                                f"buf: {count}/{transport._rx_buffer_size}"
+                            )
                             logger.debug(
                                 f"TX: {payload!r} ({buf_info})",
                                 extra={
@@ -603,7 +606,7 @@ class GrblSerialDriver(Driver):
             # handler finds an empty queue and drops the 'ok',
             # causing a deadlock.
             count = await transport.send_gcode(command_bytes, op_index)
-            buf_info = f"buf: {count}/{GRBL_RX_BUFFER_SIZE}"
+            buf_info = f"buf: {count}/{transport._rx_buffer_size}"
             logger.debug(
                 f"TX: {command_bytes!r} ({buf_info})",
                 extra={
@@ -1182,7 +1185,12 @@ class GrblSerialDriver(Driver):
         buf_count = (
             self.grbl_transport.buffer_count if self.grbl_transport else 0
         )
-        buf_info = f"buf: {buf_count}/{GRBL_RX_BUFFER_SIZE}"
+        buf_size = (
+            self.grbl_transport._rx_buffer_size
+            if self.grbl_transport
+            else DEFAULT_GRBL_RX_BUFFER_SIZE
+        )
+        buf_info = f"buf: {buf_count}/{buf_size}"
         logger.debug(
             f"RX: {data!r} ({buf_info})",
             extra={
@@ -1234,7 +1242,12 @@ class GrblSerialDriver(Driver):
             count = self.grbl_transport.ack_status_report()
         else:
             count = 0
-        buf_info = f"buf: {count}/{GRBL_RX_BUFFER_SIZE}"
+        buf_size = (
+            self.grbl_transport._rx_buffer_size
+            if self.grbl_transport
+            else DEFAULT_GRBL_RX_BUFFER_SIZE
+        )
+        buf_info = f"buf: {count}/{buf_size}"
         logger.debug(f"Processing status report: {report} ({buf_info})")
         logger.info(report, extra=self._log_extra("STATUS_POLL"))
 
@@ -1268,7 +1281,7 @@ class GrblSerialDriver(Driver):
             logger.debug(
                 f"Processed 'ok', freed {pending.length} bytes "
                 f"(buf: {transport.buffer_count}"
-                f"/{GRBL_RX_BUFFER_SIZE}, "
+                f"/{transport._rx_buffer_size}, "
                 f"op_index={pending.op_index})"
             )
 
@@ -1368,6 +1381,10 @@ class GrblSerialDriver(Driver):
             if version_info:
                 ver_num, ver_let = version_info
                 logger.info(f"Connected to GRBL version {ver_num}{ver_let}")
+        elif line.startswith("[OPT:"):
+            rx_buffer_size = parse_opt_info(line)
+            if rx_buffer_size and self.grbl_transport:
+                self.grbl_transport.set_rx_buffer_size(rx_buffer_size)
         elif line.startswith("Grbl "):
             self._handshake_received.set()
             logger.debug(f"Received Grbl welcome message: {line}")
