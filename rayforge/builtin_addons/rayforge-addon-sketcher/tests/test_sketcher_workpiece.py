@@ -242,3 +242,138 @@ class TestWorkPieceWithSketch:
         assert max_y == pytest.approx(1.0)
 
         assert wp._boundaries_cache is bounds
+
+    def test_uuid4_unique_per_workpiece_instance(self, doc):
+        """
+        Two workpiece instances from the same sketch each get their own
+        uuid4 value, and it stays stable across boundary accesses.
+        """
+        from rayforge.core.geo.font_config import FontConfig
+
+        sketch = Sketch(name="UUID Sketch")
+        origin = sketch.add_point(0, 0)
+        w_pt = sketch.add_point(10, 0)
+        h_pt = sketch.add_point(0, 10)
+        sketch.registry.add_text_box(
+            origin, w_pt, h_pt, "{uuid4()}", FontConfig()
+        )
+        sketch.solve()
+        doc.add_asset(sketch)
+
+        wp_a = WorkPiece.from_geometry_provider(sketch)
+        doc.active_layer.add_child(wp_a)
+
+        wp_b = WorkPiece.from_geometry_provider(sketch)
+        doc.active_layer.add_child(wp_b)
+
+        assert wp_a._resolved_text_cache != {}
+        assert wp_b._resolved_text_cache != {}
+        cache_a_val = next(iter(wp_a._resolved_text_cache.values()))
+        cache_b_val = next(iter(wp_b._resolved_text_cache.values()))
+        assert cache_a_val != cache_b_val
+
+    def test_uuid4_stable_within_workpiece(self, doc):
+        """
+        A workpiece instance returns the same uuid4 on repeated
+        boundary accesses (cache survives).
+        """
+        from rayforge.core.geo.font_config import FontConfig
+
+        sketch = Sketch(name="UUID Sketch")
+        origin = sketch.add_point(0, 0)
+        w_pt = sketch.add_point(10, 0)
+        h_pt = sketch.add_point(0, 10)
+        sketch.registry.add_text_box(
+            origin, w_pt, h_pt, "{uuid4()}", FontConfig()
+        )
+        sketch.solve()
+        doc.add_asset(sketch)
+
+        wp = WorkPiece.from_geometry_provider(sketch)
+        doc.active_layer.add_child(wp)
+
+        first_cache = dict(wp._resolved_text_cache)
+        wp.clear_render_cache()
+        wp._boundaries_cache = None
+        wp._fills_cache = None
+        _ = wp.boundaries
+        assert wp._resolved_text_cache == first_cache
+
+    def test_uuid4_survives_in_world(self, doc):
+        """
+        in_world carries the resolved_text_cache so the subprocess
+        uses the same uuid4.
+        """
+        from rayforge.core.geo.font_config import FontConfig
+
+        sketch = Sketch(name="UUID Sketch")
+        origin = sketch.add_point(0, 0)
+        w_pt = sketch.add_point(10, 0)
+        h_pt = sketch.add_point(0, 10)
+        sketch.registry.add_text_box(
+            origin, w_pt, h_pt, "{uuid4()}", FontConfig()
+        )
+        sketch.solve()
+        doc.add_asset(sketch)
+
+        wp = WorkPiece.from_geometry_provider(sketch)
+        doc.active_layer.add_child(wp)
+        original_cache = dict(wp._resolved_text_cache)
+
+        world = wp.in_world()
+        assert world._resolved_text_cache == original_cache
+
+    def test_uuid4_survives_serialization(self, doc):
+        """
+        The resolved_text_cache round-trips through
+        to_dict / from_dict.
+        """
+        from rayforge.core.geo.font_config import FontConfig
+
+        sketch = Sketch(name="UUID Sketch")
+        origin = sketch.add_point(0, 0)
+        w_pt = sketch.add_point(10, 0)
+        h_pt = sketch.add_point(0, 10)
+        sketch.registry.add_text_box(
+            origin, w_pt, h_pt, "{uuid4()}", FontConfig()
+        )
+        sketch.solve()
+        doc.add_asset(sketch)
+
+        wp = WorkPiece.from_geometry_provider(sketch)
+        doc.active_layer.add_child(wp)
+        original_cache = dict(wp._resolved_text_cache)
+
+        data = wp.to_dict()
+        wp2 = WorkPiece.from_dict(data)
+        assert wp2._resolved_text_cache == original_cache
+
+    def test_uuid4_cleared_on_sketch_edit(self, doc):
+        """
+        When the sketch is edited, the workpiece's cache is cleared
+        and a new uuid4 is generated.
+        """
+        from rayforge.core.geo.font_config import FontConfig
+
+        sketch = Sketch(name="UUID Sketch")
+        origin = sketch.add_point(0, 0)
+        w_pt = sketch.add_point(10, 0)
+        h_pt = sketch.add_point(0, 10)
+        sketch.registry.add_text_box(
+            origin, w_pt, h_pt, "{uuid4()}", FontConfig()
+        )
+        sketch.solve()
+        doc.add_asset(sketch)
+
+        wp = WorkPiece.from_geometry_provider(sketch)
+        doc.active_layer.add_child(wp)
+        first_val = next(iter(wp._resolved_text_cache.values()))
+
+        wp.get_geometry_provider()
+
+        sketch.solve()
+        sketch.notify_update()
+
+        _ = wp.boundaries
+        new_val = next(iter(wp._resolved_text_cache.values()))
+        assert new_val != first_val

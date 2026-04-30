@@ -241,9 +241,7 @@ class Var(Generic[T]):
         }
         if self.__class__ is Var:
             vtype = self.var_type
-            data["var_type"] = (
-                f"{vtype.__module__}.{vtype.__qualname__}"
-            )
+            data["var_type"] = f"{vtype.__module__}.{vtype.__qualname__}"
         if include_value:
             # Always serialize the effective value
             data["value"] = self.value

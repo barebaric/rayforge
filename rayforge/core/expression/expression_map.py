@@ -46,9 +46,7 @@ class ExpressionMap:
             try:
                 result = eval(expr.strip(), self._namespace)
             except Exception as e:
-                logger.debug(
-                    f"Failed to evaluate expression '{expr}': {e}"
-                )
+                logger.debug(f"Failed to evaluate expression '{expr}': {e}")
                 return match.group(0)
             if fmt:
                 try:
