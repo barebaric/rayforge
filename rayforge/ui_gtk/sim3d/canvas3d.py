@@ -125,6 +125,7 @@ class Canvas3D(Gtk.GLArea):
         self._show_travel_moves = False
         self._show_nogo_zones = True
         self._show_models = True
+        self._show_grid = True
         self._is_orbiting = False
         self._is_z_rotating = False
         self._gl_initialized = False
@@ -823,6 +824,7 @@ class Canvas3D(Gtk.GLArea):
                 self._axis_renderer is not None
                 and self._main_shader is not None
                 and self._text_shader is not None
+                and self._show_grid
             ):
                 self._axis_renderer.render(
                     ctx,
@@ -1337,6 +1339,12 @@ class Canvas3D(Gtk.GLArea):
         if self._show_models == visible:
             return
         self._show_models = visible
+        self.queue_render()
+
+    def set_show_grid(self, visible: bool):
+        if self._show_grid == visible:
+            return
+        self._show_grid = visible
         self.queue_render()
 
     def _release_scene_shm(self, handle_dict: Dict):

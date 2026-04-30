@@ -35,6 +35,7 @@ class CanvasViewState:
     show_camera: bool = True
     show_travel_lines: bool = False
     show_nogo_zones: bool = True
+    show_grid: bool = True
     show_models: bool = True
     show_tabs: bool = True
     perspective_mode: bool = False
