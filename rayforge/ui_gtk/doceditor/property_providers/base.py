@@ -111,6 +111,15 @@ class PropertyProvider(ABC):
     priority: int = 100
     """Lower priority values appear first in the UI."""
 
+    separate_group: bool = False
+    """If True, this provider's widgets get their own Expander card."""
+
+    group_title: str = ""
+    """Title for the separate Expander card (used when separate_group=True)."""
+
+    group_subtitle: str = ""
+    """Subtitle for the separate Expander, updated by update_widgets()."""
+
     def __init__(self):
         self.editor: "DocEditor"
         self.items: List[DocItem] = []

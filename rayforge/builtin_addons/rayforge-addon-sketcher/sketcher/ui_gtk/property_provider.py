@@ -10,7 +10,7 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.ui_gtk.doceditor.property_providers.base import (
     PropertyProvider,
 )
-from rayforge.ui_gtk.varset.varsetwidget import VarSetWidget
+from rayforge.ui_gtk.varset.varsetwidget import VarSetRowList
 from .sketch_cmd import SketchCmd
 
 if TYPE_CHECKING:
@@ -26,6 +26,8 @@ class SketchPropertyProvider(PropertyProvider):
     """Provides a VarSetWidget to configure a Sketch's input parameters."""
 
     priority = 100
+    separate_group = True
+    group_title = _("Sketch Parameters")
 
     def can_handle(self, items: List[DocItem]) -> bool:
         """
@@ -51,18 +53,23 @@ class SketchPropertyProvider(PropertyProvider):
         return first_sketch_uid is not None
 
     def create_widgets(self) -> List[Gtk.Widget]:
-        """Creates the VarSetWidget for sketch parameters."""
+        """Creates the VarSetRowList for sketch parameters."""
         logger.debug("Creating sketch property widgets.")
-        self.varset_widget = VarSetWidget(title=_("Sketch Parameters"))
+        self.varset_widget = VarSetRowList()
         self.varset_widget.data_changed.connect(self._on_params_changed)
+
+        self._empty_row = Adw.ActionRow(
+            title=_("No parameters"),
+            sensitive=False,
+        )
 
         self._debounce_timer_id = 0
         self._pending_changes: dict[str, Any] = {}
 
-        return [self.varset_widget]
+        return [self.varset_widget, self._empty_row]
 
     def update_widgets(self, editor: "DocEditor", items: List[DocItem]):
-        """Populates and updates the VarSetWidget based on the selection."""
+        """Populates and updates the VarSetRowList based on the selection."""
         logger.debug(
             f"Updating sketch property widgets for {len(items)} items."
         )
@@ -74,19 +81,28 @@ class SketchPropertyProvider(PropertyProvider):
             first_wp = workpieces[0]
 
             sketch = cast("Sketch", first_wp.get_geometry_provider())
-            if not sketch or not sketch.input_parameters:
-                logger.debug("No sketch or params found, clearing widget.")
+            if not sketch:
                 self.varset_widget.populate(VarSet())
+                self._empty_row.set_visible(True)
+                self.group_subtitle = ""
+                return
+
+            self.group_subtitle = sketch.name
+
+            if not sketch.input_parameters:
+                self.varset_widget.populate(VarSet())
+                self._empty_row.set_visible(True)
                 return
 
             logger.debug(
-                "Populating VarSetWidget from a clean sketch definition copy."
+                "Populating VarSetRowList from a clean sketch definition copy."
             )
             clean_varset_def = sketch.input_parameters.to_dict(
                 include_value=False
             )
             clean_varset = VarSet.from_dict(clean_varset_def)
             self.varset_widget.populate(clean_varset)
+            self._empty_row.set_visible(False)
 
             self._update_widget_for_mixed_state(clean_varset, workpieces)
         finally:
@@ -137,9 +153,9 @@ class SketchPropertyProvider(PropertyProvider):
                     if isinstance(row, Adw.ActionRow):
                         row.set_subtitle(_("Mixed Values"))
 
-    def _on_params_changed(self, sender: VarSetWidget, key: str):
+    def _on_params_changed(self, sender: VarSetRowList, key: str):
         """
-        Handles the raw signal from the VarSetWidget. Instead of applying
+        Handles the raw signal from the VarSetRowList. Instead of applying
         changes immediately, it schedules a debounced update.
         """
         logger.debug(
