@@ -176,6 +176,9 @@ class Ellipse(Entity):
         cos_a = math.cos(rotation)
         sin_a = math.sin(rotation)
 
+        if abs(rx - ry) < 1e-9:
+            return self._circle_geometry(cx, cy, rx, cos_a, sin_a)
+
         num_segments = max(32, int(64 * max(rx, ry) / min(rx, ry)))
         for i in range(num_segments):
             angle = 2 * math.pi * i / num_segments
@@ -189,6 +192,28 @@ class Ellipse(Entity):
                 geo.line_to(x, y)
         geo.close_path()
         geo.fit_arcs(0.1)
+        return geo
+
+    @staticmethod
+    def _circle_geometry(
+        cx: float,
+        cy: float,
+        r: float,
+        cos_a: float,
+        sin_a: float,
+    ) -> Geometry:
+        geo = Geometry()
+        start_x = cx + r * cos_a
+        start_y = cy + r * sin_a
+        mid_x = cx - r * cos_a
+        mid_y = cy - r * sin_a
+        i1 = -r * cos_a
+        j1 = -r * sin_a
+        i2 = r * cos_a
+        j2 = r * sin_a
+        geo.move_to(start_x, start_y)
+        geo.arc_to(mid_x, mid_y, i1, j1, clockwise=False)
+        geo.arc_to(start_x, start_y, i2, j2, clockwise=False)
         return geo
 
     def create_fill_geometry(
