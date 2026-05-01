@@ -1196,7 +1196,19 @@ class Geometry:
                 end_angle = math.atan2(end[1] - center_y, end[0] - center_x)
 
                 clockwise = bool(row[COL_CW])
-                if clockwise:
+                if radius > 1e-9 and abs(end_angle - start_angle) < 1e-9:
+                    mid = start_angle + math.pi
+                    if clockwise:
+                        ctx.arc_negative(
+                            center_x, center_y, radius, start_angle, mid
+                        )
+                        ctx.arc_negative(
+                            center_x, center_y, radius, mid, start_angle
+                        )
+                    else:
+                        ctx.arc(center_x, center_y, radius, start_angle, mid)
+                        ctx.arc(center_x, center_y, radius, mid, start_angle)
+                elif clockwise:
                     ctx.arc_negative(
                         center_x, center_y, radius, start_angle, end_angle
                     )
