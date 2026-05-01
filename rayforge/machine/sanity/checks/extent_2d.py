@@ -8,7 +8,6 @@ if TYPE_CHECKING:
 
 
 class ExtentCheck2D(BaseCheck):
-
     @property
     def category(self) -> IssueCategory:
         return IssueCategory.MACHINE_EXTENT
@@ -22,9 +21,7 @@ class ExtentCheck2D(BaseCheck):
             if end is None:
                 continue
             for point in (end,):
-                self._check_point(
-                    issues, seen, point, max_x, max_y
-                )
+                self._check_point(issues, seen, point, max_x, max_y)
         return issues
 
     @staticmethod

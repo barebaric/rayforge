@@ -24,9 +24,7 @@ def test_no_zones(isolated_machine, make_line_ops):
     assert len(_run_check(ops, isolated_machine, {})) == 0
 
 
-def test_line_hits_rect_zone(
-    isolated_machine, make_line_ops, make_rect_zone
-):
+def test_line_hits_rect_zone(isolated_machine, make_line_ops, make_rect_zone):
     zone = make_rect_zone(5, 5, 10, 10, "Clamp")
     ops = make_line_ops([(0, 10, False), (20, 10, True)])
     issues = _run_check(ops, isolated_machine, {"z1": zone})
@@ -69,9 +67,7 @@ def test_arc_hits_zone(isolated_machine):
     assert len(_run_check(ops, isolated_machine, {"z1": zone})) == 1
 
 
-def test_multiple_zones_hit(
-    isolated_machine, make_line_ops, make_rect_zone
-):
+def test_multiple_zones_hit(isolated_machine, make_line_ops, make_rect_zone):
     z1 = make_rect_zone(5, 5, 5, 5, "Zone A")
     z2 = make_rect_zone(15, 15, 5, 5, "Zone B")
     ops = make_line_ops([(0, 0, False), (20, 20, True)])

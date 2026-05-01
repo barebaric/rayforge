@@ -8,7 +8,6 @@ if TYPE_CHECKING:
 
 
 class WorkareaCheck2D(BaseCheck):
-
     @property
     def category(self) -> IssueCategory:
         return IssueCategory.WORKAREA
@@ -23,9 +22,7 @@ class WorkareaCheck2D(BaseCheck):
             end = getattr(cmd, "end", None)
             if end is None:
                 continue
-            self._check_point(
-                issues, seen, end, x_min, y_min, x_max, y_max
-            )
+            self._check_point(issues, seen, end, x_min, y_min, x_max, y_max)
         return issues
 
     @staticmethod
@@ -63,9 +60,5 @@ class WorkareaCheck2D(BaseCheck):
 def _workarea_msg(axis: str, val: float, limit: float) -> str:
     axis_name = axis[0]
     if axis[1] == "-":
-        return "{}={:.1f} < {:.1f} (work area)".format(
-            axis_name, val, limit
-        )
-    return "{}={:.1f} > {:.1f} (work area)".format(
-        axis_name, val, limit
-    )
+        return "{}={:.1f} < {:.1f} (work area)".format(axis_name, val, limit)
+    return "{}={:.1f} > {:.1f} (work area)".format(axis_name, val, limit)

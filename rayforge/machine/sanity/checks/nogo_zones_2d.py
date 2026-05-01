@@ -8,7 +8,6 @@ if TYPE_CHECKING:
 
 
 class NoGoZoneCheck2D(BaseCheck):
-
     @property
     def category(self) -> IssueCategory:
         return IssueCategory.NOGO_ZONE
