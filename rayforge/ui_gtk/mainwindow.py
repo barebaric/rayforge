@@ -1453,6 +1453,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.item_revealer.set_reveal_child(bool(selected_items))
         self.bottom_panel.update_position_menu_sensitivity()
         self._update_actions_and_ui()
+        selected_uids = {item.uid for item in selected_items}
+        self.bottom_panel.update_layer_selection(selected_uids)
 
     def on_config_changed(self, sender, **kwargs):
         config = get_context().config

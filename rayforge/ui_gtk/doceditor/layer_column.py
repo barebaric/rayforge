@@ -1,7 +1,7 @@
 import json
 import logging
 from gettext import gettext as _
-from typing import Optional, TYPE_CHECKING, cast
+from typing import List, Optional, Set, TYPE_CHECKING, cast
 from blinker import Signal
 from gi.repository import Adw, Gdk, Gio, GObject, Gtk, Pango
 from ...context import get_context
@@ -74,6 +74,9 @@ css = """
 .layer-workpiece-list > row.drop-below {
     box-shadow: inset 0 -2px 0 0 @accent_bg_color;
 }
+.layer-workpiece-list > row.selected-row {
+    background-color: alpha(@accent_bg_color, 0.2);
+}
 .layer-column.drop-left {
     box-shadow: inset 3px 0 0 0 @accent_bg_color;
 }
@@ -105,10 +108,14 @@ class LayerColumn(Gtk.Box):
         self.layer = layer
         self.editor = editor
         self._row_items = {}
+        self._ordered_items: List = []
+        self._selected_uids: Set = set()
+        self._selection_anchor = None
         self._potential_drop_index = -1
 
         self.edit_item_requested = Signal()
         self.select_items_requested = Signal()
+        self.move_to_layer_requested = Signal()
 
         self._build_header(can_delete)
         self._build_workflow_row()
@@ -286,6 +293,7 @@ class LayerColumn(Gtk.Box):
             self.listbox.remove(child)
             child = next_child
         self._row_items.clear()
+        self._ordered_items.clear()
 
         for item in self.layer.get_content_items():
             row = Gtk.ListBoxRow()
@@ -297,7 +305,29 @@ class LayerColumn(Gtk.Box):
                 continue
             row.set_child(item_row)
             self._row_items[row] = item
+            self._ordered_items.append(item)
             self.listbox.append(row)
+
+    def update_row_selection(self, selected_uids: Set):
+        self._selected_uids = {
+            uid
+            for uid in selected_uids
+            if uid in {i.uid for i in self._ordered_items}
+        }
+        if self._selected_uids:
+            for item in reversed(self._ordered_items):
+                if item.uid in self._selected_uids:
+                    self._selection_anchor = item
+                    break
+        child = self.listbox.get_first_child()
+        while child:
+            if isinstance(child, Gtk.ListBoxRow):
+                item = self._row_items.get(child)
+                if item and item.uid in selected_uids:
+                    child.add_css_class("selected-row")
+                else:
+                    child.remove_css_class("selected-row")
+            child = child.get_next_sibling()
 
     def _update_icon(self):
         if old := self.icon_container.get_first_child():
@@ -398,9 +428,15 @@ class LayerColumn(Gtk.Box):
         if picked is not None:
             widget = picked
             while widget and widget is not self:
-                if isinstance(widget, (WorkpieceRow, GroupRow)):
-                    if n_press == 2 and isinstance(widget, WorkpieceRow):
-                        self._on_workpiece_double_clicked(widget.workpiece)
+                if isinstance(widget, Gtk.ListBoxRow):
+                    item = self._row_items.get(widget)
+                    if item is None:
+                        break
+                    if n_press == 1:
+                        if not self._handle_item_click(item, gesture):
+                            return
+                    elif n_press == 2 and isinstance(item, WorkPiece):
+                        self._on_workpiece_double_clicked(item)
                     gesture.set_state(Gtk.EventSequenceState.DENIED)
                     return
                 if isinstance(widget, Gtk.Button):
@@ -409,6 +445,57 @@ class LayerColumn(Gtk.Box):
                 widget = widget.get_parent()
         if self.doc.active_layer is not self.layer:
             self.editor.layer.set_active_layer(self.layer)
+
+    def _handle_item_click(self, item, gesture) -> bool:
+        event = gesture.get_current_event()
+        modifiers = (
+            event.get_modifier_state() if event else Gdk.ModifierType(0)
+        )
+        shift = bool(modifiers & Gdk.ModifierType.SHIFT_MASK)
+        ctrl = bool(modifiers & Gdk.ModifierType.CONTROL_MASK)
+
+        if shift:
+            if (
+                not self._selection_anchor
+                or self._selection_anchor not in self._ordered_items
+            ):
+                self._selection_anchor = item
+            if item in self._ordered_items:
+                anchor_idx = self._ordered_items.index(
+                    self._selection_anchor
+                )
+                click_idx = self._ordered_items.index(item)
+                lo = min(anchor_idx, click_idx)
+                hi = max(anchor_idx, click_idx)
+                selected = self._ordered_items[lo : hi + 1]
+            else:
+                selected = [item]
+            self.select_items_requested.send(
+                self, items=selected, extend=True,
+            )
+            return True
+        elif ctrl:
+            self._selection_anchor = item
+            selected = [
+                i
+                for i in self._ordered_items
+                if i.uid in self._selected_uids
+            ]
+            if item in selected:
+                selected = [i for i in selected if i is not item]
+            else:
+                selected.append(item)
+            self.select_items_requested.send(
+                self, items=selected, extend=True,
+            )
+            return True
+        elif item.uid not in self._selected_uids:
+            self._selection_anchor = item
+            self.select_items_requested.send(
+                self, items=[item], extend=False,
+            )
+            return True
+        return False
 
     def _on_workpiece_double_clicked(self, wp):
         if not wp.geometry_provider_uid:
@@ -423,22 +510,21 @@ class LayerColumn(Gtk.Box):
 
     def _on_right_click_pressed(self, gesture, n_press, x, y):
         widget = self.pick(x, y, Gtk.PickFlags.DEFAULT)
-        clicked_row = None
+        clicked_item = None
         while widget and widget is not self:
-            if isinstance(widget, (WorkpieceRow, GroupRow)):
-                clicked_row = widget
+            if isinstance(widget, Gtk.ListBoxRow):
+                clicked_item = self._row_items.get(widget)
                 break
             widget = widget.get_parent()
 
-        if clicked_row is None:
+        if clicked_item is None:
             self._show_empty_context_menu(gesture)
         else:
-            if isinstance(clicked_row, WorkpieceRow):
-                item = clicked_row.workpiece
-            else:
-                item = clicked_row.group
-            self.select_items_requested.send(self, items=[item])
-            self._show_item_context_menu(gesture, item)
+            if clicked_item.uid not in self._selected_uids:
+                self.select_items_requested.send(
+                    self, items=[clicked_item], extend=False
+                )
+            self._show_item_context_menu(gesture)
 
     def _popup_context_menu(self, menu: Gio.Menu, gesture: Gtk.Gesture):
         if self._context_popover:
@@ -457,7 +543,7 @@ class LayerColumn(Gtk.Box):
         menu.append_item(Gio.MenuItem.new(_("Paste"), "win.paste"))
         self._popup_context_menu(menu, gesture)
 
-    def _show_item_context_menu(self, gesture, item: DocItem):
+    def _show_item_context_menu(self, gesture):
         menu = Gio.Menu.new()
         menu.append_item(Gio.MenuItem.new(_("Duplicate"), "win.duplicate"))
         menu.append_section(None, Gio.Menu.new())
@@ -477,53 +563,47 @@ class LayerColumn(Gtk.Box):
             self._remove_drop_markers()
             return self._handle_asset_drop(asset_uids)
 
-        wp = self._find_item_by_uid(value)
-        if not wp:
+        dragged_item = self._find_item_by_uid(value)
+        if not dragged_item:
             self._remove_drop_markers()
             logger.debug("Drop: rejected, item not found uid=%r", value[:8])
-            return False
-
-        item_layer = (
-            wp.layer
-            if isinstance(wp, WorkPiece)
-            else (wp.layer if isinstance(wp, Group) else None)
-        )
-        if not item_layer:
-            self._remove_drop_markers()
-            logger.debug("Drop: rejected, item has no layer uid=%r", value[:8])
             return False
 
         drop_index = self._potential_drop_index
         self._remove_drop_markers()
 
-        if item_layer is self.layer:
-            logger.debug(
-                "Drop: reorder in %s, idx=%d",
-                self.layer.name,
-                drop_index,
-            )
-            return self._handle_reorder_drop(wp, drop_index)
+        if dragged_item.uid in self._selected_uids:
+            items_to_move = [
+                i
+                for i in self._ordered_items
+                if i.uid in self._selected_uids
+            ]
+        else:
+            items_to_move = [dragged_item]
 
-        logger.debug("Drop: move %s -> %s", item_layer.name, self.layer.name)
-        self.editor.layer.move_items_to_layer([wp], self.layer)
+        if not items_to_move:
+            return False
+
+        source_layer = cast(WorkPiece, items_to_move[0]).layer
+        if source_layer is self.layer:
+            return self._handle_reorder_drop(items_to_move, drop_index)
+
+        self.move_to_layer_requested.send(
+            self, items=items_to_move, target_layer=self.layer
+        )
         return True
 
-    def _handle_reorder_drop(self, item, drop_index):
+    def _handle_reorder_drop(self, items, drop_index):
         current_items = list(self.layer.get_content_items())
         if drop_index == -1:
             drop_index = len(current_items)
-        source_index = current_items.index(item)
 
-        target_index = drop_index
-        if source_index < target_index:
-            target_index -= 1
-
-        if source_index == target_index:
-            return True
-
-        new_order = list(current_items)
-        new_order.pop(source_index)
-        new_order.insert(target_index, item)
+        new_order = [i for i in current_items if i not in items]
+        for i in reversed(items):
+            if drop_index >= len(new_order):
+                new_order.append(i)
+            else:
+                new_order.insert(drop_index, i)
         self.editor.layer.reorder_content_items(self.layer, new_order)
         return True
 

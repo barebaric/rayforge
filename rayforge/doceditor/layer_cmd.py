@@ -1,7 +1,8 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, Dict, Optional, List
 from gettext import gettext as _
+from ..core.group import Group
 from ..core.layer import Layer
 from ..core.item import DocItem
 from ..core.undo import (
@@ -339,20 +340,27 @@ class LayerCmd:
         """Creates an undoable command to move items to a specific layer."""
         if not items:
             return
-        item = items[0]
-        from ..core.group import Group
-        from ..core.workpiece import WorkPiece
 
-        if isinstance(item, WorkPiece):
-            source_layer = item.layer
-        elif isinstance(item, Group):
-            source_layer = item.layer
-        else:
+        by_layer: Dict[Layer, List[DocItem]] = {}
+        for item in items:
+            if isinstance(item, (WorkPiece, Group)):
+                layer = item.layer
+            else:
+                continue
+            if not layer or layer is target_layer:
+                continue
+            by_layer.setdefault(layer, []).append(item)
+
+        if not by_layer:
             return
-        if not source_layer or source_layer is target_layer:
-            return
-        cmd = MoveItemsLayerCommand(items, target_layer, source_layer)
-        self._editor.history_manager.execute(cmd)
+
+        history = self._editor.history_manager
+        with history.transaction(_("Move to another layer")) as t:
+            for source_layer, layer_items in by_layer.items():
+                cmd = MoveItemsLayerCommand(
+                    layer_items, target_layer, source_layer
+                )
+                t.execute(cmd)
 
     def reorder_content_items(self, layer: Layer, new_order: List[DocItem]):
         """Reorders content items within a layer with an undoable command."""
