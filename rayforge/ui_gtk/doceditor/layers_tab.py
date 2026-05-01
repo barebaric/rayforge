@@ -24,6 +24,7 @@ class LayersTab(Gtk.Box):
         self._pan_offset_x = 0.0
 
         self.edit_item_requested = Signal()
+        self.select_items_requested = Signal()
 
         self.scrolled = Gtk.ScrolledWindow()
         self.scrolled.set_policy(
@@ -114,11 +115,15 @@ class LayersTab(Gtk.Box):
                 self.doc, child, self.editor, can_delete=can_delete
             )
             col.edit_item_requested.connect(self._on_column_edit_item)
+            col.select_items_requested.connect(self._on_column_select_items)
             self._columns.append(col)
             self.columns_box.append(col)
 
     def _on_column_edit_item(self, sender, **kwargs):
         self.edit_item_requested.send(sender, **kwargs)
+
+    def _on_column_select_items(self, sender, **kwargs):
+        self.select_items_requested.send(sender, **kwargs)
 
     def _on_add_clicked(self, button):
         self.editor.layer.add_layer_and_set_active()

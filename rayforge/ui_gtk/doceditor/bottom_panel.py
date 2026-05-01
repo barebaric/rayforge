@@ -53,6 +53,7 @@ class BottomPanel(Gtk.Box):
         self.tab_changed = Signal()
         self.layout_changed = Signal()
         self.edit_item_requested = Signal()
+        self.select_items_requested = Signal()
         self.machine = machine
         self.machine_cmd = machine_cmd
         self.doc = None
@@ -76,6 +77,9 @@ class BottomPanel(Gtk.Box):
         self.layers_tab = LayersTab(doc_editor)
         self.layers_tab.edit_item_requested.connect(
             self._on_layers_tab_edit_item
+        )
+        self.layers_tab.select_items_requested.connect(
+            self._on_layers_tab_select_items
         )
 
         self.asset_browser = AssetBrowser(doc_editor)
@@ -207,6 +211,9 @@ class BottomPanel(Gtk.Box):
 
     def _on_layers_tab_edit_item(self, sender, **kwargs):
         self.edit_item_requested.send(sender, **kwargs)
+
+    def _on_layers_tab_select_items(self, sender, **kwargs):
+        self.select_items_requested.send(sender, **kwargs)
 
     def _on_active_layer_changed(self, sender):
         self._disconnect_layer_signals()

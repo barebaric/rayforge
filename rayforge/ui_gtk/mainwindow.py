@@ -449,6 +449,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.bottom_panel.edit_item_requested.connect(
             self._on_edit_item_requested
         )
+        self.bottom_panel.select_items_requested.connect(
+            self._on_select_items_requested
+        )
 
         config = get_context().config
         if config.bottom_panel:
@@ -707,6 +710,9 @@ class MainWindow(Adw.ApplicationWindow):
         action = self.action_manager.get_action(action_name)
         if action:
             action.activate(GLib.Variant.new_string(item.uid))
+
+    def _on_select_items_requested(self, sender, *, items):
+        self.surface.select_items(items)
 
     def load_project(self, file_path: Path):
         """Public method to load a project from a given path."""

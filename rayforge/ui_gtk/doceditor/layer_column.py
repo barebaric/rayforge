@@ -3,7 +3,7 @@ import logging
 from gettext import gettext as _
 from typing import Optional, TYPE_CHECKING, cast
 from blinker import Signal
-from gi.repository import Adw, Gdk, GObject, Gtk, Pango
+from gi.repository import Adw, Gdk, Gio, GObject, Gtk, Pango
 from ...context import get_context
 from ...core.doc import Doc
 from ...core.group import Group
@@ -108,6 +108,7 @@ class LayerColumn(Gtk.Box):
         self._potential_drop_index = -1
 
         self.edit_item_requested = Signal()
+        self.select_items_requested = Signal()
 
         self._build_header(can_delete)
         self._build_workflow_row()
@@ -118,6 +119,13 @@ class LayerColumn(Gtk.Box):
         self._click_gesture.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
         self._click_gesture.connect("pressed", self._on_column_clicked)
         self.add_controller(self._click_gesture)
+
+        self._context_popover: Optional[Gtk.PopoverMenu] = None
+
+        right_click = Gtk.GestureClick()
+        right_click.set_button(Gdk.BUTTON_SECONDARY)
+        right_click.connect("pressed", self._on_right_click_pressed)
+        self.add_controller(right_click)
 
         self._connect_signals()
         self._update_style()
@@ -412,6 +420,52 @@ class LayerColumn(Gtk.Box):
         if not action_name:
             return
         self.edit_item_requested.send(self, item=wp, action_name=action_name)
+
+    def _on_right_click_pressed(self, gesture, n_press, x, y):
+        widget = self.pick(x, y, Gtk.PickFlags.DEFAULT)
+        clicked_row = None
+        while widget and widget is not self:
+            if isinstance(widget, (WorkpieceRow, GroupRow)):
+                clicked_row = widget
+                break
+            widget = widget.get_parent()
+
+        if clicked_row is None:
+            self._show_empty_context_menu(gesture)
+        else:
+            if isinstance(clicked_row, WorkpieceRow):
+                item = clicked_row.workpiece
+            else:
+                item = clicked_row.group
+            self.select_items_requested.send(self, items=[item])
+            self._show_item_context_menu(gesture, item)
+
+    def _popup_context_menu(self, menu: Gio.Menu, gesture: Gtk.Gesture):
+        if self._context_popover:
+            self._context_popover.unparent()
+        popover = Gtk.PopoverMenu.new_from_model(menu)
+        popover.set_parent(self)
+        popover.set_has_arrow(False)
+        ok, rect = gesture.get_bounding_box()
+        if ok:
+            popover.set_pointing_to(rect)
+        self._context_popover = popover
+        popover.popup()
+
+    def _show_empty_context_menu(self, gesture):
+        menu = Gio.Menu.new()
+        menu.append_item(Gio.MenuItem.new(_("Paste"), "win.paste"))
+        self._popup_context_menu(menu, gesture)
+
+    def _show_item_context_menu(self, gesture, item: DocItem):
+        menu = Gio.Menu.new()
+        menu.append_item(Gio.MenuItem.new(_("Duplicate"), "win.duplicate"))
+        menu.append_section(None, Gio.Menu.new())
+        menu.append_item(Gio.MenuItem.new(_("Copy"), "win.copy"))
+        menu.append_item(Gio.MenuItem.new(_("Cut"), "win.cut"))
+        menu.append_section(None, Gio.Menu.new())
+        menu.append_item(Gio.MenuItem.new(_("Delete"), "win.remove"))
+        self._popup_context_menu(menu, gesture)
 
     def _on_drop(self, drop_target, value, x, y):
         if not value:
