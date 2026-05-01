@@ -359,6 +359,15 @@ class ActionManager:
             self.on_edit_stock_item,
             GLib.VariantType.new("s"),
         )
+        self._add_action("asset-copy", self.on_asset_copy)
+        self._add_action("asset-cut", self.on_asset_cut)
+        self._add_action("asset-paste", self.on_asset_paste)
+        self._add_action("asset-delete", self.on_asset_delete)
+        self._add_action("asset-duplicate", self.on_asset_duplicate)
+        self._add_action(
+            "asset-create-workpiece",
+            self.on_asset_create_workpiece,
+        )
 
         # Layer Management Actions
         self._add_action("layer-move-up", self.on_layer_move_up)
@@ -516,6 +525,37 @@ class ActionManager:
         if isinstance(item, StockItem):
             dialog = StockPropertiesDialog(self.win, item, self.editor)
             dialog.present()
+
+    def on_asset_copy(self, action, param):
+        browser = self.win.bottom_panel.asset_browser
+        browser.copy_selected_assets()
+        self._update_asset_action_states()
+
+    def on_asset_cut(self, action, param):
+        browser = self.win.bottom_panel.asset_browser
+        browser.cut_selected_assets()
+        self._update_asset_action_states()
+
+    def on_asset_paste(self, action, param):
+        browser = self.win.bottom_panel.asset_browser
+        browser.paste_assets()
+
+    def on_asset_delete(self, action, param):
+        browser = self.win.bottom_panel.asset_browser
+        browser.delete_selected_assets()
+        self._update_asset_action_states()
+
+    def on_asset_duplicate(self, action, param):
+        browser = self.win.bottom_panel.asset_browser
+        browser.duplicate_selected_assets()
+
+    def on_asset_create_workpiece(self, action, param):
+        browser = self.win.bottom_panel.asset_browser
+        browser.create_workpiece_from_selected()
+
+    def _update_asset_action_states(self):
+        browser = self.win.bottom_panel.asset_browser
+        self.actions["asset-paste"].set_enabled(browser.can_paste_assets())
 
     def _get_workpieces_for_tabbing(self) -> list[WorkPiece]:
         """

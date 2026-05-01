@@ -211,4 +211,6 @@ def show_background_context_menu(surface: "WorkSurface", gesture: Gtk.Gesture):
     menu.append_item(Gio.MenuItem.new(_("New Stock"), "win.add-stock"))
     menu.append_section(None, Gio.Menu.new())
     menu.append_item(Gio.MenuItem.new(_("Import File\u2026"), "win.import"))
+    menu.append_section(None, Gio.Menu.new())
+    menu.append_item(Gio.MenuItem.new(_("Paste"), "win.paste"))
     _show_popover(surface, gesture, menu)

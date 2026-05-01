@@ -1736,6 +1736,9 @@ class MainWindow(Adw.ApplicationWindow):
         am.get_action("cut").set_enabled(has_selection)
         am.get_action("copy").set_enabled(has_selection)
         am.get_action("paste").set_enabled(self.doc_editor.edit.can_paste())
+        am.get_action("asset-paste").set_enabled(
+            self.bottom_panel.asset_browser.can_paste_assets()
+        )
         am.get_action("select_all").set_enabled(doc.has_workpiece())
         am.get_action("duplicate").set_enabled(has_selection)
         am.get_action("remove").set_enabled(has_selection)
