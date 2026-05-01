@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING
+from typing import List, Set, TYPE_CHECKING
 from blinker import Signal
 from gi.repository import Gdk, GObject, Gtk
 from ...core.doc import Doc
@@ -22,6 +22,7 @@ class LayersTab(Gtk.Box):
         self._columns = []
         self._layer_drop_index = -1
         self._pan_offset_x = 0.0
+        self._selected_items: List = []
 
         self.edit_item_requested = Signal()
         self.select_items_requested = Signal()
@@ -116,6 +117,9 @@ class LayersTab(Gtk.Box):
             )
             col.edit_item_requested.connect(self._on_column_edit_item)
             col.select_items_requested.connect(self._on_column_select_items)
+            col.move_to_layer_requested.connect(
+                self._on_column_move_to_layer
+            )
             self._columns.append(col)
             self.columns_box.append(col)
 
@@ -123,7 +127,56 @@ class LayersTab(Gtk.Box):
         self.edit_item_requested.send(sender, **kwargs)
 
     def _on_column_select_items(self, sender, **kwargs):
-        self.select_items_requested.send(sender, **kwargs)
+        items = kwargs.get("items", [])
+        extend = kwargs.get("extend", False)
+        if extend:
+            other_layer = [
+                i for i in self._selected_items
+                if i.layer is not sender.layer
+            ]
+            same_layer = [
+                i for i in self._selected_items
+                if i.layer is sender.layer
+            ]
+            new_uids = {i.uid for i in items}
+            for i in same_layer:
+                if i.uid not in new_uids:
+                    items.append(i)
+            items = other_layer + items
+        self._selected_items = items
+        self.select_items_requested.send(sender, items=items)
+
+    def _on_column_move_to_layer(self, sender, **kwargs):
+        items = kwargs.get("items", [])
+        target_layer = kwargs.get("target_layer")
+        if not target_layer:
+            return
+        moved_uids = {i.uid for i in items}
+        selected_uids = {i.uid for i in self._selected_items}
+        if moved_uids & selected_uids:
+            items = list(self._selected_items)
+        self.editor.layer.move_items_to_layer(items, target_layer)
+
+    def update_row_selection(self, selected_uids: Set):
+        all_items = self.get_ordered_items()
+        self._selected_items = [i for i in all_items if i.uid in selected_uids]
+        for col in self._columns:
+            col.update_row_selection(selected_uids)
+
+    def get_selected_items(self) -> List:
+        return list(self._selected_items)
+
+    def get_ordered_items(self) -> List:
+        items = []
+        for col in self._columns:
+            child = col.listbox.get_first_child()
+            while child:
+                if isinstance(child, Gtk.ListBoxRow):
+                    item = col._row_items.get(child)
+                    if item:
+                        items.append(item)
+                child = child.get_next_sibling()
+        return items
 
     def _on_add_clicked(self, button):
         self.editor.layer.add_layer_and_set_active()

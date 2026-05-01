@@ -215,6 +215,9 @@ class BottomPanel(Gtk.Box):
     def _on_layers_tab_select_items(self, sender, **kwargs):
         self.select_items_requested.send(sender, **kwargs)
 
+    def update_layer_selection(self, selected_uids: set):
+        self.layers_tab.update_row_selection(selected_uids)
+
     def _on_active_layer_changed(self, sender):
         self._disconnect_layer_signals()
         self._connect_layer_signals()
