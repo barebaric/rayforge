@@ -8,6 +8,7 @@ import sys
 import traceback
 import warnings
 import gettext
+import locale
 from pathlib import Path
 from typing import cast
 from gettext import gettext as _
@@ -43,6 +44,13 @@ if hasattr(sys, "_MEIPASS"):
     base_dir = Path(sys._MEIPASS)  # type: ignore
 else:
     base_dir = Path(__file__).parent.parent
+
+# Set the locale from environment so Python's locale module (e.g.
+# locale.format_string) respects LC_NUMERIC for decimal separators.
+try:
+    locale.setlocale(locale.LC_ALL, "")
+except locale.Error:
+    pass
 
 # Configure gettext with the locale directory
 locale_dir = base_dir / "rayforge" / "locale"

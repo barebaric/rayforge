@@ -46,12 +46,14 @@ class SliderAdapter(RowAdapter):
             step_increment=0.1,
             page_increment=10,
         )
+        suffix = f" {var.format_suffix}" if var.format_suffix else None
         row, scale = create_slider_row(
             title=escape_title(var.label),
             subtitle=var.description if var.description else None,
             adjustment=adj,
             digits=1,
             draw_value=var.show_value,
+            format_suffix=suffix,
         )
         row.set_activatable_widget(scale)
         return row, cls(row, scale, min_val, max_val)
