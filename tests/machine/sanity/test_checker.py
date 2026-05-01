@@ -7,12 +7,8 @@ from rayforge.machine.sanity import (
 
 def test_clean_job(isolated_machine, make_line_ops):
     isolated_machine.set_axis_extents(200, 200)
-    ops = make_line_ops(
-        [(10, 10, False), (50, 50, True), (100, 100, True)]
-    )
-    report = SanityChecker(isolated_machine).check(
-        ops, mode=CheckMode.FAST
-    )
+    ops = make_line_ops([(10, 10, False), (50, 50, True), (100, 100, True)])
+    report = SanityChecker(isolated_machine).check(ops, mode=CheckMode.FAST)
     assert report.is_clean
     assert report.mode == CheckMode.FAST
 
@@ -36,25 +32,19 @@ def test_zone_violation_reported(
     report = SanityChecker(isolated_machine).check(ops)
     assert report.has_errors
     zone_issues = [
-        i
-        for i in report.issues
-        if i.category == IssueCategory.NOGO_ZONE
+        i for i in report.issues if i.category == IssueCategory.NOGO_ZONE
     ]
     assert len(zone_issues) == 1
 
 
-def test_workarea_violation_reported(
-    isolated_machine, make_line_ops
-):
+def test_workarea_violation_reported(isolated_machine, make_line_ops):
     isolated_machine.set_axis_extents(200, 200)
     isolated_machine.set_work_margins(50, 50, 50, 50)
     ops = make_line_ops([(10, 10, False), (60, 60, True)])
     report = SanityChecker(isolated_machine).check(ops)
     assert report.has_warnings
     wa_issues = [
-        i
-        for i in report.issues
-        if i.category == IssueCategory.WORKAREA
+        i for i in report.issues if i.category == IssueCategory.WORKAREA
     ]
     assert len(wa_issues) >= 1
 
@@ -83,8 +73,6 @@ def test_disabled_zone_not_included(
     ops = make_line_ops([(0, 10, False), (20, 10, True)])
     report = SanityChecker(isolated_machine).check(ops)
     zone_issues = [
-        i
-        for i in report.issues
-        if i.category == IssueCategory.NOGO_ZONE
+        i for i in report.issues if i.category == IssueCategory.NOGO_ZONE
     ]
     assert len(zone_issues) == 0
