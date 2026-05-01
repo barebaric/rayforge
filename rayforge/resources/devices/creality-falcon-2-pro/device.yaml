@@ -1,0 +1,23 @@
+api_version: 1
+device:
+  name: Creality Falcon 2 Pro 40W
+  description: Enclosed 40W diode laser engraver with 300x300mm work area
+machine:
+  driver: GrblSerialDriver
+  driver_args:
+    baudrate: '115200'
+  gcode_precision: 3
+  supports_arcs: true
+  axis_extents:
+  - 300.0
+  - 300.0
+  origin: bottom_left
+  max_travel_speed: 25000
+  max_cut_speed: 3000
+  home_on_start: false
+  heads:
+  - max_power: 1000
+    frame_power_percent: 0.1
+    spot_size_mm:
+    - 0.1
+    - 0.1

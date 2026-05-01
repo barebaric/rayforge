@@ -1,0 +1,23 @@
+api_version: 1
+device:
+  name: Ortur Laser Master 3
+  description: Diode laser engraver with 400x400mm work area and 32-bit controller
+machine:
+  driver: GrblSerialDriver
+  driver_args:
+    baudrate: '115200'
+  gcode_precision: 3
+  axis_extents:
+  - 400.0
+  - 400.0
+  origin: bottom_left
+  max_travel_speed: 10000
+  max_cut_speed: 3000
+  home_on_start: true
+  heads:
+  - max_power: 1000
+    frame_power_percent: 1.0
+    focus_power_percent: 1.0
+    spot_size_mm:
+    - 0.08
+    - 0.08
