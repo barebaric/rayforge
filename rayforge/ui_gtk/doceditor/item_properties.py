@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class DocItemPropertiesWidget(Expander):
+class DocItemPropertiesWidget(Gtk.Box):
     """
     An orchestrator widget that displays properties for selected document
     items.
@@ -30,6 +30,9 @@ class DocItemPropertiesWidget(Expander):
     each responsible for a specific aspect of an item (e.g., transformation,
     source file, tabs). It manages persistent widgets to avoid interrupting
     user edits.
+
+    Providers with ``separate_group = True`` each get their own Expander
+    card, visually separated from the main item properties card.
     """
 
     def __init__(
@@ -39,28 +42,31 @@ class DocItemPropertiesWidget(Expander):
         *args,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, *args, **kwargs)
 
         self.editor = editor
         self.items: List[DocItem] = []
+
+        self._main_expander = Expander()
+        self._main_expander.set_expanded(True)
+        self._main_expander.set_title(_("Item Properties"))
+        self.append(self._main_expander)
+
         self._rows_container = Gtk.ListBox()
         self._rows_container.set_selection_mode(Gtk.SelectionMode.NONE)
-        self.set_child(self._rows_container)
+        self._main_expander.set_child(self._rows_container)
 
-        self.set_title(_("Item Properties"))
-        self.set_expanded(True)
-
-        # Get providers from registry instead of hardcoding
         self.providers: List[PropertyProvider] = (
             property_provider_registry.create_instances()
         )
-        # This will hold tuples of (provider, [list_of_widgets])
         self._provider_widget_map: List[
             Tuple[PropertyProvider, List[Gtk.Widget]]
         ] = []
+        self._separate_groups: List[
+            Tuple[PropertyProvider, List[Gtk.Widget], Expander]
+        ] = []
         self._initialize_providers_ui()
 
-        # Connect to machine changes to update when WCS changes
         self._machine = None
         self._connect_signals()
 
@@ -95,14 +101,29 @@ class DocItemPropertiesWidget(Expander):
     def _initialize_providers_ui(self):
         """
         Creates all widgets for all providers one time and adds them to the
-        container in a hidden state.
+        appropriate container in a hidden state.
         """
         for provider in self.providers:
             widgets = provider.create_widgets()
-            self._provider_widget_map.append((provider, widgets))
-            for widget in widgets:
-                widget.set_visible(False)
-                self._rows_container.append(widget)
+            if provider.separate_group:
+                expander = Expander()
+                expander.set_expanded(True)
+                if provider.group_title:
+                    expander.set_title(provider.group_title)
+                container = Gtk.ListBox()
+                container.set_selection_mode(Gtk.SelectionMode.NONE)
+                expander.set_child(container)
+                for widget in widgets:
+                    widget.set_visible(False)
+                    container.append(widget)
+                self._separate_groups.append((provider, widgets, expander))
+                expander.set_margin_top(6)
+                self.append(expander)
+            else:
+                self._provider_widget_map.append((provider, widgets))
+                for widget in widgets:
+                    widget.set_visible(False)
+                    self._rows_container.append(widget)
 
     def set_items(self, items: Optional[List[DocItem]]):
         """Sets the currently selected items and updates the UI."""
@@ -114,11 +135,13 @@ class DocItemPropertiesWidget(Expander):
 
         count = len(self.items)
         if count == 1:
-            self.set_subtitle(_("1 item selected"))
+            self._main_expander.set_subtitle(_("1 item selected"))
         elif count > 1:
-            self.set_subtitle(_("{count} items selected").format(count=count))
+            self._main_expander.set_subtitle(
+                _("{count} items selected").format(count=count)
+            )
         else:
-            self.set_subtitle("")
+            self._main_expander.set_subtitle("")
 
         for item in self.items:
             item.updated.connect(self._on_item_data_changed)
@@ -144,15 +167,18 @@ class DocItemPropertiesWidget(Expander):
         managing the visibility and content of their persistent widgets.
         """
         if not self.items:
-            self.set_sensitive(False)
-            self.set_title(_("Item Properties"))
-            # Hide all provider widgets when nothing is selected
+            self._main_expander.set_sensitive(False)
+            self._main_expander.set_title(_("Item Properties"))
             for provider, widgets in self._provider_widget_map:
                 for widget in widgets:
                     widget.set_visible(False)
+            for provider, widgets, expander in self._separate_groups:
+                for widget in widgets:
+                    widget.set_visible(False)
+                expander.set_visible(False)
             return
 
-        self.set_sensitive(True)
+        self._main_expander.set_sensitive(True)
         self._update_title(self.items[0])
 
         for provider, widgets in self._provider_widget_map:
@@ -163,15 +189,25 @@ class DocItemPropertiesWidget(Expander):
             if can_handle:
                 provider.update_widgets(self.editor, self.items)
 
+        for provider, widgets, expander in self._separate_groups:
+            can_handle = provider.can_handle(self.items)
+            for widget in widgets:
+                widget.set_visible(can_handle)
+            expander.set_visible(can_handle)
+
+            if can_handle:
+                provider.update_widgets(self.editor, self.items)
+                expander.set_subtitle(provider.group_subtitle)
+
     def _update_title(self, item: DocItem):
         """Sets the main title of the expander based on selection."""
         if len(self.items) > 1:
-            self.set_title(_("Multiple Items"))
+            self._main_expander.set_title(_("Multiple Items"))
         elif isinstance(item, StockItem):
-            self.set_title(_("Stock Properties"))
+            self._main_expander.set_title(_("Stock Properties"))
         elif isinstance(item, WorkPiece):
-            self.set_title(_("Workpiece Properties"))
+            self._main_expander.set_title(_("Workpiece Properties"))
         elif isinstance(item, Group):
-            self.set_title(_("Group Properties"))
+            self._main_expander.set_title(_("Group Properties"))
         else:
-            self.set_title(_("Item Properties"))
+            self._main_expander.set_title(_("Item Properties"))

@@ -12,15 +12,15 @@ logger = logging.getLogger(__name__)
 _DEBOUNCE_DELAY_MS = 300
 
 
-class VarSetWidget(Adw.PreferencesGroup):
+class _VarSetRowManager:
     """
-    A self-contained Adwaita Preferences Group that populates itself with
-    rows based on a VarSet. Supports both immediate updates and explicit
-    "Apply" buttons, with built-in debouncing for rapid value changes.
+    Mixin providing all VarSet row management logic (populate, get/set
+    values, debouncing, apply buttons). Subclasses must implement
+    ``_add_row`` and ``_remove_row``, and may override
+    ``_set_group_title`` and ``_set_group_description``.
     """
 
-    def __init__(self, explicit_apply=False, debounce_ms=0, **kwargs):
-        super().__init__(**kwargs)
+    def _init_varset(self, explicit_apply=False, debounce_ms=0):
         self.explicit_apply = explicit_apply
         self.debounce_ms = debounce_ms
         self.widget_map: Dict[str, Tuple[Adw.PreferencesRow, Var]] = {}
@@ -31,11 +31,23 @@ class VarSetWidget(Adw.PreferencesGroup):
         self._debounce_timer_id: Optional[int] = None
         self._pending_keys: set = set()
 
+    def _add_row(self, row):
+        raise NotImplementedError
+
+    def _remove_row(self, row):
+        raise NotImplementedError
+
+    def _set_group_title(self, title):
+        pass
+
+    def _set_group_description(self, desc):
+        pass
+
     def clear_dynamic_rows(self):
         """Removes only the rows dynamically created by populate()."""
         self._cancel_debounce()
         for row in self._created_rows:
-            self.remove(row)
+            self._remove_row(row)
         self._created_rows.clear()
         self._apply_buttons.clear()
         self.widget_map.clear()
@@ -48,9 +60,9 @@ class VarSetWidget(Adw.PreferencesGroup):
         Reuse existing rows if possible to preserve state.
         """
         if var_set.title:
-            self.set_title(escape_title(var_set.title))
+            self._set_group_title(escape_title(var_set.title))
         if var_set.description:
-            self.set_description(escape_title(var_set.description))
+            self._set_group_description(escape_title(var_set.description))
 
         new_keys = {var.key for var in var_set}
         existing_keys = list(self.widget_map.keys())
@@ -58,7 +70,7 @@ class VarSetWidget(Adw.PreferencesGroup):
         for key in existing_keys:
             if key not in new_keys:
                 row, _ = self.widget_map.pop(key)
-                self.remove(row)
+                self._remove_row(row)
                 if row in self._created_rows:
                     self._created_rows.remove(row)
 
@@ -72,7 +84,7 @@ class VarSetWidget(Adw.PreferencesGroup):
                     needs_rebuild = adapter.needs_rebuild(old_var, var)
 
                 if needs_rebuild:
-                    self.remove(row)
+                    self._remove_row(row)
                     if row in self._created_rows:
                         self._created_rows.remove(row)
                     del self.widget_map[var.key]
@@ -86,7 +98,7 @@ class VarSetWidget(Adw.PreferencesGroup):
             row, adapter = create_row_for_var(var, "value")
             if row:
                 self._wire_up_row(row, var, adapter)
-                self.add(row)
+                self._add_row(row)
                 self._created_rows.append(row)
                 self.widget_map[var.key] = (row, var)
                 if adapter is not None:
@@ -167,3 +179,46 @@ class VarSetWidget(Adw.PreferencesGroup):
     def set_apply_buttons_sensitive(self, sensitive: bool):
         for button in self._apply_buttons:
             button.set_sensitive(sensitive)
+
+
+class VarSetWidget(Adw.PreferencesGroup, _VarSetRowManager):
+    """
+    A self-contained Adwaita Preferences Group that populates itself with
+    rows based on a VarSet. Supports both immediate updates and explicit
+    "Apply" buttons, with built-in debouncing for rapid value changes.
+    """
+
+    def __init__(self, explicit_apply=False, debounce_ms=0, **kwargs):
+        Adw.PreferencesGroup.__init__(self, **kwargs)
+        self._init_varset(explicit_apply, debounce_ms)
+
+    def _add_row(self, row):
+        self.add(row)
+
+    def _remove_row(self, row):
+        self.remove(row)
+
+    def _set_group_title(self, title):
+        self.set_title(title)
+
+    def _set_group_description(self, desc):
+        self.set_description(desc)
+
+
+class VarSetRowList(Gtk.ListBox, _VarSetRowManager):
+    """
+    A Gtk.ListBox that populates itself with rows based on a VarSet.
+    Intended for use inside Expander cards where Adw.PreferencesGroup
+    styling would be visually inconsistent.
+    """
+
+    def __init__(self, explicit_apply=False, debounce_ms=0, **kwargs):
+        Gtk.ListBox.__init__(self, **kwargs)
+        self.set_selection_mode(Gtk.SelectionMode.NONE)
+        self._init_varset(explicit_apply, debounce_ms)
+
+    def _add_row(self, row):
+        self.append(row)
+
+    def _remove_row(self, row):
+        self.remove(row)
