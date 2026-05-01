@@ -1,15 +1,19 @@
+import copy
 import json
 import logging
-from typing import TYPE_CHECKING, Optional, cast
+import uuid
+from typing import TYPE_CHECKING, Dict, List, Optional, cast
 
-from gi.repository import Gdk, GLib, Graphene, Gtk, Pango
+from gi.repository import Gdk, Gio, GLib, Graphene, Gtk, Pango
 from blinker import Signal
 from gettext import gettext as _
 
 from ...core.asset import IAsset
 from ...core.asset_registry import asset_type_registry
 from ...core.doc import Doc
+from ...core.geometry_provider import IGeometryProvider
 from ...core.stock import StockItem
+from ...core.undo import ListItemCommand
 from ..icons import get_icon
 from ..shared.gtk import apply_css
 from ..shared.popover_menu import PopoverMenu
@@ -213,6 +217,11 @@ class AssetBrowser(Gtk.Box):
         self._scrolled.set_vexpand(True)
         self._main_box.append(self._scrolled)
 
+        right_click = Gtk.GestureClick()
+        right_click.set_button(Gdk.BUTTON_SECONDARY)
+        right_click.connect("pressed", self._on_right_click_pressed)
+        self._scrolled.add_controller(right_click)
+
         self._empty_state = self._create_empty_state()
         self._main_box.append(self._empty_state)
 
@@ -230,6 +239,8 @@ class AssetBrowser(Gtk.Box):
 
         self._cards: dict[str, list] = {}
         self._selected_uids: set[str] = set()
+        self._asset_clipboard: List[Dict] = []
+        self._context_popover: Optional[Gtk.PopoverMenu] = None
         self._connect_signals()
         self._sync_cards(self.doc)
 
@@ -333,11 +344,11 @@ class AssetBrowser(Gtk.Box):
         child = self._flowbox.get_first_child()
         while child:
             next_child = child.get_next_sibling()
-            fb_child = cast(Gtk.FlowBoxChild, child)
-            card = fb_child.get_child()
-            if card:
-                fb_child.set_child(None)
-            self._flowbox.remove(fb_child)
+            if isinstance(child, Gtk.FlowBoxChild):
+                card = child.get_child()
+                if card:
+                    child.set_child(None)
+                self._flowbox.remove(child)
             child = next_child
 
         for asset in visible:
@@ -476,23 +487,188 @@ class AssetBrowser(Gtk.Box):
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
         if keyval == Gdk.KEY_Delete:
-            self._delete_selected_assets()
+            self.delete_selected_assets()
             return True
         return False
 
-    def _delete_selected_assets(self):
-        if not self._selected_uids:
-            return
+    def _on_right_click_pressed(self, gesture, n_press, x, y):
+        widget = self._scrolled.pick(x, y, Gtk.PickFlags.DEFAULT)
+        clicked_child = None
+        while widget and widget != self._scrolled:
+            if isinstance(widget, Gtk.FlowBoxChild):
+                clicked_child = widget
+                break
+            widget = widget.get_parent()
 
-        assets_to_delete = []
+        if clicked_child is None:
+            self._show_empty_context_menu(gesture)
+        else:
+            card = cast(AssetCard, clicked_child.get_child())
+            if card:
+                if card.asset.uid not in self._selected_uids:
+                    self._selected_uids = {card.asset.uid}
+                    self._update_selection_visual()
+                self._show_asset_context_menu(gesture, card.asset)
+
+    def _popup_context_menu(self, menu: Gio.Menu, gesture: Gtk.Gesture):
+        if self._context_popover:
+            self._context_popover.unparent()
+        popover = Gtk.PopoverMenu.new_from_model(menu)
+        popover.set_parent(self._scrolled)
+        popover.set_has_arrow(False)
+        popover.set_position(Gtk.PositionType.RIGHT)
+        ok, rect = gesture.get_bounding_box()
+        if ok:
+            popover.set_pointing_to(rect)
+        self._context_popover = popover
+        popover.popup()
+
+    def _show_empty_context_menu(self, gesture):
+        menu = Gio.Menu.new()
+        menu.append_item(Gio.MenuItem.new(_("New Sketch"), "win.new_sketch"))
+        menu.append_item(Gio.MenuItem.new(_("New Stock"), "win.add-stock"))
+        menu.append_section(None, Gio.Menu.new())
+        menu.append_item(
+            Gio.MenuItem.new(_("Import File\u2026"), "win.import")
+        )
+        menu.append_section(None, Gio.Menu.new())
+        menu.append_item(Gio.MenuItem.new(_("Paste"), "win.asset-paste"))
+        self._popup_context_menu(menu, gesture)
+
+    def _show_asset_context_menu(self, gesture, asset: IAsset):
+        menu = Gio.Menu.new()
+
+        if isinstance(asset, IGeometryProvider):
+            menu.append_item(
+                Gio.MenuItem.new(
+                    _("Create New Workpiece"),
+                    "win.asset-create-workpiece",
+                )
+            )
+            menu.append_section(None, Gio.Menu.new())
+
+        menu.append_item(
+            Gio.MenuItem.new(_("Duplicate"), "win.asset-duplicate")
+        )
+        menu.append_section(None, Gio.Menu.new())
+        menu.append_item(Gio.MenuItem.new(_("Copy"), "win.asset-copy"))
+        menu.append_item(Gio.MenuItem.new(_("Cut"), "win.asset-cut"))
+        menu.append_section(None, Gio.Menu.new())
+        menu.append_item(Gio.MenuItem.new(_("Delete"), "win.asset-delete"))
+        self._popup_context_menu(menu, gesture)
+
+    def get_selected_assets(self) -> List[IAsset]:
+        assets = []
         for uid in self._selected_uids:
             entry = self._cards.get(uid)
             if entry:
-                assets_to_delete.append(entry[0].asset)
+                assets.append(entry[0].asset)
+        return assets
 
-        for asset in assets_to_delete:
-            self.editor.asset.delete_asset(asset)
+    def copy_selected_assets(self):
+        assets = self.get_selected_assets()
+        if not assets:
+            return
+        self._asset_clipboard = [a.to_dict() for a in assets]
+        logger.debug(
+            "Copied %d asset(s) to clipboard", len(self._asset_clipboard)
+        )
+
+    def cut_selected_assets(self):
+        assets = self.get_selected_assets()
+        if not assets:
+            return
+        self._asset_clipboard = [a.to_dict() for a in assets]
+        history = self.editor.history_manager
+        with history.transaction(_("Cut asset(s)")) as t:
+            for asset in assets:
+                t.execute(
+                    ListItemCommand(
+                        owner_obj=self.editor.doc,
+                        item=asset,
+                        undo_command="add_asset",
+                        redo_command="remove_asset",
+                        name=_("Cut asset"),
+                    )
+                )
         self._selected_uids.clear()
+
+    def paste_assets(self):
+        if not self._asset_clipboard:
+            logger.debug("Paste: clipboard is empty")
+            return
+        logger.debug(
+            "Pasting %d asset(s) from clipboard",
+            len(self._asset_clipboard),
+        )
+        history = self.editor.history_manager
+        with history.transaction(_("Paste asset(s)")) as t:
+            for asset_dict in self._asset_clipboard:
+                data = copy.deepcopy(asset_dict)
+                new_uid = str(uuid.uuid4())
+                data["uid"] = new_uid
+                type_name = data.get("type", "unknown")
+                asset_class = asset_type_registry.get(type_name)
+                if asset_class:
+                    new_asset = asset_class.from_dict(data)
+                    t.execute(
+                        ListItemCommand(
+                            owner_obj=self.editor.doc,
+                            item=new_asset,
+                            undo_command="remove_asset",
+                            redo_command="add_asset",
+                            name=_("Paste asset"),
+                        )
+                    )
+                else:
+                    logger.warning("Paste: unknown asset type '%s'", type_name)
+
+    def duplicate_selected_assets(self):
+        assets = self.get_selected_assets()
+        if not assets:
+            return
+        history = self.editor.history_manager
+        with history.transaction(_("Duplicate asset(s)")) as t:
+            for asset in assets:
+                data = copy.deepcopy(asset.to_dict())
+                new_uid = str(uuid.uuid4())
+                data["uid"] = new_uid
+                data["name"] = asset.name + " copy"
+                type_name = data.get("type", "unknown")
+                asset_class = asset_type_registry.get(type_name)
+                if asset_class:
+                    new_asset = asset_class.from_dict(data)
+                    t.execute(
+                        ListItemCommand(
+                            owner_obj=self.editor.doc,
+                            item=new_asset,
+                            undo_command="remove_asset",
+                            redo_command="add_asset",
+                            name=_("Duplicate asset"),
+                        )
+                    )
+
+    def delete_selected_assets(self):
+        if not self._selected_uids:
+            return
+        for uid in list(self._selected_uids):
+            entry = self._cards.get(uid)
+            if entry:
+                self.editor.asset.delete_asset(entry[0].asset)
+        self._selected_uids.clear()
+
+    def create_workpiece_from_selected(self):
+        assets = self.get_selected_assets()
+        if not assets:
+            return
+        for asset in assets:
+            if isinstance(asset, IGeometryProvider):
+                self.editor.edit.add_geometry_provider_instance(
+                    asset.uid, (0.0, 0.0)
+                )
+
+    def can_paste_assets(self) -> bool:
+        return len(self._asset_clipboard) > 0
 
     def _on_add_clicked(self, button):
         asset_types = []
