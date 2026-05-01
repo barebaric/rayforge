@@ -452,6 +452,11 @@ class Canvas(Gtk.DrawingArea):
         logger.debug(f"Canvas.on_button_press fired for {type(self).__name__}")
         self.grab_focus()
         self._was_dragging = False
+        event = gesture.get_current_event()
+        if event:
+            mods = event.get_modifier_state()
+            self._shift_pressed = bool(mods & Gdk.ModifierType.SHIFT_MASK)
+            self._ctrl_pressed = bool(mods & Gdk.ModifierType.CONTROL_MASK)
         world_x, world_y = self._get_world_coords(x, y)
         self._update_hover_state(world_x, world_y)
 
