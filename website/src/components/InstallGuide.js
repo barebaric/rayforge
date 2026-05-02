@@ -95,7 +95,6 @@ function OsSelector({ selectedOs, onSelectOs }) {
             }`}
             onClick={() => onSelectOs(os.id)}
           >
-            <span className="install-os-icon">{os.icon}</span>
             <span>{os.label}</span>
           </button>
         ))}
