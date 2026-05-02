@@ -117,9 +117,7 @@ class LayersTab(Gtk.Box):
             )
             col.edit_item_requested.connect(self._on_column_edit_item)
             col.select_items_requested.connect(self._on_column_select_items)
-            col.move_to_layer_requested.connect(
-                self._on_column_move_to_layer
-            )
+            col.move_to_layer_requested.connect(self._on_column_move_to_layer)
             self._columns.append(col)
             self.columns_box.append(col)
 
@@ -131,12 +129,10 @@ class LayersTab(Gtk.Box):
         extend = kwargs.get("extend", False)
         if extend:
             other_layer = [
-                i for i in self._selected_items
-                if i.layer is not sender.layer
+                i for i in self._selected_items if i.layer is not sender.layer
             ]
             same_layer = [
-                i for i in self._selected_items
-                if i.layer is sender.layer
+                i for i in self._selected_items if i.layer is sender.layer
             ]
             new_uids = {i.uid for i in items}
             for i in same_layer:

@@ -3,10 +3,10 @@ import logging
 from typing import List, Dict, Optional, Sequence, TYPE_CHECKING, Any, Tuple
 from dataclasses import dataclass
 import cairo
+from .geo import Rect
 from .item import DocItem
 from .matrix import Matrix
 from .workpiece import WorkPiece
-from .geo import Rect
 
 if TYPE_CHECKING:
     from .layer import Layer

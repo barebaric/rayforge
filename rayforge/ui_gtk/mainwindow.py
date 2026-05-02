@@ -711,7 +711,7 @@ class MainWindow(Adw.ApplicationWindow):
         if action:
             action.activate(GLib.Variant.new_string(item.uid))
 
-    def _on_select_items_requested(self, sender, *, items):
+    def _on_select_items_requested(self, sender, *, items, **kwargs):
         self.surface.select_items(items)
 
     def load_project(self, file_path: Path):

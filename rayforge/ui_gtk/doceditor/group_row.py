@@ -28,11 +28,6 @@ class GroupRow(Gtk.Box):
 
         self._update_ui()
 
-        self._drag_source = Gtk.DragSource()
-        self._drag_source.set_actions(Gdk.DragAction.MOVE)
-        self._drag_source.connect("prepare", self._on_drag_prepare)
-        self.add_controller(self._drag_source)
-
         group.updated.connect(self._on_group_updated)
 
     def do_destroy(self):
