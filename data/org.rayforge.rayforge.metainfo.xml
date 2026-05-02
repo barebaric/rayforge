@@ -66,6 +66,46 @@
   </screenshots>
 
   <releases>
+    <release version="1.7.0-beta2" date="2026-05-02">
+      <description>
+        <p>Job Sanity Checks, 10 New Device Profiles, Better Layer
+        Interaction</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Job sanity check system that reports machine extent violations,
+          workarea violations, and no-go zone collisions before sending or
+          exporting</li>
+          <li>Device profiles for 10 popular laser cutters: Ortur LM3/LM4,
+          Atomstack X40 Pro/A70, TwoTrees TTS-55, NEJE Master 3 Max, Creality
+          Falcon 2 Pro, OMTech Polar 50W, Longer Ray5, and Thunder Laser
+          Nova 35</li>
+          <li>Context menus for workpieces in the layer tab and in the asset
+          browser with copy, cut, paste, and duplicate</li>
+          <li>Visual selection state in layer columns synced with the
+          canvas</li>
+          <li>Multi-item selection with Ctrl-click, Shift-click range, and
+          cross-layer drag</li>
+          <li>Horizontal and vertical auto-constraints from snap guides in the
+          sketcher path tool</li>
+          <li>Sketch parameters shown as a separate preferences group</li>
+          <li>Locale-aware number formatting in sliders</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Fixed GRBL buffer deadlock from lost ok responses on \r\r\n
+          line endings</li>
+          <li>Fixed wrong visibility icon for initially invisible layers</li>
+          <li>Fixed IndexError when laser combo selection is out of sync with
+          machine heads</li>
+          <li>Fixed AttributeError on startup from early view_stack signal
+          connection</li>
+          <li>Fixed circle and ellipse sketches missing preview
+          thumbnails</li>
+          <li>Fixed canvas stuck in shift-pressed state after layer
+          interaction</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.7.0-beta1" date="2026-05-01">
       <description>
         <p>CO2 Laser Support, OctoPrint Driver, Parametric Text</p>

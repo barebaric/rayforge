@@ -1,8 +1,8 @@
 # Zones Interdites
 
 Les zones interdites définissent des zones restreintes sur la surface de travail que le laser ne
-doit pas traverser. Avant d'exécuter ou d'exporter un travail, Rayforge vérifie si des
-trajets d'outil entrent dans une zone interdite activée et t'avertit si une collision est détectée.
+doit pas traverser. Lorsqu'elles sont activées, elles sont vérifiées dans le cadre des
+[vérifications de cohérence du travail](../features/sanity-checks) avant l'exécution ou l'exportation.
 
 ![Zones Interdites](/screenshots/machine-nogo-zones.png)
 
@@ -19,12 +19,6 @@ Chaque zone a les paramètres suivants :
 - **Position (X, Y, Z)** : Où la zone est placée sur la surface de travail
 - **Dimensions** : Largeur, hauteur et profondeur (ou rayon pour les cylindres)
 
-## Avertissements de Collision
-
-Lorsque tu exécutes ou exportes un travail, Rayforge vérifie tous les trajets d'outil par rapport
-aux zones interdites activées. Si un trajet d'outil traverse une zone, une boîte de dialogue
-d'avertissement apparaît avec la possibilité d'annuler ou de continuer à tes propres risques.
-
 ## Visibilité
 
 Les zones interdites sont affichées sur le canevas 2D et 3D comme des superpositions
@@ -37,4 +31,5 @@ les sessions.
 ## Pages Connexes
 
 - [Paramètres Matériel](hardware) - Dimensions de la machine et configuration des axes
+- [Vérifications de cohérence](../features/sanity-checks) - Validation avant travail
 - [Vue 3D](../ui/3d-preview) - Visualisation du trajet d'outil 3D

@@ -134,11 +134,14 @@ Alterne a visibilidade de camadas individuais:
 Antes de enviar para a máquina, verifique:
 
 - [ ] O caminho da ferramenta está completo sem segmentos faltando
-- [ ] Os caminhos permanecem dentro da área de trabalho da máquina
 - [ ] Operações de gravação executam antes dos cortes
-- [ ] Nenhum caminho de ferramenta entra em uma zona de restrição
 - [ ] O trabalho começa na posição esperada
 - [ ] Abas de fixação estão nos locais corretos
+
+Algumas verificações adicionais são realizadas automaticamente. Quando você
+executa ou exporta um trabalho, o Rayforge executa
+[verificações de sanidade](../features/sanity-checks) que verificam limites
+da máquina, fronteiras da área de trabalho e colisões com zonas de restrição.
 
 ## Dicas de Desempenho
 

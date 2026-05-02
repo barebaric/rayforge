@@ -83,6 +83,7 @@ module.exports = {
             'features/stock-handling',
             'features/simulation-mode',
             'features/framing-your-job',
+            'features/sanity-checks',
             'features/workpiece-positioning',
             'features/kerf',
           ],

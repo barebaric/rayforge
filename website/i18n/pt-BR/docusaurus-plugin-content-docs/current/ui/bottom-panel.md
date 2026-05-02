@@ -272,6 +272,12 @@ Quando a lista de ativos está vazia, ela exibe botões para adicionar estoque o
 criar um novo esboço. Você pode arrastar ativos desta lista para a tela para
 posicioná-los. Clicar duas vezes em um ativo de estoque abre suas propriedades.
 
+Clicar com o botão direito em um ativo abre um menu de contexto com opções
+para criar uma nova peça de trabalho a partir do ativo, duplicar, copiar,
+recortar ou excluí-lo. Clicar com o botão direito em um espaço vazio na lista
+de ativos oferece opções para criar um novo esboço, adicionar estoque, importar
+um arquivo ou colar da área de transferência.
+
 Quando a aba do Console ou do Visualizador G-code está ativa, você também pode
 pressionar <kbd>Ctrl+F</kbd> para pesquisar dentro do conteúdo.
 

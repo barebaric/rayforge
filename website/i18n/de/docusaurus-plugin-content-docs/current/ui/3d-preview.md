@@ -133,11 +133,15 @@ Sichtbarkeit einzelner Ebenen umschalten:
 Vor dem Senden an die Maschine verifizieren:
 
 - [ ] Werkzeugweg ist vollständig ohne fehlende Segmente
-- [ ] Pfade bleiben innerhalb des Maschinenarbeitsbereichs
 - [ ] Gravur-Operationen werden vor Schnitten ausgeführt
-- [ ] Kein Werkzeugweg betritt eine No-Go-Zone
 - [ ] Auftrag beginnt an der erwarteten Position
 - [ ] Halterungen befinden sich an den korrekten Positionen
+
+Einige zusätzliche Prüfungen werden automatisch durchgeführt. Wenn du einen
+Auftrag ausführst oder exportierst, führt Rayforge
+[Plausibilitätsprüfungen](../features/sanity-checks) durch, die
+Maschinenausmaße, Arbeitsbereichgrenzen und No-Go-Zonen-Kollisionen
+überprüfen.
 
 ## Leistungstipps
 

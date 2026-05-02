@@ -240,7 +240,9 @@ cible d'accrochage.
 De nombreux outils de dessin appliquent automatiquement des contraintes lors de
 la création de géométrie. Par exemple, lors du tracé d'une ligne proche de
 l'horizontale ou de la verticale, l'esquisseur proposera de la verrouiller en
-place. Cela aide à garder votre esquisse ordonnée dès le départ, plutôt que de
+place. L'outil de tracé crée également des contraintes horizontales et
+verticales automatiquement lorsque les guides d'accrochage montrent un
+alignement pendant le dessin. Cela aide à garder votre esquisse ordonnée dès le départ, plutôt que de
 corriger les choses par la suite.
 
 ### Commandes afficher/masquer

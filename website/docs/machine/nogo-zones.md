@@ -5,8 +5,8 @@ description: "Define no-go zones in Rayforge to protect sensitive areas of your 
 # No-Go Zones
 
 No-go zones define restricted areas on the work surface that the laser should
-not enter. Before running or exporting a job, Rayforge checks whether any
-toolpaths enter an enabled no-go zone and warns you if a collision is detected.
+not enter. When enabled, they are checked as part of the
+[job sanity checks](../features/sanity-checks) before running or exporting.
 
 ![No-Go Zones](/screenshots/machine-nogo-zones.png)
 
@@ -23,12 +23,6 @@ Each zone has the following settings:
 - **Position (X, Y, Z)**: Where the zone is placed on the work surface
 - **Dimensions**: Width, height, and depth (or radius for cylinders)
 
-## Collision Warnings
-
-When you run or export a job, Rayforge checks all toolpaths against enabled
-no-go zones. If a toolpath passes through a zone, a warning dialog appears
-with the option to cancel or proceed at your own risk.
-
 ## Visibility
 
 No-go zones are displayed on both the 2D and 3D canvas as semi-transparent
@@ -40,4 +34,5 @@ hide them. The visibility setting is remembered between sessions.
 ## Related Pages
 
 - [Hardware Settings](hardware) - Machine dimensions and axis configuration
+- [Job Sanity Checks](../features/sanity-checks) - Pre-job validation
 - [3D View](../ui/3d-preview) - 3D toolpath visualization
