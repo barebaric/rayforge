@@ -1,13 +1,45 @@
 /* --- START OF FILE src/pages/index.js --- */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
 import styles from './index.module.css';
 import Icon from '@mdi/react';
 import { mdiRocketLaunch, mdiViewDashboard, mdiFeatureSearch, mdiShareVariant } from '@mdi/js';
 
+function detectOs() {
+  if (typeof window === 'undefined') {
+    return 'linux';
+  }
+
+  const userAgent = window.navigator.userAgent.toLowerCase();
+
+  if (userAgent.includes('win')) {
+    return 'windows';
+  }
+  if (
+    userAgent.includes('mac') ||
+    userAgent.includes('iphone') ||
+    userAgent.includes('ipad')
+  ) {
+    return 'macos';
+  }
+  if (userAgent.includes('linux')) {
+    return 'linux';
+  }
+
+  return 'linux';
+}
+
 function HeroSection() {
+  const [os, setOs] = useState('linux');
+
+  useEffect(() => {
+    setOs(detectOs());
+  }, []);
+
+  const downloadTo = `/docs/getting-started/installation#${os}`;
+
   return (
     <section className={styles.hero}>
       <div className={styles.heroInner}>
@@ -23,10 +55,10 @@ function HeroSection() {
           </p>
           <div className={styles.heroCtaButtons}>
             <Link
-              to="/docs/getting-started/installation"
+              to={downloadTo}
               className={styles.buttonPrimary}
             >
-              Get Started
+              Download
             </Link>
             <a
               href="https://github.com/barebaric/rayforge"
